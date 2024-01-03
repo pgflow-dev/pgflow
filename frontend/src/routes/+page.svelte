@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount } from 'svelte';
-import { userStore, getUser, signUpUser } from '$lib/userStore';
+import { userStore, getUser, signUpUser, signOutUser } from '$lib/userStore';
 
 const user = userStore;
 let email = '';
@@ -17,6 +17,7 @@ onMount(getUser);
 	<div class="space-y-5">
   {#if $user}
     <h1>Hi, {$user.email}!</h1>
+    <button on:click={signOutUser}>Log out</button>
   {:else}
     <h1>Hi, guest!</h1>
     <h2>Sign up:</h2>
