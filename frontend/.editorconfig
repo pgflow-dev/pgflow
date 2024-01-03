@@ -1,0 +1,5 @@
+root = false
+# Configuration files
+[*.{js,ts,svelte}]
+indent_style = space
+indent_size = 2
