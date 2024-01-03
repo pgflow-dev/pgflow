@@ -1,8 +1,7 @@
 <script lang="ts">
 import { onMount } from 'svelte';
-import { userStore, getUser, signUpUser, signOutUser } from '$lib/userStore';
+import { user, getUser, signUpUser, signOutUser } from '$lib/userStore';
 
-const user = userStore;
 let email = '';
 let password = '';
 

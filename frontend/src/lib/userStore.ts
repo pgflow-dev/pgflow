@@ -4,16 +4,16 @@ import { error } from '@sveltejs/kit';
 import type { Writable } from 'svelte/store';
 import type { User, SignUpWithPasswordCredentials } from '@supabase/gotrue-js';
 
-export const userStore: Writable<User | null> = writable(null);
+export const user: Writable<User | null> = writable(null);
 
-export async function getUser() {
+export async function getUser(): Promise<void> {
   const { data: session, error: authError } = await supabase.auth.getUser();
 
   if (authError || !session) {
     throw error(403, 'Not logged in');
   }
 
-  userStore.set(session.user);
+  user.set(session.user);
 }
 
 export async function signUpUser(email: string, password: string) {
@@ -24,7 +24,7 @@ export async function signUpUser(email: string, password: string) {
     throw error(403, authError.message);
   }
 
-  userStore.set(session.user);
+  user.set(session.user);
 }
 
 export async function signInUser(email: string, password: string) {
@@ -35,7 +35,7 @@ export async function signInUser(email: string, password: string) {
     throw error(403, authError.message);
   }
 
-  userStore.set(session.user);
+  user.set(session.user);
 }
 
 export async function signOutUser() {
@@ -45,5 +45,5 @@ export async function signOutUser() {
     throw error(500, authError.message);
   }
 
-  userStore.set(null);
+  user.set(null);
 }
