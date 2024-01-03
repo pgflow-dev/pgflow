@@ -4,7 +4,7 @@ import { error } from '@sveltejs/kit';
 import type { Writable } from 'svelte/store';
 import type { User, SignUpWithPasswordCredentials } from '@supabase/gotrue-js';
 
-const userStore: Writable<User | null> = writable(null);
+export const userStore: Writable<User | null> = writable(null);
 
 export async function getUser() {
   const { data: session, error: authError } = await supabase.auth.getUser();
@@ -16,7 +16,8 @@ export async function getUser() {
   userStore.set(session.user);
 }
 
-export async function signUpUser(credentials: SignUpWithPasswordCredentials) {
+export async function signUpUser(email: string, password: string) {
+  const credentials: SignUpWithPasswordCredentials = { email, password };
   const { data: session, error: authError } = await supabase.auth.signUp(credentials);
 
   if (authError) {
@@ -26,7 +27,8 @@ export async function signUpUser(credentials: SignUpWithPasswordCredentials) {
   userStore.set(session.user);
 }
 
-export async function signInUser(credentials: SignUpWithPasswordCredentials) {
+export async function signInUser(email: string, password: string) {
+  const credentials: SignUpWithPasswordCredentials = { email, password };
   const { data: session, error: authError } = await supabase.auth.signInWithPassword(credentials);
 
   if (authError) {

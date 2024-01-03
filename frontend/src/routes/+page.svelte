@@ -1,19 +1,31 @@
 <script lang="ts">
-import { user } from '$lib/stores';
+import { onMount } from 'svelte';
+import { userStore, getUser, signUpUser } from '$lib/userStore';
+
+const user = userStore;
+let email = '';
+let password = '';
+
+const signUp = () => {
+  signUpUser({ email, password });
+}
+
+onMount(getUser);
 </script>
 
 <div class="container h-full mx-auto flex justify-center items-center">
 	<div class="space-y-5">
-    <label class="label">
-      <span>signed in?</span>
-      <input class="input" type="checkbox" bind:checked={$user} />
-    </label>
+  {#if $user}
+    <h1>Hi, {$user.email}!</h1>
+  {:else}
+    <h1>Hi, guest!</h1>
+    <h2>Sign up:</h2>
 
-    {#if $user}
-      <button class="p-6 border-black">sign out</button>
-    {:else}
-      <button class="p-6 border-black">sign in</button>
-      <button class="p-6 border-black">sign up</button>
-    {/if}
+    <form method="POST" on:submit|preventDefault={signUp}>
+      <input type="text" name="email" bind:value={email} placeholder="Email" />
+      <input type="password" name="password" bind:value={password} placeholder="Password" />
+      <button type="submit">Sign up</button>
+    </form>
+  {/if}
 	</div>
 </div>
