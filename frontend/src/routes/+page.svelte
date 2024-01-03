@@ -7,7 +7,7 @@ let email = '';
 let password = '';
 
 const signUp = () => {
-  signUpUser({ email, password });
+  signUpUser(email, password);
 }
 
 onMount(getUser);
