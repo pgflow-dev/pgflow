@@ -4,5 +4,5 @@ create table documents (
   uid uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   content text NOT NULL,
-  embeddings tsvector
+  embedding vector(768)
 );
