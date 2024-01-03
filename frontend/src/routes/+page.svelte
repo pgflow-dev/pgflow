@@ -6,10 +6,6 @@ const user = userStore;
 let email = '';
 let password = '';
 
-const signUp = () => {
-  signUpUser(email, password);
-}
-
 onMount(getUser);
 </script>
 
@@ -22,7 +18,7 @@ onMount(getUser);
     <h1>Hi, guest!</h1>
     <h2>Sign up:</h2>
 
-    <form method="POST" on:submit|preventDefault={signUp}>
+    <form method="POST" on:submit|preventDefault={() => signUpUser(email, password)}>
       <input type="text" name="email" bind:value={email} placeholder="Email" />
       <input type="password" name="password" bind:value={password} placeholder="Password" />
       <button type="submit">Sign up</button>
