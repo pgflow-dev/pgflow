@@ -2,15 +2,18 @@ pre-commit:
   piped: true
   commands:
     eslint:
+      glob: "*.{js,jsx,ts,tsx}"
       root: frontend/
       run: ./node_modules/.bin/eslint {staged_files}
     prettier:
+      glob: "*.{js,jsx,ts,tsx,json,svelte,css}"
       root: frontend/
       run: ./node_modules/.bin/prettier --check {staged_files}
     svelte_check:
       root: frontend/
       run: ./node_modules/.bin/svelte-check
     typecheck:
+      glob: "*.{js,jsx,ts,tsx,json,svelte,css}"
       root: frontend/
       run: ./node_modules/.bin/tsc --noEmit
 
