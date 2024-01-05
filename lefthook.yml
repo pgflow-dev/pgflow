@@ -1,0 +1,22 @@
+pre-commit:
+  piped: true
+  commands:
+    eslint:
+      root: frontend/
+      run: ./node_modules/.bin/eslint {staged_files}
+    prettier:
+      root: frontend/
+      run: ./node_modules/.bin/prettier --check {staged_files}
+    svelte_check:
+      root: frontend/
+      run: ./node_modules/.bin/svelte-check
+    typecheck:
+      root: frontend/
+      run: ./node_modules/.bin/tsc --noEmit
+
+    # unit_tests:
+    #   root: frontend/
+    #   run: ./node_modules/.bin/vitest
+    # integration_tests:
+    #   root: frontend/
+    #   run: ./node_modules/.bin/playwright test
