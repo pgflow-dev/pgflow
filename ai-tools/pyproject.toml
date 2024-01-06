@@ -9,6 +9,8 @@ packages = [{include = "ai_tools"}]
 [tool.poetry.dependencies]
 python = "^3.11"
 python-dotenv = "^1.0.0"
+sentence-transformers = {version = "^2.2.2", extras = ["embeddings"]}
+langchain = "^0.1.0"
 
 
 [build-system]
