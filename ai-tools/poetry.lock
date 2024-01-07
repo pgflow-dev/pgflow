@@ -589,6 +589,20 @@ files = [
 ]
 
 [[package]]
+name = "jsonlines"
+version = "4.0.0"
+description = "Library with helpers for the jsonlines file format"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "jsonlines-4.0.0-py3-none-any.whl", hash = "sha256:185b334ff2ca5a91362993f42e83588a360cf95ce4b71a73548502bda52a7c55"},
+    {file = "jsonlines-4.0.0.tar.gz", hash = "sha256:0c6d2c09117550c089995247f605ae4cf77dd1533041d366351f6f298822ea74"},
+]
+
+[package.dependencies]
+attrs = ">=19.2.0"
+
+[[package]]
 name = "jsonpatch"
 version = "1.33"
 description = "Apply JSON-Patches (RFC 6902)"
@@ -2465,4 +2479,4 @@ embeddings = ["sentence-transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "4665de97888967270bb33bf5f11652302572bc5a13cea67b5e3a6739a85b9fb3"
+content-hash = "7c11a7ec523cf8438b2691fd29da160cdb06110aeae25718082f4f4368486aeb"

@@ -11,6 +11,7 @@ python = "^3.11"
 python-dotenv = "^1.0.0"
 sentence-transformers = {version = "^2.2.2", extras = ["embeddings"]}
 langchain = "^0.1.0"
+jsonlines = "^4.0.0"
 
 [tool.poetry.extras]
 embeddings = ["sentence-transformers"]
