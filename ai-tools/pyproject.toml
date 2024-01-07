@@ -9,12 +9,15 @@ packages = [{include = "ai_tools"}]
 [tool.poetry.dependencies]
 python = "^3.11"
 python-dotenv = "^1.0.0"
-sentence-transformers = {version = "^2.2.2", extras = ["embeddings"]}
+sentence-transformers = {version = "^2.2.2"}
 langchain = "^0.1.0"
 jsonlines = "^4.0.0"
+unstructured = {version = "^0.11.8", extras = ["local-inference"]}
+pypandoc = "^1.12"
 
 [tool.poetry.extras]
 embeddings = ["sentence-transformers"]
+import_epubs = ["unstructured", "pypandoc"]
 
 [build-system]
 requires = ["poetry-core"]

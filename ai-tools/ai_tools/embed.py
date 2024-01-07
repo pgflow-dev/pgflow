@@ -1,21 +1,26 @@
 from langchain.embeddings.huggingface import HuggingFaceEmbeddings
 
-if __name__ == "__main__":
+def supabase(docs):
+    embed(docs, model_name="Supabase/gte-small")
+
+def embed(docs, model_name):
     print("Loading embeddings...")
     embeddings = HuggingFaceEmbeddings(
-        model_name="Supabase/gte-small",
-        model_name="sentence-transformers/all-mpnet-base-v2",
+        model_name=model_name,
         model_kwargs={'device': 'cuda'},
         encode_kwargs={'normalize_embeddings': True},
     )
 
-    docs = ["Hello World"]
-    print("Embedding docs...")
 
     import time
     start = time.time()
+    print("Embedding docs...")
     embedded_docs = embeddings.embed_documents(texts=docs)
     end = time.time()
 
-    print(embedded_docs)
     print(f"Embedding time: {end - start} seconds")
+
+    return embedded_docs
+
+if __name__ == "__main__":
+    supabase(["Hello World"])
