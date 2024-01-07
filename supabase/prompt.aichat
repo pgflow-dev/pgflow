@@ -1,5 +1,7 @@
 >>> user
 
+CONTEXT:
+
 i am working on an app for storing and searching/chatting with(via LLMs/GPT)
 all my online activity gathered from various sources
 
@@ -28,3 +30,5 @@ various ideas and want to interpret data in various ways:
 - create derived tables to store only subset of raws based on source_type and other filters, probably with more structured column etc
 - trigger workflows in my automation system based on new rows of specific type
 - full-text searching the whole collection
+
+MY REQUEST:
