@@ -2459,7 +2459,10 @@ files = [
 idna = ">=2.0"
 multidict = ">=4.0"
 
+[extras]
+embeddings = ["sentence-transformers"]
+
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "d32b40ebd7feda5e7685b9d5f1fb594e2bd56b7bb59e9a51101c9be3f7502d49"
+content-hash = "4665de97888967270bb33bf5f11652302572bc5a13cea67b5e3a6739a85b9fb3"

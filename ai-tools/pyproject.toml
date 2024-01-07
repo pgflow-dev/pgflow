@@ -12,6 +12,8 @@ python-dotenv = "^1.0.0"
 sentence-transformers = {version = "^2.2.2", extras = ["embeddings"]}
 langchain = "^0.1.0"
 
+[tool.poetry.extras]
+embeddings = ["sentence-transformers"]
 
 [build-system]
 requires = ["poetry-core"]
