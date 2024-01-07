@@ -20,10 +20,10 @@ pre-commit:
 
     # ai-tools/
     pyright:
-      glob: "**/*.py"
+      glob: "ai-tools/**/*.py"
       root: ai-tools/
       run: poetry run pyright {staged_files}
     poetry:
-      glob: "(pyproject.toml|poetry.lock)"
+      glob: "ai-tools/{pyproject.toml,poetry.lock}"
       root: ai-tools/
       run: poetry check
