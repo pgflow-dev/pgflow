@@ -5,10 +5,10 @@ create schema private;
 create table private.raws (
   id serial primary key,
   stored_at timestamp with time zone NOT NULL DEFAULT now(),
-  content text NOT NULL,
-  source_type text not null,
   owner_id uuid not null references auth.users(id) default auth.uid(),
-  meta jsonb default '{}'
+  source_type text not null,
+  text_content text default '',
+  json_content jsonb default '{}'
 );
 
 create policy "Authenticated users can create raws"
@@ -17,7 +17,7 @@ on private.raws for insert to authenticated with check (
 );
 
 create policy "Users can select raws"
-on private.raws for select to authenticated with check (
+on private.raws for select to authenticated using (
   owner_id = auth.uid()
 );
 
@@ -27,6 +27,6 @@ on private.raws for update to authenticated with check (
 );
 
 create policy "Users can delete raws"
-on private.raws for delete to authenticated with check (
+on private.raws for delete to authenticated using (
   owner_id = auth.uid()
 );
