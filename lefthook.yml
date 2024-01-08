@@ -2,22 +2,26 @@ pre-commit:
   parallel: true
   commands:
     # supabase/
-    supabase-types:
-      glob: "supabase/migrations/*.sql"
-      root: "supabase/"
-      run: |
-        echo "Checking for Supabase type changes..."
+    #
+    # not yet working because of some problems with root: and paths in the run: script
+    # it appears that the paths are relative to the pwd from where git commit was ran
+    #
+    # supabase-types:
+    #   glob: "supabase/migrations/*.sql"
+    #   root: "supabase/"
+    #   run: |
+    #     echo "Checking for Supabase type changes..."
 
-        if diff --brief <(cat types.d.ts) <(supabase gen types typescript --local); then
-          echo "No changes in types.d.ts, types were up-to-date."
-        else
-          echo "Changes detected in types.d.ts! Please generate and commit the updated types."
-          exit 1
-        fi
+    #     if diff --brief <(cat types.d.ts) <(supabase gen types typescript --local); then
+    #       echo "No changes in types.d.ts, types were up-to-date."
+    #     else
+    #       echo "Changes detected in types.d.ts! Please generate and commit the updated types."
+    #       exit 1
+    #     fi
 
     # frontend/
     eslint:
-      glob: "frontend/*.{js,jsx,ts,tsx}"
+      glob: "frontend/*.{js,jx,ts,tsx}"
       root: frontend/
       run: ./node_modules/.bin/eslint {staged_files}
     prettier:
