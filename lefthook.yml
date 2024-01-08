@@ -1,6 +1,20 @@
 pre-commit:
   parallel: true
   commands:
+    # supabase/
+    supabase-types:
+      glob: "supabase/migrations/*.sql"
+      root: "supabase/"
+      run: |
+        echo "Checking for Supabase type changes..."
+
+        if diff --brief <(cat types.d.ts) <(supabase gen types typescript --local); then
+          echo "No changes in types.d.ts, types were up-to-date."
+        else
+          echo "Changes detected in types.d.ts! Please generate and commit the updated types."
+          exit 1
+        fi
+
     # frontend/
     eslint:
       glob: "frontend/*.{js,jsx,ts,tsx}"
