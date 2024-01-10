@@ -6,18 +6,19 @@ pre-commit:
     # not yet working because of some problems with root: and paths in the run: script
     # it appears that the paths are relative to the pwd from where git commit was ran
     #
-    # supabase-types:
-    #   glob: "supabase/migrations/*.sql"
-    #   root: "supabase/"
-    #   run: |
-    #     echo "Checking for Supabase type changes..."
+    supabase-types:
+      glob: "supabase/migrations/*.sql"
+      root: "supabase/"
+      run: |
+        echo staged files = {staged_files}
+        echo "Checking for Supabase type changes..."
 
-    #     if diff --brief <(cat types.d.ts) <(supabase gen types typescript --local); then
-    #       echo "No changes in types.d.ts, types were up-to-date."
-    #     else
-    #       echo "Changes detected in types.d.ts! Please generate and commit the updated types."
-    #       exit 1
-    #     fi
+        if diff --color=always <(git show :supabase/types.d.ts) <(node_modules/.bin/supabase gen types typescript --local); then
+          echo "No changes in types.d.ts, types were up-to-date."
+        else
+          echo "Changes detected in types.d.ts! Please generate and commit the updated types."
+          exit 1
+        fi
 
     # frontend/
     eslint:
