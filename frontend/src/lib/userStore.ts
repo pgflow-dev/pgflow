@@ -7,43 +7,43 @@ import type { User, SignUpWithPasswordCredentials } from '@supabase/gotrue-js';
 export const user: Writable<User | null> = writable(null);
 
 export async function getUser(): Promise<void> {
-  const { data: session, error: authError } = await supabase.auth.getUser();
+	const { data: session, error: authError } = await supabase.auth.getUser();
 
-  if (authError || !session) {
-    throw error(403, 'Not logged in');
-  }
+	if (authError || !session) {
+		throw error(403, 'Not logged in');
+	}
 
-  user.set(session.user);
+	user.set(session.user);
 }
 
 export async function signUpUser(email: string, password: string) {
-  const credentials: SignUpWithPasswordCredentials = { email, password };
-  const { data: session, error: authError } = await supabase.auth.signUp(credentials);
+	const credentials: SignUpWithPasswordCredentials = { email, password };
+	const { data: session, error: authError } = await supabase.auth.signUp(credentials);
 
-  if (authError) {
-    throw error(403, authError.message);
-  }
+	if (authError) {
+		throw error(403, authError.message);
+	}
 
-  user.set(session.user);
+	user.set(session.user);
 }
 
 export async function signInUser(email: string, password: string) {
-  const credentials: SignUpWithPasswordCredentials = { email, password };
-  const { data: session, error: authError } = await supabase.auth.signInWithPassword(credentials);
+	const credentials: SignUpWithPasswordCredentials = { email, password };
+	const { data: session, error: authError } = await supabase.auth.signInWithPassword(credentials);
 
-  if (authError) {
-    throw error(403, authError.message);
-  }
+	if (authError) {
+		throw error(403, authError.message);
+	}
 
-  user.set(session.user);
+	user.set(session.user);
 }
 
 export async function signOutUser() {
-  const { error: authError } = await supabase.auth.signOut();
+	const { error: authError } = await supabase.auth.signOut();
 
-  if (authError) {
-    throw error(500, authError.message);
-  }
+	if (authError) {
+		throw error(500, authError.message);
+	}
 
-  user.set(null);
+	user.set(null);
 }

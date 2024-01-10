@@ -1,0 +1,5 @@
+root = false
+
+[*.{js,ts},*.sql,*.json]
+indent_style = spaces
+indent_size = 2
