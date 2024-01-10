@@ -1,5 +1,4 @@
 root = false
 
-[*.{js,ts,svelte},*.html,*.json]
-indent_style = space
-indent_size = 2
+[*.{js,ts,svelte},*.html,*.json,*.css]
+indent_style = tabs
