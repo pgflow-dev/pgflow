@@ -1,5 +1,6 @@
 {
 	"devDependencies": {
-		"turbo": "^1.11.3"
+		"turbo": "^1.11.3",
+		"vercel": "^33.1.0"
 	}
 }
