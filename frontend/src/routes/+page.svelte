@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SubmittableInput from './SubmittableInput.svelte';
+
 	export let data;
 	let { supabase } = data;
 	$: ({ supabase } = data);
@@ -18,27 +20,18 @@
 </script>
 
 <div class="flex h-screen">
-	<div class="w-1/3"></div>
+	<div class="w-1/3 flex items-center justify-center"></div>
+
 	<div class="w-1/3 flex items-center justify-center">
-		<input
+		<SubmittableInput
 			bind:value={currentMessage}
-			disabled={inProgress}
-			class="input"
-			type="text"
-			placeholder="what is on your mind?"
+			bind:inProgress
+			on:click={checkSentiment}
+			placeholder="Enter a message"
 		/>
+	</div>
 
-		{#if inProgress}
-			<button type="button" class="btn variant-filled-primary" disabled={true}>checking ...</button>
-		{:else}
-			<button
-				type="button"
-				class="btn variant-filled-primary"
-				on:click={checkSentiment}
-				disabled={!currentMessage}>Check sentiment</button
-			>
-		{/if}
-
+	<div class="w-1/3 flex items-center justify-center">
 		{#if sentiment}
 			{#if sentiment === 'POSITIVE'}
 				<span class="text-success-500">POSITIVE</span>
@@ -49,5 +42,4 @@
 			{/if}
 		{/if}
 	</div>
-	<div class="w-1/3"></div>
 </div>
