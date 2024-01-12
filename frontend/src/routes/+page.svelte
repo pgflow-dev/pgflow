@@ -29,7 +29,7 @@
 		<SubmittableInput
 			bind:value={currentMessage}
 			bind:inProgress
-			on:click={checkSentiment}
+			on:submit={checkSentiment}
 			placeholder="Enter a message to check sentiment"
 		/>
 	</div>
