@@ -1,49 +1,34 @@
 pre-commit:
   parallel: true
   commands:
-    # supabase/
-    #
-    # not yet working because of some problems with root: and paths in the run: script
-    # it appears that the paths are relative to the pwd from where git commit was ran
-    #
+    # checks
+    frontend-check:
+      glob: "frontend/**"
+      run: |
+        turbo run check --scope=frontend
+    backend-check:
+      glob: "supabase/**"
+      run: |
+        turbo run check --scope=backend
+    ai-tools-check:
+      glob: "ai-tools/**"
+      run: |
+        turbo run check --scope=ai-tools
+
+    # lints
+    frontend-lint:
+      glob: "frontend/**"
+      run: |
+        turbo run lint --scope=frontend
+
+    # autogenerating required artifacts
     supabase-types:
       glob: "supabase/migrations/*.sql"
       root: "supabase/"
       run: |
-        echo staged files = {staged_files}
-        echo "Checking for Supabase type changes..."
-
-        if diff --color=always <(git show :supabase/types.d.ts) <(node_modules/.bin/supabase gen types typescript --local); then
-          echo "No changes in types.d.ts, types were up-to-date."
-        else
-          echo "Changes detected in types.d.ts! Please generate and commit the updated types."
-          exit 1
-        fi
-
-    # frontend/
-    eslint:
-      glob: "frontend/*.{js,jx,ts,tsx}"
-      root: frontend/
-      run: ./node_modules/.bin/eslint {staged_files}
-    prettier:
-      glob: "frontend/*.{js,jsx,ts,tsx,json,svelte,css}"
-      root: frontend/
-      run: ./node_modules/.bin/prettier --check {staged_files}
-    svelte_check:
-      glob: "frontend/*.{js,jsx,ts,tsx,svelte}"
-      root: frontend/
-      run: ./node_modules/.bin/svelte-check
-    # typecheck:
-    #   glob: "frontend/*.{js,jsx,ts,tsx,json,svelte,css}"
-    #   root: frontend/
-    #   run: ./node_modules/.bin/tsc --noEmit
-
-    # ai-tools/
-    pyright:
-      glob: "ai-tools/**/*.py"
-      root: ai-tools/
-      run: poetry run pyright {staged_files}
-    poetry:
+        node_modules/.bin/supabase gen types typescript --local && git add supabase/types.d.ts
+    poetry-requirements:
       glob: "ai-tools/{pyproject.toml,poetry.lock}"
       root: ai-tools/
-      run: poetry check
+      run: |
+        poetry export --without-hashes > requirements.txt && git add requirements.txt

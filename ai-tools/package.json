@@ -1,0 +1,7 @@
+{
+	"name": "ai-tools",
+	"scripts": {
+		"build": "poetry install",
+		"check": "poetry check && poetry run pyright"
+	}
+}

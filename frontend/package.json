@@ -62,6 +62,7 @@
 	"type": "module",
 	"dependencies": {
 		"@floating-ui/dom": "1.5.3",
+		"@supabase/gotrue-js": "^2.62.0",
 		"@supabase/supabase-js": "^2.39.2",
 		"highlight.js": "11.9.0"
 	}
