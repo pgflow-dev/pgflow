@@ -10,13 +10,19 @@
 
 	async function focusInput() {
 		await tick();
-		input.focus();
+		input?.focus();
+	}
+
+	function dispatchSubmit() {
+		if (!inProgress && value.length) {
+			dispatch('submit');
+		}
 	}
 
 	$: !inProgress && focusInput();
 </script>
 
-<form class="form" on:submit|preventDefault={() => inProgress || dispatch('submit')}>
+<form class="form" on:submit|preventDefault={dispatchSubmit}>
 	<input
 		bind:value
 		bind:this={input}
@@ -33,7 +39,7 @@
 	<button
 		type="button"
 		class="btn variant-filled-primary"
-		on:click={() => dispatch('submit')}
+		on:click={dispatchSubmit}
 		disabled={inProgress || !value}
 	>
 		Check sentiment
