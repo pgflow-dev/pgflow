@@ -30,6 +30,7 @@ pre-commit:
       root: frontend/
       run: ./node_modules/.bin/prettier --check {staged_files}
     svelte_check:
+      glob: "frontend/*.{js,jsx,ts,tsx,svelte}"
       root: frontend/
       run: ./node_modules/.bin/svelte-check
     # typecheck:
