@@ -10,13 +10,12 @@ const classifier = await pipeline('sentiment-analysis', 'Xenova/distilbert-base-
 
 serve(async (req) => {
   const json = await req.json();
-  console.log('json = ', json);
 
   const output = await classifier(json.input);
 
   // Return the embedding
   return new Response(
-    JSON.stringify(output[0]),
+    JSON.stringify({"sentiment": output[0]}),
     { headers: { 'Content-Type': 'application/json' } }
   );
 });
