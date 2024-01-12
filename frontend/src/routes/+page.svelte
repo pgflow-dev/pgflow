@@ -1,42 +1,45 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { user, getUser, signUpUser, signOutUser } from '$lib/userStore';
+	import SubmittableInput from './SubmittableInput.svelte';
 
-	let email = '';
-	let password = '';
+	export let data;
+	let { supabase } = data;
+	$: ({ supabase } = data);
 
-	onMount(getUser);
+	let sentiment: string;
+	let currentMessage = '';
+	let inProgress = false;
+
+	async function checkSentiment() {
+		inProgress = true;
+		const { data } = await supabase.functions.invoke('sentiment', {
+			body: { input: currentMessage }
+		});
+		inProgress = false;
+		sentiment = data[0].label;
+	}
 </script>
 
-<div class="container h-full mx-auto flex justify-center items-center">
-	<div class="space-y-5">
-		{#if $user}
-			<h1>Hi, {$user.email}!</h1>
-			<button on:click={signOutUser}>Log out</button>
-		{:else}
-			<h1>Hi, guest!</h1>
-			<h2>Sign up:</h2>
+<div class="flex h-screen">
+	<div class="w-1/3 flex items-center justify-center"></div>
 
-			<form method="POST" on:submit|preventDefault={() => signUpUser(email, password)}>
-				<label class="label">
-					<span>email</span>
-					<input class="input" type="text" name="email" bind:value={email} placeholder="Email" />
-				</label>
-				<label class="label">
-					<span>password</span>
-					<input
-						class="input"
-						type="password"
-						name="password"
-						bind:value={password}
-						placeholder="Password"
-					/>
-				</label>
+	<div class="w-1/3 flex items-center justify-center">
+		<SubmittableInput
+			bind:value={currentMessage}
+			bind:inProgress
+			on:click={checkSentiment}
+			placeholder="Enter a message to check sentiment"
+		/>
+	</div>
 
-				<div>
-					<button type="submit" class="mt-4 btn variant-filled">Sign Up</button>
-				</div>
-			</form>
+	<div class="w-1/3 flex items-center justify-center">
+		{#if sentiment}
+			{#if sentiment === 'POSITIVE'}
+				<span class="badge variant-filled-success">POSITIVE</span>
+			{:else if sentiment === 'NEGATIVE'}
+				<span class="badge variant-filled-error">NEGATIVE</span>
+			{:else}
+				<span class="badge variant-filled-secondary">NEUTRAL</span>
+			{/if}
 		{/if}
 	</div>
 </div>

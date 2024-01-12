@@ -15,4 +15,4 @@ curl \
   "${API_URL}/functions/v1/${function_name}" \
   --header 'Authorization: Bearer '${ANON_KEY}'' \
   --header 'Content-Type: application/json' \
-  --data "$data"
+  --data-raw "'$data'"
