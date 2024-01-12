@@ -1,0 +1,23 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "pipeline": {
+    "build": {
+      "dependsOn": ["^build"],
+      "env": [
+      ],
+      "outputs": [
+        ".svelte-kit/output/**"
+      ]
+    },
+    "check": {
+      "dependsOn": ["^check"]
+    },
+    "lint": {
+      "dependsOn": ["^lint"]
+    }
+  },
+  "globalEnv": [
+    "PUBLIC_SUPABASE_URL",
+    "PUBLIC_SUPABASE_ANON_KEY"
+  ]
+}
