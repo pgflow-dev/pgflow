@@ -1,21 +1,38 @@
 // Follow this setup guide to integrate the Deno language server with your editor:
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { env, pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.5.0'
+import { corsHeaders } from '../_shared/cors.ts'
 
 // Configuration for Deno runtime
 env.useBrowserCache = false;
 env.allowLocalModels = false;
 
-const classifier = await pipeline('sentiment-analysis', 'Xenova/distilbert-base-uncased-finetuned-sst-2-english');
+// const classifier = await pipeline('sentiment-analysis', 'Xenova/distilbert-base-uncased-finetuned-sst-2-english');
 
-serve(async (req) => {
-  const json = await req.json();
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
 
-  const output = await classifier(json.input);
+  const { input } = await req.json();
+  // const output = await classifier(input);
 
-  // Return the embedding
+  let label;
+
+  if (Math.random() > 0.7) {
+    label = "POSITIVE";
+  }
+  else if (Math.random() < 0.3) {
+    label = "NEGATIVE";
+  }
+  else {
+    label = "NEUTRAL";
+  }
+
+  const score = Math.random();
+  const output = [{label, score}]
+
   return new Response(
-    JSON.stringify({"sentiment": output[0]}),
-    { headers: { 'Content-Type': 'application/json' } }
+    JSON.stringify(output),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
 });
