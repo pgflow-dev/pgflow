@@ -5,9 +5,9 @@
 	let { supabase } = data;
 	$: ({ supabase } = data);
 
-	let sentiment: string;
 	let currentMessage = '';
 	let inProgress = false;
+	let sentiments: { text: string; sentiment: string }[] = [];
 
 	async function checkSentiment() {
 		inProgress = true;
@@ -15,7 +15,8 @@
 			body: { input: currentMessage }
 		});
 		inProgress = false;
-		sentiment = data[0].label;
+
+		sentiments = [...sentiments, { text: currentMessage, sentiment: data[0].label }];
 	}
 </script>
 
@@ -32,14 +33,32 @@
 	</div>
 
 	<div class="w-1/3 flex items-center justify-center">
-		{#if sentiment}
-			{#if sentiment === 'POSITIVE'}
-				<span class="badge variant-filled-success">POSITIVE</span>
-			{:else if sentiment === 'NEGATIVE'}
-				<span class="badge variant-filled-error">NEGATIVE</span>
-			{:else}
-				<span class="badge variant-filled-secondary">NEUTRAL</span>
+		<div class="table-container">
+			{#if sentiments.length}
+				<table class="table w-3/4">
+					<thead>
+						<th>Message</th>
+						<th>Sentiment</th>
+					</thead>
+
+					<tbody>
+						{#each sentiments as { text, sentiment }}
+							<tr>
+								<td>{text}</td>
+								<td>
+									{#if sentiment === 'POSITIVE'}
+										<span class="badge variant-filled-success">POSITIVE</span>
+									{:else if sentiment === 'NEGATIVE'}
+										<span class="badge variant-filled-error">NEGATIVE</span>
+									{:else}
+										<span class="badge variant-filled-secondary">NEUTRAL</span>
+									{/if}
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
 			{/if}
-		{/if}
+		</div>
 	</div>
 </div>
