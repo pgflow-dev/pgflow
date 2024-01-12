@@ -11,12 +11,14 @@
 
 	async function checkSentiment() {
 		inProgress = true;
+
 		const { data } = await supabase.functions.invoke('sentiment', {
 			body: { input: currentMessage }
 		});
-		inProgress = false;
 
+		inProgress = false;
 		sentiments = [...sentiments, { text: currentMessage, sentiment: data[0].label }];
+		currentMessage = '';
 	}
 </script>
 
