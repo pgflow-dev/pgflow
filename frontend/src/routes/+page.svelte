@@ -35,7 +35,7 @@
 	<div class="w-1/3 flex items-center justify-center">
 		<div class="table-container">
 			{#if sentiments.length}
-				<table class="table w-3/4">
+				<table class="table w-3/4 mx-auto">
 					<thead>
 						<th>Message</th>
 						<th>Sentiment</th>
