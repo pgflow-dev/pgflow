@@ -6,7 +6,7 @@ import { corsHeaders } from '../_shared/cors.ts'
 env.useBrowserCache = false;
 env.allowLocalModels = false;
 
-// const classifier = await pipeline('sentiment-analysis', 'Xenova/distilbert-base-uncased-finetuned-sst-2-english');
+const classifier = await pipeline('sentiment-analysis', 'Xenova/distilbert-base-uncased-finetuned-sst-2-english');
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -14,22 +14,22 @@ Deno.serve(async (req) => {
   }
 
   const { input } = await req.json();
-  // const output = await classifier(input);
+  const output = await classifier(input);
 
-  let label;
+  // let label;
 
-  if (Math.random() > 0.7) {
-    label = "POSITIVE";
-  }
-  else if (Math.random() < 0.3) {
-    label = "NEGATIVE";
-  }
-  else {
-    label = "NEUTRAL";
-  }
+  // if (Math.random() > 0.7) {
+  //   label = "POSITIVE";
+  // }
+  // else if (Math.random() < 0.3) {
+  //   label = "NEGATIVE";
+  // }
+  // else {
+  //   label = "NEUTRAL";
+  // }
 
-  const score = Math.random();
-  const output = [{label, score}]
+  // const score = Math.random();
+  // const output = [{label, score}]
 
   return new Response(
     JSON.stringify(output),
