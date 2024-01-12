@@ -7,7 +7,7 @@
 
 	let currentMessage = '';
 	let inProgress = false;
-	let sentiments: { text: string; sentiment: string }[] = [];
+	let sentiments: { text: string; sentiment: string; score: number }[] = [];
 
 	async function checkSentiment() {
 		inProgress = true;
@@ -17,7 +17,10 @@
 		});
 
 		inProgress = false;
-		sentiments = [...sentiments, { text: currentMessage, sentiment: data[0].label }];
+		sentiments = [
+			...sentiments,
+			{ text: currentMessage, sentiment: data[0].label, score: data[0].score }
+		];
 		currentMessage = '';
 	}
 </script>
@@ -41,10 +44,11 @@
 					<thead>
 						<th>Message</th>
 						<th>Sentiment</th>
+						<th>Score</th>
 					</thead>
 
 					<tbody>
-						{#each sentiments as { text, sentiment }}
+						{#each sentiments as { text, sentiment, score }}
 							<tr>
 								<td>{text}</td>
 								<td>
@@ -55,6 +59,9 @@
 									{:else}
 										<span class="badge variant-filled-secondary">NEUTRAL</span>
 									{/if}
+								</td>
+								<td>
+									<pre>{Math.round(score * 10000) / 10000}</pre>
 								</td>
 							</tr>
 						{/each}
