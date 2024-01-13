@@ -20,7 +20,8 @@ const config = {
 		adapter: adapter(),
 		alias: {
 			// custom alias for supabase backend
-			$backend: `${path.dirname(fileURLToPath(import.meta.url))}/../supabase`
+			$backend: `${path.dirname(fileURLToPath(import.meta.url))}/../supabase`,
+			$components: `${path.dirname(fileURLToPath(import.meta.url))}/src/lib/components`
 		}
 	}
 };

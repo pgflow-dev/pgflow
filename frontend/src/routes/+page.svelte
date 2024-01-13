@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SubmittableInput from './SubmittableInput.svelte';
+	import Prompt from '$components/Prompt.svelte';
 
 	export let data;
 	let { supabase } = data;
@@ -29,7 +29,7 @@
 	<div class="w-1/3 flex items-center justify-center"></div>
 
 	<div class="w-1/3 flex items-center justify-center">
-		<SubmittableInput
+		<Prompt
 			bind:value={currentMessage}
 			bind:inProgress
 			on:submit={checkSentiment}
