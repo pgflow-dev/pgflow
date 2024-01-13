@@ -5,6 +5,8 @@
 	export let value: string;
 	export let placeholder: string;
 	export let inProgress: boolean = false;
+	export let label = 'Check sentiment';
+	export let loadingLabel = 'Checking...';
 
 	let input: HTMLInputElement;
 
@@ -22,26 +24,22 @@
 	$: !inProgress && focusInput();
 </script>
 
-<form class="form" on:submit|preventDefault={dispatchSubmit}>
-	<input
-		bind:value
-		bind:this={input}
-		disabled={inProgress}
-		class="input"
-		type="text"
-		{placeholder}
-	/>
-</form>
-
-{#if inProgress}
-	<button type="button" class="btn variant-filled-primary" disabled={true}>checking ...</button>
-{:else}
-	<button
-		type="button"
-		class="btn variant-filled-primary"
-		on:click={dispatchSubmit}
-		disabled={inProgress || !value}
-	>
-		Check sentiment
-	</button>
-{/if}
+<div class="input-group input-group-divider grid-cols-[1fr_auto] rounded-container-token">
+	<form class="form" on:submit|preventDefault={dispatchSubmit}>
+		<input
+			bind:value
+			bind:this={input}
+			disabled={inProgress}
+			class="input"
+			type="text"
+			{placeholder}
+		/>
+	</form>
+	{#if inProgress}
+		<button class="variant-filled-primary" disabled={true}>{loadingLabel}</button>
+	{:else}
+		<button on:click={dispatchSubmit} disabled={inProgress || !value} class="variant-filled-primary"
+			>{label}</button
+		>
+	{/if}
+</div>
