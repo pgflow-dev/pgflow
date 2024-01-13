@@ -38,8 +38,12 @@
 	{#if inProgress}
 		<button class="variant-filled-primary" disabled={true}>{loadingLabel}</button>
 	{:else}
-		<button on:click={dispatchSubmit} disabled={inProgress || !value} class="variant-filled-primary"
-			>{label}</button
+		<button
+			on:click={dispatchSubmit}
+			disabled={inProgress || !value}
+			class="variant-filled-primary"
 		>
+			{label}
+		</button>
 	{/if}
 </div>
