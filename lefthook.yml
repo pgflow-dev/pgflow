@@ -16,6 +16,11 @@ pre-commit:
         turbo run check --scope=ai-tools
 
     # lints
+    frontend-format-staged:
+      enabled: false
+      glob: "frontend/**"
+      root: frontend/
+      run: pnpm format-staged && git add $(git diff --name-only --cached --relative=frontend/)
     frontend-lint:
       glob: "frontend/**"
       run: |
