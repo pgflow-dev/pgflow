@@ -114,6 +114,18 @@ export interface Database {
         }
         Returns: unknown
       }
+      match_articles: {
+        Args: {
+          query_embedding: string
+          match_threshold: number
+          match_count: number
+        }
+        Returns: {
+          number: string
+          text: string
+          similarity: number
+        }[]
+      }
       vector_avg: {
         Args: {
           "": number[]

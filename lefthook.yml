@@ -31,7 +31,7 @@ pre-commit:
       glob: "supabase/migrations/*.sql"
       root: "supabase/"
       run: |
-        node_modules/.bin/supabase gen types typescript --local && git add supabase/types.d.ts
+        node_modules/.bin/supabase gen types typescript --local > types.d.ts && git add types.d.ts
     poetry-requirements:
       glob: "ai-tools/{pyproject.toml,poetry.lock}"
       root: ai-tools/
