@@ -34,7 +34,69 @@ export interface Database {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      edulaw_acts: {
+        Row: {
+          article_number: string
+          embedding: string | null
+          number: string
+          text: string
+        }
+        Insert: {
+          article_number: string
+          embedding?: string | null
+          number: string
+          text: string
+        }
+        Update: {
+          article_number?: string
+          embedding?: string | null
+          number?: string
+          text?: string
+        }
+        Relationships: []
+      }
+      edulaw_articles: {
+        Row: {
+          embedding: string | null
+          number: string
+          text: string
+        }
+        Insert: {
+          embedding?: string | null
+          number: string
+          text: string
+        }
+        Update: {
+          embedding?: string | null
+          number?: string
+          text?: string
+        }
+        Relationships: []
+      }
+      edulaw_sections: {
+        Row: {
+          act_number: string
+          article_number: string
+          embedding: string | null
+          number: string
+          text: string
+        }
+        Insert: {
+          act_number: string
+          article_number: string
+          embedding?: string | null
+          number: string
+          text: string
+        }
+        Update: {
+          act_number?: string
+          article_number?: string
+          embedding?: string | null
+          number?: string
+          text?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
