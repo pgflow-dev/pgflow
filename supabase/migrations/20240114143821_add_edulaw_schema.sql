@@ -1,4 +1,5 @@
 create schema if not exists edulaw;
+create extension if not exists vector;
 
 create table edulaw.articles (
   number text not null primary key,

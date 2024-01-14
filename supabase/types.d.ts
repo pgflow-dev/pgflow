@@ -52,18 +52,6 @@ export interface Database {
         }
         Returns: unknown
       }
-      match_documents: {
-        Args: {
-          query_embedding: string
-          match_threshold: number
-          match_count: number
-        }
-        Returns: {
-          uid: string
-          content: string
-          similarity: number
-        }[]
-      }
       vector_avg: {
         Args: {
           "": number[]
