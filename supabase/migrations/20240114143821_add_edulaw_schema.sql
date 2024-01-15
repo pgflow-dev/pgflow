@@ -3,14 +3,14 @@ create extension if not exists vector;
 create table public.edulaw_articles (
   number text not null primary key,
   text text not null,
-  embedding vector(1024)
+  embedding vector(384)
 );
 
 create table public.edulaw_acts (
   number text not null,
   article_number text not null,
   text text not null,
-  embedding vector(1024),
+  embedding vector(384),
   primary key (number, article_number)
 );
 
@@ -19,12 +19,12 @@ create table public.edulaw_sections (
   article_number text not null,
   act_number text,
   text text not null,
-  embedding vector(1024),
+  embedding vector(384),
   primary key (number, act_number, article_number)
 );
 
 create or replace function match_articles (
-  query_embedding vector(1024),
+  query_embedding vector(384),
   match_threshold float,
   match_count int
 )
@@ -46,7 +46,7 @@ as $$
 $$;
 
 create or replace function match_acts (
-  query_embedding vector(1024),
+  query_embedding vector(384),
   match_threshold float,
   match_count int
 )
@@ -70,7 +70,7 @@ as $$
 $$;
 
 create or replace function match_sections (
-  query_embedding vector(1024),
+  query_embedding vector(384),
   match_threshold float,
   match_count int
 )
