@@ -114,6 +114,19 @@ export interface Database {
         }
         Returns: unknown
       }
+      match_acts: {
+        Args: {
+          query_embedding: string
+          match_threshold: number
+          match_count: number
+        }
+        Returns: {
+          number: string
+          article_number: string
+          text: string
+          similarity: number
+        }[]
+      }
       match_articles: {
         Args: {
           query_embedding: string
@@ -122,6 +135,20 @@ export interface Database {
         }
         Returns: {
           number: string
+          text: string
+          similarity: number
+        }[]
+      }
+      match_sections: {
+        Args: {
+          query_embedding: string
+          match_threshold: number
+          match_count: number
+        }
+        Returns: {
+          number: string
+          act_number: string
+          article_number: string
           text: string
           similarity: number
         }[]
