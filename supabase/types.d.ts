@@ -34,6 +34,27 @@ export interface Database {
   }
   public: {
     Tables: {
+      documents: {
+        Row: {
+          content: string | null
+          embedding: string | null
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          content?: string | null
+          embedding?: string | null
+          id: string
+          metadata?: Json | null
+        }
+        Update: {
+          content?: string | null
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
       edulaw_acts: {
         Row: {
           article_number: string
@@ -136,6 +157,18 @@ export interface Database {
         Returns: {
           number: string
           text: string
+          similarity: number
+        }[]
+      }
+      match_documents: {
+        Args: {
+          query_embedding: string
+          filter?: Json
+        }
+        Returns: {
+          id: string
+          content: string
+          metadata: Json
           similarity: number
         }[]
       }
