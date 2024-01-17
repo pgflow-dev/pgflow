@@ -50,7 +50,6 @@
 	</div>
 
 	<div class="w-1/2 flex items-center justify-center">
-
 		{#if timeElapsedMs}
 			<span class="ml-8 text-gray-300 text-sm font-mono">{timeElapsedMs}ms</span>
 		{/if}
