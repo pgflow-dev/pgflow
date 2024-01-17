@@ -17,10 +17,10 @@ pre-commit:
 
     # lints
     frontend-format-staged:
-      enabled: false
+      skip: true
       glob: "frontend/**"
       root: frontend/
-      run: pnpm format-staged && git add $(git diff --name-only --cached --relative=frontend/)
+      run: pnpm format-staged {staged_files}
     frontend-lint:
       glob: "frontend/**"
       run: |
