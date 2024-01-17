@@ -13,7 +13,7 @@
 		response = '...';
 		timeElapsedMs = 0;
 
-    const startTime = performance.now(); // Start the timer
+		const startTime = performance.now(); // Start the timer
 		const chain = new RemoteRunnable({ url: PUBLIC_EDULAW_URL });
 		const stream = await chain.stream({ question: currentMessage });
 
@@ -50,10 +50,11 @@
 	</div>
 
 	<div class="w-1/2 flex items-center justify-center">
+
+		{#if timeElapsedMs}
+			<span class="ml-8 text-gray-300 text-sm font-mono">{timeElapsedMs}ms</span>
+		{/if}
 		<div class="w-3/4 mx-auto h-24 p-4 text-left">
-			{#if timeElapsedMs}
-				<p class="text-gray-200 text-xs">{timeElapsedMs}ms</p>
-			{/if}
 			{response}
 		</div>
 	</div>
