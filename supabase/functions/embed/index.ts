@@ -1,5 +1,5 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { env, pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.5.0'
+import { serve } from 'std/server'
+import { env, pipeline } from 'transformers'
 
 // Configuration for Deno runtime
 env.useBrowserCache = false;
