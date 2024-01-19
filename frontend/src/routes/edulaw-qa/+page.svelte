@@ -3,7 +3,7 @@
 	import { RemoteRunnable } from 'langchain/runnables/remote';
 	import { PUBLIC_EDULAW_URL } from '$env/static/public';
 
-	export let currentMessage: string;
+	export let currentMessage: string = 'jakie prawa ma uczeń w polskiej szkole?';
 	export let inProgress: boolean;
 	let response: string = '';
 	let timeElapsedMs: number | undefined = undefined;
