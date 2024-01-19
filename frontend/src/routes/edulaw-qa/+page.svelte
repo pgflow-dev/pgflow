@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import Prompt from '$components/Prompt.svelte';
 	import { RemoteRunnable } from 'langchain/runnables/remote';
 	import { PUBLIC_EDULAW_URL } from '$env/static/public';
@@ -7,6 +8,7 @@
 	export let inProgress: boolean;
 	let response: string = '';
 	let timeElapsedMs: number | undefined = undefined;
+	let interval: ReturnType<typeof setInterval>;
 
 	async function runChain() {
 		inProgress = true;
@@ -18,23 +20,38 @@
 			url: PUBLIC_EDULAW_URL,
 			options: { timeout: 45000 }
 		});
-		const stream = await chain.stream({ query: currentMessage });
 
-		timeElapsedMs = performance.now() - startTime;
-		response = '';
+		// Start updating time every 10ms
+		interval = setInterval(() => {
+			timeElapsedMs = performance.now() - startTime;
+		}, 10);
 
-		for await (const chunk of stream) {
-			console.log('chunk', chunk);
-			if (chunk && typeof chunk === 'string') {
-				response += chunk;
-				timeElapsedMs = performance.now() - startTime;
+		try {
+			const stream = await chain.stream({ query: currentMessage });
+
+			//timeElapsedMs = performance.now() - startTime;
+			response = '';
+
+			for await (const chunk of stream) {
+				console.log('chunk', chunk);
+				if (chunk && typeof chunk === 'string') {
+					response += chunk;
+					timeElapsedMs = performance.now() - startTime;
+				}
 			}
+		} finally {
+			clearInterval(interval);
+			timeElapsedMs = performance.now() - startTime;
+			inProgress = false;
+			currentMessage = '';
 		}
-
-		timeElapsedMs = performance.now() - startTime;
-		inProgress = false;
-		currentMessage = '';
 	}
+
+	onDestroy(() => {
+		if (interval) {
+			clearInterval(interval);
+		}
+	});
 </script>
 
 <div class="flex flex-col h-screen relative">
