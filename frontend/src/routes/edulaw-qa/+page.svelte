@@ -14,18 +14,20 @@
 		timeElapsedMs = 0;
 
 		const startTime = performance.now(); // Start the timer
-		const chain = new RemoteRunnable({ url: PUBLIC_EDULAW_URL });
-		const stream = await chain.stream({ question: currentMessage });
+		const chain = new RemoteRunnable({
+			url: PUBLIC_EDULAW_URL,
+			options: { timeout: 45000 }
+		});
+		const stream = await chain.stream({ query: currentMessage });
 
 		timeElapsedMs = performance.now() - startTime;
 		response = '';
 
 		for await (const chunk of stream) {
-			if (chunk) {
-				if (typeof chunk === 'string') {
-					response += chunk;
-					timeElapsedMs = performance.now() - startTime;
-				}
+			console.log('chunk', chunk);
+			if (chunk && typeof chunk === 'string') {
+				response += chunk;
+				timeElapsedMs = performance.now() - startTime;
 			}
 		}
 
