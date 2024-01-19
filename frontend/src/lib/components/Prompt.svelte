@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ProgressRadial } from '@skeletonlabs/skeleton';
 	import { createEventDispatcher, tick } from 'svelte';
 	const dispatch = createEventDispatcher();
 
@@ -6,7 +7,6 @@
 	export let placeholder: string;
 	export let inProgress: boolean = false;
 	export let label = 'Check sentiment';
-	export let loadingLabel = 'Checking...';
 
 	let input: HTMLInputElement;
 
@@ -36,7 +36,9 @@
 		/>
 	</form>
 	{#if inProgress}
-		<button class="variant-filled-primary" disabled={true}>{loadingLabel}</button>
+		<button class="variant-filled-primary" disabled={true}>
+			<ProgressRadial width="w-8" stroke={100} />
+		</button>
 	{:else}
 		<button
 			on:click={dispatchSubmit}

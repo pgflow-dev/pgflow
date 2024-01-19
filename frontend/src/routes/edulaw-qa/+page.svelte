@@ -10,7 +10,7 @@
 
 	async function runChain() {
 		inProgress = true;
-		response = '...';
+		response = '';
 		timeElapsedMs = 0;
 
 		const startTime = performance.now(); // Start the timer
@@ -37,10 +37,10 @@
 	}
 </script>
 
-<div class="flex flex-col h-screen">
+<div class="flex flex-col h-screen relative">
 	<div class="flex-grow flex items-end justify-center">
-		<div class="w-full flex justify-between p-4">
-			<div class="w-3/4 mx-auto text-justify overflow-hidden">
+		<div class="w-full flex justify-center p-4">
+			<div class="w-3/4 text-justify overflow-hidden">
 				{response}
 			</div>
 		</div>
@@ -53,13 +53,13 @@
 				on:submit={runChain}
 				placeholder="prawo oświatowe i edukacja w polsce"
 				label="zapytaj"
-				loadingLabel="pytam..."
 			/>
 		</div>
-		{#if timeElapsedMs}
-			<span class="text-gray-600 text-sm font-mono">{timeElapsedMs}ms</span>
-		{:else}
-			<span class="text-gray-600 text-sm font-mono"></span>
-		{/if}
 	</div>
+
+	{#if timeElapsedMs}
+		<div class="absolute bottom-0 right-0 p-4 text-xs text-gray-500 font-mono">
+			{timeElapsedMs.toFixed(0)}ms
+		</div>
+	{/if}
 </div>
