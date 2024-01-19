@@ -37,26 +37,29 @@
 	}
 </script>
 
-<div class="flex h-screen">
-	<div class="w-1/2 flex items-center justify-center">
-		<div class="mb-8 text-left p-4 h-24"></div>
-
-		<Prompt
-			bind:value={currentMessage}
-			bind:inProgress
-			on:submit={runChain}
-			placeholder="prawo oświatowe i edukacja w polsce"
-			label="zapytaj"
-			loadingLabel="pytam..."
-		/>
-	</div>
-
-	<div class="w-1/2 flex items-center justify-center">
-		{#if timeElapsedMs}
-			<span class="ml-8 text-gray-300 text-sm font-mono">{timeElapsedMs}ms</span>
-		{/if}
-		<div class="w-3/4 mx-auto h-24 p-4 text-left">
-			{response}
+<div class="flex flex-col h-screen">
+	<div class="flex-grow flex items-end justify-center">
+		<div class="w-full flex justify-between p-4">
+			<div class="w-3/4 mx-auto text-justify overflow-hidden">
+				{response}
+			</div>
 		</div>
+	</div>
+	<div class="w-full p-4">
+		<div class="w-3/4 mx-auto pb-10">
+			<Prompt
+				bind:value={currentMessage}
+				bind:inProgress
+				on:submit={runChain}
+				placeholder="prawo oświatowe i edukacja w polsce"
+				label="zapytaj"
+				loadingLabel="pytam..."
+			/>
+		</div>
+		{#if timeElapsedMs}
+			<span class="text-gray-600 text-sm font-mono">{timeElapsedMs}ms</span>
+		{:else}
+			<span class="text-gray-600 text-sm font-mono"></span>
+		{/if}
 	</div>
 </div>
