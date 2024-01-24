@@ -123,6 +123,12 @@ export interface Database {
       [_ in never]: never
     }
     Functions: {
+      convert_paragraph_number: {
+        Args: {
+          p_number: string
+        }
+        Returns: number
+      }
       hnswhandler: {
         Args: {
           "": unknown
