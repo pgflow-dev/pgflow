@@ -210,6 +210,26 @@ export interface Database {
           similarity: number
         }[]
       }
+      match_lex_docs: {
+        Args: {
+          query_embedding: string
+          match_threshold: number
+          match_count: number
+          filter?: Json
+        }
+        Returns: {
+          id: string
+          content: string
+          kind: string
+          source: string
+          chapter_no: string
+          article_no: string
+          paragraph_no: string
+          point_no: string
+          subpoint_no: string
+          similarity: number
+        }[]
+      }
       match_sections: {
         Args: {
           query_embedding: string
