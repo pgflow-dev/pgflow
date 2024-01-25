@@ -1,4 +1,2 @@
 packages:
-  - "frontend/"
-  - "ai-tools/"
-  - "supabase/"
+  - "packages/*"

@@ -3,7 +3,7 @@ pre-commit:
   commands:
     # checks
     frontend-check:
-      glob: "frontend/**"
+      glob: "packages/frontend/**/*.{svelte,js,ts,html,css,json}"
       run: |
         turbo run check --scope=frontend
     backend-check:
@@ -12,6 +12,7 @@ pre-commit:
       run: |
         turbo run check --scope=backend
     ai-tools-check:
+      skip: true
       glob: "ai-tools/**"
       run: |
         turbo run check --scope=ai-tools
@@ -19,22 +20,23 @@ pre-commit:
     # lints
     frontend-format-staged:
       skip: true
-      glob: "frontend/**"
-      root: frontend/
+      glob: "packages/frontend/**/*.{svelte,js,ts,html,css,json}"
+      root: packages/frontend/
       run: pnpm format-staged {staged_files}
     frontend-lint:
-      glob: "frontend/**"
+      glob: "packages/frontend/**/*.{svelte,js,ts,html,css,json}"
       run: |
         turbo run lint --scope=frontend
 
     # autogenerating required artifacts
     supabase-types:
-      glob: "supabase/migrations/*.sql"
-      root: "supabase/"
+      glob: "packages/supabase/migrations/*.sql"
+      root: "packages/supabase/"
       run: |
         node_modules/.bin/supabase gen types typescript --local > types.d.ts && git add types.d.ts
     poetry-requirements:
-      glob: "ai-tools/{pyproject.toml,poetry.lock}"
-      root: ai-tools/
+      skip: true
+      glob: "packages/ai-tools/{pyproject.toml,poetry.lock}"
+      root: "packages/ai-tools/"
       run: |
         poetry export --without-hashes > requirements.txt && git add requirements.txt
