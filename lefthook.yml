@@ -1,23 +1,30 @@
 pre-commit:
   parallel: true
   commands:
-    check/frontend:
-      glob: "packages/frontend/**/*.{svelte,js,ts,html,css,json}"
+    frontend/check:
+      root: "packages/frontend/"
+      glob: "*.{svelte,js,ts,html,css,json}"
       run: |
         turbo run check --scope=frontend
 
-    check/edulaw-ai-backend:
-      glob: "packages/edulaw-ai-backend/{pyproject.toml,poetry.lock,**/*.py}"
-      run: |
-        turbo run check --scope=edulaw-ai-backend
-
-    lint/frontend:
+    frontend/lint:
       glob: "packages/frontend/**/*.{svelte,js,ts,html,css,json}"
       run: |
         turbo run lint --scope=frontend
 
-    generate/supabase-types:
-      glob: "packages/supabase/migrations/*.sql"
+    edulaw-ai-backend/check:
+      glob: "{pyproject.toml,poetry.lock,*.py}"
+      run: |
+        turbo run check --scope=edulaw-ai-backend
+
+    edulaw-ai-backend/test:
+      root: "packages/edulaw-ai-backend/"
+      glob: "{pyproject.toml,poetry.lock,*.py}"
+      run: |
+        turbo run test --scope=edulaw-ai-backend
+
+    supabase/gen-types:
+      glob: "*.sql"
       root: "packages/supabase/"
       run: |
         node_modules/.bin/supabase gen types typescript --local > types.d.ts && git add types.d.ts
