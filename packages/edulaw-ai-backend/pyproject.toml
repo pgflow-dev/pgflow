@@ -36,6 +36,7 @@ torch = { version = "*", source = "pytorch" }
 sentence-transformers = {git = "https://github.com/UKPLab/sentence-transformers.git"}
 replicate = "^0.22.0"
 pytest = "^7.4.4"
+pyright = "^1.1.348"
 
 [tool.poetry.group.dev.dependencies]
 langchain-cli = ">=0.0.15"

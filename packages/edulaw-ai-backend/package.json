@@ -1,0 +1,7 @@
+{
+  "name": "edulaw-ai-backend",
+  "scripts": {
+    "build": "poetry install",
+    "check": "poetry check && poetry run pyright"
+  }
+}

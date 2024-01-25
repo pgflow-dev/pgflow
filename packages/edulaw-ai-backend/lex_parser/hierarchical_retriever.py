@@ -38,20 +38,20 @@ if __name__ == '__main__':
     def retrieve_points(paragraphs: List[Document], question: str):
         embedding = embeddings.embed_query(question)
         params = dict(
-            query_embedding=embedding, 
-            match_threshold=0.70, 
+            query_embedding=embedding,
+            match_threshold=0.70,
             match_count=5
         )
         points = supabase.rpc('match_documents', params=params).execute()
 
-    chain = (
-        {"paragraphs": paragraph_retriever, "question": RunnablePassthrough()}
-            | {"paragraphs": RunnablePassthrough(), 
-               "question": RunnablePassthrough(),
-               "points": retrieve_points, 
-               "subpoints": retrieve_subpoints } 
+    # chain = (
+    #     {"paragraphs": paragraph_retriever, "question": RunnablePassthrough()}
+    #         | {"paragraphs": RunnablePassthrough(),
+    #            "question": RunnablePassthrough(),
+    #            "points": retrieve_points,
+    #            "subpoints": retrieve_subpoints }
 
-    )
+    # )
 
-    question = "jakiego wsparcia może udzielić szkoła uczniowi z zespołem aspergera?"
-    pprint(chain.invoke(question))
+    # question = "jakiego wsparcia może udzielić szkoła uczniowi z zespołem aspergera?"
+    # pprint(chain.invoke(question))
