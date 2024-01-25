@@ -1,0 +1,41 @@
+some crappy intro text that parser should definitely ignore
+and this is fake Rozdzial 1
+that also should be ignored
+
+
+Rozdział 1
+Przepisy ogólne
+
+Art. 1. System oświaty zapewnia w szczególności:
+1) realizację prawa każdego obywatela Rzeczypospolitej Polskiej;
+2) wspomaganie przez szkołę wychowawczej roli rodziny;
+Art. 2. 1. System oświaty wspierają:
+1) organizacje pozarządowe, w tym organizacje harcerskie;
+2) instytuty badawcze;
+a) oraz inne inicjatywy
+b) tutaj nie wyszególnione
+2a) punkt z literka
+
+1a. System oświaty w zakresie kształcenia zawodowego
+2. Organy administracji publicznej, w tym organy prowadzące szkoły i placówki
+
+3. System oświaty mogą wspierać także jednostki organizacyjne
+
+4. Organy administracji publicznej, w tym organy prowadzące 
+
+Art. 3. Ilekroć w dalszych przepisach jest mowa bez bliższego określenia o:
+1) szkole - należy przez to rozumieć także przedszkole;
+2) szkole specjalnej lub oddziale specjalnym - należy przez to rozumieć odpowiednio:
+a) szkołę lub oddział dla uczniów posiadających orzeczenie
+b) szkołę lub oddział zorganizowane w podmiocie leczniczym
+2a) inny punkt z literka
+2b) nastepny punkt z literka
+
+Rozdział 2
+Bardziej szczegółowe przepisy
+
+Art. 1. Szczegóły na temat systemu oświaty to:
+
+1) realizację prawa każdego obywatela Rzeczypospolitej Polskiej do kształcenia się
+2) wspomaganie przez szkołę wychowawczej roli rodziny;
+

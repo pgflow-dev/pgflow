@@ -1,0 +1,45 @@
+[tool.poetry]
+name = "edulaw-ai-backend"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+packages = [
+    { include = "app" },
+    { include = "lex_parser" },
+]
+
+[[tool.poetry.source]]
+name = "pytorch"
+url = "https://download.pytorch.org/whl/cpu"
+# This tells Poetry to use that source only for packages that are explicitly listed with that source.
+# so we can be sure that pytorch is installed with +cpu and do not pull all the cuda/nvidia packages
+priority = "explicit"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+uvicorn = "^0.23.2"
+langserve = {extras = ["server"], version = ">=0.0.30"}
+pydantic = "<2"
+langchain-openai = "^0.0.2.post1"
+python-dotenv = "^1.0.0"
+vecs = "^0.4.2"
+bs4 = "^0.0.1"
+supabase = "^2.3.3"
+jsonlines = "^4.0.0"
+tqdm = "^4.66.1"
+psycopg2-binary = "^2.9.9"
+tiktoken = "^0.5.2"
+torch = { version = "*", source = "pytorch" }
+# torchvision = { version = "*", source = "pytorch" }
+# torchaudio = { version = "*", source = "pytorch" }
+sentence-transformers = {git = "https://github.com/UKPLab/sentence-transformers.git"}
+replicate = "^0.22.0"
+pytest = "^7.4.4"
+
+[tool.poetry.group.dev.dependencies]
+langchain-cli = ">=0.0.15"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
