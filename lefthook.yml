@@ -23,7 +23,14 @@ pre-commit:
       run: |
         turbo run test --scope=edulaw-ai-backend
 
-    supabase/gen-types:
+    backend/check:
+      glob: "*.ts"
+      root: "packages/supabase/functions/"
+      run: |
+        # turbo run check --scope=supabase {staged_files}
+        deno check {staged_files}
+
+    backend/gen-types:
       glob: "*.sql"
       root: "packages/supabase/"
       run: |
