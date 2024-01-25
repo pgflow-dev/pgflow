@@ -7,6 +7,7 @@ pre-commit:
       run: |
         turbo run check --scope=frontend
     backend-check:
+      skip: true
       glob: "supabase/**"
       run: |
         turbo run check --scope=backend

@@ -120,7 +120,45 @@ export interface Database {
       }
     }
     Views: {
-      [_ in never]: never
+      lex_docs: {
+        Row: {
+          article_no: string | null
+          chapter_no: string | null
+          content: string | null
+          embedding: string | null
+          id: string | null
+          kind: string | null
+          paragraph_no: string | null
+          point_no: string | null
+          source: string | null
+          subpoint_no: string | null
+        }
+        Insert: {
+          article_no?: never
+          chapter_no?: never
+          content?: string | null
+          embedding?: string | null
+          id?: string | null
+          kind?: never
+          paragraph_no?: never
+          point_no?: never
+          source?: never
+          subpoint_no?: never
+        }
+        Update: {
+          article_no?: never
+          chapter_no?: never
+          content?: string | null
+          embedding?: string | null
+          id?: string | null
+          kind?: never
+          paragraph_no?: never
+          point_no?: never
+          source?: never
+          subpoint_no?: never
+        }
+        Relationships: []
+      }
     }
     Functions: {
       convert_paragraph_number: {
@@ -178,6 +216,26 @@ export interface Database {
           similarity: number
         }[]
       }
+      match_lex_docs: {
+        Args: {
+          query_embedding: string
+          match_threshold: number
+          match_count: number
+          filter?: Json
+        }
+        Returns: {
+          id: string
+          content: string
+          kind: string
+          source: string
+          chapter_no: string
+          article_no: string
+          paragraph_no: string
+          point_no: string
+          subpoint_no: string
+          similarity: number
+        }[]
+      }
       match_sections: {
         Args: {
           query_embedding: string
@@ -191,6 +249,12 @@ export interface Database {
           text: string
           similarity: number
         }[]
+      }
+      no_to_int: {
+        Args: {
+          p_number: string
+        }
+        Returns: number
       }
       vector_avg: {
         Args: {
