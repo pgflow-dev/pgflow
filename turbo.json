@@ -3,21 +3,18 @@
   "pipeline": {
     "build": {
       "dependsOn": ["^build"],
-      "env": [
-      ],
-      "outputs": [
-        ".svelte-kit/output/**"
-      ]
+      "env": [],
+      "outputs": [".svelte-kit/output/**"]
     },
     "check": {
       "dependsOn": ["^check"]
     },
     "lint": {
       "dependsOn": ["^lint"]
+    },
+    "test": {
+      "dependsOn": ["^test"]
     }
   },
-  "globalEnv": [
-    "PUBLIC_SUPABASE_URL",
-    "PUBLIC_SUPABASE_ANON_KEY"
-  ]
+  "globalEnv": ["PUBLIC_SUPABASE_URL", "PUBLIC_SUPABASE_ANON_KEY"]
 }
