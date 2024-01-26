@@ -1,5 +1,6 @@
 pre-commit:
   parallel: true
+  follow: true
   commands:
     frontend/check:
       root: "packages/frontend/"
