@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
-# from langserve import add_routes
+from langserve import add_routes
+from chains.hypothetical_answers import chain as hypothetical_answers
 
 app = FastAPI()
 
@@ -13,6 +14,8 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
+add_routes(app, hypothetical_answers, path='/hypothetical-answers')
 
 @app.get("/")
 async def redirect_root_to_docs():
