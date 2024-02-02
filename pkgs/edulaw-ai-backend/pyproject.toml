@@ -20,7 +20,7 @@ priority = "explicit"
 python = "^3.11"
 uvicorn = "^0.23.2"
 langserve = {extras = ["server"], version = ">=0.0.30"}
-pydantic = "<2"
+pydantic = ">2,<3"
 langchain-openai = "^0.0.2.post1"
 python-dotenv = "^1.0.0"
 vecs = "^0.4.2"
