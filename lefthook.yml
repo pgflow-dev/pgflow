@@ -2,37 +2,44 @@ pre-commit:
   parallel: true
   follow: true
   commands:
+    # xd:
+    #   run: |
+    #     echo staged_files="{staged_files}"
+    #     exit 1
+
     frontend/check:
-      root: "packages/frontend/"
+      root: "pkgs/frontend"
       glob: "*.{svelte,js,ts,html,css,json}"
       run: |
         turbo run check --scope=frontend
 
     frontend/lint:
-      glob: "packages/frontend/**/*.{svelte,js,ts,html,css,json}"
+      root: "pkgs/frontend"
+      glob: "*.{svelte,js,ts,html,css,json}"
       run: |
         turbo run lint --scope=frontend
 
     edulaw-ai-backend/check:
+      root: "pkgs/edulaw-ai-backend"
       glob: "{pyproject.toml,poetry.lock,*.py}"
       run: |
         turbo run check --scope=edulaw-ai-backend
 
     edulaw-ai-backend/test:
-      root: "packages/edulaw-ai-backend/"
+      root: "pkgs/edulaw-ai-backend/"
       glob: "{pyproject.toml,poetry.lock,*.py}"
       run: |
         turbo run test --scope=edulaw-ai-backend
 
     backend/check:
+      root: "pkgs/supabase/functions/"
       glob: "*.ts"
-      root: "packages/supabase/functions/"
       run: |
         # turbo run check --scope=supabase {staged_files}
         deno check {staged_files}
 
     backend/gen-types:
+      root: "pkgs/supabase/"
       glob: "*.sql"
-      root: "packages/supabase/"
       run: |
         node_modules/.bin/supabase gen types typescript --local > types.d.ts && git add types.d.ts
