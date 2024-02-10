@@ -33,6 +33,12 @@ pre-commit:
       run: |
         turbo run test --scope=edulaw-ai-backend
 
+    edulaw-ai-backend/isort:
+      root: "pkgs/edulaw-ai-backend/"
+      glob: "{pyproject.toml,poetry.lock,*.py}"
+      run: |
+        poetry run isort {staged_files} && git add {staged_files}
+
     backend/check:
       root: "pkgs/supabase/functions/"
       glob: "*.ts"
