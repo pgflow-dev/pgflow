@@ -1,6 +1,9 @@
 {
-	"devDependencies": {
-		"turbo": "^1.11.3",
-		"vercel": "^33.1.0"
-	}
+  "name": "feedwise",
+  "author": "Wojciech Majewski <wojciech.majewski@pm.me>",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "turbo": "^1.11.3",
+    "vercel": "^33.1.0"
+  }
 }

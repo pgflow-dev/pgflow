@@ -1,5 +1,6 @@
 {
   "name": "edulaw-ai-backend",
+  "license": "UNLICENSED",
   "scripts": {
     "build": "poetry --ansi install",
     "check": "poetry --ansi check && echo '-> Running pyright' && poetry run pyright",
