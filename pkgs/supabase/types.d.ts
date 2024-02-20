@@ -161,12 +161,6 @@ export interface Database {
       }
     }
     Functions: {
-      convert_paragraph_number: {
-        Args: {
-          p_number: string
-        }
-        Returns: number
-      }
       hnswhandler: {
         Args: {
           "": unknown
