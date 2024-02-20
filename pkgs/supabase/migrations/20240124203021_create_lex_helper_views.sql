@@ -15,11 +15,11 @@ select
 from documents
 where metadata->>'kind' IN ('Chapter', 'Article', 'Paragraph', 'Point', 'Subpoint');
 
-create index lex_docs_kind_idx on documents ((metadata->>'kind'));
-create index lex_docs_source_idx on documents ((metadata->>'source'));
-create index lex_docs_chapter_no_idx on documents ((metadata->>'chapter_no'));
-create index lex_docs_article_no_idx on documents ((metadata->>'article_no'));
-create index lex_docs_paragraph_no_idx on documents ((metadata->>'paragraph_no'));
-create index lex_docs_point_no_idx on documents ((metadata->>'point_no'));
-create index lex_docs_subpoint_no_idx on documents ((metadata->>'subpoint_no'));
-create index lex_docs_idx on documents ((metadata->>'kind' IN ('Chapter', 'Article', 'Paragraph', 'Point', 'Subpoint')));
+-- create index lex_docs_kind_idx on documents ((metadata->>'kind'));
+-- create index lex_docs_source_idx on documents ((metadata->>'source'));
+-- create index lex_docs_chapter_no_idx on documents ((metadata->>'chapter_no'));
+-- create index lex_docs_article_no_idx on documents ((metadata->>'article_no'));
+-- create index lex_docs_paragraph_no_idx on documents ((metadata->>'paragraph_no'));
+-- create index lex_docs_point_no_idx on documents ((metadata->>'point_no'));
+-- create index lex_docs_subpoint_no_idx on documents ((metadata->>'subpoint_no'));
+-- create index lex_docs_idx on documents ((metadata->>'kind' IN ('Chapter', 'Article', 'Paragraph', 'Point', 'Subpoint')));
