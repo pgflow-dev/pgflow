@@ -1,22 +1,16 @@
 import os
+
 from dotenv import load_dotenv
+
 load_dotenv()
 
-from supabase.client import Client, create_client
-from langchain_community.vectorstores.supabase import SupabaseVectorStore
-
-supabase: Client = create_client(os.environ['SUPABASE_URL'], os.environ['SUPABASE_KEY'])
+from app.utils import init_supabase_vectorstore
 
 if __name__ == '__main__':
     from app.prefixed_embeddings import PrefixedEmbeddings
     from rich.pretty import pprint
 
-    store = SupabaseVectorStore(
-        embedding=PrefixedEmbeddings(),
-        client=supabase,
-        table_name='documents',
-        query_name='match_documents',
-    )
+    store = init_supabase_vectorstore()
 
     def kind(kind: str):
         return dict(
@@ -28,7 +22,7 @@ if __name__ == '__main__':
         )
 
     pprint(kind('Chapter'))
-    
+
     chapters = store.as_retriever(**kind('Chapter'))
     articles = store.as_retriever(**kind('Article'))
     paragraphs = store.as_retriever(**kind('Paragraph'))

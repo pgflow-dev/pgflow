@@ -1,31 +1,26 @@
-from langchain_core.retrievers import BaseRetriever
+from operator import itemgetter
+from typing import List
+
+from app.prefixed_embeddings import PrefixedEmbeddings
+from app.utils import init_supabase_vectorstore
+from dotenv import load_dotenv
 from langchain_core.callbacks import CallbackManagerForRetrieverRun
 from langchain_core.documents import Document
-from typing import List
-from app.prefixed_embeddings import PrefixedEmbeddings
-from supabase.client import Client, create_client
-from langchain_community.vectorstores.supabase import SupabaseVectorStore
 from langchain_core.output_parsers import StrOutputParser
-from operator import itemgetter
-from langchain_openai.chat_models import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.retrievers import BaseRetriever
+from langchain_core.runnables import (Runnable, RunnableLambda,
+                                      RunnableParallel, RunnablePassthrough)
 from langchain_core.vectorstores import VectorStoreRetriever
+from langchain_openai.chat_models import ChatOpenAI
+from supabase.client import Client, create_client
 
-from langchain_core.runnables import RunnablePassthrough, RunnableParallel, RunnableLambda, Runnable
-
-from dotenv import load_dotenv
 load_dotenv()
 import os
+
 from rich.pretty import pprint
 
-embeddings = PrefixedEmbeddings()
-supabase: Client = create_client(os.environ['SUPABASE_URL'], os.environ['SUPABASE_KEY'])
-store = SupabaseVectorStore(
-    embedding=PrefixedEmbeddings(),
-    client=supabase,
-    table_name='documents',
-    query_name='match_documents',
-)
+store = init_supabase_vectorstore()
 
 def kind_retriever(kind: str, threshold=0.5) -> VectorStoreRetriever:
     return store.as_retriever(
