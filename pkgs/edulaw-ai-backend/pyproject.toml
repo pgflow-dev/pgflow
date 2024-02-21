@@ -42,6 +42,51 @@ isort = "^5.13.2"
 [tool.poetry.group.dev.dependencies]
 langchain-cli = ">=0.0.15"
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+
+[tool.pdm]
+distribution = false
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "langchain-cli>=0.0.15",
+]
+
+[tool.pdm.build]
+includes = ["app", "lex_parser"]
+
+[[tool.pdm.source]]
+name = "pytorch"
+url = "https://download.pytorch.org/whl/cpu"
+verify_ssl = true
+[project]
+name = "edulaw-ai-backend"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Wojciech Majewski", email = "wojciech.majewski@pm.me"},
+    {name = "Your Name", email = "you@example.com"},
+]
+dependencies = [
+    "uvicorn<1.0.0,>=0.23.2",
+    "langserve[server]>=0.0.30",
+    "pydantic<3,>2",
+    "langchain-openai<1.0.0.0,>=0.0.2.post1",
+    "python-dotenv<2.0.0,>=1.0.0",
+    "vecs<1.0.0,>=0.4.2",
+    "bs4<1.0.0,>=0.0.1",
+    "supabase<3.0.0,>=2.3.3",
+    "jsonlines<5.0.0,>=4.0.0",
+    "tqdm<5.0.0,>=4.66.1",
+    "psycopg2-binary<3.0.0,>=2.9.9",
+    "tiktoken<1.0.0,>=0.5.2",
+    "torch",
+    "sentence-transformers @ git+https://github.com/UKPLab/sentence-transformers.git",
+    "replicate<1.0.0,>=0.22.0",
+    "pytest<8.0.0,>=7.4.4",
+    "pyright<2.0.0,>=1.1.348",
+    "isort<6.0.0,>=5.13.2",
+]
+requires-python = ">=3.11,<4.0"
+readme = "README.md"
+license = {text = "UNLICENSED"}
+

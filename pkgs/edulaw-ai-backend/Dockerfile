@@ -1,21 +1,31 @@
+# Stage 1: Builder
+FROM python:3.11-slim AS builder
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY pyproject.toml pdm.lock ./
+RUN pip install -U pdm
+RUN mkdir -p __pypackages__
+RUN pdm install --no-editable --no-self --prod
+
+
+# Stage 2: Runtime
 FROM python:3.11-slim
 
-RUN pip install poetry==1.6.1
+ENV APP_DIR /app
+WORKDIR $APP_DIR
 
-RUN poetry config virtualenvs.create false
+ENV PYPACKAGES="${APP_DIR}/__pypackages__"
+ENV PATH="${PATH}:${PYPACKAGES}/3.11/bin"
+ENV PYTHONPATH="${APP_DIR}/pkgs"
 
-WORKDIR /code
 
-COPY ./pyproject.toml ./README.md ./poetry.lock* ./
-
-COPY ./packages ./packages
-
-RUN poetry install  --no-interaction --no-ansi --no-root
-
-COPY ./app ./app
-
-RUN poetry install --no-interaction --no-ansi
+COPY --from=builder /app/__pypackages__/3.11/lib $PYTHONPATH/
+COPY ./ /${APP_DIR}/
 
 EXPOSE 8080
-
-CMD exec uvicorn app.server:app --host 0.0.0.0 --port 8080
+CMD ["python", "-m", "uvicorn", "app.server:app", "--host", "0.0.0.0", "--port", "8080"]

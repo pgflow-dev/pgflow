@@ -21,27 +21,33 @@ pre-commit:
       run: |
         turbo run lint --scope=frontend
 
-    # TODO: fix glob pattern for poetry.lock
+    # TODO: fix glob pattern for pdm.lock
     #       the problem is that globs without asterist or other special chars
-    #       does not not work, so literal 'poetry.lock' is not picked up
+    #       does not not work, so literal 'pdm.lock' is not picked up
     #       the workaround is to prepend the literal filename with '*'
     edulaw-ai-backend/check:
       root: "pkgs/edulaw-ai-backend"
-      glob: "{*pyproject.toml,*poetry.lock,*.py}"
+      glob: "{*pyproject.toml,*pdm.lock,*.py}"
       run: |
         turbo run check --scope=edulaw-ai-backend
 
     edulaw-ai-backend/test:
       root: "pkgs/edulaw-ai-backend/"
-      glob: "{*pyproject.toml,*poetry.lock,*.py}"
+      glob: "{*pyproject.toml,*pdm.lock,*.py}"
       run: |
         turbo run test --scope=edulaw-ai-backend
 
     edulaw-ai-backend/isort:
       root: "pkgs/edulaw-ai-backend/"
-      glob: "{*pyproject.toml,*poetry.lock,*.py}"
+      glob: "{*pyproject.toml,*pdm.lock,*.py}"
       run: |
-        poetry run isort {staged_files} && git add {staged_files}
+        pdm run isort {staged_files} && git add {staged_files}
+
+    edulaw-ai-backend/docker-build:
+      root: "pkgs/edulaw-ai-backend/"
+      glob: "{*Dockerfile,*compose.yaml}"
+      run: |
+        docker compose build
 
     backend/check:
       root: "pkgs/supabase/functions/"
