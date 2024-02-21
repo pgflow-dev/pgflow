@@ -2,8 +2,8 @@
   "name": "edulaw-ai-backend",
   "license": "UNLICENSED",
   "scripts": {
-    "build": "poetry --ansi install",
-    "check": "poetry --ansi check && echo '-> Running pyright' && poetry run pyright",
-    "test": "poetry run pytest --color=yes **/*_test.py"
+    "build": "pdm install",
+    "check": "pdm info && echo '-> Running pyright' && pdm run pyright",
+    "test": "pdm run pytest --color=yes **/*_test.py"
   }
 }
