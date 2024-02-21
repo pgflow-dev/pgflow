@@ -1,8 +1,9 @@
-from fastapi import FastAPI
-from fastapi.responses import RedirectResponse
-from fastapi.middleware.cors import CORSMiddleware
-from langserve import add_routes
+from app.utils import init_supabase_vectorstore
 from chains.hypothetical_answers import chain as hypothetical_answers
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
+from langserve import add_routes
 
 app = FastAPI()
 
@@ -15,15 +16,19 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+naive_retrieval = init_supabase_vectorstore().as_retriever()
+
 add_routes(app, hypothetical_answers, path='/hypothetical-answers')
+add_routes(app, naive_retrieval, path='/naive-retrieval')
 
 @app.get("/")
 async def redirect_root_to_docs():
     return RedirectResponse("/docs")
 
 if __name__ == "__main__":
-    import uvicorn
     import os
+
+    import uvicorn
 
     HTTP_PORT = int(os.environ.get("HTTP_PORT", 8080))
 
