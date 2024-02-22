@@ -43,11 +43,12 @@ chain = (
 
 question = "jakiego wsparcia może udzielić szkoła uczniowi z zespołem aspergera?"
 
-while True:
-    if question == "exit":
-        break
+if __name__ == "__main__":
+    while True:
+        if question == "exit":
+            break
 
-    response = chain.invoke(question)
-    pprint(response)
+        response = chain.invoke(question)
+        pprint(response)
 
-    question = input("Question: ")
+        question = input("Question: ")
