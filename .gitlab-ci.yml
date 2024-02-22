@@ -25,5 +25,6 @@ deploy-prod/edulaw-ai-backend:
     - .dependency/flyctl
   stage: deploy
   script:
-    - /root/.fly/bin/flyctl deploy --config pkgs/edulaw-ai-backend/fly.toml
+    - cd pkgs/edulaw-ai-backend
+    - /root/.fly/bin/flyctl deploy
   environment: production
