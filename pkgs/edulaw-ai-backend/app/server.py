@@ -19,11 +19,14 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+# partial chains
 add_routes(app, hypothetical_answers, path='/hypothetical-answers')
 add_routes(app, naive_retrieval, path='/naive-retrieval')
+add_routes(app, context_relevance_test, path='/context-relevance')
+
+# qa chains
 add_routes(app, qa_chain, path='/qa')
 add_routes(app, hierarchical_qa, path='/hierarchical-qa')
-add_routes(app, context_relevance_test, path='/context-relevance')
 
 @app.get("/")
 async def redirect_root_to_docs():
