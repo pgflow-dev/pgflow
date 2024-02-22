@@ -21,6 +21,9 @@ default:
         - pkgs/edulaw-ai-backend/**/*
 
 deploy-prod/edulaw-ai-backend:
+  before_script:
+    - echo ci_commit_branch is $CI_COMMIT_BRANCH
+    - echo ci_default_branch is $CI_DEFAULT_BRANCH
   extends:
     - .rule/main-branch-only
     - .pkg-changed/edulaw-ai-backend
