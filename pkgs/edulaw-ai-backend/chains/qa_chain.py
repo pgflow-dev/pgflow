@@ -32,7 +32,7 @@ opts = dict(
 )
 
 chain = (
-    {"context": store.as_retriever(**opts), "question": RunnablePassthrough()}
+    {"context": store.as_retriever(), "question": RunnablePassthrough()}
     | prompt
     | model
     | StrOutputParser()
