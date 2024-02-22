@@ -12,6 +12,9 @@ default:
   before_script:
     - apt-get update -qq && apt-get install -y curl
     - curl -L https://fly.io/install.sh | sh
+    # - alias flyctl=/root/.fly/bin/flyctl
+    - export FLYCTL_INSTALL="/root/.fly"
+    - export PATH="$FLYCTL_INSTALL/bin:$PATH"
 
 .pkg-changed/edulaw-ai-backend:
   rules:
@@ -26,5 +29,5 @@ deploy-prod/edulaw-ai-backend:
   stage: deploy
   script:
     - cd pkgs/edulaw-ai-backend
-    - /root/.fly/bin/flyctl deploy
+    - flyctl deploy
   environment: production
