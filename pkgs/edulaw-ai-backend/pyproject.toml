@@ -85,6 +85,7 @@ dependencies = [
     "pytest<8.0.0,>=7.4.4",
     "pyright<2.0.0,>=1.1.348",
     "isort<6.0.0,>=5.13.2",
+    "rich>=13.7.0",
 ]
 requires-python = ">=3.11,<4.0"
 readme = "README.md"
