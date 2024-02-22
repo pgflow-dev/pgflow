@@ -22,7 +22,7 @@ default:
 
 deploy-prod/edulaw-ai-backend:
   extends:
-    # - .rule/main-branch-only
+    - .rule/main-branch-only
     - .pkg-changed/edulaw-ai-backend
     - .dependency/flyctl
   stage: deploy
