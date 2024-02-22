@@ -25,5 +25,5 @@ deploy-prod/edulaw-ai-backend:
     - .dependency/flyctl
   stage: deploy
   script:
-    - fly deploy
+    - flyctl deploy
   environment: production
