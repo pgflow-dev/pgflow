@@ -1,5 +1,5 @@
-from app.utils import init_supabase_vectorstore
 from chains.hypothetical_answers import chain as hypothetical_answers
+from chains.naive_retrieval import chain as naive_retrieval
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
@@ -15,8 +15,6 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
-
-naive_retrieval = init_supabase_vectorstore().as_retriever()
 
 add_routes(app, hypothetical_answers, path='/hypothetical-answers')
 add_routes(app, naive_retrieval, path='/naive-retrieval')
