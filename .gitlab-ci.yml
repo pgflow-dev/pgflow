@@ -1,21 +1,29 @@
-build-job:
-  stage: build
-  script:
-    - echo "Hello, $GITLAB_USER_LOGIN"
+stages:
+  - deploy
 
-test-job1:
-  stage: test
-  script:
-    - echo "This job tests something"
+default:
+  image: python:3.11-slim
 
-test-job2:
-  stage: test
-  script:
-    - echo "This job tests something else but it takes longer"
-    - sleep 5
+.rule/main-branch-only:
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
-deploy-prod:
+.dependency/flyctl:
+  before_script:
+    - apt-get update -qq && apt-get install -y curl
+    - curl -L https://fly.io/install.sh | sh
+
+.pkg-changed/edulaw-ai-backend:
+  rules:
+    - changes:
+        - pkgs/edulaw-ai-backend/**/*
+
+deploy-prod/edulaw-ai-backend:
+  extends:
+    - .rule/main-branch-only
+    - .pkg-changed/edulaw-ai-backend
+    - .dependency/flyctl
   stage: deploy
   script:
-    - echo "Deploying $CI_COMMIT_BRANCH to production"
+    - fly deploy
   environment: production
