@@ -1,6 +1,6 @@
 pre-commit:
   parallel: true
-  follow: true
+  follow: false
   commands:
     # This task is skipped by default, un-skip it to debug the inputs
     debug:
