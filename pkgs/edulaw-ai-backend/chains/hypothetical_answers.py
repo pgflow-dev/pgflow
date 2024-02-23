@@ -1,11 +1,11 @@
 from dotenv import load_dotenv
+
 load_dotenv()
 
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai.chat_models import ChatOpenAI
-from typing import List
-import re
+from utils.parsers import LinesParser
 
 template = """
 Na podstawie poniższego pytania utwórz listę pytań pomocniczych, tak aby delikatnie poszerzyć zakres wyszukiwania.
@@ -16,14 +16,11 @@ Ilość paragrafów do zwrócenia: {num_questions}
 Oryginalne pytanie: {question}
 """.strip()
 
-def extract_lines_parser(input: str) -> List[str]:
-    return [re.sub(r"^\W+", "", line) for line in input.split("\n")]
-
 chain = (
     ChatPromptTemplate.from_template(template)
     | ChatOpenAI(model="gpt-3.5-turbo-1106")
     | StrOutputParser()
-    # | extract_lines_parser
+    | LinesParser()
 )
 
 if __name__ == "__main__":
