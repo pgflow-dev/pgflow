@@ -129,13 +129,12 @@ class PointDecorator(BaseDecorator):
 
     @property
     def parent(self):
-
         # paragraphs are optional, points can be attached to articles directly
         if self.paragraph_no:
             return self._db.paragraphs_by(
                 article_no=self.article_no,
                 paragraph_no=self.paragraph_no
-            )
+            )[0]
         else:
             return self.article
 
@@ -152,7 +151,7 @@ class SubpointDecorator(BaseDecorator):
         if self.paragraph_no:
             filter['paragraph_no'] = self.paragraph_no
 
-        return self._db.points_by(**filter)
+        return self._db.points_by(**filter)[0]
 
 class LexDb:
     def __init__(
