@@ -6,12 +6,29 @@ from lex_parser.parser import Parser
 from rich.pretty import pprint
 
 parser = Parser()
-with open(f'lex_parser/fixtures/simplified_lex.txt', 'r') as file:
+# with open(f'lex_parser/fixtures/simplified_lex.txt', 'r') as file:
+with open(f'data/educational-law-2024.txt', 'r') as file:
     parser.parse(file)
 
 class LexDbTest(unittest.TestCase):
-    def setUp(self):
-        self.db = LexDb.from_parser(parser)
+    def test_invariants(self):
+        db = LexDb.from_parser(parser)
+
+        for chapter in db.chapters:
+            for article in chapter.articles:
+                self.assertEqual(chapter, article.parent)
+                self.assertEqual(chapter, article.chapter)
+
+        for article in db.articles:
+            for paragraph in article.paragraphs:
+                self.assertEqual(article.chapter, paragraph.chapter)
+                self.assertEqual(article, paragraph.parent)
+                self.assertEqual(article, paragraph.article)
+
+        # for paragraph in db.paragraphs:
+        #     for point in paragraph.points:
+        #         self.assertEqual(paragraph.chapter, point.chapter)
+        #         self.assertEqual(paragraph, point.parent)
 
     # def test_chapters(self):
     #     chapter = parser.chapters[0]

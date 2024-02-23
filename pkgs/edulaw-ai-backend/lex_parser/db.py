@@ -14,6 +14,9 @@ class BaseDecorator:
     def __eq__(self, other):
         return self.id == other.id
 
+    # chapter_no and article_no are globally unique in the law document,
+    # so we always use them to find the chapter or article
+
     @property
     def chapter(self):
         try:
