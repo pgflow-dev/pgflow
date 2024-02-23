@@ -11,6 +11,9 @@ class BaseDecorator:
     def __getattr__(self, name):
         return getattr(self._model, name)
 
+    def __eq__(self, other):
+        return self.id == other.id
+
     @property
     def chapter(self):
         try:
