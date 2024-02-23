@@ -122,6 +122,10 @@ class ParagraphDecorator(BaseDecorator):
         else:
             return self.chapter
 
+    @property
+    def points(self):
+        return self._db.points_by(article_no=self.article_no, paragraph_no=self.paragraph_no)
+
 class PointDecorator(BaseDecorator):
     def __init__(self, model: Point, db: LexDb):
         self._model = model
@@ -137,6 +141,14 @@ class PointDecorator(BaseDecorator):
             )[0]
         else:
             return self.article
+
+    @property
+    def subpoints(self):
+        return self._db.subpoints_by(
+            article_no=self.article_no,
+            paragraph_no=self.paragraph_no,
+            point_no=self.point_no
+        )
 
 class SubpointDecorator(BaseDecorator):
     def __init__(self, model: Subpoint, db: LexDb):
@@ -224,6 +236,3 @@ if __name__ == '__main__':
     db = LexDb.from_parser(parser)
 
     import code; code.interact(local=dict(globals(), **locals()))
-    # paragraph = db.find_paragraphs(chapter_no='10', article_no='')
-    #
-    # pprint(paragraph)
