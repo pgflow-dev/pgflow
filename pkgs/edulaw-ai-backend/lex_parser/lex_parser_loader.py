@@ -1,12 +1,13 @@
-from lex_parser.parser import Parser
-from lex_parser.models import Chapter, Article, Paragraph, Point, Subpoint
-from langchain_core.documents import Document
-from typing import Union, List
+import os
+from typing import List, Union
+
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders.base import BaseLoader
-import os
+from langchain_core.documents import Document
+from lex_parser.models import (Article, Chapter, LexModel, Paragraph, Point,
+                               Subpoint)
+from lex_parser.parser import Parser
 
-LexModel = Union[Chapter, Article, Paragraph, Point, Subpoint]
 
 class LexParserLoader(BaseLoader):
     def __init__(self, path: str):

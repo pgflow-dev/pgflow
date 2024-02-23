@@ -1,11 +1,13 @@
-from pydantic import BaseModel
-from typing import Optional
 import re
+from typing import Optional, Union
+
+from pydantic import BaseModel
+
 
 class Chapter(BaseModel):
     chapter_no: str
     text: str = ''
-    
+
     def set_text(self, text: str):
         if self.text == '':
             self.text = text
@@ -39,6 +41,8 @@ class Subpoint(BaseModel):
     paragraph_no: str
     point_no: str
     text: str
+
+LexModel = Union[Chapter, Article, Paragraph, Point, Subpoint]
 
 # Regex patterns as provided
 class Matchers:
