@@ -1,6 +1,8 @@
 from typing import List, Optional, TextIO
+
 from lex_parser.models import *
 from rich.pretty import pprint
+
 
 class Parser:
     def __init__(self):
@@ -127,11 +129,11 @@ class Parser:
 
             if self.current_paragraph:
                 paragraph_no = self.current_paragraph.paragraph_no
-            if self.current_article: 
+            if self.current_article:
                 article_no = self.current_article.article_no
 
             self.current_point = Point(
-                point_no=point_no, 
+                point_no=point_no,
                 chapter_no=chapter_no,
                 article_no=article_no,
                 paragraph_no=paragraph_no,
