@@ -197,18 +197,14 @@ class LexDb:
 
 if __name__ == '__main__':
 
-    def print(*args, **kwargs):
-        pprint(*args, **kwargs)
-
-    import sys
-
-    from rich.pretty import pprint
-    sys.displayhook = pprint
-
     parser = Parser()
     with open('data/educational-law-2024.txt', 'r') as file:
         parser.parse(file)
 
     db = LexDb.from_parser(parser)
 
+    import sys
+
+    from rich.pretty import pprint
+    sys.displayhook = pprint
     import code; code.interact(local=dict(globals(), **locals()))
