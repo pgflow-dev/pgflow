@@ -15,3 +15,11 @@ Make sure to copy `.env.example` to `.env` and customize env vars properly
 1. Make sure you have Docker and Docker Compose installed and ready to go
 1. Build image with `docker compose build`
 1. Run with `docker compose up --abort-on-container-exit`
+
+### Python tips and tricks
+
+#### Interactive in-place debugging
+
+```python
+import code; code.interact(local=dict(globals(), **locals()))
+```
