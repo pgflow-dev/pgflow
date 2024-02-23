@@ -6,6 +6,7 @@ from chains.qa_chain import chain as qa_chain
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+from langchain_openai.chat_models import ChatOpenAI
 from langserve import add_routes
 
 app = FastAPI()
@@ -27,6 +28,9 @@ add_routes(app, context_relevance_test, path='/context-relevance')
 # qa chains
 add_routes(app, qa_chain, path='/qa')
 add_routes(app, hierarchical_qa, path='/hierarchical-qa')
+
+# utility/authenticated
+add_routes(app, ChatOpenAI(model="gpt-3.5-turbo-1106"), path='/models/ChatOpenAI')
 
 @app.get("/")
 async def redirect_root_to_docs():
