@@ -35,37 +35,6 @@ class BaseDecorator:
     def articles(self):
         return self._db.articles_by(article_no=self.article_no)
 
-    # @property
-    # def paragraphs(self):
-    #     return self._db.paragraphs_by(**self.id)
-    #
-    # @property
-    # def points(self):
-    #     return self._db.points_by(**self.id)
-    #
-    # @property
-    # def subpoints(self):
-    #     return self._db.subpoints_by(**self.id)
-    #
-    # @property
-    # def paragraph(self):
-    #     try:
-    #         filter = dict(chapter_no=self.chapter_no)
-    #
-    #         if self.article_no:
-    #             filter['article_no'] = self.article_no
-    #
-    #         return self._db.paragraphs_by(filter)[0]
-    #     except IndexError:
-    #         return None
-    #
-    # @property
-    # def point(self):
-    #     try:
-    #         return self._db.points_by(chapter_no=self.chapter_no)[0]
-    #     except IndexError:
-    #         return None
-
 def matches_filter(model: BaseDecorator, filter: dict[str, str]) -> bool:
     for key, value in filter.items():
         if getattr(model, key) != value:
@@ -227,7 +196,14 @@ class LexDb:
         )
 
 if __name__ == '__main__':
+
+    def print(*args, **kwargs):
+        pprint(*args, **kwargs)
+
+    import sys
+
     from rich.pretty import pprint
+    sys.displayhook = pprint
 
     parser = Parser()
     with open('data/educational-law-2024.txt', 'r') as file:
