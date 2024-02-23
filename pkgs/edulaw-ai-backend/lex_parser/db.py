@@ -1,4 +1,6 @@
-from typing import ForwardRef, List
+from __future__ import annotations
+
+from typing import List
 
 from lex_parser.models import *
 from lex_parser.parser import Parser
@@ -10,18 +12,49 @@ class BaseDecorator:
 
 
 class ChapterDecorator(BaseDecorator):
-    def __init__(self, model: Chapter, db: 'LexDb'):
+    def __init__(self, model: Chapter, db: LexDb):
         self._model = model
         self._db = db
 
 class ArticleDecorator(BaseDecorator):
-    def __init__(self, model: Article, db: 'LexDb'):
+    def __init__(self, model: Article, db: LexDb):
         self._model = model
         self._db = db
 
     @property
     def chapter(self):
         return self.db.find_chapter(self.chapter_no)
+
+class ParagraphDecorator(BaseDecorator):
+    def __init__(self, model: Paragraph, db: LexDb):
+        self._model = model
+        self._db = db
+
+    @property
+    def article(self):
+        return self.db.find_article(self.article_no)
+
+class PointDecorator(BaseDecorator):
+    def __init__(self, model: Point, db: LexDb):
+        self._model = model
+        self._db = db
+
+    @property
+    def paragraph(self):
+        return self.db.find_paragraph(self.paragraph_no)
+
+    @property
+    def article(self):
+        return self.db.find_article(self.article_no)
+
+class SubpointDecorator(BaseDecorator):
+    def __init__(self, model: Subpoint, db: LexDb):
+        self._model = model
+        self._db = db
+
+    @property
+    def point(self):
+        return self.db.find_point(self.point_no)
 
 class LexDb:
     def __init__(
@@ -48,16 +81,16 @@ class LexDb:
         return [ArticleDecorator(article, db=self) for article in self._articles]
 
     @property
-    def paragraphs(self) -> List[Paragraph]:
-        return self._paragraphs
+    def paragraphs(self) -> List[ParagraphDecorator]:
+        return [ParagraphDecorator(paragraph, db=self) for paragraph in self._paragraphs]
 
     @property
-    def points(self) -> List[Point]:
-        return self._points
+    def points(self) -> List[PointDecorator]:
+        return [PointDecorator(point, db=self) for point in self._points]
 
     @property
-    def subpoints(self) -> List[Subpoint]:
-        return self._subpoints
+    def subpoints(self) -> List[SubpointDecorator]:
+        return [SubpointDecorator(subpoint, db=self) for subpoint in self._subpoints]
 
     @classmethod
     def from_parser(cls, parser: Parser):
@@ -69,10 +102,6 @@ class LexDb:
             subpoints=parser.subpoints
         )
 
-    # @property
-    # def chapters(self) -> List[ChapterDecorator]:
-    #     return [ChapterDecorator(chapter, db=self) for chapter in self._chapters]
-
 if __name__ == '__main__':
     from rich.pretty import pprint
 
@@ -81,5 +110,3 @@ if __name__ == '__main__':
         parser.parse(file)
 
     db = LexDb.from_parser(parser)
-
-    # registry.chapters
