@@ -19,28 +19,46 @@ class BaseDecorator:
             return None
 
     @property
-    def articles(self):
-        return self._db.articles_by(**self.id)
-
-    @property
-    def points(self):
-        return self._db.points_by(**self.id)
-
-    @property
-    def paragraphs(self):
-        return self._db.paragraphs_by(**self.id)
-
-    @property
-    def paragraph(self):
-        return self.db.find_paragraph(self.paragraph_no)
-
-    @property
     def article(self):
-        return self.db.find_article(self.article_no)
+        try:
+            return self._db.articles_by(article_no=self.article_no)[0]
+        except IndexError:
+            return None
 
     @property
-    def point(self):
-        return self.db.find_point(self.point_no)
+    def articles(self):
+        return self._db.articles_by(article_no=self.article_no)
+
+    # @property
+    # def paragraphs(self):
+    #     return self._db.paragraphs_by(**self.id)
+    #
+    # @property
+    # def points(self):
+    #     return self._db.points_by(**self.id)
+    #
+    # @property
+    # def subpoints(self):
+    #     return self._db.subpoints_by(**self.id)
+    #
+    # @property
+    # def paragraph(self):
+    #     try:
+    #         filter = dict(chapter_no=self.chapter_no)
+    #
+    #         if self.article_no:
+    #             filter['article_no'] = self.article_no
+    #
+    #         return self._db.paragraphs_by(filter)[0]
+    #     except IndexError:
+    #         return None
+    #
+    # @property
+    # def point(self):
+    #     try:
+    #         return self._db.points_by(chapter_no=self.chapter_no)[0]
+    #     except IndexError:
+    #         return None
 
 def matches_filter(model: BaseDecorator, filter: dict[str, str]) -> bool:
     for key, value in filter.items():
@@ -56,25 +74,79 @@ class ChapterDecorator(BaseDecorator):
         self._model = model
         self._db = db
 
+    @property
+    def articles(self):
+        return self._db.articles_by(chapter_no=self.chapter_no)
+
+    @property
+    def paragraphs(self):
+        return self._db.paragraphs_by(chapter_no=self.chapter_no)
+
 class ArticleDecorator(BaseDecorator):
     def __init__(self, model: Article, db: LexDb):
         self._model = model
         self._db = db
+
+    @property
+    def parent(self):
+        return self.chapter
+
+    @property
+    def paragraphs(self):
+        return self._db.paragraphs_by(article_no=self.article_no)
+
+    @property
+    def points(self):
+        return self._db.points_by(article_no=self.article_no)
+
+    @property
+    def subpoints(self):
+        return self._db.subpoints_by(article_no=self.article_no)
 
 class ParagraphDecorator(BaseDecorator):
     def __init__(self, model: Paragraph, db: LexDb):
         self._model = model
         self._db = db
 
+    @property
+    def parent(self):
+        # articles are optional, paragraphs can be attached to chapters directly
+        if self.article_no:
+            return self.article
+        else:
+            return self.chapter
+
 class PointDecorator(BaseDecorator):
     def __init__(self, model: Point, db: LexDb):
         self._model = model
         self._db = db
 
+    @property
+    def parent(self):
+
+        # paragraphs are optional, points can be attached to articles directly
+        if self.paragraph_no:
+            return self._db.paragraphs_by(
+                article_no=self.article_no,
+                paragraph_no=self.paragraph_no
+            )
+        else:
+            return self.article
+
 class SubpointDecorator(BaseDecorator):
     def __init__(self, model: Subpoint, db: LexDb):
         self._model = model
         self._db = db
+
+    @property
+    def parent(self):
+        filter = dict(article_no=self.article_no)
+
+        # paragraphs are optional, points can be attached to articles directly
+        if self.paragraph_no:
+            filter['paragraph_no'] = self.paragraph_no
+
+        return self._db.points_by(**filter)
 
 class LexDb:
     def __init__(
@@ -112,20 +184,20 @@ class LexDb:
     def subpoints(self) -> List[SubpointDecorator]:
         return [SubpointDecorator(subpoint, db=self) for subpoint in self._subpoints]
 
-    def chapters_by(self, **filter) -> List[ChapterDecorator]:
-        return filter_by(self.chapters, **filter)
+    def chapters_by(self, **attributes) -> List[ChapterDecorator]:
+        return filter_by(self.chapters, attributes)
 
-    def articles_by(self, **filter) -> List[ArticleDecorator]:
-        return filter_by(self.articles, **filter)
+    def articles_by(self, **attributes) -> List[ArticleDecorator]:
+        return filter_by(self.articles, attributes)
 
-    def paragraphs_by(self, **filter) -> List[ParagraphDecorator]:
-        return filter_by(self.paragraphs, **filter)
+    def paragraphs_by(self, **attributes) -> List[ParagraphDecorator]:
+        return filter_by(self.paragraphs, attributes)
 
-    def points_by(self, **filter) -> List[PointDecorator]:
-        return filter_by(self.points, **filter)
+    def points_by(self, **attributes) -> List[PointDecorator]:
+        return filter_by(self.points, attributes)
 
-    def subpoints_by(self, **filter) -> List[SubpointDecorator]:
-        return filter_by(self.subpoints, **filter)
+    def subpoints_by(self, **attributes) -> List[SubpointDecorator]:
+        return filter_by(self.subpoints, attributes)
 
     @classmethod
     def from_parser(cls, parser: Parser):
@@ -144,7 +216,9 @@ if __name__ == '__main__':
     with open('data/educational-law-2024.txt', 'r') as file:
         parser.parse(file)
 
-    # db = LexDb.from_parser(parser)
+    db = LexDb.from_parser(parser)
+
+    import code; code.interact(local=dict(globals(), **locals()))
     # paragraph = db.find_paragraphs(chapter_no='10', article_no='')
     #
     # pprint(paragraph)

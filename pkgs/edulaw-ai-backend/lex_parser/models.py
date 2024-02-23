@@ -8,10 +8,6 @@ class Chapter(BaseModel):
     chapter_no: str
     text: str = ''
 
-    @property
-    def id(self):
-        return dict(chapter_no=self.chapter_no)
-
     def set_text(self, text: str):
         if self.text == '':
             self.text = text
@@ -20,10 +16,6 @@ class Article(BaseModel):
     article_no: str
     chapter_no: str
     text: str = ''
-
-    @property
-    def id(self):
-        return dict(chapter_no=self.chapter_no, article_no=self.article_no)
 
     def set_text(self, text: str):
         if self.text == '':
@@ -35,29 +27,12 @@ class Paragraph(BaseModel):
     article_no: Optional[str]
     text: str = ''  # Initialize with empty string
 
-    @property
-    def id(self):
-        return dict(
-            chapter_no=self.chapter_no,
-            article_no=self.article_no,
-            paragraph_no=self.paragraph_no
-        )
-
 class Point(BaseModel):
     point_no: str
     chapter_no: str
     article_no: Optional[str]
     paragraph_no: Optional[str]
     text: str = ''  # Initialize with empty string
-
-    @property
-    def id(self):
-        return dict(
-            chapter_no=self.chapter_no,
-            article_no=self.article_no,
-            paragraph_no=self.paragraph_no,
-            point_no=self.point_no
-        )
 
 class Subpoint(BaseModel):
     subpoint_no: str
@@ -66,16 +41,6 @@ class Subpoint(BaseModel):
     paragraph_no: str
     point_no: str
     text: str
-
-    @property
-    def id(self):
-        return dict(
-            chapter_no=self.chapter_no,
-            article_no=self.article_no,
-            paragraph_no=self.paragraph_no,
-            point_no=self.point_no,
-            subpoint_no=self.subpoint_no
-        )
 
 LexModel = Union[Chapter, Article, Paragraph, Point, Subpoint]
 
