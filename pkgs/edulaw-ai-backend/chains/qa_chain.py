@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 import os
+from operator import itemgetter
 
 from app.utils import init_supabase_vectorstore
 from langchain_core.output_parsers import StrOutputParser
@@ -32,7 +33,10 @@ opts = dict(
 )
 
 chain = (
-    {"context": store.as_retriever(), "question": RunnablePassthrough()}
+    {
+        "question": itemgetter("question"),
+        "context": itemgetter("question") | store.as_retriever()
+    }
     | prompt
     | model
     | StrOutputParser()
