@@ -1,6 +1,10 @@
 <script lang="ts">
 	import '../app.postcss';
 
+	export let data;
+	let { supabase } = data;
+	$: ({ supabase } = data);
+
 	// Highlight JS
 	//import hljs from 'highlight.js/lib/core';
 	//import 'highlight.js/styles/github-dark.css';
@@ -20,6 +24,15 @@
 	import { computePosition, autoUpdate, flip, shift, offset, arrow } from '@floating-ui/dom';
 	import { storePopup } from '@skeletonlabs/skeleton';
 	storePopup.set({ computePosition, autoUpdate, flip, shift, offset, arrow });
+
+	let userPromise = supabase.auth.getUser();
 </script>
 
+{#await userPromise}
+	<h3>Fetching user data...</h3>
+{:then user}
+	<h3>Logged in as: {JSON.stringify(user)}</h3>
+{:catch error}
+	<h3>Error: {error.message}</h3>
+{/await}
 <slot />
