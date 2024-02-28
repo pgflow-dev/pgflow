@@ -1,9 +1,8 @@
 <script lang="ts">
 	import Prompt from '$components/Prompt.svelte';
-	import { RemoteRunnable } from '@langchain/core/runnables/remote';
-	import { PUBLIC_EDULAW_URL } from '$env/static/public';
 	import { ChatPromptTemplate } from '@langchain/core/prompts';
 	import { StringOutputParser } from '@langchain/core/output_parsers';
+	import { RemoteChatOpenAI } from '$lib/remoteRunnables';
 
 	export let currentMessage: string = 'jakie prawa ma uczeń w polskiej szkole?';
 	export let inProgress: boolean;
@@ -13,10 +12,8 @@
 		inProgress = true;
 		response = '';
 
-		const modelUrl = `${PUBLIC_EDULAW_URL}/models/ChatOpenAI`;
-		const model = new RemoteRunnable({ url: modelUrl, options: { timeout: 45000 } });
-
 		const promptTemplate = ChatPromptTemplate.fromTemplate('Tell me a joke about {query}');
+		const model = RemoteChatOpenAI();
 		const chain = promptTemplate.pipe(model).pipe(new StringOutputParser());
 
 		try {

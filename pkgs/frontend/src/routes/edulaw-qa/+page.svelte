@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import Prompt from '$components/Prompt.svelte';
-	import { RemoteRunnable } from '@langchain/core/runnables/remote';
-	import { PUBLIC_EDULAW_URL } from '$env/static/public';
+	import { RemoteChain } from '$lib/remoteRunnables';
 
 	export let currentMessage: string = 'jakie prawa ma uczeń w polskiej szkole?';
 	export let inProgress: boolean;
@@ -16,8 +15,7 @@
 		timeElapsedMs = 0;
 
 		const startTime = performance.now(); // Start the timer
-		const chainUrl = `${PUBLIC_EDULAW_URL}/qa`;
-		const chain = new RemoteRunnable({ url: chainUrl, options: { timeout: 45000 } });
+		const chain = RemoteChain('qa');
 
 		// Start updating time every 10ms
 		interval = setInterval(() => {
