@@ -1,55 +1,40 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
 	import Prompt from '$components/Prompt.svelte';
 	import { RemoteRunnable } from '@langchain/core/runnables/remote';
 	import { PUBLIC_EDULAW_URL } from '$env/static/public';
+	import { ChatPromptTemplate } from '@langchain/core/prompts';
+	import { StringOutputParser } from '@langchain/core/output_parsers';
 
 	export let currentMessage: string = 'jakie prawa ma uczeń w polskiej szkole?';
 	export let inProgress: boolean;
 	let response: string = '';
-	let timeElapsedMs: number | undefined = undefined;
-	let interval: ReturnType<typeof setInterval>;
 
 	async function runChain() {
 		inProgress = true;
 		response = '';
-		timeElapsedMs = 0;
 
-		const startTime = performance.now(); // Start the timer
-		const chainUrl = `${PUBLIC_EDULAW_URL}/qa`;
-		const chain = new RemoteRunnable({ url: chainUrl, options: { timeout: 45000 } });
+		const modelUrl = `${PUBLIC_EDULAW_URL}/models/ChatOpenAI`;
+		const model = new RemoteRunnable({ url: modelUrl, options: { timeout: 45000 } });
 
-		// Start updating time every 10ms
-		interval = setInterval(() => {
-			timeElapsedMs = performance.now() - startTime;
-		}, 10);
+		const promptTemplate = ChatPromptTemplate.fromTemplate('Tell me a joke about {query}');
+		const chain = promptTemplate.pipe(model).pipe(new StringOutputParser());
 
 		try {
 			const stream = await chain.stream({ query: currentMessage });
 
-			//timeElapsedMs = performance.now() - startTime;
 			response = '';
 
 			for await (const chunk of stream) {
 				console.log('chunk', chunk);
 				if (chunk && typeof chunk === 'string') {
 					response += chunk;
-					timeElapsedMs = performance.now() - startTime;
 				}
 			}
 		} finally {
-			clearInterval(interval);
-			timeElapsedMs = performance.now() - startTime;
 			inProgress = false;
 			currentMessage = '';
 		}
 	}
-
-	onDestroy(() => {
-		if (interval) {
-			clearInterval(interval);
-		}
-	});
 </script>
 
 <div class="flex flex-col h-screen relative">
@@ -71,10 +56,4 @@
 			/>
 		</div>
 	</div>
-
-	{#if timeElapsedMs}
-		<div class="absolute bottom-0 right-0 p-4 text-xs text-gray-500 font-mono">
-			{timeElapsedMs.toFixed(0)}ms
-		</div>
-	{/if}
 </div>
