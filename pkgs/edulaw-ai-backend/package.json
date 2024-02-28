@@ -6,6 +6,6 @@
     "check": "pdm info && echo '-> Running pyright' && pdm run pyright",
     "test": "pdm run pytest --color=yes **/*_test.py",
     "test:watch": "ls **/*_test.py | entr -rc make test",
-    "dev:server": "source ./.env && pdm run langchain serve --port $HTTP_PORT"
+    "dev": "source ./.env && pdm run langchain serve --port $HTTP_PORT"
   }
 }
