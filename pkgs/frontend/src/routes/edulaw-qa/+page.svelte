@@ -16,10 +16,8 @@
 		timeElapsedMs = 0;
 
 		const startTime = performance.now(); // Start the timer
-		const chain = new RemoteRunnable({
-			url: PUBLIC_EDULAW_URL,
-			options: { timeout: 45000 }
-		});
+		const chainUrl = `${PUBLIC_EDULAW_URL}/qa`;
+		const chain = new RemoteRunnable({ url: chainUrl, options: { timeout: 45000 } });
 
 		// Start updating time every 10ms
 		interval = setInterval(() => {
