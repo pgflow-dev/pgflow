@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/stores';
 	import '../app.postcss';
 	import { AppShell, AppBar } from '@skeletonlabs/skeleton';
 	import type { User } from '@supabase/supabase-js';
@@ -14,11 +15,6 @@
 		}
 	}
 
-	// Floating UI for Popups
-	import { computePosition, autoUpdate, flip, shift, offset, arrow } from '@floating-ui/dom';
-	import { storePopup } from '@skeletonlabs/skeleton';
-	storePopup.set({ computePosition, autoUpdate, flip, shift, offset, arrow });
-
 	function signOut() {
 		supabase.auth.signOut();
 		user = null;
@@ -29,6 +25,9 @@
 		['Skeleton Chat Layout', '/spikes/chat-layout'],
 		['Langchain chat with memory', '/spikes/chat-with-simple-memory']
 	];
+
+	let activePath: string;
+	$: activePath = $page.url.pathname;
 </script>
 
 <AppShell>
@@ -40,9 +39,7 @@
 
 			<div class="flex flex-row gap-6 w-full ml-4">
 				{#each links as [label, path]}
-					<span>
-						<a href={path}>{label}</a>
-					</span>
+					<a href={path} class={path == activePath ? 'font-bold text-red-500' : ''}>{label}</a>
 				{/each}
 			</div>
 
