@@ -15,7 +15,7 @@
 		timeElapsedMs = 0;
 
 		const startTime = performance.now(); // Start the timer
-		const chain = RemoteChain('qa');
+		const chain = RemoteChain('hierarchical-qa', { timeout: 30000 });
 
 		// Start updating time every 10ms
 		interval = setInterval(() => {
