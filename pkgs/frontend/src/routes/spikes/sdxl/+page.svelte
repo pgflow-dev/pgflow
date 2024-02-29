@@ -11,7 +11,7 @@
 	}
 </script>
 
-<div class="flex flex-col container justify-center items-center">
+<div class="flex flex-col container justify-center items-center h-full">
 	<div class="m-8 container">
 		<Prompt
 			bind:value={storyPrompt}

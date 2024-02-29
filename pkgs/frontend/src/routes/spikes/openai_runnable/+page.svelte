@@ -34,7 +34,7 @@
 	}
 </script>
 
-<div class="flex flex-col h-screen relative">
+<div class="flex flex-col h-full relative">
 	<div class="flex-grow flex items-end justify-center">
 		<div class="w-full flex justify-center p-4">
 			<div class="w-3/4 text-justify overflow-hidden">

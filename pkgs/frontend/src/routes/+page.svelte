@@ -4,7 +4,7 @@
 	let currentDate = new Date();
 	let interval: ReturnType<typeof setInterval>;
 
-	const formatter = new Intl.DateTimeFormat('en-US', {
+	const formatter = new Intl.DateTimeFormat('pl-PL', {
 		hour: '2-digit',
 		minute: '2-digit',
 		second: '2-digit',
@@ -25,6 +25,6 @@
 	});
 </script>
 
-<div class="flex justify-center items-center h-screen">
-	<pre>{formattedDate}</pre>
+<div class="flex justify-center items-center h-full">
+	<span class="font-bold text-xl font-mono">{formattedDate}</span>
 </div>
