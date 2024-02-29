@@ -23,6 +23,12 @@
 		supabase.auth.signOut();
 		user = null;
 	}
+
+	const links = [
+		['Edulaw QA', '/edulaw-qa'],
+		['Skeleton Chat Layout', '/spikes/chat-layout'],
+		['Langchain chat with memory', '/spikes/chat-with-simple-memory']
+	];
 </script>
 
 <AppShell>
@@ -31,6 +37,14 @@
 			<svelte:fragment slot="lead">
 				<h3 class="h3">Feedwise</h3>
 			</svelte:fragment>
+
+			<div class="flex flex-row gap-6 w-full ml-4">
+				{#each links as [label, path]}
+					<span>
+						<a href={path}>{label}</a>
+					</span>
+				{/each}
+			</div>
 
 			<svelte:fragment slot="trail">
 				{#if user}
