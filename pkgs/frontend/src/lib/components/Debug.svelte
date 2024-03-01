@@ -8,7 +8,7 @@
 		<span class="font-bold h4">{label}</span>
 	{/if}
 
-	<pre class="whitespace-pre p-4 overflow-x-auto">
+	<pre class="whitespace-pre-wrap p-4 overflow-x-auto">
 		{JSON.stringify(value, null, 2).trimStart()}
 	</pre>
 </div>

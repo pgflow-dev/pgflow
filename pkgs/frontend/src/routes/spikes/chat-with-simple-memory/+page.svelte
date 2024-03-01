@@ -1,12 +1,13 @@
 <script lang="ts">
-	// import ChatPage from '$lib/components/ChatPage.svelte';
-	// import type { ChatMessage } from '$lib/chatTypes';
+	// import ChatPage from '$components/ChatPage.svelte';
+	// import type { BaseMessage } from '$lib/chatTypes';
+	import type { StoredMessage } from '@langchain/core/messages';
 	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
 	import { RemoteChatOpenAI } from '$lib/remoteRunnables';
-	// import { HumanMessage, AIMessage } from '@langchain/core/messages';
 	import { ChatMessageHistory } from '@langchain/community/stores/message/in_memory';
 	import { RunnableWithMessageHistory } from '@langchain/core/runnables';
-	import Prompt from '$lib/components/Prompt.svelte';
+	import Prompt from '$components/Prompt.svelte';
+	// import Debug from '$components/Debug.svelte';
 
 	const prompt = ChatPromptTemplate.fromMessages([
 		['system', "You're an assistant who's good at answering questions."],
@@ -28,7 +29,7 @@
 	});
 
 	let currentMessage: string = '';
-	// let messages: ChatMessage[] = [];
+	let messages: StoredMessage[] = [];
 
 	let output = '';
 	let inProgress = false;
@@ -39,13 +40,17 @@
 			{ question: currentMessage },
 			{ configurable: { sessionId: 'test' } }
 		)) as string;
+		messages = (await chatMessageHistory.getMessages()).map((m) => {
+			return m.toDict();
+		});
+		console.log('output', output);
 		currentMessage = '';
 		inProgress = false;
 	}
 </script>
 
 <div class="flex justify-center items-center flex-col">
-	<div class="mx-auto w-3/4">
+	<div class="mx-auto w-3/4 pb-8">
 		<Prompt
 			bind:value={currentMessage}
 			bind:inProgress
@@ -55,9 +60,10 @@
 		/>
 	</div>
 
-	<div class="w-3/4 h-full">
-		{#if output}
-			<pre class="whitespace-pre-wrap break-words">{JSON.stringify(output, null, 2)}</pre>
-		{/if}
+	<div class="grid grid-cols-[auto_1fr] gap-2 w-full md:w-3/4">
+		{#each messages as message}
+			<div class="font-bold">{message.type.toUpperCase()}:</div>
+			<div class="">{message.data.content}</div>
+		{/each}
 	</div>
 </div>
