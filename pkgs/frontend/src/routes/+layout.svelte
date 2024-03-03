@@ -22,8 +22,9 @@
 
 	const links = [
 		['Edulaw QA', '/edulaw-qa'],
-		['Skeleton Chat Layout', '/spikes/chat-layout'],
-		['Langchain chat with memory', '/spikes/chat-with-simple-memory']
+		['Chat Layout', '/spikes/chat-layout'],
+		['Chat (simple memory)', '/spikes/chat-with-simple-memory'],
+		['Chat (vector memory)', '/spikes/chat-with-vector-memory']
 	];
 
 	let activePath: string;

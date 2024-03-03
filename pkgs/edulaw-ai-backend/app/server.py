@@ -1,3 +1,4 @@
+from app.remote_embeddings import embed_documents, embed_query
 from chains.context_relevance_test import chain as context_relevance_test
 from chains.hierarchical_retriever import chain as hierarchical_qa
 from chains.hypothetical_answers import chain as hypothetical_answers
@@ -29,8 +30,12 @@ add_routes(app, context_relevance_test, path='/context-relevance')
 add_routes(app, qa_chain, path='/qa')
 add_routes(app, hierarchical_qa, path='/hierarchical-qa')
 
-# utility/authenticated
+# models
 add_routes(app, ChatOpenAI(model="gpt-3.5-turbo-1106"), path='/models/ChatOpenAI')
+
+# embeddings
+add_routes(app, embed_query, path='/embed_query')
+add_routes(app, embed_documents, path='/embed_documents')
 
 @app.get("/")
 async def redirect_root_to_docs():
