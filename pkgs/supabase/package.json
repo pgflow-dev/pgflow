@@ -1,6 +1,9 @@
 {
   "name": "backend",
   "license": "UNLICENSED",
+  "scripts": {
+    "gen-types": "supabase gen types typescript --local --schema public --schema auth --schema acl --schema storage --schema realtime > types.d.ts"
+  },
   "devDependencies": {
     "supabase": "^1.127.4"
   }

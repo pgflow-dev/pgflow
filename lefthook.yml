@@ -60,4 +60,4 @@ pre-commit:
       root: "pkgs/supabase/"
       glob: "*.sql"
       run: |
-        node_modules/.bin/supabase gen types typescript --local > types.d.ts && git add types.d.ts
+        pnpm gen-types && git add types.d.ts
