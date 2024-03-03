@@ -12,6 +12,7 @@
 	import { VectorStoreRetrieverMemory } from 'langchain/memory';
 	import { RunnableSequence } from '@langchain/core/runnables';
 	import { RemoteEmbeddings } from '$lib/remoteEmbeddings';
+	// import { StringOutputParser } from '@langchain/core/output_parsers';
 
 	const prompt = ChatPromptTemplate.fromMessages([
 		['system', "You're an assistant who's good at answering questions."],
@@ -28,6 +29,18 @@
 		outputKey: 'output',
 		memoryKey: 'history'
 	});
+
+	// const vectorQueriesPrompt = ChatPromptTemplate.fromMessages([
+	// 	[
+	// 		'system',
+	// 		"You're an assistant who's good at creating queries to the vector store and increase the hit ratio for good context. You must create a query that will best emulate potential content that could be relevant to the user query. create 5 queries, separated by newlines. do not mention context, but make sure it is relevant."
+	// 	],
+	// 	['human', '{query}']
+	// ]);
+	// const vectorQueriesChain = vectorQueriesPrompt
+	// 	.pipe(model)
+	// 	.pipe(new StringOutputParser())
+	// 	.pipe((lines) => lines.split('\n'));
 
 	const chain = RunnableSequence.from([
 		{
