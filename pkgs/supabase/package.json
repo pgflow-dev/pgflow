@@ -2,7 +2,8 @@
   "name": "backend",
   "license": "UNLICENSED",
   "scripts": {
-    "gen-types": "supabase gen types typescript --local --schema public --schema auth --schema acl --schema storage --schema realtime > types.d.ts"
+    "gen-types": "supabase gen types typescript --local --schema public --schema auth --schema acl --schema storage > types.d.ts",
+    "deno": "deno cache --config functions/deno.json"
   },
   "devDependencies": {
     "supabase": "^1.127.4"
