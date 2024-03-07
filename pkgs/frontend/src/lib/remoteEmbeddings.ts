@@ -12,10 +12,10 @@ export class RemoteEmbeddings implements EmbeddingsInterface {
 	//  * which will thus benefit from the concurrency and retry logic.
 	//  */
 	// caller: AsyncCaller;
-	constructor(params: EmbeddingsParams) {
+	constructor(params: EmbeddingsParams, authToken: string) {
 		this.params = params;
-		this._embedQueryChain = RemoteChain('embed_query', { timeout: 5000 });
-		this._embedDocumentsChain = RemoteChain('embed_documents', { timeout: 30000 });
+		this._embedQueryChain = RemoteChain('embed_query', authToken, { timeout: 10000 });
+		this._embedDocumentsChain = RemoteChain('embed_documents', authToken, { timeout: 30000 });
 	}
 
 	/**

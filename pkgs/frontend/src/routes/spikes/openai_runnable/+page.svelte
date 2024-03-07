@@ -8,12 +8,21 @@
 	export let inProgress: boolean;
 	let response: string = '';
 
+	import type { PageData } from './$types';
+	export let data: PageData;
+	let {
+		session: { access_token: authToken }
+	} = data;
+	$: ({
+		session: { access_token: authToken }
+	} = data);
+
 	async function runChain() {
 		inProgress = true;
 		response = '';
 
 		const promptTemplate = ChatPromptTemplate.fromTemplate('Tell me a joke about {query}');
-		const model = RemoteChatOpenAI();
+		const model = RemoteChatOpenAI(authToken, { timeout: 30000 });
 		const chain = promptTemplate.pipe(model).pipe(new StringOutputParser());
 
 		try {

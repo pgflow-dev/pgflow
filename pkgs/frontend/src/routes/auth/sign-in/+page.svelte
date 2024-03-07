@@ -14,20 +14,21 @@
 	async function signInWithEmail() {
 		inProgress = true;
 
-		const { data, error } = await supabase.auth.signInWithOtp({
+		const { data: _data, error } = await supabase.auth.signInWithOtp({
 			email: email,
 			options: {
 				shouldCreateUser: true,
 				emailRedirectTo: 'http://localhost:5173/'
 			}
 		});
+		console.log('_data', _data);
 
 		if (error) {
 			throw error;
 		}
 
 		linkSent = true;
-		return data;
+		return _data;
 	}
 </script>
 
