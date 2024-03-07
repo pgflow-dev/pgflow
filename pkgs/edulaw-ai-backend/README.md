@@ -23,3 +23,11 @@ Make sure to copy `.env.example` to `.env` and customize env vars properly
 ```python
 import code; code.interact(local=dict(globals(), **locals()))
 ```
+
+### Shell tips and tricks
+
+Split text file evenly to 3 parts, spliting on newlines.
+
+```fish
+split -n l/3 --additional-suffix=.txt data/educational-law-2024.txt data/edulaw-2024-third-
+```
