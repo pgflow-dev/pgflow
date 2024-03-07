@@ -9,6 +9,7 @@ from chains.qa_chain import chain as qa_chain
 from fastapi import FastAPI, Header, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
+from langchain_groq import ChatGroq
 from langchain_openai.chat_models import ChatOpenAI
 from langserve import add_routes
 
@@ -34,6 +35,8 @@ add_routes(app, hierarchical_qa, path='/hierarchical-qa')
 
 # models
 add_routes(app, ChatOpenAI(model="gpt-3.5-turbo-1106"), path='/models/ChatOpenAI')
+add_routes(app, ChatGroq(model="mixtral-8x7b-32768"), path='/models/ChatGroq/mixtral-8x7b')
+add_routes(app, ChatGroq(model="llama2-70b-4096"), path='/models/ChatGroq/llama2-70b')
 
 # embeddings
 add_routes(app, embed_query, path='/embed_query')
