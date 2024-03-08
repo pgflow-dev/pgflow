@@ -4,17 +4,18 @@ from typing import Union
 from app.prefixed_embeddings import PrefixedEmbeddings
 from dotenv import load_dotenv
 from langchain_community.vectorstores.supabase import SupabaseVectorStore
-from supabase.client import Client, ClientOptions, create_client
+from supabase.client import Client, create_client
 
 
 def init_supabase_client(auth_token: Union[str, None] = None) -> Client:
     load_dotenv()
 
+    client = create_client(os.environ['SUPABASE_URL'], os.environ['SUPABASE_KEY'])
+
     if auth_token:
-        return create_client(os.environ['SUPABASE_URL'], auth_token)
+        client.auth.set_session(access_token=auth_token, refresh_token='')
 
-    return create_client(os.environ['SUPABASE_URL'], os.environ['SUPABASE_KEY'])
-
+    return client
 
 def init_supabase_vectorstore(
         supabase: Client = init_supabase_client(),

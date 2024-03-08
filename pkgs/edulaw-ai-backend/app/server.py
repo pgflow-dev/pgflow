@@ -1,6 +1,7 @@
 from typing import Awaitable, Callable
 
 from app.remote_embeddings import embed_documents, embed_query
+from app.utils import init_supabase_client
 from chains.context_relevance_test import chain as context_relevance_test
 from chains.hierarchical_retriever import chain as hierarchical_qa
 from chains.hypothetical_answers import chain as hypothetical_answers
@@ -45,17 +46,6 @@ add_routes(app, embed_documents, path='/embed_documents')
 @app.get("/")
 async def redirect_root_to_docs():
     return RedirectResponse("/docs")
-
-import json
-
-from app.utils import init_supabase_client
-
-
-@app.get("/is-superadmin")
-async def is_superadmin(authorization: str = Header(None)):
-    supabase = init_supabase_client(auth_token=authorization)
-    response = supabase.rpc('is_superadmin', {}).execute()
-    return response.data
 
 @app.middleware("http")
 async def superadmin_check_middleware(request: Request, call_next: Callable[[Request], Awaitable[Response]]):
