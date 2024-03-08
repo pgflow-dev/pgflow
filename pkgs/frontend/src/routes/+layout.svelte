@@ -1,26 +1,12 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import '../app.postcss';
 	import { AppShell, AppBar } from '@skeletonlabs/skeleton';
-	import type { User } from '@supabase/supabase-js';
-
-	let user: User | null;
+	import AuthIndicator from '$lib/components/AuthIndicator.svelte';
 
 	export let data;
 	let { supabase, session } = data;
 	$: ({ supabase, session } = data);
-	$: {
-		if (session) {
-			user = session.user;
-		}
-	}
-
-	function signOut() {
-		supabase.auth.signOut();
-		user = null;
-		goto('/');
-	}
 
 	const links = [
 		['Edulaw QA', '/edulaw-qa'],
@@ -47,13 +33,7 @@
 			</div>
 
 			<svelte:fragment slot="trail">
-				{#if user}
-					<span class="font-bold">{user.email}</span>
-
-					<button class="btn btn-sm variant-soft-warning" on:click={signOut}>Sign out</button>
-				{:else}
-					<a class="btn btn-sm variant-filled" href="/auth/sign-in">Sign in</a>
-				{/if}
+				<AuthIndicator {supabase} {session} />
 			</svelte:fragment>
 		</AppBar>
 	</svelte:fragment>
