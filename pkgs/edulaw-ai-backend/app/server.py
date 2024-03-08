@@ -7,7 +7,7 @@ from chains.hierarchical_retriever import chain as hierarchical_qa
 from chains.hypothetical_answers import chain as hypothetical_answers
 from chains.naive_retrieval import chain as naive_retrieval
 from chains.qa_chain import chain as qa_chain
-from fastapi import FastAPI, Header, Request, Response
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from langchain_groq import ChatGroq
