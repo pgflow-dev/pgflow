@@ -6,6 +6,7 @@ create table if not exists acl.superadmin_emails
 );
 
 -- postgres function that checks if current signed in user's email is present in superadmin_emails table
+drop function if exists public.is_superadmin();
 create or replace function public.is_superadmin()
 returns boolean as $$
 begin

@@ -77,6 +77,7 @@ async def superadmin_check_middleware(request: Request, call_next: Callable[[Req
     print("Initializing Supabase client")
 
     try:
+        from rich.pretty import pprint
         supabase = init_supabase_client(auth_token)
 
         # Log the step of calling supabase.rpc
@@ -84,8 +85,7 @@ async def superadmin_check_middleware(request: Request, call_next: Callable[[Req
 
         response = supabase.rpc('is_superadmin', {}).execute()
 
-        from rich.pretty import pprint
-        pprint(dict(auth_token=auth_token, response=response))
+        pprint(response)
 
         # Check if the response has data and it's True
         if response.data and response.data == True:

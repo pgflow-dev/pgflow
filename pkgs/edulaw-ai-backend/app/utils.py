@@ -11,10 +11,7 @@ def init_supabase_client(auth_token: Union[str, None] = None) -> Client:
     load_dotenv()
 
     if auth_token:
-        options = ClientOptions(
-            headers={'Authorization': f"Bearer {auth_token}"}
-        )
-        return create_client(os.environ['SUPABASE_URL'], os.environ['SUPABASE_KEY'], options)
+        return create_client(os.environ['SUPABASE_URL'], auth_token)
 
     return create_client(os.environ['SUPABASE_URL'], os.environ['SUPABASE_KEY'])
 
