@@ -1,6 +1,6 @@
 import type { EmbeddingsInterface, EmbeddingsParams } from '@langchain/core/embeddings';
 import { RemoteChain } from '$lib/remoteRunnables';
-import { Runnable } from 'langchain/runnables';
+import { Runnable } from '@langchain/core/runnables';
 
 export class RemoteEmbeddings implements EmbeddingsInterface {
 	params: EmbeddingsParams;
