@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import '../app.postcss';
 	import { AppShell, AppBar } from '@skeletonlabs/skeleton';
@@ -18,6 +19,7 @@
 	function signOut() {
 		supabase.auth.signOut();
 		user = null;
+		goto('/');
 	}
 
 	const links = [
