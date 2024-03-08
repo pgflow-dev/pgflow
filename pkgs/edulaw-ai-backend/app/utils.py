@@ -32,7 +32,7 @@ def init_supabase_vectorstore(
         query_name=query_name,
     )
 
-def authorize_superadmin(request: Request):
+def authorize_superadmin(request: Request) -> tuple[bool, str]:
     auth_token_header = request.headers.get("Authorization")
 
     if not auth_token_header or not auth_token_header.startswith("Bearer "):
