@@ -9,7 +9,7 @@
 	$: ({ supabase, session } = data);
 
 	const links = [
-		['Edulaw QA', '/edulaw-qa'],
+		['Edulaw QA', '/spikes/edulaw-qa'],
 		['Chat (layout)', '/spikes/chat-layout'],
 		['Chat (simple)', '/spikes/chat-with-simple-memory'],
 		['Chat (vector)', '/spikes/chat-with-vector-memory']
@@ -23,7 +23,7 @@
 	<svelte:fragment slot="header">
 		<AppBar>
 			<svelte:fragment slot="lead">
-				<h3 class="h3">Feedwise</h3>
+				<a class="h3" href="/">Feedwise</a>
 			</svelte:fragment>
 
 			<div class="flex flex-row gap-6 w-full ml-4">
