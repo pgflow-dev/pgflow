@@ -3,6 +3,7 @@ from typing import Union
 
 from app.prefixed_embeddings import PrefixedEmbeddings
 from dotenv import load_dotenv
+from fastapi import Request
 from langchain_community.vectorstores.supabase import SupabaseVectorStore
 from supabase.client import Client, create_client
 
@@ -30,3 +31,20 @@ def init_supabase_vectorstore(
         table_name=table_name,
         query_name=query_name,
     )
+
+def authorize_superadmin(request: Request):
+    auth_token_header = request.headers.get("Authorization")
+
+    if not auth_token_header or not auth_token_header.startswith("Bearer "):
+        return (False, "Authorization header is missing or invalid")
+
+    # Remove "Bearer " prefix
+    auth_token = auth_token_header[7:]
+
+    supabase = init_supabase_client(auth_token)
+    response = supabase.rpc('is_superadmin', {}).execute()
+
+    if response.data and response.data == True:
+        return (True, "User is superadmin")
+    else:
+        return (False, "User is NOT superadmin")
