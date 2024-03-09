@@ -2,24 +2,12 @@
 	import { goto } from '$app/navigation';
 	import type { User } from '@supabase/supabase-js';
 	import { supabase } from '$lib/supabaseClient';
-	import type { Session } from '@supabase/supabase-js';
 
-	export let session: Session;
+	export let user: User;
 	export let isSuperadmin: boolean;
-
-	let user: User | null;
-	if (session?.user) {
-		({ user } = session);
-	}
-	$: {
-		if (session?.user) {
-			({ user } = session);
-		}
-	}
 
 	function signOut() {
 		supabase.auth.signOut();
-		user = null;
 		goto('/');
 	}
 </script>

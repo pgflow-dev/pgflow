@@ -13,8 +13,14 @@
 	];
 
 	export let data;
-	let { session, isSuperadmin } = data;
-	$: ({ session, isSuperadmin } = data);
+	let {
+		session: { user },
+		isSuperadmin
+	} = data;
+	$: ({
+		session: { user },
+		isSuperadmin
+	} = data);
 
 	let activePath: string;
 	$: activePath = $page.url.pathname;
@@ -37,7 +43,7 @@
 			{/if}
 
 			<svelte:fragment slot="trail">
-				<AuthIndicator {session} {isSuperadmin} />
+				<AuthIndicator {user} {isSuperadmin} />
 			</svelte:fragment>
 		</AppBar>
 	</svelte:fragment>
