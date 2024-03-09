@@ -14,23 +14,18 @@
 	import { RemoteEmbeddings } from '$lib/remoteEmbeddings';
 	// import { StringOutputParser } from '@langchain/core/output_parsers';
 
-	import type { PageData } from './$types';
-	export let data: PageData;
-	let {
-		session: { access_token: authToken }
-	} = data;
-	$: ({
-		session: { access_token: authToken }
-	} = data);
+	export let data;
+	let { session } = data;
+	$: ({ session } = data);
 
 	const prompt = ChatPromptTemplate.fromMessages([
 		['system', "You're an assistant who's good at answering questions."],
 		new MessagesPlaceholder('history'),
 		['human', '{query}']
 	]);
-	const model = RemoteChatOpenAI(authToken, { timeout: 30000 });
+	const model = RemoteChatOpenAI(session, { timeout: 30000 });
 
-	const remoteEmbeddings = new RemoteEmbeddings({}, authToken);
+	const remoteEmbeddings = new RemoteEmbeddings({}, session);
 	const vectorStore = new MemoryVectorStore(remoteEmbeddings);
 	const memory = new VectorStoreRetrieverMemory({
 		vectorStoreRetriever: vectorStore.asRetriever(),

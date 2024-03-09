@@ -1,6 +1,7 @@
 import type { EmbeddingsInterface, EmbeddingsParams } from '@langchain/core/embeddings';
 import { RemoteChain } from '$lib/remoteRunnables';
 import { Runnable } from '@langchain/core/runnables';
+import type { Session } from '@supabase/supabase-js';
 
 export class RemoteEmbeddings implements EmbeddingsInterface {
 	params: EmbeddingsParams;
@@ -12,10 +13,10 @@ export class RemoteEmbeddings implements EmbeddingsInterface {
 	//  * which will thus benefit from the concurrency and retry logic.
 	//  */
 	// caller: AsyncCaller;
-	constructor(params: EmbeddingsParams, authToken: string) {
+	constructor(params: EmbeddingsParams, session: Session) {
 		this.params = params;
-		this._embedQueryChain = RemoteChain('embed_query', authToken, { timeout: 10000 });
-		this._embedDocumentsChain = RemoteChain('embed_documents', authToken, { timeout: 30000 });
+		this._embedQueryChain = RemoteChain('embed_query', session, { timeout: 10000 });
+		this._embedDocumentsChain = RemoteChain('embed_documents', session, { timeout: 30000 });
 	}
 
 	/**

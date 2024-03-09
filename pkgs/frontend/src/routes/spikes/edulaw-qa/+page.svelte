@@ -7,14 +7,6 @@
 	let { session } = data;
 	$: ({ session } = data);
 
-	let authToken: string;
-
-	$: {
-		if (session?.access_token) {
-			authToken = session.access_token;
-		}
-	}
-
 	export let currentMessage: string = 'jakie prawa ma uczeń w polskiej szkole?';
 	export let inProgress: boolean;
 	let response: string = '';
@@ -27,7 +19,7 @@
 		timeElapsedMs = 0;
 
 		const startTime = performance.now(); // Start the timer
-		const chain = RemoteChain('hierarchical-qa', authToken, { timeout: 30000 });
+		const chain = RemoteChain('hierarchical-qa', session, { timeout: 30000 });
 
 		// Start updating time every 10ms
 		interval = setInterval(() => {

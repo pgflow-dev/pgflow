@@ -11,19 +11,15 @@
 
 	import type { PageData } from './$types';
 	export let data: PageData;
-	let {
-		session: { access_token: authToken }
-	} = data;
-	$: ({
-		session: { access_token: authToken }
-	} = data);
+	let { session } = data;
+	$: ({ session } = data);
 
 	const prompt = ChatPromptTemplate.fromMessages([
 		['system', "You're an assistant who's good at answering questions."],
 		new MessagesPlaceholder('history'),
 		['human', '{question}']
 	]);
-	const model = RemoteChatOpenAI(authToken, { timeout: 30000 });
+	const model = RemoteChatOpenAI(session, { timeout: 30000 });
 	const chain = prompt.pipe(model);
 
 	const chatMessageHistory = new ChatMessageHistory();

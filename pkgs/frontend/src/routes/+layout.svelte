@@ -12,7 +12,8 @@
 		['Edulaw QA', '/spikes/edulaw-qa'],
 		['Chat (layout)', '/spikes/chat-layout'],
 		['Chat (simple)', '/spikes/chat-with-simple-memory'],
-		['Chat (vector)', '/spikes/chat-with-vector-memory']
+		['Chat (vector)', '/spikes/chat-with-vector-memory'],
+		['createChatRunner', '/spikes/runnable-ui']
 	];
 
 	let activePath: string;

@@ -1,5 +1,6 @@
 import { RemoteRunnable } from '@langchain/core/runnables/remote';
 import { PUBLIC_EDULAW_URL } from '$env/static/public';
+import type { Session } from '@supabase/supabase-js';
 
 interface RemoteChainOptions {
 	timeout: number;
@@ -8,12 +9,14 @@ interface RemoteChainOptions {
 
 export function RemoteChain(
 	path: string,
-	authToken: string,
+	session: Session,
 	options: RemoteChainOptions = { timeout: 10000 }
 ) {
-	if (authToken) {
+	const { access_token } = session;
+
+	if (access_token) {
 		options.headers = {
-			Authorization: `Bearer ${authToken}`
+			Authorization: `Bearer ${access_token}`
 		};
 	}
 
@@ -24,8 +27,8 @@ export function RemoteChain(
 }
 
 export function RemoteChatOpenAI(
-	authToken: string,
+	session: Session,
 	options: RemoteChainOptions = { timeout: 10000 }
 ) {
-	return RemoteChain('models/ChatOpenAI', authToken, options);
+	return RemoteChain('models/ChatOpenAI', session, options);
 }
