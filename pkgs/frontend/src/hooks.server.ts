@@ -30,9 +30,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	};
 
 	event.locals.checkIsSuperadmin = async () => {
-		const {
-			data: { data: isSuperadmin }
-		} = await event.locals.supabase.rpc('is_superadmin', {});
+		const { data: isSuperadmin } = await event.locals.supabase.rpc('is_superadmin', {});
 
 		return isSuperadmin;
 	};
