@@ -1,6 +1,42 @@
 import type { Runnable } from '@langchain/core/runnables';
 import { writable, derived } from 'svelte/store';
-// import { BaseMessage, AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
+import { BaseMessage, HumanMessage } from '@langchain/core/messages';
+
+export function createChatWithHistoryRunner(runnable: Runnable) {
+	const inProgress = writable(false);
+	const history = writable<BaseMessage[]>([]);
+
+	async function runChain(input: string) {
+		inProgress.set(true);
+
+		try {
+			const stream = await runnable.stream({ query: input });
+
+			for await (const chunk of stream) {
+				let message: string;
+				if (chunk && typeof chunk === 'string') {
+					message = chunk;
+				} else {
+					console.log('typeof', typeof chunk);
+					console.dir(chunk);
+					message = chunk.message;
+				}
+
+				history.update(($prevHistory) => {
+					return [...$prevHistory, new HumanMessage({ content: message })];
+				});
+			}
+		} finally {
+			inProgress.set(false);
+		}
+	}
+
+	return {
+		runChain,
+		inProgress: derived(inProgress, ($inProgress) => $inProgress),
+		history: derived(history, ($history) => $history)
+	};
+}
 
 export function createChatRunner(runnable: Runnable) {
 	const inProgress = writable(false);
