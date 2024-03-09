@@ -3,6 +3,7 @@
 	import '../app.postcss';
 	import { AppShell, AppBar } from '@skeletonlabs/skeleton';
 	import AuthIndicator from '$lib/components/AuthIndicator.svelte';
+	import type { User } from '@supabase/supabase-js';
 
 	const links = [
 		['Edulaw QA', '/spikes/edulaw-qa'],
@@ -13,14 +14,25 @@
 	];
 
 	export let data;
-	let {
-		session: { user },
-		isSuperadmin
-	} = data;
-	$: ({
-		session: { user },
-		isSuperadmin
-	} = data);
+
+	let user: User | null;
+	let isSuperadmin: boolean = false;
+
+	if (data.session?.user && data.isSuperadmin) {
+		({
+			session: { user },
+			isSuperadmin
+		} = data);
+	}
+
+	$: {
+		if (data.session?.user && data.isSuperadmin) {
+			({
+				session: { user },
+				isSuperadmin
+			} = data);
+		}
+	}
 
 	let activePath: string;
 	$: activePath = $page.url.pathname;
