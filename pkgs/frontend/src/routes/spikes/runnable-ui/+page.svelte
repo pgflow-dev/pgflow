@@ -41,7 +41,7 @@
 			on:submit={() => runChain(currentMessage)}
 			label="Send"
 			placeholder="Ask a question"
-			bind:inProgress={$inProgress}
+			inProgress={$inProgress}
 		/>
 	</div>
 
