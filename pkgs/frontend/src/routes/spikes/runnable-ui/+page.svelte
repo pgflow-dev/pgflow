@@ -3,10 +3,18 @@
 	import { RemoteChatOpenAI } from '$lib/remoteRunnables';
 	import { createChatRunner } from '$lib/runnableStore';
 	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
+	import { BaseMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
+	import { StringOutputParser } from '@langchain/core/output_parsers';
+	import Prompt from '$components/Prompt.svelte';
 
 	export let data;
 	let { session } = data;
 	$: ({ session } = data);
+
+	const history = <BaseMessage[]>[
+		new SystemMessage('You are helpful assistant'),
+		new HumanMessage('Who won the world series in 2020?')
+	];
 
 	const prompt = ChatPromptTemplate.fromMessages([
 		['system', "You're an assistant who's good at answering questions."],
@@ -15,22 +23,31 @@
 	]);
 	const model = RemoteChatOpenAI(session, { timeout: 30000 });
 	const runnable = RunnableSequence.from([
-		{ input: (input) => input, history: () => ['aaa', 'bbb', 'ccc'] },
+		{ input: (input) => input, history: () => history },
 		prompt,
-		model
+		model,
+		new StringOutputParser()
 	]);
 
 	const { runChain, response, inProgress } = createChatRunner(runnable);
+
+	let currentMessage = '';
 </script>
 
-<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-	<div class="card">
-		<button on:click={() => runChain('hello')}>Run</button>
-		{#if $inProgress}***{/if}
+<div class="grid grid-cols-1 grid-rows-2 md:grid-cols-3 gap-4">
+	<div class="card col-start-2 row-start-2">
+		<Prompt
+			bind:value={currentMessage}
+			on:submit={() => runChain(currentMessage)}
+			label="Send"
+			placeholder="Ask a question"
+			bind:inProgress={$inProgress}
+		/>
 	</div>
 
-	<div class="card">
-		<h3 class="h3">Response:</h3>
-		<p>{$response}</p>
-	</div>
+	{#if $response}
+		<div class="card col-start-2 row-start-3">
+			<p>{$response}</p>
+		</div>
+	{/if}
 </div>
