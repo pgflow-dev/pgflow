@@ -7,9 +7,15 @@
 	export let session: Session;
 	export let isSuperadmin: boolean;
 
-	let user: User | null = null;
-	({ user } = session);
-	$: ({ user } = session);
+	let user: User | null;
+	if (session?.user) {
+		({ user } = session);
+	}
+	$: {
+		if (session?.user) {
+			({ user } = session);
+		}
+	}
 
 	function signOut() {
 		supabase.auth.signOut();
