@@ -13,8 +13,8 @@
 	];
 
 	export let data;
-	let { isSuperadmin } = data;
-	$: ({ isSuperadmin } = data);
+	let { session, isSuperadmin } = data;
+	$: ({ session, isSuperadmin } = data);
 
 	let activePath: string;
 	$: activePath = $page.url.pathname;
@@ -25,16 +25,19 @@
 		<AppBar>
 			<svelte:fragment slot="lead">
 				<a class="h3" href="/">Feedwise</a>
+				{#if isSuperadmin}<span class="badge variant-glass-warning">👑</span>{/if}
 			</svelte:fragment>
 
-			<div class="flex flex-row gap-6 w-full ml-4">
-				{#each links as [label, path]}
-					<a href={path} class={path == activePath ? 'font-bold text-red-500' : ''}>{label}</a>
-				{/each}
-			</div>
+			{#if isSuperadmin}
+				<div class="flex flex-row gap-6 w-full ml-4">
+					{#each links as [label, path]}
+						<a href={path} class={path == activePath ? 'font-bold text-red-500' : ''}>{label}</a>
+					{/each}
+				</div>
+			{/if}
 
 			<svelte:fragment slot="trail">
-				<AuthIndicator {isSuperadmin} />
+				<AuthIndicator {session} {isSuperadmin} />
 			</svelte:fragment>
 		</AppBar>
 	</svelte:fragment>

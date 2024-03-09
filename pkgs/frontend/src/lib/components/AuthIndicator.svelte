@@ -1,10 +1,15 @@
 <script lang="ts">
-	let user: User | null;
 	import { goto } from '$app/navigation';
 	import type { User } from '@supabase/supabase-js';
 	import { supabase } from '$lib/supabaseClient';
+	import type { Session } from '@supabase/supabase-js';
 
+	export let session: Session;
 	export let isSuperadmin: boolean;
+
+	let user: User | null = null;
+	({ user } = session);
+	$: ({ user } = session);
 
 	function signOut() {
 		supabase.auth.signOut();
