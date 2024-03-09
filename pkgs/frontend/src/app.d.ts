@@ -5,6 +5,7 @@ declare namespace App {
 	interface Locals {
 		supabase: SupabaseClient;
 		getSession(): Promise<Session | null>;
+		checkIsSuperadmin(): Promise<boolean>;
 	}
 	// interface PageData {}
 	// interface Error {}

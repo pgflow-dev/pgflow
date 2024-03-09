@@ -29,6 +29,14 @@ export const handle: Handle = async ({ event, resolve }) => {
 		return session;
 	};
 
+	event.locals.checkIsSuperadmin = async () => {
+		const {
+			data: { data: isSuperadmin }
+		} = await event.locals.supabase.rpc('is_superadmin', {});
+
+		return isSuperadmin;
+	};
+
 	return resolve(event, {
 		filterSerializedResponseHeaders(name) {
 			return name === 'content-range';

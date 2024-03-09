@@ -4,10 +4,6 @@
 	import { AppShell, AppBar } from '@skeletonlabs/skeleton';
 	import AuthIndicator from '$lib/components/AuthIndicator.svelte';
 
-	export let data;
-	let { supabase, session } = data;
-	$: ({ supabase, session } = data);
-
 	const links = [
 		['Edulaw QA', '/spikes/edulaw-qa'],
 		['Chat (layout)', '/spikes/chat-layout'],
@@ -15,6 +11,10 @@
 		['Chat (vector)', '/spikes/chat-with-vector-memory'],
 		['createChatRunner', '/spikes/runnable-ui']
 	];
+
+	export let data;
+	let { isSuperadmin } = data;
+	$: ({ isSuperadmin } = data);
 
 	let activePath: string;
 	$: activePath = $page.url.pathname;
@@ -34,7 +34,7 @@
 			</div>
 
 			<svelte:fragment slot="trail">
-				<AuthIndicator {supabase} {session} />
+				<AuthIndicator {isSuperadmin} />
 			</svelte:fragment>
 		</AppBar>
 	</svelte:fragment>

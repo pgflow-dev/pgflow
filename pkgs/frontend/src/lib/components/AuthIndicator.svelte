@@ -1,23 +1,10 @@
 <script lang="ts">
 	let user: User | null;
 	import { goto } from '$app/navigation';
-	import type { SupabaseClient, Session, User } from '@supabase/supabase-js';
+	import type { User } from '@supabase/supabase-js';
+	import { supabase } from '$lib/supabaseClient';
 
-	export let supabase: SupabaseClient;
-	export let session: Session | null;
-
-	$: if (session) {
-		user = session.user;
-	}
-
-	let isSuperadmin = false;
-
-	$: if (user) {
-		supabase.rpc('is_superadmin', {}).then((data) => {
-			console.log(data);
-			isSuperadmin = data.data;
-		});
-	}
+	export let isSuperadmin: boolean;
 
 	function signOut() {
 		supabase.auth.signOut();
