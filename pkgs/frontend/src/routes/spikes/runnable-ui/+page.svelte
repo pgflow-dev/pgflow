@@ -1,20 +1,14 @@
 <script lang="ts">
 	import { RunnableSequence } from '@langchain/core/runnables';
 	import { RemoteChatOpenAI } from '$lib/remoteRunnables';
-	import { createChatRunner } from '$lib/runnableStore';
+	import { createChatWithHistoryRunner } from '$lib/runnableStore';
 	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
-	import { BaseMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
-	import { StringOutputParser } from '@langchain/core/output_parsers';
 	import Prompt from '$components/Prompt.svelte';
+	import BaseMessageList from '$components/BaseMessageList.svelte';
 
 	export let data;
 	let { session } = data;
 	$: ({ session } = data);
-
-	const history = <BaseMessage[]>[
-		new SystemMessage('You are helpful assistant'),
-		new HumanMessage('Who won the world series in 2020?')
-	];
 
 	const prompt = ChatPromptTemplate.fromMessages([
 		['system', "You're an assistant who's good at answering questions."],
@@ -23,13 +17,12 @@
 	]);
 	const model = RemoteChatOpenAI(session, { timeout: 30000 });
 	const runnable = RunnableSequence.from([
-		{ input: (input) => input, history: () => history },
+		{ input: (input) => input, history: () => $history },
 		prompt,
-		model,
-		new StringOutputParser()
+		model
 	]);
 
-	const { runChain, response, inProgress } = createChatRunner(runnable);
+	const { runChain, history, inProgress } = createChatWithHistoryRunner(runnable);
 
 	let currentMessage = '';
 </script>
@@ -44,10 +37,6 @@
 			inProgress={$inProgress}
 		/>
 	</div>
-
-	{#if $response}
-		<div class="card col-start-2 row-start-3">
-			<p>{$response}</p>
-		</div>
-	{/if}
 </div>
+
+<BaseMessageList messagesStore={history} />
