@@ -39,6 +39,8 @@ add_routes(app, hierarchical_qa, path='/hierarchical-qa')
 add_routes(app, ChatOpenAI(model="gpt-3.5-turbo-1106"), path='/models/ChatOpenAI')
 add_routes(app, ChatGroq(model="mixtral-8x7b-32768"), path='/models/ChatGroq/mixtral-8x7b')
 add_routes(app, ChatGroq(model="llama2-70b-4096"), path='/models/ChatGroq/llama2-70b')
+add_routes(app, ChatGroq(model="gemma:2b"), path='/models/ChatGroq/gemma:2b')
+add_routes(app, ChatGroq(model="gemma:7b"), path='/models/ChatGroq/gemma:7b')
 
 import os
 
