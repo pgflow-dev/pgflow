@@ -6,6 +6,7 @@
 	import Debug from '$components/Debug.svelte';
 	import { createChatWithHistoryRunner } from '$lib/runnableStore';
 	import { RunnableSequence } from '@langchain/core/runnables';
+	import { StringOutputParser } from '@langchain/core/output_parsers';
 
 	export let data;
 	let { session } = data;
@@ -34,7 +35,8 @@
 		(input) => {
 			temp.set(input);
 			return input;
-		}
+		},
+		new StringOutputParser()
 	]);
 
 	const { runChain, inProgress, history } = createChatWithHistoryRunner(chain);
@@ -51,7 +53,7 @@
 			label="Send"
 			placeholder="Ask a question"
 		/>
-		<Debug value={$temp} />
+		<Debug label="Debug temp=" value={$temp} />
 	</div>
 
 	<BaseMessageList messagesStore={history} />

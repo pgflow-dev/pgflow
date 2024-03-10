@@ -27,7 +27,7 @@
 		}, 10);
 
 		try {
-			const stream = await chain.stream({ query: currentMessage });
+			const stream = await chain.stream(currentMessage);
 
 			//timeElapsedMs = performance.now() - startTime;
 			response = '';
