@@ -26,13 +26,10 @@ export function RemoteChain(
 	});
 }
 
-export function RemoteChatGroq(session: Session, options: RemoteChainOptions = { timeout: 10000 }) {
-	return RemoteChain('models/ChatGroq/mixtral-8x7b', session, options);
-}
-
-export function RemoteChatOpenAI(
+export function RemoteModel(
+	model: string,
 	session: Session,
 	options: RemoteChainOptions = { timeout: 10000 }
 ) {
-	return RemoteChain('models/ChatOpenAI', session, options);
+	return RemoteChain(`models/${model}`, session, options);
 }

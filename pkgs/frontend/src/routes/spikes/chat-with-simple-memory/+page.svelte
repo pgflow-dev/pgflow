@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
-	import { RemoteChatOpenAI } from '$lib/remoteRunnables';
+	import { RemoteModel } from '$lib/remoteRunnables';
 	import Prompt from '$components/Prompt.svelte';
 	import BaseMessageList from '$components/BaseMessageList.svelte';
 	import Debug from '$components/Debug.svelte';
@@ -14,13 +14,23 @@
 	import { writable } from 'svelte/store';
 	const temp = writable('');
 
+	// let modelStrings = [
+	// 	'ChatOpenAI',
+	// 	'ChatGroq/mixtral-8x7b',
+	// 	'ChatGroq/llama2-70b',
+	// 	'ChatGroq/gemma-7b',
+	// 	'ChatOllama/dolphin-mixtral'
+	// ];
+
+	const model = RemoteModel('ChatOpenAI', session, { timeout: 30000 });
+
 	const chain = RunnableSequence.from([
 		ChatPromptTemplate.fromMessages([
 			['system', "You're an assistant who's good at answering questions."],
 			new MessagesPlaceholder('history'),
 			['human', '{input}']
 		]),
-		RemoteChatOpenAI(session, { timeout: 30000 }),
+		model,
 		(input) => {
 			temp.set(input);
 			return input;

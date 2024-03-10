@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { RunnableSequence } from '@langchain/core/runnables';
-	import { RemoteChatOpenAI } from '$lib/remoteRunnables';
+	import { RemoteModel } from '$lib/remoteRunnables';
 	import { createChatWithHistoryRunner } from '$lib/runnableStore';
 	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
 	import Prompt from '$components/Prompt.svelte';
@@ -15,7 +15,7 @@
 		new MessagesPlaceholder('history'),
 		['human', '{input}']
 	]);
-	const model = RemoteChatOpenAI(session, { timeout: 30000 });
+	const model = RemoteModel('ChatOllama/dolphin-mixtral', session, { timeout: 30000 });
 	const runnable = RunnableSequence.from([
 		{ input: (input) => input, history: () => $history },
 		prompt,

@@ -3,7 +3,7 @@
 	// import type { BaseMessage } from '$lib/chatTypes';
 	import type { StoredMessage } from '@langchain/core/messages';
 	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
-	import { RemoteChatOpenAI } from '$lib/remoteRunnables';
+	import { RemoteModel } from '$lib/remoteRunnables';
 	// import { ChatMessageHistory } from '@langchain/community/stores/message/in_memory';
 	// import { RunnableWithMessageHistory } from '@langchain/core/runnables';
 	import Prompt from '$components/Prompt.svelte';
@@ -23,7 +23,7 @@
 		new MessagesPlaceholder('history'),
 		['human', '{query}']
 	]);
-	const model = RemoteChatOpenAI(session, { timeout: 30000 });
+	const model = RemoteModel('ChatOllama/dolphin-mixtral', session, { timeout: 30000 });
 
 	const remoteEmbeddings = new RemoteEmbeddings({}, session);
 	const vectorStore = new MemoryVectorStore(remoteEmbeddings);
