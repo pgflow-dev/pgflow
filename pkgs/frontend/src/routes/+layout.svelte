@@ -43,7 +43,6 @@
 		<AppBar>
 			<svelte:fragment slot="lead">
 				<a class="h3" href="/">Feedwise</a>
-				{#if isSuperadmin}<span class="badge variant-glass-warning">👑</span>{/if}
 			</svelte:fragment>
 
 			{#if isSuperadmin}
