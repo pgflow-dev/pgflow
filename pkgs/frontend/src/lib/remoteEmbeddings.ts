@@ -27,7 +27,7 @@ export class RemoteEmbeddings implements EmbeddingsInterface {
 	 * @returns A promise that resolves to an array of vectors for each document.
 	 */
 	embedDocuments(documents: string[]): Promise<number[][]> {
-		return this._embedQueryChain.invoke(documents);
+		return this._embedDocumentsChain.invoke(documents);
 	}
 
 	/**
