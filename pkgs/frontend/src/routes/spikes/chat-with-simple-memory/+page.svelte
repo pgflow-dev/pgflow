@@ -15,15 +15,7 @@
 	import { writable } from 'svelte/store';
 	const temp = writable('');
 
-	// let modelStrings = [
-	// 	'ChatOpenAI',
-	// 	'ChatGroq/mixtral-8x7b',
-	// 	'ChatGroq/llama2-70b',
-	// 	'ChatGroq/gemma-7b',
-	// 	'ChatOllama/dolphin-mixtral'
-	// ];
-
-	const model = RemoteModel('ChatOpenAI', session, { timeout: 30000 });
+	const model = RemoteModel('ChatGroq/mixtral-8x7b', session, { timeout: 30000 });
 
 	const chain = RunnableSequence.from([
 		ChatPromptTemplate.fromMessages([

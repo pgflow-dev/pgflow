@@ -26,13 +26,15 @@ export function RemoteChain(
 	});
 }
 
-export type RemoteModelId =
-	| 'ChatOpenAI'
-	| 'ChatGroq/mixtral-8x7b'
-	| 'ChatGroq/llama2-70b'
-	| 'ChatGroq/gemma:7b'
-	| 'ChatGroq/gemma:2b'
-	| 'ChatOllama/dolphin-mixtral';
+const MODEL_IDS = [
+	'ChatOpenAI',
+	'ChatGroq/mixtral-8x7b',
+	'ChatGroq/llama2-70b',
+	'ChatGroq/gemma:7b',
+	'ChatGroq/gemma:2b',
+	'ChatOllama/dolphin-mixtral'
+] as const;
+type RemoteModelId = (typeof MODEL_IDS)[number];
 
 export function RemoteModel(
 	model: RemoteModelId,
