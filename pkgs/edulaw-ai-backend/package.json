@@ -5,7 +5,9 @@
     "build": "pdm install",
     "check": "pdm info && echo '-> Running pyright' && pdm run pyright",
     "test": "pdm run pytest --color=yes **/*_test.py",
-    "test:watch": "ls **/*_test.py | entr -rc make test",
+    "test:focus": "pdm run pytest -m focus --color=yes **/*_test.py",
+    "test:watch": "ls **/*_test.py | entr -rc pnpm run test",
+    "test:focus:watch": "ls **/*_test.py | entr -rc pnpm run test:focus",
     "dev": "source ./.env && pdm run langchain serve --port $HTTP_PORT"
   }
 }

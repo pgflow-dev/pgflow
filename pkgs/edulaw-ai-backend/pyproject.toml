@@ -42,6 +42,11 @@ isort = "^5.13.2"
 [tool.poetry.group.dev.dependencies]
 langchain-cli = ">=0.0.15"
 
+[tool.pytest.ini_options]
+markers = [
+    "focus: marks tests as focused to be ran with 'pnpm test:focus:watch'"
+]
+
 
 [tool.pdm]
 distribution = false
