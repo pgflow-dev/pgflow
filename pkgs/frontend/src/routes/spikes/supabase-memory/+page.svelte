@@ -1,8 +1,17 @@
 <script lang="ts">
-	import { CustomChatMessageHistory } from '$lib/customChatMessageHistory';
+	import { SupabaseChatMessageHistory } from '$lib/supabaseChatMessageHistory';
 	import { onMount } from 'svelte';
 
-	const chatHistory = new CustomChatMessageHistory({ sessionId: 'test01' });
+	export let data;
+	let { session, supabase } = data;
+	$: ({ session, supabase } = data);
+
+	const conversationId = 'f4b105bc-ca88-45b5-b90c-ce22f8ebaab7';
+	const chatHistory = new SupabaseChatMessageHistory({
+		conversationId,
+		supabase,
+		session
+	});
 
 	async function createHistory() {
 		await chatHistory.addAIMessage('how can i help you?');
