@@ -4,6 +4,8 @@ import type { StoredMessage } from '@langchain/core/messages';
 import { AIMessage, HumanMessage } from '@langchain/core/messages';
 import type { SupabaseClient, Session } from '@supabase/supabase-js';
 import type { Database } from '$backend/types';
+import type { Writable } from 'svelte/store';
+import { writable } from 'svelte/store';
 
 export interface SupabaseChatMessageHistoryInput {
 	conversationId: string;
@@ -11,7 +13,7 @@ export interface SupabaseChatMessageHistoryInput {
 	supabase: SupabaseClient;
 }
 
-type ChatMessage = Pick<
+export type ChatMessage = Pick<
 	Database['public']['Tables']['chat_messages']['Row'],
 	'content' | 'role' | 'conversation_id'
 >;
@@ -59,14 +61,14 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 	conversationId: string;
 	session: Session;
 	supabase: SupabaseClient;
-
-	fakeDatabase: Record<string, StoredMessage[]> = {};
+	messagesStore: Writable<ChatMessage[]>;
 
 	constructor(fields: SupabaseChatMessageHistoryInput) {
 		super(fields);
 		this.conversationId = fields.conversationId;
 		this.session = fields.session;
 		this.supabase = fields.supabase;
+		this.messagesStore = writable<ChatMessage[]>([]);
 	}
 
 	async getMessages(): Promise<BaseMessage[]> {
@@ -81,8 +83,11 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 		}
 
 		if (rawMessages) {
-			return rawMessages.map(mapPostgrestMessageToChatMessage);
+			this.messagesStore.set(<ChatMessage[]>rawMessages);
+			const chatMessages = rawMessages.map(mapPostgrestMessageToChatMessage);
+			return chatMessages;
 		} else {
+			this.messagesStore.set([]);
 			return [];
 		}
 	}
@@ -96,6 +101,8 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 		if (error) {
 			throw error;
 		}
+
+		this.messagesStore.update((chatMessages) => [...chatMessages, chatMessage]);
 	}
 
 	async addMessages(messages: BaseMessage[]): Promise<void> {
@@ -107,5 +114,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 		if (error) {
 			throw error;
 		}
+
+		this.messagesStore.update((prevChatMessages) => [...prevChatMessages, ...chatMessages]);
 	}
 }

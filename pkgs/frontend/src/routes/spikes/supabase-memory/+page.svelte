@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { SupabaseChatMessageHistory } from '$lib/supabaseChatMessageHistory';
-	import { onMount } from 'svelte';
+	// import { onMount } from 'svelte';
+	import ChatMessageList from '$components/ChatMessageList.svelte';
+	// import type { BaseMessage } from '@langchain/core/messages';
+	// import { writable } from 'svelte/store';
+	// import Prompt from '$components/Prompt.svelte';
+	// import { createSupabaseRunner } from '$lib/supabaseChatRunner';
 
 	export let data;
 	let { session, supabase } = data;
@@ -13,12 +18,21 @@
 		session
 	});
 
-	async function createHistory() {
-		await chatHistory.addAIMessage('how can i help you?');
-		await chatHistory.addUserMessage('i need help with learning python');
-
-		console.log('getMessages', await chatHistory.getMessages());
-	}
-
-	onMount(createHistory);
+	// const { runChain, inProgress } = createChatRunner(runnable, chatHistory);
 </script>
+
+<div class="grid grid-cols-1 grid-rows-2 md:grid-cols-3 gap-4">
+	<!-- <div class="card col-start-2 row-start-2"> -->
+	<!-- 	<Prompt -->
+	<!-- 		bind:value={currentMessage} -->
+	<!-- 		on:submit={() => runChain(currentMessage)} -->
+	<!-- 		label="Send" -->
+	<!-- 		placeholder="Ask a question" -->
+	<!-- 		inProgress={$inProgress} -->
+	<!-- 	/> -->
+	<!-- </div> -->
+
+	<div class="card">
+		<ChatMessageList messagesStore={chatHistory.messagesStore} />
+	</div>
+</div>
