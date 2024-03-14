@@ -1,12 +1,9 @@
 import { BaseListChatMessageHistory } from '@langchain/core/chat_history';
-import {
-	BaseMessage,
-	mapChatMessagesToStoredMessages
-	// mapStoredMessagesToChatMessages
-} from '@langchain/core/messages';
+import { BaseMessage, mapChatMessagesToStoredMessages } from '@langchain/core/messages';
 import type { StoredMessage } from '@langchain/core/messages';
-import type { SupabaseClient, Session } from '@supabase/supabase-js';
 import { AIMessage, HumanMessage } from '@langchain/core/messages';
+import type { SupabaseClient, Session } from '@supabase/supabase-js';
+import type { Database } from '$backend/types';
 
 export interface SupabaseChatMessageHistoryInput {
 	conversationId: string;
@@ -14,7 +11,6 @@ export interface SupabaseChatMessageHistoryInput {
 	supabase: SupabaseClient;
 }
 
-import type { Database } from '$backend/types';
 type ChatMessage = Pick<
 	Database['public']['Tables']['chat_messages']['Row'],
 	'content' | 'role' | 'conversation_id'
