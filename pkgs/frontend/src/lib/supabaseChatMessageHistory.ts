@@ -15,7 +15,10 @@ export interface SupabaseChatMessageHistoryInput {
 }
 
 import type { Database } from '$backend/types';
-type ChatMessage = Database['public']['Tables']['chat_messages']['Row'];
+type ChatMessage = Pick<
+	Database['public']['Tables']['chat_messages']['Row'],
+	'content' | 'role' | 'conversation_id'
+>;
 
 function mapPostgrestMessageToChatMessage(message: ChatMessage): BaseMessage {
 	if (message.role == 'assistant') {
@@ -25,6 +28,33 @@ function mapPostgrestMessageToChatMessage(message: ChatMessage): BaseMessage {
 	} else {
 		throw new Error(`Unknown role: ${message.role}`);
 	}
+}
+
+function mapStoredMessagesToChatMessages(
+	storedMessages: StoredMessage[],
+	conversationId: string
+): ChatMessage[] {
+	storedMessages.forEach((message: StoredMessage) => {
+		if (message.type !== 'human' && message.type !== 'ai') {
+			throw `Unknown message type: ${message.type}`;
+		}
+	});
+
+	return storedMessages.map((storedMessage) => {
+		if (storedMessage.type == 'human') {
+			return <ChatMessage>{
+				conversation_id: conversationId,
+				role: 'user',
+				content: storedMessage.data.content
+			};
+		} else {
+			return <ChatMessage>{
+				conversation_id: conversationId,
+				role: 'assistant',
+				content: storedMessage.data.content
+			};
+		}
+	});
 }
 
 export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
@@ -64,24 +94,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 	async addMessage(message: BaseMessage): Promise<void> {
 		const storedMessage = mapChatMessagesToStoredMessages([message])[0];
 
-		let chatMessage: Partial<ChatMessage>;
-
-		if (storedMessage.type == 'human') {
-			chatMessage = {
-				conversation_id: this.conversationId,
-				role: 'user',
-				content: storedMessage.data.content
-			};
-		} else if (storedMessage.type == 'ai') {
-			chatMessage = {
-				conversation_id: this.conversationId,
-				role: 'assistant',
-				content: storedMessage.data.content
-			};
-		} else {
-			throw `Unknown message type: ${storedMessage.type}`;
-		}
-
+		const chatMessage = mapStoredMessagesToChatMessages([storedMessage], this.conversationId)[0];
 		const { error } = await this.supabase.from('chat_messages').insert([chatMessage]);
 
 		if (error) {
@@ -90,12 +103,13 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 	}
 
 	async addMessages(messages: BaseMessage[]): Promise<void> {
-		if (this.fakeDatabase[this.conversationId] === undefined) {
-			this.fakeDatabase[this.conversationId] = [];
-		}
+		const storedMessages = mapChatMessagesToStoredMessages(messages);
+		const chatMessages = mapStoredMessagesToChatMessages(storedMessages, this.conversationId);
 
-		const existingMessages = this.fakeDatabase[this.conversationId];
-		const serializedMessages = mapChatMessagesToStoredMessages(messages);
-		this.fakeDatabase[this.conversationId] = [...existingMessages, ...serializedMessages];
+		const { error } = await this.supabase.from('chat_messages').insert(chatMessages);
+
+		if (error) {
+			throw error;
+		}
 	}
 }
