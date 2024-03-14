@@ -6,10 +6,10 @@
 	import type { User } from '@supabase/supabase-js';
 
 	const links = [
-		['Edulaw QA', '/spikes/edulaw-qa'],
-		['Chat (layout)', '/spikes/chat-layout'],
-		['Chat (simple)', '/spikes/chat-with-simple-memory'],
-		['Chat (vector)', '/spikes/chat-with-vector-memory'],
+		['Edulaw', '/spikes/edulaw-qa'],
+		['layout', '/spikes/chat-layout'],
+		['simple', '/spikes/chat-with-simple-memory'],
+		['vector', '/spikes/chat-with-vector-memory'],
 		['createChatRunner', '/spikes/runnable-ui']
 	];
 
