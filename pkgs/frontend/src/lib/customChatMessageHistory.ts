@@ -24,6 +24,7 @@ export class CustomChatMessageHistory extends BaseListChatMessageHistory {
 
 	async getMessages(): Promise<BaseMessage[]> {
 		const messages = this.fakeDatabase[this.sessionId];
+		console.log('StoredMessage', messages);
 
 		return mapStoredMessagesToChatMessages(messages);
 	}
