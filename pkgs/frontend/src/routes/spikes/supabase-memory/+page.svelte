@@ -28,28 +28,41 @@
 		['human', '{input}']
 	]);
 	const model = RemoteModel('ChatOpenAI', session, { timeout: 30000 });
-	const runnable = new RunnableWithMessageHistory({
+	console.log('pre');
+	const runnableSession = new RunnableWithMessageHistory({
 		runnable: prompt.pipe(model),
 		getMessageHistory: () => chatHistory,
 		inputMessagesKey: 'history'
 	});
-	console.log('runnable', runnable);
+	console.log('withListeners', runnableSession.withListeners);
+	// const runnableSession = runnable.bind({ configurable: { conversationId } });
+	// console.log('runnable', runnableSession);
 	// import { StringOutputParser } from '@langchain/core/output_parsers';
 
 	let currentMessage = '';
+	import { createChatRunner } from '$lib/chatRunners';
+	const { sendMessage, inProgress, chunks } = createChatRunner(runnableSession, {
+		sessionId: conversationId
+	});
 
-	// const chatWithHistory =
-	// const { runChain, inProgress } = createChatRunner(runnable, chatHistory);
+	function onSubmit() {
+		sendMessage(currentMessage);
+		currentMessage = '';
+	}
 </script>
 
-<div class="grid grid-cols-1 grid-rows-2 md:grid-cols-3 gap-4">
+<div class="grid grid-cols-1 grid-rows-2">
 	<Prompt
 		bind:value={currentMessage}
-		on:submit={() => false}
+		on:submit={onSubmit}
 		label="Send"
 		placeholder="Ask a question"
-		inProgress={false}
+		inProgress={$inProgress}
 	/>
+
+	<div class="card">
+		{JSON.stringify($chunks, null, 2)}
+	</div>
 
 	<div class="card">
 		<ChatMessageList messagesStore={chatHistory.messagesStore} />
