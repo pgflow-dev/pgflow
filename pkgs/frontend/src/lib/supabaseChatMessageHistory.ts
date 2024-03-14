@@ -62,12 +62,31 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 	}
 
 	async addMessage(message: BaseMessage): Promise<void> {
-		if (this.fakeDatabase[this.conversationId] === undefined) {
-			this.fakeDatabase[this.conversationId] = [];
+		const storedMessage = mapChatMessagesToStoredMessages([message])[0];
+
+		let chatMessage: Partial<ChatMessage>;
+
+		if (storedMessage.type == 'human') {
+			chatMessage = {
+				conversation_id: this.conversationId,
+				role: 'user',
+				content: storedMessage.data.content
+			};
+		} else if (storedMessage.type == 'ai') {
+			chatMessage = {
+				conversation_id: this.conversationId,
+				role: 'assistant',
+				content: storedMessage.data.content
+			};
+		} else {
+			throw `Unknown message type: ${storedMessage.type}`;
 		}
 
-		const serializedMessages = mapChatMessagesToStoredMessages([message]);
-		this.fakeDatabase[this.conversationId].push(serializedMessages[0]);
+		const { error } = await this.supabase.from('chat_messages').insert([chatMessage]);
+
+		if (error) {
+			throw error;
+		}
 	}
 
 	async addMessages(messages: BaseMessage[]): Promise<void> {
