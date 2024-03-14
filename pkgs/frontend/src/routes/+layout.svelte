@@ -10,7 +10,8 @@
 		['layout', '/spikes/chat-layout'],
 		['simple', '/spikes/chat-with-simple-memory'],
 		['vector', '/spikes/chat-with-vector-memory'],
-		['createChatRunner', '/spikes/runnable-ui']
+		['chat-runner', '/spikes/runnable-ui'],
+		['supabase-memory', '/spikes/supabase-memory']
 	];
 
 	export let data;
