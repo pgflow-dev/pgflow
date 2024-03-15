@@ -6,7 +6,7 @@ import { writable } from 'svelte/store';
 const EMPTY_CHUNK = new AIMessageChunk('');
 
 interface ChatRunnerOutput {
-	sendMessage: (message: string) => Promise<void>;
+	sendMessage: (input: object) => Promise<void>;
 	inProgress: Readable<boolean>;
 	chunks: Readable<AIMessageChunk>;
 }
@@ -20,12 +20,12 @@ export function createChatRunner(runnable: Runnable, runConfig: RunConfig): Chat
 	const chunks = writable<AIMessageChunk>(EMPTY_CHUNK);
 
 	return {
-		async sendMessage(content: string) {
+		async sendMessage(input: object) {
 			inProgress.set(true);
 			chunks.set(EMPTY_CHUNK);
 
 			try {
-				const stream = await runnable.stream(content, { configurable: runConfig });
+				const stream = await runnable.stream(input, { configurable: runConfig });
 
 				for await (const chunk of stream) {
 					console.log('chunk', chunk);

@@ -1,5 +1,8 @@
 <script lang="ts">
+	// import { StringOutputParser } from '@langchain/core/output_parsers';
+	import { BaseListChatMessageHistory } from '@langchain/core/chat_history';
 	import { SupabaseChatMessageHistory } from '$lib/supabaseChatMessageHistory';
+	import { CustomChatMessageHistory } from '$lib/customChatMessageHistory';
 	// import { onMount } from 'svelte';
 	import ChatMessageList from '$components/ChatMessageList.svelte';
 	// import type { BaseMessage } from '@langchain/core/messages';
@@ -16,11 +19,18 @@
 	$: ({ session, supabase } = data);
 
 	const conversationId = 'f4b105bc-ca88-45b5-b90c-ce22f8ebaab7';
-	const chatHistory = new SupabaseChatMessageHistory({
-		conversationId,
-		supabase,
-		session
-	});
+
+	import { ChatMessageHistory } from '@langchain/community/stores/message/in_memory';
+
+	function getMessageHistory(sessionId: string): BaseListChatMessageHistory {
+		console.log('supabase-memory:getMessageHistory', { sessionId });
+		// return new ChatMessageHistory();
+		return new SupabaseChatMessageHistory({
+			conversationId: sessionId,
+			supabase,
+			session
+		});
+	}
 
 	const prompt = ChatPromptTemplate.fromMessages([
 		['system', "You're an assistant who's good at answering questions."],
@@ -28,16 +38,18 @@
 		['human', '{input}']
 	]);
 	const model = RemoteModel('ChatOpenAI', session, { timeout: 30000 });
-	console.log('pre');
 	const runnableSession = new RunnableWithMessageHistory({
 		runnable: prompt.pipe(model),
-		getMessageHistory: () => chatHistory,
-		inputMessagesKey: 'history'
+		getMessageHistory,
+		inputMessagesKey: 'input',
+		historyMessagesKey: 'history',
+		config: { configurable: { sessionId: {} } }
 	});
-	console.log('withListeners', runnableSession.withListeners);
-	// const runnableSession = runnable.bind({ configurable: { conversationId } });
-	// console.log('runnable', runnableSession);
-	// import { StringOutputParser } from '@langchain/core/output_parsers';
+
+	// (async () => {
+	// 	let results = await runnableSession.stream({ input: 'hello' });
+	// 	console.log('results', results);
+	// })();
 
 	let currentMessage = '';
 	import { createChatRunner } from '$lib/chatRunners';
@@ -46,7 +58,7 @@
 	});
 
 	function onSubmit() {
-		sendMessage(currentMessage);
+		sendMessage({ input: currentMessage });
 		currentMessage = '';
 	}
 </script>
@@ -65,6 +77,6 @@
 	</div>
 
 	<div class="card">
-		<ChatMessageList messagesStore={chatHistory.messagesStore} />
+		<!-- <ChatMessageList messagesStore={chatHistory.messagesStore} /> -->
 	</div>
 </div>

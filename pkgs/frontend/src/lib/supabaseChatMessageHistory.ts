@@ -64,6 +64,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 	messagesStore: Writable<ChatMessage[]>;
 
 	constructor(fields: SupabaseChatMessageHistoryInput) {
+		console.log('SupabaseChatMessageHistory:constructor', fields);
 		super(fields);
 		this.conversationId = fields.conversationId;
 		this.session = fields.session;
