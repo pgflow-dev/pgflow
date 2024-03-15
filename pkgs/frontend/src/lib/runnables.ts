@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 import { RunnableLambda } from '@langchain/core/runnables';
 
 export function debug(label: string) {
@@ -10,16 +9,3 @@ export function debug(label: string) {
 		}
 	});
 }
-||||||| Stash base
-=======
-import { RunnableLambda } from '@langchain/core/runnables';
-
-function debug(label: string) {
-	return new RunnableLambda({
-		func(input: any) {
-			console.log(label, input);
-			return input;
-		}
-	});
-}
->>>>>>> Stashed changes
