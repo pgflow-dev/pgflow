@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { SupabaseChatMessageHistory } from '$lib/supabaseChatMessageHistory';
 	import Prompt from '$components/Prompt.svelte';
+	import ChatMessageList from '$components/ChatMessageList.svelte';
 	import { RunnableWithMessageHistory } from '@langchain/core/runnables';
 	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
 	import { createChatRunner } from '$lib/chatRunners';
@@ -56,6 +57,6 @@
 	</div>
 
 	<div class="card">
-		<!-- <ChatMessageList messagesStore={chatHistory.messagesStore} /> -->
+		<ChatMessageList messagesStore={chatHistory.messagesStore} />
 	</div>
 </div>
