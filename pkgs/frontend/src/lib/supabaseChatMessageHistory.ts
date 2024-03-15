@@ -77,7 +77,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 			.from('chat_messages')
 			.select('*')
 			.eq('conversation_id', this.conversationId)
-			.order('created_at', { ascending: false });
+			.order('created_at', { ascending: true });
 
 		if (error) {
 			throw error;
