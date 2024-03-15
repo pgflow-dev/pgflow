@@ -31,7 +31,9 @@ export const MODEL_IDS = [
 	'ChatGroq/mixtral-8x7b',
 	'ChatGroq/llama2-70b',
 	'ChatGroq/gemma-7b-it',
-	'ChatOllama/dolphin-mixtral'
+	'ChatOllama/dolphin-mixtral',
+	'ChatOllama/gemma:2b',
+	'ChatOllama/gemma:7b'
 ] as const;
 export type RemoteModelId = (typeof MODEL_IDS)[number];
 

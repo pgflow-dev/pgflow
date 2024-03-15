@@ -48,6 +48,8 @@ from dotenv import load_dotenv
 load_dotenv()
 OLLAMA_URL = os.environ["OLLAMA_URL"]
 add_routes(app, ChatOllama(base_url=OLLAMA_URL, model="dolphin-mixtral"), path='/models/ChatOllama/dolphin-mixtral')
+add_routes(app, ChatOllama(base_url=OLLAMA_URL, model="gemma:2b"), path='/models/ChatOllama/gemma:2b')
+add_routes(app, ChatOllama(base_url=OLLAMA_URL, model="gemma:7b"), path='/models/ChatOllama/gemma:7b')
 
 # embeddings
 add_routes(app, embed_query, path='/embed_query')
