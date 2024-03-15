@@ -7,7 +7,7 @@
 	import { RunnableWithMessageHistory } from '@langchain/core/runnables';
 	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
 	import { createChatRunner } from '$lib/chatRunners';
-	import { debug } from '$lib/runnables';
+	// import { debug } from '$lib/runnables';
 
 	export let data;
 	let { session, supabase } = data;
@@ -31,12 +31,12 @@
 	import { PUBLIC_OPENAI_API_KEY } from '$env/static/public';
 	const model = new ChatOpenAI({ openAIApiKey: PUBLIC_OPENAI_API_KEY });
 	const runnableSession = new RunnableWithMessageHistory({
-		runnable: prompt.pipe(debug('prompt')).pipe(model),
+		runnable: prompt.pipe(model),
 		getMessageHistory: () => chatHistory,
 		inputMessagesKey: 'input',
 		historyMessagesKey: 'history',
 		config: { configurable: { sessionId: conversationId } }
-	}).pipe(debug('afterhistory'));
+	});
 
 	let currentMessage = '';
 	const { sendMessage, inProgress, chunks } = createChatRunner(runnableSession);
@@ -48,16 +48,22 @@
 		[chatHistory.messagesStore, inProgress, chunks, currentContent],
 		([$messages, $inProgress, $chunks, $currentContent]) => {
 			if ($inProgress) {
+				// console.log('$currentContent', $currentContent);
 				const humanMessage = <ChatMessage>{
+					// content: '',
 					content: $currentContent,
 					role: 'user',
 					conversation_id: conversationId
 				};
+				console.log('stream', $chunks);
 				// console.log('humanMessage', humanMessage);
 				const streamedMessage = mapStoredMessagesToChatMessages(
 					[$chunks.toDict()],
 					conversationId
 				)[0];
+
+				// console.log('humanMessage', humanMessage);
+				// console.log('streamedMessage', streamedMessage);
 
 				return [...$messages, humanMessage, streamedMessage];
 			} else {
@@ -66,9 +72,12 @@
 		}
 	);
 
-	function onSubmit() {
+	$: $simplifiedHistory && console.log('history', $simplifiedHistory);
+
+	async function onSubmit() {
 		currentContent.set(currentMessage);
-		sendMessage({ input: currentMessage });
+		// console.log('currentMessage', currentMessage);
+		await sendMessage({ input: currentMessage });
 		currentContent.set('');
 		currentMessage = '';
 	}

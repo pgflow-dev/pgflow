@@ -64,7 +64,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 	messagesStore: Writable<ChatMessage[]>;
 
 	constructor(fields: SupabaseChatMessageHistoryInput) {
-		console.log('SupabaseChatMessageHistory:constructor', fields);
+		// console.log('SupabaseChatMessageHistory:constructor', fields);
 		super(fields);
 		this.conversationId = fields.conversationId;
 		this.session = fields.session;
@@ -83,7 +83,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 			throw error;
 		}
 
-		console.log('getMessages', rawMessages);
+		// console.log('getMessages', rawMessages);
 		if (rawMessages) {
 			this.messagesStore.set(<ChatMessage[]>rawMessages);
 			const chatMessages = rawMessages.map(mapPostgrestMessageToChatMessage);
@@ -104,7 +104,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 			throw error;
 		}
 
-		console.log('addMessage', { chatMessage });
+		// console.log('addMessage', { chatMessage });
 		this.messagesStore.update((chatMessages) => [...chatMessages, chatMessage]);
 	}
 
