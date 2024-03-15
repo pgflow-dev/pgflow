@@ -11,11 +11,7 @@ interface ChatRunnerOutput {
 	chunks: Readable<AIMessageChunk>;
 }
 
-interface RunConfig {
-	sessionId: string;
-}
-
-export function createChatRunner(runnable: Runnable, runConfig: RunConfig): ChatRunnerOutput {
+export function createChatRunner(runnable: Runnable): ChatRunnerOutput {
 	const inProgress = writable(false);
 	const chunks = writable<AIMessageChunk>(EMPTY_CHUNK);
 
@@ -25,11 +21,14 @@ export function createChatRunner(runnable: Runnable, runConfig: RunConfig): Chat
 			chunks.set(EMPTY_CHUNK);
 
 			try {
-				const stream = await runnable.stream(input, { configurable: runConfig });
+				const stream = await runnable.stream(input);
 
 				for await (const chunk of stream) {
-					console.log('chunk', chunk);
-					chunks.update((prevChunk) => prevChunk.concat(chunk));
+					// console.log('chunk', chunk);
+					chunks.update((prevChunk) => {
+						// console.log({ prevChunk, chunk });
+						return prevChunk.concat(chunk);
+					});
 				}
 			} finally {
 				inProgress.set(false);

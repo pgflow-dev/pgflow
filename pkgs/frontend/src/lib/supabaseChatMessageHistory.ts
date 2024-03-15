@@ -83,6 +83,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 			throw error;
 		}
 
+		console.log('rawMessages', rawMessages);
 		if (rawMessages) {
 			this.messagesStore.set(<ChatMessage[]>rawMessages);
 			const chatMessages = rawMessages.map(mapPostgrestMessageToChatMessage);

@@ -1,18 +1,9 @@
 <script lang="ts">
-	// import { StringOutputParser } from '@langchain/core/output_parsers';
-	import { BaseListChatMessageHistory } from '@langchain/core/chat_history';
 	import { SupabaseChatMessageHistory } from '$lib/supabaseChatMessageHistory';
-	import { CustomChatMessageHistory } from '$lib/customChatMessageHistory';
-	// import { onMount } from 'svelte';
-	import ChatMessageList from '$components/ChatMessageList.svelte';
-	// import type { BaseMessage } from '@langchain/core/messages';
-	// import { writable } from 'svelte/store';
 	import Prompt from '$components/Prompt.svelte';
-	// import { createSupabaseRunner } from '$lib/supabaseChatRunner';
 	import { RunnableWithMessageHistory } from '@langchain/core/runnables';
-	import { RemoteModel } from '$lib/remoteRunnables';
-	// import type { RemoteModelId } from '$lib/remoteRunnables';
 	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
+	import { createChatRunner } from '$lib/chatRunners';
 
 	export let data;
 	let { session, supabase } = data;
@@ -20,42 +11,30 @@
 
 	const conversationId = 'f4b105bc-ca88-45b5-b90c-ce22f8ebaab7';
 
-	import { ChatMessageHistory } from '@langchain/community/stores/message/in_memory';
-
-	function getMessageHistory(sessionId: string): BaseListChatMessageHistory {
-		console.log('supabase-memory:getMessageHistory', { sessionId });
-		// return new ChatMessageHistory();
-		return new SupabaseChatMessageHistory({
-			conversationId: sessionId,
-			supabase,
-			session
-		});
-	}
+	const chatHistory = new SupabaseChatMessageHistory({
+		conversationId,
+		supabase,
+		session
+	});
 
 	const prompt = ChatPromptTemplate.fromMessages([
 		['system', "You're an assistant who's good at answering questions."],
 		new MessagesPlaceholder('history'),
 		['human', '{input}']
 	]);
-	const model = RemoteModel('ChatOpenAI', session, { timeout: 30000 });
+	import { ChatOpenAI } from '@langchain/openai';
+	import { PUBLIC_OPENAI_API_KEY } from '$env/static/public';
+	const model = new ChatOpenAI({ openAIApiKey: PUBLIC_OPENAI_API_KEY });
 	const runnableSession = new RunnableWithMessageHistory({
 		runnable: prompt.pipe(model),
-		getMessageHistory,
+		getMessageHistory: () => chatHistory,
 		inputMessagesKey: 'input',
 		historyMessagesKey: 'history',
-		config: { configurable: { sessionId: {} } }
+		config: { configurable: { sessionId: conversationId } }
 	});
-
-	// (async () => {
-	// 	let results = await runnableSession.stream({ input: 'hello' });
-	// 	console.log('results', results);
-	// })();
 
 	let currentMessage = '';
-	import { createChatRunner } from '$lib/chatRunners';
-	const { sendMessage, inProgress, chunks } = createChatRunner(runnableSession, {
-		sessionId: conversationId
-	});
+	const { sendMessage, inProgress, chunks } = createChatRunner(runnableSession);
 
 	function onSubmit() {
 		sendMessage({ input: currentMessage });
