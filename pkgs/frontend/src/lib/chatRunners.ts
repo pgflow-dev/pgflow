@@ -3,6 +3,10 @@ import type { Readable } from 'svelte/store';
 import { AIMessageChunk } from '@langchain/core/messages';
 import { writable } from 'svelte/store';
 
+import { AIMessage } from '@langchain/core/messages';
+import { derived } from 'svelte/store';
+import { mapStoredMessagesToChatMessages } from '$lib/supabaseChatMessageHistory';
+
 const EMPTY_CHUNK = new AIMessageChunk('');
 
 interface ChatRunnerOutput {
@@ -24,9 +28,7 @@ export function createChatRunner(runnable: Runnable): ChatRunnerOutput {
 				const stream = await runnable.stream(input);
 
 				for await (const chunk of stream) {
-					// console.log('chunk', chunk);
 					chunks.update((prevChunk) => {
-						// console.log({ prevChunk, chunk });
 						return prevChunk.concat(chunk);
 					});
 				}

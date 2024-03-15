@@ -28,7 +28,7 @@ function mapPostgrestMessageToChatMessage(message: ChatMessage): BaseMessage {
 	}
 }
 
-function mapStoredMessagesToChatMessages(
+export function mapStoredMessagesToChatMessages(
 	storedMessages: StoredMessage[],
 	conversationId: string
 ): ChatMessage[] {
@@ -83,7 +83,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 			throw error;
 		}
 
-		console.log('rawMessages', rawMessages);
+		console.log('getMessages', rawMessages);
 		if (rawMessages) {
 			this.messagesStore.set(<ChatMessage[]>rawMessages);
 			const chatMessages = rawMessages.map(mapPostgrestMessageToChatMessage);
@@ -104,6 +104,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 			throw error;
 		}
 
+		console.log('addMessage', { chatMessage });
 		this.messagesStore.update((chatMessages) => [...chatMessages, chatMessage]);
 	}
 
