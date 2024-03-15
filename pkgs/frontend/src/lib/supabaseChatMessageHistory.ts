@@ -119,4 +119,8 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 
 		this.messagesStore.update((prevChatMessages) => [...prevChatMessages, ...chatMessages]);
 	}
+
+	async clear(): Promise<void> {
+		await this.supabase.from('chat_messages').delete().eq('conversation_id', this.conversationId);
+	}
 }

@@ -17,6 +17,7 @@
 		supabase,
 		session
 	});
+	chatHistory.clear();
 
 	const prompt = ChatPromptTemplate.fromMessages([
 		['system', "You're an assistant who's good at answering questions."],
