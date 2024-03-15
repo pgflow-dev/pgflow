@@ -69,6 +69,9 @@ async def superadmin_check_middleware(
     if request.method == "OPTIONS":
         return await call_next(request)
 
+    if os.environ["ENVIRONMENT"] == "development" and os.environ["DISABLE_AUTH"] == "true":
+        return await call_next(request)
+
     (is_authorized, reason) = authorize_superadmin(request)
 
     if is_authorized:
