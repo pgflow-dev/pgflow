@@ -3,6 +3,7 @@
 	import { RemoteModel } from '$lib/remoteRunnables';
 	import { createChatWithHistoryRunner } from '$lib/runnableStore';
 	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
+	import ChatLayout from '$components/ChatLayout.svelte';
 	import Prompt from '$components/Prompt.svelte';
 	import BaseMessageList from '$components/BaseMessageList.svelte';
 
@@ -27,8 +28,11 @@
 	let currentMessage = '';
 </script>
 
-<div class="grid grid-cols-1 grid-rows-2 md:grid-cols-3 gap-4">
-	<div class="card col-start-2 row-start-2">
+<ChatLayout>
+	<svelte:fragment slot="messages">
+		<BaseMessageList messagesStore={history} />
+	</svelte:fragment>
+	<svelte:fragment slot="prompt">
 		<Prompt
 			bind:value={currentMessage}
 			on:submit={() => runChain(currentMessage)}
@@ -36,7 +40,5 @@
 			placeholder="Ask a question"
 			inProgress={$inProgress}
 		/>
-	</div>
-</div>
-
-<BaseMessageList messagesStore={history} />
+	</svelte:fragment>
+</ChatLayout>

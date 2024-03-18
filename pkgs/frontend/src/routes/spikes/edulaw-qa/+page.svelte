@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
+	import ChatLayout from '$components/ChatLayout.svelte';
 	import Prompt from '$components/Prompt.svelte';
 	import { RemoteChain } from '$lib/remoteRunnables';
 
@@ -54,29 +55,24 @@
 	});
 </script>
 
-<div class="flex flex-col h-full relative">
-	<div class="flex-grow flex items-end justify-center">
-		<div class="w-full flex justify-center p-4">
-			<div class="w-3/4 text-justify overflow-hidden">
-				{response}
-			</div>
-		</div>
-	</div>
-	<div class="w-full p-4">
-		<div class="w-3/4 mx-auto pb-10">
-			<Prompt
-				bind:value={currentMessage}
-				bind:inProgress
-				on:submit={runChain}
-				placeholder="prawo oświatowe i edukacja w polsce"
-				label="zapytaj"
-			/>
-		</div>
-	</div>
+<ChatLayout>
+	<svelte:fragment slot="messages">
+		{response}
+	</svelte:fragment>
 
-	{#if timeElapsedMs}
-		<div class="absolute bottom-0 right-0 p-4 text-xs text-gray-500 font-mono">
-			{timeElapsedMs.toFixed(0)}ms
-		</div>
-	{/if}
-</div>
+	<svelte:fragment slot="prompt">
+		<Prompt
+			bind:value={currentMessage}
+			bind:inProgress
+			on:submit={runChain}
+			placeholder="prawo oświatowe i edukacja w polsce"
+			label="zapytaj"
+		/>
+
+		{#if timeElapsedMs}
+			<div class="absolute bottom-0 right-0 p-4 text-xs text-gray-500 font-mono">
+				{timeElapsedMs.toFixed(0)}ms
+			</div>
+		{/if}
+	</svelte:fragment>
+</ChatLayout>

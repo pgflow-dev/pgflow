@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ChatLayout from '$components/ChatLayout.svelte';
 	import { Avatar } from '@skeletonlabs/skeleton';
 	import Prompt from '$components/Prompt.svelte';
 
@@ -18,8 +19,8 @@
 	adipisicing elit.`;
 </script>
 
-<div class="h-full grid grid-rows-[auto_1fr] gap-1">
-	<div class="h-full bg-surface-500/30 p-4 w-[60vw] mx-auto overflow-x-hidden overflow-y-scroll">
+<ChatLayout>
+	<svelte:fragment slot="messages">
 		<div class="w-full p-4 bg-surface-500 rounded-xl m-2 text-justify">
 			<div class="font-bold flex items-center mb-2">
 				<Avatar width="w-4" name="You" class="mr-4" />
@@ -48,9 +49,9 @@
 			</div>
 			{LOREM}
 		</div>
-	</div>
+	</svelte:fragment>
 
-	<div class="bg-surface-500/30 p-4 w-[60vw] mx-auto">
+	<svelte:fragment slot="prompt">
 		<Prompt label="send" placeholder="ask a question" value={currentMessage} />
-	</div>
-</div>
+	</svelte:fragment>
+</ChatLayout>

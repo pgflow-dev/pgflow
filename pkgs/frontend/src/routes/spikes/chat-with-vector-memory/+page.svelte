@@ -6,6 +6,7 @@
 	import { RemoteModel } from '$lib/remoteRunnables';
 	// import { ChatMessageHistory } from '@langchain/community/stores/message/in_memory';
 	// import { RunnableWithMessageHistory } from '@langchain/core/runnables';
+	import ChatLayout from '$components/ChatLayout.svelte';
 	import Prompt from '$components/Prompt.svelte';
 	// import Debug from '$components/Debug.svelte';
 	import { MemoryVectorStore } from 'langchain/vectorstores/memory';
@@ -83,7 +84,20 @@
 </script>
 
 <div class="flex justify-center items-center flex-col">
-	<div class="mx-auto w-3/4 pb-8">
+	<div class="mx-auto w-3/4 pb-8"></div>
+
+	<div class="grid grid-cols-[auto_1fr] gap-2 w-full md:w-3/4"></div>
+</div>
+
+<ChatLayout>
+	<svelte:fragment slot="messages">
+		{#each messages as message}
+			<div class="font-bold">{message.type.toUpperCase()}:</div>
+			<div class="">{message.data.content}</div>
+		{/each}
+	</svelte:fragment>
+
+	<svelte:fragment slot="prompt">
 		<Prompt
 			bind:value={currentMessage}
 			bind:inProgress
@@ -91,12 +105,5 @@
 			label="Send"
 			placeholder="Ask a question"
 		/>
-	</div>
-
-	<div class="grid grid-cols-[auto_1fr] gap-2 w-full md:w-3/4">
-		{#each messages as message}
-			<div class="font-bold">{message.type.toUpperCase()}:</div>
-			<div class="">{message.data.content}</div>
-		{/each}
-	</div>
-</div>
+	</svelte:fragment>
+</ChatLayout>
