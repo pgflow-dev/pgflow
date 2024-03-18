@@ -3,7 +3,7 @@
 </script>
 
 <div class="flex flex-col h-full">
-	<SelectModelId />
+	<!-- <SelectModelId /> -->
 
 	<slot />
 </div>

@@ -11,7 +11,8 @@
 		['simple', '/spikes/chat-with-simple-memory'],
 		['vector', '/spikes/chat-with-vector-memory'],
 		['chat-runner', '/spikes/runnable-ui'],
-		['supabase-memory', '/spikes/supabase-memory']
+		['supabase-memory', '/spikes/supabase-memory'],
+		['layout diy', '/spikes/chat-layout-diy']
 	];
 
 	export let data;
