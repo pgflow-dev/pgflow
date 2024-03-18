@@ -54,13 +54,13 @@
 	"dependencies": {
 		"@floating-ui/dom": "1.5.3",
 		"@langchain/community": "^0.0.34",
-		"@langchain/core": "^0.1.39",
+		"@langchain/core": "^0.1.48",
 		"@langchain/openai": "^0.0.15",
 		"@supabase/gotrue-js": "^2.62.0",
 		"@supabase/ssr": "^0.0.10",
 		"@supabase/supabase-js": "^2.39.3",
 		"highlight.js": "11.9.0",
-		"langchain": "^0.1.24",
+		"langchain": "^0.1.28",
 		"langsmith": "^0.1.8"
 	}
 }
