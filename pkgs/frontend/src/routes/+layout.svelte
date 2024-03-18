@@ -12,7 +12,8 @@
 		['chat-runner', '/spikes/runnable-ui'],
 		['supabase-memory', '/spikes/supabase-memory'],
 		['layout diy', '/spikes/chat-layout-diy'],
-		['flex grow', '/spikes/flex-grow']
+		['flex grow', '/spikes/flex-grow'],
+		['test streaming', '/spikes/test-streaming']
 	];
 
 	export let data;
