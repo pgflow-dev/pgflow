@@ -2,6 +2,7 @@
 	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
 	import { RemoteModel } from '$lib/remoteRunnables';
 	import type { RemoteModelId } from '$lib/remoteRunnables';
+	import ChatLayout from '$components/ChatLayout.svelte';
 	import Prompt from '$components/Prompt.svelte';
 	import BaseMessageList from '$components/BaseMessageList.svelte';
 	// import Debug from '$components/Debug.svelte';
@@ -34,8 +35,12 @@
 	let currentMessage: string = '';
 </script>
 
-<div class="flex justify-center items-center flex-col">
-	<div class="mx-auto w-3/4 pb-8">
+<ChatLayout>
+	<svelte:fragment slot="messages">
+		<BaseMessageList messagesStore={history} />
+	</svelte:fragment>
+
+	<svelte:fragment slot="prompt">
 		<Prompt
 			bind:value={currentMessage}
 			inProgress={$inProgress}
@@ -43,7 +48,5 @@
 			label="Send"
 			placeholder="Ask a question"
 		/>
-	</div>
-
-	<BaseMessageList messagesStore={history} />
-</div>
+	</svelte:fragment>
+</ChatLayout>

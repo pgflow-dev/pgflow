@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { SupabaseChatMessageHistory } from '$lib/supabaseChatMessageHistory';
 	import type { ChatMessage } from '$lib/supabaseChatMessageHistory';
+	import ChatLayout from '$components/ChatLayout.svelte';
 	import Prompt from '$components/Prompt.svelte';
 	import ChatMessageList from '$components/ChatMessageList.svelte';
 	// import Debug from '$components/Debug.svelte';
@@ -27,9 +28,11 @@
 		new MessagesPlaceholder('history'),
 		['human', '{input}']
 	]);
-	import { ChatOpenAI } from '@langchain/openai';
-	import { PUBLIC_OPENAI_API_KEY } from '$env/static/public';
-	const model = new ChatOpenAI({ openAIApiKey: PUBLIC_OPENAI_API_KEY });
+	import { RemoteModel } from '$lib/remoteRunnables';
+	const model = RemoteModel('ChatOpenAI', session, { timeout: 30000 });
+	// import { ChatOpenAI } from '@langchain/openai';
+	// import { PUBLIC_OPENAI_API_KEY } from '$env/static/public';
+	// const model = new ChatOpenAI({ openAIApiKey: PUBLIC_OPENAI_API_KEY });
 	const runnableSession = new RunnableWithMessageHistory({
 		runnable: prompt.pipe(model),
 		getMessageHistory: () => chatHistory,
@@ -83,21 +86,18 @@
 	}
 </script>
 
-<div class="flex flex-col h-full">
-	<Prompt
-		bind:value={currentMessage}
-		on:submit={onSubmit}
-		label="Send"
-		placeholder="Ask a question"
-		inProgress={$inProgress}
-	/>
-
-	<!-- <Debug value={$simplifiedHistory} /> -->
-	<!-- <div class="card"> -->
-	<!-- 	{JSON.stringify($simplifiedHistory, null, 2)} -->
-	<!-- </div> -->
-
-	<div class="card">
+<ChatLayout>
+	<svelte:fragment slot="messages">
 		<ChatMessageList messagesStore={simplifiedHistory} />
-	</div>
-</div>
+	</svelte:fragment>
+
+	<svelte:fragment slot="prompt">
+		<Prompt
+			bind:value={currentMessage}
+			on:submit={onSubmit}
+			label="Send"
+			placeholder="Ask a question"
+			inProgress={$inProgress}
+		/>
+	</svelte:fragment>
+</ChatLayout>
