@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.1"
-content_hash = "sha256:38b6f1f73b2d5f5d0f75ffa0761e556e83b9f07a417672b5eab8b7eb418023ae"
+content_hash = "sha256:3a8ed551dce3938bdc129147a11accd1952bb7f3ccae23ebe79355f9fcf1f0f8"
 
 [[package]]
 name = "aiohttp"
@@ -347,7 +347,7 @@ name = "gitdb"
 version = "4.0.11"
 requires_python = ">=3.7"
 summary = "Git Object Database"
-groups = ["dev"]
+groups = ["default", "dev"]
 dependencies = [
     "smmap<6,>=3.0.1",
 ]
@@ -361,7 +361,7 @@ name = "gitpython"
 version = "3.1.42"
 requires_python = ">=3.7"
 summary = "GitPython is a Python library used to interact with Git repositories"
-groups = ["dev"]
+groups = ["default", "dev"]
 dependencies = [
     "gitdb<5,>=4.0.1",
 ]
@@ -482,7 +482,7 @@ name = "httpx-sse"
 version = "0.4.0"
 requires_python = ">=3.8"
 summary = "Consume Server-Sent Event (SSE) messages with HTTPX."
-groups = ["dev"]
+groups = ["default", "dev"]
 files = [
     {file = "httpx-sse-0.4.0.tar.gz", hash = "sha256:1e81a3a3070ce322add1d3529ed42eb5f70817f45ed6ec915ab753f961139721"},
     {file = "httpx_sse-0.4.0-py3-none-any.whl", hash = "sha256:f329af6eae57eaa2bdfd962b42524764af68075ea87370a2de920af5341e318f"},
@@ -607,7 +607,7 @@ files = [
 
 [[package]]
 name = "langchain"
-version = "0.1.8"
+version = "0.1.12"
 requires_python = ">=3.8.1,<4.0"
 summary = "Building applications with LLMs through composability"
 groups = ["default", "dev"]
@@ -617,17 +617,18 @@ dependencies = [
     "aiohttp<4.0.0,>=3.8.3",
     "dataclasses-json<0.7,>=0.5.7",
     "jsonpatch<2.0,>=1.33",
-    "langchain-community<0.1,>=0.0.21",
-    "langchain-core<0.2,>=0.1.24",
-    "langsmith<0.2.0,>=0.1.0",
+    "langchain-community<0.1,>=0.0.28",
+    "langchain-core<0.2.0,>=0.1.31",
+    "langchain-text-splitters<0.1,>=0.0.1",
+    "langsmith<0.2.0,>=0.1.17",
     "numpy<2,>=1",
     "pydantic<3,>=1",
     "requests<3,>=2",
     "tenacity<9.0.0,>=8.1.0",
 ]
 files = [
-    {file = "langchain-0.1.8-py3-none-any.whl", hash = "sha256:19e951b0e2be099ff048ee483acecb47e1a39c33a47dadfee70fcfa20f45cc19"},
-    {file = "langchain-0.1.8.tar.gz", hash = "sha256:c8b1c2954a07cd6422c9027459473bafae90c78f07015bf2fc6262fadf97ea44"},
+    {file = "langchain-0.1.12-py3-none-any.whl", hash = "sha256:b4dd1760e2d035daefad08af60a209b96b729ee45492d34e3e127e553a471034"},
+    {file = "langchain-0.1.12.tar.gz", hash = "sha256:5f612761ba548b81748ed8dc70535e8de0531445415028a82de3fd8255bfa8a3"},
 ]
 
 [[package]]
@@ -635,7 +636,7 @@ name = "langchain-cli"
 version = "0.0.21"
 requires_python = ">=3.8.1,<4.0"
 summary = "CLI for interacting with LangChain"
-groups = ["dev"]
+groups = ["default", "dev"]
 dependencies = [
     "gitpython<4.0.0,>=3.1.40",
     "langserve[all]>=0.0.16",
@@ -650,7 +651,7 @@ files = [
 
 [[package]]
 name = "langchain-community"
-version = "0.0.21"
+version = "0.0.28"
 requires_python = ">=3.8.1,<4.0"
 summary = "Community contributed LangChain integrations."
 groups = ["default", "dev"]
@@ -659,20 +660,20 @@ dependencies = [
     "SQLAlchemy<3,>=1.4",
     "aiohttp<4.0.0,>=3.8.3",
     "dataclasses-json<0.7,>=0.5.7",
-    "langchain-core<0.2,>=0.1.24",
+    "langchain-core<0.2.0,>=0.1.31",
     "langsmith<0.2.0,>=0.1.0",
     "numpy<2,>=1",
     "requests<3,>=2",
     "tenacity<9.0.0,>=8.1.0",
 ]
 files = [
-    {file = "langchain_community-0.0.21-py3-none-any.whl", hash = "sha256:120977485d244eb472ad3618a31222fe6c2bce08026f4caa96bd6dae2e316ac0"},
-    {file = "langchain_community-0.0.21.tar.gz", hash = "sha256:1c310a7e2663d5f6464a433981504894f97c12783cbeb8bdf4159a574f88c18d"},
+    {file = "langchain_community-0.0.28-py3-none-any.whl", hash = "sha256:bdb015ac455ae68432ea104628717583dce041e1abdfcefe86e39f034f5e90b8"},
+    {file = "langchain_community-0.0.28.tar.gz", hash = "sha256:8664d243a90550fc5ddc137b712034e02c8d43afc8d4cc832ba5842b44c864ce"},
 ]
 
 [[package]]
 name = "langchain-core"
-version = "0.1.25"
+version = "0.1.32"
 requires_python = ">=3.8.1,<4.0"
 summary = "Building applications with LLMs through composability"
 groups = ["default", "dev"]
@@ -687,8 +688,8 @@ dependencies = [
     "tenacity<9.0.0,>=8.1.0",
 ]
 files = [
-    {file = "langchain_core-0.1.25-py3-none-any.whl", hash = "sha256:ff0a0ad1ed877878e7b9c7601870cd12145abf3c814aae41995968d05ea6c09d"},
-    {file = "langchain_core-0.1.25.tar.gz", hash = "sha256:065ff8b4e383c5645d175b20ae44b258330ed06457b0fc0179efee310b6f2af6"},
+    {file = "langchain_core-0.1.32-py3-none-any.whl", hash = "sha256:192aecdee6216af19b596ec18e7be3da0b9ecb9083eec263e02b68125737245d"},
+    {file = "langchain_core-0.1.32.tar.gz", hash = "sha256:d62683becbf20f51f12875791a042320f45eaa0c87a267d30bc03bc1a07f5ec2"},
 ]
 
 [[package]]
@@ -708,19 +709,32 @@ files = [
 
 [[package]]
 name = "langchain-openai"
-version = "0.0.6"
+version = "0.0.8"
 requires_python = ">=3.8.1,<4.0"
 summary = "An integration package connecting OpenAI and LangChain"
 groups = ["default"]
 dependencies = [
-    "langchain-core<0.2,>=0.1.16",
-    "numpy<2,>=1",
+    "langchain-core<0.2.0,>=0.1.27",
     "openai<2.0.0,>=1.10.0",
     "tiktoken<1,>=0.5.2",
 ]
 files = [
-    {file = "langchain_openai-0.0.6-py3-none-any.whl", hash = "sha256:2ef040e4447a26a9d3bd45dfac9cefa00797ea58555a3d91ab4f88699eb3a005"},
-    {file = "langchain_openai-0.0.6.tar.gz", hash = "sha256:f5c4ebe46f2c8635c8f0c26cc8df27700aacafea025410e418d5a080039974dd"},
+    {file = "langchain_openai-0.0.8-py3-none-any.whl", hash = "sha256:4862fc72cecbee0240aaa6df0234d5893dd30cd33ca23ac5cfdd86c11d2c44df"},
+    {file = "langchain_openai-0.0.8.tar.gz", hash = "sha256:b7aba7fcc52305e78b08197ebc54fc45cc06dbc40ba5b913bc48a22b30a4f5c9"},
+]
+
+[[package]]
+name = "langchain-text-splitters"
+version = "0.0.1"
+requires_python = ">=3.8.1,<4.0"
+summary = "LangChain text splitting utilities"
+groups = ["default", "dev"]
+dependencies = [
+    "langchain-core<0.2.0,>=0.1.28",
+]
+files = [
+    {file = "langchain_text_splitters-0.0.1-py3-none-any.whl", hash = "sha256:f5b802f873f5ff6a8b9259ff34d53ed989666ef4e1582e6d1adb3b5520e3839a"},
+    {file = "langchain_text_splitters-0.0.1.tar.gz", hash = "sha256:ac459fa98799f5117ad5425a9330b21961321e30bc19a2a2f9f761ddadd62aa1"},
 ]
 
 [[package]]
@@ -746,7 +760,7 @@ version = "0.0.41"
 extras = ["all"]
 requires_python = ">=3.8.1,<4.0.0"
 summary = ""
-groups = ["dev"]
+groups = ["default", "dev"]
 dependencies = [
     "fastapi<1,>=0.90.1",
     "httpx-sse>=0.3.1",
@@ -777,17 +791,18 @@ files = [
 
 [[package]]
 name = "langsmith"
-version = "0.1.4"
+version = "0.1.27"
 requires_python = ">=3.8.1,<4.0"
 summary = "Client library to connect to the LangSmith LLM Tracing and Evaluation Platform."
 groups = ["default", "dev"]
 dependencies = [
+    "orjson<4.0.0,>=3.9.14",
     "pydantic<3,>=1",
     "requests<3,>=2",
 ]
 files = [
-    {file = "langsmith-0.1.4-py3-none-any.whl", hash = "sha256:13ea90c030a3ef472e00f4dd31b9c89f165f98f0c870309eca3366c93fcaa29f"},
-    {file = "langsmith-0.1.4.tar.gz", hash = "sha256:b45ea1001f67c4c233b3521eb578326863e32e0eb738e52900c035261deec368"},
+    {file = "langsmith-0.1.27-py3-none-any.whl", hash = "sha256:d223176952b1525c958189ab1b894f5bd9891ec9177222f7a978aeee4bf1cc95"},
+    {file = "langsmith-0.1.27.tar.gz", hash = "sha256:e0a339d976362051adf3fdbc43fcc7c00bb4615a401321ad7e556bd2dab556c0"},
 ]
 
 [[package]]
@@ -1530,7 +1545,7 @@ name = "shellingham"
 version = "1.5.4"
 requires_python = ">=3.7"
 summary = "Tool to Detect Surrounding Shell"
-groups = ["dev"]
+groups = ["default", "dev"]
 files = [
     {file = "shellingham-1.5.4-py2.py3-none-any.whl", hash = "sha256:7ecfff8f2fd72616f7481040475a65b2bf8af90a56c89140852d1120324e8686"},
     {file = "shellingham-1.5.4.tar.gz", hash = "sha256:8dbca0739d487e5bd35ab3ca4b36e11c4078f3a234bfce294b0a0291363404de"},
@@ -1552,7 +1567,7 @@ name = "smmap"
 version = "5.0.1"
 requires_python = ">=3.7"
 summary = "A pure Python implementation of a sliding window memory map manager"
-groups = ["dev"]
+groups = ["default", "dev"]
 files = [
     {file = "smmap-5.0.1-py3-none-any.whl", hash = "sha256:e6d8668fa5f93e706934a62d7b4db19c8d9eb8cf2adbb75ef1b675aa332b69da"},
     {file = "smmap-5.0.1.tar.gz", hash = "sha256:dceeb6c0028fdb6734471eb07c0cd2aae706ccaecab45965ee83f11c8d3b1f62"},
@@ -1844,7 +1859,7 @@ name = "tomlkit"
 version = "0.12.3"
 requires_python = ">=3.7"
 summary = "Style preserving TOML library"
-groups = ["dev"]
+groups = ["default", "dev"]
 files = [
     {file = "tomlkit-0.12.3-py3-none-any.whl", hash = "sha256:b0a645a9156dc7cb5d3a1f0d4bab66db287fcb8e0430bdd4664a095ea16414ba"},
     {file = "tomlkit-0.12.3.tar.gz", hash = "sha256:75baf5012d06501f07bee5bf8e801b9f343e7aac5a92581f20f80ce632e6b5a4"},
@@ -1929,7 +1944,7 @@ name = "typer"
 version = "0.9.0"
 requires_python = ">=3.6"
 summary = "Typer, build great CLIs. Easy to code. Based on Python type hints."
-groups = ["dev"]
+groups = ["default", "dev"]
 dependencies = [
     "click<9.0.0,>=7.1.1",
     "typing-extensions>=3.7.4.3",
@@ -1945,7 +1960,7 @@ version = "0.9.0"
 extras = ["all"]
 requires_python = ">=3.6"
 summary = "Typer, build great CLIs. Easy to code. Based on Python type hints."
-groups = ["dev"]
+groups = ["default", "dev"]
 dependencies = [
     "colorama<0.5.0,>=0.4.3",
     "rich<14.0.0,>=10.11.0",
