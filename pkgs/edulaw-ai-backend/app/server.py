@@ -61,25 +61,26 @@ add_routes(app, embed_documents, path='/embed_documents')
 async def redirect_root_to_docs():
     return RedirectResponse("/docs")
 
-@app.middleware("http")
-async def superadmin_check_middleware(
-    request: Request,
-    call_next: Callable[[Request],
-    Awaitable[Response]]
-    ):
+if os.environ.get('ENVIRONMENT') != 'development':
+    @app.middleware("http")
+    async def superadmin_check_middleware(
+        request: Request,
+        call_next: Callable[[Request],
+        Awaitable[Response]]
+        ):
 
-    if request.method == "OPTIONS":
-        return await call_next(request)
+        if request.method == "OPTIONS":
+            return await call_next(request)
 
-    (is_authorized, reason) = authorize_superadmin(request)
+        (is_authorized, reason) = authorize_superadmin(request)
 
-    if is_authorized:
-        print("Superadmin AUTHORIZED")
-        return await call_next(request)
-    else:
-        print(f"Superadmin authorization FAILED: {reason}")
+        if is_authorized:
+            print("Superadmin AUTHORIZED")
+            return await call_next(request)
+        else:
+            print(f"Superadmin authorization FAILED: {reason}")
 
-        return JSONResponse(content={"reason": reason}, status_code=403)
+            return JSONResponse(content={"reason": reason}, status_code=403)
 
 if __name__ == "__main__":
     import os
