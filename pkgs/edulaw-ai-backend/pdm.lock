@@ -739,7 +739,7 @@ files = [
 
 [[package]]
 name = "langserve"
-version = "0.0.41"
+version = "0.0.51"
 requires_python = ">=3.8.1,<4.0.0"
 summary = ""
 groups = ["default", "dev"]
@@ -750,13 +750,13 @@ dependencies = [
     "pydantic>=1",
 ]
 files = [
-    {file = "langserve-0.0.41-py3-none-any.whl", hash = "sha256:99583a6a4f2a6c3f98ffcf0c9eeed2a1ef6278b0cfaf9d789dfd517c49d0062a"},
-    {file = "langserve-0.0.41.tar.gz", hash = "sha256:8583d9d01b202b4111e21e3c94d91ca6b61093ebff55fdfd0f92c6c8d155a6e5"},
+    {file = "langserve-0.0.51-py3-none-any.whl", hash = "sha256:e735eef2b6fde7e1514f4be8234b9f0727283e639822ca9c25e8ccc2d24e8492"},
+    {file = "langserve-0.0.51.tar.gz", hash = "sha256:036c0104c512bcc2c2406ae089ef9e7e718c32c39ebf6dcb2212f168c7d09816"},
 ]
 
 [[package]]
 name = "langserve"
-version = "0.0.41"
+version = "0.0.51"
 extras = ["all"]
 requires_python = ">=3.8.1,<4.0.0"
 summary = ""
@@ -764,29 +764,29 @@ groups = ["default", "dev"]
 dependencies = [
     "fastapi<1,>=0.90.1",
     "httpx-sse>=0.3.1",
-    "langserve==0.0.41",
+    "langserve==0.0.51",
     "sse-starlette<2.0.0,>=1.3.0",
 ]
 files = [
-    {file = "langserve-0.0.41-py3-none-any.whl", hash = "sha256:99583a6a4f2a6c3f98ffcf0c9eeed2a1ef6278b0cfaf9d789dfd517c49d0062a"},
-    {file = "langserve-0.0.41.tar.gz", hash = "sha256:8583d9d01b202b4111e21e3c94d91ca6b61093ebff55fdfd0f92c6c8d155a6e5"},
+    {file = "langserve-0.0.51-py3-none-any.whl", hash = "sha256:e735eef2b6fde7e1514f4be8234b9f0727283e639822ca9c25e8ccc2d24e8492"},
+    {file = "langserve-0.0.51.tar.gz", hash = "sha256:036c0104c512bcc2c2406ae089ef9e7e718c32c39ebf6dcb2212f168c7d09816"},
 ]
 
 [[package]]
 name = "langserve"
-version = "0.0.41"
+version = "0.0.51"
 extras = ["server"]
 requires_python = ">=3.8.1,<4.0.0"
 summary = ""
 groups = ["default"]
 dependencies = [
     "fastapi<1,>=0.90.1",
-    "langserve==0.0.41",
+    "langserve==0.0.51",
     "sse-starlette<2.0.0,>=1.3.0",
 ]
 files = [
-    {file = "langserve-0.0.41-py3-none-any.whl", hash = "sha256:99583a6a4f2a6c3f98ffcf0c9eeed2a1ef6278b0cfaf9d789dfd517c49d0062a"},
-    {file = "langserve-0.0.41.tar.gz", hash = "sha256:8583d9d01b202b4111e21e3c94d91ca6b61093ebff55fdfd0f92c6c8d155a6e5"},
+    {file = "langserve-0.0.51-py3-none-any.whl", hash = "sha256:e735eef2b6fde7e1514f4be8234b9f0727283e639822ca9c25e8ccc2d24e8492"},
+    {file = "langserve-0.0.51.tar.gz", hash = "sha256:036c0104c512bcc2c2406ae089ef9e7e718c32c39ebf6dcb2212f168c7d09816"},
 ]
 
 [[package]]
