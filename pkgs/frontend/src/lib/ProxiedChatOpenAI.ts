@@ -5,7 +5,7 @@ import type { Session } from '@supabase/supabase-js';
 type ChatOpenAIArgs = ConstructorParameters<typeof ChatOpenAI>[0];
 
 export function createProxiedModel(supabaseSession: Session, fields?: ChatOpenAIArgs) {
-	const baseURL = `${PUBLIC_EDULAW_URL}/proxy/openai/`;
+	const baseURL = `${PUBLIC_EDULAW_URL}/proxy/openai`;
 
 	if (!fields) {
 		fields = {};
