@@ -1,4 +1,4 @@
-from typing import Awaitable, Callable
+from typing import Awaitable, Callable, Dict, List
 
 from app.remote_embeddings import embed_documents, embed_query
 from app.utils import authorize_superadmin
@@ -9,7 +9,7 @@ from chains.naive_retrieval import chain as naive_retrieval
 from chains.qa_chain import chain as qa_chain
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
 from langchain_community.chat_models import ChatOllama
 from langchain_groq import ChatGroq
 from langchain_openai.chat_models import ChatOpenAI
@@ -57,30 +57,35 @@ if OLLAMA_URL is not None:
 add_routes(app, embed_query, path='/embed_query')
 add_routes(app, embed_documents, path='/embed_documents')
 
+from routers.chat_completions_proxy import router as chat_completions
+
+app.include_router(chat_completions)
+
+
+
 @app.get("/")
 async def redirect_root_to_docs():
     return RedirectResponse("/docs")
 
-if os.environ.get('ENVIRONMENT') != 'development':
-    @app.middleware("http")
-    async def superadmin_check_middleware(
-        request: Request,
-        call_next: Callable[[Request],
-        Awaitable[Response]]
-        ):
+@app.middleware("http")
+async def superadmin_check_middleware(
+    request: Request,
+    call_next: Callable[[Request],
+    Awaitable[Response]]
+    ):
 
-        if request.method == "OPTIONS":
-            return await call_next(request)
+    if request.method == "OPTIONS":
+        return await call_next(request)
 
-        (is_authorized, reason) = authorize_superadmin(request)
+    (is_authorized, reason) = authorize_superadmin(request)
 
-        if is_authorized:
-            print("Superadmin AUTHORIZED")
-            return await call_next(request)
-        else:
-            print(f"Superadmin authorization FAILED: {reason}")
+    if is_authorized:
+        print("Superadmin AUTHORIZED")
+        return await call_next(request)
+    else:
+        print(f"Superadmin authorization FAILED: {reason}")
 
-            return JSONResponse(content={"reason": reason}, status_code=403)
+        return JSONResponse(content={"reason": reason}, status_code=403)
 
 if __name__ == "__main__":
     import os

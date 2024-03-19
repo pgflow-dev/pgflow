@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { ChatPromptTemplate } from '@langchain/core/prompts';
 	import { onMount } from 'svelte';
-	import { RemoteModel } from '$lib/remoteRunnables';
 	import type { AIMessageChunk } from '@langchain/core/messages';
+	import { createProxiedModel } from '$lib/ProxiedChatOpenAI';
 
 	export let data;
 	let { session } = data;
@@ -17,11 +17,13 @@
 		const prompt = ChatPromptTemplate.fromTemplate(
 			'Tell me a joke about {topic}, but create a really long introduction to make it hit harder'
 		);
-		const model = RemoteModel('ChatOpenAI', session, { timeout: 30000 });
+		const model = createProxiedModel(session);
+		const chain = prompt.pipe(model);
 
-		const stream = await model.stream(await prompt.invoke(input));
+		const stream = await chain.stream(input);
 
 		for await (const chunk of stream) {
+			console.log({ chunk });
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			response.update((c: any) => {
 				if (c && c.concat) {
@@ -30,8 +32,9 @@
 					return chunk;
 				}
 			});
-			console.log(chunk);
 		}
+
+		console.log('after stream');
 	});
 </script>
 

@@ -28,11 +28,8 @@
 		new MessagesPlaceholder('history'),
 		['human', '{input}']
 	]);
-	import { RemoteModel } from '$lib/remoteRunnables';
-	const model = RemoteModel('ChatOpenAI', session, { timeout: 30000 });
-	// import { ChatOpenAI } from '@langchain/openai';
-	// import { PUBLIC_OPENAI_API_KEY } from '$env/static/public';
-	// const model = new ChatOpenAI({ openAIApiKey: PUBLIC_OPENAI_API_KEY });
+	import { createProxiedModel } from '$lib/ProxiedChatOpenAI';
+	const model = createProxiedModel(session);
 	const runnableSession = new RunnableWithMessageHistory({
 		runnable: prompt.pipe(model),
 		getMessageHistory: () => chatHistory,
