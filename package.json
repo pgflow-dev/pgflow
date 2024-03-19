@@ -3,7 +3,7 @@
   "author": "Wojciech Majewski <wojciech.majewski@pm.me>",
   "license": "UNLICENSED",
   "devDependencies": {
-    "turbo": "^1.11.3",
-    "vercel": "^33.1.0"
+    "turbo": "^1.12.5",
+    "vercel": "^33.6.1"
   }
 }
