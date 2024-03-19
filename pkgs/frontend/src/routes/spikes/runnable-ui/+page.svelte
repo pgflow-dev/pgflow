@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { RunnableSequence } from '@langchain/core/runnables';
-	import { RemoteModel } from '$lib/remoteRunnables';
 	import { createChatWithHistoryRunner } from '$lib/runnableStore';
 	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
 	import ChatLayout from '$components/ChatLayout.svelte';
 	import Prompt from '$components/Prompt.svelte';
 	import BaseMessageList from '$components/BaseMessageList.svelte';
+	import { createProxiedModel } from '$lib/ProxiedChatOpenAI';
 
 	export let data;
 	let { session } = data;
@@ -16,7 +16,7 @@
 		new MessagesPlaceholder('history'),
 		['human', '{input}']
 	]);
-	const model = RemoteModel('ChatOpenAI', session, { timeout: 30000 });
+	const model = createProxiedModel(session);
 	const runnable = RunnableSequence.from([
 		{ input: (input) => input, history: () => $history },
 		prompt,

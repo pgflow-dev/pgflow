@@ -3,7 +3,6 @@
 	// import type { BaseMessage } from '$lib/chatTypes';
 	import type { StoredMessage } from '@langchain/core/messages';
 	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
-	import { RemoteModel } from '$lib/remoteRunnables';
 	// import { ChatMessageHistory } from '@langchain/community/stores/message/in_memory';
 	// import { RunnableWithMessageHistory } from '@langchain/core/runnables';
 	import ChatLayout from '$components/ChatLayout.svelte';
@@ -14,6 +13,8 @@
 	import { RunnableSequence } from '@langchain/core/runnables';
 	import { RemoteEmbeddings } from '$lib/remoteEmbeddings';
 	// import { StringOutputParser } from '@langchain/core/output_parsers';
+	import { createProxiedModel } from '$lib/ProxiedChatOpenAI';
+	import { BaseMessageChunk } from '@langchain/core/messages';
 
 	export let data;
 	let { session } = data;
@@ -24,7 +25,7 @@
 		new MessagesPlaceholder('history'),
 		['human', '{query}']
 	]);
-	const model = RemoteModel('ChatOllama/dolphin-mixtral', session, { timeout: 30000 });
+	const model = createProxiedModel(session);
 
 	const remoteEmbeddings = new RemoteEmbeddings({}, session);
 	const vectorStore = new MemoryVectorStore(remoteEmbeddings);
@@ -69,13 +70,13 @@
 	let currentMessage: string = '';
 	let messages: StoredMessage[] = [];
 
-	let output = '';
+	let output: BaseMessageChunk;
 	let inProgress = false;
 
 	async function invokeChain() {
 		inProgress = true;
 
-		output = (await chain.invoke({ query: currentMessage })) as string;
+		output = await chain.invoke({ query: currentMessage });
 		console.log('output', output);
 
 		currentMessage = '';

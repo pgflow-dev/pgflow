@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
-	import { RemoteModel } from '$lib/remoteRunnables';
 	import type { RemoteModelId } from '$lib/remoteRunnables';
 	import ChatLayout from '$components/ChatLayout.svelte';
 	import Prompt from '$components/Prompt.svelte';
@@ -10,6 +9,7 @@
 	import { RunnableSequence } from '@langchain/core/runnables';
 	import { StringOutputParser } from '@langchain/core/output_parsers';
 	import { currentModelId } from '$lib/currentModelIdStore.js';
+	import { createProxiedModel } from '$lib/ProxiedChatOpenAI';
 
 	export let data;
 	let { session } = data;
@@ -22,7 +22,7 @@
 	]);
 
 	function initChain(modelId: RemoteModelId) {
-		let model = RemoteModel(modelId, session, { timeout: 30000 });
+		let model = createProxiedModel(session);
 		let chain = RunnableSequence.from([prompt, model, new StringOutputParser()]);
 		console.log(`initializing ${modelId}`);
 
