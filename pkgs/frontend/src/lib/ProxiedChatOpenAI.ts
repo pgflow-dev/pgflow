@@ -4,7 +4,13 @@ import type { Session } from '@supabase/supabase-js';
 
 type ChatOpenAIArgs = ConstructorParameters<typeof ChatOpenAI>[0];
 
-export function createProxiedModel(supabaseSession: Session, fields?: ChatOpenAIArgs) {
+type ProxyableChatModel = 'ChatOpenAI';
+
+export function createProxiedChatModel(
+	chatModelKlass: ProxyableChatModel,
+	supabaseSession: Session,
+	fields?: ChatOpenAIArgs
+) {
 	const edulawURL = PUBLIC_EDULAW_URL.replace(/\/$/, '');
 	const baseURL = `${edulawURL}/proxy/openai`;
 
@@ -27,5 +33,9 @@ export function createProxiedModel(supabaseSession: Session, fields?: ChatOpenAI
 		Authorization: `Bearer ${supabaseSession.access_token}`
 	};
 
-	return new ChatOpenAI({ ...fields });
+	if (chatModelKlass === 'ChatOpenAI') {
+		return new ChatOpenAI({ ...fields });
+	} else {
+		throw new Error(`Unsupported chat model: ${chatModelKlass}`);
+	}
 }

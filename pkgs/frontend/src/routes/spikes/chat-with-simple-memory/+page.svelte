@@ -9,7 +9,7 @@
 	import { RunnableSequence } from '@langchain/core/runnables';
 	import { StringOutputParser } from '@langchain/core/output_parsers';
 	import { currentModelId } from '$lib/currentModelIdStore.js';
-	import { createProxiedModel } from '$lib/ProxiedChatOpenAI';
+	import { createProxiedChatModel } from '$lib/ProxiedChatOpenAI';
 
 	export let data;
 	let { session } = data;
@@ -22,7 +22,7 @@
 	]);
 
 	function initChain(modelId: RemoteModelId) {
-		let model = createProxiedModel(session);
+		let model = createProxiedChatModel('ChatOpenAI', session);
 		let chain = RunnableSequence.from([prompt, model, new StringOutputParser()]);
 		console.log(`initializing ${modelId}`);
 
