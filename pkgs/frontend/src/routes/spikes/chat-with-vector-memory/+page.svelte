@@ -13,7 +13,7 @@
 	import { RunnableSequence } from '@langchain/core/runnables';
 	import { RemoteEmbeddings } from '$lib/remoteEmbeddings';
 	// import { StringOutputParser } from '@langchain/core/output_parsers';
-	import { createProxiedModel } from '$lib/ProxiedChatOpenAI';
+	import { createProxiedChatModel } from '$lib/ProxiedChatOpenAI';
 	import { BaseMessageChunk } from '@langchain/core/messages';
 
 	export let data;
@@ -25,7 +25,7 @@
 		new MessagesPlaceholder('history'),
 		['human', '{query}']
 	]);
-	const model = createProxiedModel(session);
+	const model = createProxiedChatModel('ChatOpenAI', session);
 
 	const remoteEmbeddings = new RemoteEmbeddings({}, session);
 	const vectorStore = new MemoryVectorStore(remoteEmbeddings);

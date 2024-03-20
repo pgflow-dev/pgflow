@@ -2,14 +2,13 @@ import { BaseListChatMessageHistory } from '@langchain/core/chat_history';
 import { BaseMessage, mapChatMessagesToStoredMessages } from '@langchain/core/messages';
 import type { StoredMessage } from '@langchain/core/messages';
 import { AIMessage, HumanMessage } from '@langchain/core/messages';
-import type { SupabaseClient, Session } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '$backend/types';
 import type { Writable } from 'svelte/store';
 import { writable } from 'svelte/store';
 
 export interface SupabaseChatMessageHistoryInput {
 	conversationId: string;
-	session: Session;
 	supabase: SupabaseClient;
 }
 
@@ -59,15 +58,12 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 	lc_namespace = ['langchain', 'stores', 'message'];
 
 	conversationId: string;
-	session: Session;
 	supabase: SupabaseClient;
 	messagesStore: Writable<ChatMessage[]>;
 
 	constructor(fields: SupabaseChatMessageHistoryInput) {
-		// console.log('SupabaseChatMessageHistory:constructor', fields);
 		super(fields);
 		this.conversationId = fields.conversationId;
-		this.session = fields.session;
 		this.supabase = fields.supabase;
 		this.messagesStore = writable<ChatMessage[]>([]);
 	}
@@ -78,6 +74,8 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 			.select('*')
 			.eq('conversation_id', this.conversationId)
 			.order('created_at', { ascending: true });
+
+		console.log('getMessages : rawMessages', rawMessages);
 
 		if (error) {
 			throw error;
@@ -95,6 +93,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 	}
 
 	async addMessage(message: BaseMessage): Promise<void> {
+		console.log('addMessage : message', message);
 		const storedMessage = mapChatMessagesToStoredMessages([message])[0];
 
 		const chatMessage = mapStoredMessagesToChatMessages([storedMessage], this.conversationId)[0];
@@ -105,10 +104,15 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 		}
 
 		// console.log('addMessage', { chatMessage });
-		this.messagesStore.update((chatMessages) => [...chatMessages, chatMessage]);
+		this.messagesStore.update((chatMessages) => {
+			console.log({ chatMessages, chatMessage });
+			return [...chatMessages, chatMessage];
+		});
+		console.log('after update');
 	}
 
 	async addMessages(messages: BaseMessage[]): Promise<void> {
+		console.log('addMessages : messages', messages);
 		const storedMessages = mapChatMessagesToStoredMessages(messages);
 		const chatMessages = mapStoredMessagesToChatMessages(storedMessages, this.conversationId);
 
@@ -122,6 +126,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 	}
 
 	async clear(): Promise<void> {
+		console.log('clear');
 		await this.supabase.from('chat_messages').delete().eq('conversation_id', this.conversationId);
 	}
 }

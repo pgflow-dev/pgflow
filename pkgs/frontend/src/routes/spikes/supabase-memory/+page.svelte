@@ -3,11 +3,10 @@
 	import type { ChatMessage } from '$lib/supabaseChatMessageHistory';
 	import ChatLayout from '$components/ChatLayout.svelte';
 	import Prompt from '$components/Prompt.svelte';
-	import ChatMessageList from '$components/ChatMessageList.svelte';
+	// import ChatMessageList from '$components/ChatMessageList.svelte';
 	// import Debug from '$components/Debug.svelte';
-	import { RunnableWithMessageHistory } from '@langchain/core/runnables';
-	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
 	import { createChatRunner } from '$lib/chatRunners';
+	import { createQaChainWithHistory } from '$lib/chains/QaChain';
 	// import { debug } from '$lib/runnables';
 
 	export let data;
@@ -18,24 +17,14 @@
 
 	const chatHistory = new SupabaseChatMessageHistory({
 		conversationId,
-		supabase,
-		session
+		supabase
 	});
 	chatHistory.clear();
 
-	const prompt = ChatPromptTemplate.fromMessages([
-		['system', "You're an assistant who's good at answering questions."],
-		new MessagesPlaceholder('history'),
-		['human', '{input}']
-	]);
-	import { createProxiedModel } from '$lib/ProxiedChatOpenAI';
-	const model = createProxiedModel(session);
-	const runnableSession = new RunnableWithMessageHistory({
-		runnable: prompt.pipe(model),
-		getMessageHistory: () => chatHistory,
-		inputMessagesKey: 'input',
-		historyMessagesKey: 'history',
-		config: { configurable: { sessionId: conversationId } }
+	const runnableSession = createQaChainWithHistory({
+		session,
+		conversationId,
+		memory: chatHistory
 	});
 
 	let currentMessage = '';
@@ -85,7 +74,7 @@
 
 <ChatLayout>
 	<svelte:fragment slot="messages">
-		<ChatMessageList messagesStore={simplifiedHistory} />
+		<!-- <ChatMessageList messagesStore={simplifiedHistory} /> -->
 	</svelte:fragment>
 
 	<svelte:fragment slot="prompt">

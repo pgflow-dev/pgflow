@@ -13,7 +13,8 @@
 		['supabase-memory', '/spikes/supabase-memory'],
 		['layout diy', '/spikes/chat-layout-diy'],
 		['flex grow', '/spikes/flex-grow'],
-		['test streaming', '/spikes/test-streaming']
+		['test streaming', '/spikes/test-streaming'],
+		['runnable store', '/spikes/runnable-store']
 	];
 
 	export let data;

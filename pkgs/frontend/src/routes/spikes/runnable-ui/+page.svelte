@@ -5,7 +5,7 @@
 	import ChatLayout from '$components/ChatLayout.svelte';
 	import Prompt from '$components/Prompt.svelte';
 	import BaseMessageList from '$components/BaseMessageList.svelte';
-	import { createProxiedModel } from '$lib/ProxiedChatOpenAI';
+	import { createProxiedChatModel } from '$lib/ProxiedChatOpenAI';
 
 	export let data;
 	let { session } = data;
@@ -16,7 +16,7 @@
 		new MessagesPlaceholder('history'),
 		['human', '{input}']
 	]);
-	const model = createProxiedModel(session);
+	const model = createProxiedChatModel('ChatOpenAI', session);
 	const runnable = RunnableSequence.from([
 		{ input: (input) => input, history: () => $history },
 		prompt,

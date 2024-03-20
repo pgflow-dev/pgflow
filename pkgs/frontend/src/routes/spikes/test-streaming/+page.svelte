@@ -2,7 +2,7 @@
 	import { ChatPromptTemplate } from '@langchain/core/prompts';
 	import { onMount } from 'svelte';
 	import type { AIMessageChunk } from '@langchain/core/messages';
-	import { createProxiedModel } from '$lib/ProxiedChatOpenAI';
+	import { createProxiedChatModel } from '$lib/ProxiedChatOpenAI';
 
 	export let data;
 	let { session } = data;
@@ -17,7 +17,7 @@
 		const prompt = ChatPromptTemplate.fromTemplate(
 			'Tell me a joke about {topic}, but create a really long introduction to make it hit harder'
 		);
-		const model = createProxiedModel(session);
+		const model = createProxiedChatModel('ChatOpenAI', session);
 		const chain = prompt.pipe(model);
 
 		const stream = await chain.stream(input);
