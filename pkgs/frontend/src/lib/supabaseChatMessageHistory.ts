@@ -1,5 +1,8 @@
 import { BaseListChatMessageHistory } from '@langchain/core/chat_history';
-import { BaseMessage, mapChatMessagesToStoredMessages } from '@langchain/core/messages';
+import {
+	BaseMessage,
+	mapChatMessagesToStoredMessages as mapBaseMessagesToStoredMessages
+} from '@langchain/core/messages';
 import type { StoredMessage } from '@langchain/core/messages';
 import { AIMessage, HumanMessage } from '@langchain/core/messages';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -17,7 +20,7 @@ export type ChatMessage = Pick<
 	'content' | 'role' | 'conversation_id'
 >;
 
-function mapPostgrestMessageToChatMessage(message: ChatMessage): BaseMessage {
+export function chatMessageToBaseMessage(message: ChatMessage): BaseMessage {
 	if (message.role == 'assistant') {
 		return new AIMessage(message.content);
 	} else if (message.role == 'user') {
@@ -32,7 +35,7 @@ export function mapStoredMessagesToChatMessages(
 	conversationId: string
 ): ChatMessage[] {
 	storedMessages.forEach((message: StoredMessage) => {
-		if (message.type !== 'human' && message.type !== 'ai') {
+		if (message.type !== 'human' && message.type !== 'ai' && message.type !== 'generic') {
 			throw `Unknown message type: ${message.type}`;
 		}
 	});
@@ -75,7 +78,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 			.eq('conversation_id', this.conversationId)
 			.order('created_at', { ascending: true });
 
-		console.log('getMessages : rawMessages', rawMessages);
+		console.log('getMessages/rawMessages', rawMessages);
 
 		if (error) {
 			throw error;
@@ -84,7 +87,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 		// console.log('getMessages', rawMessages);
 		if (rawMessages) {
 			this.messagesStore.set(<ChatMessage[]>rawMessages);
-			const chatMessages = rawMessages.map(mapPostgrestMessageToChatMessage);
+			const chatMessages = rawMessages.map(chatMessageToBaseMessage);
 			return chatMessages;
 		} else {
 			this.messagesStore.set([]);
@@ -93,8 +96,9 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 	}
 
 	async addMessage(message: BaseMessage): Promise<void> {
-		console.log('addMessage : message', message);
-		const storedMessage = mapChatMessagesToStoredMessages([message])[0];
+		console.log('addMessage/message', message);
+		const storedMessage = mapBaseMessagesToStoredMessages([message])[0];
+		console.log('addMessage/storedMessage', storedMessage);
 
 		const chatMessage = mapStoredMessagesToChatMessages([storedMessage], this.conversationId)[0];
 		const { error } = await this.supabase.from('chat_messages').insert([chatMessage]);
@@ -103,7 +107,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 			throw error;
 		}
 
-		// console.log('addMessage', { chatMessage });
+		console.log('addMessage/chatMessage', chatMessage);
 		this.messagesStore.update((chatMessages) => {
 			console.log({ chatMessages, chatMessage });
 			return [...chatMessages, chatMessage];
@@ -112,8 +116,8 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 	}
 
 	async addMessages(messages: BaseMessage[]): Promise<void> {
-		console.log('addMessages : messages', messages);
-		const storedMessages = mapChatMessagesToStoredMessages(messages);
+		console.log('addMessages/messages', messages);
+		const storedMessages = mapBaseMessagesToStoredMessages(messages);
 		const chatMessages = mapStoredMessagesToChatMessages(storedMessages, this.conversationId);
 
 		const { error } = await this.supabase.from('chat_messages').insert(chatMessages);

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { ChatPromptTemplate } from '@langchain/core/prompts';
 	import { createProxiedChatModel } from '$lib/ProxiedChatOpenAI';
-	import { ChatMessageHistoryStore } from '$lib/ChatMessageHistoryStore';
+	// import { ChatMessageHistoryStore } from '$lib/ChatMessageHistoryStore';
 	// import Debug from '$components/Debug.svelte';
 	import Prompt from '$components/Prompt.svelte';
 	import ChatLayout from '$components/ChatLayout.svelte';
@@ -9,16 +9,26 @@
 	import { createChainWithHistory } from '$lib/chains/createChainWithHistory';
 	import { writable, derived, get } from 'svelte/store';
 	import { AIMessageChunk } from '@langchain/core/messages';
+	import {
+		SupabaseChatMessageHistory,
+		chatMessageToBaseMessage
+	} from '$lib/supabaseChatMessageHistory';
 
 	export let data;
-	let { session } = data;
-	$: ({ session } = data);
+	let { session, supabase } = data;
+	$: ({ session, supabase } = data);
 
-	const history = new ChatMessageHistoryStore();
+	const conversationId = 'f4b105bc-ca88-45b5-b90c-ce22f8ebaab7';
+	const history = new SupabaseChatMessageHistory({ supabase, conversationId });
+	history.clear();
 
 	const aiMessageChunk = writable<AIMessageChunk | null>(null);
+	const baseMessages = derived(history.messagesStore, ($messages) => {
+		return $messages.map(chatMessageToBaseMessage);
+	});
+
 	const messagesWithChunk = derived(
-		[history.messagesStore, aiMessageChunk],
+		[baseMessages, aiMessageChunk],
 		([$messages, $aiMessageChunk]) => {
 			if ($aiMessageChunk) {
 				$messages = [...$messages, $aiMessageChunk];
@@ -45,7 +55,9 @@
 
 		const aiMessage = get(aiMessageChunk);
 		if (aiMessage) {
-			history.addMessage(aiMessage);
+			console.log('PRE');
+			await history.addMessage(aiMessage);
+			console.log('POST');
 		}
 
 		aiMessageChunk.set(null);
