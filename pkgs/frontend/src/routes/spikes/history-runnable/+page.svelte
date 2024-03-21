@@ -2,69 +2,65 @@
 	import { ChatPromptTemplate } from '@langchain/core/prompts';
 	import { createProxiedChatModel } from '$lib/ProxiedChatOpenAI';
 	import { ChatMessageHistoryStore } from '$lib/ChatMessageHistoryStore';
-	import { RunnableSequence, RunnablePassthrough, RunnableLambda } from '@langchain/core/runnables';
-	import { type BaseMessage } from '@langchain/core/messages';
 	// import Debug from '$components/Debug.svelte';
 	import Prompt from '$components/Prompt.svelte';
 	import ChatLayout from '$components/ChatLayout.svelte';
 	import BaseMessageList from '$components/BaseMessageList.svelte';
-	import { ChatPromptValue } from '@langchain/core/prompt_values';
+	import { createChainWithHistory } from '$lib/chains/createChainWithHistory';
+	import { writable, derived, get } from 'svelte/store';
+	import { AIMessageChunk } from '@langchain/core/messages';
 
 	export let data;
 	let { session } = data;
 	$: ({ session } = data);
 
-	const chatHistory = new ChatMessageHistoryStore();
-	const messages = chatHistory.messagesStore;
+	const history = new ChatMessageHistoryStore();
+	const messages = history.messagesStore;
+	const aiMessageChunk = writable<AIMessageChunk | null>(null);
+	const messagesWithChunk = derived([messages, aiMessageChunk], ([$messages, $aiMessageChunk]) => {
+		if ($aiMessageChunk) {
+			$messages = [...$messages, $aiMessageChunk];
+		}
+		return $messages;
+	});
 
 	const prompt = ChatPromptTemplate.fromTemplate('{input}');
 	const model = createProxiedChatModel('ChatOpenAI', session);
 
-	const chain = RunnableSequence.from([
-		RunnablePassthrough.assign({
-			history: () => chatHistory.getMessages()
-		}),
-
-		prompt,
-
-		// save HumanMessage
-		new RunnableLambda({
-			func: (chatPromptValue: ChatPromptValue) => {
-				const { messages } = chatPromptValue;
-				const humanMessage = messages[messages.length - 1];
-				chatHistory.addMessage(humanMessage);
-
-				return chatPromptValue;
-			}
-		}),
-
-		model,
-
-		// save AIMessage
-		new RunnableLambda({
-			func: (output: BaseMessage) => {
-				chatHistory.addMessage(output);
-				return output;
-			}
-		})
-	]);
+	const chain = createChainWithHistory({ prompt, model, history });
 
 	let userInput = '';
 
-	async function run() {
-		let response = await chain.invoke({ input: userInput });
-		userInput = '';
+	async function runStream() {
+		const stream = await chain.stream({ input: userInput });
 
-		console.log('response', response);
+		for await (const chunk of stream) {
+			aiMessageChunk.update((c) => {
+				return c ? c.concat(chunk) : chunk;
+			});
+		}
+
+		const aiMessage = get(aiMessageChunk);
+		if (aiMessage) {
+			history.addMessage(aiMessage);
+		}
+
+		aiMessageChunk.set(null);
+		userInput = '';
 	}
 </script>
 
 <ChatLayout>
 	<svelte:fragment slot="messages">
-		<BaseMessageList messagesStore={messages} />
+		<BaseMessageList messagesStore={messagesWithChunk} />
 	</svelte:fragment>
 
 	<svelte:fragment slot="prompt">
-		<Prompt bind:value={userInput} on:submit={run} label="Send" placeholder="Ask a question" />
+		<Prompt
+			bind:value={userInput}
+			on:submit={runStream}
+			label="Send"
+			placeholder="Ask a question"
+		/>
 	</svelte:fragment>
 </ChatLayout>

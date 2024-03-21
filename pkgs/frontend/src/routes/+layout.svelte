@@ -12,9 +12,9 @@
 		['chat-runner', '/spikes/runnable-ui'],
 		['supabase-memory', '/spikes/supabase-memory'],
 		['layout diy', '/spikes/chat-layout-diy'],
-		['flex grow', '/spikes/flex-grow'],
 		['test streaming', '/spikes/test-streaming'],
-		['runnable store', '/spikes/runnable-store']
+		['runnable store', '/spikes/runnable-store'],
+		['history runnable', '/spikes/history-runnable']
 	];
 
 	export let data;
