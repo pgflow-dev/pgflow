@@ -20,7 +20,7 @@
 
 	const conversationId = 'f4b105bc-ca88-45b5-b90c-ce22f8ebaab7';
 	const history = new SupabaseChatMessageHistory({ supabase, conversationId });
-	history.clear();
+	const getMessagesPromise = history.getMessages();
 
 	const aiMessageChunk = writable<AIMessageChunk | null>(null);
 	const baseMessages = derived(history.messagesStore, ($messages) => {
@@ -45,6 +45,8 @@
 	let userInput = '';
 
 	async function runStream() {
+		await getMessagesPromise;
+
 		const stream = await chain.stream({ input: userInput });
 
 		for await (const chunk of stream) {
@@ -67,7 +69,13 @@
 
 <ChatLayout>
 	<svelte:fragment slot="messages">
-		<BaseMessageList messagesStore={messagesWithChunk} />
+		{#await getMessagesPromise}
+			<div class="w-full h-full flex items-center justify-center">
+				<h3 class="h3 text-gray-700">Loading conversation...</h3>
+			</div>
+		{:then}
+			<BaseMessageList messagesStore={messagesWithChunk} />
+		{/await}
 	</svelte:fragment>
 
 	<svelte:fragment slot="prompt">
