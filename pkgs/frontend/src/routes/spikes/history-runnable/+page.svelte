@@ -15,14 +15,17 @@
 	$: ({ session } = data);
 
 	const history = new ChatMessageHistoryStore();
-	const messages = history.messagesStore;
+
 	const aiMessageChunk = writable<AIMessageChunk | null>(null);
-	const messagesWithChunk = derived([messages, aiMessageChunk], ([$messages, $aiMessageChunk]) => {
-		if ($aiMessageChunk) {
-			$messages = [...$messages, $aiMessageChunk];
+	const messagesWithChunk = derived(
+		[history.messagesStore, aiMessageChunk],
+		([$messages, $aiMessageChunk]) => {
+			if ($aiMessageChunk) {
+				$messages = [...$messages, $aiMessageChunk];
+			}
+			return $messages;
 		}
-		return $messages;
-	});
+	);
 
 	const prompt = ChatPromptTemplate.fromTemplate('{input}');
 	const model = createProxiedChatModel('ChatOpenAI', session);
