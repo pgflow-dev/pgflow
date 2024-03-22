@@ -8,6 +8,6 @@
     "test:focus": "pdm run pytest -m focus --color=yes **/*_test.py",
     "test:watch": "ls **/*_test.py | entr -rc pnpm run test",
     "test:focus:watch": "ls **/*_test.py | entr -rc pnpm run test:focus",
-    "dev": "source ./.env && pdm run langchain serve --port $HTTP_PORT"
+    "dev": "source ./.env && HTTP_PORT=$HTTP_PORT pdm run python -m app.server"
   }
 }

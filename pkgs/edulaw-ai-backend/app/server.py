@@ -1,4 +1,4 @@
-from typing import Awaitable, Callable
+from typing import Awaitable, Callable, Dict, List
 
 from app.remote_embeddings import embed_documents, embed_query
 from app.utils import authorize_superadmin
@@ -9,7 +9,7 @@ from chains.naive_retrieval import chain as naive_retrieval
 from chains.qa_chain import chain as qa_chain
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
 from langchain_community.chat_models import ChatOllama
 from langchain_groq import ChatGroq
 from langchain_openai.chat_models import ChatOpenAI
@@ -46,14 +46,22 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-OLLAMA_URL = os.environ["OLLAMA_URL"]
-add_routes(app, ChatOllama(base_url=OLLAMA_URL, model="dolphin-mixtral"), path='/models/ChatOllama/dolphin-mixtral')
-add_routes(app, ChatOllama(base_url=OLLAMA_URL, model="gemma:2b"), path='/models/ChatOllama/gemma:2b')
-add_routes(app, ChatOllama(base_url=OLLAMA_URL, model="gemma:7b"), path='/models/ChatOllama/gemma:7b')
+OLLAMA_URL = os.environ.get("OLLAMA_URL")
+
+if OLLAMA_URL is not None:
+    add_routes(app, ChatOllama(base_url=OLLAMA_URL, model="dolphin-mixtral"), path='/models/ChatOllama/dolphin-mixtral')
+    add_routes(app, ChatOllama(base_url=OLLAMA_URL, model="gemma:2b"), path='/models/ChatOllama/gemma:2b')
+    add_routes(app, ChatOllama(base_url=OLLAMA_URL, model="gemma:7b"), path='/models/ChatOllama/gemma:7b')
 
 # embeddings
 add_routes(app, embed_query, path='/embed_query')
 add_routes(app, embed_documents, path='/embed_documents')
+
+from routers.chat_completions_proxy import router as chat_completions
+
+app.include_router(chat_completions)
+
+
 
 @app.get("/")
 async def redirect_root_to_docs():

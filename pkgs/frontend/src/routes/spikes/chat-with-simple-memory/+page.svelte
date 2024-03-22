@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
-	import { RemoteModel } from '$lib/remoteRunnables';
 	import type { RemoteModelId } from '$lib/remoteRunnables';
+	import ChatLayout from '$components/ChatLayout.svelte';
 	import Prompt from '$components/Prompt.svelte';
 	import BaseMessageList from '$components/BaseMessageList.svelte';
 	// import Debug from '$components/Debug.svelte';
@@ -9,6 +9,7 @@
 	import { RunnableSequence } from '@langchain/core/runnables';
 	import { StringOutputParser } from '@langchain/core/output_parsers';
 	import { currentModelId } from '$lib/currentModelIdStore.js';
+	import { createProxiedChatModel } from '$lib/ProxiedChatOpenAI';
 
 	export let data;
 	let { session } = data;
@@ -21,7 +22,7 @@
 	]);
 
 	function initChain(modelId: RemoteModelId) {
-		let model = RemoteModel(modelId, session, { timeout: 30000 });
+		let model = createProxiedChatModel('ChatOpenAI', session);
 		let chain = RunnableSequence.from([prompt, model, new StringOutputParser()]);
 		console.log(`initializing ${modelId}`);
 
@@ -34,8 +35,12 @@
 	let currentMessage: string = '';
 </script>
 
-<div class="flex justify-center items-center flex-col">
-	<div class="mx-auto w-3/4 pb-8">
+<ChatLayout>
+	<svelte:fragment slot="messages">
+		<BaseMessageList messagesStore={history} />
+	</svelte:fragment>
+
+	<svelte:fragment slot="prompt">
 		<Prompt
 			bind:value={currentMessage}
 			inProgress={$inProgress}
@@ -43,7 +48,5 @@
 			label="Send"
 			placeholder="Ask a question"
 		/>
-	</div>
-
-	<BaseMessageList messagesStore={history} />
-</div>
+	</svelte:fragment>
+</ChatLayout>

@@ -9,6 +9,6 @@
 	{/if}
 
 	<pre class="whitespace-pre-wrap p-4 overflow-x-auto">
-		{JSON.stringify(value, null, 2).trimStart()}
+		{JSON.stringify(value, null, 2)}
 	</pre>
 </div>

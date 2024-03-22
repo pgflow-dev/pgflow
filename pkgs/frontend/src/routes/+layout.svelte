@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import '../app.postcss';
-	import { AppShell, AppBar } from '@skeletonlabs/skeleton';
 	import AuthIndicator from '$lib/components/AuthIndicator.svelte';
 	import type { User } from '@supabase/supabase-js';
 
@@ -11,7 +10,11 @@
 		['simple', '/spikes/chat-with-simple-memory'],
 		['vector', '/spikes/chat-with-vector-memory'],
 		['chat-runner', '/spikes/runnable-ui'],
-		['supabase-memory', '/spikes/supabase-memory']
+		['supabase-memory', '/spikes/supabase-memory'],
+		['layout diy', '/spikes/chat-layout-diy'],
+		['test streaming', '/spikes/test-streaming'],
+		['runnable store', '/spikes/runnable-store'],
+		['history runnable', '/spikes/history-runnable']
 	];
 
 	export let data;
@@ -39,13 +42,13 @@
 	$: activePath = $page.url.pathname;
 </script>
 
-<AppShell>
-	<svelte:fragment slot="header">
-		<AppBar>
-			<svelte:fragment slot="lead">
-				<a class="h3" href="/">Feedwise</a>
-			</svelte:fragment>
+<div class="flex flex-col h-full">
+	<header class="min-h-14 max-h-14 px-4 flex flex-row items-center bg-surface-600">
+		<div>
+			<a class="h3" href="/">Feedwise</a>
+		</div>
 
+		<div class="align-middle flex-grow">
 			{#if isSuperadmin}
 				<div class="flex flex-row gap-6 w-full ml-4">
 					{#each links as [label, path]}
@@ -53,12 +56,10 @@
 					{/each}
 				</div>
 			{/if}
+		</div>
 
-			<svelte:fragment slot="trail">
-				<AuthIndicator {user} {isSuperadmin} />
-			</svelte:fragment>
-		</AppBar>
-	</svelte:fragment>
+		<AuthIndicator {user} {isSuperadmin} />
+	</header>
+
 	<slot />
-	<svelte:fragment slot="pageFooter"></svelte:fragment>
-</AppShell>
+</div>

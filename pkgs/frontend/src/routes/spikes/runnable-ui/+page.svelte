@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { RunnableSequence } from '@langchain/core/runnables';
-	import { RemoteModel } from '$lib/remoteRunnables';
 	import { createChatWithHistoryRunner } from '$lib/runnableStore';
 	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
+	import ChatLayout from '$components/ChatLayout.svelte';
 	import Prompt from '$components/Prompt.svelte';
 	import BaseMessageList from '$components/BaseMessageList.svelte';
+	import { createProxiedChatModel } from '$lib/ProxiedChatOpenAI';
 
 	export let data;
 	let { session } = data;
@@ -15,7 +16,7 @@
 		new MessagesPlaceholder('history'),
 		['human', '{input}']
 	]);
-	const model = RemoteModel('ChatOpenAI', session, { timeout: 30000 });
+	const model = createProxiedChatModel('ChatOpenAI', session);
 	const runnable = RunnableSequence.from([
 		{ input: (input) => input, history: () => $history },
 		prompt,
@@ -27,8 +28,11 @@
 	let currentMessage = '';
 </script>
 
-<div class="grid grid-cols-1 grid-rows-2 md:grid-cols-3 gap-4">
-	<div class="card col-start-2 row-start-2">
+<ChatLayout>
+	<svelte:fragment slot="messages">
+		<BaseMessageList messagesStore={history} />
+	</svelte:fragment>
+	<svelte:fragment slot="prompt">
 		<Prompt
 			bind:value={currentMessage}
 			on:submit={() => runChain(currentMessage)}
@@ -36,7 +40,5 @@
 			placeholder="Ask a question"
 			inProgress={$inProgress}
 		/>
-	</div>
-</div>
-
-<BaseMessageList messagesStore={history} />
+	</svelte:fragment>
+</ChatLayout>

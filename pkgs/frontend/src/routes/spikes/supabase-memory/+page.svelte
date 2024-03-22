@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { SupabaseChatMessageHistory } from '$lib/supabaseChatMessageHistory';
 	import type { ChatMessage } from '$lib/supabaseChatMessageHistory';
+	import ChatLayout from '$components/ChatLayout.svelte';
 	import Prompt from '$components/Prompt.svelte';
-	import ChatMessageList from '$components/ChatMessageList.svelte';
+	// import ChatMessageList from '$components/ChatMessageList.svelte';
 	// import Debug from '$components/Debug.svelte';
-	import { RunnableWithMessageHistory } from '@langchain/core/runnables';
-	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
 	import { createChatRunner } from '$lib/chatRunners';
+	import { createQaChainWithHistory } from '$lib/chains/QaChain';
 	// import { debug } from '$lib/runnables';
 
 	export let data;
@@ -17,25 +17,14 @@
 
 	const chatHistory = new SupabaseChatMessageHistory({
 		conversationId,
-		supabase,
-		session
+		supabase
 	});
 	chatHistory.clear();
 
-	const prompt = ChatPromptTemplate.fromMessages([
-		['system', "You're an assistant who's good at answering questions."],
-		new MessagesPlaceholder('history'),
-		['human', '{input}']
-	]);
-	import { ChatOpenAI } from '@langchain/openai';
-	import { PUBLIC_OPENAI_API_KEY } from '$env/static/public';
-	const model = new ChatOpenAI({ openAIApiKey: PUBLIC_OPENAI_API_KEY });
-	const runnableSession = new RunnableWithMessageHistory({
-		runnable: prompt.pipe(model),
-		getMessageHistory: () => chatHistory,
-		inputMessagesKey: 'input',
-		historyMessagesKey: 'history',
-		config: { configurable: { sessionId: conversationId } }
+	const runnableSession = createQaChainWithHistory({
+		session,
+		conversationId,
+		memory: chatHistory
 	});
 
 	let currentMessage = '';
@@ -83,21 +72,18 @@
 	}
 </script>
 
-<div class="flex flex-col h-full">
-	<Prompt
-		bind:value={currentMessage}
-		on:submit={onSubmit}
-		label="Send"
-		placeholder="Ask a question"
-		inProgress={$inProgress}
-	/>
+<ChatLayout>
+	<svelte:fragment slot="messages">
+		<!-- <ChatMessageList messagesStore={simplifiedHistory} /> -->
+	</svelte:fragment>
 
-	<!-- <Debug value={$simplifiedHistory} /> -->
-	<!-- <div class="card"> -->
-	<!-- 	{JSON.stringify($simplifiedHistory, null, 2)} -->
-	<!-- </div> -->
-
-	<div class="card">
-		<ChatMessageList messagesStore={simplifiedHistory} />
-	</div>
-</div>
+	<svelte:fragment slot="prompt">
+		<Prompt
+			bind:value={currentMessage}
+			on:submit={onSubmit}
+			label="Send"
+			placeholder="Ask a question"
+			inProgress={$inProgress}
+		/>
+	</svelte:fragment>
+</ChatLayout>
