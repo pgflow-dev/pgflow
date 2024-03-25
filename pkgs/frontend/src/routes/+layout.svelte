@@ -4,18 +4,7 @@
 	import AuthIndicator from '$lib/components/AuthIndicator.svelte';
 	import type { User } from '@supabase/supabase-js';
 
-	const links = [
-		['Edulaw', '/spikes/edulaw-qa'],
-		['layout', '/spikes/chat-layout'],
-		['simple', '/spikes/chat-with-simple-memory'],
-		['vector', '/spikes/chat-with-vector-memory'],
-		['chat-runner', '/spikes/runnable-ui'],
-		['supabase-memory', '/spikes/supabase-memory'],
-		['layout diy', '/spikes/chat-layout-diy'],
-		['test streaming', '/spikes/test-streaming'],
-		['runnable store', '/spikes/runnable-store'],
-		['history runnable', '/spikes/history-runnable']
-	];
+	const links = [['history runnable', '/spikes/history-runnable']];
 
 	export let data;
 
