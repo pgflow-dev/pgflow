@@ -1,18 +1,12 @@
 <script lang="ts">
-	// import ChatPage from '$components/ChatPage.svelte';
-	// import type { BaseMessage } from '$lib/chatTypes';
 	import type { StoredMessage } from '@langchain/core/messages';
 	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
-	// import { ChatMessageHistory } from '@langchain/community/stores/message/in_memory';
-	// import { RunnableWithMessageHistory } from '@langchain/core/runnables';
 	import ChatLayout from '$components/ChatLayout.svelte';
 	import Prompt from '$components/Prompt.svelte';
-	// import Debug from '$components/Debug.svelte';
 	import { MemoryVectorStore } from 'langchain/vectorstores/memory';
 	import { VectorStoreRetrieverMemory } from 'langchain/memory';
 	import { RunnableSequence } from '@langchain/core/runnables';
 	import { RemoteEmbeddings } from '$lib/remoteEmbeddings';
-	// import { StringOutputParser } from '@langchain/core/output_parsers';
 	import { createProxiedChatModel } from '$lib/ProxiedChatOpenAI';
 	import { BaseMessageChunk } from '@langchain/core/messages';
 
@@ -52,14 +46,12 @@
 		{
 			input: (initialInput) => initialInput.query,
 			memory: (initialInput) => {
-				console.log('initialInput', initialInput);
 				return memory.loadMemoryVariables({ query: initialInput.query });
 			}
 		},
 		{
 			query: (previousOutput) => previousOutput.input,
 			history: (previousOutput) => {
-				console.log('previousOutput', previousOutput);
 				return previousOutput.memory.history || [];
 			}
 		},
@@ -77,7 +69,7 @@
 		inProgress = true;
 
 		output = await chain.invoke({ query: currentMessage });
-		console.log('output', output);
+		console.log({ output });
 
 		currentMessage = '';
 		inProgress = false;

@@ -23,7 +23,6 @@
 		const stream = await chain.stream(input);
 
 		for await (const chunk of stream) {
-			console.log({ chunk });
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			response.update((c: any) => {
 				if (c && c.concat) {
@@ -33,8 +32,6 @@
 				}
 			});
 		}
-
-		console.log('after stream');
 	});
 </script>
 
