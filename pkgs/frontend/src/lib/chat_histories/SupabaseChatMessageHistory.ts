@@ -6,19 +6,14 @@ import {
 import type { StoredMessage } from '@langchain/core/messages';
 import { AIMessage, HumanMessage } from '@langchain/core/messages';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '$backend/types';
 import type { Writable } from 'svelte/store';
 import { writable } from 'svelte/store';
+import type { ChatMessage } from '$lib/db';
 
 export interface SupabaseChatMessageHistoryInput {
 	conversationId: string;
 	supabase: SupabaseClient;
 }
-
-export type ChatMessage = Pick<
-	Database['public']['Tables']['chat_messages']['Row'],
-	'content' | 'role' | 'conversation_id'
->;
 
 export function chatMessageToBaseMessage(message: ChatMessage): BaseMessage {
 	if (message.role == 'assistant') {
