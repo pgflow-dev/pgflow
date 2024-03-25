@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ChatPromptTemplate } from '@langchain/core/prompts';
-	import { createProxiedChatModel } from '$lib/ProxiedChatOpenAI';
+	import { createProxiedChatModel } from '$lib/models/ProxiedChatOpenAI';
 	// import { ChatMessageHistoryStore } from '$lib/ChatMessageHistoryStore';
 	// import Debug from '$components/Debug.svelte';
 	import Prompt from '$components/Prompt.svelte';
@@ -12,7 +12,7 @@
 	import {
 		SupabaseChatMessageHistory,
 		chatMessageToBaseMessage
-	} from '$lib/supabaseChatMessageHistory';
+	} from '$lib/chat_histories/SupabaseChatMessageHistory';
 
 	export let data;
 	let { session, supabase } = data;

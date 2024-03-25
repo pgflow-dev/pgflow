@@ -1,5 +1,5 @@
 import type { EmbeddingsInterface, EmbeddingsParams } from '@langchain/core/embeddings';
-import { RemoteChain } from '$lib/remoteRunnables';
+import { RemoteChain } from '$lib/chains/remoteRunnables';
 import { Runnable } from '@langchain/core/runnables';
 import type { Session } from '@supabase/supabase-js';
 
