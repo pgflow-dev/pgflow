@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { PUBLIC_URL } from '$env/static/public';
+
 	export let data;
 	let { supabase } = data;
 	$: ({ supabase } = data);
@@ -18,7 +20,7 @@
 			email: email,
 			options: {
 				shouldCreateUser: true,
-				emailRedirectTo: 'http://localhost:5173/'
+				emailRedirectTo: PUBLIC_URL
 			}
 		});
 
