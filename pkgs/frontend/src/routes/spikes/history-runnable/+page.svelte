@@ -21,6 +21,7 @@
 	const conversationId = 'f4b105bc-ca88-45b5-b90c-ce22f8ebaab7';
 	const history = new SupabaseChatMessageHistory({ supabase, conversationId });
 	const getMessagesPromise = history.getMessages();
+	const inProgress = writable<boolean>(false);
 
 	const aiMessageChunk = writable<AIMessageChunk | null>(null);
 	const baseMessages = derived(history.messagesStore, ($messages) => {
@@ -45,9 +46,12 @@
 	let userInput = '';
 
 	async function runStream() {
+		inProgress.set(true);
 		await getMessagesPromise;
 
-		const stream = await chain.stream({ input: userInput });
+		const streamPromise = chain.stream({ input: userInput });
+		userInput = '';
+		const stream = await streamPromise;
 
 		for await (const chunk of stream) {
 			aiMessageChunk.update((c) => {
@@ -57,33 +61,46 @@
 
 		const aiMessage = get(aiMessageChunk);
 		if (aiMessage) {
-			console.log('PRE');
 			await history.addMessage(aiMessage);
-			console.log('POST');
 		}
 
 		aiMessageChunk.set(null);
 		userInput = '';
+		inProgress.set(false);
+	}
+
+	let clearHistoryPromise: Promise<void> | null = null;
+
+	async function clearHistory() {
+		// sets a promise and unsets on resolve
+		clearHistoryPromise = history.clear().then(() => {
+			clearHistoryPromise = null;
+		});
 	}
 </script>
 
 <ChatLayout>
-	<svelte:fragment slot="messages">
+	<svelte:fragment slot="messages" let:scrollToBottom>
 		{#await getMessagesPromise}
 			<div class="w-full h-full flex items-center justify-center">
 				<h3 class="h3 text-gray-700">Loading conversation...</h3>
 			</div>
 		{:then}
-			<BaseMessageList messagesStore={messagesWithChunk} />
+			<BaseMessageList messagesStore={messagesWithChunk} {scrollToBottom} />
 		{/await}
 	</svelte:fragment>
 
-	<svelte:fragment slot="prompt">
+	<div slot="prompt" class="flex justify-center">
 		<Prompt
 			bind:value={userInput}
 			on:submit={runStream}
 			label="Send"
 			placeholder="Ask a question"
+			inProgress={!!clearHistoryPromise}
 		/>
-	</svelte:fragment>
+
+		<button class="" disabled={$inProgress || !!clearHistoryPromise} on:click={clearHistory}>
+			Clear
+		</button>
+	</div>
 </ChatLayout>

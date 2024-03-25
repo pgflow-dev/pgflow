@@ -78,13 +78,10 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 			.eq('conversation_id', this.conversationId)
 			.order('created_at', { ascending: true });
 
-		console.log('getMessages/rawMessages', rawMessages);
-
 		if (error) {
 			throw error;
 		}
 
-		// console.log('getMessages', rawMessages);
 		if (rawMessages) {
 			this.messagesStore.set(<ChatMessage[]>rawMessages);
 			const chatMessages = rawMessages.map(chatMessageToBaseMessage);
@@ -96,9 +93,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 	}
 
 	async addMessage(message: BaseMessage): Promise<void> {
-		console.log('addMessage/message', message);
 		const storedMessage = mapBaseMessagesToStoredMessages([message])[0];
-		console.log('addMessage/storedMessage', storedMessage);
 
 		const chatMessage = mapStoredMessagesToChatMessages([storedMessage], this.conversationId)[0];
 		const { error } = await this.supabase.from('chat_messages').insert([chatMessage]);
@@ -107,16 +102,12 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 			throw error;
 		}
 
-		console.log('addMessage/chatMessage', chatMessage);
 		this.messagesStore.update((chatMessages) => {
-			console.log({ chatMessages, chatMessage });
 			return [...chatMessages, chatMessage];
 		});
-		console.log('after update');
 	}
 
 	async addMessages(messages: BaseMessage[]): Promise<void> {
-		console.log('addMessages/messages', messages);
 		const storedMessages = mapBaseMessagesToStoredMessages(messages);
 		const chatMessages = mapStoredMessagesToChatMessages(storedMessages, this.conversationId);
 
@@ -130,7 +121,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 	}
 
 	async clear(): Promise<void> {
-		console.log('clear');
 		await this.supabase.from('chat_messages').delete().eq('conversation_id', this.conversationId);
+		this.messagesStore.set([]);
 	}
 }

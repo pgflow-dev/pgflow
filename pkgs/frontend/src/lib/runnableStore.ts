@@ -25,10 +25,8 @@ export function createChatWithHistoryRunner(runnable: Runnable) {
 
 			for await (const chunk of stream) {
 				if (chunk && typeof chunk === 'string') {
-					console.log('chunk - string', chunk);
 					addMessage(new AIMessage({ content: chunk }));
 				} else {
-					console.log('chunk - object (AIMessage)', chunk);
 					addMessage(chunk);
 				}
 			}

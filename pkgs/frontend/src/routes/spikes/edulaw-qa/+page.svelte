@@ -34,7 +34,6 @@
 			response = '';
 
 			for await (const chunk of stream) {
-				console.log('chunk', chunk);
 				if (chunk && typeof chunk === 'string') {
 					response += chunk;
 					timeElapsedMs = performance.now() - startTime;

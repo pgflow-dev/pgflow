@@ -1,14 +1,11 @@
 <script lang="ts">
 	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
-	import type { RemoteModelId } from '$lib/remoteRunnables';
 	import ChatLayout from '$components/ChatLayout.svelte';
 	import Prompt from '$components/Prompt.svelte';
 	import BaseMessageList from '$components/BaseMessageList.svelte';
-	// import Debug from '$components/Debug.svelte';
 	import { createChatWithHistoryRunner } from '$lib/runnableStore';
 	import { RunnableSequence } from '@langchain/core/runnables';
 	import { StringOutputParser } from '@langchain/core/output_parsers';
-	import { currentModelId } from '$lib/currentModelIdStore.js';
 	import { createProxiedChatModel } from '$lib/ProxiedChatOpenAI';
 
 	export let data;
@@ -21,16 +18,15 @@
 		['human', '{input}']
 	]);
 
-	function initChain(modelId: RemoteModelId) {
+	function initChain() {
 		let model = createProxiedChatModel('ChatOpenAI', session);
 		let chain = RunnableSequence.from([prompt, model, new StringOutputParser()]);
-		console.log(`initializing ${modelId}`);
 
 		return createChatWithHistoryRunner(chain);
 	}
 
-	let { runChain, inProgress, history } = initChain($currentModelId);
-	$: ({ runChain, inProgress, history } = initChain($currentModelId));
+	let { runChain, inProgress, history } = initChain();
+	$: ({ runChain, inProgress, history } = initChain());
 
 	let currentMessage: string = '';
 </script>

@@ -21,7 +21,6 @@
 				emailRedirectTo: 'http://localhost:5173/'
 			}
 		});
-		console.log('_data', _data);
 
 		if (error) {
 			throw error;
