@@ -6,7 +6,6 @@
 
 	const scroller = () => {
 		const node = get(messagesContainer);
-		console.log({ node });
 
 		if (node) {
 			scrollToBottom(node);

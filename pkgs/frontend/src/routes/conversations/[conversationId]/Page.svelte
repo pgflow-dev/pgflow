@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { PageData } from './$types';
 	import { ChatPromptTemplate } from '@langchain/core/prompts';
 	import { createProxiedChatModel } from '$lib/models/ProxiedChatOpenAI';
 	// import { ChatMessageHistoryStore } from '$lib/ChatMessageHistoryStore';
@@ -9,18 +10,12 @@
 	import { createChainWithHistory } from '$lib/chains/createChainWithHistory';
 	import { writable, derived, get } from 'svelte/store';
 	import { AIMessageChunk } from '@langchain/core/messages';
-	import {
-		SupabaseChatMessageHistory,
-		chatMessageToBaseMessage
-	} from '$lib/chat_histories/SupabaseChatMessageHistory';
+	import { chatMessageToBaseMessage } from '$lib/chat_histories/SupabaseChatMessageHistory';
 
-	export let data;
-	let { session, supabase } = data;
-	$: ({ session, supabase } = data);
+	export let data: PageData;
+	let { session, history } = data;
+	$: ({ session, history } = data);
 
-	const conversationId = 'f4b105bc-ca88-45b5-b90c-ce22f8ebaab7';
-	const history = new SupabaseChatMessageHistory({ supabase, conversationId });
-	const getMessagesPromise = history.getMessages();
 	const inProgress = writable<boolean>(false);
 
 	const aiMessageChunk = writable<AIMessageChunk | null>(null);
@@ -47,7 +42,6 @@
 
 	async function runStream() {
 		inProgress.set(true);
-		await getMessagesPromise;
 
 		const streamPromise = chain.stream({ input: userInput });
 		userInput = '';
@@ -81,25 +75,19 @@
 
 <ChatLayout>
 	<svelte:fragment slot="messages" let:scrollToBottom>
-		{#await getMessagesPromise}
-			<div class="w-full h-full flex items-center justify-center">
-				<h3 class="h3 text-gray-700">Loading conversation...</h3>
-			</div>
-		{:then}
-			<BaseMessageList messagesStore={messagesWithChunk} {scrollToBottom} />
-		{/await}
+		<BaseMessageList messagesStore={messagesWithChunk} {scrollToBottom} />
 	</svelte:fragment>
 
-	<div slot="prompt" class="flex justify-center">
+	<div slot="prompt" class="flex justify-center p-4">
 		<Prompt
 			bind:value={userInput}
 			on:submit={runStream}
 			label="Send"
 			placeholder="Ask a question"
-			inProgress={!!clearHistoryPromise}
+			inProgress={!!clearHistoryPromise || $inProgress}
 		/>
 
-		<button class="" disabled={$inProgress || !!clearHistoryPromise} on:click={clearHistory}>
+		<button class="mx-4" disabled={$inProgress || !!clearHistoryPromise} on:click={clearHistory}>
 			Clear
 		</button>
 	</div>

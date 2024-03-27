@@ -670,9 +670,38 @@ export interface Database {
       [_ in never]: never
     }
   }
-  public: {
+  chat: {
     Tables: {
-      chat_messages: {
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title?: string | null
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      messages: {
         Row: {
           content: string
           conversation_id: string
@@ -699,7 +728,14 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: "chat_messages_user_id_fkey"
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -707,6 +743,22 @@ export interface Database {
           }
         ]
       }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  public: {
+    Tables: {
       documents: {
         Row: {
           content: string | null
