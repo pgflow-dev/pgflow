@@ -68,7 +68,8 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 
 	async getMessages(): Promise<BaseMessage[]> {
 		const { data: rawMessages, error } = await this.supabase
-			.from('chat_messages')
+			.schema('chat')
+			.from('messages')
 			.select('*')
 			.eq('conversation_id', this.conversationId)
 			.order('created_at', { ascending: true });
@@ -91,7 +92,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 		const storedMessage = mapBaseMessagesToStoredMessages([message])[0];
 
 		const chatMessage = mapStoredMessagesToChatMessages([storedMessage], this.conversationId)[0];
-		const { error } = await this.supabase.from('chat_messages').insert([chatMessage]);
+		const { error } = await this.supabase.schema('chat').from('messages').insert([chatMessage]);
 
 		if (error) {
 			throw error;
@@ -106,7 +107,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 		const storedMessages = mapBaseMessagesToStoredMessages(messages);
 		const chatMessages = mapStoredMessagesToChatMessages(storedMessages, this.conversationId);
 
-		const { error } = await this.supabase.from('chat_messages').insert(chatMessages);
+		const { error } = await this.supabase.schema('chat').from('messages').insert(chatMessages);
 
 		if (error) {
 			throw error;
@@ -116,7 +117,11 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 	}
 
 	async clear(): Promise<void> {
-		await this.supabase.from('chat_messages').delete().eq('conversation_id', this.conversationId);
+		await this.supabase
+			.schema('chat')
+			.from('messages')
+			.delete()
+			.eq('conversation_id', this.conversationId);
 		this.messagesStore.set([]);
 	}
 }
