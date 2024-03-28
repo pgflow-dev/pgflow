@@ -1,4 +1,5 @@
 <script lang="ts">
+	import NewConversationButton from '$components/NewConversationButton.svelte';
 	import type { ChatConversation } from '$lib/db.js';
 	import dayjs from 'dayjs';
 	import relativeTime from 'dayjs/plugin/relativeTime';
@@ -27,7 +28,7 @@
 	<h2 class="h2">My conversations</h2>
 
 	<div class="flex flex-row items-center justify-end">
-		<a class="btn variant-filled-primary" href="/conversations/new">+ New conversation</a>
+		<NewConversationButton {supabase} />
 	</div>
 
 	{#each conversations as conversation (conversation.id)}

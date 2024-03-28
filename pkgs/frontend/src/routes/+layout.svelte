@@ -3,10 +3,13 @@
 	import '../app.postcss';
 	import AuthIndicator from '$lib/components/AuthIndicator.svelte';
 	import type { User } from '@supabase/supabase-js';
+	import NewConversationButton from '$components/NewConversationButton.svelte';
 
 	const links = [['My conversations', '/conversations']];
 
 	export let data;
+	let { supabase } = data;
+	$: ({ supabase } = data);
 
 	let user: User | null;
 	let isSuperadmin: boolean = false;
@@ -43,11 +46,7 @@
 					{#each links as [label, path]}
 						<a href={path} class={path == activePath ? 'font-bold text-red-500' : ''}>{label}</a>
 					{/each}
-					<a
-						class="btn btn-sm text-xs variant-filled-primary"
-						href="/conversations/new"
-						data-sveltekit-preload-data="off">+ New conversation</a
-					>
+					<NewConversationButton {supabase} />
 				</div>
 			{/if}
 		</div>
