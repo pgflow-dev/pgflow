@@ -5,6 +5,8 @@ import type { Session } from '@supabase/supabase-js';
 export const load: LayoutLoad = async (event: LayoutLoadEvent) => {
 	const parent = await event.parent();
 
+	console.log('==== conversations/+layout.ts');
+
 	if (!parent.session) {
 		redirect(302, '/auth/sign-in');
 	}

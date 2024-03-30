@@ -18,5 +18,7 @@ export const load: PageLoad = async ({
 		redirect(302, '/');
 	}
 
+	console.log('==== conversations/+page.ts');
+
 	return { conversations: data };
 };

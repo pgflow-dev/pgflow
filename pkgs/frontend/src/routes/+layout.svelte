@@ -5,11 +5,11 @@
 	import type { User } from '@supabase/supabase-js';
 	import NewConversationButton from '$components/NewConversationButton.svelte';
 
+	console.log('==== +layout.svelte');
+
 	const links = [['My conversations', '/conversations']];
 
 	export let data;
-	let { supabase } = data;
-	$: ({ supabase } = data);
 
 	let user: User | null;
 	let isSuperadmin: boolean = false;
@@ -46,7 +46,7 @@
 					{#each links as [label, path]}
 						<a href={path} class={path == activePath ? 'font-bold text-red-500' : ''}>{label}</a>
 					{/each}
-					<NewConversationButton {supabase} />
+					<NewConversationButton />
 				</div>
 			{/if}
 		</div>

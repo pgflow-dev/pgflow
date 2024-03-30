@@ -22,12 +22,13 @@ export const load: PageLoad = async ({
 	params,
 	parent
 }): Promise<{ conversation: ChatConversation; history: SupabaseChatMessageHistory }> => {
-	console.log('new params', params);
 	const { supabase } = await parent();
 	const { conversationId } = params;
 
 	const conversation = await loadConversation(supabase, conversationId);
 	const history = new SupabaseChatMessageHistory({ supabase, conversationId });
+
+	console.log('==== conversations/[conversationId]/+page.ts');
 
 	// preload messages
 	await history.getMessages();

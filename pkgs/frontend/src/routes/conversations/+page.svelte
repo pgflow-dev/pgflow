@@ -28,7 +28,7 @@
 	<h2 class="h2">My conversations</h2>
 
 	<div class="flex flex-row items-center justify-end">
-		<NewConversationButton {supabase} />
+		<NewConversationButton />
 	</div>
 
 	{#each conversations as conversation (conversation.id)}

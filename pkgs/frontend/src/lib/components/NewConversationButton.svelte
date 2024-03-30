@@ -1,17 +1,19 @@
 <script lang="ts">
 	import type { ChatConversation } from '$lib/db';
 	import { goto } from '$app/navigation';
-	import type { SupabaseClient } from '@supabase/supabase-js';
-
-	export let supabase: SupabaseClient;
+	import { supabase, session } from '$lib/stores/current';
 
 	async function createConversationAndGoto() {
-		const { data, error } = await supabase
+		if (!$supabase) {
+			throw 'Supabase client is not ready yet! This should not be called';
+		}
+
+		const { data, error } = await $supabase
 			.schema('chat')
 			.from('conversations')
 			.insert({ title: 'blank' })
 			.select()
-			.returns<ChatConversation>()
+			.returns<ChatConversation[]>()
 			.single();
 
 		if (error) {
@@ -26,6 +28,8 @@
 	}
 </script>
 
-<button on:click={createConversationAndGoto} class="btn btn-sm text-xs variant-filled-primary">
-	+ New conversation
-</button>
+{#if $session}
+	<button on:click={createConversationAndGoto} class="btn btn-sm text-xs variant-filled-primary">
+		+ New conversation
+	</button>
+{/if}
