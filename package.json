@@ -4,6 +4,6 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "turbo": "^1.12.5",
-    "vercel": "^33.6.1"
+    "vercel": "^33.6.2"
   }
 }
