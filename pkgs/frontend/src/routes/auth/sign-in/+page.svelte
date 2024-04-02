@@ -40,23 +40,25 @@
 	{:else}
 		<h3 class="h3">Sign in with magic link</h3>
 		<p>Enter your email and we'll send you a magic link to sign in.</p>
-		<label class="label flex flex-col items-center">
-			<input
-				class="input"
-				type="text"
-				placeholder="email"
-				disabled={inProgress}
-				bind:value={email}
-			/>
-		</label>
+		<form on:submit|preventDefault={signInWithEmail}>
+			<label class="label flex flex-col items-center">
+				<input
+					class="input"
+					type="text"
+					placeholder="email"
+					disabled={inProgress}
+					bind:value={email}
+				/>
+			</label>
 
-		<button
-			on:click={signInWithEmail}
-			disabled={!isValidEmail(email) || inProgress}
-			value={email}
-			class="btn variant-filled"
-		>
-			Send magic link
-		</button>
+			<button
+				on:click={signInWithEmail}
+				disabled={!isValidEmail(email) || inProgress}
+				value={email}
+				class="btn variant-filled"
+			>
+				Send magic link
+			</button>
+		</form>
 	{/if}
 </div>
