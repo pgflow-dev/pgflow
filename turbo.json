@@ -1,19 +1,20 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "pipeline": {
-    "build": {
-      "dependsOn": ["^build"],
+    "frontend#build": {
+      "dependsOn": [],
       "env": [],
-      "outputs": [".svelte-kit/output/**"]
+      "outputs": [".svelte-kit/output/**"],
+      "inputs": ["pkgs/frontend/**", "pkgs/supabase/types.d.ts"]
     },
     "check": {
-      "dependsOn": ["^check"]
+      "dependsOn": []
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": []
     },
     "test": {
-      "dependsOn": ["^test"]
+      "dependsOn": []
     }
   }
 }
