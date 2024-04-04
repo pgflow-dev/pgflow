@@ -1,7 +1,8 @@
+from typing import List
 
 from app.embeddings import embeddings as hf_embeddings
 from langchain_core.embeddings import Embeddings
-from typing import List
+
 
 class PrefixedEmbeddings(Embeddings):
     """Uses HuggingfaceEmbeddings to embed documents, but adds model-specific prefixes"""
