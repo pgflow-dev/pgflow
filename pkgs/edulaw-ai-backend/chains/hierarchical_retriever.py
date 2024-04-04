@@ -175,7 +175,8 @@ question = "co powinni zrobić rodzice dziecka, gdy nauczyciel od polskiego jest
 # chain = break_down_chain | hypothetical_answer_chain
 
 if __name__ == '__main__':
-    print(f'====== chain invoked: {question}')
+    # print(f'====== chain invoked: {question}')
+    question = input("Question: ")
     results = chain.invoke(question)
 
     print('====== results')

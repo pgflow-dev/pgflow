@@ -49,7 +49,7 @@ if __name__ == "__main__":
         if question == "exit":
             break
 
-        response = chain.invoke(question)
+        response = chain.invoke(dict(question=question))
         pprint(response)
 
         question = input("Question: ")
