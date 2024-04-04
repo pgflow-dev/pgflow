@@ -3,13 +3,8 @@
   "pipeline": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [
-        ".svelte-kit/**",
-        ".vercel_build_output/**",
-        ".vercel/**",
-        "build/**"
-      ],
-      "inputs": ["src/**/*", "pkgs/supabase/types.d.ts"]
+      "outputs": [".svelte-kit/**", ".vercel/**"],
+      "inputs": ["src/**/*", "../supabase/types.d.ts"]
     },
     "check": {
       "dependsOn": []
