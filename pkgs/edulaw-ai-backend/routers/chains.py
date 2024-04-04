@@ -9,11 +9,11 @@ from langserve import add_routes
 router = APIRouter()
 
 # partial chains
+add_routes(router, context_relevance_test, path='/context-relevance')
 add_routes(router, hypothetical_answers, path='/hypothetical-answers')
 add_routes(router, naive_retrieval, path='/naive-retrieval')
-add_routes(router, context_relevance_test, path='/context-relevance')
 
 # qa chains
-add_routes(router, qa_chain, path='/qa')
 add_routes(router, hierarchical_qa, path='/hierarchical-qa')
+add_routes(router, qa_chain, path='/qa')
 
