@@ -3,10 +3,10 @@
 	import BaseMessageList from '$components/BaseMessageList.svelte';
 	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
 	import { createProxiedChatModel } from '$lib/models/ProxiedChatOpenAI';
-	import { createChainWithHistory } from '$lib/chains/createChainWithHistory';
 	import { useChat } from '$lib/useChat';
 	import Prompt from '$components/Prompt.svelte';
 	import type { PageData } from './$types';
+	import { RunnableSequence } from '@langchain/core/runnables';
 
 	export let data: PageData;
 	let { session, history } = data;
@@ -18,7 +18,12 @@
 		['user', '{input}']
 	]);
 	const model = createProxiedChatModel('ChatOpenAI', session);
-	const chain = createChainWithHistory({ prompt, model, history });
+	const chain = RunnableSequence.from([
+		history.asMessageLoader(),
+		prompt,
+		history.asMessageSaver(),
+		model
+	]);
 
 	const { input, handleSubmit, inProgress, messages } = useChat({ history, chain });
 </script>
