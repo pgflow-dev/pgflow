@@ -2,10 +2,14 @@
   "$schema": "https://turbo.build/schema.json",
   "pipeline": {
     "build": {
-      "dependsOn": [],
-      "env": [],
-      "outputs": [".svelte-kit/output/**"],
-      "inputs": ["pkgs/frontend/**", "pkgs/supabase/types.d.ts"]
+      "dependsOn": ["^build"],
+      "outputs": [
+        ".svelte-kit/**",
+        ".vercel_build_output/**",
+        ".vercel/**",
+        "build/**"
+      ],
+      "inputs": ["src/**/*", "pkgs/supabase/types.d.ts"]
     },
     "check": {
       "dependsOn": []
