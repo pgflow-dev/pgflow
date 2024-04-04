@@ -9,6 +9,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Writable } from 'svelte/store';
 import { writable } from 'svelte/store';
 import type { ChatMessage } from '$lib/db';
+import { RunnableLambda, RunnablePassthrough } from '@langchain/core/runnables';
+import type { ChatPromptValue } from '@langchain/core/prompt_values';
 
 export interface SupabaseChatMessageHistoryInput {
 	conversationId: string;
@@ -123,5 +125,25 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 			.delete()
 			.eq('conversation_id', this.conversationId);
 		this.messagesStore.set([]);
+	}
+
+	asMessageLoader(fields?: { key: string }) {
+		const key = fields?.key || 'messages';
+
+		return RunnablePassthrough.assign({
+			[key]: () => this.getMessages()
+		});
+	}
+
+	asMessageSaver() {
+		return new RunnableLambda({
+			func: (chatPromptValue: ChatPromptValue) => {
+				const { messages } = chatPromptValue;
+				const humanMessage = messages[messages.length - 1];
+				this.addMessage(humanMessage);
+
+				return chatPromptValue;
+			}
+		});
 	}
 }
