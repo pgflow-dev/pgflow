@@ -127,7 +127,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 		this.messagesStore.set([]);
 	}
 
-	asMessageLoader(fields?: { key: string }) {
+	asLoaderRunnable(fields?: { key: string }) {
 		const key = fields?.key || 'messages';
 
 		return RunnablePassthrough.assign({
@@ -135,7 +135,7 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 		});
 	}
 
-	asMessageSaver() {
+	asSaverRunnable() {
 		return new RunnableLambda({
 			func: (chatPromptValue: ChatPromptValue) => {
 				const { messages } = chatPromptValue;

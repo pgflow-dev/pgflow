@@ -19,9 +19,9 @@
 	]);
 	const model = createProxiedChatModel('ChatOpenAI', session);
 	const chain = RunnableSequence.from([
-		history.asMessageLoader(),
+		history.asLoaderRunnable(),
 		prompt,
-		history.asMessageSaver(),
+		history.asSaverRunnable(),
 		model
 	]);
 
