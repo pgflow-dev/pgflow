@@ -6,6 +6,6 @@ if __name__ == "__main__":
     from rich.pretty import pprint
 
     print()
-    for doc in chain.invoke("edukacja"):
-        print(f"{doc.metadata['kind']}: {doc.page_content}")
+    results = chain.invoke("czy nauczyciel ma obowiązek udostępnić informację o zrealizowanym programie nauczania?")
 
+    pprint(results)
