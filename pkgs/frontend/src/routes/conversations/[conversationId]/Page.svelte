@@ -1,7 +1,7 @@
 <script lang="ts">
 	import ChatLayout from '$components/ChatLayout.svelte';
 	import BaseMessageList from '$components/BaseMessageList.svelte';
-	import { ChatPromptTemplate } from '@langchain/core/prompts';
+	import { ChatPromptTemplate, MessagesPlaceholder } from '@langchain/core/prompts';
 	import { createProxiedChatModel } from '$lib/models/ProxiedChatOpenAI';
 	import { createChainWithHistory } from '$lib/chains/createChainWithHistory';
 	import { useChat } from '$lib/useChat';
@@ -12,7 +12,11 @@
 	let { session, history } = data;
 	$: ({ session, history } = data);
 
-	const prompt = ChatPromptTemplate.fromTemplate('{input}');
+	const prompt = ChatPromptTemplate.fromMessages([
+		['system', 'You are a helpful assistant.'],
+		new MessagesPlaceholder('messages'),
+		['user', '{input}']
+	]);
 	const model = createProxiedChatModel('ChatOpenAI', session);
 	const chain = createChainWithHistory({ prompt, model, history });
 
