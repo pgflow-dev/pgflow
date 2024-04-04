@@ -15,16 +15,6 @@ load_dotenv()
 
 app = FastAPI()
 
-### Routes
-
-@app.get("/")
-async def redirect_root_to_docs():
-    return RedirectResponse("/docs")
-
-app.include_router(chat_completions_router, prefix='/proxy')
-app.include_router(models_router, prefix='/models')
-app.include_router(chains_router)
-
 ### Middlewares
 
 app.add_middleware(
@@ -58,6 +48,16 @@ async def superadmin_check_middleware(
         print(f"Superadmin authorization FAILED: {reason}")
 
         return JSONResponse(content={"reason": reason}, status_code=403)
+
+### Routes
+
+@app.get("/")
+async def redirect_root_to_docs():
+    return RedirectResponse("/docs")
+
+app.include_router(chat_completions_router, prefix='/proxy')
+app.include_router(models_router, prefix='/models')
+app.include_router(chains_router)
 
 if __name__ == "__main__":
     import os
