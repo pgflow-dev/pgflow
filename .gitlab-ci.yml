@@ -27,8 +27,14 @@ deploy-prod/edulaw-ai-backend:
     - .pkg-changed/edulaw-ai-backend
     - .dependency/flyctl
   stage: deploy
+  variables:
+    DISCORD_MESSAGE: "Deployed **edulaw-ai-backend** to **production**"
   script:
     - cd pkgs/edulaw-ai-backend
     - flyctl deploy
-    - curl -H "Content-Type: application/json"  -X POST  -d '{"content": "Deployed **edulaw-ai-backend** to **production**"}' "https://discord.com/api/webhooks/1225425316571254844/7OLRvm5wJlACBKqcuG0pw2TRcokZt-ZNlAaLDTX4A2NTgJPQ4rBDL78NNCvzOSJm7CYO"
+    - >
+      curl -H "Content-Type: application/json"
+        -X POST
+        -d "{\"content\": \"$DISCORD_MESSAGE\"}"
+        $DISCORD_WEBHOOK
   environment: production
