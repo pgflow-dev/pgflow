@@ -32,9 +32,9 @@ deploy-prod/edulaw-ai-backend:
   script:
     - cd pkgs/edulaw-ai-backend
     - flyctl deploy
-    - >
-      curl -H "Content-Type: application/json"
-        -X POST
-        -d "{\"content\": \"$DISCORD_MESSAGE\"}"
+    - |
+      curl -H "Content-Type: application/json" \
+        -X POST \
+        -d "{\"content\": \"$DISCORD_MESSAGE\"}" \
         $DISCORD_WEBHOOK
   environment: production
