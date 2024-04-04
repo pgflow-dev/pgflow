@@ -5,7 +5,7 @@ from fastapi.responses import StreamingResponse
 from openai import OpenAI
 from rich.pretty import pprint
 
-router = APIRouter(prefix='/proxy')
+router = APIRouter()
 
 _CLIENTS = {}
 

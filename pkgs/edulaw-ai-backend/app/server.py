@@ -1,19 +1,16 @@
-from typing import Awaitable, Callable, Dict, List
+import os
+from typing import Awaitable, Callable
 
-from app.remote_embeddings import embed_documents, embed_query
 from app.utils import authorize_superadmin
-from chains.context_relevance_test import chain as context_relevance_test
-from chains.hierarchical_retriever import chain as hierarchical_qa
-from chains.hypothetical_answers import chain as hypothetical_answers
-from chains.naive_retrieval import chain as naive_retrieval
-from chains.qa_chain import chain as qa_chain
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
-from langchain_community.chat_models import ChatOllama
-from langchain_groq import ChatGroq
-from langchain_openai.chat_models import ChatOpenAI
-from langserve import add_routes
+from fastapi.responses import JSONResponse, RedirectResponse
+from routers.chains import router as chains_router
+from routers.chat_completions_proxy import router as chat_completions_router
+from routers.models_and_embeddings import router as models_router
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -26,40 +23,9 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# partial chains
-add_routes(app, hypothetical_answers, path='/hypothetical-answers')
-add_routes(app, naive_retrieval, path='/naive-retrieval')
-add_routes(app, context_relevance_test, path='/context-relevance')
-
-# qa chains
-add_routes(app, qa_chain, path='/qa')
-add_routes(app, hierarchical_qa, path='/hierarchical-qa')
-
-# models
-add_routes(app, ChatOpenAI(model="gpt-3.5-turbo-1106"), path='/models/ChatOpenAI')
-add_routes(app, ChatGroq(model="mixtral-8x7b-32768"), path='/models/ChatGroq/mixtral-8x7b')
-add_routes(app, ChatGroq(model="llama2-70b-4096"), path='/models/ChatGroq/llama2-70b')
-add_routes(app, ChatGroq(model="gemma-7b-it"), path='/models/ChatGroq/gemma-7b-it')
-
-import os
-
-from dotenv import load_dotenv
-
-load_dotenv()
-OLLAMA_URL = os.environ.get("OLLAMA_URL")
-
-if OLLAMA_URL is not None:
-    add_routes(app, ChatOllama(base_url=OLLAMA_URL, model="dolphin-mixtral"), path='/models/ChatOllama/dolphin-mixtral')
-    add_routes(app, ChatOllama(base_url=OLLAMA_URL, model="gemma:2b"), path='/models/ChatOllama/gemma:2b')
-    add_routes(app, ChatOllama(base_url=OLLAMA_URL, model="gemma:7b"), path='/models/ChatOllama/gemma:7b')
-
-# embeddings
-add_routes(app, embed_query, path='/embed_query')
-add_routes(app, embed_documents, path='/embed_documents')
-
-from routers.chat_completions_proxy import router as chat_completions
-
-app.include_router(chat_completions)
+app.include_router(chat_completions_router, prefix='/proxy')
+app.include_router(models_router, prefix='/models')
+app.include_router(chains_router)
 
 @app.get("/")
 async def redirect_root_to_docs():
