@@ -10,6 +10,7 @@ from routers.chains import router as chains_router
 from routers.chat_completions_proxy import router as chat_completions_router
 from routers.models_and_embeddings import router as models_router
 
+# TODO: figure out how to not run it on load
 load_dotenv()
 
 app = FastAPI()
