@@ -7,7 +7,7 @@
 
 	console.log('==== +layout.svelte');
 
-	const links = [['My conversations', '/conversations']];
+	const links = [['Conversations', '/conversations']];
 
 	export let data;
 
@@ -36,13 +36,13 @@
 
 <div class="flex flex-col h-full">
 	<header class="min-h-14 max-h-14 px-4 flex flex-row items-center bg-surface-600">
-		<div>
+		<div class="align-middle">
 			<a class="h3" href="/">Feedwise</a>
 		</div>
 
 		<div class="align-middle flex-grow">
 			{#if isSuperadmin}
-				<div class="flex flex-row gap-6 w-full ml-4">
+				<div class="flex flex-row gap-6 w-full ml-4 items-center">
 					{#each links as [label, path]}
 						<a href={path} class={path == activePath ? 'font-bold text-red-500' : ''}>{label}</a>
 					{/each}
