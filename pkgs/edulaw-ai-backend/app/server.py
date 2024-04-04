@@ -61,8 +61,6 @@ from routers.chat_completions_proxy import router as chat_completions
 
 app.include_router(chat_completions)
 
-
-
 @app.get("/")
 async def redirect_root_to_docs():
     return RedirectResponse("/docs")
