@@ -328,6 +328,7 @@ export interface Database {
           id: string
           metadata_url: string | null
           metadata_xml: string
+          name_id_format: string | null
           sso_provider_id: string
           updated_at: string | null
         }
@@ -338,6 +339,7 @@ export interface Database {
           id: string
           metadata_url?: string | null
           metadata_xml: string
+          name_id_format?: string | null
           sso_provider_id: string
           updated_at?: string | null
         }
@@ -348,6 +350,7 @@ export interface Database {
           id?: string
           metadata_url?: string | null
           metadata_xml?: string
+          name_id_format?: string | null
           sso_provider_id?: string
           updated_at?: string | null
         }
@@ -366,7 +369,6 @@ export interface Database {
           created_at: string | null
           flow_state_id: string | null
           for_email: string | null
-          from_ip_address: unknown | null
           id: string
           redirect_to: string | null
           request_id: string
@@ -377,7 +379,6 @@ export interface Database {
           created_at?: string | null
           flow_state_id?: string | null
           for_email?: string | null
-          from_ip_address?: unknown | null
           id: string
           redirect_to?: string | null
           request_id: string
@@ -388,7 +389,6 @@ export interface Database {
           created_at?: string | null
           flow_state_id?: string | null
           for_email?: string | null
-          from_ip_address?: unknown | null
           id?: string
           redirect_to?: string | null
           request_id?: string
@@ -547,6 +547,7 @@ export interface Database {
           id: string
           instance_id: string | null
           invited_at: string | null
+          is_anonymous: boolean
           is_sso_user: boolean
           is_super_admin: boolean | null
           last_sign_in_at: string | null
@@ -583,6 +584,7 @@ export interface Database {
           id: string
           instance_id?: string | null
           invited_at?: string | null
+          is_anonymous?: boolean
           is_sso_user?: boolean
           is_super_admin?: boolean | null
           last_sign_in_at?: string | null
@@ -619,6 +621,7 @@ export interface Database {
           id?: string
           instance_id?: string | null
           invited_at?: string | null
+          is_anonymous?: boolean
           is_sso_user?: boolean
           is_super_admin?: boolean | null
           last_sign_in_at?: string | null
@@ -727,13 +730,6 @@ export interface Database {
           user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "messages_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "messages_user_id_fkey"
             columns: ["user_id"]

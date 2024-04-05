@@ -24,7 +24,7 @@ create index on conversations(user_id, created_at desc);
 
 create table messages (
   id uuid primary key default gen_random_uuid(),
-  conversation_id uuid not null references conversations(id) ON UPDATE CASCADE ON DELETE CASCADE,
+  conversation_id uuid NOT NULL,
   user_id uuid not null default auth.uid() references auth.users(id) ON UPDATE CASCADE ON DELETE CASCADE,
   created_at timestamp with time zone not null default now(),
   content text not null,
@@ -52,11 +52,7 @@ create policy "allow select" on messages for select to authenticated
 create policy "allow insert" on conversations for insert to authenticated
   with check (user_id = (select auth.uid()));
 create policy "allow insert IF owner of conversation" on messages for insert to authenticated
-  with check (
-    user_id = (select auth.uid())
-    AND EXISTS (
-      select 1 from conversations where user_id = (select auth.uid()) and id = conversation_id limit 1
-    ));
+  with check (user_id = (select auth.uid()));
 
 -- UPDATE
 create policy "DENY update" on conversations for update to authenticated

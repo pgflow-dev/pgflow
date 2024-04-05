@@ -5,16 +5,18 @@ import {
 } from '@langchain/core/messages';
 import type { StoredMessage } from '@langchain/core/messages';
 import { AIMessage, HumanMessage } from '@langchain/core/messages';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import type { Writable } from 'svelte/store';
-import { writable } from 'svelte/store';
+import { get, writable } from 'svelte/store';
 import type { ChatMessage } from '$lib/db';
 import { RunnableLambda, RunnablePassthrough } from '@langchain/core/runnables';
 import type { ChatPromptValue } from '@langchain/core/prompt_values';
+import { createConversationForMessage } from '$lib/helpers/createConversationForMessage';
 
 export interface SupabaseChatMessageHistoryInput {
 	conversationId: string;
 	supabase: SupabaseClient;
+	session: Session;
 }
 
 export function chatMessageToBaseMessage(message: ChatMessage): BaseMessage {
@@ -59,34 +61,45 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 
 	conversationId: string;
 	supabase: SupabaseClient;
+	session: Session;
 	messagesStore: Writable<ChatMessage[]>;
+	messagesLoaded: boolean;
 
 	constructor(fields: SupabaseChatMessageHistoryInput) {
 		super(fields);
 		this.conversationId = fields.conversationId;
 		this.supabase = fields.supabase;
+		this.session = fields.session;
 		this.messagesStore = writable<ChatMessage[]>([]);
+		this.messagesLoaded = false;
 	}
 
 	async getMessages(): Promise<BaseMessage[]> {
-		const { data: rawMessages, error } = await this.supabase
-			.schema('chat')
-			.from('messages')
-			.select('*')
-			.eq('conversation_id', this.conversationId)
-			.order('created_at', { ascending: true });
+		await this.ensureMessagesLoaded();
 
-		if (error) {
-			throw error;
-		}
+		return get(this.messagesStore).map(chatMessageToBaseMessage);
+	}
 
-		if (rawMessages) {
-			this.messagesStore.set(<ChatMessage[]>rawMessages);
-			const chatMessages = rawMessages.map(chatMessageToBaseMessage);
-			return chatMessages;
-		} else {
-			this.messagesStore.set([]);
-			return [];
+	async ensureMessagesLoaded(): Promise<void> {
+		if (!this.messagesLoaded) {
+			const { data: rawMessages, error } = await this.supabase
+				.schema('chat')
+				.from('messages')
+				.select('*')
+				.eq('conversation_id', this.conversationId)
+				.order('created_at', { ascending: true });
+
+			if (error) {
+				throw error;
+			}
+
+			if (rawMessages) {
+				this.messagesStore.set(<ChatMessage[]>rawMessages);
+			} else {
+				this.messagesStore.set([]);
+			}
+
+			this.messagesLoaded = true;
 		}
 	}
 
@@ -103,6 +116,14 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 		this.messagesStore.update((chatMessages) => {
 			return [...chatMessages, chatMessage];
 		});
+
+		if (get(this.messagesStore).length === 1) {
+			await createConversationForMessage({
+				supabase: this.supabase,
+				session: this.session,
+				chatMessage
+			});
+		}
 	}
 
 	async addMessages(messages: BaseMessage[]): Promise<void> {

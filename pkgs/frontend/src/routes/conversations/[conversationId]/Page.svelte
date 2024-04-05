@@ -6,11 +6,18 @@
 	import { useChat } from '$lib/useChat';
 	import Prompt from '$components/Prompt.svelte';
 	import type { PageData } from './$types';
+	import { SupabaseChatMessageHistory } from '$lib/chat_histories/SupabaseChatMessageHistory';
+	import { page } from '$app/stores';
 	import { RunnableSequence } from '@langchain/core/runnables';
 
 	export let data: PageData;
-	let { session, history } = data;
-	$: ({ session, history } = data);
+	let { session, supabase } = data;
+	$: ({ session, supabase } = data);
+
+	const conversationId = $page.params.conversationId;
+
+	const history = new SupabaseChatMessageHistory({ supabase, session, conversationId });
+	history.getMessages();
 
 	const prompt = ChatPromptTemplate.fromMessages([
 		['system', 'You are a helpful assistant.'],
