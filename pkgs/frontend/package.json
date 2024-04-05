@@ -21,13 +21,13 @@
 		"@playwright/test": "^1.28.1",
 		"@skeletonlabs/skeleton": "2.7.0",
 		"@skeletonlabs/tw-plugin": "0.3.1",
-		"@sveltejs/adapter-auto": "^3.2.0",
 		"@sveltejs/kit": "^2.5.5",
 		"@sveltejs/vite-plugin-svelte": "^3.0.2",
 		"@tailwindcss/forms": "0.5.7",
 		"@tailwindcss/typography": "0.5.10",
 		"@types/eslint": "8.56.0",
 		"@types/node": "20.10.6",
+		"@types/uuid": "^9.0.8",
 		"@typescript-eslint/eslint-plugin": "^6.0.0",
 		"@typescript-eslint/parser": "^6.0.0",
 		"autoprefixer": "10.4.16",
@@ -64,6 +64,7 @@
 		"highlight.js": "11.9.0",
 		"langchain": "^0.1.28",
 		"langsmith": "^0.1.8",
-		"marked": "^12.0.1"
+		"marked": "^12.0.1",
+		"uuid": "^9.0.1"
 	}
 }

@@ -6,8 +6,7 @@ default:
 
 .rule/main-branch-only:
   rules:
-    - if: $CI_COMMIT_BRANCH == 'main'
-    # - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_MERGE_REQUEST_IID == null'
 
 .dependency/flyctl:
   before_script:

@@ -25,17 +25,17 @@
 </script>
 
 <div class="h-full w-full md:w-3/4 mx-auto flex flex-col tems-center p-8 card">
-	<h2 class="h2">My conversations</h2>
+	<div class="flex flex-row">
+		<h2 class="h2 flex-grow">My conversations</h2>
 
-	<div class="flex flex-row items-center justify-end">
 		<NewConversationButton />
 	</div>
 
 	{#each conversations as conversation (conversation.id)}
 		<div class="flex card variant-filled-surface p-3 my-3 items-center space-x-4">
-			<a class="h4 flex-grow" href="/conversations/{conversation.id}">{conversation.title}</a>
+			<a class="flex-grow" href="/conversations/{conversation.id}">{conversation.title}</a>
 			<div class="text-gray-500 text-xs">{dayjs(conversation.created_at).fromNow()}</div>
-			<button on:click={() => deleteConversation(conversation)} class="chip variant-filled-error"
+			<button on:click={() => deleteConversation(conversation)} class="badge variant-filled-error"
 				>✕</button
 			>
 		</div>
