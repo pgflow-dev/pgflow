@@ -776,69 +776,6 @@ export interface Database {
         }
         Relationships: []
       }
-      edulaw_acts: {
-        Row: {
-          article_number: string
-          embedding: string | null
-          number: string
-          text: string
-        }
-        Insert: {
-          article_number: string
-          embedding?: string | null
-          number: string
-          text: string
-        }
-        Update: {
-          article_number?: string
-          embedding?: string | null
-          number?: string
-          text?: string
-        }
-        Relationships: []
-      }
-      edulaw_articles: {
-        Row: {
-          embedding: string | null
-          number: string
-          text: string
-        }
-        Insert: {
-          embedding?: string | null
-          number: string
-          text: string
-        }
-        Update: {
-          embedding?: string | null
-          number?: string
-          text?: string
-        }
-        Relationships: []
-      }
-      edulaw_sections: {
-        Row: {
-          act_number: string
-          article_number: string
-          embedding: string | null
-          number: string
-          text: string
-        }
-        Insert: {
-          act_number: string
-          article_number: string
-          embedding?: string | null
-          number: string
-          text: string
-        }
-        Update: {
-          act_number?: string
-          article_number?: string
-          embedding?: string | null
-          number?: string
-          text?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       lex_docs: {
@@ -898,40 +835,18 @@ export interface Database {
         }
         Returns: unknown
       }
-      match_acts: {
-        Args: {
-          query_embedding: string
-          match_threshold: number
-          match_count: number
-        }
-        Returns: {
-          number: string
-          article_number: string
-          text: string
-          similarity: number
-        }[]
-      }
-      match_articles: {
-        Args: {
-          query_embedding: string
-          match_threshold: number
-          match_count: number
-        }
-        Returns: {
-          number: string
-          text: string
-          similarity: number
-        }[]
-      }
       match_documents: {
         Args: {
           query_embedding: string
+          match_count?: number
+          match_threshold?: number
           filter?: Json
         }
         Returns: {
           id: string
           content: string
           metadata: Json
+          embeddings: string
           similarity: number
         }[]
       }
@@ -952,20 +867,6 @@ export interface Database {
           paragraph_no: string
           point_no: string
           subpoint_no: string
-          similarity: number
-        }[]
-      }
-      match_sections: {
-        Args: {
-          query_embedding: string
-          match_threshold: number
-          match_count: number
-        }
-        Returns: {
-          number: string
-          act_number: string
-          article_number: string
-          text: string
           similarity: number
         }[]
       }

@@ -13,11 +13,14 @@ create table
 -- Create a function to search for documents
 create function match_documents (
   query_embedding vector (384),
+  match_count int default 10,
+  match_threshold float default 0,
   filter jsonb default '{}'
 ) returns table (
   id uuid,
   content text,
   metadata jsonb,
+  embeddings vector (384),
   similarity float
 ) language plpgsql as $$
 #variable_conflict use_column
@@ -27,9 +30,11 @@ begin
     id,
     content,
     metadata,
+    embeddings,
     1 - (documents.embedding <=> query_embedding) as similarity
   from documents
   where metadata @> filter
-  order by documents.embedding <=> query_embedding;
+  order by documents.embedding <=> query_embedding
+  limit match_count;
 end;
 $$;
