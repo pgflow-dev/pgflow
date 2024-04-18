@@ -5,7 +5,7 @@
 
 	export let value: string;
 	export let placeholder: string;
-	export let inProgress: boolean = false;
+	export let loading: boolean = false;
 	export let label = 'Check sentiment';
 
 	let input: HTMLInputElement;
@@ -16,12 +16,12 @@
 	}
 
 	function dispatchSubmit() {
-		if (!inProgress && value.length) {
+		if (!loading && value.length) {
 			dispatch('submit');
 		}
 	}
 
-	$: !inProgress && focusInput();
+	$: !loading && focusInput();
 </script>
 
 <div class="input-group input-group-divider grid-cols-[1fr_auto] rounded-container-token">
@@ -29,22 +29,18 @@
 		<input
 			bind:value
 			bind:this={input}
-			disabled={inProgress}
+			disabled={loading}
 			class="input"
 			type="text"
 			{placeholder}
 		/>
 	</form>
-	{#if inProgress}
+	{#if loading}
 		<button class="variant-filled-primary" disabled={true}>
 			<ProgressRadial width="w-8" stroke={100} />
 		</button>
 	{:else}
-		<button
-			on:click={dispatchSubmit}
-			disabled={inProgress || !value}
-			class="variant-filled-primary"
-		>
+		<button on:click={dispatchSubmit} disabled={loading || !value} class="variant-filled-primary">
 			{label}
 		</button>
 	{/if}

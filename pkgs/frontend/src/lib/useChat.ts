@@ -12,7 +12,7 @@ type UseChatFields = {
 };
 
 export function useChat({ history, chain }: UseChatFields) {
-	const inProgress = writable<boolean>(false);
+	const loading = writable<boolean>(false);
 	const input = writable<string>('');
 
 	const aiMessageChunk = writable<AIMessageChunk | null>(null);
@@ -31,7 +31,7 @@ export function useChat({ history, chain }: UseChatFields) {
 	);
 
 	async function handleSubmit() {
-		inProgress.set(true);
+		loading.set(true);
 
 		const streamPromise = chain.stream({ input: get(input) });
 		input.set('');
@@ -50,13 +50,13 @@ export function useChat({ history, chain }: UseChatFields) {
 
 		aiMessageChunk.set(null);
 		input.set('');
-		inProgress.set(false);
+		loading.set(false);
 	}
 
 	return {
 		input,
 		handleSubmit,
-		inProgress,
+		loading,
 		messages: messagesWithChunk
 	};
 }

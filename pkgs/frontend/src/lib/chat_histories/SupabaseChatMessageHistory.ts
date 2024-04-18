@@ -9,7 +9,7 @@ import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import type { Writable } from 'svelte/store';
 import { get, writable } from 'svelte/store';
 import type { ChatMessage } from '$lib/db';
-import { RunnableLambda, RunnablePassthrough } from '@langchain/core/runnables';
+import { RunnableLambda } from '@langchain/core/runnables';
 import type { ChatPromptValue } from '@langchain/core/prompt_values';
 import { createConversationForMessage } from '$lib/helpers/createConversationForMessage';
 
@@ -148,11 +148,9 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 		this.messagesStore.set([]);
 	}
 
-	asLoaderRunnable(fields?: { key: string }) {
-		const key = fields?.key || 'messages';
-
-		return RunnablePassthrough.assign({
-			[key]: () => this.getMessages()
+	asLoaderRunnable() {
+		return new RunnableLambda({
+			func: () => this.getMessages()
 		});
 	}
 

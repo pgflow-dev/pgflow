@@ -7,3 +7,5 @@ export type ChatMessage = Pick<MessageRow, 'content' | 'role' | 'conversation_id
 export type ChatConversation = Pick<ConversationRow, 'id' | 'created_at' | 'title'>;
 
 export type ChatConversationWithMessages = ChatConversation & { messages: ChatMessage[] };
+
+export type MatchDocumentsRpc = Database['public']['Functions']['match_documents'];

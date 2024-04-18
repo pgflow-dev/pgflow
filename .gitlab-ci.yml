@@ -4,28 +4,20 @@ stages:
 default:
   image: python:3.11-slim
 
-.rule/main-branch-only:
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && $CI_MERGE_REQUEST_IID == null'
+deploy-prod/edulaw-ai-backend:
+  stage: deploy
 
-.dependency/flyctl:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - pkgs/edulaw-ai-backend/**/*
+
   before_script:
     - apt-get update -qq && apt-get install -y curl
     - curl -L https://fly.io/install.sh | sh
     - export FLYCTL_INSTALL="/root/.fly"
     - export PATH="$FLYCTL_INSTALL/bin:$PATH"
 
-.pkg-changed/edulaw-ai-backend:
-  rules:
-    - changes:
-        - pkgs/edulaw-ai-backend/**/*
-
-deploy-prod/edulaw-ai-backend:
-  extends:
-    - .rule/main-branch-only
-    - .pkg-changed/edulaw-ai-backend
-    - .dependency/flyctl
-  stage: deploy
   variables:
     DISCORD_MESSAGE: "Deployed **edulaw-ai-backend** to **production**"
   script:

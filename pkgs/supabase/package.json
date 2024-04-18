@@ -3,7 +3,8 @@
   "license": "UNLICENSED",
   "scripts": {
     "gen-types": "supabase gen types typescript --local --schema public --schema auth --schema acl --schema storage --schema chat > types.d.ts",
-    "deno": "deno cache --config functions/deno.json"
+    "deno": "deno cache --config functions/deno.json",
+    "db-reset": "supabase db reset && pnpm gen-types"
   },
   "devDependencies": {
     "supabase": "^1.131.4"
