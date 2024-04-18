@@ -8,7 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from routers.chains import router as chains_router
 from routers.chat_completions_proxy import router as chat_completions_router
-from routers.models_and_embeddings import router as models_router
+from routers.embeddings import router as embeddings_router
+from routers.models import router as models_router
 
 # TODO: figure out how to not run it on load
 load_dotenv()
@@ -57,6 +58,7 @@ async def redirect_root_to_docs():
 
 app.include_router(chat_completions_router, prefix='/proxy')
 app.include_router(models_router, prefix='/models')
+app.include_router(embeddings_router)
 app.include_router(chains_router)
 
 if __name__ == "__main__":

@@ -1,6 +1,5 @@
 import os
 
-from app.remote_embeddings import embed_documents, embed_query
 from fastapi import APIRouter
 from langchain_community.chat_models import ChatOllama
 from langchain_groq import ChatGroq
@@ -20,11 +19,4 @@ if OLLAMA_URL is not None:
     add_routes(router, ChatOllama(base_url=OLLAMA_URL, model="dolphin-mixtral"), path='/ChatOllama/dolphin-mixtral')
     add_routes(router, ChatOllama(base_url=OLLAMA_URL, model="gemma:2b"), path='/ChatOllama/gemma:2b')
     add_routes(router, ChatOllama(base_url=OLLAMA_URL, model="gemma:7b"), path='/ChatOllama/gemma:7b')
-
-# embeddings
-add_routes(router, embed_query, path='/embed_query')
-add_routes(router, embed_documents, path='/embed_documents')
-
-
-
 

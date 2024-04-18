@@ -1,6 +1,8 @@
 -- Enable the pgvector extension to work with embedding vectors
 create extension if not exists vector;
 
+set search_path TO public;
+
 -- Create a table to store your documents
 create table
   documents (
@@ -20,7 +22,7 @@ create function match_documents (
   id uuid,
   content text,
   metadata jsonb,
-  embeddings vector (384),
+  embedding vector (384),
   similarity float
 ) language plpgsql as $$
 #variable_conflict use_column
@@ -30,10 +32,11 @@ begin
     id,
     content,
     metadata,
-    embeddings,
+    embedding,
     1 - (documents.embedding <=> query_embedding) as similarity
   from documents
   where metadata @> filter
+  and 1 - (documents.embedding <=> query_embedding) >= match_threshold
   order by documents.embedding <=> query_embedding
   limit match_count;
 end;

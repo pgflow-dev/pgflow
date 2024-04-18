@@ -6,7 +6,7 @@
 	$: ({ supabase } = data);
 
 	let email = '';
-	let inProgress = false;
+	let loading = false;
 	let linkSent = false;
 
 	function isValidEmail(email: string) {
@@ -14,7 +14,7 @@
 	}
 
 	async function signInWithEmail() {
-		inProgress = true;
+		loading = true;
 
 		const { data: _data, error } = await supabase.auth.signInWithOtp({
 			email: email,
@@ -46,14 +46,14 @@
 					class="input"
 					type="text"
 					placeholder="email"
-					disabled={inProgress}
+					disabled={loading}
 					bind:value={email}
 				/>
 			</label>
 
 			<button
 				on:click={signInWithEmail}
-				disabled={!isValidEmail(email) || inProgress}
+				disabled={!isValidEmail(email) || loading}
 				value={email}
 				class="btn variant-filled"
 			>

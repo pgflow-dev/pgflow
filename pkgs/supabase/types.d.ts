@@ -846,7 +846,7 @@ export interface Database {
           id: string
           content: string
           metadata: Json
-          embeddings: string
+          embedding: string
           similarity: number
         }[]
       }
