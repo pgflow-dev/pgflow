@@ -10,7 +10,6 @@ import type { Writable } from 'svelte/store';
 import { get, writable } from 'svelte/store';
 import type { ChatMessage } from '$lib/db';
 import { RunnableLambda } from '@langchain/core/runnables';
-import type { ChatPromptValue } from '@langchain/core/prompt_values';
 import { createConversationForMessage } from '$lib/helpers/createConversationForMessage';
 
 export interface SupabaseChatMessageHistoryInput {
@@ -150,18 +149,16 @@ export class SupabaseChatMessageHistory extends BaseListChatMessageHistory {
 
 	asLoaderRunnable() {
 		return new RunnableLambda({
-			func: () => this.getMessages()
+			func: async () => await this.getMessages()
 		});
 	}
 
 	asSaverRunnable() {
 		return new RunnableLambda({
-			func: (chatPromptValue: ChatPromptValue) => {
-				const { messages } = chatPromptValue;
-				const humanMessage = messages[messages.length - 1];
-				this.addMessage(humanMessage);
+			func: async (input: string) => {
+				await this.addMessage(new HumanMessage(input));
 
-				return chatPromptValue;
+				return input;
 			}
 		});
 	}

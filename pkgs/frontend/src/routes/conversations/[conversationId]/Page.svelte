@@ -12,6 +12,7 @@
 	import { ProgressRadial } from '@skeletonlabs/skeleton';
 	import { chatWithHistoryAndContextPrompt } from '$lib/prompts';
 	import { debug } from '$lib/runnables';
+	import { HumanMessage } from '@langchain/core/messages';
 
 	export let data: PageData;
 	let { session, supabase } = data;
@@ -30,14 +31,18 @@
 
 	const model = createProxiedChatModel('ChatOpenAI', session);
 	const chain = RunnableSequence.from([
+		debug('original input'),
 		RunnableParallel.from({
-			input: (originalInput: { input: string }) => originalInput.input,
+			input: async (originalInput: { input: string }) => {
+				await history.addMessage(new HumanMessage(originalInput.input));
+
+				return originalInput.input;
+			},
 			messages: history.asLoaderRunnable(),
 			context: retrievalChain
 		}),
 		debug('parallel'),
 		chatWithHistoryAndContextPrompt,
-		history.asSaverRunnable(),
 		model
 	]);
 
