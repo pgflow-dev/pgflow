@@ -46,6 +46,8 @@
 		model
 	]);
 
+	$: console.log('$documents', $documents);
+
 	const { input, handleSubmit, loading, messages } = useChat({ history, chain });
 </script>
 
@@ -66,7 +68,7 @@
 			>
 				<h3 class="h3">Relevant docs:</h3>
 				{#each $documents as doc (doc)}
-					<p>- {doc.pageContent}</p>
+					<p>- {doc.content}</p>
 				{/each}
 			</div>
 		{/if}

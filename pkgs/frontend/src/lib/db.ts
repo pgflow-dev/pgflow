@@ -9,3 +9,4 @@ export type ChatConversation = Pick<ConversationRow, 'id' | 'created_at' | 'titl
 export type ChatConversationWithMessages = ChatConversation & { messages: ChatMessage[] };
 
 export type MatchDocumentsRpc = Database['public']['Functions']['match_documents'];
+export type MatchedDocuments = MatchDocumentsRpc['Returns'];

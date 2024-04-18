@@ -1,8 +1,8 @@
 import { RunnableLambda, RunnableSequence } from '@langchain/core/runnables';
-import { Document } from '@langchain/core/documents';
+// import { Document } from '@langchain/core/documents';
 import { derived, writable } from 'svelte/store';
 import { RemoteEmbeddings } from '$lib/embeddings/RemoteEmbeddings';
-import type { MatchDocumentsRpc } from '$lib/db';
+import type { MatchedDocuments } from '$lib/db';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 
 export type UseRetrievalInput = {
@@ -14,7 +14,7 @@ export type RetrievalStatus = 'embedQuery' | 'retrieval' | 'ready' | 'error';
 
 export default function useRetriever({ session, supabase }: UseRetrievalInput) {
 	const embeddings = new RemoteEmbeddings({}, session);
-	const documents = writable<Document[]>([]);
+	const documents = writable<MatchedDocuments>([]);
 	const status = writable<RetrievalStatus>('ready');
 	const loading = derived(status, ($status) => $status !== 'ready');
 
@@ -25,7 +25,7 @@ export default function useRetriever({ session, supabase }: UseRetrievalInput) {
 		status.set('retrieval');
 		const { data, error } = await supabase
 			.rpc('match_documents', { query_embedding })
-			.returns<MatchDocumentsRpc['Returns']>();
+			.returns<MatchedDocuments>();
 		if (error) {
 			status.set('error');
 			throw error;
@@ -36,13 +36,13 @@ export default function useRetriever({ session, supabase }: UseRetrievalInput) {
 	}
 	const retriever = new RunnableLambda({ func: retrieveDocuments });
 
-	const formatDocs = (docs: Document[]) => {
-		const contents = docs.map((doc) => doc.pageContent);
+	const formatDocs = (docs: MatchedDocuments) => {
+		const contents = docs.map((doc) => doc);
 
 		return contents.join('\n');
 	};
 
-	const updateStore = (docs: Document[]) => {
+	const updateStore = (docs: MatchedDocuments) => {
 		documents.set(docs);
 
 		return docs;
