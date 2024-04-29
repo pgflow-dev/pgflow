@@ -7,7 +7,10 @@
 
 	console.log('==== +layout.svelte');
 
-	const links = [['Conversations', '/conversations']];
+	const links = [
+		['Documents', '/documents'],
+		['Conversations', '/conversations']
+	];
 
 	export let data;
 

@@ -1,5 +1,4 @@
 from app.utils import init_supabase_client
-from chains.question_generator import chain as question_generator
 
 if __name__ == "__main__":
     from rich.pretty import pprint

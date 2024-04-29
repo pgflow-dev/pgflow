@@ -27,7 +27,15 @@
 		chain: retrievalChain,
 		documents,
 		loading: retrieverLoading
-	} = useRetriever({ session, supabase });
+	} = useRetriever({
+		session,
+		supabase,
+		options: {
+			match_threshold: 0.6,
+			match_count: 5,
+			filter: { source: 'point-in-context' }
+		}
+	});
 
 	const model = createProxiedChatModel('ChatOpenAI', session);
 	const chain = RunnableSequence.from([
@@ -40,6 +48,9 @@
 			},
 			messages: history.asLoaderRunnable(),
 			context: retrievalChain
+			// context: RunnablePassthrough.assign({ input: createTopicExtractorChain(session) })
+			// 	.pipe(debug('topics'))
+			// 	.pipe(retrievalChain)
 		}),
 		debug('parallel'),
 		chatWithHistoryAndContextPrompt,

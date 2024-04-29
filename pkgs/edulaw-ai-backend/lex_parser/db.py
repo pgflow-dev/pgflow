@@ -18,6 +18,18 @@ class BaseDecorator:
     # so we always use them to find the chapter or article
 
     @property
+    def ancestors(self):
+        _ancestors = []
+
+        parent = self.parent
+        while parent:
+            _ancestors.append(parent)
+            parent = parent.parent
+
+        _ancestors.reverse()
+        return _ancestors
+
+    @property
     def chapter(self):
         try:
             return self._db.chapters_by(chapter_no=self.chapter_no)[0]
@@ -50,12 +62,23 @@ class ChapterDecorator(BaseDecorator):
         self._db = db
 
     @property
+    def children(self):
+        articles = self._db.articles_by(chapter_no=self.chapter_no)
+        paragraphs = self._db.paragraphs_by(chapter_no=self.chapter_no)
+
+        return [*articles, *paragraphs]
+
+    @property
     def articles(self):
         return self._db.articles_by(chapter_no=self.chapter_no)
 
     @property
     def paragraphs(self):
         return self._db.paragraphs_by(chapter_no=self.chapter_no)
+
+    @property
+    def parent(self):
+        return None
 
 class ArticleDecorator(BaseDecorator):
     def __init__(self, model: Article, db: LexDb):
@@ -65,6 +88,13 @@ class ArticleDecorator(BaseDecorator):
     @property
     def parent(self):
         return self.chapter
+
+    @property
+    def children(self):
+        paragraphs = self._db.paragraphs_by(chapter_no=self.chapter_no, article_no=self.article_no)
+        points = self._db.points_by(chapter_no=self.chapter_no, article_no=self.article_no, paragraph_no='')
+
+        return [*paragraphs, *points]
 
     @property
     def paragraphs(self):
@@ -92,6 +122,12 @@ class ParagraphDecorator(BaseDecorator):
             return self.chapter
 
     @property
+    def children(self):
+        points = self._db.points_by(chapter_no=self.chapter_no, article_no=self.article_no, paragraph_no=self.paragraph_no)
+
+        return points
+
+    @property
     def points(self):
         return self._db.points_by(article_no=self.article_no, paragraph_no=self.paragraph_no)
 
@@ -110,6 +146,10 @@ class PointDecorator(BaseDecorator):
             )[0]
         else:
             return self.article
+
+    @property
+    def children(self):
+        return self.subpoints
 
     @property
     def subpoints(self):
@@ -194,6 +234,14 @@ class LexDb:
             points=parser.points,
             subpoints=parser.subpoints
         )
+
+    @classmethod
+    def from_file(cls, path: str):
+        parser = Parser()
+        with open(path, 'r') as file:
+            parser.parse(file)
+
+        return LexDb.from_parser(parser)
 
 if __name__ == '__main__':
 

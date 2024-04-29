@@ -11,6 +11,7 @@ create table
     metadata jsonb, -- corresponds to Document.metadata
     embedding vector (384) -- 1536 works for OpenAI embeddings, change if needed
   );
+create index on documents using hnsw (embedding vector_cosine_ops);
 
 -- Create a function to search for documents
 create function match_documents (

@@ -776,6 +776,42 @@ export interface Database {
         }
         Relationships: []
       }
+      embeddings: {
+        Row: {
+          document_id: string
+          embedding: string
+          id: string
+          type: string
+        }
+        Insert: {
+          document_id: string
+          embedding: string
+          id: string
+          type: string
+        }
+        Update: {
+          document_id?: string
+          embedding?: string
+          id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "embeddings_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "embeddings_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "lex_docs"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       lex_docs: {
@@ -841,6 +877,22 @@ export interface Database {
           match_count?: number
           match_threshold?: number
           filter?: Json
+        }
+        Returns: {
+          id: string
+          content: string
+          metadata: Json
+          embedding: string
+          similarity: number
+        }[]
+      }
+      match_documents_via_embeddings: {
+        Args: {
+          query_embedding: string
+          match_count?: number
+          match_threshold?: number
+          filter?: Json
+          type_filter?: string
         }
         Returns: {
           id: string
