@@ -29,11 +29,12 @@ if __name__ == "__main__":
     #           "paragraph_no": "",
     #           "kind": "Point"
     def is_doc_relevant(doc: dict):
-         return doc['metadata']['point_no'] == '32' and doc['metadata']['article_no'] == '4' and doc['metadata']['paragraph_no'] == ''
+        return True
+         # return doc['metadata']['point_no'] == '32' and doc['metadata']['article_no'] == '4' and doc['metadata']['paragraph_no'] == ''
 
     docs_to_batch = list(filter(is_doc_relevant, docs))
 
-    with tqdm(total=100, desc="Generating hypothetical questions", unit="document") as pbar:
+    with tqdm(total=len(docs_to_batch), desc="Generating hypothetical questions", unit="document") as pbar:
         with jsonl_open('data/pipeline_02.jsonl', 'w') as writer:
             for _, results in question_generator.batch_as_completed(docs_to_batch):
                 writer.write(results)

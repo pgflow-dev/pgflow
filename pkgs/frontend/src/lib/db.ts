@@ -35,6 +35,7 @@ export type Database = MergeDeep<
 						content: string;
 						metadata: Json;
 						embedding: number[];
+						embedded_content: string;
 						similarity: number;
 					}[];
 				};

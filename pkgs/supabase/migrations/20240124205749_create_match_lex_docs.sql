@@ -1,5 +1,5 @@
 create or replace function match_lex_docs (
-  query_embedding vector(384),
+  query_embedding vector(1536),
   match_threshold float,
   match_count int,
   filter jsonb default '{}'

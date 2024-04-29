@@ -4,6 +4,7 @@ load_dotenv()
 
 from app.prefixed_embeddings import PrefixedEmbeddings
 from jsonlines import open as jsonl_open
+from langchain_openai import OpenAIEmbeddings
 from tqdm import tqdm
 
 if __name__ == "__main__":
@@ -12,7 +13,8 @@ if __name__ == "__main__":
         docs = list(reader)
 
     docs_to_batch = docs
-    embeddings = PrefixedEmbeddings()
+    embeddings = OpenAIEmbeddings()
+    # embeddings = PrefixedEmbeddings()
 
     with tqdm(total=len(docs_to_batch), desc="Embedding", unit="document") as pbar:
         with jsonl_open('data/pipeline_04.jsonl', 'w') as writer:

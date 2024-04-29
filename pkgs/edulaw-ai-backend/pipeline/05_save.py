@@ -31,6 +31,7 @@ if __name__ == "__main__":
         content = record['doc']['page_content']
         metadata = record['doc']['metadata']
         content_embedding = record['content_embedding']
+        print(f'content_embedding: {len(content_embedding)}')
 
         result = supabase.table('documents').insert(dict(
             id=document_id,
@@ -38,16 +39,18 @@ if __name__ == "__main__":
             metadata=metadata,
             embedding=content_embedding
         )).execute()
+        assert len(result.data) > 0
 
-        document = result.data[0]
-
+        pairs = zip(record['questions'], record['questions_embeddings'])
         embedded_questions = [
             dict(
                 id=str(uuid.uuid4()),
                 document_id = document_id,
-                embedding=embeddings.embed_documents([question])[0],
+                content=question,
+                embedding=question_embedding,
                 type="summary"
             )
-            for question in record['questions']
+            for question, question_embedding in pairs
         ]
         result = supabase.table('embeddings').insert(embedded_questions).execute()
+        assert len(result.data) > 0

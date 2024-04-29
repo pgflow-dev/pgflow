@@ -31,9 +31,9 @@
 		session,
 		supabase,
 		options: {
-			match_threshold: 0.6,
-			match_count: 5,
-			filter: { source: 'point-in-context' }
+			match_threshold: 0.8,
+			match_count: 10
+			// filter: { source: 'point-in-context' }
 		}
 	});
 
@@ -73,7 +73,7 @@
 			</div>
 		{/if}
 
-		{#if $documents.length > 0}
+		{#if $documents.length < 0}
 			<div
 				class="card fixed bottom-1/3 right-0 h-2/5 shadow-black w-2/5 overflow-y-auto overflow-x-hidden shadow p-4 m-8 rounded-xl z-30"
 			>

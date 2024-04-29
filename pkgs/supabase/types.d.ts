@@ -778,18 +778,21 @@ export interface Database {
       }
       embeddings: {
         Row: {
+          content: string | null
           document_id: string
           embedding: string
           id: string
           type: string
         }
         Insert: {
+          content?: string | null
           document_id: string
           embedding: string
           id: string
           type: string
         }
         Update: {
+          content?: string | null
           document_id?: string
           embedding?: string
           id?: string
@@ -899,6 +902,8 @@ export interface Database {
           content: string
           metadata: Json
           embedding: string
+          document_embedding: string
+          embedded_content: string
           similarity: number
         }[]
       }

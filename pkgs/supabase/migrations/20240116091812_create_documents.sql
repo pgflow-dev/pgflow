@@ -9,13 +9,13 @@ create table
     id uuid primary key,
     content text, -- corresponds to Document.pageContent
     metadata jsonb, -- corresponds to Document.metadata
-    embedding vector (384) -- 1536 works for OpenAI embeddings, change if needed
+    embedding vector (1536) -- 1536 works for OpenAI embeddings, change if needed
   );
 create index on documents using hnsw (embedding vector_cosine_ops);
 
 -- Create a function to search for documents
 create function match_documents (
-  query_embedding vector (384),
+  query_embedding vector (1536),
   match_count int default 10,
   match_threshold float default 0,
   filter jsonb default '{}'
@@ -23,7 +23,7 @@ create function match_documents (
   id uuid,
   content text,
   metadata jsonb,
-  embedding vector (384),
+  embedding vector (1536),
   similarity float
 ) language plpgsql as $$
 #variable_conflict use_column
