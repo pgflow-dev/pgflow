@@ -7,12 +7,17 @@
 	import type { PageData } from './$types';
 	import { SupabaseChatMessageHistory } from '$lib/chat_histories/SupabaseChatMessageHistory';
 	import { page } from '$app/stores';
-	import { RunnableParallel, RunnableSequence } from '@langchain/core/runnables';
+	import {
+		RunnableParallel,
+		RunnablePassthrough,
+		RunnableSequence
+	} from '@langchain/core/runnables';
 	import useRetriever from '$lib/useRetriever';
 	import { ProgressRadial } from '@skeletonlabs/skeleton';
 	import { chatWithHistoryAndContextPrompt } from '$lib/prompts';
 	import { debug } from '$lib/runnables';
 	import { HumanMessage } from '@langchain/core/messages';
+	import { createRephraseToQueryChain } from '$lib/chains/createRephraseToQueryChain';
 
 	export let data: PageData;
 	let { session, supabase } = data;
@@ -47,10 +52,11 @@
 				return originalInput.input;
 			},
 			messages: history.asLoaderRunnable(),
-			context: retrievalChain
-			// context: RunnablePassthrough.assign({ input: createTopicExtractorChain(session) })
-			// 	.pipe(debug('topics'))
-			// 	.pipe(retrievalChain)
+			context: RunnablePassthrough.assign({
+				input: createRephraseToQueryChain(session)
+			})
+				.pipe(debug('rephrased'))
+				.pipe(retrievalChain)
 		}),
 		debug('parallel'),
 		chatWithHistoryAndContextPrompt,
