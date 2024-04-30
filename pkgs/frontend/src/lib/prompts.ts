@@ -11,3 +11,15 @@ export const chatWithHistoryAndContextPrompt = ChatPromptTemplate.fromMessages([
 	new MessagesPlaceholder('messages'),
 	['user', '{input}']
 ]);
+
+export const standaloneQuestionPrompt = ChatPromptTemplate.fromMessages([
+	[
+		'system',
+		`Twoim zadaniem jest sformułowanie niezależnego pytania na podstawie pytania użytkownika.
+Jeśli pytanie użytkownika odnosi się do jakichś fragmentów historii rozmowy, sparafrazuj to pytanie tak, aby zawierało treść, zamiast się do niej odnosić.
+
+PAMIĘTAJ - NIE WOLNO CI ZMIENIAĆ ZNACZENIA PYTANIA!!!`
+	],
+	new MessagesPlaceholder('messages'),
+	['user', '{input}']
+]);

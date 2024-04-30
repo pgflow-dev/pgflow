@@ -14,10 +14,10 @@
 	} from '@langchain/core/runnables';
 	import useRetriever from '$lib/useRetriever';
 	import { ProgressRadial } from '@skeletonlabs/skeleton';
-	import { chatWithHistoryAndContextPrompt } from '$lib/prompts';
+	import { chatWithHistoryAndContextPrompt, standaloneQuestionPrompt } from '$lib/prompts';
 	import { debug } from '$lib/runnables';
 	import { HumanMessage } from '@langchain/core/messages';
-	import { createRephraseToQueryChain } from '$lib/chains/createRephraseToQueryChain';
+	import { StringOutputParser } from '@langchain/core/output_parsers';
 
 	export let data: PageData;
 	let { session, supabase } = data;
@@ -38,11 +38,15 @@
 		options: {
 			match_threshold: 0.8,
 			match_count: 10
-			// filter: { source: 'point-in-context' }
 		}
 	});
 
 	const model = createProxiedChatModel('ChatOpenAI', session);
+
+	const standaloneQuestionChain = standaloneQuestionPrompt
+		.pipe(model)
+		.pipe(new StringOutputParser());
+
 	const chain = RunnableSequence.from([
 		debug('original input'),
 		RunnableParallel.from({
@@ -51,12 +55,14 @@
 
 				return originalInput.input;
 			},
-			messages: history.asLoaderRunnable(),
-			context: RunnablePassthrough.assign({
-				input: createRephraseToQueryChain(session)
-			})
-				.pipe(debug('rephrased'))
-				.pipe(retrievalChain)
+			messages: history.asLoaderRunnable()
+		}),
+		RunnablePassthrough.assign({
+			originalInput: async (i: { input: string }) => i.input,
+			input: standaloneQuestionChain
+		}),
+		RunnablePassthrough.assign({
+			context: retrievalChain
 		}),
 		debug('parallel'),
 		chatWithHistoryAndContextPrompt,
