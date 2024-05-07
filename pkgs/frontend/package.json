@@ -54,7 +54,7 @@
 	"dependencies": {
 		"@floating-ui/dom": "1.5.3",
 		"@langchain/community": "^0.0.34",
-		"@langchain/core": "^0.1.48",
+		"@langchain/core": "^0.1.62",
 		"@langchain/openai": "^0.0.15",
 		"@supabase/gotrue-js": "^2.62.0",
 		"@supabase/ssr": "^0.0.10",
@@ -62,7 +62,7 @@
 		"@sveltejs/adapter-vercel": "^5.2.0",
 		"dayjs": "^1.11.10",
 		"highlight.js": "11.9.0",
-		"langchain": "^0.1.28",
+		"langchain": "^0.1.36",
 		"langsmith": "^0.1.8",
 		"marked": "^12.0.1",
 		"type-fest": "^4.17.0",
