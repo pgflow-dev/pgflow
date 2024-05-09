@@ -20,7 +20,7 @@ export function RemoteChain(
 		};
 	}
 
-	const baseUrl = PUBLIC_EDULAW_URL.replace(/\/$/, '');
+	const baseUrl = PUBLIC_EDULAW_URL.replace(/\/$/, '').replace(/^\//, '');
 	const runnableUrl = `${baseUrl}/${path}`;
 
 	return new RemoteRunnable({

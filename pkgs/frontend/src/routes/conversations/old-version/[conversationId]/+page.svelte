@@ -4,7 +4,7 @@
 
 	export let data;
 
-	console.log('==== /conversations/stream-[conversationId]/+page.svelte');
+	console.log('==== /conversations/[conversationId]/+page.svelte');
 </script>
 
 {#key $page.url.pathname}
