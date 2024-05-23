@@ -46,7 +46,7 @@ def create_chain():
 	search_type="similarity",
 	search_kwargs=dict(k=5),
     )
-    standalone_question_chain = standalone_question_prompt | model
+    standalone_question_chain = standalone_question_prompt | model | StrOutputParser()
 
     chain = (
         debug('start')
