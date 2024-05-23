@@ -32,7 +32,7 @@ def debug(label):
         pprint(f"{label}: {original_input}")
         return original_input
 
-    return RunnableLambda(debug_fn)
+    return RunnableLambda(debug_fn).with_config(run_name=f"debug: {label}")
 
 def create_chain():
     load_dotenv()
