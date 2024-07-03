@@ -23,6 +23,11 @@ A simple SvelteKit app that uses Supabase for authentication via GitHub authenti
 
 ## Getting Started
 
+### Prerequisites
+
+docker: https://docs.docker.com/desktop/insta...
+supabase cli: https://supabase.com/docs/guides/cli/...
+
 1. Clone the repo
 
 ```bash
@@ -63,3 +68,7 @@ pnpm run dev
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a PR or open an issue.
+
+## Thanks
+
+Shout out to [Davis Media](https://github.com/Davis-Media) for building the base template for this project! 🤙
