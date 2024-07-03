@@ -23,7 +23,9 @@ A simple SvelteKit app that uses Supabase for authentication via GitHub authenti
 
 ## Getting Started
 
-### Prerequisites
+### Running Locally
+
+#### Prerequisites
 
 - docker: https://docs.docker.com/desktop/insta...
 - supabase cli: https://supabase.com/docs/guides/cli/...
@@ -64,6 +66,40 @@ pnpm run dev
 ```
 
 7. Navigate to [localhost:5173](http://localhost:3000) to see your app running.
+
+### Deploying to Vercel
+
+The easiest way to deploy this app is to use Vercel. You can deploy this app with the following steps:
+
+### Database
+
+1. Create a new project in the Supabase dashboard
+
+2. Login to supabase using the console
+
+```bash
+supabase login
+```
+
+3. Link your project to the supabase cli
+
+```bash
+supabase link --project-ref <YOUR_PROJECT_ID>
+```
+
+4. Deploy your database
+
+```bash
+supabase db push
+```
+
+### Client
+
+1. Create a new project on Vercel
+2. Connect your GitHub repository
+3. Add a new github OAuth app in the Github developer settings
+4. Configure your environment variables, make sure you are using updated values from your newly-created Supabase project and Github OAuth app
+5. Deploy
 
 ## Contributing
 
