@@ -2,11 +2,10 @@
 	import { enhance } from '$app/forms';
 	import { invalidate } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button';
-	import { Card } from '$lib/components/ui/card';
-	import CardContent from '$lib/components/ui/card/card-content.svelte';
-	import CardHeader from '$lib/components/ui/card/card-header.svelte';
+	import * as Card from '$lib/components/ui/card/index';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
+	import Hero from '$lib/components/Hero.svelte';
 
 	const { data } = $props();
 	const { userProfile } = data;
@@ -25,9 +24,12 @@
 </script>
 
 {#if userProfile}
-	<Card class="mx-auto max-w-md">
-		<CardHeader class="text-3xl font-thin">Manage your profile</CardHeader>
-		<CardContent>
+	<Card.Root class="mx-auto max-w-md">
+		<Card.Header>
+			<Card.Title class="text-3xl font-thin">Profile</Card.Title>
+			<Card.Description>Update your profile information</Card.Description>
+		</Card.Header>
+		<Card.Content>
 			<form
 				method="post"
 				use:enhance={({ formData }) => {
@@ -44,26 +46,28 @@
 					};
 				}}
 			>
-				<div>
+				<div class="flex items-center gap-2">
+					<div class="w-full">
+						<Label>First Name</Label>
+						<Input bind:value={firstName} />
+					</div>
+					<div class="w-full">
+						<Label>Last Name</Label>
+						<Input bind:value={lastName} />
+					</div>
+				</div>
+
+				<div class="mt-4">
 					<Label>Email</Label>
 					<Input bind:value={email} />
 				</div>
-				<div>
-					<Label>First Name</Label>
-					<Input bind:value={firstName} />
-				</div>
-				<div>
-					<Label>Last Name</Label>
-					<Input bind:value={lastName} />
-				</div>
+
 				<div class="mt-5">
-					<Button type="submit">Update Profile</Button>
+					<Button type="submit" class="w-full">Update Profile</Button>
 				</div>
 			</form>
-		</CardContent>
-	</Card>
+		</Card.Content>
+	</Card.Root>
 {:else}
-	<div class="flex justify-center">
-		<Button href="/auth/login">Login to the site!</Button>
-	</div>
+	<Hero />
 {/if}

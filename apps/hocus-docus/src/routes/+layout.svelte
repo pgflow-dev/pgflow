@@ -34,7 +34,7 @@
 <div class="flex min-h-screen flex-col">
 	<nav class="border-b p-2">
 		<div class="mx-auto flex w-full max-w-2xl items-center justify-between">
-			<a href="/" class="text-2xl font-bold">supabase</a>
+			<a href="/" class="text-2xl font-bold">App</a>
 
 			<div class="flex gap-2">
 				<ThemeToggle />
