@@ -18,6 +18,7 @@ A simple SvelteKit app that uses Supabase for authentication via GitHub authenti
 - [Supabase](https://supabase.io/): An open-source Firebase alternative
 - [shadcn-svelte](https://shadcn-svelte.com): A Tailwind CSS component library for Svelte, based on [shadcn](https://shadcn.com)
 - [Tailwind CSS](https://tailwindcss.com/): A utility-first CSS framework
+- [Iconify](https://iconify.design): A unified icon framework using icons from [icones.js](https://icones.js.org/collection/all)
 - [Zod](https://zod.dev): A TypeScript-first schema declaration and validation library
 
 ## Getting Started
