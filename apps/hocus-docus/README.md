@@ -13,12 +13,12 @@ A simple SvelteKit app that uses Supabase for authentication via GitHub authenti
 
 ## Technologies
 
-- [SvelteKit](https://kit.svelte.dev/) - A framework for building web applications with Svelte
-- [TypeScript](https://www.typescriptlang.org/) - A typed superset of JavaScript that compiles to plain JavaScript
-- [Supabase](https://supabase.io/) - An open-source Firebase alternative
-- [shadcn-svelte](https://shadcn-svelte.com) - A Tailwind CSS component library for Svelte, based on [shadcn](https://shadcn.com)
-- [Tailwind CSS](https://tailwindcss.com/) - A utility-first CSS framework
-- [Zod](https://zod.dev) - A TypeScript-first schema declaration and validation library
+- [SvelteKit](https://kit.svelte.dev/): A framework for building web applications with Svelte
+- [TypeScript](https://www.typescriptlang.org/): A typed superset of JavaScript that compiles to plain JavaScript
+- [Supabase](https://supabase.io/): An open-source Firebase alternative
+- [shadcn-svelte](https://shadcn-svelte.com): A Tailwind CSS component library for Svelte, based on [shadcn](https://shadcn.com)
+- [Tailwind CSS](https://tailwindcss.com/): A utility-first CSS framework
+- [Zod](https://zod.dev): A TypeScript-first schema declaration and validation library
 
 ## Getting Started
 
