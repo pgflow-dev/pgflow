@@ -10,7 +10,7 @@
 		<Card.Description>Choose a provider to login with</Card.Description>
 	</Card.Header>
 	<Card.Content>
-		<Button href="/auth/login/github" class="flex w-fit items-center gap-2">
+		<Button href="/auth/login/github" class="flex items-center gap-2">
 			<Icon icon="mdi:github" class="h-6 w-6" />
 			Login with GitHub
 		</Button>
