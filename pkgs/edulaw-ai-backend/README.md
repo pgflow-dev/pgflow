@@ -31,3 +31,9 @@ Split text file evenly to 3 parts, spliting on newlines.
 ```fish
 split -n l/3 --additional-suffix=.txt data/educational-law-2024.txt data/edulaw-2024-third-
 ```
+
+View JSONL file without particular keys (eg. embeddings) with jq:
+
+```sh
+jq 'del(.content_embedding, .questions_embeddings)' .para-project/pipeline/pipeline_04.jsonl | head -c 1200
+```
