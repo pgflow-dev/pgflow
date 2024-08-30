@@ -23,4 +23,5 @@ aider \
 	--lint-cmd='turbo run lint' \
 	--dark-mode \
 	--sonnet \
+	--no-auto-commits \
 	$@
