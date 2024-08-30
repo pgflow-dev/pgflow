@@ -1,0 +1,26 @@
+#!/bin/bash
+
+if [ -f .env.aider ]; then
+	source .env.aider
+fi
+
+if [ -z "$ANTHROPIC_API_KEY" ]; then
+	echo "ANTHROPIC_API_KEY is not set"
+	exit 1
+fi
+
+if [ -z "$OPENAI_API_KEY" ]; then
+	echo "OPENAI_API_KEY is not set"
+	exit 1
+fi
+
+aider \
+	--anthropic-api-key=$ANTHROPIC_API_KEY \
+	--openai-api-key=$OPENAI_API_KEY \
+	--auto-test \
+	--auto-lint \
+	--test-cmd 'turbo run check' \
+	--lint-cmd='turbo run lint' \
+	--dark-mode \
+	--sonnet
+	$@
