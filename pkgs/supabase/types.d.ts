@@ -810,6 +810,54 @@ export interface Database {
       [_ in never]: never
     }
   }
+  feed: {
+    Tables: {
+      notes: {
+        Row: {
+          content: string
+          created_at: string
+          embedding: string | null
+          id: number
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          embedding?: string | null
+          id?: number
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          id?: number
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      match_notes: {
+        Args: {
+          query_embedding: string
+          match_threshold: number
+        }
+        Returns: {
+          id: number
+          content: string
+          similarity: number
+          metadata: Json
+        }[]
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       documents: {

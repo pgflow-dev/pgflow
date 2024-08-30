@@ -2,7 +2,7 @@
   "name": "backend",
   "license": "UNLICENSED",
   "scripts": {
-    "gen-types": "supabase gen types typescript --local --schema public --schema auth --schema acl --schema storage --schema chat > types.d.ts",
+    "gen-types": "supabase gen types typescript --local --schema public --schema auth --schema acl --schema storage --schema chat --schema feed > types.d.ts",
     "deno": "deno cache --config functions/deno.json",
     "db-reset": "supabase db reset && pnpm gen-types"
   },
