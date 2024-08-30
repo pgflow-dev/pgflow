@@ -54,3 +54,5 @@ export type ChatConversationWithMessages = ChatConversation & { messages: ChatMe
 
 export type MatchDocumentsRpc = Database['public']['Functions']['match_documents_via_embeddings'];
 export type MatchedDocuments = MatchDocumentsRpc['Returns'];
+
+export type FeedNoteRow = Database['feed']['Tables']['notes']['Row'];

@@ -64,6 +64,7 @@ export interface Database {
       flow_state: {
         Row: {
           auth_code: string
+          auth_code_issued_at: string | null
           authentication_method: string
           code_challenge: string
           code_challenge_method: Database["auth"]["Enums"]["code_challenge_method"]
@@ -77,6 +78,7 @@ export interface Database {
         }
         Insert: {
           auth_code: string
+          auth_code_issued_at?: string | null
           authentication_method: string
           code_challenge: string
           code_challenge_method: Database["auth"]["Enums"]["code_challenge_method"]
@@ -90,6 +92,7 @@ export interface Database {
         }
         Update: {
           auth_code?: string
+          auth_code_issued_at?: string | null
           authentication_method?: string
           code_challenge?: string
           code_challenge_method?: Database["auth"]["Enums"]["code_challenge_method"]
@@ -209,6 +212,7 @@ export interface Database {
           factor_id: string
           id: string
           ip_address: unknown
+          otp_code: string | null
           verified_at: string | null
         }
         Insert: {
@@ -216,6 +220,7 @@ export interface Database {
           factor_id: string
           id: string
           ip_address: unknown
+          otp_code?: string | null
           verified_at?: string | null
         }
         Update: {
@@ -223,6 +228,7 @@ export interface Database {
           factor_id?: string
           id?: string
           ip_address?: unknown
+          otp_code?: string | null
           verified_at?: string | null
         }
         Relationships: [
@@ -241,6 +247,8 @@ export interface Database {
           factor_type: Database["auth"]["Enums"]["factor_type"]
           friendly_name: string | null
           id: string
+          last_challenged_at: string | null
+          phone: string | null
           secret: string | null
           status: Database["auth"]["Enums"]["factor_status"]
           updated_at: string
@@ -251,6 +259,8 @@ export interface Database {
           factor_type: Database["auth"]["Enums"]["factor_type"]
           friendly_name?: string | null
           id: string
+          last_challenged_at?: string | null
+          phone?: string | null
           secret?: string | null
           status: Database["auth"]["Enums"]["factor_status"]
           updated_at: string
@@ -261,6 +271,8 @@ export interface Database {
           factor_type?: Database["auth"]["Enums"]["factor_type"]
           friendly_name?: string | null
           id?: string
+          last_challenged_at?: string | null
+          phone?: string | null
           secret?: string | null
           status?: Database["auth"]["Enums"]["factor_status"]
           updated_at?: string
@@ -269,6 +281,44 @@ export interface Database {
         Relationships: [
           {
             foreignKeyName: "mfa_factors_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      one_time_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          relates_to: string
+          token_hash: string
+          token_type: Database["auth"]["Enums"]["one_time_token_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          relates_to: string
+          token_hash: string
+          token_type: Database["auth"]["Enums"]["one_time_token_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          relates_to?: string
+          token_hash?: string
+          token_type?: Database["auth"]["Enums"]["one_time_token_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "one_time_tokens_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -667,7 +717,14 @@ export interface Database {
       aal_level: "aal1" | "aal2" | "aal3"
       code_challenge_method: "s256" | "plain"
       factor_status: "unverified" | "verified"
-      factor_type: "totp" | "webauthn"
+      factor_type: "totp" | "webauthn" | "phone"
+      one_time_token_type:
+        | "confirmation_token"
+        | "reauthentication_token"
+        | "recovery_token"
+        | "email_change_token_new"
+        | "email_change_token_current"
+        | "phone_change_token"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1051,6 +1108,7 @@ export interface Database {
           owner_id: string | null
           path_tokens: string[] | null
           updated_at: string | null
+          user_metadata: Json | null
           version: string | null
         }
         Insert: {
@@ -1064,6 +1122,7 @@ export interface Database {
           owner_id?: string | null
           path_tokens?: string[] | null
           updated_at?: string | null
+          user_metadata?: Json | null
           version?: string | null
         }
         Update: {
@@ -1077,6 +1136,7 @@ export interface Database {
           owner_id?: string | null
           path_tokens?: string[] | null
           updated_at?: string | null
+          user_metadata?: Json | null
           version?: string | null
         }
         Relationships: [
@@ -1085,6 +1145,104 @@ export interface Database {
             columns: ["bucket_id"]
             isOneToOne: false
             referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      s3_multipart_uploads: {
+        Row: {
+          bucket_id: string
+          created_at: string
+          id: string
+          in_progress_size: number
+          key: string
+          owner_id: string | null
+          upload_signature: string
+          user_metadata: Json | null
+          version: string
+        }
+        Insert: {
+          bucket_id: string
+          created_at?: string
+          id: string
+          in_progress_size?: number
+          key: string
+          owner_id?: string | null
+          upload_signature: string
+          user_metadata?: Json | null
+          version: string
+        }
+        Update: {
+          bucket_id?: string
+          created_at?: string
+          id?: string
+          in_progress_size?: number
+          key?: string
+          owner_id?: string | null
+          upload_signature?: string
+          user_metadata?: Json | null
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "s3_multipart_uploads_bucket_id_fkey"
+            columns: ["bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      s3_multipart_uploads_parts: {
+        Row: {
+          bucket_id: string
+          created_at: string
+          etag: string
+          id: string
+          key: string
+          owner_id: string | null
+          part_number: number
+          size: number
+          upload_id: string
+          version: string
+        }
+        Insert: {
+          bucket_id: string
+          created_at?: string
+          etag: string
+          id?: string
+          key: string
+          owner_id?: string | null
+          part_number: number
+          size?: number
+          upload_id: string
+          version: string
+        }
+        Update: {
+          bucket_id?: string
+          created_at?: string
+          etag?: string
+          id?: string
+          key?: string
+          owner_id?: string | null
+          part_number?: number
+          size?: number
+          upload_id?: string
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "s3_multipart_uploads_parts_bucket_id_fkey"
+            columns: ["bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "s3_multipart_uploads_parts_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "s3_multipart_uploads"
             referencedColumns: ["id"]
           }
         ]
@@ -1127,6 +1285,41 @@ export interface Database {
           size: number
           bucket_id: string
         }[]
+      }
+      list_multipart_uploads_with_delimiter: {
+        Args: {
+          bucket_id: string
+          prefix_param: string
+          delimiter_param: string
+          max_keys?: number
+          next_key_token?: string
+          next_upload_token?: string
+        }
+        Returns: {
+          key: string
+          id: string
+          created_at: string
+        }[]
+      }
+      list_objects_with_delimiter: {
+        Args: {
+          bucket_id: string
+          prefix_param: string
+          delimiter_param: string
+          max_keys?: number
+          start_after?: string
+          next_token?: string
+        }
+        Returns: {
+          name: string
+          id: string
+          metadata: Json
+          updated_at: string
+        }[]
+      }
+      operation: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       search: {
         Args: {
