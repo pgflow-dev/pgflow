@@ -22,5 +22,5 @@ aider \
 	--test-cmd 'turbo run check' \
 	--lint-cmd='turbo run lint' \
 	--dark-mode \
-	--sonnet
+	--sonnet \
 	$@
