@@ -2,3 +2,8 @@ __pycache__
 embedded_*.jsonl
 .pdm-python
 data/pipeline_*.jsonl
+
+.env*
+.flaskenv*
+!.env.project
+!.env.vault

@@ -21,3 +21,8 @@ yarn-error.log*
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+.env*
+.flaskenv*
+!.env.project
+!.env.vault
