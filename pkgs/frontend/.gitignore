@@ -10,3 +10,8 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vercel
 .histoire/dist
+
+.env*
+.flaskenv*
+!.env.project
+!.env.vault
