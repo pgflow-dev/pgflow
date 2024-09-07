@@ -8,8 +8,9 @@
 	console.log('==== +layout.svelte');
 
 	const links = [
-		['Documents', '/documents'],
-		['Conversations', '/conversations']
+		['Semantic', '/documents'],
+		['Full Text', '/documents/search'],
+		['Chats', '/conversations']
 	];
 
 	export let data;
@@ -18,18 +19,12 @@
 	let isSuperadmin: boolean = false;
 
 	if (data.session?.user && data.isSuperadmin) {
-		({
-			session: { user },
-			isSuperadmin
-		} = data);
+		({ isSuperadmin } = data);
 	}
 
 	$: {
 		if (data.session?.user && data.isSuperadmin) {
-			({
-				session: { user },
-				isSuperadmin
-			} = data);
+			({ isSuperadmin } = data);
 		}
 	}
 

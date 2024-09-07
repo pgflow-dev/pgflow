@@ -41,7 +41,8 @@ pre-commit:
       root: "pkgs/edulaw-ai-backend/"
       glob: "{*pyproject.toml,*pdm.lock,*.py}"
       run: |
-        pdm run isort {staged_files} && git add {staged_files}
+        pdm run isort {staged_files}
+      stage_fixed: true
 
     edulaw-ai-backend/docker-build:
       root: "pkgs/edulaw-ai-backend/"

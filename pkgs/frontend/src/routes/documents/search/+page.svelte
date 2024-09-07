@@ -3,8 +3,8 @@
 	import { writable } from 'svelte/store';
 
 	export let data;
-	let { session, supabase } = data;
-	$: ({ session, supabase } = data);
+	let { supabase } = data;
+	$: ({ supabase } = data);
 
 	type Doc = { id: number; content: string };
 

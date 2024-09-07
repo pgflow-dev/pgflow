@@ -2,8 +2,8 @@
 	import RealtimeFeed from './RealtimeFeed.svelte';
 
 	export let data;
-	let { supabase, session } = data;
-	$: ({ supabase, session } = data);
+	let { supabase } = data;
+	$: ({ supabase } = data);
 
 	let input: string = '';
 	let saving = false;
@@ -50,6 +50,6 @@
 	{:else if saveStatus === 'error'}
 		<p class="text-red-500">Error saving note. Please try again.</p>
 	{/if}
-	
+
 	<RealtimeFeed {supabase} />
 </div>
