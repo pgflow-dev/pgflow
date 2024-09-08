@@ -55,14 +55,14 @@ pre-commit:
       run: |
         docker compose build
 
-    backend/check:
+    supabase/check:
       root: "pkgs/supabase/functions/"
       glob: "*.ts"
       run: |
         # turbo run check --scope=supabase {staged_files}
         deno check {staged_files}
 
-    backend/gen-types:
+    supabase/gen-types:
       root: "pkgs/supabase/"
       glob: "*.sql"
       run: |
