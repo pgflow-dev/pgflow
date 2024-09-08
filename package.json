@@ -3,6 +3,8 @@
   "author": "Wojciech Majewski <wojciech.majewski@pm.me>",
   "license": "UNLICENSED",
   "devDependencies": {
+    "@commitlint/cli": "^19.4.1",
+    "@commitlint/config-conventional": "^19.4.1",
     "turbo": "^1.12.5",
     "vercel": "^33.6.3"
   }
