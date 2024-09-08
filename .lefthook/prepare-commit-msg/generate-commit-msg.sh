@@ -6,12 +6,9 @@ PROMPT_TEXT="
 Based on the changes above, generate commit message that adheres to Conventional Commit specification.
 Do not write anything about generating commits or any meta informations. The only thing required from you is the content of the commit itself, starting with commit type, as in Conventional Commit.
 
-If the change is broad and you want to provide more explanation, provide it as description after the title.
+If the change is big, write a very concise summary of changes as a bullet point list.
 
-If you do not understand the change or think it would be good to include more information than you were able to guess based on diff, write a placeholder in description for me to fill in: <<< FILL ME IN >>>
-
-Do not include any backticks or markdown formatting at all. Just text of the commit itself.
-"
+ABSOLUTELY DO NOT INCLUDE BACKTICKS OR MARKDOWN FORMATTING: you are only allowed to start your reply with one of the commit types."
 
 # Only pre-fill if it's a regular commit (not an amend, merge, etc.)
 if [ -z "$COMMIT_SOURCE" ]; then
