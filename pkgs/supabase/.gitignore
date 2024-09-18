@@ -2,3 +2,8 @@
 .branches
 .temp
 .env
+
+.env*
+.flaskenv*
+!.env.project
+!.env.vault
