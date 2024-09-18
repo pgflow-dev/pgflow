@@ -7,6 +7,6 @@
     "db-reset": "supabase db reset && pnpm gen-types"
   },
   "devDependencies": {
-    "supabase": "^1.131.4"
+    "supabase": "^1.192.5"
   }
 }
