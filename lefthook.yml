@@ -70,7 +70,7 @@ pre-commit:
       glob: "*.ts"
       run: |
         # turbo run check --scope=supabase {staged_files}
-        deno check {staged_files}
+        deno check --config deno.json {staged_files}
 
     supabase/gen-types:
       root: "pkgs/supabase/"
