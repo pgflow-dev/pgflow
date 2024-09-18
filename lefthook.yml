@@ -8,6 +8,11 @@ commit-msg:
     "lint commit message":
       run: pnpm commitlint --edit {1}
 
+post-commit:
+  commands:
+    "push changes to origin":
+      run: git push
+
 pre-commit:
   parallel: true
   follow: false
