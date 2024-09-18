@@ -4,7 +4,8 @@
   "scripts": {
     "gen-types": "supabase gen types typescript --local --schema public --schema auth --schema acl --schema storage --schema chat --schema feed > types.d.ts",
     "deno": "deno cache --config functions/deno.json functions/**/index.ts",
-    "db-reset": "supabase db reset && pnpm gen-types"
+    "db-reset": "supabase db reset && pnpm gen-types",
+    "functions": "bin/supabase functions serve --env-file .env"
   },
   "devDependencies": {
     "supabase": "^1.192.5"
