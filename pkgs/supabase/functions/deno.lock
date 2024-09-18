@@ -2,10 +2,20 @@
   "version": "3",
   "packages": {
     "specifiers": {
+      "jsr:@supabase/functions-js": "jsr:@supabase/functions-js@2.4.3",
       "npm:@langchain/core": "npm:@langchain/core@0.1.40_zod@3.22.4",
       "npm:@langchain/openai": "npm:@langchain/openai@0.0.15_zod@3.22.4",
       "npm:@langchain/openai@0.0.15": "npm:@langchain/openai@0.0.15_zod@3.22.4",
-      "npm:@supabase/supabase-js": "npm:@supabase/supabase-js@2.39.3"
+      "npm:@supabase/supabase-js": "npm:@supabase/supabase-js@2.39.3",
+      "npm:openai@^4.52.5": "npm:openai@4.62.1"
+    },
+    "jsr": {
+      "@supabase/functions-js@2.4.3": {
+        "integrity": "010834c9e7d2996b4be8e4004a15ed8f42b326490e4b354683f9c191353b76cc",
+        "dependencies": [
+          "npm:openai@^4.52.5"
+        ]
+      }
     },
     "npm": {
       "@langchain/core@0.1.40_zod@3.22.4": {
@@ -320,6 +330,18 @@
           "web-streams-polyfill": "web-streams-polyfill@3.3.3"
         }
       },
+      "openai@4.62.1": {
+        "integrity": "sha512-Aa6i4oBR1tV8E2d2p3MvXg57X98i8gZtHq4bQNX274qLKZVX7PXXq5P1FMonTXOrX3zwvkqN1iNccn3XK3CwVg==",
+        "dependencies": {
+          "@types/node": "@types/node@18.16.19",
+          "@types/node-fetch": "@types/node-fetch@2.6.11",
+          "abort-controller": "abort-controller@3.0.0",
+          "agentkeepalive": "agentkeepalive@4.5.0",
+          "form-data-encoder": "form-data-encoder@1.7.2",
+          "formdata-node": "formdata-node@4.4.1",
+          "node-fetch": "node-fetch@2.7.0"
+        }
+      },
       "p-finally@1.0.0": {
         "integrity": "sha512-LICb2p9CB7FS+0eR1oqWnHhp0FljGLZCWBE9aix0Uye9W8LTQPwMTYVGWQWIw9RdQiDg4+epXQODwIYJtSJaow==",
         "dependencies": {}
@@ -390,6 +412,10 @@
         "dependencies": {}
       }
     }
+  },
+  "redirects": {
+    "https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts": "https://esm.sh/@supabase/functions-js@2.4.3/src/edge-runtime.d.ts",
+    "https://esm.sh/@supabase/functions-js@2.4.3/src/edge-runtime.d.ts": "https://esm.sh/v135/@supabase/functions-js@2.4.3/src/edge-runtime.d.ts"
   },
   "remote": {
     "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.14.0": "724f3ce7141e9d22ab39ec5f4ce54bac065de5506901bd565f29570d9afd52b7",

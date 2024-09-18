@@ -1,31 +1,15 @@
-import { serve } from 'std/server'
-import { env, pipeline } from 'transformers'
+/// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+const model = new Supabase.ai.Session("gte-small");
 
-// Configuration for Deno runtime
-env.useBrowserCache = false;
-env.allowLocalModels = false;
-
-const pipe = await pipeline(
-  'feature-extraction',
-  'Supabase/gte-small',
-);
-
-serve(async (req) => {
-  // Extract input string from JSON body
-  const { input } = await req.json();
-
-  // Generate the embedding from the user input
-  const output = await pipe(input, {
-    pooling: 'mean',
-    normalize: true,
+Deno.serve(async (req: Request) => {
+  const params = new URL(req.url).searchParams;
+  const input = params.get("input") || "";
+  const output = await model.run(input, { mean_pool: true, normalize: true });
+  return new Response(JSON.stringify(output), {
+    headers: {
+      "Content-Type": "application/json",
+      Connection: "keep-alive",
+    },
   });
-
-  // Extract the embedding output
-  const embedding = Array.from(output.data);
-
-  // Return the embedding
-  return new Response(
-    JSON.stringify({ embedding }),
-    { headers: { 'Content-Type': 'application/json' } }
-  );
 });
