@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ -f ~/.env.local ]; then
+	source ~/.env.local
+fi
+
 if [ -f .env.aider ]; then
 	source .env.aider
 fi
