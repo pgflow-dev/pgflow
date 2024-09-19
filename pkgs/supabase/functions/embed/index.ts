@@ -3,9 +3,9 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 const model = new Supabase.ai.Session("gte-small");
 
 Deno.serve(async (req: Request) => {
-  const params = new URL(req.url).searchParams;
-  const input = params.get("input") || "";
+  const { input } = await req.json();
   const output = await model.run(input, { mean_pool: true, normalize: true });
+  console.log({ input, output });
   return new Response(JSON.stringify(output), {
     headers: {
       "Content-Type": "application/json",
