@@ -4,8 +4,12 @@
   "scripts": {
     "gen-types": "supabase gen types typescript --local --schema public --schema auth --schema acl --schema storage --schema chat --schema feed > types.d.ts",
     "deno": "deno cache --config functions/deno.json functions/**/index.ts",
-    "db-reset": "supabase db reset && pnpm gen-types",
-    "functions": "bin/supabase functions serve --env-file .env"
+    "db-reset": "bin/supabase db reset && pnpm gen-types",
+    "functions": "bin/supabase functions serve --env-file .env",
+    "restart": "bin/supabase stop && bin/supabase start",
+    "status": "bin/supabase status",
+    "stop": "bin/supabase stop",
+    "start": "bin/supabase start"
   },
   "devDependencies": {
     "supabase": "^1.192.5"
