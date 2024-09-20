@@ -28,23 +28,28 @@
 	}
 </script>
 
-<div class="grid grid-cols-8 gap-4">
-	<div class="col-span-8 flex margin-">
-		<Prompt
-			value={$searchTerm}
-			label="search"
-			placeholder="search for notes"
-			on:submit={fetchRelevantNotes}
-		/>
-	</div>
+<div class="container mx-auto px-4">
+	<div class="grid grid-cols-12 gap-4">
+		<div class="col-span-12 flex mb-4">
+			<Prompt
+				value={$searchTerm}
+				label="search"
+				placeholder="search for notes"
+				on:submit={fetchRelevantNotes}
+			/>
+		</div>
 
-	<div class="col-span-7 flex">
-		{#each $notes as note (note)}
-			<div class="card variant-filled-surface p-3 my-3 items-center space-x-4">
-				<a class="flex-grow" href="/feed/notes/{note.id}">{note.content}</a>
-			</div>
-		{/each}
-	</div>
+		<div class="col-span-10 col-start-2">
+			{#each $notes as note (note)}
+				<div class="card mb-4">
+					<header class="card-header">
+						<a class="flex-grow" href="/feed/notes/{note.id}">{note.id}</a>
+					</header>
+					<section class="p-4">{note.content}</section>
+				</div>
+			{/each}
+		</div>
 
-	<div class="col-span-1 flex">filter</div>
+		<div class="col-span-1 flex">filter</div>
+	</div>
 </div>
