@@ -15,7 +15,7 @@
 	async function fetchRelevantNotes() {
 		const response = await supabase.schema('feed').rpc('easy_match_notes', {
 			query: $searchTerm,
-			threshold: 0.2
+			match_threshold: 0.2
 		});
 
 		if (response.error) {
