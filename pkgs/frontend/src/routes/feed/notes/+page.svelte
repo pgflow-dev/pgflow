@@ -10,8 +10,12 @@
 
 	const searchTerm = writable('');
 	const notes = writable<FeedNoteRow[]>([]);
-	let showResults = false;
+	const showResults = writable(false);
+	const searchInProgress = writable(false);
+
 	async function fetchRelevantNotes() {
+		searchInProgress.set(true);
+		notes.set([]);
 		const response = await supabase.schema('feed').rpc('easy_match_notes', {
 			query: $searchTerm,
 			match_threshold: 0.2
@@ -24,23 +28,25 @@
 		const data = response?.data || [];
 
 		notes.set(data);
-		showResults = true;
+		showResults.set(true);
+		searchInProgress.set(false);
 	}
 </script>
 
 <div class="container mx-auto px-4 h-screen flex flex-col">
-	<div class="flex-grow flex items-center justify-center" class:hidden={showResults}>
+	<div class="flex-grow flex items-center justify-center" class:hidden={$showResults}>
 		<div class="w-1/2">
 			<Prompt
 				value={$searchTerm}
 				label="search"
+				loading={$searchInProgress}
 				placeholder="search for notes"
 				on:submit={fetchRelevantNotes}
 			/>
 		</div>
 	</div>
 
-	{#if showResults}
+	{#if $showResults}
 		<div class="grid grid-cols-12 gap-4">
 			<div
 				class="col-span-6 col-start-4 flex mb-4 pt-10 pb-4"
