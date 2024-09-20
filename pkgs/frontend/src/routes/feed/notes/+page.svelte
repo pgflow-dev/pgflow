@@ -30,7 +30,7 @@
 
 <div class="container mx-auto px-4">
 	<div class="grid grid-cols-12 gap-4">
-		<div class="col-span-12 flex mb-4">
+		<div class="col-span-6 col-start-4 flex mb-4 pt-10 pb-4">
 			<Prompt
 				value={$searchTerm}
 				label="search"
@@ -49,7 +49,5 @@
 				</div>
 			{/each}
 		</div>
-
-		<div class="col-span-1 flex">filter</div>
 	</div>
 </div>
