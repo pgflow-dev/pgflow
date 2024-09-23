@@ -19,12 +19,18 @@
 	let isSuperadmin: boolean = false;
 
 	if (data.session?.user && data.isSuperadmin) {
-		({ isSuperadmin } = data);
+		({
+			isSuperadmin,
+			session: { user }
+		} = data);
 	}
 
 	$: {
 		if (data.session?.user && data.isSuperadmin) {
-			({ isSuperadmin } = data);
+			({
+				isSuperadmin,
+				session: { user }
+			} = data);
 		}
 	}
 
