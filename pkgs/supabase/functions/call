@@ -7,6 +7,10 @@ if [ $? -eq 0 ]; then
   eval "$supabase_env"
 fi
 
+if [ -f ".env" ]; then
+  source .env
+fi
+
 function_name="$1"
 data="$2"
 
@@ -15,4 +19,4 @@ curl \
   "${API_URL}/functions/v1/${function_name}" \
   --header 'Authorization: Bearer '${ANON_KEY}'' \
   --header 'Content-Type: application/json' \
-  --data-raw "'$data'"
+  --data-raw "$data"

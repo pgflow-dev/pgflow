@@ -10,7 +10,10 @@
 	const links = [
 		['Semantic', '/documents'],
 		['Full Text', '/documents/search'],
-		['Chats', '/conversations']
+		['Chats', '/conversations'],
+		['+chat', '/conversations'],
+		['Notes', '/feed/notes'],
+		['+note', '/feed/add-note']
 	];
 
 	export let data;

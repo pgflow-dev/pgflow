@@ -16,16 +16,20 @@ grant usage on schema feed to anon, authenticated;
 create table if not exists notes (
     id serial primary key,
     content text not null,
-    embedding public.vector(384),
+    embedding public.vector(1536),
+    inferred jsonb default '{}',
     created_at timestamp not null default current_timestamp
 );
 
+--- realtime
+alter publication supabase_realtime add table feed.notes;
+
 ----------------------------- match_notes -------------------------
-create or replace function match_notes(query_embedding public.vector(384), match_threshold float)
+create or replace function match_notes(query_embedding public.vector(1536), match_threshold float)
 returns table(id int, content text, similarity float, metadata jsonb) as $$
 begin
     return query
-    select id, content, (embedding <=> query_embedding) as similarity, jsonb_build_object('created_at', created_at) as metadata
+    select id, content, inferred, (embedding <=> query_embedding) as similarity, jsonb_build_object('created_at', created_at) as metadata
     from notes
     where embedding is not null and (embedding <=> query_embedding) <= match_threshold
     order by similarity asc;
@@ -44,32 +48,53 @@ create policy "allow delete" on notes for delete to authenticated using (true);
 drop extension if exists http;
 create extension http with schema extensions;
 
--- Create embed_content function
-create or replace function "feed"."embed_content"(input text)
-returns public.vector(384)
+create or replace function "feed"."edge_fn"(fn_name text, body text)
+returns text
 language plpgsql
 as $$
 declare
-    result public.vector(384);
+    result text;
+    url text = 'http://host.docker.internal:54321/functions/v1/' || fn_name;
 begin
-    select content::public.vector(384) into result
-    from extensions.http_post(
-        'http://host.docker.internal:54321/functions/v1/embed',
-        json_build_object('input', input)::text,
-        'application/json'
-    );
+    select content into result
+    from extensions.http_post(url, body, 'application/json')
+    where status >= 200 and status < 300;
+
+    if result is null then
+        raise exception 'Edge function returned non-OK status';
+    end if;
+
     return result;
 end;
 $$;
 
+create or replace function "feed"."embed_content"(input text)
+returns public.vector(1536) as $$
+begin
+return feed.edge_fn('embed', json_build_object('input', input)::text)::public.vector(1536);
+end;
+$$ language plpgsql;
+
+create or replace function "feed"."infer_metadata"(input text)
+returns jsonb as $$
+begin
+return feed.edge_fn('infer-metadata', json_build_object('input', input)::text)::jsonb;
+end;
+$$ language plpgsql;
+
 --------------------------------------- easy match notes -----------------
 create or replace function easy_match_notes(query text, match_threshold float)
-returns table(id int, content text, similarity float, metadata jsonb) as $$
+returns table(id int, content text, inferred jsonb, similarity float, metadata jsonb) as $$
 declare
-    query_embedding public.vector(384) = feed.embed_content(query);
+    query_embedding public.vector(1536) = feed.embed_content(query);
 begin
     return query
-    select n.id, n.content, (n.embedding <=> query_embedding) as similarity, jsonb_build_object('created_at', n.created_at) as metadata
+    select
+        n.id,
+        n.content,
+        n.inferred,
+        (n.embedding <=> query_embedding) as similarity,
+        jsonb_build_object('created_at', n.created_at) as metadata
     from feed.notes n
     where n.embedding is not null and (n.embedding <=> query_embedding) <= match_threshold
     order by similarity asc;
@@ -77,40 +102,67 @@ end;
 $$ language plpgsql;
 
 ---------------- trigger to mark changed content for re-embedding ----------------
-drop trigger if exists "embed_notes" on "feed"."notes";
-drop function if exists "feed"."embed_notes";
-create function "feed"."embed_notes"()
+drop trigger if exists "mark_note_changed" on "feed"."notes";
+drop function if exists "feed"."mark_note_changed";
+create function "feed"."mark_note_changed"()
 returns trigger
 language plpgsql
 as $$
 begin
     IF NEW.content <> OLD.content THEN
         NEW.embedding = NULL;
+        NEW.inferred = '{}';
     END IF;
 
     RETURN NEW;
 end;
 $$;
 
--- Create trigger for embed_notes
-create trigger "embed_notes" before update
+-- Create trigger for mark_note_changed
+create trigger "mark_note_changed" before update
 on "feed"."notes" for each row
-execute function "feed"."embed_notes"();
+execute function "feed"."mark_note_changed"();
 
------------
-select cron.schedule (
-    'create-missing-embeddings',
-    '1 seconds',
-    $$
+create procedure feed.update_stuff(num numeric)
+language plpgsql
+as $$
+begin
     UPDATE feed.notes
     SET embedding = feed.embed_content(content)
-    WHERE embedding IS NULL
-    AND feed.notes.id IN (
+    WHERE feed.notes.id IN (
         SELECT id
         FROM feed.notes
         WHERE embedding IS NULL
+        order by id asc
+        limit num
         FOR UPDATE SKIP LOCKED
-    )
+    );
+
+    UPDATE feed.notes
+    SET inferred = feed.infer_metadata(content)
+    WHERE feed.notes.id IN (
+        SELECT id
+        FROM feed.notes
+        WHERE inferred = '{}'
+        order by id asc
+        limit num
+        FOR UPDATE SKIP LOCKED
+    );
+end;
+$$;
+
+----------------------------------------------------------
+----- generate 10 jobs, each processing one item ---------
+----- this is because 1s is the lowest granularity -------
+----- and we want to trigger realtime updates often, -----
+----- so we need to commit often -------------------------
+----------------------------------------------------------
+select cron.schedule (
+    'update-stuff-' || index,
+    '1 seconds',
     $$
-);
+    call feed.update_stuff(1);
+    $$
+)
+from generate_series(1, 4) as index;
 

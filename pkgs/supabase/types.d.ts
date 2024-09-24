@@ -818,18 +818,21 @@ export type Database = {
           created_at: string
           embedding: string | null
           id: number
+          inferred: Json | null
         }
         Insert: {
           content: string
           created_at?: string
           embedding?: string | null
           id?: number
+          inferred?: Json | null
         }
         Update: {
           content?: string
           created_at?: string
           embedding?: string | null
           id?: number
+          inferred?: Json | null
         }
         Relationships: []
       }
@@ -846,15 +849,29 @@ export type Database = {
         Returns: {
           id: number
           content: string
+          inferred: Json
           similarity: number
           metadata: Json
         }[]
+      }
+      edge_fn: {
+        Args: {
+          fn_name: string
+          body: string
+        }
+        Returns: string
       }
       embed_content: {
         Args: {
           input: string
         }
         Returns: string
+      }
+      infer_metadata: {
+        Args: {
+          input: string
+        }
+        Returns: Json
       }
       match_notes: {
         Args: {

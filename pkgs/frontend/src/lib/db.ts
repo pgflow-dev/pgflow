@@ -56,3 +56,11 @@ export type MatchDocumentsRpc = Database['public']['Functions']['match_documents
 export type MatchedDocuments = MatchDocumentsRpc['Returns'];
 
 export type FeedNoteRow = Database['feed']['Tables']['notes']['Row'];
+
+export type InferredFeedNoteRow = FeedNoteRow & {
+	inferred: {
+		type: string;
+		value: string;
+		keywords: string[];
+	};
+};

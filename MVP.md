@@ -1,5 +1,11 @@
 # MVP
 
+### ideas
+
+must be super responsive and unobtrusive - must allow searching via slash,
+adding via paste and viewing via point and click on the same screen, in spirit
+of "absolutely do not make me think and always guess what i want"
+
 ## Problem
 
 ### Problem Statement
