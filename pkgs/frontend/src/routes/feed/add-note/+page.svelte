@@ -3,6 +3,7 @@
 	import { writable } from 'svelte/store';
 	import NoteRow from '../NoteRow.svelte';
 	import { onMount } from 'svelte';
+	import type { RealtimePostgresDeletePayload } from '@supabase/supabase-js';
 
 	export let data;
 
@@ -12,6 +13,7 @@
 	const notes = writable<InferredFeedNoteRow[]>([]);
 	const newContent = writable<string>('');
 	let textareaElement: HTMLTextAreaElement;
+
 	function handleUpdateNote(payload: { new: InferredFeedNoteRow }) {
 		console.log('handleUpdateNote', payload);
 
@@ -28,6 +30,13 @@
 		} else {
 			$notes = [note, ...$notes];
 		}
+	}
+
+	function handleDeleteNote(payload: RealtimePostgresDeletePayload<InferredFeedNoteRow>) {
+		console.log('handleDeleteNote', payload);
+
+		const { old: deleted } = payload;
+		$notes = $notes.filter((n) => n.id !== deleted.id);
 	}
 
 	async function createNote() {
@@ -56,6 +65,7 @@
 			})
 			.on('postgres_changes', { event: 'INSERT', ...eventSpec }, handleUpdateNote)
 			.on('postgres_changes', { event: 'UPDATE', ...eventSpec }, handleUpdateNote)
+			.on('postgres_changes', { event: 'DELETE', ...eventSpec }, handleDeleteNote)
 			.subscribe();
 
 		const response = await supabase
