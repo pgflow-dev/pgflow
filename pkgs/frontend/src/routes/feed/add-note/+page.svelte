@@ -31,7 +31,9 @@
 	}
 
 	async function createNote() {
-		const result = await supabase.schema('feed').from('notes').insert({ content: $newContent });
+		const resultPromise = supabase.schema('feed').from('notes').insert({ content: $newContent });
+		newContent.set('');
+		const result = await resultPromise;
 
 		if (result.error) {
 			throw result.error;
