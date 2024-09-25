@@ -83,7 +83,21 @@
 
 		textareaElement.focus();
 	});
+
+	function handlePaste(event: KeyboardEvent) {
+		if (event.ctrlKey && event.key === 'v') {
+			event.preventDefault();
+			navigator.clipboard.readText().then((text) => {
+				newContent.set(text);
+				if (textareaElement) {
+					textareaElement.focus();
+				}
+			});
+		}
+	}
 </script>
+
+<svelte:window on:keydown={handlePaste} />
 
 <!-- <div class=""> -->
 <div class="col-start-2 col-span-6 p-4">
