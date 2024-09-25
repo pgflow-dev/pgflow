@@ -77,7 +77,17 @@
 
 <!-- <div class=""> -->
 <div class="col-start-2 col-span-6 p-4">
-	<textarea bind:value={$newContent} bind:this={textareaElement} class="textarea" />
+	<textarea
+		bind:value={$newContent}
+		bind:this={textareaElement}
+		class="textarea"
+		on:keydown={(e) => {
+			if (e.ctrlKey && e.key === 'Enter') {
+				e.preventDefault();
+				createNote();
+			}
+		}}
+	/>
 	<button on:click={createNote} class="btn btn-xl variant-filled-primary">Add Note</button>
 </div>
 <div class="col-span-12 p-4">
