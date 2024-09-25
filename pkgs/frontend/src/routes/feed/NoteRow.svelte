@@ -9,14 +9,10 @@
 	<header class="card-header">
 		{#if note?.inferred?.type}
 			<span class="chip variant-filled-error p-2">{note.inferred.type}</span>
-		{:else}
-			<ProgressRadial width="w-4" stroke={50} />
 		{/if}
 
 		{#if note?.embedding}
 			<span class="badge variant-filled float-right ml-2" in:slide={{ duration: 500 }}>i</span>
-		{:else}
-			<ProgressRadial width="w-4" stroke={50} />
 		{/if}
 
 		<div class="float-right" in:slide={{ duration: 800 }}>
@@ -25,7 +21,7 @@
 					<span class="badge">{keyword}</span>
 				{/each}
 			{:else}
-				<ProgressRadial width="w-4" stroke={50} />
+				<ProgressRadial width="w-3" stroke={10} />
 			{/if}
 		</div>
 	</header>
