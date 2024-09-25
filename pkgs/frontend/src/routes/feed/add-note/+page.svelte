@@ -11,7 +11,7 @@
 
 	const notes = writable<InferredFeedNoteRow[]>([]);
 	const newContent = writable<string>('');
-
+	let textareaElement: HTMLTextAreaElement;
 	function handleUpdateNote(payload: { new: InferredFeedNoteRow }) {
 		console.log('handleUpdateNote', payload);
 
@@ -39,6 +39,7 @@
 			throw result.error;
 		}
 
+		textareaElement.focus();
 		return result.data;
 	}
 
@@ -69,12 +70,14 @@
 		} else {
 			console.log('error', response.error);
 		}
+
+		textareaElement.focus();
 	});
 </script>
 
 <!-- <div class=""> -->
 <div class="col-start-2 col-span-6 p-4">
-	<textarea bind:value={$newContent} class="textarea" />
+	<textarea bind:value={$newContent} bind:this={textareaElement} class="textarea" />
 	<button on:click={createNote} class="btn btn-xl variant-filled-primary">Add Note</button>
 </div>
 <div class="col-span-12 p-4">
