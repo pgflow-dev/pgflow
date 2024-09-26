@@ -14,7 +14,8 @@
 		"format": "prettier --write .",
 		"format-staged": "prettier --write $(git diff --name-only --cached --relative=frontend/)",
 		"test:integration": "playwright test",
-		"test:unit": "vitest"
+		"test:unit": "vitest",
+		"generate-pwa-assets": "pwa-assets-generator --preset minimal-2023 static/logo.svg"
 	},
 	"devDependencies": {
 		"@histoire/plugin-svelte": "^0.17.15",
@@ -30,6 +31,8 @@
 		"@types/uuid": "^9.0.8",
 		"@typescript-eslint/eslint-plugin": "^6.0.0",
 		"@typescript-eslint/parser": "^6.0.0",
+		"@vite-pwa/assets-generator": "^0.2.6",
+		"@vite-pwa/sveltekit": "^0.6.5",
 		"autoprefixer": "10.4.16",
 		"eslint": "^8.56.0",
 		"eslint-config-prettier": "^9.1.0",

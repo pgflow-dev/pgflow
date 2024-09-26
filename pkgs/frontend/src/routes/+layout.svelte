@@ -5,7 +5,10 @@
 	import type { User } from '@supabase/supabase-js';
 	import NewConversationButton from '$components/NewConversationButton.svelte';
 
-	console.log('==== +layout.svelte');
+	// @ts-expect-error svelte-check complains about this virtual module
+	import { pwaInfo } from 'virtual:pwa-info';
+
+	$: webManifest = pwaInfo ? pwaInfo.webManifest.linkTag : '';
 
 	const links = [
 		['Semantic', '/documents'],
@@ -40,6 +43,11 @@
 	let activePath: string;
 	$: activePath = $page.url.pathname;
 </script>
+
+<svelte:head>
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html webManifest}
+</svelte:head>
 
 <div class="flex flex-col h-full">
 	<header class="min-h-14 max-h-14 px-4 flex flex-row items-center bg-surface-600">
