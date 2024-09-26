@@ -51,7 +51,23 @@ export default defineConfig({
 						type: 'image/png',
 						purpose: 'maskable'
 					}
-				]
+				],
+				share_target: {
+					action: '/share',
+					method: 'POST',
+					enctype: 'multipart/form-data',
+					params: {
+						title: 'title',
+						text: 'text',
+						url: 'url',
+						files: [
+							{
+								name: 'file',
+								accept: ['*/*']
+							}
+						]
+					}
+				}
 			},
 			workbox: {
 				globPatterns: ['client/**/*.{js,css,ico,png,svg,webp,woff,woff2}']
