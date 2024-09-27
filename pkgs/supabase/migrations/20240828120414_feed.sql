@@ -110,7 +110,7 @@ begin
 end;
 $$ language plpgsql;
 
----------------- trigger to mark changed content for re-embedding ----------------
+-------------- trigger to mark changed content for re-embedding ----------------
 drop trigger if exists mark_note_changed on feed.notes;
 drop function if exists feed.mark_note_changed;
 create function feed.mark_note_changed()
