@@ -4,6 +4,7 @@
 	import NoteRow from '../NoteRow.svelte';
 	import { onMount } from 'svelte';
 	import type { RealtimePostgresDeletePayload } from '@supabase/supabase-js';
+	import { enhance } from '$app/forms';
 
 	export let data;
 
@@ -11,7 +12,6 @@
 	$: ({ supabase } = data);
 
 	const notes = writable<InferredFeedNoteRow[]>([]);
-	const newContent = writable<string>('');
 	let textareaElement: HTMLTextAreaElement;
 
 	function handleUpdateNote(payload: { new: InferredFeedNoteRow }) {
@@ -37,19 +37,6 @@
 
 		const { old: deleted } = payload;
 		$notes = $notes.filter((n) => n.id !== deleted.id);
-	}
-
-	async function createNote() {
-		const resultPromise = supabase.schema('feed').from('notes').insert({ content: $newContent });
-		newContent.set('');
-		const result = await resultPromise;
-
-		if (result.error) {
-			throw result.error;
-		}
-
-		textareaElement.focus();
-		return result.data;
 	}
 
 	onMount(async () => {
@@ -88,31 +75,38 @@
 		if (event.ctrlKey && event.key === 'v') {
 			event.preventDefault();
 			navigator.clipboard.readText().then((text) => {
-				newContent.set(text);
+				textareaElement.value = text;
 				if (textareaElement) {
 					textareaElement.focus();
 				}
 			});
 		}
 	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		if (event.ctrlKey && event.key === 'Enter') {
+			event.preventDefault();
+			const target = event.target as HTMLElement;
+			const form = target?.closest('form');
+			if (form) {
+				form.requestSubmit();
+			}
+		}
+	}
 </script>
 
 <svelte:window on:keydown={handlePaste} />
 
-<!-- <div class=""> -->
 <div class="col-start-2 col-span-6 p-4">
-	<textarea
-		bind:value={$newContent}
-		bind:this={textareaElement}
-		class="textarea"
-		on:keydown={(e) => {
-			if (e.ctrlKey && e.key === 'Enter') {
-				e.preventDefault();
-				createNote();
-			}
-		}}
-	/>
-	<button on:click={createNote} class="btn btn-xl variant-filled-primary">Add Note</button>
+	<form method="POST" use:enhance>
+		<textarea
+			name="content"
+			bind:this={textareaElement}
+			class="textarea"
+			on:keydown={handleKeydown}
+		/>
+		<button type="submit" class="btn btn-xl variant-filled-primary">Add Note</button>
+	</form>
 </div>
 <div class="col-span-12 p-4">
 	{#each $notes as note (note.id)}
