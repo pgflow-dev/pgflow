@@ -1,8 +1,6 @@
 insert into acl.superadmin_emails (email) values
   ('admin@example.com'),
-  ('wojciech.majewski@pm.me'),
-  ('majewskibartosz@pm.me'),
-  ('amadeusz.filipek@protonmail.com')
+  ('wojciech.majewski@pm.me')
   on conflict do nothing;
 
 insert into feed.notes (content) values
