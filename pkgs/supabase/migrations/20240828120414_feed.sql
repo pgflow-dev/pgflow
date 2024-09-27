@@ -168,10 +168,10 @@ $$;
 ----------------------------------------------------------
 select
     cron.schedule(
-        'update-stuff-' || index,
+        'update-stuff-' || i,
         '1 seconds',
         $$
     call feed.update_stuff(1);
     $$
     )
-from generate_series(1, 4) as index;
+from generate_series(1, 4) as i;
