@@ -51,7 +51,7 @@
 	<svelte:fragment slot="lead">
 		<button class="btn btn-sm variant-ghost" on:click={openDrawer}>menu</button>
 	</svelte:fragment>
-	FeedWise
+	<h3 class="h3">feedwise</h3>
 	<svelte:fragment slot="trail">
 		{#if user}
 			<a href="/auth/sign-out" class="btn btn-sm variant-ghost">

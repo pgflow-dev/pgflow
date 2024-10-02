@@ -21,8 +21,8 @@ export default defineConfig({
 			// strategies: 'injectManifest',
 			registerType: 'autoUpdate',
 			manifest: {
-				short_name: 'FeedWise',
-				name: 'FeedWise',
+				short_name: 'feedwise',
+				name: 'feedwise',
 				start_url: '/',
 				scope: '/',
 				display: 'standalone',
