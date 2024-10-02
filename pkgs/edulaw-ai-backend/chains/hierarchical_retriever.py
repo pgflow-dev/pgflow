@@ -31,17 +31,6 @@ def kind_retriever(kind: str, threshold=0.5) -> VectorStoreRetriever:
         search_type='similarity_score_threshold'
     )
 
-
-# def retrieve_points(paragraphs: List[Document], question: str):
-#     embedding = embeddings.embed_query(question)
-#     params = dict(
-#         query_embedding=embedding,
-
-#         # match_threshold=0.70,
-#         # match_count=5
-#     )
-#     points = supabase.rpc('match_lex_docs', params=params).execute()
-
 rephrase_chain = (
     {"question": RunnablePassthrough()}
     | ChatPromptTemplate.from_template("Sparafrazuj wiadomość tak, aby była niezależnym pytaniem: {question}")

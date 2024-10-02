@@ -2,7 +2,7 @@ create schema if not exists acl;
 
 create table if not exists acl.superadmin_emails
 (
-  email text primary key
+    email text primary key
 );
 
 -- postgres function that checks if current signed in user's email is present in superadmin_emails table

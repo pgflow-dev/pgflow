@@ -854,19 +854,6 @@ export type Database = {
           metadata: Json
         }[]
       }
-      edge_fn: {
-        Args: {
-          fn_name: string
-          body: string
-        }
-        Returns: string
-      }
-      embed_content: {
-        Args: {
-          input: string
-        }
-        Returns: string
-      }
       infer_metadata: {
         Args: {
           input: string
@@ -946,173 +933,17 @@ export type Database = {
             referencedRelation: "documents"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "embeddings_document_id_fkey"
-            columns: ["document_id"]
-            isOneToOne: false
-            referencedRelation: "lex_docs"
-            referencedColumns: ["id"]
-          },
         ]
       }
     }
     Views: {
-      lex_docs: {
-        Row: {
-          article_no: string | null
-          chapter_no: string | null
-          content: string | null
-          embedding: string | null
-          id: string | null
-          kind: string | null
-          paragraph_no: string | null
-          point_no: string | null
-          source: string | null
-          subpoint_no: string | null
-        }
-        Insert: {
-          article_no?: never
-          chapter_no?: never
-          content?: string | null
-          embedding?: string | null
-          id?: string | null
-          kind?: never
-          paragraph_no?: never
-          point_no?: never
-          source?: never
-          subpoint_no?: never
-        }
-        Update: {
-          article_no?: never
-          chapter_no?: never
-          content?: string | null
-          embedding?: string | null
-          id?: string | null
-          kind?: never
-          paragraph_no?: never
-          point_no?: never
-          source?: never
-          subpoint_no?: never
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
-      binary_quantize:
-        | {
-            Args: {
-              "": string
-            }
-            Returns: unknown
-          }
-        | {
-            Args: {
-              "": unknown
-            }
-            Returns: unknown
-          }
-      halfvec_avg: {
-        Args: {
-          "": number[]
-        }
-        Returns: unknown
-      }
-      halfvec_out: {
-        Args: {
-          "": unknown
-        }
-        Returns: unknown
-      }
-      halfvec_send: {
-        Args: {
-          "": unknown
-        }
-        Returns: string
-      }
-      halfvec_typmod_in: {
-        Args: {
-          "": unknown[]
-        }
-        Returns: number
-      }
-      hnsw_bit_support: {
-        Args: {
-          "": unknown
-        }
-        Returns: unknown
-      }
-      hnsw_halfvec_support: {
-        Args: {
-          "": unknown
-        }
-        Returns: unknown
-      }
-      hnsw_sparsevec_support: {
-        Args: {
-          "": unknown
-        }
-        Returns: unknown
-      }
-      hnswhandler: {
-        Args: {
-          "": unknown
-        }
-        Returns: unknown
-      }
       is_superadmin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
-      ivfflat_bit_support: {
-        Args: {
-          "": unknown
-        }
-        Returns: unknown
-      }
-      ivfflat_halfvec_support: {
-        Args: {
-          "": unknown
-        }
-        Returns: unknown
-      }
-      ivfflathandler: {
-        Args: {
-          "": unknown
-        }
-        Returns: unknown
-      }
-      l2_norm:
-        | {
-            Args: {
-              "": unknown
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              "": unknown
-            }
-            Returns: number
-          }
-      l2_normalize:
-        | {
-            Args: {
-              "": string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              "": unknown
-            }
-            Returns: unknown
-          }
-        | {
-            Args: {
-              "": unknown
-            }
-            Returns: unknown
-          }
       match_documents: {
         Args: {
           query_embedding: string
@@ -1145,93 +976,6 @@ export type Database = {
           embedded_content: string
           similarity: number
         }[]
-      }
-      match_lex_docs: {
-        Args: {
-          query_embedding: string
-          match_threshold: number
-          match_count: number
-          filter?: Json
-        }
-        Returns: {
-          id: string
-          content: string
-          kind: string
-          source: string
-          chapter_no: string
-          article_no: string
-          paragraph_no: string
-          point_no: string
-          subpoint_no: string
-          similarity: number
-        }[]
-      }
-      no_to_int: {
-        Args: {
-          p_number: string
-        }
-        Returns: number
-      }
-      sparsevec_out: {
-        Args: {
-          "": unknown
-        }
-        Returns: unknown
-      }
-      sparsevec_send: {
-        Args: {
-          "": unknown
-        }
-        Returns: string
-      }
-      sparsevec_typmod_in: {
-        Args: {
-          "": unknown[]
-        }
-        Returns: number
-      }
-      vector_avg: {
-        Args: {
-          "": number[]
-        }
-        Returns: string
-      }
-      vector_dims:
-        | {
-            Args: {
-              "": string
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              "": unknown
-            }
-            Returns: number
-          }
-      vector_norm: {
-        Args: {
-          "": string
-        }
-        Returns: number
-      }
-      vector_out: {
-        Args: {
-          "": string
-        }
-        Returns: unknown
-      }
-      vector_send: {
-        Args: {
-          "": string
-        }
-        Returns: string
-      }
-      vector_typmod_in: {
-        Args: {
-          "": unknown[]
-        }
-        Returns: number
       }
     }
     Enums: {
