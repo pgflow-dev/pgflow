@@ -64,6 +64,9 @@ importers:
       marked:
         specifier: ^12.0.1
         version: 12.0.1
+      svelte-awesome:
+        specifier: ^3.3.4
+        version: 3.3.4(svelte@4.2.12)
       type-fest:
         specifier: ^4.17.0
         version: 4.17.0
@@ -9396,6 +9399,14 @@ packages:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
     dev: true
+
+  /svelte-awesome@3.3.4(svelte@4.2.12):
+    resolution: {integrity: sha512-gmAnjwsAfRQFS7xnLaCTHoiMWZP9cQb0822dFj0Mcb708lAX162HH+xduaUtmuK8QvijsLarto2P/6oyH2Qv3Q==}
+    peerDependencies:
+      svelte: ^3.43.1 || ^4.0.0
+    dependencies:
+      svelte: 4.2.12
+    dev: false
 
   /svelte-check@3.6.9(@babel/core@7.25.2)(postcss@8.4.32)(svelte@4.2.12):
     resolution: {integrity: sha512-hDQrk3L0osX07djQyMiXocKysTLfusqi8AriNcCiQxhQR49/LonYolcUGMtZ0fbUR8HTR198Prrgf52WWU9wEg==}

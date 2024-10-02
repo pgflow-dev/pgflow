@@ -7,7 +7,7 @@
     "deno": "deno cache --config functions/deno.json functions/**/index.ts",
     "db-reset": "bin/supabase db reset && pnpm gen-types",
     "functions": "bin/supabase functions serve --env-file .env",
-    "restart": "bin/supabase stop && bin/supabase start",
+    "restart": "pnpm stop && pnpm start",
     "status": "bin/supabase status",
     "stop": "bin/supabase stop",
     "start": "bin/supabase start"

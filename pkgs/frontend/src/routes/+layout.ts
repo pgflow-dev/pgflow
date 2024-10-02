@@ -9,6 +9,9 @@ export const load: LayoutLoad = async ({ fetch, data, depends }) => {
 	console.log('==== +layout.ts');
 
 	const supabase = createBrowserClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
+		auth: {
+			flowType: 'pkce'
+		},
 		global: {
 			fetch
 		},

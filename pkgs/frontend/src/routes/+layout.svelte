@@ -58,7 +58,7 @@
 				{#if isSuperadmin}👑{:else}👤{/if}
 			</a>
 		{:else}
-			<a href="/auth/sign-in" class="btn btn-sm variant-filled-primary">sign in</a>
+			<a href="/auth/sign-in-2" class="btn btn-sm variant-filled-primary">sign in</a>
 		{/if}
 	</svelte:fragment>
 </AppBar>

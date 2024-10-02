@@ -1,2 +1,13 @@
 #!/bin/bash
+
+source .env
+
+export SITE_URL
+export AI_INFERENCE_API_HOST
+export OPENAI_API_KEY
+export GOOGLE_OAUTH_CLIENT_ID
+export GOOGLE_OAUTH_CLIENT_SECRET
+export GITHUB_OAUTH_CLIENT_ID
+export GITHUB_OAUTH_CLIENT_SECRET
+
 pnpm supabase --workdir ../ $@
