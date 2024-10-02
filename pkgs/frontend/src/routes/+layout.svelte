@@ -28,6 +28,18 @@
 			} = data);
 		}
 	}
+
+	// Drawer
+	import { initializeStores, Drawer } from '@skeletonlabs/skeleton';
+	import { getDrawerStore } from '@skeletonlabs/skeleton';
+	import { onDestroy } from 'svelte';
+	initializeStores();
+
+	const drawerStore = getDrawerStore();
+	const openDrawer = () => drawerStore.open({ position: 'right' });
+	const closeDrawer = () => drawerStore.close();
+
+	onDestroy(closeDrawer);
 </script>
 
 <svelte:head>
@@ -37,7 +49,7 @@
 
 <AppBar gridColumns="grid-cols-3" slotDefault="place-self-center" slotTrail="place-content-end">
 	<svelte:fragment slot="lead">
-		<button class="btn btn-sm variant-ghost">menu</button>
+		<button class="btn btn-sm variant-ghost" on:click={openDrawer}>menu</button>
 	</svelte:fragment>
 	FeedWise
 	<svelte:fragment slot="trail">
@@ -54,3 +66,25 @@
 <div class="flex flex-col h-full">
 	<slot />
 </div>
+
+<Drawer>
+	<div class="flex flex-col order-red-50 border w-full">
+		<div class="flex-c">
+			<h3>Edulaw Chatbot</h3>
+			<a class="btn" href="/conversations">Conversations</a>
+			<a class="btn" href="/conversations/new">New Conversation</a>
+		</div>
+
+		<div class="flex-c">
+			<h3>Edulaw Docs</h3>
+			<a class="btn" href="/documents">Semantic search</a>
+			<a class="btn" href="/documents/search">Full text search</a>
+		</div>
+
+		<div class="flex-c">
+			<h3>Feed</h3>
+			<a class="btn" href="/feed">Recent saves</a>
+			<a class="btn" href="/feed/add-note">New save</a>
+		</div>
+	</div>
+</Drawer>
