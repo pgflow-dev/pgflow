@@ -1,17 +1,33 @@
 <script lang="ts">
+	import { ProgressRadial } from '@skeletonlabs/skeleton';
 	import { PUBLIC_URL } from '$env/static/public';
+	import { Icon } from 'svelte-awesome';
+	import { google, github, envelope } from 'svelte-awesome/icons';
+	import { randomTagline } from '$lib/texts';
 
 	export let data;
 	let { supabase } = data;
 	$: ({ supabase } = data);
 
+	let tagline = randomTagline();
+
+	function signInWithGithub() {
+		supabase.auth.signInWithOAuth({
+			provider: 'github',
+			options: { redirectTo: `${PUBLIC_URL}/auth/callback` }
+		});
+	}
+
+	function signInWithGoogle() {
+		supabase.auth.signInWithOAuth({
+			provider: 'google',
+			options: { redirectTo: `${PUBLIC_URL}/auth/callback` }
+		});
+	}
+
 	let email = '';
 	let loading = false;
 	let linkSent = false;
-
-	function isValidEmail(email: string) {
-		return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-	}
 
 	async function signInWithEmail() {
 		loading = true;
@@ -31,34 +47,74 @@
 		linkSent = true;
 		return _data;
 	}
+
+	function isValidEmail(email: string) {
+		return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+	}
 </script>
 
-<div class="flex flex-col items-center justify-center h-screen space-y-4">
+<main class="container mx-auto px-4 py-8 max-w-md">
+	<h1 class="text-3xl font-bold mb-2 text-center mt-4 mb-12">
+		{tagline}
+	</h1>
+
 	{#if linkSent}
-		<h3 class="h3">Magic link sent!</h3>
-		<p>Check your email client and click the link to sign in</p>
+		<div class="flex flex-col space-y-4 mt-24 mb-6 p-8 m-6 card">
+			<h2 class="h2">Magic link sent!</h2>
+			<p>Check your email client and click the link to sign in</p>
+		</div>
 	{:else}
-		<h3 class="h3">Sign in with magic link</h3>
-		<p>Enter your email and we'll send you a magic link to sign in.</p>
-		<form on:submit|preventDefault={signInWithEmail}>
-			<label class="label flex flex-col items-center">
-				<input
-					class="input"
-					type="text"
-					placeholder="email"
-					disabled={loading}
-					bind:value={email}
-				/>
-			</label>
+		<p class="text-gray-400 mt-4 mb-6">Log in to your Feedwise account</p>
+
+		<div class="flex flex-col space-y-4 mb-6">
+			<button
+				class="flex items-center justify-center bg-[#4285F4] text-white py-3 px-6 rounded-lg shadow-md cvcover:bg-[#357AE8] transition duration-300 border border-[#4285F4] text-xl"
+				on:click={signInWithGoogle}
+			>
+				<Icon data={google} class="mr-2 w-8 h-8" />
+				Sign in with Google
+			</button>
 
 			<button
+				class="flex items-center justify-center bg-[#24292e] text-white py-3 px-6 rounded-lg shadow-md hover:bg-[#2f363d] transition duration-300 border border-[#24292e] text-xl"
+				on:click={signInWithGithub}
+			>
+				<Icon data={github} class="mr-2 w-8 h-8" />
+				Sign in with GitHub
+			</button>
+		</div>
+
+		<div class="flex items-center mb-6">
+			<hr class="flex-grow border-t border-gray-700" />
+			<span class="px-3 text-gray-300 text-sm">or</span>
+			<hr class="flex-grow border-t border-gray-700" />
+		</div>
+
+		<form class="flex flex-col space-y-2">
+			<input
+				type="email"
+				required={true}
+				bind:value={email}
+				placeholder="Enter your email to sign in..."
+				class="input py-3 px-5 text-lg border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+			/>
+
+			<button
+				type="submit"
 				on:click={signInWithEmail}
 				disabled={!isValidEmail(email) || loading}
-				value={email}
-				class="btn variant-filled"
+				class="flex items-center justify-center py-3 px-3 rounded-lg text-lg variant-ringed-surface transition-opacity duration-300 ease-in-out"
+				class:opacity-30={!isValidEmail(email)}
+				class:cursor-not-allowed={!isValidEmail(email) || loading}
 			>
-				Send magic link
+				{#if loading}
+					<ProgressRadial width="w-8" height="h-8" class="mb-1 mr-2" stroke={100} />
+					signing in...
+				{:else}
+					<Icon data={envelope} class="mb-1 mr-2 w-8 h-8" />
+					Continue with email
+				{/if}
 			</button>
 		</form>
 	{/if}
-</div>
+</main>
