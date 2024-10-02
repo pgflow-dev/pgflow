@@ -1,23 +1,12 @@
 <script lang="ts">
-	import { page } from '$app/stores';
 	import '../app.postcss';
-	import AuthIndicator from '$lib/components/AuthIndicator.svelte';
 	import type { User } from '@supabase/supabase-js';
-	import NewConversationButton from '$components/NewConversationButton.svelte';
 
 	// @ts-expect-error svelte-check complains about this virtual module
 	import { pwaInfo } from 'virtual:pwa-info';
+	import { AppBar } from '@skeletonlabs/skeleton';
 
 	$: webManifest = pwaInfo ? pwaInfo.webManifest.linkTag : '';
-
-	const links = [
-		['Semantic', '/documents'],
-		['Full Text', '/documents/search'],
-		['Chats', '/conversations'],
-		['+chat', '/conversations'],
-		['Notes', '/feed/notes'],
-		['+note', '/feed/add-note']
-	];
 
 	export let data;
 
@@ -39,9 +28,6 @@
 			} = data);
 		}
 	}
-
-	let activePath: string;
-	$: activePath = $page.url.pathname;
 </script>
 
 <svelte:head>
@@ -49,25 +35,22 @@
 	{@html webManifest}
 </svelte:head>
 
+<AppBar gridColumns="grid-cols-3" slotDefault="place-self-center" slotTrail="place-content-end">
+	<svelte:fragment slot="lead">
+		<button class="btn btn-sm variant-ghost">menu</button>
+	</svelte:fragment>
+	FeedWise
+	<svelte:fragment slot="trail">
+		{#if user}
+			<a href="/auth/sign-out" class="btn btn-sm variant-ghost">
+				{#if isSuperadmin}👑{:else}👤{/if}
+			</a>
+		{:else}
+			<a href="/auth/sign-in" class="btn btn-sm variant-filled-primary">sign in</a>
+		{/if}
+	</svelte:fragment>
+</AppBar>
+
 <div class="flex flex-col h-full">
-	<header class="min-h-14 max-h-14 px-4 flex flex-row items-center bg-surface-600">
-		<div class="align-middle">
-			<a class="h3" href="/">Feedwise</a>
-		</div>
-
-		<div class="align-middle flex-grow">
-			{#if isSuperadmin}
-				<div class="flex flex-row gap-6 w-full ml-4 items-center">
-					{#each links as [label, path]}
-						<a href={path} class={path == activePath ? 'font-bold text-red-500' : ''}>{label}</a>
-					{/each}
-					<NewConversationButton />
-				</div>
-			{/if}
-		</div>
-
-		<AuthIndicator {user} {isSuperadmin} />
-	</header>
-
 	<slot />
 </div>
