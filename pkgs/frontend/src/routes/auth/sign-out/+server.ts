@@ -8,5 +8,5 @@ export const GET = async (event: RequestEvent) => {
 
 	await supabase.auth.signOut();
 
-	throw redirect(302, '/');
+	throw redirect(302, '/auth/sign-in');
 };
