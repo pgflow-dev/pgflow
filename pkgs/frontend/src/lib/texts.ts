@@ -1,17 +1,12 @@
 export const TAGLINES = [
-	'Your second brain on autopilot',
-	'No thinking, just linking',
-	'Forget effort, remember content',
-	'Lazy storage, smart retrieval',
-	'Forget tagging, remember living',
-	'Lazy hoarding, smart exploring',
 	'Effortless hoarding for digital pack-rats',
-	'Lazy now, brilliant later',
-	'Brainless bookmarking at its finest',
-	'No tags, no problem',
-	'Save first, ask questions later',
+	'No thinking, just linking',
+	'Your second brain on autopilot',
 	'Brainless bookmarking for busy minds',
-	'Busy brain? Save the strain'
+	'Lazy now, brilliant later',
+	'Save now, ask questions later',
+	'Forget tagging, remember living',
+	'Digital Clutter, Simplified'
 ];
 
 export function randomTagline() {
