@@ -1,6 +1,8 @@
 <script lang="ts">
 	import '../app.postcss';
-	import type { User } from '@supabase/supabase-js';
+
+	import { invalidate } from '$app/navigation';
+	import { onMount } from 'svelte';
 
 	// @ts-expect-error svelte-check complains about this virtual module
 	import { pwaInfo } from 'virtual:pwa-info';
@@ -9,25 +11,17 @@
 	$: webManifest = pwaInfo ? pwaInfo.webManifest.linkTag : '';
 
 	export let data;
+	$: ({ session, supabase, user } = data);
 
-	let user: User | null;
-	let isSuperadmin: boolean = false;
+	onMount(() => {
+		const { data } = supabase.auth.onAuthStateChange((_, newSession) => {
+			if (newSession?.expires_at !== session?.expires_at) {
+				invalidate('supabase:auth');
+			}
+		});
 
-	if (data.session?.user && data.isSuperadmin) {
-		({
-			isSuperadmin,
-			session: { user }
-		} = data);
-	}
-
-	$: {
-		if (data.session?.user && data.isSuperadmin) {
-			({
-				isSuperadmin,
-				session: { user }
-			} = data);
-		}
-	}
+		return () => data.subscription.unsubscribe();
+	});
 
 	// Drawer
 	import { initializeStores, Drawer } from '@skeletonlabs/skeleton';
@@ -54,9 +48,7 @@
 	<h3 class="h3">feedwise</h3>
 	<svelte:fragment slot="trail">
 		{#if user}
-			<a href="/auth/sign-out" class="btn btn-sm variant-ghost">
-				{#if isSuperadmin}👑{:else}👤{/if}
-			</a>
+			<a href="/auth/sign-out" class="btn btn-sm variant-ghost"> 👤 </a>
 		{:else}
 			<a href="/auth/sign-in" class="btn btn-sm variant-filled-primary">sign in</a>
 		{/if}

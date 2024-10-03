@@ -1,5 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import { redirect } from '@sveltejs/kit';
+import type { EmailOtpType } from '@supabase/supabase-js';
 
 export const GET = async (event: RequestEvent) => {
 	const {
@@ -7,7 +8,7 @@ export const GET = async (event: RequestEvent) => {
 		locals: { supabase }
 	} = event;
 	const token_hash = url.searchParams.get('token_hash') as string;
-	const type = url.searchParams.get('type') as string;
+	const type = url.searchParams.get('type') as EmailOtpType;
 	const next = url.searchParams.get('next') ?? '/';
 
 	if (token_hash && type) {
