@@ -1,5 +1,7 @@
 export const TAGLINES = [
+	'Forget effort, remember content',
 	'Lazy storage, smart retrieval',
+	'Forget tagging, remember living',
 	'Effortless hoarding, instant recall',
 	'Lazy hoarding, smart exploring',
 	'Effortless hoarding for digital pack-rats',
@@ -31,7 +33,6 @@ export const TAGLINES = [
 	'Save without lifting a finger',
 	'Thoughtless storage, brilliant recall',
 	'Lazy filing, smart retrieving',
-	'Forget tagging, remember living',
 	'Effortless collecting, instant accessing',
 	'Brainless saving, genius searching',
 	'Dump knowledge, retrieve wisdom',
@@ -43,7 +44,6 @@ export const TAGLINES = [
 	'Save without thinking, find everything',
 	'Thoughtless collecting, thoughtful retrieving',
 	'Lazy saving, brilliant recalling',
-	'Forget effort, remember content',
 	'Save it and leave it',
 	'Effortless dumping, smart pumping',
 	'Brainless storing, genius exploring',
