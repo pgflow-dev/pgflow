@@ -42,7 +42,6 @@ export const TAGLINES = [
 	'Your digital memory, perfectly organized',
 	'Effortless input, incredible output',
 	'Save without thinking, find everything',
-	'Thoughtless collecting, thoughtful retrieving',
 	'Lazy saving, brilliant recalling',
 	'Save it and leave it',
 	'Effortless dumping, smart pumping',
