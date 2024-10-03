@@ -4,6 +4,14 @@ import { defineConfig } from 'vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 
 export default defineConfig({
+	// enable console.log on production for debug purposes
+	build: {
+		terserOptions: {
+			compress: {
+				drop_console: false
+			}
+		}
+	},
 	plugins: [
 		sveltekit(),
 		purgeCss({
