@@ -10,7 +10,8 @@ export const load: LayoutLoad = async ({ fetch, data, depends }) => {
 
 	const supabase = createBrowserClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
 		auth: {
-			flowType: 'pkce'
+			flowType: 'pkce',
+			detectSessionInUrl: true
 		},
 		global: {
 			fetch
