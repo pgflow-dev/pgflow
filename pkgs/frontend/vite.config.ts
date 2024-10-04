@@ -2,6 +2,9 @@ import { purgeCss } from 'vite-plugin-tailwind-purgecss';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
+import mkcert from 'vite-plugin-mkcert';
+
+const MKCERT_HOSTS = ['localhost', '127.0.0.1'];
 
 export default defineConfig({
 	// enable console.log on production for debug purposes
@@ -13,6 +16,9 @@ export default defineConfig({
 	// 	}
 	// },
 	plugins: [
+		mkcert({
+			hosts: MKCERT_HOSTS
+		}),
 		sveltekit(),
 		purgeCss({
 			safelist: {
@@ -33,10 +39,10 @@ export default defineConfig({
 				name: 'feedwise',
 				start_url: '/',
 				scope: '/',
-				display: 'standalone',
+				display: 'fullscreen',
 				description: 'Quick capture for the busy',
-				theme_color: '#ffffff',
-				background_color: '#ffffff',
+				theme_color: '#1b1b27',
+				background_color: '#1b1b27',
 				icons: [
 					{
 						src: 'pwa-64x64.png',
@@ -60,6 +66,7 @@ export default defineConfig({
 						purpose: 'maskable'
 					}
 				],
+				display_override: ['fullscreen', 'standalone'],
 				share_target: {
 					action: '/share',
 					method: 'POST',
@@ -91,5 +98,11 @@ export default defineConfig({
 				includeVersionFile: true
 			}
 		})
-	]
+	],
+	server: {
+		// empty proxy option fixes following error:
+		//   TypeError: Request constructor: init.headers is a symbol, which cannot be converted to a DOMString.
+		proxy: {},
+		https: {}
+	}
 });

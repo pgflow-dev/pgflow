@@ -1,12 +1,20 @@
-<script>
-	import { page } from '$app/stores';
+<script lang="ts">
+	import { enhance } from '$app/forms';
 
-	let url = $page.url.searchParams.get('url') || '';
-	let title = $page.url.searchParams.get('title') || '';
-	let text = $page.url.searchParams.get('text') || '';
+	export let form;
 </script>
 
-<h1>Shared Content</h1>
-<p>URL: {url}</p>
-<p>Title: {title}</p>
-<p>Text: {text}</p>
+{#if form && form.data}
+	<h1>Shared Content</h1>
+	<p>URL: {form?.data?.url}</p>
+	<p>Title: {form?.data.title}</p>
+	<p>Text: {form?.data.text}</p>
+{/if}
+
+<form method="POST" use:enhance enctype="multipart/form-data">
+	<input name="title" type="text" placeholder="Title" />
+	<input name="text" type="text" placeholder="Text" />
+	<input name="url" type="url" placeholder="URL" />
+	<input name="files" type="file" multiple />
+	<button type="submit">Submit</button>
+</form>
