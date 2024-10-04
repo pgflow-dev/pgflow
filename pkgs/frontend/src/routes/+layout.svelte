@@ -1,6 +1,9 @@
 <script lang="ts">
 	import '../app.postcss';
 
+	import { Icon } from 'svelte-awesome';
+	import { signIn, signOut } from 'svelte-awesome/icons';
+
 	import { invalidate } from '$app/navigation';
 	import { onMount } from 'svelte';
 
@@ -45,14 +48,18 @@
 
 <AppBar gridColumns="grid-cols-3" slotDefault="place-self-center" slotTrail="place-content-end">
 	<svelte:fragment slot="lead">
-		<button class="btn btn-sm variant-ghost" on:click={openDrawer}>menu</button>
+		<button class="btn btn-sm variant-ghost text-gray-500" on:click={openDrawer}>?</button>
 	</svelte:fragment>
 	<h3 class="h3 font-bold text-secondary-300">feedwise</h3>
 	<svelte:fragment slot="trail">
 		{#if user}
-			<a href="/auth/sign-out" class="p-1 text-xs variant-ghost-tertiary btn">sign out</a>
+			<a href="/auth/sign-out" class="btn btn-sm p-1 px-2 variant-filled-tertiary"
+				><Icon data={signOut} /></a
+			>
 		{:else}
-			<a href="/auth/sign-in" class="btn btn-sm p-1 px-2 variant-filled-tertiary">sign in</a>
+			<a href="/auth/sign-in" class="btn btn-sm p-1 px-2 variant-filled-secondary"
+				><Icon data={signIn} /></a
+			>
 		{/if}
 	</svelte:fragment>
 </AppBar>
