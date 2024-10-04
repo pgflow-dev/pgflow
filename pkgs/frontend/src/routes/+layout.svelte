@@ -39,6 +39,8 @@
 <svelte:head>
 	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 	{@html webManifest}
+
+	<title>feedwise</title>
 </svelte:head>
 
 <AppBar gridColumns="grid-cols-3" slotDefault="place-self-center" slotTrail="place-content-end">
