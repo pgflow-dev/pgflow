@@ -54,7 +54,7 @@
 </script>
 
 <main class="container mx-auto px-4 py-8 max-w-md">
-	<h1 class="text-3xl font-bold mb-2 text-center mt-4 mb-12">
+	<h1 class="text-3xl font-bold mb-2 text-center mt-4">
 		{tagline}
 	</h1>
 
@@ -64,7 +64,7 @@
 			<p>Check your email client and click the link to sign in</p>
 		</div>
 	{:else}
-		<p class="text-gray-400 mt-4 mb-6">Log in to your Feedwise account</p>
+		<p class="text-gray-300 mt-4 mb-6">Log in to your Feedwise account</p>
 
 		<div class="flex flex-col space-y-4 mb-6">
 			<button
@@ -86,7 +86,7 @@
 
 		<div class="flex items-center mb-6">
 			<hr class="flex-grow border-t border-gray-700" />
-			<span class="px-3 text-gray-300 text-sm">or</span>
+			<span class="px-3 text-gray-400">or continue with email</span>
 			<hr class="flex-grow border-t border-gray-700" />
 		</div>
 
@@ -95,7 +95,7 @@
 				type="email"
 				required={true}
 				bind:value={email}
-				placeholder="Enter your email to sign in..."
+				placeholder="Enter your email"
 				class="input py-3 px-5 text-lg border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
 			/>
 
