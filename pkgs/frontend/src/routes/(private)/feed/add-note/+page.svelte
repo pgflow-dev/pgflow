@@ -108,7 +108,7 @@
 		<button type="submit" class="btn btn-xl variant-filled-primary">Add Note</button>
 	</form>
 </div>
-<div class="col-span-12 p-4">
+<div class="flex col-span-12 p-4">
 	{#each $notes as note (note.id)}
 		<NoteRow {note} />
 	{/each}
