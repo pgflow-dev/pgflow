@@ -2,7 +2,7 @@
 	import '../app.postcss';
 
 	import { Icon } from 'svelte-awesome';
-	import { signIn, signOut } from 'svelte-awesome/icons';
+	import { signIn, signOut, bars } from 'svelte-awesome/icons';
 
 	import { invalidate } from '$app/navigation';
 	import { onMount } from 'svelte';
@@ -48,7 +48,9 @@
 
 <AppBar gridColumns="grid-cols-3" slotDefault="place-self-center" slotTrail="place-content-end">
 	<svelte:fragment slot="lead">
-		<button class="btn btn-sm variant-ghost text-gray-500" on:click={openDrawer}>?</button>
+		<button class="text-gray-300 p-1" on:click={openDrawer}>
+			<Icon data={bars} />
+		</button>
 	</svelte:fragment>
 	<h3 class="h3 font-bold text-secondary-300">feedwise</h3>
 	<svelte:fragment slot="trail">
