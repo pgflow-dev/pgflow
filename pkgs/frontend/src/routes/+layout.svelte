@@ -2,7 +2,7 @@
 	import '../app.postcss';
 
 	import { Icon } from 'svelte-awesome';
-	import { signIn, signOut, bars } from 'svelte-awesome/icons';
+	import { signOut, bars } from 'svelte-awesome/icons';
 
 	import { invalidate } from '$app/navigation';
 	import { onMount } from 'svelte';
@@ -53,17 +53,7 @@
 		</button>
 	</svelte:fragment>
 	<h3 class="h3 font-bold text-secondary-300">feedwise</h3>
-	<svelte:fragment slot="trail">
-		{#if user}
-			<a href="/auth/sign-out" class="btn btn-sm p-1 px-2 variant-filled-tertiary"
-				><Icon data={signOut} /></a
-			>
-		{:else}
-			<a href="/auth/sign-in" class="btn btn-sm p-1 px-2 variant-filled-secondary"
-				><Icon data={signIn} /></a
-			>
-		{/if}
-	</svelte:fragment>
+	<svelte:fragment slot="trail"></svelte:fragment>
 </AppBar>
 
 <div class="flex flex-col h-full">
@@ -88,6 +78,16 @@
 			<h3>Feed</h3>
 			<a class="btn" href="/feed">Recent saves</a>
 			<a class="btn" href="/feed/add-note">New save</a>
+		</div>
+
+		<div class="flex-c">
+			<h3>Account</h3>
+			{#if user}
+				<a href="/auth/sign-out" class="btn">
+					<Icon data={signOut} />
+					Sign Out
+				</a>
+			{/if}
 		</div>
 	</div>
 </Drawer>
