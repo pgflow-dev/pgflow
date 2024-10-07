@@ -2,7 +2,7 @@
 	import '../app.postcss';
 
 	import { Icon } from 'svelte-awesome';
-	import { signOut, bars } from 'svelte-awesome/icons';
+	import { signOut, bars, comments, fileText, rss } from 'svelte-awesome/icons';
 
 	import { invalidate } from '$app/navigation';
 	import { onMount } from 'svelte';
@@ -61,33 +61,51 @@
 </div>
 
 <Drawer>
-	<div class="flex flex-col order-red-50 border w-full">
-		<div class="flex-c">
-			<h3>Edulaw Chatbot</h3>
-			<a class="btn" href="/conversations">Conversations</a>
-			<a class="btn" href="/conversations/new">New Conversation</a>
+	<div class="p-4 space-y-6">
+		<div class="space-y-2">
+			<h3 class="h3 font-bold text-primary-500">Edulaw Chatbot</h3>
+			<a class="btn btn-sm variant-soft-primary w-full" href="/conversations">
+				<Icon data={comments} scale={0.8} />
+				<span class="ml-2">Conversations</span>
+			</a>
+			<a class="btn btn-sm variant-soft-primary w-full" href="/conversations/new">
+				<Icon data={comments} scale={0.8} />
+				<span class="ml-2">New Conversation</span>
+			</a>
 		</div>
 
-		<div class="flex-c">
-			<h3>Edulaw Docs</h3>
-			<a class="btn" href="/documents">Semantic search</a>
-			<a class="btn" href="/documents/search">Full text search</a>
+		<div class="space-y-2">
+			<h3 class="h3 font-bold text-primary-500">Edulaw Docs</h3>
+			<a class="btn btn-sm variant-soft-primary w-full" href="/documents">
+				<Icon data={fileText} scale={0.8} />
+				<span class="ml-2">Semantic search</span>
+			</a>
+			<a class="btn btn-sm variant-soft-primary w-full" href="/documents/search">
+				<Icon data={fileText} scale={0.8} />
+				<span class="ml-2">Full text search</span>
+			</a>
 		</div>
 
-		<div class="flex-c">
-			<h3>Feed</h3>
-			<a class="btn" href="/feed">Recent saves</a>
-			<a class="btn" href="/feed/add-note">New save</a>
-		</div>
+		<div class="space-y-2">
+			<h3 class="h3 font-bold text-primary-500">Feed</h3>
+			<a class="btn btn-sm variant-soft-primary w-full" href="/feed">
+				<Icon data={rss} scale={0.8} />
+				<span class="ml-2">Recent saves</span>
+			</a>
+			<a class="btn btn-sm variant-soft-primary w-full" href="/feed/add-note">
+				<Icon data={rss} scale={0.8} />
+				<span class="ml-2">New save</span>
+			</a>
 
-		<div class="flex-c">
-			<h3>Account</h3>
-			{#if user}
-				<a href="/auth/sign-out" class="btn">
-					<Icon data={signOut} />
-					Sign Out
-				</a>
-			{/if}
+			<div class="space-y-2">
+				<h3 class="h3 font-bold text-primary-500">Account</h3>
+				{#if user}
+					<a href="/auth/sign-out" class="btn btn-sm variant-soft-primary w-full">
+						<Icon data={signOut} />
+						<span class="ml-2">Sign Out</span>
+					</a>
+				{/if}
+			</div>
 		</div>
-	</div>
-</Drawer>
+	</div></Drawer
+>
