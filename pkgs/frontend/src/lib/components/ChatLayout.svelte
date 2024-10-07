@@ -17,9 +17,9 @@
 	};
 </script>
 
-<div id="messages" bind:this={$messagesContainer} class="overflow-y-auto px-24 flex-grow">
+<div id="messages" bind:this={$messagesContainer} class="overflow-y-auto flex-grow">
 	<slot name="messages" scrollToBottom={scroller} />
 </div>
-<div id="prompt" class="px-24 flex-shrink">
+<div id="prompt" class="flex-shrink">
 	<slot name="prompt" />
 </div>
