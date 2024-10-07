@@ -2,7 +2,7 @@
 	import '../app.postcss';
 
 	import { Icon } from 'svelte-awesome';
-	import { signOut, bars, comments, fileText, rss } from 'svelte-awesome/icons';
+	import { signOut, bars, comments, fileText, rss, signIn } from 'svelte-awesome/icons';
 
 	import { invalidate } from '$app/navigation';
 	import { onMount } from 'svelte';
@@ -103,6 +103,11 @@
 					<a href="/auth/sign-out" class="btn btn-sm variant-soft-primary w-full">
 						<Icon data={signOut} />
 						<span class="ml-2">Sign Out</span>
+					</a>
+				{:else}
+					<a href="/auth/sign-in" class="btn btn-sm variant-soft-primary w-full">
+						<Icon data={signIn} />
+						<span class="ml-2">Sign In</span>
 					</a>
 				{/if}
 			</div>
