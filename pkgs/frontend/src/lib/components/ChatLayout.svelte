@@ -17,9 +17,11 @@
 	};
 </script>
 
-<div id="messages" bind:this={$messagesContainer} class="overflow-y-auto flex-grow">
-	<slot name="messages" scrollToBottom={scroller} />
-</div>
-<div id="prompt" class="flex-shrink">
-	<slot name="prompt" />
+<div class="flex flex-col h-screen">
+	<div id="messages" bind:this={$messagesContainer} class="flex-grow overflow-y-auto">
+		<slot name="messages" scrollToBottom={scroller} />
+	</div>
+	<div id="prompt" class="flex-shrink-0">
+		<slot name="prompt" />
+	</div>
 </div>

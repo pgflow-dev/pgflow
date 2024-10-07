@@ -56,7 +56,7 @@
 	<svelte:fragment slot="trail"></svelte:fragment>
 </AppBar>
 
-<div class="flex flex-col h-full">
+<div class="flex flex-col">
 	<slot />
 </div>
 
