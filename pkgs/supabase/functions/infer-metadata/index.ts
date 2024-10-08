@@ -56,7 +56,7 @@ Deno.serve(async (req: Request) => {
       },
       { role: "user", content: input },
     ],
-    model: "gpt-4o",
+    model: "gpt-4o-mini-2024-07-18",
     response_format: zodResponseFormat(ShareMetadataSchema, "share-metadata"),
   });
   const content = completion.choices[0]?.message?.content;
