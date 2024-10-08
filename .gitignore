@@ -17,3 +17,8 @@ vite.config.ts.timestamp-*
 .vercel
 .plandex
 .aider*
+
+.env*
+.flaskenv*
+!.env.project
+!.env.vault

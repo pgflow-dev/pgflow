@@ -98,7 +98,7 @@
 <svelte:window on:keydown={handlePaste} />
 
 <div class="col-start-2 col-span-6 p-4">
-	<form method="POST" use:enhance>
+	<form method="POST" use:enhance action="/share">
 		<textarea
 			name="content"
 			bind:this={textareaElement}
@@ -108,7 +108,7 @@
 		<button type="submit" class="btn btn-xl variant-filled-primary">Add Share</button>
 	</form>
 </div>
-<div class="flex col-span-12 p-4">
+<div class="col-span-12 gap-2">
 	{#each $shares as share (share.id)}
 		<ShareRow {share} />
 	{/each}

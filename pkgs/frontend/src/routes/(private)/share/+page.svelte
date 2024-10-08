@@ -1,15 +1,12 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 
-	export let form;
+	export let data;
 </script>
 
-{#if form && form.data}
-	<h1>Shared Content</h1>
-	<p>URL: {form?.data?.url}</p>
-	<p>Title: {form?.data.title}</p>
-	<p>Text: {form?.data.text}</p>
-{/if}
+x
+<pre><code>{JSON.stringify(data, null, 2)}</code></pre>
+y
 
 <form method="POST" use:enhance enctype="multipart/form-data">
 	<input name="title" type="text" placeholder="Title" />

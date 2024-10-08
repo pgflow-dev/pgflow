@@ -1,5 +1,6 @@
 import type { Database as DatabaseGenerated, Json } from '$backend/types';
 import type { MergeDeep } from 'type-fest';
+import type { ShareMetadata } from '$lib/shareMetadataSchema';
 
 // Override the type for a specific column in a view:
 export type Database = MergeDeep<
@@ -56,11 +57,4 @@ export type MatchDocumentsRpc = Database['public']['Functions']['match_documents
 export type MatchedDocuments = MatchDocumentsRpc['Returns'];
 
 export type FeedShareRow = Database['feed']['Tables']['shares']['Row'];
-
-export type InferredFeedShareRow = FeedShareRow & {
-	inferred: {
-		type: string;
-		value: string;
-		keywords: string[];
-	};
-};
+export type InferredFeedShareRow = FeedShareRow & { inferred: ShareMetadata };

@@ -814,27 +814,38 @@ export type Database = {
     Tables: {
       shares: {
         Row: {
-          content: string
           created_at: string
           embedding: string | null
           id: number
           inferred: Json | null
+          json_content: Json
+          owner_id: string
         }
         Insert: {
-          content: string
           created_at?: string
           embedding?: string | null
           id?: number
           inferred?: Json | null
+          json_content: Json
+          owner_id?: string
         }
         Update: {
-          content?: string
           created_at?: string
           embedding?: string | null
           id?: number
           inferred?: Json | null
+          json_content?: Json
+          owner_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "shares_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

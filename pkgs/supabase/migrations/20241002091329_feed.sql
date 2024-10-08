@@ -15,20 +15,29 @@ set search_path to feed;
 ----------------------------- shares -------------------------------
 create table if not exists shares (
     id serial primary key,
-    content text not null,
+    owner_id uuid not null default auth.uid() references auth.users (id),
+    json_content jsonb not null,
     embedding extensions.vector(1536),
     inferred jsonb default '{}',
     created_at timestamp not null default current_timestamp
 );
 
+-- title, text or url must be present
+-- json_content must be present
+alter table feed.shares
+add constraint json_content_present
+check (json_content is not null and json_content != '{}');
+
 ------------------------------- RLS -------------------------------
 alter table shares enable row level security;
-create policy allow_select on shares for select to authenticated using (true);
+create policy allow_select on shares for select to authenticated
+using (owner_id = auth.uid());
 create policy allow_insert on shares
-for insert to authenticated with check (true);
-create policy allow_update on shares
-for update to authenticated using (true) with check (true);
-create policy allow_delete on shares for delete to authenticated using (true);
+for insert to authenticated with check (owner_id = auth.uid());
+create policy allow_update on shares for update to authenticated
+using (owner_id = auth.uid()) with check (owner_id = auth.uid());
+create policy allow_delete on shares for delete to authenticated
+using (owner_id = auth.uid());
 
 --- realtime
 alter publication supabase_realtime add table feed.shares;
@@ -40,7 +49,7 @@ create or replace function match_shares(
 returns table (id int, content text, similarity float, metadata jsonb) as $$
 begin
     return query
-    select id, content, inferred, (embedding <=> query_embedding) as similarity, jsonb_build_object('created_at', created_at) as metadata
+    select id, json_content::text as content, inferred, (embedding <=> query_embedding) as similarity, jsonb_build_object('created_at', created_at) as metadata
     from shares
     where embedding is not null and (embedding <=> query_embedding) <= match_threshold
     order by similarity asc;
@@ -76,7 +85,7 @@ returns trigger
 language plpgsql
 as $$
 begin
-    IF NEW.content <> OLD.content THEN
+    IF NEW.json_content <> OLD.json_content THEN
         NEW.embedding = NULL;
         NEW.inferred = '{}';
     END IF;
@@ -95,7 +104,7 @@ language plpgsql
 as $$
 begin
     UPDATE feed.shares
-    SET embedding = utils.embed(content)
+    SET embedding = utils.embed(json_content::text)
     WHERE feed.shares.id IN (
         SELECT id
         FROM feed.shares
@@ -104,9 +113,8 @@ begin
         limit num
         FOR UPDATE SKIP LOCKED
     );
-
     UPDATE feed.shares
-    SET inferred = feed.infer_metadata(content)
+    SET inferred = feed.infer_metadata(json_content::text)
     WHERE feed.shares.id IN (
         SELECT id
         FROM feed.shares
@@ -124,12 +132,12 @@ $$;
 ----- and we want to trigger realtime updates often, -----
 ----- so we need to commit often -------------------------
 ----------------------------------------------------------
--- select
---     cron.schedule(
---         'update-stuff-' || i,
---         '1 seconds',
---         $$
---     call feed.update_stuff(1);
---     $$
---     )
--- from generate_series(1, 4) as i;
+select
+    cron.schedule(
+        'update-stuff-' || i,
+        '1 seconds',
+        $$
+    call feed.update_stuff(1);
+    $$
+    )
+from generate_series(1, 4) as i;

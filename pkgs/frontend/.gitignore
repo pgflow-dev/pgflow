@@ -15,3 +15,5 @@ vite.config.ts.timestamp-*
 .flaskenv*
 !.env.project
 !.env.vault
+
+dev-dist/
