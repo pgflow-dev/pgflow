@@ -812,7 +812,7 @@ export type Database = {
   }
   feed: {
     Tables: {
-      notes: {
+      shares: {
         Row: {
           content: string
           created_at: string
@@ -841,7 +841,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      easy_match_notes: {
+      easy_match_shares: {
         Args: {
           query: string
           match_threshold: number
@@ -860,7 +860,7 @@ export type Database = {
         }
         Returns: Json
       }
-      match_notes: {
+      match_shares: {
         Args: {
           query_embedding: string
           match_threshold: number

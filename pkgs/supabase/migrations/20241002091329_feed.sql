@@ -12,8 +12,8 @@ grant all on sequences to anon, authenticated, service_role;
 
 set search_path to feed;
 
------------------------------ notes -------------------------------
-create table if not exists notes (
+----------------------------- shares -------------------------------
+create table if not exists shares (
     id serial primary key,
     content text not null,
     embedding extensions.vector(1536),
@@ -22,33 +22,33 @@ create table if not exists notes (
 );
 
 ------------------------------- RLS -------------------------------
-alter table notes enable row level security;
-create policy allow_select on notes for select to authenticated using (true);
-create policy allow_insert on notes
+alter table shares enable row level security;
+create policy allow_select on shares for select to authenticated using (true);
+create policy allow_insert on shares
 for insert to authenticated with check (true);
-create policy allow_update on notes
+create policy allow_update on shares
 for update to authenticated using (true) with check (true);
-create policy allow_delete on notes for delete to authenticated using (true);
+create policy allow_delete on shares for delete to authenticated using (true);
 
 --- realtime
-alter publication supabase_realtime add table feed.notes;
+alter publication supabase_realtime add table feed.shares;
 
------------------------------ match_notes -------------------------
-create or replace function match_notes(
+----------------------------- match_shares -------------------------
+create or replace function match_shares(
     query_embedding extensions.vector(1536), match_threshold float
 )
 returns table (id int, content text, similarity float, metadata jsonb) as $$
 begin
     return query
     select id, content, inferred, (embedding <=> query_embedding) as similarity, jsonb_build_object('created_at', created_at) as metadata
-    from notes
+    from shares
     where embedding is not null and (embedding <=> query_embedding) <= match_threshold
     order by similarity asc;
 end;
 $$ language plpgsql;
 
---------------------------------------- easy match notes -----------------
-create or replace function easy_match_notes(query text, match_threshold float)
+--------------------------------------- easy match shares -----------------
+create or replace function easy_match_shares(query text, match_threshold float)
 returns table (
     id int, content text, inferred jsonb, similarity float, metadata jsonb
 ) as $$
@@ -56,7 +56,7 @@ declare
     query_embedding extensions.vector(1536) = utils.embed(query);
 begin
     return query
-    select * from match_notes(query_embedding, match_threshold);
+    select * from match_shares(query_embedding, match_threshold);
 end;
 $$ language plpgsql;
 
@@ -69,9 +69,9 @@ end;
 $$ language plpgsql;
 
 -------------- trigger to mark changed content for re-embedding ----------------
-drop trigger if exists mark_note_changed on feed.notes;
-drop function if exists feed.mark_note_changed;
-create function feed.mark_note_changed()
+drop trigger if exists mark_share_changed on feed.shares;
+drop function if exists feed.mark_share_changed;
+create function feed.mark_share_changed()
 returns trigger
 language plpgsql
 as $$
@@ -85,31 +85,31 @@ begin
 end;
 $$;
 
--- Create trigger for mark_note_changed
-create trigger mark_note_changed before update
-on feed.notes for each row
-execute function feed.mark_note_changed();
+-- Create trigger for mark_share_changed
+create trigger mark_share_changed before update
+on feed.shares for each row
+execute function feed.mark_share_changed();
 
 create procedure feed.update_stuff(num numeric)
 language plpgsql
 as $$
 begin
-    UPDATE feed.notes
+    UPDATE feed.shares
     SET embedding = utils.embed(content)
-    WHERE feed.notes.id IN (
+    WHERE feed.shares.id IN (
         SELECT id
-        FROM feed.notes
+        FROM feed.shares
         WHERE embedding IS NULL
         order by id asc
         limit num
         FOR UPDATE SKIP LOCKED
     );
 
-    UPDATE feed.notes
+    UPDATE feed.shares
     SET inferred = feed.infer_metadata(content)
-    WHERE feed.notes.id IN (
+    WHERE feed.shares.id IN (
         SELECT id
-        FROM feed.notes
+        FROM feed.shares
         WHERE inferred = '{}'
         order by id asc
         limit num

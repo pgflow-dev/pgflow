@@ -1,7 +1,7 @@
 <script lang="ts">
-	import NoteRow from '../NoteRow.svelte';
+	import ShareRow from '../ShareRow.svelte';
 	import Prompt from '$components/Prompt.svelte';
-	import type { InferredFeedNoteRow } from '$lib/db';
+	import type { InferredFeedShareRow } from '$lib/db';
 	import { writable } from 'svelte/store';
 	import { fade } from 'svelte/transition';
 
@@ -10,14 +10,14 @@
 	$: ({ supabase } = data);
 
 	const searchTerm = writable('');
-	const notes = writable<InferredFeedNoteRow[]>([]);
+	const shares = writable<InferredFeedShareRow[]>([]);
 	const showResults = writable(false);
 	const searchInProgress = writable(false);
 
-	async function fetchRelevantNotes() {
+	async function fetchRelevantShares() {
 		searchInProgress.set(true);
-		notes.set([]);
-		const response = await supabase.schema('feed').rpc('easy_match_notes', {
+		shares.set([]);
+		const response = await supabase.schema('feed').rpc('easy_match_shares', {
 			query: $searchTerm,
 			match_threshold: 0.19
 		});
@@ -28,7 +28,7 @@
 
 		const data = response?.data || [];
 
-		notes.set(data);
+		shares.set(data);
 		showResults.set(true);
 		searchInProgress.set(false);
 	}
@@ -39,13 +39,13 @@
 		bind:value={$searchTerm}
 		label="search"
 		loading={$searchInProgress}
-		placeholder="search for notes"
-		on:submit={fetchRelevantNotes}
+		placeholder="search for shares"
+		on:submit={fetchRelevantShares}
 	/>
 </div>
 
 <div class="col-span-10 col-start-2" in:fade={{ duration: 100, delay: 0 }}>
-	{#each $notes as note (note)}
-		<NoteRow {note} />
+	{#each $shares as share (share)}
+		<ShareRow {share} />
 	{/each}
 </div>

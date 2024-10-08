@@ -1,20 +1,20 @@
 <script lang="ts">
 	import { slide } from 'svelte/transition';
-	import type { InferredFeedNoteRow } from '$lib/db';
+	import type { InferredFeedShareRow } from '$lib/db';
 	import { ProgressRadial } from '@skeletonlabs/skeleton';
-	export let note: InferredFeedNoteRow;
+	export let share: InferredFeedShareRow;
 
-	function isHeaderReady(note: InferredFeedNoteRow) {
-		return note?.inferred?.value || note?.inferred?.type || note?.inferred?.keywords;
+	function isHeaderReady(share: InferredFeedShareRow) {
+		return share?.inferred?.value || share?.inferred?.type || share?.inferred?.keywords;
 	}
 </script>
 
 <div class="card m-4 p-2 relative variant-soft-secondary flex w-full h-full">
 	<header class="card-header p-1">
-		{#if isHeaderReady(note)}
+		{#if isHeaderReady(share)}
 			<div class="float-right" in:slide={{ duration: 800 }}>
-				{#if note?.inferred?.keywords}
-					{#each note.inferred.keywords as keyword (keyword)}
+				{#if share?.inferred?.keywords}
+					{#each share.inferred.keywords as keyword (keyword)}
 						<a
 							href="/yolo"
 							class="chip variant-glass-tertiary hover:variant-glass-primary py-0 p-0.5 mx-0.5"
@@ -30,15 +30,15 @@
 		{/if}
 	</header>
 	<section class="p-4 flex-grow">
-		{#if note?.inferred?.value}
-			{note.inferred.value}
+		{#if share?.inferred?.value}
+			{share.inferred.value}
 		{:else}
-			{note.content}
+			{share.content}
 		{/if}
 	</section>
 	<footer class="card-footer p-1 mt-auto text-right">
-		{#if note?.inferred?.type}
-			<span class="m-0 chip variant-glass-success text-xs p-0.5">{note.inferred.type}</span>
+		{#if share?.inferred?.type}
+			<span class="m-0 chip variant-glass-success text-xs p-0.5">{share.inferred.type}</span>
 		{/if}
 	</footer>
 </div>

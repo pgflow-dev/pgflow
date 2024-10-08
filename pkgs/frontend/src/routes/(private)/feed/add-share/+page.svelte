@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { InferredFeedNoteRow } from '$lib/db';
+	import type { InferredFeedShareRow } from '$lib/db';
 	import { writable } from 'svelte/store';
-	import NoteRow from '../NoteRow.svelte';
+	import ShareRow from '../ShareRow.svelte';
 	import { onMount } from 'svelte';
 	import type { RealtimePostgresDeletePayload } from '@supabase/supabase-js';
 	import { enhance } from '$app/forms';
@@ -11,38 +11,38 @@
 	let { supabase } = data;
 	$: ({ supabase } = data);
 
-	const notes = writable<InferredFeedNoteRow[]>([]);
+	const shares = writable<InferredFeedShareRow[]>([]);
 	let textareaElement: HTMLTextAreaElement;
 
-	function handleUpdateNote(payload: { new: InferredFeedNoteRow }) {
-		console.log('handleUpdateNote', payload);
+	function handleUpdateShare(payload: { new: InferredFeedShareRow }) {
+		console.log('handleUpdateShare', payload);
 
-		const { new: note } = payload;
-		const index = $notes.findIndex((n) => n.id === note.id);
+		const { new: share } = payload;
+		const index = $shares.findIndex((n) => n.id === share.id);
 
-		// if there is note in $notes with same id, replace its attributes
+		// if there is share in $shares with same id, replace its attributes
 		if (index !== -1) {
-			$notes = [
-				...$notes.slice(0, index),
-				{ ...$notes[index], ...note },
-				...$notes.slice(index + 1)
+			$shares = [
+				...$shares.slice(0, index),
+				{ ...$shares[index], ...share },
+				...$shares.slice(index + 1)
 			];
 		} else {
-			$notes = [note, ...$notes];
+			$shares = [share, ...$shares];
 		}
 	}
 
-	function handleDeleteNote(payload: RealtimePostgresDeletePayload<InferredFeedNoteRow>) {
-		console.log('handleDeleteNote', payload);
+	function handleDeleteShare(payload: RealtimePostgresDeletePayload<InferredFeedShareRow>) {
+		console.log('handleDeleteShare', payload);
 
 		const { old: deleted } = payload;
-		$notes = $notes.filter((n) => n.id !== deleted.id);
+		$shares = $shares.filter((n) => n.id !== deleted.id);
 	}
 
 	onMount(async () => {
 		const eventSpec = {
 			schema: 'feed',
-			table: 'notes'
+			table: 'shares'
 		};
 
 		supabase
@@ -50,20 +50,20 @@
 			.on('postgres_changes', { event: '*', ...eventSpec }, (p) => {
 				console.log('PAYLOAD --------------->', p);
 			})
-			.on('postgres_changes', { event: 'INSERT', ...eventSpec }, handleUpdateNote)
-			.on('postgres_changes', { event: 'UPDATE', ...eventSpec }, handleUpdateNote)
-			.on('postgres_changes', { event: 'DELETE', ...eventSpec }, handleDeleteNote)
+			.on('postgres_changes', { event: 'INSERT', ...eventSpec }, handleUpdateShare)
+			.on('postgres_changes', { event: 'UPDATE', ...eventSpec }, handleUpdateShare)
+			.on('postgres_changes', { event: 'DELETE', ...eventSpec }, handleDeleteShare)
 			.subscribe();
 
 		const response = await supabase
 			.schema('feed')
-			.from('notes')
+			.from('shares')
 			.select('*')
 			.order('created_at', { ascending: false })
 			.limit(25);
 
 		if (response.data && !response.error) {
-			notes.set(response.data);
+			shares.set(response.data);
 		} else {
 			console.log('error', response.error);
 		}
@@ -105,11 +105,11 @@
 			class="textarea"
 			on:keydown={handleKeydown}
 		/>
-		<button type="submit" class="btn btn-xl variant-filled-primary">Add Note</button>
+		<button type="submit" class="btn btn-xl variant-filled-primary">Add Share</button>
 	</form>
 </div>
 <div class="flex col-span-12 p-4">
-	{#each $notes as note (note.id)}
-		<NoteRow {note} />
+	{#each $shares as share (share.id)}
+		<ShareRow {share} />
 	{/each}
 </div>

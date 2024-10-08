@@ -11,7 +11,7 @@ export const actions: Actions = {
 
 		console.log('formData', formData.entries());
 		const content = `[${title}](${text})`;
-		const response = await supabase.schema('feed').from('notes').insert({ content });
+		const response = await supabase.schema('feed').from('shares').insert({ content });
 		console.log('response', response);
 
 		const { status, error } = response;

@@ -92,7 +92,7 @@
 				<Icon data={rss} scale={0.8} />
 				<span class="ml-2">Recent saves</span>
 			</a>
-			<a class="btn btn-sm variant-soft-primary w-full" href="/feed/add-note">
+			<a class="btn btn-sm variant-soft-primary w-full" href="/feed/add-share">
 				<Icon data={rss} scale={0.8} />
 				<span class="ml-2">New save</span>
 			</a>

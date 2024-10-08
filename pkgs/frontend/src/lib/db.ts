@@ -55,9 +55,9 @@ export type ChatConversationWithMessages = ChatConversation & { messages: ChatMe
 export type MatchDocumentsRpc = Database['public']['Functions']['match_documents_via_embeddings'];
 export type MatchedDocuments = MatchDocumentsRpc['Returns'];
 
-export type FeedNoteRow = Database['feed']['Tables']['notes']['Row'];
+export type FeedShareRow = Database['feed']['Tables']['shares']['Row'];
 
-export type InferredFeedNoteRow = FeedNoteRow & {
+export type InferredFeedShareRow = FeedShareRow & {
 	inferred: {
 		type: string;
 		value: string;
