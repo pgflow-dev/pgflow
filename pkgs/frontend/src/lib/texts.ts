@@ -6,7 +6,10 @@ export const TAGLINES = [
 	'Lazy now, brilliant later',
 	'Save now, ask questions later',
 	'Forget tagging, remember living',
-	'Digital Clutter, Simplified'
+	'Digital Clutter, Simplified',
+	'Leave the sorting to the robots',
+	'Because organizing is overrated',
+	'Toss it in, let AI begin'
 ];
 
 export function randomTagline() {
