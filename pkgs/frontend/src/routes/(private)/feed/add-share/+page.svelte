@@ -97,15 +97,20 @@
 
 <svelte:window on:keydown={handlePaste} />
 
-<div class="col-start-2 col-span-6 p-4">
-	<form method="POST" use:enhance action="/share">
+<div class="col-span-12 relative">
+	<form method="POST" use:enhance action="/share" class="relative">
 		<textarea
 			name="content"
 			bind:this={textareaElement}
-			class="textarea"
+			class="textarea w-full min-h-[100px] pr-24"
 			on:keydown={handleKeydown}
 		/>
-		<button type="submit" class="btn btn-xl variant-filled-primary">Add Share</button>
+		<button
+			type="submit"
+			class="btn btn-xs text-xs p-1 variant-soft-primary absolute bottom-2 right-2"
+		>
+			Add Share
+		</button>
 	</form>
 </div>
 <div class="col-span-12 gap-2">
