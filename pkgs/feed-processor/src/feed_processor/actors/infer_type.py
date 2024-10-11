@@ -76,7 +76,6 @@ if __name__ == '__main__':
 
     from uuid import uuid4
 
-    # record_uuid = str(uuid4())
     from feed_processor.supabase import create_service_role_client
     supabase = create_service_role_client()
 
