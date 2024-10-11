@@ -29,3 +29,29 @@ deploy-prod/edulaw-ai-backend:
         -d "{\"content\": \"$DISCORD_MESSAGE\"}" \
         $DISCORD_WEBHOOK
   environment: production
+
+deploy-prod/feed-processor:
+  stage: deploy
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - pkgs/feed-processor/**/*
+
+  before_script:
+    - apt-get update -qq && apt-get install -y curl
+    - curl -L https://fly.io/install.sh | sh
+    - export FLYCTL_INSTALL="/root/.fly"
+    - export PATH="$FLYCTL_INSTALL/bin:$PATH"
+
+  variables:
+    DISCORD_MESSAGE: "Deployed **feed-processor** to **production**"
+  script:
+    - cd pkgs/feed-processor
+    - flyctl deploy
+    - |
+      curl -H "Content-Type: application/json" \
+        -X POST \
+        -d "{\"content\": \"$DISCORD_MESSAGE\"}" \
+        $DISCORD_WEBHOOK
+  environment: production
