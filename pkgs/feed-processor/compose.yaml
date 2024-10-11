@@ -1,0 +1,10 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: jumski/feed-processor:latest
+    environment:
+      PYTHONPATH: src
+    env_file:
+      - .env

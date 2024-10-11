@@ -8,7 +8,6 @@ from feed_processor.supabase import create_service_role_client
 from pgqueuer.models import Job
 from pgqueuer.queries import Queries
 from pydantic import BaseModel
-from rich.pretty import pprint
 from supabase.client import Client as SupabaseClient
 
 
@@ -27,7 +26,7 @@ class RecordToRefresh(BaseModel):
 async def infer_ui(job: Job, queries: Queries, supabase: SupabaseClient):
     record = RecordToRefresh.from_job(job)
     inference_results = run_inference(record, supabase)
-    pprint(inference_results)
+    print(inference_results)
 
     update_results = (
         supabase
@@ -37,20 +36,20 @@ async def infer_ui(job: Job, queries: Queries, supabase: SupabaseClient):
             .eq("id", record.id)
             .execute()
     )
-    pprint(update_results)
+    print(update_results)
 
 def run_inference(record: RecordToRefresh, supabase: SupabaseClient):
-    pprint(record)
+    print(record)
     ui_schema = AttributesSchemaByType[record.inferred_type]
     infer_ui_chain = create_chain(api_key=os.environ["OPENAI_API_KEY"], schema=ui_schema)
 
     table = supabase.schema(record.schema_name).table(record.table_name)
     select_results = table.select("json_content, inferred_type").eq("id", record.id).single().execute()
-    pprint(select_results)
+    print(select_results)
 
     row = select_results.data
     print("----------------------------- ROW ---------------------------")
-    pprint(row)
+    print(row)
 
     input = InputType(
         input=row['json_content'],

@@ -1,0 +1,16 @@
+# fly.toml app configuration file generated for feed-processor on 2024-10-11T17:12:31+02:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'feed-processor'
+primary_region = 'waw'
+
+[build]
+
+# HTTP service has been disabled
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1

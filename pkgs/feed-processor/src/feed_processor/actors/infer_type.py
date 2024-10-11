@@ -7,7 +7,6 @@ from feed_processor.supabase import create_service_role_client
 from pgqueuer.models import Job
 from pgqueuer.queries import Queries
 from pydantic import BaseModel
-from rich.pretty import pprint
 from supabase.client import Client as SupabaseClient
 
 
@@ -40,19 +39,19 @@ async def infer_type(job: Job, queries: Queries, _: SupabaseClient):
     )
 
 def refresh_record_type(record: RecordToRefresh):
-    pprint(record)
+    print(record)
     supabase = create_service_role_client()
     infer_type_chain = create_chain(api_key=os.environ["OPENAI_API_KEY"])
 
     # find record
     table = supabase.schema(record.schema_name).table(record.table_name)
     select_results = table.select("json_content").eq("id", record.id).execute()
-    pprint(select_results)
+    print(select_results)
 
     # call llm
     input = InputType(input=as_json(select_results.data))
     infer_results = infer_type_chain.invoke(input)
-    pprint(infer_results)
+    print(infer_results)
 
     # update type
     if infer_results.confidence > 0.7:
@@ -64,7 +63,7 @@ def refresh_record_type(record: RecordToRefresh):
                 .eq("id", record.id)
                 .execute()
         )
-        pprint(update_results)
+        print(update_results)
 
     return infer_results
 
