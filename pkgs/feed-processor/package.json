@@ -1,0 +1,14 @@
+{
+  "name": "feed-processor",
+  "version": "0.0.1",
+  "description": "",
+  "scripts": {
+    "consumer": "pdm run python -m pgqueuer run feed_processor.main",
+    "dev": "pnpm consumer",
+    "test": "echo noop",
+    "check": "pdm info && echo '-> Running pyright' && pdm run pyright"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED"
+}

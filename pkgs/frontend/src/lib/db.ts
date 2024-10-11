@@ -57,4 +57,7 @@ export type MatchDocumentsRpc = Database['public']['Functions']['match_documents
 export type MatchedDocuments = MatchDocumentsRpc['Returns'];
 
 export type FeedShareRow = Database['feed']['Tables']['shares']['Row'];
-export type InferredFeedShareRow = FeedShareRow & { inferred: ShareMetadata };
+export type InferredFeedShareRow = FeedShareRow & {
+	inferred_type: string;
+	inferred: ShareMetadata;
+};

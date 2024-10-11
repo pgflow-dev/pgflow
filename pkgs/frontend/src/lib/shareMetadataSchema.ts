@@ -2,29 +2,24 @@ import { z } from 'zod';
 
 const UI = {
 	Event: z.object({
-		type: z.literal('event'),
 		datetime: z.string(),
 		title: z.string(),
 		place: z.string(),
 		description: z.string()
 	}),
 	Video: z.object({
-		type: z.literal('video'),
 		url: z.string(),
 		title: z.string()
 	}),
 	Snippet: z.object({
-		type: z.literal('snippet'),
 		source: z.string(),
 		language_code: z.string()
 	}),
 	Bookmark: z.object({
-		type: z.literal('bookmark'),
 		url: z.string(),
 		title: z.string()
 	}),
 	Text: z.object({
-		type: z.literal('text'),
 		text: z.string()
 	})
 };

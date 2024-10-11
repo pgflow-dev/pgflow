@@ -44,7 +44,8 @@ pre-commit:
       root: "pkgs/edulaw-ai-backend"
       glob: "{*pyproject.toml,*pdm.lock,*.py}"
       run: |
-        turbo run check --scope=edulaw-ai-backend
+        python_staged_files=$(echo "{staged_files}" | tr ' ' '\n' | grep '\.py$')
+        pnpm check $python_staged_files
 
     edulaw-ai-backend/test:
       root: "pkgs/edulaw-ai-backend/"
@@ -77,3 +78,27 @@ pre-commit:
       glob: "*.sql"
       run: |
         pnpm gen-types && git add types.d.ts
+
+    # TODO: fix glob pattern for pdm.lock
+    #       the problem is that globs without asterist or other special chars
+    #       does not not work, so literal 'pdm.lock' is not picked up
+    #       the workaround is to prepend the literal filename with '*'
+    feed-processor/check:
+      root: "pkgs/feed-processor"
+      glob: "{*pyproject.toml,*pdm.lock,*.py}"
+      run: |
+        python_staged_files=$(echo "{staged_files}" | tr ' ' '\n' | grep '\.py$')
+        pnpm check $python_staged_files
+
+    feed-processor/test:
+      root: "pkgs/feed-processor/"
+      glob: "{*pyproject.toml,*pdm.lock,*.py}"
+      run: |
+        turbo run test --scope=feed-processor
+
+    feed-processor/isort:
+      root: "pkgs/feed-processor/"
+      glob: "{*pyproject.toml,*pdm.lock,*.py}"
+      run: |
+        pdm run isort {staged_files}
+      stage_fixed: true

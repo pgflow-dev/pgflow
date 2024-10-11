@@ -1,0 +1,30 @@
+[project]
+name = "feed-processor"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "Wojtek Majewski", email = "wojciech.majewski@pm.me"},
+]
+dependencies = [
+    "python-dotenv>=1.0.1",
+    "asyncpg>=0.29.0",
+    "pgqueuer>=0.9.2",
+    "supabase>=2.9.0",
+    "langchain-core>=0.3.10",
+    "langchain-openai>=0.2.2",
+    "langchain>=0.3.3",
+    "isort>=5.13.2",
+    "pyright>=1.1.384",
+]
+requires-python = "==3.11.*"
+readme = "README.md"
+license = {text = "UNLICENSED"}
+
+
+[tool.pdm]
+distribution = false
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "rich>=13.9.2",
+]

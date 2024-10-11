@@ -816,24 +816,30 @@ export type Database = {
         Row: {
           created_at: string
           embedding: string | null
-          id: number
+          id: string
           inferred: Json | null
+          inferred_type: string | null
+          inferred_type_confidence: number | null
           json_content: Json
           owner_id: string
         }
         Insert: {
           created_at?: string
           embedding?: string | null
-          id?: number
+          id?: string
           inferred?: Json | null
+          inferred_type?: string | null
+          inferred_type_confidence?: number | null
           json_content: Json
           owner_id?: string
         }
         Update: {
           created_at?: string
           embedding?: string | null
-          id?: number
+          id?: string
           inferred?: Json | null
+          inferred_type?: string | null
+          inferred_type_confidence?: number | null
           json_content?: Json
           owner_id?: string
         }
@@ -864,12 +870,6 @@ export type Database = {
           similarity: number
           metadata: Json
         }[]
-      }
-      infer_metadata: {
-        Args: {
-          input: string
-        }
-        Returns: Json
       }
       match_shares: {
         Args: {
@@ -946,6 +946,69 @@ export type Database = {
           },
         ]
       }
+      pgqueuer: {
+        Row: {
+          created: string
+          entrypoint: string
+          heartbeat: string
+          id: number
+          payload: string | null
+          priority: number
+          status: Database["public"]["Enums"]["pgqueuer_status"]
+          updated: string
+        }
+        Insert: {
+          created?: string
+          entrypoint: string
+          heartbeat?: string
+          id?: number
+          payload?: string | null
+          priority: number
+          status: Database["public"]["Enums"]["pgqueuer_status"]
+          updated?: string
+        }
+        Update: {
+          created?: string
+          entrypoint?: string
+          heartbeat?: string
+          id?: number
+          payload?: string | null
+          priority?: number
+          status?: Database["public"]["Enums"]["pgqueuer_status"]
+          updated?: string
+        }
+        Relationships: []
+      }
+      pgqueuer_statistics: {
+        Row: {
+          count: number
+          created: string
+          entrypoint: string
+          id: number
+          priority: number
+          status: Database["public"]["Enums"]["pgqueuer_statistics_status"]
+          time_in_queue: unknown
+        }
+        Insert: {
+          count: number
+          created?: string
+          entrypoint: string
+          id?: number
+          priority: number
+          status: Database["public"]["Enums"]["pgqueuer_statistics_status"]
+          time_in_queue: unknown
+        }
+        Update: {
+          count?: number
+          created?: string
+          entrypoint?: string
+          id?: number
+          priority?: number
+          status?: Database["public"]["Enums"]["pgqueuer_statistics_status"]
+          time_in_queue?: unknown
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -990,7 +1053,8 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      pgqueuer_statistics_status: "exception" | "successful" | "canceled"
+      pgqueuer_status: "queued" | "picked"
     }
     CompositeTypes: {
       [_ in never]: never

@@ -53,3 +53,29 @@ return utils.edge_fn('embed', json_build_object('input', input)::text)::vector(1
 end;
 $$ language plpgsql;
 
+-- enqueue job
+create or replace function utils.enqueue_job(entrypoint text, payload jsonb)
+returns void as $$
+begin
+insert into pgqueuer (priority, entrypoint, payload, status)
+values (
+    0,
+    entrypoint,
+    payload::text::bytea,
+    'queued'
+    );
+end;
+$$ language plpgsql;
+
+-- process record
+create or replace function utils.enqueue_job_for_row(
+    entrypoint text,
+    schema_name text,
+    table_name text,
+    id uuid
+)
+returns void as $$
+begin
+  perform utils.enqueue_job(entrypoint, json_build_object('schema_name', schema_name, 'table_name', table_name, 'id', id)::jsonb);
+end;
+$$ language plpgsql;

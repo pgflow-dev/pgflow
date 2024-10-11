@@ -45,7 +45,7 @@ Example extracted metadata:
 `;
 
 Deno.serve(async (req: Request) => {
-  const { input } = await req.json();
+  const input = await req.text();
   const currentDate = new Date().toISOString();
 
   const completion = await client.chat.completions.create({

@@ -14,10 +14,16 @@ set search_path to feed;
 
 ----------------------------- shares -------------------------------
 create table if not exists shares (
-    id serial primary key,
+    id uuid primary key default gen_random_uuid(),
     owner_id uuid not null default auth.uid() references auth.users (id),
     json_content jsonb not null,
     embedding extensions.vector(1536),
+    inferred_type text,
+    inferred_type_confidence numeric
+    check (
+        inferred_type_confidence is NULL
+        or (inferred_type_confidence <= 1 and inferred_type_confidence >= 0)
+    ),
     inferred jsonb default '{}',
     created_at timestamp not null default current_timestamp
 );
@@ -26,7 +32,7 @@ create table if not exists shares (
 -- json_content must be present
 alter table feed.shares
 add constraint json_content_present
-check (json_content is not null and json_content != '{}');
+check (json_content is not NULL and json_content != '{}');
 
 ------------------------------- RLS -------------------------------
 alter table shares enable row level security;
@@ -69,14 +75,6 @@ begin
 end;
 $$ language plpgsql;
 
-------------------------------------- inference --------------------------
-create or replace function feed.infer_metadata(input text)
-returns jsonb as $$
-begin
-return utils.edge_fn('infer-metadata', json_build_object('input', input)::text)::jsonb;
-end;
-$$ language plpgsql;
-
 -------------- trigger to mark changed content for re-embedding ----------------
 drop trigger if exists mark_share_changed on feed.shares;
 drop function if exists feed.mark_share_changed;
@@ -85,9 +83,8 @@ returns trigger
 language plpgsql
 as $$
 begin
-    IF NEW.json_content <> OLD.json_content THEN
-        NEW.embedding = NULL;
-        NEW.inferred = '{}';
+    IF TG_OP = 'INSERT' OR (TG_OP = 'UPDATE' AND NEW.json_content <> OLD.json_content) THEN
+        perform utils.enqueue_job_for_row('infer_type', 'feed', 'shares', NEW.id);
     END IF;
 
     RETURN NEW;
@@ -95,49 +92,6 @@ end;
 $$;
 
 -- Create trigger for mark_share_changed
-create trigger mark_share_changed before update
+create trigger mark_share_changed after update or insert
 on feed.shares for each row
 execute function feed.mark_share_changed();
-
-create procedure feed.update_stuff(num numeric)
-language plpgsql
-as $$
-begin
-    UPDATE feed.shares
-    SET embedding = utils.embed(json_content::text)
-    WHERE feed.shares.id IN (
-        SELECT id
-        FROM feed.shares
-        WHERE embedding IS NULL
-        order by id asc
-        limit num
-        FOR UPDATE SKIP LOCKED
-    );
-    UPDATE feed.shares
-    SET inferred = feed.infer_metadata(json_content::text)
-    WHERE feed.shares.id IN (
-        SELECT id
-        FROM feed.shares
-        WHERE inferred = '{}'
-        order by id asc
-        limit num
-        FOR UPDATE SKIP LOCKED
-    );
-end;
-$$;
-
-----------------------------------------------------------
------ generate 10 jobs, each processing one item ---------
------ this is because 1s is the lowest granularity -------
------ and we want to trigger realtime updates often, -----
------ so we need to commit often -------------------------
-----------------------------------------------------------
-select
-    cron.schedule(
-        'update-stuff-' || i,
-        '1 seconds',
-        $$
-    call feed.update_stuff(1);
-    $$
-    )
-from generate_series(1, 4) as i;

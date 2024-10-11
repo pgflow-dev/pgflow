@@ -23,6 +23,8 @@ importers:
 
   pkgs/edulaw-ai-backend: {}
 
+  pkgs/feed-processor: {}
+
   pkgs/frontend:
     dependencies:
       '@floating-ui/dom':
