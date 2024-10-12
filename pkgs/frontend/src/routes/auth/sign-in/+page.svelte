@@ -11,17 +11,19 @@
 
 	let tagline = randomTagline();
 
+	const redirectTo = `${PUBLIC_URL}/auth/callback?next=/feed/add-share`;
+
 	function signInWithGithub() {
 		supabase.auth.signInWithOAuth({
 			provider: 'github',
-			options: { redirectTo: `${PUBLIC_URL}/auth/callback` }
+			options: { redirectTo }
 		});
 	}
 
 	function signInWithGoogle() {
 		supabase.auth.signInWithOAuth({
 			provider: 'google',
-			options: { redirectTo: `${PUBLIC_URL}/auth/callback` }
+			options: { redirectTo }
 		});
 	}
 
@@ -36,7 +38,7 @@
 			email: email,
 			options: {
 				shouldCreateUser: true,
-				emailRedirectTo: PUBLIC_URL
+				emailRedirectTo: redirectTo
 			}
 		});
 
