@@ -41,14 +41,7 @@
 </script>
 
 {#if share?.inferred.ui === undefined}
-	<div class="card break-inside-avoid p-2 bg-gray-200 flex items-center variant-ghost-warning">
-		<p class="text-sm">Inferring...</p>
-		{#if share?.inferred_type}
-			<div class="chip animate-bounce">
-				{JSON.stringify(share.inferred_type, null, 2)}
-			</div>
-		{/if}
-	</div>
+	<Text text={share.content} />
 {:else if isBookmark(share)}
 	<Bookmark {...share.inferred.ui} />
 {:else if isEvent(share)}
