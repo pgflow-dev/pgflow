@@ -7,3 +7,6 @@ data/pipeline_*.jsonl
 .flaskenv*
 !.env.project
 !.env.vault
+
+!.envrc*
+.direnv

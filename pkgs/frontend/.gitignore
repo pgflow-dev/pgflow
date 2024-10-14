@@ -17,3 +17,6 @@ vite.config.ts.timestamp-*
 !.env.vault
 
 dev-dist/
+
+!.envrc*
+.direnv

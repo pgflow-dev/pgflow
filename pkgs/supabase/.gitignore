@@ -7,3 +7,6 @@
 .flaskenv*
 !.env.project
 !.env.vault
+
+!.envrc*
+.direnv

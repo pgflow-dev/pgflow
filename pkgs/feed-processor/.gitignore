@@ -167,3 +167,4 @@ cython_debug/
 !.env.vault
 
 .direnv
+!.envrc*
