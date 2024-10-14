@@ -45,7 +45,7 @@ def refresh_record_type(record: RecordToRefresh):
 
     # find record
     table = supabase.schema(record.schema_name).table(record.table_name)
-    select_results = table.select("json_content").eq("id", record.id).execute()
+    select_results = table.select("content").eq("id", record.id).execute()
     print(select_results)
 
     # call llm
@@ -92,9 +92,7 @@ if __name__ == '__main__':
             dict(
                 id=str(uuid4()),
                 owner_id='11111111-1111-1111-1111-111111111111',
-                json_content=dict(
-                    input=link
-                )
+                content=link
             )
         ).execute()
         for link in links

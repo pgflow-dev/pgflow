@@ -9,7 +9,7 @@ export const actions: Actions = {
 		const response = await supabase
 			.schema('feed')
 			.from('shares')
-			.insert({ json_content: formValues });
+			.insert({ content: JSON.stringify(formValues, null, 2) });
 		console.log('response', response);
 
 		const { status, error } = response;

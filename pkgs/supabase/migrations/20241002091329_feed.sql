@@ -16,7 +16,7 @@ set search_path to feed;
 create table if not exists shares (
     id uuid primary key default gen_random_uuid(),
     owner_id uuid not null default auth.uid() references auth.users (id),
-    json_content jsonb not null,
+    content text not null,
     embedding extensions.vector(1536),
     inferred_type text,
     inferred_type_confidence numeric
@@ -27,12 +27,6 @@ create table if not exists shares (
     inferred jsonb default '{}',
     created_at timestamp not null default current_timestamp
 );
-
--- title, text or url must be present
--- json_content must be present
-alter table feed.shares
-add constraint json_content_present
-check (json_content is not NULL and json_content != '{}');
 
 ------------------------------- RLS -------------------------------
 alter table shares enable row level security;
@@ -55,7 +49,7 @@ create or replace function match_shares(
 returns table (id int, content text, similarity float, metadata jsonb) as $$
 begin
     return query
-    select id, json_content::text as content, inferred, (embedding <=> query_embedding) as similarity, jsonb_build_object('created_at', created_at) as metadata
+    select id, content, inferred, (embedding <=> query_embedding) as similarity, jsonb_build_object('created_at', created_at) as metadata
     from shares
     where embedding is not null and (embedding <=> query_embedding) <= match_threshold
     order by similarity asc;
@@ -83,7 +77,7 @@ returns trigger
 language plpgsql
 as $$
 begin
-    IF TG_OP = 'INSERT' OR (TG_OP = 'UPDATE' AND NEW.json_content <> OLD.json_content) THEN
+    IF TG_OP = 'INSERT' OR (TG_OP = 'UPDATE' AND NEW.content <> OLD.content) THEN
         perform utils.enqueue_job_for_row('infer_type', 'feed', 'shares', NEW.id);
     END IF;
 

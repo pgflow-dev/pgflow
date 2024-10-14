@@ -814,33 +814,33 @@ export type Database = {
     Tables: {
       shares: {
         Row: {
+          content: string
           created_at: string
           embedding: string | null
           id: string
           inferred: Json | null
           inferred_type: string | null
           inferred_type_confidence: number | null
-          json_content: Json
           owner_id: string
         }
         Insert: {
+          content: string
           created_at?: string
           embedding?: string | null
           id?: string
           inferred?: Json | null
           inferred_type?: string | null
           inferred_type_confidence?: number | null
-          json_content: Json
           owner_id?: string
         }
         Update: {
+          content?: string
           created_at?: string
           embedding?: string | null
           id?: string
           inferred?: Json | null
           inferred_type?: string | null
           inferred_type_confidence?: number | null
-          json_content?: Json
           owner_id?: string
         }
         Relationships: [

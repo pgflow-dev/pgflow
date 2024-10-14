@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from json import dumps as as_json
 from json import loads as parse_json
 
 from feed_processor.chains.infer_ui_chain import InputType, create_chain
@@ -44,7 +45,7 @@ def run_inference(record: RecordToRefresh, supabase: SupabaseClient):
     infer_ui_chain = create_chain(api_key=os.environ["OPENAI_API_KEY"], schema=ui_schema)
 
     table = supabase.schema(record.schema_name).table(record.table_name)
-    select_results = table.select("json_content, inferred_type").eq("id", record.id).single().execute()
+    select_results = table.select("content, inferred_type").eq("id", record.id).single().execute()
     print(select_results)
 
     row = select_results.data
@@ -52,7 +53,7 @@ def run_inference(record: RecordToRefresh, supabase: SupabaseClient):
     print(row)
 
     input = InputType(
-        input=row['json_content'],
+        input=row['content'],
         type=row['inferred_type'],
         datetime=datetime.now()
     )
@@ -87,9 +88,7 @@ if __name__ == '__main__':
             dict(
                 id=str(uuid4()),
                 owner_id='11111111-1111-1111-1111-111111111111',
-                json_content=dict(
-                    input=link
-                )
+                content=link
             )
         ).execute()
         for link in links
