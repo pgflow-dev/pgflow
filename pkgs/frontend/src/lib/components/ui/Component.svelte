@@ -41,7 +41,7 @@
 </script>
 
 {#if share?.inferred.ui === undefined}
-	<Text text={share.content} />
+	<Text text={share.content} loading={true} />
 {:else if isBookmark(share)}
 	<Bookmark {...share.inferred.ui} />
 {:else if isEvent(share)}
