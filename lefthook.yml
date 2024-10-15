@@ -29,6 +29,7 @@ pre-commit:
       glob: "*.{svelte,js,ts,html,css,json}"
       run: |
         prettier --write {staged_files}
+      stage_fixed: true
 
     frontend/check:
       root: "pkgs/frontend"
