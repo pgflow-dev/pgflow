@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { ProgressRadial } from '@skeletonlabs/skeleton';
 	import { PUBLIC_URL } from '$env/static/public';
 	import { Icon } from 'svelte-awesome';
 	import { google, github, envelope } from 'svelte-awesome/icons';
@@ -112,7 +111,7 @@
 				class:cursor-not-allowed={!isValidEmail(email) || loading}
 			>
 				{#if loading}
-					<ProgressRadial width="w-8" height="h-8" class="mb-1 mr-2" stroke={100} />
+					<span class="w-8 h-8 mb-1 mr-2">⌛</span>
 					signing in...
 				{:else}
 					<Icon data={envelope} class="mb-1 mr-2 w-8 h-8" />

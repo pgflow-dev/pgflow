@@ -13,7 +13,6 @@
 		RunnableSequence
 	} from '@langchain/core/runnables';
 	import useRetriever from '$lib/useRetriever';
-	import { ProgressRadial } from '@skeletonlabs/skeleton';
 	import { chatWithHistoryAndContextPrompt, standaloneQuestionPrompt } from '$lib/prompts';
 	import { debug } from '$lib/runnables';
 	import { HumanMessage } from '@langchain/core/messages';
@@ -80,7 +79,7 @@
 
 		{#if $retrieverLoading}
 			<div class="card">
-				<ProgressRadial width="w-4" stroke={30} />
+				<span>⌛</span>
 				<h3 class="h3">Retrieving relevant docs...</h3>
 			</div>
 		{/if}

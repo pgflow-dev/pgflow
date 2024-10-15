@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Textarea } from '$components/ui/textarea';
 	import type { InferredFeedShareRow } from '$lib/db';
 	import { writable } from 'svelte/store';
 	import ShareRow from '../ShareRow.svelte';
@@ -12,7 +13,7 @@
 	$: ({ supabase } = data);
 
 	const shares = writable<InferredFeedShareRow[]>([]);
-	let textareaElement: HTMLTextAreaElement;
+	let textareaElement: Textarea;
 
 	function handleUpdateShare(payload: { new: InferredFeedShareRow }) {
 		console.log('handleUpdateShare', payload);
@@ -68,7 +69,9 @@
 			console.log('error', response.error);
 		}
 
-		textareaElement.focus();
+		if (textareaElement) {
+			textareaElement.focus();
+		}
 	});
 
 	function handlePaste(event: KeyboardEvent) {
@@ -99,7 +102,7 @@
 
 <div class="col-span-12 relative">
 	<form method="POST" use:enhance action="/share" class="relative">
-		<textarea
+		<Textarea
 			name="content"
 			bind:this={textareaElement}
 			class="textarea w-full min-h-[100px] pr-24"
@@ -116,7 +119,7 @@
 		</button>
 	</form>
 </div>
-<div class="col-span-12 gap-2">
+<div class="col-span-12 gap-2 space-y-2">
 	{#each $shares as share (share.id)}
 		<ShareRow {share} />
 	{/each}
