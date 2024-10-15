@@ -4,6 +4,7 @@
 	import { Icon } from 'svelte-awesome';
 	import { google, github, envelope } from 'svelte-awesome/icons';
 	import { randomTagline } from '$lib/texts';
+	import { page } from '$app/stores';
 
 	export let data;
 	let { supabase } = data;
@@ -11,7 +12,8 @@
 
 	let tagline = randomTagline();
 
-	const redirectTo = `${PUBLIC_URL}/auth/callback?next=/feed/add-share`;
+	const nextPath = $page.params['next'] || '/feed/add-share';
+	const redirectTo = `${PUBLIC_URL}/auth/callback?next=${nextPath}`;
 
 	function signInWithGithub() {
 		supabase.auth.signInWithOAuth({

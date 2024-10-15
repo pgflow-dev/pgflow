@@ -52,7 +52,7 @@
 			<Icon data={bars} />
 		</button>
 	</svelte:fragment>
-	<h3 class="h3 font-bold text-secondary-300">feedwise</h3>
+	<h3 class="h3 font-bold text-secondary-300"><a href="/">feedwise</a></h3>
 	<svelte:fragment slot="trail"></svelte:fragment>
 </AppBar>
 
