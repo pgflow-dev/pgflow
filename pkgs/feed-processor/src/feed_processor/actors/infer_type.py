@@ -41,7 +41,7 @@ async def infer_type(job: Job, queries: Queries, _: SupabaseClient):
 def refresh_record_type(record: RecordToRefresh):
     print(record)
     supabase = create_service_role_client()
-    infer_type_chain = create_chain(api_key=os.environ["OPENAI_API_KEY"])
+    infer_type_chain = create_chain(api_key=os.environ["OPENAI_API_KEY"]).with_config({'run_name': 'Infer Type'})
 
     # find record
     table = supabase.schema(record.schema_name).table(record.table_name)

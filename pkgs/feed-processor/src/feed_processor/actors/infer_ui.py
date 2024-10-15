@@ -42,7 +42,7 @@ async def infer_ui(job: Job, queries: Queries, supabase: SupabaseClient):
 def run_inference(record: RecordToRefresh, supabase: SupabaseClient):
     print(record)
     ui_schema = AttributesSchemaByType[record.inferred_type]
-    infer_ui_chain = create_chain(api_key=os.environ["OPENAI_API_KEY"], schema=ui_schema)
+    infer_ui_chain = create_chain(api_key=os.environ["OPENAI_API_KEY"], schema=ui_schema).with_config({'run_name': 'Infer UI'})
 
     table = supabase.schema(record.schema_name).table(record.table_name)
     select_results = table.select("content, inferred_type").eq("id", record.id).single().execute()
