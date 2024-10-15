@@ -105,6 +105,9 @@
 			class="textarea w-full min-h-[100px] pr-24"
 			on:keydown={handleKeydown}
 		/>
+
+		<input type="hidden" name="__source" value="webapp" />
+
 		<button
 			type="submit"
 			class="btn btn-xs text-xs p-1 variant-soft-primary absolute bottom-2 right-2"

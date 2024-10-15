@@ -5,17 +5,19 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const formValues = Object.fromEntries(formData.entries());
 
-		console.log('formValues', formValues);
-		const response = await supabase
-			.schema('feed')
-			.from('shares')
-			.insert({ content: JSON.stringify(formValues, null, 2) });
-		console.log('response', response);
+		let content: string;
+
+		if (formValues['__source'] && formValues['__source'] === 'webapp') {
+			content = formValues['content'].toString();
+		} else {
+			content = JSON.stringify(formValues, null, 2);
+		}
+
+		const response = await supabase.schema('feed').from('shares').insert({ content });
 
 		const { status, error } = response;
 
 		if (error || status < 200 || status >= 300) {
-			console.log('error', error);
 			return {
 				success: false
 			};
