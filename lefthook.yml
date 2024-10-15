@@ -24,6 +24,12 @@ pre-commit:
         echo staged_files="{staged_files}"
         exit 1
 
+    frontend/prettier-fix:
+      root: "pkgs/frontend"
+      glob: "*.{svelte,js,ts,html,css,json}"
+      run: |
+        prettier --write {staged_files}
+
     frontend/check:
       root: "pkgs/frontend"
       glob: "*.{svelte,js,ts,html,css,json}"
