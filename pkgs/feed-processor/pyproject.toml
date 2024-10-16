@@ -16,6 +16,7 @@ dependencies = [
     "isort>=5.13.2",
     "pyright>=1.1.384",
     "langsmith>=0.1.135",
+    "pytest-xdist>=3.6.1",
 ]
 requires-python = "==3.11.*"
 readme = "README.md"

@@ -5,7 +5,7 @@
   "scripts": {
     "consumer": "pdm run python -m pgqueuer run feed_processor.main",
     "dev": "pnpm consumer",
-    "test": "pdm run pytest",
+    "test": "pdm run pytest -n 4",
     "check": "pdm info && echo '-> Running pyright' && pdm run pyright"
   },
   "keywords": [],
