@@ -2,7 +2,7 @@
 	import '../app.postcss';
 
 	import { Icon } from 'svelte-awesome';
-	import { signOut, bars, comments, fileText, rss, signIn, share } from 'svelte-awesome/icons';
+	import { signOut, bars, rss, signIn } from 'svelte-awesome/icons';
 
 	import { invalidate } from '$app/navigation';
 	import { onMount } from 'svelte';
@@ -60,42 +60,38 @@
 <Drawer.Root open={$isDrawerOpen} onClose={() => isDrawerOpen.set(false)}>
 	<Drawer.Content>
 		<div class="p-4 space-y-6">
-			<div class="space-y-2">
-				<a class="btn btn-sm variant-soft-primary w-full" href="/share">
-					<Icon data={share} scale={0.8} />
-					<span class="ml-2">Share</span>
-				</a>
+			<!-- <div class="space-y-2"> -->
+			<!-- 	<a class="btn btn-sm variant-soft-primary w-full" href="/share"> -->
+			<!-- 		<Icon data={share} scale={0.8} /> -->
+			<!-- 		<span class="ml-2">Share</span> -->
+			<!-- 	</a> -->
+			<!---->
+			<!-- 	<h3 class="h3 font-bold text-primary-500">Edulaw Chatbot</h3> -->
+			<!-- 	<a class="btn btn-sm variant-soft-primary w-full" href="/conversations"> -->
+			<!-- 		<Icon data={comments} scale={0.8} /> -->
+			<!-- 		<span class="ml-2">Conversations</span> -->
+			<!-- 	</a> -->
+			<!-- 	<a class="btn btn-sm variant-soft-primary w-full" href="/conversations/new"> -->
+			<!-- 		<Icon data={comments} scale={0.8} /> -->
+			<!-- 		<span class="ml-2">New Conversation</span> -->
+			<!-- 	</a> -->
+			<!-- </div> -->
 
-				<h3 class="h3 font-bold text-primary-500">Edulaw Chatbot</h3>
-				<a class="btn btn-sm variant-soft-primary w-full" href="/conversations">
-					<Icon data={comments} scale={0.8} />
-					<span class="ml-2">Conversations</span>
-				</a>
-				<a class="btn btn-sm variant-soft-primary w-full" href="/conversations/new">
-					<Icon data={comments} scale={0.8} />
-					<span class="ml-2">New Conversation</span>
-				</a>
-			</div>
-
-			<div class="space-y-2">
-				<h3 class="h3 font-bold text-primary-500">Edulaw Docs</h3>
-				<a class="btn btn-sm variant-soft-primary w-full" href="/documents">
-					<Icon data={fileText} scale={0.8} />
-					<span class="ml-2">Semantic search</span>
-				</a>
-				<a class="btn btn-sm variant-soft-primary w-full" href="/documents/search">
-					<Icon data={fileText} scale={0.8} />
-					<span class="ml-2">Full text search</span>
-				</a>
-			</div>
+			<!-- <div class="space-y-2"> -->
+			<!-- 	<h3 class="h3 font-bold text-primary-500">Edulaw Docs</h3> -->
+			<!-- 	<a class="btn btn-sm variant-soft-primary w-full" href="/documents"> -->
+			<!-- 		<Icon data={fileText} scale={0.8} /> -->
+			<!-- 		<span class="ml-2">Semantic search</span> -->
+			<!-- 	</a> -->
+			<!-- 	<a class="btn btn-sm variant-soft-primary w-full" href="/documents/search"> -->
+			<!-- 		<Icon data={fileText} scale={0.8} /> -->
+			<!-- 		<span class="ml-2">Full text search</span> -->
+			<!-- 	</a> -->
+			<!-- </div> -->
 
 			<div class="space-y-2">
 				<h3 class="h3 font-bold text-primary-500">Feed</h3>
-				<a class="btn btn-sm variant-soft-primary w-full" href="/feed">
-					<Icon data={rss} scale={0.8} />
-					<span class="ml-2">Recent saves</span>
-				</a>
-				<a class="btn btn-sm variant-soft-primary w-full" href="/feed/add-share">
+				<a class="btn btn-sm variant-soft-primary w-full" href="/share">
 					<Icon data={rss} scale={0.8} />
 					<span class="ml-2">New save</span>
 				</a>
@@ -118,7 +114,7 @@
 		</div>
 		<!-- <Drawer.Header> -->
 		<!-- 	<Drawer.Title>feedwise</Drawer.Title> -->
-		<!-- 	<!-- <Drawer.Description>This action cannot be undone.</Drawer.Description> --> -->
+		<!-- 	<!-- <Drawer.Description>This action cannot be undone.</Drawer.Description> -->
 		<!-- </Drawer.Header> -->
 		<!-- <Drawer.Footer> -->
 		<!-- 	<button>Submit</button> -->
