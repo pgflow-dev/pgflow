@@ -5,7 +5,7 @@ from pgqueuer.models import Job
 from pydantic import BaseModel, Field
 
 
-class RecordToRefresh(BaseModel):
+class JobPayload(BaseModel):
     schema_name: str
     table_name: str
     id: str

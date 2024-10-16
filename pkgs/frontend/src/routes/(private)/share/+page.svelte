@@ -74,14 +74,12 @@
 		}
 	});
 
+	const textareaValue = writable('');
 	function handlePaste(event: KeyboardEvent) {
 		if (event.ctrlKey && event.key === 'v') {
 			event.preventDefault();
 			navigator.clipboard.readText().then((text) => {
-				textareaElement.value = text;
-				if (textareaElement) {
-					textareaElement.focus();
-				}
+				textareaValue.set(text);
 			});
 		}
 	}
@@ -107,6 +105,7 @@
 			bind:this={textareaElement}
 			class="textarea w-full min-h-[100px] pr-24"
 			on:keydown={handleKeydown}
+			bind:value={$textareaValue}
 		/>
 
 		<input type="hidden" name="__source" value="webapp" />
