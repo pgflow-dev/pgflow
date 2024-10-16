@@ -37,10 +37,7 @@
 
 		const { data: _data, error } = await supabase.auth.signInWithOtp({
 			email: email,
-			options: {
-				shouldCreateUser: true,
-				emailRedirectTo: redirectTo
-			}
+			options: { shouldCreateUser: true }
 		});
 
 		if (error) {
