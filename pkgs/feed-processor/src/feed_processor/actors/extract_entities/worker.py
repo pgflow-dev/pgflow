@@ -15,8 +15,5 @@ def worker(share, supabase: SupabaseClient):
     input = InputType(input=as_json(share))
     infer_results = chain.invoke(input)
 
-    from rich.pretty import pprint
-    pprint(infer_results)
-
     return infer_results
 

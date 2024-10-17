@@ -3,7 +3,6 @@ from json import dumps as as_json
 from feed_processor.models import JobPayload
 from pgqueuer.models import Job
 from pgqueuer.queries import Queries
-from rich.pretty import pprint
 from supabase.client import Client as SupabaseClient
 
 from .worker import worker
@@ -20,8 +19,8 @@ async def extract_entities(job: Job, _: Queries, supabase: SupabaseClient):
         raise Exception(f"Could not find record with id {job_payload.id} in {job_payload.schema_name}.{job_payload.table_name}")
 
     share = select_results.data
-    print('-------------------------- share')
-    pprint(share)
+    # print('-------------------------- share')
+    # print(share)
     results = worker(share, supabase)
 
     entities_to_save = {}
@@ -34,12 +33,10 @@ async def extract_entities(job: Job, _: Queries, supabase: SupabaseClient):
         entity_dict['owner_id'] = share['owner_id']
         entity_dict['share_id'] = share['id']
         entities_to_save[entity.table_name].append(entity_dict)
-
-    print('---------------------------------- entities to save')
-    pprint(entities_to_save)
+    # print('---------------------------------- entities to save')
 
     for table_name, entities in entities_to_save.items():
-        print(f"Saving {table_name}...")
+        # print(f"Saving {table_name}...")
 
         results = (
             supabase
@@ -48,5 +45,5 @@ async def extract_entities(job: Job, _: Queries, supabase: SupabaseClient):
             .insert(entities)
             .execute()
         )
-        print(results)
+        # print(results)
 
