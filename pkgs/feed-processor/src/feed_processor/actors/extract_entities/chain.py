@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal, TypedDict
 
 from feed_processor.actors.extract_entities.schema import Schema
@@ -10,6 +11,7 @@ from .prompt import prompt
 
 class InputType(TypedDict):
     input: str
+    time: datetime
 
 def create_chain(api_key: str) -> Runnable[InputType, Schema]:
     model = ChatOpenAI(model='gpt-4o-mini', api_key=SecretStr(api_key))
@@ -41,7 +43,7 @@ if __name__ == '__main__':
     print('----------------------------------------------------------------')
     print(input_text)
     print('----------------------------------------------------------------')
-    input = InputType(input=input_text)
+    input = InputType(input=input_text, time=datetime.now())
     results = chain.invoke(input)
 
     pprint(results)

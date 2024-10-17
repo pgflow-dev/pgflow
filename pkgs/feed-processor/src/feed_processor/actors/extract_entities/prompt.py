@@ -68,6 +68,9 @@ Handle edge cases as follows:
 
 Remember to analyze the raw text carefully and extract all relevant entities. If you can't find any entities or if you're unsure about certain attributes, it's better to omit them than to include incorrect information.
 
+### Additional context:
+Current date and time: {time}
+
 Now, please process the raw text and provide the extracted entities in the specified JSON format.
 """
 
