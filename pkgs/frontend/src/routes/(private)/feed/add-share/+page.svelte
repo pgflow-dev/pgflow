@@ -132,7 +132,7 @@
 	{#each $shares as share (share.id)}
 		<div animate:flip={{ duration: 300, easing: expoOut }}>
 			{#if $entities.get(share.id)}
-				<div transition:slide={{ duration: 300 }} class="my-8">
+				<div transition:slide={{ duration: 300 }} class="my-16">
 					{#each $entities.get(share.id) || [] as entity (entity.id)}
 						<div transition:slide={{ duration: 300 }}>
 							<EntityComponent {entity} />
