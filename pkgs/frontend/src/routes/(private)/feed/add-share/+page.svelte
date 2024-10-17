@@ -4,13 +4,16 @@
 	import { writable } from 'svelte/store';
 	import UiComponent from '$components/ui/Component.svelte';
 	import { onMount } from 'svelte';
+	import { slide } from 'svelte/transition';
+	import { flip } from 'svelte/animate';
+	import { expoOut } from 'svelte/easing';
 	import type {
 		RealtimePostgresDeletePayload,
 		RealtimePostgresInsertPayload
 	} from '@supabase/supabase-js';
-	import { enhance } from '$app/forms';
 	import { createSupabaseEntityStore } from '$lib/stores/supabaseEntityStore';
 	import EntityComponent from '$components/feed/EntityComponent.svelte';
+	import { enhance } from '$app/forms';
 
 	export let data;
 
@@ -19,7 +22,6 @@
 
 	const shares = writable<InferredFeedShareRow[]>([]);
 	const { entities, upsertEntity } = createSupabaseEntityStore<Entity>([]);
-	let textareaElement: Textarea;
 
 	function handleUpdateShare(payload: { new: InferredFeedShareRow }) {
 		console.log('handleUpdateShare', payload);
@@ -80,10 +82,6 @@
 		} else {
 			console.log('error', response.error);
 		}
-
-		if (textareaElement) {
-			textareaElement.focus();
-		}
 	});
 
 	const textareaValue = writable('');
@@ -114,7 +112,6 @@
 	<form method="POST" use:enhance action="/feed/add-share" class="relative">
 		<Textarea
 			name="content"
-			bind:this={textareaElement}
 			class="textarea w-full min-h-[100px] pr-24"
 			on:keydown={handleKeydown}
 			bind:value={$textareaValue}
@@ -130,14 +127,23 @@
 		</button>
 	</form>
 </div>
+
 <div class="col-span-12 gap-2 space-y-2">
 	{#each $shares as share (share.id)}
-		{#if $entities.get(share.id)}
-			{#each $entities.get(share.id) || [] as entity (entity.id)}
-				<EntityComponent {entity} />
-			{/each}
-		{:else}
-			<UiComponent {share} entities={[]} />
-		{/if}
+		<div animate:flip={{ duration: 300, easing: expoOut }}>
+			{#if $entities.get(share.id)}
+				<div transition:slide={{ duration: 300 }} class="my-8">
+					{#each $entities.get(share.id) || [] as entity (entity.id)}
+						<div transition:slide={{ duration: 300 }}>
+							<EntityComponent {entity} />
+						</div>
+					{/each}
+				</div>
+			{:else}
+				<div transition:slide={{ duration: 300 }} class="opacity-25">
+					<UiComponent {share} entities={[]} />
+				</div>
+			{/if}
+		</div>
 	{/each}
 </div>
