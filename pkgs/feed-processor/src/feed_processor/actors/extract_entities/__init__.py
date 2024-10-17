@@ -13,7 +13,7 @@ async def extract_entities(job: Job, _: Queries, supabase: SupabaseClient):
 
     # find record
     table = supabase.schema(job_payload.schema_name).table(job_payload.table_name)
-    select_results = table.select("id, content").eq("id", job_payload.id).single().execute()
+    select_results = table.select("id, content, owner_id").eq("id", job_payload.id).single().execute()
 
     if select_results.data is None:
         raise Exception(f"Could not find record with id {job_payload.id} in {job_payload.schema_name}.{job_payload.table_name}")
