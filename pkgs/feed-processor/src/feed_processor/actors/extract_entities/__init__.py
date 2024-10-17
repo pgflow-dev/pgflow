@@ -21,7 +21,7 @@ async def extract_entities(job: Job, _: Queries, supabase: SupabaseClient):
     share = select_results.data
     # print('-------------------------- share')
     # print(share)
-    results = worker(share, supabase)
+    results = worker(share)
 
     entities_to_save = {}
 
