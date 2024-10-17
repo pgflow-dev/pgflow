@@ -1,6 +1,6 @@
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { createTitleizeChain } from '$lib/chains/createTitleizeChain';
-import type { ChatConversation, ChatMessage } from '$lib/db';
+import type { ChatConversation, ChatMessage } from '$lib/models';
 
 type CreateConversationForMessageFields = {
 	supabase: SupabaseClient;

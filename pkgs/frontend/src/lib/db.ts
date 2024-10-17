@@ -1,6 +1,5 @@
 import type { Database as DatabaseGenerated, Json } from '$backend/types';
 import type { MergeDeep } from 'type-fest';
-import type { ShareMetadata } from '$lib/shareMetadataSchema';
 
 // Override the type for a specific column in a view:
 export type Database = MergeDeep<
@@ -44,20 +43,3 @@ export type Database = MergeDeep<
 		};
 	}
 >;
-
-export type MessageRow = Database['chat']['Tables']['messages']['Row'];
-export type ConversationRow = Database['chat']['Tables']['conversations']['Row'];
-
-export type ChatMessage = Pick<MessageRow, 'content' | 'role' | 'conversation_id'>;
-export type ChatConversation = Pick<ConversationRow, 'id' | 'created_at' | 'title'>;
-
-export type ChatConversationWithMessages = ChatConversation & { messages: ChatMessage[] };
-
-export type MatchDocumentsRpc = Database['public']['Functions']['match_documents_via_embeddings'];
-export type MatchedDocuments = MatchDocumentsRpc['Returns'];
-
-export type FeedShareRow = Database['feed']['Tables']['shares']['Row'];
-export type InferredFeedShareRow = FeedShareRow & {
-	inferred_type: string;
-	inferred: ShareMetadata;
-};

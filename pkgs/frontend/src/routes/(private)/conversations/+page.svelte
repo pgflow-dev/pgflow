@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ChatConversation } from '$lib/db.js';
+	import type { ChatConversation } from '$lib/models';
 	import dayjs from 'dayjs';
 	import relativeTime from 'dayjs/plugin/relativeTime';
 	dayjs.extend(relativeTime);

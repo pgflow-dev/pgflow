@@ -1,7 +1,7 @@
 import { RunnableLambda, RunnableSequence } from '@langchain/core/runnables';
 import { derived, writable } from 'svelte/store';
 import { RemoteEmbeddings } from '$lib/embeddings/RemoteEmbeddings';
-import type { MatchDocumentsRpc, MatchedDocuments } from '$lib/db';
+import type { MatchDocumentsRpc, MatchedDocuments } from '$lib/db/public';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 
 export type UseRetrievalInput = {

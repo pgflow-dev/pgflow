@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
-import type { ChatConversation } from '$lib/db';
+import type { ChatConversation } from '$lib/models';
 
 export const load: PageLoad = async ({
 	parent

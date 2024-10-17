@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { InferredFeedShareRow } from '$lib/db';
+	import type { InferredFeedShareRow } from '$lib/db/feed';
 	import Text from './Text.svelte';
 	import Snippet from './Snippet.svelte';
 

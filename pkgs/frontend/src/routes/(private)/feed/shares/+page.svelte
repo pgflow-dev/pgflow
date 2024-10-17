@@ -1,7 +1,7 @@
 <script lang="ts">
 	import ShareRow from '../ShareRow.svelte';
 	import Prompt from '$components/Prompt.svelte';
-	import type { InferredFeedShareRow } from '$lib/db';
+	import type { InferredFeedShareRow } from '$lib/db/feed';
 	import { writable } from 'svelte/store';
 	import { fade } from 'svelte/transition';
 

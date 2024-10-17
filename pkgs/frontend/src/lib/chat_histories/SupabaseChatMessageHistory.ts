@@ -8,7 +8,7 @@ import { AIMessage, HumanMessage } from '@langchain/core/messages';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import type { Writable } from 'svelte/store';
 import { get, writable } from 'svelte/store';
-import type { ChatMessage } from '$lib/db';
+import type { ChatMessage } from '$lib/models';
 import { RunnableLambda } from '@langchain/core/runnables';
 import { createConversationForMessage } from '$lib/helpers/createConversationForMessage';
 

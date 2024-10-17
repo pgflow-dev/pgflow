@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { InferredFeedShareRow } from '$lib/db';
+	import type { InferredFeedShareRow } from '$lib/db/feed';
 	export let share: InferredFeedShareRow;
 	import UiComponent from '$lib/components/ui/Component.svelte';
 </script>

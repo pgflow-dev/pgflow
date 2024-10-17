@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Textarea } from '$components/ui/textarea';
-	import type { InferredFeedShareRow } from '$lib/db';
+	import type { InferredFeedShareRow } from '$lib/db/feed';
 	import { writable } from 'svelte/store';
 	import ShareRow from '../feed/ShareRow.svelte';
 	import { onMount } from 'svelte';
