@@ -68,7 +68,7 @@ export default defineConfig({
 				],
 				display_override: ['fullscreen', 'standalone'],
 				share_target: {
-					action: '/share',
+					action: '/feed/add-share',
 					method: 'POST',
 					enctype: 'multipart/form-data',
 					params: {

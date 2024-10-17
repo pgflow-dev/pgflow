@@ -2,7 +2,7 @@
 	import { Textarea } from '$components/ui/textarea';
 	import type { InferredFeedShareRow } from '$lib/db/feed';
 	import { writable } from 'svelte/store';
-	import ShareRow from '../feed/ShareRow.svelte';
+	import UiComponent from '$components/ui/Component.svelte';
 	import { onMount } from 'svelte';
 	import type { RealtimePostgresDeletePayload } from '@supabase/supabase-js';
 	import { enhance } from '$app/forms';
@@ -120,6 +120,6 @@
 </div>
 <div class="col-span-12 gap-2 space-y-2">
 	{#each $shares as share (share.id)}
-		<ShareRow {share} />
+		<UiComponent {share} />
 	{/each}
 </div>

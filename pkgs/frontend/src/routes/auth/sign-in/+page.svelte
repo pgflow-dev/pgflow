@@ -11,7 +11,7 @@
 
 	let tagline = randomTagline();
 
-	const nextPath = $page.params['next'] || '/share';
+	const nextPath = $page.params['next'] || '/feed/add-share';
 	const redirectTo = `${PUBLIC_URL}/auth/callback?next=${nextPath}`;
 
 	function signInWithGithub() {

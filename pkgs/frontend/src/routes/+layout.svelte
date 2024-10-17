@@ -61,7 +61,7 @@
 	<Drawer.Content>
 		<div class="p-4 space-y-6">
 			<!-- <div class="space-y-2"> -->
-			<!-- 	<a class="btn btn-sm variant-soft-primary w-full" href="/share"> -->
+			<!-- 	<a class="btn btn-sm variant-soft-primary w-full" href="/feed/add-share"> -->
 			<!-- 		<Icon data={share} scale={0.8} /> -->
 			<!-- 		<span class="ml-2">Share</span> -->
 			<!-- 	</a> -->
@@ -91,7 +91,7 @@
 
 			<div class="space-y-2">
 				<h3 class="h3 font-bold text-primary-500">Feed</h3>
-				<a class="btn btn-sm variant-soft-primary w-full" href="/share">
+				<a class="btn btn-sm variant-soft-primary w-full" href="/feed/add-share">
 					<Icon data={rss} scale={0.8} />
 					<span class="ml-2">New save</span>
 				</a>
