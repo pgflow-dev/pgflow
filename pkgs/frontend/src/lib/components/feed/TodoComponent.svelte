@@ -5,7 +5,7 @@
 </script>
 
 <div
-	class="overflow-x-auto card break-inside-avoid p-2 variant-soft-secondary relative border border-gray-800"
+	class="overflow-x-auto card break-inside-avoid p-2 variant-soft-secondary relative border border-gray-600"
 >
 	<!-- huge checkbox -->
 	<label>

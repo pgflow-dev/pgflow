@@ -14,7 +14,7 @@
 	}
 </script>
 
-<div class="break-inside-avoid p-2 flex items-center border border-gray-800">
+<div class="break-inside-avoid p-2 flex items-center border border-gray-600">
 	<img src={getFaviconUrl(bookmark.url)} alt="Favicon" class="w-4 h-4 mr-2" />
 	<a href={bookmark.url} target="_blank" rel="noreferrer">{bookmark.title}</a>
 </div>
