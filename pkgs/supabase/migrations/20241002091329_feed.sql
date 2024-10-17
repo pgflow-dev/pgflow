@@ -19,11 +19,6 @@ create table if not exists shares (
     content text not null,
     embedding extensions.vector(1536),
     inferred_type text,
-    inferred_type_confidence numeric
-    check (
-        inferred_type_confidence is NULL
-        or (inferred_type_confidence <= 1 and inferred_type_confidence >= 0)
-    ),
     inferred jsonb default '{}',
     created_at timestamp not null default current_timestamp
 );
@@ -78,7 +73,7 @@ language plpgsql
 as $$
 begin
     IF TG_OP = 'INSERT' OR (TG_OP = 'UPDATE' AND NEW.content <> OLD.content) THEN
-        perform utils.enqueue_job_for_row('infer_type', 'feed', 'shares', NEW.id);
+        perform utils.enqueue_job_for_row('extract_entities', 'feed', 'shares', NEW.id);
     END IF;
 
     RETURN NEW;

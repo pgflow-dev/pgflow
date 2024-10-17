@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ShareRow from '../ShareRow.svelte';
+	import UiComponent from '$components/ui/Component.svelte';
 	import Prompt from '$components/Prompt.svelte';
 	import type { InferredFeedShareRow } from '$lib/db/feed';
 	import { writable } from 'svelte/store';
@@ -46,6 +46,6 @@
 
 <div class="col-span-10 col-start-2" in:fade={{ duration: 100, delay: 0 }}>
 	{#each $shares as share (share)}
-		<ShareRow {share} />
+		<UiComponent {share} entities={[]} />
 	{/each}
 </div>

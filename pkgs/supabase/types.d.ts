@@ -812,6 +812,228 @@ export type Database = {
   }
   feed: {
     Tables: {
+      bookmarks: {
+        Row: {
+          created_at: string
+          id: string
+          owner_id: string
+          reason: string | null
+          share_id: string
+          short_summary: string
+          tags: string[] | null
+          title: string
+          type: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          owner_id?: string
+          reason?: string | null
+          share_id: string
+          short_summary: string
+          tags?: string[] | null
+          title: string
+          type?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          owner_id?: string
+          reason?: string | null
+          share_id?: string
+          short_summary?: string
+          tags?: string[] | null
+          title?: string
+          type?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookmarks_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookmarks_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "shares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      code_snippets: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          language_code: string
+          owner_id: string
+          reason: string | null
+          share_id: string
+          short_summary: string
+          source: string
+          tags: string[] | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          language_code: string
+          owner_id?: string
+          reason?: string | null
+          share_id: string
+          short_summary: string
+          source: string
+          tags?: string[] | null
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          language_code?: string
+          owner_id?: string
+          reason?: string | null
+          share_id?: string
+          short_summary?: string
+          source?: string
+          tags?: string[] | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_snippets_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "code_snippets_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "shares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          owner_id: string
+          place: string | null
+          reason: string | null
+          share_id: string
+          short_summary: string
+          tags: string[] | null
+          time: string
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          owner_id?: string
+          place?: string | null
+          reason?: string | null
+          share_id: string
+          short_summary: string
+          tags?: string[] | null
+          time: string
+          title: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          owner_id?: string
+          place?: string | null
+          reason?: string | null
+          share_id?: string
+          short_summary?: string
+          tags?: string[] | null
+          time?: string
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "shares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notes: {
+        Row: {
+          created_at: string
+          id: string
+          owner_id: string
+          reason: string | null
+          share_id: string
+          short_summary: string
+          tags: string[] | null
+          text: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          owner_id?: string
+          reason?: string | null
+          share_id: string
+          short_summary: string
+          tags?: string[] | null
+          text: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          owner_id?: string
+          reason?: string | null
+          share_id?: string
+          short_summary?: string
+          tags?: string[] | null
+          text?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notes_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "shares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shares: {
         Row: {
           content: string
@@ -820,7 +1042,6 @@ export type Database = {
           id: string
           inferred: Json | null
           inferred_type: string | null
-          inferred_type_confidence: number | null
           owner_id: string
         }
         Insert: {
@@ -830,7 +1051,6 @@ export type Database = {
           id?: string
           inferred?: Json | null
           inferred_type?: string | null
-          inferred_type_confidence?: number | null
           owner_id?: string
         }
         Update: {
@@ -840,7 +1060,6 @@ export type Database = {
           id?: string
           inferred?: Json | null
           inferred_type?: string | null
-          inferred_type_confidence?: number | null
           owner_id?: string
         }
         Relationships: [
@@ -849,6 +1068,60 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      todos: {
+        Row: {
+          created_at: string
+          due_date: string | null
+          id: string
+          owner_id: string
+          reason: string | null
+          share_id: string
+          short_summary: string
+          tags: string[] | null
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          owner_id?: string
+          reason?: string | null
+          share_id: string
+          short_summary: string
+          tags?: string[] | null
+          title: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          owner_id?: string
+          reason?: string | null
+          share_id?: string
+          short_summary?: string
+          tags?: string[] | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "todos_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "todos_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "shares"
             referencedColumns: ["id"]
           },
         ]

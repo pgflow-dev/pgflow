@@ -1,11 +1,16 @@
 <script lang="ts">
 	import { Textarea } from '$components/ui/textarea';
-	import type { InferredFeedShareRow } from '$lib/db/feed';
+	import type { InferredFeedShareRow, Entity } from '$lib/db/feed';
 	import { writable } from 'svelte/store';
 	import UiComponent from '$components/ui/Component.svelte';
 	import { onMount } from 'svelte';
-	import type { RealtimePostgresDeletePayload } from '@supabase/supabase-js';
+	import type {
+		RealtimePostgresDeletePayload,
+		RealtimePostgresInsertPayload
+	} from '@supabase/supabase-js';
 	import { enhance } from '$app/forms';
+	import { createSupabaseEntityStore } from '$lib/stores/supabaseEntityStore';
+	import EntityComponent from '$components/feed/EntityComponent.svelte';
 
 	export let data;
 
@@ -13,6 +18,7 @@
 	$: ({ supabase } = data);
 
 	const shares = writable<InferredFeedShareRow[]>([]);
+	const { entities, upsertEntity } = createSupabaseEntityStore<Entity>([]);
 	let textareaElement: Textarea;
 
 	function handleUpdateShare(payload: { new: InferredFeedShareRow }) {
@@ -48,12 +54,18 @@
 
 		supabase
 			.channel('schema-db-changes')
-			.on('postgres_changes', { event: '*', ...eventSpec }, (p) => {
-				console.log('PAYLOAD --------------->', p);
-			})
 			.on('postgres_changes', { event: 'INSERT', ...eventSpec }, handleUpdateShare)
 			.on('postgres_changes', { event: 'UPDATE', ...eventSpec }, handleUpdateShare)
 			.on('postgres_changes', { event: 'DELETE', ...eventSpec }, handleDeleteShare)
+			.on(
+				'postgres_changes',
+				{ event: 'INSERT', schema: 'feed' },
+				(payload: RealtimePostgresInsertPayload<Entity>) => {
+					if (payload.table != 'shares') {
+						upsertEntity(payload.new);
+					}
+				}
+			)
 			.subscribe();
 
 		const response = await supabase
@@ -120,6 +132,12 @@
 </div>
 <div class="col-span-12 gap-2 space-y-2">
 	{#each $shares as share (share.id)}
-		<UiComponent {share} />
+		{#if $entities.get(share.id)}
+			{#each $entities.get(share.id) || [] as entity (entity.id)}
+				<EntityComponent {entity} />
+			{/each}
+		{:else}
+			<UiComponent {share} entities={[]} />
+		{/if}
 	{/each}
 </div>

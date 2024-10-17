@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 
 import asyncpg
+from feed_processor.actors.extract_entities import extract_entities
 from feed_processor.actors.infer_type import infer_type
 from feed_processor.supabase import create_service_role_client
 from pgqueuer.db import AsyncpgDriver
@@ -29,5 +30,9 @@ async def main() -> QueueManager:
     @qm.entrypoint('infer_type')
     async def infer_type_entrypoint(job: Job):
         await infer_type(job, queries, supabase)
+
+    @qm.entrypoint('extract_entities')
+    async def extract_entities_entrypoint(job: Job):
+        await extract_entities(job, queries, supabase)
 
     return qm
