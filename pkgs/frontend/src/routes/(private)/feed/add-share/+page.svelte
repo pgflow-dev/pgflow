@@ -99,7 +99,7 @@
 <svelte:window on:keydown={handlePaste} />
 
 <div class="col-span-12 relative">
-	<form method="POST" use:enhance action="/share" class="relative">
+	<form method="POST" use:enhance action="/feed/add-share" class="relative">
 		<Textarea
 			name="content"
 			bind:this={textareaElement}
