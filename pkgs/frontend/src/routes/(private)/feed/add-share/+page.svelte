@@ -181,7 +181,6 @@
 					</div>
 				{:else}
 					<div
-						transition:slide={{ duration: 300 }}
 						class="opacity-30 hover:opacity-70 overflow-x-auto border border-gray-300 p-4 rounded-lg"
 					>
 						{share.content}
