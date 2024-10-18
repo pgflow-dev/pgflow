@@ -53,42 +53,11 @@
 	<div class="divider" />
 </header>
 
-<div class="flex flex-col h-[calc(100vh-64px)] overflow-y-auto pt-2">
-	<slot />
-</div>
+<slot />
 
 <Drawer.Root open={$isDrawerOpen} onClose={() => isDrawerOpen.set(false)}>
 	<Drawer.Content>
 		<div class="p-4 space-y-6">
-			<!-- <div class="space-y-2"> -->
-			<!-- 	<a class="btn btn-sm variant-soft-primary w-full" href="/feed/add-share"> -->
-			<!-- 		<Icon data={share} scale={0.8} /> -->
-			<!-- 		<span class="ml-2">Share</span> -->
-			<!-- 	</a> -->
-			<!---->
-			<!-- 	<h3 class="h3 font-bold text-primary-500">Edulaw Chatbot</h3> -->
-			<!-- 	<a class="btn btn-sm variant-soft-primary w-full" href="/conversations"> -->
-			<!-- 		<Icon data={comments} scale={0.8} /> -->
-			<!-- 		<span class="ml-2">Conversations</span> -->
-			<!-- 	</a> -->
-			<!-- 	<a class="btn btn-sm variant-soft-primary w-full" href="/conversations/new"> -->
-			<!-- 		<Icon data={comments} scale={0.8} /> -->
-			<!-- 		<span class="ml-2">New Conversation</span> -->
-			<!-- 	</a> -->
-			<!-- </div> -->
-
-			<!-- <div class="space-y-2"> -->
-			<!-- 	<h3 class="h3 font-bold text-primary-500">Edulaw Docs</h3> -->
-			<!-- 	<a class="btn btn-sm variant-soft-primary w-full" href="/documents"> -->
-			<!-- 		<Icon data={fileText} scale={0.8} /> -->
-			<!-- 		<span class="ml-2">Semantic search</span> -->
-			<!-- 	</a> -->
-			<!-- 	<a class="btn btn-sm variant-soft-primary w-full" href="/documents/search"> -->
-			<!-- 		<Icon data={fileText} scale={0.8} /> -->
-			<!-- 		<span class="ml-2">Full text search</span> -->
-			<!-- 	</a> -->
-			<!-- </div> -->
-
 			<div class="space-y-2">
 				<h3 class="h3 font-bold text-primary-500">Feed</h3>
 				<a class="btn btn-sm variant-soft-primary w-full" href="/feed/add-share">
@@ -112,13 +81,5 @@
 				</div>
 			</div>
 		</div>
-		<!-- <Drawer.Header> -->
-		<!-- 	<Drawer.Title>feedwise</Drawer.Title> -->
-		<!-- 	<!-- <Drawer.Description>This action cannot be undone.</Drawer.Description> -->
-		<!-- </Drawer.Header> -->
-		<!-- <Drawer.Footer> -->
-		<!-- 	<button>Submit</button> -->
-		<!-- 	<Drawer.Close>Cancel</Drawer.Close> -->
-		<!-- </Drawer.Footer> -->
 	</Drawer.Content>
 </Drawer.Root>
