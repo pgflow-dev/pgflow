@@ -14,7 +14,7 @@ class InputType(TypedDict):
     time: datetime
 
 def create_chain(api_key: str) -> Runnable[InputType, Schema]:
-    model = ChatOpenAI(model='gpt-4o-mini', api_key=SecretStr(api_key))
+    model = ChatOpenAI(model='gpt-4o', api_key=SecretStr(api_key))
 
     return RunnableSequence(
         prompt,

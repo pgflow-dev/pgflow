@@ -1,9 +1,6 @@
 <script lang="ts">
 	import '../app.postcss';
 
-	import { Icon } from 'svelte-awesome';
-	import { signOut, bars, rss, signIn } from 'svelte-awesome/icons';
-
 	import { invalidate } from '$app/navigation';
 	import { onMount } from 'svelte';
 
@@ -12,7 +9,7 @@
 	$: webManifest = pwaInfo ? pwaInfo.webManifest.linkTag : '';
 
 	export let data;
-	$: ({ session, supabase, user } = data);
+	$: ({ session, supabase } = data);
 
 	onMount(() => {
 		const { data } = supabase.auth.onAuthStateChange((_, newSession) => {
@@ -23,12 +20,6 @@
 
 		return () => data.subscription.unsubscribe();
 	});
-
-	import * as Drawer from '$components/ui/drawer';
-	import { writable } from 'svelte/store';
-	const isDrawerOpen = writable(false);
-
-	import { Button } from '$components/ui/button';
 
 	import { ModeWatcher } from 'mode-watcher';
 </script>
@@ -42,44 +33,4 @@
 	<title>feedwise</title>
 </svelte:head>
 
-<header class="sticky top-0 w-full">
-	<div class="flex justify-between items-center p-2">
-		<h1 class="pl-4 font-bold"><a href="/">feedwise</a></h1>
-		<Button variant="ghost" on:click={() => isDrawerOpen.set(true)}>
-			<Icon data={bars} />
-		</Button>
-	</div>
-
-	<div class="divider" />
-</header>
-
 <slot />
-
-<Drawer.Root open={$isDrawerOpen} onClose={() => isDrawerOpen.set(false)}>
-	<Drawer.Content>
-		<div class="p-4 space-y-6">
-			<div class="space-y-2">
-				<h3 class="h3 font-bold text-primary-500">Feed</h3>
-				<a class="btn btn-sm variant-soft-primary w-full" href="/feed/add-share">
-					<Icon data={rss} scale={0.8} />
-					<span class="ml-2">New save</span>
-				</a>
-
-				<div class="space-y-2">
-					<h3 class="h3 font-bold text-primary-500">Account</h3>
-					{#if user}
-						<a href="/auth/sign-out" class="btn btn-sm variant-soft-primary w-full">
-							<Icon data={signOut} />
-							<span class="ml-2">Sign Out</span>
-						</a>
-					{:else}
-						<a href="/auth/sign-in" class="btn btn-sm variant-soft-primary w-full">
-							<Icon data={signIn} />
-							<span class="ml-2">Sign In</span>
-						</a>
-					{/if}
-				</div>
-			</div>
-		</div>
-	</Drawer.Content>
-</Drawer.Root>

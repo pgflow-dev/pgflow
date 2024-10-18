@@ -50,7 +50,8 @@ You need to extract entities of the following types:
 Extraction rules and constraints:
 - Extract only the entity types listed above.
 - For each entity, start with 'reason' where you explain why you think this is this type
-- You can extract between 0 and 10 entities in total.
+- You can extract at most 20 entities.
+- If you do not find any entities. save whole content as Note
 - It's possible that the entire content fits a single entity type.
 - If you can't extract any entities, return an empty array.
 - Never extract entities that don't match the specified types.

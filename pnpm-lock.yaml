@@ -142,6 +142,9 @@ importers:
       histoire:
         specifier: ^0.17.15
         version: 0.17.15(@types/node@20.10.6)(vite@5.0.11)
+      lucide-svelte:
+        specifier: ^0.453.0
+        version: 0.453.0(svelte@4.2.12)
       msw:
         specifier: ^1.3.2
         version: 1.3.2(typescript@5.3.3)
@@ -7510,6 +7513,14 @@ packages:
     engines: {node: '>=10'}
     dependencies:
       yallist: 4.0.0
+
+  /lucide-svelte@0.453.0(svelte@4.2.12):
+    resolution: {integrity: sha512-K+eE2ZeE00ThIEbAmZB3Hq0sVS+1ZLj+7nqtJvN0Xrh/KZnfnEChG+do80sctqXQEE+iG1dA2T+5fVcJS1awfA==}
+    peerDependencies:
+      svelte: ^3 || ^4 || ^5.0.0-next.42
+    dependencies:
+      svelte: 4.2.12
+    dev: true
 
   /magic-string@0.25.9:
     resolution: {integrity: sha512-RmF0AsMzgt25qzqqLc1+MbHmhdx0ojF2Fvs4XnOqz2ZOBXzzkEwc/dJQZCYHAn7v1jbVOjAZfK8msRn4BxO4VQ==}

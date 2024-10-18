@@ -53,10 +53,12 @@
 	}
 </script>
 
-<main class="container mx-auto px-4 py-8 max-w-md">
-	<h1 class="text-3xl font-bold mb-2 text-center mt-4">
-		{tagline}
-	</h1>
+<main class="container mx-auto px-4 py-8 max-w-md flex flex-col justify-center min-h-screen">
+	<div class="h-16 align-bottom mb-8">
+		<h1 class="text-3xl font-bold mb-2 text-center mt-4">
+			{tagline}
+		</h1>
+	</div>
 
 	{#if linkSent}
 		<div class="flex flex-col space-y-4 mt-24 mb-6 p-8 m-6 card">
@@ -64,7 +66,7 @@
 			<p>Check your email client and click the link to sign in</p>
 		</div>
 	{:else}
-		<p class="text-gray-300 mt-4 mb-6">Log in to your Feedwise account</p>
+		<p class="text-gray-400 mt-4 mb-6">Log in to your Feedwise account</p>
 
 		<div class="flex flex-col space-y-4 mb-6">
 			<button

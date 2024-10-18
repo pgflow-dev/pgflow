@@ -33,7 +33,8 @@ async def extract_entities(job: Job, _: Queries, supabase: SupabaseClient):
         entity_dict['owner_id'] = share['owner_id']
         entity_dict['share_id'] = share['id']
         entities_to_save[entity.table_name].append(entity_dict)
-    # print('---------------------------------- entities to save')
+    print('---------------------------------- entities to save')
+    print(entities_to_save)
 
     for table_name, entities in entities_to_save.items():
         # print(f"Saving {table_name}...")
