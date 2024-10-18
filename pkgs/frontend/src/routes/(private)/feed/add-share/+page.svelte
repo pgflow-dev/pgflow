@@ -131,10 +131,22 @@
 		$textareaValue = '';
 	}
 
+	function openTextarea() {
+		$textareaVisible = true;
+
+		if (textareaElement) {
+			console.log('focus', textareaElement);
+			textareaElement.focus();
+		} else {
+			console.error('textareaElement is undefined');
+		}
+	}
+
 	let textareaElement: HTMLTextAreaElement | undefined;
 	const textareaVisible = writable(false);
 
-	$: !!$textareaVisible && console.log('textareaElement', textareaElement);
+	$: $textareaVisible && console.log('textareaElement toggled', textareaElement);
+	$: $textareaVisible && textareaElement && textareaElement.focus();
 </script>
 
 <svelte:window on:keydown={handlePaste} />
@@ -154,9 +166,9 @@
 				{:else}
 					<div
 						transition:slide={{ duration: 300 }}
-						class="opacity-30 hover:opacity-70 overflow-x-auto"
+						class="opacity-30 hover:opacity-70 overflow-x-auto border border-gray-300 p-4 rounded-lg"
 					>
-						<pre><code>{share.content}</code></pre>
+						{share.content}
 					</div>
 				{/if}
 			</div>
@@ -189,7 +201,7 @@
 				</Button>
 			{:else}
 				<button
-					on:click={() => ($textareaVisible = true)}
+					on:click={openTextarea}
 					class="w-full bg-black p-2 text-gray-500 border-none border-t border-t-gray-700 min-h-10"
 				>
 					Click to save stuff...
