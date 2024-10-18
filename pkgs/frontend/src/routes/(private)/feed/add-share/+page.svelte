@@ -81,7 +81,7 @@
 						scrollToBottom();
 						// Call scrollToBottom multiple times with increasing delays
 						for (let i = 1; i <= 3; i++) {
-							// setTimeout(scrollToBottom, i * 400);
+							setTimeout(scrollToBottom, i * 400);
 						}
 					}
 				}
