@@ -2,7 +2,6 @@
 	import ChatLayout from '$components/feed/ChatLayout.svelte';
 	import Spinner from '$components/Spinner.svelte';
 
-	import { Button } from '$components/ui/button';
 	import type { InferredFeedShareRow, Entity } from '$lib/db/feed';
 	import { derived, writable } from 'svelte/store';
 	import { onMount, tick } from 'svelte';
@@ -212,10 +211,10 @@
 					bind:this={textareaElement}
 				/>
 
-				<Button variant="ghost" class="text-xs p-1 absolute bottom-0 right-2 align-middle">
+				<button class="text-xs p-1 absolute bottom-2 right-2 align-middle">
 					<Icon data={save} class="w-4 h-4" />
 					<span class="ml-1 text-sm">Save</span>
-				</Button>
+				</button>
 			{:else}
 				<button
 					on:click={openTextarea}
