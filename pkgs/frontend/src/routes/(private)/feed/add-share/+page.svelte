@@ -25,7 +25,7 @@
 
 	const shares = writable<InferredFeedShareRow[]>([]);
 	const reversedShares = derived(shares, ($shares) => [...$shares].reverse());
-	const { entities, upsertEntity } = createSupabaseEntityStore<Entity>([]);
+	const { entities, upsertEntity, upsertEntities } = createSupabaseEntityStore<Entity>([]);
 
 	function handleUpdateShare(payload: { new: InferredFeedShareRow }) {
 		console.log('handleUpdateShare', payload);
@@ -94,6 +94,21 @@
 			.select('*')
 			.order('created_at', { ascending: false })
 			.limit(25);
+
+		async function fetchEntities(tableName: string) {
+			const response = await supabase
+				.schema('feed')
+				.from(tableName)
+				.select('*')
+				.order('created_at', { ascending: false })
+				.limit(100);
+
+			return response.data;
+		}
+
+		const entityTables = ['events', 'todos', 'notes', 'code_snippets', 'bookmarks'];
+		const relatedEntities = (await Promise.all(entityTables.map(fetchEntities))).flat();
+		upsertEntities(relatedEntities);
 
 		if (response.data && !response.error) {
 			shares.set(response.data);
