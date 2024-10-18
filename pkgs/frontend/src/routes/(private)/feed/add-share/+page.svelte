@@ -91,27 +91,28 @@
 		const response = await supabase
 			.schema('feed')
 			.from('shares')
-			.select('*')
+			.select('*, bookmarks(*), todos(*), notes(*), events(*), code_snippets(*)')
 			.order('created_at', { ascending: false })
-			.limit(25);
+			.limit(100);
 
-		async function fetchEntities(tableName: string) {
-			const response = await supabase
-				.schema('feed')
-				.from(tableName)
-				.select('*')
-				.order('created_at', { ascending: false })
-				.limit(100);
-
-			return response.data;
-		}
-
-		const entityTables = ['events', 'todos', 'notes', 'code_snippets', 'bookmarks'];
-		const relatedEntities = (await Promise.all(entityTables.map(fetchEntities))).flat();
-		upsertEntities(relatedEntities);
+		let entitiesToUpsert: Entity[] = [];
 
 		if (response.data && !response.error) {
+			console.log('shares', response.data);
 			shares.set(response.data);
+
+			entitiesToUpsert = response.data
+				.map((share) => {
+					return [
+						...share.bookmarks,
+						...share.notes,
+						...share.events,
+						...share.todos,
+						...share.code_snippets
+					];
+				})
+				.flat();
+			upsertEntities(entitiesToUpsert);
 		} else {
 			console.log('error', response.error);
 		}
