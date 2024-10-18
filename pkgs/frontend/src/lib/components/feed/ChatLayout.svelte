@@ -7,7 +7,7 @@
 		<slot />
 	</main>
 
-	<footer class="sticky bottom-0 dark:bg-black">
+	<footer class="bottom-0 dark:bg-black">
 		<slot name="footer" />
 	</footer>
 </LayoutWithHeaderAndSidebar>
