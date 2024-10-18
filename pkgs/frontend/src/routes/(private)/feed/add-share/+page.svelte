@@ -170,11 +170,11 @@
 <ChatLayout>
 	<div slot="default" class="col-span-12 gap-2 space-y-2 overflow-y-auto px-4 overflow-x-hidden">
 		{#each $reversedShares as share (share.id)}
-			<div animate:flip={{ duration: 700, easing: expoOut }}>
+			<div animate:flip={{ duration: 500, easing: expoOut }}>
 				{#if $entities.get(share.id)}
-					<div transition:slide={{ duration: 700 }} class="my-16">
+					<div class="my-16">
 						{#each $entities.get(share.id) || [] as entity (entity.id)}
-							<div in:slide={{ duration: 700 }}>
+							<div in:slide={{ duration: 500, easing: expoOut }}>
 								<EntityComponent {entity} />
 							</div>
 						{/each}
