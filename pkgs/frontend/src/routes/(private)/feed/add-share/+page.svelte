@@ -79,7 +79,10 @@
 					if (payload.table != 'shares') {
 						upsertEntity(payload.new);
 						scrollToBottom();
-						setTimeout(scrollToBottom, 1000);
+						// Call scrollToBottom multiple times with increasing delays
+						for (let i = 1; i <= 5; i++) {
+							setTimeout(scrollToBottom, i * 200);
+						}
 					}
 				}
 			)
@@ -125,6 +128,7 @@
 	async function handleSubmit() {
 		scrollToBottom();
 		$textareaVisible = false;
+		$textareaValue = '';
 	}
 
 	let textareaElement: HTMLTextAreaElement | undefined;
