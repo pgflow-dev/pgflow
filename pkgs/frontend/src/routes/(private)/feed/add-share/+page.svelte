@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ChatLayout from '$components/feed/ChatLayout.svelte';
+	import Spinner from '$components/Spinner.svelte';
 
 	import { Button } from '$components/ui/button';
 	import type { InferredFeedShareRow, Entity } from '$lib/db/feed';
@@ -80,8 +81,8 @@
 						upsertEntity(payload.new);
 						scrollToBottom();
 						// Call scrollToBottom multiple times with increasing delays
-						for (let i = 1; i <= 5; i++) {
-							setTimeout(scrollToBottom, i * 200);
+						for (let i = 1; i <= 3; i++) {
+							// setTimeout(scrollToBottom, i * 400);
 						}
 					}
 				}
@@ -170,20 +171,21 @@
 <ChatLayout>
 	<div slot="default" class="col-span-12 gap-2 space-y-2 overflow-y-auto px-4 overflow-x-hidden">
 		{#each $reversedShares as share (share.id)}
-			<div animate:flip={{ duration: 300, easing: expoOut }}>
+			<div animate:flip={{ duration: 700, easing: expoOut }}>
 				{#if $entities.get(share.id)}
-					<div transition:slide={{ duration: 300 }} class="my-16">
+					<div transition:slide={{ duration: 700 }} class="my-16">
 						{#each $entities.get(share.id) || [] as entity (entity.id)}
-							<div transition:slide={{ duration: 300 }}>
+							<div in:slide={{ duration: 700 }}>
 								<EntityComponent {entity} />
 							</div>
 						{/each}
 					</div>
 				{:else}
 					<div
-						class="opacity-30 hover:opacity-70 overflow-x-auto border border-gray-300 p-4 rounded-lg"
+						class="opacity-30 hover:opacity-70 overflow-x-auto border border-gray-300 p-4 rounded-lg flex flex-row items-center relative"
 					>
-						{share.content}
+						<div class="flex-grow">{share.content}</div>
+						<Spinner className="absolute top-4 right-4" />
 					</div>
 				{/if}
 			</div>
@@ -204,7 +206,7 @@
 			{#if $textareaVisible}
 				<textarea
 					name="content"
-					class="bg-black border-none border-t border-t-gray-700 p-2 w-full min-h-32 transition-height duration-300 ease-in-out"
+					class="bg-black border-none border-t border-t-gray-700 p-2 w-full min-h-32"
 					on:keydown={handleKeydown}
 					bind:value={$textareaValue}
 					bind:this={textareaElement}
