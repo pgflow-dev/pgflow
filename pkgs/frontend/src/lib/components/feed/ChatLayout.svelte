@@ -3,11 +3,11 @@
 </script>
 
 <LayoutWithHeaderAndSidebar>
-	<main class="flex-grow">
+	<main class="flex-grow overflow-y-scroll">
 		<slot />
 	</main>
 
-	<footer class="bottom-0 dark:bg-black">
+	<footer class="bottom-0 dark:bg-black p-0 m-0 b-0 sticky">
 		<slot name="footer" />
 	</footer>
 </LayoutWithHeaderAndSidebar>

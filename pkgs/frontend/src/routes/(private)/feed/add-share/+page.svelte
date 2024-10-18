@@ -55,7 +55,7 @@
 	async function scrollToBottom() {
 		await tick();
 		if (scrollTarget) {
-			scrollTarget.scrollIntoView({ behavior: 'auto' });
+			scrollTarget.scrollIntoView({ behavior: 'instant' });
 		}
 	}
 
@@ -78,6 +78,8 @@
 				(payload: RealtimePostgresInsertPayload<Entity>) => {
 					if (payload.table != 'shares') {
 						upsertEntity(payload.new);
+						scrollToBottom();
+						setTimeout(scrollToBottom, 1000);
 					}
 				}
 			)
@@ -122,6 +124,7 @@
 
 	async function handleSubmit() {
 		scrollToBottom();
+		$textareaVisible = false;
 	}
 
 	let textareaElement: HTMLTextAreaElement | undefined;
@@ -157,7 +160,7 @@
 		<div bind:this={scrollTarget} />
 	</div>
 
-	<div slot="footer" class="col-span-12 absolute bottom-0 left-0 w-full">
+	<div slot="footer">
 		<form
 			method="POST"
 			use:enhance

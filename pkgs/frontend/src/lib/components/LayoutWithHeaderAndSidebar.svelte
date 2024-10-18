@@ -8,7 +8,7 @@
 	import LogIn from 'lucide-svelte/icons/log-in';
 </script>
 
-<div class="flex flex-col min-h-screen">
+<div class="flex flex-col max-h-screen h-screen overflow-y-hidden">
 	<header class="sticky top-0 z-50 shadow-md flex items-center pr-3 dark:bg-black h-10">
 		<slot name="header">
 			<Sheet.Root>
