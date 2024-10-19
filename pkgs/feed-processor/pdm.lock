@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:7250556e5c981c0148dae288bc58bd22e92c2e63219febec442bc3a6fe2b14b1"
+content_hash = "sha256:661ffd9072ab485a803e2edea6ad68a414d0203d788380847ec01ac460db36ff"
 
 [[metadata.targets]]
 requires_python = "==3.11.*"
@@ -197,6 +197,16 @@ marker = "sys_platform == \"win32\" or platform_system == \"Windows\""
 files = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
+]
+
+[[package]]
+name = "dataclasses"
+version = "0.6"
+summary = "A backport of the dataclasses module for Python 3.6"
+groups = ["default"]
+files = [
+    {file = "dataclasses-0.6-py3-none-any.whl", hash = "sha256:454a69d788c7fda44efd71e259be79577822f5e3f53f029a22d08004e951dc9f"},
+    {file = "dataclasses-0.6.tar.gz", hash = "sha256:6988bd2b895eef432d562370bb707d540f32f7360ab13da45340101bc2307d84"},
 ]
 
 [[package]]
