@@ -1,16 +1,12 @@
-from json import dumps as as_json
-
-from feed_processor.models import JobPayload
+from feed_processor.models import JobContext, JobPayload
 from pgqueuer.models import Job
-from pgqueuer.queries import Queries
-from supabase.client import Client as SupabaseClient
 
 from .worker import worker
 
 
-async def infer_type(job: Job, queries: Queries, supabase: SupabaseClient):
+async def infer_type(job: Job, context: JobContext):
     job_payload = JobPayload.from_job(job)
-    results = worker(job_payload, supabase)
+    results = worker(job_payload, context.supabase)
 
     # await queries.enqueue(
     #     entrypoint="infer_ui",

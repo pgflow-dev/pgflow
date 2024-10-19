@@ -5,6 +5,7 @@ import os
 import asyncpg
 from feed_processor.actors.extract_entities import extract_entities
 from feed_processor.actors.infer_type import infer_type
+from feed_processor.models import JobContext
 from feed_processor.supabase import create_service_role_client
 from pgqueuer.db import AsyncpgDriver
 from pgqueuer.models import Job
@@ -23,16 +24,21 @@ async def main() -> QueueManager:
     connection = await asyncpg.connect(DATABASE_URL)
     driver = AsyncpgDriver(connection)
     qm = QueueManager(driver)
-    queries = Queries(driver)
 
-    supabase = create_service_role_client()
+    context = JobContext(
+        supabase=create_service_role_client(),
+        connection=connection,
+        driver=driver,
+        qm=qm,
+        queries=Queries(driver)
+    )
 
     @qm.entrypoint('infer_type')
     async def infer_type_entrypoint(job: Job):
-        await infer_type(job, queries, supabase)
+        await infer_type(job, context)
 
     @qm.entrypoint('extract_entities')
     async def extract_entities_entrypoint(job: Job):
-        await extract_entities(job, queries, supabase)
+        await extract_entities(job, context)
 
     return qm

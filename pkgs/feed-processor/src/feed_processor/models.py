@@ -56,3 +56,20 @@ AttributesSchemaByType = {
     "bookmark": Bookmark,
     "text": Text
 }
+
+from asyncpg.connection import Connection
+from pgqueuer.db import AsyncpgDriver
+from pgqueuer.models import Job
+from pgqueuer.qm import QueueManager
+from pgqueuer.queries import Queries
+from supabase.client import Client as SupabaseClient
+
+
+class JobContext(BaseModel):
+    supabase: SupabaseClient
+    connection: Connection
+    driver: AsyncpgDriver
+    qm: QueueManager
+    queries: Queries
+
+

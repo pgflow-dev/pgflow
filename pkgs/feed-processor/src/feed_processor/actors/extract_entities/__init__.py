@@ -1,14 +1,11 @@
-from json import dumps as as_json
-
-from feed_processor.models import JobPayload
+from feed_processor.models import JobContext, JobPayload
 from pgqueuer.models import Job
-from pgqueuer.queries import Queries
-from supabase.client import Client as SupabaseClient
 
 from .worker import worker
 
 
-async def extract_entities(job: Job, _: Queries, supabase: SupabaseClient):
+async def extract_entities(job: Job, context: JobContext):
+    supabase = context.supabase
     job_payload = JobPayload.from_job(job)
 
     # find record

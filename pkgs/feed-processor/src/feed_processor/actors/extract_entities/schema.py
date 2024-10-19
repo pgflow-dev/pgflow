@@ -1,5 +1,4 @@
-from datetime import datetime
-from typing import List, Optional, Union
+from typing import List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -105,6 +104,9 @@ class Note(BaseModel):
             "short_summary": self.short_summary,
             "tags": self.tags
         }
+
+class Person(BaseModel):
+    gender: Literal["male", "female"]
 
 Entity = Union[Bookmark, CodeSnippet, Event, Todo, Note]
 
