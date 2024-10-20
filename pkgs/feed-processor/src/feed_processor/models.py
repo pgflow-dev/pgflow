@@ -58,14 +58,13 @@ AttributesSchemaByType = {
 }
 
 from dataclasses import dataclass
-
 from asyncpg.connection import Connection
 from pgqueuer.db import AsyncpgDriver
 from pgqueuer.models import Job
 from pgqueuer.qm import QueueManager
 from pgqueuer.queries import Queries
 from supabase.client import Client as SupabaseClient
-
+from pydantic import SecretStr
 
 @dataclass
 class JobContext:
@@ -74,4 +73,5 @@ class JobContext:
     driver: AsyncpgDriver
     qm: QueueManager
     queries: Queries
+    openai_api_key: SecretStr
 
