@@ -1,4 +1,4 @@
-from typing import Literal, TypedDict
+from typing import List, Literal, TypedDict
 
 from feed_processor.models import Bookmark
 from feed_processor.models import JobPayload as BaseJobPayload
@@ -12,7 +12,8 @@ class RunnableInput(TypedDict):
     extraction_rules: str
     time: str
 
-RunnableOutput = Bookmark
+class RunnableOutput(BaseModel):
+    bookmarks: List[Bookmark]
 
 class JobPayload(BaseJobPayload):
     entity_type: Literal["bookmark"]

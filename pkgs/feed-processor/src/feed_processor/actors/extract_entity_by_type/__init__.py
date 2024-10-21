@@ -24,7 +24,7 @@ def _find_row(job_payload: JobPayload, context: JobContext):
 
     return results.data
 
-def _create_row(record: dict, inference: RunnableOutput, job_payload: JobPayload, context: JobContext):
+def _create_row(record: dict, inference: Bookmark, job_payload: JobPayload, context: JobContext):
     print(f"_create_row:RECORD = {record}")
     print(f"_create_row:INFERENCE = {inference}")
 
@@ -59,5 +59,6 @@ async def extract_entity_by_type(job: Job, context: JobContext):
     inference = chain.invoke(input)
     print(f"INFERENCE = {inference}")
 
-    row = _create_row(record=record, inference=inference, job_payload=job_payload, context=context)
-    print(f"ROW = {row}")
+    rows = [_create_row(record=record, inference=bookmark, job_payload=job_payload, context=context)
+            for bookmark in inference.bookmarks]
+    print(f"ROW = {rows}")
