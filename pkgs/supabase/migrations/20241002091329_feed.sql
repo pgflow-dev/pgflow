@@ -67,13 +67,22 @@ $$ language plpgsql;
 -------------- trigger to mark changed content for re-embedding ----------------
 drop trigger if exists mark_share_changed on feed.shares;
 drop function if exists feed.mark_share_changed;
+
 create function feed.mark_share_changed()
 returns trigger
 language plpgsql
 as $$
 begin
     IF TG_OP = 'INSERT' OR (TG_OP = 'UPDATE' AND NEW.content <> OLD.content) THEN
-        perform utils.enqueue_job_for_row('extract_entities', 'feed', 'shares', NEW.id);
+        perform utils.enqueue_job(
+            'extract_entity_by_type',
+            json_build_object(
+                'schema_name', TG_TABLE_SCHEMA,
+                'table_name', TG_TABLE_NAME,
+                'id', NEW.id,
+                'entity_type', 'bookmark'
+            )::jsonb
+        );
     END IF;
 
     RETURN NEW;
