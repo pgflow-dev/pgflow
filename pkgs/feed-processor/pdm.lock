@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:661ffd9072ab485a803e2edea6ad68a414d0203d788380847ec01ac460db36ff"
+content_hash = "sha256:92eb0e7a2569c4ffa1c0a3f5eb6a5113b734161955fb42f42e73f755726d6304"
 
 [[metadata.targets]]
 requires_python = "==3.11.*"
@@ -306,6 +306,26 @@ files = [
 ]
 
 [[package]]
+name = "groq"
+version = "0.11.0"
+requires_python = ">=3.7"
+summary = "The official Python library for the groq API"
+groups = ["default"]
+dependencies = [
+    "anyio<5,>=3.5.0",
+    "cached-property; python_version < \"3.8\"",
+    "distro<2,>=1.7.0",
+    "httpx<1,>=0.23.0",
+    "pydantic<3,>=1.9.0",
+    "sniffio",
+    "typing-extensions<5,>=4.7",
+]
+files = [
+    {file = "groq-0.11.0-py3-none-any.whl", hash = "sha256:e328531c979542e563668c62260aec13b43a6ee0ca9e2fb22dff1d26f8c8ce54"},
+    {file = "groq-0.11.0.tar.gz", hash = "sha256:dbb9aefedf388ddd4801ec7bf3eba7f5edb67948fec0cd2829d97244059f42a7"},
+]
+
+[[package]]
 name = "h11"
 version = "0.14.0"
 requires_python = ">=3.7"
@@ -529,6 +549,21 @@ dependencies = [
 files = [
     {file = "langchain_core-0.3.10-py3-none-any.whl", hash = "sha256:146be6bf2d3dc0d6f4feb46ef082182cf57b056e8163d45278529cd7b7343d2f"},
     {file = "langchain_core-0.3.10.tar.gz", hash = "sha256:63b9a3d03b52dba29cc248b752c574cdcb5fb04bd0fc5c76097fcbb7aaba5221"},
+]
+
+[[package]]
+name = "langchain-groq"
+version = "0.2.0"
+requires_python = "<4.0,>=3.9"
+summary = "An integration package connecting Groq and LangChain"
+groups = ["default"]
+dependencies = [
+    "groq<1,>=0.4.1",
+    "langchain-core<0.4,>=0.3",
+]
+files = [
+    {file = "langchain_groq-0.2.0-py3-none-any.whl", hash = "sha256:23a891f87b6399b988c128cd6656781850a6bd34c91de5e283e713d8fce18d9e"},
+    {file = "langchain_groq-0.2.0.tar.gz", hash = "sha256:36932bbdfe19176130acb660a0c7ba8db55f5fdee6b0ee69b53794d5308542ae"},
 ]
 
 [[package]]
