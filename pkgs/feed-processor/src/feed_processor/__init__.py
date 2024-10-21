@@ -14,6 +14,7 @@ from pgqueuer.qm import QueueManager
 from pgqueuer.queries import Queries
 from pydantic import SecretStr
 
+print(f"OPENAI_API_KEY={os.environ['OPENAI_API_KEY']}")
 print(f"LANGCHAIN_API_KEY={os.environ['LANGCHAIN_API_KEY']}")
 print(f"LANGCHAIN_ENDPOINT={os.environ['LANGCHAIN_ENDPOINT']}")
 print(f"LANGCHAIN_PROJECT={os.environ['LANGCHAIN_PROJECT']}")
@@ -38,15 +39,24 @@ async def main() -> QueueManager:
 
     @qm.entrypoint('infer_type')
     async def infer_type_entrypoint(job: Job):
+        print("-------------- inter_type_entrypoint --------------")
+        print(f"-------------- job = {job}")
+        print("---------------------------------------------------")
         await infer_type(job, context)
 
     @qm.entrypoint('extract_entities')
     async def extract_entities_entrypoint(job: Job):
+        print("-------------- extract_entities --------------")
+        print(f"-------------- job = {job}")
+        print("---------------------------------------------------")
         await extract_entities(job, context)
 
-    for _type in ['bookmark']:
-        @qm.entrypoint(f"extract_{_type}")
-        async def infer_ui_entrypoint(job: Job):
-            await extract_entity_by_type(job, context)
+    @qm.entrypoint(f"extract_entity_by_type")
+    async def extract_entity_by_type_entrypoint(job: Job):
+        print("-------------- extract_entity_by_type --------------")
+
+        print(f"-------------- job = {job}")
+        print("---------------------------------------------------")
+        await extract_entity_by_type(job, context)
 
     return qm

@@ -23,6 +23,8 @@
 	let { supabase } = data;
 	$: ({ supabase } = data);
 
+	let textareaElement: HTMLTextAreaElement | undefined;
+
 	const shares = writable<InferredFeedShareRow[]>([]);
 	const { entities, upsertEntity, upsertEntities } = createSupabaseEntityStore<Entity>([]);
 
@@ -53,10 +55,10 @@
 
 	async function scrollToTop() {
 		await tick();
-		window.scrollTo({
-			top: 0,
-			behavior: 'instant'
-		});
+		// window?.scrollTo({
+		// 	top: 0,
+		// 	behavior: 'instant'
+		// });
 	}
 
 	$: $shares && scrollToTop();
@@ -98,7 +100,7 @@
 		let entitiesToUpsert: Entity[] = [];
 
 		if (response.data && !response.error) {
-			console.log('shares', response.data);
+			console.log('response.data (shares)', response.data);
 			shares.set(response.data);
 
 			entitiesToUpsert = response.data
@@ -148,20 +150,12 @@
 
 	function openTextarea() {
 		$textareaVisible = true;
-
-		if (textareaElement) {
-			console.log('focus', textareaElement);
-			textareaElement.focus();
-		} else {
-			console.error('textareaElement is undefined');
-		}
 	}
 
-	let textareaElement: HTMLTextAreaElement | undefined;
 	const textareaVisible = writable(false);
 
-	$: $textareaVisible && console.log('textareaElement toggled', textareaElement);
 	$: $textareaVisible && textareaElement && textareaElement.focus();
+	$: $shares && console.log('$shares', $shares);
 </script>
 
 <svelte:window on:keydown={handlePaste} />

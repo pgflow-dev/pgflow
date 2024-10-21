@@ -39,6 +39,7 @@ class Snippet(BaseModel):
 class Bookmark(BaseModel):
     """Bookmark: any link that was not recognized as more specific UI type. Must have URL, Title is optional but encouraged."""
 
+    short_summary: str = Field(description="Few word summary of a destination")
     url: str = Field(description="URL of the link")
     title: str = Field(description="Title of the link")
 
@@ -58,13 +59,15 @@ AttributesSchemaByType = {
 }
 
 from dataclasses import dataclass
+
 from asyncpg.connection import Connection
 from pgqueuer.db import AsyncpgDriver
 from pgqueuer.models import Job
 from pgqueuer.qm import QueueManager
 from pgqueuer.queries import Queries
-from supabase.client import Client as SupabaseClient
 from pydantic import SecretStr
+from supabase.client import Client as SupabaseClient
+
 
 @dataclass
 class JobContext:

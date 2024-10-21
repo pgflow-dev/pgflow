@@ -12,10 +12,12 @@ export const actions: Actions = {
 		} else {
 			content = JSON.stringify(formValues, null, 2);
 		}
+		console.log('content', content);
 
 		const response = await supabase.schema('feed').from('shares').insert({ content });
 
 		const { status, error } = response;
+		console.log({ status, error });
 
 		if (error || status < 200 || status >= 300) {
 			return {
