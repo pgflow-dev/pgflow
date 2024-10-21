@@ -77,4 +77,5 @@ class JobContext:
     qm: QueueManager
     queries: Queries
     openai_api_key: SecretStr
+    groq_api_key: SecretStr
 

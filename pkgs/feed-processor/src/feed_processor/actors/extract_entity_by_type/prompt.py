@@ -17,6 +17,8 @@ Extraction rules and constraints:
 {extraction_rules}
 
 Current date and time: {time}
+
+Output valid JSON only.
 """
 
 prompt = ChatPromptTemplate.from_template(PROMPT)

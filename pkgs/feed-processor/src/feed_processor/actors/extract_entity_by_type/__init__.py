@@ -44,7 +44,7 @@ def _create_row(record: dict, inference: RunnableOutput, job_payload: JobPayload
 
 async def extract_entity_by_type(job: Job, context: JobContext):
     job_payload = JobPayload.from_job(job)
-    chain = create_chain(api_key=context.openai_api_key)
+    chain = create_chain(context)
     record = _find_row(job_payload, context)
 
     print(f"RECORD = {record}")

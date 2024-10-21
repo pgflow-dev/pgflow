@@ -35,6 +35,7 @@ async def main() -> QueueManager:
         qm=qm,
         queries=Queries(driver),
         openai_api_key=SecretStr(os.environ["OPENAI_API_KEY"]),
+        groq_api_key=SecretStr(os.environ["GROQ_API_KEY"]),
     )
 
     @qm.entrypoint('infer_type')
