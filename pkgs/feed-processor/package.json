@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "consumer": "pdm run python -m pgqueuer run feed_processor.main",
-    "dev": "pnpm consumer",
+    "dev": "fd --glob '*.py' | entr -rc pdm run python -m pgqueuer run feed_processor.main",
     "test": "echo noop",
     "oldtest": "pdm run pytest -n 4",
     "check": "pdm info && echo '-> Running pyright' && pdm run pyright"
