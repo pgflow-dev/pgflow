@@ -2,7 +2,7 @@ from typing import List, Literal, TypedDict
 
 from feed_processor.models import Bookmark
 from feed_processor.models import JobPayload as BaseJobPayload
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class RunnableInput(TypedDict):
@@ -13,7 +13,7 @@ class RunnableInput(TypedDict):
     time: str
 
 class RunnableOutput(BaseModel):
-    bookmarks: List[Bookmark]
+    bookmarks: List[Bookmark] = Field(description="zero or more bookmarks. only consider something a bookmark if you are 100% sure user want to save and go back to this URL")
 
 class JobPayload(BaseJobPayload):
     entity_type: Literal["bookmark"]
