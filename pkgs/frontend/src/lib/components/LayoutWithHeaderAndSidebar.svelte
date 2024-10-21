@@ -56,6 +56,8 @@
 
 			<h1 class="h1 font-bold">feedwise</h1>
 		</slot>
+
+		<slot name="header:bottom" />
 	</header>
 
 	<slot />

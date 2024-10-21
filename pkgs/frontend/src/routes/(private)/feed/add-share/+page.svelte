@@ -3,7 +3,7 @@
 	import Spinner from '$components/Spinner.svelte';
 
 	import type { InferredFeedShareRow, Entity } from '$lib/db/feed';
-	import { derived, writable } from 'svelte/store';
+	import { writable } from 'svelte/store';
 	import { onMount, tick } from 'svelte';
 	import { slide } from 'svelte/transition';
 	import { flip } from 'svelte/animate';
@@ -24,7 +24,6 @@
 	$: ({ supabase } = data);
 
 	const shares = writable<InferredFeedShareRow[]>([]);
-	const reversedShares = derived(shares, ($shares) => [...$shares].reverse());
 	const { entities, upsertEntity, upsertEntities } = createSupabaseEntityStore<Entity>([]);
 
 	function handleUpdateShare(payload: { new: InferredFeedShareRow }) {
@@ -52,14 +51,15 @@
 		$shares = $shares.filter((n) => n.id !== deleted.id);
 	}
 
-	async function scrollToBottom() {
+	async function scrollToTop() {
 		await tick();
-		if (scrollTarget) {
-			scrollTarget.scrollIntoView({ behavior: 'instant' });
-		}
+		window.scrollTo({
+			top: 0,
+			behavior: 'instant'
+		});
 	}
 
-	$: $reversedShares && scrollToBottom();
+	$: $shares && scrollToTop();
 
 	onMount(async () => {
 		const eventSpec = {
@@ -78,10 +78,10 @@
 				(payload: RealtimePostgresInsertPayload<Entity>) => {
 					if (payload.table != 'shares') {
 						upsertEntity(payload.new);
-						scrollToBottom();
-						// Call scrollToBottom multiple times with increasing delays
+						scrollToTop();
+
 						for (let i = 1; i <= 3; i++) {
-							setTimeout(scrollToBottom, i * 400);
+							setTimeout(scrollToTop, i * 400);
 						}
 					}
 				}
@@ -128,21 +128,20 @@
 		}
 	}
 
-	function handleKeydown(event: KeyboardEvent) {
+	function handleCtrlEnter(event: KeyboardEvent) {
 		if (event.ctrlKey && event.key === 'Enter') {
 			event.preventDefault();
 			const target = event.target as HTMLElement;
 			const form = target?.closest('form');
 			if (form) {
 				form.requestSubmit();
+				handleSubmit();
 			}
 		}
 	}
 
-	let scrollTarget: HTMLDivElement | undefined;
-
 	async function handleSubmit() {
-		scrollToBottom();
+		scrollToTop();
 		$textareaVisible = false;
 		$textareaValue = '';
 	}
@@ -168,8 +167,42 @@
 <svelte:window on:keydown={handlePaste} />
 
 <ChatLayout>
+	<div slot="header:bottom">
+		<form
+			method="POST"
+			use:enhance
+			action="/feed/add-share"
+			class="relative"
+			on:submit={handleSubmit}
+		>
+			<input type="hidden" name="__source" value="webapp" />
+
+			{#if $textareaVisible}
+				<textarea
+					name="content"
+					class="bg-black border-none border-t border-t-gray-700 p-2 w-full min-h-32"
+					on:keydown={handleCtrlEnter}
+					bind:value={$textareaValue}
+					bind:this={textareaElement}
+				/>
+
+				<button class="text-xs p-1 absolute bottom-2 right-2 align-middle">
+					<Icon data={save} class="w-4 h-4" />
+					<span class="ml-1 text-sm">Save</span>
+				</button>
+			{:else}
+				<button
+					on:click={openTextarea}
+					class="w-full bg-black p-2 text-gray-500 border-none border-t border-t-gray-700 min-h-10"
+				>
+					Click to save stuff...
+				</button>
+			{/if}
+		</form>
+	</div>
+
 	<div slot="default" class="col-span-12 gap-2 space-y-2 overflow-y-auto px-4 overflow-x-hidden">
-		{#each $reversedShares as share (share.id)}
+		{#each $shares as share (share.id)}
 			<div animate:flip={{ duration: 500, easing: expoOut }}>
 				{#if $entities.get(share.id)}
 					<div class="my-16">
@@ -189,40 +222,7 @@
 				{/if}
 			</div>
 		{/each}
-		<div bind:this={scrollTarget} />
 	</div>
 
-	<div slot="footer">
-		<form
-			method="POST"
-			use:enhance
-			action="/feed/add-share"
-			class="relative"
-			on:submit={handleSubmit}
-		>
-			<input type="hidden" name="__source" value="webapp" />
-
-			{#if $textareaVisible}
-				<textarea
-					name="content"
-					class="bg-black border-none border-t border-t-gray-700 p-2 w-full min-h-32"
-					on:keydown={handleKeydown}
-					bind:value={$textareaValue}
-					bind:this={textareaElement}
-				/>
-
-				<button class="text-xs p-1 absolute bottom-2 right-2 align-middle">
-					<Icon data={save} class="w-4 h-4" />
-					<span class="ml-1 text-sm">Save</span>
-				</button>
-			{:else}
-				<button
-					on:click={openTextarea}
-					class="w-full bg-black p-2 text-gray-500 border-none border-t border-t-gray-700 min-h-10"
-				>
-					Click to save stuff...
-				</button>
-			{/if}
-		</form>
-	</div>
+	<div slot="footer"></div>
 </ChatLayout>

@@ -3,6 +3,8 @@
 </script>
 
 <LayoutWithHeaderAndSidebar>
+	<slot name="header:bottom" />
+
 	<main class="flex-grow overflow-y-scroll">
 		<slot />
 	</main>
