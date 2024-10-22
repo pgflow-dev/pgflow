@@ -13,6 +13,8 @@ from pgqueuer.queries import Queries
 from pydantic import SecretStr
 
 print(f"OPENAI_API_KEY={os.environ['OPENAI_API_KEY']}")
+print(f"GROQ_API_KEY={os.environ['GROQ_API_KEY']}")
+print(f"ANTHROPIC_API_KEY={os.environ['ANTHROPIC_API_KEY']}")
 print(f"LANGCHAIN_API_KEY={os.environ['LANGCHAIN_API_KEY']}")
 print(f"LANGCHAIN_ENDPOINT={os.environ['LANGCHAIN_ENDPOINT']}")
 print(f"LANGCHAIN_PROJECT={os.environ['LANGCHAIN_PROJECT']}")
@@ -34,6 +36,7 @@ async def main() -> QueueManager:
         queries=Queries(driver),
         openai_api_key=SecretStr(os.environ["OPENAI_API_KEY"]),
         groq_api_key=SecretStr(os.environ["GROQ_API_KEY"]),
+        anthropic_api_key=SecretStr(os.environ["ANTHROPIC_API_KEY"])
     )
 
     @qm.entrypoint(f"extract_entity_by_type", concurrency_limit=16, requests_per_second=128)

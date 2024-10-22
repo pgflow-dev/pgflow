@@ -84,4 +84,5 @@ class JobContext:
     queries: Queries
     openai_api_key: SecretStr
     groq_api_key: SecretStr
+    anthropic_api_key: SecretStr
 
