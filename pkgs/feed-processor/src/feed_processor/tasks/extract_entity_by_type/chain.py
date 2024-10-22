@@ -21,9 +21,9 @@ def _create_output_type(entity_type: Type[_EntityT]):
         __base__=ExtractedEntities[entity_type]
     )
 
-def create_chain(context: JobContext, input_type: Type[_RunnableInputT], entity_type: Type[_EntityT]) -> Runnable[_RunnableInputT, ExtractedEntities[_EntityT]]:
+def create_chain(context: JobContext, runnable_input_type: Type[_RunnableInputT], type_to_extract: Type[_EntityT]) -> Runnable[_RunnableInputT, ExtractedEntities[_EntityT]]:
     model = ChatOpenAI(model='gpt-4o-mini', api_key=context.openai_api_key)
-    output_type = _create_output_type(entity_type=entity_type)
+    output_type = _create_output_type(entity_type=type_to_extract)
 
     # groq_model = "llama3-groq-70b-8192-tool-use-preview"
     # groq_model = "llama3-groq-8b-8192-tool-use-preview"
@@ -43,4 +43,4 @@ def create_chain(context: JobContext, input_type: Type[_RunnableInputT], entity_
             # groq
             # method="function_calling",
         )
-    ).with_types(input_type=input_type, output_type=output_type)
+    ).with_types(input_type=runnable_input_type, output_type=output_type)
