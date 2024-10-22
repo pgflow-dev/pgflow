@@ -5,7 +5,7 @@ from feed_processor.models import JobPayload as BaseJobPayload
 from pydantic import BaseModel, Field
 
 
-class RunnableInput(TypedDict):
+class RunnableInput(BaseModel):
     input: str
     entity_type: Literal["bookmark"]
     entity_type_code: str

@@ -44,7 +44,7 @@ def _create_row(record: dict, inference: Bookmark, job_payload: JobPayload, cont
 
 async def extract_entity_by_type(job: Job, context: JobContext):
     job_payload = JobPayload.from_job(job)
-    chain = create_chain(context)
+    chain = create_chain(context, RunnableInput, RunnableOutput)
     record = _find_row(job_payload, context)
 
     print(f"RECORD = {record}")
