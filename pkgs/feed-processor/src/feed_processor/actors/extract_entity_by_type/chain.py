@@ -24,7 +24,7 @@ def create_chain(context: JobContext, input_type: Type[_InputT], output_type: Ty
     return RunnableSequence(
         prompt,
             model.with_structured_output(
-            schema=RunnableOutput,
+            schema=output_type,
 
             # openai
             method="json_schema",
