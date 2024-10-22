@@ -9,13 +9,13 @@ from .schema import RunnableInput, RunnableOutput
 
 
 def create_chain(context: JobContext) -> Runnable[RunnableInput, RunnableOutput]:
-    # model = ChatOpenAI(model='gpt-4o-mini', api_key=context.openai_api_key)
+    model = ChatOpenAI(model='gpt-4o-mini', api_key=context.openai_api_key)
 
-    groq_model = "llama3-groq-70b-8192-tool-use-preview"
+    # groq_model = "llama3-groq-70b-8192-tool-use-preview"
     # groq_model = "llama3-groq-8b-8192-tool-use-preview"
     # groq_model = "mixtral-8x7b-32768"
     # groq_model = "gemma2-9b-it"
-    model = ChatGroq(model=groq_model, api_key=context.groq_api_key, stop_sequences=[])
+    # model = ChatGroq(model=groq_model, api_key=context.groq_api_key, stop_sequences=[])
 
     return RunnableSequence(
         prompt,
@@ -23,10 +23,10 @@ def create_chain(context: JobContext) -> Runnable[RunnableInput, RunnableOutput]
             schema=RunnableOutput,
 
             # openai
-            # method="json_schema",
-            # strict=True
+            method="json_schema",
+            strict=True
 
             # groq
-            method="function_calling",
+            # method="function_calling",
         )
     ).with_types(input_type=RunnableInput, output_type=RunnableOutput)
