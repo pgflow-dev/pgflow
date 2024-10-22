@@ -4,10 +4,10 @@ import os
 
 import asyncpg
 from feed_processor.actors.extract_entities import extract_entities
-from feed_processor.actors.extract_entity_by_type import extract_entity_by_type
 from feed_processor.actors.infer_type import infer_type
 from feed_processor.models import JobContext
 from feed_processor.supabase import create_service_role_client
+from feed_processor.tasks.extract_entity_by_type import extract_entity_by_type
 from pgqueuer.db import AsyncpgDriver
 from pgqueuer.models import Job
 from pgqueuer.qm import QueueManager
