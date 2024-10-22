@@ -80,11 +80,12 @@
 				(payload: RealtimePostgresInsertPayload<Entity>) => {
 					if (payload.table != 'shares') {
 						upsertEntity(payload.new);
-						scrollToTop();
+						setTimeout(scrollToTop, 500);
+						// scrollToTop();
 
-						for (let i = 1; i <= 3; i++) {
-							setTimeout(scrollToTop, i * 400);
-						}
+						// for (let i = 1; i <= 3; i++) {
+						// 	setTimeout(scrollToTop, i * 400);
+						// }
 					}
 				}
 			)
