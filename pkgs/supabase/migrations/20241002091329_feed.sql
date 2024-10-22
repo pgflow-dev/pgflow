@@ -72,17 +72,23 @@ create function feed.mark_share_changed()
 returns trigger
 language plpgsql
 as $$
+declare
+    entity_types text[] := ARRAY['event', 'note', 'code_snippet', 'todo', 'bookmark', 'person'];
+    entity_type text;
 begin
     IF TG_OP = 'INSERT' OR (TG_OP = 'UPDATE' AND NEW.content <> OLD.content) THEN
-        perform utils.enqueue_job(
-            'extract_entity_by_type',
-            json_build_object(
-                'schema_name', TG_TABLE_SCHEMA,
-                'table_name', TG_TABLE_NAME,
-                'id', NEW.id,
-                'entity_type', 'bookmark'
-            )::jsonb
-        );
+        FOREACH entity_type IN ARRAY entity_types
+        LOOP
+            perform utils.enqueue_job(
+                'extract_entity_by_type',
+                json_build_object(
+                    'schema_name', TG_TABLE_SCHEMA,
+                    'table_name', TG_TABLE_NAME,
+                    'id', NEW.id,
+                    'entity_type', entity_type
+                )::jsonb
+            );
+        END LOOP;
     END IF;
 
     RETURN NEW;

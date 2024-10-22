@@ -14,5 +14,8 @@ export type Note = Database['feed']['Tables']['notes']['Row'] & { type: 'note' }
 export type CodeSnippet = Database['feed']['Tables']['code_snippets']['Row'] & {
 	type: 'code_snippet';
 };
+export type Person = Database['feed']['Tables']['people']['Row'] & {
+	type: 'person';
+};
 
-export type Entity = Bookmark | Event | Todo | Note | CodeSnippet;
+export type Entity = Bookmark | Event | Todo | Note | CodeSnippet | Person;

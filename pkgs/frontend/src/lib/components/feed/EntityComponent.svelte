@@ -8,6 +8,7 @@
 	import NoteComponent from './NoteComponent.svelte';
 	import CodeSnippetComponent from './CodeSnippetComponent.svelte';
 	import BookmarkComponent from './BookmarkComponent.svelte';
+	import PersonComponent from './PersonComponent.svelte';
 </script>
 
 {#if entity.type == 'event'}
@@ -20,4 +21,6 @@
 	<CodeSnippetComponent code_snippet={entity} />
 {:else if entity.type == 'bookmark'}
 	<BookmarkComponent bookmark={entity} />
+{:else if entity.type == 'person'}
+	<PersonComponent person={entity} />
 {/if}

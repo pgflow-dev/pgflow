@@ -1034,6 +1034,66 @@ export type Database = {
           },
         ]
       }
+      people: {
+        Row: {
+          created_at: string
+          gender: string
+          id: string
+          name_or_nickname: string
+          occupation: string | null
+          owner_id: string
+          reason: string | null
+          relation_to_user: string | null
+          share_id: string
+          short_summary: string
+          tags: string[] | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          gender: string
+          id?: string
+          name_or_nickname: string
+          occupation?: string | null
+          owner_id?: string
+          reason?: string | null
+          relation_to_user?: string | null
+          share_id: string
+          short_summary: string
+          tags?: string[] | null
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          gender?: string
+          id?: string
+          name_or_nickname?: string
+          occupation?: string | null
+          owner_id?: string
+          reason?: string | null
+          relation_to_user?: string | null
+          share_id?: string
+          short_summary?: string
+          tags?: string[] | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "people_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "shares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shares: {
         Row: {
           content: string

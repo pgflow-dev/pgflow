@@ -128,3 +128,31 @@ alter publication supabase_realtime add table feed.notes;
 alter table notes enable row level security;
 create policy allow_select on notes for select to authenticated
 using (owner_id = auth.uid());
+
+-- class Person(BaseModel):
+--     gender: Literal["male", "female"] = Field(description="Gender of th
+--     name: str = Field(description="Name of the person")
+--     occupation: str = Field(description="Occupation of the person")
+--     relation_to_user: str = Field(description="Relation of the person
+--     short_summary: str = ShortSumaryField
+--     tags: List[str] = TagsField
+create table people (
+    id uuid primary key default gen_random_uuid(),
+    owner_id uuid not null default auth.uid() references auth.users (id),
+    share_id uuid not null references feed.shares (id),
+    reason text,
+    gender text not null check (gender in ('male', 'female')),
+    name_or_nickname text not null,
+    occupation text,
+    relation_to_user text,
+    short_summary text not null,
+    tags text [] default '{}',
+
+    created_at timestamp not null default current_timestamp,
+
+    type text generated always as ('person') stored not null
+);
+alter publication supabase_realtime add table feed.people;
+alter table people enable row level security;
+create policy allow_select on people for select to authenticated
+using (owner_id = auth.uid());

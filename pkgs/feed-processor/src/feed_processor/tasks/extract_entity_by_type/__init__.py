@@ -1,12 +1,9 @@
-from feed_processor.models import Bookmark, JobContext
+from feed_processor.models import JobContext
 from pgqueuer.models import Job
 
 from .chain import create_chain
-from .schema import JobPayload, RunnableInput, RunnableOutput
+from .schema import ENTITY_TYPES_MAP, Entity, JobPayload, RunnableInput
 
-OUTPUT_TYPES = dict(
-    bookmark=Bookmark
-)
 
 def _find_row(job_payload: JobPayload, context: JobContext):
     print(f"JOB PAYLOAD = {job_payload}")
@@ -24,18 +21,18 @@ def _find_row(job_payload: JobPayload, context: JobContext):
 
     return results.data
 
-def _create_row(record: dict, inference: Bookmark, job_payload: JobPayload, context: JobContext):
+def _create_row(record: dict, inference: Entity, job_payload: JobPayload, context: JobContext):
     print(f"_create_row:RECORD = {record}")
     print(f"_create_row:INFERENCE = {inference}")
 
-    row_to_insert = inference.model_dump()
+    row_to_insert = inference.to_supabase_dict()
     row_to_insert['share_id'] = record['id']
     row_to_insert['owner_id'] = record['owner_id']
     results = (
         context
         .supabase
         .schema(job_payload.schema_name)
-        .table('bookmarks')
+        .table(inference.table_name)
         .insert(row_to_insert)
         .execute()
     )
@@ -47,7 +44,7 @@ async def extract_entity_by_type(job: Job, context: JobContext):
     chain = create_chain(
         context=context,
         runnable_input_type=RunnableInput,
-        type_to_extract=OUTPUT_TYPES[job_payload.entity_type]
+        type_to_extract=ENTITY_TYPES_MAP[job_payload.entity_type]
     ).with_config({"run_name": f"extract_entity_by_type/{job_payload.entity_type}"})
     record = _find_row(job_payload, context)
 

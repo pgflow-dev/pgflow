@@ -3,8 +3,6 @@ from __future__ import annotations
 import os
 
 import asyncpg
-from feed_processor.actors.extract_entities import extract_entities
-from feed_processor.actors.infer_type import infer_type
 from feed_processor.models import JobContext
 from feed_processor.supabase import create_service_role_client
 from feed_processor.tasks.extract_entity_by_type import extract_entity_by_type
@@ -38,24 +36,9 @@ async def main() -> QueueManager:
         groq_api_key=SecretStr(os.environ["GROQ_API_KEY"]),
     )
 
-    @qm.entrypoint('infer_type')
-    async def infer_type_entrypoint(job: Job):
-        print("-------------- inter_type_entrypoint --------------")
-        print(f"-------------- job = {job}")
-        print("---------------------------------------------------")
-        await infer_type(job, context)
-
-    @qm.entrypoint('extract_entities')
-    async def extract_entities_entrypoint(job: Job):
-        print("-------------- extract_entities --------------")
-        print(f"-------------- job = {job}")
-        print("---------------------------------------------------")
-        await extract_entities(job, context)
-
-    @qm.entrypoint(f"extract_entity_by_type")
+    @qm.entrypoint(f"extract_entity_by_type", concurrency_limit=16, requests_per_second=128)
     async def extract_entity_by_type_entrypoint(job: Job):
         print("-------------- extract_entity_by_type --------------")
-
         print(f"-------------- job = {job}")
         print("---------------------------------------------------")
         await extract_entity_by_type(job, context)
