@@ -18,7 +18,7 @@ class ExtractedEntities(BaseModel, Generic[_EntityT]):
 def _create_output_type(entity_type: Type[_EntityT]):
     return create_model(
         f"Extracted{entity_type.__name__}s",
-        __base__=ExtractedEntities[entity_type]
+        __base__=ExtractedEntities[entity_type],
     )
 
 def create_chain(context: JobContext, runnable_input_type: Type[_RunnableInputT], type_to_extract: Type[_EntityT]) -> Runnable[_RunnableInputT, ExtractedEntities[_EntityT]]:

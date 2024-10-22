@@ -48,7 +48,7 @@ async def extract_entity_by_type(job: Job, context: JobContext):
         context=context,
         runnable_input_type=RunnableInput,
         type_to_extract=OUTPUT_TYPES[job_payload.entity_type]
-    )
+    ).with_config({"run_name": f"extract_entity_by_type/{job_payload.entity_type}"})
     record = _find_row(job_payload, context)
 
     print(f"RECORD = {record}")

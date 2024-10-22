@@ -37,7 +37,13 @@ class Snippet(BaseModel):
     language_code: str = Field(description="Language of the source code as lowercase simple identifier: 'ruby', 'python', 'java' etc")
 
 class Bookmark(BaseModel):
-    """Bookmark: any link that was not recognized as more specific UI type. Must have URL, Title is optional but encouraged."""
+    """
+    Links to stuff that user pasted or want to revisit later.
+    plainoldurls.com, [Markdown](https://links.com), https://urls-with-proto.com etc.
+    Do not skip anything but do not consider every link a bookmark: for example, urls to
+    static assets in html code are not a bookmark.
+    But a link to other article mentioned in content of original article is a bookmark.
+    """
 
     short_summary: str = Field(description="Few word summary of a destination")
     url: str = Field(description="URL of the link")
