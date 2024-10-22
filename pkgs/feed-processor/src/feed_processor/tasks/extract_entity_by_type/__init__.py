@@ -44,7 +44,7 @@ def _create_row(record: dict, inference: Bookmark, job_payload: JobPayload, cont
 
 async def extract_entity_by_type(job: Job, context: JobContext):
     job_payload = JobPayload.from_job(job)
-    chain = create_chain(context, RunnableInput, RunnableOutput)
+    chain = create_chain(context, RunnableInput, OUTPUT_TYPES[job_payload.entity_type])
     record = _find_row(job_payload, context)
 
     print(f"RECORD = {record}")
@@ -56,9 +56,9 @@ async def extract_entity_by_type(job: Job, context: JobContext):
         extraction_rules="",
         time=str(record['created_at'])
     )
-    inference = chain.invoke(input)
+    inference = chain.invoke(input=input)
     print(f"INFERENCE = {inference}")
 
     rows = [_create_row(record=record, inference=bookmark, job_payload=job_payload, context=context)
-            for bookmark in inference.bookmarks]
+            for bookmark in inference.entities]
     print(f"ROW = {rows}")

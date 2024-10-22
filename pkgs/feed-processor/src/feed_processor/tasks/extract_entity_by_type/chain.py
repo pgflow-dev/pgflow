@@ -1,19 +1,29 @@
-from typing import Type, TypeVar
+from typing import Generic, List, Type, TypeVar
 
 from feed_processor.models import JobContext
 from langchain_core.runnables import Runnable, RunnableSequence
 from langchain_groq.chat_models import ChatGroq
 from langchain_openai.chat_models import ChatOpenAI
-from pydantic import BaseModel
+from pydantic import BaseModel, create_model
 
 from .prompt import prompt
-from .schema import RunnableInput, RunnableOutput
 
-_InputT = TypeVar('_InputT', bound=RunnableInput)
-_OutputT = TypeVar('_OutputT', bound=RunnableOutput)
+_RunnableInputT = TypeVar('_RunnableInputT')
+_EntityT = TypeVar('_EntityT', bound=BaseModel)
 
-def create_chain(context: JobContext, input_type: Type[_InputT], output_type: Type[_OutputT]) -> Runnable[_InputT, _OutputT]:
+
+class ExtractedEntities(BaseModel, Generic[_EntityT]):
+    entities: List[_EntityT]
+
+def _create_output_type(entity_type: Type[_EntityT]):
+    return create_model(
+        f"Extracted{entity_type.__name__}s",
+        __base__=ExtractedEntities[entity_type]
+    )
+
+def create_chain(context: JobContext, input_type: Type[_RunnableInputT], entity_type: Type[_EntityT]) -> Runnable[_RunnableInputT, ExtractedEntities[_EntityT]]:
     model = ChatOpenAI(model='gpt-4o-mini', api_key=context.openai_api_key)
+    output_type = _create_output_type(entity_type=entity_type)
 
     # groq_model = "llama3-groq-70b-8192-tool-use-preview"
     # groq_model = "llama3-groq-8b-8192-tool-use-preview"
