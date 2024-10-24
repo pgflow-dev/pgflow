@@ -12,18 +12,10 @@ from pgqueuer.qm import QueueManager
 from pgqueuer.queries import Queries
 from pydantic import SecretStr
 
-print(f"OPENAI_API_KEY={os.environ['OPENAI_API_KEY']}")
-print(f"GROQ_API_KEY={os.environ['GROQ_API_KEY']}")
-print(f"ANTHROPIC_API_KEY={os.environ['ANTHROPIC_API_KEY']}")
-print(f"LANGCHAIN_API_KEY={os.environ['LANGCHAIN_API_KEY']}")
-print(f"LANGCHAIN_ENDPOINT={os.environ['LANGCHAIN_ENDPOINT']}")
-print(f"LANGCHAIN_PROJECT={os.environ['LANGCHAIN_PROJECT']}")
-print(f"LANGCHAIN_TRACING_V2={os.environ['LANGCHAIN_TRACING_V2']}")
-print(f"DATABASE_URL={os.environ['DATABASE_URL']}")
-
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 async def main() -> QueueManager:
+    print('Setting up QueueManager...')
     connection = await asyncpg.connect(DATABASE_URL)
     driver = AsyncpgDriver(connection)
     qm = QueueManager(driver)
@@ -42,8 +34,7 @@ async def main() -> QueueManager:
     @qm.entrypoint(f"extract_entity_by_type", concurrency_limit=16, requests_per_second=128)
     async def extract_entity_by_type_entrypoint(job: Job):
         print("-------------- extract_entity_by_type --------------")
-        print(f"-------------- job = {job}")
-        print("---------------------------------------------------")
         await extract_entity_by_type(job, context)
 
+    print('Starting QueueManager...')
     return qm
