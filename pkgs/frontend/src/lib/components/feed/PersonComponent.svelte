@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Tags from '$components/Tags.svelte';
 	import type { Person } from '$lib/db/feed';
 	import { User } from 'lucide-svelte';
 
@@ -19,4 +20,5 @@
 			<p>Relation: {person.relation_to_user}</p>
 		{/if}
 	</div>
+	<Tags tags={person.tags || []} />
 </div>

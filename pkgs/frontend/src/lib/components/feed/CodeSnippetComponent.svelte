@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Tags from '$components/Tags.svelte';
 	import type { CodeSnippet } from '$lib/db/feed';
 
 	export let code_snippet: CodeSnippet;
@@ -11,4 +12,5 @@
 		>{code_snippet.language_code}</span
 	>
 	<pre><code class="text-sm">{code_snippet.source}</code></pre>
+	<Tags tags={code_snippet.tags || []} />
 </div>

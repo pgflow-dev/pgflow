@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Tags from '$components/Tags.svelte';
 	import type { Todo } from '$lib/db/feed';
 
 	export let todo: Todo;
@@ -9,4 +10,5 @@
 >
 	<input type="checkbox" class="h-4 w-4" />
 	<span>{todo.title}</span>
+	<Tags tags={todo.tags || []} />
 </label>

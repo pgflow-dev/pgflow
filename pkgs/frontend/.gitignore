@@ -20,3 +20,4 @@ dev-dist/
 
 !.envrc*
 .direnv
+dev-dist

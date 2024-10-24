@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Tags from '$components/Tags.svelte';
 	import type { Event } from '$lib/db/feed';
 
 	export let event: Event;
@@ -18,4 +19,5 @@
 	<p class="text-sm text-right">{event.place}</p>
 	<hr />
 	<p class="text-sm">{event.description}</p>
+	<Tags tags={event.tags || []} />
 </div>
