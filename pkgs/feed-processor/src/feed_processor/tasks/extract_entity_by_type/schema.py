@@ -127,12 +127,13 @@ class Event(BaseModel):
 class Todo(BaseModel):
     """
     Represents a todo item extracted from the input.
-    This class captures various attributes of a todo, including the title, due date,
+    This class captures various attributes of a todo, including the title,
     short summary, and associated tags.
 
-    Todos are personal tasks or reminders that the user needs to complete. They are
-    typically short, specific, and action-oriented. Unlike events, todos are not
-    necessarily tied to a specific time or place, though they may have a due date.
+    Todos are personal tasks that the user needs to complete.
+    They are typically short, specific, and action-oriented.
+    Unlike events, todos are NEVER tied to a specific time or place.
+    NEVER create todos for content that looks like Events and has a time/date.
 
     Examples of todos:
     1. "Buy groceries"
@@ -141,11 +142,16 @@ class Todo(BaseModel):
     4. "Schedule dentist appointment"
     5. "Pay electricity bill"
 
-    These are not events because:
-    - They are personal actions to be taken, not occurrences with a set time and place
-    - They often lack specific details like location or duration
-    - They are typically more flexible in terms of when they can be completed
-    - They represent tasks to be done rather than occasions to attend or observe
+    Examples of events that should not be treated as todos:
+    1. "Dentist tomorrow at 7pm" (because it has a date and time)
+    2. "Meeting with Joe next monday" (because it has a date)
+    3. "i think im gonna meet with parents later today" (becasue it has time)
+
+    Be very intelligent about extracting date and time:
+    - if user provide only a Date, figure out what would be appropriate time for this kind of event
+        example: "dinner with Joe on monday" - assume dinner is at 1pm (and similar)
+    - if user provide only a Time, figure out if he talks about today maybe?
+        example: "call mom at 8pm" - if 8pm is after current time, assume its today
     """
     is_todo: bool
     reason: str = ReasonField
