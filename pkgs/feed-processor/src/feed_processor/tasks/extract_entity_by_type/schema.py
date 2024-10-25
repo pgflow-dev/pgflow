@@ -169,6 +169,11 @@ class Todo(BaseModel):
         }
 
 class Note(BaseModel):
+    """
+    Represents a note or journal entry User want to save for later.
+    It only makes sense to extract a Note if the whole content looks like a note.
+    Never extract notes that can be better extracted as events, todos or bookmarks.
+    """
     is_note: bool
     reason: str = ReasonField
     text: str = Field(..., description="The text of the note, journal entry or loose thought")
