@@ -73,7 +73,7 @@ returns trigger
 language plpgsql
 as $$
 declare
-    entity_types text[] := ARRAY['event', 'note', 'code_snippet', 'todo', 'bookmark', 'person'];
+    entity_types text[] := ARRAY['person', 'event', 'todo', 'bookmark', 'code_snippet', 'note'];
     entity_type text;
 begin
     IF TG_OP = 'INSERT' OR (TG_OP = 'UPDATE' AND NEW.content <> OLD.content) THEN
