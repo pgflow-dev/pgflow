@@ -53,8 +53,6 @@ async def extract_entity_by_type(job: Job, context: JobContext):
     input = RunnableInput(
         input=record['content'],
         entity_type=job_payload.entity_type,
-        entity_type_code='',
-        extraction_rules="",
         time=str(record['created_at'])
     )
     inference = chain.invoke(input=input)

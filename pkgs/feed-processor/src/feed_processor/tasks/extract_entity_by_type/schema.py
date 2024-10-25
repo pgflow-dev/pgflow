@@ -9,8 +9,6 @@ EntityType = Literal["bookmark", "code_snippet", "event", "todo", "note", "perso
 class RunnableInput(TypedDict):
     input: str
     entity_type: EntityType
-    entity_type_code: str
-    extraction_rules: str
     time: str
 
 class JobPayload(BaseModel):
