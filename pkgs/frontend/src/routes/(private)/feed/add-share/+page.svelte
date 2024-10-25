@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { v4 as uuidv4 } from 'uuid';
 	import ChatLayout from '$components/feed/ChatLayout.svelte';
 	import Spinner from '$components/Spinner.svelte';
 
@@ -26,13 +27,12 @@
 
 	let textareaElement: HTMLTextAreaElement | undefined;
 
-	const shares = writable<InferredFeedShareRow[]>([]);
+	type OptimisticFeedShareRow = Pick<InferredFeedShareRow, 'id' | 'content'> &
+		Partial<InferredFeedShareRow>;
+	const shares = writable<OptimisticFeedShareRow[]>([]);
 	const { entities, upsertEntity, upsertEntities } = createSupabaseEntityStore<Entity>([]);
 
-	function handleUpdateShare(payload: { new: InferredFeedShareRow }) {
-		console.log('handleUpdateShare', payload);
-
-		const { new: share } = payload;
+	function updateShareInStore(share: OptimisticFeedShareRow) {
 		const index = $shares.findIndex((n) => n.id === share.id);
 
 		// if there is share in $shares with same id, replace its attributes
@@ -45,6 +45,14 @@
 		} else {
 			$shares = [share, ...$shares];
 		}
+	}
+
+	function handleUpdateShare(payload: { new: InferredFeedShareRow }) {
+		console.log('handleUpdateShare', payload);
+
+		const { new: share } = payload;
+
+		updateShareInStore(share);
 	}
 
 	function handleDeleteShare(payload: RealtimePostgresDeletePayload<InferredFeedShareRow>) {
@@ -123,14 +131,8 @@
 	});
 
 	const textareaValue = writable('');
-	function handlePaste(event: KeyboardEvent) {
-		if (event.ctrlKey && event.key === 'v') {
-			event.preventDefault();
-			navigator.clipboard.readText().then((text) => {
-				textareaValue.set(text);
-			});
-		}
-	}
+	const newShareId = writable(uuidv4());
+	const MAX_CHARS = 10000;
 
 	function handleCtrlEnter(event: KeyboardEvent) {
 		if (event.ctrlKey && event.key === 'Enter') {
@@ -139,15 +141,25 @@
 			const form = target?.closest('form');
 			if (form) {
 				form.requestSubmit();
-				handleSubmit();
 			}
 		}
 	}
 
 	async function handleSubmit() {
 		scrollToTop();
+
+		const optimisticShare: OptimisticFeedShareRow = {
+			id: $newShareId,
+			content: $textareaValue
+		};
+		console.log('ADD optimisticShare', optimisticShare);
+		console.log('ADD optimisticShare.id', optimisticShare.id);
+		updateShareInStore(optimisticShare);
+		// $shares = [optimisticShare, ...$shares];
+
 		$textareaVisible = false;
 		$textareaValue = '';
+		$newShareId = uuidv4();
 	}
 
 	const textareaVisible = writable(false);
@@ -157,7 +169,6 @@
 </script>
 
 <svelte:window
-	on:keydown={handlePaste}
 	use:shortcut={{
 		trigger: {
 			key: 'i',
@@ -174,6 +185,7 @@
 
 <ChatLayout>
 	<div slot="header:bottom">
+		<!-- {$newShareId} -->
 		<form
 			method="POST"
 			use:enhance
@@ -182,16 +194,22 @@
 			on:submit={handleSubmit}
 		>
 			<input type="hidden" name="__source" value="webapp" />
+			<input type="hidden" name="id" value={$newShareId} />
 
 			{#if $textareaVisible}
-				<textarea
-					name="content"
-					class="bg-black border-none border-t border-t-gray-700 p-2 w-full min-h-32"
-					on:keydown={handleCtrlEnter}
-					bind:value={$textareaValue}
-					bind:this={textareaElement}
-				/>
-
+				<div class="relative">
+					<textarea
+						name="content"
+						class="bg-black border-none border-t border-t-gray-700 p-2 w-full min-h-32"
+						on:keydown={handleCtrlEnter}
+						bind:value={$textareaValue}
+						bind:this={textareaElement}
+						maxlength={MAX_CHARS}
+					/>
+					<div class="absolute bottom-3 left-2 text-xs text-gray-500">
+						{MAX_CHARS - $textareaValue.length} chars left
+					</div>
+				</div>
 				<button class="text-xs p-1 absolute bottom-2 right-2 align-middle">
 					<Icon data={save} class="w-4 h-4" />
 					<span class="ml-1 text-sm">Save</span>
@@ -226,6 +244,7 @@
 						<Spinner className="absolute top-4 right-4" />
 					</div>
 				{/if}
+				<!-- <span class="text-xs text-gray-500">{share.id}</span> -->
 			</div>
 		{/each}
 	</div>

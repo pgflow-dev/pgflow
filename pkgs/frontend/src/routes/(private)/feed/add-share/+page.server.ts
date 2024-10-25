@@ -7,6 +7,7 @@ export const actions: Actions = {
 
 		let content: string;
 
+		const id = formValues['id'];
 		if (formValues['__source'] && formValues['__source'] === 'webapp') {
 			content = formValues['content'].toString();
 		} else {
@@ -14,7 +15,7 @@ export const actions: Actions = {
 		}
 		console.log('content', content);
 
-		const response = await supabase.schema('feed').from('shares').insert({ content });
+		const response = await supabase.schema('feed').from('shares').insert({ id, content });
 
 		const { status, error } = response;
 		console.log({ status, error });
