@@ -70,7 +70,6 @@ drop function if exists feed.mark_share_changed;
 
 create function feed.mark_share_changed()
 returns trigger
-language plpgsql
 as $$
 declare
     entity_types text[] := ARRAY['person', 'event', 'todo', 'bookmark', 'code_snippet', 'note'];
@@ -93,7 +92,7 @@ begin
 
     RETURN NEW;
 end;
-$$;
+$$ language plpgsql security definer;
 
 -- Create trigger for mark_share_changed
 create trigger mark_share_changed after update or insert

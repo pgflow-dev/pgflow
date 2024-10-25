@@ -4,6 +4,18 @@ create table documents (
     metadata jsonb, -- corresponds to Document.metadata
     embedding vector(1536) -- 1536 works for OpenAI embeddings, change if needed
 );
+
+alter table documents enable row level security;
+
+create policy documents_read_policy on documents
+for select to public
+using (true);
+
+create policy documents_modify_policy on documents
+for all to service_role
+using (true)
+with check (true);
+
 create index on documents using hnsw (embedding vector_cosine_ops);
 
 create table embeddings (
@@ -14,6 +26,18 @@ create table embeddings (
     embedding vector(1536) not null,
     type text not null
 );
+
+alter table embeddings enable row level security;
+
+create policy embeddings_read_policy on embeddings
+for select to public
+using (true);
+
+create policy embeddings_modify_policy on embeddings
+for all to service_role
+using (true)
+with check (true);
+
 create index on embeddings using hnsw (embedding vector_cosine_ops);
 
 create function match_documents(
