@@ -4,7 +4,7 @@
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
-		"dev": "vite dev",
+		"dev": "vite dev --host localhost --port 5173",
 		"build": "vite build",
 		"preview": "vite preview",
 		"test": "pnpm test:integration && pnpm test:unit",
