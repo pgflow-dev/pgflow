@@ -6,7 +6,7 @@ async def run_dev():
 
     print(' -> QueueManager starting in DEV mode')
 
-    return await qm_coroutine.run()
+    return await qm_coroutine.run(batch_size=1)
 
 if __name__ == '__main__':
     import asyncio

@@ -27,4 +27,4 @@ COPY src /project/src
 WORKDIR /project
 
 ENTRYPOINT ["python", "-m", "pgqueuer"]
-CMD ["run", "feed_processor.main"]
+CMD ["run", "--batch-size", "1", "feed_processor.main"]
