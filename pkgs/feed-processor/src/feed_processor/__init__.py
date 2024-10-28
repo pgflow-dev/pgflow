@@ -14,7 +14,7 @@ from pydantic import SecretStr
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
-async def main() -> QueueManager:
+async def main(batch_size: int = 1) -> QueueManager:
     print('Setting up QueueManager...')
     connection = await asyncpg.connect(DATABASE_URL)
     driver = AsyncpgDriver(connection)
