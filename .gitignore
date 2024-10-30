@@ -25,3 +25,4 @@ vite.config.ts.timestamp-*
 
 !.envrc
 .direnv
+.null-ls*
