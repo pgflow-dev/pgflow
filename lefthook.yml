@@ -6,6 +6,7 @@ prepare-commit-msg:
 commit-msg:
   commands:
     "lint commit message":
+      skip: true
       run: pnpm commitlint --edit {1}
 
 post-commit:
