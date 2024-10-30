@@ -12,7 +12,6 @@ commit-msg:
 post-commit:
   commands:
     "push changes to origin":
-      skip: true
       run: git push
 
 pre-commit:
