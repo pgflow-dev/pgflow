@@ -3,7 +3,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "dev": "(pnpm status || pnpm restart) && pnpm functions",
-    "gen-types": "bin/supabase gen types typescript --local --schema public --schema acl --schema auth --schema acl --schema storage --schema chat --schema feed > types.d.ts",
+    "gen-types": "bin/supabase gen types typescript --local --schema public --schema acl --schema auth --schema acl --schema storage --schema chat --schema feed --schema pgflow > types.d.ts",
     "deno": "deno cache --config functions/deno.json functions/**/index.ts",
     "db-reset": "bin/supabase db reset && pnpm gen-types",
     "db-migrate": "bin/supabase migration up && pnpm gen-types",
@@ -11,7 +11,9 @@
     "restart": "pnpm stop && pnpm start",
     "status": "bin/supabase status",
     "stop": "bin/supabase stop",
-    "start": "bin/supabase start"
+    "start": "bin/supabase start",
+    "test": "bin/test",
+    "test:watch": "ls tests/**/*.sql | entr -rc bin/test"
   },
   "devDependencies": {
     "supabase": "^1.207.9"

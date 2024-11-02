@@ -3,9 +3,16 @@
   "packages": {
     "specifiers": {
       "jsr:@supabase/functions-js": "jsr:@supabase/functions-js@2.4.3",
+      "jsr:@supabase/supabase-js@2": "jsr:@supabase/supabase-js@2.46.1",
       "npm:@langchain/core": "npm:@langchain/core@0.1.40_zod@3.22.4",
       "npm:@langchain/openai": "npm:@langchain/openai@0.0.15_zod@3.22.4",
       "npm:@langchain/openai@0.0.15": "npm:@langchain/openai@0.0.15_zod@3.22.4",
+      "npm:@supabase/auth-js@2.65.1": "npm:@supabase/auth-js@2.65.1",
+      "npm:@supabase/functions-js@2.4.3": "npm:@supabase/functions-js@2.4.3",
+      "npm:@supabase/node-fetch@2.6.15": "npm:@supabase/node-fetch@2.6.15",
+      "npm:@supabase/postgrest-js@1.16.3": "npm:@supabase/postgrest-js@1.16.3",
+      "npm:@supabase/realtime-js@2.10.7": "npm:@supabase/realtime-js@2.10.7",
+      "npm:@supabase/storage-js@2.7.1": "npm:@supabase/storage-js@2.7.1",
       "npm:@supabase/supabase-js": "npm:@supabase/supabase-js@2.39.3",
       "npm:openai": "npm:openai@4.62.1",
       "npm:openai@^4.52.5": "npm:openai@4.62.1",
@@ -16,6 +23,17 @@
         "integrity": "010834c9e7d2996b4be8e4004a15ed8f42b326490e4b354683f9c191353b76cc",
         "dependencies": [
           "npm:openai@^4.52.5"
+        ]
+      },
+      "@supabase/supabase-js@2.46.1": {
+        "integrity": "9cefe1552806d5dc00545b924605539b1b0865691483799cf8c081fbdd17d5c9",
+        "dependencies": [
+          "npm:@supabase/auth-js@2.65.1",
+          "npm:@supabase/functions-js@2.4.3",
+          "npm:@supabase/node-fetch@2.6.15",
+          "npm:@supabase/postgrest-js@1.16.3",
+          "npm:@supabase/realtime-js@2.10.7",
+          "npm:@supabase/storage-js@2.7.1"
         ]
       }
     },
@@ -46,8 +64,20 @@
           "zod-to-json-schema": "zod-to-json-schema@3.22.4_zod@3.22.4"
         }
       },
+      "@supabase/auth-js@2.65.1": {
+        "integrity": "sha512-IA7i2Xq2SWNCNMKxwmPlHafBQda0qtnFr8QnyyBr+KaSxoXXqEzFCnQ1dGTy6bsZjVBgXu++o3qrDypTspaAPw==",
+        "dependencies": {
+          "@supabase/node-fetch": "@supabase/node-fetch@2.6.15"
+        }
+      },
       "@supabase/functions-js@2.2.0": {
         "integrity": "sha512-lAmxD/mZ8vk2mg1CmXQWzK5mOHk7kDxAnxoyqUj2BVPvacEZ52P8nFkInEuSMqx6P6FKy64selW1Vyhui9racA==",
+        "dependencies": {
+          "@supabase/node-fetch": "@supabase/node-fetch@2.6.15"
+        }
+      },
+      "@supabase/functions-js@2.4.3": {
+        "integrity": "sha512-sOLXy+mWRyu4LLv1onYydq+10mNRQ4rzqQxNhbrKLTLTcdcmS9hbWif0bGz/NavmiQfPs4ZcmQJp4WqOXlR4AQ==",
         "dependencies": {
           "@supabase/node-fetch": "@supabase/node-fetch@2.6.15"
         }
@@ -64,10 +94,25 @@
           "whatwg-url": "whatwg-url@5.0.0"
         }
       },
+      "@supabase/postgrest-js@1.16.3": {
+        "integrity": "sha512-HI6dsbW68AKlOPofUjDTaosiDBCtW4XAm0D18pPwxoW3zKOE2Ru13Z69Wuys9fd6iTpfDViNco5sgrtnP0666A==",
+        "dependencies": {
+          "@supabase/node-fetch": "@supabase/node-fetch@2.6.15"
+        }
+      },
       "@supabase/postgrest-js@1.9.2": {
         "integrity": "sha512-I6yHo8CC9cxhOo6DouDMy9uOfW7hjdsnCxZiaJuIVZm1dBGTFiQPgfMa9zXCamEWzNyWRjZvupAUuX+tqcl5Sw==",
         "dependencies": {
           "@supabase/node-fetch": "@supabase/node-fetch@2.6.15"
+        }
+      },
+      "@supabase/realtime-js@2.10.7": {
+        "integrity": "sha512-OLI0hiSAqQSqRpGMTUwoIWo51eUivSYlaNBgxsXZE7PSoWh12wPRdVt0psUMaUzEonSB85K21wGc7W5jHnT6uA==",
+        "dependencies": {
+          "@supabase/node-fetch": "@supabase/node-fetch@2.6.15",
+          "@types/phoenix": "@types/phoenix@1.6.4",
+          "@types/ws": "@types/ws@8.5.10",
+          "ws": "ws@8.16.0"
         }
       },
       "@supabase/realtime-js@2.9.3": {
@@ -81,6 +126,12 @@
       },
       "@supabase/storage-js@2.5.5": {
         "integrity": "sha512-OpLoDRjFwClwc2cjTJZG8XviTiQH4Ik8sCiMK5v7et0MDu2QlXjCAW3ljxJB5+z/KazdMOTnySi+hysxWUPu3w==",
+        "dependencies": {
+          "@supabase/node-fetch": "@supabase/node-fetch@2.6.15"
+        }
+      },
+      "@supabase/storage-js@2.7.1": {
+        "integrity": "sha512-asYHcyDR1fKqrMpytAS1zjyEfvxuOIp1CIXX7ji4lHHcJKqyk+sLl/Vxgm4sN6u8zvuUtae9e4kDxQP2qrwWBA==",
         "dependencies": {
           "@supabase/node-fetch": "@supabase/node-fetch@2.6.15"
         }

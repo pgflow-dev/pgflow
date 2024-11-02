@@ -66,8 +66,9 @@ AttributesSchemaByType = {
 
 from dataclasses import dataclass
 
+from asyncpg import Pool
 from asyncpg.connection import Connection
-from pgqueuer.db import AsyncpgDriver
+from pgqueuer.db import AsyncpgDriver, AsyncpgPoolDriver
 from pgqueuer.models import Job
 from pgqueuer.qm import QueueManager
 from pgqueuer.queries import Queries
@@ -80,9 +81,9 @@ class JobContext:
     supabase: SupabaseClient
     connection: Connection
     driver: AsyncpgDriver
+    pool: Pool
     qm: QueueManager
     queries: Queries
     openai_api_key: SecretStr
     groq_api_key: SecretStr
     anthropic_api_key: SecretStr
-

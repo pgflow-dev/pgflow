@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Run the test and pipe through awk for colorization
+# bin/supabase test db supabase/"$@" | awk '
+#   BEGIN {
+#     RED="\033[31m";
+#     GREEN="\033[32m";
+#     RESET="\033[0m";
+#   }
+#   /^Failed|failed|FAIL|# Failed|error running container|Result: FAIL/ {print RED $0 RESET; next}
+#   /^ok|passing|PASS|Result: PASS/ {print GREEN $0 RESET; next}
+#   {print}
+# '
+#
+bin/supabase test db supabase/"$@" | awk '
+/^# Failed test/ {print "\033[31m" $0 "\033[0m"; next}        # Red for failed tests
+/^# *have:/      {print "\033[36m" $0 "\033[0m"; next}       # Cyan for "have" lines
+/^# *want:/      {print "\033[32m" $0 "\033[0m"; next}       # Green for "want" lines
+/Failed [0-9]+\/[0-9]+ subtests/ {print "\033[31m" $0 "\033[0m"; next}  # Red for summary of failed subtests
+/Result: FAIL/   {print "\033[1;31m" $0 "\033[0m"; next}     # Bold red for overall failure
+/Result: PASS/   {print "\033[1;32m" $0 "\033[0m"; next}     # Bold green for overall success
+{ print $0 }     # Default: print the line as is
+'

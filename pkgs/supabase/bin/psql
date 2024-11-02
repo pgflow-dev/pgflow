@@ -1,0 +1,8 @@
+#!/bin/bash
+
+source .env
+
+export DB_URL
+
+echo psql "$DB_URL" "$@"
+psql "$DB_URL" "$@"

@@ -3,7 +3,7 @@ project_id = "feedwise"
 [api]
 enabled = true
 port = 54321
-schemas = ["public", "storage", "graphql_public", "chat", "feed"]
+schemas = ["public", "storage", "graphql_public", "chat", "feed", "pgflow"]
 
 # Extra schemas to add to the search_path of every request. public is always included.
 extra_search_path = ["public", "extensions"]
