@@ -81,8 +81,9 @@ BEGIN
         NEW.content::jsonb
     )
     FROM pgflow.step_state_requests
-    WHERE request_id = NEW.id;
-    
+    WHERE request_id = NEW.id
+    AND status >= 200 AND status < 300;
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
