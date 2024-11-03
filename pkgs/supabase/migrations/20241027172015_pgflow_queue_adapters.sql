@@ -111,7 +111,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER handle_http_response_trigger
-AFTER INSERT ON net._http_response
-FOR EACH ROW
-EXECUTE FUNCTION pgflow.handle_http_response();
+-- CREATE OR REPLACE TRIGGER handle_http_response_trigger
+-- AFTER INSERT ON net._http_response
+-- FOR EACH ROW
+-- EXECUTE FUNCTION pgflow.handle_http_response();
