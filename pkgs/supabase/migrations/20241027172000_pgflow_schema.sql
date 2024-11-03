@@ -2,6 +2,22 @@
 CREATE SCHEMA IF NOT EXISTS pgflow;
 SET search_path TO pgflow;
 
+--------------------------------------------------------------------------
+------------------ TODO: fix me, UNSECURE --------------------------------
+--------------------------------------------------------------------------
+GRANT USAGE ON SCHEMA pgflow TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA pgflow TO anon, authenticated, service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA pgflow TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA pgflow TO anon,
+authenticated,
+service_role;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA pgflow
+GRANT ALL ON TABLES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA pgflow
+GRANT ALL ON ROUTINES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA pgflow
+GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+
 ------------------------------------------
 -- Core workflow definition tables
 ------------------------------------------
