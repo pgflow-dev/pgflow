@@ -1350,42 +1350,24 @@ export type Database = {
           step_result: Json
         }[]
       }
-      enqueue_job:
-        | {
-            Args: {
-              workflow_slug: string
-              run_id: string
-              step_slug: string
-              payload: Json
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              workflow_slug: string
-              step_slug: string
-              payload: Json
-            }
-            Returns: undefined
-          }
-      enqueue_job_edge_fn:
-        | {
-            Args: {
-              workflow_slug: string
-              run_id: string
-              step_slug: string
-              payload: Json
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              workflow_slug: string
-              step_slug: string
-              payload: Json
-            }
-            Returns: undefined
-          }
+      enqueue_job: {
+        Args: {
+          workflow_slug: string
+          run_id: string
+          step_slug: string
+          payload: Json
+        }
+        Returns: undefined
+      }
+      enqueue_job_edge_fn: {
+        Args: {
+          workflow_slug: string
+          run_id: string
+          step_slug: string
+          payload: Json
+        }
+        Returns: undefined
+      }
       enqueue_job_pgqueuer: {
         Args: {
           workflow_slug: string

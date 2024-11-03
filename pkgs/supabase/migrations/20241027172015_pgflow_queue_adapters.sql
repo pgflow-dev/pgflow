@@ -30,11 +30,25 @@ CREATE OR REPLACE FUNCTION pgflow.enqueue_job_edge_fn(
 )
 RETURNS VOID AS $$
 BEGIN
-    WITH request as (
+    WITH secret as (
+        select decrypted_secret AS supabase_anon_key 
+        from vault.decrypted_secrets 
+    where name = 'supabase_anon_key'
+    ),
+    settings AS (
+        select decrypted_secret AS app_url
+        from vault.decrypted_secrets 
+        where name = 'app_url'
+    ),
+    request as (
         select net.http_post(
-          url := 'http://host.docker.internal:54321/functions/v1/execute-step',
-          body := payload::jsonb,
-          timeout_milliseconds := 5000
+            url := (select app_url from settings) || '/functions/v1/execute-step',
+            body := payload::jsonb,
+            headers := jsonb_build_object(
+                'Content-Type', 'application/json',
+                'Authorization', 'Bearer ' || (select supabase_anon_key from secret)
+            ),
+            timeout_milliseconds := 5000
         ) AS id
     )
     INSERT INTO pgflow.step_state_requests
@@ -82,13 +96,13 @@ BEGIN
     )
     FROM pgflow.step_state_requests
     WHERE request_id = NEW.id
-    AND status >= 200 AND status < 300;
+    AND NEW.status_code >= 200 AND NEW.status_code < 300;
 
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER handle_http_response_trigger
+CREATE OR REPLACE TRIGGER handle_http_response_trigger
 AFTER INSERT ON net._http_response
 FOR EACH ROW
 EXECUTE FUNCTION pgflow.handle_http_response();
