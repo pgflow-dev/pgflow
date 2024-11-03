@@ -31,13 +31,13 @@ CREATE OR REPLACE FUNCTION pgflow.enqueue_job_edge_fn(
 RETURNS VOID AS $$
 BEGIN
     WITH secret as (
-        select decrypted_secret AS supabase_anon_key 
-        from vault.decrypted_secrets 
+        select decrypted_secret AS supabase_anon_key
+        from vault.decrypted_secrets
     where name = 'supabase_anon_key'
     ),
     settings AS (
         select decrypted_secret AS app_url
-        from vault.decrypted_secrets 
+        from vault.decrypted_secrets
         where name = 'app_url'
     ),
     request as (
@@ -97,6 +97,15 @@ BEGIN
     FROM pgflow.step_state_requests
     WHERE request_id = NEW.id
     AND NEW.status_code >= 200 AND NEW.status_code < 300;
+
+    PERFORM pgflow.fail_step(
+        run_id,
+        step_slug,
+        jsonb_build_object('error', NEW.error_msg)
+    )
+    FROM pgflow.step_state_requests
+    WHERE request_id = NEW.id
+    AND NEW.status_code >= 400;
 
     RETURN NEW;
 END;
