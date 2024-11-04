@@ -18,13 +18,6 @@ class JobPayload(BaseModel):
 
         return cls(**json.loads(job.payload.decode()))
 
-
-from dotenv import load_dotenv
-
-load_dotenv()
-import os
-
-
 async def transcribe_recording(job: Job, context: JobContext):
     job_payload = JobPayload.from_job(job)
     supabase = context.supabase
@@ -35,9 +28,10 @@ async def transcribe_recording(job: Job, context: JobContext):
         bucket=bucket,
         owner=job_payload.owner_id
     ))
+    context.groq_api_key.__module__
 
     response = supabase.storage.from_(bucket).download(filename)
-    client = Groq(api_key=os.environ['GROQ_API_KEY'])
+    client = Groq(api_key=context.groq_api_key.get_secret_value())
     transcription = client.audio.transcriptions.create(
       file=(filename, response),
       model="whisper-large-v3-turbo",
