@@ -14,15 +14,3 @@ BEGIN
     FROM run;
 END;
 $$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION pgflow.enqueue_job(
-    workflow_slug TEXT,
-    run_id UUID,
-    step_slug TEXT,
-    payload JSONB
-)
-RETURNS VOID AS $$
-BEGIN
-    PERFORM pgflow.enqueue_job_pgqueuer(workflow_slug, run_id, step_slug, payload);
-END;
-$$ LANGUAGE plpgsql;
