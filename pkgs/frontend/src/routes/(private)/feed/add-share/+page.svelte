@@ -2,6 +2,7 @@
 	import { v4 as uuidv4 } from 'uuid';
 	import ChatLayout from '$components/feed/ChatLayout.svelte';
 	import Spinner from '$components/Spinner.svelte';
+	import VoiceMemo from '$components/VoiceMemo.svelte';
 
 	import type { InferredFeedShareRow, Entity } from '$lib/db/feed';
 	import { writable } from 'svelte/store';
@@ -22,8 +23,8 @@
 
 	export let data;
 
-	let { supabase } = data;
-	$: ({ supabase } = data);
+	let { supabase, session } = data;
+	$: ({ supabase, session } = data);
 
 	let textareaElement: HTMLTextAreaElement | undefined;
 
@@ -215,17 +216,22 @@
 					<span class="ml-1 text-sm">Save</span>
 				</button>
 			{:else}
-				<button
-					on:click={() => ($textareaVisible = true)}
-					class="w-full bg-black p-2 text-gray-500 border-none border-t border-t-gray-700 min-h-10"
-				>
-					Click to save stuff...
-				</button>
+				<div class="w-full relative">
+					<button
+						on:click={() => ($textareaVisible = true)}
+						class="w-full bg-black p-2 text-gray-500 border-none border-t border-t-gray-700 min-h-10"
+					>
+						Click to save stuff...
+					</button>
+				</div>
 			{/if}
 		</form>
 	</div>
 
-	<div slot="default" class="col-span-12 gap-2 space-y-2 overflow-y-auto px-4 overflow-x-hidden">
+	<div
+		slot="default"
+		class="col-span-12 gap-2 space-y-2 overflow-y-auto px-4 overflow-x-hidden relative"
+	>
 		{#each $shares as share (share.id)}
 			<div animate:flip={{ duration: 500, easing: expoOut }}>
 				{#if $entities.get(share.id)}
@@ -249,5 +255,9 @@
 		{/each}
 	</div>
 
-	<div slot="footer"></div>
+	<div slot="footer">
+		<div class="p-2 flex justify-center">
+			<VoiceMemo {session} on:uploadComplete={(e) => console.log('uploadComplete', e)} />
+		</div>
+	</div>
 </ChatLayout>

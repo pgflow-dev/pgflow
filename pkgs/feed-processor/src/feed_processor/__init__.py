@@ -7,6 +7,7 @@ from feed_processor.models import JobContext
 from feed_processor.spikes.pgflow import setup_pgflow_entrypoints
 from feed_processor.supabase import create_service_role_client
 from feed_processor.tasks.extract_entity_by_type import extract_entity_by_type
+from feed_processor.tasks.transcribe_recording import transcribe_recording
 from pgqueuer.db import AsyncpgDriver, AsyncpgPoolDriver
 from pgqueuer.models import Job
 from pgqueuer.qm import QueueManager
@@ -21,7 +22,7 @@ async def main() -> QueueManager:
     connection = await asyncpg.connect(DATABASE_URL)
     driver = AsyncpgDriver(connection)
     qm = QueueManager(driver)
-    
+
     # Create separate connection pool for job queries
     pool = await asyncpg.create_pool(
         DATABASE_URL,
@@ -30,7 +31,7 @@ async def main() -> QueueManager:
         max_queries=50000,
         max_inactive_connection_lifetime=300.0
     )
-     
+
     if not pool:
         raise Exception("Cannot create pool... exiting")
 
@@ -46,10 +47,15 @@ async def main() -> QueueManager:
         anthropic_api_key=SecretStr(os.environ["ANTHROPIC_API_KEY"])
     )
 
-    @qm.entrypoint("extract_entity_by_type", concurrency_limit=16, requests_per_second=128)
+    @qm.entrypoint("extract_entity_by_type")
     async def extract_entity_by_type_entrypoint(job: Job):
         print("-------------- extract_entity_by_type --------------")
         await extract_entity_by_type(job, context)
+
+    @qm.entrypoint('transcribe_recording')
+    async def transcribe_recording_entrypoint(job: Job):
+        print("-------------- transcribe_recording --------------")
+        await transcribe_recording(job, context)
 
     entrypoints = [
         'flow_01/root',
