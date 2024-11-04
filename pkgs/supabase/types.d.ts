@@ -1368,24 +1368,15 @@ export type Database = {
         }
         Returns: undefined
       }
-      enqueue_job_pgqueuer:
-        | {
-            Args: {
-              workflow_slug: string
-              run_id: string
-              step_slug: string
-              payload: Json
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              workflow_slug: string
-              step_slug: string
-              payload: Json
-            }
-            Returns: undefined
-          }
+      enqueue_job_pgqueuer: {
+        Args: {
+          workflow_slug: string
+          run_id: string
+          step_slug: string
+          payload: Json
+        }
+        Returns: undefined
+      }
       get_ready_dependants_of: {
         Args: {
           p_run_id: string
