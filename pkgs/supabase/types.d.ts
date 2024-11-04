@@ -1371,6 +1371,7 @@ export type Database = {
       enqueue_job_pgqueuer: {
         Args: {
           workflow_slug: string
+          run_id: string
           step_slug: string
           payload: Json
         }

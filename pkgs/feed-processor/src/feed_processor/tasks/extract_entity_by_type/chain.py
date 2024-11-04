@@ -26,8 +26,8 @@ def create_chain(context: JobContext, runnable_input_type: Type[_RunnableInputT]
     output_type = _create_output_type(entity_type=type_to_extract)
 
     ### OpenAI
-    # openai_model = 'gpt-4o'
-    openai_model = 'gpt-4o-mini'
+    openai_model = 'gpt-4o'
+    # openai_model = 'gpt-4o-mini'
     model = ChatOpenAI(model=openai_model, api_key=context.openai_api_key).with_structured_output(
         schema=output_type,
         method="json_schema",
