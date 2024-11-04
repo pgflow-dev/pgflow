@@ -219,7 +219,7 @@
 				<div class="w-full relative">
 					<button
 						on:click={() => ($textareaVisible = true)}
-						class="w-full bg-black p-2 text-gray-500 border-none border-t border-t-gray-700 min-h-10"
+						class="w-full bg-black p-2 text-gray-500 border-none border-t border-t-gray-700 min-h-16 text-2xl font-bold"
 					>
 						Click to save stuff...
 					</button>
@@ -256,8 +256,10 @@
 	</div>
 
 	<div slot="footer">
-		<div class="p-2 flex justify-center">
-			<VoiceMemo {session} on:uploadComplete={(e) => console.log('uploadComplete', e)} />
-		</div>
+		{#if !$textareaVisible}
+			<div class="p-2 flex justify-center">
+				<VoiceMemo {session} on:uploadComplete={(e) => console.log('uploadComplete', e)} />
+			</div>
+		{/if}
 	</div>
 </ChatLayout>

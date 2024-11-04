@@ -61,7 +61,7 @@
 </script>
 
 <button
-	class="w-12 h-12 rounded-full bg-red-900 flex items-center justify-center transition-transform hover:scale-105 focus:outline-none"
+	class="w-24 h-24 rounded-full bg-red-900 flex items-center justify-center transition-transform hover:scale-105 focus:outline-none"
 	class:animate-pulse={isRecording}
 	on:click={() => {
 		if (isRecording) {
@@ -73,8 +73,13 @@
 	aria-label={isRecording ? 'Stop recording' : 'Start recording'}
 >
 	<div
-		class="w-12 h-12 rounded-full border-4 border-red-600 flex items-center justify-center text-white font-semibold text-sm"
+		class:animate-spin={isRecording}
+		class="w-24 h-24 rounded-full border-4 border-red-600 flex items-center justify-center text-white font-semibold text-2xl"
 	>
-		Rec
+		{#if isRecording}
+			Stop
+		{:else}
+			Rec
+		{/if}
 	</div>
 </button>
