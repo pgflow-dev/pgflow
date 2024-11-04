@@ -7,11 +7,11 @@ CREATE OR REPLACE FUNCTION pgflow.enqueue_job_pgqueuer(
 RETURNS VOID AS $$
 BEGIN
     INSERT INTO public.pgqueuer (priority, entrypoint, payload, status)
-    SELECT
+    VALUES (
         0,
         workflow_slug || '/' || step_slug,
         payload::text::bytea,
         'queued'
-    FROM run;
+    );
 END;
 $$ LANGUAGE plpgsql;
