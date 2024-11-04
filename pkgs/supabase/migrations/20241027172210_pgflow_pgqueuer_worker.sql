@@ -1,5 +1,6 @@
 CREATE OR REPLACE FUNCTION pgflow.enqueue_job_pgqueuer(
     workflow_slug TEXT,
+    run_id UUID,
     step_slug TEXT,
     payload JSONB
 )
