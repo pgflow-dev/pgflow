@@ -10,15 +10,18 @@ Deno.serve(async (req: Request) => {
 
   console.log("input", input);
 
-  const output = { step: step["slug"], currentTime: new Date().toISOString() };
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+  const output = {
+    step: step["step_slug"],
+    currentTime: new Date().toISOString(),
+  };
+  // await new Promise((resolve) => setTimeout(resolve, 2000));
 
   console.log("output", output);
 
   const supabase = createAuthenticatedClient(req);
   const { error, data } = await supabase.schema("pgflow").rpc("complete_step", {
-    p_run_id: run["id"],
-    p_step_slug: step["slug"],
+    p_run_id: run["run_id"],
+    p_step_slug: step["step_slug"],
     p_step_result: output,
   });
 

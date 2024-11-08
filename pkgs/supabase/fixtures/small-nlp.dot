@@ -1,0 +1,6 @@
+digraph small_nlp {
+    "input-text" -> "sentiment-analysis";
+    "input-text" -> "topic-classification";
+    "sentiment-analysis" -> "combine-results";
+    "topic-classification" -> "combine-results";
+}

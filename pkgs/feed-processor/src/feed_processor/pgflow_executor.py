@@ -17,7 +17,7 @@ class Pgflow(JobExecutor):
         super().__init__(func, requests_per_second, retry_timer, serialized_dispatch)
 
     async def execute(self, job: Job) -> None:
-        workflow_slug, step_slug = job.entrypoint.split("/")
+        flow_slug, step_slug = job.entrypoint.split("/")
 
         if job.payload:
             payload_json = parse_json(job.payload.decode())

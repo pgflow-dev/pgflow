@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import os
+from typing import List
 
 import asyncpg
+from asyncpg.pool import Pool
 from feed_processor.models import JobContext
 from feed_processor.spikes.pgflow import setup_pgflow_entrypoints
 from feed_processor.supabase import create_service_role_client
@@ -16,21 +18,36 @@ from pydantic import SecretStr
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
+async def fetch_entrypoints(pool: Pool) -> List[str]:
+    """Fetch flow step entrypoints from the database.
+
+    Returns array of strings in format: 'flow_slug/step_slug'
+    """
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT flow_slug || '/' || step_slug FROM pgflow.steps")
+        return [row[0] for row in rows]
+
+
 async def main() -> QueueManager:
     print('Setting up QueueManager...')
     # Create connection for the queue manager driver
     connection = await asyncpg.connect(DATABASE_URL)
     driver = AsyncpgDriver(connection)
-    qm = QueueManager(driver)
 
     # Create separate connection pool for job queries
     pool = await asyncpg.create_pool(
         DATABASE_URL,
-        min_size=10,
-        max_size=20,
+        min_size=5,
+        max_size=10,
         max_queries=50000,
         max_inactive_connection_lifetime=300.0
     )
+
+    if not pool:
+        raise Exception("Cannot create connection... exiting")
+
+    pool_driver = AsyncpgPoolDriver(pool)
+    qm = QueueManager(pool_driver)
 
     if not pool:
         raise Exception("Cannot create pool... exiting")
@@ -39,7 +56,6 @@ async def main() -> QueueManager:
         supabase=create_service_role_client(),
         connection=connection,
         driver=driver,
-        pool=pool,
         qm=qm,
         queries=Queries(driver),
         openai_api_key=SecretStr(os.environ["OPENAI_API_KEY"]),
@@ -57,17 +73,7 @@ async def main() -> QueueManager:
         print("-------------- transcribe_recording --------------")
         await transcribe_recording(job, context)
 
-    entrypoints = [
-        'flow_01/root',
-        'flow_01/left',
-        'flow_01/right',
-        'flow_01/end',
-        '03_complete_step/root',
-        '03_complete_step/left',
-        '03_complete_step/right',
-        '03_complete_step/end',
-    ]
-
+    entrypoints = await fetch_entrypoints(pool)
     setup_pgflow_entrypoints(entrypoints, qm, context)
 
     print('Starting QueueManager...')

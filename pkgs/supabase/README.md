@@ -28,3 +28,12 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 // Make a request
 const { data: todos, error } = await supabase.from("todos").select("*");
 ```
+
+### Connecting to pooler
+
+```shall
+DATABASE_URL="postgresql://postgres.pooler-dev:postgres@127.0.0.1:54329/postgres"
+
+```
+
+The tenant is hardcoded to `pooler-dev` on development, port changes to `54329`.

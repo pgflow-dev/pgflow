@@ -1162,174 +1162,174 @@ export type Database = {
     Tables: {
       deps: {
         Row: {
-          dependant_slug: string
-          dependency_slug: string
-          workflow_slug: string
+          flow_slug: string
+          from_step_slug: string
+          to_step_slug: string
         }
         Insert: {
-          dependant_slug: string
-          dependency_slug: string
-          workflow_slug: string
+          flow_slug: string
+          from_step_slug: string
+          to_step_slug: string
         }
         Update: {
-          dependant_slug?: string
-          dependency_slug?: string
-          workflow_slug?: string
+          flow_slug?: string
+          from_step_slug?: string
+          to_step_slug?: string
         }
         Relationships: [
           {
-            foreignKeyName: "deps_workflow_slug_dependant_slug_fkey"
-            columns: ["workflow_slug", "dependant_slug"]
+            foreignKeyName: "deps_flow_slug_fkey"
+            columns: ["flow_slug"]
             isOneToOne: false
-            referencedRelation: "steps"
-            referencedColumns: ["workflow_slug", "slug"]
+            referencedRelation: "flows"
+            referencedColumns: ["flow_slug"]
           },
           {
-            foreignKeyName: "deps_workflow_slug_dependency_slug_fkey"
-            columns: ["workflow_slug", "dependency_slug"]
+            foreignKeyName: "deps_flow_slug_from_step_slug_fkey"
+            columns: ["flow_slug", "from_step_slug"]
             isOneToOne: false
             referencedRelation: "steps"
-            referencedColumns: ["workflow_slug", "slug"]
+            referencedColumns: ["flow_slug", "step_slug"]
           },
           {
-            foreignKeyName: "deps_workflow_slug_fkey"
-            columns: ["workflow_slug"]
+            foreignKeyName: "deps_flow_slug_to_step_slug_fkey"
+            columns: ["flow_slug", "to_step_slug"]
             isOneToOne: false
-            referencedRelation: "workflows"
-            referencedColumns: ["slug"]
+            referencedRelation: "steps"
+            referencedColumns: ["flow_slug", "step_slug"]
           },
         ]
       }
-      runs: {
+      flows: {
         Row: {
-          id: string
-          payload: Json
-          status: string
-          workflow_slug: string
+          flow_slug: string
         }
         Insert: {
-          id: string
-          payload: Json
-          status?: string
-          workflow_slug: string
+          flow_slug: string
         }
         Update: {
-          id?: string
-          payload?: Json
+          flow_slug?: string
+        }
+        Relationships: []
+      }
+      runs: {
+        Row: {
+          flow_slug: string
+          payload: Json
+          run_id: string
+          status: string
+        }
+        Insert: {
+          flow_slug: string
+          payload: Json
+          run_id: string
           status?: string
-          workflow_slug?: string
+        }
+        Update: {
+          flow_slug?: string
+          payload?: Json
+          run_id?: string
+          status?: string
         }
         Relationships: [
           {
-            foreignKeyName: "runs_workflow_slug_fkey"
-            columns: ["workflow_slug"]
+            foreignKeyName: "runs_flow_slug_fkey"
+            columns: ["flow_slug"]
             isOneToOne: false
-            referencedRelation: "workflows"
-            referencedColumns: ["slug"]
+            referencedRelation: "flows"
+            referencedColumns: ["flow_slug"]
           },
         ]
       }
       step_state_requests: {
         Row: {
+          flow_slug: string | null
           request_id: number
           run_id: string | null
           step_slug: string | null
-          workflow_slug: string | null
         }
         Insert: {
+          flow_slug?: string | null
           request_id: number
           run_id?: string | null
           step_slug?: string | null
-          workflow_slug?: string | null
         }
         Update: {
+          flow_slug?: string | null
           request_id?: number
           run_id?: string | null
           step_slug?: string | null
-          workflow_slug?: string | null
         }
         Relationships: []
       }
       step_states: {
         Row: {
+          flow_slug: string
           run_id: string
           status: string
           step_result: Json | null
           step_slug: string
-          workflow_slug: string
         }
         Insert: {
+          flow_slug: string
           run_id: string
           status?: string
           step_result?: Json | null
           step_slug: string
-          workflow_slug: string
         }
         Update: {
+          flow_slug?: string
           run_id?: string
           status?: string
           step_result?: Json | null
           step_slug?: string
-          workflow_slug?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "step_states_flow_slug_fkey"
+            columns: ["flow_slug"]
+            isOneToOne: false
+            referencedRelation: "flows"
+            referencedColumns: ["flow_slug"]
+          },
+          {
+            foreignKeyName: "step_states_flow_slug_step_slug_fkey"
+            columns: ["flow_slug", "step_slug"]
+            isOneToOne: false
+            referencedRelation: "steps"
+            referencedColumns: ["flow_slug", "step_slug"]
+          },
           {
             foreignKeyName: "step_states_run_id_fkey"
             columns: ["run_id"]
             isOneToOne: false
             referencedRelation: "runs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "step_states_workflow_slug_fkey"
-            columns: ["workflow_slug"]
-            isOneToOne: false
-            referencedRelation: "workflows"
-            referencedColumns: ["slug"]
-          },
-          {
-            foreignKeyName: "step_states_workflow_slug_step_slug_fkey"
-            columns: ["workflow_slug", "step_slug"]
-            isOneToOne: false
-            referencedRelation: "steps"
-            referencedColumns: ["workflow_slug", "slug"]
+            referencedColumns: ["run_id"]
           },
         ]
       }
       steps: {
         Row: {
-          slug: string
-          workflow_slug: string
+          flow_slug: string
+          step_slug: string
         }
         Insert: {
-          slug: string
-          workflow_slug: string
+          flow_slug: string
+          step_slug: string
         }
         Update: {
-          slug?: string
-          workflow_slug?: string
+          flow_slug?: string
+          step_slug?: string
         }
         Relationships: [
           {
-            foreignKeyName: "steps_workflow_slug_fkey"
-            columns: ["workflow_slug"]
+            foreignKeyName: "steps_flow_slug_fkey"
+            columns: ["flow_slug"]
             isOneToOne: false
-            referencedRelation: "workflows"
-            referencedColumns: ["slug"]
+            referencedRelation: "flows"
+            referencedColumns: ["flow_slug"]
           },
         ]
-      }
-      workflows: {
-        Row: {
-          slug: string
-        }
-        Insert: {
-          slug: string
-        }
-        Update: {
-          slug?: string
-        }
-        Relationships: []
       }
     }
     Views: {
@@ -1343,7 +1343,7 @@ export type Database = {
           p_step_result: Json
         }
         Returns: {
-          workflow_slug: string
+          flow_slug: string
           run_id: string
           step_slug: string
           status: string
@@ -1352,7 +1352,7 @@ export type Database = {
       }
       enqueue_job: {
         Args: {
-          workflow_slug: string
+          flow_slug: string
           run_id: string
           step_slug: string
           payload: Json
@@ -1361,7 +1361,7 @@ export type Database = {
       }
       enqueue_job_edge_fn: {
         Args: {
-          workflow_slug: string
+          flow_slug: string
           run_id: string
           step_slug: string
           payload: Json
@@ -1370,29 +1370,20 @@ export type Database = {
       }
       enqueue_job_pgqueuer: {
         Args: {
-          workflow_slug: string
+          flow_slug: string
           run_id: string
           step_slug: string
           payload: Json
         }
         Returns: undefined
       }
-      get_ready_dependants_of: {
-        Args: {
-          p_run_id: string
-          p_step_slug: string
-        }
-        Returns: {
-          step_slug: string
-        }[]
-      }
       get_root_steps: {
         Args: {
-          p_workflow_slug: string
+          p_flow_slug: string
         }
         Returns: {
-          workflow_slug: string
-          slug: string
+          flow_slug: string
+          step_slug: string
         }[]
       }
       has_unmet_deps: {
@@ -1408,14 +1399,14 @@ export type Database = {
         }
         Returns: boolean
       }
-      run_workflow: {
+      run_flow: {
         Args: {
-          p_workflow_slug: string
+          p_flow_slug: string
           p_payload: Json
         }
         Returns: {
-          workflow_slug: string
-          id: string
+          flow_slug: string
+          run_id: string
           status: string
           payload: Json
         }[]
@@ -1426,8 +1417,8 @@ export type Database = {
           p_step_slug: string
         }
         Returns: {
-          workflow_slug: string
-          id: string
+          flow_slug: string
+          run_id: string
           status: string
           step_result: Json
         }[]

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -e
+
+for fixture_file in ./fixtures/*.sql; do
+	echo "Loading fixture $fixture_file"
+
+	bin/psql -f $fixture_file
+done

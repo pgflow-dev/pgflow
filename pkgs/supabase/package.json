@@ -5,7 +5,7 @@
     "dev": "(pnpm status || pnpm restart) && pnpm functions",
     "gen-types": "bin/supabase gen types typescript --local --schema public --schema acl --schema auth --schema acl --schema storage --schema chat --schema feed --schema pgflow > types.d.ts",
     "deno": "deno cache --config functions/deno.json functions/**/index.ts",
-    "db-reset": "bin/supabase db reset && pnpm gen-types",
+    "db-reset": "bin/supabase db reset && pnpm gen-types && bin/load-secrets",
     "db-migrate": "bin/supabase migration up && pnpm gen-types",
     "functions": "bin/supabase functions serve --env-file .env",
     "restart": "pnpm stop && pnpm start",
@@ -16,6 +16,6 @@
     "test:watch": "ls tests/**/*.sql | entr -rc bin/test"
   },
   "devDependencies": {
-    "supabase": "^1.207.9"
+    "supabase": "^1.219.0"
   }
 }
