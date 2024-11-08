@@ -1,7 +1,11 @@
 #!/bin/bash
 
+# Exit early if sgpt is not available
+if ! command -v sgpt &> /dev/null; then
+    exit 0
+fi
+
 openai_model=gpt-4o
-# openai_model=gpt-4o-mini
 
 COMMIT_MSG_FILE="$1"
 COMMIT_SOURCE="$2"
