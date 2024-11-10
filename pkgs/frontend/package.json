@@ -60,6 +60,7 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@dagrejs/dagre": "^1.1.4",
 		"@floating-ui/dom": "1.5.3",
 		"@langchain/community": "^0.0.34",
 		"@langchain/core": "^0.1.62",
@@ -75,6 +76,7 @@
 		"@uppy/progress-bar": "^4.0.0",
 		"@uppy/svelte": "^4.1.0",
 		"@uppy/tus": "^4.1.2",
+		"@xyflow/svelte": "^0.1.23",
 		"dayjs": "^1.11.10",
 		"highlight.js": "11.9.0",
 		"langchain": "^0.1.36",

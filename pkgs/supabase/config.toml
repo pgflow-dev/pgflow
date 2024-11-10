@@ -29,9 +29,9 @@ port = 54329
 # Configure one of the supported pooler modes: `transaction`, `session`.
 pool_mode = "transaction"
 # How many server connections to allow per user/database pair.
-default_pool_size = 20
+default_pool_size = 500
 # Maximum number of client connections allowed.
-max_client_conn = 100
+max_client_conn = 1000
 
 [realtime]
 enabled = true

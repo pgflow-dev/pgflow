@@ -1,26 +1,12 @@
 SET search_path TO pgflow;
 
--- TODO: make decision which task queue to use based on the steps
---       definition, so it is possible to have jobs in python and typescript
-CREATE OR REPLACE FUNCTION pgflow.enqueue_job(
-    workflow_slug TEXT,
-    run_id UUID,
-    step_slug TEXT,
-    payload JSONB
-)
-RETURNS VOID AS $$
-BEGIN
-    PERFORM pgflow.enqueue_job_pgqueuer(workflow_slug, run_id, step_slug, payload);
-END;
-$$ LANGUAGE plpgsql;
-
 CREATE OR REPLACE FUNCTION pgflow.start_step(
     p_run_id UUID,
     p_step_slug TEXT
 )
 RETURNS TABLE (
-    workflow_slug TEXT,
-    id UUID,
+    flow_slug TEXT,
+    run_id UUID,
     status TEXT,
     step_result JSONB
 ) AS $$
@@ -31,13 +17,13 @@ DECLARE
     job_payload JSONB;
 BEGIN
     SELECT
-    r.workflow_slug,
-    r.id,
+    r.flow_slug,
+    r.run_id,
     r.status,
     r.payload
     INTO locked_run
     FROM pgflow.runs AS r
-    WHERE r.id = p_run_id;
+    WHERE r.run_id = p_run_id;
 
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Run not found: run_id=%', p_run_id;
@@ -50,8 +36,8 @@ BEGIN
     --
     -- Lock the step_state row to prevent concurrent modifications
     BEGIN
-        INSERT INTO pgflow.step_states (workflow_slug, run_id, step_slug) VALUES (
-            locked_run.workflow_slug,
+        INSERT INTO pgflow.step_states (flow_slug, run_id, step_slug) VALUES (
+            locked_run.flow_slug,
             p_run_id,
             p_step_slug
         )
@@ -73,11 +59,11 @@ BEGIN
     --   "step_b": "hello"
     -- }
     WITH steps_with_results AS (
-        SELECT ss.step_result, d.dependency_slug AS step_slug
+        SELECT ss.step_result, d.from_step_slug AS step_slug
         FROM pgflow.deps d
-        JOIN pgflow.step_states ss ON ss.step_slug = d.dependency_slug
+        JOIN pgflow.step_states ss ON ss.step_slug = d.from_step_slug
             AND ss.run_id = p_run_id
-        WHERE d.dependant_slug = p_step_slug
+        WHERE d.to_step_slug = p_step_slug
     ),
     deps_payload AS (
         SELECT jsonb_object_agg(swr.step_slug, swr.step_result) AS deps
@@ -85,22 +71,22 @@ BEGIN
     ),
     run as (
         SELECT
-        r.workflow_slug,
-        r.id,
+        r.flow_slug,
+        r.run_id,
         r.status,
         r.payload
         FROM pgflow.runs AS r
-        WHERE r.id = p_run_id
+        WHERE r.run_id = p_run_id
     )
     SELECT COALESCE(deps, '{}'::jsonb) || jsonb_build_object(
         '__run__', to_jsonb(run.*),
-        '__step__', jsonb_build_object('slug', p_step_slug)
+        '__step__', jsonb_build_object('step_slug', p_step_slug)
     )
     INTO job_payload
     FROM deps_payload, run;
 
     PERFORM pgflow.enqueue_job(
-        locked_run.workflow_slug,
+        locked_run.flow_slug,
         p_run_id,
         p_step_slug,
         job_payload
@@ -108,7 +94,7 @@ BEGIN
 
     RETURN QUERY
     SELECT
-        step_state.workflow_slug,
+        step_state.flow_slug,
         step_state.run_id,
         step_state.status,
         step_state.step_result;

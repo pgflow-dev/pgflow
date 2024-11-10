@@ -122,7 +122,7 @@ class WorkflowSyncer:
                     for parent_slug in parents:
                         cur.execute("""
                             INSERT INTO pgflow.deps (
-                                workflow_slug, dependency_slug, dependant_slug
+                                workflow_slug, from_step_slug, to_step_slug
                             ) VALUES (%s, %s, %s)
                             ON CONFLICT DO NOTHING
                         """, (workflow_slug, parent_slug, step_slug))

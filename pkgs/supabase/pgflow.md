@@ -98,11 +98,11 @@ INSERT INTO pgflow.steps (workflow_slug, slug) VALUES
 
 ```sql
 -- step_two depends on step_one
-INSERT INTO pgflow.deps (workflow_slug, dependency_slug, dependant_slug) VALUES
+INSERT INTO pgflow.deps (workflow_slug, from_step_slug, to_step_slug) VALUES
   ('my_workflow', 'step_one', 'step_two');
 
 -- step_three depends on step_two
-INSERT INTO pgflow.deps (workflow_slug, dependency_slug, dependant_slug) VALUES
+INSERT INTO pgflow.deps (workflow_slug, from_step_slug, to_step_slug) VALUES
   ('my_workflow', 'step_two', 'step_three');
 ```
 
@@ -173,11 +173,11 @@ INSERT INTO pgflow.steps (workflow_slug, slug) VALUES
 
 ```sql
 -- 'send_emails' depends on 'prepare_list'
-INSERT INTO pgflow.deps (workflow_slug, dependency_slug, dependant_slug) VALUES
+INSERT INTO pgflow.deps (workflow_slug, from_step_slug, to_step_slug) VALUES
   ('email_campaign', 'prepare_list', 'send_emails');
 
 -- 'generate_report' depends on 'send_emails'
-INSERT INTO pgflow.deps (workflow_slug, dependency_slug, dependant_slug) VALUES
+INSERT INTO pgflow.deps (workflow_slug, from_step_slug, to_step_slug) VALUES
   ('email_campaign', 'send_emails', 'generate_report');
 ```
 
@@ -256,14 +256,14 @@ CREATE TABLE pgflow.steps (
 -- Dependencies table - stores relationships between steps
 CREATE TABLE pgflow.deps (
     workflow_slug TEXT NOT NULL REFERENCES pgflow.workflows (slug),
-    dependency_slug TEXT NOT NULL,  -- The step that must complete first
-    dependant_slug TEXT NOT NULL,   -- The step that depends on dependency_slug
-    PRIMARY KEY (workflow_slug, dependency_slug, dependant_slug),
-    FOREIGN KEY (workflow_slug, dependency_slug)
+    from_step_slug TEXT NOT NULL,  -- The step that must complete first
+    to_step_slug TEXT NOT NULL,   -- The step that depends on from_step_slug
+    PRIMARY KEY (workflow_slug, from_step_slug, to_step_slug),
+    FOREIGN KEY (workflow_slug, from_step_slug)
     REFERENCES pgflow.steps (workflow_slug, slug),
-    FOREIGN KEY (workflow_slug, dependant_slug)
+    FOREIGN KEY (workflow_slug, to_step_slug)
     REFERENCES pgflow.steps (workflow_slug, slug),
-    CHECK (dependency_slug != dependant_slug)  -- Prevent self-dependencies
+    CHECK (from_step_slug != to_step_slug)  -- Prevent self-dependencies
 );
 
 ------------------------------------------

@@ -1,0 +1,27 @@
+#!/bin/bash
+
+
+while true; do
+    clear
+    bin/psql -c '
+        WITH steps AS (
+            select
+            count(*) AS all,
+            count(*) FILTER (WHERE status = $$pending$$) AS pending,
+            count(*) FILTER (WHERE status = $$completed$$) AS completed
+            from pgflow.step_states
+        ),
+        locks AS (
+            SELECT COUNT(*) AS locks FROM pg_locks
+        ),
+        jobs AS (
+        SELECT
+        COUNT(*) FILTER (WHERE status = $$queued$$) as jobs_queued,
+        COUNT(*) FILTER (WHERE status = $$picked$$) as jobs_picked
+        FROM public.pgqueuer
+        )
+        SELECT steps.*, locks.*, jobs.*
+        FROM steps, locks, jobs
+    '
+    sleep 1
+done

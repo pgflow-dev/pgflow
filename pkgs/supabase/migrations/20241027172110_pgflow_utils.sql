@@ -1,16 +1,16 @@
 -------- get_root_steps ----------------------
 ----------------------------------------------
 
-create or replace function pgflow.get_root_steps(p_workflow_slug text)
-returns table (workflow_slug text, slug text) as
+create or replace function pgflow.get_root_steps(p_flow_slug text)
+returns table (flow_slug text, step_slug text) as
 $$
 BEGIN
 
 RETURN QUERY
-SELECT s.workflow_slug, s.slug
+SELECT s.flow_slug, s.step_slug
 FROM pgflow.steps AS s
-LEFT JOIN pgflow.deps AS d ON s.slug = d.dependant_slug
-WHERE s.workflow_slug = p_workflow_slug AND d.dependant_slug IS NULL;
+LEFT JOIN pgflow.deps AS d ON s.step_slug = d.to_step_slug
+WHERE s.flow_slug = p_flow_slug AND d.to_step_slug IS NULL;
 
 END;
 $$ language plpgsql stable;
@@ -23,7 +23,7 @@ returns boolean as $$
 BEGIN
     RETURN NOT EXISTS (
         SELECT 1 FROM pgflow.deps d
-        WHERE d.dependant_slug = p_step_slug
+        WHERE d.to_step_slug = p_step_slug
     );
 END;
 $$ language plpgsql stable;
@@ -38,9 +38,9 @@ BEGIN
     RETURN EXISTS (
         SELECT 1
         FROM pgflow.deps d
-        JOIN pgflow.step_states ss ON ss.step_slug = d.dependency_slug
+        JOIN pgflow.step_states ss ON ss.step_slug = d.from_step_slug
             AND ss.run_id = p_run_id
-        WHERE d.dependant_slug = p_step_slug
+        WHERE d.to_step_slug = p_step_slug
             AND ss.status != 'completed'
     );
 END;

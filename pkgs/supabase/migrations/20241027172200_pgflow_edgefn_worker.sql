@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS pgflow.step_state_requests (
-    workflow_slug TEXT,
+    flow_slug TEXT,
     run_id UUID,
     step_slug TEXT,
     request_id NUMERIC NOT NULL
@@ -8,7 +8,7 @@ COMMENT ON TABLE pgflow.step_state_requests
 IS 'Associates a request with step_state that triggered it';
 
 CREATE OR REPLACE FUNCTION pgflow.enqueue_job_edge_fn(
-    workflow_slug TEXT,
+    flow_slug TEXT,
     run_id UUID,
     step_slug TEXT,
     payload JSONB
@@ -38,10 +38,10 @@ BEGIN
     )
     INSERT INTO pgflow.step_state_requests
     SELECT
-        workflow_slug,
+        flow_slug,
         run_id,
         step_slug,
         request.id
     FROM request;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
