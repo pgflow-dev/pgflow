@@ -27,7 +27,7 @@ BEGIN
     ),
     request as (
         select net.http_post(
-            url := (select app_url from settings) || '/functions/v1/execute-step',
+            url := (select app_url from settings) || '/functions/v1/pgflow',
             body := payload::jsonb,
             headers := jsonb_build_object(
                 'Content-Type', 'application/json',
