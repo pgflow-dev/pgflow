@@ -1,5 +1,5 @@
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js";
-import Groq from "https://esm.sh/groq-sdk";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import Groq from "groq-sdk";
 import { Flow } from "./Flow.ts";
 
 const supabase: SupabaseClient = {} as SupabaseClient;
@@ -12,7 +12,7 @@ type RunPayload = {
   ownerId: string;
 };
 
-const flow = new Flow<RunPayload>()
+const ProcessVoiceMemo = new Flow<RunPayload>()
   .addRootStep("transcribe", async ({ objectName, bucketId }) => {
     const response = await supabase.storage.from(bucketId).download(objectName);
 
@@ -81,6 +81,6 @@ const flow = new Flow<RunPayload>()
   .addStep("merge", ["summarize", "capitalize"], (payload) => {
     return JSON.stringify(payload);
   });
-export default flow;
+export default ProcessVoiceMemo;
 
-console.log("flow", flow);
+export type StepsType = ReturnType<typeof ProcessVoiceMemo.getSteps>;

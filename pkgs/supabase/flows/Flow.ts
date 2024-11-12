@@ -1,11 +1,12 @@
 // JSON type enforcement so we can serialize the results to JSONB columns
-type SerializableToJson =
-  | string
-  | number
-  | boolean
-  | null
-  | SerializableToJson[]
-  | { [key: string]: SerializableToJson };
+type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
+
+// Define the StepDefinition interface
+interface StepDefinition<Payload extends Json, RetType extends Json> {
+  name: string;
+  handler: (payload: Payload) => RetType | Promise<RetType>;
+  dependencies: string[];
+}
 
 // Utility type to extract the resolved type from a Promise or a value
 type UnwrapPromise<T> = T extends Promise<infer U> ? UnwrapPromise<U> : T;
@@ -21,13 +22,17 @@ type MergeObjects<T1 extends object, T2 extends object> = {
 
 // Flow class definition
 export class Flow<
-  RunPayload extends SerializableToJson,
-  Steps extends object = Record<never, never>,
+  RunPayload extends Json,
+  Steps extends Record<string, Json> = Record<never, never>,
 > {
-  constructor(private steps: Steps = {} as Steps) {}
+  // Update the stepDefinitions property to hold the correct types
+  private stepDefinitions: Record<string, StepDefinition<any, any>>;
 
-  // Method to add root steps (no dependencies)
-  addRootStep<Name extends string, RetType extends SerializableToJson>(
+  constructor(stepDefinitions: Record<string, StepDefinition<any, any>> = {}) {
+    this.stepDefinitions = stepDefinitions;
+  }
+
+  addRootStep<Name extends string, RetType extends Json>(
     name: Name,
     handler: (payload: RunPayload) => RetType | Promise<RetType>,
   ): Flow<
@@ -38,21 +43,23 @@ export class Flow<
       Steps,
       { [K in Name]: UnwrapPromise<RetType> }
     >;
-
-    this.steps = {
-      ...this.steps,
-      [name]: { name, handler, deps: [] },
+    // Update the step definitions
+    const newStepDefinitions = {
+      ...this.stepDefinitions,
+      [name]: {
+        name,
+        handler,
+        dependencies: [],
+      } as StepDefinition<RunPayload, RetType>,
     };
-
-    console.log("addRootStep", this.steps);
-    return new Flow<RunPayload, NewSteps>(this.steps as NewSteps);
+    return new Flow<RunPayload, NewSteps>(newStepDefinitions);
   }
 
-  // Method to add steps with dependencies
+  // Similarly for addStep
   addStep<
     Name extends string,
-    Deps extends keyof Steps,
-    RetType extends SerializableToJson,
+    Deps extends keyof Steps & string,
+    RetType extends Json,
   >(
     name: Name,
     dependencies: Deps[],
@@ -67,30 +74,45 @@ export class Flow<
       Steps,
       { [K in Name]: UnwrapPromise<RetType> }
     >;
-
-    this.steps = {
-      ...this.steps,
-      [name]: { name, dependencies, handler },
+    const dependencyTypes = {} as { [K in Deps]: Steps[K] };
+    // Update the step definitions
+    const newStepDefinitions = {
+      ...this.stepDefinitions,
+      [name]: {
+        name,
+        handler,
+        dependencies,
+      } as StepDefinition<
+        { __run__: RunPayload } & { [K in Deps]: Steps[K] },
+        RetType
+      >,
     };
+    return new Flow<RunPayload, NewSteps>(newStepDefinitions);
+  }
 
-    console.log("addStep", this.steps);
-    return new Flow<RunPayload, NewSteps>(this.steps as NewSteps);
+  public getSteps(): {
+    [K in keyof Steps]: StepDefinition<Json, Steps[K]>;
+  } {
+    return this.stepDefinitions as {
+      [K in keyof Steps]: StepDefinition<any, Steps[K]>;
+    };
   }
 }
 
-// // Now, let's build the flow
-// const flow = new Flow<RunPayload>()
-//   .addRootStep("transcribe", async (payload) => {
-//     // payload is correctly inferred as RunPayload
-//     return {
-//       transcription: `Transcribed text for voiceMemoId: ${payload.voiceMemoId}`,
-//       length: 27,
-//     };
-//   })
-//   .addStep("summarize", ["transcribe"], async (payload) => {
-//     // payload is correctly inferred as { __run__: RunPayload; transcribe: { transcription: string; length: number } }
-//     // Access payload.transcribe.transcription without type errors
-//     return {
-//       summary: `Summary: ${payload.transcribe.transcription}`,
-//     };
-// });
+// Now, let's build the flow
+const ExampleFlow = new Flow<{ value: number }>()
+  // rootStep return type will be inferred to:
+  //
+  // { doubledValue: number; };
+  .addRootStep("rootStep", async (payload) => ({
+    doubledValue: payload.value * 2,
+  }))
+  // normalStep return type will be inferred to:
+  // { doubledValueArray: number[] };
+  .addStep("normalStep", ["rootStep"], async (payload) => ({
+    doubledValueArray: [payload.rootStep.doubledValue],
+  }));
+
+export default ExampleFlow;
+
+export type StepsType = ReturnType<typeof ExampleFlow.getSteps>;

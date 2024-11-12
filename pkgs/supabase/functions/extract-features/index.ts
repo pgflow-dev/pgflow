@@ -1,8 +1,7 @@
 /// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import "npm:openai";
-import { z } from "npm:zod";
-import OpenAI from "npm:openai@^4.52.5";
+import "@supabase/functions-js";
+import { z } from "zod";
+import OpenAI from "@openai/openai";
 
 const client = new OpenAI({ apiKey: Deno.env.get("OPENAI_API_KEY") });
 

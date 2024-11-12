@@ -1,5 +1,4 @@
 /// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createAuthenticatedClient } from "../_shared/supabaseClient.ts";
 
 Deno.serve(async (req: Request) => {

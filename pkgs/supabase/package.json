@@ -1,5 +1,6 @@
 {
   "name": "backend",
+  "type": "module",
   "license": "UNLICENSED",
   "scripts": {
     "dev": "(pnpm status || pnpm restart) && pnpm functions",
@@ -16,6 +17,16 @@
     "test:watch": "ls tests/**/*.sql | entr -rc bin/test"
   },
   "devDependencies": {
-    "supabase": "^1.219.0"
+    "@supabase/supabase-js": "^2.45.4",
+    "@types/json-schema": "^7.0.15",
+    "groq-sdk": "^0.7.0",
+    "json-schema": "^0.4.0",
+    "openai": "^4.71.1",
+    "supabase": "^1.219.0",
+    "ts-json-schema-generator": "^2.3.0",
+    "ts-morph": "^24.0.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.2",
+    "zod": "^3.23.8"
   }
 }

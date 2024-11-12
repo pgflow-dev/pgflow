@@ -1,8 +1,0 @@
-{
-  "imports": {
-    "transformers": "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.14.0",
-    "std/server": "https://deno.land/std@0.218.2/http/server.ts",
-    "@supabase/supabase-js": "npm:@supabase/supabase-js",
-    "zod": "npm:zod"
-  }
-}

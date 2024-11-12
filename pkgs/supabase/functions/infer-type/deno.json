@@ -1,0 +1,7 @@
+{
+  "imports": {
+    "openai": "jsr:@openai/openai@^4.71.1",
+    "@supabase/functions-js": "jsr:@supabase/functions-js@^2.4.3",
+    "zod": "npm:zod@^3.23.8"
+  }
+}
