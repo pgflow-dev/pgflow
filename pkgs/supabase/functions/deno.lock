@@ -14,6 +14,8 @@
       "npm:@supabase/realtime-js@2.10.7": "npm:@supabase/realtime-js@2.10.7",
       "npm:@supabase/storage-js@2.7.1": "npm:@supabase/storage-js@2.7.1",
       "npm:@supabase/supabase-js": "npm:@supabase/supabase-js@2.39.3",
+      "npm:fs": "npm:fs@0.0.1-security",
+      "npm:groq-sdk": "npm:groq-sdk@0.7.0",
       "npm:openai": "npm:openai@4.62.1",
       "npm:openai@^4.52.5": "npm:openai@4.62.1",
       "npm:zod": "npm:zod@3.22.4"
@@ -272,6 +274,22 @@
           "web-streams-polyfill": "web-streams-polyfill@4.0.0-beta.3"
         }
       },
+      "fs@0.0.1-security": {
+        "integrity": "sha512-3XY9e1pP0CVEUCdj5BmfIZxRBTSDycnbqhIOGec9QYtmVH2fbLpj86CFWkrNOkt/Fvty4KZG5lTglL9j/gJ87w==",
+        "dependencies": {}
+      },
+      "groq-sdk@0.7.0": {
+        "integrity": "sha512-OgPqrRtti5MjEVclR8sgBHrhSkTLdFCmi47yrEF29uJZaiCkX3s7bXpnMhq8Lwoe1f4AwgC0qGOeHXpeSgu5lg==",
+        "dependencies": {
+          "@types/node": "@types/node@18.16.19",
+          "@types/node-fetch": "@types/node-fetch@2.6.11",
+          "abort-controller": "abort-controller@3.0.0",
+          "agentkeepalive": "agentkeepalive@4.5.0",
+          "form-data-encoder": "form-data-encoder@1.7.2",
+          "formdata-node": "formdata-node@4.4.1",
+          "node-fetch": "node-fetch@2.7.0"
+        }
+      },
       "humanize-ms@1.2.1": {
         "integrity": "sha512-Fl70vYtsAFb/C06PTS9dZBo7ihau+Tu/DNCk/OyHhea07S+aeMWpFFkUaXRa8fI+ScZbEI8dfSxwY7gxZ9SAVQ==",
         "dependencies": {
@@ -468,7 +486,9 @@
   },
   "redirects": {
     "https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts": "https://esm.sh/@supabase/functions-js@2.4.3/src/edge-runtime.d.ts",
-    "https://esm.sh/@supabase/functions-js@2.4.3/src/edge-runtime.d.ts": "https://esm.sh/v135/@supabase/functions-js@2.4.3/src/edge-runtime.d.ts"
+    "https://esm.sh/@supabase/functions-js@2.4.3/src/edge-runtime.d.ts": "https://esm.sh/v135/@supabase/functions-js@2.4.3/src/edge-runtime.d.ts",
+    "https://esm.sh/@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.46.1",
+    "https://esm.sh/groq-sdk": "https://esm.sh/groq-sdk@0.7.0"
   },
   "remote": {
     "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.14.0": "724f3ce7141e9d22ab39ec5f4ce54bac065de5506901bd565f29570d9afd52b7",
@@ -482,6 +502,42 @@
     "https://deno.land/std@0.177.0/async/pool.ts": "fd082bd4aaf26445909889435a5c74334c017847842ec035739b4ae637ae8260",
     "https://deno.land/std@0.177.0/async/retry.ts": "5efa3ba450ac0c07a40a82e2df296287b5013755d232049efd7ea2244f15b20f",
     "https://deno.land/std@0.177.0/async/tee.ts": "47e42d35f622650b02234d43803d0383a89eb4387e1b83b5a40106d18ae36757",
-    "https://deno.land/std@0.177.0/http/server.ts": "cbb17b594651215ba95c01a395700684e569c165a567e4e04bba327f41197433"
+    "https://deno.land/std@0.177.0/http/server.ts": "cbb17b594651215ba95c01a395700684e569c165a567e4e04bba327f41197433",
+    "https://esm.sh/@supabase/supabase-js@2.46.1": "7522e22424839477a66897d868a73e749944f1cccde0405057df615c4986e270",
+    "https://esm.sh/groq-sdk@0.7.0": "21a3dc8c4ef611ba870056b12373f4f62d3fe8d9c4cc06e8a3448f279377a7c1",
+    "https://esm.sh/v135/@supabase/auth-js@2.65.1/denonext/auth-js.mjs": "b7135e85481aa3ba832baf45405198e1409629b41d1de593ed2abe1ccd37b1a6",
+    "https://esm.sh/v135/@supabase/functions-js@2.4.3/denonext/functions-js.mjs": "98b9108627bcbb255f1e1d2f8fdc321ca2596a476b76cb8f9109862f1b50ca8c",
+    "https://esm.sh/v135/@supabase/node-fetch@2.6.15/denonext/node-fetch.mjs": "efad00ea3d4cbe1bee688836ef75339d49a1981bc5728a13e9ad5f26791d5efb",
+    "https://esm.sh/v135/@supabase/postgrest-js@1.16.3/denonext/postgrest-js.mjs": "1f0cc477f069386bce1b8c5d6a2357ffd1442299f6423381b2aa2c4652f4af10",
+    "https://esm.sh/v135/@supabase/realtime-js@2.10.7/denonext/realtime-js.mjs": "83480b9b485872eebdbd5cfaf36b87fc943021ccb15f72b55e3548c9c72d9a0e",
+    "https://esm.sh/v135/@supabase/storage-js@2.7.1/denonext/storage-js.mjs": "5ddd96a2213608015badb0778b4a446f641c843e017264978ab1e10f83b3cb21",
+    "https://esm.sh/v135/@supabase/supabase-js@2.46.1/denonext/supabase-js.mjs": "b59ea8f568a984be80c378ef4aea963e72c87dc588df1eb63337b728cbd51f7c",
+    "https://esm.sh/v135/bufferutil@4.0.8/denonext/bufferutil.mjs": "60a4618cbd1a5cb24935c55590b793d4ecb33862357d32e1d4614a0bbb90947f",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/_shims.js": "ad1fa001d066f61c81e88f538c4c1cbcb342586d56f33664e03c9fb1b9522e4a",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/_shims/MultipartBody.js": "f14fa9e7327eb401be8f61cf157d25f9b043f1c61173a408be1b8516d471984d",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/_shims/auto/runtime.js": "bbf688aa7c9f512d5b5474a65d84efbbe61d4cdb85e34f0a8f0a37f66852a174",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/_shims/registry.js": "8793791982d092d0d0f601f91d14cb18aea3621324a450499f19e4e8bf67f85f",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/_shims/web-runtime.js": "fe77ab7737a5ef3708993920a4f7af913957620a29346f23a74751ecd2ca8821",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/core.js": "dcca771ca0a6c1eb3d2cd36f9aff5f2f0a5a04029f5489ca7768cff9e02b006c",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/error.js": "1c14d1fc253c1fe645f40726b792b56801081297e672cbdd2110fbf15e1e8201",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/groq-sdk.mjs": "4e4e4fab2822a291643e74ccabbd0428b818b6920eabaf59d1c3f368c06f8980",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/lib/streaming.js": "f5463b5c972491b40726941ba2b41a13dd98940bb68829a12fbba5323f8fe88d",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/resource.js": "572cacd3f4cab4c0f16ac92dca1c91ca364b7b66d7d8ad2377723fc4b5b56d06",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/resources.js": "59af681eb9b0600ec8986647763803eab22bf6c009b60b17d3baee1c3b87da33",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/resources/audio/audio.js": "f50a17540594d1f1d1210c1b6eec538857790d26667642547d7535f0e2888d1a",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/resources/audio/transcriptions.js": "7a65cb1e49ce19ad217e2f9dcbf94037a6e6c66bcd56d0c2119ba4167b619fee",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/resources/audio/translations.js": "1d53a0e1e81914144efa825df0af155ff94689aeb5f9d56ae976f8bdf0a94f4a",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/resources/chat/chat.js": "e2416f88ef3447e5dc05c868f031e1e50e15112a1a8b334d80c4189f3b4d8fa0",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/resources/chat/completions.js": "1897a838c91b8707fcd519d638758d348b44dbcf933e555d61195d56fee8e082",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/resources/completions.js": "51b8e99812b8175ef0572942789c30cdff5e5cecc773ed9f5e90a25bf0f4d6ca",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/resources/embeddings.js": "ba6e48846c4b493ca2681b1f44b36e8dca212fbfa6a5e55cdfdb7451127610be",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/resources/models.js": "6eaa33ab612fad45c64401ec63731431f2c25d47ab5a28f361be0e279921e776",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/resources/shared.js": "977ce0ab51dcc6a8c286edb218f80291457f19ecdca1c9c22c50e2998aefd63a",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/uploads.js": "168d1b1675a3a027742b58b85b743664e51395c60bc729d4a22335cfc747a922",
+    "https://esm.sh/v135/groq-sdk@0.7.0/denonext/version.js": "d801d3390b178201750fd89d0ca42ddc970dc9e22283539a6b0197275b447ce7",
+    "https://esm.sh/v135/node-gyp-build@4.6.1/denonext/node-gyp-build.mjs": "5d28b312f145a6cb2ec0dbdd80a7d34c0e0e6b5dcada65411d8bcff6c8991cc6",
+    "https://esm.sh/v135/node-gyp-build@4.8.1/denonext/node-gyp-build.mjs": "cddfc39c5f2d6e228fb1cd8cc36a594d870470b01348f866a7fb4e6f3ed8c66d",
+    "https://esm.sh/v135/utf-8-validate@6.0.4/denonext/utf-8-validate.mjs": "ab4990b545a45f10f7711c69046ee3e9c5b732b9781937f922cefd3fc99d0e88",
+    "https://esm.sh/v135/ws@8.18.0/denonext/ws.mjs": "b4c6f51c7c4d60d2a880889c9b07e00aa367adf20a8304a365cc5e09051a5004"
   }
 }
