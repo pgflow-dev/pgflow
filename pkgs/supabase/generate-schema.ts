@@ -1,4 +1,4 @@
-import ts, { Project, TypeChecker, Type } from "ts-morph";
+import { Project, Type } from "ts-morph";
 import typeToJsonSchema from "./typeToJsonSchema.ts";
 
 // Initialize a Project
@@ -11,7 +11,7 @@ function isPromiseType(type: Type): boolean {
 }
 
 // Updated unwrapPromiseType function
-function unwrapPromiseType(type: Type, typeChecker: TypeChecker): Type[] {
+function unwrapPromiseType(type: Type): Type[] {
   const types: Type[] = [];
   const visited = new Set<string>();
 
@@ -38,7 +38,7 @@ function unwrapPromiseType(type: Type, typeChecker: TypeChecker): Type[] {
   return types;
 }
 
-async function analyzeFlow(flowName: string, sourceFilePath: string) {
+async function analyzeFlow(sourceFilePath: string) {
   const sourceFile = project.getSourceFileOrThrow(sourceFilePath);
   const typeChecker = project.getTypeChecker();
 
@@ -77,7 +77,7 @@ async function analyzeFlow(flowName: string, sourceFilePath: string) {
 
       // Get the return type of the handler function
       const returnType = callSignatures[0].getReturnType();
-      const unwrappedReturnType = unwrapPromiseType(returnType, typeChecker);
+      const unwrappedReturnType = unwrapPromiseType(returnType);
 
       // Convert the unwrapped return type to JSON Schema
       const schema = typeToJsonSchema(unwrappedReturnType, typeChecker);
@@ -91,4 +91,4 @@ async function analyzeFlow(flowName: string, sourceFilePath: string) {
   }
 }
 
-analyzeFlow("ProcessVoiceMemo", "flows/ProcessVoiceMemo.ts");
+analyzeFlow("flows/ProcessVoiceMemo.ts");

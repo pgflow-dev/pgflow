@@ -1,4 +1,4 @@
-import ts, { TypeChecker, Symbol as TsSymbol, Type } from "ts-morph";
+import ts, { TypeChecker, Symbol as TsSymbol } from "ts-morph";
 import { JSONSchema7 } from "json-schema";
 
 export function typeToJsonSchemaSingle(
