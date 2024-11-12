@@ -29,6 +29,13 @@ export function typeToJsonSchemaSingle(
   if (type.isNull() || type.isUndefined()) {
     return { type: "null" };
   }
+  if (type.isTuple()) {
+    const types = type.getTupleElements();
+    return {
+      type: "array",
+      items: types.map((t) => typeToJsonSchemaSingle(t, typeChecker)),
+    };
+  }
   if (type.isArray()) {
     return {
       type: "array",

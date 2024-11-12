@@ -43,14 +43,14 @@ export class Flow<
       Steps,
       { [K in Name]: UnwrapPromise<RetType> }
     >;
-    // Update the step definitions
+    const newStepDefinition: StepDefinition<RunPayload, RetType> = {
+      name,
+      handler,
+      dependencies: [],
+    };
     const newStepDefinitions = {
       ...this.stepDefinitions,
-      [name]: {
-        name,
-        handler,
-        dependencies: [],
-      } as StepDefinition<RunPayload, RetType>,
+      [name]: newStepDefinition,
     };
     return new Flow<RunPayload, NewSteps>(newStepDefinitions);
   }
@@ -60,12 +60,11 @@ export class Flow<
     Name extends string,
     Deps extends keyof Steps & string,
     RetType extends Json,
+    Payload extends { __run__: RunPayload } & { [K in Deps]: Steps[K] },
   >(
     name: Name,
     dependencies: Deps[],
-    handler: (
-      payload: { __run__: RunPayload } & { [K in Deps]: Steps[K] },
-    ) => RetType | Promise<RetType>,
+    handler: (payload: Payload) => RetType | Promise<RetType>,
   ): Flow<
     RunPayload,
     MergeObjects<Steps, { [K in Name]: UnwrapPromise<RetType> }>
@@ -74,18 +73,14 @@ export class Flow<
       Steps,
       { [K in Name]: UnwrapPromise<RetType> }
     >;
-    const dependencyTypes = {} as { [K in Deps]: Steps[K] };
-    // Update the step definitions
+    const newStepDefinition: StepDefinition<Payload, RetType> = {
+      name,
+      handler,
+      dependencies,
+    };
     const newStepDefinitions = {
       ...this.stepDefinitions,
-      [name]: {
-        name,
-        handler,
-        dependencies,
-      } as StepDefinition<
-        { __run__: RunPayload } & { [K in Deps]: Steps[K] },
-        RetType
-      >,
+      [name]: newStepDefinition,
     };
     return new Flow<RunPayload, NewSteps>(newStepDefinitions);
   }

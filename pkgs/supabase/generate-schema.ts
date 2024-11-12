@@ -67,7 +67,15 @@ function analyzeFlow(sourceFilePath: string) {
         continue;
       }
 
-      const handlerType = handlerSymbol.getTypeAtLocation(sourceFile);
+      const handlerDeclarations = handlerSymbol.getDeclarations();
+      if (handlerDeclarations.length === 0) {
+        console.error(`No declarations found for handler in step ${stepName}.`);
+        continue;
+      }
+      const handlerType = typeChecker.getTypeOfSymbolAtLocation(
+        handlerSymbol,
+        handlerDeclarations[0],
+      );
 
       // Get the call signatures of the handler function
       const callSignatures = handlerType.getCallSignatures();
