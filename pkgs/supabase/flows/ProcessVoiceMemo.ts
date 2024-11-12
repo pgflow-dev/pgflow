@@ -79,7 +79,7 @@ const ProcessVoiceMemo = new Flow<RunPayload>()
     },
   )
   .addStep("merge", ["summarize", "capitalize"], (payload) => {
-    return JSON.stringify(payload);
+    return [payload.summarize.summary, payload.capitalize];
   });
 export default ProcessVoiceMemo;
 
