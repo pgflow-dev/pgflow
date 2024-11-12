@@ -2,7 +2,8 @@
 	"imports": {
 		"@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.34.0",
 		"@supabase/functions-js": "jsr:@supabase/functions-js/edge-runtime.d.ts",
-		"openai": "jsr:@openai/openai@^4.52.5"
+		"openai": "jsr:@openai/openai@^4.52.5",
+		"BasicFlow": "../../flows/BasicFlow.ts"
 	}
 }
 
