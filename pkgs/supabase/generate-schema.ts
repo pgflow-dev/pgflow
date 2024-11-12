@@ -1,5 +1,6 @@
 import { Project, Type } from "ts-morph";
 import typeToJsonSchema from "./typeToJsonSchema.ts";
+import { JSONSchema7 } from "json-schema";
 
 // Initialize a Project
 const project = new Project({
@@ -38,9 +39,11 @@ function unwrapPromiseType(type: Type): Type[] {
   return types;
 }
 
-async function analyzeFlow(sourceFilePath: string) {
+function analyzeFlow(sourceFilePath: string) {
   const sourceFile = project.getSourceFileOrThrow(sourceFilePath);
   const typeChecker = project.getTypeChecker();
+
+  const stepsToSchemas: { [key: string]: JSONSchema7 } = {};
 
   try {
     // Find the type alias 'StepsType'
@@ -81,6 +84,7 @@ async function analyzeFlow(sourceFilePath: string) {
 
       // Convert the unwrapped return type to JSON Schema
       const schema = typeToJsonSchema(unwrappedReturnType, typeChecker);
+      stepsToSchemas[stepName] = schema;
       console.log(
         `JSON Schema for step "${stepName}":`,
         JSON.stringify(schema, null, 2),
@@ -89,6 +93,10 @@ async function analyzeFlow(sourceFilePath: string) {
   } catch (error) {
     console.error("Failed to analyze flow:", error);
   }
+
+  return stepsToSchemas;
 }
 
-analyzeFlow("flows/ProcessVoiceMemo.ts");
+const stepsToSchemas = analyzeFlow("flows/ProcessVoiceMemo.ts");
+
+console.log(JSON.stringify(stepsToSchemas, null, 2));
