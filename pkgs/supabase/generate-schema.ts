@@ -105,6 +105,6 @@ function analyzeFlow(sourceFilePath: string) {
   return stepsToSchemas;
 }
 
-const stepsToSchemas = analyzeFlow("flows/ProcessVoiceMemo.ts");
+const stepsToSchemas = analyzeFlow("functions/_flows/ProcessVoiceMemo.ts");
 
 console.log(JSON.stringify(stepsToSchemas, null, 2));

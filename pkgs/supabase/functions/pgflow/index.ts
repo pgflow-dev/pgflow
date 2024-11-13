@@ -1,6 +1,16 @@
 /// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
-import { createAuthenticatedClient } from "../_shared/supabaseClient.ts";
-import BasicFlow from "BasicFlow";
+import BasicFlow from "../_flows/BasicFlow.ts";
+
+import { createClient } from "jsr:@supabase/supabase-js@^2.34.0";
+
+export function createAuthenticatedClient(req: Request) {
+  const authHeader = req.headers.get("Authorization")!;
+  return createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    { global: { headers: { Authorization: authHeader } } },
+  );
+}
 
 Deno.serve(async (req: Request) => {
   const input = await req.json();
