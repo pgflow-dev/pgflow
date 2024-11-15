@@ -3,7 +3,11 @@ title: pgflow
 description: Open Source parallel processing for your Supabase app
 template: splash
 hero:
-  tagline: Open Source background processing for your Supabase app
+  tagline: |
+    Open Source background processing for your Supabase app.
+    Define flows using statically typed TypeScript DSL
+    and run on Edge Functions or dedicated workers.
+
   image:
     file: ../../assets/nodes-group-logo.svg
   actions:
@@ -32,13 +36,13 @@ for AI powered customer support system.
 
    <Code code={stripSetupCode(_01_entrypoint)} lang="ts" />
 
-2. #### Add parallel processing
+2. #### Add parallel steps
 
    Add parallel processing by adding steps that depends on `transcription` results
 
    <Code code={stripSetupCode(_02_parallel_processing)} lang="ts" />
 
-3. #### Merge parallel results
+3. #### Use results
 
    Combine results to create a support ticket
 

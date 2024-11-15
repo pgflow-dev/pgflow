@@ -10,7 +10,7 @@ import { Flow } from "./Flow.ts";
 
 // everything below will get included, content above will be ignored in the docs
 /////////////////////////////////////////////////////////////////////////////////////
-export type RunPayload = {
+type RunPayload = {
   voiceMemoId: string;
   userId: string;
 };
