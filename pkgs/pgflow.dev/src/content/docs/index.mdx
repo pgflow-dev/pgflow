@@ -12,12 +12,12 @@ hero:
       icon: right-arrow
 ---
 
-import { Code, Steps } from '@astrojs/starlight/components';
-import { stripSetupCode } from './helpers.ts';
-import _01_entrypoint from './01_flow_entrypoint.ts?raw';
-import _02_parallel_processing from './02_parallel_processing.ts?raw';
-import _03_combine from './03_combine.ts?raw';
-import _05_trigger from './05_trigger.ts?raw';
+import { Code, Steps } from "@astrojs/starlight/components";
+import { stripSetupCode } from "./helpers.ts";
+import _01_entrypoint from "./01_flow_entrypoint.ts?raw";
+import _02_parallel_processing from "./02_parallel_processing.ts?raw";
+import _03_combine from "./03_combine.ts?raw";
+import _05_trigger from "./05_trigger.ts?raw";
 
 ## How it works?
 
@@ -28,18 +28,18 @@ for AI powered customer support system.
 
 1. Define `RunPayload` and entrypoints (root step)
 
-   <Code code={stripSetupCode(_01_entrypoint)} lang="ts"/>
+   <Code code={stripSetupCode(_01_entrypoint)} lang="ts" />
 
 2. Add parallel processing by adding steps that depends on `transcription` results
 
-   <Code code={stripSetupCode(_02_parallel_processing)} lang="ts"/>
+   <Code code={stripSetupCode(_02_parallel_processing)} lang="ts" />
 
 3. Combine results to create a support ticket
 
-   <Code code={stripSetupCode(_03_combine)} lang="ts"/>
+   <Code code={stripSetupCode(_03_combine)} lang="ts" />
 
 4. Deploy your workflow
-   
+
    ```sh
    $ pgflow deploy flows/ProcessVoiceTicket.ts
 
@@ -52,6 +52,13 @@ for AI powered customer support system.
 
 5. Trigger it from browser and receive progress in realtime
 
-   <Code code={stripSetupCode(_05_trigger)} lang="ts"/>
+   <Code code={stripSetupCode(_05_trigger)} lang="ts" />
+
+6. Profit! You gain lot more with this simple approach:
+
+   - orchestration is done by postgres, dependant steps start only when dependencies are ready
+   - we leverage Supabase Edge Functions to execute handlers - its baked in!
+   - you stream live updates/progress back to user browser in realtime
+   - end-to-end type safety via JSON schemas generated from your step handlers, all done solely based on shape of the grap and a single type annotation for whole run payload
 
 </Steps>
