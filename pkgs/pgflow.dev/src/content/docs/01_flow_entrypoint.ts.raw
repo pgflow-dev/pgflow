@@ -15,8 +15,9 @@ export type RunPayload = {
   userId: string;
 };
 
-new Flow<RunPayload>().addRootStep("transcription", async ({ voiceMemoId }) => {
-  const file = await fetchVoiceMemo(voiceMemoId);
+new Flow<RunPayload>()
+	.addRootStep("transcription", async ({ voiceMemoId }) => {
+		const file = await fetchVoiceMemo(voiceMemoId);
 
-  return await trancribeWithGroqWhisper(file);
-});
+		return await trancribeWithGroqWhisper(file);
+	})
