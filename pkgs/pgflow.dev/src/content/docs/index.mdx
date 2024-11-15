@@ -1,36 +1,57 @@
 ---
 title: pgflow
-description: Effortless Supabase background workflows on to of Postgres
+description: Open Source parallel processing for your Supabase app
 template: splash
 hero:
-  tagline: Effortless Supabase background workflows on to of Postgres
+  tagline: Open Source parallel processing for your Supabase app
   image:
     file: ../../assets/nodes-group-logo.svg
   actions:
-    - text: Try with your Supabase app
+    - text: How it works?
       link: /guides/example/
       icon: right-arrow
-    - text: Read the pgflow docs
-      link: https://pgflow.dev/docs
-      icon: external
-      variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Code, Steps } from '@astrojs/starlight/components';
+import { stripSetupCode } from './helpers.ts';
+import _01_entrypoint from './01_flow_entrypoint.ts?raw';
+import _02_parallel_processing from './02_parallel_processing.ts?raw';
+import _03_combine from './03_combine.ts?raw';
+import _05_trigger from './05_trigger.ts?raw';
 
-## Next steps
+## How it works?
 
-<CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
-	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
-	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
-	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
-	</Card>
-</CardGrid>
+Lets code as simplified example - a voice memo processing flow
+for AI powered customer support system.
+
+<Steps>
+
+1. Define `RunPayload` and entrypoints (root step)
+
+   <Code code={stripSetupCode(_01_entrypoint)} lang="ts"/>
+
+2. Add parallel processing by adding steps that depends on `transcription` results
+
+   <Code code={stripSetupCode(_02_parallel_processing)} lang="ts"/>
+
+3. Combine results to create a support ticket
+
+   <Code code={stripSetupCode(_03_combine)} lang="ts"/>
+
+4. Deploy your workflow
+   
+   ```sh
+   $ pgflow deploy flows/ProcessVoiceTicket.ts
+
+     -> generating JSON schemas... done
+     -> generating graph shape... done
+     -> upserting... done
+
+     Your flow was successfully deployed. You can run it now!
+   ```
+
+5. Trigger it from browser and receive progress in realtime
+
+   <Code code={stripSetupCode(_05_trigger)} lang="ts"/>
+
+</Steps>
