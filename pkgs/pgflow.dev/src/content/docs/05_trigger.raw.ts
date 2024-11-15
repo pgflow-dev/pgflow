@@ -1,3 +1,4 @@
+// @ts-nocheck
 ////////////////////////////////////////////////////////////////
 import { useFlow } from '@pgflow/react';
 import { ProcessVoiceTicket } from "flows/ProcessVoiceTicket.ts";

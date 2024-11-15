@@ -1,3 +1,4 @@
+// @ts-nocheck
 function fetchVoiceMemo(voiceMemoId: string): File {
   return new File([], voiceMemoId);
 }
