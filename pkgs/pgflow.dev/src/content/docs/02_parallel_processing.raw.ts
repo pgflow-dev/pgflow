@@ -1,3 +1,4 @@
+// @ts-nocheck
 // everything below will get included, content above will be ignored in the docs
 /////////////////////////////////////////////////////////////////////////////////////
 .addStep("title", ["transcription"]
