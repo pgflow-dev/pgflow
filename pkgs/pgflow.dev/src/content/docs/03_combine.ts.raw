@@ -1,6 +1,6 @@
 // @ts-nocheck
 /////////////////////////////////////
-.addStep(
+.task(
   "newTicket",
   ["title", "sentiment", "summary"],
   async ({ title, sentiment, summary, __run__: { userId } }) => await upsertTicket({
