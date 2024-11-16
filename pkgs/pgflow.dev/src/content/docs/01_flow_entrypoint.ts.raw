@@ -16,7 +16,7 @@ type RunPayload = {
 };
 
 new Flow<RunPayload>()
-	.addRootStep("transcription", async ({ voiceMemoId }) => {
+	.task("transcription", async ({ voiceMemoId }) => {
 		const file = await fetchVoiceMemo(voiceMemoId);
 
 		return await trancribeWithGroqWhisper(file);

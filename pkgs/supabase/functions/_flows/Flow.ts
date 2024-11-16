@@ -32,31 +32,16 @@ export class Flow<
     this.stepDefinitions = stepDefinitions;
   }
 
-  addRootStep<Name extends string, RetType extends Json>(
+  // Function overloads
+  task<Name extends string, RetType extends Json>(
     name: Name,
     handler: (payload: RunPayload) => RetType | Promise<RetType>,
   ): Flow<
     RunPayload,
     MergeObjects<Steps, { [K in Name]: UnwrapPromise<RetType> }>
-  > {
-    type NewSteps = MergeObjects<
-      Steps,
-      { [K in Name]: UnwrapPromise<RetType> }
-    >;
-    const newStepDefinition: StepDefinition<RunPayload, RetType> = {
-      name,
-      handler,
-      dependencies: [],
-    };
-    const newStepDefinitions = {
-      ...this.stepDefinitions,
-      [name]: newStepDefinition,
-    };
-    return new Flow<RunPayload, NewSteps>(newStepDefinitions);
-  }
+  >;
 
-  // Similarly for addStep
-  addStep<
+  task<
     Name extends string,
     Deps extends keyof Steps & string,
     RetType extends Json,
@@ -68,20 +53,40 @@ export class Flow<
   ): Flow<
     RunPayload,
     MergeObjects<Steps, { [K in Name]: UnwrapPromise<RetType> }>
+  >;
+
+  // Implementation
+  task<
+    Name extends string,
+    Deps extends keyof Steps & string,
+    RetType extends Json,
+    Payload extends { __run__: RunPayload } & { [K in Deps]: Steps[K] },
+  >(
+    name: Name,
+    handlerOrDeps:
+      | ((payload: RunPayload) => RetType | Promise<RetType>)
+      | Deps[],
+    handler?: (payload: Payload) => RetType | Promise<RetType>,
+  ): Flow<
+    RunPayload,
+    MergeObjects<Steps, { [K in Name]: UnwrapPromise<RetType> }>
   > {
     type NewSteps = MergeObjects<
       Steps,
       { [K in Name]: UnwrapPromise<RetType> }
     >;
-    const newStepDefinition: StepDefinition<Payload, RetType> = {
+
+    const newStepDefinition: StepDefinition<any, RetType> = {
       name,
-      handler,
-      dependencies,
+      handler: typeof handlerOrDeps === "function" ? handlerOrDeps : handler!,
+      dependencies: typeof handlerOrDeps === "function" ? [] : handlerOrDeps,
     };
+
     const newStepDefinitions = {
       ...this.stepDefinitions,
       [name]: newStepDefinition,
     };
+
     return new Flow<RunPayload, NewSteps>(newStepDefinitions);
   }
 
@@ -99,12 +104,12 @@ const ExampleFlow = new Flow<{ value: number }>()
   // rootStep return type will be inferred to:
   //
   // { doubledValue: number; };
-  .addRootStep("rootStep", async (payload) => ({
+  .task("rootStep", async (payload) => ({
     doubledValue: payload.value * 2,
   }))
   // normalStep return type will be inferred to:
   // { doubledValueArray: number[] };
-  .addStep("normalStep", ["rootStep"], async (payload) => ({
+  .task("normalStep", ["rootStep"], async (payload) => ({
     doubledValueArray: [payload.rootStep.doubledValue],
   }));
 

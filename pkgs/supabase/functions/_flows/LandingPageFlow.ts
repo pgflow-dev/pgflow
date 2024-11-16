@@ -14,7 +14,7 @@ export type RunPayload = {
   userId: string;
 };
 
-export const LandingPageFlow = new Flow<RunPayload>().addRootStep(
+export const LandingPageFlow = new Flow<RunPayload>().task(
   "transcription",
   ({ voiceMemoId, userId }) => {
     const file = await fetchVoiceMemo(voiceMemoId);

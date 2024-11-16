@@ -26,7 +26,7 @@ function mergeHandler(payload: MergeHandlerPayload): MergeHandlerReturn {
 }
 
 const ProcessVoiceMemo = new Flow<RunPayload>()
-  .addRootStep("transcribe", async ({ objectName, bucketId }) => {
+  .task("transcribe", async ({ objectName, bucketId }) => {
     const response = await supabase.storage.from(bucketId).download(objectName);
 
     if (response.error) {
@@ -60,7 +60,7 @@ const ProcessVoiceMemo = new Flow<RunPayload>()
 
     return { transcription: transcription.text };
   })
-  .addStep(
+  .task(
     "summarize",
     ["transcribe"],
     async ({ transcribe, __run__: { ownerId } }) => {
@@ -84,14 +84,14 @@ const ProcessVoiceMemo = new Flow<RunPayload>()
       };
     },
   )
-  .addStep(
+  .task(
     "capitalize",
     ["transcribe"],
     ({ transcribe: { transcription } }) => {
       return transcription.toUpperCase();
     },
   )
-  .addStep("merge", ["summarize", "capitalize"], mergeHandler);
+  .task("merge", ["summarize", "capitalize"], mergeHandler);
 export default ProcessVoiceMemo;
 
 export type StepsType = ReturnType<typeof ProcessVoiceMemo.getSteps>;

@@ -59,19 +59,19 @@ type RunPayload = {
 };
 
 const HatchetFlow = new Flow<RunPayload>()
-  .addRootStep("start", (_payload) => {
+  .task("start", (_payload) => {
     return { status: "starting..." };
   })
-  .addStep("load_docs", ["start"], ({ start: { status } }) => {
+  .task("load_docs", ["start"], ({ start: { status } }) => {
     return { status: `docs loaded`, docs: [`the start status was ${status}`] };
   })
-  .addStep("reason_docs", ["load_docs"], ({ load_docs: { docs } }) => {
+  .task("reason_docs", ["load_docs"], ({ load_docs: { docs } }) => {
     return {
       status: "writing a response",
       research: `reasoning about ${docs.length} docs...`,
     };
   })
-  .addStep(
+  .task(
     "generate_response",
     ["reason_docs"],
     ({ reason_docs: { research } }) => {
