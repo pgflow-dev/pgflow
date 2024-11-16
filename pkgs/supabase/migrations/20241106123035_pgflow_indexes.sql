@@ -4,7 +4,7 @@ CREATE INDEX idx_deps_to_step_slug ON pgflow.deps (to_step_slug);
 -- Index on from_step_slug in pgflow.deps
 CREATE INDEX idx_deps_from_step_slug ON pgflow.deps (from_step_slug);
 
--- Optional: Index on (to_step_slug, from_step_slug) 
+-- Optional: Index on (to_step_slug, from_step_slug)
 -- if you frequently query both columns together
 CREATE INDEX idx_deps_from_step_slug_to_step_slug
 ON pgflow.deps (to_step_slug, from_step_slug);

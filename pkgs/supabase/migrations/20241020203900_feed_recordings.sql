@@ -47,7 +47,7 @@ begin
         PERFORM utils.enqueue_job(
             'transcribe_recording',
             json_build_object(
-                'bucket_id', 'feed_recordings', 
+                'bucket_id', 'feed_recordings',
                 'object_id', NEW.id,
                 'object_name', NEW.name,
                 'bucket_id', 'feed_recordings',
