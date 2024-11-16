@@ -2,11 +2,12 @@ I'm working on workflow engine implemented on top of postgres with a typescript 
 
 when installing pgflow (my engine) into a supabase project, one is supposed to run "npx pgflow install --migrations-path=supabase/migratoins --flows-path=supabase/flows" and it should create supabase/flows folder and copy pgflow migrations to supabase folder.
 
-then user defines his flows in supabase/flows using the pgflow package (just importing 
+then user defines his flows in supabase/flows using the pgflow package (just importing
 Flow class and using it to build the DAG flow).
 this should result in a default export of instance of Flow class with defined steps etc.
 
 this flow class will be used in following way:
+
 - in pgflow edge function handler to handle particular step using its handler function (will be called by pgflow from within db)
 - when inserting workflow to database, to convert graph structure to inserts to flows, steps and deps tables
 - when inserting workflow to database, to infer the return types for each handler automatically (without adding any additional type annotations - pgflow-dsl is already type infering result values based on run payload and flow of functions - one need to only generate JSON schemas for all handler return types) - the json schemas then are saved with steps definitions as "result_schema" column (not yet implemented) which later is used to validate calls to complete_step (if the payload passed to complete step for given step does not match the provided result_schema, it should be marked as failure)
@@ -14,8 +15,9 @@ this flow class will be used in following way:
 the last way how defined flows will be used is to trigger workflows client side, for example in a frontend app - one imports the flows and just calls Flow.run(runPayload) - the run should be typed like the run payload.
 
 My main focus should be DX, hence my questions:
+
 - is my suggested approach a good one?
-- can a single folder with flows/*.ts classes be used both by edge functions (deno runtime), json schema inference (typescript compiler, ts-morph, ts-json-schema-generator) and frontend app (vite on node, browser)
+- can a single folder with flows/\*.ts classes be used both by edge functions (deno runtime), json schema inference (typescript compiler, ts-morph, ts-json-schema-generator) and frontend app (vite on node, browser)
 - how to make it as easy as possible so it is not a burden for user, but allow to reuse the code everywhere?
 
 See my code:
@@ -82,7 +84,7 @@ export class Flow<
     name: Name,
     dependencies: Deps[],
     handler: (
-      payload: { __run__: RunPayload } & { [K in Deps]: Steps[K] },
+      payload: { run: RunPayload } & { [K in Deps]: Steps[K] },
     ) => RetType | Promise<RetType>,
   ): Flow<
     RunPayload,
@@ -159,7 +161,7 @@ const flow = new Flow<RunPayload>()
   .addStep(
     "summarize",
     ["transcribe"],
-    async ({ transcribe, __run__: { ownerId } }) => {
+    async ({ transcribe, run: { ownerId } }) => {
       const chatCompletion = await groq.chat.completions.create({
         messages: [
           {

@@ -100,7 +100,7 @@ SELECT is(
 --             AND step_slug = 'left'
 --     ),
 --     '{
---         "__run__": {"input": "hello world"},
+--         "run": {"input": "hello world"},
 --         "__step__": {"step_slug": "root"},
 --         "root": {"output": "success"}
 --     }'::jsonb,
@@ -116,7 +116,7 @@ SELECT is(
 --             AND step_slug = 'right'
 --     ),
 --     '{
---         "__run__": {"input": "hello world"},
+--         "run": {"input": "hello world"},
 --         "__step__": {"step_slug": "right"},
 --         "root": {"output": "success"}
 --     }'::jsonb,

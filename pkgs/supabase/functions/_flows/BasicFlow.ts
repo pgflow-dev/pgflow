@@ -7,7 +7,7 @@ const BasicFlow = new Flow<string>()
   .task(
     "end",
     ["left", "right"],
-    ({ left, right, __run__ }) => `<${left}> and <${right}> of (${__run__})`,
+    ({ left, right, run }) => `<${left}> and <${right}> of (${run})`,
   );
 
 export default BasicFlow;

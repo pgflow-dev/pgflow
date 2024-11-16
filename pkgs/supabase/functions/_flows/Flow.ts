@@ -45,7 +45,7 @@ export class Flow<
     Name extends string,
     Deps extends keyof Steps & string,
     RetType extends Json,
-    Payload extends { __run__: RunPayload } & { [K in Deps]: Steps[K] },
+    Payload extends { run: RunPayload } & { [K in Deps]: Steps[K] },
   >(
     name: Name,
     dependencies: Deps[],
@@ -60,7 +60,7 @@ export class Flow<
     Name extends string,
     Deps extends keyof Steps & string,
     RetType extends Json,
-    Payload extends { __run__: RunPayload } & { [K in Deps]: Steps[K] },
+    Payload extends { run: RunPayload } & { [K in Deps]: Steps[K] },
   >(
     name: Name,
     handlerOrDeps:

@@ -63,7 +63,7 @@ const ProcessVoiceMemo = new Flow<RunPayload>()
   .task(
     "summarize",
     ["transcribe"],
-    async ({ transcribe, __run__: { ownerId } }) => {
+    async ({ transcribe, run: { ownerId } }) => {
       const chatCompletion = await groq.chat.completions.create({
         messages: [
           {
@@ -84,13 +84,9 @@ const ProcessVoiceMemo = new Flow<RunPayload>()
       };
     },
   )
-  .task(
-    "capitalize",
-    ["transcribe"],
-    ({ transcribe: { transcription } }) => {
-      return transcription.toUpperCase();
-    },
-  )
+  .task("capitalize", ["transcribe"], ({ transcribe: { transcription } }) => {
+    return transcription.toUpperCase();
+  })
   .task("merge", ["summarize", "capitalize"], mergeHandler);
 export default ProcessVoiceMemo;
 

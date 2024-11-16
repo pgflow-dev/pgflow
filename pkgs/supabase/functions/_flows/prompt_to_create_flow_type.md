@@ -10,7 +10,7 @@ Any steps that have dependencies will be called with an object composed
 of all the dependencies return values, where dependency name will be a key
 and the return value will be a value.
 
-I want to create a generic (template?) typescript type "Workflow" which 
+I want to create a generic (template?) typescript type "Workflow" which
 will accept a RunPayload as its template variable. RunPayload is a custom
 type that user writes.
 
@@ -26,20 +26,19 @@ The names of the tasks corresponds to the strings in dependsOn array.
 Name of the tasks are top level keys in the Flow type.
 
 The steps that have depencencies will be called with an object composed of all the dependencies return values.
-There will also be included an additional special key "__run__" which will hold the RunPayload itself,
+There will also be included an additional special key "run" which will hold the RunPayload itself,
 so each step can also refer to run payload.
 
 So in our case of step "summarize", it depends on "transcribe", so it is called with an object of type:
 
 ```typescript
 type SummarizePayload = {
-	__run__: RunPayload,
+	run: RunPayload,
 	transcribe: <type of return value of "transcribe">
 }
 ```
 
-The type includes only __run__ key and any direct dependencies, no all parent steps.
-
+The type includes only run key and any direct dependencies, no all parent steps.
 
 ## Your job
 
@@ -49,9 +48,10 @@ used to build composed dependency types for the non-root steps.
 
 ## IMPORTANT!!!
 
-Make sure you understand that the shape of the type should be Flow<T> 
-- all the return types of the tasks should be inferred from the return types of 
-the run methods themselvves.
+Make sure you understand that the shape of the type should be Flow<T>
+
+- all the return types of the tasks should be inferred from the return types of
+  the run methods themselvves.
 
 We just need to create a type for a DAG graph of steps and connect their inputs and outputs with types,
 assuming the bodies of run() will be using typed code and the return
@@ -61,5 +61,3 @@ type of the function run() will always be known this way.
 
 Use this example usage of the Flow<T> type so you can better understand
 and use references i mentioned:
-
-

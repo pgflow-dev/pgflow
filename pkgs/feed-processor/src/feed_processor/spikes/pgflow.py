@@ -30,7 +30,7 @@ def setup_pgflow_entrypoints(entrypoints: list[str], qm: QueueManager, context: 
                 print('got payload')
                 payload = parse_json(job.payload.decode())
                 print('\n'.join(f'{k}: {v}' for k, v in payload.items()))
-                run = payload['__run__']
+                run = payload['run']
                 run_id = UUID(run['run_id'])
                 step_slug = payload['__step__']['step_slug']
                 step_result = dict(step_slug=step_slug)

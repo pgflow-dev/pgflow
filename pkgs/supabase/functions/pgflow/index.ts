@@ -19,7 +19,7 @@ Deno.serve(async (req: Request) => {
   const flowSteps = BasicFlow.getSteps();
   type StepNames = keyof typeof flowSteps;
 
-  const run = input["__run__"];
+  const run = input["run"];
   const step = input["__step__"];
   const slug = input["__step__"]["step_slug"];
 

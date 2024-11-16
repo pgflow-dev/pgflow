@@ -5,7 +5,7 @@ type SummarizeInput = {
   transcribe: {
     transcription: string;
   };
-  __run__: {
+  run: {
     ownerId: string;
   };
 };
@@ -16,7 +16,7 @@ type SummarizeOutput = {
 
 export default async function handleSummarize({
   transcribe,
-  __run__,
+  run,
 }: SummarizeInput): Promise<SummarizeOutput> {
   const chatCompletion = await groq.chat.completions.create({
     messages: [
@@ -34,6 +34,6 @@ export default async function handleSummarize({
 
   return {
     summary: chatCompletion.choices[0].message.content,
-    runOwnerId: __run__.ownerId,
+    runOwnerId: run.ownerId,
   };
 }

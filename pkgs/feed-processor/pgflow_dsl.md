@@ -80,7 +80,7 @@ class Context:
         self.db_connection = db_connection
 
     def step_output(self, step_slug):
-        run_id = self.job.payload.get('__run__', {}).get('id')
+        run_id = self.job.payload.get('run', {}).get('id')
         if not run_id:
             raise Exception("No run_id in job payload")
         with self.db_connection.cursor() as cur:
@@ -136,7 +136,7 @@ def pgflow_entrypoint(job):
     step_slug = payload.get('__step__', {}).get('slug')
     if not step_slug:
         raise Exception("No step slug found in job payload")
-    workflow_slug = payload.get('__run__', {}).get('workflow_slug')
+    workflow_slug = payload.get('run', {}).get('workflow_slug')
     if not workflow_slug:
         raise Exception("No workflow slug found in job payload")
     workflow_cls = hatchet.workflows.get(workflow_slug)
@@ -151,7 +151,7 @@ def pgflow_entrypoint(job):
     ctx = Context(job, db_connection)
     result = method(workflow_instance, ctx)
     # Mark step as succeeded
-    run_id = payload.get('__run__', {}).get('id')
+    run_id = payload.get('run', {}).get('id')
     with db_connection:
         with db_connection.cursor() as cur:
             cur.execute("""

@@ -80,7 +80,7 @@ const InngestFlow = new Flow<RunPayload>()
   .task(
     "writeToDb",
     ["transcribeVideo", "summarizeTranscript"],
-    async ({ __run__: { videoId }, transcribeVideo, summarizeTranscript }) =>
+    async ({ run: { videoId }, transcribeVideo, summarizeTranscript }) =>
       await db.videoSummaries.upsert({
         videoId,
         transcript: transcribeVideo,

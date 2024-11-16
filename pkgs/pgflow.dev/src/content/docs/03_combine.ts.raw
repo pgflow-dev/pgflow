@@ -3,7 +3,7 @@
 .task(
   "newTicket",
   ["title", "sentiment", "summary"],
-  async ({ title, sentiment, summary, __run__: { userId } }) => await upsertTicket({
+  async ({ title, sentiment, summary, run: { userId } }) => await upsertTicket({
     title,
     severity: sentiment > 3 ? "high" : "low",
     description: summary,

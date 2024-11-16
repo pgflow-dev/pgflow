@@ -95,7 +95,7 @@ PREPARE expected_values AS
 SELECT
     (_tv.flow_slug || '/root')::text as entrypoint,
     jsonb_build_object(
-        '__run__', to_jsonb(r.*),
+        'run', to_jsonb(r.*),
         '__step__', jsonb_build_object('step_slug', 'root')
     ) as payload_jsonb
 FROM _test_vars _tv
