@@ -80,18 +80,12 @@ const InngestFlow = new Flow<RunPayload>()
   .task(
     "writeToDb",
     ["transcribeVideo", "summarizeTranscript"],
-    async ({ __run__: { videoId }, transcribeVideo, summarizeTranscript }) => {
+    async ({ __run__: { videoId }, transcribeVideo, summarizeTranscript }) =>
       await db.videoSummaries.upsert({
         videoId,
         transcript: transcribeVideo,
         summary: summarizeTranscript,
-      });
-      return {
-        videoId,
-        transcript: transcribeVideo,
-        summary: summarizeTranscript,
-      };
-    },
+      }),
   );
 
 export type StepsType = ReturnType<typeof InngestFlow.getSteps>;
