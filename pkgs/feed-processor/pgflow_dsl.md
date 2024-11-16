@@ -133,7 +133,7 @@ class WorkflowSyncer:
 @qm.entrypoint('pgflow')
 def pgflow_entrypoint(job):
     payload = json.loads(job.payload)
-    step_slug = payload.get('__step__', {}).get('slug')
+    step_slug = payload.get('step', {}).get('slug')
     if not step_slug:
         raise Exception("No step slug found in job payload")
     workflow_slug = payload.get('run', {}).get('workflow_slug')

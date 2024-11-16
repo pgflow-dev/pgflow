@@ -96,7 +96,7 @@ SELECT
     (_tv.flow_slug || '/root')::text as entrypoint,
     jsonb_build_object(
         'run', to_jsonb(r.*),
-        '__step__', jsonb_build_object('step_slug', 'root')
+        'step', jsonb_build_object('step_slug', 'root')
     ) as payload_jsonb
 FROM _test_vars _tv
 JOIN pgflow.runs r ON r.id = _tv.run_id;

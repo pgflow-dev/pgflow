@@ -20,8 +20,8 @@ Deno.serve(async (req: Request) => {
   type StepNames = keyof typeof flowSteps;
 
   const run = input["run"];
-  const step = input["__step__"];
-  const slug = input["__step__"]["step_slug"];
+  const step = input["step"];
+  const slug = input["step"]["step_slug"];
 
   function assertStepSlug(slug: string): asserts slug is StepNames {
     if (!(slug in flowSteps)) {
@@ -29,9 +29,9 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // Create new input object without __step__ key
+  // Create new input object without step key
   const handlerInput = { ...input };
-  delete handlerInput["__step__"];
+  delete handlerInput["step"];
 
   assertStepSlug(slug);
   const stepResult = await flowSteps[slug].handler(handlerInput);

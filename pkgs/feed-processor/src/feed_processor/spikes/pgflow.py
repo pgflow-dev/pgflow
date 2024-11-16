@@ -32,7 +32,7 @@ def setup_pgflow_entrypoints(entrypoints: list[str], qm: QueueManager, context: 
                 print('\n'.join(f'{k}: {v}' for k, v in payload.items()))
                 run = payload['run']
                 run_id = UUID(run['run_id'])
-                step_slug = payload['__step__']['step_slug']
+                step_slug = payload['step']['step_slug']
                 step_result = dict(step_slug=step_slug)
 
                 # query = "SELECT pgflow.run_flow($1::text, $2::jsonb)"

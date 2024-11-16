@@ -101,7 +101,7 @@ SELECT is(
 --     ),
 --     '{
 --         "run": {"input": "hello world"},
---         "__step__": {"step_slug": "root"},
+--         "step": {"step_slug": "root"},
 --         "root": {"output": "success"}
 --     }'::jsonb,
 --     'left step should have payload of flow and dependencies'
@@ -117,7 +117,7 @@ SELECT is(
 --     ),
 --     '{
 --         "run": {"input": "hello world"},
---         "__step__": {"step_slug": "right"},
+--         "step": {"step_slug": "right"},
 --         "root": {"output": "success"}
 --     }'::jsonb,
 --     'right step should have payload of flow and dependencies'

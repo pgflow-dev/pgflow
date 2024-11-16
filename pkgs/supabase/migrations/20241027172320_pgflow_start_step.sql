@@ -80,7 +80,7 @@ BEGIN
     )
     SELECT COALESCE(deps, '{}'::jsonb) || jsonb_build_object(
         'run', to_jsonb(run.*),
-        '__step__', jsonb_build_object('step_slug', p_step_slug)
+        'step', jsonb_build_object('step_slug', p_step_slug)
     )
     INTO job_payload
     FROM deps_payload, run;
