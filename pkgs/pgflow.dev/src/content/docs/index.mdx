@@ -13,8 +13,8 @@ hero:
       icon: down-caret
 ---
 
-import { Code, Steps } from "@astrojs/starlight/components";
-import { stripSetupCode } from "./helpers.ts";
+import CodeAfterMarker from '../../components/CodeAfterMarker.astro';
+import { Steps } from "@astrojs/starlight/components";
 import _01_entrypoint from "./01_flow_entrypoint.ts.raw?raw";
 import _02_parallel_processing from "./02_parallel_processing.ts.raw?raw";
 import _03_combine from "./03_combine.ts.raw?raw";
@@ -31,19 +31,19 @@ for AI powered customer support system.
 
    Define `RunPayload` and root steps (steps without dependencies)
 
-   <Code code={stripSetupCode(_01_entrypoint)} lang="ts" />
+   <CodeAfterMarker code={_01_entrypoint} lang="ts" />
 
 2. #### Add parallel steps
 
    Add parallel processing by adding steps that depends on `transcription` results
 
-   <Code code={stripSetupCode(_02_parallel_processing)} lang="ts" />
+   <CodeAfterMarker code={_02_parallel_processing} lang="ts" />
 
 3. #### Use results
 
    Combine results to create a support ticket
 
-   <Code code={stripSetupCode(_03_combine)} lang="ts" />
+   <CodeAfterMarker code={_03_combine} lang="ts" />
 
 4. #### Deploy to production
 
@@ -61,7 +61,7 @@ for AI powered customer support system.
 
    Triggering flows allows to receive live updates on flow progress by leveraging Supabase Realtime.
 
-   <Code code={stripSetupCode(_05_trigger)} lang="ts" />
+   <CodeAfterMarker code={_05_trigger} lang="ts" />
 
 6. #### Profit!
 
