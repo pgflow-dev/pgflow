@@ -10,10 +10,16 @@ export default defineConfig({
       social: {
         github: "https://github.com/jumski",
       },
+      components: {
+        SiteTitle: "./src/components/SiteTitle.astro",
+      },
       sidebar: [
         {
-          label: "Work-In-Progress",
-          items: [{ label: "Home", slug: "index" }],
+          label: "Landing Pages WIP",
+          items: [
+            { label: "Starting with flow def", slug: "index" },
+            { label: "Starting with React", slug: "starting_with_react" },
+          ],
         },
         {
           label: "AI Generated Docs",
