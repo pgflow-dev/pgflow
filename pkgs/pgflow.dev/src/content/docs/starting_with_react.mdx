@@ -52,22 +52,34 @@ Refer to this guide: [Getting started with React](https://reactjs.org/docs/getti
 
    </CardGrid>
 
-2. #### Hook up the existing Flow
+2. #### Add a flow
 
    <CardGrid>
 
-     ```jsx
-     import { CreateMemeFlow } from './flows/CreateMemeFlow.ts';
+     ```diff lang="jsx"
+     + import { CreateMemeFlow } from './flows/CreateMemeFlow.ts';
+     +
+       const CreateMemeComponent = () => {
+         const [topic, setTopic] = useState('');
+     +   const { startFlow } = useFlow(CreateMemeFlow);
 
-     const CreateMemeComponent = () => {
-       const { triggerFlow } = useFlow(CreateMemeFlow);
-
-       return <div>
-         <input type="text" placeholder="Topic of a joke" />
-         <button onClick={triggerFlow()}>Create meme!</button>
-       </div>;
-     }
+         return <div>
+           <input 
+             type="text" 
+             value={topic} 
+             onChange={(e) => setTopic(e.target.value)} 
+             placeholder="Topic of a joke" 
+           />
+     -     <button>Tell a joke</button>
+     +     <button onClick={() => startFlow(topic)}>Tell a joke</button>
+         </div>;
+       }
      ```
+
+     <div>
+       <input type="text" placeholder="Topic of a joke" />
+       <button>Create meme!</button>
+     </div>
 
    </CardGrid>
 
