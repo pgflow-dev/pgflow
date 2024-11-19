@@ -1,0 +1,16 @@
+---
+title: Test multifile code
+---
+
+import { Code } from "@astrojs/starlight/components";
+
+<Code group="multifile" code={`
+// file1.ts
+const a = 1;
+const b = 2;
+`}/>
+
+<Code group="multifile" code={`
+// file2.ts
+console.log(a + b);
+`}/>
