@@ -22,6 +22,12 @@ export default defineConfig({
           ],
         },
         {
+          label: "Spikes, ideas",
+          items: [
+            { label: "Test Multifile Code", slug: "test_multifile_code" },
+          ],
+        },
+        {
           label: "AI Generated Docs",
           items: [
             {
