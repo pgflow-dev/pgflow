@@ -4,14 +4,83 @@ title: React support
 
 import { Code, Steps } from "@astrojs/starlight/components";
 
-## React - first class citizen
-
 pgflow works beautifully with React.
-Click this button to start this flow:
+Click **this button** to start the flow.
 
 ```typescript
-const IncrementNumberFlow = new Flow<{input: number}>()
-   .task("increment", ({input}) => inputNumber + 1)
+
+const GenerateSocialPostComponent = () => {
+  const { flow } = useFlow(GenerateSocialPost)
+
+  if (flowState.isCompleted('extractTags')) {
+    return '';  
+  }
+
+  return (
+    <div>
+      <input
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        placeholder="Enter a number"
+      />
+      <button onClick={() => flow.run(inputValue)}>Submit</button>
+      <p>{result}</p>
+    </div>
+  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const SimpleFlow = () => {
+  const [inputValue, setInputValue] = useState('');
+  const [result, setResult] = useState('');
+
+  const handleSubmit = () => {
+    // Handle the submission here
+    setResult(`Submitted value: ${inputValue}`);
+  };
+
+  return (
+    <div>
+      <input
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        placeholder="Enter a number"
+      />
+      <button onClick={handleSubmit}>Submit</button>
+      <p>{result}</p>
+    </div>
+  );
+};
+```
+
+1. ## React - first class citizen
+
+```typescript
+
 ```
 
 We just created a new flow with a single task Flow is statically typed

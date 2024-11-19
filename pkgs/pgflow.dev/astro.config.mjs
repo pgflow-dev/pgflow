@@ -22,6 +22,10 @@ export default defineConfig({
               label: "Explain in a simple way ",
               slug: "explain_in_a_simple_way",
             },
+            {
+              label: "From frontend perspective",
+              slug: "from_frontend_perspective",
+            },
           ],
         },
         // {
