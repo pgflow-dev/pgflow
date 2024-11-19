@@ -1,0 +1,74 @@
+---
+title: pgflow
+description: This is a starter template for Astro.
+template: splash
+hero:
+  tagline: Type-safe background processing integrated with Supabase
+  image:
+    file: ../../assets/nodes-group-logo.svg
+  actions:
+    - text: Check it out
+      link: "#how-it-works"
+      icon: down-caret
+---
+
+import { CardGrid, Card, Code, Steps, Aside } from "@astrojs/starlight/components";
+
+## React example
+
+We will be coding a simple app that triggers a flow on button click.
+
+<Aside type="tip">
+You should have React app up and running before you start.
+Refer to this guide: [Getting started with React](https://reactjs.org/docs/getting-started.html)
+</Aside>
+
+<Steps>
+
+1. #### Create your component
+
+   <CardGrid>
+
+     ```jsx
+     const CreateMemeComponent = () => {
+       const [topic, setTopic] = useState('');
+
+       return <div>
+         <input 
+           type="text" 
+           value={topic} 
+           onChange={(e) => setTopic(e.target.value)} 
+           placeholder="Topic of a joke" 
+         />
+         <button>Tell a joke</button>
+       </div>;
+     }
+     ```
+
+     <div>
+       <input type="text" placeholder="Topic of a joke" />
+       <button>Create meme!</button>
+     </div>
+
+   </CardGrid>
+
+2. #### Hook up the existing Flow
+
+   <CardGrid>
+
+     ```jsx
+     import { CreateMemeFlow } from './flows/CreateMemeFlow.ts';
+
+     const CreateMemeComponent = () => {
+       const { triggerFlow } = useFlow(CreateMemeFlow);
+
+       return <div>
+         <input type="text" placeholder="Topic of a joke" />
+         <button onClick={triggerFlow()}>Create meme!</button>
+       </div>;
+     }
+     ```
+
+   </CardGrid>
+
+ </Steps>
