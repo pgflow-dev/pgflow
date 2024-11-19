@@ -92,21 +92,29 @@ Refer to this guide: [Getting started with React](https://reactjs.org/docs/getti
       
        const CreateMemeComponent = () => {
          const [topic, setTopic] = useState('');
-         const { flow, startFlow } = useFlow(CreateMemeFlow);
+         const { 
+           flow, 
+           startFlow, 
+           steps: { 
+             transcription: transcriptionStep,
+             summary: summaryStep,
+             extractKeywords: extractKeywordsStep
+           } 
+         } = useFlow(CreateMemeFlow);
 
          return <div>
            <input 
              type="text" 
              value={topic} 
-     +       disabled={flow.isRunning}
+             disabled={flow.isRunning}
              onChange={(e) => setTopic(e.target.value)} 
              placeholder="Topic of a joke" 
            />
-     -     <button onClick={() => startFlow(topic)}>Tell a joke</button>
-     +     <button 
-     +       onClick={() => startFlow(topic)}
-     +       disabled={flow.isRunning}
-     +     >Tell a joke</button>
+           <button onClick={() => startFlow(topic)}>Tell a joke</button>
+           <button 
+             onClick={() => startFlow(topic)}
+             disabled={flow.isRunning}
+           >Tell a joke</button>
          </div>;
        }
      ```
