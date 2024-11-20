@@ -1,0 +1,2 @@
+#!/bin/bash
+deno --config functions/_flows/deno.json run --allow-write --allow-run --allow-env --allow-read functions/build.ts
