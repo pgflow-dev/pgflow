@@ -1,15 +1,6 @@
 import { Command } from "commander";
+import install from "./cli/commands/install.ts";
 
-let program = new Command()
-  .command("install")
-  .description("Installs pgflow migration and worker edge function")
-  .argument("<supabase-path>", "Path to supabase project")
-  .action(async (supabasePath: string) => {
-    console.log(`Installing pgflow into ${supabasePath}`);
-  });
-
-if (process.env.NODE_ENV === "test") {
-  program = program.exitOverride();
-}
+let program = new Command().name("pgflow");
 
 export default program;
