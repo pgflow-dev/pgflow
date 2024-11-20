@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2022",
+    "allowImportingTsExtensions": true,
     "module": "node16",
     "lib": ["ES2022", "DOM"],
     "moduleResolution": "node16",
@@ -17,7 +18,7 @@
     "noUnusedParameters": true,
     "noImplicitAny": false,
     "noImplicitThis": false,
-    "strictNullChecks": false,
+    "strictNullChecks": false
   },
   "include": ["src", "__tests__"]
 }

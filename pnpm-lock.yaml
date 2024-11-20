@@ -242,6 +242,9 @@ importers:
 
   pkgs/pgflow-core:
     dependencies:
+      commander:
+        specifier: ^12.1.0
+        version: 12.1.0
       tslib:
         specifier: ~2.7
         version: 2.7.0
