@@ -7,6 +7,34 @@ export type Json =
   | Json[]
 
 export type Database = {
+  acl: {
+    Tables: {
+      superadmin_emails: {
+        Row: {
+          email: string
+        }
+        Insert: {
+          email: string
+        }
+        Update: {
+          email?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   auth: {
     Tables: {
       audit_log_entries: {
@@ -702,9 +730,56 @@ export type Database = {
       [_ in never]: never
     }
   }
-  public: {
+  chat: {
     Tables: {
-      [_ in never]: never
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title?: string | null
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+          user_id?: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -714,6 +789,812 @@ export type Database = {
     }
     Enums: {
       [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  feed: {
+    Tables: {
+      bookmarks: {
+        Row: {
+          created_at: string
+          id: string
+          owner_id: string
+          reason: string | null
+          share_id: string
+          short_summary: string
+          tags: string[] | null
+          title: string
+          type: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          owner_id?: string
+          reason?: string | null
+          share_id: string
+          short_summary: string
+          tags?: string[] | null
+          title: string
+          type?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          owner_id?: string
+          reason?: string | null
+          share_id?: string
+          short_summary?: string
+          tags?: string[] | null
+          title?: string
+          type?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookmarks_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "shares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      code_snippets: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          language_code: string
+          owner_id: string
+          reason: string | null
+          share_id: string
+          short_summary: string
+          source: string
+          tags: string[] | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          language_code: string
+          owner_id?: string
+          reason?: string | null
+          share_id: string
+          short_summary: string
+          source: string
+          tags?: string[] | null
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          language_code?: string
+          owner_id?: string
+          reason?: string | null
+          share_id?: string
+          short_summary?: string
+          source?: string
+          tags?: string[] | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_snippets_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "shares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          owner_id: string
+          place: string | null
+          reason: string | null
+          share_id: string
+          short_summary: string
+          tags: string[] | null
+          time: string
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          owner_id?: string
+          place?: string | null
+          reason?: string | null
+          share_id: string
+          short_summary: string
+          tags?: string[] | null
+          time: string
+          title: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          owner_id?: string
+          place?: string | null
+          reason?: string | null
+          share_id?: string
+          short_summary?: string
+          tags?: string[] | null
+          time?: string
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "shares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notes: {
+        Row: {
+          created_at: string
+          id: string
+          owner_id: string
+          reason: string | null
+          share_id: string
+          short_summary: string
+          tags: string[] | null
+          text: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          owner_id?: string
+          reason?: string | null
+          share_id: string
+          short_summary: string
+          tags?: string[] | null
+          text: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          owner_id?: string
+          reason?: string | null
+          share_id?: string
+          short_summary?: string
+          tags?: string[] | null
+          text?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "shares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      people: {
+        Row: {
+          created_at: string
+          gender: string
+          id: string
+          name_or_nickname: string
+          occupation: string | null
+          owner_id: string
+          reason: string | null
+          relation_to_user: string | null
+          share_id: string
+          short_summary: string
+          tags: string[] | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          gender: string
+          id?: string
+          name_or_nickname: string
+          occupation?: string | null
+          owner_id?: string
+          reason?: string | null
+          relation_to_user?: string | null
+          share_id: string
+          short_summary: string
+          tags?: string[] | null
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          gender?: string
+          id?: string
+          name_or_nickname?: string
+          occupation?: string | null
+          owner_id?: string
+          reason?: string | null
+          relation_to_user?: string | null
+          share_id?: string
+          short_summary?: string
+          tags?: string[] | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "people_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "shares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shares: {
+        Row: {
+          content: string
+          created_at: string
+          embedding: string | null
+          id: string
+          inferred: Json | null
+          inferred_type: string | null
+          owner_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          inferred?: Json | null
+          inferred_type?: string | null
+          owner_id?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          inferred?: Json | null
+          inferred_type?: string | null
+          owner_id?: string
+        }
+        Relationships: []
+      }
+      todos: {
+        Row: {
+          created_at: string
+          due_date: string | null
+          id: string
+          owner_id: string
+          reason: string | null
+          share_id: string
+          short_summary: string
+          tags: string[] | null
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          owner_id?: string
+          reason?: string | null
+          share_id: string
+          short_summary: string
+          tags?: string[] | null
+          title: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          owner_id?: string
+          reason?: string | null
+          share_id?: string
+          short_summary?: string
+          tags?: string[] | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "todos_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "shares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      easy_match_shares: {
+        Args: {
+          query: string
+          match_threshold: number
+        }
+        Returns: {
+          id: number
+          content: string
+          inferred: Json
+          similarity: number
+          metadata: Json
+        }[]
+      }
+      match_shares: {
+        Args: {
+          query_embedding: string
+          match_threshold: number
+        }
+        Returns: {
+          id: number
+          content: string
+          similarity: number
+          metadata: Json
+        }[]
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  pgflow: {
+    Tables: {
+      deps: {
+        Row: {
+          flow_slug: string
+          from_step_slug: string
+          to_step_slug: string
+        }
+        Insert: {
+          flow_slug: string
+          from_step_slug: string
+          to_step_slug: string
+        }
+        Update: {
+          flow_slug?: string
+          from_step_slug?: string
+          to_step_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deps_flow_slug_fkey"
+            columns: ["flow_slug"]
+            isOneToOne: false
+            referencedRelation: "flows"
+            referencedColumns: ["flow_slug"]
+          },
+          {
+            foreignKeyName: "deps_flow_slug_from_step_slug_fkey"
+            columns: ["flow_slug", "from_step_slug"]
+            isOneToOne: false
+            referencedRelation: "steps"
+            referencedColumns: ["flow_slug", "step_slug"]
+          },
+          {
+            foreignKeyName: "deps_flow_slug_to_step_slug_fkey"
+            columns: ["flow_slug", "to_step_slug"]
+            isOneToOne: false
+            referencedRelation: "steps"
+            referencedColumns: ["flow_slug", "step_slug"]
+          },
+        ]
+      }
+      flows: {
+        Row: {
+          flow_slug: string
+        }
+        Insert: {
+          flow_slug: string
+        }
+        Update: {
+          flow_slug?: string
+        }
+        Relationships: []
+      }
+      runs: {
+        Row: {
+          flow_slug: string
+          payload: Json
+          run_id: string
+          status: string
+        }
+        Insert: {
+          flow_slug: string
+          payload: Json
+          run_id: string
+          status?: string
+        }
+        Update: {
+          flow_slug?: string
+          payload?: Json
+          run_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "runs_flow_slug_fkey"
+            columns: ["flow_slug"]
+            isOneToOne: false
+            referencedRelation: "flows"
+            referencedColumns: ["flow_slug"]
+          },
+        ]
+      }
+      step_state_requests: {
+        Row: {
+          flow_slug: string | null
+          request_id: number
+          run_id: string | null
+          step_slug: string | null
+        }
+        Insert: {
+          flow_slug?: string | null
+          request_id: number
+          run_id?: string | null
+          step_slug?: string | null
+        }
+        Update: {
+          flow_slug?: string | null
+          request_id?: number
+          run_id?: string | null
+          step_slug?: string | null
+        }
+        Relationships: []
+      }
+      step_states: {
+        Row: {
+          flow_slug: string
+          run_id: string
+          status: string
+          step_result: Json | null
+          step_slug: string
+        }
+        Insert: {
+          flow_slug: string
+          run_id: string
+          status?: string
+          step_result?: Json | null
+          step_slug: string
+        }
+        Update: {
+          flow_slug?: string
+          run_id?: string
+          status?: string
+          step_result?: Json | null
+          step_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "step_states_flow_slug_fkey"
+            columns: ["flow_slug"]
+            isOneToOne: false
+            referencedRelation: "flows"
+            referencedColumns: ["flow_slug"]
+          },
+          {
+            foreignKeyName: "step_states_flow_slug_step_slug_fkey"
+            columns: ["flow_slug", "step_slug"]
+            isOneToOne: false
+            referencedRelation: "steps"
+            referencedColumns: ["flow_slug", "step_slug"]
+          },
+          {
+            foreignKeyName: "step_states_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "runs"
+            referencedColumns: ["run_id"]
+          },
+        ]
+      }
+      steps: {
+        Row: {
+          flow_slug: string
+          step_slug: string
+        }
+        Insert: {
+          flow_slug: string
+          step_slug: string
+        }
+        Update: {
+          flow_slug?: string
+          step_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "steps_flow_slug_fkey"
+            columns: ["flow_slug"]
+            isOneToOne: false
+            referencedRelation: "flows"
+            referencedColumns: ["flow_slug"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      complete_step: {
+        Args: {
+          p_run_id: string
+          p_step_slug: string
+          p_step_result: Json
+        }
+        Returns: {
+          flow_slug: string
+          run_id: string
+          step_slug: string
+          status: string
+          step_result: Json
+        }[]
+      }
+      enqueue_job: {
+        Args: {
+          flow_slug: string
+          run_id: string
+          step_slug: string
+          payload: Json
+        }
+        Returns: undefined
+      }
+      enqueue_job_edge_fn: {
+        Args: {
+          flow_slug: string
+          run_id: string
+          step_slug: string
+          payload: Json
+        }
+        Returns: undefined
+      }
+      enqueue_job_pgqueuer: {
+        Args: {
+          flow_slug: string
+          run_id: string
+          step_slug: string
+          payload: Json
+        }
+        Returns: undefined
+      }
+      get_root_steps: {
+        Args: {
+          p_flow_slug: string
+        }
+        Returns: {
+          flow_slug: string
+          step_slug: string
+        }[]
+      }
+      has_unmet_deps: {
+        Args: {
+          p_run_id: string
+          p_step_slug: string
+        }
+        Returns: boolean
+      }
+      is_root_step: {
+        Args: {
+          p_step_slug: string
+        }
+        Returns: boolean
+      }
+      run_flow: {
+        Args: {
+          p_flow_slug: string
+          p_payload: Json
+        }
+        Returns: {
+          flow_slug: string
+          run_id: string
+          status: string
+          payload: Json
+        }[]
+      }
+      start_step: {
+        Args: {
+          p_run_id: string
+          p_step_slug: string
+        }
+        Returns: {
+          flow_slug: string
+          run_id: string
+          status: string
+          step_result: Json
+        }[]
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  public: {
+    Tables: {
+      documents: {
+        Row: {
+          content: string | null
+          embedding: string | null
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          content?: string | null
+          embedding?: string | null
+          id: string
+          metadata?: Json | null
+        }
+        Update: {
+          content?: string | null
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
+      embeddings: {
+        Row: {
+          content: string | null
+          document_id: string
+          embedding: string
+          id: string
+          type: string
+        }
+        Insert: {
+          content?: string | null
+          document_id: string
+          embedding: string
+          id: string
+          type: string
+        }
+        Update: {
+          content?: string | null
+          document_id?: string
+          embedding?: string
+          id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "embeddings_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pgqueuer: {
+        Row: {
+          created: string
+          entrypoint: string
+          heartbeat: string
+          id: number
+          payload: string | null
+          priority: number
+          status: Database["public"]["Enums"]["pgqueuer_status"]
+          updated: string
+        }
+        Insert: {
+          created?: string
+          entrypoint: string
+          heartbeat?: string
+          id?: number
+          payload?: string | null
+          priority: number
+          status: Database["public"]["Enums"]["pgqueuer_status"]
+          updated?: string
+        }
+        Update: {
+          created?: string
+          entrypoint?: string
+          heartbeat?: string
+          id?: number
+          payload?: string | null
+          priority?: number
+          status?: Database["public"]["Enums"]["pgqueuer_status"]
+          updated?: string
+        }
+        Relationships: []
+      }
+      pgqueuer_statistics: {
+        Row: {
+          count: number
+          created: string
+          entrypoint: string
+          id: number
+          priority: number
+          status: Database["public"]["Enums"]["pgqueuer_statistics_status"]
+          time_in_queue: unknown
+        }
+        Insert: {
+          count: number
+          created?: string
+          entrypoint: string
+          id?: number
+          priority: number
+          status: Database["public"]["Enums"]["pgqueuer_statistics_status"]
+          time_in_queue: unknown
+        }
+        Update: {
+          count?: number
+          created?: string
+          entrypoint?: string
+          id?: number
+          priority?: number
+          status?: Database["public"]["Enums"]["pgqueuer_statistics_status"]
+          time_in_queue?: unknown
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      is_superadmin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      match_documents: {
+        Args: {
+          query_embedding: string
+          match_count?: number
+          match_threshold?: number
+          filter?: Json
+        }
+        Returns: {
+          id: string
+          content: string
+          metadata: Json
+          embedding: string
+          similarity: number
+        }[]
+      }
+      match_documents_via_embeddings: {
+        Args: {
+          query_embedding: string
+          match_count?: number
+          match_threshold?: number
+          filter?: Json
+          type_filter?: string
+        }
+        Returns: {
+          id: string
+          content: string
+          metadata: Json
+          embedding: string
+          document_embedding: string
+          embedded_content: string
+          similarity: number
+        }[]
+      }
+    }
+    Enums: {
+      pgqueuer_statistics_status: "exception" | "successful" | "canceled"
+      pgqueuer_status: "queued" | "picked"
     }
     CompositeTypes: {
       [_ in never]: never
