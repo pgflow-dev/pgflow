@@ -27,7 +27,7 @@ const NewShareHandler = async ({
     .schema("feed")
     .from("shares")
     .upsert({
-      ownerId,
+      owner_id: ownerId,
       content: transcription,
     })
     .returns<Share>();
