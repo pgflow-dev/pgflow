@@ -76,27 +76,7 @@ const ProcessVoiceMemo = new Flow<RunPayload>()
 
     return transcription.text;
   })
-  .task("newShare", ["transcription"], NewShareHandler)
-  .task("note", ["newShare"], async ({ newShare, run: { ownerId } }) => {
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content:
-            "Summarize the voice memo in one, concise sentence. Output only this sentence, nothing else",
-        },
-        { role: "user", content: newShare.content },
-      ],
-      model: "mixtral-8x7b-32768",
-      temperature: 0,
-      max_tokens: 1024,
-    });
-
-    return {
-      summary: chatCompletion.choices[0].message.content,
-      runOwnerId: ownerId,
-    };
-  });
+  .task("newShare", ["transcription"], NewShareHandler);
 export default ProcessVoiceMemo;
 
 export type StepsType = ReturnType<typeof ProcessVoiceMemo.getSteps>;
