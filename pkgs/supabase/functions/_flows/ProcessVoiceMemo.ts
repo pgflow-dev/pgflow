@@ -4,6 +4,13 @@ import { Flow } from "./Flow.ts";
 import type { Database } from "../../types.d.ts";
 import { createServiceRoleClient } from "../_shared/supabaseClient.ts";
 
+type RunPayload = {
+  objectId: string;
+  objectName: string;
+  bucketId: string;
+  ownerId: string;
+};
+
 if (!Deno.env.get("GROQ_API_KEY") || Deno.env.get("GROQ_API_KEY") === "") {
   throw new Error("Missing GROQ_API_KEY");
 }
@@ -39,13 +46,6 @@ const NewShareHandler = async ({
   }
 
   return response.data;
-};
-
-type RunPayload = {
-  objectId: string;
-  objectName: string;
-  bucketId: string;
-  ownerId: string;
 };
 
 const ProcessVoiceMemo = new Flow<RunPayload>()
