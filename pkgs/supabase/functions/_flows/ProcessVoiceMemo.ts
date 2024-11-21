@@ -1,4 +1,3 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import Groq from "groq-sdk";
 import { Flow } from "./Flow.ts";
 import type { Database } from "../../types.d.ts";
