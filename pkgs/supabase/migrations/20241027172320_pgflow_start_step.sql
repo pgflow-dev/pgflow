@@ -78,9 +78,14 @@ BEGIN
         FROM pgflow.runs AS r
         WHERE r.run_id = p_run_id
     )
-    SELECT COALESCE(deps, '{}'::jsonb) || jsonb_build_object(
-        'run', to_jsonb(run.*),
-        'step', jsonb_build_object('step_slug', p_step_slug)
+    SELECT jsonb_build_object(
+        'payload', COALESCE(deps, '{}'::jsonb) || jsonb_build_object('run', run.payload),
+        'meta', jsonb_build_object(
+            'flow_slug', run.flow_slug,
+            'step_slug', p_step_slug,
+            'run_id', run.run_id,
+            'run_status', run.status
+        )
     )
     INTO job_payload
     FROM deps_payload, run;
