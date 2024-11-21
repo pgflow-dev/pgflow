@@ -1,7 +1,7 @@
 import { Command } from "commander";
 
 let install = new Command()
-  .command("install")
+  .command("install supabase")
   .description("Installs pgflow migration and worker edge function")
   .argument("<supabase-path>", "Path to supabase project")
   .action(async (supabasePath: string) => {

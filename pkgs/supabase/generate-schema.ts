@@ -55,7 +55,7 @@ function analyzeFlow(sourceFilePath: string) {
 
     for (const stepDefProp of stepDefsProperties) {
       const stepName = stepDefProp.getName();
-      console.log(`Processing step: ${stepName}`);
+      // console.log(`Processing step: ${stepName}`);
 
       // Get the type of the step definition
       const stepDefType = stepDefProp.getTypeAtLocation(stepsTypeAlias);
@@ -93,10 +93,10 @@ function analyzeFlow(sourceFilePath: string) {
       // Convert the unwrapped return type to JSON Schema
       const schema = typeToJsonSchema(unwrappedReturnType, typeChecker);
       stepsToSchemas[stepName] = schema;
-      console.log(
-        `JSON Schema for step "${stepName}":`,
-        JSON.stringify(schema, null, 2),
-      );
+      // console.log(
+      //   `JSON Schema for step "${stepName}":`,
+      //   JSON.stringify(schema, null, 2),
+      // );
     }
   } catch (error) {
     console.error("Failed to analyze flow:", error);

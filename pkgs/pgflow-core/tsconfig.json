@@ -1,8 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2022",
-    "allowImportingTsExtensions": true,
-    "module": "node16",
+    "module": "ESNext",
     "lib": ["ES2022", "DOM"],
     "moduleResolution": "node16",
     "rootDir": ".",
