@@ -15,7 +15,7 @@ function generate_with() {
 }
 
 if [ -z "$COMMIT_SOURCE" ]; then
-    diff=$(git diff --cached -- . ':(exclude)pnpm-lock.yaml' | head -c 5000)
+    diff=$(git diff --cached --no-ext-diff --unified -- . ':(exclude)pnpm-lock.yaml' | head -c 5000)
 
     generate_with $openai_model | fold -w 100 > "$COMMIT_MSG_FILE"
 fi
