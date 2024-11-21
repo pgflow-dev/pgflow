@@ -1,8 +1,8 @@
 {
 	"imports": {
-		"@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.34.0",
+    "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.46.1",
 		"openai": "jsr:@openai/openai@^4.52.5",
-		"BasicFlow": "../../flows/BasicFlow.ts"
+    "groq-sdk": "npm:groq-sdk@^0.7.0"
 	}
 }
 
