@@ -16,7 +16,7 @@ export type RunPayload = {
 
 export const LandingPageFlow = new Flow<RunPayload>().task(
   "transcription",
-  ({ voiceMemoId, userId }) => {
+  ({ run: { voiceMemoId, userId } }) => {
     const file = await fetchVoiceMemo(voiceMemoId);
     const transcription = await trancribeWithGroqWhisper(file);
   },

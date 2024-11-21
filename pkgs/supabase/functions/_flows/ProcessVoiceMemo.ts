@@ -49,7 +49,7 @@ type RunPayload = {
 };
 
 const ProcessVoiceMemo = new Flow<RunPayload>()
-  .task("transcription", async ({ objectName, bucketId }) => {
+  .task("transcription", async ({ run: { objectName, bucketId } }) => {
     const response = await supabase.storage.from(bucketId).download(objectName);
 
     console.log("transcription: download", response);

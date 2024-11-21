@@ -41,7 +41,7 @@ export class Flow<
   // Function overloads
   task<Name extends string, RetType extends Json>(
     name: Name,
-    handler: (payload: RunPayload) => RetType | Promise<RetType>,
+    handler: (payload: { run: RunPayload }) => RetType | Promise<RetType>,
   ): Flow<
     RunPayload,
     MergeObjects<Steps, { [K in Name]: UnwrapPromise<RetType> }>
@@ -69,9 +69,7 @@ export class Flow<
     Payload extends { run: RunPayload } & { [K in Deps]: Steps[K] },
   >(
     name: Name,
-    handlerOrDeps:
-      | ((payload: RunPayload) => RetType | Promise<RetType>)
-      | Deps[],
+    handlerOrDeps: ((payload: Payload) => RetType | Promise<RetType>) | Deps[],
     handler?: (payload: Payload) => RetType | Promise<RetType>,
   ): Flow<
     RunPayload,
@@ -111,7 +109,7 @@ const ExampleFlow = new Flow<{ value: number }>()
   //
   // { doubledValue: number; };
   .task("rootStep", async (payload) => ({
-    doubledValue: payload.value * 2,
+    doubledValue: payload.run.value * 2,
   }))
   // normalStep return type will be inferred to:
   // { doubledValueArray: number[] };
