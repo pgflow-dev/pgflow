@@ -22,23 +22,28 @@ GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
 -- Core flow definition tables
 ------------------------------------------
 
+-- Simple domain to prevent slugs from using reserved keywords
+CREATE DOMAIN "SLUG" AS TEXT CHECK (
+    value NOT IN ('', 'run', 'step')
+);
+
 -- Flows table - stores flow definitions
 CREATE TABLE pgflow.flows (
-    flow_slug TEXT PRIMARY KEY NOT NULL  -- Unique identifier for the flow
+    flow_slug "SLUG" PRIMARY KEY NOT NULL  -- Unique identifier for the flow
 );
 
 -- Steps table - stores individual steps within flows
 CREATE TABLE pgflow.steps (
-    flow_slug TEXT NOT NULL REFERENCES flows (flow_slug),
-    step_slug TEXT NOT NULL,
+    flow_slug "SLUG" NOT NULL REFERENCES flows (flow_slug),
+    step_slug "SLUG" NOT NULL,
     PRIMARY KEY (flow_slug, step_slug)
 );
 
 -- Dependencies table - stores relationships between steps
 CREATE TABLE pgflow.deps (
-    flow_slug TEXT NOT NULL REFERENCES pgflow.flows (flow_slug),
-    from_step_slug TEXT NOT NULL,  -- The step that must complete first
-    to_step_slug TEXT NOT NULL,   -- The step that depends on from_step_slug
+    flow_slug "SLUG" NOT NULL REFERENCES pgflow.flows (flow_slug),
+    from_step_slug "SLUG" NOT NULL,  -- The step that must complete first
+    to_step_slug "SLUG" NOT NULL,   -- The step that depends on from_step_slug
     PRIMARY KEY (flow_slug, from_step_slug, to_step_slug),
     FOREIGN KEY (flow_slug, from_step_slug)
     REFERENCES pgflow.steps (flow_slug, step_slug),
@@ -53,7 +58,7 @@ CREATE TABLE pgflow.deps (
 
 -- Runs table - tracks flow execution instances
 CREATE TABLE pgflow.runs (
-    flow_slug TEXT NOT NULL REFERENCES pgflow.flows (flow_slug),
+    flow_slug "SLUG" NOT NULL REFERENCES pgflow.flows (flow_slug),
     run_id UUID PRIMARY KEY NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending',
     payload JSONB NOT NULL,
@@ -62,9 +67,9 @@ CREATE TABLE pgflow.runs (
 
 -- Step states table - tracks the state of individual steps within a run
 CREATE TABLE pgflow.step_states (
-    flow_slug TEXT NOT NULL REFERENCES pgflow.flows (flow_slug),
+    flow_slug "SLUG" NOT NULL REFERENCES pgflow.flows (flow_slug),
     run_id UUID NOT NULL REFERENCES pgflow.runs (run_id),
-    step_slug TEXT NOT NULL,
+    step_slug "SLUG" NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending',
     step_result JSONB,
     PRIMARY KEY (run_id, step_slug),
