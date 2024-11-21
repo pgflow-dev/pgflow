@@ -1,5 +1,5 @@
 /// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
-import BasicFlow from "../_flows/BasicFlow.ts";
+import ProcessVoiceMemo from "../_flows/ProcessVoiceMemo.ts";
 
 import { createClient } from "jsr:@supabase/supabase-js@^2.34.0";
 
@@ -16,31 +16,32 @@ Deno.serve(async (req: Request) => {
   const input = await req.json();
   console.log("input", input);
 
-  const flowSteps = BasicFlow.getSteps();
+  const flowSteps = ProcessVoiceMemo.getSteps();
   type StepNames = keyof typeof flowSteps;
 
-  const run = input["run"];
-  const step = input["step"];
-  const slug = input["step"]["step_slug"];
+  const meta = input["meta"];
+  const payload = input["payload"];
+
+  const run_id = meta["run_id"];
+  const flow_slug = meta["flow_slug"];
+  const step_slug = meta["step_slug"];
+
+  console.log(`${flow_slug}/${step_slug}: ${run_id}`, payload);
 
   function assertStepSlug(slug: string): asserts slug is StepNames {
     if (!(slug in flowSteps)) {
       throw new Error(`Invalid step slug: ${String(slug)}`);
     }
   }
+  assertStepSlug(step_slug);
 
-  // Create new input object without step key
-  const handlerInput = { ...input };
-  delete handlerInput["step"];
-
-  assertStepSlug(slug);
-  const stepResult = await flowSteps[slug].handler(handlerInput);
+  const stepResult = await flowSteps[step_slug].handler(payload);
   console.log("stepResult", stepResult);
 
   const supabase = createAuthenticatedClient(req);
   const { error, data } = await supabase.schema("pgflow").rpc("complete_step", {
-    p_run_id: run["run_id"],
-    p_step_slug: step["step_slug"],
+    p_run_id: run_id,
+    p_step_slug: step_slug,
     p_step_result: stepResult,
   });
   console.log("complete_step", { data, error });

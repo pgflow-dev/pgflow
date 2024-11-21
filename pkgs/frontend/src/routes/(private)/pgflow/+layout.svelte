@@ -27,7 +27,7 @@
 
 <ChatLayout>
 	<div slot="footer">
-		<div class="p-2 flex justify-center items-center h-full space-x-4">
+		<div class="p-1 flex justify-center items-center h-full space-x-2">
 			{#if error}
 				<div class="text-red-500">
 					<p>Error: {error}</p>

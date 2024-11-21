@@ -10,6 +10,6 @@ CREATE OR REPLACE FUNCTION pgflow.enqueue_job(
 )
 RETURNS VOID AS $$
 BEGIN
-    PERFORM pgflow.enqueue_job_pgqueuer(flow_slug, run_id, step_slug, payload);
+    PERFORM pgflow.enqueue_job_edge_fn(flow_slug, run_id, step_slug, payload);
 END;
 $$ LANGUAGE plpgsql;

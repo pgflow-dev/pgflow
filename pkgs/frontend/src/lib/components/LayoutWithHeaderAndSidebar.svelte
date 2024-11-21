@@ -54,7 +54,14 @@
 
 			<div class="flex-grow" />
 
-			<h1 class="h1 font-bold">feedwise</h1>
+			<div class="space-x-4">
+				<a href="/pgflow">/pgflow</a>
+				<a href="/feed/add-share">/feed/add-share</a>
+			</div>
+
+			<h1 class="h1 font-bold ml-4">
+				<a href="/">feedwise</a>
+			</h1>
 		</slot>
 
 		<slot name="header:bottom" />

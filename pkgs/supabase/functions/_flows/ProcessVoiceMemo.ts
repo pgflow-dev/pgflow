@@ -1,9 +1,7 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import Groq from "groq-sdk";
 import { Flow } from "./Flow.ts";
-
-const supabase: SupabaseClient = {} as SupabaseClient;
-const groq = new Groq();
+import type { Database } from "../../types.d.ts";
+import { createServiceRoleClient } from "../_shared/supabaseClient.ts";
 
 type RunPayload = {
   objectId: string;
@@ -12,22 +10,48 @@ type RunPayload = {
   ownerId: string;
 };
 
-type MergeHandlerPayload = {
-  summarize: {
-    summary: string | null;
-    runOwnerId: string;
-  };
-  capitalize: string;
-};
-type MergeHandlerReturn = [string | null, string];
-
-function mergeHandler(payload: MergeHandlerPayload): MergeHandlerReturn {
-  return [payload.summarize.summary, payload.capitalize];
+if (!Deno.env.get("GROQ_API_KEY") || Deno.env.get("GROQ_API_KEY") === "") {
+  throw new Error("Missing GROQ_API_KEY");
 }
 
+const supabase = createServiceRoleClient();
+const groq = new Groq({ apiKey: Deno.env.get("GROQ_API_KEY") });
+
+type Share = Database["feed"]["Tables"]["shares"]["Row"];
+
+type NewShareHandlerInput = {
+  transcription: string;
+  run: { ownerId: string };
+};
+type NewShareHandlerOutput = Share;
+
+const NewShareHandler = async ({
+  transcription,
+  run: { ownerId },
+}: NewShareHandlerInput): Promise<NewShareHandlerOutput> => {
+  const response = await supabase
+    .schema("feed")
+    .from("shares")
+    .upsert({
+      owner_id: ownerId,
+      content: transcription,
+    })
+    .returns<Share>();
+
+  console.log("newShare: response", response);
+
+  if (response.error) {
+    throw new Error(response.error.message);
+  }
+
+  return response.data;
+};
+
 const ProcessVoiceMemo = new Flow<RunPayload>()
-  .task("transcribe", async ({ objectName, bucketId }) => {
+  .task("transcription", async ({ run: { objectName, bucketId } }) => {
     const response = await supabase.storage.from(bucketId).download(objectName);
+
+    console.log("transcription: download", response);
 
     if (response.error) {
       throw new Error(response.error.message);
@@ -58,36 +82,9 @@ const ProcessVoiceMemo = new Flow<RunPayload>()
       throw new Error("No transcription found");
     }
 
-    return { transcription: transcription.text };
+    return transcription.text;
   })
-  .task(
-    "summarize",
-    ["transcribe"],
-    async ({ transcribe, run: { ownerId } }) => {
-      const chatCompletion = await groq.chat.completions.create({
-        messages: [
-          {
-            role: "system",
-            content:
-              "Summarize the voice memo in one, concise sentence. Output only this sentence, nothing else",
-          },
-          { role: "user", content: transcribe.transcription },
-        ],
-        model: "mixtral-8x7b-32768",
-        temperature: 0,
-        max_tokens: 1024,
-      });
-
-      return {
-        summary: chatCompletion.choices[0].message.content,
-        runOwnerId: ownerId,
-      };
-    },
-  )
-  .task("capitalize", ["transcribe"], ({ transcribe: { transcription } }) => {
-    return transcription.toUpperCase();
-  })
-  .task("merge", ["summarize", "capitalize"], mergeHandler);
+  .task("newShare", ["transcription"], NewShareHandler);
 export default ProcessVoiceMemo;
 
 export type StepsType = ReturnType<typeof ProcessVoiceMemo.getSteps>;
