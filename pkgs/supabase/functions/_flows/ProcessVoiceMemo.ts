@@ -1,9 +1,38 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Groq from "groq-sdk";
 import { Flow } from "./Flow.ts";
+import type { Database } from "../../types.d.ts";
 
 const supabase: SupabaseClient = {} as SupabaseClient;
 const groq = new Groq();
+
+type Share = Database["feed"]["Tables"]["shares"]["Row"];
+
+type NewShareHandlerInput = {
+  transcription: string;
+  run: { ownerId: string };
+};
+type NewShareHandlerOutput = Share;
+
+const NewShareHandler = async ({
+  transcription,
+  run: { ownerId },
+}: NewShareHandlerInput): Promise<NewShareHandlerOutput> => {
+  const response = await supabase
+    .schema("feed")
+    .from("shares")
+    .upsert({
+      ownerId,
+      content: transcription,
+    })
+    .returns<Share>();
+
+  if (response.error) {
+    throw new Error(response.error.message);
+  }
+
+  return response.data;
+};
 
 type RunPayload = {
   objectId: string;
@@ -12,21 +41,8 @@ type RunPayload = {
   ownerId: string;
 };
 
-type MergeHandlerPayload = {
-  summarize: {
-    summary: string | null;
-    runOwnerId: string;
-  };
-  capitalize: string;
-};
-type MergeHandlerReturn = [string | null, string];
-
-function mergeHandler(payload: MergeHandlerPayload): MergeHandlerReturn {
-  return [payload.summarize.summary, payload.capitalize];
-}
-
 const ProcessVoiceMemo = new Flow<RunPayload>()
-  .task("transcribe", async ({ objectName, bucketId }) => {
+  .task("transcription", async ({ objectName, bucketId }) => {
     const response = await supabase.storage.from(bucketId).download(objectName);
 
     if (response.error) {
@@ -58,36 +74,29 @@ const ProcessVoiceMemo = new Flow<RunPayload>()
       throw new Error("No transcription found");
     }
 
-    return { transcription: transcription.text };
+    return transcription.text;
   })
-  .task(
-    "summarize",
-    ["transcribe"],
-    async ({ transcribe, run: { ownerId } }) => {
-      const chatCompletion = await groq.chat.completions.create({
-        messages: [
-          {
-            role: "system",
-            content:
-              "Summarize the voice memo in one, concise sentence. Output only this sentence, nothing else",
-          },
-          { role: "user", content: transcribe.transcription },
-        ],
-        model: "mixtral-8x7b-32768",
-        temperature: 0,
-        max_tokens: 1024,
-      });
+  .task("newShare", ["transcription"], NewShareHandler)
+  .task("note", ["newShare"], async ({ newShare, run: { ownerId } }) => {
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content:
+            "Summarize the voice memo in one, concise sentence. Output only this sentence, nothing else",
+        },
+        { role: "user", content: newShare.content },
+      ],
+      model: "mixtral-8x7b-32768",
+      temperature: 0,
+      max_tokens: 1024,
+    });
 
-      return {
-        summary: chatCompletion.choices[0].message.content,
-        runOwnerId: ownerId,
-      };
-    },
-  )
-  .task("capitalize", ["transcribe"], ({ transcribe: { transcription } }) => {
-    return transcription.toUpperCase();
-  })
-  .task("merge", ["summarize", "capitalize"], mergeHandler);
+    return {
+      summary: chatCompletion.choices[0].message.content,
+      runOwnerId: ownerId,
+    };
+  });
 export default ProcessVoiceMemo;
 
 export type StepsType = ReturnType<typeof ProcessVoiceMemo.getSteps>;
