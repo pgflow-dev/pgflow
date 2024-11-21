@@ -1,5 +1,5 @@
 /// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
-import BasicFlow from "../_flows/BasicFlow.ts";
+import ProcessVoiceMemo from "../_flows/ProcessVoiceMemo.ts";
 
 import { createClient } from "jsr:@supabase/supabase-js@^2.34.0";
 
@@ -16,7 +16,7 @@ Deno.serve(async (req: Request) => {
   const input = await req.json();
   console.log("input", input);
 
-  const flowSteps = BasicFlow.getSteps();
+  const flowSteps = ProcessVoiceMemo.getSteps();
   type StepNames = keyof typeof flowSteps;
 
   const run = input["run"];
