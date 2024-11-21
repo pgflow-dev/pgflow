@@ -1,5 +1,11 @@
 // JSON type enforcement so we can serialize the results to JSONB columns
-type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
+type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | Json[]
+  | { [key: string]: Json | undefined };
 
 // Define the StepDefinition interface
 interface StepDefinition<Payload extends Json, RetType extends Json> {
