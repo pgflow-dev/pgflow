@@ -44,14 +44,13 @@ as $$
 begin
     -- only perform if the bucket matches feed_recordings
     if NEW.bucket_id = 'feed_recordings' then
-        PERFORM utils.enqueue_job(
-            'transcribe_recording',
+        PERFORM pgflow.run_flow(
+            'ProcessVoiceMemo',
             json_build_object(
-                'bucket_id', 'feed_recordings',
-                'object_id', NEW.id,
-                'object_name', NEW.name,
-                'bucket_id', 'feed_recordings',
-                'owner_id', NEW.owner
+                'bucketId', 'feed_recordings',
+                'objectId', NEW.id,
+                'objectName', NEW.name,
+                'ownerId', NEW.owner
             )::jsonb
         );
     end if;
