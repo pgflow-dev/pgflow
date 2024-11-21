@@ -2,9 +2,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import Groq from "groq-sdk";
 import { Flow } from "./Flow.ts";
 import type { Database } from "../../types.d.ts";
+import { createServiceRoleClient } from "../_shared/supabaseClient.ts";
 
-const supabase: SupabaseClient = {} as SupabaseClient;
-const groq = new Groq();
+if (!Deno.env.get("GROQ_API_KEY") || Deno.env.get("GROQ_API_KEY") === "") {
+  throw new Error("Missing GROQ_API_KEY");
+}
+
+const supabase = createServiceRoleClient();
+const groq = new Groq({ apiKey: Deno.env.get("GROQ_API_KEY") });
 
 type Share = Database["feed"]["Tables"]["shares"]["Row"];
 
@@ -27,6 +32,8 @@ const NewShareHandler = async ({
     })
     .returns<Share>();
 
+  console.log("newShare: response", response);
+
   if (response.error) {
     throw new Error(response.error.message);
   }
@@ -44,6 +51,8 @@ type RunPayload = {
 const ProcessVoiceMemo = new Flow<RunPayload>()
   .task("transcription", async ({ objectName, bucketId }) => {
     const response = await supabase.storage.from(bucketId).download(objectName);
+
+    console.log("transcription: download", response);
 
     if (response.error) {
       throw new Error(response.error.message);
