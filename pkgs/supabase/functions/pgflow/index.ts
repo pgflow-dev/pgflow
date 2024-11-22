@@ -1,19 +1,20 @@
 /// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
 import ProcessVoiceMemo from "../_flows/ProcessVoiceMemo.ts";
+import type { Json } from "../../types.d.ts";
+import { createServiceRoleClient } from "../_shared/supabaseClient.ts";
 
-import { createClient } from "jsr:@supabase/supabase-js@^2.34.0";
+type EdgeFnInput = {
+  meta: {
+    run_id: string;
+    flow_slug: string;
+    step_slug: string;
+  };
+  payload: Json;
+};
 
-export function createAuthenticatedClient(req: Request) {
-  const authHeader = req.headers.get("Authorization")!;
-  return createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-    { global: { headers: { Authorization: authHeader } } },
-  );
-}
+const supabase = createServiceRoleClient();
 
-Deno.serve(async (req: Request) => {
-  const input = await req.json();
+async function handleInput(input: EdgeFnInput) {
   console.log("input", input);
 
   const flowSteps = ProcessVoiceMemo.getSteps();
@@ -38,13 +39,18 @@ Deno.serve(async (req: Request) => {
   const stepResult = await flowSteps[step_slug].handler(payload);
   console.log("stepResult", stepResult);
 
-  const supabase = createAuthenticatedClient(req);
   const { error, data } = await supabase.schema("pgflow").rpc("complete_step", {
     p_run_id: run_id,
     p_step_slug: step_slug,
     p_step_result: stepResult,
   });
   console.log("complete_step", { data, error });
+}
+
+Deno.serve(async (req: Request) => {
+  const input = await req.json();
+
+  await handleInput(input);
 
   return new Response(JSON.stringify(stepResult), {
     headers: {
