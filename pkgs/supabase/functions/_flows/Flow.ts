@@ -1,5 +1,5 @@
 // JSON type enforcement so we can serialize the results to JSONB columns
-type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -8,7 +8,7 @@ type Json =
   | { [key: string]: Json | undefined };
 
 // Define the StepDefinition interface
-interface StepDefinition<Payload extends Json, RetType extends Json> {
+export interface StepDefinition<Payload extends Json, RetType extends Json> {
   name: string;
   handler: (payload: Payload) => RetType | Promise<RetType>;
   dependencies: string[];
