@@ -1377,6 +1377,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      fail_step: {
+        Args: {
+          run_id: string
+          step_slug: string
+          error: string
+        }
+        Returns: {
+          flow_slug: string
+          returned_run_id: string
+          returned_step_slug: string
+          status: string
+          step_result: Json
+        }[]
+      }
       get_root_steps: {
         Args: {
           p_flow_slug: string
