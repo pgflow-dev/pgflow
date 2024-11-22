@@ -40,11 +40,19 @@ export default defineConfig({
           items: [
             {
               label: "Explain in a simple way ",
-              slug: "explain_in_a_simple_way",
+              slug: "ai_generated/explain_in_a_simple_way",
             },
             {
               label: "From frontend perspective",
-              slug: "from_frontend_perspective",
+              slug: "ai_generated/from_frontend_perspective",
+            },
+            {
+              label: "Anatomy of a flow",
+              slug: "ai_generated/anatomy_of_a_flow",
+            },
+            {
+              label: "Flow lifecyce",
+              slug: "ai_generated/flow_lifecycle",
             },
           ],
         },
