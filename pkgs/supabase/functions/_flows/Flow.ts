@@ -32,9 +32,11 @@ export class Flow<
   Steps extends Record<string, Json> = Record<never, never>,
 > {
   // Update the stepDefinitions property to hold the correct types
-  private stepDefinitions: Record<string, StepDefinition<any, any>>;
+  private stepDefinitions: Record<string, StepDefinition<Json, Json>>;
 
-  constructor(stepDefinitions: Record<string, StepDefinition<any, any>> = {}) {
+  constructor(
+    stepDefinitions: Record<string, StepDefinition<Json, Json>> = {},
+  ) {
     this.stepDefinitions = stepDefinitions;
   }
 
@@ -98,7 +100,7 @@ export class Flow<
     [K in keyof Steps]: StepDefinition<Json, Steps[K]>;
   } {
     return this.stepDefinitions as {
-      [K in keyof Steps]: StepDefinition<any, Steps[K]>;
+      [K in keyof Steps]: StepDefinition<Json, Steps[K]>;
     };
   }
 }
