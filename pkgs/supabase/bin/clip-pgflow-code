@@ -1,0 +1,2 @@
+#!/bin/bash
+clip migrations/*pgflow*.sql functions/_flows/**/*.ts functions/pgflow/*.ts ../frontend/src/routes/\(private\)/pgflow/**/*.* generate-schema.ts
