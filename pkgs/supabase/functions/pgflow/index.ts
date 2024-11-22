@@ -37,20 +37,24 @@ async function handleInput(input: EdgeFnInput) {
   assertStepSlug(step_slug);
 
   const stepResult = await flowSteps[step_slug].handler(payload);
-  console.log("stepResult", stepResult);
 
   const { error, data } = await supabase.schema("pgflow").rpc("complete_step", {
     p_run_id: run_id,
     p_step_slug: step_slug,
     p_step_result: stepResult,
   });
-  console.log("complete_step", { data, error });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
 }
 
 Deno.serve(async (req: Request) => {
   const input = await req.json();
 
-  await handleInput(input);
+  const stepResult = await handleInput(input);
 
   return new Response(JSON.stringify(stepResult), {
     headers: {
