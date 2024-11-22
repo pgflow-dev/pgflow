@@ -29,5 +29,8 @@ export default async function handleInput(
   }
   assertStepSlug(step_slug);
 
-  return await flowSteps[step_slug].handler(payload);
+  const stepToRun = flowSteps[step_slug];
+  const stepHandler = stepToRun.handler;
+
+  return await stepHandler(payload);
 }
