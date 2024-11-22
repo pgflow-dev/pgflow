@@ -11,8 +11,8 @@ RETURNS TABLE (
     step_result JSONB
 ) AS $$
 DECLARE
-    p_run_id UUID := $1;
-    p_step_slug TEXT := $2;
+    p_run_id UUID := run_id;
+    p_step_slug TEXT := step_slug;
 BEGIN
     UPDATE pgflow.step_states AS ss
     SET status = 'failed',
