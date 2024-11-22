@@ -13,10 +13,12 @@ Deno.serve(async (req: Request) => {
   try {
     const stepResult = await handleInput(meta, payload);
     console.log("STEP RESULTS: ", stepResult);
+
     const completeStepResult = await completeStep(meta, stepResult, supabase);
     console.log("complete_step: ", completeStepResult);
   } catch (error) {
     console.log("ERROR: ", error);
+
     const failStepResult = await failStep(meta, error, supabase);
     console.log("fail_step: ", failStepResult);
   }
