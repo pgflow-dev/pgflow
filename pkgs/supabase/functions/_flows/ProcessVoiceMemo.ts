@@ -73,7 +73,7 @@ const ProcessVoiceMemo = new Flow<RunPayload>()
 
     const transcription = await groq.audio.transcriptions.create({
       file: audioFile,
-      model: "whisper-large-v3-turbo",
+      model: "whisper-large-v3",
       language: "en",
       response_format: "verbose_json",
     });
