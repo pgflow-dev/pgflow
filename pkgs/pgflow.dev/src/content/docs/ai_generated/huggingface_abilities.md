@@ -1,0 +1,33 @@
+---
+title: HuggingFace Abilities
+---
+
+- Text Classification
+- Named Entity Recognition (NER)
+- Question Answering
+- Text Generation
+- Translation
+- Summarization
+- Sentiment Analysis
+- Language Modeling
+- Speech Recognition
+- Image Classification
+- Object Detection
+- Image Segmentation
+- Text-to-Speech
+- Speech-to-Text
+- Conversational AI
+- Zero-Shot Classification
+- Feature Extraction
+- Text Embeddings
+- Token Classification
+- Fill-Mask
+- Multiple Choice
+- Table Question Answering
+- Visual Question Answering
+- Text-to-Image Generation
+- Image-to-Text Generation
+- Audio Classification
+- Audio-to-Audio Generation
+- Video Classification
+- Video-to-Text Generation
