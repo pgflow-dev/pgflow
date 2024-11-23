@@ -25,8 +25,8 @@ BEGIN
     RETURN QUERY
     SELECT
         ss.flow_slug,
-        ss.run_id as returned_run_id,
-        ss.step_slug as returned_step_slug,
+        ss.run_id,
+        ss.step_slug,
         ss.status,
         ss.step_result
     FROM pgflow.step_states AS ss
