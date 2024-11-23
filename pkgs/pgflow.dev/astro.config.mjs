@@ -63,6 +63,10 @@ export default defineConfig({
               label: "Step Type: Upsert Row",
               slug: "ai_generated/step_type_upsert_row",
             },
+            {
+              label: "HuggingFace Abilities",
+              slug: "ai_generated/huggingface_abilities",
+            },
           ],
         },
         // {
