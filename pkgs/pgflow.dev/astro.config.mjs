@@ -19,6 +19,10 @@ export default defineConfig({
           items: [
             { label: "Starting with flow def", slug: "index" },
             { label: "Starting with React", slug: "starting_with_react" },
+            {
+              label: "Flow DSL crash course",
+              slug: "landing_pages/flow_usage",
+            },
           ],
         },
         {
@@ -58,10 +62,6 @@ export default defineConfig({
             {
               label: "Step Type: Upsert Row",
               slug: "ai_generated/step_type_upsert_row",
-            },
-            {
-              label: "Supabase Rows as First-Class Citizen",
-              slug: "ai_generated/supabase_rows_as_first_class_citizen",
             },
           ],
         },
