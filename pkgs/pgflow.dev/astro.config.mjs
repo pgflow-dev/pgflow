@@ -33,6 +33,7 @@ export default defineConfig({
               label: "Versioning: always new flow",
               slug: "ideas/versioning_migrate_payload",
             },
+            { label: "JS API", slug: "ideas/js_api" },
           ],
         },
         {
@@ -53,6 +54,14 @@ export default defineConfig({
             {
               label: "Flow lifecyce",
               slug: "ai_generated/flow_lifecycle",
+            },
+            {
+              label: "Step Type: Upsert Row",
+              slug: "ai_generated/step_type_upsert_row",
+            },
+            {
+              label: "Supabase Rows as First-Class Citizen",
+              slug: "ai_generated/supabase_rows_as_first_class_citizen",
             },
           ],
         },
