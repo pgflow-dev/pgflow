@@ -1,5 +1,5 @@
 ---
-title: Frontend simplicity
+title: The Ultimate Abstraction
 template: splash
 hero:
   tagline: Run distributed workflows and treat them as Promises
