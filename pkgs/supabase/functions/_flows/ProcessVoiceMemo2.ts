@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Groq from "groq-sdk";
-import { Flow } from "./Flow.ts";
+import { Flow } from "../_pgflow/Flow.ts";
 import createChatCompletion from "../_steps/SummarizeWithGroq.ts";
 
 const supabase: SupabaseClient = {} as SupabaseClient;

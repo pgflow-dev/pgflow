@@ -1,5 +1,5 @@
 import Groq from "groq-sdk";
-import { Flow } from "./Flow.ts";
+import { Flow } from "../_pgflow/Flow.ts";
 import type { Database } from "../../types.d.ts";
 import { createServiceRoleClient } from "../_shared/supabaseClient.ts";
 

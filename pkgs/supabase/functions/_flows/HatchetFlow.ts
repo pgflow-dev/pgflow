@@ -1,4 +1,4 @@
-import { Flow } from "./Flow.ts";
+import { Flow } from "../_pgflow/Flow.ts";
 
 // const workflow: Workflow = {
 //   id: 'basic-rag-workflow',

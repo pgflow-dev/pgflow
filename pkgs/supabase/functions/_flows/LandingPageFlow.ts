@@ -1,11 +1,11 @@
+import { Flow } from "../_pgflow/Flow.ts";
+
 function fetchVoiceMemo(voiceMemoId: string): File {
   return new File([], voiceMemoId);
 }
 function transcribeWithGroqWhisper(audioFile: File): string {
   return "the trascription of voice memo";
 }
-
-import { Flow } from "./Flow.ts";
 
 // everything below will get included, content above will be ignored in the docs
 /////////////////////////////////////////////////////////////////////////////////////

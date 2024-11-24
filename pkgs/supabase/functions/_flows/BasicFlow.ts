@@ -1,4 +1,4 @@
-import { Flow } from "./Flow.ts";
+import { Flow } from "../_pgflow/Flow.ts";
 
 const BasicFlow = new Flow<string>()
   .task("root", ({ run }) => `[${run}]r00t`)
