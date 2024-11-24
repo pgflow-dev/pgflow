@@ -1,4 +1,8 @@
-export default createChatCompletion = async (content: string) => {
+import Groq from "groq-sdk";
+
+const groq = new Groq({ apiKey: Deno.env.get("GROQ_API_KEY") });
+
+export default async (content: string) => {
   const chatCompletion = await groq.chat.completions.create({
     messages: [
       {
