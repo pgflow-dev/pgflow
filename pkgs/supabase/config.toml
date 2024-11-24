@@ -1,5 +1,8 @@
 project_id = "feedwise"
 
+[edge_runtime]
+policy = "per_worker"
+
 [api]
 enabled = true
 port = 54321

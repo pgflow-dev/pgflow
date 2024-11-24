@@ -1368,6 +1368,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      enqueue_job_edge_fn_event: {
+        Args: {
+          flow_slug: string
+          run_id: string
+          step_slug: string
+          payload: Json
+        }
+        Returns: undefined
+      }
       enqueue_job_pgqueuer: {
         Args: {
           flow_slug: string
@@ -1560,6 +1569,18 @@ export type Database = {
           priority?: number
           status?: Database["public"]["Enums"]["pgqueuer_statistics_status"]
           time_in_queue?: unknown
+        }
+        Relationships: []
+      }
+      result: {
+        Row: {
+          content: string | null
+        }
+        Insert: {
+          content?: string | null
+        }
+        Update: {
+          content?: string | null
         }
         Relationships: []
       }

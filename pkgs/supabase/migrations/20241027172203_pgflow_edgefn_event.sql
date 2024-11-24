@@ -1,0 +1,28 @@
+create or replace function pgflow.enqueue_job_edge_fn_event(
+    flow_slug text,
+    run_id uuid,
+    step_slug text,
+    payload jsonb
+)
+returns void as $$
+DECLARE
+    result text;
+BEGIN
+    WITH settings AS (
+        select decrypted_secret AS app_url
+        from vault.decrypted_secrets
+        where name = 'app_url'
+    )
+    select content into result
+    from extensions.http_post(
+        (select app_url from settings) || '/functions/v1/pgflow-2',
+        payload::jsonb::text,
+        'application/json'
+    )
+    where status >= 200 and status < 300;
+
+    if result IS NULL then
+        raise exception 'Edge function returned non-OK status';
+    end if;
+END;
+$$ language plpgsql security definer;
