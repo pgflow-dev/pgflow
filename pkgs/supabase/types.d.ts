@@ -1572,18 +1572,6 @@ export type Database = {
         }
         Relationships: []
       }
-      result: {
-        Row: {
-          content: string | null
-        }
-        Insert: {
-          content?: string | null
-        }
-        Update: {
-          content?: string | null
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never

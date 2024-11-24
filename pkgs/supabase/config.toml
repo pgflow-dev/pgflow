@@ -3,6 +3,10 @@ project_id = "feedwise"
 [edge_runtime]
 policy = "per_worker"
 
+[db.seed]
+enabled = true
+sql_paths = ["seed.sql", "fixtures/*.sql"]
+
 [api]
 enabled = true
 port = 54321
