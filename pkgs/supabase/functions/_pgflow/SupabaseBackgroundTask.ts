@@ -7,6 +7,6 @@ export default class SupabaseBackgroundTask extends Event {
   }
 }
 globalThis.addEventListener("myBackgroundTask", async (event) => {
-  const res = await (event as MyBackgroundTaskEvent).taskPromise;
+  const res = await (event as SupabaseBackgroundTask).taskPromise;
   console.log(await res.json());
 });

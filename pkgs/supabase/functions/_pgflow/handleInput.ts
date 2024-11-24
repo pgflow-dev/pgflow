@@ -1,5 +1,8 @@
 import type { Json } from "../../types.d.ts";
 import ProcessVoiceMemo from "../_flows/ProcessVoiceMemo.ts";
+import NlpPipeline from "../_flows/NlpPipeline.ts";
+const FlowDef = NlpPipeline;
+// const FlowDef = ProcessVoiceMemo;
 
 export type EdgeFnInput = {
   meta: {
@@ -19,7 +22,7 @@ export default async function handleInput(
     payload,
   );
 
-  const flowSteps = ProcessVoiceMemo.getSteps();
+  const flowSteps = FlowDef.getSteps();
   type StepNames = keyof typeof flowSteps;
 
   function assertStepSlug(slug: string): asserts slug is StepNames {
