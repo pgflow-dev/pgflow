@@ -7,7 +7,7 @@ export const load: PageLoad = async ({ parent, params: { flowSlug } }): Promise<
 
 	const { data: run, error } = await supabase
 		.schema('pgflow')
-		.rpc('run_flow', { p_flow_slug: flowSlug, p_payload: { some: { input: 'data ' } } })
+		.rpc('run_flow', { p_flow_slug: flowSlug, p_payload: '<input>' })
 		.single<RunFlow>();
 
 	if (error) {
