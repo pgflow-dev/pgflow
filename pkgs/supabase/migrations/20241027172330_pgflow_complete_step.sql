@@ -63,7 +63,7 @@ BEGIN
             AND ss2.step_slug = d2.from_step_slug
             WHERE d2.to_step_slug = ds.to_step_slug
             AND d2.flow_slug = (SELECT r2.flow_slug FROM pgflow.runs AS r2 WHERE r2.run_id = p_run_id)
-            AND (ss2.status IS NULL OR ss2.status != 'completed')
+            AND (ss2.status IS NULL OR ss2.status NOT IN('completed', 'failed'))
         )
     LOOP
         PERFORM pgflow.start_step(p_run_id, ready_step.step_slug);
