@@ -1,24 +1,24 @@
 set search_path to pgflow;
 
-delete from pgflow.step_states where flow_slug = 'nlp-pipeline';
-delete from pgflow.runs where flow_slug = 'nlp-pipeline';
-delete from pgflow.deps where flow_slug = 'nlp-pipeline';
-delete from pgflow.steps where flow_slug = 'nlp-pipeline';
-delete from pgflow.flows where flow_slug = 'nlp-pipeline';
+delete from pgflow.step_states where flow_slug = 'NlpPipeline';
+delete from pgflow.runs where flow_slug = 'NlpPipeline';
+delete from pgflow.deps where flow_slug = 'NlpPipeline';
+delete from pgflow.steps where flow_slug = 'NlpPipeline';
+delete from pgflow.flows where flow_slug = 'NlpPipeline';
 
 insert into pgflow.flows (flow_slug) values (
-    'nlp-pipeline'
+    'NlpPipeline'
 );
 
 insert into pgflow.steps (flow_slug, step_slug) values
-('nlp-pipeline', 'text_input'),
-('nlp-pipeline', 'openai_embeddings'),
-('nlp-pipeline', 'huggingface_embeddings'),
-('nlp-pipeline', 'langchain_processing'),
-('nlp-pipeline', 'bert_classification'),
-('nlp-pipeline', 'gpt_summarization'),
-('nlp-pipeline', 'sentiment_analysis'),
-('nlp-pipeline', 'result_aggregation');
+('NlpPipeline', 'text_input'),
+('NlpPipeline', 'openai_embeddings'),
+('NlpPipeline', 'huggingface_embeddings'),
+('NlpPipeline', 'langchain_processing'),
+('NlpPipeline', 'bert_classification'),
+('NlpPipeline', 'gpt_summarization'),
+('NlpPipeline', 'sentiment_analysis'),
+('NlpPipeline', 'result_aggregation');
 --
 --                          text_input
 --                        /    |    \    \
@@ -31,36 +31,36 @@ insert into pgflow.steps (flow_slug, step_slug) values
 
 insert into pgflow.deps (flow_slug, from_step_slug, to_step_slug)
 values
-('nlp-pipeline', 'text_input', 'openai_embeddings'),
-('nlp-pipeline', 'text_input', 'bert_classification'),
-('nlp-pipeline', 'text_input', 'gpt_summarization'),
+('NlpPipeline', 'text_input', 'openai_embeddings'),
+('NlpPipeline', 'text_input', 'bert_classification'),
+('NlpPipeline', 'text_input', 'gpt_summarization'),
 (
-    'nlp-pipeline',
+    'NlpPipeline',
     'openai_embeddings',
     'huggingface_embeddings'
 ),
 (
-    'nlp-pipeline',
+    'NlpPipeline',
     'huggingface_embeddings',
     'langchain_processing'
 ),
 (
-    'nlp-pipeline',
+    'NlpPipeline',
     'bert_classification',
     'result_aggregation'
 ),
 (
-    'nlp-pipeline',
+    'NlpPipeline',
     'gpt_summarization',
     'sentiment_analysis'
 ),
 (
-    'nlp-pipeline',
+    'NlpPipeline',
     'sentiment_analysis',
     'result_aggregation'
 ),
 (
-    'nlp-pipeline',
+    'NlpPipeline',
     'langchain_processing',
     'result_aggregation'
 );
