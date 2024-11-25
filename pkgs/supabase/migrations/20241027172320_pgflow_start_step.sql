@@ -43,8 +43,8 @@ BEGIN
         )
         RETURNING * INTO step_state;
     EXCEPTION WHEN unique_violation THEN
-        RAISE EXCEPTION 'Step already started for run: run_id=%, step_slug=%', p_run_id, p_step_slug;
-        RETURN;
+        -- Another transaction already started this step, which is fine
+        NULL;
     END;
 
     -- collect dependencies of a step into json object with keys being slugs
