@@ -16,7 +16,7 @@ Deno.serve(async (req: Request) => {
 
     const completeStepResult = await completeStep(meta, stepResult, supabase);
     console.log("complete_step: ", completeStepResult);
-  } catch (error) {
+  } catch (error: unknown) {
     console.log("ERROR: ", error);
 
     const failStepResult = await failStep(meta, error, supabase);
