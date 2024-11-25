@@ -1,11 +1,13 @@
 import type { Json } from "../../types.d.ts";
 import ProcessVoiceMemo from "../_flows/ProcessVoiceMemo.ts";
 import NlpPipeline from "../_flows/NlpPipeline.ts";
+import BasicFlow from "../_flows/BasicFlow.ts";
 const FlowDef = NlpPipeline;
 
 const FlowDefs = {
   NlpPipeline: NlpPipeline,
   ProcessVoiceMemo: ProcessVoiceMemo,
+  BasicFlow: BasicFlow,
 };
 
 type FlowSlugs = keyof typeof FlowDefs;
