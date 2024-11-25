@@ -21,19 +21,21 @@ export function setupBackgroundTaskListener(globalThis: any) {
     const { meta, payload } = backgroundTask.input;
     console.log("Event Listener START", backgroundTask.input);
 
+    let stepResult: any;
+
     try {
-      const stepResult = await handleInput(meta, payload);
+      stepResult = await handleInput(meta, payload);
       console.log("Event Listener RESULT", stepResult);
-
-      const completeStepResult = await completeStep(meta, stepResult, supabase);
-      console.log("Event Listener COMPLETE", completeStepResult);
-
-      return completeStepResult;
     } catch (error) {
       const failStepResult = await failStep(meta, error, supabase);
       console.log("Event Listener FAIL", error, failStepResult);
 
       return failStepResult;
     }
+
+    const completeStepResult = await completeStep(meta, stepResult, supabase);
+    console.log("Event Listener COMPLETE", completeStepResult);
+
+    return completeStepResult;
   });
 }
