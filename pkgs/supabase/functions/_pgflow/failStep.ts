@@ -3,7 +3,7 @@ import type { EdgeFnInput } from "./handleInput.ts";
 
 export default async function failStep(
   { run_id, step_slug }: EdgeFnInput["meta"],
-  error: Error,
+  error: Json,
   supabase: SupabaseClient,
 ) {
   const { data, error: rpcError } = await supabase
@@ -11,7 +11,7 @@ export default async function failStep(
     .rpc("fail_step", {
       run_id,
       step_slug,
-      error: error.message,
+      error,
     });
 
   if (rpcError) {
