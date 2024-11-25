@@ -8,17 +8,29 @@ returns void as $$
 DECLARE
     result text;
 BEGIN
-    WITH settings AS (
+    WITH secret as (
+        select decrypted_secret AS supabase_anon_key
+        from vault.decrypted_secrets
+    where name = 'supabase_anon_key'
+    ),
+    settings AS (
         select decrypted_secret AS app_url
         from vault.decrypted_secrets
         where name = 'app_url'
     )
     select content into result
-    from extensions.http_post(
+    from extensions.http((
+        'POST',
         (select app_url from settings) || '/functions/v1/pgflow-2',
-        payload::jsonb::text,
-        'application/json'
-    )
+        ARRAY[
+            http_header(
+                'Authorization', 
+                'Bearer ' || (select supabase_anon_key from secret)
+            ) 
+        ],
+        'application/json',
+        payload::jsonb::text
+    )::http_request)
     where status >= 200 and status < 300;
 
     if result IS NULL then
