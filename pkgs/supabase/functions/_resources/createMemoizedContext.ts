@@ -1,4 +1,4 @@
-const Deno = {
+const Deno2 = {
   env: {
     GROQ_API_KEY: "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   },
@@ -14,7 +14,7 @@ const createMemoizedContext = <T extends Record<string, (env: any) => any>>(
       Object.defineProperty(acc, name, {
         get() {
           if (!cache.has(name)) {
-            cache.set(name, factoryFn(Deno.env));
+            cache.set(name, factoryFn(Deno2.env));
           }
           return cache.get(name);
         },

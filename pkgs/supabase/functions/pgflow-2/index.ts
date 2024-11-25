@@ -1,8 +1,7 @@
 /// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
 import { createServiceRoleClient } from "../_shared/supabaseClient.ts";
 import BackgroundTaskHandler from "../_pgflow/BackgroundTaskHandler.ts";
-
-const supabase = createServiceRoleClient();
+import { type EdgeFnInput } from "../_pgflow/handleInput.ts";
 
 globalThis.addEventListener("pgflow", async (event) => {
   const backgroundTask = event as BackgroundTaskHandler;
@@ -11,9 +10,10 @@ globalThis.addEventListener("pgflow", async (event) => {
   console.log("taskResult", JSON.stringify(taskResult, null, 2));
 });
 
+const supabase = createServiceRoleClient();
+
 Deno.serve(async (req: Request) => {
   const input: EdgeFnInput = await req.json();
-  const { meta, payload } = input;
 
   globalThis.dispatchEvent(new BackgroundTaskHandler(input, supabase));
 
