@@ -7,28 +7,30 @@ import SupabaseBackgroundTask from "../_pgflow/SupabaseBackgroundTask.ts";
 
 const supabase = createServiceRoleClient();
 
+let x = 0;
+
 Deno.serve(async (req: Request) => {
   const input: EdgeFnInput = await req.json();
   const { meta, payload } = input;
 
   // try {
   const taskPromise = handleInput(meta, payload);
-  console.log("taskPromise", taskPromise);
 
-  const backgroundTask = new SupabaseBackgroundTask(taskPromise);
-  globalThis.dispatchEvent(backgroundTask);
-  console.log("dispatched");
+  const eventId = `pgflow-${meta.run_id}-${meta.step_slug}`;
+  const backgroundTask = new SupabaseBackgroundTask(eventId, taskPromise);
+  globalThis.addEventListener(eventId, async (event) => {
+    console.log(`event ${eventId}`, event);
 
-  globalThis.addEventListener("pgflow", async (event) => {
-    console.log("event", event);
-
-    const res = await (event as SupabaseBackgroundTask).taskPromise;
-    const stepResult = await res.json();
-    console.log("stepResult", stepResult);
+    const stepResult = await (event as SupabaseBackgroundTask).taskPromise;
+    console.log("stepResult", JSON.stringify(stepResult, null, 2));
 
     const completeStepResult = await completeStep(meta, stepResult, supabase);
-    console.log("completeStepResult", completeStepResult);
+    console.log(
+      "completeStepResult",
+      JSON.stringify(completeStepResult, null, 2),
+    );
   });
+  globalThis.dispatchEvent(backgroundTask);
 
   // } catch (error) {
   //   console.log("ERROR: ", error);
@@ -37,6 +39,8 @@ Deno.serve(async (req: Request) => {
   //   console.log("fail_step: ", failStepResult);
   // }
 
+  console.log("responding but x is ", x);
+  x += 1;
   return new Response(JSON.stringify("ok"), {
     headers: {
       "Content-Type": "application/json",

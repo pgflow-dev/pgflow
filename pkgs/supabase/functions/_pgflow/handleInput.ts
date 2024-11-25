@@ -2,14 +2,33 @@ import type { Json } from "../../types.d.ts";
 import ProcessVoiceMemo from "../_flows/ProcessVoiceMemo.ts";
 import NlpPipeline from "../_flows/NlpPipeline.ts";
 const FlowDef = NlpPipeline;
-// const FlowDef = ProcessVoiceMemo;
+
+const FlowDefs = {
+  NlpPipeline: NlpPipeline,
+  ProcessVoiceMemo: ProcessVoiceMemo,
+};
+
+type FlowSlugs = keyof typeof FlowDefs;
+type AllFlows = (typeof FlowDefs)[FlowSlugs];
+
+type FlowSteps<K extends FlowSlugs> = ReturnType<
+  (typeof FlowDefs)[K]["getSteps"]
+>;
+
+type FlowToSteps<K extends FlowSlugs> = {
+  flow_slug: K;
+  step_slug: keyof FlowSteps<K>;
+  // step_slug: keyof ReturnType<(typeof FlowDefs)[K]["getSteps"]>;
+};
+
+type AllFlowSteps = {
+  [K in FlowSlugs]: FlowToSteps<K>;
+}[FlowSlugs];
 
 export type EdgeFnInput = {
   meta: {
     run_id: string;
-    flow_slug: string;
-    step_slug: string;
-  };
+  } & AllFlowSteps;
   payload: Json;
 };
 
@@ -22,6 +41,7 @@ export default async function handleInput(
     payload,
   );
 
+  const FlowDef = FlowDefs[flow_slug];
   const flowSteps = FlowDef.getSteps();
   type StepNames = keyof typeof flowSteps;
 
