@@ -18,28 +18,7 @@ BEGIN
     -- Try with locking at the granularity of a run_id
     -- it should be absolutely fine even if all steps finishes at the same time
     -- but we can work on improving this to lock on particular sorted dependants
-    PERFORM pg_advisory_xact_lock(run_id::TEXT::BIGINT);
-
-    -- -- Step 1: find all dependants of this step and store them in an array
-    -- SELECT ARRAY_AGG(ds.to_step_slug ORDER BY ds.to_step_slug) INTO to_step_slugs
-    -- FROM (
-    --     SELECT DISTINCT d.to_step_slug
-    --     FROM pgflow.deps AS d
-    --     JOIN pgflow.runs AS r ON r.run_id = p_run_id
-    --     WHERE d.flow_slug = r.flow_slug
-    --     AND d.from_step_slug = p_step_slug
-    -- ) ds;
-    --
-    -- -- Step 2: acquire locks on all dependants in a consistent order to prevent deadlocks
-    -- IF to_step_slugs IS NOT NULL THEN
-    --     FOREACH _to_step_slug IN ARRAY to_step_slugs
-    --     LOOP
-    --         PERFORM pg_advisory_xact_lock(
-    --             hashtext(p_run_id::text),
-    --             hashtext(_to_step_slug)
-    --         );
-    --     END LOOP;
-    -- END IF;
+    PERFORM pg_advisory_xact_lock(('x' || LEFT(md5(p_run_id::text), 16))::bit(64)::bigint);
 
     -- Step 3: update current step state to 'completed',
     --         so it can be considered as completed when
