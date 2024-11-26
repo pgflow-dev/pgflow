@@ -2,7 +2,7 @@
 title: pgflow
 template: splash
 hero:
-  tagline: Supabase-first, open-source, type-safe workflow engine
+  tagline: Supabase-native open-source type-safe workflow engine with realtime updates
   image:
     file: ../../assets/nodes-group-logo.svg
   actions:
