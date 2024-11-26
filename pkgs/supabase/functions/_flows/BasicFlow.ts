@@ -5,7 +5,7 @@ const randomSleep = () => sleep(Math.floor(Math.random() * 500 + 200)); // Rando
 
 const BasicFlow = new Flow<string>()
   .task("root", async ({ run }) => {
-    await randomSleep();
+    // await randomSleep();
     return `[${run}]r00t`;
   })
   .task("left", ["root"], async ({ root: r }) => {
