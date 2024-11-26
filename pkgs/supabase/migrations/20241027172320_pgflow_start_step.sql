@@ -42,9 +42,9 @@ BEGIN
             p_step_slug
         )
         RETURNING * INTO step_state;
-    EXCEPTION WHEN unique_violation THEN
-        -- Another transaction already started this step, which is fine
-        NULL;
+    -- EXCEPTION WHEN unique_violation THEN
+    --     -- Another transaction already started this step, which is fine
+    --     NULL;
     END;
 
     -- collect dependencies of a step into json object with keys being slugs
