@@ -7,6 +7,11 @@ export default async function completeStep(
   result: Json,
   supabase: SupabaseClient,
 ) {
+  console.log("completeStep(meta, result, supabaes)", {
+    meta: { run_id, step_slug },
+    result,
+    supabase,
+  });
   const { data, error: rpcError } = await supabase
     .schema("pgflow")
     .rpc("complete_step", {
@@ -14,6 +19,7 @@ export default async function completeStep(
       p_step_slug: step_slug,
       p_step_result: result,
     });
+  console.log("completeStep() results:", { data, error: rpcError });
 
   if (rpcError) {
     throw new Error(rpcError.message);

@@ -16,6 +16,8 @@ export class BackgroundTaskEvent extends Event {
 }
 
 async function performTask({ meta, payload }: EdgeFnInput) {
+  console.log("performTask({ meta, payload })", { meta, payload });
+
   let stepResult: any;
 
   try {
@@ -34,23 +36,24 @@ async function performTask({ meta, payload }: EdgeFnInput) {
   return completeStepResult;
 }
 
-globalThis.addEventListener("pgflow", async (event) => {
-  const taskPromise = (event as BackgroundTaskEvent).taskPromise;
-
-  try {
-    const result = await taskPromise;
-    console.log("Task completed:", result);
-  } catch (error) {
-    console.error("Task failed:", error);
-  }
-});
+// globalThis.addEventListener("pgflow", async (event) => {
+//   const taskPromise = (event as BackgroundTaskEvent).taskPromise;
+//
+//   try {
+//     const result = await taskPromise;
+//     console.log("Task completed:", result);
+//   } catch (error) {
+//     console.error("Task failed:", error);
+//   }
+// });
 
 Deno.serve(async (req: Request) => {
   const input: EdgeFnInput = await req.json();
 
   const taskPromise = performTask(input);
+  await taskPromise;
 
-  globalThis.dispatchEvent(new BackgroundTaskEvent(taskPromise));
+  // globalThis.dispatchEvent(new BackgroundTaskEvent(taskPromise));
 
   return new Response(JSON.stringify("ok"), {
     headers: {
