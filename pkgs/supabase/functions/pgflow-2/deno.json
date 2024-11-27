@@ -1,10 +1,7 @@
 {
-	"imports": {
+  "imports": {
     "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.46.1",
-		"openai": "jsr:@openai/openai@^4.52.5",
+    "openai": "jsr:@openai/openai@^4.52.5",
     "groq-sdk": "npm:groq-sdk@^0.7.0"
-	}
+  }
 }
-
-
-

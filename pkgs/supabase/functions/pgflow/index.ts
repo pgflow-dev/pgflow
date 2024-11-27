@@ -1,4 +1,3 @@
-/// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
 import { createServiceRoleClient } from "../_shared/supabaseClient.ts";
 import handleInput, { type EdgeFnInput } from "../_pgflow/handleInput.ts";
 import completeStep from "../_pgflow/completeStep.ts";
