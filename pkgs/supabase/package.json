@@ -15,7 +15,7 @@
     "start": "bin/supabase start",
     "test": "bin/test",
     "test:watch": "ls tests/**/*.sql | entr -rc bin/test",
-    "pgflow:gen-schema": "pnpm tsx --tsconfig tsconfig.json generate-schema.ts"
+    "pgflow:gen-schema": "pnpm tsx --tsconfig schema-generator/tsconfig.json schema-generator/generate-schema.ts"
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.45.4",
