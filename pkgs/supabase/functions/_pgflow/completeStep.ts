@@ -7,10 +7,9 @@ export default async function completeStep(
   result: Json,
   supabase: SupabaseClient,
 ) {
-  console.log("completeStep(meta, result, supabaes)", {
+  console.log("completeStep(meta, result)", {
     meta: { run_id, step_slug },
     result,
-    supabase,
   });
   const { data, error: rpcError } = await supabase
     .schema("pgflow")

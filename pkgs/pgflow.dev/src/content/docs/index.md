@@ -1,8 +1,8 @@
 ---
-title: The Ultimate Abstraction
+title: pgflow
 template: splash
 hero:
-  tagline: Run distributed workflows and treat them as Promises
+  tagline: Supabase-native open-source type-safe workflow engine with realtime updates
   image:
     file: ../../assets/nodes-group-logo.svg
   actions:
