@@ -1,6 +1,26 @@
 CREATE SCHEMA IF NOT EXISTS pgflow_locks;
 SET search_path TO pgflow_locks;
 
+--------------------------------------------------------------------------
+------------------ TODO: fix me, UNSECURE --------------------------------
+--------------------------------------------------------------------------
+GRANT USAGE ON SCHEMA pgflow_locks TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA pgflow_locks TO anon,
+authenticated,
+service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA pgflow_locks TO anon,
+authenticated,
+service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA pgflow_locks TO anon,
+authenticated,
+service_role;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA pgflow_locks
+GRANT ALL ON TABLES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA pgflow_locks
+GRANT ALL ON ROUTINES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA pgflow_locks
+GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+
 -- universal, concistency-safe hash function
 CREATE OR REPLACE FUNCTION pgflow_locks.hash64(input text) RETURNS bigint AS $$
 DECLARE hash BIGINT;
