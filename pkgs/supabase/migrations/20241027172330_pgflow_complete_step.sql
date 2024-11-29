@@ -10,6 +10,7 @@ RETURNS TABLE (
     status TEXT,
     step_result JSONB
 ) AS $$
+#variable_conflict use_column
 DECLARE
     ready_step RECORD;
     step_state_to_complete pgflow.step_states%ROWTYPE;

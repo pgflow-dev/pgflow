@@ -10,6 +10,7 @@ RETURNS TABLE (
     status TEXT,
     step_result JSONB
 ) AS $$
+#variable_conflict use_column
 DECLARE
     p_run_id UUID := run_id;
     p_step_slug TEXT := step_slug;

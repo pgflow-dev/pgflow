@@ -10,6 +10,7 @@ RETURNS TABLE (
     status TEXT,
     payload JSONB
 ) AS $$
+#variable_conflict use_column
 DECLARE
     new_run RECORD;
 BEGIN

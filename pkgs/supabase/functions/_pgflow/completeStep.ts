@@ -16,7 +16,7 @@ export default async function completeStep(
     .rpc("complete_step", {
       p_run_id: run_id,
       p_step_slug: step_slug,
-      p_step_result: result,
+      p_step_result: result || null,
     });
   console.log("completeStep() results:", { data, error: rpcError });
 

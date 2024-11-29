@@ -37,9 +37,9 @@ BEGIN
     EXCEPTION
         WHEN unique_violation THEN
             -- Another transaction already started this step
-            SELECT * INTO step_state 
-            FROM pgflow.step_states 
-            WHERE run_id = p_run_id AND step_slug = p_step_slug;
+            SELECT * INTO step_state
+            FROM pgflow.step_states ss
+            WHERE ss.run_id = p_run_id AND ss.step_slug = p_step_slug;
         WHEN others THEN
             RAISE EXCEPTION 'Error inserting into step_states: %', SQLERRM;
     END;

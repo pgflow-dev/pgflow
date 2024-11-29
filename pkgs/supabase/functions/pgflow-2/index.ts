@@ -26,9 +26,8 @@ async function performTask(input: EdgeFnInput) {
   try {
     stepResult = await handleInput(meta, payload);
   } catch (error) {
-    const failStepResult = await failStep(meta, error, supabase);
-
-    return failStepResult;
+    // const failStepResult = await failStep(meta, error, supabase);
+    // return failStepResult;
   }
 
   const completeStepResult = await completeStep(meta, stepResult, supabase);
@@ -41,9 +40,9 @@ globalThis.addEventListener("pgflow", async (event) => {
   try {
     await startStepExecution(input, supabase);
     await taskPromise;
-    await completeStepExecution(input, supabase);
+    // await completeStepExecution(input, supabase);
   } catch (_error) {
-    await failStepExecution(input, supabase);
+    // await failStepExecution(input, supabase);
   }
 });
 
