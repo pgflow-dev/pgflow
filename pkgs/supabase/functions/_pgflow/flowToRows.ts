@@ -1,4 +1,4 @@
-import { Database } from "../../types.d";
+import { type Database } from "../../types.d";
 import { Flow, type Json } from "./Flow";
 
 type FlowRow = Database["pgflow"]["Tables"]["flows"]["Row"];

@@ -1,7 +1,6 @@
 import { createServiceRoleClient } from "../_shared/supabaseClient.ts";
 import handleInput, { type EdgeFnInput } from "../_pgflow/handleInput.ts";
-import completeStep from "../_pgflow/completeStep.ts";
-import failStep from "../_pgflow/failStep.ts";
+import { completeStep, failStep } from "../_pgflow/index.ts";
 
 const supabase = createServiceRoleClient();
 

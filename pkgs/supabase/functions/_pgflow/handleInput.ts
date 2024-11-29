@@ -1,8 +1,7 @@
-import type { Json } from "../../types.d.ts";
+import { type Json } from "./index.ts";
 import FlowDefs from "../_flows/index.ts";
 
 type FlowSlugs = keyof typeof FlowDefs;
-type AllFlowDefs = (typeof FlowDefs)[FlowSlugs];
 
 type FlowSteps<K extends FlowSlugs> = ReturnType<
   (typeof FlowDefs)[K]["getSteps"]
