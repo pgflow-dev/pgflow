@@ -38,11 +38,6 @@ export default async function handleInput(
   { run_id, flow_slug, step_slug }: EdgeFnInput["meta"],
   payload: EdgeFnInput["payload"],
 ) {
-  console.log(
-    `CALLING HANDLER FOR ${flow_slug}/${step_slug} (run ${run_id}) with payload`,
-    payload,
-  );
-
   const FlowDef = FlowDefs[flow_slug];
   const flowSteps = FlowDef.getSteps();
   type StepNames = keyof typeof flowSteps;
@@ -57,5 +52,10 @@ export default async function handleInput(
   const stepToRun = flowSteps[step_slug];
   const stepHandler = stepToRun.handler;
 
-  return await stepHandler(payload);
+  console.log(`CALL: ${flow_slug}/${step_slug} (${run_id})`, payload);
+  const handlerResult = await stepHandler(payload);
+
+  console.log(`RTRN: ${flow_slug}/${step_slug} (${run_id})`, handlerResult);
+
+  return handlerResult;
 }

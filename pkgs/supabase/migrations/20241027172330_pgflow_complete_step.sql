@@ -11,23 +11,32 @@ RETURNS TABLE (
     step_result JSONB
 ) AS $$
 DECLARE
-    _to_step_slug TEXT;
     ready_step RECORD;
-    to_step_slugs TEXT[];
+    step_state_to_complete pgflow.step_states%ROWTYPE;
 BEGIN
-    -- Try with locking at the granularity of a run_id
-    -- it should be absolutely fine even if all steps finishes at the same time
-    -- but we can work on improving this to lock on particular sorted dependants
-    PERFORM pg_advisory_xact_lock(('x' || LEFT(md5(p_run_id::text), 16))::bit(64)::bigint);
+    PERFORM pgflow.lock_run(p_run_id);
+    PERFORM pgflow.lock_step_state(p_run_id, p_step_slug);
 
-    -- Step 3: update current step state to 'completed',
-    --         so it can be considered as completed when
-    --         checking dependencies of dependants
-    UPDATE pgflow.step_states AS ss
+    SELECT * INTO step_state_to_complete
+    FROM pgflow.step_states ss
+    WHERE ss.run_id = p_run_id
+    AND ss.step_slug = p_step_slug;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Step state not found for run_id: % and step_slug: %', p_run_id, p_step_slug;
+    END IF;
+
+    UPDATE pgflow.step_states ss
     SET status = 'completed',
         step_result = p_step_result
     WHERE ss.run_id = p_run_id
     AND ss.step_slug = p_step_slug;
+
+    -- This check is actually redundant since we already verified the row exists,
+    -- but keeping it as an extra safety measure
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Failed to update step state for run_id: % and step_slug: %', p_run_id, p_step_slug;
+    END IF;
 
     -- Step 4: start all the ready dependants
     FOR ready_step IN

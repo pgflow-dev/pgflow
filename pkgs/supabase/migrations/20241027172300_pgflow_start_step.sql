@@ -30,22 +30,20 @@ BEGIN
         RETURN;
     END IF;
 
-    -- IF pgflow.has_unmet_deps(p_run_id, p_step_slug) THEN
-    --     RAISE EXCEPTION 'Dependencies not met for step: run_id=%, step_slug=%', p_run_id, p_step_slug;
-    -- END IF;
-    --
-    -- Lock the step_state row to prevent concurrent modifications
     BEGIN
-        INSERT INTO pgflow.step_states (flow_slug, run_id, step_slug) VALUES (
-            locked_run.flow_slug,
-            p_run_id,
-            p_step_slug
-        )
+        INSERT INTO pgflow.step_states (flow_slug, run_id, step_slug)
+        VALUES (locked_run.flow_slug, p_run_id, p_step_slug)
         RETURNING * INTO step_state;
-    -- EXCEPTION WHEN unique_violation THEN
-    --     -- Another transaction already started this step, which is fine
-    --     NULL;
+    EXCEPTION
+        WHEN unique_violation THEN
+            -- Another transaction already started this step
+            SELECT * INTO step_state 
+            FROM pgflow.step_states 
+            WHERE run_id = p_run_id AND step_slug = p_step_slug;
+        WHEN others THEN
+            RAISE EXCEPTION 'Error inserting into step_states: %', SQLERRM;
     END;
+
 
     -- collect dependencies of a step into json object with keys being slugs
     -- of dependency steps and values being results of that dependency steps

@@ -23,5 +23,5 @@ while true; do
         SELECT steps.*, locks.*, jobs.*
         FROM steps, locks, jobs
     '
-    sleep 1
+    sleep 0.1
 done

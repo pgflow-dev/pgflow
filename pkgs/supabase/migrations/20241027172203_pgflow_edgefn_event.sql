@@ -8,6 +8,8 @@ returns void as $$
 DECLARE
     result text;
 BEGIN
+    PERFORM pgflow.lock_step_state(run_id, step_slug);
+
     WITH secret as (
         select decrypted_secret AS supabase_anon_key
         from vault.decrypted_secrets
@@ -24,9 +26,9 @@ BEGIN
         (select app_url from settings) || '/functions/v1/pgflow-2',
         ARRAY[
             http_header(
-                'Authorization', 
+                'Authorization',
                 'Bearer ' || (select supabase_anon_key from secret)
-            ) 
+            )
         ],
         'application/json',
         payload::jsonb::text

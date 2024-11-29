@@ -1241,6 +1241,52 @@ export type Database = {
           },
         ]
       }
+      step_executions: {
+        Row: {
+          flow_slug: string
+          run_id: string
+          status: string
+          step_execution_id: string
+          step_slug: string
+        }
+        Insert: {
+          flow_slug: string
+          run_id: string
+          status?: string
+          step_execution_id?: string
+          step_slug: string
+        }
+        Update: {
+          flow_slug?: string
+          run_id?: string
+          status?: string
+          step_execution_id?: string
+          step_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "step_executions_flow_slug_fkey"
+            columns: ["flow_slug"]
+            isOneToOne: false
+            referencedRelation: "flows"
+            referencedColumns: ["flow_slug"]
+          },
+          {
+            foreignKeyName: "step_executions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "runs"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "step_executions_run_id_step_slug_fkey"
+            columns: ["run_id", "step_slug"]
+            isOneToOne: false
+            referencedRelation: "step_states"
+            referencedColumns: ["run_id", "step_slug"]
+          },
+        ]
+      }
       step_state_requests: {
         Row: {
           flow_slug: string | null
@@ -1350,6 +1396,13 @@ export type Database = {
           step_result: Json
         }[]
       }
+      complete_step_execution: {
+        Args: {
+          run_id: string
+          step_slug: string
+        }
+        Returns: undefined
+      }
       enqueue_job: {
         Args: {
           flow_slug: string
@@ -1400,6 +1453,13 @@ export type Database = {
           step_result: Json
         }[]
       }
+      fail_step_execution: {
+        Args: {
+          run_id: string
+          step_slug: string
+        }
+        Returns: undefined
+      }
       get_root_steps: {
         Args: {
           p_flow_slug: string
@@ -1416,11 +1476,30 @@ export type Database = {
         }
         Returns: boolean
       }
+      hash64: {
+        Args: {
+          input: string
+        }
+        Returns: number
+      }
       is_root_step: {
         Args: {
           p_step_slug: string
         }
         Returns: boolean
+      }
+      lock_run: {
+        Args: {
+          run_id: string
+        }
+        Returns: undefined
+      }
+      lock_step_state: {
+        Args: {
+          run_id: string
+          step_slug: string
+        }
+        Returns: undefined
       }
       run_flow: {
         Args: {
@@ -1445,6 +1524,13 @@ export type Database = {
           status: string
           step_result: Json
         }[]
+      }
+      start_step_execution: {
+        Args: {
+          run_id: string
+          step_slug: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
