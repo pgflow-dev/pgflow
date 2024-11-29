@@ -1476,30 +1476,11 @@ export type Database = {
         }
         Returns: boolean
       }
-      hash64: {
-        Args: {
-          input: string
-        }
-        Returns: number
-      }
       is_root_step: {
         Args: {
           p_step_slug: string
         }
         Returns: boolean
-      }
-      lock_run: {
-        Args: {
-          run_id: string
-        }
-        Returns: undefined
-      }
-      lock_step_state: {
-        Args: {
-          run_id: string
-          step_slug: string
-        }
-        Returns: undefined
       }
       run_flow: {
         Args: {
@@ -1526,6 +1507,41 @@ export type Database = {
         }[]
       }
       start_step_execution: {
+        Args: {
+          run_id: string
+          step_slug: string
+        }
+        Returns: undefined
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  pgflow_locks: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      complete_steps_in_serial: {
+        Args: {
+          run_id: string
+        }
+        Returns: undefined
+      }
+      hash64: {
+        Args: {
+          input: string
+        }
+        Returns: number
+      }
+      wait_for_start_step_to_commit: {
         Args: {
           run_id: string
           step_slug: string

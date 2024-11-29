@@ -1,7 +1,8 @@
-SET search_path TO pgflow;
+CREATE SCHEMA IF NOT EXISTS pgflow_locks;
+SET search_path TO pgflow_locks;
 
 -- universal, concistency-safe hash function
-CREATE OR REPLACE FUNCTION pgflow.hash64(input text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION pgflow_locks.hash64(input text) RETURNS bigint AS $$
 DECLARE hash BIGINT;
 BEGIN
     RETURN ('x' || LEFT(md5(input::text), 16))::bit(64)::bigint;
@@ -9,26 +10,36 @@ END;
 $$ LANGUAGE plpgsql;
 
 -------------------------------
-CREATE OR REPLACE FUNCTION pgflow.lock_run(
+-- required to make sure we check if dependant steps are ready in serial,
+-- so one of the dependencies can observe all deps for dependant
+-- being ready, so it can start the dependant
+CREATE OR REPLACE FUNCTION pgflow_locks.complete_steps_in_serial(
     run_id uuid
 )
 RETURNS void AS $$
 BEGIN
     PERFORM pg_advisory_xact_lock(
-        pgflow.hash64(run_id::text)
+        pgflow_locks.hash64(run_id::text)
     );
 END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 -------------------------------
-CREATE OR REPLACE FUNCTION pgflow.lock_step_state(
+-- required so the start_step_exeuction() call in edge function
+-- can wait for the step to be ready, and it is triggered via http request
+-- from withih the start_step transaction, so it often fails because it does
+-- not see the step state commited yet
+
+-- TODO: remove this when we hide complete_step() as private API and
+--       and expose it only via complete_step_execution()
+CREATE OR REPLACE FUNCTION pgflow_locks.wait_for_start_step_to_commit(
     run_id uuid,
     step_slug text
 )
 RETURNS void AS $$
 BEGIN
     PERFORM pg_advisory_xact_lock(
-        pgflow.hash64(run_id::text || step_slug::text)
+        pgflow_locks.hash64(run_id::text || step_slug::text)
     );
 END;
 $$ LANGUAGE plpgsql VOLATILE;

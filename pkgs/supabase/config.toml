@@ -10,7 +10,7 @@ sql_paths = ["seed.sql", "fixtures/*.sql"]
 [api]
 enabled = true
 port = 54321
-schemas = ["public", "storage", "graphql_public", "chat", "feed", "pgflow"]
+schemas = ["public", "storage", "graphql_public", "chat", "feed", "pgflow", "pgflow_locks"]
 
 # Extra schemas to add to the search_path of every request. public is always included.
 extra_search_path = ["public", "extensions"]

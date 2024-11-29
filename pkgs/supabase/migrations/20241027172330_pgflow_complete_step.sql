@@ -14,8 +14,12 @@ DECLARE
     ready_step RECORD;
     step_state_to_complete pgflow.step_states%ROWTYPE;
 BEGIN
-    PERFORM pgflow.lock_run(p_run_id);
-    PERFORM pgflow.lock_step_state(p_run_id, p_step_slug);
+    PERFORM pgflow_locks.wait_for_start_step_to_commit(p_run_id, p_step_slug);
+
+    -- required to make sure we check if dependant steps are ready in serial,
+    -- so one of the dependencies can observe all deps for dependant
+    -- being ready, so it can start the dependant
+    PERFORM pgflow_locks.complete_steps_in_serial(p_run_id);
 
     SELECT * INTO step_state_to_complete
     FROM pgflow.step_states ss

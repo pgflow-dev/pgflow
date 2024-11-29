@@ -8,7 +8,7 @@ returns void as $$
 DECLARE
     result text;
 BEGIN
-    PERFORM pgflow.lock_step_state(run_id, step_slug);
+    PERFORM pgflow_locks.wait_for_start_step_to_commit(run_id, step_slug);
 
     WITH secret as (
         select decrypted_secret AS supabase_anon_key

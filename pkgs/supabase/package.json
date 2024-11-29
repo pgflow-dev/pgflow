@@ -4,7 +4,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "dev": "(pnpm status || pnpm restart) && pnpm functions",
-    "gen-types": "bin/supabase gen types typescript --local --schema public --schema acl --schema auth --schema acl --schema storage --schema chat --schema feed --schema pgflow > types.d.ts",
+    "gen-types": "bin/supabase gen types typescript --local --schema public --schema acl --schema auth --schema acl --schema storage --schema chat --schema feed --schema pgflow --schema pgflow_locks > types.d.ts",
     "deno": "deno cache --config functions/deno.json functions/**/*.ts flows/**/*.ts",
     "db-reset": "bin/supabase db reset && pnpm gen-types && bin/load-secrets",
     "db-migrate": "bin/supabase migration up && pnpm gen-types",
