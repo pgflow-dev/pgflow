@@ -1,5 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import type { EdgeFnInput } from "./handleInput.ts";
+import type { Json } from "./Flow.ts";
 
 export default async function failStep(
   { run_id, step_slug }: EdgeFnInput["meta"],

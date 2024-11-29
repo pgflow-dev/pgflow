@@ -1,17 +1,8 @@
 import type { Json } from "../../types.d.ts";
-import ProcessVoiceMemo from "../_flows/ProcessVoiceMemo.ts";
-import NlpPipeline from "../_flows/NlpPipeline.ts";
-import BasicFlow from "../_flows/BasicFlow.ts";
-const FlowDef = NlpPipeline;
-
-const FlowDefs = {
-  NlpPipeline: NlpPipeline,
-  ProcessVoiceMemo: ProcessVoiceMemo,
-  BasicFlow: BasicFlow,
-};
+import FlowDefs from "../_flows/index.ts";
 
 type FlowSlugs = keyof typeof FlowDefs;
-type AllFlows = (typeof FlowDefs)[FlowSlugs];
+type AllFlowDefs = (typeof FlowDefs)[FlowSlugs];
 
 type FlowSteps<K extends FlowSlugs> = ReturnType<
   (typeof FlowDefs)[K]["getSteps"]

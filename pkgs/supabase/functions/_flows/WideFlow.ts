@@ -151,3 +151,5 @@ const WideFlow = new Flow<string>()
   });
 
 export default WideFlow;
+
+export type StepsType = ReturnType<typeof WideFlow.getSteps>;

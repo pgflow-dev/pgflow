@@ -22,3 +22,5 @@ const BasicFlow = new Flow<string>()
   });
 
 export default BasicFlow;
+
+export type StepsType = ReturnType<typeof BasicFlow.getSteps>;

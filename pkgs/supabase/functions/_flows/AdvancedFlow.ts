@@ -90,3 +90,5 @@ const AdvancedFlow = new Flow<string>()
   });
 
 export default AdvancedFlow;
+
+export type StepsType = ReturnType<typeof AdvancedFlow.getSteps>;

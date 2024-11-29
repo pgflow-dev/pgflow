@@ -26,6 +26,7 @@ async function performTask(input: EdgeFnInput) {
   try {
     stepResult = await handleInput(meta, payload);
   } catch (error) {
+    console.log("error", error);
     // const failStepResult = await failStep(meta, error, supabase);
     // return failStepResult;
   }

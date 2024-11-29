@@ -46,3 +46,5 @@ const SequentialFlow = new Flow<string>()
   });
 
 export default SequentialFlow;
+
+export type StepsType = ReturnType<typeof SequentialFlow.getSteps>;

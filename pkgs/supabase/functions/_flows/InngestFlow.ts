@@ -56,4 +56,6 @@ const InngestFlow = new Flow<RunPayload>()
       }),
   );
 
+export default InngestFlow;
+
 export type StepsType = ReturnType<typeof InngestFlow.getSteps>;

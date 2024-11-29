@@ -5,7 +5,7 @@ const randomSleep = () => sleep(Math.floor(Math.random() * 500 + 200)); // Rando
 
 const MonstrousFlow = new Flow<string>()
   .task("r", async ({ run }) => {
-    // await randomSleep();
+    await randomSleep();
     return `[${run}]root`;
   })
   .task("a1", ["r"], async ({ r }) => {
@@ -78,8 +78,10 @@ const MonstrousFlow = new Flow<string>()
     ["a8", "b8" /* add all other final nodes like c8, d8, ..., y8 */],
     async ({ a8 }) => {
       await randomSleep();
-      // return `Final: ${a8}, ${b8} /*, ${c8}, ${d8}, ..., ${y8} */`;
+      return `Final: ${a8}`;
     },
   );
 
 export default MonstrousFlow;
+
+export type StepsType = ReturnType<typeof MonstrousFlow.getSteps>;
