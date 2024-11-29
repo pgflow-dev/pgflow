@@ -1,11 +1,9 @@
 import { Flow } from "../_pgflow/Flow.ts";
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const randomSleep = () => sleep(Math.floor(Math.random() * 500 + 200)); // Random 1-5 seconds
+import { randomSleep } from "../_pgflow/utils.ts";
 
 const AdvancedFlow = new Flow<string>()
   .task("start", async ({ run }) => {
-    // await randomSleep();
+    await randomSleep();
     return `[${run}]start`;
   })
   .task("load_doc", ["start"], async ({ start }) => {
