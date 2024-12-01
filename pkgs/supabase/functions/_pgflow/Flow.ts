@@ -18,7 +18,8 @@ export interface StepDefinition<Payload extends Json, RetType extends Json> {
 type UnwrapPromise<T> = T extends Promise<infer U> ? UnwrapPromise<U> : T;
 
 // Utility type to merge two object types and preserve required properties
-type MergeObjects<T1 extends object, T2 extends object> = T1 & T2;
+type MergeObjects<T1 extends object, T2 extends object> = Omit<T1, keyof T2> &
+  T2;
 
 // Flow class definition
 export class Flow<
