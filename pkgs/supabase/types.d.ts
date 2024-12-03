@@ -1241,52 +1241,6 @@ export type Database = {
           },
         ]
       }
-      step_executions: {
-        Row: {
-          flow_slug: string
-          run_id: string
-          status: string
-          step_execution_id: string
-          step_slug: string
-        }
-        Insert: {
-          flow_slug: string
-          run_id: string
-          status?: string
-          step_execution_id?: string
-          step_slug: string
-        }
-        Update: {
-          flow_slug?: string
-          run_id?: string
-          status?: string
-          step_execution_id?: string
-          step_slug?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "step_executions_flow_slug_fkey"
-            columns: ["flow_slug"]
-            isOneToOne: false
-            referencedRelation: "flows"
-            referencedColumns: ["flow_slug"]
-          },
-          {
-            foreignKeyName: "step_executions_run_id_fkey"
-            columns: ["run_id"]
-            isOneToOne: false
-            referencedRelation: "runs"
-            referencedColumns: ["run_id"]
-          },
-          {
-            foreignKeyName: "step_executions_run_id_step_slug_fkey"
-            columns: ["run_id", "step_slug"]
-            isOneToOne: false
-            referencedRelation: "step_states"
-            referencedColumns: ["run_id", "step_slug"]
-          },
-        ]
-      }
       step_state_requests: {
         Row: {
           flow_slug: string | null
@@ -1354,6 +1308,67 @@ export type Database = {
           },
         ]
       }
+      step_tasks: {
+        Row: {
+          attempt_count: number
+          flow_slug: string
+          last_attempt_at: string
+          max_attempts: number
+          next_attempt_at: string | null
+          result: Json | null
+          run_id: string
+          status: string
+          step_slug: string
+          step_task_id: string
+        }
+        Insert: {
+          attempt_count?: number
+          flow_slug: string
+          last_attempt_at?: string
+          max_attempts?: number
+          next_attempt_at?: string | null
+          result?: Json | null
+          run_id: string
+          status?: string
+          step_slug: string
+          step_task_id?: string
+        }
+        Update: {
+          attempt_count?: number
+          flow_slug?: string
+          last_attempt_at?: string
+          max_attempts?: number
+          next_attempt_at?: string | null
+          result?: Json | null
+          run_id?: string
+          status?: string
+          step_slug?: string
+          step_task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "step_tasks_flow_slug_fkey"
+            columns: ["flow_slug"]
+            isOneToOne: false
+            referencedRelation: "flows"
+            referencedColumns: ["flow_slug"]
+          },
+          {
+            foreignKeyName: "step_tasks_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "runs"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "step_tasks_run_id_step_slug_fkey"
+            columns: ["run_id", "step_slug"]
+            isOneToOne: false
+            referencedRelation: "step_states"
+            referencedColumns: ["run_id", "step_slug"]
+          },
+        ]
+      }
       steps: {
         Row: {
           flow_slug: string
@@ -1396,10 +1411,11 @@ export type Database = {
           step_result: Json
         }[]
       }
-      complete_step_execution: {
+      complete_step_task: {
         Args: {
           run_id: string
           step_slug: string
+          result: Json
         }
         Returns: undefined
       }
@@ -1453,10 +1469,11 @@ export type Database = {
           step_result: Json
         }[]
       }
-      fail_step_execution: {
+      fail_step_task: {
         Args: {
           run_id: string
           step_slug: string
+          error: Json
         }
         Returns: undefined
       }
@@ -1482,6 +1499,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      retry_failed_step_tasks: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       run_flow: {
         Args: {
           p_flow_slug: string
@@ -1506,7 +1527,7 @@ export type Database = {
           step_result: Json
         }[]
       }
-      start_step_execution: {
+      start_step_task: {
         Args: {
           run_id: string
           step_slug: string

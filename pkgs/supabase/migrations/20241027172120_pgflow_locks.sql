@@ -39,7 +39,7 @@ CREATE OR REPLACE FUNCTION pgflow_locks.complete_steps_in_serial(
 RETURNS void AS $$
 BEGIN
     PERFORM pg_advisory_xact_lock(
-        pgflow_locks.hash64(run_id::text)
+        pgflow_locks.hash64('complete_steps_in_serial' || run_id::text)
     );
 END;
 $$ LANGUAGE plpgsql VOLATILE;
@@ -59,7 +59,7 @@ CREATE OR REPLACE FUNCTION pgflow_locks.wait_for_start_step_to_commit(
 RETURNS void AS $$
 BEGIN
     PERFORM pg_advisory_xact_lock(
-        pgflow_locks.hash64(run_id::text || step_slug::text)
+        pgflow_locks.hash64('wait_for_start_step_to_commit' || run_id::text || step_slug::text)
     );
 END;
 $$ LANGUAGE plpgsql VOLATILE;
