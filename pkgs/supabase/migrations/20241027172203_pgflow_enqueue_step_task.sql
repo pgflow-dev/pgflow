@@ -1,4 +1,4 @@
-create or replace function pgflow.enqueue_job_edge_fn_event(
+create or replace function pgflow.enqueue_step_task(
     flow_slug text,
     run_id uuid,
     step_slug text,

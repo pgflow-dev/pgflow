@@ -1437,7 +1437,7 @@ export type Database = {
         }
         Returns: undefined
       }
-      enqueue_job_edge_fn_event: {
+      enqueue_job_pgqueuer: {
         Args: {
           flow_slug: string
           run_id: string
@@ -1446,7 +1446,7 @@ export type Database = {
         }
         Returns: undefined
       }
-      enqueue_job_pgqueuer: {
+      enqueue_step_task: {
         Args: {
           flow_slug: string
           run_id: string

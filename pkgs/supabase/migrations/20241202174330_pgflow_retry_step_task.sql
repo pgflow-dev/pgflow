@@ -20,7 +20,7 @@ BEGIN
     END IF;
 
     IF v_task.status = 'failed' THEN
-        PERFORM pgflow.enqueue_job_edge_fn_event(
+        PERFORM pgflow.enqueue_step_task(
             flow_slug := v_task.flow_slug,
             run_id := v_task.run_id,
             step_slug := v_task.step_slug,
