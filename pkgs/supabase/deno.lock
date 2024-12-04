@@ -19,7 +19,7 @@
       "npm:groq-sdk@^0.7.0": "npm:groq-sdk@0.7.0",
       "npm:json-schema@^0.4.0": "npm:json-schema@0.4.0",
       "npm:openai@^4.71.1": "npm:openai@4.72.0_zod@3.23.8",
-      "npm:supabase@^1.223.10": "npm:supabase@1.223.10",
+      "npm:supabase@^1.226.3": "npm:supabase@1.226.4",
       "npm:ts-json-schema-generator@^2.3.0": "npm:ts-json-schema-generator@2.3.0",
       "npm:ts-morph@^24.0.0": "npm:ts-morph@24.0.0",
       "npm:ts-node@^10.9.2": "npm:ts-node@10.9.2_@types+node@18.16.19_typescript@5.6.3",
@@ -888,8 +888,8 @@
           "ansi-regex": "ansi-regex@6.1.0"
         }
       },
-      "supabase@1.223.10": {
-        "integrity": "sha512-a5Wi562n0eiV3w359qiCjewyVad688Z3+JHdvLybdlITrwvNIcR6QYqRR6EzjKY5V/sNCqC+5sNf40wDYAYcHg==",
+      "supabase@1.226.4": {
+        "integrity": "sha512-qEzoagrqZs5T7sAlfZzehX3PJ13cSBrJVs2vrh6xC+B0VI0wgOBw2gCNRcsOMJMpSr0V1l0XueCiFBWPm2U03w==",
         "dependencies": {
           "bin-links": "bin-links@5.0.0",
           "https-proxy-agent": "https-proxy-agent@7.0.5",
@@ -1062,7 +1062,7 @@
         "npm:groq-sdk@^0.7.0",
         "npm:json-schema@^0.4.0",
         "npm:openai@^4.71.1",
-        "npm:supabase@^1.223.10",
+        "npm:supabase@^1.226.3",
         "npm:ts-json-schema-generator@^2.3.0",
         "npm:ts-morph@^24.0.0",
         "npm:ts-node@^10.9.2",
