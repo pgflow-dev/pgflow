@@ -1,0 +1,24 @@
+sequenceDiagram
+  participant web as Browser
+  participant rltime as Realtime
+  participant rest as REST API
+  participant pg as Postgres
+  participant edgefn as EdgeFn HTTP Handler
+  participant evloop as EdgeFn Event Loop
+
+  web -->> rest: HTTP run_flow()
+
+  rest ->> pg: SELECT run_flow()
+  activate pg
+  pg ->> pg: SELECT start_step()
+  pg ->> edgefn: POST /functions/v1/pgflow
+  edgefn ->> evloop: waitUntil(FlowStepHandlerFn())
+  edgefn ->> pg: HTTP 200 OK
+  deactivate pg
+  pg ->> rltime: Publish new Flow Run
+  rltime -->> web: Update flow progress
+  evloop ->> pg: CALL complete_step_task()
+  pg ->> rltime: Publish step_task update
+  rltime -->> web: Update step progress
+
+

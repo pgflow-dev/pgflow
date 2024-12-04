@@ -21,9 +21,9 @@ the root step handlers automatically (in our case, the "run()" method from the t
 Root steps are steps that does not have dependsOn property or have it set as empty array, null or undefined;
 
 Other steps are steps that has dependsOn property and it's not empty array, null or undefined.
-They will run only after all tasks that are listed in dependsOn complete.
-The names of the tasks corresponds to the strings in dependsOn array.
-Name of the tasks are top level keys in the Flow type.
+They will run only after all steps that are listed in dependsOn complete.
+The names of the steps corresponds to the strings in dependsOn array.
+Name of the steps are top level keys in the Flow type.
 
 The steps that have depencencies will be called with an object composed of all the dependencies return values.
 There will also be included an additional special key "run" which will hold the RunPayload itself,
@@ -50,7 +50,7 @@ used to build composed dependency types for the non-root steps.
 
 Make sure you understand that the shape of the type should be Flow<T>
 
-- all the return types of the tasks should be inferred from the return types of
+- all the return types of the steps should be inferred from the return types of
   the run methods themselvves.
 
 We just need to create a type for a DAG graph of steps and connect their inputs and outputs with types,

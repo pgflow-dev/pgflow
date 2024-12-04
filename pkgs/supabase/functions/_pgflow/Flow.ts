@@ -18,8 +18,7 @@ export interface StepDefinition<Payload extends Json, RetType extends Json> {
 type UnwrapPromise<T> = T extends Promise<infer U> ? UnwrapPromise<U> : T;
 
 // Utility type to merge two object types and preserve required properties
-type MergeObjects<T1 extends object, T2 extends object> = Omit<T1, keyof T2> &
-  T2;
+type MergeObjects<T1 extends object, T2 extends object> = T1 & T2;
 
 // Flow class definition
 export class Flow<
@@ -36,7 +35,7 @@ export class Flow<
   }
 
   // Function overloads
-  task<Name extends string, RetType extends Json>(
+  step<Name extends string, RetType extends Json>(
     name: Name,
     handler: (payload: { run: RunPayload }) => RetType | Promise<RetType>,
   ): Flow<
@@ -44,7 +43,7 @@ export class Flow<
     MergeObjects<Steps, { [K in Name]: UnwrapPromise<RetType> }>
   >;
 
-  task<
+  step<
     Name extends string,
     Deps extends keyof Steps & string,
     RetType extends Json,
@@ -59,7 +58,7 @@ export class Flow<
   >;
 
   // Implementation
-  task<
+  step<
     Name extends string,
     Deps extends keyof Steps & string,
     RetType extends Json,
@@ -105,12 +104,12 @@ const ExampleFlow = new Flow<{ value: number }>()
   // rootStep return type will be inferred to:
   //
   // { doubledValue: number; };
-  .task("rootStep", async (payload) => ({
+  .step("rootStep", async (payload) => ({
     doubledValue: payload.run.value * 2,
   }))
   // normalStep return type will be inferred to:
   // { doubledValueArray: number[] };
-  .task("normalStep", ["rootStep"], async (payload) => ({
+  .step("normalStep", ["rootStep"], async (payload) => ({
     doubledValueArray: [payload.rootStep.doubledValue],
   }));
 

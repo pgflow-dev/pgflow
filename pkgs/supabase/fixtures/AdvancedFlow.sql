@@ -1,6 +1,6 @@
 set search_path to pgflow;
 
-delete from pgflow.step_executions where flow_slug = 'AdvancedFlow';
+delete from pgflow.step_tasks where flow_slug = 'AdvancedFlow';
 delete from pgflow.step_states where flow_slug = 'AdvancedFlow';
 delete from pgflow.runs where flow_slug = 'AdvancedFlow';
 delete from pgflow.deps where flow_slug = 'AdvancedFlow';

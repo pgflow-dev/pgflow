@@ -1,7 +1,7 @@
 \x
 /*
 
-delete from pgflow.step_executions;
+delete from pgflow.step_tasks;
 delete from pgflow.step_states;
 delete from pgflow.runs;
 
@@ -11,5 +11,5 @@ limit 1;
 
 */
 
-select * from pgflow.step_executions;
+select * from pgflow.step_tasks;
 select * from pgflow.step_states;

@@ -44,3 +44,23 @@ BEGIN
     );
 END;
 $$ LANGUAGE plpgsql STABLE;
+
+----------- FINDERS --------------------------
+-- DROP FUNCTION IF EXISTS pgflow.find_run(uuid);
+-- CREATE OR REPLACE FUNCTION pgflow.find_run(run_id uuid)
+-- RETURNS pgflow.runs AS $$
+-- DECLARE
+--     p_run_id uuid := run_id;
+--     v_run pgflow.runs%ROWTYPE;
+-- BEGIN
+--     SELECT r.* INTO v_run
+--     FROM pgflow.runs AS r
+--     WHERE r.run_id = p_run_id;
+--
+--     IF NOT FOUND THEN
+--         RAISE EXCEPTION 'Run not found: run_id=%', p_run_id;
+--     END IF;
+--
+--     RETURN v_run;
+-- END;
+-- $$ LANGUAGE plpgsql STABLE;

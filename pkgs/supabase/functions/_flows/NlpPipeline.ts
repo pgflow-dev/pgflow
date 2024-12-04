@@ -2,15 +2,15 @@ import { Flow } from "../_pgflow/Flow.ts";
 import { randomSleep } from "../_pgflow/utils.ts";
 
 const NlpPipeline = new Flow<string>()
-  .task("text_input", ({ run }) => {
+  .step("text_input", ({ run }) => {
     // await randomSleep();
     return `Input: ${run}`;
   })
-  .task("openai_embeddings", ["text_input"], async ({ text_input }) => {
+  .step("openai_embeddings", ["text_input"], async ({ text_input }) => {
     await randomSleep();
     return `OpenAI Embeddings: ${text_input}`;
   })
-  .task(
+  .step(
     "huggingface_embeddings",
     ["openai_embeddings"],
     async ({ openai_embeddings }) => {
@@ -18,7 +18,7 @@ const NlpPipeline = new Flow<string>()
       return `HuggingFace: ${openai_embeddings}`;
     },
   )
-  .task(
+  .step(
     "langchain_processing",
     ["huggingface_embeddings"],
     async ({ huggingface_embeddings }) => {
@@ -26,15 +26,15 @@ const NlpPipeline = new Flow<string>()
       return `LangChain: ${huggingface_embeddings}`;
     },
   )
-  .task("bert_classification", ["text_input"], async ({ text_input }) => {
+  .step("bert_classification", ["text_input"], async ({ text_input }) => {
     await randomSleep();
     return `BERT: ${text_input}`;
   })
-  .task("gpt_summarization", ["text_input"], async ({ text_input }) => {
+  .step("gpt_summarization", ["text_input"], async ({ text_input }) => {
     await randomSleep();
     return `GPT Summary: ${text_input}`;
   })
-  .task(
+  .step(
     "sentiment_analysis",
     ["gpt_summarization"],
     async ({ gpt_summarization }) => {
@@ -42,7 +42,7 @@ const NlpPipeline = new Flow<string>()
       return `Sentiment: ${gpt_summarization}`;
     },
   )
-  .task(
+  .step(
     "result_aggregation",
     ["langchain_processing", "bert_classification", "sentiment_analysis"],
     async ({

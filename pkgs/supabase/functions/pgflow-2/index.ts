@@ -1,59 +1,50 @@
+import { type Json } from "../_pgflow/index.ts";
 import { type EdgeFnInput } from "../_pgflow/handleInput.ts";
 import {
   handleInput,
-  completeStep,
-  failStep,
-  startStepExecution,
-  completeStepExecution,
-  failStepExecution,
+  startStepTask,
+  completeStepTask,
+  failStepTask,
 } from "../_pgflow/index.ts";
 import { createServiceRoleClient } from "../_shared/supabaseClient.ts";
 
 const supabase = createServiceRoleClient();
 
 export class BackgroundTaskEvent extends Event {
-  readonly taskPromise: Promise<any>;
+  readonly taskPromise: Promise<Json>;
   readonly input: EdgeFnInput;
 
-  constructor(taskPromise: Promise<any>, input: EdgeFnInput) {
+  constructor(taskPromise: Promise<Json>, input: EdgeFnInput) {
     super("pgflow");
     this.taskPromise = taskPromise;
     this.input = input;
   }
 }
 
-async function performTask(input: EdgeFnInput) {
-  const { meta, payload } = input;
-  let stepResult: any;
-
-  try {
-    stepResult = await handleInput(meta, payload);
-  } catch (error) {
-    console.log("error", error);
-    // const failStepResult = await failStep(meta, error, supabase);
-    // return failStepResult;
-  }
-
-  const completeStepResult = await completeStep(meta, stepResult, supabase);
-  return completeStepResult;
-}
-
 globalThis.addEventListener("pgflow", async (event) => {
   const { taskPromise, input } = event as BackgroundTaskEvent;
+  let result: Json;
+
+  await startStepTask(input, supabase);
 
   try {
-    await startStepExecution(input, supabase);
-    await taskPromise;
-    // await completeStepExecution(input, supabase);
-  } catch (_error) {
-    // await failStepExecution(input, supabase);
+    result = await taskPromise;
+  } catch (error: unknown) {
+    // TODO: handle potential error from failStepTask call
+    const errorToReport =
+      error instanceof Error ? error : new Error(String(error));
+    return await failStepTask(input, errorToReport, supabase);
   }
+
+  // TODO: handle potential error from completeStepTask call
+  return await completeStepTask(input, result, supabase);
 });
 
 Deno.serve(async (req: Request) => {
   const input: EdgeFnInput = await req.json();
+  const { meta, payload } = input;
 
-  const taskPromise = performTask(input);
+  const taskPromise = handleInput(meta, payload);
 
   globalThis.dispatchEvent(new BackgroundTaskEvent(taskPromise, input));
 

@@ -1,8 +1,9 @@
 import { type SupabaseClient } from '@supabase/supabase-js';
-import type { Flow, Step, Dep, Run, StepState } from '$lib/db/pgflow';
+import type { Flow, Step, Dep, Run, StepState, StepTask } from '$lib/db/pgflow';
 
-type RunWithStepStates = Run & {
+type RunWithStatesAndTasks = Run & {
 	step_states: StepState[];
+	step_tasks: StepTask[];
 };
 
 type FlowWithStepsAndDeps = Flow & {
@@ -10,7 +11,7 @@ type FlowWithStepsAndDeps = Flow & {
 	deps: Dep[];
 };
 
-type QueryData = RunWithStepStates & {
+type QueryData = RunWithStatesAndTasks & {
 	flow: FlowWithStepsAndDeps;
 };
 
@@ -23,6 +24,7 @@ async function executeQuery(supabase: SupabaseClient, runId: string) {
 			`
 				*,
 				step_states!step_states_run_id_fkey(*),
+				step_tasks!step_tasks_run_id_fkey(*),
 				flow:flows!runs_flow_slug_fkey (
 					steps!steps_flow_slug_fkey(*),
 					deps:deps!deps_flow_slug_fkey (
@@ -61,6 +63,14 @@ export default async function fetchFlowRun(supabase: SupabaseClient, runId: stri
 			{} as Record<string, StepState>
 		);
 
+		const stepTasksByStepSlug = run.step_tasks.reduce(
+			(acc, stepTask) => {
+				acc[stepTask.step_slug] = stepTask;
+				return acc;
+			},
+			{} as Record<string, StepTask>
+		);
+
 		const initialNodes = steps.map((step) => {
 			return {
 				id: step.step_slug,
@@ -69,7 +79,8 @@ export default async function fetchFlowRun(supabase: SupabaseClient, runId: stri
 				data: {
 					step,
 					label: step.step_slug,
-					step_state: stepStatesByStepSlug[step.step_slug]
+					step_state: stepStatesByStepSlug[step.step_slug],
+					step_task: stepTasksByStepSlug[step.step_slug]
 				}
 			};
 		});

@@ -30,11 +30,11 @@ function createSummaryPrompt(transcript: string) {
 }
 
 const InngestFlow = new Flow<RunPayload>()
-  .task("transcribeVideo", async ({ run: { videoUrl } }) => {
+  .step("transcribeVideo", async ({ run: { videoUrl } }) => {
     const transcript = await deepgram.transcribe(videoUrl);
     return transcript;
   })
-  .task(
+  .step(
     "summarizeTranscript",
     ["transcribeVideo"],
     async ({ transcribeVideo }) => {
@@ -45,7 +45,7 @@ const InngestFlow = new Flow<RunPayload>()
       return summary;
     },
   )
-  .task(
+  .step(
     "writeToDb",
     ["transcribeVideo", "summarizeTranscript"],
     async ({ run: { videoId }, transcribeVideo, summarizeTranscript }) =>

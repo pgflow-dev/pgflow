@@ -2,22 +2,22 @@ import { Flow } from "../_pgflow/Flow.ts";
 import { randomSleep } from "../_pgflow/utils.ts";
 
 const WideFlow = new Flow<string>()
-  .task("start", async ({ run }) => {
+  .step("start", async ({ run }) => {
     return `[${run}]start`;
   })
-  .task("download_stream", ["start"], async ({ start }) => {
+  .step("download_stream", ["start"], async ({ start }) => {
     await randomSleep();
     return `${start}/download_stream`;
   })
-  .task("extract_frames", ["download_stream"], async ({ download_stream }) => {
+  .step("extract_frames", ["download_stream"], async ({ download_stream }) => {
     await randomSleep();
     return `${download_stream}/extract_frames`;
   })
-  .task("extract_audio", ["download_stream"], async ({ download_stream }) => {
+  .step("extract_audio", ["download_stream"], async ({ download_stream }) => {
     await randomSleep();
     return `${download_stream}/extract_audio`;
   })
-  .task(
+  .step(
     "collect_chat_data",
     ["download_stream"],
     async ({ download_stream }) => {
@@ -25,15 +25,15 @@ const WideFlow = new Flow<string>()
       return `${download_stream}/collect_chat_data`;
     },
   )
-  .task("detect_scenes", ["extract_frames"], async ({ extract_frames }) => {
+  .step("detect_scenes", ["extract_frames"], async ({ extract_frames }) => {
     await randomSleep();
     return `${extract_frames}/detect_scenes`;
   })
-  .task("detect_players", ["extract_frames"], async ({ extract_frames }) => {
+  .step("detect_players", ["extract_frames"], async ({ extract_frames }) => {
     await randomSleep();
     return `${extract_frames}/detect_players`;
   })
-  .task(
+  .step(
     "scene_classification",
     ["detect_scenes"],
     async ({ detect_scenes }) => {
@@ -41,15 +41,15 @@ const WideFlow = new Flow<string>()
       return `${detect_scenes}/scene_classification`;
     },
   )
-  .task("scene_segmentation", ["detect_scenes"], async ({ detect_scenes }) => {
+  .step("scene_segmentation", ["detect_scenes"], async ({ detect_scenes }) => {
     await randomSleep();
     return `${detect_scenes}/scene_segmentation`;
   })
-  .task("face_recognition", ["detect_players"], async ({ detect_players }) => {
+  .step("face_recognition", ["detect_players"], async ({ detect_players }) => {
     await randomSleep();
     return `${detect_players}/face_recognition`;
   })
-  .task(
+  .step(
     "jersey_recognition",
     ["detect_players"],
     async ({ detect_players }) => {
@@ -57,7 +57,7 @@ const WideFlow = new Flow<string>()
       return `${detect_players}/jersey_recognition`;
     },
   )
-  .task(
+  .step(
     "identify_players",
     ["face_recognition", "jersey_recognition"],
     async ({ face_recognition, jersey_recognition }) => {
@@ -65,11 +65,11 @@ const WideFlow = new Flow<string>()
       return `${face_recognition} & ${jersey_recognition}/identify_players`;
     },
   )
-  .task("transcribe_audio", ["extract_audio"], async ({ extract_audio }) => {
+  .step("transcribe_audio", ["extract_audio"], async ({ extract_audio }) => {
     await randomSleep();
     return `${extract_audio}/transcribe_audio`;
   })
-  .task(
+  .step(
     "analyze_audio_sentiment",
     ["transcribe_audio"],
     async ({ transcribe_audio }) => {
@@ -77,7 +77,7 @@ const WideFlow = new Flow<string>()
       return `${transcribe_audio}/analyze_audio_sentiment`;
     },
   )
-  .task(
+  .step(
     "keyword_extraction",
     ["transcribe_audio"],
     async ({ transcribe_audio }) => {
@@ -85,15 +85,15 @@ const WideFlow = new Flow<string>()
       return `${transcribe_audio}/keyword_extraction`;
     },
   )
-  .task("filter_spam", ["collect_chat_data"], async ({ collect_chat_data }) => {
+  .step("filter_spam", ["collect_chat_data"], async ({ collect_chat_data }) => {
     await randomSleep();
     return `${collect_chat_data}/filter_spam`;
   })
-  .task("analyze_chat_sentiment", ["filter_spam"], async ({ filter_spam }) => {
+  .step("analyze_chat_sentiment", ["filter_spam"], async ({ filter_spam }) => {
     await randomSleep();
     return `${filter_spam}/analyze_chat_sentiment`;
   })
-  .task(
+  .step(
     "sentiment_summary",
     ["analyze_audio_sentiment", "analyze_chat_sentiment"],
     async ({ analyze_audio_sentiment, analyze_chat_sentiment }) => {
@@ -101,7 +101,7 @@ const WideFlow = new Flow<string>()
       return `${analyze_audio_sentiment} & ${analyze_chat_sentiment}/sentiment_summary`;
     },
   )
-  .task(
+  .step(
     "generate_statistics",
     ["sentiment_summary", "identify_players"],
     async ({ sentiment_summary, identify_players }) => {
@@ -109,7 +109,7 @@ const WideFlow = new Flow<string>()
       return `${sentiment_summary} & ${identify_players}/generate_statistics`;
     },
   )
-  .task(
+  .step(
     "generate_highlights",
     [
       "scene_classification",
@@ -127,7 +127,7 @@ const WideFlow = new Flow<string>()
       return `${scene_classification}, ${scene_segmentation}, ${keyword_extraction}, ${identify_players}/generate_highlights`;
     },
   )
-  .task(
+  .step(
     "update_dashboard",
     ["generate_statistics", "generate_highlights"],
     async ({ generate_statistics, generate_highlights }) => {
@@ -135,7 +135,7 @@ const WideFlow = new Flow<string>()
       return `${generate_statistics} & ${generate_highlights}/update_dashboard`;
     },
   )
-  .task(
+  .step(
     "send_notifications",
     ["update_dashboard"],
     async ({ update_dashboard }) => {
@@ -143,7 +143,7 @@ const WideFlow = new Flow<string>()
       return `${update_dashboard}/send_notifications`;
     },
   )
-  .task("finish", ["send_notifications"], async ({ send_notifications }) => {
+  .step("finish", ["send_notifications"], async ({ send_notifications }) => {
     await randomSleep();
     return `${send_notifications}/finish`;
   });

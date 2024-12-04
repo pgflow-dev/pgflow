@@ -10,7 +10,7 @@
 		REALTIME_POSTGRES_CHANGES_LISTEN_EVENT,
 		RealtimeChannel
 	} from '@supabase/supabase-js';
-	import type { StepState } from '$lib/db/pgflow';
+	import type { StepState, StepTask } from '$lib/db/pgflow';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
@@ -41,9 +41,7 @@
 		RealtimePostgresChangesFilter
 	} from '@supabase/supabase-js';
 
-	type RealtimePayload = RealtimePostgresChangesPayload<StepState>;
-
-	function updateStepState(payload: RealtimePayload) {
+	function updateStepState(payload: RealtimePostgresChangesPayload<StepState>) {
 		if (payload.eventType === 'DELETE') {
 			console.log('deleteStepState', payload);
 		} else {
@@ -53,6 +51,30 @@
 		}
 	}
 
+	function updateStepTask(payload: RealtimePostgresChangesPayload<StepTask>) {
+		if (payload.eventType === 'DELETE') {
+			console.log('deleteStepTask', payload);
+		} else {
+			console.log('updateStepTask', payload);
+			const { new: stepTask } = payload;
+			initialNodes.update((nodes) => updateNodeWithStepTask(nodes, stepTask));
+		}
+	}
+
+	function updateNodeWithStepTask(nodes: Node[], stepTask: StepTask) {
+		return nodes.map((node) => {
+			if (node.id === stepTask.step_slug) {
+				return {
+					...node,
+					data: {
+						...node.data,
+						step_task: stepTask
+					}
+				};
+			}
+			return node;
+		});
+	}
 	function updateNodeWithStepState(nodes: Node[], stepState: StepState) {
 		return nodes.map((node) => {
 			if (node.id === stepState.step_slug) {
@@ -79,7 +101,6 @@
 		const eventSpec: RealtimePostgresChangesFilter<`${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.ALL}`> =
 			{
 				schema: 'pgflow',
-				table: 'step_states',
 				event: '*',
 				filter: `run_id=eq.${runId}`
 			};
@@ -87,7 +108,8 @@
 
 		realtimeChannel = supabase
 			.channel('schema-db-changes')
-			.on('postgres_changes', eventSpec, updateStepState)
+			.on('postgres_changes', { ...eventSpec, table: 'step_states' }, updateStepState)
+			.on('postgres_changes', { ...eventSpec, table: 'step_tasks' }, updateStepTask)
 			.subscribe();
 	});
 

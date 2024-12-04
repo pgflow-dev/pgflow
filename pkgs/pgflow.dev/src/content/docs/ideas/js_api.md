@@ -22,10 +22,10 @@ The cool part? You only need to define your input type once, and TypeScript auto
 import { Flow } from "pgflow";
 
 const BasicFlow = new Flow<string>()
-  .task("root", ({ run }) => `[${run}]r00t`)
-  .task("left", ["root"], ({ root: r }) => `${r}/left`)
-  .task("right", ["root"], ({ root: r }) => `${r}/right`)
-  .task(
+  .step("root", ({ run }) => `[${run}]r00t`)
+  .step("left", ["root"], ({ root: r }) => `${r}/left`)
+  .step("right", ["root"], ({ root: r }) => `${r}/right`)
+  .step(
     "end",
     ["left", "right"],
     ({ left, right, run }) => `<${left}> and <${right}> of (${run})`,

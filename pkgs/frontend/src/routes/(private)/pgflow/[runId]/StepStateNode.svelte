@@ -1,33 +1,12 @@
 <script lang="ts">
 	import { Handle, Position, type NodeProps } from '@xyflow/svelte';
-
-	type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
-
-	type StepState = {
-		run_id: string;
-		status: string;
-		step_result:
-			| string
-			| number
-			| boolean
-			| Json[]
-			| {
-					[x: string]: Json;
-			  }
-			| null;
-		step_slug: string;
-		flow_slug: string;
-	};
-
-	type Step = {
-		step_slug: string;
-		flow_slug: string;
-	};
+	import type { Step, StepState, StepTask } from '$lib/db/pgflow';
 
 	interface NodeData extends Record<string, unknown> {
 		step: Step;
 		label: string;
 		step_state?: StepState;
+		step_task?: StepTask;
 	}
 
 	type $$Props = NodeProps & {
@@ -90,6 +69,19 @@
 			<Hourglass class="text-gray-500" />
 		{/if}
 	</div>
+
+	{#if data.step_task?.attempt_count && data.step_task?.attempt_count > 1}
+		<div class="flex justify-center mt-1">
+			<!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
+			{#each Array.from({ length: data.step_task.attempt_count - 1 }) as _i}
+				<span class="mx-0.5 {statusToIconClass['failed']} w-3 h-3">.</span>
+			{/each}
+
+			{#if status === 'failed'}
+				<span class="mx-0.5 {statusToIconClass['failed']} w-3 h-3">.</span>
+			{/if}
+		</div>
+	{/if}
 
 	<Handle type="target" position={Position.Top} />
 	<Handle type="source" position={Position.Bottom} />

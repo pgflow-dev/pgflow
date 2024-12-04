@@ -48,7 +48,7 @@ const NewShareHandler = async ({
 };
 
 const ProcessVoiceMemo = new Flow<RunPayload>()
-  .task("transcription", async ({ run: { objectName, bucketId } }) => {
+  .step("transcription", async ({ run: { objectName, bucketId } }) => {
     const response = await supabase.storage.from(bucketId).download(objectName);
 
     console.log("transcription: download", response);
@@ -84,7 +84,7 @@ const ProcessVoiceMemo = new Flow<RunPayload>()
 
     return transcription.text;
   })
-  .task("newShare", ["transcription"], NewShareHandler);
+  .step("newShare", ["transcription"], NewShareHandler);
 export default ProcessVoiceMemo;
 
 export type StepsType = ReturnType<typeof ProcessVoiceMemo.getSteps>;

@@ -1,0 +1,10 @@
+#!/bin/bash
+
+diagram_path="$1"
+diagram_dir="$(dirname $diagram_path)"
+diagram_file="$(basename $diagram_path)"
+diagram_base="$(basename $diagram_path .mermaid)"
+png_path="${diagram_dir}/${diagram_base}.png"
+
+echo "$diagram_path" |\
+	entr fish -c "mmdc --width 1920 --height 500 --outputFormat png --output '$png_path' < '$diagram_path' ; kitten icat '$png_path'"

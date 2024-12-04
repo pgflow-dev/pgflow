@@ -7,6 +7,7 @@ import NlpPipeline from "./NlpPipeline.ts";
 import ProcessVoiceMemo from "./ProcessVoiceMemo.ts";
 import Sequential from "./Sequential.ts";
 import WideFlow from "./WideFlow.ts";
+import FailingStepFlow from "./FailingStepFlow.ts";
 
 export default {
   AdvancedFlow,
@@ -18,4 +19,5 @@ export default {
   ProcessVoiceMemo,
   Sequential,
   WideFlow,
+  FailingStepFlow,
 };

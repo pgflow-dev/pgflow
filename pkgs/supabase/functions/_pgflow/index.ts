@@ -1,20 +1,20 @@
 import Flow, { type Json } from "./Flow.ts";
 import completeStep from "./completeStep.ts";
-import completeStepExecution from "./completeStepExecution.ts";
+import completeStepTask from "./completeStepTask.ts";
 import failStep from "./failStep.ts";
-import failStepExecution from "./failStepExecution.ts";
+import failStepTask from "./failStepTask.ts";
 import handleInput from "./handleInput.ts";
-import startStepExecution from "./startStepExecution.ts";
+import startStepTask from "./startStepTask.ts";
 import { randomSleep } from "./utils.ts";
 
 export {
   Flow,
   Json,
   completeStep,
-  completeStepExecution,
+  completeStepTask,
   failStep,
-  failStepExecution,
+  failStepTask,
   handleInput,
-  startStepExecution,
+  startStepTask,
   randomSleep,
 };

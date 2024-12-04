@@ -72,18 +72,23 @@ CREATE TABLE pgflow.step_states (
     REFERENCES pgflow.steps (flow_slug, step_slug),
     CHECK (status IN ('pending', 'failed', 'completed'))
 );
+ALTER PUBLICATION supabase_realtime ADD TABLE pgflow.step_states;
 
--- Executio logs table - tracks the execution of individual steps
-CREATE TABLE pgflow.step_executions (
+-- Executio logs table - tracks the task of individual steps
+CREATE TABLE pgflow.step_tasks (
     flow_slug TEXT NOT NULL REFERENCES pgflow.flows (flow_slug),
     step_slug TEXT NOT NULL,
     run_id UUID NOT NULL REFERENCES pgflow.runs (run_id),
-    step_execution_id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
-    status TEXT NOT NULL DEFAULT 'pending',
+    status TEXT NOT NULL DEFAULT 'queued',
+    payload JSONB NOT NULL,
+    result JSONB,
+    attempt_count INT NOT NULL DEFAULT 1,
+    max_attempts INT NOT NULL DEFAULT 3,
+    last_attempt_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    next_attempt_at TIMESTAMPTZ,
+    CONSTRAINT step_tasks_pkey PRIMARY KEY (run_id, step_slug),
     FOREIGN KEY (run_id, step_slug)
     REFERENCES pgflow.step_states (run_id, step_slug),
-    CHECK (status IN ('pending', 'failed', 'completed'))
+    CHECK (status IN ('queued', 'started', 'failed', 'completed'))
 );
-
---- realtime
-ALTER PUBLICATION supabase_realtime ADD TABLE pgflow.step_states;
+ALTER PUBLICATION supabase_realtime ADD TABLE pgflow.step_tasks;

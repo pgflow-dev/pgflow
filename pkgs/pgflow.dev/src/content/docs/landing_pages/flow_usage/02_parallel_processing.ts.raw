@@ -1,12 +1,12 @@
 // @ts-nocheck
 // everything below will get included, content above will be ignored in the docs
 /////////////////////////////////////////////////////////////////////////////////////
-.task("title", ["transcription"]
+.step("title", ["transcription"]
   async ({ transcription }) => await createTitleWithClaude(transription)
 )
-.task("sentiment", ["transcription"],
+.step("sentiment", ["transcription"],
 	async ({ transcription }) => await classifySentiment(transcription)
 })
-.task("summary", ["transcription"],
+.step("summary", ["transcription"],
   async ({ transcription }) => await summarizeWithOpenAI(transription)
 )
