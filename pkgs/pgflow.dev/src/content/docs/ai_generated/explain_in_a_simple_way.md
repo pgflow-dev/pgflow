@@ -17,7 +17,7 @@ PGFlow is a workflow engine designed to manage and execute complex workflows wit
 
 ### 2. Steps
 
-- **Definition**: Steps are individual tasks or actions within a flow.
+- **Definition**: Steps are individual steps or actions within a flow.
 - **Storage**: Steps are stored in the `pgflow.steps` table, each associated with a `flow_slug` and identified by a `step_slug`.
 
 ### 3. Dependencies
@@ -53,4 +53,4 @@ PGFlow is a workflow engine designed to manage and execute complex workflows wit
 
 ## Conclusion
 
-PGFlow provides a robust framework for managing workflows directly within a PostgreSQL database. Its architecture is designed to handle complex dependencies and ensure reliable execution of tasks.
+PGFlow provides a robust framework for managing workflows directly within a PostgreSQL database. Its architecture is designed to handle complex dependencies and ensure reliable execution of steps.

@@ -46,12 +46,12 @@ const UpsertHandler = async ({
 };
 
 const ProcessDataFlow = new Flow<RunPayload>()
-  .task("fetchData", async ({ run: { objectId } }) => {
+  .step("fetchData", async ({ run: { objectId } }) => {
     // Fetch data logic
     const data = { id: objectId, value: "some data" };
     return data;
   })
-  .task("upsertData", ["fetchData"], UpsertHandler);
+  .step("upsertData", ["fetchData"], UpsertHandler);
 
 export default ProcessDataFlow;
 
