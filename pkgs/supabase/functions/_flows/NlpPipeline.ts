@@ -1,28 +1,24 @@
 import { Flow } from "../_pgflow/Flow.ts";
-import { randomSleep } from "../_pgflow/utils.ts";
+import { simulateWorkThenError } from "../_pgflow/utils.ts";
 
-async function simulateWorkAndError() {
-  await randomSleep(300);
+type Params = {
+  text: string;
+};
 
-  if (Math.random() < 0.2) {
-    throw new Error("Simulated error");
-  }
-}
-
-const NlpPipeline = new Flow<string>()
+const NlpPipeline = new Flow<Params>()
   .step("text_input", async ({ run }) => {
-    await simulateWorkAndError();
+    await simulateWorkThenError();
     return `Input: ${run}`;
   })
   .step("openai_embeddings", ["text_input"], async ({ text_input }) => {
-    await simulateWorkAndError();
+    await simulateWorkThenError();
     return `OpenAI Embeddings: ${text_input}`;
   })
   .step(
     "huggingface_embeddings",
     ["openai_embeddings"],
     async ({ openai_embeddings }) => {
-      await simulateWorkAndError();
+      await simulateWorkThenError();
       return `HuggingFace: ${openai_embeddings}`;
     },
   )
@@ -30,23 +26,23 @@ const NlpPipeline = new Flow<string>()
     "langchain_processing",
     ["huggingface_embeddings"],
     async ({ huggingface_embeddings }) => {
-      await simulateWorkAndError();
+      await simulateWorkThenError();
       return `LangChain: ${huggingface_embeddings}`;
     },
   )
   .step("bert_classification", ["text_input"], async ({ text_input }) => {
-    await simulateWorkAndError();
+    await simulateWorkThenError();
     return `BERT: ${text_input}`;
   })
   .step("gpt_summarization", ["text_input"], async ({ text_input }) => {
-    await simulateWorkAndError();
+    await simulateWorkThenError();
     return `GPT Summary: ${text_input}`;
   })
   .step(
     "sentiment_analysis",
     ["gpt_summarization"],
     async ({ gpt_summarization }) => {
-      await simulateWorkAndError();
+      await simulateWorkThenError();
       return `Sentiment: ${gpt_summarization}`;
     },
   )
@@ -58,7 +54,7 @@ const NlpPipeline = new Flow<string>()
       bert_classification,
       sentiment_analysis,
     }) => {
-      await simulateWorkAndError();
+      await simulateWorkThenError();
       return `Results: ${langchain_processing}, ${bert_classification}, ${sentiment_analysis}`;
     },
   );
