@@ -65,11 +65,21 @@ CREATE TABLE pgflow.step_states (
     flow_slug TEXT NOT NULL REFERENCES pgflow.flows (flow_slug),
     run_id UUID NOT NULL REFERENCES pgflow.runs (run_id),
     step_slug TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    failed_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
+    status TEXT NOT NULL GENERATED ALWAYS AS (
+        CASE
+            WHEN failed_at IS NOT NULL THEN 'failed'
+            WHEN completed_at IS NOT NULL THEN 'completed'
+            ELSE 'pending'
+        END
+    ) STORED,
     step_result JSONB,
     PRIMARY KEY (run_id, step_slug),
     FOREIGN KEY (flow_slug, step_slug)
     REFERENCES pgflow.steps (flow_slug, step_slug),
+    CHECK (NOT (completed_at IS NOT NULL AND failed_at IS NOT NULL)),
     CHECK (status IN ('pending', 'failed', 'completed'))
 );
 ALTER PUBLICATION supabase_realtime ADD TABLE pgflow.step_states;

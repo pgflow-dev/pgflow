@@ -16,7 +16,7 @@ DECLARE
     p_step_slug TEXT := step_slug;
 BEGIN
     UPDATE pgflow.step_states AS ss
-    SET status = 'failed',
+    SET failed_at = now(),
         step_result = jsonb_build_object(
             'error', error
         )

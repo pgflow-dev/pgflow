@@ -10,7 +10,6 @@ DECLARE
     p_run_id uuid := run_id;
     p_step_slug text := step_slug;
     http_response text;
-    v_task pgflow.step_tasks%ROWTYPE;
     v_run pgflow.runs%ROWTYPE;
 BEGIN
     PERFORM pgflow_locks.wait_for_start_step_to_commit(p_run_id, p_step_slug);
@@ -24,8 +23,7 @@ BEGIN
     SET
         status = 'queued',
         attempt_count = st.attempt_count + 1,
-        next_attempt_at = now()
-    RETURNING st.* INTO v_task;
+        next_attempt_at = now();
 
     WITH secret as (
         select decrypted_secret AS supabase_anon_key

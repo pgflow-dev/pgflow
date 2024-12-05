@@ -25,7 +25,7 @@ BEGIN
     step_state_to_complete := pgflow.find_step_state(p_run_id, p_step_slug);
 
     UPDATE pgflow.step_states ss
-    SET status = 'completed',
+    SET completed_at = now(),
         step_result = p_step_result
     WHERE ss.run_id = p_run_id
     AND ss.step_slug = p_step_slug;

@@ -1264,6 +1264,9 @@ export type Database = {
       }
       step_states: {
         Row: {
+          completed_at: string | null
+          created_at: string
+          failed_at: string | null
           flow_slug: string
           run_id: string
           status: string
@@ -1271,6 +1274,9 @@ export type Database = {
           step_slug: string
         }
         Insert: {
+          completed_at?: string | null
+          created_at?: string
+          failed_at?: string | null
           flow_slug: string
           run_id: string
           status?: string
@@ -1278,6 +1284,9 @@ export type Database = {
           step_slug: string
         }
         Update: {
+          completed_at?: string | null
+          created_at?: string
+          failed_at?: string | null
           flow_slug?: string
           run_id?: string
           status?: string
@@ -1494,6 +1503,9 @@ export type Database = {
           p_step_slug: string
         }
         Returns: {
+          completed_at: string | null
+          created_at: string
+          failed_at: string | null
           flow_slug: string
           run_id: string
           status: string
