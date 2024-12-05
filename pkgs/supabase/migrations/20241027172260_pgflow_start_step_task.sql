@@ -9,13 +9,11 @@ DECLARE
     p_run_id UUID := run_id;
     p_step_slug TEXT := step_slug;
     v_run pgflow.runs%ROWTYPE;
-    v_flow_slug TEXT;
     v_task pgflow.step_tasks%ROWTYPE;
 BEGIN
     PERFORM pgflow_locks.wait_for_start_step_to_commit(p_run_id, p_step_slug);
 
     v_run := pgflow.find_run(p_run_id);
-    v_flow_slug := v_run.flow_slug;
     v_task := pgflow.find_step_task(p_run_id, p_step_slug);
 
     UPDATE pgflow.step_tasks AS st

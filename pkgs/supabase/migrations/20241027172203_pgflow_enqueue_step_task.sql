@@ -12,16 +12,14 @@ DECLARE
     http_response text;
     v_task pgflow.step_tasks%ROWTYPE;
     v_run pgflow.runs%ROWTYPE;
-    v_flow_slug text;
 BEGIN
     PERFORM pgflow_locks.wait_for_start_step_to_commit(p_run_id, p_step_slug);
 
     v_run := pgflow.find_run(p_run_id);
-    v_flow_slug := v_run.flow_slug;
 
     -- create step_task or increment attempt_count on existing record
     INSERT INTO pgflow.step_tasks AS st (flow_slug, run_id, step_slug, payload)
-    VALUES (v_flow_slug, p_run_id, p_step_slug, p_payload)
+    VALUES (v_run.flow_slug, p_run_id, p_step_slug, p_payload)
     ON CONFLICT ON CONSTRAINT step_tasks_pkey DO UPDATE
     SET
         status = 'queued',
