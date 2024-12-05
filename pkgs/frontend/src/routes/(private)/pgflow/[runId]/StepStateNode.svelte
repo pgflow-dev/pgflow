@@ -74,11 +74,11 @@
 		<div class="flex justify-center mt-1">
 			<!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
 			{#each Array.from({ length: data.step_task.attempt_count - 1 }) as _i}
-				<span class="mx-0.5 {statusToIconClass['failed']} w-3 h-3">.</span>
+				<span class="mx-0.5 {statusToIconClass['failed']} w-3 h-3">X</span>
 			{/each}
 
 			{#if status === 'failed'}
-				<span class="mx-0.5 {statusToIconClass['failed']} w-3 h-3">.</span>
+				<span class="mx-0.5 {statusToIconClass['failed']} w-3 h-3">X</span>
 			{/if}
 		</div>
 	{/if}
