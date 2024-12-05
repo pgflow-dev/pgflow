@@ -4,7 +4,7 @@ import { JSONSchema7 } from "json-schema";
 
 // Initialize a Project
 const project = new Project({
-  tsConfigFilePath: "tsconfig.json",
+  tsConfigFilePath: "schema-generator/tsconfig.json",
 });
 
 function isPromiseType(type: Type): boolean {
