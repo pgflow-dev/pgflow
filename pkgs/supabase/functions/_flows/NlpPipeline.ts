@@ -2,11 +2,11 @@ import { Flow } from "../_pgflow/Flow.ts";
 import { randomSleep } from "../_pgflow/utils.ts";
 
 async function simulateWorkAndError() {
-  if (Math.random() < 0.3) {
+  await randomSleep(300);
+
+  if (Math.random() < 0.2) {
     throw new Error("Simulated error");
   }
-
-  await randomSleep(1000);
 }
 
 const NlpPipeline = new Flow<string>()
