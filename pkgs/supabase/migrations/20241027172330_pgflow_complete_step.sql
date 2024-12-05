@@ -22,14 +22,7 @@ BEGIN
     -- being ready, so it can start the dependant
     PERFORM pgflow_locks.complete_steps_in_serial(p_run_id);
 
-    SELECT * INTO step_state_to_complete
-    FROM pgflow.step_states ss
-    WHERE ss.run_id = p_run_id
-    AND ss.step_slug = p_step_slug;
-
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'Step state not found for run_id: % and step_slug: %', p_run_id, p_step_slug;
-    END IF;
+    step_state_to_complete := pgflow.find_step_state(p_run_id, p_step_slug);
 
     UPDATE pgflow.step_states ss
     SET status = 'completed',

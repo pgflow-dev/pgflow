@@ -16,19 +16,7 @@ DECLARE
     step_state pgflow.step_states%ROWTYPE;
     job_payload JSONB;
 BEGIN
-    SELECT
-    r.flow_slug,
-    r.run_id,
-    r.status,
-    r.payload
-    INTO locked_run
-    FROM pgflow.runs AS r
-    WHERE r.run_id = p_run_id;
-
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'Run not found: run_id=%', p_run_id;
-        RETURN;
-    END IF;
+    locked_run := pgflow.find_run(p_run_id);
 
     BEGIN
         INSERT INTO pgflow.step_states (flow_slug, run_id, step_slug)

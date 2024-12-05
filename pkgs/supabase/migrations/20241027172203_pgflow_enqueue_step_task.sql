@@ -11,18 +11,13 @@ DECLARE
     p_step_slug text := step_slug;
     http_response text;
     v_task pgflow.step_tasks%ROWTYPE;
+    v_run pgflow.runs%ROWTYPE;
     v_flow_slug text;
 BEGIN
     PERFORM pgflow_locks.wait_for_start_step_to_commit(p_run_id, p_step_slug);
 
-    SELECT r.flow_slug INTO v_flow_slug
-    FROM pgflow.runs AS r
-    WHERE r.run_id = p_run_id;
-
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'Run not found: run_id=%', p_run_id;
-        RETURN;
-    END IF;
+    v_run := pgflow.find_run(p_run_id);
+    v_flow_slug := v_run.flow_slug;
 
     -- create step_task or increment attempt_count on existing record
     INSERT INTO pgflow.step_tasks AS st (flow_slug, run_id, step_slug, payload)

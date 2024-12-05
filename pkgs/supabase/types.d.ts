@@ -1477,6 +1477,48 @@ export type Database = {
         }
         Returns: undefined
       }
+      find_run: {
+        Args: {
+          run_id: string
+        }
+        Returns: {
+          flow_slug: string
+          payload: Json
+          run_id: string
+          status: string
+        }
+      }
+      find_step_state: {
+        Args: {
+          p_run_id: string
+          p_step_slug: string
+        }
+        Returns: {
+          flow_slug: string
+          run_id: string
+          status: string
+          step_result: Json | null
+          step_slug: string
+        }
+      }
+      find_step_task: {
+        Args: {
+          run_id: string
+          step_slug: string
+        }
+        Returns: {
+          attempt_count: number
+          flow_slug: string
+          last_attempt_at: string
+          max_attempts: number
+          next_attempt_at: string | null
+          payload: Json
+          result: Json | null
+          run_id: string
+          status: string
+          step_slug: string
+        }
+      }
       get_root_steps: {
         Args: {
           p_flow_slug: string

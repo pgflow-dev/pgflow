@@ -10,14 +10,7 @@ DECLARE
     p_step_slug text := step_slug;
     v_task pgflow.step_tasks%ROWTYPE;
 BEGIN
-    SELECT st.* INTO v_task
-    from pgflow.step_tasks AS st
-    WHERE st.run_id = p_run_id AND st.step_slug = p_step_slug;
-
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'Step task not found: run_id=%, step_slug=%', p_run_id, p_step_slug;
-        RETURN;
-    END IF;
+    v_task := pgflow.find_step_task(p_run_id, p_step_slug);
 
     IF v_task.status = 'failed' THEN
         PERFORM pgflow.enqueue_step_task(
