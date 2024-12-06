@@ -1,3 +1,6 @@
+------------------ pgmq --------------------------
+CREATE EXTENSION IF NOT EXISTS pgmq;
+
 -- Create flow management schema
 CREATE SCHEMA IF NOT EXISTS pgflow;
 SET search_path TO pgflow;
