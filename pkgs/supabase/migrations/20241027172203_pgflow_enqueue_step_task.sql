@@ -38,7 +38,7 @@ BEGIN
     select content into http_response
     from extensions.http((
         'POST',
-        (select app_url from settings) || '/functions/v1/pgflow-3',
+        (select app_url from settings) || '/functions/v1/pgflow-pgmq',
         ARRAY[
             http_header(
                 'Authorization',
