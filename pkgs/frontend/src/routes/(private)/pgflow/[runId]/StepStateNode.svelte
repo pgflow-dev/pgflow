@@ -1,6 +1,8 @@
 <script lang="ts">
-	import { Handle, Position, type NodeProps } from '@xyflow/svelte';
+	import { type NodeProps } from '@xyflow/svelte';
 	import type { Step, StepState, StepTask } from '$lib/db/pgflow';
+	import StepResultHoverCard from './StepResultHoverCard.svelte';
+	import type { Json } from '$backend/types';
 
 	interface NodeData extends Record<string, unknown> {
 		step: Step;
@@ -13,6 +15,23 @@
 		data: NodeData;
 	};
 	export let data: NodeData;
+
+	let result: Json;
+
+	$: {
+		result = {
+			payload: data.step_task?.payload,
+			result: data.step_state?.step_result,
+			started_at: data.step_state?.created_at,
+			attempt_count: data.step_task?.attempt_count
+		};
+
+		if (data.step_state?.status === 'failed') {
+			result['failed_at'] = data.step_state?.failed_at;
+		} else if (data.step_state?.status === 'completed') {
+			result['completed_at'] = data.step_state?.completed_at;
+		}
+	}
 
 	const statusToIconClass: Record<string, string> = {
 		pending: 'text-yellow-500',
@@ -83,6 +102,10 @@
 		</div>
 	{/if}
 
-	<Handle type="target" position={Position.Top} />
-	<Handle type="source" position={Position.Bottom} />
+	{#if data.step_state && data.step_task}
+		<StepResultHoverCard {result} />
+	{/if}
+
+	<!-- <Handle type="target" position={Position.Top} /> -->
+	<!-- <Handle type="source" position={Position.Bottom} /> -->
 </Card>
