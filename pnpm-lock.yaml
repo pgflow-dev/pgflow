@@ -335,8 +335,8 @@ importers:
         specifier: ^4.71.1
         version: 4.71.1(zod@3.23.8)
       supabase:
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^2.0.2
+        version: 2.0.2
       ts-json-schema-generator:
         specifier: ^2.3.0
         version: 2.3.0
@@ -5928,7 +5928,7 @@ packages:
     resolution: {integrity: sha512-H0TSyFNDMomMNJQBn8wFV5YC/2eJ+VXECwOadZJT554xP6cODZHPX3H9QMQECxvrgiSOP1pHjy1sMWQVYJOUOA==}
     engines: {node: '>= 14'}
     dependencies:
-      debug: 4.3.7
+      debug: 4.4.0
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -9525,7 +9525,7 @@ packages:
     engines: {node: '>= 14'}
     dependencies:
       agent-base: 7.1.1
-      debug: 4.3.7
+      debug: 4.4.0
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -13966,8 +13966,8 @@ packages:
     dependencies:
       s.color: 0.0.15
 
-  /supabase@2.0.0:
-    resolution: {integrity: sha512-2Z42hoKgmjMjFMo3pVdVvV8nIDly/ac/v4ZcHSdDJohf+2Y+/OJ1sHGoIvm6v3N4dAGKe3SCovS3+HYFGL1L7w==}
+  /supabase@2.0.2:
+    resolution: {integrity: sha512-rp32HdxnFujZZWyTCn7x2ZmT0wQu9+1MBEyH0fBCLPvF3wFkg/SyuHpOOnfik/OUgHb0JJqollaWm/quyet/zg==}
     engines: {npm: '>=8'}
     hasBin: true
     requiresBuild: true
