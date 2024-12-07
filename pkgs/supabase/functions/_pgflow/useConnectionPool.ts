@@ -11,9 +11,8 @@ export async function useConnectionPool() {
 
     try {
       connection = await pool.connect();
-      console.log("Connected to connection", connection);
 
-      callback(connection);
+      return await callback(connection);
     } catch (error) {
       console.error(error);
       return;
