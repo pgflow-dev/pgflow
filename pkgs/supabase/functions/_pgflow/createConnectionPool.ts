@@ -1,15 +1,22 @@
 import { Pool } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
 
-const POOL_CONNECTIONS = 5;
-const DATABASE_URL =
-  "postgresql://postgres:postgres@host.docker.internal:54322/postgres";
+type Options = {
+  pool_connections: 5;
+  database_url: string;
+};
 
-if (!DATABASE_URL) {
-  throw new Error("DATABASE_URL environment variable is not set");
+async function createConnectionPool(options: Options) {
+  const POOL_CONNECTIONS = 5;
+  const DATABASE_URL =
+    "postgresql://postgres:postgres@host.docker.internal:54322/postgres";
+
+  if (!DATABASE_URL) {
+    throw new Error("DATABASE_URL environment variable is not set");
+  }
+
+  const pool = new Pool(DATABASE_URL, POOL_CONNECTIONS);
+  console.log("createConnectionPool : CREATED POOL");
 }
-
-const pool = new Pool(DATABASE_URL, POOL_CONNECTIONS);
-console.log("POOL CREATED");
 
 async function processQueue(queueName: string, pool: Pool) {
   let client;
