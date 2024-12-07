@@ -1,0 +1,14 @@
+{
+  "imports": {
+    "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.46.1",
+    "@supabase/functions-js": "jsr:@supabase/functions-js/mod.ts",
+    "@supabase/functions-js/": "jsr:@supabase/functions-js/",
+    "openai": "jsr:@openai/openai@^4.52.5",
+    "groq-sdk": "npm:groq-sdk@^0.7.0"
+  },
+  "tasks": {
+    "cache": "deno cache index.ts"
+  },
+  "lock": true,
+  "lockfile": "./deno.lock"
+}
