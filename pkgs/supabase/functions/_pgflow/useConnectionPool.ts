@@ -21,5 +21,15 @@ export async function useConnectionPool() {
     }
   }
 
-  return { pool, withPostgres };
+  async function queryObject(query: string) {
+    return await withPostgres(
+      async (client) => await client.queryObject(query),
+    );
+  }
+
+  async function queryArray(query: string) {
+    return await withPostgres(async (client) => await client.queryArray(query));
+  }
+
+  return { pool, withPostgres, queryObject, queryArray };
 }
