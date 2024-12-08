@@ -16,7 +16,6 @@ async function* readMessages(
       `SELECT pgmq.read('${queueName}', ${batchSize}, ${visibilityTimeout});`,
     );
     const { rows: messages } = results;
-    console.log(`WORKER: Messages`, messages);
 
     for (const message in messages) {
       console.log("readMessages - message", message);
@@ -31,8 +30,8 @@ export async function startWorker(
   handler: (payload: Json) => void,
 ) {
   console.log(`${slug}: Started`);
-  const { queryObject } = await useConnectionPool();
 
+  // const { queryObject } = await useConnectionPool();
   // await queryObject(`SELECT pgmq.create('pgflow-worker');`);
 
   for await (const message of readMessages("pgflow-worker")) {
