@@ -1,25 +1,28 @@
 import { useConnectionPool } from "./useConnectionPool.ts";
 import { Json } from "./Flow.ts";
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 async function* readMessages(
   queueName: string,
-  batchSize = 2,
+  batchSize = 1,
   visibilityTimeout = 1,
 ) {
-  const { queryArray, withPostgres } = await useConnectionPool();
+  const { queryArray } = await useConnectionPool();
 
   while (true) {
     const results = await queryArray(
-      `select now() as time from generate_series(1, ${batchSize})`,
-      // `SELECT pgmq.read('${queueName}', ${batchSize}, ${visibilityTimeout});`,
+      // `select now() as time from generate_series(1, ${batchSize})`,
+      `SELECT pgmq.read('${queueName}', ${batchSize}, ${visibilityTimeout});`,
     );
     const { rows: messages } = results;
-    console.log(`WORKER: Messages`, messages);
+    // console.log(`WORKER: Messages`, messages);
 
     for (const message in messages) {
+      console.log("readMessages - message", message);
       yield message;
+      await sleep(1000);
     }
-    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 }
 
@@ -30,10 +33,11 @@ export async function startWorker(
   console.log(`${slug}: Started`);
   const { queryObject } = await useConnectionPool();
 
-  await queryObject(`SELECT pgmq.create('pgflow');`);
+  // await queryObject(`SELECT pgmq.create('pgflow-worker');`);
 
-  for await (const results of readMessages("pgflow")) {
-    console.log(`${slug}:`, results);
+  for await (const message of readMessages("pgflow-worker")) {
+    console.log(`${slug}:`, message);
+    await handler(message);
   }
 }
 
