@@ -1,18 +1,30 @@
 import { useConnectionPool } from "./useConnectionPool.ts";
 
-export async function startWorker(slug: string) {
-  console.log(`WORKER ${slug}: Started`);
+async function* readMessages(
+  queueName: string,
+  batchSize = 2,
+  visibilityTimeout = 1,
+) {
   const { queryObject, withPostgres } = await useConnectionPool();
 
-  const queue = await queryObject(`SELECT pgmq.create('yolo');`);
-
   while (true) {
-    const results = await withPostgres(
-      async (client) => await client.queryObject(`SELECT now() as time`),
-      // await client.queryObject(`SELECT pgmq.read('yolo', 2, 1);`),
+    const results = await queryObject(
+      `select now() as time`,
+      // `SELECT pgmq.read('${queueName}', ${batchSize}, ${visibilityTimeout});`,
     );
-    console.log(`WORKER ${slug}: Results`, results);
+    yield results;
     await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+}
+
+export async function startWorker(slug: string) {
+  console.log(`WORKER ${slug}: Started`);
+  const { queryObject } = await useConnectionPool();
+
+  await queryObject(`SELECT pgmq.create('yolo');`);
+
+  for await (const results of readMessages("yolo")) {
+    console.log(`WORKER ${slug}: Results`, results);
   }
 }
 
