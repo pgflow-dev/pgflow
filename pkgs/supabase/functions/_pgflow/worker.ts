@@ -16,13 +16,13 @@ async function* readMessages(
       `SELECT pgmq.read('${queueName}', ${batchSize}, ${visibilityTimeout});`,
     );
     const { rows: messages } = results;
-    // console.log(`WORKER: Messages`, messages);
+    console.log(`WORKER: Messages`, messages);
 
     for (const message in messages) {
       console.log("readMessages - message", message);
       yield message;
-      await sleep(1000);
     }
+    await sleep(1000);
   }
 }
 
