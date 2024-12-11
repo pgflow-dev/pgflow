@@ -1547,6 +1547,15 @@ export type Database = {
           step_slug: string
         }
       }
+      get_ready_dependents: {
+        Args: {
+          p_run_id: string
+          p_step_slug: string
+        }
+        Returns: {
+          dependent_slug: string
+        }[]
+      }
       get_root_steps: {
         Args: {
           p_flow_slug: string
