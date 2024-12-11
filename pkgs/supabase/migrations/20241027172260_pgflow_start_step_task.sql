@@ -16,6 +16,8 @@ BEGIN
     v_run := pgflow.find_run(p_run_id);
     v_task := pgflow.find_step_task(p_run_id, p_step_slug);
 
+    PERFORM pgflow.verify_status(v_task, 'queued');
+
     UPDATE pgflow.step_tasks AS st
     SET status = 'started', last_attempt_at = now(), next_attempt_at = NULL
     WHERE st.run_id = v_task.run_id

@@ -32,6 +32,7 @@ BEGIN
             RAISE EXCEPTION 'Error inserting into step_states: %', SQLERRM;
     END;
 
+    PERFORM pgflow.verify_status(step_state, 'pending');
 
     -- collect dependencies of a step into json object with keys being slugs
     -- of dependency steps and values being results of that dependency steps

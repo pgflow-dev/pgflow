@@ -1,7 +1,5 @@
 import { Flow } from "../_pgflow/Flow.ts";
 
-// original code from https://www.inngest.com/
-
 type RunPayload = {
   videoUrl: string;
   videoId: string;

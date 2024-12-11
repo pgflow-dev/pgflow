@@ -12,6 +12,9 @@ DECLARE
     p_error JSONB := error;
     v_task pgflow.step_tasks%ROWTYPE;
 BEGIN
+    v_task := pgflow.find_step_task(p_run_id, p_step_slug);
+    PERFORM pgflow.verify_status(v_task, 'started');
+
     UPDATE pgflow.step_tasks se
     SET
         status = 'failed',

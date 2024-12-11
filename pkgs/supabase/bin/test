@@ -12,6 +12,9 @@
 #   {print}
 # '
 #
+# Use pipefail to ensure we get the exit code from bin/supabase rather than just awk
+set -o pipefail
+
 bin/supabase test db supabase/"$@" | awk '
 /^# Failed test/ {print "\033[31m" $0 "\033[0m"; next}        # Red for failed tests
 /^# *have:/      {print "\033[36m" $0 "\033[0m"; next}       # Cyan for "have" lines
@@ -21,3 +24,6 @@ bin/supabase test db supabase/"$@" | awk '
 /Result: PASS/   {print "\033[1;32m" $0 "\033[0m"; next}     # Bold green for overall success
 { print $0 }     # Default: print the line as is
 '
+
+# Get the exit status from the pipeline
+exit ${PIPESTATUS[0]}

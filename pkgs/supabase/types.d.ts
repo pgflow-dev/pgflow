@@ -1415,6 +1415,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      call_edgefn: {
+        Args: {
+          function_name: string
+          body: string
+        }
+        Returns: undefined
+      }
       complete_step: {
         Args: {
           p_run_id: string
@@ -1549,19 +1556,6 @@ export type Database = {
           step_slug: string
         }[]
       }
-      has_unmet_deps: {
-        Args: {
-          p_run_id: string
-          p_step_slug: string
-        }
-        Returns: boolean
-      }
-      is_root_step: {
-        Args: {
-          p_step_slug: string
-        }
-        Returns: boolean
-      }
       retry_step_task: {
         Args: {
           run_id: string
@@ -1600,6 +1594,21 @@ export type Database = {
         }
         Returns: undefined
       }
+      verify_status:
+        | {
+            Args: {
+              record: Record<string, unknown>
+              allowed_status: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              record: Record<string, unknown>
+              allowed_statuses: string[]
+            }
+            Returns: undefined
+          }
     }
     Enums: {
       [_ in never]: never

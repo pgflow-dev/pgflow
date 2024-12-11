@@ -3,20 +3,20 @@ import { randomSleep } from "../_pgflow/utils.ts";
 
 const BasicFlow = new Flow<string>()
   .step("root", async ({ run }) => {
-    await randomSleep(1000);
+    await randomSleep(500);
     return `[${run}]r00t`;
   })
   .step("left", ["root"], async ({ root: r }) => {
-    await randomSleep(1000);
+    await randomSleep(500);
     return `${r}/left`;
   })
   .step("right", ["root"], async ({ root: r }) => {
-    await randomSleep(3000);
+    await randomSleep(1000);
     throw new Error("Right failed");
     return `${r}/right`;
   })
   .step("end", ["left", "right"], async ({ left, right, run }) => {
-    await randomSleep(1000);
+    await randomSleep(500);
     return `<${left}> and <${right}> of (${run})`;
   });
 

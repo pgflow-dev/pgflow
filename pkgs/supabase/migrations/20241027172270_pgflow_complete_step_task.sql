@@ -10,7 +10,11 @@ DECLARE
     p_run_id UUID := run_id;
     p_step_slug TEXT := step_slug;
     p_result JSONB := result;
+    v_task pgflow.step_tasks%ROWTYPE;
 BEGIN
+    v_task := pgflow.find_step_task(p_run_id, p_step_slug);
+    PERFORM pgflow.verify_status(v_task, 'started');
+
     UPDATE pgflow.step_tasks se
     SET status = 'completed', result = p_result
     WHERE se.run_id = p_run_id

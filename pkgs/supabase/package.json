@@ -14,7 +14,7 @@
     "stop": "bin/supabase stop",
     "start": "bin/supabase start",
     "test": "bin/test",
-    "test:watch": "ls tests/**/*.sql | entr -rc bin/test",
+    "test:watch": "find tests/ -type f -iname '*.sql' | entr -rc bin/test",
     "pgflow:gen-schema": "pnpm tsx --tsconfig schema-generator/tsconfig.json schema-generator/generate-schema.ts"
   },
   "devDependencies": {

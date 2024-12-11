@@ -19,7 +19,6 @@ END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 ----------- find_step_task --------------------------
-DROP FUNCTION IF EXISTS pgflow.find_step_task(uuid);
 CREATE OR REPLACE FUNCTION pgflow.find_step_task(run_id uuid, step_slug text)
 RETURNS pgflow.step_tasks AS $$
 DECLARE
@@ -33,7 +32,7 @@ BEGIN
     AND st.step_slug = p_step_slug;
 
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'step_task not found for run_id=% and step_slug=%', p_run_id, p_step_slug;
+        RAISE EXCEPTION 'Step task not found for run_id=% and step_slug=%', p_run_id, p_step_slug;
     END IF;
 
     RETURN v_step_task;

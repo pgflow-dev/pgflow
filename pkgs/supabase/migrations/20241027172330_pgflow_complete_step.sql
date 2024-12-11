@@ -24,6 +24,8 @@ BEGIN
 
     step_state_to_complete := pgflow.find_step_state(p_run_id, p_step_slug);
 
+    PERFORM pgflow.verify_status(step_state_to_complete, 'pending');
+
     UPDATE pgflow.step_states ss
     SET completed_at = now(),
         step_result = p_step_result

@@ -14,7 +14,11 @@ RETURNS TABLE (
 DECLARE
     p_run_id UUID := run_id;
     p_step_slug TEXT := step_slug;
+    v_step_state pgflow.step_states%ROWTYPE;
 BEGIN
+    v_step_state := pgflow.find_step_state(p_run_id, p_step_slug);
+    PERFORM pgflow.verify_status(v_step_state, 'pending');
+
     UPDATE pgflow.step_states AS ss
     SET failed_at = now(),
         step_result = jsonb_build_object(
