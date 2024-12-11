@@ -16,14 +16,61 @@
 set -o pipefail
 
 bin/supabase test db supabase/"$@" | awk '
-/^# Failed test/ {print "\033[31m" $0 "\033[0m"; next}        # Red for failed tests
-/^# *have:/      {print "\033[36m" $0 "\033[0m"; next}       # Cyan for "have" lines
-/^# *want:/      {print "\033[32m" $0 "\033[0m"; next}       # Green for "want" lines
-/Failed [0-9]+\/[0-9]+ subtests/ {print "\033[31m" $0 "\033[0m"; next}  # Red for summary of failed subtests
-/Result: FAIL/   {print "\033[1;31m" $0 "\033[0m"; next}     # Bold red for overall failure
-/Result: PASS/   {print "\033[1;32m" $0 "\033[0m"; next}     # Bold green for overall success
+BEGIN {
+    RED="\033[31m";
+    GREEN="\033[32m";
+    CYAN="\033[36m";
+    BOLD="\033[1m";
+    RESET="\033[0m";
+}
+/^# Failed test [0-9]+: / {printf "%s%s%s%s\n", RED, substr($0, 1, index($0, ":")), RESET, substr($0, index($0, ":") + 1); next}  # Red for "Failed test N:" part only
+/^# *have:/      {print CYAN $0 RESET; next}                 # Cyan for "have" lines
+/^# *want:/      {print GREEN $0 RESET; next}                # Green for "want" lines
+/Failed [0-9]+\/[0-9]+ subtests/ {print RED $0 RESET; next}  # Red for summary of failed subtests
+/Result: FAIL/   {print RED BOLD $0 RESET; next}             # Bold red for overall failure
+/Result: PASS/   {print GREEN BOLD $0 RESET; next}           # Bold green for overall success
+/^Test Summary Report$/ {print BOLD $0 RESET; next}          # Bold for summary header
+/\.+ ok$/        {sub(/ok$/, ""); printf "%s%sok%s\n", $0, GREEN, RESET; next}  # Green for passing tests
+/^# Files=[0-9]+, Tests=[0-9]+,.*$/ {
+    gsub(/Files=/, BOLD "Files=" RESET);
+    gsub(/Tests=/, BOLD "Tests=" RESET);
+    print;
+    next;
+}
+/\.+[^ok].*$/    {print RED $0 RESET; next}                  # Red for failing test lines
 { print $0 }     # Default: print the line as is
 '
 
 # Get the exit status from the pipeline
 exit ${PIPESTATUS[0]}
+
+#### example output from bin/supabase test db:
+# Using workdir ../
+# Connecting to local database...
+# ../tmp/complete_step_task_test.sql ................. ok
+# ../tmp/enqueue_step_task_test.sql .................. ok
+# ../tmp/fail_step_task_test.sql .....................
+# # Failed test 7: "calling fail_step_task() makes another retry attempt"
+# #         have: 3
+# #         want: 4
+# # Looks like you failed 1 test of 9
+# Failed 1/9 subtests
+# ../tmp/find_run_test.sql ........................... ok
+# ../tmp/find_step_state_test.sql .................... ok
+# ../tmp/find_step_task_test.sql ..................... ok
+# ../tmp/get_root_steps_test.sql ..................... ok
+# ../tmp/happy_path.sql .............................. ok
+# ../tmp/retries_if_attempts_not_exhausted_test.sql .. ok
+# ../tmp/retry_step_task_test.sql .................... ok
+# ../tmp/run_flow_test.sql ........................... ok
+# ../tmp/start_step_task_test.sql .................... ok
+# ../tmp/test_mocking.sql ............................ ok
+#
+# Test Summary Report
+# -------------------
+# ../tmp/fail_step_task_test.sql                   (Wstat: 0 Tests: 9 Failed: 1)
+#   Failed test:  7
+# Files=13, Tests=66,  0 wallclock secs ( 0.03 usr  0.02 sys +  0.09 cusr  0.04 csys =  0.18 CPU)
+# Result: FAIL
+# error running container: exit 1
+# Try rerunning the command with --debug to troubleshoot the error.
