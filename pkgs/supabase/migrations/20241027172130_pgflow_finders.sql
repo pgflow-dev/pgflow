@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION pgflow.find_run(
 )
 RETURNS pgflow.runs
 LANGUAGE plpgsql
-VOLATILE
+STABLE
 SET search_path TO pgflow
 AS $$
 DECLARE
@@ -29,7 +29,7 @@ CREATE OR REPLACE FUNCTION pgflow.find_step_task(
 )
 RETURNS pgflow.step_tasks
 LANGUAGE plpgsql
-VOLATILE
+STABLE
 SET search_path TO pgflow
 AS $$
 DECLARE
@@ -57,7 +57,7 @@ CREATE OR REPLACE FUNCTION pgflow.find_step_state(
 )
 RETURNS pgflow.step_states
 LANGUAGE plpgsql
-VOLATILE
+STABLE
 SET search_path TO pgflow
 AS $$
 DECLARE

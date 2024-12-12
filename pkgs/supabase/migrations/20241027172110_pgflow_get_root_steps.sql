@@ -6,7 +6,7 @@ RETURNS TABLE (
     step_slug text
 )
 LANGUAGE plpgsql
-VOLATILE
+STABLE
 SET search_path TO pgflow
 AS
 $$

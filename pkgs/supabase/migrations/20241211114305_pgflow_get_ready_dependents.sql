@@ -6,7 +6,7 @@ RETURNS TABLE (
     dependent_slug text
 )
 LANGUAGE plpgsql
-VOLATILE
+STABLE
 SET search_path TO pgflow
 AS $$
 BEGIN

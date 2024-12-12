@@ -4,6 +4,7 @@ CREATE OR REPLACE FUNCTION pgflow.verify_status(
 )
 RETURNS void
 LANGUAGE plpgsql
+IMMUTABLE
 SET search_path TO pgflow
 AS $$
 BEGIN
