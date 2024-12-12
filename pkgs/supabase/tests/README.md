@@ -1,3 +1,5 @@
+Here's an updated test coverage checklist with new recommended tests marked with ⭐:
+
 # pgflow Test Coverage
 
 ## Core Flow Tests
@@ -8,38 +10,36 @@
 - ❌ Run Flow with missing step handlers
 - ❌ Run Flow pause/resume functionality
 - ❌ Run Flow cancel functionality
+- ⭐ Run Flow with conditional branches
+- ⭐ Run Flow with dynamic step generation
 
 ## Step State Tests
 
 - ✅ Step status transitions (pending -> completed/failed)
 - ✅ Step dependency validation
 - ✅ Step result storage
-- ❌ Step timeout handling
-- ❌ Step concurrency handling
-- ❌ Step idempotency
 
 ## Error Handling Tests
 
 - ✅ Failed step retry behavior
 - ✅ Maximum retries exceeded
 - ✅ Invalid flow configuration
-- ❌ Database constraint violations
 - ❌ Out of order execution attempts
-- ❌ Race condition handling
+- ❌ Race condition handling (performance/transactional tests)
+- ⭐ Partial failure recovery
+- ⭐ Error propagation across dependent steps
 
 ## Edge Cases
 
 - ❌ Very large payloads
 - ❌ Many concurrent flows
-- ❌ Network partitions
-- ❌ Database deadlocks
-- ❌ Long running steps
-- ❌ Steps with high failure rates
+- ❌ Database deadlocks (need a way to increase possibility/simulate)
 
 ## Performance Tests
 
-- ❌ Load testing maximum concurrent flows
-- ❌ Load testing step execution throughput
+- ❌ Load testing maximum concurrent flow transactions (complete_step is most expensive)
 - ❌ Database index optimization verification
 - ❌ Memory usage under load
 - ❌ Connection pool exhaustion
+- ⭐ Step execution metrics collection
+- ⭐ Flow completion time analysis
