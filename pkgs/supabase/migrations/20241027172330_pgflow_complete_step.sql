@@ -9,11 +9,15 @@ RETURNS TABLE (
     step_slug TEXT,
     status TEXT,
     step_result JSONB
-) AS $$
+)
+LANGUAGE plpgsql
+VOLATILE
+SET search_path TO pgflow
+AS $$
 #variable_conflict use_column
 DECLARE
     ready_step RECORD;
-    step_state_to_complete pgflow.step_states%ROWTYPE;
+    step_state_to_complete step_states%ROWTYPE;
 BEGIN
     PERFORM pgflow_locks.wait_for_start_step_to_commit(p_run_id, p_step_slug);
 
@@ -22,11 +26,11 @@ BEGIN
     -- being ready, so it can start the dependant
     PERFORM pgflow_locks.complete_steps_in_serial(p_run_id);
 
-    step_state_to_complete := pgflow.find_step_state(p_run_id, p_step_slug);
+    step_state_to_complete := find_step_state(p_run_id, p_step_slug);
 
-    PERFORM pgflow.verify_status(step_state_to_complete, 'pending');
+    PERFORM verify_status(step_state_to_complete, 'pending');
 
-    UPDATE pgflow.step_states ss
+    UPDATE step_states ss
     SET completed_at = now(),
         step_result = p_step_result
     WHERE ss.run_id = p_run_id
@@ -40,9 +44,9 @@ BEGIN
 
     -- Step 4: start all the ready dependants
     FOR ready_step IN
-        SELECT * FROM pgflow.get_ready_dependents(p_run_id, p_step_slug)
+        SELECT * FROM get_ready_dependents(p_run_id, p_step_slug)
     LOOP
-        PERFORM pgflow.start_step(p_run_id, ready_step.dependent_slug);
+        PERFORM start_step(p_run_id, ready_step.dependent_slug);
     END LOOP;
 
     -- Return the updated step state
@@ -53,8 +57,8 @@ BEGIN
         ss.step_slug,
         ss.status,
         ss.step_result
-    FROM pgflow.step_states AS ss
+    FROM step_states AS ss
     WHERE ss.run_id = p_run_id
     AND ss.step_slug = p_step_slug;
 END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$;

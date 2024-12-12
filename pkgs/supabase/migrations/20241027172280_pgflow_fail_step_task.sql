@@ -1,21 +1,23 @@
-SET search_path TO pgflow;
-
 CREATE OR REPLACE FUNCTION pgflow.fail_step_task(
     run_id UUID,
     step_slug TEXT,
     error JSONB
 )
-RETURNS VOID AS $$
+RETURNS VOID
+LANGUAGE plpgsql
+VOLATILE
+SET search_path TO pgflow
+AS $$
 DECLARE
     p_run_id UUID := run_id;
     p_step_slug TEXT := step_slug;
     p_error JSONB := error;
-    v_task pgflow.step_tasks%ROWTYPE;
+    v_task step_tasks%ROWTYPE;
 BEGIN
-    v_task := pgflow.find_step_task(p_run_id, p_step_slug);
-    PERFORM pgflow.verify_status(v_task, 'started');
+    v_task := find_step_task(p_run_id, p_step_slug);
+    PERFORM verify_status(v_task, 'started');
 
-    UPDATE pgflow.step_tasks se
+    UPDATE step_tasks se
     SET
         status = 'failed',
         result = p_error
@@ -24,9 +26,9 @@ BEGIN
     RETURNING se.* INTO v_task;
 
     IF v_task.attempt_count < v_task.max_attempts THEN
-        PERFORM pgflow.retry_step_task(p_run_id, p_step_slug);
+        PERFORM retry_step_task(p_run_id, p_step_slug);
     ELSE
-        PERFORM pgflow.fail_step(p_run_id, p_step_slug, p_error::TEXT);
+        PERFORM fail_step(p_run_id, p_step_slug, p_error::TEXT);
     END IF;
 END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$;

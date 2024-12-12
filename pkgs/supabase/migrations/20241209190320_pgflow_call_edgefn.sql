@@ -2,7 +2,11 @@ create or replace function pgflow.call_edgefn(
     function_name text,
     body text
 )
-returns void as $$
+returns void
+language plpgsql
+volatile
+set search_path to pgflow
+as $$
 declare
     http_response text;
 begin
@@ -25,18 +29,18 @@ begin
         'POST',
         (select app_url from settings) || '/functions/v1/' || function_name,
         ARRAY[
-            http_header(
+            extensions.http_header(
                 'Authorization',
                 'Bearer ' || (select supabase_anon_key from secret)
             )
         ],
         'application/json',
         body
-    )::http_request)
+    )::extensions.http_request)
     where status >= 200 and status < 300;
 
     if http_response IS NULL then
         raise exception 'Edge function returned non-OK status';
     end if;
 end;
-$$ language plpgsql volatile;
+$$;

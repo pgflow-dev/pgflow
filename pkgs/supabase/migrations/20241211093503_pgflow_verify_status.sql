@@ -2,17 +2,22 @@ CREATE OR REPLACE FUNCTION pgflow.verify_status(
     record record,
     allowed_status text
 )
-RETURNS void AS $$
+RETURNS void
+LANGUAGE plpgsql
+SET search_path TO pgflow
+AS $$
 BEGIN
-    PERFORM pgflow.verify_status(record, ARRAY[allowed_status]);
+    PERFORM verify_status(record, ARRAY[allowed_status]);
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 CREATE OR REPLACE FUNCTION pgflow.verify_status(
     record record,
     allowed_statuses text []
 )
-RETURNS void AS $$
+RETURNS void
+LANGUAGE plpgsql
+AS $$
 BEGIN
     IF NOT (record.status = ANY(allowed_statuses)) THEN
         RAISE EXCEPTION 'Expected % status to be one of % but got ''%''',
@@ -21,4 +26,4 @@ BEGIN
             record.status;
     END IF;
 END;
-$$ LANGUAGE plpgsql;
+$$;

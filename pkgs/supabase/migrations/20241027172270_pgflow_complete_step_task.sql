@@ -1,25 +1,27 @@
-SET search_path TO pgflow;
-
 CREATE OR REPLACE FUNCTION pgflow.complete_step_task(
     run_id UUID,
     step_slug TEXT,
     result JSONB
 )
-RETURNS VOID AS $$
+RETURNS VOID
+LANGUAGE plpgsql
+VOLATILE
+SET search_path TO pgflow
+AS $$
 DECLARE
     p_run_id UUID := run_id;
     p_step_slug TEXT := step_slug;
     p_result JSONB := result;
-    v_task pgflow.step_tasks%ROWTYPE;
+    v_task step_tasks%ROWTYPE;
 BEGIN
-    v_task := pgflow.find_step_task(p_run_id, p_step_slug);
-    PERFORM pgflow.verify_status(v_task, 'started');
+    v_task := find_step_task(p_run_id, p_step_slug);
+    PERFORM verify_status(v_task, 'started');
 
-    UPDATE pgflow.step_tasks se
+    UPDATE step_tasks se
     SET status = 'completed', result = p_result
     WHERE se.run_id = p_run_id
     AND se.step_slug = p_step_slug;
 
-    PERFORM pgflow.complete_step(p_run_id, p_step_slug, p_result);
+    PERFORM complete_step(p_run_id, p_step_slug, p_result);
 END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$;
