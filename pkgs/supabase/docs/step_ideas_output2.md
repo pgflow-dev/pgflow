@@ -28,22 +28,22 @@ interface FlowExtensions<RunPayload> {
   conditional<Name extends string>(
     name: Name,
     condition: ConditionHandler<RunPayload>,
-    handler: (payload: RunPayload) => Promise<void>
+    handler: (payload: RunPayload) => Promise<void>,
   ): Flow<RunPayload>;
 }
 
 // Example Usage
-const flow = new Flow<InputType>()
-  .conditional(
-    "checkUserPermissions",
-    async ({ user }) => user.hasPermission("ADMIN"),
-    async (payload) => {
-      // This handler runs only if condition is true
-    }
-  );
+const flow = new Flow<InputType>().conditional(
+  "checkUserPermissions",
+  async ({ user }) => user.hasPermission("ADMIN"),
+  async (payload) => {
+    // This handler runs only if condition is true
+  },
+);
 ```
 
 **Implementation Details:**
+
 - Adds two steps internally: condition check and handler
 - Uses step metadata to control handler execution
 - Leverages Postgres functions to evaluate condition results
@@ -55,22 +55,22 @@ interface FlowExtensions<RunPayload> {
   forEach<Name extends string, Item>(
     name: Name,
     items: (payload: RunPayload) => Item[],
-    handler: (item: Item, index: number) => Promise<void>
+    handler: (item: Item, index: number) => Promise<void>,
   ): Flow<RunPayload>;
 }
 
 // Example Usage
-const flow = new Flow<{items: string[]}>()
-  .forEach(
-    "processItems",
-    ({ items }) => items,
-    async (item, index) => {
-      // Process each item
-    }
-  );
+const flow = new Flow<{ items: string[] }>().forEach(
+  "processItems",
+  ({ items }) => items,
+  async (item, index) => {
+    // Process each item
+  },
+);
 ```
 
 **Benefits:**
+
 - Type-safe iteration over arrays
 - Parallel processing capability
 - Progress tracking per item
@@ -93,21 +93,20 @@ interface FlowExtensions<RunPayload> {
     name: Name,
     functionName: string,
     config: SupabaseStepConfig<T>,
-    argsBuilder: (payload: RunPayload) => Record<string, unknown>
+    argsBuilder: (payload: RunPayload) => Record<string, unknown>,
   ): Flow<RunPayload>;
 }
 
 // Example Usage
-const flow = new Flow<InputType>()
-  .supabaseRpc(
-    "callFunction",
-    "my_postgres_function",
-    { type: z.object({ result: z.string() }) },
-    ({ run }) => ({
-      arg1: run.value,
-      arg2: "static",
-    })
-  );
+const flow = new Flow<InputType>().supabaseRpc(
+  "callFunction",
+  "my_postgres_function",
+  { type: z.object({ result: z.string() }) },
+  ({ run }) => ({
+    arg1: run.value,
+    arg2: "static",
+  }),
+);
 ```
 
 ## Implementation Considerations
@@ -118,7 +117,7 @@ All extensions should maintain full type safety:
 
 ```typescript
 // Type inference example
-type StepResult = typeof flow.getSteps()["stepName"]["handler"] extends 
+type StepResult = typeof flow.getSteps()["stepName"]["handler"] extends
   (...args: any[]) => Promise<infer R> ? R : never;
 ```
 
@@ -131,26 +130,25 @@ interface ErrorConfig {
   onError?: (error: Error) => Promise<void>;
 }
 
-const flow = new Flow<InputType>()
-  .supabaseRpc("myStep", "function_name", {
-    errorConfig: {
-      retryStrategy: "exponential",
-      maxRetries: 3,
-      onError: async (error) => {
-        // Custom error handling
-      }
-    }
-  });
+const flow = new Flow<InputType>().supabaseRpc("myStep", "function_name", {
+  errorConfig: {
+    retryStrategy: "exponential",
+    maxRetries: 3,
+    onError: async (error) => {
+      // Custom error handling
+    },
+  },
+});
 ```
 
 ### 3. Metadata Storage
 
 ```sql
-ALTER TABLE pgflow.steps 
+ALTER TABLE pgflow.steps
 ADD COLUMN step_type text,
 ADD COLUMN step_config jsonb;
 
-ALTER TABLE pgflow.step_tasks 
+ALTER TABLE pgflow.step_tasks
 ADD COLUMN task_type text,
 ADD COLUMN task_config jsonb;
 ```
@@ -158,6 +156,7 @@ ADD COLUMN task_config jsonb;
 ## Future Possibilities
 
 1. **Timeout Handling**:
+
 ```typescript
 .step("longRunning", {
   timeout: "1h",
@@ -168,6 +167,7 @@ ADD COLUMN task_config jsonb;
 ```
 
 2. **Retry Policies**:
+
 ```typescript
 .step("flaky", {
   retry: {
@@ -179,6 +179,7 @@ ADD COLUMN task_config jsonb;
 ```
 
 3. **Step Groups**:
+
 ```typescript
 .group("dataProcessing", (group) =>
   group
