@@ -1591,6 +1591,7 @@ export type Database = {
         }
         Returns: {
           flow_slug: string
+          step_slug: string
           run_id: string
           status: string
           step_result: Json

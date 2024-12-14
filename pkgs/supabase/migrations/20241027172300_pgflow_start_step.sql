@@ -4,6 +4,7 @@ CREATE OR REPLACE FUNCTION pgflow.start_step(
 )
 RETURNS TABLE (
     flow_slug TEXT,
+    step_slug TEXT,
     run_id UUID,
     status TEXT,
     step_result JSONB
@@ -88,6 +89,7 @@ BEGIN
     RETURN QUERY
     SELECT
         step_state.flow_slug,
+        p_step_slug,
         step_state.run_id,
         step_state.status,
         step_state.step_result;

@@ -42,6 +42,7 @@ create or replace function pgflow_tests.start_step(
 )
 returns table (
     flow_slug text,
+    step_slug text,
     run_id uuid,
     status text,
     step_result jsonb
@@ -58,6 +59,7 @@ BEGIN
     RETURN QUERY
     SELECT
         'test_flow'::TEXT,
+        p_step_slug,
         p_run_id::UUID,
         'pending'::TEXT,
         '{}'::JSONB;
@@ -77,10 +79,11 @@ BEGIN
     )
     returns table (
         flow_slug text,
+        step_slug text,
         run_id uuid,
         status text,
         step_result jsonb
-    ) 
+    )
     language sql
     set search_path to pgflow_tests
     AS $inner_body$
