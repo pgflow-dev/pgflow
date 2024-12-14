@@ -34,7 +34,7 @@ begin
     return
       slug is not null
       and slug <> ''
-      and length(slug) < 128
+      and length(slug) <= 128
       and slug ~ '^[a-zA-Z_][a-zA-Z0-9_]*$';
 end;
 $$;
