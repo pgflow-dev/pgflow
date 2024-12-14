@@ -1565,6 +1565,12 @@ export type Database = {
           step_slug: string
         }[]
       }
+      is_valid_slug: {
+        Args: {
+          slug: string
+        }
+        Returns: boolean
+      }
       retry_step_task: {
         Args: {
           run_id: string
