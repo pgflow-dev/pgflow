@@ -31,8 +31,8 @@ BEGIN
     END IF;
 
     -- create step_task or increment attempt_count on existing record
-    INSERT INTO step_tasks AS st (flow_slug, run_id, step_slug, payload)
-    VALUES (v_run.flow_slug, p_run_id, p_step_slug, p_payload)
+    INSERT INTO step_tasks AS st (flow_slug, run_id, step_slug, next_attempt_at, payload)
+    VALUES (v_run.flow_slug, p_run_id, p_step_slug, now(), p_payload)
     ON CONFLICT ON CONSTRAINT step_tasks_pkey DO UPDATE
     SET
         status = 'queued',

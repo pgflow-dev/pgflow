@@ -1330,7 +1330,7 @@ export type Database = {
         Row: {
           attempt_count: number
           flow_slug: string
-          last_attempt_at: string
+          last_attempt_at: string | null
           max_attempts: number
           next_attempt_at: string | null
           payload: Json
@@ -1342,7 +1342,7 @@ export type Database = {
         Insert: {
           attempt_count?: number
           flow_slug: string
-          last_attempt_at?: string
+          last_attempt_at?: string | null
           max_attempts?: number
           next_attempt_at?: string | null
           payload: Json
@@ -1354,7 +1354,7 @@ export type Database = {
         Update: {
           attempt_count?: number
           flow_slug?: string
-          last_attempt_at?: string
+          last_attempt_at?: string | null
           max_attempts?: number
           next_attempt_at?: string | null
           payload?: Json
@@ -1537,7 +1537,7 @@ export type Database = {
         Returns: {
           attempt_count: number
           flow_slug: string
-          last_attempt_at: string
+          last_attempt_at: string | null
           max_attempts: number
           next_attempt_at: string | null
           payload: Json
@@ -1571,6 +1571,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      retry_stale_step_tasks: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       retry_step_task: {
         Args: {
           run_id: string
@@ -1590,6 +1594,10 @@ export type Database = {
           payload: Json
         }[]
       }
+      start_monitoring: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       start_step: {
         Args: {
           p_run_id: string
@@ -1608,6 +1616,10 @@ export type Database = {
           run_id: string
           step_slug: string
         }
+        Returns: undefined
+      }
+      stop_monitoring: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
       verify_status:

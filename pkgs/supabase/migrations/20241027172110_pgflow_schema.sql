@@ -119,7 +119,7 @@ CREATE TABLE pgflow.step_tasks (
     result jsonb,
     attempt_count int NOT NULL DEFAULT 1,
     max_attempts int NOT NULL DEFAULT 3,
-    last_attempt_at timestamptz NOT NULL DEFAULT now(),
+    last_attempt_at timestamptz,
     next_attempt_at timestamptz,
     CONSTRAINT step_tasks_pkey PRIMARY KEY (run_id, step_slug),
     FOREIGN KEY (run_id, step_slug)

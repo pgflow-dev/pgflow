@@ -28,95 +28,12 @@ as $$
 $$;
 
 ---------------------------------------
--------- MOCK start_step { ------------
----------------------------------------
-create table if not exists pgflow_tests.start_step_calls (
-    run_id uuid,
-    step_slug text
-);
-
--- Mocked version of start_step
-create or replace function pgflow_tests.start_step(
-    p_run_id uuid,
-    p_step_slug text
-)
-returns table (
-    flow_slug text,
-    step_slug text,
-    run_id uuid,
-    status text,
-    step_result jsonb
-)
-language plpgsql
-set search_path to pgflow_tests
-as $$
-BEGIN
-    -- Log the call to the temporary table
-    INSERT INTO start_step_calls (run_id, step_slug)
-    VALUES (p_run_id, p_step_slug);
-
-    -- Return a mock row
-    RETURN QUERY
-    SELECT
-        'test_flow'::TEXT,
-        p_step_slug,
-        p_run_id::UUID,
-        'pending'::TEXT,
-        '{}'::JSONB;
-END;
-$$;
-
-create or replace function pgflow_tests.mock_start_step()
-returns void
-language plpgsql
-set search_path to pgflow
-as $$
-BEGIN
-    -- Create the mock function
-    CREATE OR REPLACE FUNCTION start_step(
-        p_run_id uuid,
-        p_step_slug text
-    )
-    returns table (
-        flow_slug text,
-        step_slug text,
-        run_id uuid,
-        status text,
-        step_result jsonb
-    )
-    language sql
-    set search_path to pgflow_tests
-    AS $inner_body$
-        SELECT * FROM start_step(p_run_id, p_step_slug);
-    $inner_body$;
-END;
-$$;
----------------------------------------
--------- } MOCK start_step ------------
----------------------------------------
-
----------------------------------------
 -------- MOCK call_edgefn { -----------
 ---------------------------------------
 create table if not exists pgflow_tests.call_edgefn_calls (
     function_name text,
     body text
 );
-
-create or replace function pgflow_tests.call_edgefn(
-    function_name text,
-    body text
-)
-returns void
-language plpgsql
-set search_path to pgflow_tests
-as $$
-BEGIN
-    -- Log the call to the temporary table
-    INSERT INTO call_edgefn_calls (function_name, body)
-    VALUES (function_name, body);
-END;
-$$;
 
 create or replace function pgflow_tests.mock_call_edgefn()
 returns void
@@ -130,6 +47,9 @@ BEGIN
         function_name text, body text
     )
     returns void as $mock_body$
+        -- Log the call to the temporary table
+        INSERT INTO pgflow_tests.call_edgefn_calls (function_name, body)
+        VALUES (function_name, body);
     $mock_body$ language sql;
 END;
 $$;
