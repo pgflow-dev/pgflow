@@ -3,12 +3,12 @@ BEGIN;
 -- Plan the number of tests
 SELECT plan(4);
 
-SELECT pgflow_tests.load_flow('BasicFlow');
+SELECT pgflow_tests.load_flow('Basic');
 select pgflow_tests.mock_call_edgefn();
 
 -- Step 2: Start the flow
 SELECT * INTO TEMP TABLE test_run
-FROM pgflow.run_flow('BasicFlow', '"run_payload"'::jsonb);
+FROM pgflow.run_flow('Basic', '"run_payload"'::jsonb);
 
 SELECT isnt_empty('SELECT * FROM test_run', 'Run successfully created');
 

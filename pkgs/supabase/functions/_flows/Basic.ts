@@ -1,7 +1,7 @@
 import { Flow } from "../_pgflow/Flow.ts";
 import { simulateWorkThenError } from "../_pgflow/utils.ts";
 
-const BasicFlow = new Flow<string>()
+const Basic = new Flow<string>()
   .step("root", async ({ run }) => {
     await simulateWorkThenError();
     return `[${run}]r00t`;
@@ -19,6 +19,6 @@ const BasicFlow = new Flow<string>()
     return `<${left}> and <${right}> of (${run})`;
   });
 
-export default BasicFlow;
+export default Basic;
 
-export type StepsType = ReturnType<typeof BasicFlow.getSteps>;
+export type StepsType = ReturnType<typeof Basic.getSteps>;

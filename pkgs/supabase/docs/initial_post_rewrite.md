@@ -39,7 +39,7 @@ SELECT pgflow.run_flow('MyFlow', '{"param": "value"}'::jsonb);
 Workflows are defined using a type-safe DSL:
 
 ```typescript
-const BasicFlow = new Flow<string>()
+const Basic = new Flow<string>()
   .step("root", async ({ run }) => {
     return `Started: ${run}`;
   })

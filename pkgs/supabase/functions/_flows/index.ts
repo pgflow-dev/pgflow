@@ -1,23 +1,23 @@
-import AdvancedFlow from "./AdvancedFlow.ts";
-import BasicFlow from "./BasicFlow.ts";
-import HatchetFlow from "./HatchetFlow.ts";
-import InngestFlow from "./InngestFlow.ts";
-import MonstrousFlow from "./MonstrousFlow.ts";
+import Advanced from "./Advanced.ts";
+import Basic from "./Basic.ts";
+import Hatchet from "./Hatchet.ts";
+import Inngest from "./Inngest.ts";
+import Monstrous from "./Monstrous.ts";
 import NlpPipeline from "./NlpPipeline.ts";
 import ProcessVoiceMemo from "./ProcessVoiceMemo.ts";
 import Sequential from "./Sequential.ts";
-import WideFlow from "./WideFlow.ts";
-import FailingStepFlow from "./FailingStepFlow.ts";
+import Wide from "./Wide.ts";
+import FailingStep from "./FailingStep.ts";
 
 export default {
-  AdvancedFlow,
-  BasicFlow,
-  HatchetFlow,
-  InngestFlow,
-  MonstrousFlow,
+  Advanced,
+  Basic,
+  Hatchet,
+  Inngest,
+  Monstrous,
   NlpPipeline,
   ProcessVoiceMemo,
   Sequential,
-  WideFlow,
-  FailingStepFlow,
+  Wide,
+  FailingStep,
 };

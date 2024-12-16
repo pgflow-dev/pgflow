@@ -13,18 +13,18 @@ as $$
     delete from flows f where f.flow_slug = flow_slug;
 
     -- Step 1: Setup the flow
-    INSERT INTO flows (flow_slug) VALUES ('BasicFlow');
+    INSERT INTO flows (flow_slug) VALUES ('Basic');
     INSERT INTO steps (flow_slug, step_slug) VALUES
-    ('BasicFlow', 'root'),
-    ('BasicFlow', 'left'),
-    ('BasicFlow', 'right'),
-    ('BasicFlow', 'end');
+    ('Basic', 'root'),
+    ('Basic', 'left'),
+    ('Basic', 'right'),
+    ('Basic', 'end');
 
     INSERT INTO deps (flow_slug, from_step_slug, to_step_slug) VALUES
-    ('BasicFlow', 'root', 'left'),
-    ('BasicFlow', 'root', 'right'),
-    ('BasicFlow', 'left', 'end'),
-    ('BasicFlow', 'right', 'end');
+    ('Basic', 'root', 'left'),
+    ('Basic', 'root', 'right'),
+    ('Basic', 'left', 'end'),
+    ('Basic', 'right', 'end');
 $$;
 
 ---------------------------------------
