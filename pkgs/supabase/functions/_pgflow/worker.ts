@@ -1,5 +1,9 @@
 import { Json } from "./Flow.ts";
 import sql from "../_pgflow/sql.ts"; // sql.listen
+import type { Database } from "../../types.d.ts";
+import { type EdgeFnInput as MessagePayload } from "./handleInput.ts";
+
+type PgmqMessageRecord = Database["pgmq"]["CompositeTypes"]["message_record"];
 
 function logWorker(scope: string, msg: Json = null) {
   console.log(`[worker] ${scope}`, msg);
@@ -30,19 +34,22 @@ function createQueueGenerator(
 ) {
   const { sleep, interrupt } = createInterruptibleSleep();
 
-  async function* pollQueue(): AsyncGenerator<Json> {
+  async function* pollQueue(): AsyncGenerator<MessagePayload> {
     try {
       while (true) {
         logWorker("polling", new Date().toISOString());
 
-        const messages = await sql`
+        const messages: PgmqMessageRecord[] = (await sql`
           SELECT * FROM pgmq.read(${queueName}, ${batchSize}, ${visibilityTimeout});
-        `;
+        `) as PgmqMessageRecord[];
         logWorker("readMessages messages", messages);
 
         for (const message of messages) {
           logWorker("readMessages - message", message);
-          yield message.message;
+
+          // TODO: can we make it more type safe here?
+          const payload = message.message as MessagePayload;
+          yield payload;
         }
 
         // Use interruptible sleep
@@ -54,6 +61,27 @@ function createQueueGenerator(
   }
 
   return { pollQueue, interruptPolling: interrupt };
+}
+
+type FindStepTaskInput = {
+  run_id: string;
+  step_slug: string;
+};
+type StepTaskRecord =
+  Database["pgflow"]["Functions"]["find_step_task"]["Returns"];
+
+async function findStepTask({
+  run_id,
+  step_slug,
+}: FindStepTaskInput): Promise<StepTaskRecord> {
+  const results = await sql`
+    SELECT * FROM pgflow.find_step_task(${run_id}, ${step_slug});
+  `;
+  console.log("FIND_STEP_TASK", results);
+
+  const stepTask = results[0] as StepTaskRecord;
+
+  return stepTask;
 }
 
 export async function startWorker(
@@ -73,6 +101,8 @@ export async function startWorker(
 
   for await (const payload of pollQueue()) {
     logWorker("payload", payload);
+
+    const stepTask = await findStepTask(payload.meta);
 
     await handler(payload);
   }
