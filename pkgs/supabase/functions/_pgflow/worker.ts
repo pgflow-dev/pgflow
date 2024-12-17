@@ -1,6 +1,5 @@
-import sql from "./sql.ts";
 import { Json } from "./Flow.ts";
-import { listenOnChannel } from "./pubsub.ts";
+import sql from "../_pgflow/sql.ts"; // sql.listen
 
 // Interruptible sleep utility
 function createInterruptibleSleep() {
@@ -27,26 +26,20 @@ function createQueueGenerator(
 ) {
   const { sleep, interrupt } = createInterruptibleSleep();
 
-  const channel = `${queueName}_notifications`;
-  const listenReq = sql.listen(channel, (msg: string) => {
-    console.log("NOTIFY", msg);
-    interrupt();
-  });
-
-  async function* readMessages() {
+  async function* pollQueue(): AsyncGenerator<Json> {
     try {
       while (true) {
         console.log("iterated.....", new Date().toISOString());
 
-        // const results = await queryArray(
-        //   `SELECT pgmq.read('${queueName}', ${batchSize}, ${visibilityTimeout});`,
-        // );
-        // const { rows: messages } = results;
-        //
-        // for (const message of messages) {
-        //   console.log("readMessages - message", message);
-        //   yield message;
-        // }
+        const results = await sql`
+          SELECT pgmq.read('${queueName}', ${batchSize}, ${visibilityTimeout});
+        `;
+        console.log("readMessages results", results);
+
+        for (const message of results) {
+          console.log("readMessages - message", message);
+          yield message;
+        }
 
         // Use interruptible sleep
         await sleep(1000);
@@ -56,20 +49,30 @@ function createQueueGenerator(
     }
   }
 
-  return { readMessages };
+  return { pollQueue, interruptPolling: interrupt };
 }
 
 export async function startWorker(
-  slug: string,
-  handler: (payload: Json) => void,
+  channelName: string,
+  handler: (payload: Json) => Promise<void>,
 ) {
-  console.log(`${slug}: Started`);
+  const { pollQueue, interruptPolling } = createQueueGenerator("pgflow");
 
-  // const { queryObject } = await useConnectionPool();
-  const { readMessages } = createQueueGenerator("pgflow");
+  function logWorker(msg: Json) {
+    console.log(`worker(${channelName}): `, msg);
+  }
 
-  for await (const message of readMessages()) {
-    console.log(`${slug}:`, message);
+  // Start listening for notifications
+  sql.listen(channelName, (msg: string) => {
+    logWorker(msg);
+    interruptPolling(); // Interrupt the sleep when notification received
+  });
+
+  // Start polling
+  logWorker("Started Polling");
+
+  for await (const message of pollQueue()) {
+    logWorker(message);
     await handler(message);
   }
 }
