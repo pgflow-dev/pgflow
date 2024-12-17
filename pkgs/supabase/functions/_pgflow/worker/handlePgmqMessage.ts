@@ -1,5 +1,5 @@
 import { createServiceRoleClient } from "../../_shared/supabaseClient.ts";
-import executeTask from "../executeTask.ts";
+import executeTask from "./executeTask.ts";
 import { MessagePayload } from "./createQueueGenerator.ts";
 import { findStepTask } from "./findStepTask.ts";
 

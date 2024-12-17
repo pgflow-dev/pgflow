@@ -2,7 +2,7 @@ import type { Database } from "../../../types.d.ts";
 import sql from "../../_pgflow/sql.ts";
 import { type MessagePayload } from "./createQueueGenerator.ts";
 
-type StepTaskRecord =
+export type StepTaskRecord =
   Database["pgflow"]["Functions"]["find_step_task"]["Returns"];
 
 export async function findStepTask({
