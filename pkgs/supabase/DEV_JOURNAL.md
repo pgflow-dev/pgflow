@@ -59,4 +59,54 @@ The main trouble is that running a flow with lot of root steps is slow becuase e
 
 #### Simple work plan
 
-- [ ] Make MVP for the worker that uses executeTask in the simplest way possible
+- [x] Make MVP for the worker that uses executeTask in the simplest way possible
+
+#### Success and findings
+
+I decided to put only minimum amount to identify step_task on the pgmq queue
+(run_id and step_slug for now).
+
+The idea to use async generator with interruptible sleep as a poll+wakeup mechanism
+was very neat in theory but very error prone and hard to debug because of the
+interruptible sleep race conditions.
+
+I decided to simpolify it and now i use both setInterval for polling
+and just LISTEN callback to put work on eventloop directly.
+
+This seems to be working extremely well.
+
+### [x] Brainstorm ideas for step_type and worker_backend modularity
+
+So, from my chats with o1 it is apparent that my current design is very modular
+and it would be easy to implement the step types and custom worker backends.
+
+In a nutshell, we have 3 layers:
+
+- orchestration (start_step, complete_step, fail_step)
+- worker backend (enqueue_step_task, start_step_task, complete_step_task, fail_step_task)
+- step types (handle_step_task_completion, handle_step_task_failure, handle_step_task_start etc).
+
+#### Orchestration layer
+
+Orchestration layer is one that is concerned about steps and putting work on the queue.
+It is not concerned with how the work will be performed or how many distinct tasks
+are required to complete the step.
+
+#### Worker Backend layer
+
+Worker backend layer is concerned with how the work will be performed.
+It exposes a small set of db functions that are called by orchestration layer.
+They are responsible for managing step_tasks, retries and their mapping to
+the underlying message queue messages.
+
+#### Step Type layer
+
+Step Type layer is concerned with what work and when should be performed.
+It is responsible for creating new step_tasks and exposes few helper functions
+that will be called by orchestration or worker backend layers:
+
+- handle_step_task_start, handle_step_task_failure, handle_step_task_completion
+
+I imagine on each step it can request to process more work and orchestration
+layer would just get the work definition returned by the step type layer
+and will use worker backend layer to enqueue the work appropriately.
