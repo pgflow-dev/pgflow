@@ -1,8 +1,11 @@
 import { Json } from "./Flow.ts";
 import sql from "../_pgflow/sql.ts"; // sql.listen
 import type { Database } from "../../types.d.ts";
-import { type EdgeFnInput as MessagePayload } from "./handleInput.ts";
 
+type MessagePayload = {
+  run_id: string;
+  step_slug: string;
+};
 type PgmqMessageRecord = Database["pgmq"]["CompositeTypes"]["message_record"];
 
 function logWorker(scope: string, msg: Json = null) {
@@ -63,17 +66,13 @@ function createQueueGenerator(
   return { pollQueue, interruptPolling: interrupt };
 }
 
-type FindStepTaskInput = {
-  run_id: string;
-  step_slug: string;
-};
 type StepTaskRecord =
   Database["pgflow"]["Functions"]["find_step_task"]["Returns"];
 
 async function findStepTask({
   run_id,
   step_slug,
-}: FindStepTaskInput): Promise<StepTaskRecord> {
+}: MessagePayload): Promise<StepTaskRecord> {
   const results = await sql`
     SELECT * FROM pgflow.find_step_task(${run_id}, ${step_slug});
   `;
@@ -99,11 +98,9 @@ export async function startWorker(
   // Start polling
   logWorker("Started Polling");
 
-  for await (const payload of pollQueue()) {
-    logWorker("payload", payload);
+  for await (const message of pollQueue()) {
+    const stepTask = await findStepTask(message);
 
-    const stepTask = await findStepTask(payload.meta);
-
-    await handler(payload);
+    await handler(stepTask.payload);
   }
 }

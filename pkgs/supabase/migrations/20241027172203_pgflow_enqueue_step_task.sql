@@ -39,7 +39,11 @@ BEGIN
         attempt_count = st.attempt_count + 1,
         next_attempt_at = now();
 
-    PERFORM pgmq.send('pgflow', p_payload);
+    PERFORM pgmq.send('pgflow', jsonb_build_object(
+        'run_id', v_run.run_id,
+        'step_slug', v_step_state.step_slug
+        -- TODO: implement some kind of task_key to allow for multiple tasks per step
+    ));
     PERFORM pg_notify('pgflow', '');
 
     -- TODO: replace with pgmq call or extract some abstraction for other task queues

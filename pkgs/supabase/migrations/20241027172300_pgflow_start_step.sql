@@ -67,15 +67,7 @@ BEGIN
         FROM runs AS r
         WHERE r.run_id = p_run_id
     )
-    SELECT jsonb_build_object(
-        'payload', COALESCE(deps, '{}'::jsonb) || jsonb_build_object('run', run.payload),
-        'meta', jsonb_build_object(
-            'flow_slug', run.flow_slug,
-            'step_slug', p_step_slug,
-            'run_id', run.run_id,
-            'run_status', run.status
-        )
-    )
+    SELECT COALESCE(deps, '{}'::jsonb) || jsonb_build_object('run', run.payload)
     INTO job_payload
     FROM deps_payload, run;
 
