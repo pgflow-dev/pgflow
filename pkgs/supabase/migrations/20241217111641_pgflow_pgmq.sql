@@ -34,5 +34,3 @@ begin
 
 end;
 $$;
-
-PERFORM pgflow_pgmq.start_edgefn_worker();

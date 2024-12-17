@@ -75,3 +75,18 @@ BEGIN
     );
 END;
 $$;
+
+CREATE OR REPLACE FUNCTION pgflow_locks.process_step_task_in_serial(
+    run_id uuid,
+    step_slug text
+)
+RETURNS void
+LANGUAGE plpgsql
+VOLATILE
+AS $$
+BEGIN
+    PERFORM pg_advisory_xact_lock(
+        pgflow_locks.hash64('process_step_task_in_serial' || run_id::text || step_slug::text)
+    );
+END;
+$$;

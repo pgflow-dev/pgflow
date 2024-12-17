@@ -12,6 +12,8 @@ DECLARE
     p_step_slug text := step_slug;
     v_task step_tasks%ROWTYPE;
 BEGIN
+    PERFORM pgflow_locks.process_step_task_in_serial(p_run_id, p_step_slug);
+
     v_task := find_step_task(p_run_id, p_step_slug);
 
     -- We allot to retry queued tasks because of unreliability of the

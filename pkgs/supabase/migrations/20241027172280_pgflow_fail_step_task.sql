@@ -14,6 +14,8 @@ DECLARE
     p_error JSONB := error;
     v_task step_tasks%ROWTYPE;
 BEGIN
+    PERFORM pgflow_locks.process_step_task_in_serial(p_run_id, p_step_slug);
+
     v_task := find_step_task(p_run_id, p_step_slug);
     PERFORM verify_status(v_task, 'started');
 

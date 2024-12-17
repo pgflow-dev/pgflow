@@ -19,7 +19,7 @@ DECLARE
     v_step_state step_states%ROWTYPE;
     v_step_task step_tasks%ROWTYPE;
 BEGIN
-    PERFORM pgflow_locks.wait_for_start_step_to_commit(p_run_id, p_step_slug);
+    PERFORM pgflow_locks.process_step_task_in_serial(p_run_id, p_step_slug);
 
     v_run := find_run(p_run_id);
 

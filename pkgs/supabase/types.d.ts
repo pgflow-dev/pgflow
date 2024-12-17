@@ -1630,6 +1630,13 @@ export type Database = {
         }
         Returns: number
       }
+      process_step_task_in_serial: {
+        Args: {
+          run_id: string
+          step_slug: string
+        }
+        Returns: undefined
+      }
       wait_for_start_step_to_commit: {
         Args: {
           run_id: string

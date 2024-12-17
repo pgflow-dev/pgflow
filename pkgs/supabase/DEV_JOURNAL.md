@@ -155,3 +155,6 @@ runtime has escaped from the event loop unexpectedly: event loop error: Postgres
 I have no clue yet whas is causing this issue, but it is definitely caused
 by the wall clock/cpu clock limit and edge function dying unexpectedly.
 
+#### [ ] Try to stop LISTEN and polling when onbeforeunload is called
+
+> if the onbeforeunload event is triggered in a Supabase Edge Function worker, any new request to the same Edge Function endpoint will result in a new instance of the Edge Function worker being spawned
