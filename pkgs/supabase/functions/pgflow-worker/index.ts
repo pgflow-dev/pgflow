@@ -2,12 +2,8 @@
 import { Json } from "../_pgflow/Flow.ts";
 import { startWorker } from "../_pgflow/worker.ts";
 
-async function handlePayload(payload: Json) {
-  console.log("HANDLER HANDLING PAYLOAD", payload);
-}
-
 // @ts-ignore - TODO: fix the types
-EdgeRuntime.waitUntil(startWorker("pgflow", handlePayload));
+EdgeRuntime.waitUntil(startWorker("pgflow"));
 
 Deno.serve((_req) => {
   return new Response("ok", {

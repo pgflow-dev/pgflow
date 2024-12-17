@@ -69,7 +69,7 @@ function createQueueGenerator(
 type StepTaskRecord =
   Database["pgflow"]["Functions"]["find_step_task"]["Returns"];
 
-async function findStepTask({
+export async function findStepTask({
   run_id,
   step_slug,
 }: MessagePayload): Promise<StepTaskRecord> {
@@ -83,9 +83,20 @@ async function findStepTask({
   return stepTask;
 }
 
+import executeTask from "./executeTask.ts";
+async function handleMessage(message: MessagePayload) {
+  console.log("handleMessage()", message);
+
+  const stepTask = await findStepTask(message);
+
+  await executeTask(stepTask);
+
+  // await handler(stepTask.payload);
+}
+
 export async function startWorker(
   channelName: string,
-  handler: (payload: Json) => Promise<void>,
+  handler: (payload: MessagePayload) => Promise<void>,
 ) {
   const { pollQueue, interruptPolling } = createQueueGenerator("pgflow");
 
@@ -99,8 +110,6 @@ export async function startWorker(
   logWorker("Started Polling");
 
   for await (const message of pollQueue()) {
-    const stepTask = await findStepTask(message);
-
-    await handler(stepTask.payload);
+    await handler(message);
   }
 }
