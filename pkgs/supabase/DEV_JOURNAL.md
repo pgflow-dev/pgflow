@@ -110,3 +110,48 @@ that will be called by orchestration or worker backend layers:
 I imagine on each step it can request to process more work and orchestration
 layer would just get the work definition returned by the step type layer
 and will use worker backend layer to enqueue the work appropriately.
+
+### [ ] Resolve problems with enqueueing started or completed tasks
+
+There is some kind of race condition that can happen when worker dies because
+of wall clock or CPU clock limits.
+
+```
+[Info] readMessages Result(1) [
+  {
+    msg_id: "765",
+    read_ct: 1,
+    enqueued_at: 2024-12-17T19:06:28.820Z,
+    vt: 2024-12-17T19:06:59.463Z,
+    message: {
+      run_id: "4ca35f9e-b180-4a26-8230-58c4bd4be2bc",
+      step_slug: "extract_frames"
+    }
+  }
+]
+
+[Info] processMessage() {
+  run_id: "4ca35f9e-b180-4a26-8230-58c4bd4be2bc",
+  step_slug: "extract_frames"
+}
+
+[Info] ON UNLOAD
+
+runtime has escaped from the event loop unexpectedly: event loop error: PostgresError: Expected step_tasks status to be one of {queued} but got 'completed'
+    at ErrorResponse (https://deno.land/x/postgresjs@v3.4.5/src/connection.js:791:26)
+    at handle (https://deno.land/x/postgresjs@v3.4.5/src/connection.js:477:6)
+    at data (https://deno.land/x/postgresjs@v3.4.5/src/connection.js:318:9)
+    at https://deno.land/x/postgresjs@v3.4.5/polyfills.js:138:30
+    at Array.forEach (<anonymous>)
+    at call (https://deno.land/x/postgresjs@v3.4.5/polyfills.js:138:16)
+    at success (https://deno.land/x/postgresjs@v3.4.5/polyfills.js:98:9)
+    at eventLoopTick (ext:core/01_core.js:168:7)
+    at cachedError (https://deno.land/x/postgresjs@v3.4.5/src/query.js:170:23)
+    at new Query (https://deno.land/x/postgresjs@v3.4.5/src/query.js:36:24)
+    at sql (https://deno.land/x/postgresjs@v3.4.5/src/index.js:113:11)
+    at startStepTask (file:///home/jumski/Code/jumski/feedwise/pkgs/supabase/functions/_pgflow/worker/startStepTask.ts:4:28)
+```
+
+I have no clue yet whas is causing this issue, but it is definitely caused
+by the wall clock/cpu clock limit and edge function dying unexpectedly.
+
