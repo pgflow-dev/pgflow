@@ -1,25 +1,20 @@
 import { type Json } from "../../_pgflow/index.ts";
-import {
-  handleInput,
-  startStepTask,
-  completeStepTask,
-  failStepTask,
-} from "../../_pgflow/index.ts";
-import { createServiceRoleClient } from "../../_shared/supabaseClient.ts";
+import { handleInput } from "../../_pgflow/index.ts";
+import startStepTask from "./startStepTask.ts";
+import completeStepTask from "./completeStepTask.ts";
+import failStepTask from "./failStepTask.ts";
 import { type StepTaskRecord } from "./findStepTask.ts";
-
-const supabase = createServiceRoleClient();
+import { EdgeFnInput } from "../handleInput.ts";
 
 export default async function executeTask(stepTask: StepTaskRecord) {
-  const meta = {
+  const meta: EdgeFnInput["meta"] = {
     run_id: stepTask.run_id,
     flow_slug: stepTask.flow_slug,
     step_slug: stepTask.step_slug,
-  };
+  } as EdgeFnInput["meta"];
   const payload = stepTask.payload;
-  const input = { meta, payload };
 
-  await startStepTask(input, supabase);
+  await startStepTask(stepTask);
 
   let result: Json;
 
@@ -30,9 +25,9 @@ export default async function executeTask(stepTask: StepTaskRecord) {
     // TODO: handle potential error from failStepTask call
     const errorToReport =
       error instanceof Error ? error : new Error(String(error));
-    return await failStepTask(input, errorToReport, supabase);
+    return await failStepTask(stepTask, errorToReport);
   }
 
   // TODO: handle potential error from completeStepTask call
-  return await completeStepTask(input, result, supabase);
+  return await completeStepTask(stepTask, result);
 }
