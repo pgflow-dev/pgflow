@@ -1,6 +1,7 @@
 import createQueueGenerator from "./createQueueGenerator.ts";
 import sql from "../../_pgflow/sql.ts";
-import handlePgmqMessage from "./handlePgmqMessage.ts";
+import executeTask from "./executeTask.ts";
+import { findStepTask } from "./findStepTask.ts";
 
 export default async function startWorker(channelName: string) {
   const { pollQueue, interruptPolling } = createQueueGenerator("pgflow");
@@ -10,6 +11,7 @@ export default async function startWorker(channelName: string) {
   console.log("Started Polling");
 
   for await (const message of pollQueue()) {
-    await handlePgmqMessage(message);
+    const stepTask = await findStepTask(message);
+    await executeTask(stepTask);
   }
 }

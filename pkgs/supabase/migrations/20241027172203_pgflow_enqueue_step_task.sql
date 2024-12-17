@@ -17,6 +17,7 @@ DECLARE
     http_response text;
     v_run runs%ROWTYPE;
     v_step_state step_states%ROWTYPE;
+    v_step_task step_tasks%ROWTYPE;
 BEGIN
     PERFORM pgflow_locks.wait_for_start_step_to_commit(p_run_id, p_step_slug);
 
@@ -37,13 +38,26 @@ BEGIN
     SET
         status = 'queued',
         attempt_count = st.attempt_count + 1,
-        next_attempt_at = now();
+        next_attempt_at = now()
+    RETURNING * INTO v_step_task;
 
-    PERFORM pgmq.send('pgflow', jsonb_build_object(
-        'run_id', v_run.run_id,
-        'step_slug', v_step_state.step_slug
-        -- TODO: implement some kind of task_key to allow for multiple tasks per step
-    ));
+    IF v_step_task.message_id IS NOT NULL THEN
+        PERFORM pgmq.archive('pgflow', v_step_task.message_id);
+    END IF;
+
+    WITH new_message AS (
+        select send as msg_id FROM pgmq.send('pgflow', jsonb_build_object(
+            'run_id', v_run.run_id,
+            'step_slug', v_step_state.step_slug
+            -- TODO: implement some kind of task_key to allow for multiple tasks per step
+        ))
+    )
+    UPDATE step_tasks AS st
+    SET message_id = new_message.msg_id
+    FROM new_message
+    WHERE st.run_id = v_run.run_id
+    AND st.step_slug = v_step_state.step_slug;
+
     PERFORM pg_notify('pgflow', '');
 
     -- TODO: replace with pgmq call or extract some abstraction for other task queues

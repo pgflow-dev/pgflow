@@ -22,6 +22,7 @@ BEGIN
     WHERE se.run_id = p_run_id
     AND se.step_slug = p_step_slug;
 
+    PERFORM pgmq.archive('pgflow', v_task.message_id);
     PERFORM complete_step(p_run_id, p_step_slug, p_result);
 END;
 $$;

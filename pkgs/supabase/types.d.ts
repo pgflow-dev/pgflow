@@ -1250,27 +1250,6 @@ export type Database = {
           },
         ]
       }
-      step_state_requests: {
-        Row: {
-          flow_slug: string | null
-          request_id: number
-          run_id: string | null
-          step_slug: string | null
-        }
-        Insert: {
-          flow_slug?: string | null
-          request_id: number
-          run_id?: string | null
-          step_slug?: string | null
-        }
-        Update: {
-          flow_slug?: string | null
-          request_id?: number
-          run_id?: string | null
-          step_slug?: string | null
-        }
-        Relationships: []
-      }
       step_states: {
         Row: {
           completed_at: string | null
@@ -1332,6 +1311,7 @@ export type Database = {
           flow_slug: string
           last_attempt_at: string | null
           max_attempts: number
+          message_id: number | null
           next_attempt_at: string | null
           payload: Json
           result: Json | null
@@ -1344,6 +1324,7 @@ export type Database = {
           flow_slug: string
           last_attempt_at?: string | null
           max_attempts?: number
+          message_id?: number | null
           next_attempt_at?: string | null
           payload: Json
           result?: Json | null
@@ -1356,6 +1337,7 @@ export type Database = {
           flow_slug?: string
           last_attempt_at?: string | null
           max_attempts?: number
+          message_id?: number | null
           next_attempt_at?: string | null
           payload?: Json
           result?: Json | null
@@ -1453,24 +1435,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      enqueue_job_edge_fn: {
-        Args: {
-          flow_slug: string
-          run_id: string
-          step_slug: string
-          payload: Json
-        }
-        Returns: undefined
-      }
-      enqueue_job_pgqueuer: {
-        Args: {
-          flow_slug: string
-          run_id: string
-          step_slug: string
-          payload: Json
-        }
-        Returns: undefined
-      }
       enqueue_step_task: {
         Args: {
           flow_slug: string
@@ -1539,6 +1503,7 @@ export type Database = {
           flow_slug: string
           last_attempt_at: string | null
           max_attempts: number
+          message_id: number | null
           next_attempt_at: string | null
           payload: Json
           result: Json | null
@@ -1680,36 +1645,26 @@ export type Database = {
       [_ in never]: never
     }
   }
+  pgflow_pgmq: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   pgmq: {
     Tables: {
       a_pgflow: {
-        Row: {
-          archived_at: string
-          enqueued_at: string
-          message: Json | null
-          msg_id: number
-          read_ct: number
-          vt: string
-        }
-        Insert: {
-          archived_at?: string
-          enqueued_at?: string
-          message?: Json | null
-          msg_id: number
-          read_ct?: number
-          vt: string
-        }
-        Update: {
-          archived_at?: string
-          enqueued_at?: string
-          message?: Json | null
-          msg_id?: number
-          read_ct?: number
-          vt?: string
-        }
-        Relationships: []
-      }
-      a_yolo233: {
         Row: {
           archived_at: string
           enqueued_at: string
@@ -1758,30 +1713,6 @@ export type Database = {
         Relationships: []
       }
       q_pgflow: {
-        Row: {
-          enqueued_at: string
-          message: Json | null
-          msg_id: number
-          read_ct: number
-          vt: string
-        }
-        Insert: {
-          enqueued_at?: string
-          message?: Json | null
-          msg_id?: never
-          read_ct?: number
-          vt: string
-        }
-        Update: {
-          enqueued_at?: string
-          message?: Json | null
-          msg_id?: never
-          read_ct?: number
-          vt?: string
-        }
-        Relationships: []
-      }
-      q_yolo233: {
         Row: {
           enqueued_at: string
           message: Json | null

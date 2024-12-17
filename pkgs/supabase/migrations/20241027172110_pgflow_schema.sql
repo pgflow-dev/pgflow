@@ -121,6 +121,7 @@ CREATE TABLE pgflow.step_tasks (
     max_attempts int NOT NULL DEFAULT 3,
     last_attempt_at timestamptz,
     next_attempt_at timestamptz,
+    message_id bigint,
     CONSTRAINT step_tasks_pkey PRIMARY KEY (run_id, step_slug),
     FOREIGN KEY (run_id, step_slug)
     REFERENCES pgflow.step_states (run_id, step_slug),
