@@ -1653,7 +1653,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      start_edgefn_worker: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      stop_edgefn_worker: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
