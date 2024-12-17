@@ -56,3 +56,7 @@ The main trouble is that running a flow with lot of root steps is slow becuase e
 - need a pgflow_pgmq.read_queued_step_tasks(batchSize) function that will read n-messages from the queue
 - this function needs to find the related step tasks and it should return them, not the job itself
 - async iterator's job is to read batch of messages and executeTask() each of them in eventloop
+
+#### Simple work plan
+
+- [ ] Make MVP for the worker that uses executeTask in the simplest way possible

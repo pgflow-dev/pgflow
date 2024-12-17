@@ -39,9 +39,10 @@ BEGIN
         attempt_count = st.attempt_count + 1,
         next_attempt_at = now();
 
-    -- PERFORM pg_notify('pgflow_notifications', p_payload::text);
+    PERFORM pgmq.send('pgflow', p_payload);
+    PERFORM pg_notify('pgflow', '');
 
     -- TODO: replace with pgmq call or extract some abstraction for other task queues
-    PERFORM call_edgefn('pgflow-3', p_payload::text);
+    -- PERFORM call_edgefn('pgflow-3', p_payload::text);
 END;
 $$;

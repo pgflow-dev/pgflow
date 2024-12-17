@@ -1,6 +1,10 @@
 import { Json } from "./Flow.ts";
 import sql from "../_pgflow/sql.ts"; // sql.listen
 
+function logWorker(scope: string, msg: Json = null) {
+  console.log(`[worker] ${scope}`, msg);
+}
+
 // Interruptible sleep utility
 function createInterruptibleSleep() {
   let resolver: (() => void) | undefined;
@@ -29,16 +33,16 @@ function createQueueGenerator(
   async function* pollQueue(): AsyncGenerator<Json> {
     try {
       while (true) {
-        console.log("iterated.....", new Date().toISOString());
+        logWorker("polling", new Date().toISOString());
 
         const results = await sql`
-          SELECT pgmq.read('${queueName}', ${batchSize}, ${visibilityTimeout});
+          SELECT message FROM pgmq.read(${queueName}, ${batchSize}, ${visibilityTimeout});
         `;
-        console.log("readMessages results", results);
+        logWorker("readMessages results", results);
 
         for (const message of results) {
-          console.log("readMessages - message", message);
-          yield message;
+          logWorker("readMessages - message", message);
+          yield JSON.parse(message.read);
         }
 
         // Use interruptible sleep
@@ -58,21 +62,18 @@ export async function startWorker(
 ) {
   const { pollQueue, interruptPolling } = createQueueGenerator("pgflow");
 
-  function logWorker(msg: Json) {
-    console.log(`worker(${channelName}): `, msg);
-  }
-
   // Start listening for notifications
   sql.listen(channelName, (msg: string) => {
-    logWorker(msg);
+    logWorker("NOTIFY", msg);
     interruptPolling(); // Interrupt the sleep when notification received
   });
 
   // Start polling
   logWorker("Started Polling");
 
-  for await (const message of pollQueue()) {
-    logWorker(message);
-    await handler(message);
+  for await (const payload of pollQueue()) {
+    logWorker("payload", payload);
+
+    await handler(payload);
   }
 }
