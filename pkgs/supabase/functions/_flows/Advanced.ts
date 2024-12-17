@@ -1,0 +1,92 @@
+import { Flow } from "../_pgflow/Flow.ts";
+import { simulateWorkThenError } from "../_pgflow/utils.ts";
+
+const AdvancedFlow = new Flow<string>()
+  .step("start", async ({ run }) => {
+    await simulateWorkThenError();
+    return `[${run}]start`;
+  })
+  .step("load_doc", ["start"], async ({ start }) => {
+    await simulateWorkThenError();
+    return `${start}/load_doc`;
+  })
+  .step("check_format", ["load_doc"], async ({ load_doc }) => {
+    await simulateWorkThenError();
+    return `${load_doc}/check_format`;
+  })
+  .step("convert_to_text", ["check_format"], async ({ check_format }) => {
+    await simulateWorkThenError();
+    return `${check_format}/convert_to_text`;
+  })
+  .step("extract_text", ["convert_to_text"], async ({ convert_to_text }) => {
+    await simulateWorkThenError();
+    return `${convert_to_text}/extract_text`;
+  })
+  .step(
+    "extract_metadata",
+    ["convert_to_text"],
+    async ({ convert_to_text }) => {
+      await simulateWorkThenError();
+      return `${convert_to_text}/extract_metadata`;
+    },
+  )
+  .step("detect_language", ["extract_text"], async ({ extract_text }) => {
+    await simulateWorkThenError();
+    return `${extract_text}/detect_language`;
+  })
+  .step("translate_text", ["detect_language"], async ({ detect_language }) => {
+    await simulateWorkThenError();
+    return `${detect_language}/translate_text`;
+  })
+  .step("perform_ner", ["translate_text"], async ({ translate_text }) => {
+    await simulateWorkThenError();
+    return `${translate_text}/perform_ner`;
+  })
+  .step(
+    "sentiment_analysis",
+    ["translate_text"],
+    async ({ translate_text }) => {
+      await simulateWorkThenError();
+      return `${translate_text}/sentiment_analysis`;
+    },
+  )
+  .step(
+    "generate_summary",
+    ["perform_ner", "sentiment_analysis"],
+    async ({ perform_ner, sentiment_analysis }) => {
+      await simulateWorkThenError();
+      return `<${perform_ner}> and <${sentiment_analysis}>/generate_summary`;
+    },
+  )
+  .step(
+    "generate_keywords",
+    ["generate_summary", "extract_metadata"],
+    async ({ generate_summary, extract_metadata }) => {
+      await simulateWorkThenError();
+      return `<${generate_summary}> and <${extract_metadata}>/generate_keywords`;
+    },
+  )
+  .step("embed_text", ["generate_keywords"], async ({ generate_keywords }) => {
+    await simulateWorkThenError();
+    return `${generate_keywords}/embed_text`;
+  })
+  .step("index_vector_store", ["embed_text"], async ({ embed_text }) => {
+    await simulateWorkThenError();
+    return `${embed_text}/index_vector_store`;
+  })
+  .step(
+    "update_search_index",
+    ["index_vector_store"],
+    async ({ index_vector_store }) => {
+      await simulateWorkThenError();
+      return `${index_vector_store}/update_search_index`;
+    },
+  )
+  .step("finish", ["update_search_index"], async ({ update_search_index }) => {
+    await simulateWorkThenError();
+    return `${update_search_index}/finish`;
+  });
+
+export default AdvancedFlow;
+
+export type StepsType = ReturnType<typeof AdvancedFlow.getSteps>;

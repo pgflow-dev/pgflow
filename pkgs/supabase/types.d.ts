@@ -1330,7 +1330,7 @@ export type Database = {
         Row: {
           attempt_count: number
           flow_slug: string
-          last_attempt_at: string
+          last_attempt_at: string | null
           max_attempts: number
           next_attempt_at: string | null
           payload: Json
@@ -1342,7 +1342,7 @@ export type Database = {
         Insert: {
           attempt_count?: number
           flow_slug: string
-          last_attempt_at?: string
+          last_attempt_at?: string | null
           max_attempts?: number
           next_attempt_at?: string | null
           payload: Json
@@ -1354,7 +1354,7 @@ export type Database = {
         Update: {
           attempt_count?: number
           flow_slug?: string
-          last_attempt_at?: string
+          last_attempt_at?: string | null
           max_attempts?: number
           next_attempt_at?: string | null
           payload?: Json
@@ -1415,6 +1415,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      call_edgefn: {
+        Args: {
+          function_name: string
+          body: string
+        }
+        Returns: undefined
+      }
       complete_step: {
         Args: {
           p_run_id: string
@@ -1530,7 +1537,7 @@ export type Database = {
         Returns: {
           attempt_count: number
           flow_slug: string
-          last_attempt_at: string
+          last_attempt_at: string | null
           max_attempts: number
           next_attempt_at: string | null
           payload: Json
@@ -1539,6 +1546,15 @@ export type Database = {
           status: string
           step_slug: string
         }
+      }
+      get_ready_dependents: {
+        Args: {
+          p_run_id: string
+          p_step_slug: string
+        }
+        Returns: {
+          dependent_slug: string
+        }[]
       }
       get_root_steps: {
         Args: {
@@ -1549,18 +1565,15 @@ export type Database = {
           step_slug: string
         }[]
       }
-      has_unmet_deps: {
+      is_valid_slug: {
         Args: {
-          p_run_id: string
-          p_step_slug: string
+          slug: string
         }
         Returns: boolean
       }
-      is_root_step: {
-        Args: {
-          p_step_slug: string
-        }
-        Returns: boolean
+      retry_stale_step_tasks: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       retry_step_task: {
         Args: {
@@ -1581,6 +1594,10 @@ export type Database = {
           payload: Json
         }[]
       }
+      start_monitoring: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       start_step: {
         Args: {
           p_run_id: string
@@ -1588,6 +1605,7 @@ export type Database = {
         }
         Returns: {
           flow_slug: string
+          step_slug: string
           run_id: string
           status: string
           step_result: Json
@@ -1600,6 +1618,25 @@ export type Database = {
         }
         Returns: undefined
       }
+      stop_monitoring: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      verify_status:
+        | {
+            Args: {
+              record: Record<string, unknown>
+              allowed_status: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              record: Record<string, unknown>
+              allowed_statuses: string[]
+            }
+            Returns: undefined
+          }
     }
     Enums: {
       [_ in never]: never

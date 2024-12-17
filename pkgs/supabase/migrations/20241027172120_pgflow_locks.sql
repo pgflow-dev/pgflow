@@ -22,12 +22,18 @@ ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA pgflow_locks
 GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
 
 -- universal, concistency-safe hash function
-CREATE OR REPLACE FUNCTION pgflow_locks.hash64(input text) RETURNS bigint AS $$
+CREATE OR REPLACE FUNCTION pgflow_locks.hash64(
+    input text
+)
+RETURNS bigint
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
 DECLARE hash BIGINT;
 BEGIN
     RETURN ('x' || LEFT(md5(input::text), 16))::bit(64)::bigint;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -------------------------------
 -- required to make sure we check if dependant steps are ready in serial,
@@ -36,13 +42,16 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION pgflow_locks.complete_steps_in_serial(
     run_id uuid
 )
-RETURNS void AS $$
+RETURNS void
+LANGUAGE plpgsql
+VOLATILE
+AS $$
 BEGIN
     PERFORM pg_advisory_xact_lock(
         pgflow_locks.hash64('complete_steps_in_serial' || run_id::text)
     );
 END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$;
 
 -------------------------------
 -- required so the start_step_exeuction() call in edge function
@@ -56,10 +65,13 @@ CREATE OR REPLACE FUNCTION pgflow_locks.wait_for_start_step_to_commit(
     run_id uuid,
     step_slug text
 )
-RETURNS void AS $$
+RETURNS void
+LANGUAGE plpgsql
+VOLATILE
+AS $$
 BEGIN
     PERFORM pg_advisory_xact_lock(
         pgflow_locks.hash64('wait_for_start_step_to_commit' || run_id::text || step_slug::text)
     );
 END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$;

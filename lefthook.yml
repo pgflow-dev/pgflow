@@ -78,7 +78,13 @@ pre-commit:
       root: "pkgs/supabase/functions/"
       glob: "*.ts"
       run: |
-        turbo run check --scope=supabase {staged_files}
+        turbo run check --scope=backend
+
+    supabase/test:
+      root: "pkgs/supabase/"
+      glob: "**/*.sql"
+      run: |
+        turbo run test --scope=backend
 
     supabase/gen-types:
       root: "pkgs/supabase/"

@@ -20,6 +20,7 @@ export default async function executeTask(
   try {
     result = await handleInput(meta, payload);
   } catch (error: unknown) {
+    console.log("ERROR:", error);
     // TODO: handle potential error from failStepTask call
     const errorToReport =
       error instanceof Error ? error : new Error(String(error));

@@ -1,5 +1,3 @@
-SET search_path TO pgflow;
-
 -- TODO: make decision which task queue to use based on the steps
 --       definition, so it is possible to have jobs in python and typescript
 CREATE OR REPLACE FUNCTION pgflow.enqueue_job(
@@ -8,8 +6,12 @@ CREATE OR REPLACE FUNCTION pgflow.enqueue_job(
     step_slug TEXT,
     payload JSONB
 )
-RETURNS VOID AS $$
+RETURNS VOID
+LANGUAGE plpgsql
+VOLATILE
+SET search_path TO pgflow
+AS $$
 BEGIN
-    PERFORM pgflow.enqueue_step_task(flow_slug, run_id, step_slug, payload);
+    PERFORM enqueue_step_task(flow_slug, run_id, step_slug, payload);
 END;
-$$ LANGUAGE plpgsql;
+$$;

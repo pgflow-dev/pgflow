@@ -4,54 +4,42 @@ create or replace function pgflow.enqueue_step_task(
     step_slug text,
     payload jsonb
 )
-returns void as $$
+returns void
+language plpgsql
+volatile
+security definer
+set search_path to pgflow
+as $$
 DECLARE
     p_payload jsonb := payload;
     p_run_id uuid := run_id;
     p_step_slug text := step_slug;
     http_response text;
-    v_run pgflow.runs%ROWTYPE;
+    v_run runs%ROWTYPE;
+    v_step_state step_states%ROWTYPE;
 BEGIN
     PERFORM pgflow_locks.wait_for_start_step_to_commit(p_run_id, p_step_slug);
 
-    v_run := pgflow.find_run(p_run_id);
+    v_run := find_run(p_run_id);
+
+    -- make sure the step is started by searching for its state
+    v_step_state := find_step_state(p_run_id, p_step_slug);
+
+    -- verify step is in pending status
+    IF v_step_state.status != 'pending' THEN
+        RAISE EXCEPTION 'Cannot enqueue task for step in % status', v_step_state.status;
+    END IF;
 
     -- create step_task or increment attempt_count on existing record
-    INSERT INTO pgflow.step_tasks AS st (flow_slug, run_id, step_slug, payload)
-    VALUES (v_run.flow_slug, p_run_id, p_step_slug, p_payload)
+    INSERT INTO step_tasks AS st (flow_slug, run_id, step_slug, next_attempt_at, payload)
+    VALUES (v_run.flow_slug, p_run_id, p_step_slug, now(), p_payload)
     ON CONFLICT ON CONSTRAINT step_tasks_pkey DO UPDATE
     SET
         status = 'queued',
         attempt_count = st.attempt_count + 1,
         next_attempt_at = now();
 
-    WITH secret as (
-        select decrypted_secret AS supabase_anon_key
-        from vault.decrypted_secrets
-        where name = 'supabase_anon_key'
-    ),
-    settings AS (
-        select decrypted_secret AS app_url
-        from vault.decrypted_secrets
-        where name = 'app_url'
-    )
-    select content into http_response
-    from extensions.http((
-        'POST',
-        (select app_url from settings) || '/functions/v1/pgflow-pgmq',
-        ARRAY[
-            http_header(
-                'Authorization',
-                'Bearer ' || (select supabase_anon_key from secret)
-            )
-        ],
-        'application/json',
-        p_payload::text
-    )::http_request)
-    where status >= 200 and status < 300;
-
-    if http_response IS NULL then
-        raise exception 'Edge function returned non-OK status';
-    end if;
+    -- TODO: replace with pgmq call or extract some abstraction for other task queues
+    PERFORM call_edgefn('pgflow-3', p_payload::text);
 END;
-$$ language plpgsql security definer;
+$$;

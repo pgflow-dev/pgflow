@@ -14,7 +14,7 @@
     "stop": "bin/supabase stop",
     "start": "bin/supabase start",
     "test": "bin/test",
-    "test:watch": "ls tests/**/*.sql | entr -rc bin/test",
+    "test:watch": "find tests/ -type f -iname '*.sql' | entr -rc bin/test",
     "pgflow:gen-schema": "pnpm tsx --tsconfig schema-generator/tsconfig.json schema-generator/generate-schema.ts"
   },
   "devDependencies": {
@@ -23,7 +23,7 @@
     "groq-sdk": "^0.7.0",
     "json-schema": "^0.4.0",
     "openai": "^4.71.1",
-    "supabase": "^2.0.5",
+    "supabase": "^2.0.6",
     "ts-json-schema-generator": "^2.3.0",
     "ts-morph": "^24.0.0",
     "ts-node": "^10.9.2",
