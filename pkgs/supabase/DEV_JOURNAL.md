@@ -39,3 +39,10 @@ I decided to go with Atlas, its perfect and checks all the boxes.
 which i will try to get.
 
 CI/CD runs for free with a paid account.
+
+## 2024-12-17
+
+### [ ] Implement **pgmq** queue
+
+I started to implement pgmq queue because i had troubles with the retries logic for pgflow-3 implementation.
+The main trouble is that running a flow with lot of root steps is slow becuase each root step is a http call to edgefn.

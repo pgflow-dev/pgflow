@@ -49,7 +49,7 @@ function createQueueGenerator(
         // }
 
         // Use interruptible sleep
-        await sleep(3000);
+        await sleep(1000);
       }
     } finally {
       // await cleanup();
@@ -72,16 +72,4 @@ export async function startWorker(
     console.log(`${slug}:`, message);
     await handler(message);
   }
-}
-
-export async function startWorkers(
-  count: number,
-  handler: (payload: Json) => void,
-) {
-  const workers = Array.from({ length: count }).map((_, index) => {
-    const slug = `worker-${index + 1}`;
-    return startWorker(slug, handler);
-  });
-
-  return Promise.all(workers);
 }
