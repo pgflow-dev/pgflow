@@ -24,28 +24,7 @@ async function readAndProcessBatch() {
   }
 }
 
-// export default async function startWorker(channelName: string) {
-//   console.log("Started wakeup listener");
-//
-//   // TODO: probably need to clean this up when edgefn dies
-//   sql.listen(channelName, () => {
-//     console.log("Worker wake up");
-//
-//     // @ts-ignore - TODO: fix the types
-//     EdgeRuntime.waitUntil(readAndProcessBatch());
-//   });
-//
-//   console.log("Started Polling");
-//   setInterval(() => {
-//     console.log("... polling ...");
-//     // @ts-ignore - TODO: fix the types
-//     EdgeRuntime.waitUntil(readAndProcessBatch());
-//   }, 10000);
-// }
-//
-//
-//
-
+// TODO: find a better name
 function doWork(msg = "polling") {
   console.log(msg);
   try {
