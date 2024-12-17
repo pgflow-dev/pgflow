@@ -19,7 +19,7 @@ export default function createQueueGenerator(
   async function* pollQueue(): AsyncGenerator<MessagePayload> {
     try {
       while (true) {
-        // console.log("polling", new Date().toISOString());
+        console.log("polling", new Date().toISOString());
 
         const messages: PgmqMessageRecord[] = (await sql`
           SELECT * FROM pgmq.read(${queueName}, ${batchSize}, ${visibilityTimeout});

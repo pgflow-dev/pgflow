@@ -22,7 +22,10 @@ BEGIN
     WHERE se.run_id = p_run_id
     AND se.step_slug = p_step_slug;
 
-    PERFORM pgmq.archive('pgflow', v_task.message_id);
+    IF v_task.message_id IS NOT NULL THEN
+        PERFORM pgmq.archive('pgflow', v_task.message_id);
+    END IF;
+
     PERFORM complete_step(p_run_id, p_step_slug, p_result);
 END;
 $$;

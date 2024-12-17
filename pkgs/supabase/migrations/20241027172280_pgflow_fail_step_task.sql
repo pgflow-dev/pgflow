@@ -25,6 +25,10 @@ BEGIN
     AND se.step_slug = p_step_slug
     RETURNING se.* INTO v_task;
 
+    IF v_task.message_id IS NOT NULL THEN
+        PERFORM pgmq.archive('pgflow', v_task.message_id);
+    END IF;
+
     IF v_task.attempt_count < v_task.max_attempts THEN
         PERFORM retry_step_task(p_run_id, p_step_slug);
     ELSE

@@ -41,10 +41,6 @@ BEGIN
         next_attempt_at = now()
     RETURNING * INTO v_step_task;
 
-    IF v_step_task.message_id IS NOT NULL THEN
-        PERFORM pgmq.archive('pgflow', v_step_task.message_id);
-    END IF;
-
     WITH new_message AS (
         select send as msg_id FROM pgmq.send('pgflow', jsonb_build_object(
             'run_id', v_run.run_id,
