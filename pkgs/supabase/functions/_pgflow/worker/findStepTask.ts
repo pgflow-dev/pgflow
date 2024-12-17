@@ -12,9 +12,6 @@ export async function findStepTask({
   const results = await sql`
     SELECT * FROM pgflow.find_step_task(${run_id}, ${step_slug});
   `;
-  console.log("FIND_STEP_TASK", results);
 
-  const stepTask = results[0] as StepTaskRecord;
-
-  return stepTask;
+  return results[0] as StepTaskRecord;
 }
