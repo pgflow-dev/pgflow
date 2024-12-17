@@ -35,14 +35,14 @@ function createQueueGenerator(
       while (true) {
         logWorker("polling", new Date().toISOString());
 
-        const results = await sql`
-          SELECT message FROM pgmq.read(${queueName}, ${batchSize}, ${visibilityTimeout});
+        const messages = await sql`
+          SELECT * FROM pgmq.read(${queueName}, ${batchSize}, ${visibilityTimeout});
         `;
-        logWorker("readMessages results", results);
+        logWorker("readMessages messages", messages);
 
-        for (const message of results) {
+        for (const message of messages) {
           logWorker("readMessages - message", message);
-          yield JSON.parse(message.read);
+          yield message.message;
         }
 
         // Use interruptible sleep
