@@ -1,4 +1,4 @@
-import { useConnectionPool } from "./useConnectionPool.ts";
+import sql from "./sql.ts";
 import { Json } from "./Flow.ts";
 import { listenOnChannel } from "./pubsub.ts";
 
@@ -20,44 +20,43 @@ function createInterruptibleSleep() {
   return { sleep, interrupt };
 }
 
-async function* readMessages(
+function createQueueGenerator(
   queueName: string,
   batchSize = 1,
   visibilityTimeout = 1,
 ) {
-  const { queryArray, pool } = await useConnectionPool();
-  const client = await pool.connect();
   const { sleep, interrupt } = createInterruptibleSleep();
 
-  try {
-    // Set up notification listener
-    const notificationChannel = `${queueName}_notifications`;
-    const cleanup = await listenOnChannel(client, notificationChannel, () => {
-      // Wake up the sleep when notification arrives
-      interrupt();
-    });
+  const channel = `${queueName}_notifications`;
+  const listenReq = sql.listen(channel, (msg: string) => {
+    console.log("NOTIFY", msg);
+    interrupt();
+  });
 
+  async function* readMessages() {
     try {
       while (true) {
-        const results = await queryArray(
-          `SELECT pgmq.read('${queueName}', ${batchSize}, ${visibilityTimeout});`,
-        );
-        const { rows: messages } = results;
+        console.log("iterated.....", new Date().toISOString());
 
-        for (const message of messages) {
-          console.log("readMessages - message", message);
-          yield message;
-        }
+        // const results = await queryArray(
+        //   `SELECT pgmq.read('${queueName}', ${batchSize}, ${visibilityTimeout});`,
+        // );
+        // const { rows: messages } = results;
+        //
+        // for (const message of messages) {
+        //   console.log("readMessages - message", message);
+        //   yield message;
+        // }
 
         // Use interruptible sleep
-        await sleep(1000);
+        await sleep(3000);
       }
     } finally {
-      await cleanup();
+      // await cleanup();
     }
-  } finally {
-    client.release();
   }
+
+  return { readMessages };
 }
 
 export async function startWorker(
@@ -67,8 +66,9 @@ export async function startWorker(
   console.log(`${slug}: Started`);
 
   // const { queryObject } = await useConnectionPool();
+  const { readMessages } = createQueueGenerator("pgflow");
 
-  for await (const message of readMessages("pgflow_worker")) {
+  for await (const message of readMessages()) {
     console.log(`${slug}:`, message);
     await handler(message);
   }
