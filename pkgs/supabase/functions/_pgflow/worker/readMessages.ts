@@ -3,7 +3,7 @@ import type { PgmqMessageRecord } from "./index.ts";
 
 export default async function readMessages(
   queueName: string,
-  batchSize = 1,
+  batchSize = 20,
   visibilityTimeout = 1,
 ) {
   const messages: PgmqMessageRecord[] = (await sql`

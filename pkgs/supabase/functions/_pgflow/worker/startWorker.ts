@@ -4,6 +4,8 @@ import executeTask from "./executeTask.ts";
 import { findStepTask } from "./findStepTask.ts";
 import readMessages from "./readMessages.ts";
 
+const POLLING_INTERVAL = 1000;
+
 async function processMessage(message: MessagePayload) {
   console.log("processMessage()", message);
   const stepTask = await findStepTask(message);
@@ -22,21 +24,52 @@ async function readAndProcessBatch() {
   }
 }
 
-export default async function startWorker(channelName: string) {
+// export default async function startWorker(channelName: string) {
+//   console.log("Started wakeup listener");
+//
+//   // TODO: probably need to clean this up when edgefn dies
+//   sql.listen(channelName, () => {
+//     console.log("Worker wake up");
+//
+//     // @ts-ignore - TODO: fix the types
+//     EdgeRuntime.waitUntil(readAndProcessBatch());
+//   });
+//
+//   console.log("Started Polling");
+//   setInterval(() => {
+//     console.log("... polling ...");
+//     // @ts-ignore - TODO: fix the types
+//     EdgeRuntime.waitUntil(readAndProcessBatch());
+//   }, 10000);
+// }
+//
+//
+//
+
+function doWork(msg = "polling") {
+  console.log(msg);
+  try {
+    // @ts-ignore - TODO: fix the types
+    EdgeRuntime.waitUntil(readAndProcessBatch());
+  } catch (error) {
+    console.error(`Error ${msg}:`, error);
+  }
+}
+
+export default function startWorker(channelName: string) {
   console.log("Started wakeup listener");
 
-  // TODO: probably need to clean this up when edgefn dies
-  sql.listen(channelName, () => {
-    console.log("Worker wake up");
+  let listenPromise: Promise<void> | null = null;
 
-    // @ts-ignore - TODO: fix the types
-    EdgeRuntime.waitUntil(readAndProcessBatch());
-  });
+  try {
+    listenPromise = sql.listen(channelName, () => doWork("wakeup"));
 
-  console.log("Started Polling");
-  setInterval(() => {
-    console.log("... polling ...");
-    // @ts-ignore - TODO: fix the types
-    EdgeRuntime.waitUntil(readAndProcessBatch());
-  }, 1000);
+    console.log("Started Polling");
+    doWork();
+    setInterval(doWork, POLLING_INTERVAL);
+  } catch (error) {
+    console.error("Error starting worker:", error);
+  }
+
+  return listenPromise;
 }
