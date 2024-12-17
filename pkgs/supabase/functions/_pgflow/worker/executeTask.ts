@@ -21,6 +21,8 @@ export default async function executeTask(stepTask: StepTaskRecord) {
 
   await startStepTask(input, supabase);
 
+  let result: Json;
+
   try {
     result = await handleInput(meta, payload);
   } catch (error: unknown) {
