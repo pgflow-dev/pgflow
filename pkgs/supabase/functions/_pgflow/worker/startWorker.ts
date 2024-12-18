@@ -4,65 +4,56 @@ import executeTask from "./executeTask.ts";
 import { findStepTask } from "./findStepTask.ts";
 import readMessages from "./readMessages.ts";
 
-const POLLING_INTERVAL = 1000;
-
 const log = console.log;
 
 // @ts-ignore - TODO: fix the types
 const waitUntil = EdgeRuntime.waitUntil;
 
-async function processMessage(message: MessagePayload) {
+export async function processMessage(message: MessagePayload) {
   log("processMessage()", message);
   const stepTask = await findStepTask(message);
   return await executeTask(stepTask);
 }
 
-async function readAndProcessBatch() {
-  const messages = await readMessages("pgflow");
-  const messagesPayloads: MessagePayload[] = messages.map(
-    (message) => message.message,
-  ) as MessagePayload[];
+async function processMessages(shouldExit: { value: boolean }) {
+  while (!shouldExit.value) {
+    try {
+      const messages = await readMessages("pgflow");
+      const messagesPayloads: MessagePayload[] = messages.map(
+        (message) => message.message,
+      ) as MessagePayload[];
 
-  for (const messagePayload of messagesPayloads) {
-    waitUntil(processMessage(messagePayload));
+      for (const messagePayload of messagesPayloads) {
+        waitUntil(processMessage(messagePayload));
+      }
+    } catch (error) {
+      console.error("Error processing messages:", error);
+      // Continue polling even if there's an error
+    }
   }
-}
-
-// TODO: find a better name
-function scheduleBatchProcessing(msg = "polling") {
-  log(msg);
-  try {
-    waitUntil(readAndProcessBatch());
-  } catch (error) {
-    console.error(`Error ${msg}:`, error);
-  }
+  log("Polling stopped");
 }
 
 export default function startWorker(channelName: string) {
   log("Started wakeup listener");
 
-  // let listenRequest: postgres.ListenRequest;
-  let shouldExit = false;
+  // Using an object to allow sharing the reference between functions
+  const state = { value: false };
 
   sql.listen(channelName, () => {
-    if (shouldExit) {
+    if (state.value) {
       return;
     }
-    scheduleBatchProcessing("wakeup");
+    log("wakeup notification received");
   });
 
   log("Started Polling");
-  scheduleBatchProcessing();
-
-  const interval = setInterval(scheduleBatchProcessing, POLLING_INTERVAL);
+  // Start the continuous polling loop
+  waitUntil(processMessages(state));
 
   function stopWorker() {
     log("Stopping worker...");
-    shouldExit = true;
-
-    if (interval) {
-      clearInterval(interval);
-    }
+    state.value = true;
   }
 
   return { stopWorker };

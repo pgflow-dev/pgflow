@@ -6,8 +6,14 @@ export default async function readMessages(
   batchSize = 20,
   visibilityTimeout = 1,
 ) {
-  const messages: PgmqMessageRecord[] = (await sql`
-    SELECT * FROM pgmq.read(${queueName}, ${batchSize}, ${visibilityTimeout});
+  const messages = (await sql`
+    SELECT *
+    FROM pgmq.read_with_poll(
+      ${queueName},
+      ${batchSize},
+      ${visibilityTimeout},
+      ${visibilityTimeout}
+    );
   `) as PgmqMessageRecord[];
 
   console.log("readMessages", messages);
