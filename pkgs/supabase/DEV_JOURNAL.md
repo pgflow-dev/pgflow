@@ -158,3 +158,16 @@ by the wall clock/cpu clock limit and edge function dying unexpectedly.
 #### [ ] Try to stop LISTEN and polling when onbeforeunload is called
 
 > if the onbeforeunload event is triggered in a Supabase Edge Function worker, any new request to the same Edge Function endpoint will result in a new instance of the Edge Function worker being spawned
+
+## 2024-12-18
+
+#### [x] Try to stop LISTEN and polling when onbeforeunload is called
+
+Implemented stopWorker which seems to be solving most of the problems caused
+by early termination of the worker, but there is still some kind of issue
+or race condition that manifests itself from time to time by
+raising the "invalid status" error (expected queued, got completed) for step tasks.
+
+### [ ] Implement the automatic spawning of new worker in onbeforeunload
+
+We need to trigger a new worker function when old is dying.
