@@ -1,13 +1,18 @@
 import { MessagePayload } from "./index.ts";
-import sql from "../../_pgflow/sql.ts";
+import sql /*, { postgres }*/ from "../../_pgflow/sql.ts";
 import executeTask from "./executeTask.ts";
 import { findStepTask } from "./findStepTask.ts";
 import readMessages from "./readMessages.ts";
 
 const POLLING_INTERVAL = 1000;
 
+const log = console.log;
+
+// @ts-ignore - TODO: fix the types
+const waitUntil = EdgeRuntime.waitUntil;
+
 async function processMessage(message: MessagePayload) {
-  console.log("processMessage()", message);
+  log("processMessage()", message);
   const stepTask = await findStepTask(message);
   return await executeTask(stepTask);
 }
@@ -19,36 +24,46 @@ async function readAndProcessBatch() {
   ) as MessagePayload[];
 
   for (const messagePayload of messagesPayloads) {
-    // @ts-ignore - TODO: fix the types
-    EdgeRuntime.waitUntil(processMessage(messagePayload));
+    waitUntil(processMessage(messagePayload));
   }
 }
 
 // TODO: find a better name
-function doWork(msg = "polling") {
-  console.log(msg);
+function scheduleBatchProcessing(msg = "polling") {
+  log(msg);
   try {
-    // @ts-ignore - TODO: fix the types
-    EdgeRuntime.waitUntil(readAndProcessBatch());
+    waitUntil(readAndProcessBatch());
   } catch (error) {
     console.error(`Error ${msg}:`, error);
   }
 }
 
 export default function startWorker(channelName: string) {
-  console.log("Started wakeup listener");
+  log("Started wakeup listener");
 
-  let listenPromise: Promise<void> | null = null;
+  // let listenRequest: postgres.ListenRequest;
+  let shouldExit = false;
 
-  try {
-    listenPromise = sql.listen(channelName, () => doWork("wakeup"));
+  sql.listen(channelName, () => {
+    if (shouldExit) {
+      return;
+    }
+    scheduleBatchProcessing("wakeup");
+  });
 
-    console.log("Started Polling");
-    doWork();
-    setInterval(doWork, POLLING_INTERVAL);
-  } catch (error) {
-    console.error("Error starting worker:", error);
+  log("Started Polling");
+  scheduleBatchProcessing();
+
+  const interval = setInterval(scheduleBatchProcessing, POLLING_INTERVAL);
+
+  function stopWorker() {
+    log("Stopping worker...");
+    shouldExit = true;
+
+    if (interval) {
+      clearInterval(interval);
+    }
   }
 
-  return listenPromise;
+  return { stopWorker };
 }
