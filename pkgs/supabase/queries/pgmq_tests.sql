@@ -5,19 +5,30 @@ delete from pgmq.a_pgflow;
 
 select pgflow.run_flow('Basic', '"yolo"'::jsonb);
 
-select
-    p.proname as function_name,
-    pg_get_function_arguments(p.oid) as args_with_defaults,
-    pg_get_function_result(p.oid) as return_type
-from
-    pg_catalog.pg_proc p
-    join pg_catalog.pg_namespace n on p.pronamespace = n.oid
-where
-    n.nspname = 'pgmq'
-and p.proname = 'send'
-order by
-    proname;
+select pgflow.run_flow('Wide', ('"' || i::text || '"')::jsonb)
+from generate_series(1, 1) as i;
 
 */
 
-select pgmq.send('pgflow'::text, '"yolo"'::json, 5);
+-- select pgmq.send('pgflow'::text, '"yolo"'::json, 5);
+
+-- select
+--     count(*) as total,
+--     count(*) filter (where status = 'pending') as pending,
+--     count(*) filter (where status = 'completed') as completed,
+--     count(*) filter (where status = 'failed') as failed
+-- from pgflow.step_states;
+
+select
+    count(*) as total,
+    count(*) filter (where status = 'queued') as queued,
+    count(*) filter (where status = 'started') as started,
+    count(*) filter (where status = 'completed') as completed,
+    count(*) filter (where status = 'failed') as failed
+from pgflow.step_tasks;
+
+
+
+-- select pgflow.stop_monitoring();
+-- select pgflow.start_monitoring();
+-- select pgflow_pgmq.stop_edgefn_worker();
