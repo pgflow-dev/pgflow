@@ -1,0 +1,19 @@
+{
+  "imports": {
+    "postgres": "https://esm.sh/v135/postgres@3.4.5",
+    "openai": "jsr:@openai/openai@^4.52.5",
+    "@supabase/functions-js/": "jsr:@supabase/functions-js/",
+    "@supabase/functions-js": "jsr:@supabase/functions-js/mod.ts",
+    "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.46.1",
+    "groq-sdk": "npm:groq-sdk@^0.7.0"
+  },
+  "tasks": {
+    "cache": "deno cache index.ts",
+    "esm:add": "deno run -A https://esm.sh/v135 add",
+    "esm:update": "deno run -A https://esm.sh/v135 update",
+    "esm:remove": "deno run -A https://esm.sh/v135 remove"
+  },
+  "lock": true,
+  "lockfile": "./deno.lock",
+  "scopes": {}
+}
