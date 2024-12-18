@@ -1,4 +1,5 @@
 import startWorker from "./startWorker.ts";
+import spawnNewEdgeFunction from "./spawnNewEdgeFunction.ts";
 import type { Database } from "../../../types.d.ts";
 
 type MessagePayload = {
@@ -7,4 +8,9 @@ type MessagePayload = {
 };
 type PgmqMessageRecord = Database["pgmq"]["CompositeTypes"]["message_record"];
 
-export { type MessagePayload, type PgmqMessageRecord, startWorker };
+export {
+  type MessagePayload,
+  type PgmqMessageRecord,
+  startWorker,
+  spawnNewEdgeFunction,
+};

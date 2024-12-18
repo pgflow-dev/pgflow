@@ -1,5 +1,7 @@
 import { Flow } from "../_pgflow/Flow.ts";
-import { simulateWorkThenError } from "../_pgflow/utils.ts";
+// import { simulateWorkThenError } from "../_pgflow/utils.ts";
+
+function simulateWorkThenError() {}
 
 const WideFlow = new Flow<string>()
   .step("start", async ({ run }) => {
