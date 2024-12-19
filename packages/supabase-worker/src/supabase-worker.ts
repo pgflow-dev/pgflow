@@ -1,0 +1,7 @@
+/**
+ * JSDoc for this function
+ * @return {string}
+ */
+export function supabaseWorker() {
+  return 'supabase-worker';
+}
