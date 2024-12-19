@@ -34,6 +34,11 @@ jobs:
           node-version: 20
           cache: 'pnpm'
 
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: 1.x
+
       - run: pnpm install --frozen-lockfile
       - uses: nrwl/nx-set-shas@v4
 
