@@ -10,11 +10,10 @@
 
 [Click here to finish setting up your workspace!](https://cloud.nx.app/connect/X0R0bFA3JW)
 
-
 ## Generate a library
 
 ```sh
-npx nx g @nx/js:lib packages/pkg1 --publishable --importPath=@my-org/pkg1
+npx nx g @nx/js:lib pkgs/pkg1 --publishable --importPath=@my-org/pkg1
 ```
 
 ## Run tasks
