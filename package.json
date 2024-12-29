@@ -5,7 +5,7 @@
   "scripts": {},
   "private": true,
   "devDependencies": {
-    "@nrwl/deno": "^17.2.3",
+    "@axhxrx/nx-deno": "^1.0.2",
     "@nx/js": "20.2.2",
     "@swc-node/register": "~1.9.1",
     "@swc/core": "~1.5.7",
