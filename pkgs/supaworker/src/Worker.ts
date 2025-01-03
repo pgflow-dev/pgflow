@@ -27,34 +27,33 @@ export interface WorkerConfig {
 }
 
 export class Worker<MessagePayload extends Json> {
-  private mainController: AbortController;
+  private mainController = new AbortController();
   private isRunning = false;
-  private queueName: string;
+  private sql: postgres.Sql;
   private queue: Queue<MessagePayload>;
   private queries: Queries;
-  private activeExecutors: Map<number, MessageExecutor<MessagePayload>>;
-  private batchSize: number;
-  private visibilityTimeout: number;
-  private maxPollSeconds: number;
-  private pollIntervalMs: number;
-  private sql: postgres.Sql;
+  private activeExecutors = new Map<number, MessageExecutor<MessagePayload>>();
   private workerId?: string;
   private heartbeat?: Heartbeat;
+  private config: Required<WorkerConfig>;
 
   constructor(config: WorkerConfig) {
-    this.sql = postgres(config.connectionString, {
-      max: config.maxPgConnections || 4,
+    this.config = {
+      connectionString: config.connectionString,
+      queueName: config.queueName,
+      batchSize: config.batchSize ?? 5,
+      visibilityTimeout: config.visibilityTimeout ?? 1,
+      maxPollSeconds: config.maxPollSeconds ?? 5,
+      pollIntervalMs: config.pollIntervalMs ?? 100,
+      maxPgConnections: config.maxPgConnections ?? 4,
+    };
+
+    this.sql = postgres(this.config.connectionString, {
+      max: this.config.maxPgConnections,
       prepare: false,
     });
-    this.mainController = new AbortController();
-    this.activeExecutors = new Map();
-    this.queueName = config.queueName;
-    this.queue = new Queue(this.sql, config.queueName);
+    this.queue = new Queue(this.sql, this.config.queueName);
     this.queries = new Queries(this.sql);
-    this.batchSize = config.batchSize || 5;
-    this.visibilityTimeout = config.visibilityTimeout || 1;
-    this.maxPollSeconds = config.maxPollSeconds || 5;
-    this.pollIntervalMs = config.pollIntervalMs || 100;
   }
 
   log(message: string) {
@@ -87,7 +86,7 @@ export class Worker<MessagePayload extends Json> {
   }
 
   async acknowledgeStart() {
-    const worker = await this.queries.onWorkerStarted(this.queueName);
+    const worker = await this.queries.onWorkerStarted(this.config.queueName);
 
     this.workerId = worker.worker_id;
     this.isRunning = true;
@@ -128,19 +127,19 @@ export class Worker<MessagePayload extends Json> {
           | [] = [];
 
         if (!this.mainController.signal.aborted) {
-          this.log(`Polling for ${this.maxPollSeconds}s`);
+          this.log(`Polling for ${this.config.maxPollSeconds}s`);
           messageRecords = await this.queue.readWithPoll(
-            this.batchSize,
-            this.visibilityTimeout,
-            this.maxPollSeconds,
-            this.pollIntervalMs,
+            this.config.batchSize,
+            this.config.visibilityTimeout,
+            this.config.maxPollSeconds,
+            this.config.pollIntervalMs,
           );
         }
 
         if (this.mainController.signal.aborted) {
           this.log("-> Discarding messageRecords because worker is stopping");
         } else {
-          console.log(" -> messageRecords", messageRecords);
+          // console.log(" -> messageRecords", messageRecords);
 
           for (const messageRecord of messageRecords) {
             // @ts-ignore - Using Edge Runtime
