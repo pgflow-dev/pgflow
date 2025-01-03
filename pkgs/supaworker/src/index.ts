@@ -8,7 +8,7 @@ export class Supaworker {
   private static wasCalled = false;
 
   static start<MessagePayload extends Json = Json>(
-    handler: (message: MessagePayload) => Promise<void> | void,
+    handler: (message: MessagePayload) => Promise<any> | any,
     config: SupaworkerConfig = {},
   ) {
     if (this.wasCalled) {
