@@ -23,6 +23,7 @@ export interface WorkerConfig {
   visibilityTimeout?: number;
   maxPollSeconds?: number;
   pollIntervalMs?: number;
+  maxPgConnections?: number;
 }
 
 export class Worker<MessagePayload extends Json> {
@@ -42,7 +43,7 @@ export class Worker<MessagePayload extends Json> {
 
   constructor(config: WorkerConfig) {
     this.sql = postgres(config.connectionString, {
-      max: 4,
+      max: config.maxPgConnections || 4,
       prepare: false,
     });
     this.mainController = new AbortController();
