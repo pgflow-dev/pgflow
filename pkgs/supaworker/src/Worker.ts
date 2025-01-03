@@ -3,6 +3,7 @@ import { Json } from "./types.ts";
 import { MessageExecutor } from "./MessageExecutor.ts";
 import { Queue } from "./Queue.ts";
 import { Queries } from "./Queries.ts";
+import { Heartbeat } from "./Heartbeat.ts";
 
 // @ts-ignore - TODO: fix the types
 const waitUntil = EdgeRuntime.waitUntil;
@@ -37,6 +38,7 @@ export class Worker<MessagePayload extends Json> {
   private pollIntervalMs: number;
   private sql: postgres.Sql;
   private workerId?: string;
+  private heartbeat?: Heartbeat;
 
   constructor(config: WorkerConfig) {
     this.sql = postgres(config.connectionString, {
@@ -88,6 +90,12 @@ export class Worker<MessagePayload extends Json> {
 
     this.workerId = worker.worker_id;
     this.isRunning = true;
+    this.heartbeat = new Heartbeat(
+      5000,
+      this.queries,
+      this.workerId,
+      this.log.bind(this),
+    );
 
     this.log("Worker started");
   }
@@ -101,16 +109,6 @@ export class Worker<MessagePayload extends Json> {
     console.log("<<<< onWorkerStopped");
   }
 
-  async sendHeartbeat() {
-    if (this.workerId) {
-      await this.queries.sendHeartbeat(this.workerId);
-    }
-  }
-
-  private shouldSendHeartbeat(lastHeartbeat: number): boolean {
-    return Date.now() - lastHeartbeat >= 5000;
-  }
-
   async start(messageHandler: (message: MessagePayload) => Promise<void>) {
     if (this.isRunning) {
       this.log("Worker already running");
@@ -119,16 +117,10 @@ export class Worker<MessagePayload extends Json> {
 
     await this.acknowledgeStart();
 
-    let lastHeartbeat = 0;
-
     console.log("worker main loop started");
     while (!this.mainController.signal.aborted) {
       try {
-        if (this.shouldSendHeartbeat(lastHeartbeat)) {
-          await this.sendHeartbeat();
-          this.log("Heartbeat OK");
-          lastHeartbeat = Date.now();
-        }
+        await this.heartbeat?.send();
 
         let messageRecords:
           | postgres.RowList<MessageRecord<MessagePayload>[]>
