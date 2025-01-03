@@ -24,10 +24,7 @@ export class MessageExecutor<MessagePayload extends Json> {
   async execute(): Promise<void> {
     try {
       await this.messageHandler(this.record.message!);
-
-      if (!this.controller.signal.aborted) {
-        await this.queue.archive(this.record.msg_id);
-      }
+      await this.queue.archive(this.record.msg_id);
     } catch (error: unknown) {
       if (error instanceof Error && error.name === "AbortError") {
         console.log("Message processing cancelled:", this.record.msg_id);
