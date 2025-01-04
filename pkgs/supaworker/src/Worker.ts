@@ -3,7 +3,7 @@ import { Json } from "./types.ts";
 import { Queue } from "./Queue.ts";
 import { Queries } from "./Queries.ts";
 import { Heartbeat } from "./Heartbeat.ts";
-import { ExecutionQueue } from "./ExecutionQueue.ts";
+import { ExecutionController } from "./ExecutionController.ts";
 import { Logger } from "./Logger.ts";
 
 // @ts-ignore - TODO: fix the types
@@ -33,7 +33,7 @@ export class Worker<MessagePayload extends Json> {
   private sql: postgres.Sql;
   private queue: Queue<MessagePayload>;
   private queries: Queries;
-  private executionQueue: ExecutionQueue<MessagePayload>;
+  private executionController: ExecutionController<MessagePayload>;
   private workerId?: string;
   private heartbeat?: Heartbeat;
   private config: Required<WorkerConfig>;
@@ -56,7 +56,11 @@ export class Worker<MessagePayload extends Json> {
     });
     this.queue = new Queue(this.sql, this.config.queueName);
     this.queries = new Queries(this.sql);
-    this.executionQueue = new ExecutionQueue(this.queue);
+    this.executionController = new ExecutionController(
+      this.queue,
+      this.mainController.signal,
+      this.config.batchSize,
+    );
   }
 
   private log(message: string) {
@@ -72,7 +76,7 @@ export class Worker<MessagePayload extends Json> {
     record: MessageRecord<MessagePayload>,
     messageHandler: (message: MessagePayload) => Promise<void>,
   ): Promise<void> {
-    await this.executionQueue.execute(record, messageHandler);
+    await this.executionController.start(record, messageHandler);
   }
 
   async acknowledgeStart() {
@@ -151,12 +155,9 @@ export class Worker<MessagePayload extends Json> {
     this.log("-> Stopped accepting new messages");
     this.mainController.abort();
 
-    console.log("-> Aborting executionQueue");
-    this.executionQueue.abort();
-
-    console.log("-> Waiting for executionQueue to finish");
-    await this.executionQueue.waitForAll();
-    console.log("-> ExecutionQueue finished");
+    console.log("-> Waiting for execution completion");
+    await this.executionController.awaitCompletion();
+    console.log("-> Execution completed");
 
     // Now safe to close connection
     await this.acknowledgeStop();
