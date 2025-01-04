@@ -1,9 +1,10 @@
 import postgres from "postgres";
 import { Json } from "./types.ts";
-import { MessageExecutor } from "./MessageExecutor.ts";
 import { Queue } from "./Queue.ts";
 import { Queries } from "./Queries.ts";
 import { Heartbeat } from "./Heartbeat.ts";
+import { ExecutionQueue } from "./ExecutionQueue.ts";
+import { Logger } from "./Logger.ts";
 
 // @ts-ignore - TODO: fix the types
 const waitUntil = EdgeRuntime.waitUntil;
@@ -32,10 +33,11 @@ export class Worker<MessagePayload extends Json> {
   private sql: postgres.Sql;
   private queue: Queue<MessagePayload>;
   private queries: Queries;
-  private activeExecutors = new Map<number, MessageExecutor<MessagePayload>>();
+  private executionQueue: ExecutionQueue<MessagePayload>;
   private workerId?: string;
   private heartbeat?: Heartbeat;
   private config: Required<WorkerConfig>;
+  private logger = new Logger();
 
   constructor(config: WorkerConfig) {
     this.config = {
@@ -54,15 +56,11 @@ export class Worker<MessagePayload extends Json> {
     });
     this.queue = new Queue(this.sql, this.config.queueName);
     this.queries = new Queries(this.sql);
+    this.executionQueue = new ExecutionQueue(this.queue);
   }
 
-  log(message: string) {
-    let label = "starting";
-    if (this.workerId) {
-      label = this.workerId;
-    }
-
-    console.log(`[worker_id=${label}] ${message}`);
+  private log(message: string) {
+    this.logger.log(message);
   }
 
   startAndWait(messageHandler: (message: MessagePayload) => Promise<void>) {
@@ -74,21 +72,14 @@ export class Worker<MessagePayload extends Json> {
     record: MessageRecord<MessagePayload>,
     messageHandler: (message: MessagePayload) => Promise<void>,
   ): Promise<void> {
-    const executor = new MessageExecutor(this.queue, record, messageHandler);
-
-    this.activeExecutors.set(executor.msgId, executor);
-
-    try {
-      await executor.execute();
-    } finally {
-      this.activeExecutors.delete(executor.msgId);
-    }
+    await this.executionQueue.execute(record, messageHandler);
   }
 
   async acknowledgeStart() {
     const worker = await this.queries.onWorkerStarted(this.config.queueName);
 
     this.workerId = worker.worker_id;
+    this.logger.setWorkerId(this.workerId);
     this.isRunning = true;
     this.heartbeat = new Heartbeat(
       5000,
@@ -160,24 +151,12 @@ export class Worker<MessagePayload extends Json> {
     this.log("-> Stopped accepting new messages");
     this.mainController.abort();
 
-    // Abort all active executors
-    console.log("-> Aborting executors");
-    for (const executor of this.activeExecutors.values()) {
-      executor.abort();
-    }
+    console.log("-> Aborting executionQueue");
+    this.executionQueue.abort();
 
-    // Wait for all executors to finish
-    console.log("-> Waiting for executors to finish");
-    if (this.activeExecutors.size > 0) {
-      await Promise.all(
-        Array.from(this.activeExecutors.values()).map((executor) =>
-          executor.execute(),
-        ),
-      );
-    }
-    console.log("-> Executors finished");
-
-    this.activeExecutors.clear();
+    console.log("-> Waiting for executionQueue to finish");
+    await this.executionQueue.waitForAll();
+    console.log("-> ExecutionQueue finished");
 
     // Now safe to close connection
     await this.acknowledgeStop();
