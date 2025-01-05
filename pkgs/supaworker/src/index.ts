@@ -34,9 +34,13 @@ export class Supaworker {
       spawnNewEdgeFunction("pgflow-worker-2");
     };
 
-    worker.startAndWait(async (message) => {
+    worker.start(async (message) => {
       await handler(message);
     });
+
+    // use waitUntil to prevent the function from exiting
+    // @ts-ignore: TODO: fix the types
+    EdgeRuntime.waitUntil(new Promise(() => {}));
 
     Deno.serve((_req) => {
       console.log("HTTP Request...");

@@ -6,9 +6,6 @@ import { Heartbeat } from "./Heartbeat.ts";
 import { ExecutionController } from "./ExecutionController.ts";
 import { Logger } from "./Logger.ts";
 
-// @ts-ignore - TODO: fix the types
-const waitUntil = EdgeRuntime.waitUntil;
-
 export interface MessageRecord<MessagePayload extends Json> {
   msg_id: number;
   read_ct: number;
@@ -69,12 +66,7 @@ export class Worker<MessagePayload extends Json> {
     this.logger.log(message);
   }
 
-  startAndWait(messageHandler: (message: MessagePayload) => Promise<void>) {
-    // @ts-ignore - Using Edge Runtime
-    waitUntil(this.start(messageHandler));
-  }
-
-  async acknowledgeStart() {
+  private async acknowledgeStart() {
     const worker = await this.queries.onWorkerStarted(this.config.queueName);
 
     this.workerId = worker.worker_id;
@@ -90,7 +82,7 @@ export class Worker<MessagePayload extends Json> {
     this.log("Worker started");
   }
 
-  async acknowledgeStop() {
+  private async acknowledgeStop() {
     if (!this.workerId || !this.isRunning) {
       throw new Error("Cannot stop worker: not started!");
     }
