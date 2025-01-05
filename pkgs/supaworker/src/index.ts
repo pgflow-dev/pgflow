@@ -31,7 +31,10 @@ export class Supaworker {
 
     globalThis.onbeforeunload = () => {
       worker.stop();
-      spawnNewEdgeFunction("pgflow-worker-2");
+
+      if (worker.edgeFunctionName) {
+        spawnNewEdgeFunction(worker.edgeFunctionName);
+      }
     };
 
     worker.start(async (message) => {

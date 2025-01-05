@@ -33,10 +33,10 @@ export class Worker<MessagePayload extends Json> {
   private queries: Queries;
   private executionController: ExecutionController<MessagePayload>;
   private workerId?: string;
-  private edgeFunctionName?: string;
   private heartbeat?: Heartbeat;
   private config: Required<WorkerConfig>;
   private logger = new Logger();
+  readonly edgeFunctionName?: string;
 
   constructor(config: WorkerConfig) {
     this.config = {
