@@ -33,6 +33,7 @@ export class Worker<MessagePayload extends Json> {
   private queries: Queries;
   private executionController: ExecutionController<MessagePayload>;
   private workerId?: string;
+  private edgeFunctionName?: string;
   private heartbeat?: Heartbeat;
   private config: Required<WorkerConfig>;
   private logger = new Logger();
@@ -102,7 +103,7 @@ export class Worker<MessagePayload extends Json> {
     console.log("worker main loop started");
     while (!this.mainController.signal.aborted) {
       try {
-        await this.heartbeat?.send();
+        await this.heartbeat?.send(this.edgeFunctionName);
 
         let messageRecords:
           | postgres.RowList<MessageRecord<MessagePayload>[]>
@@ -148,5 +149,9 @@ export class Worker<MessagePayload extends Json> {
     // Now safe to close connection
     await this.acknowledgeStop();
     await this.sql.end();
+  }
+
+  setFunctionName(functionName: string) {
+    this.edgeFunctionName = functionName;
   }
 }

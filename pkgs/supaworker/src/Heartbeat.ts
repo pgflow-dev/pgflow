@@ -10,10 +10,10 @@ export class Heartbeat {
     private log: (message: string) => void,
   ) {}
 
-  async send(): Promise<void> {
+  async send(functionName?: string): Promise<void> {
     const now = Date.now();
     if (now - this.lastHeartbeat >= this.interval) {
-      await this.queries.sendHeartbeat(this.workerId);
+      await this.queries.sendHeartbeat(this.workerId, functionName);
       this.log("Heartbeat OK");
       this.lastHeartbeat = now;
     }

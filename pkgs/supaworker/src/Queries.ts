@@ -22,12 +22,25 @@ export class Queries {
     return workers[0];
   }
 
-  async sendHeartbeat(workerId: string): Promise<WorkerRow> {
-    const workers = await this.sql<WorkerRow[]>`
-      SELECT * FROM supaworker.send_heartbeat(${workerId}::uuid);
-    `;
+  async sendHeartbeat(
+    workerId: string,
+    functionName?: string,
+  ): Promise<WorkerRow> {
+    if (functionName) {
+      console.log("functionName", functionName);
+      const workers = await this.sql<WorkerRow[]>`
+        SELECT * FROM supaworker.send_heartbeat(worker_id => ${workerId}::uuid, function_name => ${functionName}::text);
+      `;
 
-    return workers[0];
+      return workers[0];
+    } else {
+      console.log("NO functionName");
+      const workers = await this.sql<WorkerRow[]>`
+        SELECT * FROM supaworker.send_heartbeat(worker_id => ${workerId}::uuid);
+      `;
+
+      return workers[0];
+    }
   }
 
   async spawnNewWorker(queueName: string): Promise<void> {

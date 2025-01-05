@@ -43,7 +43,13 @@ export class Supaworker {
     EdgeRuntime.waitUntil(new Promise(() => {}));
 
     Deno.serve((_req) => {
-      console.log("HTTP Request...");
+      const edgeFunctionName = new URL(_req.url).pathname.replace(
+        /^\/+|\/+$/g,
+        "",
+      );
+      worker.setFunctionName(edgeFunctionName);
+
+      console.log(`HTTP Request: ${edgeFunctionName}`);
       return new Response("ok", {
         headers: { "Content-Type": "application/json" },
       });
