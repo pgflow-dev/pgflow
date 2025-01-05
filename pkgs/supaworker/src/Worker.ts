@@ -72,13 +72,6 @@ export class Worker<MessagePayload extends Json> {
     waitUntil(this.start(messageHandler));
   }
 
-  private async executeMessage(
-    record: MessageRecord<MessagePayload>,
-    messageHandler: (message: MessagePayload) => Promise<void>,
-  ): Promise<void> {
-    await this.executionController.start(record, messageHandler);
-  }
-
   async acknowledgeStart() {
     const worker = await this.queries.onWorkerStarted(this.config.queueName);
 
@@ -137,8 +130,7 @@ export class Worker<MessagePayload extends Json> {
           // console.log(" -> messageRecords", messageRecords);
 
           for (const messageRecord of messageRecords) {
-            // @ts-ignore - Using Edge Runtime
-            waitUntil(this.executeMessage(messageRecord, messageHandler));
+            await this.executionController.start(messageRecord, messageHandler);
           }
         }
       } catch (error: unknown) {
