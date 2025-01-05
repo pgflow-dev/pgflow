@@ -29,7 +29,7 @@ export class Queue<MessagePayload extends Json> {
   ) {
     return await this.sql<MessageRecord<MessagePayload>[]>`
       SELECT *
-      FROM pgmq.read_with_poll(
+      FROM supaworker.read_with_poll(
         queue_name => ${this.queueName},
         vt => ${visibilityTimeout},
         qty => ${batchSize},
