@@ -42,4 +42,18 @@ export class Queue<MessagePayload extends Json> {
   async end() {
     await this.sql.end();
   }
+
+  async setVt(
+    msgId: number,
+    vtOffsetSeconds: number,
+  ): Promise<MessageRecord<MessagePayload>> {
+    const records = await this.sql<MessageRecord<MessagePayload>[]>`
+      SELECT * FROM pgmq.set_vt(
+        ${this.queueName},
+        ${msgId}::bigint,
+        ${vtOffsetSeconds}::integer
+      );
+    `;
+    return records[0];
+  }
 }

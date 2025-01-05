@@ -31,7 +31,7 @@ export class MessageExecutor<MessagePayload extends Json> {
       } else {
         console.error("Error processing message:", error);
         // Re-queue the message on non-abort errors
-        await this.queue.send(this.record.message!);
+        await this.queue.setVt(this.msgId, 2);
       }
     }
   }
