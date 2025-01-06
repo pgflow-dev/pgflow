@@ -1,0 +1,31 @@
+#!/bin/bash
+
+source .env
+
+# Default to 100000 if no argument provided
+MSG_COUNT=${1:-5000}
+
+psql "$DB_URL" -v msg_count="$MSG_COUNT" << SQL
+
+DELETE FROM pgmq.q_pgflow;
+DELETE FROM pgmq.a_pgflow;
+DELETE FROM supaworker.workers;
+
+-- 'counter' sequence for incrementing in task handlers
+CREATE SEQUENCE IF NOT EXISTS pgflow_counter_seq;
+ALTER SEQUENCE pgflow_counter_seq RESTART WITH 1;
+
+-- job id sequence
+CREATE SEQUENCE IF NOT EXISTS pgflow_value_seq;
+ALTER SEQUENCE pgflow_value_seq RESTART WITH 1;
+
+-- enqueue a bunch of messages
+SELECT pgmq.send(
+    'pgflow',
+    ('{"value": ' || nextval('pgflow_value_seq')::text || '}')::jsonb
+)
+FROM generate_series(1, :msg_count) as i;
+
+SELECT supaworker.spawn(queue_name => 'pgflow-worker-2');
+
+SQL
