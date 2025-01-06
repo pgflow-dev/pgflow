@@ -13,6 +13,7 @@
   "plugins": [
     "@nx/js/typescript",
     "@axhxrx/nx-deno",
+    "@nx/vite",
     {
       "plugin": "@nx/eslint/plugin",
       "options": {
