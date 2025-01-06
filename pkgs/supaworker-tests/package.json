@@ -7,60 +7,14 @@
     "projectType": "application",
     "sourceRoot": "pkgs/supaworker-tests/src",
     "targets": {
-      "build": {
-        "executor": "@nx/esbuild:esbuild",
+      "test": {
+        "executor": "@nx/vite:test",
         "outputs": [
-          "{options.outputPath}"
-        ],
-        "defaultConfiguration": "production",
-        "options": {
-          "platform": "node",
-          "outputPath": "dist/pkgs/supaworker-tests",
-          "format": [
-            "cjs"
-          ],
-          "bundle": false,
-          "main": "pkgs/supaworker-tests/src/main.ts",
-          "tsConfig": "pkgs/supaworker-tests/tsconfig.app.json",
-          "assets": [
-            "pkgs/supaworker-tests/src/assets"
-          ],
-          "esbuildOptions": {
-            "sourcemap": true,
-            "outExtension": {
-              ".js": ".js"
-            }
-          }
-        },
-        "configurations": {
-          "development": {},
-          "production": {
-            "esbuildOptions": {
-              "sourcemap": false,
-              "outExtension": {
-                ".js": ".js"
-              }
-            }
-          }
-        }
-      },
-      "serve": {
-        "executor": "@nx/js:node",
-        "defaultConfiguration": "development",
-        "dependsOn": [
-          "build"
+          "{workspaceRoot}/coverage/pkgs/supaworker-tests"
         ],
         "options": {
-          "buildTarget": "supaworker-tests:build",
-          "runBuildTargetDependencies": false
-        },
-        "configurations": {
-          "development": {
-            "buildTarget": "supaworker-tests:build:development"
-          },
-          "production": {
-            "buildTarget": "supaworker-tests:build:production"
-          }
+          "passWithNoTests": false,
+          "reportsDirectory": "../../coverage/pkgs/supaworker-tests"
         }
       }
     }
