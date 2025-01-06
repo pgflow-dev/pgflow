@@ -1,5 +1,4 @@
 {
   "imports": {
-    "@pgflow/supabase-worker": "./pkgs/supabase-worker/mod.ts"
   }
 }
