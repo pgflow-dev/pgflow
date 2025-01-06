@@ -1,0 +1,14 @@
+{
+  "imports": {
+    "postgres": "https://deno.land/x/postgresjs@v3.4.5/mod.js"
+  },
+  "tasks": {
+    "cache": "deno cache *.ts",
+    "esm:add": "deno run -A https://esm.sh/v135 add",
+    "esm:update": "deno run -A https://esm.sh/v135 update",
+    "esm:remove": "deno run -A https://esm.sh/v135 remove"
+  },
+  "lock": true,
+  "lockfile": "./deno.lock",
+  "scopes": {}
+}
