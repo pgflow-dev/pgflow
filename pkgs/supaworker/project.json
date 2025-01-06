@@ -1,22 +1,22 @@
 {
-  "name": "supabase-worker",
+  "name": "supaworker",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "pkgs/supabase-worker",
+  "sourceRoot": "pkgs/supaworker",
   "projectType": "library",
   "targets": {
     "test": {
       "executor": "@axhxrx/nx-deno:test",
-      "outputs": ["{workspaceRoot}/coverage/pkgs/supabase-worker"],
+      "outputs": ["{workspaceRoot}/coverage/pkgs/supaworker"],
       "options": {
-        "coverageDirectory": "coverage/pkgs/supabase-worker",
-        "denoConfig": "pkgs/supabase-worker/deno.json",
+        "coverageDirectory": "coverage/pkgs/supaworker",
+        "denoConfig": "pkgs/supaworker/deno.json",
         "check": "local"
       }
     },
     "lint": {
       "executor": "@axhxrx/nx-deno:lint",
       "options": {
-        "denoConfig": "pkgs/supabase-worker/deno.json"
+        "denoConfig": "pkgs/supaworker/deno.json"
       }
     }
   },

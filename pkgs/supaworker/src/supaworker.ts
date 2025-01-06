@@ -3,5 +3,5 @@
  * @return {string}
  */
 export function supabaseWorker() {
-  return 'supabase-worker';
+  return 'supaworker';
 }

@@ -6,5 +6,5 @@
     "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"]
   },
   "nxCloudId": "676490227393fa777407053a",
-  "plugins": ["@nx/js/typescript", "@nx/deno"]
+  "plugins": ["@nx/js/typescript", "@axhxrx/nx-deno"]
 }
