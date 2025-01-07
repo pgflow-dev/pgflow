@@ -1,13 +1,13 @@
 project_id = "supaworker-tests"
 
 [db]
-port = 54322
-shadow_port = 54320
+port = 50322
+shadow_port = 50320
 major_version = 15
 
 [db.pooler]
 enabled = true
-port = 54329
+port = 50329
 pool_mode = "transaction"
 default_pool_size = 20
 max_client_conn = 100
