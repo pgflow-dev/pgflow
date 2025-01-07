@@ -1,0 +1,4 @@
+pre-commit:
+  commands:
+    nx-affected:
+      run: nx affected
