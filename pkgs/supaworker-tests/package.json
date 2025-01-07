@@ -18,5 +18,8 @@
         }
       }
     }
+  },
+  "devDependencies": {
+    "supabase": "^2.2.1"
   }
 }
