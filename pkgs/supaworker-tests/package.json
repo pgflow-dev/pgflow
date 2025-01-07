@@ -17,7 +17,31 @@
           "parallel": false
         }
       },
+      "supabase:stop": {
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "pkgs/supaworker-tests",
+          "commands": [
+            "supabase stop --no-backup"
+          ],
+          "parallel": false
+        }
+      },
+      "supabase:restart": {
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "pkgs/supaworker-tests",
+          "commands": [
+            "supabase stop --no-backup",
+            "supabase db start"
+          ],
+          "parallel": false
+        }
+      },
       "supabase:reset": {
+        "dependsOn": [
+          "supabase:start"
+        ],
         "executor": "nx:run-commands",
         "options": {
           "cwd": "pkgs/supaworker-tests",
@@ -31,9 +55,7 @@
       },
       "test:pgtap": {
         "dependsOn": [
-          {
-            "target": "supabase:start"
-          }
+          "supabase:start"
         ],
         "executor": "nx:run-commands",
         "options": {
