@@ -20,10 +20,8 @@
   "nxCloudId": "676490227393fa777407053a",
   "plugins": [
     "@nx/js/typescript",
-    "@axhxrx/nx-deno",
-    "@nx/vite",
     "@nx/eslint/plugin",
-    "@nx/vite/plugin"
+    "@axhxrx/nx-deno"
   ],
   "targetDefaults": {
     "@nx/esbuild:esbuild": {

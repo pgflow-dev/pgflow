@@ -7,14 +7,29 @@
     "projectType": "application",
     "sourceRoot": "pkgs/supaworker-tests/src",
     "targets": {
-      "test": {
-        "executor": "@nx/vite:test",
-        "outputs": [
-          "{workspaceRoot}/coverage/pkgs/supaworker-tests"
-        ],
+      "supabase:start": {
+        "executor": "nx:run-commands",
         "options": {
-          "passWithNoTests": false,
-          "reportsDirectory": "../../coverage/pkgs/supaworker-tests"
+          "cwd": "pkgs/supaworker-tests",
+          "commands": [
+            "supabase db start"
+          ],
+          "parallel": false
+        }
+      },
+      "test:pgtap": {
+        "dependsOn": [
+          {
+            "target": "supabase:start"
+          }
+        ],
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "pkgs/supaworker-tests",
+          "commands": [
+            "supabase db test"
+          ],
+          "parallel": false
         }
       }
     }

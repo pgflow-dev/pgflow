@@ -1,5 +1,7 @@
 {
-  "deno.enablePaths": ["packages/supabase-worker"],
+  "deno.enablePaths": [
+    "packages/supabase-worker"
+  ],
   "deno.unstable": true,
   "deno.importMap": "./import_map.json"
 }

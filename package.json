@@ -8,11 +8,11 @@
     "@axhxrx/nx-deno": "^1.0.2",
     "@eslint/js": "^9.8.0",
     "@nx/esbuild": "20.3.0",
-    "@nx/eslint": "20.3.0",
+    "@nx/eslint": "20.2.2",
     "@nx/eslint-plugin": "20.3.0",
     "@nx/js": "20.3.0",
     "@nx/node": "^20.3.0",
-    "@nx/vite": "^20.3.0",
+    "@nx/vite": "^20.2.2",
     "@nx/web": "20.3.0",
     "@swc-node/register": "~1.9.1",
     "@swc/core": "~1.5.7",
@@ -31,6 +31,5 @@
     "typescript-eslint": "^8.13.0",
     "vite": "^5.0.0",
     "vitest": "^1.3.1"
-  },
-  "dependencies": {}
+  }
 }
