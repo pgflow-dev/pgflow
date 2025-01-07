@@ -1,5 +1,6 @@
 {
   "imports": {
-    "@pgflow/supabase-worker": "./pkgs/supabase-worker/mod.ts"
+    "@pgflow/supaworker": "./pkgs/supaworker/mod.ts",
+    "postgres": "https://deno.land/x/postgresjs@v3.4.5/mod.js"
   }
 }

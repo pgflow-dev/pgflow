@@ -1,0 +1,40 @@
+{
+  "name": "@pgflow/supaworker-tests",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "name": "supaworker-tests",
+    "projectType": "application",
+    "sourceRoot": "pkgs/supaworker-tests/src",
+    "targets": {
+      "supabase:start": {
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "pkgs/supaworker-tests",
+          "commands": [
+            "supabase db start"
+          ],
+          "parallel": false
+        }
+      },
+      "test:pgtap": {
+        "dependsOn": [
+          {
+            "target": "supabase:start"
+          }
+        ],
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "pkgs/supaworker-tests",
+          "commands": [
+            "supabase db test"
+          ],
+          "parallel": false
+        }
+      }
+    }
+  },
+  "devDependencies": {
+    "supabase": "^2.2.1"
+  }
+}

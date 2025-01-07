@@ -1,0 +1,40 @@
+project_id = "supaworker-tests"
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.pooler]
+enabled = true
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[db.seed]
+enabled = true
+sql_paths = ['./seed.sql']
+
+[edge_runtime]
+enabled = true
+policy = "per_worker"
+inspector_port = 8083
+
+# disable unused features
+[api]
+enabled = false
+[realtime]
+enabled = false
+[studio]
+enabled = false
+[inbucket]
+enabled = false
+[analytics]
+enabled = false
+[storage]
+enabled = false
+[auth]
+enabled = false
+
+
