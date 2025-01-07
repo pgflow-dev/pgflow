@@ -1,0 +1,52 @@
+{
+  "name": "@pgflow/supabase-plugin",
+  "version": "0.0.1",
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "typings": "./dist/index.d.ts",
+  "private": true,
+  "nx": {
+    "sourceRoot": "pkgs/supaworker-tests/tools/supabase-plugin/src",
+    "projectType": "library",
+    "targets": {
+      "build": {
+        "executor": "@nx/js:tsc",
+        "outputs": [
+          "{options.outputPath}"
+        ],
+        "options": {
+          "outputPath": "pkgs/supaworker-tests/tools/supabase-plugin/dist",
+          "main": "pkgs/supaworker-tests/tools/supabase-plugin/src/index.ts",
+          "tsConfig": "pkgs/supaworker-tests/tools/supabase-plugin/tsconfig.lib.json",
+          "rootDir": "pkgs/supaworker-tests/tools/supabase-plugin/src",
+          "generatePackageJson": false,
+          "assets": [
+            {
+              "input": "./pkgs/supaworker-tests/tools/supabase-plugin/src",
+              "glob": "**/!(*.ts)",
+              "output": "."
+            },
+            {
+              "input": "./pkgs/supaworker-tests/tools/supabase-plugin/src",
+              "glob": "**/*.d.ts",
+              "output": "."
+            }
+          ]
+        }
+      },
+      "test": {
+        "executor": "@nx/vite:test",
+        "outputs": [
+          "{options.reportsDirectory}"
+        ],
+        "options": {
+          "reportsDirectory": "../../../../coverage/pkgs/supaworker-tests/tools/supabase-plugin"
+        }
+      }
+    },
+    "name": "supabase-plugin"
+  }
+}

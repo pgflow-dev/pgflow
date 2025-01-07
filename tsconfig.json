@@ -5,6 +5,9 @@
   "references": [
     {
       "path": "./pkgs/supaworker-tests"
+    },
+    {
+      "path": "./pkgs/supaworker-tests/tools/supabase-plugin"
     }
   ]
 }

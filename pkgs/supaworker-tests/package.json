@@ -69,6 +69,7 @@
     }
   },
   "devDependencies": {
+    "@nx/plugin": "^20.3.0",
     "supabase": "^2.2.1"
   }
 }
