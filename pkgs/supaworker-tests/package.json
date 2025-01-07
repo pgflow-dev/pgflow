@@ -17,6 +17,18 @@
           "parallel": false
         }
       },
+      "supabase:reset": {
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "pkgs/supaworker-tests",
+          "commands": [
+            "mkdir -p supabase/migrations",
+            "cp sql/*.sql supabase/migrations/",
+            "supabase db reset"
+          ],
+          "parallel": false
+        }
+      },
       "test:pgtap": {
         "dependsOn": [
           {
