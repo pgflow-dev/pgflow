@@ -47,7 +47,7 @@
           "cwd": "pkgs/supaworker-tests",
           "commands": [
             "mkdir -p supabase/migrations",
-            "cp sql/*.sql supabase/migrations/",
+            "cp ../supaworker/sql/*.sql supabase/migrations/",
             "supabase db reset"
           ],
           "parallel": false
