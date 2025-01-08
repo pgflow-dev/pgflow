@@ -13,3 +13,11 @@ export type PgmqMessageRecord = {
   vt: string | null;
   message: Json | null;
 };
+
+export type WorkerRow = {
+  last_heartbeat_at: string;
+  queue_name: string;
+  started_at: string;
+  stopped_at: string | null;
+  worker_id: string;
+};

@@ -1,7 +1,5 @@
-import type { postgres } from "postgres";
-import type { Database } from "../../types.d.ts";
-
-type WorkerRow = Database["supaworker"]["Tables"]["workers"]["Row"];
+import type postgres from 'postgres';
+import type { WorkerRow } from './types.ts';
 
 export class Queries {
   constructor(private readonly sql: postgres.Sql) {}
