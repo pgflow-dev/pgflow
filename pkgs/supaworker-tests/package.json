@@ -66,6 +66,11 @@
           ],
           "parallel": false
         }
+      },
+      "test": {
+        "dependsOn": [
+          "test:pgtap"
+        ]
       }
     }
   },
