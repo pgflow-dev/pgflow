@@ -91,7 +91,7 @@ begin
 
     IF v_active_count < 1 THEN
         raise notice 'Spawning new worker for queue: %', p_queue_name;
-        PERFORM pgflow.call_edgefn_async('pgflow-worker-2', p_queue_name);
+        PERFORM supaworker.call_edgefn_async('pgflow-worker-2', p_queue_name);
         return 1;
     ELSE
         raise notice 'Worker Exists for queue: NOT spawning new worker for queue: %', p_queue_name;
