@@ -1,10 +1,10 @@
-import postgres from "postgres";
-import { Json } from "./types.ts";
-import { Queue } from "./Queue.ts";
-import { Queries } from "./Queries.ts";
-import { Heartbeat } from "./Heartbeat.ts";
-import { ExecutionController } from "./ExecutionController.ts";
-import { Logger } from "./Logger.ts";
+import postgres from 'postgres';
+import { Json } from './types.ts';
+import { Queue } from './Queue.ts';
+import { Queries } from './Queries.ts';
+import { Heartbeat } from './Heartbeat.ts';
+import { ExecutionController } from './ExecutionController.ts';
+import { Logger } from './Logger.ts';
 
 export interface MessageRecord<MessagePayload extends Json> {
   msg_id: number;
@@ -36,7 +36,7 @@ export class Worker<MessagePayload extends Json> {
   private heartbeat?: Heartbeat;
   private config: Required<WorkerConfig>;
   private logger = new Logger();
-  readonly edgeFunctionName?: string;
+  public edgeFunctionName?: string;
 
   constructor(config: WorkerConfig) {
     this.config = {
@@ -59,7 +59,7 @@ export class Worker<MessagePayload extends Json> {
     this.executionController = new ExecutionController(
       this.queue,
       this.mainController.signal,
-      this.config.maxConcurrency,
+      this.config.maxConcurrency
     );
   }
 
@@ -77,30 +77,30 @@ export class Worker<MessagePayload extends Json> {
       5000,
       this.queries,
       this.workerId,
-      this.log.bind(this),
+      this.log.bind(this)
     );
 
-    this.log("Worker started");
+    this.log('Worker started');
   }
 
   private async acknowledgeStop() {
     if (!this.workerId || !this.isRunning) {
-      throw new Error("Cannot stop worker: not started!");
+      throw new Error('Cannot stop worker: not started!');
     }
-    console.log("onWorkerStopped >>>>");
+    console.log('onWorkerStopped >>>>');
     await this.queries.onWorkerStopped(this.workerId);
-    console.log("<<<< onWorkerStopped");
+    console.log('<<<< onWorkerStopped');
   }
 
   async start(messageHandler: (message: MessagePayload) => Promise<void>) {
     if (this.isRunning) {
-      this.log("Worker already running");
+      this.log('Worker already running');
       return;
     }
 
     await this.acknowledgeStart();
 
-    console.log("worker main loop started");
+    console.log('worker main loop started');
     while (!this.mainController.signal.aborted) {
       try {
         await this.heartbeat?.send(this.edgeFunctionName);
@@ -115,12 +115,12 @@ export class Worker<MessagePayload extends Json> {
             this.config.batchSize,
             this.config.visibilityTimeout,
             this.config.maxPollSeconds,
-            this.config.pollIntervalMs,
+            this.config.pollIntervalMs
           );
         }
 
         if (this.mainController.signal.aborted) {
-          this.log("-> Discarding messageRecords because worker is stopping");
+          this.log('-> Discarding messageRecords because worker is stopping');
         } else {
           // console.log(" -> messageRecords", messageRecords);
 
@@ -129,22 +129,22 @@ export class Worker<MessagePayload extends Json> {
           }
         }
       } catch (error: unknown) {
-        console.error("Error processing messages:", error);
+        console.error('Error processing messages:', error);
       }
     }
     this.isRunning = false;
-    this.log("Worker main loop stopped");
+    this.log('Worker main loop stopped');
   }
 
   async stop() {
-    this.log("STOPPING Worker...");
+    this.log('STOPPING Worker...');
 
-    this.log("-> Stopped accepting new messages");
+    this.log('-> Stopped accepting new messages');
     this.mainController.abort();
 
-    console.log("-> Waiting for execution completion");
+    console.log('-> Waiting for execution completion');
     await this.executionController.awaitCompletion();
-    console.log("-> Execution completed");
+    console.log('-> Execution completed');
 
     // Now safe to close connection
     await this.acknowledgeStop();

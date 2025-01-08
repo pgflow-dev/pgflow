@@ -1,11 +1,11 @@
-import { type postgres } from "postgres";
-import { type Json } from "./types.ts";
-import { MessageRecord } from "./Worker.ts";
+import type postgres from 'postgres';
+import { type Json } from './types.ts';
+import { MessageRecord } from './Worker.ts';
 
 export class Queue<MessagePayload extends Json> {
   constructor(
     private readonly sql: postgres.Sql,
-    private readonly queueName: string,
+    private readonly queueName: string
   ) {}
 
   async archive(msgId: number): Promise<void> {
@@ -25,7 +25,7 @@ export class Queue<MessagePayload extends Json> {
     batchSize = 20,
     visibilityTimeout = 2,
     maxPollSeconds = 5,
-    pollIntervalMs = 200,
+    pollIntervalMs = 200
   ) {
     return await this.sql<MessageRecord<MessagePayload>[]>`
       SELECT *
@@ -45,7 +45,7 @@ export class Queue<MessagePayload extends Json> {
 
   async setVt(
     msgId: number,
-    vtOffsetSeconds: number,
+    vtOffsetSeconds: number
   ): Promise<MessageRecord<MessagePayload>> {
     const records = await this.sql<MessageRecord<MessagePayload>[]>`
       SELECT * FROM pgmq.set_vt(

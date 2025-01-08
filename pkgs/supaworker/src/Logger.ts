@@ -1,5 +1,5 @@
 export class Logger {
-  constructor(private workerId: string = "starting") {}
+  constructor(private workerId: string = 'starting') {}
 
   setWorkerId(id: string) {
     this.workerId = id;
