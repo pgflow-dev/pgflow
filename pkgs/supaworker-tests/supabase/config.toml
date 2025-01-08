@@ -1,5 +1,9 @@
 project_id = "supaworker-tests"
 
+[api]
+enabled = true
+port = 50321
+
 [db]
 port = 50322
 shadow_port = 50320
@@ -22,8 +26,6 @@ policy = "per_worker"
 inspector_port = 8083
 
 # disable unused features
-[api]
-enabled = false
 [realtime]
 enabled = false
 [studio]

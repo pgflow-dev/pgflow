@@ -65,6 +65,20 @@
           "parallel": false
         }
       },
+      "supabase:functions-serve": {
+        "dependsOn": [
+          "supabase:start",
+          "supabase:prepare-edge-fn"
+        ],
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "pkgs/supaworker-tests",
+          "commands": [
+            "supabase functions serve --env-file supabase/.env"
+          ],
+          "parallel": false
+        }
+      },
       "test:pgtap": {
         "dependsOn": [
           "supabase:start"
