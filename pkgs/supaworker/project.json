@@ -4,7 +4,7 @@
   "sourceRoot": "pkgs/supaworker",
   "projectType": "library",
   "targets": {
-    "test": {
+    "test:unit": {
       "executor": "@axhxrx/nx-deno:test",
       "outputs": ["{workspaceRoot}/coverage/pkgs/supaworker"],
       "options": {
@@ -18,6 +18,97 @@
       "options": {
         "denoConfig": "pkgs/supaworker/deno.json"
       }
+    },
+    "supabase:start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/supaworker",
+        "commands": [
+          "supabase db start"
+        ],
+        "parallel": false
+      }
+    },
+    "supabase:stop": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/supaworker",
+        "commands": [
+          "supabase stop --no-backup"
+        ],
+        "parallel": false
+      }
+    },
+    "supabase:restart": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/supaworker",
+        "commands": [
+          "supabase stop --no-backup",
+          "supabase db start"
+        ],
+        "parallel": false
+      }
+    },
+    "supabase:reset": {
+      "dependsOn": [
+        "supabase:prepare"
+      ],
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/supaworker",
+        "commands": [
+          "mkdir -p supabase/migrations",
+          "rm supabase/migrations/*.sql",
+          "cp ../supaworker/sql/*.sql supabase/migrations/",
+          "supabase db reset"
+        ],
+        "parallel": false
+      }
+    },
+    "supabase:prepare-edge-fn": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/supaworker",
+        "commands": [
+          "rm -f ./supabase/functions/_supaworker/*.ts",
+          "cp ../supaworker/src/*.ts ./supabase/functions/_supaworker/"
+        ],
+        "parallel": false
+      }
+    },
+    "supabase:functions-serve": {
+      "dependsOn": [
+        "supabase:start",
+        "supabase:prepare-edge-fn"
+      ],
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/supaworker",
+        "commands": [
+          "supabase functions serve --env-file supabase/.env"
+        ],
+        "parallel": false
+      }
+    },
+    "test:pgtap": {
+      "dependsOn": [
+        "supabase:start"
+      ],
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/supaworker",
+        "commands": [
+          "supabase db test"
+        ],
+        "parallel": false
+      }
+    },
+    "test": {
+      "dependsOn": [
+        "test:pgtap",
+        "test:unit"
+      ]
     }
   },
   "tags": []

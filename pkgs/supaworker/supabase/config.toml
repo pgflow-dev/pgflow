@@ -1,4 +1,4 @@
-project_id = "supaworker-tests"
+project_id = "supaworker"
 
 [api]
 enabled = true
