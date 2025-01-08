@@ -12,10 +12,10 @@ Deno.test('should send message to queue and check sequence', async () => {
 
     await delay(100);
 
-    const seqResult = await sql`SELECT last_value FROM test_seq`;
+    const seqResult = await sql`SELECT last_value::integer FROM test_seq`;
     const nextVal = seqResult[0].last_value;
 
-    assertEquals(nextVal, '5');
+    assertEquals(nextVal, 5);
   } finally {
     // Clean up connection
     await sql.end();
