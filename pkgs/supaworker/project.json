@@ -4,13 +4,24 @@
   "sourceRoot": "pkgs/supaworker",
   "projectType": "library",
   "targets": {
-    "test:unit": {
+    "test:nx-deno": {
       "executor": "@axhxrx/nx-deno:test",
       "outputs": ["{workspaceRoot}/coverage/pkgs/supaworker"],
       "options": {
         "coverageDirectory": "coverage/pkgs/supaworker",
         "denoConfig": "pkgs/supaworker/deno.json",
+        "allowNone": false,
         "check": "local"
+      }
+    },
+    "test:unit": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/supaworker",
+        "commands": [
+          "deno test --allow-all --env-file=supabase/.env"
+        ],
+        "parallel": false
       }
     },
     "lint": {
