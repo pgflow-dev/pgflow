@@ -40,7 +40,7 @@
       },
       "supabase:reset": {
         "dependsOn": [
-          "supabase:start"
+          "supabase:prepare"
         ],
         "executor": "nx:run-commands",
         "options": {
@@ -50,6 +50,17 @@
             "rm supabase/migrations/*.sql",
             "cp ../supaworker/sql/*.sql supabase/migrations/",
             "supabase db reset"
+          ],
+          "parallel": false
+        }
+      },
+      "supabase:prepare-edge-fn": {
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "pkgs/supaworker-tests",
+          "commands": [
+            "rm -f ./supabase/functions/_supaworker/*.ts",
+            "cp ../supaworker/src/*.ts ./supabase/functions/_supaworker/"
           ],
           "parallel": false
         }
