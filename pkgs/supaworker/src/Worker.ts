@@ -22,7 +22,7 @@ export interface WorkerConfig {
   maxPollSeconds?: number;
   pollIntervalMs?: number;
   maxPgConnections?: number;
-  maxConcurrency?: number;
+  maxConcurrent?: number;
 }
 
 export class Worker<MessagePayload extends Json> {
@@ -47,7 +47,7 @@ export class Worker<MessagePayload extends Json> {
       maxPollSeconds: config.maxPollSeconds ?? 5,
       pollIntervalMs: config.pollIntervalMs ?? 100,
       maxPgConnections: config.maxPgConnections ?? 4,
-      maxConcurrency: config.maxConcurrency ?? 50,
+      maxConcurrent: config.maxConcurrency ?? 50,
     };
 
     this.sql = postgres(this.config.connectionString, {
@@ -59,7 +59,7 @@ export class Worker<MessagePayload extends Json> {
     this.executionController = new ExecutionController(
       this.queue,
       this.mainController.signal,
-      this.config.maxConcurrency
+      this.config.maxConcurrent
     );
   }
 

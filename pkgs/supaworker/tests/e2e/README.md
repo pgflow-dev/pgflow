@@ -41,8 +41,8 @@ functions/
 - [x] Worker picks messages from queue
 - [ ] Worker calls handler function with each message
 - [x] Worker can process big amounts of messages (restarts itself when CPU clock limit hits)
-- Different worker functions can pull from different queues
-- [ ] Drent worker functions can pull from the same queue
+- [ ] Different worker functions can pull from different queues
+- [ ] Different worker functions can pull from the same queue
 
 ✅ Worker Lifecycle
 
@@ -59,4 +59,4 @@ functions/
 
 ✅ Concurrency
 
-- [ ] Worker respects maxConcurrency (does not read new messages if there are no empty slots, reads max empty-slots-count of messages)
+- [ ] Worker respects maxConcurrent (does not read new messages if there are no empty slots, reads max empty-slots-count of messages)

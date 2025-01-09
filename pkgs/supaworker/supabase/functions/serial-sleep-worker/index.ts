@@ -3,4 +3,4 @@ import { delay } from 'jsr:@std/async';
 
 const sleep1s = () => delay(1000);
 
-Supaworker.start(sleep1s, { maxConcurrency: 1 });
+Supaworker.start(sleep1s, { maxConcurrent: 1 });
