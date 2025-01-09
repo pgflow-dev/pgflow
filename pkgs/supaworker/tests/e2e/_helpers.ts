@@ -1,20 +1,42 @@
 import { sql } from '../sql.ts';
 import { delay } from 'jsr:@std/async';
 
-export async function seqLastValue(): Promise<number> {
-  const seqResult = await sql`SELECT last_value::integer FROM test_seq`;
+export async function seqLastValue(
+  seqName: string = 'test_seq'
+): Promise<number> {
+  const seqResult = await sql`SELECT last_value::integer FROM ${sql(seqName)}`;
   return seqResult[0].last_value;
+}
+
+interface WaitForSeqValueOptions {
+  pollIntervalMs?: number;
+  seqName?: string;
+  timeoutMs?: number;
 }
 
 export async function waitForSeqValue(
   value: number,
-  message: string = 'Polling...'
+  options: WaitForSeqValueOptions = {}
 ): Promise<number> {
+  const {
+    pollIntervalMs = 1000,
+    seqName = 'test_seq',
+    timeoutMs = 30000,
+  } = options;
+
+  const startTime = Date.now();
   let lastVal = 0;
+
   while (lastVal < value) {
-    console.log(`${message} current value:`, lastVal);
-    await delay(1000);
-    lastVal = await seqLastValue();
+    if (Date.now() - startTime > timeoutMs) {
+      throw new Error(
+        `Timeout waiting for sequence ${seqName} to reach value ${value}`
+      );
+    }
+
+    console.log(`Polling ${seqName}... current value:`, lastVal);
+    await delay(pollIntervalMs);
+    lastVal = await seqLastValue(seqName);
   }
   return lastVal;
 }
