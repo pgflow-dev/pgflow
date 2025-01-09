@@ -82,8 +82,8 @@ importers:
         specifier: ^2.6.2
         version: 2.8.8
       supabase:
-        specifier: ^2.2.1
-        version: 2.2.1
+        specifier: ^2.1.4
+        version: 2.1.4
       tslib:
         specifier: ^2.3.0
         version: 2.8.1
@@ -7601,8 +7601,8 @@ packages:
       peek-readable: 5.3.1
     dev: true
 
-  /supabase@2.2.1:
-    resolution: {integrity: sha512-uTu8f4kT9wE3EEQTAJAWFlHyu8ymauFxWEz2FDGIQ2MzlD1Xb1NCHtsj/xvmJWqrGI1jnBYcPuatZVTHj1jR1g==}
+  /supabase@2.1.4:
+    resolution: {integrity: sha512-OoDV7C6tkqzIISY1bJdOaQvl9Wy3YpzfDkEzq0axGxgbCeWW/Qhr3vKw4hl+lkGKduRp9lYVg+SKh51PTIaRUg==}
     engines: {npm: '>=8'}
     hasBin: true
     requiresBuild: true
