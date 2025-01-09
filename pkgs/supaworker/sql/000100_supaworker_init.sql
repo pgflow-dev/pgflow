@@ -78,23 +78,23 @@ $$ language plpgsql;
 
 -- Spawn a new worker asynchronously via edge function
 create or replace function supaworker.spawn(
-    queue_name text
+    edge_fn_name text
 ) returns integer as $$
 declare
-    p_queue_name text := queue_name;
+    p_edge_fn_name text := edge_fn_name;
     v_active_count integer;
 begin
     SELECT COUNT(*)
     INTO v_active_count
     FROM supaworker.active_workers AS aw
-    WHERE aw.queue_name = p_queue_name;
+    WHERE aw.edge_fn_name = p_edge_fn_name;
 
     IF v_active_count < 1 THEN
-        raise notice 'Spawning new worker for queue: %', p_queue_name;
-        PERFORM supaworker.call_edgefn_async('pgflow-worker-2', p_queue_name);
+        raise notice 'Spawning new worker: %', p_edge_fn_name;
+        PERFORM supaworker.call_edgefn_async(p_edge_fn_name, '');
         return 1;
     ELSE
-        raise notice 'Worker Exists for queue: NOT spawning new worker for queue: %', p_queue_name;
+        raise notice 'Worker Exists for queue: NOT spawning new worker for queue: %', p_edge_fn_name;
         return 0;
     END IF;
 end;
