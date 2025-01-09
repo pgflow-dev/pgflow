@@ -1,6 +1,6 @@
 import { sql } from '../sql.ts';
 import { assertEquals } from 'jsr:@std/assert';
-import { waitForActiveWorker, waitForSeqValue } from './_helpers.ts';
+import { startWorker, waitForSeqValue } from './_helpers.ts';
 import { sendBatch } from './_helpers.ts';
 
 Deno.test('should send message to queue and check sequence', async () => {
@@ -8,14 +8,12 @@ Deno.test('should send message to queue and check sequence', async () => {
   await sql`ALTER SEQUENCE test_seq RESTART WITH 1`;
   await sql`DELETE FROM pgmq.q_pgflow`;
   await sql`DELETE FROM pgmq.a_pgflow`;
-  await sql`SELECT supaworker.spawn('increment-sequence')`;
-  await waitForActiveWorker();
-  await sendBatch(6);
+  await startWorker('increment-sequence');
 
   try {
-    const lastVal = await waitForSeqValue(6, {
-      timeoutMs: 20000,
-    });
+    await sendBatch(6);
+
+    const lastVal = await waitForSeqValue(6);
 
     assertEquals(lastVal, 6, 'sequence should have 6 values');
 
@@ -25,7 +23,6 @@ Deno.test('should send message to queue and check sequence', async () => {
     const archive = await sql`SELECT * FROM pgmq.a_pgflow`;
     assertEquals(archive.length, 6, 'archive should have 5 messages');
   } finally {
-    // Clean up connection
     await sql.end();
   }
 });
