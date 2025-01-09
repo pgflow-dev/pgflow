@@ -1,10 +1,9 @@
-import postgres from 'postgres';
+import { sql } from '../sql.ts';
 import { assertEquals } from 'jsr:@std/assert';
 import { delay } from 'jsr:@std/async';
 
 Deno.test('should send message to queue and check sequence', async () => {
   // Connect to postgres
-  const sql = postgres(Deno.env.get('DB_URL')!);
   const result = await sql`ALTER SEQUENCE test_seq RESTART WITH 1`;
 
   try {
