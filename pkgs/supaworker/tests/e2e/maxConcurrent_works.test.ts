@@ -5,7 +5,14 @@ import {
   assertLess,
 } from 'jsr:@std/assert';
 import { delay } from 'jsr:@std/async';
-import { seqLastValue, waitForSeqValue } from './_helpers.ts';
+import {
+  sendBatch,
+  seqLastValue,
+  waitForActiveWorker,
+  waitForSeqValue,
+} from './_helpers.ts';
+
+const MESSAGES_TO_SEND = 5;
 
 Deno.test('worker respect maxConcurrent settings', async () => {
   await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
@@ -19,9 +26,12 @@ Deno.test('worker respect maxConcurrent settings', async () => {
     // se we will expect roughly 1 message per second
     const startTime = Date.now();
 
-    await sql`SELECT pgmq.send_batch('pgflow', ARRAY['{}', '{}', '{}', '{}', '{}']::jsonb[])`;
-
-    await waitForSeqValue(5);
+    await sendBatch(MESSAGES_TO_SEND);
+    const expectedSeqValue = MESSAGES_TO_SEND + 1; // intial value is 1
+    await waitForSeqValue(expectedSeqValue, {
+      pollIntervalMs: 1000,
+      timeoutMs: 7000,
+    });
 
     const endTime = Date.now();
     const totalMs = Math.floor(endTime - startTime);
@@ -30,11 +40,6 @@ Deno.test('worker respect maxConcurrent settings', async () => {
       totalMs,
       5000,
       'Should take at least 5 seconds to process all messages'
-    );
-    assertLess(
-      totalMs,
-      7000,
-      'Should take less than 7 seconds to process all messages'
     );
   } finally {
     // Clean up connection
