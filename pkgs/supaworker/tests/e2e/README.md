@@ -59,4 +59,4 @@ functions/
 
 ✅ Concurrency
 
-- [ ] Worker respects maxConcurrent (does not read new messages if there are no empty slots, reads max empty-slots-count of messages)
+- [x] Worker respects maxConcurrent and processes messages in serial when set to 1
