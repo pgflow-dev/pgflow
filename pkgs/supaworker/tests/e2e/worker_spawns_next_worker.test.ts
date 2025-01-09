@@ -28,6 +28,8 @@ Deno.test('should spawn next worker when CPU clock limit hits', async () => {
   await startWorker('increment-sequence');
 
   await sql`ALTER SEQUENCE test_seq RESTART WITH 1`;
+  await sql`DELETE FROM pgmq.q_pgflow`;
+  await sql`DELETE FROM pgmq.a_pgflow`;
   await sql`DELETE FROM supaworker.workers`;
 
   const MESSAGES_TO_SEND = 10000;
@@ -58,10 +60,15 @@ Deno.test('should spawn next worker when CPU clock limit hits', async () => {
 
     const workers = await fetchWorkers('increment-sequence');
     console.log('workers', workers);
+
+    const queue = await sql`SELECT * FROM pgmq.q_pgflow`;
+    assertEquals(queue.length, 0, 'queue should be empty');
+
+    const archive = await sql`SELECT * FROM pgmq.a_pgflow`;
     assertEquals(
-      workers.length,
-      2,
-      `Should spawn additional worker because one cannot process ${MESSAGES_TO_SEND} messages`
+      archive.length,
+      MESSAGES_TO_SEND,
+      `archive should have all ${MESSAGES_TO_SEND} messages`
     );
   } finally {
     await sql.end();
