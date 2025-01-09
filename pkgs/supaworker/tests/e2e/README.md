@@ -24,11 +24,31 @@ This approach lets us verify the entire stack from message enqueueing through wo
 - `queue` - pgmq queue that workers can pull from
 - `message` - PGMQ `message_record` that contains metadata (`msg_id`, `read_ct`, `vt`) and payload (`message JSONB`)
 
+#### Worker naming convention
+
+```sh
+functions/
+├── read-payload-worker/
+├── shared-queue-reader-a-worker/
+├── shared-queue-reader-b-worker/
+├── always-fail-worker/
+├── retry-success-worker/
+└── slow-process-worker/
+```
+
 ### [ ] Happy Path
 
 - [x] Worker picks messages from queue
 - [ ] Worker calls handler function with each message
 - [x] Worker can process big amounts of messages (restarts itself when CPU clock limit hits)
+- Different worker functions can pull from different queues
+- [ ] Drent worker functions can pull from the same queue
+
+✅ Worker Lifecycle
+
+- [ ] Worker registers on start
+- [ ] Worker sends heartbeats every 5s
+- [ ] Worker updates edge_fn_name with heartbeat
 
 ✅ Retries & Failures
 
@@ -40,14 +60,3 @@ This approach lets us verify the entire stack from message enqueueing through wo
 ✅ Concurrency
 
 - [ ] Worker respects maxConcurrency (does not read new messages if there are no empty slots, reads max empty-slots-count of messages)
-
-✅ Worker Lifecycle
-
-- [ ] Worker registers on start
-- [ ] Worker sends heartbeats every 5s
-- [ ] Worker updates edge_fn_name with heartbeat
-
-✅ Queue-Specific Behaviors
-
-- [ ] Check two workers can pull from two different queues
-- [ ] Check two workers can pull from the same queue
