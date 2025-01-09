@@ -1,0 +1,8 @@
+prepare-commit-msg:
+  scripts:
+    'generate-commit-msg.sh':
+      runner: bash
+      output:
+        - meta
+        - summary
+        - error
