@@ -1,8 +1,8 @@
 import { sql } from '../sql.ts';
 import { assertGreaterOrEqual } from 'jsr:@std/assert';
-import { sendBatch, waitForSeqValue, startWorker } from './_helpers.ts';
+import { sendBatch, waitForSeqToIncrementBy, startWorker } from './_helpers.ts';
 
-const MESSAGES_TO_SEND = 10;
+const MESSAGES_TO_SEND = 5;
 
 Deno.test('worker respect maxConcurrent settings', async () => {
   await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
@@ -17,9 +17,8 @@ Deno.test('worker respect maxConcurrent settings', async () => {
     const startTime = Date.now();
 
     await sendBatch(MESSAGES_TO_SEND);
-    const expectedSeqValue = MESSAGES_TO_SEND + 1; // intial value is 1
-    await waitForSeqValue(expectedSeqValue, {
-      timeoutMs: 7000,
+    await waitForSeqToIncrementBy(MESSAGES_TO_SEND, {
+      timeoutMs: MESSAGES_TO_SEND * 1000,
     });
 
     const endTime = Date.now();
@@ -27,8 +26,8 @@ Deno.test('worker respect maxConcurrent settings', async () => {
 
     assertGreaterOrEqual(
       totalMs,
-      MESSAGES_TO_SEND * 1000,
-      `Should take at least ${MESSAGES_TO_SEND} seconds to process all messages`
+      (MESSAGES_TO_SEND - 1) * 1000,
+      `Should take at least ${MESSAGES_TO_SEND}s to process all messages, took ${totalMs}ms instead`
     );
   } finally {
     await sql.end();

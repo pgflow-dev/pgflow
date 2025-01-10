@@ -2,6 +2,39 @@ import { sql } from '../sql.ts';
 import { delay } from 'jsr:@std/async';
 import ProgressBar from 'jsr:@deno-library/progress';
 
+interface WaitForOptions {
+  pollIntervalMs?: number;
+  timeoutMs?: number;
+  description?: string;
+}
+
+export async function waitFor<T>(
+  predicate: () => Promise<T | false>,
+  options: WaitForOptions = {}
+): Promise<T> {
+  const {
+    pollIntervalMs = 250,
+    timeoutMs = 30000,
+    description = 'condition',
+  } = options;
+
+  const startTime = Date.now();
+
+  while (true) {
+    const result = await predicate();
+
+    if (result) return result;
+
+    if (Date.now() - startTime > timeoutMs) {
+      throw new Error(
+        `Timeout after ${timeoutMs}ms waiting for ${description}`
+      );
+    }
+
+    await delay(pollIntervalMs);
+  }
+}
+
 export async function sendBatch(count: number) {
   return await sql`
     SELECT pgmq.send_batch(
@@ -16,7 +49,16 @@ export async function sendBatch(count: number) {
 export async function seqLastValue(
   seqName: string = 'test_seq'
 ): Promise<number> {
-  const seqResult = await sql`SELECT last_value::integer FROM ${sql(seqName)}`;
+  // Postgres sequences are initialized with a value of 1,
+  // but incrementing them for the first time does not increment the last_value,
+  // only sets is_called to true
+  const seqResult = await sql`
+    SELECT 
+      CASE 
+        WHEN is_called THEN last_value::integer 
+        ELSE 0 
+      END as last_value 
+    FROM ${sql(seqName)}`;
   return seqResult[0].last_value;
 }
 
@@ -26,52 +68,49 @@ interface WaitForSeqValueOptions {
   timeoutMs?: number;
 }
 
-export async function waitForSeqValue(
+export async function waitForSeqToIncrementBy(
   value: number,
   options: WaitForSeqValueOptions = {}
 ): Promise<number> {
-  const {
-    pollIntervalMs = 250,
-    seqName = 'test_seq',
-    timeoutMs = 30000,
-  } = options;
+  const { seqName = 'test_seq' } = options;
 
   const progress = new ProgressBar({
     title: `${seqName}`,
     total: value,
     width: 20,
-    // complete: 'X',
-    // incomplete: '.',
-    // display: "[:bar] :eta left | ':title' value: :completed/:total",
   });
 
-  const startTime = Date.now();
-  let lastVal = 0;
+  const startVal = await seqLastValue(seqName);
+  let lastVal = startVal;
 
-  // console.log(`Waiting for '${seqName}' value (${lastVal}/${value})`);
-  while (lastVal < value) {
-    progress.render(lastVal);
-    if (Date.now() - startTime > timeoutMs) {
-      throw new Error(
-        `Timeout waiting for sequence ${seqName} to reach value ${value}`
-      );
+  return await waitFor(
+    async () => {
+      lastVal = await seqLastValue(seqName);
+      progress.render(lastVal);
+      const incrementedBy = lastVal - startVal;
+
+      return incrementedBy >= value ? lastVal : false;
+    },
+    {
+      ...options,
+      description: `sequence ${seqName} to reach value ${value}`,
     }
-
-    await delay(pollIntervalMs);
-    lastVal = await seqLastValue(seqName);
-  }
-  return lastVal;
+  );
 }
 
 export async function waitForActiveWorker() {
-  let hasActiveWorker = false;
-
-  while (!hasActiveWorker) {
-    [{ has_active: hasActiveWorker }] =
-      await sql`SELECT count(*) > 0 AS has_active FROM supaworker.active_workers`;
-    console.log(' -> waiting for active worker ', hasActiveWorker);
-    await delay(300);
-  }
+  return await waitFor(
+    async () => {
+      const [{ has_active: hasActiveWorker }] =
+        await sql`SELECT count(*) > 0 AS has_active FROM supaworker.active_workers`;
+      console.log(' -> waiting for active worker ', hasActiveWorker);
+      return hasActiveWorker;
+    },
+    {
+      pollIntervalMs: 300,
+      description: 'active worker',
+    }
+  );
 }
 
 export async function fetchWorkers(workerName: string) {

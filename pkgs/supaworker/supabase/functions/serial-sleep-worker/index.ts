@@ -7,7 +7,8 @@ const sql = postgres(DB_POOL_URL);
 await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
 
 const sleep1s = async () => {
-  await sql`SELECT nextval('test_seq')`;
+  const lastVal = await sql`SELECT nextval('test_seq')`;
+  console.log('lastVal is ', lastVal);
   await delay(1000);
 };
 
