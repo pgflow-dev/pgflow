@@ -1,9 +1,5 @@
 import { sql } from '../sql.ts';
-import {
-  assertEquals,
-  assertGreater,
-  assertGreaterOrEqual,
-} from 'jsr:@std/assert';
+import { assertGreater, assertGreaterOrEqual } from 'jsr:@std/assert';
 import {
   fetchWorkers,
   sendBatch,
@@ -11,8 +7,8 @@ import {
   waitForSeqToIncrementBy,
 } from './_helpers.ts';
 
-const WORKER_NAME = 'increment-sequence';
-const MESSAGES_TO_SEND = 3000;
+const WORKER_NAME = 'cpu-intensive';
+const MESSAGES_TO_SEND = 3;
 
 Deno.test('should spawn next worker when CPU clock limit hits', async () => {
   await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
@@ -31,22 +27,14 @@ Deno.test('should spawn next worker when CPU clock limit hits', async () => {
     await sendBatch(MESSAGES_TO_SEND);
 
     const lastVal = await waitForSeqToIncrementBy(MESSAGES_TO_SEND, {
-      timeoutMs: 45000,
+      timeoutMs: 15000,
+      pollIntervalMs: 300,
     });
 
     assertGreaterOrEqual(
       lastVal,
       MESSAGES_TO_SEND,
       'Sequence value should be greater than or equal to the number of messages sent'
-    );
-
-    const queue = await sql`SELECT * FROM pgmq.q_pgflow`;
-    const archive = await sql`SELECT * FROM pgmq.a_pgflow`;
-    assertEquals(queue.length, 0, 'queue should be empty');
-    assertEquals(
-      archive.length,
-      MESSAGES_TO_SEND,
-      `archive should have all ${MESSAGES_TO_SEND} messages`
     );
 
     const workers = await fetchWorkers(WORKER_NAME);

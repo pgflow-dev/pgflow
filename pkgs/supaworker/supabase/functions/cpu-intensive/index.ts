@@ -9,13 +9,11 @@ const sql = postgres(DB_POOL_URL);
 await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
 
 async function cpuIntensiveTask() {
-  console.time('cpu-intensive');
   let data = new TextEncoder().encode('burn');
   for (let i = 0; i < 100000; i++) {
     data = new Uint8Array(await crypto.subtle.digest('SHA-256', data));
   }
-  console.timeEnd('cpu-intensive');
-  await sql`SELECT nextval('test_seq')`;
+  console.log('last_val is ', await sql`SELECT nextval('test_seq')`);
 }
 
 Supaworker.start(cpuIntensiveTask);
