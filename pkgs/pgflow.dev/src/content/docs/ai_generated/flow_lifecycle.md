@@ -1,5 +1,6 @@
 ---
-title: Flow Lifecycle 
+title: Flow Lifecycle
+draft: true
 ---
 
 The **Flow Lifecycle** in PGFlow outlines the sequence of events from triggering a workflow to its completion, focusing on seamless integration with your application. This guide explains the process, referencing the provided diagram.

@@ -1,5 +1,6 @@
 ---
 title: Example Guide
+draft: true
 description: A guide in my new Starlight docs site.
 ---
 
