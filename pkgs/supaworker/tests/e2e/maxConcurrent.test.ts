@@ -5,6 +5,7 @@ import {
   sendBatch,
   waitForSeqToIncrementBy,
   startWorker,
+  log,
 } from './_helpers.ts';
 
 const MESSAGES_TO_SEND = 5;
@@ -25,7 +26,7 @@ Deno.test('worker respect maxConcurrent settings', async () => {
         WHERE edge_fn_name = ${WORKER_NAME}
       `;
 
-      console.log('worker_count', worker_count);
+      log('worker_count', worker_count);
       return worker_count === 1;
     },
     { description: 'Waiting for exacly one worker' }

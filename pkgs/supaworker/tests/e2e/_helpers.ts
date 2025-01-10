@@ -8,6 +8,10 @@ interface WaitForOptions {
   description?: string;
 }
 
+export async function log(message: string, ...args: any[]) {
+  console.log(`\x1b[38;5;238m -> ${message}\x1b[0m`, ...args);
+}
+
 export async function waitFor<T>(
   predicate: () => Promise<T | false>,
   options: WaitForOptions = {}
@@ -78,6 +82,8 @@ export async function waitForSeqToIncrementBy(
     title: `${seqName}`,
     total: value,
     width: 20,
+    display: `\x1b[38;5;238m -> incrementing "${seqName}": :completed/:total :time [:bar] :percent\x1b[0m`,
+    prettyTime: true,
   });
 
   const startVal = await seqLastValue(seqName);
@@ -103,7 +109,7 @@ export async function waitForActiveWorker() {
     async () => {
       const [{ has_active: hasActiveWorker }] =
         await sql`SELECT count(*) > 0 AS has_active FROM supaworker.active_workers`;
-      console.log(' -> waiting for active worker ', hasActiveWorker);
+      log('waiting for active worker ', hasActiveWorker);
       return hasActiveWorker;
     },
     {
@@ -119,8 +125,8 @@ export async function fetchWorkers(workerName: string) {
 
 export async function startWorker(workerName: string, seconds: number = 5) {
   await sql`SELECT supaworker.spawn(${workerName}::text)`;
-  console.log('Waiting for worker to spawn...');
+  log('Waiting for worker to spawn...');
 
   await waitForActiveWorker();
-  console.log('Worker spawned!');
+  log('Worker spawned!');
 }

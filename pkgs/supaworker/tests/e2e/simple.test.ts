@@ -1,6 +1,6 @@
 import { sql } from '../sql.ts';
 import { assertEquals } from 'jsr:@std/assert';
-import { startWorker, waitForSeqToIncrementBy } from './_helpers.ts';
+import { log, startWorker, waitForSeqToIncrementBy } from './_helpers.ts';
 import { sendBatch } from './_helpers.ts';
 import { delay } from 'jsr:@std/async';
 
@@ -23,7 +23,7 @@ Deno.test('should send message to queue and check sequence', async () => {
     await delay(500); // wait for worker transaction to commit
 
     const queue = await sql`SELECT * FROM pgmq.q_increment_sequence`;
-    console.log('queue', queue);
+    log('queue', queue);
     assertEquals(queue.length, 0, 'queue should be empty');
 
     const archive = await sql`SELECT * FROM pgmq.a_increment_sequence`;
