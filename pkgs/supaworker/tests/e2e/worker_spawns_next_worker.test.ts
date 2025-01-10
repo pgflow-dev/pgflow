@@ -1,6 +1,6 @@
 import { sql } from '../sql.ts';
 import { assertEquals, assertGreaterOrEqual } from 'jsr:@std/assert';
-import { sendBatch, startWorker, waitForSeqValue } from './_helpers.ts';
+import { sendBatch, startWorker, waitForSeqToIncrementBy } from './_helpers.ts';
 
 Deno.test('should spawn next worker when CPU clock limit hits', async () => {
   await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
@@ -14,7 +14,7 @@ Deno.test('should spawn next worker when CPU clock limit hits', async () => {
   try {
     await sendBatch(MESSAGES_TO_SEND);
 
-    const lastVal = await waitForSeqValue(MESSAGES_TO_SEND);
+    const lastVal = await waitForSeqToIncrementBy(MESSAGES_TO_SEND);
 
     assertGreaterOrEqual(
       lastVal,

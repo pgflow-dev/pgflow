@@ -1,6 +1,6 @@
 import { sql } from '../sql.ts';
 import { assertEquals } from 'jsr:@std/assert';
-import { startWorker, waitForSeqValue } from './_helpers.ts';
+import { startWorker, waitForSeqToIncrementBy } from './_helpers.ts';
 import { sendBatch } from './_helpers.ts';
 
 Deno.test('should send message to queue and check sequence', async () => {
@@ -13,7 +13,7 @@ Deno.test('should send message to queue and check sequence', async () => {
   try {
     await sendBatch(6);
 
-    const lastVal = await waitForSeqValue(6);
+    const lastVal = await waitForSeqToIncrementBy(6);
 
     assertEquals(lastVal, 6, 'sequence should have 6 values');
 
