@@ -4,6 +4,7 @@ import {
   fetchWorkers,
   log,
   sendBatch,
+  seqLastValue,
   startWorker,
   waitForSeqToIncrementBy,
 } from './_helpers.ts';
@@ -30,22 +31,19 @@ Deno.test('should spawn next worker when CPU clock limit hits', async () => {
 
   try {
     await sendBatch(MESSAGES_TO_SEND, WORKER_NAME);
-
-    const lastVal = await waitForSeqToIncrementBy(MESSAGES_TO_SEND, {
+    await waitForSeqToIncrementBy(MESSAGES_TO_SEND, {
       timeoutMs: 15000,
       pollIntervalMs: 300,
     });
 
     assertGreaterOrEqual(
-      lastVal,
+      await seqLastValue(WORKER_NAME),
       MESSAGES_TO_SEND,
       'Sequence value should be greater than or equal to the number of messages sent'
     );
 
-    const workers = await fetchWorkers(WORKER_NAME);
-    log('workers.length', workers.length);
     assertGreater(
-      workers.length,
+      (await fetchWorkers(WORKER_NAME)).length,
       1,
       'expected worker to spawn another but there is only 1 worker'
     );
