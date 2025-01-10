@@ -7,14 +7,18 @@ import {
   waitForSeqToIncrementBy,
 } from './_helpers.ts';
 
-const WORKER_NAME = 'cpu-intensive';
-const MESSAGES_TO_SEND = 3;
+const WORKER_NAME = 'cpu_intensive';
+
+// TODO: document relation between CPU clock limit, amount of time to process
+//       single message and amount of messages to send
+const MESSAGES_TO_SEND = 30;
 
 Deno.test('should spawn next worker when CPU clock limit hits', async () => {
   await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
   await sql`ALTER SEQUENCE test_seq RESTART WITH 1`;
-  await sql`DELETE FROM pgmq.q_pgflow`;
-  await sql`DELETE FROM pgmq.a_pgflow`;
+  await sql`SELECT pgmq.create(${WORKER_NAME})`;
+  await sql`SELECT pgmq.drop_queue(${WORKER_NAME})`;
+  await sql`SELECT pgmq.create(${WORKER_NAME})`;
   await sql`
     DELETE FROM supaworker.workers 
     WHERE worker_id IN (
@@ -24,7 +28,7 @@ Deno.test('should spawn next worker when CPU clock limit hits', async () => {
   await startWorker(WORKER_NAME);
 
   try {
-    await sendBatch(MESSAGES_TO_SEND);
+    await sendBatch(MESSAGES_TO_SEND, WORKER_NAME);
 
     const lastVal = await waitForSeqToIncrementBy(MESSAGES_TO_SEND, {
       timeoutMs: 15000,
@@ -38,6 +42,7 @@ Deno.test('should spawn next worker when CPU clock limit hits', async () => {
     );
 
     const workers = await fetchWorkers(WORKER_NAME);
+    console.log('workers.length', workers.length);
     assertGreater(
       workers.length,
       1,

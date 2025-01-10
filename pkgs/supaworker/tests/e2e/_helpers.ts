@@ -35,10 +35,10 @@ export async function waitFor<T>(
   }
 }
 
-export async function sendBatch(count: number) {
+export async function sendBatch(count: number, queueName: string) {
   return await sql`
     SELECT pgmq.send_batch(
-      'pgflow',
+      ${queueName},
       ARRAY(
         SELECT '{}'::jsonb
         FROM generate_series(1, ${count}::integer)
