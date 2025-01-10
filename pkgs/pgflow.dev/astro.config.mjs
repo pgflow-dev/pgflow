@@ -28,7 +28,6 @@ export default defineConfig({
         {
           label: "Spikes, ideas",
           items: [
-            { label: "Test Multifile Code", slug: "ideas/test_multifile_code" },
             {
               label: "Versioning: always new flow",
               slug: "ideas/versioning_always_new_flow",
@@ -37,7 +36,6 @@ export default defineConfig({
               label: "Versioning: always new flow",
               slug: "ideas/versioning_migrate_payload",
             },
-            { label: "JS API", slug: "ideas/js_api" },
           ],
         },
         {
