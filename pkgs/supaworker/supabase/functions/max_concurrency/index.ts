@@ -16,5 +16,5 @@ Supaworker.start(incrementSeq, {
   queueName: 'max_concurrency',
   batchSize: 50,
   maxConcurrent: 50,
-  maxPgConnections: 50,
+  maxPgConnections: 20,
 });
