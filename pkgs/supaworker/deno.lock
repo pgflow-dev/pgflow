@@ -305,6 +305,7 @@
     "https://deno.land/std@0.132.0/streams/conversion.ts": "712585bfa0172a97fb68dd46e784ae8ad59d11b88079d6a4ab098ff42e697d21",
     "https://deno.land/std@0.132.0/testing/_diff.ts": "9d849cd6877694152e01775b2d93f9d6b7aef7e24bfe3bfafc4d7a1ac8e9f392",
     "https://deno.land/std@0.132.0/testing/asserts.ts": "b0ef969032882b1f7eb1c7571e313214baa1485f7b61cf35807b2434e254365c",
+    "https://deno.land/std@0.224.0/fmt/colors.ts": "508563c0659dd7198ba4bbf87e97f654af3c34eb56ba790260f252ad8012e1c5",
     "https://deno.land/x/postgresjs@v3.4.5/mod.js": "cb68f17d6d90df318934deccdb469d740be0888e7a597a9e7eea7100ce36a252",
     "https://deno.land/x/postgresjs@v3.4.5/polyfills.js": "318eb01f2b4cc33a46c59f3ddc11f22a56d6b1db8b7719b2ad7decee63a5bd47",
     "https://deno.land/x/postgresjs@v3.4.5/src/bytes.js": "f2de43bdc8fa5dc4b169f2c70d5d8b053a3dea8f85ef011d7b27dec69e14ebb7",

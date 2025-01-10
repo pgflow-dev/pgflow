@@ -1,6 +1,7 @@
 import { sql } from '../sql.ts';
 import { delay } from 'jsr:@std/async';
 import ProgressBar from 'jsr:@deno-library/progress';
+import { dim } from 'https://deno.land/std@0.224.0/fmt/colors.ts';
 
 interface WaitForOptions {
   pollIntervalMs?: number;
@@ -9,7 +10,7 @@ interface WaitForOptions {
 }
 
 export async function log(message: string, ...args: any[]) {
-  console.log(`\x1b[38;5;238m -> ${message}\x1b[0m`, ...args);
+  console.log(dim(` -> ${message}`), ...args);
 }
 
 export async function waitFor<T>(
@@ -78,11 +79,15 @@ export async function waitForSeqToIncrementBy(
 ): Promise<number> {
   const { seqName = 'test_seq' } = options;
 
+  let perSecond = 0;
+
   const progress = new ProgressBar({
-    title: `${seqName}`,
+    title: `${seqName} (${perSecond}/s)`,
     total: value,
     width: 20,
-    display: `\x1b[38;5;238m -> incrementing "${seqName}": :completed/:total :time [:bar] :percent\x1b[0m`,
+    display: dim(
+      ` -> incrementing "${seqName}": :completed/:total (:eta left) [:bar] :percent`
+    ),
     prettyTime: true,
   });
 
@@ -125,8 +130,6 @@ export async function fetchWorkers(workerName: string) {
 
 export async function startWorker(workerName: string, seconds: number = 5) {
   await sql`SELECT supaworker.spawn(${workerName}::text)`;
-  log('Waiting for worker to spawn...');
-
   await waitForActiveWorker();
-  log('Worker spawned!');
+  log('worker spawned!');
 }
