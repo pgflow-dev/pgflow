@@ -1,5 +1,6 @@
 ---
 title: "Versioning: always new flow"
+draft: true
 ---
 
 Encouraging users to create new workflows instead of modifying existing ones can be an effective strategy for handling versioning in PGFlow. This approach simplifies version management by treating each significant change as a new workflow.

@@ -1,5 +1,6 @@
 ---
 title: "Versioning: migrate payload"
+draft: true
 ---
 
 We can show users how to implement a "payload migration function" that translates run payloads from previous versions to the new version.
