@@ -32,7 +32,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/supaworker",
-        "commands": ["supabase db start"],
+        "commands": ["supabase start"],
         "parallel": false
       }
     },

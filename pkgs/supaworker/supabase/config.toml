@@ -13,7 +13,7 @@ major_version = 15
 enabled = true
 port = 50329
 pool_mode = "transaction"
-default_pool_size = 20
+default_pool_size = 100
 max_client_conn = 100
 
 [db.seed]

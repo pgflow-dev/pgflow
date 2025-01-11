@@ -6,10 +6,13 @@ console.log('DB_POOL_URL', DB_POOL_URL);
 
 const sql = postgres(DB_POOL_URL);
 await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
-await sql`ALTER SEQUENCE test_seq RESTART WITH 1`;
+await sql`SELECT pgmq.create('increment_sequence')`;
 
 async function incrementCounter() {
-  await sql`SELECT nextval('test_seq')`;
+  console.log(
+    '[increment_sequence] next_seq =',
+    await sql`SELECT nextval('test_seq')`
+  );
 }
 
-Supaworker.start(incrementCounter);
+Supaworker.start(incrementCounter, { queueName: 'increment_sequence' });
