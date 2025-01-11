@@ -9,7 +9,7 @@ hero:
 
 **pgflow** is a Postgres-first workflow engine I began building in November. I wanted a **deeply integrated**, open-source solution that **runs entirely on Supabase—no external workers or self-hosting required**. Since I couldn’t find one, I decided to build it.
 
-#### Edge Function Worker
+#### Edge Worker
 
 I've build a task queue worker for PGMQ that runs entirely on Supabase Edge Functions
 **without any external dependencies**.
