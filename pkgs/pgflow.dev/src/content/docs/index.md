@@ -21,7 +21,7 @@ It's designed to **auto-respawn** and **gracefully shut down**, with configurabl
 **Not yet** - I'm aiming to have the first version ready in early 2024.
 
 Living with **ADHD**, I bring a lot of **hyperfocus** and **passion** to this project, but my process can be a bit scattered at times, and the scope can feel huge.
-The **Supabase Edge Function Worker**, a critical piece of pgflow, is already extracted from my private stuff and lives happily in a new monorepo. Stay tuned!
+The worker, a critical piece of pgflow, is already extracted from my private stuff and lives happily in a new monorepo, getting some rough edges sanded before relese. Stay tuned!
 
 ##### Have questions or want to say Hi?
 
