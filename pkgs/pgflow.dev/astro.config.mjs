@@ -13,6 +13,15 @@ export default defineConfig({
       components: {
         SiteTitle: "./src/components/SiteTitle.astro",
       },
+      head: [
+        {
+          tag: "script",
+          content: `
+            import { inject } from '@vercel/analytics';
+            inject();
+          `,
+        },
+      ],
       sidebar: [
         // {
         //   label: "Landing Pages WIP",
