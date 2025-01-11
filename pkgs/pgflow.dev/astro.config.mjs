@@ -18,7 +18,6 @@ export default defineConfig({
           label: "Landing Pages WIP",
           items: [
             { label: "Starting with flow def", slug: "index" },
-            { label: "Starting with React", slug: "starting_with_react" },
             {
               label: "Flow DSL crash course",
               slug: "landing_pages/flow_usage",
