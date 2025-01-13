@@ -80,7 +80,8 @@
         "cwd": "pkgs/supaworker",
         "commands": [
           "rm -f ./supabase/functions/_supaworker/*.ts",
-          "cp ../supaworker/src/*.ts ./supabase/functions/_supaworker/"
+          "cp ../supaworker/src/*.ts ./supabase/functions/_supaworker/",
+          "cp ../supaworker/deno.* ./supabase/functions/_supaworker/"
         ],
         "parallel": false
       }
