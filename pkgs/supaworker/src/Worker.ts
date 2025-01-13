@@ -3,6 +3,7 @@ import { Json } from './types.ts';
 import { Queue } from './Queue.ts';
 import { Queries } from './Queries.ts';
 import { Heartbeat } from './Heartbeat.ts';
+// import { SimpleExecutionController as ExecutionController } from './SimpleExecutionController.ts';
 import { ExecutionController } from './ExecutionController.ts';
 import { Logger } from './Logger.ts';
 
@@ -54,6 +55,9 @@ export class Worker<MessagePayload extends Json> {
     });
     this.queue = new Queue(this.sql, this.config.queueName);
     this.queries = new Queries(this.sql);
+    // this.executionController = new ExecutionController(
+    //   this.config.maxConcurrent
+    // );
     this.executionController = new ExecutionController(
       this.queue,
       this.mainController.signal,
