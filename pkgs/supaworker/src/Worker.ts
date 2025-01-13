@@ -47,7 +47,7 @@ export class Worker<MessagePayload extends Json> {
       maxPollSeconds: config.maxPollSeconds ?? 5,
       pollIntervalMs: config.pollIntervalMs ?? 100,
       maxPgConnections: config.maxPgConnections ?? 4,
-      maxConcurrent: config.maxConcurrency ?? 50,
+      maxConcurrent: config.maxConcurrent ?? 50,
     };
 
     this.sql = postgres(this.config.connectionString, {
