@@ -17,7 +17,6 @@ export interface MessageRecord<MessagePayload extends Json> {
 export interface WorkerConfig {
   connectionString: string;
   queueName: string;
-  batchSize?: number;
   visibilityTimeout?: number;
   maxPollSeconds?: number;
   pollIntervalMs?: number;
@@ -42,7 +41,6 @@ export class Worker<MessagePayload extends Json> {
     this.config = {
       connectionString: config.connectionString,
       queueName: config.queueName,
-      batchSize: config.batchSize ?? 5,
       visibilityTimeout: config.visibilityTimeout ?? 1,
       maxPollSeconds: config.maxPollSeconds ?? 5,
       pollIntervalMs: config.pollIntervalMs ?? 100,
@@ -105,29 +103,26 @@ export class Worker<MessagePayload extends Json> {
       try {
         await this.heartbeat?.send(this.edgeFunctionName);
 
-        let messageRecords:
-          | postgres.RowList<MessageRecord<MessagePayload>[]>
-          | [] = [];
-
-        if (!this.mainController.signal.aborted) {
-          this.log(`Polling for ${this.config.maxPollSeconds}s`);
-          messageRecords = await this.queue.readWithPoll(
-            this.config.batchSize,
-            this.config.visibilityTimeout,
-            this.config.maxPollSeconds,
-            this.config.pollIntervalMs
-          );
-        }
+        // Start all executions for this batch before next iteration
+        const messageRecords = !this.mainController.signal.aborted
+          ? await this.queue.readWithPoll(
+              this.config.maxConcurrent,
+              this.config.visibilityTimeout,
+              this.config.maxPollSeconds,
+              this.config.pollIntervalMs
+            )
+          : [];
 
         if (this.mainController.signal.aborted) {
           this.log('-> Discarding messageRecords because worker is stopping');
-        } else {
-          // console.log(" -> messageRecords", messageRecords);
-
-          for (const messageRecord of messageRecords) {
-            await this.executionController.start(messageRecord, messageHandler);
-          }
+          continue;
         }
+
+        // Start all executions and wait for them to be tracked
+        const startPromises = messageRecords.map((messageRecord) =>
+          this.executionController.start(messageRecord, messageHandler)
+        );
+        await Promise.all(startPromises);
       } catch (error: unknown) {
         console.error('Error processing messages:', error);
       }
