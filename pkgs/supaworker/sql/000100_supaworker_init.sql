@@ -65,7 +65,7 @@ $$ language plpgsql;
 -- Optional: Explicit stop function
 create or replace function supaworker.on_worker_stopped(
     worker_id UUID
-) returns VOID as $$
+) returns setof supaworker.workers as $$
 declare
     p_worker_id UUID := worker_id;
 BEGIN
