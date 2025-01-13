@@ -2,17 +2,22 @@ import { Json } from './types.ts';
 import { type MessageRecord } from './Worker.ts';
 import { Queue } from './Queue.ts';
 
+class AbortError extends Error {
+  constructor() {
+    super('Operation aborted');
+    this.name = 'AbortError';
+  }
+}
+
 export class MessageExecutor<MessagePayload extends Json> {
-  private controller: AbortController;
   executionPromise?: Promise<void>;
 
   constructor(
     private readonly queue: Queue<MessagePayload>,
     private readonly record: MessageRecord<MessagePayload>,
-    private readonly messageHandler: (message: MessagePayload) => Promise<void>
-  ) {
-    this.controller = new AbortController();
-  }
+    private readonly messageHandler: (message: MessagePayload) => Promise<void>,
+    private readonly signal: AbortSignal
+  ) {}
 
   get msgId() {
     return this.record.msg_id;
@@ -27,7 +32,28 @@ export class MessageExecutor<MessagePayload extends Json> {
 
   private async _execute(): Promise<void> {
     try {
-      await this.messageHandler(this.record.message!);
+      // Check if already aborted
+      if (this.signal.aborted) {
+        throw new AbortError();
+      }
+
+      // Create a promise that rejects when abort signal is triggered
+      const abortPromise = new Promise<void>((_, reject) => {
+        this.signal.addEventListener(
+          'abort',
+          () => {
+            reject(new AbortError());
+          },
+          { once: true }
+        );
+      });
+
+      // Race between handler and abort signal
+      await Promise.race([
+        this.messageHandler(this.record.message!),
+        abortPromise,
+      ]);
+
       await this.queue.archive(this.record.msg_id);
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -38,10 +64,6 @@ export class MessageExecutor<MessagePayload extends Json> {
         await this.queue.setVt(this.msgId, 2);
       }
     }
-  }
-
-  abort() {
-    this.controller.abort();
   }
 
   finally(onfinally?: (() => void) | null): Promise<void> {

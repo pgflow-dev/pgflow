@@ -13,7 +13,6 @@ export class ExecutionController<T extends Json> {
     private signal: AbortSignal,
     maxConcurrent: number = 10
   ) {
-    signal.addEventListener('abort', () => this.abortAll());
     this.semaphore = new Sema(maxConcurrent);
   }
 
@@ -33,12 +32,6 @@ export class ExecutionController<T extends Json> {
     return execution;
   }
 
-  async abortAll() {
-    await Promise.all(
-      Array.from(this.executors.values()).map((e) => e.abort())
-    );
-  }
-
   async awaitCompletion() {
     if (this.executors.size > 0) {
       await Promise.all(
@@ -54,7 +47,7 @@ export class ExecutionController<T extends Json> {
     try {
       await this.semaphore.acquire();
 
-      return new MessageExecutor(this.queue, record, handler);
+      return new MessageExecutor(this.queue, record, handler, this.signal);
     } catch (e) {
       this.semaphore.release();
 
