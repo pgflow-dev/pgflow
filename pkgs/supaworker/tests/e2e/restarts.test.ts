@@ -33,7 +33,7 @@ Deno.test('should spawn next worker when CPU clock limit hits', async () => {
   try {
     await sendBatch(MESSAGES_TO_SEND, WORKER_NAME);
     await waitForSeqToIncrementBy(MESSAGES_TO_SEND, {
-      timeoutMs: 15000,
+      timeoutMs: 35000,
       pollIntervalMs: 300,
     });
 

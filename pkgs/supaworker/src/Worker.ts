@@ -122,7 +122,9 @@ export class Worker<MessagePayload extends Json> {
         const startPromises = messageRecords.map((messageRecord) =>
           this.executionController.start(messageRecord, messageHandler)
         );
+        console.log('startPromises');
         await Promise.all(startPromises);
+        console.log('after startPromises');
       } catch (error: unknown) {
         console.error('Error processing messages:', error);
       }

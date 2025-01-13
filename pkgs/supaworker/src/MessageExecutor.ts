@@ -4,7 +4,7 @@ import { Queue } from './Queue.ts';
 
 export class MessageExecutor<MessagePayload extends Json> {
   private controller: AbortController;
-  private executionPromise?: Promise<void>;
+  executionPromise?: Promise<void>;
 
   constructor(
     private readonly queue: Queue<MessagePayload>,
@@ -18,17 +18,6 @@ export class MessageExecutor<MessagePayload extends Json> {
     return this.record.msg_id;
   }
 
-  abort() {
-    this.controller.abort();
-  }
-
-  finally(onfinally?: (() => void) | null): Promise<void> {
-    if (!this.executionPromise) {
-      throw new Error('Executor not started');
-    }
-    return this.executionPromise.finally(onfinally);
-  }
-
   execute(): this {
     if (!this.executionPromise) {
       this.executionPromise = this._execute();
@@ -36,7 +25,7 @@ export class MessageExecutor<MessagePayload extends Json> {
     return this;
   }
 
-  async _execute(): Promise<void> {
+  private async _execute(): Promise<void> {
     try {
       await this.messageHandler(this.record.message!);
       await this.queue.archive(this.record.msg_id);
@@ -49,5 +38,16 @@ export class MessageExecutor<MessagePayload extends Json> {
         await this.queue.setVt(this.msgId, 2);
       }
     }
+  }
+
+  abort() {
+    this.controller.abort();
+  }
+
+  finally(onfinally?: (() => void) | null): Promise<void> {
+    if (!this.executionPromise) {
+      throw new Error('Executor not started');
+    }
+    return this.executionPromise.finally(onfinally);
   }
 }

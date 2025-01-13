@@ -41,7 +41,9 @@ export class ExecutionController<T extends Json> {
 
   async awaitCompletion() {
     if (this.executors.size > 0) {
-      await Promise.all(Array.from(this.executors.values()));
+      await Promise.all(
+        Array.from(this.executors.values()).map((e) => e.executionPromise)
+      );
     }
   }
 
