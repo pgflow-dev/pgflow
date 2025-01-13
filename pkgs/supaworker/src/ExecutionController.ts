@@ -2,61 +2,61 @@ import { MessageExecutor } from './MessageExecutor.ts';
 import { Queue } from './Queue.ts';
 import { Json } from './types.ts';
 import { MessageRecord } from './Worker.ts';
+import { Sema } from 'npm:async-sema@^3.1.1';
 
 export class ExecutionController<T extends Json> {
   private executors = new Map<number, MessageExecutor<T>>();
+  private semaphore: Sema;
+
   constructor(
     private queue: Queue<T>,
     private signal: AbortSignal,
-    private maxConcurrent: number = 10
+    maxConcurrent: number = 10
   ) {
     signal.addEventListener('abort', () => this.abortAll());
+    this.semaphore = new Sema(maxConcurrent);
   }
 
   async start(
     record: MessageRecord<T>,
     handler: (message: T) => Promise<void>
   ) {
-    // Wait if at capacity
-    while (this.activeCount >= this.maxConcurrent) {
-      await Promise.race([
-        ...Array.from(this.executors.values()).map((e) => e.execute()),
-        new Promise((_, reject) => {
-          this.signal?.addEventListener(
-            'abort',
-            () => reject(new Error('Aborted while waiting for execution slot')),
-            { once: true }
-          );
-        }),
-      ]).catch(() => {});
-    }
+    const executor = await this.waitForAvailableExecutor(record, handler);
 
-    const executor = new MessageExecutor(this.queue, record, handler);
     this.executors.set(executor.msgId, executor);
 
-    try {
-      await executor.execute();
-    } finally {
+    const execution = executor.execute().finally(() => {
       this.executors.delete(executor.msgId);
-    }
+      this.semaphore.release();
+    });
+
+    return execution;
   }
 
-  get activeCount() {
-    return this.executors.size;
-  }
-
-  abortAll() {
-    for (const executor of this.executors.values()) {
-      executor.abort();
-    }
+  async abortAll() {
+    await Promise.all(
+      Array.from(this.executors.values()).map((e) => e.abort())
+    );
   }
 
   async awaitCompletion() {
-    if (this.activeCount > 0) {
-      await Promise.all(
-        Array.from(this.executors.values()).map((e) => e.execute())
-      );
+    if (this.executors.size > 0) {
+      await Promise.all(Array.from(this.executors.values()));
     }
-    this.executors.clear();
+  }
+
+  private async waitForAvailableExecutor(
+    record: MessageRecord<T>,
+    handler: (message: T) => Promise<void>
+  ) {
+    try {
+      await this.semaphore.acquire();
+
+      return new MessageExecutor(this.queue, record, handler);
+    } catch (e) {
+      this.semaphore.release();
+
+      throw e;
+    }
   }
 }

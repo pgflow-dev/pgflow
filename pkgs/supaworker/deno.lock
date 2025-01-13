@@ -9,7 +9,8 @@
       "jsr:@std/async": "jsr:@std/async@1.0.9",
       "jsr:@std/fmt@1.0.3": "jsr:@std/fmt@1.0.3",
       "jsr:@std/internal@^1.0.5": "jsr:@std/internal@1.0.5",
-      "jsr:@std/io@0.225.0": "jsr:@std/io@0.225.0"
+      "jsr:@std/io@0.225.0": "jsr:@std/io@0.225.0",
+      "npm:async-sema@^3.1.1": "npm:async-sema@3.1.1"
     },
     "jsr": {
       "@core/asyncutil@1.2.0": {
@@ -39,6 +40,12 @@
       },
       "@std/io@0.225.0": {
         "integrity": "c1db7c5e5a231629b32d64b9a53139445b2ca640d828c26bf23e1c55f8c079b3"
+      }
+    },
+    "npm": {
+      "async-sema@3.1.1": {
+        "integrity": "sha512-tLRNUXati5MFePdAk8dw7Qt7DpxPB60ofAgn8WRhW6a2rcimZnYBP9oxHiv0OHy+Wz7kPMG+t4LGdt31+4EmGg==",
+        "dependencies": {}
       }
     }
   },
@@ -326,7 +333,8 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@core/asyncutil@^1.2.0"
+      "jsr:@core/asyncutil@^1.2.0",
+      "jsr:@std/async"
     ]
   }
 }

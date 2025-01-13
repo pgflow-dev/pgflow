@@ -4,6 +4,7 @@ import { Queue } from './Queue.ts';
 
 export class MessageExecutor<MessagePayload extends Json> {
   private controller: AbortController;
+  private executionPromise?: Promise<void>;
 
   constructor(
     private readonly queue: Queue<MessagePayload>,
@@ -21,7 +22,21 @@ export class MessageExecutor<MessagePayload extends Json> {
     this.controller.abort();
   }
 
-  async execute(): Promise<void> {
+  finally(onfinally?: (() => void) | null): Promise<void> {
+    if (!this.executionPromise) {
+      throw new Error('Executor not started');
+    }
+    return this.executionPromise.finally(onfinally);
+  }
+
+  execute(): this {
+    if (!this.executionPromise) {
+      this.executionPromise = this._execute();
+    }
+    return this;
+  }
+
+  async _execute(): Promise<void> {
     try {
       await this.messageHandler(this.record.message!);
       await this.queue.archive(this.record.msg_id);
