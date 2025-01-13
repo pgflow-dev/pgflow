@@ -20,16 +20,37 @@ export class ExecutionController<T extends Json> {
     record: MessageRecord<T>,
     handler: (message: T) => Promise<void>
   ) {
-    const executor = await this.waitForAvailableExecutor(record, handler);
+    await this.semaphore.acquire();
 
-    this.executors.set(executor.msgId, executor);
+    let executor: MessageExecutor<T>;
+    try {
+      // Create executor (could throw)
+      executor = new MessageExecutor(this.queue, record, handler, this.signal);
 
-    const execution = executor.execute().finally(() => {
-      this.executors.delete(executor.msgId);
+      // Add to tracking map (could throw)
+      this.executors.set(executor.msgId, executor);
+
+      try {
+        // Start execution (could throw synchronously)
+        executor.execute();
+      } catch (error) {
+        // Clean up if execute() throws synchronously
+        this.executors.delete(executor.msgId);
+        throw error;
+      }
+
+      // Only attach finally() after successful execute()
+      executor.finally(() => {
+        this.executors.delete(executor.msgId);
+        this.semaphore.release();
+      });
+
+      return executor;
+    } catch (error) {
+      // Release semaphore if anything fails during setup
       this.semaphore.release();
-    });
-
-    return execution;
+      throw error;
+    }
   }
 
   async awaitCompletion() {

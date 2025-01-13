@@ -42,7 +42,7 @@ export class Worker<MessagePayload extends Json> {
     this.config = {
       connectionString: config.connectionString,
       queueName: config.queueName,
-      visibilityTimeout: config.visibilityTimeout ?? 1,
+      visibilityTimeout: config.visibilityTimeout ?? 3,
       maxPollSeconds: config.maxPollSeconds ?? 5,
       pollIntervalMs: config.pollIntervalMs ?? 100,
       maxPgConnections: config.maxPgConnections ?? 4,
