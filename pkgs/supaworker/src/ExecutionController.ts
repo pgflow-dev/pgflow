@@ -35,27 +35,26 @@ export class ExecutionController<MessagePayload extends Json> {
         this.archiver
       );
 
-      // Add to tracking map (could throw)
-      this.executors.set(executor.msgId, executor);
+      // Attach cleanup before any execution
+      executor.finally(() => {
+        this.executors.delete(executor.msgId);
+        this.semaphore.release();
+      });
 
       try {
         console.log(
           `[ExecutionController] Starting execution for ${executor.msgId}`
         );
+        // Only add to map after we've attached cleanup
+        this.executors.set(executor.msgId, executor);
         executor.execute();
       } catch (error) {
         console.log(
           `[ExecutionController] Execution failed synchronously for ${executor.msgId}, cleaning up`
         );
-        this.executors.delete(executor.msgId);
+        // The finally handler will clean up the map and semaphore
         throw error;
       }
-
-      // Only attach finally() after successful execute()
-      executor.finally(() => {
-        this.executors.delete(executor.msgId);
-        this.semaphore.release();
-      });
 
       return executor;
     } catch (error) {

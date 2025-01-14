@@ -11,7 +11,10 @@ class AbortError extends Error {
 }
 
 export class MessageExecutor<MessagePayload extends Json> {
-  executionPromise?: Promise<void>;
+  private readonly executionPromise: Promise<void>;
+  private readonly resolve: (value: void | PromiseLike<void>) => void;
+  private readonly reject: (reason?: any) => void;
+  private hasStarted = false;
 
   constructor(
     private readonly queue: Queue<MessagePayload>,
@@ -19,15 +22,21 @@ export class MessageExecutor<MessagePayload extends Json> {
     private readonly messageHandler: (message: MessagePayload) => Promise<void>,
     private readonly signal: AbortSignal,
     private readonly batchArchiver: BatchArchiver<MessagePayload>
-  ) {}
+  ) {
+    const { promise, resolve, reject } = Promise.withResolvers<void>();
+    this.executionPromise = promise;
+    this.resolve = resolve;
+    this.reject = reject;
+  }
 
   get msgId() {
     return this.record.msg_id;
   }
 
   execute(): Promise<void> {
-    if (!this.executionPromise) {
-      this.executionPromise = this._execute();
+    if (!this.hasStarted) {
+      this.hasStarted = true;
+      this._execute().then(this.resolve, this.reject);
     } else {
       console.log('[MessageExecutor] Execution already started');
     }
@@ -70,14 +79,9 @@ export class MessageExecutor<MessagePayload extends Json> {
   }
 
   finally(onfinally?: (() => void) | null): this {
-    if (!this.executionPromise) {
-      throw new Error('Executor not started');
+    if (onfinally) {
+      this.executionPromise.finally(onfinally);
     }
-
-    this.executionPromise = this.executionPromise.finally(() => {
-      if (onfinally) onfinally();
-    });
-
     return this;
   }
 }
