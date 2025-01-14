@@ -22,6 +22,8 @@ export interface WorkerConfig {
   pollIntervalMs?: number;
   maxPgConnections?: number;
   maxConcurrent?: number;
+  retryLimit?: number;
+  retryDelay?: number;
 }
 
 export enum WorkerState {
@@ -53,6 +55,8 @@ export class Worker<MessagePayload extends Json> {
       pollIntervalMs: config.pollIntervalMs ?? 100,
       maxPgConnections: config.maxPgConnections ?? 4,
       maxConcurrent: config.maxConcurrent ?? 50,
+      retryLimit: config.retryLimit ?? 0,
+      retryDelay: config.retryDelay ?? 2000,
     };
 
     this.sql = postgres(this.config.connectionString, {
@@ -64,7 +68,9 @@ export class Worker<MessagePayload extends Json> {
     this.executionController = new ExecutionController(
       this.queue,
       this.mainController.signal,
-      this.config.maxConcurrent
+      this.config.maxConcurrent,
+      this.config.retryLimit,
+      this.config.retryDelay
     );
   }
 
@@ -141,6 +147,8 @@ export class Worker<MessagePayload extends Json> {
                 this.config.pollIntervalMs
               )
             : [];
+          console.log('messageRecords', messageRecords);
+          console.log('aborted', this.mainController.signal.aborted);
 
           if (this.mainController.signal.aborted) {
             this.log('-> Discarding messageRecords because worker is stopping');

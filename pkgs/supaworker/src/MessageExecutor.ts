@@ -21,7 +21,9 @@ export class MessageExecutor<MessagePayload extends Json> {
     private readonly record: MessageRecord<MessagePayload>,
     private readonly messageHandler: (message: MessagePayload) => Promise<void>,
     private readonly signal: AbortSignal,
-    private readonly batchArchiver: BatchArchiver<MessagePayload>
+    private readonly batchArchiver: BatchArchiver<MessagePayload>,
+    private readonly retryLimit: number,
+    private readonly retryDelay: number
   ) {
     const { promise, resolve, reject } = Promise.withResolvers<void>();
     this.executionPromise = promise;
@@ -71,10 +73,17 @@ export class MessageExecutor<MessagePayload extends Json> {
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
         console.log(`[MessageExecutor] Aborted execution for ${this.msgId}`);
-      } else {
-        // Re-queue the message on non-abort errors
-        await this.queue.setVt(this.msgId, 2);
       }
+
+      await this.scheduleRetry();
+    }
+  }
+
+  async scheduleRetry() {
+    const readCountLimit = this.retryLimit + 1; // initial read also counts
+
+    if (this.record.read_ct < readCountLimit) {
+      await this.queue.setVt(this.msgId, this.retryDelay);
     }
   }
 

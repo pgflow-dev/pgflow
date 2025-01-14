@@ -334,6 +334,7 @@
   "workspace": {
     "dependencies": [
       "jsr:@core/asyncutil@^1.2.0",
+      "jsr:@std/assert",
       "jsr:@std/async"
     ]
   }

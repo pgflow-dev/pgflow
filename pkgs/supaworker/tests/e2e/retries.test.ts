@@ -17,12 +17,14 @@ Deno.test('simple processing works', async () => {
   try {
     await sendBatch(1, WORKER_NAME);
 
-    // waiting for worker to exhaust retries and archive message
+    log('waiting for worker to exhaust retries and archive message...');
     const [message, ...otherMessages] = await waitFor(
       async () => {
         const archivedMessages = await sql<
           PgmqMessageRecord[]
-        >`SELECT * FROM pgmq.a_${WORKER_NAME}`;
+        >`SELECT * FROM ${sql('pgmq.a_' + WORKER_NAME)}`;
+
+        log('archived messages', archivedMessages);
 
         return archivedMessages.length > 1 && archivedMessages;
       },
@@ -30,6 +32,8 @@ Deno.test('simple processing works', async () => {
         timeoutMs: RETRY_LIMIT * RETRY_DELAY * 1.5 + 1000,
       }
     );
+
+    log('messages', { message, otherMessages });
 
     assertEquals(
       otherMessages,

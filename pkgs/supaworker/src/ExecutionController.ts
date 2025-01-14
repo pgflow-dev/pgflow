@@ -13,7 +13,9 @@ export class ExecutionController<MessagePayload extends Json> {
   constructor(
     private queue: Queue<MessagePayload>,
     private signal: AbortSignal,
-    maxConcurrent: number = 10
+    maxConcurrent: number = 10,
+    private retryLimit: number = 0,
+    private retryDelay: number = 2000
   ) {
     this.semaphore = new Sema(maxConcurrent);
     this.archiver = new BatchArchiver(queue);
@@ -32,7 +34,9 @@ export class ExecutionController<MessagePayload extends Json> {
         record,
         handler,
         this.signal,
-        this.archiver
+        this.archiver,
+        this.retryLimit,
+        this.retryDelay
       );
 
       // Attach cleanup before any execution
