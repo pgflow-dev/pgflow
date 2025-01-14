@@ -18,7 +18,7 @@ export class MessageExecutor<MessagePayload extends Json> {
     private readonly record: MessageRecord<MessagePayload>,
     private readonly messageHandler: (message: MessagePayload) => Promise<void>,
     private readonly signal: AbortSignal,
-    private readonly batchArchiver: BatchArchiver
+    private readonly batchArchiver: BatchArchiver<MessagePayload>
   ) {}
 
   get msgId() {

@@ -70,6 +70,6 @@ export class ExecutionController<MessagePayload extends Json> {
         Array.from(this.executors.values()).map((e) => e.executionPromise)
       );
     }
-    // await this.archiver.flush();
+    await this.archiver.flush();
   }
 }

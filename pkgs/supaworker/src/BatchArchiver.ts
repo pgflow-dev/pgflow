@@ -6,6 +6,9 @@ interface BatchConfig {
   timeoutMs?: number;
 }
 
+/**
+ * A class that manages the archiving of messages in batches.
+ */
 export class BatchArchiver<MessagePayload extends Json> {
   private pending = new Set<number>();
   private timeoutId?: number;
@@ -19,11 +22,19 @@ export class BatchArchiver<MessagePayload extends Json> {
     };
   }
 
+  /**
+   * Adds a message ID to the pending set and schedules an archive for the next batch.
+   * @param msgId The message ID to add to the pending set
+   * @returns Promise that resolves when the message has been added to the pending set
+   */
   async add(msgId: number): Promise<void> {
     this.pending.add(msgId);
     await this.archiveImmediatelyOrSchedule();
   }
 
+  /**
+   * Clears any pending timeout.
+   */
   private clearTimeout() {
     if (this.timeoutId) {
       clearTimeout(this.timeoutId);
@@ -31,6 +42,12 @@ export class BatchArchiver<MessagePayload extends Json> {
     }
   }
 
+  /**
+   * Archives the current batch of pending messages immediately if the batch size
+   * is less than or equal to the configured batch size.
+   *
+   * Otherwise, schedules an archive for the next batch.
+   */
   private async archiveImmediatelyOrSchedule(): Promise<void> {
     if (this.pending.size >= this.config.batchSize) {
       this.clearTimeout();
@@ -40,6 +57,11 @@ export class BatchArchiver<MessagePayload extends Json> {
     }
   }
 
+  /**
+   * Sets up a timeout to archive the current batch of pending messages.
+   *
+   * If the timeout is already set, it will clear the existing timeout.
+   */
   private setupTimeout() {
     if (this.timeoutId) return;
 
@@ -53,6 +75,14 @@ export class BatchArchiver<MessagePayload extends Json> {
     }, this.config.timeoutMs);
   }
 
+  /**
+   * Archives the current batch of pending message IDs using the queue.
+   * Clears the pending set after successful archival.
+   *
+   * @throws Will throw an error if archiving fails
+   * @returns Promise that resolves when the batch has been archived
+   * @private
+   */
   private async archiveBatch(): Promise<void> {
     if (this.pending.size === 0) return;
 
@@ -65,5 +95,16 @@ export class BatchArchiver<MessagePayload extends Json> {
       console.error('Failed to archive batch:', error);
       throw error;
     }
+  }
+
+  /**
+   * Archives all pending messages immediately and cleans up any scheduled timeouts.
+   *
+   * Used during shutdown to ensure all messages are archived before stopping.
+   * @returns Promise that resolves when all pending messages have been archived
+   */
+  async flush(): Promise<void> {
+    this.clearTimeout();
+    await this.archiveBatch();
   }
 }

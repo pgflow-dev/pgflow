@@ -6,6 +6,7 @@ import {
   waitForSeqToIncrementBy,
   startWorker,
   log,
+  waitForBatchArchiver,
 } from './_helpers.ts';
 
 const MESSAGES_TO_SEND = 5;
@@ -41,6 +42,7 @@ Deno.test('worker respect maxConcurrent settings', async () => {
     await waitForSeqToIncrementBy(MESSAGES_TO_SEND, {
       timeoutMs: MESSAGES_TO_SEND * 1000 + 1000,
     });
+    await waitForBatchArchiver();
 
     const endTime = Date.now();
     const totalMs = Math.round(endTime - startTime);
