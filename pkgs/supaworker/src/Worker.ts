@@ -46,17 +46,20 @@ export class Worker<MessagePayload extends Json> {
   private logger = new Logger();
   public edgeFunctionName?: string;
 
-  constructor(config: WorkerConfig) {
+  private static readonly DEFAULT_CONFIG = {
+    maxConcurrent: 50,
+    maxPgConnections: 4,
+    maxPollSeconds: 5,
+    pollIntervalMs: 100,
+    retryDelay: 5,
+    retryLimit: 0,
+    visibilityTimeout: 3,
+  } as const;
+
+  constructor(configOverrides: WorkerConfig) {
     this.config = {
-      connectionString: config.connectionString,
-      queueName: config.queueName,
-      visibilityTimeout: config.visibilityTimeout ?? 3,
-      maxPollSeconds: config.maxPollSeconds ?? 5,
-      pollIntervalMs: config.pollIntervalMs ?? 100,
-      maxPgConnections: config.maxPgConnections ?? 4,
-      maxConcurrent: config.maxConcurrent ?? 50,
-      retryLimit: config.retryLimit ?? 0,
-      retryDelay: config.retryDelay ?? 5,
+      ...Worker.DEFAULT_CONFIG,
+      ...configOverrides,
     };
 
     this.sql = postgres(this.config.connectionString, {
@@ -167,7 +170,7 @@ export class Worker<MessagePayload extends Json> {
    * @returns A list of message records.
    */
   async pollMessages() {
-    const messageRecords = this.mainController.signal.aborted
+    return this.mainController.signal.aborted
       ? []
       : await this.queue.readWithPoll(
           this.config.maxConcurrent,
@@ -175,11 +178,6 @@ export class Worker<MessagePayload extends Json> {
           this.config.maxPollSeconds,
           this.config.pollIntervalMs
         );
-
-    console.log('messageRecords', messageRecords);
-    console.log('aborted', this.mainController.signal.aborted);
-
-    return messageRecords;
   }
 
   async stop() {
