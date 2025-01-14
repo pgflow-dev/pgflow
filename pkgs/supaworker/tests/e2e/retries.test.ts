@@ -5,8 +5,9 @@ import { sendBatch } from './_helpers.ts';
 import { type PgmqMessageRecord } from '../../src/types.ts';
 
 const WORKER_NAME = 'failing_always';
-const RETRY_LIMIT = 5;
-const RETRY_DELAY = 2000;
+const RETRY_LIMIT = 2;
+const RETRY_DELAY_MS = 2000;
+const MAX_POLL_MS = 1000;
 
 Deno.test('simple processing works', async () => {
   await sql`SELECT pgmq.create(${WORKER_NAME})`;
@@ -26,14 +27,12 @@ Deno.test('simple processing works', async () => {
 
         log('archived messages', archivedMessages);
 
-        return archivedMessages.length > 1 && archivedMessages;
+        return archivedMessages.length >= 1 && archivedMessages;
       },
       {
-        timeoutMs: RETRY_LIMIT * RETRY_DELAY * 1.5 + 1000,
+        timeoutMs: (RETRY_LIMIT + 1) * RETRY_DELAY_MS + 1000,
       }
     );
-
-    log('messages', { message, otherMessages });
 
     assertEquals(
       otherMessages,
@@ -43,8 +42,10 @@ Deno.test('simple processing works', async () => {
 
     assertEquals(
       message.read_ct,
-      6,
-      'messages should be read 6 times - initial read and 5 retries'
+      RETRY_LIMIT + 1,
+      `messages should be read ${
+        RETRY_LIMIT + 1
+      } times - initial read and ${RETRY_LIMIT} retries`
     );
   } finally {
     await sql.end();

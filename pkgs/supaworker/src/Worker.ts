@@ -56,7 +56,7 @@ export class Worker<MessagePayload extends Json> {
       maxPgConnections: config.maxPgConnections ?? 4,
       maxConcurrent: config.maxConcurrent ?? 50,
       retryLimit: config.retryLimit ?? 0,
-      retryDelay: config.retryDelay ?? 2000,
+      retryDelay: config.retryDelay ?? 5,
     };
 
     this.sql = postgres(this.config.connectionString, {
@@ -162,7 +162,9 @@ export class Worker<MessagePayload extends Json> {
   }
 
   /**
-   * Get the next batch of messages to process
+   * Polls for messages from the queue.
+   *
+   * @returns A list of message records.
    */
   async pollMessages() {
     const messageRecords = this.mainController.signal.aborted

@@ -1,13 +1,13 @@
 import { Supaworker } from '../_supaworker/index.ts';
 
 function failingAlways() {
-  console.log('table flip');
-  throw new Error('table flip');
-  // console.log('(╯°□°)╯︵ ┻━┻');
-  // throw new Error('(╯°□°)╯︵ ┻━┻');
+  console.log('(╯°□°)╯︵ ┻━┻');
+  throw new Error('(╯°□°)╯︵ ┻━┻');
 }
 
 Supaworker.start(failingAlways, {
-  retryLimit: 5,
-  retryDelay: 2000,
+  queueName: 'failing_always',
+  retryLimit: 2,
+  retryDelay: 2,
+  maxPollSeconds: 1,
 });

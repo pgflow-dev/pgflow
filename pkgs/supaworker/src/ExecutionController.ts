@@ -15,7 +15,7 @@ export class ExecutionController<MessagePayload extends Json> {
     private signal: AbortSignal,
     maxConcurrent: number = 10,
     private retryLimit: number = 0,
-    private retryDelay: number = 2000
+    private retryDelay: number = 5
   ) {
     this.semaphore = new Sema(maxConcurrent);
     this.archiver = new BatchArchiver(queue);

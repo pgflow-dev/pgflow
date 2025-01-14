@@ -75,16 +75,25 @@ export class MessageExecutor<MessagePayload extends Json> {
         console.log(`[MessageExecutor] Aborted execution for ${this.msgId}`);
       }
 
-      await this.scheduleRetry();
+      await this.retryOrArchive();
     }
   }
 
-  async scheduleRetry() {
+  private async retryOrArchive() {
+    if (this.retryAvailable) {
+      await this.queue.setVt(this.msgId, this.retryDelay);
+    } else {
+      await this.batchArchiver.add(this.msgId);
+    }
+  }
+
+  /**
+   * Returns true if the message can be retried.
+   */
+  private get retryAvailable() {
     const readCountLimit = this.retryLimit + 1; // initial read also counts
 
-    if (this.record.read_ct < readCountLimit) {
-      await this.queue.setVt(this.msgId, this.retryDelay);
-    }
+    return this.record.read_ct < readCountLimit;
   }
 
   finally(onfinally?: (() => void) | null): this {
