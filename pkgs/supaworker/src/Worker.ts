@@ -24,9 +24,16 @@ export interface WorkerConfig {
   maxConcurrent?: number;
 }
 
+export enum WorkerState {
+  Idle = 'idle',
+  Starting = 'starting',
+  Running = 'running',
+  Stopping = 'stopping',
+}
+
 export class Worker<MessagePayload extends Json> {
   private mainController = new AbortController();
-  private workerState: 'idle' | 'starting' | 'running' | 'stopping' = 'idle';
+  private workerState: WorkerState = WorkerState.Idle;
   private sql: postgres.Sql;
   private queue: Queue<MessagePayload>;
   private queries: Queries;
@@ -66,16 +73,16 @@ export class Worker<MessagePayload extends Json> {
   }
 
   private async acknowledgeStart() {
-    if (this.workerState !== 'idle') {
+    if (this.workerState !== WorkerState.Idle) {
       throw new Error(`Cannot start worker in state: ${this.workerState}`);
     }
 
-    this.workerState = 'starting';
+    this.workerState = WorkerState.Starting;
     const worker = await this.queries.onWorkerStarted(this.config.queueName);
 
     this.workerId = worker.worker_id;
     this.logger.setWorkerId(this.workerId);
-    this.workerState = 'running';
+    this.workerState = WorkerState.Running;
     this.heartbeat = new Heartbeat(
       5000,
       this.queries,
@@ -91,14 +98,14 @@ export class Worker<MessagePayload extends Json> {
       throw new Error('Cannot stop worker: workerId not set');
     }
 
-    if (this.workerState !== 'stopping') {
+    if (this.workerState !== WorkerState.Stopping) {
       throw new Error(`Cannot acknowledge stop in state: ${this.workerState}`);
     }
 
     try {
       this.log('Acknowledging worker stop...');
       await this.queries.onWorkerStopped(this.workerId);
-      this.workerState = 'idle';
+      this.workerState = WorkerState.Idle;
       this.log('Worker stop acknowledged');
     } catch (error) {
       this.log(`Error acknowledging worker stop: ${error}`);
@@ -107,9 +114,12 @@ export class Worker<MessagePayload extends Json> {
   }
 
   async start(messageHandler: (message: MessagePayload) => Promise<void>) {
-    if (this.workerState !== 'idle') {
-      this.log(`Cannot start worker in state: ${this.workerState}`);
-      return;
+    if (this.workerState !== WorkerState.Idle) {
+      const error = new Error(
+        `Cannot start worker in state: ${this.workerState}`
+      );
+      this.log(error.message);
+      throw error;
     }
 
     try {
@@ -117,7 +127,7 @@ export class Worker<MessagePayload extends Json> {
 
       this.log('Worker main loop started');
       while (
-        this.workerState === 'running' &&
+        this.workerState === WorkerState.Running &&
         !this.mainController.signal.aborted
       ) {
         try {
@@ -152,12 +162,12 @@ export class Worker<MessagePayload extends Json> {
   }
 
   async stop() {
-    if (this.workerState !== 'running') {
+    if (this.workerState !== WorkerState.Running) {
       throw new Error(`Cannot stop worker in state: ${this.workerState}`);
     }
 
     this.log('STOPPING Worker...');
-    this.workerState = 'stopping';
+    this.workerState = WorkerState.Stopping;
 
     try {
       this.log('-> Stopped accepting new messages');
