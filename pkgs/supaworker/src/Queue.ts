@@ -10,14 +10,20 @@ export class Queue<MessagePayload extends Json> {
 
   async archive(msgId: number): Promise<void> {
     await this.sql`
-      SELECT pgmq.archive(${this.queueName}, ${msgId}::bigint);
+      SELECT pgmq.archive(queue_name => ${this.queueName}, msg_id => ${msgId}::bigint);
+    `;
+  }
+
+  async archiveBatch(msgIds: number[]): Promise<void> {
+    await this.sql`
+      SELECT pgmq.archive(queue_name => ${this.queueName}, msg_ids => ${msgIds}::bigint[]);
     `;
   }
 
   async send(message: MessagePayload): Promise<void> {
     const msgJson = JSON.stringify(message);
     await this.sql`
-      SELECT pgmq.send(${this.queueName}, ${msgJson}::jsonb)
+      SELECT pgmq.send(queue_name => ${this.queueName}, msg => ${msgJson}::jsonb)
     `;
   }
 
@@ -49,9 +55,9 @@ export class Queue<MessagePayload extends Json> {
   ): Promise<MessageRecord<MessagePayload>> {
     const records = await this.sql<MessageRecord<MessagePayload>[]>`
       SELECT * FROM pgmq.set_vt(
-        ${this.queueName},
-        ${msgId}::bigint,
-        ${vtOffsetSeconds}::integer
+        queue_name => ${this.queueName},
+        msg_id => ${msgId}::bigint,
+        vt => ${vtOffsetSeconds}::integer
       );
     `;
     return records[0];

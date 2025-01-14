@@ -73,6 +73,11 @@ interface WaitForSeqValueOptions {
   timeoutMs?: number;
 }
 
+export async function waitForBatchArchiver() {
+  // TODO: find a better way, good enough for now
+  await delay(2000);
+}
+
 export async function waitForSeqToIncrementBy(
   value: number,
   options: WaitForSeqValueOptions = {}

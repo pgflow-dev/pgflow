@@ -2,10 +2,10 @@ import { sql } from '../sql.ts';
 import { assertGreater, assertGreaterOrEqual } from 'jsr:@std/assert';
 import {
   fetchWorkers,
-  log,
   sendBatch,
   seqLastValue,
   startWorker,
+  waitForBatchArchiver,
   waitForSeqToIncrementBy,
 } from './_helpers.ts';
 
@@ -36,6 +36,7 @@ Deno.test('should spawn next worker when CPU clock limit hits', async () => {
       timeoutMs: 35000,
       pollIntervalMs: 300,
     });
+    await waitForBatchArchiver();
 
     assertGreaterOrEqual(
       await seqLastValue(),
