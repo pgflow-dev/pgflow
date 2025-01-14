@@ -3,7 +3,6 @@ import { Json } from './types.ts';
 import { Queue } from './Queue.ts';
 import { Queries } from './Queries.ts';
 import { Heartbeat } from './Heartbeat.ts';
-// import { SimpleExecutionController as ExecutionController } from './SimpleExecutionController.ts';
 import { ExecutionController } from './ExecutionController.ts';
 import { Logger } from './Logger.ts';
 
@@ -27,7 +26,7 @@ export interface WorkerConfig {
 
 export class Worker<MessagePayload extends Json> {
   private mainController = new AbortController();
-  private isRunning = false;
+  private workerState: 'idle' | 'starting' | 'running' | 'stopping' = 'idle';
   private sql: postgres.Sql;
   private queue: Queue<MessagePayload>;
   private queries: Queries;
@@ -55,9 +54,6 @@ export class Worker<MessagePayload extends Json> {
     });
     this.queue = new Queue(this.sql, this.config.queueName);
     this.queries = new Queries(this.sql);
-    // this.executionController = new ExecutionController(
-    //   this.config.maxConcurrent
-    // );
     this.executionController = new ExecutionController(
       this.queue,
       this.mainController.signal,
@@ -70,11 +66,16 @@ export class Worker<MessagePayload extends Json> {
   }
 
   private async acknowledgeStart() {
+    if (this.workerState !== 'idle') {
+      throw new Error(`Cannot start worker in state: ${this.workerState}`);
+    }
+
+    this.workerState = 'starting';
     const worker = await this.queries.onWorkerStarted(this.config.queueName);
 
     this.workerId = worker.worker_id;
     this.logger.setWorkerId(this.workerId);
-    this.isRunning = true;
+    this.workerState = 'running';
     this.heartbeat = new Heartbeat(
       5000,
       this.queries,
@@ -86,70 +87,92 @@ export class Worker<MessagePayload extends Json> {
   }
 
   private async acknowledgeStop() {
-    if (!this.workerId || !this.isRunning) {
-      throw new Error('Cannot stop worker: not started!');
+    if (!this.workerId) {
+      throw new Error('Cannot stop worker: workerId not set');
     }
-    console.log('onWorkerStopped >>>>');
-    await this.queries.onWorkerStopped(this.workerId);
-    console.log('<<<< onWorkerStopped');
+
+    if (this.workerState !== 'stopping') {
+      throw new Error(`Cannot acknowledge stop in state: ${this.workerState}`);
+    }
+
+    try {
+      this.log('Acknowledging worker stop...');
+      await this.queries.onWorkerStopped(this.workerId);
+      this.workerState = 'idle';
+      this.log('Worker stop acknowledged');
+    } catch (error) {
+      this.log(`Error acknowledging worker stop: ${error}`);
+      throw error;
+    }
   }
 
   async start(messageHandler: (message: MessagePayload) => Promise<void>) {
-    if (this.isRunning) {
-      this.log('Worker already running');
+    if (this.workerState !== 'idle') {
+      this.log(`Cannot start worker in state: ${this.workerState}`);
       return;
     }
 
-    await this.acknowledgeStart();
+    try {
+      await this.acknowledgeStart();
 
-    console.log('worker main loop started');
-    while (!this.mainController.signal.aborted) {
-      try {
-        await this.heartbeat?.send(this.edgeFunctionName);
+      this.log('Worker main loop started');
+      while (
+        this.workerState === 'running' &&
+        !this.mainController.signal.aborted
+      ) {
+        try {
+          await this.heartbeat?.send(this.edgeFunctionName);
 
-        // Start all executions for this batch before next iteration
-        const messageRecords = !this.mainController.signal.aborted
-          ? await this.queue.readWithPoll(
-              this.config.maxConcurrent,
-              this.config.visibilityTimeout,
-              this.config.maxPollSeconds,
-              this.config.pollIntervalMs
-            )
-          : [];
+          const messageRecords = !this.mainController.signal.aborted
+            ? await this.queue.readWithPoll(
+                this.config.maxConcurrent,
+                this.config.visibilityTimeout,
+                this.config.maxPollSeconds,
+                this.config.pollIntervalMs
+              )
+            : [];
 
-        if (this.mainController.signal.aborted) {
-          this.log('-> Discarding messageRecords because worker is stopping');
-          continue;
+          if (this.mainController.signal.aborted) {
+            this.log('-> Discarding messageRecords because worker is stopping');
+            continue;
+          }
+
+          const startPromises = messageRecords.map((messageRecord: any) =>
+            this.executionController.start(messageRecord, messageHandler)
+          );
+          await Promise.all(startPromises);
+        } catch (error: unknown) {
+          this.log(`Error processing messages: ${error}`);
         }
-
-        // Start all executions and wait for them to be tracked
-        const startPromises = messageRecords.map((messageRecord) =>
-          this.executionController.start(messageRecord, messageHandler)
-        );
-        console.log('startPromises');
-        await Promise.all(startPromises);
-        console.log('after startPromises');
-      } catch (error: unknown) {
-        console.error('Error processing messages:', error);
       }
+    } catch (error) {
+      this.log(`Error in worker main loop: ${error}`);
+      throw error;
     }
-    this.isRunning = false;
-    this.log('Worker main loop stopped');
   }
 
   async stop() {
+    if (this.workerState !== 'running') {
+      throw new Error(`Cannot stop worker in state: ${this.workerState}`);
+    }
+
     this.log('STOPPING Worker...');
+    this.workerState = 'stopping';
 
-    this.log('-> Stopped accepting new messages');
-    this.mainController.abort();
+    try {
+      this.log('-> Stopped accepting new messages');
+      this.mainController.abort();
 
-    console.log('-> Waiting for execution completion');
-    await this.executionController.awaitCompletion();
-    console.log('-> Execution completed');
+      this.log('-> Waiting for execution completion');
+      await this.executionController.awaitCompletion();
+      this.log('-> Execution completed');
 
-    // Now safe to close connection
-    await this.acknowledgeStop();
-    await this.sql.end();
+      await this.acknowledgeStop();
+      await this.sql.end();
+    } catch (error) {
+      this.log(`Error during worker stop: ${error}`);
+      throw error;
+    }
   }
 
   setFunctionName(functionName: string) {

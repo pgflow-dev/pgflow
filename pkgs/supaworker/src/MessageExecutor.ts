@@ -1,6 +1,7 @@
 import { Json } from './types.ts';
 import { type MessageRecord } from './Worker.ts';
 import { Queue } from './Queue.ts';
+import { BatchArchiver } from './BatchArchiver.ts';
 
 class AbortError extends Error {
   constructor() {
@@ -16,18 +17,21 @@ export class MessageExecutor<MessagePayload extends Json> {
     private readonly queue: Queue<MessagePayload>,
     private readonly record: MessageRecord<MessagePayload>,
     private readonly messageHandler: (message: MessagePayload) => Promise<void>,
-    private readonly signal: AbortSignal
+    private readonly signal: AbortSignal,
+    private readonly batchArchiver: BatchArchiver
   ) {}
 
   get msgId() {
     return this.record.msg_id;
   }
 
-  execute(): this {
+  execute(): Promise<void> {
     if (!this.executionPromise) {
       this.executionPromise = this._execute();
+    } else {
+      console.log('[MessageExecutor] Execution already started');
     }
-    return this;
+    return this.executionPromise;
   }
 
   private async _execute(): Promise<void> {
@@ -54,22 +58,26 @@ export class MessageExecutor<MessagePayload extends Json> {
         abortPromise,
       ]);
 
-      await this.queue.archive(this.record.msg_id);
+      this.batchArchiver.add(this.msgId);
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
-        console.log('Message processing cancelled:', this.record.msg_id);
+        console.log(`[MessageExecutor] Aborted execution for ${this.msgId}`);
       } else {
-        console.error('Error processing message:', error);
         // Re-queue the message on non-abort errors
         await this.queue.setVt(this.msgId, 2);
       }
     }
   }
 
-  finally(onfinally?: (() => void) | null): Promise<void> {
+  finally(onfinally?: (() => void) | null): this {
     if (!this.executionPromise) {
       throw new Error('Executor not started');
     }
-    return this.executionPromise.finally(onfinally);
+
+    this.executionPromise = this.executionPromise.finally(() => {
+      if (onfinally) onfinally();
+    });
+
+    return this;
   }
 }

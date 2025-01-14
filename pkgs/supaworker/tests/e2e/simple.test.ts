@@ -1,6 +1,11 @@
 import { sql } from '../sql.ts';
 import { assertEquals } from 'jsr:@std/assert';
-import { log, startWorker, waitForSeqToIncrementBy } from './_helpers.ts';
+import {
+  log,
+  startWorker,
+  waitFor,
+  waitForSeqToIncrementBy,
+} from './_helpers.ts';
 import { sendBatch } from './_helpers.ts';
 import { delay } from 'jsr:@std/async';
 
@@ -18,6 +23,7 @@ Deno.test('should send message to queue and check sequence', async () => {
     await sendBatch(6, WORKER_NAME);
 
     await waitForSeqToIncrementBy(6);
+    await delay(1200); // wait for BatchArchiver
 
     // TODO: find a better way, maybe some advisary lock?
     await delay(500); // wait for worker transaction to commit
