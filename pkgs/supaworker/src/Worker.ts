@@ -139,24 +139,16 @@ export class Worker<MessagePayload extends Json> {
         try {
           await this.heartbeat?.send(this.edgeFunctionName);
 
-          const messageRecords = !this.mainController.signal.aborted
-            ? await this.queue.readWithPoll(
-                this.config.maxConcurrent,
-                this.config.visibilityTimeout,
-                this.config.maxPollSeconds,
-                this.config.pollIntervalMs
-              )
-            : [];
-          console.log('messageRecords', messageRecords);
-          console.log('aborted', this.mainController.signal.aborted);
+          const messageRecords = await this.pollMessages();
 
           if (this.mainController.signal.aborted) {
             this.log('-> Discarding messageRecords because worker is stopping');
             continue;
           }
 
-          const startPromises = messageRecords.map((messageRecord: any) =>
-            this.executionController.start(messageRecord, messageHandler)
+          const startPromises = messageRecords.map(
+            (messageRecord: MessageRecord<MessagePayload>) =>
+              this.executionController.start(messageRecord, messageHandler)
           );
           await Promise.all(startPromises);
         } catch (error: unknown) {
@@ -167,6 +159,25 @@ export class Worker<MessagePayload extends Json> {
       this.log(`Error in worker main loop: ${error}`);
       throw error;
     }
+  }
+
+  /**
+   * Get the next batch of messages to process
+   */
+  async pollMessages() {
+    const messageRecords = this.mainController.signal.aborted
+      ? []
+      : await this.queue.readWithPoll(
+          this.config.maxConcurrent,
+          this.config.visibilityTimeout,
+          this.config.maxPollSeconds,
+          this.config.pollIntervalMs
+        );
+
+    console.log('messageRecords', messageRecords);
+    console.log('aborted', this.mainController.signal.aborted);
+
+    return messageRecords;
   }
 
   async stop() {
