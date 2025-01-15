@@ -23,6 +23,7 @@ normal operations:
 - makes extra effort to gracefully abort pending jobs with abort signals
 - uses PGMQ's visibility timeout to ensure **no job is ever lost**
 - **spawns new instances** automatically for **continuous operations**
+- pings db with **heartbeats** to ensure we know worker is alive
 
 ## 🚀 Get started
 
