@@ -1,13 +1,13 @@
 ---
-title: pgflow
+title: Edge Worker
 template: splash
 hero:
-  tagline: Seamlessly integrate workflows and workers with Supabase
+  tagline: Queue worker running on top of Edge Functions and PGMQ
   image:
     file: ../../assets/nodes-group-logo.svg
   actions:
     - text: Get started
-      link: '#create-new-edge-function'
+      link: '#-get-started'
       variant: primary
 ---
 
@@ -24,7 +24,12 @@ normal operations:
 - uses PGMQ's visibility timeout to ensure **no job is ever lost**
 - **spawns new instances** automatically for **continuous operations**
 
-You can get started in 3 minutes.
+## 🚀 Get started
+
+<Aside type="caution" title="Requirements">
+You should have Supabase CLI installed and local project set up already.
+If you don't, follow Supabase's [installation guide](https://supabase.com/docs/guides/cli) first.
+</Aside>
 
 <Steps>
 
@@ -41,12 +46,13 @@ You can get started in 3 minutes.
     ```typescript
     import { EdgeWorker } from "@pgflow/edge-worker";
 
-    EdgeWorker.start(async (message: { urlToScrape: string }) => {
+    EdgeWorker.start(async (payload: { urlToScrape: string }) => {
       // do something with the message
+      console.log('Scraping URL...', urlToScrape);
     });
     ```
 
-2. #### Download and run migration
+2. #### Update your schema
 
     Run the following bash script to download the migration file to your project.
     Replace `<supabase-dir>` with the path to your `supabase/` directory.
@@ -69,23 +75,21 @@ You can get started in 3 minutes.
     curl http://localhost:54321/functions/v1/my-edge-worker
     ```
 
-4. #### Enqueue a job
+4. #### Process your first message
 
-    Worker by default polls for messages on PGMQ queue named `default`.
+    Worker by default polls for messages on PGMQ queue named `default` (configurable).
 
     You just need to send a message to that queue:
 
     ```sql
-    SELECT pgmq.send('default', '{'urlToScrape': 'https://example.com'}'::jsonb);
+    SELECT pgmq.send('default', '{"urlToScrape": "https://example.com"}'::jsonb);
     ```
 
-    Worker should start processing the message immediately.
+    Worker will start processing the message immediately.
 
-    <Aside>
-      You can create the queue yourself or let worker do it during startup.
-
-      You can also configure the queue name by passing a second configuration map
-      (see more in the docs).
+    <Aside title="Queues">
+      If you do not create the queue yourself, the worker will create
+      a logged, non-partitioned queue for you during startup.
     </Aside>
 
 </Steps>
