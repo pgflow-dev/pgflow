@@ -1,0 +1,86 @@
+---
+title: pgflow
+template: splash
+hero:
+  tagline: Seamlessly integrate workflows and workers with Supabase
+  image:
+    file: ../../assets/nodes-group-logo.svg
+  actions:
+    - text: Get started
+      link: '#create-new-edge-function'
+      variant: primary
+---
+
+import { Aside, Steps, Badge } from "@astrojs/starlight/components";
+
+Edge Worker is an attempt to provide a decent task queue worker
+for Supabase, running on top of their Edge Functions and PGMQ.
+
+It is designed to automatically **spawn new instance when terminated** and
+to **gracefully abort and restart** pending jobs.
+
+You can start using it in 3 minutes.
+
+<Steps>
+
+1. #### Create your worker
+
+    Call your supabase CLI as usual to create new function:
+
+    ```typescript
+    npx supabase functions new my-edge-worker
+    ```
+
+    Replace contents of generated `index.ts` with the following:
+
+    ```typescript
+    import { EdgeWorker } from "@pgflow/edge-worker";
+
+    EdgeWorker.start(async (message: { urlToScrape: string }) => {
+      // do something with the message
+    });
+    ```
+
+2. #### Download and run migration
+
+    Run following bash script to download migration file to your project.
+    Replace `<supabase-dir>` with path to `supabase/` directory.
+
+    ```bash
+    wget -O <supabase-dir>/migrations/ https://raw.githubusercontent.com/pgflow-dev/pgflow/main/edge-worker/migrations/edge-worker.sql
+    ```
+
+    Then migrate, as usual:
+
+    ```bash
+    npx supabase migration up
+    ```
+
+3. #### Start your worker
+
+    You can start worker by making an http request to its edge function:
+
+    ```bash
+    curl http://localhost:54321/functions/v1/my-edge-worker
+    ```
+
+4. #### Enqueue a job
+
+    Worker by default polls for messages on PGMQ queue named `default`.
+
+    You just need to send a message to that queue:
+    
+    ```sql
+    SELECT pgmq.send('default', '{'urlToScrape': 'https://example.com'}'::jsonb);
+    ```
+
+    Worker should start processing the message immediately.
+
+    <Aside>
+      You can create the queue yourself or let worker do it during startup.
+
+      You can also configure the queue name by passing a second configuration map
+      (see more in the docs).
+    </Aside>
+
+</Steps>
