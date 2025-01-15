@@ -43,7 +43,7 @@ If not, please follow Supabase's [installation guide](https://supabase.com/docs/
 
     EdgeWorker.start(async (payload: { urlToScrape: string }) => {
       // do something with the message
-      console.log('Scraping URL...', urlToScrape);
+      console.log('Scraping URL...', payload.urlToScrape);
     });
     ```
 
@@ -67,7 +67,7 @@ If not, please follow Supabase's [installation guide](https://supabase.com/docs/
     Start the worker by making an HTTP request to its edge function:
 
     ```bash
-    curl http://localhost:54321/functions/v1/my-edge-worker
+    curl http://localhost:54321/functions/v1/<function-name>
     ```
 
 4. #### Process your first message
@@ -77,7 +77,10 @@ If not, please follow Supabase's [installation guide](https://supabase.com/docs/
     Send a test message to the queue:
 
     ```sql
-    SELECT pgmq.send('default', '{"urlToScrape": "https://example.com"}'::jsonb);
+    SELECT pgmq.send(
+      queue_name => 'default', 
+      msg => '{"urlToScrape": "https://example.com"}'::jsonb
+    );
     ```
 
     The worker will process the message immediately.
