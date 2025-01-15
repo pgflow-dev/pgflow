@@ -20,8 +20,8 @@ as an expected occurrence and includes extra measures to handle it as part of
 normal operations:
 
 - stops polling as soon as the soft limit is reached
-- makes extra effort to gracefully abort pending jobs with abort signals
-- uses PGMQ's visibility timeout to ensure **no job is ever lost**
+- makes extra effort to gracefully abort pending tasks with abort signals
+- uses PGMQ's visibility timeout to ensure **no message is ever lost**
 - **spawns new instances** automatically for **continuous operations**
 - pings db with **heartbeats** to ensure we know worker is alive
 
@@ -72,7 +72,7 @@ If not, please follow Supabase's [installation guide](https://supabase.com/docs/
 
 4. #### Process your first message
 
-    By default, the worker polls for messages from a PGMQ queue named `default` (this name is configurable).
+    By default, the worker polls for messages from a PGMQ queue named `tasks` (this name is configurable).
 
     Send a test message to the queue:
 
