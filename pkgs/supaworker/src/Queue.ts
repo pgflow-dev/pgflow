@@ -1,6 +1,6 @@
 import type postgres from 'postgres';
 import { type Json } from './types.ts';
-import { MessageRecord } from './Worker.ts';
+import { MessageRecord } from './types.ts';
 
 export class Queue<MessagePayload extends Json> {
   constructor(

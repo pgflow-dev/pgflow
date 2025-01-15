@@ -1,7 +1,7 @@
 import { MessageExecutor } from './MessageExecutor.ts';
 import { Queue } from './Queue.ts';
 import { Json } from './types.ts';
-import { MessageRecord } from './Worker.ts';
+import { MessageRecord } from './types.ts';
 import { Sema } from 'npm:async-sema@^3.1.1';
 import { BatchArchiver } from './BatchArchiver.ts';
 

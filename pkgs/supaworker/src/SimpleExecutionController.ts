@@ -1,5 +1,5 @@
 import { Json } from './types.ts';
-import { MessageRecord } from './Worker.ts';
+import { MessageRecord } from './types.ts';
 
 export class SimpleExecutionController<T extends Json> {
   private running = new Set<Promise<void>>();

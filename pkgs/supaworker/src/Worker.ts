@@ -1,18 +1,10 @@
 import postgres from 'postgres';
-import { Json } from './types.ts';
+import { Json, MessageRecord } from './types.ts';
 import { Queue } from './Queue.ts';
 import { Queries } from './Queries.ts';
 import { Heartbeat } from './Heartbeat.ts';
 import { ExecutionController } from './ExecutionController.ts';
 import { Logger } from './Logger.ts';
-
-export interface MessageRecord<MessagePayload extends Json> {
-  msg_id: number;
-  read_ct: number;
-  enqueued_at: string;
-  vt: string;
-  message: MessagePayload | null;
-}
 
 export interface WorkerConfig {
   connectionString: string;

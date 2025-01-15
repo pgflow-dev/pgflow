@@ -21,3 +21,11 @@ export type WorkerRow = {
   stopped_at: string | null;
   worker_id: string;
 };
+
+export interface MessageRecord<MessagePayload extends Json> {
+  msg_id: number;
+  read_ct: number;
+  enqueued_at: string;
+  vt: string;
+  message: MessagePayload | null;
+}

@@ -1,5 +1,5 @@
 import { Json } from './types.ts';
-import { type MessageRecord } from './Worker.ts';
+import { type MessageRecord } from './types.ts';
 import { Queue } from './Queue.ts';
 import { BatchArchiver } from './BatchArchiver.ts';
 
