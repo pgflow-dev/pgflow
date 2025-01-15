@@ -1,0 +1,72 @@
+---
+title: Edge Worker
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+<Aside type="caution" title="Requirements">
+You need to have the Supabase CLI installed and a local project set up before continuing.
+If not, please follow Supabase's [installation guide](https://supabase.com/docs/guides/cli) first.
+</Aside>
+
+## 🚀 Get started
+
+<Steps>
+
+1. #### Create your worker
+
+    Use the Supabase CLI to create a new function. Edge Worker handles HTTP requests internally, so replace the function's content with:
+
+    ```typescript
+    import { EdgeWorker } from "@pgflow/edge-worker";
+
+    EdgeWorker.start(async (payload: { urlToScrape: string }) => {
+      // do something with the message
+      console.log('Scraping URL...', payload.urlToScrape);
+    });
+    ```
+
+2. #### Update your schema
+
+    Run this command to download the migration file to your project.
+    Replace `<supabase-dir>` with your project's `supabase/` directory path.
+
+    ```bash
+    wget -O <supabase-dir>/migrations/ https://raw.githubusercontent.com/pgflow-dev/pgflow/main/edge-worker/migrations/edge-worker.sql
+    ```
+
+    Then apply the migration:
+
+    ```bash
+    npx supabase migration up
+    ```
+
+3. #### Start your worker
+
+    Start the worker by making an HTTP request to its edge function:
+
+    ```bash
+    curl http://localhost:54321/functions/v1/<function-name>
+    ```
+
+4. #### Process your first message
+
+    By default, the worker looks for messages in the `tasks` queue (this name is configurable).
+
+    Send a test message to the queue:
+
+    ```sql
+    SELECT pgmq.send(
+      queue_name => 'tasks',
+      msg => '{"urlToScrape": "https://example.com"}'::jsonb
+    );
+    ```
+
+    The worker will process the message immediately.
+
+    <Aside title="Creating queues">
+      If you haven't created the queue beforehand, the worker will automatically create
+      a logged, non-partitioned queue during startup.
+    </Aside>
+
+</Steps>
