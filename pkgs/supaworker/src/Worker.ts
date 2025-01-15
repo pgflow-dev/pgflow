@@ -67,10 +67,7 @@ export class Worker<MessagePayload extends Json> {
     try {
       await this.acknowledgeStart();
 
-      while (
-        this.workerState.isRunning &&
-        !this.mainController.signal.aborted
-      ) {
+      while (this.isMainLoopActive) {
         try {
           await this.heartbeat?.send(this.edgeFunctionName);
 
@@ -175,5 +172,12 @@ export class Worker<MessagePayload extends Json> {
 
   setFunctionName(functionName: string) {
     this.edgeFunctionName = functionName;
+  }
+
+  /**
+   * Returns true if worker state is Running and worker was not stopped
+   */
+  private get isMainLoopActive() {
+    return this.workerState.isRunning && !this.mainController.signal.aborted;
   }
 }
