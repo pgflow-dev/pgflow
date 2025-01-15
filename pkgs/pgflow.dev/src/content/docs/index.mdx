@@ -78,7 +78,7 @@ If not, please follow Supabase's [installation guide](https://supabase.com/docs/
 
     ```sql
     SELECT pgmq.send(
-      queue_name => 'default',
+      queue_name => 'tasks',
       msg => '{"urlToScrape": "https://example.com"}'::jsonb
     );
     ```
