@@ -10,9 +10,7 @@ export default defineConfig({
       social: {
         github: "https://github.com/jumski",
       },
-      components: {
-        SiteTitle: "./src/components/SiteTitle.astro",
-      },
+      components: {},
       head: [
         {
           tag: "script",
