@@ -56,7 +56,7 @@ export class WorkerState {
     return this.state === States.Stopping;
   }
 
-  transitionTo(state: States) {
+  async transitionTo(state: States, callback?: () => Promise<void>) {
     if (this.state === state) {
       return;
     }
@@ -69,6 +69,22 @@ export class WorkerState {
         from: this.state,
         to: state,
       });
+    }
+
+    if (callback) {
+      try {
+        await callback();
+        this.state = state;
+        console.log(`[WorkerState] Transitioned to '${state}'`);
+      } catch (error) {
+        console.error(
+          `[WorkerState] Failed to transition to '${state}': ${error}`
+        );
+        throw error;
+      }
+    } else {
+      this.state = state;
+      console.log(`[WorkerState] Transitioned to '${state}'`);
     }
   }
 }
