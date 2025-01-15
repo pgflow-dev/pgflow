@@ -17,13 +17,14 @@ All configuration options are optional and have sane defaults.
 
 ```typescript
 EdgeWorker.start(handler, {
-  maxConcurrent: 20,
-  maxPgConnections: 4,
-  maxPollSeconds: 5,
-  pollIntervalMs: 200,
-  retryDelay: 5,
-  retryLimit: 0,
-  visibilityTimeout: 3,
+  maxConcurrent: 20, // how much jobs are processed at the same time
+  maxPgConnections: 4, // how many connections to the databasee are opened
+  maxPollSeconds: 5, // in-worker polling interval
+  pollIntervalMs: 200, // in-database polling interval
+  retryDelay: 5, // how long to wait before retrying a failed job
+  retryLimit: 0, // how many times to retry a failed job
+  visibilityTimeout: 3, // how long a job is invisible after reading
+                        // if not successful, will reappear after this time
 });
 ```
 
@@ -33,7 +34,7 @@ EdgeWorker.start(handler, {
 **Type:** `string`
 **Default:** `'tasks'`
 
-The name of the PGMQ queue to listen to for messages. 
+The name of the PGMQ queue to listen to for messages.
 
 <Aside title="You don't need to create queues manually" type="tip">
 The worker will automatically create a logged, non-partitioned queue
@@ -111,7 +112,7 @@ EdgeWorker.start(handler, {
 });
 ```
 
-### `visibilityTimeout` 
+### `visibilityTimeout`
 **Type:** `number`
 **Default:** `30`
 
@@ -119,7 +120,7 @@ The duration in seconds that a message is hidden from other consumers while bein
 
 <Aside title="Timeouts" type="caution">
 Make sure to set it bigger than max time your task can take to complete, otherwise
-it will be retried multiple times.
+it will be processed multiple times.
 </Aside>
 
 <Aside title="Work-in-Progress" type="danger">
