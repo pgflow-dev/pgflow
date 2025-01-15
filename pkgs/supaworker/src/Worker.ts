@@ -35,10 +35,10 @@ export class Worker<MessagePayload extends Json> {
   public edgeFunctionName?: string;
 
   private static readonly DEFAULT_CONFIG = {
-    maxConcurrent: 50,
+    maxConcurrent: 20,
     maxPgConnections: 4,
     maxPollSeconds: 5,
-    pollIntervalMs: 100,
+    pollIntervalMs: 200,
     retryDelay: 5,
     retryLimit: 0,
     visibilityTimeout: 3,
