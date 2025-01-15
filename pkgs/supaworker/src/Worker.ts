@@ -6,6 +6,7 @@ import { Heartbeat } from './Heartbeat.ts';
 import { ExecutionController } from './ExecutionController.ts';
 import { Logger } from './Logger.ts';
 import { WorkerState, States } from './WorkerState.ts';
+import { ReadWithPollPoller } from './ReadWithPollPoller.ts';
 
 export interface WorkerConfig {
   connectionString: string;
@@ -26,6 +27,7 @@ export class Worker<MessagePayload extends Json> {
   private queue: Queue<MessagePayload>;
   private queries: Queries;
   private executionController: ExecutionController<MessagePayload>;
+  private poller: ReadWithPollPoller<MessagePayload>;
   private workerId?: string;
   private heartbeat?: Heartbeat;
   private config: Required<WorkerConfig>;
@@ -61,6 +63,16 @@ export class Worker<MessagePayload extends Json> {
       this.config.retryLimit,
       this.config.retryDelay
     );
+    this.poller = new ReadWithPollPoller(
+      this.queue,
+      {
+        batchSize: this.config.maxConcurrent,
+        visibilityTimeout: this.config.visibilityTimeout,
+        maxPollSeconds: this.config.maxPollSeconds,
+        pollIntervalMs: this.config.pollIntervalMs,
+      },
+      this.mainController.signal
+    );
   }
 
   async start(messageHandler: (message: MessagePayload) => Promise<void>) {
@@ -71,7 +83,7 @@ export class Worker<MessagePayload extends Json> {
         try {
           await this.heartbeat?.send(this.edgeFunctionName);
 
-          const messageRecords = await this.pollMessages();
+          const messageRecords = await this.poller.poll();
 
           if (this.mainController.signal.aborted) {
             this.log('-> Discarding messageRecords because worker is stopping');
@@ -133,22 +145,6 @@ export class Worker<MessagePayload extends Json> {
       this.log(`Error acknowledging worker stop: ${error}`);
       throw error;
     }
-  }
-
-  /**
-   * Polls for messages from the queue.
-   *
-   * @returns A list of message records.
-   */
-  async pollMessages() {
-    return this.mainController.signal.aborted
-      ? []
-      : await this.queue.readWithPoll(
-          this.config.maxConcurrent,
-          this.config.visibilityTimeout,
-          this.config.maxPollSeconds,
-          this.config.pollIntervalMs
-        );
   }
 
   async stop() {
