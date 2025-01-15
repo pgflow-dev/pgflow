@@ -52,7 +52,7 @@ export class Worker<MessagePayload extends Json> {
 
     this.sql = postgres(this.config.connectionString, {
       max: this.config.maxPgConnections,
-      prepare: false,
+      prepare: true,
     });
     this.queue = new Queue(this.sql, this.config.queueName);
     this.queries = new Queries(this.sql);

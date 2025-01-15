@@ -1,7 +1,7 @@
 import postgres from 'postgres';
 
 const sql = postgres(Deno.env.get('DB_URL')!, {
-  prepare: false,
+  prepare: true,
   onnotice(_) {
     // no-op to silence notices
   },

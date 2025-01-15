@@ -12,7 +12,7 @@ major_version = 15
 [db.pooler]
 enabled = true
 port = 50329
-pool_mode = "transaction"
+pool_mode = "session"
 default_pool_size = 200
 max_client_conn = 200
 
