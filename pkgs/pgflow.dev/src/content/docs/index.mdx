@@ -28,21 +28,15 @@ normal operations:
 ## 🚀 Get started
 
 <Aside type="caution" title="Requirements">
-You should have Supabase CLI installed and local project set up already.
-If you don't, follow Supabase's [installation guide](https://supabase.com/docs/guides/cli) first.
+You need to have the Supabase CLI installed and a local project set up before continuing.
+If not, please follow Supabase's [installation guide](https://supabase.com/docs/guides/cli) first.
 </Aside>
 
 <Steps>
 
 1. #### Create your worker
 
-    Call your supabase CLI as usual to create new function:
-
-    ```typescript
-    npx supabase functions new my-edge-worker
-    ```
-
-    Replace contents of generated `index.ts` with the following:
+    Use the Supabase CLI to create a new function:
 
     ```typescript
     import { EdgeWorker } from "@pgflow/edge-worker";
@@ -55,14 +49,14 @@ If you don't, follow Supabase's [installation guide](https://supabase.com/docs/g
 
 2. #### Update your schema
 
-    Run the following bash script to download the migration file to your project.
-    Replace `<supabase-dir>` with the path to your `supabase/` directory.
+    Run this command to download the migration file to your project.
+    Replace `<supabase-dir>` with your project's `supabase/` directory path.
 
     ```bash
     wget -O <supabase-dir>/migrations/ https://raw.githubusercontent.com/pgflow-dev/pgflow/main/edge-worker/migrations/edge-worker.sql
     ```
 
-    Then migrate, as usual:
+    Then apply the migration:
 
     ```bash
     npx supabase migration up
@@ -70,7 +64,7 @@ If you don't, follow Supabase's [installation guide](https://supabase.com/docs/g
 
 3. #### Start your worker
 
-    You can start worker by making an http request to its edge function:
+    Start the worker by making an HTTP request to its edge function:
 
     ```bash
     curl http://localhost:54321/functions/v1/my-edge-worker
@@ -78,19 +72,19 @@ If you don't, follow Supabase's [installation guide](https://supabase.com/docs/g
 
 4. #### Process your first message
 
-    Worker by default polls for messages on PGMQ queue named `default` (configurable).
+    By default, the worker polls for messages from a PGMQ queue named `default` (this name is configurable).
 
-    You just need to send a message to that queue:
+    Send a test message to the queue:
 
     ```sql
     SELECT pgmq.send('default', '{"urlToScrape": "https://example.com"}'::jsonb);
     ```
 
-    Worker will start processing the message immediately.
+    The worker will process the message immediately.
 
     <Aside title="Queues">
-      If you do not create the queue yourself, the worker will create
-      a logged, non-partitioned queue for you during startup.
+      If you haven't created the queue beforehand, the worker will automatically create
+      a logged, non-partitioned queue during startup.
     </Aside>
 
 </Steps>
