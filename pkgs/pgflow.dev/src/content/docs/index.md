@@ -7,9 +7,9 @@ hero:
   image:
     file: ../../assets/nodes-group-logo.svg
   actions:
-    - text: Edge Worker WIP docs!
+    - text: check out Edge Worker!
       link: "/edge-worker"
-      variant: secondary
+      variant: primary
       icon: external
 ---
 
