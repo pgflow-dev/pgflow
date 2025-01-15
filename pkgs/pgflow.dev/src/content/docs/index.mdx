@@ -23,7 +23,7 @@ normal operations:
 - makes extra effort to gracefully abort pending tasks with abort signals
 - uses PGMQ's visibility timeout to ensure **no message is ever lost**
 - **spawns new instances** automatically for **continuous operations**
-- pings db with **heartbeats** to ensure we know worker is alive
+- pings the database with **heartbeats** to ensure the worker's health
 
 ## 🚀 Get started
 
@@ -36,7 +36,7 @@ If not, please follow Supabase's [installation guide](https://supabase.com/docs/
 
 1. #### Create your worker
 
-    Use the Supabase CLI to create a new function:
+    Use the Supabase CLI to create a new function. Edge Worker handles HTTP requests internally, so replace the function's content with:
 
     ```typescript
     import { EdgeWorker } from "@pgflow/edge-worker";
@@ -72,13 +72,13 @@ If not, please follow Supabase's [installation guide](https://supabase.com/docs/
 
 4. #### Process your first message
 
-    By default, the worker polls for messages from a PGMQ queue named `tasks` (this name is configurable).
+    By default, the worker looks for messages in the `tasks` queue (this name is configurable).
 
     Send a test message to the queue:
 
     ```sql
     SELECT pgmq.send(
-      queue_name => 'default', 
+      queue_name => 'default',
       msg => '{"urlToScrape": "https://example.com"}'::jsonb
     );
     ```
