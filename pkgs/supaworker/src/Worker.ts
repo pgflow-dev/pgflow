@@ -63,6 +63,39 @@ export class Worker<MessagePayload extends Json> {
     );
   }
 
+  async start(messageHandler: (message: MessagePayload) => Promise<void>) {
+    try {
+      await this.acknowledgeStart();
+
+      while (
+        this.workerState.isRunning &&
+        !this.mainController.signal.aborted
+      ) {
+        try {
+          await this.heartbeat?.send(this.edgeFunctionName);
+
+          const messageRecords = await this.pollMessages();
+
+          if (this.mainController.signal.aborted) {
+            this.log('-> Discarding messageRecords because worker is stopping');
+            continue;
+          }
+
+          const startPromises = messageRecords.map(
+            (messageRecord: MessageRecord<MessagePayload>) =>
+              this.executionController.start(messageRecord, messageHandler)
+          );
+          await Promise.all(startPromises);
+        } catch (error: unknown) {
+          this.log(`Error processing messages: ${error}`);
+        }
+      }
+    } catch (error) {
+      this.log(`Error in worker main loop: ${error}`);
+      throw error;
+    }
+  }
+
   private log(message: string) {
     this.logger.log(message);
   }
@@ -101,39 +134,6 @@ export class Worker<MessagePayload extends Json> {
       this.log('Worker stop acknowledged');
     } catch (error) {
       this.log(`Error acknowledging worker stop: ${error}`);
-      throw error;
-    }
-  }
-
-  async start(messageHandler: (message: MessagePayload) => Promise<void>) {
-    try {
-      await this.acknowledgeStart();
-
-      while (
-        this.workerState.isRunning &&
-        !this.mainController.signal.aborted
-      ) {
-        try {
-          await this.heartbeat?.send(this.edgeFunctionName);
-
-          const messageRecords = await this.pollMessages();
-
-          if (this.mainController.signal.aborted) {
-            this.log('-> Discarding messageRecords because worker is stopping');
-            continue;
-          }
-
-          const startPromises = messageRecords.map(
-            (messageRecord: MessageRecord<MessagePayload>) =>
-              this.executionController.start(messageRecord, messageHandler)
-          );
-          await Promise.all(startPromises);
-        } catch (error: unknown) {
-          this.log(`Error processing messages: ${error}`);
-        }
-      }
-    } catch (error) {
-      this.log(`Error in worker main loop: ${error}`);
       throw error;
     }
   }
