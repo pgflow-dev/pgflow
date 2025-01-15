@@ -6,16 +6,17 @@ next: /edge-worker/configuration
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 
-The Supaworker class accepts configuration options to customize its behavior when processing messages from the queue. This page details all available configuration options.
+You can pass optional configuration object as second argument to `EdgeWorker.start()`
+to tweak the worker's behavior.
 
 <Aside title="Zero configuration needed" type="tip">
 All configuration options are optional and have sane defaults.
 </Aside>
 
-#### Default configuration
+### Default configuration
 
 ```typescript
-DEFAULT_CONFIG = {
+EdgeWorker.start(handler, {
   maxConcurrent: 20,
   maxPgConnections: 4,
   maxPollSeconds: 5,
@@ -23,103 +24,61 @@ DEFAULT_CONFIG = {
   retryDelay: 5,
   retryLimit: 0,
   visibilityTimeout: 3,
-} as const;
+});
 ```
 
-### queueName
+## Queue and polling
+
+### `queueName`
 **Type:** `string`
 **Default:** `'tasks'`
 
-The name of the PGMQ queue to listen to for messages. You do not need to create
-this queue manually, the worker will automatically create a logged, non-partitioned queue
-during startup if it does not exist.
+The name of the PGMQ queue to listen to for messages. 
+
+<Aside title="You don't need to create queues manually" type="tip">
+The worker will automatically create a logged, non-partitioned queue
+with configured name during startup if it does not exist.
+</Aside>
 
 ```ts
-Supaworker.start(handler, {
+EdgeWorker.start(handler, {
   queueName: 'my-custom-queue'
 });
 ```
 
-### pollIntervalMs
-**Type:** `number`
-**Default:** `200`
-
-The interval for in-database polling that `pgmq.read_with_poll` does.
-Most of the time, you don't need to change this value.
-
-```ts
-Supaworker.start(handler, {
-  pollIntervalMs: 300 // Poll every 300ms
-});
-```
-
-### retryLimit
-**Type:** `number`
-**Default:** `0`
-
-Maximum number of retry attempts for failed message processing before marking the message as dead.
-**By default messages will not be retried.**
-
-```ts
-Supaworker.start(handler, {
-  retryLimit: 5
-});
-```
-
-### visibilityTimeout
-**Type:** `number`
-**Default:** `30`
-
-The duration in seconds that a message is hidden from other consumers while being processed.
-
-<Aside type="caution">
-  If message processing takes longer than the visibility timeout, the message may be processed multiple times by different workers.
-</Aside>
-
-```ts
-Supaworker.start(handler, {
-  visibilityTimeout: 5 // mesassage will re-appear on queue after 5 seconds if not processed
-});
-```
-
-### maxConcurrent
-**Type:** `number`
-**Default:** `10`
-
-This option limits concurrency - the maximum number of messages that can be processed at the same time.
-Increase for IO-heavy tasks (network or db calls), decrease for CPU-heavy tasks.
-
-```ts
-Supaworker.start(handler, {
-  batchSize: 10 // Process up to 10 messages at once
-});
-```
-
-### maxPgConnections
-**Type:** `number`
-**Default:** `4`
-
-This option limits the number of connections to the database.
-Increase for IO-heavy tasks (network or db calls), decrease for CPU-heavy tasks.
-
-```ts
-Supaworker.start(handler, {
-  maxPgConnections: 10 // Use up to 10 connections to the database
-});
-
-### maxPollSeconds
+### `maxPollSeconds`
 **Type:** `number`
 **Default:** `5`
 
 Amount of seconds to wait for a message to be available in the queue.
 
 ```ts
-Supaworker.start(handler, {
+EdgeWorker.start(handler, {
   maxPollSeconds: 5 // Long-poll for 5 seconds waiting for a message
 });
 ```
 
-### retryDelay
+### `pollIntervalMs`
+**Type:** `number`
+**Default:** `200`
+
+The interval for in-database polling that `pgmq.read_with_poll` does.
+Most of the time, you don't need to change this value.
+
+<Aside type="caution">
+  This value should be lower than the `maxPollSeconds` value.
+</Aside>
+
+
+```ts
+EdgeWorker.start(handler, {
+  pollIntervalMs: 300 // Poll every 300ms
+});
+```
+
+## Retries
+
+### `retryDelay`
 **Type:** `number`
 **Default:** `5`
 
@@ -130,10 +89,77 @@ Amount of seconds to wait between retry attempts.
 </Aside>
 
 ```ts
-Supaworker.start(handler, {
+EdgeWorker.start(handler, {
   retryDelay: 5 // Wait 5 seconds between retries
 });
 ```
+
+
+### `retryLimit`
+**Type:** `number`
+**Default:** `0`
+
+Maximum number of retry attempts for failed message processing before marking the message as dead.
+
+<Aside title="No retries by default!" type="danger">
+By default messages will not be retried, you need to set this option explicitly.
+</Aside>
+
+```ts
+EdgeWorker.start(handler, {
+  retryLimit: 5
+});
+```
+
+### `visibilityTimeout` 
+**Type:** `number`
+**Default:** `30`
+
+The duration in seconds that a message is hidden from other consumers while being processed.
+
+<Aside title="Timeouts" type="caution">
+Make sure to set it bigger than max time your task can take to complete, otherwise
+it will be retried multiple times.
+</Aside>
+
+<Aside title="Work-in-Progress" type="danger">
+This option is probably subject to be refactored to `timeoutMs` that will
+affect timeout for the tasks (wip) and visibility timeout.
+**Do not rely on this option heavily for now!**
+</Aside>
+
+```ts
+EdgeWorker.start(handler, {
+  visibilityTimeout: 5 // mesassage will re-appear on queue after 5 seconds if not processed
+});
+```
+
+## Concurrency
+
+### `maxConcurrent`
+**Type:** `number`
+**Default:** `10`
+
+This option limits concurrency - the maximum number of messages that can be processed at the same time.
+Increase for IO-heavy tasks (network or db calls), decrease for CPU-heavy tasks.
+
+```ts
+EdgeWorker.start(handler, {
+  batchSize: 10 // Process up to 10 messages at once
+});
+```
+
+### `maxPgConnections`
+**Type:** `number`
+**Default:** `4`
+
+This option limits the number of connections to the database.
+Increase for IO-heavy tasks (network or db calls), decrease for CPU-heavy tasks.
+
+```ts
+EdgeWorker.start(handler, {
+  maxPgConnections: 10 // Use up to 10 connections to the database
+});
 
 ## Environment Variables
 
@@ -141,5 +167,3 @@ Supaworker.start(handler, {
 1. `DB_POOL_URL` (Required) - PostgreSQL connection string for the database
 2. Set any additional environment variables needed by your worker logic
 </Steps>
-
-For more information on deploying workers, see the [Edge Worker documentation](/edge-worker/configuration).
