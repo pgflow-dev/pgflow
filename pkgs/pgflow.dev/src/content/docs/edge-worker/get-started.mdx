@@ -1,5 +1,6 @@
 ---
 title: Edge Worker
+next: /edge-worker/configuration
 ---
 
 import { Aside, Steps } from "@astrojs/starlight/components";
@@ -13,7 +14,7 @@ If not, please follow Supabase's [installation guide](https://supabase.com/docs/
 
 <Steps>
 
-1. #### Create your worker
+1. ### Create your worker
 
     Use the Supabase CLI to create a new function. Edge Worker handles HTTP requests internally, so replace the function's content with:
 
@@ -26,7 +27,7 @@ If not, please follow Supabase's [installation guide](https://supabase.com/docs/
     });
     ```
 
-2. #### Update your schema
+2. ### Update your schema
 
     Run this command to download the migration file to your project.
     Replace `<supabase-dir>` with your project's `supabase/` directory path.
@@ -41,7 +42,7 @@ If not, please follow Supabase's [installation guide](https://supabase.com/docs/
     npx supabase migration up
     ```
 
-3. #### Start your worker
+3. ### Start your worker
 
     Start the worker by making an HTTP request to its edge function:
 
@@ -49,7 +50,7 @@ If not, please follow Supabase's [installation guide](https://supabase.com/docs/
     curl http://localhost:54321/functions/v1/<function-name>
     ```
 
-4. #### Process your first message
+4. ### Process your first message
 
     By default, the worker looks for messages in the `tasks` queue (this name is configurable).
 

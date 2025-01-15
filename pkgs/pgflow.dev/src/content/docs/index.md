@@ -11,6 +11,10 @@ hero:
       link: "/edge-worker"
       variant: primary
       icon: external
+banner:
+  content: |
+    I just released <strong>Edge Worker</strong> - a Supabase-native queue worker.
+    <a href="/edge-worker">Check it out!</a>
 ---
 
 **pgflow** is a Postgres-first workflow engine I began building in November. I wanted a **deeply integrated**, open-source solution that **runs entirely on Supabase—no external workers or self-hosting required**. Since I couldn’t find one, I decided to build it.
