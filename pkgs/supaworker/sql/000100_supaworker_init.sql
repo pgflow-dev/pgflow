@@ -1,5 +1,5 @@
 create extension if not exists "pgmq" version '1.4.4';
-select pgmq.create('pgflow');
+select pgmq.create('tasks');
 
 create schema if not exists supaworker;
 set search_path to supaworker;

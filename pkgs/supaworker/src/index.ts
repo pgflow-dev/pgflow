@@ -25,7 +25,7 @@ export class Supaworker {
 
     const worker = new Worker<MessagePayload>({
       connectionString: DB_POOL_URL,
-      queueName: config.queueName || 'pgflow',
+      queueName: config.queueName || 'tasks',
       ...config,
     });
 

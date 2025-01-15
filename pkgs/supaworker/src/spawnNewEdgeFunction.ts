@@ -2,7 +2,7 @@
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') as string;
 
 export default async function spawnNewEdgeFunction(
-  functionName: string = 'pgflow-worker'
+  functionName: string = 'edge-worker'
 ): Promise<void> {
   if (!functionName) {
     throw new Error('functionName cannot be null or empty');
