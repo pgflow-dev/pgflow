@@ -64,8 +64,4 @@ export class WorkerLifecycle {
   isRunning(): boolean {
     return this.workerState.isRunning;
   }
-
-  transitionToStopping() {
-    this.workerState.transitionTo(States.Stopping);
-  }
 }
