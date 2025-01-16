@@ -23,7 +23,11 @@ export class Supaworker {
       throw new Error('DB_POOL_URL is not set');
     }
 
-    const worker = new Worker<MessagePayload>({
+    const worker = new Worker<MessagePayload>(
+      async (message) => {
+        await handler(message);
+      },
+      {
       connectionString: DB_POOL_URL,
       queueName: config.queueName || 'tasks',
       ...config,
@@ -37,9 +41,7 @@ export class Supaworker {
       }
     };
 
-    worker.start(async (message) => {
-      await handler(message);
-    });
+    worker.start();
 
     // use waitUntil to prevent the function from exiting
     // @ts-ignore: TODO: fix the types

@@ -21,6 +21,7 @@ export type WorkerConfig = {
 export class Worker<MessagePayload extends Json> {
   private config: Required<WorkerConfig>;
   private executionController: ExecutionController<MessagePayload>;
+  private messageHandler: (message: MessagePayload) => Promise<void>;
   private lifecycle: WorkerLifecycle;
   private logger: Logger;
   private abortController = new AbortController();
@@ -41,13 +42,18 @@ export class Worker<MessagePayload extends Json> {
     batchSize: 20,
   } as const;
 
-  constructor(configOverrides: WorkerConfig) {
+  constructor(
+    messageHandler: (message: MessagePayload) => Promise<void>,
+    configOverrides: WorkerConfig
+  ) {
     this.config = {
       ...Worker.DEFAULT_CONFIG,
       ...configOverrides,
     };
 
     this.logger = new Logger();
+    this.messageHandler = messageHandler;
+
     this.sql = postgres(this.config.connectionString, {
       max: this.config.maxPgConnections,
       prepare: true,
@@ -84,7 +90,7 @@ export class Worker<MessagePayload extends Json> {
     );
   }
 
-  async start(messageHandler: (message: MessagePayload) => Promise<void>) {
+  async start() {
     try {
       await this.lifecycle.acknowledgeStart();
 
@@ -97,7 +103,7 @@ export class Worker<MessagePayload extends Json> {
         }
 
         try {
-          await this.batchProcessor.processBatch(messageHandler);
+          await this.batchProcessor.processBatch(this.messageHandler);
         } catch (error: unknown) {
           this.logger.log(`Error processing batch: ${error}`);
           // Continue to next iteration - failed batch shouldn't stop the worker
