@@ -1,3 +1,6 @@
+// @ts-nocheck
+/* eslint-disable */
+
 export class ListenNotifyPoller<
   MessagePayload extends Json
 > extends MessagePolling<MessagePayload> {

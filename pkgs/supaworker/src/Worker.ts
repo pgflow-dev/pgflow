@@ -2,7 +2,6 @@ import postgres from 'postgres';
 import { Json, MessageRecord } from './types.ts';
 import { Queue } from './Queue.ts';
 import { Queries } from './Queries.ts';
-import { Heartbeat } from './Heartbeat.ts';
 import { ExecutionController } from './ExecutionController.ts';
 import { Logger } from './Logger.ts';
 import { WorkerLifecycle } from './WorkerLifecycle.ts';
