@@ -36,19 +36,19 @@ This approach lets us verify the entire stack from message enqueueing through wo
 - [x] Different worker functions can pull from different queues
 - [ ] Different worker functions can pull from the same queue
 
-✅ Worker Lifecycle
+### [x] Worker Lifecycle
 
 - [x] Worker registers on start
 - [x] Worker sends heartbeats every 5s
 - [x] Worker updates edge_fn_name with heartbeat
 
-✅ Retries & Failures
+### [ ] Retries & Failures
 
 - [ ] Worker retries failed jobs n-times and succeeds
 - [ ] Worker uses exponential backoff for each subsequent retry
 - [x] Worker uses proper number of retries for each job
 - [x] Worker archives jobs that will not be retried
 
-✅ Concurrency
+### [x] Concurrency
 
 - [x] Worker respects maxConcurrent and processes messages in serial when set to 1
