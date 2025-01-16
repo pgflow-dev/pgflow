@@ -1,5 +1,5 @@
 import postgres from 'postgres';
-import { Json, MessageRecord } from './types.ts';
+import { Json } from './types.ts';
 import { Queue } from './Queue.ts';
 import { Queries } from './Queries.ts';
 import {
@@ -8,16 +8,14 @@ import {
 } from './ExecutionController.ts';
 import { Logger } from './Logger.ts';
 import { WorkerLifecycle, type LifecycleConfig } from './WorkerLifecycle.ts';
-import { PollerConfig, ReadWithPollPoller } from './ReadWithPollPoller.ts';
+import { PollerConfig } from './ReadWithPollPoller.ts';
+import { BatchProcessor } from './BatchProcessor.ts';
 
 export interface WorkerConfig
   extends ExecutionConfig,
     LifecycleConfig,
     PollerConfig {
-  // required
   connectionString: string;
-
-  // optional
   maxPgConnections?: number;
 }
 
@@ -27,7 +25,8 @@ export class Worker<MessagePayload extends Json> {
   private lifecycle: WorkerLifecycle;
   private logger: Logger;
   private abortController = new AbortController();
-  private poller: ReadWithPollPoller<MessagePayload>;
+
+  private batchProcessor: BatchProcessor<MessagePayload>;
   private sql: postgres.Sql;
   public edgeFunctionName?: string;
 
@@ -70,12 +69,18 @@ export class Worker<MessagePayload extends Json> {
       }
     );
 
-    this.poller = new ReadWithPollPoller(queue, this.abortSignal, {
-      batchSize: this.config.maxConcurrent,
-      maxPollSeconds: this.config.maxPollSeconds,
-      pollIntervalMs: this.config.pollIntervalMs,
-      visibilityTimeout: this.config.visibilityTimeout,
-    });
+    this.batchProcessor = new BatchProcessor(
+      this.executionController,
+      queue,
+      this.logger,
+      this.abortSignal,
+      {
+        batchSize: this.config.maxConcurrent,
+        maxPollSeconds: this.config.maxPollSeconds,
+        pollIntervalMs: this.config.pollIntervalMs,
+        visibilityTimeout: this.config.visibilityTimeout,
+      }
+    );
   }
 
   async start(messageHandler: (message: MessagePayload) => Promise<void>) {
@@ -85,23 +90,16 @@ export class Worker<MessagePayload extends Json> {
       while (this.isMainLoopActive) {
         try {
           await this.lifecycle.sendHeartbeat(this.edgeFunctionName);
-
-          const messageRecords = await this.poller.poll();
-
-          if (this.isAborted) {
-            this.logger.log(
-              '-> Discarding messageRecords because worker is stopping'
-            );
-            continue;
-          }
-
-          const startPromises = messageRecords.map(
-            (messageRecord: MessageRecord<MessagePayload>) =>
-              this.executionController.start(messageRecord, messageHandler)
-          );
-          await Promise.all(startPromises);
         } catch (error: unknown) {
-          this.logger.log(`Error processing messages: ${error}`);
+          this.logger.log(`Error sending heartbeat: ${error}`);
+          // Continue execution - a failed heartbeat shouldn't stop processing
+        }
+
+        try {
+          await this.batchProcessor.processBatch(messageHandler);
+        } catch (error: unknown) {
+          this.logger.log(`Error processing batch: ${error}`);
+          // Continue to next iteration - failed batch shouldn't stop the worker
         }
       }
     } catch (error) {

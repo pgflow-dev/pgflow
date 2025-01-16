@@ -3,9 +3,9 @@ import { Json, MessageRecord } from './types.ts';
 
 export interface PollerConfig {
   batchSize: number;
-  visibilityTimeout: number;
   maxPollSeconds: number;
   pollIntervalMs: number;
+  visibilityTimeout: number;
 }
 
 export class ReadWithPollPoller<MessagePayload extends Json> {
