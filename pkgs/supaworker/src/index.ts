@@ -2,7 +2,7 @@ import { Worker, WorkerConfig } from './Worker.ts';
 import spawnNewEdgeFunction from './spawnNewEdgeFunction.ts';
 import { Json } from './types.ts';
 
-export type SupaworkerConfig = Partial<Omit<WorkerConfig, 'connectionString'>>;
+export type SupaworkerConfig = Omit<WorkerConfig, 'connectionString'>;
 
 export class Supaworker {
   private static wasCalled = false;

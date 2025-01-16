@@ -11,13 +11,12 @@ import { WorkerLifecycle, type LifecycleConfig } from './WorkerLifecycle.ts';
 import { PollerConfig } from './ReadWithPollPoller.ts';
 import { BatchProcessor } from './BatchProcessor.ts';
 
-export interface WorkerConfig
-  extends ExecutionConfig,
-    LifecycleConfig,
-    PollerConfig {
+export type WorkerConfig = {
   connectionString: string;
   maxPgConnections?: number;
-}
+} & Partial<ExecutionConfig> &
+  Partial<LifecycleConfig> &
+  Partial<PollerConfig>;
 
 export class Worker<MessagePayload extends Json> {
   private config: Required<WorkerConfig>;
@@ -31,6 +30,7 @@ export class Worker<MessagePayload extends Json> {
   public edgeFunctionName?: string;
 
   private static readonly DEFAULT_CONFIG = {
+    queueName: 'tasks',
     maxConcurrent: 20,
     maxPgConnections: 4,
     maxPollSeconds: 5,
@@ -38,6 +38,7 @@ export class Worker<MessagePayload extends Json> {
     retryDelay: 5,
     retryLimit: 0,
     visibilityTimeout: 3,
+    batchSize: 20,
   } as const;
 
   constructor(configOverrides: WorkerConfig) {
