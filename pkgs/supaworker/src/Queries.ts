@@ -17,7 +17,7 @@ export class Queries {
       SELECT * FROM supaworker.on_worker_started(
         queue_name => ${queueName}::text,
         worker_id => ${workerId}::uuid,
-        edge_fn_name => ${edgeFunctionName}::text
+        function_name => ${edgeFunctionName}::text
       );
     `;
 

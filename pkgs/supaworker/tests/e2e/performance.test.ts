@@ -25,7 +25,7 @@ Deno.test(
         const [{ worker_count }] = await sql`
         SELECT COUNT(*)::integer AS worker_count
         FROM supaworker.active_workers 
-        WHERE edge_fn_name = ${WORKER_NAME}
+        WHERE function_name = ${WORKER_NAME}
       `;
 
         log('worker_count', worker_count);

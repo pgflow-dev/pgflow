@@ -90,7 +90,7 @@ SELECT lives_ok(
 
 SELECT is(
     (
-        SELECT edge_fn_name 
+        SELECT function_name 
         FROM supaworker.workers 
         WHERE queue_name = 'test_queue'
     ),
