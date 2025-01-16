@@ -2,7 +2,7 @@ import { Worker, WorkerConfig } from './Worker.ts';
 import spawnNewEdgeFunction from './spawnNewEdgeFunction.ts';
 import { Json } from './types.ts';
 
-export type SupaworkerConfig = Partial<Omit<WorkerConfig, 'connectionString'>>;
+export type SupaworkerConfig = Omit<WorkerConfig, 'connectionString'>;
 
 export class Supaworker {
   private static wasCalled = false;
@@ -25,7 +25,7 @@ export class Supaworker {
 
     const worker = new Worker<MessagePayload>({
       connectionString: DB_POOL_URL,
-      queueName: config.queueName || 'pgflow',
+      queueName: config.queueName || 'tasks',
       ...config,
     });
 

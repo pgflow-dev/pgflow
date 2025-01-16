@@ -5,7 +5,7 @@ import { delay } from 'jsr:@std/async';
 const DB_POOL_URL = Deno.env.get('DB_POOL_URL')!;
 console.log('DB_POOL_URL', DB_POOL_URL);
 
-const sql = postgres(DB_POOL_URL, { prepare: false });
+const sql = postgres(DB_POOL_URL, { prepare: true });
 
 async function incrementSeq() {
   await delay(100);

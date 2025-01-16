@@ -25,9 +25,6 @@ Deno.test('simple processing works', async () => {
     await waitForSeqToIncrementBy(6);
     await waitForBatchArchiver();
 
-    // TODO: find a better way, maybe some advisary lock?
-    await delay(500); // wait for worker transaction to commit
-
     const queue = await sql`SELECT * FROM pgmq.q_increment_sequence`;
     log('queue', queue);
     assertEquals(queue.length, 0, 'queue should be empty');
