@@ -1,7 +1,7 @@
 import { Heartbeat } from './Heartbeat.ts';
 import { Logger } from './Logger.ts';
 import { Queries } from './Queries.ts';
-import { WorkerRow } from './types.ts';
+import { WorkerBootstrap, WorkerRow } from './types.ts';
 import { States, WorkerState } from './WorkerState.ts';
 
 export interface LifecycleConfig {
@@ -25,10 +25,7 @@ export class WorkerLifecycle {
   async acknowledgeStart({
     edgeFunctionName,
     sbExecutionId,
-  }: {
-    edgeFunctionName: string;
-    sbExecutionId: string;
-  }): Promise<void> {
+  }: WorkerBootstrap): Promise<void> {
     this.workerState.transitionTo(States.Starting);
 
     this.workerRow = await this.queries.onWorkerStarted({
@@ -40,7 +37,7 @@ export class WorkerLifecycle {
     this.heartbeat = new Heartbeat(
       5000,
       this.queries,
-      this.workerRow.worker_id,
+      this.workerRow,
       this.logger.log.bind(this.logger)
     );
 
@@ -66,7 +63,7 @@ export class WorkerLifecycle {
   }
 
   async sendHeartbeat() {
-    await this.heartbeat?.send(this.workerRow);
+    await this.heartbeat?.send();
   }
 
   isRunning(): boolean {

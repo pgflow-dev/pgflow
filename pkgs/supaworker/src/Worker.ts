@@ -1,5 +1,5 @@
 import postgres from 'postgres';
-import { Json } from './types.ts';
+import { Json, WorkerInfo } from './types.ts';
 import { Queue } from './Queue.ts';
 import { Queries } from './Queries.ts';
 import {
@@ -90,16 +90,22 @@ export class Worker<MessagePayload extends Json> {
     );
   }
 
-  async start({ edgeFunctionName, sbExecutionId }: { edgeFunctionName: string; sbExecutionId: string }) {
+  async startOnlyOnce(workerInfo: WorkerInfo) {
+    if (this.lifecycle.isRunning()) {
+      this.logger.log('Worker already running, ignoring start request');
+      return;
+    }
+
+    await this.start(workerInfo);
+  }
+
+  private async start(workerInfo: WorkerInfo) {
     try {
-      this.edgeFunctionName = edgeFunctionName;
-      await this.lifecycle.acknowledgeStart({
-        edgeFunctionName, sbExecutionId
-      });
+      await this.lifecycle.acknowledgeStart(workerInfo);
 
       while (this.isMainLoopActive) {
         try {
-          await this.lifecycle.sendHeartbeat(this.edgeFunctionName);
+          await this.lifecycle.sendHeartbeat();
         } catch (error: unknown) {
           this.logger.log(`Error sending heartbeat: ${error}`);
           // Continue execution - a failed heartbeat shouldn't stop processing
@@ -137,10 +143,6 @@ export class Worker<MessagePayload extends Json> {
     }
   }
 
-  setFunctionName(functionName: string) {
-    this.edgeFunctionName = functionName;
-  }
-
   /**
    * Returns true if worker state is Running and worker was not stopped
    */
@@ -156,3 +158,4 @@ export class Worker<MessagePayload extends Json> {
     return this.abortController.signal.aborted;
   }
 }
+

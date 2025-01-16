@@ -29,3 +29,8 @@ export interface MessageRecord<MessagePayload extends Json> {
   vt: string;
   message: MessagePayload | null;
 }
+
+export interface WorkerBootstrap {
+  edgeFunctionName: string;
+  sbExecutionId: string;
+}
