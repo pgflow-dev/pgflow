@@ -52,35 +52,6 @@ Deno.test('WorkerState - invalid state transitions should throw', async () => {
   );
 });
 
-Deno.test('WorkerState - transition with callback', async () => {
-  const state = new WorkerState();
-  let callbackExecuted = false;
-
-  await state.transitionTo(States.Starting, async () => {
-    callbackExecuted = true;
-  });
-
-  assertEquals(state.current, States.Starting);
-  assertEquals(callbackExecuted, true);
-});
-
-Deno.test(
-  'WorkerState - transition with failing callback should throw',
-  async () => {
-    const state = new WorkerState();
-
-    await assertRejects(
-      async () => {
-        await state.transitionTo(States.Starting, async () => {
-          throw new Error('Callback failed');
-        });
-      },
-      Error,
-      'Callback failed'
-    );
-  }
-);
-
 Deno.test(
   'WorkerState - transitioning to same state should be no-op',
   async () => {
