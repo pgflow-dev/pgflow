@@ -5,19 +5,31 @@ import { MessageRecord } from './types.ts';
 import { Sema } from 'npm:async-sema@^3.1.1';
 import { BatchArchiver } from './BatchArchiver.ts';
 
+export interface ExecutionConfig {
+  maxConcurrent: number;
+  retryLimit: number;
+  retryDelay: number;
+}
+
 export class ExecutionController<MessagePayload extends Json> {
   private executors = new Map<number, MessageExecutor<MessagePayload>>();
   private semaphore: Sema;
   private archiver: BatchArchiver<MessagePayload>;
+  private queue: Queue<MessagePayload>;
+  private signal: AbortSignal;
+  private retryLimit: number;
+  private retryDelay: number;
 
   constructor(
-    private queue: Queue<MessagePayload>,
-    private signal: AbortSignal,
-    maxConcurrent: number = 10,
-    private retryLimit: number = 0,
-    private retryDelay: number = 5
+    queue: Queue<MessagePayload>,
+    abortSignal: AbortSignal,
+    config: ExecutionConfig
   ) {
-    this.semaphore = new Sema(maxConcurrent);
+    this.queue = queue;
+    this.signal = abortSignal;
+    this.retryLimit = config.retryLimit;
+    this.retryDelay = config.retryDelay;
+    this.semaphore = new Sema(config.maxConcurrent);
     this.archiver = new BatchArchiver(queue);
   }
 

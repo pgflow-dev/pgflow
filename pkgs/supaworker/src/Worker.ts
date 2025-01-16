@@ -2,25 +2,27 @@ import postgres from 'postgres';
 import { Json, MessageRecord } from './types.ts';
 import { Queue } from './Queue.ts';
 import { Queries } from './Queries.ts';
-import { ExecutionController } from './ExecutionController.ts';
+import {
+  ExecutionController,
+  type ExecutionConfig,
+} from './ExecutionController.ts';
 import { Logger } from './Logger.ts';
 import { WorkerLifecycle } from './WorkerLifecycle.ts';
 import { ReadWithPollPoller } from './ReadWithPollPoller.ts';
 
-export interface WorkerConfig {
+export interface WorkerConfig extends ExecutionConfig {
+  // required
+  queueName: string;
   connectionString: string;
-  maxConcurrent?: number;
+
+  // optional
   maxPgConnections?: number;
   maxPollSeconds?: number;
   pollIntervalMs?: number;
-  queueName: string;
-  retryDelay?: number;
-  retryLimit?: number;
   visibilityTimeout?: number;
 }
 
 export class Worker<MessagePayload extends Json> {
-  public edgeFunctionName?: string;
   private config: Required<WorkerConfig>;
   private executionController: ExecutionController<MessagePayload>;
   private lifecycle: WorkerLifecycle;
@@ -28,6 +30,7 @@ export class Worker<MessagePayload extends Json> {
   private mainController = new AbortController();
   private poller: ReadWithPollPoller<MessagePayload>;
   private sql: postgres.Sql;
+  public edgeFunctionName?: string;
 
   private static readonly DEFAULT_CONFIG = {
     maxConcurrent: 20,
@@ -63,10 +66,13 @@ export class Worker<MessagePayload extends Json> {
     this.executionController = new ExecutionController<MessagePayload>(
       queue,
       this.mainController.signal,
-      this.config.maxConcurrent,
-      this.config.retryLimit,
-      this.config.retryDelay
+      {
+        maxConcurrent: this.config.maxConcurrent,
+        retryLimit: this.config.retryLimit,
+        retryDelay: this.config.retryDelay,
+      }
     );
+
     const pollerConfig = {
       batchSize: this.config.maxConcurrent,
       maxPollSeconds: this.config.maxPollSeconds,
