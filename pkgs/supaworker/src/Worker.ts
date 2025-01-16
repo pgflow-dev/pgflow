@@ -9,27 +9,25 @@ import { ReadWithPollPoller } from './ReadWithPollPoller.ts';
 
 export interface WorkerConfig {
   connectionString: string;
-  queueName: string;
-  visibilityTimeout?: number;
+  maxConcurrent?: number;
+  maxPgConnections?: number;
   maxPollSeconds?: number;
   pollIntervalMs?: number;
-  maxPgConnections?: number;
-  maxConcurrent?: number;
-  retryLimit?: number;
+  queueName: string;
   retryDelay?: number;
+  retryLimit?: number;
+  visibilityTimeout?: number;
 }
 
 export class Worker<MessagePayload extends Json> {
-  private mainController = new AbortController();
-  private sql: postgres.Sql;
-  private queue: Queue<MessagePayload>;
-  private queries: Queries;
-  private executionController: ExecutionController<MessagePayload>;
-  private poller: ReadWithPollPoller<MessagePayload>;
-  private config: Required<WorkerConfig>;
-  private logger: Logger;
-  private lifecycle: WorkerLifecycle;
   public edgeFunctionName?: string;
+  private config: Required<WorkerConfig>;
+  private executionController: ExecutionController<MessagePayload>;
+  private lifecycle: WorkerLifecycle;
+  private logger: Logger;
+  private mainController = new AbortController();
+  private poller: ReadWithPollPoller<MessagePayload>;
+  private sql: postgres.Sql;
 
   private static readonly DEFAULT_CONFIG = {
     maxConcurrent: 20,
@@ -52,16 +50,18 @@ export class Worker<MessagePayload extends Json> {
       max: this.config.maxPgConnections,
       prepare: true,
     });
-    this.queue = new Queue(this.sql, this.config.queueName);
-    this.queries = new Queries(this.sql);
+
+    const queue = new Queue<MessagePayload>(this.sql, this.config.queueName);
+    const queries = new Queries(this.sql);
+
     this.lifecycle = new WorkerLifecycle(
       this.config.queueName,
-      this.queries,
+      queries,
       this.logger
     );
 
-    this.executionController = new ExecutionController(
-      this.queue,
+    this.executionController = new ExecutionController<MessagePayload>(
+      queue,
       this.mainController.signal,
       this.config.maxConcurrent,
       this.config.retryLimit,
@@ -69,13 +69,13 @@ export class Worker<MessagePayload extends Json> {
     );
     const pollerConfig = {
       batchSize: this.config.maxConcurrent,
-      visibilityTimeout: this.config.visibilityTimeout,
       maxPollSeconds: this.config.maxPollSeconds,
       pollIntervalMs: this.config.pollIntervalMs,
+      visibilityTimeout: this.config.visibilityTimeout,
     };
 
     this.poller = new ReadWithPollPoller(
-      this.queue,
+      queue,
       this.mainController.signal,
       pollerConfig
     );
