@@ -90,9 +90,12 @@ export class Worker<MessagePayload extends Json> {
     );
   }
 
-  async start() {
+  async start({ edgeFunctionName, sbExecutionId }: { edgeFunctionName: string; sbExecutionId: string }) {
     try {
-      await this.lifecycle.acknowledgeStart();
+      this.edgeFunctionName = edgeFunctionName;
+      await this.lifecycle.acknowledgeStart({
+        edgeFunctionName, sbExecutionId
+      });
 
       while (this.isMainLoopActive) {
         try {

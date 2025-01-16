@@ -1,6 +1,7 @@
 import { Heartbeat } from './Heartbeat.ts';
 import { Logger } from './Logger.ts';
 import { Queries } from './Queries.ts';
+import { WorkerRow } from './types.ts';
 import { States, WorkerState } from './WorkerState.ts';
 
 export interface LifecycleConfig {
@@ -9,11 +10,11 @@ export interface LifecycleConfig {
 
 export class WorkerLifecycle {
   private workerState: WorkerState = new WorkerState();
-  private workerId?: string;
   private heartbeat?: Heartbeat;
   private logger: Logger;
   private queries: Queries;
   private readonly queueName: string;
+  private workerRow?: WorkerRow;
 
   constructor(queries: Queries, logger: Logger, config: LifecycleConfig) {
     this.queries = queries;
@@ -21,37 +22,42 @@ export class WorkerLifecycle {
     this.queueName = config.queueName;
   }
 
-  async acknowledgeStart(): Promise<string> {
+  async acknowledgeStart({
+    edgeFunctionName,
+    sbExecutionId,
+  }: {
+    edgeFunctionName: string;
+    sbExecutionId: string;
+  }): Promise<void> {
     this.workerState.transitionTo(States.Starting);
 
-    const worker = await this.queries.onWorkerStarted(this.queueName);
-    this.workerId = worker.worker_id;
-    this.logger.setWorkerId(this.workerId);
+    this.workerRow = await this.queries.onWorkerStarted({
+      queueName: this.queueName,
+      workerId: sbExecutionId,
+      edgeFunctionName,
+    });
 
     this.heartbeat = new Heartbeat(
       5000,
       this.queries,
-      this.workerId,
+      this.workerRow.worker_id,
       this.logger.log.bind(this.logger)
     );
 
     this.workerState.transitionTo(States.Running);
-    this.logger.log('Worker started');
-
-    return this.workerId;
   }
 
   async acknowledgeStop() {
     this.workerState.transitionTo(States.Stopping);
 
-    if (!this.workerId) {
-      throw new Error('Cannot stop worker: workerId not set');
+    if (!this.workerRow) {
+      throw new Error('Cannot stop worker: workerRow not set');
     }
 
     try {
       this.logger.log('Acknowledging worker stop...');
       this.workerState.transitionTo(States.Stopped);
-      await this.queries.onWorkerStopped(this.workerId);
+      await this.queries.onWorkerStopped(this.workerRow);
       this.logger.log('Worker stop acknowledged');
     } catch (error) {
       this.logger.log(`Error acknowledging worker stop: ${error}`);
@@ -59,8 +65,8 @@ export class WorkerLifecycle {
     }
   }
 
-  async sendHeartbeat(edgeFunctionName?: string) {
-    await this.heartbeat?.send(edgeFunctionName);
+  async sendHeartbeat() {
+    await this.heartbeat?.send(this.workerRow);
   }
 
   isRunning(): boolean {
