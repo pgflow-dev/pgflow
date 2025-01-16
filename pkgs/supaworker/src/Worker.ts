@@ -1,5 +1,5 @@
 import postgres from 'postgres';
-import { Json, WorkerInfo } from './types.ts';
+import { Json, WorkerBootstrap } from './types.ts';
 import { Queue } from './Queue.ts';
 import { Queries } from './Queries.ts';
 import {
@@ -90,18 +90,18 @@ export class Worker<MessagePayload extends Json> {
     );
   }
 
-  async startOnlyOnce(workerInfo: WorkerInfo) {
+  async startOnlyOnce(workerBootstrap: WorkerBootstrap) {
     if (this.lifecycle.isRunning()) {
       this.logger.log('Worker already running, ignoring start request');
       return;
     }
 
-    await this.start(workerInfo);
+    await this.start(workerBootstrap);
   }
 
-  private async start(workerInfo: WorkerInfo) {
+  private async start(workerBootstrap: WorkerBootstrap) {
     try {
-      await this.lifecycle.acknowledgeStart(workerInfo);
+      await this.lifecycle.acknowledgeStart(workerBootstrap);
 
       while (this.isMainLoopActive) {
         try {
@@ -158,4 +158,3 @@ export class Worker<MessagePayload extends Json> {
     return this.abortController.signal.aborted;
   }
 }
-

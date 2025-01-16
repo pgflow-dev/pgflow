@@ -22,17 +22,14 @@ export class WorkerLifecycle {
     this.queueName = config.queueName;
   }
 
-  async acknowledgeStart({
-    edgeFunctionName,
-    sbExecutionId,
-  }: WorkerBootstrap): Promise<void> {
+  async acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void> {
     this.workerState.transitionTo(States.Starting);
 
     this.workerRow = await this.queries.onWorkerStarted({
       queueName: this.queueName,
-      workerId: sbExecutionId,
-      edgeFunctionName,
+      ...workerBootstrap,
     });
+    this.logger.setWorkerRow(this.workerRow);
 
     this.heartbeat = new Heartbeat(
       5000,

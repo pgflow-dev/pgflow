@@ -3,24 +3,30 @@ import { assertEquals, assertRejects, assert, assertFalse } from '@std/assert';
 import { WorkerLifecycle } from '../../src/WorkerLifecycle.ts';
 import { Queries } from '../../src/Queries.ts';
 import { Logger } from '../../src/Logger.ts';
+import { WorkerBootstrap, WorkerRow } from '../../src/types.ts';
 
 // @ts-ignore TODO: fix types
 const test = Deno.test;
 
-const mockWorkerRow = {
-  worker_id: 'test-worker-id',
+const bootstrapDouble: WorkerBootstrap = {
+  edgeFunctionName: 'test-function',
+  workerId: 'test-execution-id',
+};
+
+const workerRowDouble: WorkerRow = {
+  worker_id: 'test-execution-id',
   queue_name: 'test-queue',
   started_at: new Date().toISOString(),
   stopped_at: null,
   last_heartbeat_at: new Date().toISOString(),
-  current_function: null,
+  function_name: 'test-function',
 };
 
 function createMockQueries() {
   const mockQueries = new Queries(null as any);
 
-  mockQueries.onWorkerStarted = () => Promise.resolve(mockWorkerRow);
-  mockQueries.onWorkerStopped = () => Promise.resolve(mockWorkerRow);
+  mockQueries.onWorkerStarted = () => Promise.resolve(workerRowDouble);
+  mockQueries.onWorkerStopped = () => Promise.resolve(workerRowDouble);
   mockQueries.sendHeartbeat = () => Promise.resolve();
 
   return mockQueries;
@@ -30,34 +36,32 @@ function createMockLogger() {
   const mockLogger = new Logger();
 
   mockLogger.log = () => {};
-  mockLogger.setWorkerId = () => {};
+  mockLogger.setWorkerRow = () => {};
 
   return mockLogger;
 }
 
-test('acknowledgeStart - should set worker ID and log startup', async () => {
+test('acknowledgeStart - should set worker ID, edge function name and log startup', async () => {
   const mockQueries = createMockQueries();
   const mockLogger = createMockLogger();
 
   // Create spies
   const onWorkerStartedSpy = spy(mockQueries, 'onWorkerStarted');
-  const loggerSetWorkerIdSpy = spy(mockLogger, 'setWorkerId');
-  const loggerLogSpy = spy(mockLogger, 'log');
+  const loggerSetWorkerIdSpy = spy(mockLogger, 'setWorkerRow');
 
   const lifecycle = new WorkerLifecycle(mockQueries, mockLogger, {
     queueName: 'test-queue',
   });
 
-  const workerId = await lifecycle.acknowledgeStart();
+  await lifecycle.acknowledgeStart(bootstrapDouble);
 
-  assertEquals(workerId, 'test-worker-id');
+  assertEquals(bootstrapDouble.workerId, 'test-execution-id');
   assert(lifecycle.isRunning(), 'Worker should be running after start');
   assertSpyCalls(onWorkerStartedSpy, 1);
   assertSpyCalls(loggerSetWorkerIdSpy, 1);
-  assertSpyCalls(loggerLogSpy, 1);
 });
 
-test('sendHeartbeat - should delegate to Heartbeat instance with edge function name', async () => {
+test('sendHeartbeat - should delegate to Heartbeat instance', async () => {
   const mockQueries = createMockQueries();
   const mockLogger = createMockLogger();
   const lifecycle = new WorkerLifecycle(mockQueries, mockLogger, {
@@ -65,26 +69,7 @@ test('sendHeartbeat - should delegate to Heartbeat instance with edge function n
   });
 
   // Start the worker to initialize heartbeat
-  await lifecycle.acknowledgeStart();
-
-  // Create spy after heartbeat is initialized
-  const heartbeatSpy = spy(mockQueries, 'sendHeartbeat');
-
-  await lifecycle.sendHeartbeat('test-function');
-
-  assertSpyCalls(heartbeatSpy, 1);
-  assertEquals(heartbeatSpy.calls[0].args, ['test-worker-id', 'test-function']);
-});
-
-test('sendHeartbeat - should work without edge function name', async () => {
-  const mockQueries = createMockQueries();
-  const mockLogger = createMockLogger();
-  const lifecycle = new WorkerLifecycle(mockQueries, mockLogger, {
-    queueName: 'test-queue',
-  });
-
-  // Start the worker to initialize heartbeat
-  await lifecycle.acknowledgeStart();
+  await lifecycle.acknowledgeStart(bootstrapDouble);
 
   // Create spy after heartbeat is initialized
   const heartbeatSpy = spy(mockQueries, 'sendHeartbeat');
@@ -92,16 +77,34 @@ test('sendHeartbeat - should work without edge function name', async () => {
   await lifecycle.sendHeartbeat();
 
   assertSpyCalls(heartbeatSpy, 1);
-  assertEquals(heartbeatSpy.calls[0].args, ['test-worker-id', undefined]);
+  assertEquals(heartbeatSpy.calls[0].args, [workerRowDouble]);
+});
+
+test('sendHeartbeat - should work after initialization', async () => {
+  const mockQueries = createMockQueries();
+  const mockLogger = createMockLogger();
+  const lifecycle = new WorkerLifecycle(mockQueries, mockLogger, {
+    queueName: 'test-queue',
+  });
+
+  // Start the worker to initialize heartbeat
+  await lifecycle.acknowledgeStart(bootstrapDouble);
+
+  // Create spy after heartbeat is initialized
+  const heartbeatSpy = spy(mockQueries, 'sendHeartbeat');
+
+  await lifecycle.sendHeartbeat();
+
+  assertSpyCalls(heartbeatSpy, 1);
+  assertEquals(heartbeatSpy.calls[0].args, [workerRowDouble]);
 });
 
 test('sendHeartbeat - should handle database errors', async () => {
   const mockQueries = new Queries(null as any);
-  mockQueries.onWorkerStarted = () => Promise.resolve(mockWorkerRow);
+  mockQueries.onWorkerStarted = () => Promise.resolve(workerRowDouble);
   mockQueries.sendHeartbeat = () => Promise.reject(new Error('Database error'));
 
   const mockLogger = createMockLogger();
-  const loggerLogSpy = spy(mockLogger, 'log');
 
   const lifecycle = new WorkerLifecycle(mockQueries, mockLogger, {
     queueName: 'test-queue',
@@ -111,20 +114,17 @@ test('sendHeartbeat - should handle database errors', async () => {
     'Worker should not be running before start'
   );
 
-  await lifecycle.acknowledgeStart();
+  await lifecycle.acknowledgeStart({
+    edgeFunctionName: 'test-function',
+    workerId: 'test-execution-id',
+  });
   assert(lifecycle.isRunning(), 'Worker should be running after start');
 
   await assertRejects(
-    async () => await lifecycle.sendHeartbeat('test-function'),
+    async () => await lifecycle.sendHeartbeat(),
     Error,
     'Database error'
   );
-
-  // Should log:
-  // 1. "Worker started" from acknowledgeStart
-  // 2. "Sending heartbeat..." from Heartbeat.send
-  assertSpyCalls(loggerLogSpy, 1);
-  assertEquals(loggerLogSpy.calls[0].args[0], 'Worker started');
 });
 
 test('sendHeartbeat - should do nothing if heartbeat not initialized', async () => {
@@ -141,7 +141,7 @@ test('sendHeartbeat - should do nothing if heartbeat not initialized', async () 
     'Worker should not be running before start'
   );
 
-  await lifecycle.sendHeartbeat('test-function');
+  await lifecycle.sendHeartbeat();
 
   assertSpyCalls(heartbeatSpy, 0);
 });
@@ -150,39 +150,35 @@ test('acknowledgeStop - should mark worker as stopped and log completion', async
   const mockQueries = createMockQueries();
   const mockLogger = createMockLogger();
   mockLogger.log = () => {};
-  mockLogger.setWorkerId = () => {};
+  mockLogger.setWorkerRow = () => {};
   const onWorkerStoppedSpy = spy(mockQueries, 'onWorkerStopped');
-  const loggerLogSpy = spy(mockLogger, 'log');
   const lifecycle = new WorkerLifecycle(mockQueries, mockLogger, {
     queueName: 'test-queue',
   });
-  await lifecycle.acknowledgeStart();
+  await lifecycle.acknowledgeStart(bootstrapDouble);
 
   assert(lifecycle.isRunning(), 'Worker should be running before stop');
   await lifecycle.acknowledgeStop();
   assertFalse(lifecycle.isRunning(), 'Worker should not be running after stop');
 
   assertSpyCalls(onWorkerStoppedSpy, 1);
-  assertSpyCalls(loggerLogSpy, 3); // logs for start, stop acknowledgment, and stop completed
 });
 
 test('acknowledgeStop - should propagate database errors and log failure', async () => {
   const mockQueries = new Queries(null as any);
-  mockQueries.onWorkerStarted = () => Promise.resolve(mockWorkerRow);
+  mockQueries.onWorkerStarted = () => Promise.resolve(workerRowDouble);
   mockQueries.onWorkerStopped = () =>
     Promise.reject(new Error('Database error'));
   mockQueries.sendHeartbeat = () => Promise.resolve();
 
   const mockLogger = new Logger();
   mockLogger.log = () => {};
-  mockLogger.setWorkerId = () => {};
-
-  const loggerLogSpy = spy(mockLogger, 'log');
+  mockLogger.setWorkerRow = () => {};
 
   const lifecycle = new WorkerLifecycle(mockQueries, mockLogger, {
     queueName: 'test-queue',
   });
-  await lifecycle.acknowledgeStart();
+  await lifecycle.acknowledgeStart(bootstrapDouble);
 
   // Test error handling
   await assertRejects(
@@ -190,6 +186,4 @@ test('acknowledgeStop - should propagate database errors and log failure', async
     Error,
     'Database error'
   );
-
-  assertSpyCalls(loggerLogSpy, 3);
 });

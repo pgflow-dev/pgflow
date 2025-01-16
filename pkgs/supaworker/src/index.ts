@@ -54,7 +54,7 @@ export class Supaworker {
 
       worker.startOnlyOnce({
         edgeFunctionName,
-        sbExecutionId: Deno.env.get('SB_EXECUTION_ID')!,
+        workerId: Deno.env.get('SB_EXECUTION_ID')!,
       });
 
       console.log(`HTTP Request: ${edgeFunctionName}`);
@@ -64,4 +64,3 @@ export class Supaworker {
     });
   }
 }
-

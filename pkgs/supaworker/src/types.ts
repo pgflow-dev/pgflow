@@ -20,6 +20,7 @@ export type WorkerRow = {
   started_at: string;
   stopped_at: string | null;
   worker_id: string;
+  function_name: string;
 };
 
 export interface MessageRecord<MessagePayload extends Json> {
@@ -32,5 +33,5 @@ export interface MessageRecord<MessagePayload extends Json> {
 
 export interface WorkerBootstrap {
   edgeFunctionName: string;
-  sbExecutionId: string;
+  workerId: string;
 }
