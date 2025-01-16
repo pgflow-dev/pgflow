@@ -44,7 +44,9 @@ test('acknowledgeStart - should set worker ID and log startup', async () => {
   const loggerSetWorkerIdSpy = spy(mockLogger, 'setWorkerId');
   const loggerLogSpy = spy(mockLogger, 'log');
 
-  const lifecycle = new WorkerLifecycle('test-queue', mockQueries, mockLogger);
+  const lifecycle = new WorkerLifecycle(mockQueries, mockLogger, {
+    queueName: 'test-queue',
+  });
 
   const workerId = await lifecycle.acknowledgeStart();
 
@@ -58,7 +60,9 @@ test('acknowledgeStart - should set worker ID and log startup', async () => {
 test('sendHeartbeat - should delegate to Heartbeat instance with edge function name', async () => {
   const mockQueries = createMockQueries();
   const mockLogger = createMockLogger();
-  const lifecycle = new WorkerLifecycle('test-queue', mockQueries, mockLogger);
+  const lifecycle = new WorkerLifecycle(mockQueries, mockLogger, {
+    queueName: 'test-queue',
+  });
 
   // Start the worker to initialize heartbeat
   await lifecycle.acknowledgeStart();
@@ -75,7 +79,9 @@ test('sendHeartbeat - should delegate to Heartbeat instance with edge function n
 test('sendHeartbeat - should work without edge function name', async () => {
   const mockQueries = createMockQueries();
   const mockLogger = createMockLogger();
-  const lifecycle = new WorkerLifecycle('test-queue', mockQueries, mockLogger);
+  const lifecycle = new WorkerLifecycle(mockQueries, mockLogger, {
+    queueName: 'test-queue',
+  });
 
   // Start the worker to initialize heartbeat
   await lifecycle.acknowledgeStart();
@@ -97,7 +103,9 @@ test('sendHeartbeat - should handle database errors', async () => {
   const mockLogger = createMockLogger();
   const loggerLogSpy = spy(mockLogger, 'log');
 
-  const lifecycle = new WorkerLifecycle('test-queue', mockQueries, mockLogger);
+  const lifecycle = new WorkerLifecycle(mockQueries, mockLogger, {
+    queueName: 'test-queue',
+  });
   assertFalse(
     lifecycle.isRunning(),
     'Worker should not be running before start'
@@ -124,7 +132,9 @@ test('sendHeartbeat - should do nothing if heartbeat not initialized', async () 
   const mockLogger = createMockLogger();
   const heartbeatSpy = spy(mockQueries, 'sendHeartbeat');
 
-  const lifecycle = new WorkerLifecycle('test-queue', mockQueries, mockLogger);
+  const lifecycle = new WorkerLifecycle(mockQueries, mockLogger, {
+    queueName: 'test-queue',
+  });
   // Note: Not calling acknowledgeStart()
   assertFalse(
     lifecycle.isRunning(),
@@ -143,7 +153,9 @@ test('acknowledgeStop - should mark worker as stopped and log completion', async
   mockLogger.setWorkerId = () => {};
   const onWorkerStoppedSpy = spy(mockQueries, 'onWorkerStopped');
   const loggerLogSpy = spy(mockLogger, 'log');
-  const lifecycle = new WorkerLifecycle('test-queue', mockQueries, mockLogger);
+  const lifecycle = new WorkerLifecycle(mockQueries, mockLogger, {
+    queueName: 'test-queue',
+  });
   await lifecycle.acknowledgeStart();
 
   assert(lifecycle.isRunning(), 'Worker should be running before stop');
@@ -167,7 +179,9 @@ test('acknowledgeStop - should propagate database errors and log failure', async
 
   const loggerLogSpy = spy(mockLogger, 'log');
 
-  const lifecycle = new WorkerLifecycle('test-queue', mockQueries, mockLogger);
+  const lifecycle = new WorkerLifecycle(mockQueries, mockLogger, {
+    queueName: 'test-queue',
+  });
   await lifecycle.acknowledgeStart();
 
   // Test error handling

@@ -3,20 +3,22 @@ import { Logger } from './Logger.ts';
 import { Queries } from './Queries.ts';
 import { States, WorkerState } from './WorkerState.ts';
 
+export interface LifecycleConfig {
+  queueName: string;
+}
+
 export class WorkerLifecycle {
   private workerState: WorkerState = new WorkerState();
   private workerId?: string;
   private heartbeat?: Heartbeat;
   private logger: Logger;
   private queries: Queries;
+  private readonly queueName: string;
 
-  constructor(
-    private readonly queueName: string,
-    queries: Queries,
-    logger: Logger
-  ) {
+  constructor(queries: Queries, logger: Logger, config: LifecycleConfig) {
     this.queries = queries;
     this.logger = logger;
+    this.queueName = config.queueName;
   }
 
   async acknowledgeStart(): Promise<string> {

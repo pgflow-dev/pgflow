@@ -7,12 +7,11 @@ import {
   type ExecutionConfig,
 } from './ExecutionController.ts';
 import { Logger } from './Logger.ts';
-import { WorkerLifecycle } from './WorkerLifecycle.ts';
+import { WorkerLifecycle, type LifecycleConfig } from './WorkerLifecycle.ts';
 import { ReadWithPollPoller } from './ReadWithPollPoller.ts';
 
-export interface WorkerConfig extends ExecutionConfig {
+export interface WorkerConfig extends ExecutionConfig, LifecycleConfig {
   // required
-  queueName: string;
   connectionString: string;
 
   // optional
@@ -57,11 +56,9 @@ export class Worker<MessagePayload extends Json> {
     const queue = new Queue<MessagePayload>(this.sql, this.config.queueName);
     const queries = new Queries(this.sql);
 
-    this.lifecycle = new WorkerLifecycle(
-      this.config.queueName,
-      queries,
-      this.logger
-    );
+    this.lifecycle = new WorkerLifecycle(queries, this.logger, {
+      queueName: this.config.queueName,
+    });
 
     this.executionController = new ExecutionController<MessagePayload>(
       queue,
