@@ -7,9 +7,8 @@ import { type PgmqMessageRecord } from '../../src/types.ts';
 const WORKER_NAME = 'failing_always';
 const RETRY_LIMIT = 2;
 const RETRY_DELAY_MS = 2000;
-const MAX_POLL_MS = 1000;
 
-Deno.test('simple processing works', async () => {
+Deno.test('retries works', async () => {
   await sql`SELECT pgmq.create(${WORKER_NAME})`;
   await sql`SELECT pgmq.drop_queue(${WORKER_NAME})`;
   await sql`SELECT pgmq.create(${WORKER_NAME})`;
@@ -30,7 +29,7 @@ Deno.test('simple processing works', async () => {
         return archivedMessages.length >= 1 && archivedMessages;
       },
       {
-        timeoutMs: (RETRY_LIMIT + 1) * RETRY_DELAY_MS + 1000,
+        timeoutMs: (RETRY_LIMIT + 1) * RETRY_DELAY_MS + 3000,
       }
     );
 

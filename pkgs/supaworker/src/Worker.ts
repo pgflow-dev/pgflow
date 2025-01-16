@@ -27,7 +27,7 @@ export class Worker<MessagePayload extends Json> {
   private executionController: ExecutionController<MessagePayload>;
   private poller: ReadWithPollPoller<MessagePayload>;
   private config: Required<WorkerConfig>;
-  private logger = new Logger();
+  private logger: Logger;
   private lifecycle: WorkerLifecycle;
   public edgeFunctionName?: string;
 
@@ -47,13 +47,13 @@ export class Worker<MessagePayload extends Json> {
       ...configOverrides,
     };
 
+    this.logger = new Logger();
     this.sql = postgres(this.config.connectionString, {
       max: this.config.maxPgConnections,
       prepare: true,
     });
     this.queue = new Queue(this.sql, this.config.queueName);
     this.queries = new Queries(this.sql);
-    this.logger = new Logger();
     this.lifecycle = new WorkerLifecycle(
       this.config.queueName,
       this.queries,
@@ -67,15 +67,17 @@ export class Worker<MessagePayload extends Json> {
       this.config.retryLimit,
       this.config.retryDelay
     );
+    const pollerConfig = {
+      batchSize: this.config.maxConcurrent,
+      visibilityTimeout: this.config.visibilityTimeout,
+      maxPollSeconds: this.config.maxPollSeconds,
+      pollIntervalMs: this.config.pollIntervalMs,
+    };
+
     this.poller = new ReadWithPollPoller(
       this.queue,
-      {
-        batchSize: this.config.maxConcurrent,
-        visibilityTimeout: this.config.visibilityTimeout,
-        maxPollSeconds: this.config.maxPollSeconds,
-        pollIntervalMs: this.config.pollIntervalMs,
-      },
-      this.mainController.signal
+      this.mainController.signal,
+      pollerConfig
     );
   }
 

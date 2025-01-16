@@ -11,8 +11,8 @@ export interface PollerConfig {
 export class ReadWithPollPoller<MessagePayload extends Json> {
   constructor(
     protected readonly queue: Queue<MessagePayload>,
-    protected readonly config: PollerConfig,
-    protected readonly signal: AbortSignal
+    protected readonly signal: AbortSignal,
+    protected readonly config: PollerConfig
   ) {}
 
   async poll(): Promise<MessageRecord<MessagePayload>[]> {
