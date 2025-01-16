@@ -8,17 +8,17 @@ import {
 } from './ExecutionController.ts';
 import { Logger } from './Logger.ts';
 import { WorkerLifecycle, type LifecycleConfig } from './WorkerLifecycle.ts';
-import { ReadWithPollPoller } from './ReadWithPollPoller.ts';
+import { PollerConfig, ReadWithPollPoller } from './ReadWithPollPoller.ts';
 
-export interface WorkerConfig extends ExecutionConfig, LifecycleConfig {
+export interface WorkerConfig
+  extends ExecutionConfig,
+    LifecycleConfig,
+    PollerConfig {
   // required
   connectionString: string;
 
   // optional
   maxPgConnections?: number;
-  maxPollSeconds?: number;
-  pollIntervalMs?: number;
-  visibilityTimeout?: number;
 }
 
 export class Worker<MessagePayload extends Json> {
