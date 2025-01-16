@@ -26,7 +26,7 @@ export class Worker<MessagePayload extends Json> {
   private executionController: ExecutionController<MessagePayload>;
   private lifecycle: WorkerLifecycle;
   private logger: Logger;
-  private mainController = new AbortController();
+  private abortController = new AbortController();
   private poller: ReadWithPollPoller<MessagePayload>;
   private sql: postgres.Sql;
   public edgeFunctionName?: string;
@@ -62,7 +62,7 @@ export class Worker<MessagePayload extends Json> {
 
     this.executionController = new ExecutionController<MessagePayload>(
       queue,
-      this.mainController.signal,
+      this.abortSignal,
       {
         maxConcurrent: this.config.maxConcurrent,
         retryLimit: this.config.retryLimit,
@@ -70,18 +70,12 @@ export class Worker<MessagePayload extends Json> {
       }
     );
 
-    const pollerConfig = {
+    this.poller = new ReadWithPollPoller(queue, this.abortSignal, {
       batchSize: this.config.maxConcurrent,
       maxPollSeconds: this.config.maxPollSeconds,
       pollIntervalMs: this.config.pollIntervalMs,
       visibilityTimeout: this.config.visibilityTimeout,
-    };
-
-    this.poller = new ReadWithPollPoller(
-      queue,
-      this.mainController.signal,
-      pollerConfig
-    );
+    });
   }
 
   async start(messageHandler: (message: MessagePayload) => Promise<void>) {
@@ -94,7 +88,7 @@ export class Worker<MessagePayload extends Json> {
 
           const messageRecords = await this.poller.poll();
 
-          if (this.mainController.signal.aborted) {
+          if (this.isAborted) {
             this.logger.log(
               '-> Discarding messageRecords because worker is stopping'
             );
@@ -121,7 +115,7 @@ export class Worker<MessagePayload extends Json> {
 
     try {
       this.logger.log('-> Stopped accepting new messages');
-      this.mainController.abort();
+      this.abortController.abort();
 
       this.logger.log('-> Waiting for execution completion');
       await this.executionController.awaitCompletion();
@@ -143,6 +137,14 @@ export class Worker<MessagePayload extends Json> {
    * Returns true if worker state is Running and worker was not stopped
    */
   private get isMainLoopActive() {
-    return this.lifecycle.isRunning() && !this.mainController.signal.aborted;
+    return this.lifecycle.isRunning() && !this.isAborted;
+  }
+
+  private get abortSignal() {
+    return this.abortController.signal;
+  }
+
+  private get isAborted() {
+    return this.abortController.signal.aborted;
   }
 }
