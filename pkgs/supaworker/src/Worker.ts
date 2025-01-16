@@ -5,7 +5,7 @@ import { Queries } from './Queries.ts';
 import { Heartbeat } from './Heartbeat.ts';
 import { ExecutionController } from './ExecutionController.ts';
 import { Logger } from './Logger.ts';
-import { WorkerState, States } from './WorkerState.ts';
+import { WorkerLifecycle } from './WorkerLifecycle.ts';
 import { ReadWithPollPoller } from './ReadWithPollPoller.ts';
 
 export interface WorkerConfig {
@@ -22,16 +22,14 @@ export interface WorkerConfig {
 
 export class Worker<MessagePayload extends Json> {
   private mainController = new AbortController();
-  private workerState: WorkerState = new WorkerState();
   private sql: postgres.Sql;
   private queue: Queue<MessagePayload>;
   private queries: Queries;
   private executionController: ExecutionController<MessagePayload>;
   private poller: ReadWithPollPoller<MessagePayload>;
-  private workerId?: string;
-  private heartbeat?: Heartbeat;
   private config: Required<WorkerConfig>;
   private logger = new Logger();
+  private lifecycle: WorkerLifecycle;
   public edgeFunctionName?: string;
 
   private static readonly DEFAULT_CONFIG = {
@@ -56,6 +54,13 @@ export class Worker<MessagePayload extends Json> {
     });
     this.queue = new Queue(this.sql, this.config.queueName);
     this.queries = new Queries(this.sql);
+    this.logger = new Logger();
+    this.lifecycle = new WorkerLifecycle(
+      this.config.queueName,
+      this.queries,
+      this.logger
+    );
+
     this.executionController = new ExecutionController(
       this.queue,
       this.mainController.signal,
@@ -77,16 +82,18 @@ export class Worker<MessagePayload extends Json> {
 
   async start(messageHandler: (message: MessagePayload) => Promise<void>) {
     try {
-      await this.acknowledgeStart();
+      await this.lifecycle.acknowledgeStart();
 
       while (this.isMainLoopActive) {
         try {
-          await this.heartbeat?.send(this.edgeFunctionName);
+          await this.lifecycle.sendHeartbeat(this.edgeFunctionName);
 
           const messageRecords = await this.poller.poll();
 
           if (this.mainController.signal.aborted) {
-            this.log('-> Discarding messageRecords because worker is stopping');
+            this.logger.log(
+              '-> Discarding messageRecords because worker is stopping'
+            );
             continue;
           }
 
@@ -96,72 +103,30 @@ export class Worker<MessagePayload extends Json> {
           );
           await Promise.all(startPromises);
         } catch (error: unknown) {
-          this.log(`Error processing messages: ${error}`);
+          this.logger.log(`Error processing messages: ${error}`);
         }
       }
     } catch (error) {
-      this.log(`Error in worker main loop: ${error}`);
-      throw error;
-    }
-  }
-
-  private log(message: string) {
-    this.logger.log(message);
-  }
-
-  private async acknowledgeStart() {
-    this.workerState.transitionTo(States.Starting);
-
-    const worker = await this.queries.onWorkerStarted(this.config.queueName);
-
-    this.workerId = worker.worker_id;
-    this.logger.setWorkerId(this.workerId);
-
-    this.heartbeat = new Heartbeat(
-      5000,
-      this.queries,
-      this.workerId,
-      this.log.bind(this)
-    );
-
-    this.workerState.transitionTo(States.Running);
-
-    this.log('Worker started');
-  }
-
-  private async acknowledgeStop() {
-    if (!this.workerId) {
-      throw new Error('Cannot stop worker: workerId not set');
-    }
-
-    try {
-      this.log('Acknowledging worker stop...');
-
-      this.workerState.transitionTo(States.Stopped);
-      await this.queries.onWorkerStopped(this.workerId);
-
-      this.log('Worker stop acknowledged');
-    } catch (error) {
-      this.log(`Error acknowledging worker stop: ${error}`);
+      this.logger.log(`Error in worker main loop: ${error}`);
       throw error;
     }
   }
 
   async stop() {
-    this.workerState.transitionTo(States.Stopping);
+    this.lifecycle.transitionToStopping();
 
     try {
-      this.log('-> Stopped accepting new messages');
+      this.logger.log('-> Stopped accepting new messages');
       this.mainController.abort();
 
-      this.log('-> Waiting for execution completion');
+      this.logger.log('-> Waiting for execution completion');
       await this.executionController.awaitCompletion();
-      this.log('-> Execution completed');
+      this.logger.log('-> Execution completed');
 
-      await this.acknowledgeStop();
+      await this.lifecycle.acknowledgeStop();
       await this.sql.end();
     } catch (error) {
-      this.log(`Error during worker stop: ${error}`);
+      this.logger.log(`Error during worker stop: ${error}`);
       throw error;
     }
   }
@@ -174,6 +139,6 @@ export class Worker<MessagePayload extends Json> {
    * Returns true if worker state is Running and worker was not stopped
    */
   private get isMainLoopActive() {
-    return this.workerState.isRunning && !this.mainController.signal.aborted;
+    return this.lifecycle.isRunning() && !this.mainController.signal.aborted;
   }
 }
