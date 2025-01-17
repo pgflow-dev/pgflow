@@ -88,8 +88,23 @@
       }
     },
     "test:unit": {
-      "dependsOn": ["supabase:start"],
+      "cache": true,
+      "dependsOn": [
+        {
+          "target": "supabase:start",
+          "params": "forward",
+          "waitUntilTargets": true
+        }
+      ],
       "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "{projectRoot}/src/**/*.ts",
+        "{projectRoot}/tests/unit/**/*.ts",
+        "{projectRoot}/deno.json",
+        "{projectRoot}/deno.lock"
+      ],
+      "outputs": ["{workspaceRoot}/coverage/pkgs/supaworker/unit"],
       "options": {
         "cwd": "pkgs/supaworker",
         "commands": [
@@ -99,8 +114,25 @@
       }
     },
     "test:e2e": {
-      "dependsOn": ["supabase:start"],
+      "cache": true,
+      "dependsOn": [
+        {
+          "target": "supabase:start",
+          "params": "forward",
+          "waitUntilTargets": true
+        }
+      ],
       "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "{projectRoot}/src/**/*.ts",
+        "{projectRoot}/tests/e2e/**/*.ts",
+        "{projectRoot}/supabase/functions/**/*.ts",
+        "{projectRoot}/deno.json",
+        "{projectRoot}/deno.lock",
+        "{projectRoot}/supabase/config.toml"
+      ],
+      "outputs": ["{workspaceRoot}/coverage/pkgs/supaworker/e2e"],
       "options": {
         "cwd": "pkgs/supaworker",
         "commands": [
@@ -110,8 +142,22 @@
       }
     },
     "test:pgtap": {
-      "dependsOn": ["supabase:start"],
+      "cache": true,
+      "dependsOn": [
+        {
+          "target": "supabase:start",
+          "params": "forward",
+          "waitUntilTargets": true
+        }
+      ],
       "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "{projectRoot}/sql/**/*.sql",
+        "{projectRoot}/supabase/tests/**/*.sql",
+        "{projectRoot}/supabase/config.toml"
+      ],
+      "outputs": ["{workspaceRoot}/coverage/pkgs/supaworker/pgtap"],
       "options": {
         "cwd": "pkgs/supaworker",
         "commands": ["supabase db test"],
