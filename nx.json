@@ -16,13 +16,11 @@
   "plugins": [
     {
       "plugin": "@nx/js/typescript",
-      "exclude": ["tools/supabase-plugin/*"]
     },
     "@nx/eslint/plugin",
     "@axhxrx/nx-deno",
     {
       "plugin": "@nx/js/typescript",
-      "include": ["tools/supabase-plugin/*"],
       "options": {
         "typecheck": {
           "targetName": "typecheck"
