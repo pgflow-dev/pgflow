@@ -1,4 +1,4 @@
-import { EdgeWorker } from '../_supaworker/index.ts';
+import { EdgeWorker } from '../_src/index.ts';
 
 function failingAlways() {
   console.log('(╯°□°)╯︵ ┻━┻');

@@ -1,4 +1,4 @@
-import { EdgeWorker } from '../_supaworker/index.ts';
+import { EdgeWorker } from '../_src/index.ts';
 import postgres from 'postgres';
 
 const DB_POOL_URL = Deno.env.get('DB_POOL_URL')!;
