@@ -5,9 +5,9 @@ create schema if not exists supaworker;
 set search_path to supaworker;
 
 create table if not exists supaworker.workers (
-    worker_id UUID not null default gen_random_uuid() primary key,
+    worker_id UUID not null primary key,
     queue_name TEXT not null,
-    function_name text,
+    function_name TEXT not null,
     started_at TIMESTAMPTZ not null default now(),
     stopped_at TIMESTAMPTZ,
     last_heartbeat_at TIMESTAMPTZ not null default now()
@@ -35,10 +35,12 @@ returns setof supaworker.workers
 as $$
 declare
     p_queue_name TEXT := queue_name;
+    p_worker_id UUID := worker_id;
+    p_function_name TEXT := function_name;
 begin
     RETURN QUERY
-    INSERT INTO supaworker.workers (queue_name)
-    VALUES (queue_name)
+    INSERT INTO supaworker.workers (queue_name, worker_id, function_name)
+    VALUES (queue_name, worker_id, function_name)
     RETURNING *;
 end;
 $$ language plpgsql;
