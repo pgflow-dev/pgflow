@@ -8,7 +8,7 @@ This repository is a monorepo that contains the following packages:
 
 | Nx Package     | NPM Package | Description |
 |--------------|-------------|-------------|
-| `supaworker` | `@pgflow/supaworker` | An auto-restarting task queue worker implemented for Supabase Edge Functions and PGMQ |
+| `edge-worker` | `@pgflow/edge-worker` | An auto-restarting task queue worker implemented for Supabase Edge Functions and PGMQ |
 | `cli` | `@pgflow/cli` (`pgflow`) | A CLI tool for interacting with whole stack |
 
 ## NX Readme
