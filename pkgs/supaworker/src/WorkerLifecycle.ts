@@ -50,13 +50,17 @@ export class WorkerLifecycle {
 
     try {
       this.logger.log('Acknowledging worker stop...');
-      this.workerState.transitionTo(States.Stopped);
       await this.queries.onWorkerStopped(this.workerRow);
+      this.workerState.transitionTo(States.Stopped);
       this.logger.log('Worker stop acknowledged');
     } catch (error) {
       this.logger.log(`Error acknowledging worker stop: ${error}`);
       throw error;
     }
+  }
+
+  get edgeFunctionName() {
+    return this.workerRow?.function_name;
   }
 
   async sendHeartbeat() {

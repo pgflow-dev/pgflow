@@ -28,7 +28,6 @@ export class Worker<MessagePayload extends Json> {
 
   private batchProcessor: BatchProcessor<MessagePayload>;
   private sql: postgres.Sql;
-  public edgeFunctionName?: string;
 
   private static readonly DEFAULT_CONFIG = {
     queueName: 'tasks',
@@ -131,16 +130,23 @@ export class Worker<MessagePayload extends Json> {
       this.logger.log('-> Stopped accepting new messages');
       this.abortController.abort();
 
-      this.logger.log('-> Waiting for execution completion');
+      this.logger.log('-> Waiting for pending tasks to complete...');
       await this.executionController.awaitCompletion();
-      this.logger.log('-> Execution completed');
+      this.logger.log('-> Pending tasks completed!');
 
       await this.lifecycle.acknowledgeStop();
+
+      this.logger.log('-> Closing SQL connection...');
       await this.sql.end();
+      this.logger.log('-> SQL connection closed!');
     } catch (error) {
       this.logger.log(`Error during worker stop: ${error}`);
       throw error;
     }
+  }
+
+  get edgeFunctionName() {
+    return this.lifecycle.edgeFunctionName;
   }
 
   /**
