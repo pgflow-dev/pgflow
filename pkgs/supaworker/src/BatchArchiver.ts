@@ -17,7 +17,7 @@ export class BatchArchiver<MessagePayload extends Json> {
   constructor(private queue: Queue<MessagePayload>, config: BatchConfig = {}) {
     this.config = {
       batchSize: 100,
-      timeoutMs: 1000,
+      timeoutMs: 500,
       ...config,
     };
   }

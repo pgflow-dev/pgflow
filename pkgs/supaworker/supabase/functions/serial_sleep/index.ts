@@ -18,5 +18,5 @@ const sleep1s = async () => {
 Supaworker.start(sleep1s, {
   queueName: 'serial_sleep',
   maxConcurrent: 1,
-  visibilityTimeout: 1,
+  visibilityTimeout: 5, // higher than the delay()
 });
