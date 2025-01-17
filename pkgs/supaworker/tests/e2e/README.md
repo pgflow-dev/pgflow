@@ -40,7 +40,7 @@ This approach lets us verify the entire stack from message enqueueing through wo
 
 - [x] Worker registers on start
 - [x] Worker sends heartbeats every 5s
-- [x] Worker updates edge_fn_name with heartbeat
+- [x] Worker updates function_name with heartbeat
 
 ### [ ] Retries & Failures
 

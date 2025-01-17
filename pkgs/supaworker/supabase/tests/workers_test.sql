@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(13);
+SELECT plan(12);
 
 -- Test initial state
 SELECT is(
@@ -22,7 +22,7 @@ SELECT is(
 
 -- Test on_worker_started()
 SELECT lives_ok(
-    $$ SELECT supaworker.on_worker_started('test_queue') $$,
+    $$ SELECT supaworker.on_worker_started('test_queue', gen_random_uuid(), 'test_function') $$,
     'on_worker_started should execute successfully'
 );
 
@@ -40,7 +40,7 @@ SELECT is(
 
 -- Test multiple on_worker_started() calls
 SELECT lives_ok(
-    $$ SELECT supaworker.on_worker_started('test_queue_2') $$,
+    $$ SELECT supaworker.on_worker_started('test_queue_2', gen_random_uuid(), 'test_function_2') $$,
     'second on_worker_started should execute successfully'
 );
 
@@ -77,25 +77,15 @@ SELECT is(
     'should have two active workers after send_heartbeat'
 );
 
--- Test send_heartbeat with function_name
-SELECT lives_ok(
-    $$
-        SELECT supaworker.send_heartbeat(
-            (SELECT worker_id FROM supaworker.workers WHERE queue_name = 'test_queue'),
-            'test_function'
-        )
-    $$,
-    'send_heartbeat with function name should execute successfully'
-);
-
+-- Test function_name is set correctly on worker creation
 SELECT is(
     (
-        SELECT edge_fn_name 
+        SELECT function_name 
         FROM supaworker.workers 
         WHERE queue_name = 'test_queue'
     ),
     'test_function',
-    'send_heartbeat should set function name correctly'
+    'worker should have correct function_name from creation'
 );
 
 SELECT finish();

@@ -14,14 +14,6 @@
         "check": "local"
       }
     },
-    "test:unit": {
-      "executor": "nx:run-commands",
-      "options": {
-        "cwd": "pkgs/supaworker",
-        "commands": ["deno test --allow-all --env-file=supabase/.env"],
-        "parallel": false
-      }
-    },
     "lint": {
       "executor": "@axhxrx/nx-deno:lint",
       "options": {
@@ -95,6 +87,28 @@
         "parallel": false
       }
     },
+    "test:unit": {
+      "dependsOn": ["supabase:start"],
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/supaworker",
+        "commands": [
+          "deno test --allow-all --env-file=supabase/.env tests/unit/"
+        ],
+        "parallel": false
+      }
+    },
+    "test:e2e": {
+      "dependsOn": ["supabase:start"],
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/supaworker",
+        "commands": [
+          "deno test --allow-all --env-file=supabase/.env tests/e2e/"
+        ],
+        "parallel": false
+      }
+    },
     "test:pgtap": {
       "dependsOn": ["supabase:start"],
       "executor": "nx:run-commands",
@@ -105,7 +119,7 @@
       }
     },
     "test": {
-      "dependsOn": ["test:pgtap", "test:unit"]
+      "dependsOn": ["test:pgtap", "test:unit", "test:e2e"]
     }
   },
   "tags": []

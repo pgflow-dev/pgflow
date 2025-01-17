@@ -23,11 +23,16 @@ export class Supaworker {
       throw new Error('DB_POOL_URL is not set');
     }
 
-    const worker = new Worker<MessagePayload>({
-      connectionString: DB_POOL_URL,
-      queueName: config.queueName || 'tasks',
-      ...config,
-    });
+    const worker = new Worker<MessagePayload>(
+      async (message) => {
+        await handler(message);
+      },
+      {
+        connectionString: DB_POOL_URL,
+        queueName: config.queueName || 'tasks',
+        ...config,
+      }
+    );
 
     globalThis.onbeforeunload = () => {
       worker.stop();
@@ -36,10 +41,6 @@ export class Supaworker {
         spawnNewEdgeFunction(worker.edgeFunctionName);
       }
     };
-
-    worker.start(async (message) => {
-      await handler(message);
-    });
 
     // use waitUntil to prevent the function from exiting
     // @ts-ignore: TODO: fix the types
@@ -50,7 +51,11 @@ export class Supaworker {
         /^\/+|\/+$/g,
         ''
       );
-      worker.setFunctionName(edgeFunctionName);
+
+      worker.startOnlyOnce({
+        edgeFunctionName,
+        workerId: Deno.env.get('SB_EXECUTION_ID')!,
+      });
 
       console.log(`HTTP Request: ${edgeFunctionName}`);
       return new Response('ok', {

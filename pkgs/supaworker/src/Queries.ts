@@ -4,32 +4,38 @@ import type { WorkerRow } from './types.ts';
 export class Queries {
   constructor(private readonly sql: postgres.Sql) {}
 
-  async onWorkerStarted(queueName: string): Promise<WorkerRow> {
+  async onWorkerStarted({
+    queueName,
+    workerId,
+    edgeFunctionName,
+  }: {
+    queueName: string;
+    workerId: string;
+    edgeFunctionName: string;
+  }): Promise<WorkerRow> {
     const workers = await this.sql<WorkerRow[]>`
-      SELECT * FROM supaworker.on_worker_started(${queueName}::text);
+      SELECT * FROM supaworker.on_worker_started(
+        queue_name => ${queueName}::text,
+        worker_id => ${workerId}::uuid,
+        function_name => ${edgeFunctionName}::text
+      );
     `;
 
     return workers[0];
   }
 
-  async onWorkerStopped(workerId: string): Promise<WorkerRow> {
+  async onWorkerStopped(workerRow: WorkerRow): Promise<WorkerRow> {
     const workers = await this.sql<WorkerRow[]>`
-      SELECT * FROM supaworker.on_worker_stopped(${workerId}::uuid);
+      SELECT * FROM supaworker.on_worker_stopped(${workerRow.worker_id}::uuid);
     `;
 
     return workers[0];
   }
 
-  async sendHeartbeat(workerId: string, functionName?: string): Promise<void> {
-    if (functionName) {
-      await this.sql<WorkerRow[]>`
-        SELECT * FROM supaworker.send_heartbeat(worker_id => ${workerId}::uuid, function_name => ${functionName}::text);
-      `;
-    } else {
-      await this.sql<WorkerRow[]>`
-        SELECT * FROM supaworker.send_heartbeat(worker_id => ${workerId}::uuid);
-      `;
-    }
+  async sendHeartbeat(workerRow: WorkerRow): Promise<void> {
+    await this.sql<WorkerRow[]>`
+      SELECT * FROM supaworker.send_heartbeat(worker_id => ${workerRow.worker_id}::uuid);
+    `;
   }
 
   async spawnNewWorker(queueName: string): Promise<void> {

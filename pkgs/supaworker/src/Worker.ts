@@ -1,5 +1,5 @@
 import postgres from 'postgres';
-import { Json } from './types.ts';
+import { Json, WorkerBootstrap } from './types.ts';
 import { Queue } from './Queue.ts';
 import { Queries } from './Queries.ts';
 import {
@@ -21,13 +21,13 @@ export type WorkerConfig = {
 export class Worker<MessagePayload extends Json> {
   private config: Required<WorkerConfig>;
   private executionController: ExecutionController<MessagePayload>;
+  private messageHandler: (message: MessagePayload) => Promise<void>;
   private lifecycle: WorkerLifecycle;
   private logger: Logger;
   private abortController = new AbortController();
 
   private batchProcessor: BatchProcessor<MessagePayload>;
   private sql: postgres.Sql;
-  public edgeFunctionName?: string;
 
   private static readonly DEFAULT_CONFIG = {
     queueName: 'tasks',
@@ -41,13 +41,18 @@ export class Worker<MessagePayload extends Json> {
     batchSize: 20,
   } as const;
 
-  constructor(configOverrides: WorkerConfig) {
+  constructor(
+    messageHandler: (message: MessagePayload) => Promise<void>,
+    configOverrides: WorkerConfig
+  ) {
     this.config = {
       ...Worker.DEFAULT_CONFIG,
       ...configOverrides,
     };
 
     this.logger = new Logger();
+    this.messageHandler = messageHandler;
+
     this.sql = postgres(this.config.connectionString, {
       max: this.config.maxPgConnections,
       prepare: true,
@@ -84,20 +89,29 @@ export class Worker<MessagePayload extends Json> {
     );
   }
 
-  async start(messageHandler: (message: MessagePayload) => Promise<void>) {
+  async startOnlyOnce(workerBootstrap: WorkerBootstrap) {
+    if (this.lifecycle.isRunning()) {
+      this.logger.log('Worker already running, ignoring start request');
+      return;
+    }
+
+    await this.start(workerBootstrap);
+  }
+
+  private async start(workerBootstrap: WorkerBootstrap) {
     try {
-      await this.lifecycle.acknowledgeStart();
+      await this.lifecycle.acknowledgeStart(workerBootstrap);
 
       while (this.isMainLoopActive) {
         try {
-          await this.lifecycle.sendHeartbeat(this.edgeFunctionName);
+          await this.lifecycle.sendHeartbeat();
         } catch (error: unknown) {
           this.logger.log(`Error sending heartbeat: ${error}`);
           // Continue execution - a failed heartbeat shouldn't stop processing
         }
 
         try {
-          await this.batchProcessor.processBatch(messageHandler);
+          await this.batchProcessor.processBatch(this.messageHandler);
         } catch (error: unknown) {
           this.logger.log(`Error processing batch: ${error}`);
           // Continue to next iteration - failed batch shouldn't stop the worker
@@ -116,20 +130,23 @@ export class Worker<MessagePayload extends Json> {
       this.logger.log('-> Stopped accepting new messages');
       this.abortController.abort();
 
-      this.logger.log('-> Waiting for execution completion');
+      this.logger.log('-> Waiting for pending tasks to complete...');
       await this.executionController.awaitCompletion();
-      this.logger.log('-> Execution completed');
+      this.logger.log('-> Pending tasks completed!');
 
       await this.lifecycle.acknowledgeStop();
+
+      this.logger.log('-> Closing SQL connection...');
       await this.sql.end();
+      this.logger.log('-> SQL connection closed!');
     } catch (error) {
       this.logger.log(`Error during worker stop: ${error}`);
       throw error;
     }
   }
 
-  setFunctionName(functionName: string) {
-    this.edgeFunctionName = functionName;
+  get edgeFunctionName() {
+    return this.lifecycle.edgeFunctionName;
   }
 
   /**

@@ -5,9 +5,9 @@ create schema if not exists supaworker;
 set search_path to supaworker;
 
 create table if not exists supaworker.workers (
-    worker_id UUID not null default gen_random_uuid() primary key,
+    worker_id UUID not null primary key,
     queue_name TEXT not null,
-    edge_fn_name text,
+    function_name TEXT not null,
     started_at TIMESTAMPTZ not null default now(),
     stopped_at TIMESTAMPTZ,
     last_heartbeat_at TIMESTAMPTZ not null default now()
@@ -27,36 +27,33 @@ where
     and last_heartbeat_at < now() - interval '6 seconds';
 
 create or replace function supaworker.on_worker_started(
-    queue_name TEXT
+    queue_name TEXT,
+    worker_id UUID,
+    function_name TEXT
 )
 returns setof supaworker.workers
 as $$
 declare
     p_queue_name TEXT := queue_name;
+    p_worker_id UUID := worker_id;
+    p_function_name TEXT := function_name;
 begin
     RETURN QUERY
-    INSERT INTO supaworker.workers (queue_name)
-    VALUES (queue_name)
+    INSERT INTO supaworker.workers (queue_name, worker_id, function_name)
+    VALUES (queue_name, worker_id, function_name)
     RETURNING *;
 end;
 $$ language plpgsql;
 
 create or replace function supaworker.send_heartbeat(
-    worker_id UUID,
-    function_name text default null
-) returns setof supaworker.WORKERS as $$
+    worker_id UUID
+) returns setof supaworker.workers as $$
 DECLARE
     p_worker_id UUID := worker_id;
-    p_function_name text := function_name;
 BEGIN
 RETURN QUERY
-UPDATE supaworker.workers AS w
-SET 
-    last_heartbeat_at = now(),
-    edge_fn_name = CASE 
-        WHEN p_function_name IS NOT NULL AND p_function_name <> '' THEN p_function_name 
-        ELSE edge_fn_name 
-    END
+    UPDATE supaworker.workers AS w
+    SET last_heartbeat_at = now()
     WHERE w.worker_id = p_worker_id
     RETURNING *;
 END;
@@ -78,23 +75,23 @@ $$ language plpgsql;
 
 -- Spawn a new worker asynchronously via edge function
 create or replace function supaworker.spawn(
-    edge_fn_name text
+    function_name text
 ) returns integer as $$
 declare
-    p_edge_fn_name text := edge_fn_name;
+    p_function_name text := function_name;
     v_active_count integer;
 begin
     SELECT COUNT(*)
     INTO v_active_count
     FROM supaworker.active_workers AS aw
-    WHERE aw.edge_fn_name = p_edge_fn_name;
+    WHERE aw.function_name = p_function_name;
 
     IF v_active_count < 1 THEN
-        raise notice 'Spawning new worker: %', p_edge_fn_name;
-        PERFORM supaworker.call_edgefn_async(p_edge_fn_name, '');
+        raise notice 'Spawning new worker: %', p_function_name;
+        PERFORM supaworker.call_edgefn_async(p_function_name, '');
         return 1;
     ELSE
-        raise notice 'Worker Exists for queue: NOT spawning new worker for queue: %', p_edge_fn_name;
+        raise notice 'Worker Exists for queue: NOT spawning new worker for queue: %', p_function_name;
         return 0;
     END IF;
 end;

@@ -11,7 +11,7 @@ async function cpuIntensiveTask() {
   let data = new TextEncoder().encode('burn');
   const timeId = `cpu_intensive_${Math.random()}`;
   console.time(timeId);
-  for (let i = 0; i < 1000; i++) {
+  for (let i = 0; i < 10000; i++) {
     data = new Uint8Array(await crypto.subtle.digest('SHA-256', data));
   }
   console.timeEnd(timeId);

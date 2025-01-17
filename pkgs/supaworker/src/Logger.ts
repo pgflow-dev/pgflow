@@ -1,8 +1,14 @@
-export class Logger {
-  constructor(private workerId: string = 'starting') {}
+import { WorkerRow } from './types.ts';
 
-  setWorkerId(id: string) {
-    this.workerId = id;
+export class Logger {
+  private workerRow?: WorkerRow;
+
+  setWorkerRow(workerRow: WorkerRow) {
+    this.workerRow = workerRow;
+  }
+
+  get workerId() {
+    return this.workerRow?.worker_id;
   }
 
   log(message: string) {
