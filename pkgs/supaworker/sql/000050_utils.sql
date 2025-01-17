@@ -1,15 +1,15 @@
 create extension if not exists pg_net;
 
-create schema if not exists supaworker;
+create schema if not exists edge_worker;
 
-create or replace function supaworker.call_edgefn_async(
+create or replace function edge_worker.call_edgefn_async(
     function_name text,
     body text
 )
 returns bigint
 language plpgsql
 volatile
-set search_path to supaworker
+set search_path to edge_worker
 as $$
 declare
     request_id bigint;

@@ -1,1 +1,1 @@
-export * from './src/supaworker.ts';
+export { EdgeWorker } from './src/index.ts';

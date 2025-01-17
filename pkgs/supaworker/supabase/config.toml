@@ -1,4 +1,4 @@
-project_id = "supaworker"
+project_id = "edge-worker"
 
 [api]
 enabled = true

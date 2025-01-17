@@ -23,7 +23,7 @@ Deno.test('worker respect maxConcurrent settings', async () => {
     async () => {
       const [{ worker_count }] = await sql`
         SELECT COUNT(*)::integer AS worker_count
-        FROM supaworker.active_workers 
+        FROM edge_worker.active_workers 
         WHERE function_name = ${WORKER_NAME}
       `;
 

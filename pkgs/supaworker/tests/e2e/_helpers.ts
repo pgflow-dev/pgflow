@@ -118,7 +118,7 @@ export async function waitForActiveWorker() {
   return await waitFor(
     async () => {
       const [{ has_active: hasActiveWorker }] =
-        await sql`SELECT count(*) > 0 AS has_active FROM supaworker.active_workers`;
+        await sql`SELECT count(*) > 0 AS has_active FROM edge_worker.active_workers`;
       log('waiting for active worker ', hasActiveWorker);
       return hasActiveWorker;
     },
@@ -130,11 +130,11 @@ export async function waitForActiveWorker() {
 }
 
 export async function fetchWorkers(workerName: string) {
-  return await sql`SELECT * FROM supaworker.workers`;
+  return await sql`SELECT * FROM edge_worker.workers`;
 }
 
 export async function startWorker(workerName: string, seconds: number = 5) {
-  await sql`SELECT supaworker.spawn(${workerName}::text)`;
+  await sql`SELECT edge_worker.spawn(${workerName}::text)`;
   await waitForActiveWorker();
   log('worker spawned!');
 }

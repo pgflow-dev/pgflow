@@ -23,10 +23,10 @@ Deno.test('should spawn next worker when CPU clock limit hits', async () => {
   } catch {}
   await sql`SELECT pgmq.create(${WORKER_NAME})`;
   await sql`
-    DELETE FROM supaworker.workers 
+    DELETE FROM edge_worker.workers 
     WHERE worker_id IN (
       SELECT worker_id 
-      FROM supaworker.inactive_workers
+      FROM edge_worker.inactive_workers
     )`;
   await startWorker(WORKER_NAME);
 
