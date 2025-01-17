@@ -35,7 +35,7 @@ export class Queue<MessagePayload extends Json> {
   ) {
     return await this.sql<MessageRecord<MessagePayload>[]>`
       SELECT *
-      FROM supaworker.read_with_poll(
+      FROM edge_worker.read_with_poll(
         queue_name => ${this.queueName},
         vt => ${visibilityTimeout},
         qty => ${batchSize},
