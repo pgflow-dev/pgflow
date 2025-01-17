@@ -2,13 +2,6 @@ import { Worker, WorkerConfig } from './Worker.ts';
 import spawnNewEdgeFunction from './spawnNewEdgeFunction.ts';
 import { Json } from './types.ts';
 
-/**
- * Extracts the edge function name from the request URL
- */
-function extractFunctionName(req: Request) {
-  return new URL(req.url).pathname.replace(/^\/+|\/+$/g, '');
-}
-
 export type SupaworkerConfig = Omit<WorkerConfig, 'connectionString'>;
 
 export class Supaworker {
@@ -18,29 +11,52 @@ export class Supaworker {
     handler: (message: MessagePayload) => Promise<unknown> | unknown,
     config: SupaworkerConfig = {}
   ) {
+    this.ensureFirstCall();
+    const connectionString = this.getConnectionString();
+
+    const worker = this.initializeWorker(handler, {
+      ...config,
+      connectionString,
+    });
+
+    this.setupShutdownHandler(worker);
+    this.setupRequestHandler(worker);
+  }
+
+  private static ensureFirstCall() {
     if (this.wasCalled) {
       throw new Error('Supaworker can only be called once');
     }
     this.wasCalled = true;
+  }
 
+  private static getConnectionString(): string {
     // @ts-ignore - TODO: fix the types
-    const DB_POOL_URL = Deno.env.get('DB_POOL_URL');
-
-    if (!DB_POOL_URL) {
+    const connectionString = Deno.env.get('DB_POOL_URL');
+    if (!connectionString) {
       throw new Error('DB_POOL_URL is not set');
     }
+    return connectionString;
+  }
 
-    const worker = new Worker<MessagePayload>(
+  private static initializeWorker<MessagePayload extends Json>(
+    handler: (message: MessagePayload) => Promise<unknown> | unknown,
+    config: WorkerConfig
+  ): Worker<MessagePayload> {
+    return new Worker<MessagePayload>(
       async (message) => {
         await handler(message);
       },
       {
-        connectionString: DB_POOL_URL,
         queueName: config.queueName || 'tasks',
         ...config,
       }
     );
+  }
 
+  private static setupShutdownHandler<MessagePayload extends Json>(
+    worker: Worker<MessagePayload>
+  ) {
     globalThis.onbeforeunload = () => {
       worker.stop();
 
@@ -52,9 +68,13 @@ export class Supaworker {
     // use waitUntil to prevent the function from exiting
     // @ts-ignore: TODO: fix the types
     EdgeRuntime.waitUntil(new Promise(() => {}));
+  }
 
-    Deno.serve((req) => {
-      const edgeFunctionName = extractFunctionName(req);
+  private static setupRequestHandler<MessagePayload extends Json>(
+    worker: Worker<MessagePayload>
+  ) {
+    Deno.serve({}, (req) => {
+      const edgeFunctionName = this.extractFunctionName(req);
 
       worker.startOnlyOnce({
         edgeFunctionName,
@@ -67,4 +87,9 @@ export class Supaworker {
       });
     });
   }
+
+  private static extractFunctionName(req: Request): string {
+    return new URL(req.url).pathname.replace(/^\/+|\/+$/g, '');
+  }
 }
+
