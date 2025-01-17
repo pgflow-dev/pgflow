@@ -2,13 +2,20 @@ import { Worker, WorkerConfig } from './Worker.ts';
 import spawnNewEdgeFunction from './spawnNewEdgeFunction.ts';
 import { Json } from './types.ts';
 
+/**
+ * Extracts the edge function name from the request URL
+ */
+function extractFunctionName(req: Request) {
+  return new URL(req.url).pathname.replace(/^\/+|\/+$/g, '');
+}
+
 export type SupaworkerConfig = Omit<WorkerConfig, 'connectionString'>;
 
 export class Supaworker {
   private static wasCalled = false;
 
   static start<MessagePayload extends Json = Json>(
-    handler: (message: MessagePayload) => Promise<any> | any,
+    handler: (message: MessagePayload) => Promise<unknown> | unknown,
     config: SupaworkerConfig = {}
   ) {
     if (this.wasCalled) {
@@ -46,11 +53,8 @@ export class Supaworker {
     // @ts-ignore: TODO: fix the types
     EdgeRuntime.waitUntil(new Promise(() => {}));
 
-    Deno.serve((_req) => {
-      const edgeFunctionName = new URL(_req.url).pathname.replace(
-        /^\/+|\/+$/g,
-        ''
-      );
+    Deno.serve((req) => {
+      const edgeFunctionName = extractFunctionName(req);
 
       worker.startOnlyOnce({
         edgeFunctionName,
