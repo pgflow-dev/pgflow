@@ -1,6 +1,8 @@
 BEGIN;
 SELECT plan(12);
 
+DELETE FROM supaworker.workers;
+
 -- Test initial state
 SELECT is(
     (SELECT count(*) FROM supaworker.workers),
