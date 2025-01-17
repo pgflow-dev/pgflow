@@ -2,14 +2,14 @@ import { Worker, WorkerConfig } from './Worker.ts';
 import spawnNewEdgeFunction from './spawnNewEdgeFunction.ts';
 import { Json } from './types.ts';
 
-export type SupaworkerConfig = Omit<WorkerConfig, 'connectionString'>;
+export type EdgeWorkerConfig = Omit<WorkerConfig, 'connectionString'>;
 
-export class Supaworker {
+export class EdgeWorker {
   private static wasCalled = false;
 
   static start<MessagePayload extends Json = Json>(
     handler: (message: MessagePayload) => Promise<unknown> | unknown,
-    config: SupaworkerConfig = {}
+    config: EdgeWorkerConfig = {}
   ) {
     this.ensureFirstCall();
     const connectionString = this.getConnectionString();
@@ -25,7 +25,7 @@ export class Supaworker {
 
   private static ensureFirstCall() {
     if (this.wasCalled) {
-      throw new Error('Supaworker can only be called once');
+      throw new Error('EdgeWorker can only be called once');
     }
     this.wasCalled = true;
   }

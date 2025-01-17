@@ -1,4 +1,4 @@
-import { Supaworker } from '../_supaworker/index.ts';
+import { EdgeWorker } from '../_supaworker/index.ts';
 import postgres from 'postgres';
 
 const DB_POOL_URL = Deno.env.get('DB_POOL_URL')!;
@@ -15,4 +15,4 @@ async function incrementCounter() {
   );
 }
 
-Supaworker.start(incrementCounter, { queueName: 'increment_sequence' });
+EdgeWorker.start(incrementCounter, { queueName: 'increment_sequence' });

@@ -1,4 +1,4 @@
-import { Supaworker } from '../_supaworker/index.ts';
+import { EdgeWorker } from '../_supaworker/index.ts';
 import postgres from 'postgres';
 import { crypto } from 'jsr:@std/crypto';
 
@@ -22,4 +22,4 @@ async function cpuIntensiveTask() {
   );
 }
 
-Supaworker.start(cpuIntensiveTask, { queueName: 'cpu_intensive' });
+EdgeWorker.start(cpuIntensiveTask, { queueName: 'cpu_intensive' });

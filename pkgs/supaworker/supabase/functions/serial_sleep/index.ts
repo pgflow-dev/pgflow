@@ -1,4 +1,4 @@
-import { Supaworker } from '../_supaworker/index.ts';
+import { EdgeWorker } from '../_supaworker/index.ts';
 import { delay } from 'jsr:@std/async';
 import postgres from 'postgres';
 
@@ -15,7 +15,7 @@ const sleep1s = async () => {
   console.timeEnd('Task time');
 };
 
-Supaworker.start(sleep1s, {
+EdgeWorker.start(sleep1s, {
   queueName: 'serial_sleep',
   maxConcurrent: 1,
   visibilityTimeout: 5, // higher than the delay()

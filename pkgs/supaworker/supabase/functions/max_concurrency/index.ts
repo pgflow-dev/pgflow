@@ -1,4 +1,4 @@
-import { Supaworker } from '../_supaworker/index.ts';
+import { EdgeWorker } from '../_supaworker/index.ts';
 import postgres from 'postgres';
 import { delay } from 'jsr:@std/async';
 
@@ -17,7 +17,7 @@ async function incrementSeq() {
   );
 }
 
-Supaworker.start(incrementSeq, {
+EdgeWorker.start(incrementSeq, {
   queueName: 'max_concurrency',
   maxConcurrent: 40,
   maxPgConnections: 4,

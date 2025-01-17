@@ -1,6 +1,6 @@
 # E2E Testing Strategy
 
-We use a real Supabase instance running locally (in `supabase/`) to perform end-to-end testing of the entire Supaworker stack. The tests interact with purpose-built test workers that simulate different behaviors:
+We use a real Supabase instance running locally (in `supabase/`) to perform end-to-end testing of the entire EdgeWorker stack. The tests interact with purpose-built test workers that simulate different behaviors:
 
 - Different queues with specific behaviors
 - Workers that always fail
@@ -24,7 +24,7 @@ This approach lets us verify the entire stack from message enqueueing through wo
 #### Glossary
 
 - `worker` - instance of given worker edge function that is subject to CPU and memory limits and can be killed
-- `worker function` - edge function within supabase app that uses Supaworker instead of serving requests
+- `worker function` - edge function within supabase app that uses EdgeWorker instead of serving requests
 - `queue` - pgmq queue that workers can pull from
 - `message` - PGMQ `message_record` that contains metadata (`msg_id`, `read_ct`, `vt`) and payload (`message JSONB`)
 
