@@ -45,10 +45,6 @@ export class Queue<MessagePayload extends Json> {
     `;
   }
 
-  async end() {
-    await this.sql.end();
-  }
-
   async setVt(
     msgId: number,
     vtOffsetSeconds: number
