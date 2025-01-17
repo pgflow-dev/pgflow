@@ -1,5 +1,5 @@
 import { sql } from '../sql.ts';
-import { delay } from 'jsr:@std/async';
+import { delay } from '@std/async';
 import ProgressBar from 'jsr:@deno-library/progress';
 import { dim } from 'https://deno.land/std@0.224.0/fmt/colors.ts';
 
@@ -9,7 +9,7 @@ interface WaitForOptions {
   description?: string;
 }
 
-export async function log(message: string, ...args: any[]) {
+export function log(message: string, ...args: unknown[]) {
   console.log(dim(` -> ${message}`), ...args);
 }
 
@@ -84,7 +84,7 @@ export async function waitForSeqToIncrementBy(
 ): Promise<number> {
   const { seqName = 'test_seq' } = options;
 
-  let perSecond = 0;
+  const perSecond = 0;
 
   const progress = new ProgressBar({
     title: `${seqName} (${perSecond}/s)`,
@@ -129,11 +129,11 @@ export async function waitForActiveWorker() {
   );
 }
 
-export async function fetchWorkers(workerName: string) {
-  return await sql`SELECT * FROM edge_worker.workers`;
+export async function fetchWorkers(functionName: string) {
+  return await sql`SELECT * FROM edge_worker.workers WHERE function_name = ${functionName}`;
 }
 
-export async function startWorker(workerName: string, seconds: number = 5) {
+export async function startWorker(workerName: string) {
   await sql`SELECT edge_worker.spawn(${workerName}::text)`;
   await waitForActiveWorker();
   log('worker spawned!');

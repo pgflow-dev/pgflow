@@ -1,5 +1,5 @@
 import { sql } from '../sql.ts';
-import { assertEquals } from 'jsr:@std/assert';
+import { assertEquals } from '@std/assert';
 import {
   log,
   startWorker,
@@ -7,7 +7,6 @@ import {
   waitForSeqToIncrementBy,
 } from './_helpers.ts';
 import { sendBatch } from './_helpers.ts';
-import { delay } from 'jsr:@std/async';
 
 const WORKER_NAME = 'increment_sequence';
 

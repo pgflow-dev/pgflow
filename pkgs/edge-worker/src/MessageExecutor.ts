@@ -21,7 +21,7 @@ class AbortError extends Error {
 export class MessageExecutor<MessagePayload extends Json> {
   public readonly executionPromise: Promise<void>;
   private readonly resolve: (value: void | PromiseLike<void>) => void;
-  private readonly reject: (reason?: any) => void;
+  private readonly reject: (reason?: unknown) => void;
   private hasStarted = false;
 
   constructor(

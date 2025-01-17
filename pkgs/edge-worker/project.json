@@ -17,7 +17,8 @@
     "lint": {
       "executor": "@axhxrx/nx-deno:lint",
       "options": {
-        "denoConfig": "pkgs/edge-worker/deno.json"
+        "denoConfig": "pkgs/edge-worker/deno.json",
+        "ignore": "pkgs/edge-worker/supabase/functions/_src/"
       }
     },
     "supabase:start": {

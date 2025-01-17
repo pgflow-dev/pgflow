@@ -20,7 +20,9 @@ Deno.test('should spawn next worker when CPU clock limit hits', async () => {
   await sql`ALTER SEQUENCE test_seq RESTART WITH 1`;
   try {
     await sql`SELECT pgmq.drop_queue(${WORKER_NAME})`;
-  } catch {}
+  } catch {
+    // ignore
+  }
   await sql`SELECT pgmq.create(${WORKER_NAME})`;
   await sql`
     DELETE FROM edge_worker.workers 

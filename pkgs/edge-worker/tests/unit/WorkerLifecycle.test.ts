@@ -23,6 +23,7 @@ const workerRowDouble: WorkerRow = {
 };
 
 function createMockQueries() {
+  // deno-lint-ignore no-explicit-any
   const mockQueries = new Queries(null as any);
 
   mockQueries.onWorkerStarted = () => Promise.resolve(workerRowDouble);
@@ -100,6 +101,7 @@ test('sendHeartbeat - should work after initialization', async () => {
 });
 
 test('sendHeartbeat - should handle database errors', async () => {
+  // deno-lint-ignore no-explicit-any
   const mockQueries = new Queries(null as any);
   mockQueries.onWorkerStarted = () => Promise.resolve(workerRowDouble);
   mockQueries.sendHeartbeat = () => Promise.reject(new Error('Database error'));
@@ -165,6 +167,7 @@ test('acknowledgeStop - should mark worker as stopped and log completion', async
 });
 
 test('acknowledgeStop - should propagate database errors and log failure', async () => {
+  // deno-lint-ignore no-explicit-any
   const mockQueries = new Queries(null as any);
   mockQueries.onWorkerStarted = () => Promise.resolve(workerRowDouble);
   mockQueries.onWorkerStopped = () =>
