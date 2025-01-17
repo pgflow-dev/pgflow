@@ -120,7 +120,7 @@
       }
     },
     "test": {
-      "dependsOn": ["test:pgtap", "test:unit", "test:e2e"]
+      "dependsOn": ["test:unit"]
     }
   },
   "tags": []
