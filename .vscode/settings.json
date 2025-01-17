@@ -1,5 +1,5 @@
 {
-  "deno.enablePaths": ["pkgs/supaworker"],
+  "deno.enablePaths": ["pkgs/edge-worker"],
   "deno.unstable": true,
   "deno.importMap": "./import_map.json",
   "eslint.validate": ["json"]
