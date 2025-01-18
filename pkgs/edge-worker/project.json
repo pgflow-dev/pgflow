@@ -1,0 +1,127 @@
+{
+  "name": "edge-worker",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "pkgs/edge-worker",
+  "projectType": "library",
+  "targets": {
+    "test:nx-deno": {
+      "executor": "@axhxrx/nx-deno:test",
+      "outputs": ["{workspaceRoot}/coverage/pkgs/edge-worker"],
+      "options": {
+        "coverageDirectory": "coverage/pkgs/edge-worker",
+        "denoConfig": "pkgs/edge-worker/deno.json",
+        "allowNone": false,
+        "check": "local"
+      }
+    },
+    "lint": {
+      "executor": "@axhxrx/nx-deno:lint",
+      "options": {
+        "denoConfig": "pkgs/edge-worker/deno.json",
+        "ignore": "pkgs/edge-worker/supabase/functions/_src/"
+      }
+    },
+    "supabase:start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "commands": ["supabase start"],
+        "parallel": false
+      }
+    },
+    "supabase:stop": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "commands": ["supabase stop --no-backup"],
+        "parallel": false
+      }
+    },
+    "supabase:status": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "commands": ["supabase status"],
+        "parallel": false
+      }
+    },
+    "supabase:restart": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "commands": ["supabase stop --no-backup", "supabase start"],
+        "parallel": false
+      }
+    },
+    "supabase:reset": {
+      "dependsOn": ["supabase:prepare"],
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "commands": [
+          "rm -r supabase/migrations",
+          "mkdir -p supabase/migrations",
+          "cp ../edge-worker/sql/*.sql supabase/migrations/",
+          "supabase db reset"
+        ],
+        "parallel": false
+      }
+    },
+    "supabase:prepare-edge-fn": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "commands": [
+          "rm -f ./supabase/functions/_src/*.ts",
+          "cp ../edge-worker/src/*.ts ./supabase/functions/_src/",
+          "cp ../edge-worker/deno.* ./supabase/functions/_src/"
+        ],
+        "parallel": false
+      }
+    },
+    "supabase:functions-serve": {
+      "dependsOn": ["supabase:start", "supabase:prepare-edge-fn"],
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "commands": ["supabase functions serve --env-file supabase/.env"],
+        "parallel": false
+      }
+    },
+    "test:unit": {
+      "dependsOn": ["supabase:start"],
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "commands": [
+          "deno test --allow-all --env-file=supabase/.env tests/unit/"
+        ],
+        "parallel": false
+      }
+    },
+    "test:e2e": {
+      "dependsOn": ["supabase:start"],
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "commands": [
+          "deno test --allow-all --env-file=supabase/.env tests/e2e/"
+        ],
+        "parallel": false
+      }
+    },
+    "test:pgtap": {
+      "dependsOn": ["supabase:start"],
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "commands": ["supabase db test"],
+        "parallel": false
+      }
+    },
+    "test": {
+      "dependsOn": ["test:unit"]
+    }
+  },
+  "tags": []
+}

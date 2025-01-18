@@ -1,3 +1,0 @@
-#!/bin/bash
-
-pnpm supabase --workdir pkgs/supaworker $@

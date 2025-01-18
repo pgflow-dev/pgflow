@@ -3,11 +3,5 @@
   "compileOnSave": false,
   "files": [],
   "references": [
-    {
-      "path": "./pkgs/supaworker-tests"
-    },
-    {
-      "path": "./tools/supabase-plugin"
-    }
   ]
 }

@@ -1,5 +1,0 @@
-#!/bin/bash
-
-source .env
-
-psql "$DB_URL" -f queries/supaworker_jobs_per_second.sql
