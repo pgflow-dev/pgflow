@@ -27,10 +27,10 @@ export default defineConfig({
         {
           label: "Edge Worker",
           items: [
-            { label: "How it works?", slug: "" },
+            { label: "How it works?", slug: "edge-worker/how-it-works" },
             {
-              label: "Get started",
-              slug: "edge-worker/get-started",
+              label: "Prepare environment",
+              slug: "edge-worker/prepare-environment",
             },
             {
               label: "Create your first worker",

@@ -1,0 +1,27 @@
+---
+title: How it works?
+next:
+    label: Prepare environment
+    link: prepare-environment
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+**Edge Worker** is your regular task queue worker, getting message off a queue and calling user functions with its payload.
+
+Under the hood, it wraps [Supabase Background Tasks](https://supabase.com/docs/guides/functions/background-tasks) and adds lot of useful features:
+
+- retries with delays
+- monitoring and heartbeats
+- concurrency control
+- horizontal scaling (by deploying more edge functions for same queue)
+
+It treats Edge Function termination due to CPU/clock limits
+as an expected occurrence and includes extra measures to handle it as part of
+normal operations:
+
+- stops polling as soon as the soft limit is reached
+- makes extra effort to gracefully abort pending tasks with abort signals
+- uses PGMQ's visibility timeout to ensure **no message is ever lost**
+- **spawns new instances** automatically for **continuous operations**
+- pings the database with **heartbeats** to ensure the worker's health
