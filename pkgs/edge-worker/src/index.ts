@@ -25,7 +25,7 @@ export class EdgeWorker {
 
   private static ensureFirstCall() {
     if (this.wasCalled) {
-      throw new Error('EdgeWorker can only be called once');
+      throw new Error('EdgeWorker.start() can only be called once');
     }
     this.wasCalled = true;
   }
@@ -92,4 +92,3 @@ export class EdgeWorker {
     return new URL(req.url).pathname.replace(/^\/+|\/+$/g, '');
   }
 }
-
