@@ -18,14 +18,27 @@ All configuration options are optional and have sane defaults.
 
 ```typescript
 EdgeWorker.start(handler, {
-  maxConcurrent: 20, // how much jobs are processed at the same time
-  maxPgConnections: 4, // how many connections to the databasee are opened
-  maxPollSeconds: 5, // in-worker polling interval
-  pollIntervalMs: 200, // in-database polling interval
-  retryDelay: 5, // how long to wait before retrying a failed job
-  retryLimit: 0, // how many times to retry a failed job
-  visibilityTimeout: 3, // how long a job is invisible after reading
-                        // if not successful, will reappear after this time
+  // how much jobs are processed at the same time
+  maxConcurrent: 20,
+
+  // how many connections to the databasee are opened
+  maxPgConnections: 4,
+
+  // in-worker polling interval
+  maxPollSeconds: 5,
+
+  // in-database polling interval
+  pollIntervalMs: 200,
+
+  // how long to wait before retrying a failed job
+  retryDelay: 5,
+
+  // how many times to retry a failed job
+  retryLimit: 0,
+
+  // how long a job is invisible after reading
+  // if not successful, will reappear after this time
+  visibilityTimeout: 3,
 });
 ```
 
