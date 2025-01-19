@@ -7,7 +7,7 @@ prev:
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 
-You can pass optional configuration object as second argument to `EdgeWorker.start()`
+You can pass an optional configuration object as the second argument to `EdgeWorker.start()`
 to tweak the worker's behavior.
 
 <Aside title="Zero configuration needed" type="tip">
@@ -18,10 +18,10 @@ All configuration options are optional and have sane defaults.
 
 ```typescript
 EdgeWorker.start(handler, {
-  // how much jobs are processed at the same time
+  // how many tasks are processed at the same time
   maxConcurrent: 20,
 
-  // how many connections to the databasee are opened
+  // how many connections to the database are opened
   maxPgConnections: 4,
 
   // in-worker polling interval
@@ -145,7 +145,7 @@ affect timeout for the tasks (wip) and visibility timeout.
 
 ```ts
 EdgeWorker.start(handler, {
-  visibilityTimeout: 5 // mesassage will re-appear on queue after 5 seconds if not processed
+  visibilityTimeout: 5 // message will re-appear in queue after 5 seconds if not processed
 });
 ```
 
@@ -160,7 +160,7 @@ Increase for IO-heavy tasks (network or db calls), decrease for CPU-heavy tasks.
 
 ```ts
 EdgeWorker.start(handler, {
-  batchSize: 10 // Process up to 10 messages at once
+  maxConcurrent: 10 // Process up to 10 messages at once
 });
 ```
 
