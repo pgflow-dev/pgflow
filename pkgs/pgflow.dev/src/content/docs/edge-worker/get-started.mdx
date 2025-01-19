@@ -1,69 +1,113 @@
 ---
-title: 🚀 Get started
+title: Prepare environment
 next:
-    label: Configuration
-    link: configuration
+    label: Get started
+    link: get-started
 ---
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 import { FileTree } from '@astrojs/starlight/components';
-
-Setting up your first worker is easy and you will be up and running in no time.
 
 <Aside type="danger" title="Not production ready!">
 **Edge Worker** is in alpha stage and it is not production ready yet,
 but we will get there!
 </Aside>
 
-<Aside type="caution" title="Requirements">
-Before we start, make sure you have the following:
-
-- Supabase CLI installed and local project set up (see Supabase's [installation guide](https://supabase.com/docs/guides/cli))
-- Supavisor Session Mode connection string (check [Supabase Docs](https://supabase.com/docs/guides/database/connecting-to-postgres#supavisor-session-mode) to get this string)
+<Aside type="caution" title="Prerequisites">
+Make sure you have the Supabase CLI installed and local project set up.
+If not, see Supabase's [installation guide](https://supabase.com/docs/guides/cli).
 </Aside>
 
 <Steps>
 
+1. ### Install migration
 
-1. ### Create your worker
-
-    Use the Supabase CLI to create a new function. Edge Worker handles HTTP requests internally, so replace the function's content with:
-
-    ```typescript
-    import { EdgeWorker } from "@pgflow/edge-worker";
-
-    EdgeWorker.start(async (payload: { urlToScrape: string }) => {
-      // do something with the message
-      console.log('Scraping URL...', payload.urlToScrape);
-    });
-    ```
-
-3. ### Start your worker
-
-    Start the worker by making an HTTP request to its edge function:
+    Run this command to download the migration file to your project.
+    Replace `<supabase-dir>` with your project's `supabase/` directory path.
 
     ```bash
-    curl http://localhost:54321/functions/v1/<function-name>
+    wget -O <supabase-dir>/migrations/ https://pgflow.dev/edge-worker.sql
     ```
 
-4. ### Process your first message
+    Then apply the migration:
 
-    By default, the worker looks for messages in the `tasks` queue (this name is configurable).
-
-    Send a test message to the queue:
-
-    ```sql
-    SELECT pgmq.send(
-      queue_name => 'tasks',
-      msg => '{"urlToScrape": "https://example.com"}'::jsonb
-    );
+    ```bash
+    npx supabase migration up
     ```
 
-    The worker will process the message immediately.
+1. ### Setup Connection Pool
 
-    <Aside title="Creating queues">
-      If you haven't created the queue beforehand, the worker will automatically create
-      a logged, non-partitioned queue during startup.
-    </Aside>
+    Worker is a long running process and need to use Supavisor **Session Mode**
+    in order to maximiza performance (learn more in [Connect to your database](https://supabase.com/docs/guides/database/connecting-to-postgres#more-about-connection-pooling) official docs).
+
+    You need to change the `db.pooler` section in your `supabase/config.toml` file.
+    You can also increase the `default_pool_size`.
+
+    ```diff lang="toml"
+      [db.pooler]
+      enabled = false
+      # Port to use for the local connection pooler.
+      port = 54329
+      # Specifies when a server connection can be reused by other clients.
+      # Configure one of the supported pooler modes: `transaction`, `session`.
+    - pool_mode = "transaction"
+    + pool_mode = "session"
+      # How many server connections to allow per user/database pair.
+    - default_pool_size = 20
+    + default_pool_size = 100
+      # Maximum number of client connections allowed.
+      max_client_conn = 100
+    ```
+
+1. ### Setup Edge Runtime mode
+
+    We need to switch Edge Runtime policy to `per_worker` to enable
+    Background Tasks (see more in [Testing background tasks locally](https://supabase.com/docs/guides/functions/background-tasks#testing-background-tasks-locally) in official docs)
+
+   ```diff lang="toml"
+     [edge_runtime]
+     enabled = true
+     # Configure one of the supported request policies: `oneshot`, `per_worker`.
+     # Use `oneshot` for hot reload, or `per_worker` for load testing.
+   - policy = "oneshot"
+   + policy = "per_worker"
+     # Port to attach the Chrome inspector for debugging edge functions.
+     inspector_port = 8083
+   ```
+
+1. ### Prepare connection string
+
+    Your worke needs to connect to your Supabase project's database.
+    Worker is a long lived process, so we should use Supavisor Session Mode connection.
+    In local development use the following connection string:
+
+    ```env
+    DB_POOL_URL="postgresql://postgres.pooler-dev:postgres@pooler:6543/postgres"
+    ```
+
+    ##### Put this `.env` file here:
+
+    <FileTree>
+
+    - supabase/
+        - config.toml
+        - package.json
+        - functions/
+          - my-new-worker/
+            - **.env** \<== add the .env file here
+            - index.ts
+
+    </FileTree>
+
+1. ### Restart Supabase
+
+    To apply the changes, restart Supabase:
+
+    ```bash
+    npx supabase stop
+    npx supabase start
+    ```
 
 </Steps>
+
+This is it! You are ready to create your first worker and do some processing.

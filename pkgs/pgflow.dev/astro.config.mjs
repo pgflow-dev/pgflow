@@ -29,10 +29,13 @@ export default defineConfig({
           items: [
             { label: "How it works?", slug: "" },
             {
-              label: "Prepare environment",
-              slug: "edge-worker/prepare-environment",
+              label: "Get started",
+              slug: "edge-worker/get-started",
             },
-            { label: "Get started", slug: "edge-worker/get-started" },
+            {
+              label: "Create your first worker",
+              slug: "edge-worker/create-first-worker",
+            },
             { label: "Configuration", slug: "edge-worker/configuration" },
           ],
         },

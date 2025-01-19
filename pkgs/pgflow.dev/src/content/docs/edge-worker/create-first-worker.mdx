@@ -1,0 +1,66 @@
+---
+title: Create your first worker
+next:
+    label: Configuration
+    link: configuration
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+import { FileTree } from '@astrojs/starlight/components';
+
+Setting up your first worker is easy and you will be up and running in no time.
+
+<Aside type="danger" title="Not production ready!">
+**Edge Worker** is in alpha stage and it is not production ready yet,
+but we will get there!
+</Aside>
+
+<Aside type="caution" title="Requirements">
+Before we start, make sure read the [Get started](/get-started) guide.
+</Aside>
+
+<Steps>
+
+
+1. ### Create your worker
+
+    Use the Supabase CLI to create a new function. Edge Worker handles HTTP requests internally, so replace the function's content with:
+
+    ```typescript
+    import { EdgeWorker } from "@pgflow/edge-worker";
+
+    EdgeWorker.start(async (payload: { urlToScrape: string }) => {
+      // do something with the message
+      console.log('Scraping URL...', payload.urlToScrape);
+    });
+    ```
+
+3. ### Start your worker
+
+    Start the worker by making an HTTP request to its edge function:
+
+    ```bash
+    curl http://localhost:54321/functions/v1/<function-name>
+    ```
+
+4. ### Process your first message
+
+    By default, the worker looks for messages in the `tasks` queue (this name is configurable).
+
+    Send a test message to the queue:
+
+    ```sql
+    SELECT pgmq.send(
+      queue_name => 'tasks',
+      msg => '{"urlToScrape": "https://example.com"}'::jsonb
+    );
+    ```
+
+    The worker will process the message immediately.
+
+    <Aside title="Creating queues">
+      If you haven't created the queue beforehand, the worker will automatically create
+      a logged, non-partitioned queue during startup.
+    </Aside>
+
+</Steps>
