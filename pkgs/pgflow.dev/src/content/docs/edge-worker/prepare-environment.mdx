@@ -1,5 +1,8 @@
 ---
 title: Prepare environment
+next: 
+    label: Get started
+    link: get-started
 ---
 
 import { Aside, Steps } from "@astrojs/starlight/components";
@@ -12,7 +15,7 @@ but we will get there!
 
 <Steps>
 
-1. ### Install Edge Worker migration
+1. ### Install migration
 
     Run this command to download the migration file to your project.
     Replace `<supabase-dir>` with your project's `supabase/` directory path.
@@ -27,7 +30,47 @@ but we will get there!
     npx supabase migration up
     ```
 
-2. ### Prepare DB connection string
+1. ### Setup Connection Pool
+    
+    Worker is a long running process and need to use Supavisor **Session Mode**
+    in order to maximiza performance.
+
+    You need to change the `db.pooler` section in your `supabase/config.toml` file.
+    You can also increase the `default_pool_size`.
+
+    ```diff lang="toml"
+      [db.pooler]
+      enabled = false
+      # Port to use for the local connection pooler.
+      port = 54329
+      # Specifies when a server connection can be reused by other clients.
+      # Configure one of the supported pooler modes: `transaction`, `session`.
+    - pool_mode = "transaction"
+    + pool_mode = "session"
+      # How many server connections to allow per user/database pair.
+    - default_pool_size = 20
+    + default_pool_size = 100
+      # Maximum number of client connections allowed.
+      max_client_conn = 100
+    ```
+
+1. ### Setup Edge Runtime mode
+
+    We need to switch Edge Runtime policy to `per_worker` to enable
+    Background Tasks (see more in [Testing background tasks locally](https://supabase.com/docs/guides/functions/background-tasks#testing-background-tasks-locally) in official docs)
+
+   ```diff lang="toml"
+     [edge_runtime]
+     enabled = true
+     # Configure one of the supported request policies: `oneshot`, `per_worker`.
+     # Use `oneshot` for hot reload, or `per_worker` for load testing.
+   - policy = "oneshot"
+   + policy = "per_worker"
+     # Port to attach the Chrome inspector for debugging edge functions.
+     inspector_port = 8083
+   ```
+
+1. ### Prepare connection string
 
     Your worke needs to connect to your Supabase project's database.
     Worker is a long lived process, so we should use Supavisor Session Mode connection.
@@ -52,3 +95,5 @@ but we will get there!
     </FileTree>
 
 </Steps>
+
+This is it! You are ready to create your first worker and do some processing.
