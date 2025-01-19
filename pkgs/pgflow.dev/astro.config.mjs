@@ -24,29 +24,14 @@ export default defineConfig({
         },
       ],
       sidebar: [
-        // {
-        //   label: "Landing Pages WIP",
-        //   items: [
-        //     { label: "Starting with flow def", slug: "index" },
-        //     {
-        //       label: "Flow DSL crash course",
-        //       slug: "landing_pages/flow_usage",
-        //     },
-        //   ],
-        // },
-        // {
-        //   label: "Spikes, ideas",
-        //   items: [
-        //     {
-        //       label: "Versioning: always new flow",
-        //       slug: "ideas/versioning_always_new_flow",
-        //     },
-        //     {
-        //       label: "Versioning: migrate payload",
-        //       slug: "ideas/versioning_migrate_payload",
-        //     },
-        //   ],
-        // },
+        {
+          label: "Edge Worker",
+          items: [
+            { label: "How it works?", slug: "" },
+            { label: "Get started", slug: "edge-worker/get-started" },
+            { label: "Configuration", slug: "edge-worker/configuration" },
+          ],
+        },
       ],
       expressiveCode: {
         themes: ["tokyo-night"],
