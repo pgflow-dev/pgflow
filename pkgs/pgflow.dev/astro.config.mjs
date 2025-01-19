@@ -10,7 +10,8 @@ export default defineConfig({
       social: {
         github: "https://github.com/pgflow-dev/pgflow",
         discord: "https://discord.gg/fyMHqy9h",
-        "x.com": "https://x.com/pgflow_dev",
+        twitter: "https://x.com/pgflow_dev",
+        blueSky: "https://bsky.app/profile/pgflow.bsky.social",
       },
       components: {},
       head: [
