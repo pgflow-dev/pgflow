@@ -8,7 +8,9 @@ export default defineConfig({
     starlight({
       title: "pgflow",
       social: {
-        github: "https://github.com/jumski",
+        github: "https://github.com/pgflow-dev/pgflow",
+        discord: "https://discord.gg/fyMHqy9h",
+        "x.com": "https://x.com/pgflow_dev",
       },
       components: {},
       head: [
