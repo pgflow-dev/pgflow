@@ -28,6 +28,10 @@ export default defineConfig({
           label: "Edge Worker",
           items: [
             { label: "How it works?", slug: "" },
+            {
+              label: "Prepare environment",
+              slug: "edge-worker/prepare-environment",
+            },
             { label: "Get started", slug: "edge-worker/get-started" },
             { label: "Configuration", slug: "edge-worker/configuration" },
           ],

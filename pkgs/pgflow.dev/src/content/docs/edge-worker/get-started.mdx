@@ -38,45 +38,6 @@ Before we start, make sure you have the following:
     });
     ```
 
-2. ### Prepare DB connection string
-
-    Your worke needs to connect to your Supabase project's database. 
-    Worker is a long lived process, so we should use Supavisor Session Mode connection.
-    In local development use the following connection string:
-
-    ```env
-    DB_POOL_URL="postgresql://postgres.pooler-dev:postgres@pooler:6543/postgres"
-    ```
-
-    ##### Put this `.env` file here:
-
-    <FileTree>
-
-    - supabase/
-        - config.toml
-        - package.json
-        - functions/
-          - my-new-worker/
-            - **.env** \<== add the .env file here
-            - index.ts
-
-    </FileTree>
-
-3. ### Update your schema
-
-    Run this command to download the migration file to your project.
-    Replace `<supabase-dir>` with your project's `supabase/` directory path.
-
-    ```bash
-    wget -O <supabase-dir>/migrations/ https://pgflow.dev/edge-worker.sql
-    ```
-
-    Then apply the migration:
-
-    ```bash
-    npx supabase migration up
-    ```
-
 3. ### Start your worker
 
     Start the worker by making an HTTP request to its edge function:

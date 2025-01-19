@@ -1,0 +1,54 @@
+---
+title: Prepare environment
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+import { FileTree } from '@astrojs/starlight/components';
+
+<Aside type="danger" title="Not production ready!">
+**Edge Worker** is in alpha stage and it is not production ready yet,
+but we will get there!
+</Aside>
+
+<Steps>
+
+1. ### Install Edge Worker migration
+
+    Run this command to download the migration file to your project.
+    Replace `<supabase-dir>` with your project's `supabase/` directory path.
+
+    ```bash
+    wget -O <supabase-dir>/migrations/ https://pgflow.dev/edge-worker.sql
+    ```
+
+    Then apply the migration:
+
+    ```bash
+    npx supabase migration up
+    ```
+
+2. ### Prepare DB connection string
+
+    Your worke needs to connect to your Supabase project's database.
+    Worker is a long lived process, so we should use Supavisor Session Mode connection.
+    In local development use the following connection string:
+
+    ```env
+    DB_POOL_URL="postgresql://postgres.pooler-dev:postgres@pooler:6543/postgres"
+    ```
+
+    ##### Put this `.env` file here:
+
+    <FileTree>
+
+    - supabase/
+        - config.toml
+        - package.json
+        - functions/
+          - my-new-worker/
+            - **.env** \<== add the .env file here
+            - index.ts
+
+    </FileTree>
+
+</Steps>
