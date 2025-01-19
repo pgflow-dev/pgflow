@@ -16,7 +16,7 @@ hero:
     - text: What is pgflow?
       link: 'pgflow'
       variant: minimal
-next: 
+next:
   link: 'edge-worker/get-started'
   label: 'Get started'
 ---
@@ -27,9 +27,9 @@ import { Aside } from "@astrojs/starlight/components";
 
 **Edge Worker** is your regular task queue worker, getting message off a queue and calling user functions with its payload.
 
-Under the hood, it wraps [Supabase Background Tasks](https://supabase.com/docs/guides/background-tasks) and adds lot of useful features:
+Under the hood, it wraps [Supabase Background Tasks](https://supabase.com/docs/guides/functions/background-tasks) and adds lot of useful features:
 
-- retries
+- retries with delays
 - monitoring and heartbeats
 - concurrency control
 - horizontal scaling (by deploying more edge functions for same queue)
