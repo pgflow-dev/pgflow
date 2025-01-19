@@ -175,10 +175,3 @@ Increase for IO-heavy tasks (network or db calls), decrease for CPU-heavy tasks.
 EdgeWorker.start(handler, {
   maxPgConnections: 10 // Use up to 10 connections to the database
 });
-
-## Environment Variables
-
-<Steps>
-1. `DB_POOL_URL` (Required) - PostgreSQL connection string for the database
-2. Set any additional environment variables needed by your worker logic
-</Steps>
