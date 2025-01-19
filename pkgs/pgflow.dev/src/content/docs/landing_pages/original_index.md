@@ -4,8 +4,6 @@ draft: true
 template: splash
 hero:
   tagline: Supabase-native open-source type-safe workflow engine with realtime updates
-  image:
-    file: ../../assets/nodes-group-logo.svg
   actions:
     - text: Check how simple it is
       link: "#how-it-works"

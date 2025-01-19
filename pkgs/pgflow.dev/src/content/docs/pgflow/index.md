@@ -5,7 +5,7 @@ template: splash
 hero:
   tagline: Simple, Postgres-First Workflow Orchestration for Supabase
   image:
-    file: ../../assets/nodes-group-logo.svg
+    file: ../../../assets/pgflow-logo.svg
   actions:
     - text: check out Edge Worker!
       link: "/edge-worker"
