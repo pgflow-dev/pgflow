@@ -1,11 +1,12 @@
 ---
 title: 🚀 Get started
-next: 
+next:
     label: Configuration
     link: configuration
 ---
 
 import { Aside, Steps } from "@astrojs/starlight/components";
+import { FileTree } from '@astrojs/starlight/components';
 
 Setting up your first worker is easy and you will be up and running in no time.
 
@@ -18,9 +19,11 @@ but we will get there!
 Before we start, make sure you have the following:
 
 - Supabase CLI installed and local project set up (see Supabase's [installation guide](https://supabase.com/docs/guides/cli))
+- Supavisor Session Mode connection string (check [Supabase Docs](https://supabase.com/docs/guides/database/connecting-to-postgres#supavisor-session-mode) to get this string)
 </Aside>
 
 <Steps>
+
 
 1. ### Create your worker
 
@@ -35,7 +38,31 @@ Before we start, make sure you have the following:
     });
     ```
 
-2. ### Update your schema
+2. ### Prepare DB connection string
+
+    Your worke needs to connect to your Supabase project's database. 
+    Worker is a long lived process, so we should use Supavisor Session Mode connection.
+    In local development use the following connection string:
+
+    ```env
+    DB_POOL_URL="postgresql://postgres.pooler-dev:postgres@pooler:6543/postgres"
+    ```
+
+    ##### Put this `.env` file here:
+
+    <FileTree>
+
+    - supabase/
+        - config.toml
+        - package.json
+        - functions/
+          - my-new-worker/
+            - **.env** \<== add the .env file here
+            - index.ts
+
+    </FileTree>
+
+3. ### Update your schema
 
     Run this command to download the migration file to your project.
     Replace `<supabase-dir>` with your project's `supabase/` directory path.
