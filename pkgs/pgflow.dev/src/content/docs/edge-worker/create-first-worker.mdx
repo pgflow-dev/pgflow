@@ -8,15 +8,14 @@ next:
 import { Aside, Steps } from "@astrojs/starlight/components";
 import { FileTree } from '@astrojs/starlight/components';
 
-Setting up your first worker is easy and you will be up and running in no time.
+Setting up your first worker is straightforward and takes just a few minutes.
 
-<Aside type="danger" title="Not production ready!">
-**Edge Worker** is in alpha stage and it is not production ready yet,
-but we will get there!
+<Aside type="danger" title="Not production ready">
+**Edge Worker** is currently in alpha stage and not yet production ready.
 </Aside>
 
 <Aside type="caution" title="Requirements">
-Before we start, make sure read the [Prepare environment](/prepare-environment) guide.
+Before starting, please read the [Prepare environment](/prepare-environment) guide.
 </Aside>
 
 <Steps>
@@ -24,7 +23,7 @@ Before we start, make sure read the [Prepare environment](/prepare-environment) 
 
 1. ### Create your worker
 
-    Use the Supabase CLI to create a new function. Edge Worker handles HTTP requests internally, so replace the function's content with:
+    First, create a new Edge Function using the Supabase CLI. Then, replace its content with this code:
 
     ```typescript
     import { EdgeWorker } from "@pgflow/edge-worker";
@@ -37,7 +36,7 @@ Before we start, make sure read the [Prepare environment](/prepare-environment) 
 
 3. ### Start your worker
 
-    Start the worker by making an HTTP request to its edge function:
+    Start the worker by sending an HTTP request to your Edge Function:
 
     ```bash
     curl http://localhost:54321/functions/v1/<function-name>

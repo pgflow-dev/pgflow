@@ -10,8 +10,8 @@ next:
 import { Aside, Steps } from "@astrojs/starlight/components";
 import { FileTree } from '@astrojs/starlight/components';
 
-We need to setup few things before we can start working with Edge Worker.
-It must be done only once per project.
+We need to set up a few things before working with Edge Worker.
+This setup needs to be done only once per project.
 
 <Aside type="danger" title="Not production ready!">
 **Edge Worker** is in alpha stage and it is not production ready yet,
@@ -42,9 +42,9 @@ If not, see Supabase's [installation guide](https://supabase.com/docs/guides/cli
 
 1. ### Prepare connection string
 
-    Your worke needs to connect to your Supabase project's database.
+    Your worker needs to connect to your Supabase project's database.
 
-    Worker is a long lived process, so we should use Supavisor **Session Mode** connection
+    Worker is a long-lived process, so we should use Supavisor **Session Mode** connection
     (see more in [Connect to your database](https://supabase.com/docs/guides/database/connecting-to-postgres#more-about-connection-pooling) docs).
 
     In local development use the following connection string:
@@ -115,4 +115,4 @@ If not, see Supabase's [installation guide](https://supabase.com/docs/guides/cli
 
 </Steps>
 
-This is it! You are ready to create your first worker and do some processing 🥳
+That's it! You're ready to create your first worker and start processing messages 🥳
