@@ -20,8 +20,10 @@ class AbortError extends Error {
  */
 export class MessageExecutor<MessagePayload extends Json> {
   public readonly executionPromise: Promise<void>;
-  private readonly resolve: (value: void | PromiseLike<void>) => void;
-  private readonly reject: (reason?: unknown) => void;
+  private readonly onExecutionCompleted: (
+    value: void | PromiseLike<void>
+  ) => void;
+  private readonly onExecutionFailed: (reason?: unknown) => void;
   private hasStarted = false;
 
   constructor(
@@ -35,8 +37,8 @@ export class MessageExecutor<MessagePayload extends Json> {
   ) {
     const { promise, resolve, reject } = Promise.withResolvers<void>();
     this.executionPromise = promise;
-    this.resolve = resolve;
-    this.reject = reject;
+    this.onExecutionCompleted = resolve;
+    this.onExecutionFailed = reject;
   }
 
   /**
@@ -54,7 +56,7 @@ export class MessageExecutor<MessagePayload extends Json> {
   execute(): Promise<void> {
     if (!this.hasStarted) {
       this.hasStarted = true;
-      this._execute().then(this.resolve, this.reject);
+      this._execute().then(this.onExecutionCompleted, this.onExecutionFailed);
     } else {
       console.log('[MessageExecutor] Execution already started');
     }
