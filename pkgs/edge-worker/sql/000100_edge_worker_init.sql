@@ -40,21 +40,6 @@ RETURN QUERY
 END;
 $$ language plpgsql;
 
--- Optional: Explicit stop function
-create or replace function edge_worker.on_worker_stopped(
-    worker_id UUID
-) returns setof edge_worker.workers as $$
-declare
-    p_worker_id UUID := worker_id;
-BEGIN
-    RETURN QUERY
-    UPDATE edge_worker.workers AS w
-    SET stopped_at = now(), last_heartbeat_at = now()
-    WHERE w.worker_id = p_worker_id
-    RETURNING *;
-END;
-$$ language plpgsql;
-
 -- Spawn a new worker asynchronously via edge function
 create or replace function edge_worker.spawn(
     function_name text
