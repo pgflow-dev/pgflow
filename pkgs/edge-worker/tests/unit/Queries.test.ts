@@ -3,12 +3,14 @@ import { Queries } from '../../src/Queries.ts';
 import { withSql } from '../sql.ts';
 import { WorkerRow } from '../../src/types.ts';
 
+const FAKE_UUID = '123e4567-e89b-12d3-a456-426614174000';
+
 Deno.test('Queries.onWorkerStarted integration test', async () => {
   await withSql(async (sql) => {
     const queries = new Queries(sql);
     // Test data
     const queueName = 'test_queue';
-    const workerId = '123e4567-e89b-12d3-a456-426614174000';
+    const workerId = FAKE_UUID;
     const edgeFunctionName = 'test_function';
 
     // Execute the method
@@ -34,7 +36,7 @@ Deno.test('Queries.onWorkerStarted throws on duplicate worker', async () => {
 
     const params = {
       queueName: 'test_queue',
-      workerId: '123e4567-e89b-12d3-a456-426614174000',
+      workerId: FAKE_UUID,
       edgeFunctionName: 'test_function',
     };
 
@@ -62,7 +64,7 @@ Deno.test(
       // First create a worker
       const params = {
         queueName: 'test_queue',
-        workerId: '123e4567-e89b-12d3-a456-426614174000',
+        workerId: FAKE_UUID,
         edgeFunctionName: 'test_function',
       };
 
@@ -91,6 +93,39 @@ Deno.test(
     })
 );
 
+Deno.test('Queries operations fail gracefully for non-existent worker', (t) =>
+  withSql(async (sql) => {
+    return; // TODO: decide if we really want to throw for non-existent worker
+
+    const queries = new Queries(sql);
+    const nonExistentWorker: WorkerRow = {
+      worker_id: FAKE_UUID,
+      queue_name: 'test_queue',
+      function_name: 'test_function',
+      started_at: new Date().toISOString(),
+      last_heartbeat_at: new Date().toISOString(),
+      stopped_at: null,
+    };
+
+    // Both operations should reject for non-existent worker
+    await t.step('sendHeartbeat', async () => {
+      await assertRejects(
+        async () => await queries.sendHeartbeat(nonExistentWorker),
+        Error,
+        'no rows'
+      );
+    });
+
+    await t.step('onWorkerStopped', async () => {
+      await assertRejects(
+        async () => await queries.onWorkerStopped(nonExistentWorker),
+        Error,
+        'no rows'
+      );
+    });
+  })
+);
+
 Deno.test(
   'Queries.onWorkerStopped updates stopped_at and last_heartbeat_at',
   () =>
@@ -100,7 +135,7 @@ Deno.test(
       // First create a worker
       const params = {
         queueName: 'test_queue',
-        workerId: '123e4567-e89b-12d3-a456-426614174000',
+        workerId: FAKE_UUID,
         edgeFunctionName: 'test_function',
       };
 
