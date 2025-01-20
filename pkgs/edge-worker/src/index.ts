@@ -57,12 +57,12 @@ export class EdgeWorker {
   private static setupShutdownHandler<MessagePayload extends Json>(
     worker: Worker<MessagePayload>
   ) {
-    globalThis.onbeforeunload = () => {
-      worker.stop();
-
+    globalThis.onbeforeunload = async () => {
       if (worker.edgeFunctionName) {
-        spawnNewEdgeFunction(worker.edgeFunctionName);
+        await spawnNewEdgeFunction(worker.edgeFunctionName);
       }
+
+      worker.stop();
     };
 
     // use waitUntil to prevent the function from exiting
