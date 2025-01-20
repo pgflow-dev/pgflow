@@ -110,15 +110,6 @@
         "parallel": false
       }
     },
-    "test:pgtap": {
-      "dependsOn": ["supabase:start"],
-      "executor": "nx:run-commands",
-      "options": {
-        "cwd": "pkgs/edge-worker",
-        "commands": ["supabase db test"],
-        "parallel": false
-      }
-    },
     "test": {
       "dependsOn": ["test:unit"]
     }
