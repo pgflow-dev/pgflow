@@ -1,56 +1,16 @@
-create extension if not exists "pgmq" version '1.4.4';
-select pgmq.create('tasks');
-
-create schema if not exists edge_worker;
 set search_path to edge_worker;
 
-create table if not exists edge_worker.workers (
-    worker_id UUID not null primary key,
-    queue_name TEXT not null,
-    function_name TEXT not null,
-    started_at TIMESTAMPTZ not null default now(),
-    stopped_at TIMESTAMPTZ,
-    last_heartbeat_at TIMESTAMPTZ not null default now()
-);
-
-create or replace view edge_worker.active_workers as
-select *
-from edge_worker.workers
-where
-    stopped_at is null
-    and last_heartbeat_at > now() - interval '6 seconds';
-
-create or replace view edge_worker.inactive_workers as
-select *
-from edge_worker.workers
-where
-    stopped_at is null
-    and last_heartbeat_at < now() - interval '6 seconds';
-
--- Spawn a new worker asynchronously via edge function
-create or replace function edge_worker.spawn(
-    function_name text
-) returns integer as $$
-declare
-    p_function_name text := function_name;
-    v_active_count integer;
-begin
-    SELECT COUNT(*)
-    INTO v_active_count
-    FROM edge_worker.active_workers AS aw
-    WHERE aw.function_name = p_function_name;
-
-    IF v_active_count < 1 THEN
-        raise notice 'Spawning new worker: %', p_function_name;
-        PERFORM edge_worker.call_edgefn_async(p_function_name, '');
-        return 1;
-    ELSE
-        raise notice 'Worker Exists for queue: NOT spawning new worker for queue: %', p_function_name;
-        return 0;
-    END IF;
-end;
-$$ language plpgsql;
-
+--------------------------------------------------------------------------------
+-- Read With Poll --------------------------------------------------------------
+--                                                                            --
+-- This is a backport of the pgmq.read_with_poll function from version 1.5.0  --
+-- It is required because it fixes a bug with high CPU usage and Supabase     --
+-- is still using version 1.4.4.                                              --
+--                                                                            --
+-- It is slightly modified (removed headers which are not available in 1.4.1) --
+--                                                                            --
+-- This will be removed once Supabase upgrades to 1.5.0 or higher.            --
+--------------------------------------------------------------------------------
 create function edge_worker.read_with_poll(
     queue_name TEXT,
     vt INTEGER,
