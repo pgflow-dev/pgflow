@@ -66,6 +66,7 @@ create or replace function edge_worker.on_worker_stopped(
 declare
     p_worker_id UUID := worker_id;
 BEGIN
+    RETURN QUERY
     UPDATE edge_worker.workers AS w
     SET stopped_at = now(), last_heartbeat_at = now()
     WHERE w.worker_id = p_worker_id

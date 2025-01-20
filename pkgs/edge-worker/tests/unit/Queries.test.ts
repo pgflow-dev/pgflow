@@ -90,3 +90,66 @@ Deno.test(
       );
     })
 );
+
+Deno.test(
+  'Queries.onWorkerStopped updates stopped_at and last_heartbeat_at',
+  () =>
+    withSql(async (sql) => {
+      const queries = new Queries(sql);
+
+      // First create a worker
+      const params = {
+        queueName: 'test_queue',
+        workerId: '123e4567-e89b-12d3-a456-426614174000',
+        edgeFunctionName: 'test_function',
+      };
+
+      const worker = await queries.onWorkerStarted(params);
+      const initialHeartbeat = worker.last_heartbeat_at;
+      assertEquals(
+        worker.stopped_at,
+        null,
+        'stopped_at should be null initially'
+      );
+
+      // Wait a bit to ensure timestamp will be different
+      await new Promise((resolve) => setTimeout(resolve, 1));
+
+      // Stop the worker
+      const stoppedWorker = await queries.onWorkerStopped(worker);
+
+      // Verify returned worker has updated timestamps
+      assertExists(stoppedWorker.stopped_at, 'stopped_at should be set');
+      assertExists(
+        stoppedWorker.last_heartbeat_at,
+        'last_heartbeat_at should be set'
+      );
+      assertEquals(
+        stoppedWorker.last_heartbeat_at > initialHeartbeat,
+        true,
+        'last_heartbeat_at should be updated to a later time'
+      );
+
+      // Verify in database directly
+      const [workerRow] = await sql<[WorkerRow]>`
+        SELECT * FROM edge_worker.workers 
+        WHERE worker_id = ${params.workerId} 
+        AND queue_name = ${params.queueName}
+      `;
+
+      assertExists(
+        workerRow.stopped_at,
+        'stopped_at should be set in database'
+      );
+      assertEquals(
+        workerRow.last_heartbeat_at > initialHeartbeat,
+        true,
+        'last_heartbeat_at in database should be updated to a later time'
+      );
+      assertEquals(
+        workerRow.stopped_at,
+        stoppedWorker.stopped_at,
+        'stopped_at should match between API response and database'
+      );
+    })
+);
