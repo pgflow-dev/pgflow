@@ -19,26 +19,13 @@ from edge_worker.workers
 where
     stopped_at is null
     and last_heartbeat_at > now() - interval '6 seconds';
+
 create or replace view edge_worker.inactive_workers as
 select *
 from edge_worker.workers
 where
     stopped_at is null
     and last_heartbeat_at < now() - interval '6 seconds';
-
-create or replace function edge_worker.send_heartbeat(
-    worker_id UUID
-) returns setof edge_worker.workers as $$
-DECLARE
-    p_worker_id UUID := worker_id;
-BEGIN
-RETURN QUERY
-    UPDATE edge_worker.workers AS w
-    SET last_heartbeat_at = now()
-    WHERE w.worker_id = p_worker_id
-    RETURNING *;
-END;
-$$ language plpgsql;
 
 -- Spawn a new worker asynchronously via edge function
 create or replace function edge_worker.spawn(
@@ -123,24 +110,3 @@ BEGIN
     END LOOP;
 END;
 $$ language plpgsql;
-
-
--- Helper function to identify stale workers
--- create or replace function get_stale_workers(
---     p_threshold_minutes INT default 5
--- ) returns table (
---     worker_id TEXT,
---     last_heartbeat_at TIMESTAMPTZ,
---     minutes_since_heartbeat DOUBLE PRECISION
--- ) as $$
--- BEGIN
---     RETURN QUERY
---     SELECT
---         w.worker_id,
---         w.last_heartbeat_at,
---         EXTRACT(EPOCH FROM (now() - w.last_heartbeat_at))/60 AS minutes_since_heartbeat
---     FROM edge_worker.workers w
---     WHERE w.status = 'running'
---     AND w.last_heartbeat_at < now() - (p_threshold_minutes || ' minutes')::interval;
--- END;
--- $$ language plpgsql;

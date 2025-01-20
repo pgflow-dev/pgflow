@@ -35,7 +35,10 @@ export class Queries {
 
   async sendHeartbeat(workerRow: WorkerRow): Promise<void> {
     await this.sql<WorkerRow[]>`
-      SELECT * FROM edge_worker.send_heartbeat(worker_id => ${workerRow.worker_id}::uuid);
+      UPDATE edge_worker.workers AS w
+      SET last_heartbeat_at = now()
+      WHERE w.worker_id = ${workerRow.worker_id}
+      RETURNING *;
     `;
   }
 }
