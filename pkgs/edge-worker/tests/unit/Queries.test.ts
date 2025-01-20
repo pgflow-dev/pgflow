@@ -1,6 +1,7 @@
 import { assertEquals, assertExists, assertRejects } from 'jsr:@std/assert';
 import { Queries } from '../../src/Queries.ts';
 import { withSql } from '../sql.ts';
+import { WorkerRow } from '../../src/types.ts';
 
 Deno.test('Queries.onWorkerStarted integration test', async () => {
   await withSql(async (sql) => {
@@ -51,3 +52,41 @@ Deno.test('Queries.onWorkerStarted throws on duplicate worker', async () => {
     );
   });
 });
+
+Deno.test(
+  'Queries.sendHeartbeat updates last_heartbeat_at for started worker',
+  () =>
+    withSql(async (sql) => {
+      const queries = new Queries(sql);
+
+      // First create a worker
+      const params = {
+        queueName: 'test_queue',
+        workerId: '123e4567-e89b-12d3-a456-426614174000',
+        edgeFunctionName: 'test_function',
+      };
+
+      const worker = await queries.onWorkerStarted(params);
+      const initialHeartbeat = worker.last_heartbeat_at;
+
+      // Wait a bit to ensure timestamp will be different
+      await new Promise((resolve) => setTimeout(resolve, 1));
+
+      // Send heartbeat
+      await queries.sendHeartbeat(worker);
+
+      // Verify in database directly
+      const [updatedWorkerRow] = await sql<[WorkerRow]>`
+        SELECT * FROM edge_worker.workers 
+        WHERE worker_id = ${params.workerId} 
+        AND queue_name = ${params.queueName}
+      `;
+
+      assertExists(updatedWorkerRow.last_heartbeat_at);
+      assertEquals(
+        updatedWorkerRow.last_heartbeat_at > initialHeartbeat,
+        true,
+        'last_heartbeat_at in database should be updated to a later time'
+      );
+    })
+);
