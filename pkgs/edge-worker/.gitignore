@@ -1,2 +1,2 @@
-supabase/migrations/*.sql
-supabase/functions/_src/*/*.ts
+supabase/migrations/*
+supabase/functions/_src/*
