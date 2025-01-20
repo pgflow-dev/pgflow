@@ -37,12 +37,4 @@ export class Queries {
       SELECT * FROM edge_worker.send_heartbeat(worker_id => ${workerRow.worker_id}::uuid);
     `;
   }
-
-  async spawnNewWorker(queueName: string): Promise<void> {
-    console.log('spawnNewWorker', queueName);
-    await this.sql`
-      SELECT * FROM edge_worker.spawn(${queueName}::text);
-    `;
-    console.log('SPAWNED', queueName);
-  }
 }
