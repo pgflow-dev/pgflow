@@ -26,25 +26,6 @@ where
     stopped_at is null
     and last_heartbeat_at < now() - interval '6 seconds';
 
-create or replace function edge_worker.on_worker_started(
-    queue_name TEXT,
-    worker_id UUID,
-    function_name TEXT
-)
-returns setof edge_worker.workers
-as $$
-declare
-    p_queue_name TEXT := queue_name;
-    p_worker_id UUID := worker_id;
-    p_function_name TEXT := function_name;
-begin
-    RETURN QUERY
-    INSERT INTO edge_worker.workers (queue_name, worker_id, function_name)
-    VALUES (queue_name, worker_id, function_name)
-    RETURNING *;
-end;
-$$ language plpgsql;
-
 create or replace function edge_worker.send_heartbeat(
     worker_id UUID
 ) returns setof edge_worker.workers as $$

@@ -13,15 +13,13 @@ export class Queries {
     workerId: string;
     edgeFunctionName: string;
   }): Promise<WorkerRow> {
-    const workers = await this.sql<WorkerRow[]>`
-      SELECT * FROM edge_worker.on_worker_started(
-        queue_name => ${queueName}::text,
-        worker_id => ${workerId}::uuid,
-        function_name => ${edgeFunctionName}::text
-      );
+    const [worker] = await this.sql<WorkerRow[]>`
+      INSERT INTO edge_worker.workers (queue_name, worker_id, function_name)
+      VALUES (${queueName}, ${workerId}, ${edgeFunctionName})
+      RETURNING *;
     `;
 
-    return workers[0];
+    return worker;
   }
 
   async onWorkerStopped(workerRow: WorkerRow): Promise<WorkerRow> {
