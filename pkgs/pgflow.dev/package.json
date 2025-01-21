@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro check && astro build",
+    "copy-migrations": "cp ../edge-worker/migrations/000_initial.sql public/edge-worker/",
+    "build": "npm run copy-migrations && astro check && astro build",
     "preview": "astro preview",
     "astro": "astro"
   },
