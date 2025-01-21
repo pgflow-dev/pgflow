@@ -16,6 +16,14 @@ Under the hood, it wraps [Supabase Background Tasks](https://supabase.com/docs/g
 - concurrency control
 - horizontal scaling (by deploying multiple edge functions for the same queue)
 
+```mermaid
+graph TD;
+A-->B;
+A-->C;
+B-->D;
+C-->D;
+```
+
 It treats Edge Function termination due to CPU/clock limits
 as an expected occurrence and includes extra measures to handle it as part of
 normal operations:
