@@ -1,8 +1,8 @@
+import PQueue from 'npm:p-queue';
 import { MessageExecutor } from './MessageExecutor.ts';
 import { Queue } from './Queue.ts';
 import { Json } from './types.ts';
 import { MessageRecord } from './types.ts';
-import { Sema } from 'npm:async-sema@^3.1.1';
 import { BatchArchiver } from './BatchArchiver.ts';
 
 export interface ExecutionConfig {
@@ -12,10 +12,9 @@ export interface ExecutionConfig {
 }
 
 export class ExecutionController<MessagePayload extends Json> {
-  private executors = new Map<number, MessageExecutor<MessagePayload>>();
-  private semaphore: Sema;
-  private archiver: BatchArchiver<MessagePayload>;
   private queue: Queue<MessagePayload>;
+  private pqueue: PQueue;
+  private archiver: BatchArchiver<MessagePayload>;
   private signal: AbortSignal;
   private retryLimit: number;
   private retryDelay: number;
@@ -29,7 +28,7 @@ export class ExecutionController<MessagePayload extends Json> {
     this.signal = abortSignal;
     this.retryLimit = config.retryLimit;
     this.retryDelay = config.retryDelay;
-    this.semaphore = new Sema(config.maxConcurrent);
+    this.pqueue = new PQueue({ concurrency: config.maxConcurrent });
     this.archiver = new BatchArchiver(queue);
   }
 
@@ -37,54 +36,35 @@ export class ExecutionController<MessagePayload extends Json> {
     record: MessageRecord<MessagePayload>,
     handler: (message: MessagePayload) => Promise<void>
   ) {
-    await this.semaphore.acquire();
+    const executor = new MessageExecutor(
+      this.queue,
+      record,
+      handler,
+      this.signal,
+      this.archiver,
+      this.retryLimit,
+      this.retryDelay
+    );
 
-    let executor: MessageExecutor<MessagePayload>;
-    try {
-      executor = new MessageExecutor(
-        this.queue,
-        record,
-        handler,
-        this.signal,
-        this.archiver,
-        this.retryLimit,
-        this.retryDelay
-      );
+    console.log(
+      `[ExecutionController] Starting execution for ${executor.msgId}`
+    );
 
-      // Attach cleanup before any execution
-      executor.finally(() => {
-        this.executors.delete(executor.msgId);
-        this.semaphore.release();
-      });
-
+    return await this.pqueue.add(async () => {
       try {
-        console.log(
-          `[ExecutionController] Starting execution for ${executor.msgId}`
-        );
-        // Only add to map after we've attached cleanup
-        this.executors.set(executor.msgId, executor);
-        executor.execute();
+        await executor.execute();
       } catch (error) {
-        console.log(
-          `[ExecutionController] Execution failed synchronously for ${executor.msgId}, cleaning up`
+        console.error(
+          `[ExecutionController] Execution failed for ${executor.msgId}:`,
+          error
         );
-        // The finally handler will clean up the map and semaphore
         throw error;
       }
-
-      return executor;
-    } catch (error) {
-      this.semaphore.release();
-      throw error;
-    }
+    });
   }
 
   async awaitCompletion() {
-    if (this.executors.size > 0) {
-      await Promise.all(
-        Array.from(this.executors.values()).map((e) => e.executionPromise)
-      );
-    }
+    await this.pqueue.onIdle();
     await this.archiver.flush();
   }
 }
