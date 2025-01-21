@@ -3,10 +3,7 @@ import { type Json } from './types.ts';
 import { MessageRecord } from './types.ts';
 
 export class Queue<MessagePayload extends Json> {
-  constructor(
-    private readonly sql: postgres.Sql,
-    private readonly queueName: string
-  ) {}
+  constructor(private readonly sql: postgres.Sql, readonly queueName: string) {}
 
   async archive(msgId: number): Promise<void> {
     await this.sql`

@@ -1,6 +1,7 @@
 import { Heartbeat } from './Heartbeat.ts';
 import { Logger } from './Logger.ts';
 import { Queries } from './Queries.ts';
+import { Queue } from './Queue.ts';
 import { WorkerBootstrap, WorkerRow } from './types.ts';
 import { States, WorkerState } from './WorkerState.ts';
 
@@ -13,13 +14,13 @@ export class WorkerLifecycle {
   private heartbeat?: Heartbeat;
   private logger: Logger;
   private queries: Queries;
-  private readonly queueName: string;
+  private queue: Queue;
   private workerRow?: WorkerRow;
 
-  constructor(queries: Queries, logger: Logger, config: LifecycleConfig) {
+  constructor(queries: Queries, queue: Queue, logger: Logger) {
     this.queries = queries;
     this.logger = logger;
-    this.queueName = config.queueName;
+    this.queue = queue;
   }
 
   async acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void> {
@@ -68,6 +69,10 @@ export class WorkerLifecycle {
 
   get edgeFunctionName() {
     return this.workerRow?.function_name;
+  }
+
+  get queueName() {
+    return this.queue.queueName;
   }
 
   async sendHeartbeat() {
