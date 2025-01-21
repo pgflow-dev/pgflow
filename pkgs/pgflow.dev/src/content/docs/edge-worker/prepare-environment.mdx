@@ -27,11 +27,10 @@ If not, see Supabase's [installation guide](https://supabase.com/docs/guides/cli
 
 1. ### Install migration
 
-    Run this command to download the migration file to your project.
-    Replace `<supabase-dir>` with your project's `supabase/` directory path.
+    Run this command to download the migration file to your project (change `supabase/migrations` to your migrations folder):
 
     ```bash
-    wget -O <supabase-dir>/migrations/ https://pgflow.pages.dev/edge-worker/000_initial.sql
+    wget -P supabase/migrations https://pgflow.pages.dev/edge-worker/000_edge_worker_initial.sql
     ```
 
     Then apply the migration:
