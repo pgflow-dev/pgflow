@@ -59,9 +59,8 @@
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
-          "rm -r supabase/migrations",
-          "mkdir -p supabase/migrations",
-          "cp ../edge-worker/sql/*.sql supabase/migrations/",
+          "rm supabase/migrations/*.sql",
+          "cp migrations/*.sql supabase/migrations/",
           "supabase db reset"
         ],
         "parallel": false
@@ -72,9 +71,9 @@
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
-          "rm -f ./supabase/functions/_src/*.ts",
-          "cp ../edge-worker/src/*.ts ./supabase/functions/_src/",
-          "cp ../edge-worker/deno.* ./supabase/functions/_src/"
+          "rm supabase/functions/_src/*.ts",
+          "cp src/*.ts ./supabase/functions/_src/",
+          "cp deno.* ./supabase/functions/_src/"
         ],
         "parallel": false
       }
@@ -84,7 +83,9 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",
-        "commands": ["supabase functions serve --env-file supabase/.env"],
+        "commands": [
+          "supabase functions serve --env-file supabase/functions/.env"
+        ],
         "parallel": false
       }
     },
@@ -94,7 +95,7 @@
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
-          "deno test --allow-all --env-file=supabase/.env tests/unit/"
+          "deno test --allow-all --env-file=supabase/functions/.env tests/unit/"
         ],
         "parallel": false
       }
