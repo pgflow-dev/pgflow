@@ -38,7 +38,7 @@ Before starting, please read the [Prepare environment](/prepare-environment) gui
 
     Start the worker by sending an HTTP request to your Edge Function:
 
-    ```bash
+    ```bash frame="none"
     curl http://localhost:54321/functions/v1/<function-name>
     ```
 
@@ -48,7 +48,7 @@ Before starting, please read the [Prepare environment](/prepare-environment) gui
 
     Send a test message to the queue:
 
-    ```sql
+    ```sql frame="none"
     SELECT pgmq.send(
       queue_name => 'tasks',
       msg => '{"urlToScrape": "https://example.com"}'::jsonb

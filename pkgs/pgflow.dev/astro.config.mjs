@@ -41,9 +41,9 @@ export default defineConfig({
           ],
         },
       ],
-      expressiveCode: {
-        themes: ['tokyo-night'],
-      },
+      // expressiveCode: {
+      //   themes: ['tokyo-night'],
+      // },
     }),
   ],
 });

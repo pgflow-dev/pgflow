@@ -12,9 +12,9 @@ Edge Worker sends heartbeats every 5 seconds and updates `last_heartbeat_at` col
 
 ### List of active workers
 
-In order to get a list of active workers, we need to fetch those that pinged in last 6 seconds (+1s to account for delays):
+In order to get a list of active workers, we need to fetch those that have pinged in the last 6 seconds (+1s to account for delays):
 
-```sql
+```sql frame="none"
 SELECT * 
 FROM edge_worker.workers 
 WHERE last_heartbeat_at > now() - make_interval(secs => 6)
@@ -22,16 +22,12 @@ WHERE last_heartbeat_at > now() - make_interval(secs => 6)
 
 ### Helper SQL Views
 
-Alterntively, use following SQL views so you can just query active workers with:
+Alterntively, use following SQL views to simplify those queries:
 
-```sql
-SELECT * FROM edge_worker.active_workers 
-```
-
-#### `edge_worker.active_workers`
+#### Active Workers
 
 <Code code={activeWorkersSql} lang="sql" />
 
-#### `edge_worker.inactive_workers`
+#### Inactive Workers
 
 <Code code={inactiveWorkersSql} lang="sql" />

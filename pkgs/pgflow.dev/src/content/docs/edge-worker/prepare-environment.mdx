@@ -29,14 +29,14 @@ If not, see Supabase's [installation guide](https://supabase.com/docs/guides/cli
 
     Run this command to download the migration file to your project (replace `supabase/migrations` with your migrations folder):
 
-    ```bash
+    ```bash frame="none"
     wget -P supabase/migrations \
         https://pgflow.pages.dev/edge-worker/000_edge_worker_initial.sql
     ```
 
     Then apply the migration:
 
-    ```bash
+    ```bash frame="none"
     npx supabase migration up
     ```
 
@@ -51,7 +51,7 @@ If not, see Supabase's [installation guide](https://supabase.com/docs/guides/cli
 
     For local development, put this in `supabase/functions/.env`:
 
-    ```shell
+    ```shell frame="none"
     EDGE_WORKER_DB_URL="postgresql://postgres.pooler-dev:postgres@pooler:6543/postgres"
     ```
 
@@ -95,7 +95,7 @@ If not, see Supabase's [installation guide](https://supabase.com/docs/guides/cli
 
     To apply the changes, restart Supabase:
 
-    ```bash
+    ```bash frame="none"
     npx supabase stop
     npx supabase start
     ```
