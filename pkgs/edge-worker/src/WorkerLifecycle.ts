@@ -41,7 +41,7 @@ export class WorkerLifecycle {
     this.workerState.transitionTo(States.Running);
   }
 
-  async acknowledgeStop() {
+  acknowledgeStop() {
     this.workerState.transitionTo(States.Stopping);
 
     if (!this.workerRow) {
@@ -50,7 +50,14 @@ export class WorkerLifecycle {
 
     try {
       this.logger.log('Acknowledging worker stop...');
-      await this.queries.onWorkerStopped(this.workerRow);
+
+      // TODO: commented out because we can live without this
+      //       but it is causing problems with DbHandler - workes does not have
+      //       enough time to fire this query before hard-terimnated
+      //       We can always check the heartbeat to see if it is still running
+      //
+      // await this.queries.onWorkerStopped(this.workerRow);
+
       this.workerState.transitionTo(States.Stopped);
       this.logger.log('Worker stop acknowledged');
     } catch (error) {

@@ -134,7 +134,7 @@ export class Worker<MessagePayload extends Json> {
       await this.executionController.awaitCompletion();
       this.logger.log('-> Pending tasks completed!');
 
-      await this.lifecycle.acknowledgeStop();
+      this.lifecycle.acknowledgeStop();
 
       this.logger.log('-> Closing SQL connection...');
       await this.sql.end();
