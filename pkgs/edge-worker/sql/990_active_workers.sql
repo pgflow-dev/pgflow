@@ -1,5 +1,4 @@
--- Active workers are workers that have not stopped 
--- and have not sent a heartbeat in the last 6 seconds
+-- Active workers are workers that have sent a heartbeat in the last 6 seconds
 create or replace view edge_worker.active_workers as
 select
     worker_id,
@@ -9,6 +8,4 @@ select
     stopped_at,
     last_heartbeat_at
 from edge_worker.workers
-where
-    stopped_at is null
-    and last_heartbeat_at > now() - make_interval(secs => 6);
+where last_heartbeat_at > now() - make_interval(secs => 6);
