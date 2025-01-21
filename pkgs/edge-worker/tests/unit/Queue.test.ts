@@ -45,7 +45,7 @@ Deno.test('Queue operations integration test', async (t) => {
     });
 
     await t.step('read message', async () => {
-      const messages = await queue.readWithPoll();
+      const messages = await queue.readWithPoll(1);
       assertEquals(messages.length, 1);
       assertExists(messages[0].msg_id);
     });
@@ -64,7 +64,7 @@ Deno.test('Queue operations integration test', async (t) => {
       await queue.archive(message.msg_id);
 
       // Verify message is no longer available
-      const newMessages = await queue.readWithPoll(1, 2, 1, 100);
+      const newMessages = await queue.readWithPoll(1, 2, 0, 100);
       assertEquals(newMessages.length, 0);
     });
   });
