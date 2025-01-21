@@ -1,12 +1,13 @@
 import { assertEquals, assertExists, assertRejects } from 'jsr:@std/assert';
 import { Queries } from '../../src/Queries.ts';
-import { withSql } from '../sql.ts';
+import { withSql, withRollback } from '../sql.ts';
 import { WorkerRow } from '../../src/types.ts';
 
 const FAKE_UUID = '123e4567-e89b-12d3-a456-426614174000';
 
 Deno.test('Queries.onWorkerStarted integration test', async () => {
   await withSql(async (sql) => {
+    await sql`TRUNCATE edge_worker.workers CASCADE`;
     const queries = new Queries(sql);
     // Test data
     const queueName = 'test_queue';
@@ -32,6 +33,7 @@ Deno.test('Queries.onWorkerStarted integration test', async () => {
 
 Deno.test('Queries.onWorkerStarted throws on duplicate worker', async () => {
   await withSql(async (sql) => {
+    await sql`TRUNCATE edge_worker.workers CASCADE`;
     const queries = new Queries(sql);
 
     const params = {
@@ -59,6 +61,7 @@ Deno.test(
   'Queries.sendHeartbeat updates last_heartbeat_at for started worker',
   () =>
     withSql(async (sql) => {
+      await sql`TRUNCATE edge_worker.workers CASCADE`;
       const queries = new Queries(sql);
 
       // First create a worker
@@ -95,6 +98,7 @@ Deno.test(
 
 Deno.test('Queries operations fail gracefully for non-existent worker', (t) =>
   withSql(async (sql) => {
+    await sql`TRUNCATE edge_worker.workers CASCADE`;
     return; // TODO: decide if we really want to throw for non-existent worker
 
     const queries = new Queries(sql);
@@ -130,6 +134,7 @@ Deno.test(
   'Queries.onWorkerStopped updates stopped_at and last_heartbeat_at',
   () =>
     withSql(async (sql) => {
+      await sql`TRUNCATE edge_worker.workers CASCADE`;
       const queries = new Queries(sql);
 
       // First create a worker
