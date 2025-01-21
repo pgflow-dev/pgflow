@@ -61,7 +61,11 @@ export class Worker<MessagePayload extends Json> {
     const queue = new Queue<MessagePayload>(this.sql, this.config.queueName);
     const queries = new Queries(this.sql);
 
-    this.lifecycle = new WorkerLifecycle(queries, queue, this.logger);
+    this.lifecycle = new WorkerLifecycle<MessagePayload>(
+      queries,
+      queue,
+      this.logger
+    );
 
     this.executionController = new ExecutionController<MessagePayload>(
       queue,

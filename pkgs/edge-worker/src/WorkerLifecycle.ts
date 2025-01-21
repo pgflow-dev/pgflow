@@ -2,22 +2,22 @@ import { Heartbeat } from './Heartbeat.ts';
 import { Logger } from './Logger.ts';
 import { Queries } from './Queries.ts';
 import { Queue } from './Queue.ts';
-import { WorkerBootstrap, WorkerRow } from './types.ts';
+import { Json, WorkerBootstrap, WorkerRow } from './types.ts';
 import { States, WorkerState } from './WorkerState.ts';
 
 export interface LifecycleConfig {
   queueName: string;
 }
 
-export class WorkerLifecycle {
+export class WorkerLifecycle<MessagePayload extends Json> {
   private workerState: WorkerState = new WorkerState();
   private heartbeat?: Heartbeat;
   private logger: Logger;
   private queries: Queries;
-  private queue: Queue;
+  private queue: Queue<MessagePayload>;
   private workerRow?: WorkerRow;
 
-  constructor(queries: Queries, queue: Queue, logger: Logger) {
+  constructor(queries: Queries, queue: Queue<MessagePayload>, logger: Logger) {
     this.queries = queries;
     this.logger = logger;
     this.queue = queue;
