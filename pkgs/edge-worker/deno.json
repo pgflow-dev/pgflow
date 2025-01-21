@@ -5,6 +5,7 @@
     "postgres": "https://deno.land/x/postgresjs@v3.4.5/mod.js",
     "@std/async": "jsr:@std/async",
     "@std/assert": "jsr:@std/assert",
-    "@std/testing/mock": "jsr:@std/testing/mock"
+    "@std/testing/mock": "jsr:@std/testing/mock",
+    "p-queue": "npm:p-queue"
   }
 }

@@ -19,13 +19,6 @@ class AbortError extends Error {
  * It also handles the abort signal and logs the error.
  */
 export class MessageExecutor<MessagePayload extends Json> {
-  public readonly executionPromise: Promise<void>;
-  private readonly onExecutionCompleted: (
-    value: void | PromiseLike<void>
-  ) => void;
-  private readonly onExecutionFailed: (reason?: unknown) => void;
-  private hasStarted = false;
-
   constructor(
     private readonly queue: Queue<MessagePayload>,
     private readonly record: MessageRecord<MessagePayload>,
@@ -34,73 +27,36 @@ export class MessageExecutor<MessagePayload extends Json> {
     private readonly batchArchiver: BatchArchiver<MessagePayload>,
     private readonly retryLimit: number,
     private readonly retryDelay: number
-  ) {
-    const { promise, resolve, reject } = Promise.withResolvers<void>();
-    this.executionPromise = promise;
-    this.onExecutionCompleted = resolve;
-    this.onExecutionFailed = reject;
-  }
+  ) {}
 
-  /**
-   * Returns the message ID of the message being executed.
-   */
   get msgId() {
     return this.record.msg_id;
   }
 
-  /**
-   * Executes the message handler.
-   *
-   * If the execution has already started, it logs a warning and returns the execution promise.
-   */
-  execute(): Promise<void> {
-    if (!this.hasStarted) {
-      this.hasStarted = true;
-      this._execute().then(this.onExecutionCompleted, this.onExecutionFailed);
-    } else {
-      console.log('[MessageExecutor] Execution already started');
-    }
-    return this.executionPromise;
-  }
-
-  /**
-   * Executes the message handler and handles any errors that occur.
-   *
-   * **on success:** it delegates to BatchArchiver to archive the message
-   * **on failure:** it retries the message if retry is available, otherwise archives via BatchArchiver
-   * **on abort:** it logs and let message reappear after the visibility timeout
-   *
-   */
-  private async _execute(): Promise<void> {
+  async execute(): Promise<void> {
     try {
-      // Check if already aborted
       if (this.signal.aborted) {
         throw new AbortError();
       }
 
-      // Create a promise that rejects when abort signal is triggered
-      const abortPromise = new Promise<void>((_, reject) => {
-        this.signal.addEventListener(
-          'abort',
-          () => {
-            reject(new AbortError());
-          },
-          { once: true }
-        );
-      });
-
-      // Race between handler and abort signal
       await Promise.race([
         this.messageHandler(this.record.message!),
-        abortPromise,
+        new Promise((_, reject) => {
+          this.signal.addEventListener(
+            'abort',
+            () => {
+              reject(new AbortError());
+            },
+            { once: true }
+          );
+        }),
       ]);
 
       console.log(
         `[MessageExecutor] Task ${this.msgId} completed successfully, archiving...`
       );
-      this.batchArchiver.add(this.msgId);
-      console.log(`[MessageExecutor] Task ${this.msgId} archived`);
-    } catch (error: unknown) {
+      await this.batchArchiver.add(this.msgId);
+    } catch (error) {
       await this.handleExecutionError(error);
     }
   }
@@ -149,12 +105,5 @@ export class MessageExecutor<MessagePayload extends Json> {
     const readCountLimit = this.retryLimit + 1; // initial read also counts
 
     return this.record.read_ct < readCountLimit;
-  }
-
-  finally(onfinally?: (() => void) | null): this {
-    if (onfinally) {
-      this.executionPromise.finally(onfinally);
-    }
-    return this;
   }
 }
