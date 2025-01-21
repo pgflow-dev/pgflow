@@ -15,7 +15,7 @@ prev:
 
 ##### Can I use it yet?
 
-**Not yet** - I'm aiming to have the first version ready in early 2024.
+**Not yet** - I'm aiming to have the first version ready in early 2025.
 
 Living with **ADHD**, I bring a lot of **hyperfocus** and **passion** to this project, but my process can be a bit scattered at times, and the scope can feel huge.
 The worker, a critical piece of pgflow, is already extracted from my private stuff and lives happily in a new monorepo. Stay tuned!
