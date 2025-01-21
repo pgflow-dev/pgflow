@@ -1,4 +1,8 @@
 {
+  "name": "@pgflow/edge-worker",
+  "version": "0.0.1",
+  "license": "MIT",
+  "exports": "./mod.ts",
   "imports": {
     "postgres": "https://deno.land/x/postgresjs@v3.4.5/mod.js",
     "@std/async": "jsr:@std/async",
