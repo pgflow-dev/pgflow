@@ -9,6 +9,10 @@ import { Aside } from "@astrojs/starlight/components";
 
 **Edge Worker** is a task queue worker that gets messages from a queue and calls user functions with their payload.
 
+[![](https://mermaid.ink/img/pako:eNp9UcFqwzAM_RXjc_sDOexQki2XQkoLgcU5KLaWhCa2ke3BaPvvcxKWrnRMB2PpPT3ZTxcujUKecKFbAtuxUyo0i-FCsxQEPwYLDThkmWqRvQYtfW-0E3xhTpGV1QyWhs5I9QKgVkI_qaXgZ7Xf7cXb_lBNBzsEDFjfkXxX5QjkGwTv2AmaAZ_Vi6ogo4KMk9l2-3J1EXNsROegxeusvhCzcsatGYYVd38QgGTXf-K_HEtGRvSBlFc5aDUgrS7VDz3Lw7r1Q7Fjxzd8RBqhV3ELl4kuuO9wjAYl8aqAzpNVt8iD4M3xS0ueeAq44WRC2_0kwSrwmPYQjR558gGDi1UL-t2Ye46q94b2y87n1d--AcT_p-U?type=png)](https://mermaid.live/edit#pako:eNp9UcFqwzAM_RXjc_sDOexQki2XQkoLgcU5KLaWhCa2ke3BaPvvcxKWrnRMB2PpPT3ZTxcujUKecKFbAtuxUyo0i-FCsxQEPwYLDThkmWqRvQYtfW-0E3xhTpGV1QyWhs5I9QKgVkI_qaXgZ7Xf7cXb_lBNBzsEDFjfkXxX5QjkGwTv2AmaAZ_Vi6ogo4KMk9l2-3J1EXNsROegxeusvhCzcsatGYYVd38QgGTXf-K_HEtGRvSBlFc5aDUgrS7VDz3Lw7r1Q7Fjxzd8RBqhV3ELl4kuuO9wjAYl8aqAzpNVt8iD4M3xS0ueeAq44WRC2_0kwSrwmPYQjR558gGDi1UL-t2Ye46q94b2y87n1d--AcT_p-U)
+
+### Features 
+
 Under the hood, it wraps [Supabase Background Tasks](https://supabase.com/docs/guides/functions/background-tasks) and adds a lot of useful features:
 
 - retries with delays
@@ -16,15 +20,9 @@ Under the hood, it wraps [Supabase Background Tasks](https://supabase.com/docs/g
 - concurrency control
 - horizontal scaling (by deploying multiple edge functions for the same queue)
 
-```mermaid
-graph TD;
-A-->B;
-A-->C;
-B-->D;
-C-->D;
-```
+### CPU/clock limits
 
-It treats Edge Function termination due to CPU/clock limits
+Edge Worker treats Edge Function termination due to CPU/clock limits
 as an expected occurrence and includes extra measures to handle it as part of
 normal operations:
 
