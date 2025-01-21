@@ -1,4 +1,4 @@
-import { EdgeWorker } from '../_src/index.ts';
+import { EdgeWorker } from '../_src/EdgeWorker.ts';
 import postgres from 'postgres';
 import { crypto } from 'jsr:@std/crypto';
 

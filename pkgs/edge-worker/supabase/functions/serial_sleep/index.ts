@@ -1,4 +1,4 @@
-import { EdgeWorker } from '../_src/index.ts';
+import { EdgeWorker } from '../_src/EdgeWorker.ts';
 import { delay } from 'jsr:@std/async';
 import postgres from 'postgres';
 

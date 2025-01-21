@@ -1,1 +1,1 @@
-export { EdgeWorker } from './src/index.ts';
+export { EdgeWorker, type EdgeWorkerConfig } from './src/EdgeWorker.ts';
