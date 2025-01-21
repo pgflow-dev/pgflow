@@ -2,8 +2,8 @@ import { EdgeWorker } from '../_src/EdgeWorker.ts';
 import { delay } from 'jsr:@std/async';
 import postgres from 'postgres';
 
-const DB_POOL_URL = Deno.env.get('DB_POOL_URL')!;
-const sql = postgres(DB_POOL_URL, { prepare: true });
+const EDGE_WORKER_DB_URL = Deno.env.get('EDGE_WORKER_DB_URL')!;
+const sql = postgres(EDGE_WORKER_DB_URL, { prepare: true });
 await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
 await sql`SELECT pgmq.create('serial_sleep')`;
 

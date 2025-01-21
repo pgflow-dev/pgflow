@@ -1,10 +1,10 @@
 import { EdgeWorker } from '../_src/EdgeWorker.ts';
 import postgres from 'postgres';
 
-const DB_POOL_URL = Deno.env.get('DB_POOL_URL')!;
-console.log('DB_POOL_URL', DB_POOL_URL);
+const EDGE_WORKER_DB_URL = Deno.env.get('EDGE_WORKER_DB_URL')!;
+console.log('EDGE_WORKER_DB_URL', EDGE_WORKER_DB_URL);
 
-const sql = postgres(DB_POOL_URL);
+const sql = postgres(EDGE_WORKER_DB_URL);
 await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
 await sql`SELECT pgmq.create('increment_sequence')`;
 

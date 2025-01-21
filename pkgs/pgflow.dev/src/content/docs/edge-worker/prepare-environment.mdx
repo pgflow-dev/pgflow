@@ -10,11 +10,11 @@ next:
 import { Aside, Steps } from "@astrojs/starlight/components";
 import { FileTree } from '@astrojs/starlight/components';
 
-We need to set up a few things before working with Edge Worker.
+Let's set up a few things before working with Edge Worker.
 This setup needs to be done only once per project.
 
 <Aside type="danger" title="Not production ready!">
-**Edge Worker** is in alpha stage and it is not production ready yet,
+**Edge Worker** is in alpha stage and is not production ready yet,
 but we will get there!
 </Aside>
 
@@ -27,7 +27,7 @@ If not, see Supabase's [installation guide](https://supabase.com/docs/guides/cli
 
 1. ### Install migration
 
-    Run this command to download the migration file to your project (change `supabase/migrations` to your migrations folder):
+    Run this command to download the migration file to your project (replace `supabase/migrations` with your migrations folder):
 
     ```bash
     wget -P supabase/migrations \
@@ -44,20 +44,21 @@ If not, see Supabase's [installation guide](https://supabase.com/docs/guides/cli
 
     Your worker needs to connect to your Supabase project's database.
 
-    Since the worker is a long-lived process, so we should use Supavisor **Session Mode** connection
+    Since the worker is a long-lived process, we should use Supavisor **Session Mode** connection
     (see more in [Connect to your database](https://supabase.com/docs/guides/database/connecting-to-postgres#more-about-connection-pooling) docs).
 
-    For local development, use this connection string in `supabase/functions/.env`:
+    Edge Worker looks for the connection string in the `EDGE_WORKER_DB_URL` environment variable.
+
+    For local development, put this in `supabase/functions/.env`:
 
     ```shell
-    // supabase/functions/.env
-    DB_POOL_URL="postgresql://postgres.pooler-dev:postgres@pooler:6543/postgres"
+    EDGE_WORKER_DB_URL="postgresql://postgres.pooler-dev:postgres@pooler:6543/postgres"
     ```
 
 1. ### Setup Connection Pool
 
-    You need to modify the `db.pooler` section in your `supabase/config.toml` file
-    to switch to Supavisor **Session Mode** connection pooling.
+    Modify the `db.pooler` section in your `supabase/config.toml` file
+    to switch to Supavisor **Session Mode** connection pooling:
 
     ```diff lang="toml"
       [db.pooler]
@@ -76,7 +77,7 @@ If not, see Supabase's [installation guide](https://supabase.com/docs/guides/cli
 
 1. ### Setup Edge Runtime policy
 
-    We need to change Edge Runtime policy to `per_worker` to enable
+    We need to change the Edge Runtime policy to `per_worker` to enable
     Background Tasks (see more in [Testing background tasks locally](https://supabase.com/docs/guides/functions/background-tasks#testing-background-tasks-locally)).
 
    ```diff lang="toml"

@@ -32,9 +32,12 @@ export class EdgeWorker {
 
   private static getConnectionString(): string {
     // @ts-ignore - TODO: fix the types
-    const connectionString = Deno.env.get('DB_POOL_URL');
+    const connectionString = Deno.env.get('EDGE_WORKER_DB_URL');
     if (!connectionString) {
-      throw new Error('DB_POOL_URL is not set');
+      const message =
+        'EDGE_WORKER_DB_URL is not set!\n' +
+        'See https://pgflow.pages.dev/edge-worker/prepare-environment/#prepare-connection-string';
+      throw new Error(message);
     }
     return connectionString;
   }
