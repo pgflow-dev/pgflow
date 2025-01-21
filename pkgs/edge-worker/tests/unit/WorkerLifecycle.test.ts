@@ -61,7 +61,7 @@ test('acknowledgeStart - should set worker ID, edge function name and log startu
   await lifecycle.acknowledgeStart(bootstrapDouble);
 
   assertEquals(bootstrapDouble.workerId, 'test-execution-id');
-  assert(lifecycle.isRunning(), 'Worker should be running after start');
+  assert(lifecycle.isRunning, 'Worker should be running after start');
   assertSpyCalls(onWorkerStartedSpy, 1);
   assertSpyCalls(loggerSetWorkerIdSpy, 1);
 });
@@ -111,16 +111,13 @@ test('sendHeartbeat - should handle database errors', async () => {
   const mockLogger = createMockLogger();
 
   const lifecycle = new WorkerLifecycle(mockQueries, mockQueue, mockLogger);
-  assertFalse(
-    lifecycle.isRunning(),
-    'Worker should not be running before start'
-  );
+  assertFalse(lifecycle.isRunning, 'Worker should not be running before start');
 
   await lifecycle.acknowledgeStart({
     edgeFunctionName: 'test-function',
     workerId: 'test-execution-id',
   });
-  assert(lifecycle.isRunning(), 'Worker should be running after start');
+  assert(lifecycle.isRunning, 'Worker should be running after start');
 
   await assertRejects(
     async () => await lifecycle.sendHeartbeat(),
@@ -137,10 +134,7 @@ test('sendHeartbeat - should do nothing if heartbeat not initialized', async () 
 
   const lifecycle = new WorkerLifecycle(mockQueries, mockQueue, mockLogger);
   // Note: Not calling acknowledgeStart()
-  assertFalse(
-    lifecycle.isRunning(),
-    'Worker should not be running before start'
-  );
+  assertFalse(lifecycle.isRunning, 'Worker should not be running before start');
 
   await lifecycle.sendHeartbeat();
 
@@ -160,12 +154,9 @@ test({
     const lifecycle = new WorkerLifecycle(mockQueries, mockQueue, mockLogger);
     await lifecycle.acknowledgeStart(bootstrapDouble);
 
-    assert(lifecycle.isRunning(), 'Worker should be running before stop');
+    assert(lifecycle.isRunning, 'Worker should be running before stop');
     await lifecycle.acknowledgeStop();
-    assertFalse(
-      lifecycle.isRunning(),
-      'Worker should not be running after stop'
-    );
+    assertFalse(lifecycle.isRunning, 'Worker should not be running after stop');
 
     assertSpyCalls(onWorkerStoppedSpy, 1);
   },

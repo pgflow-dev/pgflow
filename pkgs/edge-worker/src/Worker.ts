@@ -92,7 +92,7 @@ export class Worker<MessagePayload extends Json> {
   }
 
   async startOnlyOnce(workerBootstrap: WorkerBootstrap) {
-    if (this.lifecycle.isRunning()) {
+    if (this.lifecycle.isRunning) {
       this.logger.log('Worker already running, ignoring start request');
       return;
     }
@@ -155,7 +155,7 @@ export class Worker<MessagePayload extends Json> {
    * Returns true if worker state is Running and worker was not stopped
    */
   private get isMainLoopActive() {
-    return this.lifecycle.isRunning() && !this.isAborted;
+    return this.lifecycle.isRunning && !this.isAborted;
   }
 
   private get abortSignal() {

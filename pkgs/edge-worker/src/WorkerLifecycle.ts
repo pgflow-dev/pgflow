@@ -79,7 +79,7 @@ export class WorkerLifecycle<MessagePayload extends Json> {
     await this.heartbeat?.send();
   }
 
-  isRunning(): boolean {
+  get isRunning(): boolean {
     return this.workerState.isRunning;
   }
 
