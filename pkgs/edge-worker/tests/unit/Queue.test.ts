@@ -1,4 +1,4 @@
-import { assertEquals, assertExists, assertObjectMatch } from '@std/assert';
+import { assertEquals, assertExists } from '@std/assert';
 import { Queue } from '../../src/Queue.ts';
 import { type postgres, withSql } from '../sql.ts';
 import { MessageRecord } from '../../src/types.ts';
@@ -9,11 +9,11 @@ type TestPayload = {
   data: string;
 };
 
-async function readAllMessages(sql: postgres.Sql, queueName: string) {
+async function peekAllMessages(sql: postgres.Sql, queueName: string) {
   return await sql<MessageRecord<TestPayload>[]>`
     SELECT * FROM pgmq.read(
       queue_name => ${queueName},
-      vt => 2,
+      vt => 0,
       qty => 9999
     )
   `;
@@ -58,12 +58,10 @@ Deno.test('Queue operations integration test', async (t) => {
     };
 
     await queue.send(testMessage);
-    const messages = await readAllMessages(sql, 'test_queue');
+    const messages = await peekAllMessages(sql, 'test_queue');
 
-    await t.step('read message', async () => {
-      assertEquals(messages.length, 1);
-      assertExists(messages[0].msg_id);
-    });
+    assertEquals(messages.length, 1);
+    assertExists(messages[0].msg_id);
 
     await t.step('set visibility timeout', async () => {
       const message = messages[0];
@@ -72,14 +70,15 @@ Deno.test('Queue operations integration test', async (t) => {
       assertEquals(updatedMessage.message, message.message);
     });
 
-    // await t.step('archive single message', async () => {
-    //   const msgId = await queue.send(testMessage);
-    //   await queue.archive(testMessage.msg_id);
-    //
-    //   // Verify message is no longer available
-    //   const newMessages = await readAllMessages(sql, 'test_queue');
-    //   assertEquals(newMessages.length, 0);
-    // });
+    await t.step('archive single message', async () => {
+      await queue.send(testMessage);
+      const [message] = await peekAllMessages(sql, 'test_queue');
+      await queue.archive(message.msg_id);
+
+      // Verify message is no longer available
+      const newMessages = await peekAllMessages(sql, 'test_queue');
+      assertEquals(newMessages.length, 0);
+    });
   });
 });
 
@@ -101,19 +100,19 @@ Deno.test('Queue batch operations', async (t) => {
     });
 
     await t.step('read multiple messages', async () => {
-      const messages = await readAllMessages(sql, 'test_queue_batch');
+      const messages = await peekAllMessages(sql, 'test_queue_batch');
       assertEquals(messages.length, 3);
     });
 
-    // await t.step('archive batch', async () => {
-    //   const messages = await readAllMessages(sql, 'test_queue');
-    //   const msgIds = messages.map((m) => m.msg_id);
-    //   await queue.archiveBatch(msgIds);
-    //
-    //   // Verify messages are no longer available
-    //   const newMessages = await readAllMessages(sql, 'test_queue');
-    //   assertEquals(newMessages.length, 0);
-    // });
+    await t.step('archive batch', async () => {
+      const messages = await peekAllMessages(sql, 'test_queue');
+      const msgIds = messages.map((m) => m.msg_id);
+      await queue.archiveBatch(msgIds);
+
+      // Verify messages are no longer available
+      const newMessages = await peekAllMessages(sql, 'test_queue');
+      assertEquals(newMessages.length, 0);
+    });
   });
 });
 
