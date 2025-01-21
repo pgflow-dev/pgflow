@@ -5,6 +5,16 @@ import { MessageRecord } from './types.ts';
 export class Queue<MessagePayload extends Json> {
   constructor(private readonly sql: postgres.Sql, readonly queueName: string) {}
 
+  /**
+   * Creates a queue if it doesn't exist.
+   * If the queue already exists, this method does nothing.
+   */
+  async safeCreate(): Promise<void> {
+    await this.sql`
+        select * from pgmq.create(${this.queueName});
+    `;
+  }
+
   async archive(msgId: number): Promise<void> {
     await this.sql`
       SELECT pgmq.archive(queue_name => ${this.queueName}, msg_id => ${msgId}::bigint);
