@@ -1,5 +1,5 @@
 import postgres from 'postgres';
-import { Json, WorkerBootstrap } from './types.ts';
+import type { Json, WorkerBootstrap } from './types.ts';
 import { Queue } from './Queue.ts';
 import { Queries } from './Queries.ts';
 import {
@@ -8,7 +8,7 @@ import {
 } from './ExecutionController.ts';
 import { Logger } from './Logger.ts';
 import { WorkerLifecycle, type LifecycleConfig } from './WorkerLifecycle.ts';
-import { PollerConfig } from './ReadWithPollPoller.ts';
+import type { PollerConfig } from './ReadWithPollPoller.ts';
 import { BatchProcessor } from './BatchProcessor.ts';
 
 export type WorkerConfig = {
@@ -22,7 +22,7 @@ export class Worker<MessagePayload extends Json> {
   private config: Required<WorkerConfig>;
   private executionController: ExecutionController<MessagePayload>;
   private messageHandler: (message: MessagePayload) => Promise<void>;
-  private lifecycle: WorkerLifecycle;
+  private lifecycle: WorkerLifecycle<MessagePayload>;
   private logger: Logger;
   private abortController = new AbortController();
 

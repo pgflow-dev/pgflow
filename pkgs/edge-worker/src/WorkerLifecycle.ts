@@ -26,6 +26,9 @@ export class WorkerLifecycle<MessagePayload extends Json> {
   async acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void> {
     this.workerState.transitionTo(States.Starting);
 
+    this.logger.log(`Ensuring queue '${this.queue.queueName}' exists...`);
+    this.queue.safeCreate();
+
     this.workerRow = await this.queries.onWorkerStarted({
       queueName: this.queueName,
       ...workerBootstrap,
