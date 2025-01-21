@@ -1,0 +1,177 @@
+---
+title: Configuration
+prev:
+  label: Prepare environment
+  link: prepare-environment
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+You can pass an optional configuration object as the second argument to `EdgeWorker.start()`
+to tweak the worker's behavior.
+
+<Aside title="Zero configuration needed" type="tip">
+All configuration options are optional and have sane defaults.
+</Aside>
+
+### Default configuration
+
+```typescript
+EdgeWorker.start(handler, {
+  // how many tasks are processed at the same time
+  maxConcurrent: 20,
+
+  // how many connections to the database are opened
+  maxPgConnections: 4,
+
+  // in-worker polling interval
+  maxPollSeconds: 5,
+
+  // in-database polling interval
+  pollIntervalMs: 200,
+
+  // how long to wait before retrying a failed job
+  retryDelay: 5,
+
+  // how many times to retry a failed job
+  retryLimit: 0,
+
+  // how long a job is invisible after reading
+  // if not successful, will reappear after this time
+  visibilityTimeout: 3,
+});
+```
+
+## Queue and polling
+
+### `queueName`
+**Type:** `string`
+**Default:** `'tasks'`
+
+The name of the PGMQ queue to listen to for messages.
+
+<Aside title="You don't need to create queues manually" type="tip">
+The worker will automatically create a logged, non-partitioned queue
+with configured name during startup if it does not exist.
+</Aside>
+
+```ts
+EdgeWorker.start(handler, {
+  queueName: 'my-custom-queue'
+});
+```
+
+### `maxPollSeconds`
+**Type:** `number`
+**Default:** `5`
+
+Amount of seconds to wait for a message to be available in the queue.
+
+```ts
+EdgeWorker.start(handler, {
+  maxPollSeconds: 5 // Long-poll for 5 seconds waiting for a message
+});
+```
+
+### `pollIntervalMs`
+**Type:** `number`
+**Default:** `200`
+
+The interval for in-database polling that `pgmq.read_with_poll` does.
+Most of the time, you don't need to change this value.
+
+<Aside type="caution">
+  This value should be lower than the `maxPollSeconds` value.
+</Aside>
+
+
+```ts
+EdgeWorker.start(handler, {
+  pollIntervalMs: 300 // Poll every 300ms
+});
+```
+
+## Retries
+
+### `retryDelay`
+**Type:** `number`
+**Default:** `5`
+
+Amount of seconds to wait between retry attempts.
+
+<Aside type="caution">
+  This value should be greater than the visibility timeout.
+</Aside>
+
+```ts
+EdgeWorker.start(handler, {
+  retryDelay: 5 // Wait 5 seconds between retries
+});
+```
+
+
+### `retryLimit`
+**Type:** `number`
+**Default:** `0`
+
+Maximum number of retry attempts for failed message processing before marking the message as dead.
+
+<Aside title="No retries by default!" type="danger">
+By default messages will not be retried, you need to set this option explicitly.
+</Aside>
+
+```ts
+EdgeWorker.start(handler, {
+  retryLimit: 5
+});
+```
+
+### `visibilityTimeout`
+**Type:** `number`
+**Default:** `30`
+
+The duration in seconds that a message is hidden from other consumers while being processed.
+
+<Aside title="Timeouts" type="caution">
+Make sure to set it bigger than max time your task can take to complete, otherwise
+it will be processed multiple times.
+</Aside>
+
+<Aside title="Work-in-Progress" type="danger">
+This option is probably subject to be refactored to `timeoutMs` that will
+affect timeout for the tasks (wip) and visibility timeout.
+**Do not rely on this option heavily for now!**
+</Aside>
+
+```ts
+EdgeWorker.start(handler, {
+  visibilityTimeout: 5 // message will re-appear in queue after 5 seconds if not processed
+});
+```
+
+## Concurrency
+
+### `maxConcurrent`
+**Type:** `number`
+**Default:** `10`
+
+This option limits concurrency - the maximum number of messages that can be processed at the same time.
+Increase for IO-heavy tasks (network or db calls), decrease for CPU-heavy tasks.
+
+```ts
+EdgeWorker.start(handler, {
+  maxConcurrent: 10 // Process up to 10 messages at once
+});
+```
+
+### `maxPgConnections`
+**Type:** `number`
+**Default:** `4`
+
+This option limits the number of connections to the database.
+Increase for IO-heavy tasks (network or db calls), decrease for CPU-heavy tasks.
+
+```ts
+EdgeWorker.start(handler, {
+  maxPgConnections: 10 // Use up to 10 connections to the database
+});

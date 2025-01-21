@@ -1,0 +1,104 @@
+---
+title: Prepare environment
+prev:
+    label: How it works?
+    link: how-it-works
+next:
+  link: create-first-worker
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+import { FileTree } from '@astrojs/starlight/components';
+
+We need to set up a few things before working with Edge Worker.
+This setup needs to be done only once per project.
+
+<Aside type="danger" title="Not production ready!">
+**Edge Worker** is in alpha stage and it is not production ready yet,
+but we will get there!
+</Aside>
+
+<Aside type="caution" title="Prerequisites">
+Make sure you have the Supabase CLI installed and a local project set up.
+If not, see Supabase's [installation guide](https://supabase.com/docs/guides/cli).
+</Aside>
+
+<Steps>
+
+1. ### Install migration
+
+    Run this command to download the migration file to your project.
+    Replace `<supabase-dir>` with your project's `supabase/` directory path.
+
+    ```bash
+    wget -O <supabase-dir>/migrations/ https://pgflow.dev/edge-worker.sql
+    ```
+
+    Then apply the migration:
+
+    ```bash
+    npx supabase migration up
+    ```
+
+1. ### Prepare connection string
+
+    Your worker needs to connect to your Supabase project's database.
+
+    Since the worker is a long-lived process, so we should use Supavisor **Session Mode** connection
+    (see more in [Connect to your database](https://supabase.com/docs/guides/database/connecting-to-postgres#more-about-connection-pooling) docs).
+
+    For local development, use this connection string in `supabase/functions/.env`:
+
+    ```shell
+    // supabase/functions/.env
+    DB_POOL_URL="postgresql://postgres.pooler-dev:postgres@pooler:6543/postgres"
+    ```
+
+1. ### Setup Connection Pool
+
+    You need to modify the `db.pooler` section in your `supabase/config.toml` file
+    to switch to Supavisor **Session Mode** connection pooling.
+
+    ```diff lang="toml"
+      [db.pooler]
+      enabled = false
+      # Port to use for the local connection pooler.
+      port = 54329
+      # Specifies when a server connection can be reused by other clients.
+      # Configure one of the supported pooler modes: `transaction`, `session`.
+    - pool_mode = "transaction"
+    + pool_mode = "session"
+      # How many server connections to allow per user/database pair.
+      default_pool_size = 20
+      # Maximum number of client connections allowed.
+      max_client_conn = 100
+    ```
+
+1. ### Setup Edge Runtime policy
+
+    We need to change Edge Runtime policy to `per_worker` to enable
+    Background Tasks (see more in [Testing background tasks locally](https://supabase.com/docs/guides/functions/background-tasks#testing-background-tasks-locally)).
+
+   ```diff lang="toml"
+     [edge_runtime]
+     enabled = true
+     # Configure one of the supported request policies: `oneshot`, `per_worker`.
+     # Use `oneshot` for hot reload, or `per_worker` for load testing.
+   - policy = "oneshot"
+   + policy = "per_worker"
+     # Port to attach the Chrome inspector for debugging edge functions.
+     inspector_port = 8083
+   ```
+
+1. ### Restart Supabase
+
+    To apply the changes, restart Supabase:
+
+    ```bash
+    npx supabase stop
+    npx supabase start
+    ```
+
+</Steps>
+
+That's it! You're ready to create your first worker and start processing messages 🥳

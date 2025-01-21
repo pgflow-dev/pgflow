@@ -1,0 +1,16 @@
+---
+import { Code } from "@astrojs/starlight/components";
+
+interface Props {
+	code: string;
+}
+
+const { code } = Astro.props;
+
+const lines = code.split("\n");
+const markerIndex = lines.findIndex((line) => line.includes("//////////"));
+const relevantPart =
+	markerIndex !== -1 ? lines.slice(markerIndex + 1).join("\n") : code;
+---
+
+<Code {...Astro.props} code={relevantPart || code} />

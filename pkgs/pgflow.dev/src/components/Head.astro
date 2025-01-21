@@ -1,0 +1,12 @@
+---
+import DefaultHead from "@astrojs/starlight/components/Head.astro";
+import Analytics from "@vercel/analytics/astro";
+import type { Props } from "@astrojs/starlight/props";
+
+type HeadProps = Props;
+const props = Astro.props as HeadProps;
+---
+
+<DefaultHead {...props} />
+<Analytics />
+<!-- Inject Vercel Analytics into the head -->
