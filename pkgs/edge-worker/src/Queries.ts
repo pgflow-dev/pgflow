@@ -13,36 +13,32 @@ export class Queries {
     workerId: string;
     edgeFunctionName: string;
   }): Promise<WorkerRow> {
-    const workers = await this.sql<WorkerRow[]>`
-      SELECT * FROM edge_worker.on_worker_started(
-        queue_name => ${queueName}::text,
-        worker_id => ${workerId}::uuid,
-        function_name => ${edgeFunctionName}::text
-      );
+    const [worker] = await this.sql<WorkerRow[]>`
+      INSERT INTO edge_worker.workers (queue_name, worker_id, function_name)
+      VALUES (${queueName}, ${workerId}, ${edgeFunctionName})
+      RETURNING *;
     `;
 
-    return workers[0];
+    return worker;
   }
 
   async onWorkerStopped(workerRow: WorkerRow): Promise<WorkerRow> {
-    const workers = await this.sql<WorkerRow[]>`
-      SELECT * FROM edge_worker.on_worker_stopped(${workerRow.worker_id}::uuid);
+    const [worker] = await this.sql<WorkerRow[]>`
+      UPDATE edge_worker.workers AS w
+      SET stopped_at = now(), last_heartbeat_at = now()
+      WHERE w.worker_id = ${workerRow.worker_id}
+      RETURNING *;
     `;
 
-    return workers[0];
+    return worker;
   }
 
   async sendHeartbeat(workerRow: WorkerRow): Promise<void> {
     await this.sql<WorkerRow[]>`
-      SELECT * FROM edge_worker.send_heartbeat(worker_id => ${workerRow.worker_id}::uuid);
+      UPDATE edge_worker.workers AS w
+      SET last_heartbeat_at = now()
+      WHERE w.worker_id = ${workerRow.worker_id}
+      RETURNING *;
     `;
-  }
-
-  async spawnNewWorker(queueName: string): Promise<void> {
-    console.log('spawnNewWorker', queueName);
-    await this.sql`
-      SELECT * FROM edge_worker.spawn(${queueName}::text);
-    `;
-    console.log('SPAWNED', queueName);
   }
 }
