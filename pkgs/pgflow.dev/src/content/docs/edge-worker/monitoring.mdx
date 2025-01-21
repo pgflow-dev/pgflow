@@ -1,0 +1,37 @@
+---
+title: Monitoring
+prev: 
+  link: /edge-worker/configuration
+---
+
+import { Code } from "@astrojs/starlight/components";
+import activeWorkersSql from '../../../../../edge-worker/sql/990_active_workers.sql?raw';
+import inactiveWorkersSql from '../../../../../edge-worker/sql/991_inactive_workers.sql?raw';
+
+Edge Worker sends heartbeats every 5 seconds and updates `last_heartbeat_at` column in `edge_worker.workers` table.
+
+### List of active workers
+
+In order to get a list of active workers, we need to fetch those that pinged in last 6 seconds (+1s to account for delays):
+
+```sql
+SELECT * 
+FROM edge_worker.workers 
+WHERE last_heartbeat_at > now() - make_interval(secs => 6)
+```
+
+### Helper SQL Views
+
+Alterntively, use following SQL views so you can just query active workers with:
+
+```sql
+SELECT * FROM edge_worker.active_workers 
+```
+
+#### `edge_worker.active_workers`
+
+<Code code={activeWorkersSql} lang="sql" />
+
+#### `edge_worker.inactive_workers`
+
+<Code code={inactiveWorkersSql} lang="sql" />
