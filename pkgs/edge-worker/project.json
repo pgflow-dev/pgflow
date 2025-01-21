@@ -59,7 +59,7 @@
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
-          "rm supabase/migrations/*.sql",
+          "rm -f supabase/migrations/*.sql",
           "cp migrations/*.sql supabase/migrations/",
           "cp sql/*_*.sql supabase/migrations/",
           "supabase db reset"
@@ -72,7 +72,7 @@
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
-          "rm supabase/functions/_src/*.ts",
+          "rm -f supabase/functions/_src/*.ts",
           "cp src/*.ts ./supabase/functions/_src/",
           "cp deno.* ./supabase/functions/_src/"
         ],
