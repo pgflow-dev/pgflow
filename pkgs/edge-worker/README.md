@@ -4,7 +4,7 @@
     <h3>📚 Documentation @ pgflow.dev</h3>
   </a>
   
-  <h4>⚠️ <strong>ALPHA STAGE - NOT PRODUCTION READY</strong> ⚠️</h4>
+  <h4>⚠️ <strong>ADVANCED PROOF of CONCEPT - NOT PRODUCTION READY</strong> ⚠️</h4>
 </div>
 
 A task queue worker for Supabase Edge Functions that extends background tasks with useful features.
