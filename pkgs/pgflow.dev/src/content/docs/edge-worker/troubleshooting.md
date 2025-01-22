@@ -2,8 +2,8 @@
 title: Troubleshooting
 draft: true
 prev:
-  link: /edge-worker/monitoring
-  label: Monitoring
+  link: /edge-worker/observability
+  label: Observability
 next:
   link: /edge-worker/ideas
   label: Ideas

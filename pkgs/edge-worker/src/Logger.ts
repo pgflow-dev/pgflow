@@ -1,5 +1,24 @@
 import * as log from 'jsr:@std/log';
 
+function getLogLevelFromEnv(): log.LevelName {
+  const validLevels = [
+    'NOTSET',
+    'DEBUG',
+    'INFO',
+    'WARNING',
+    'ERROR',
+    'CRITICAL',
+  ];
+  const logLevel = Deno.env.get('EDGE_WORKER_LOG_LEVEL')?.toUpperCase();
+
+  if (logLevel && !validLevels.includes(logLevel)) {
+    console.warn(`Invalid log level "${logLevel}". Using "INFO" instead.`);
+    return 'INFO';
+  }
+
+  return (logLevel as log.LevelName) || 'INFO';
+}
+
 const defaultLoggerConfig: log.LoggerConfig = {
   level: 'DEBUG',
   handlers: ['console'],
@@ -9,7 +28,11 @@ export function setupLogger(workerId: string) {
   log.setup({
     handlers: {
       console: new log.ConsoleHandler('DEBUG', {
-        formatter: (record) => {
+        formatter: (record: {
+          loggerName: string;
+          msg: string;
+          args: any[];
+        }) => {
           const prefix = `worker_id=${workerId}`;
           const module = record.loggerName;
           const msg = record.msg;
