@@ -25,6 +25,24 @@ async function clearDb(sql: postgres.Sql, queueName: string) {
 }
 
 Deno.test(
+  'Queue#safeDrop drops queue and handles non-existent queue',
+  async () => {
+    await withSql(async (sql) => {
+      const queue = new Queue<TestPayload>(sql, 'test_queue_safe_drop');
+
+      // Create queue first
+      await queue.safeCreate();
+
+      // First drop should succeed
+      await queue.safeDrop();
+
+      // Second drop should not throw
+      await queue.safeDrop();
+    });
+  }
+);
+
+Deno.test(
   'Queue#safeCreate creates queue and handles duplicate creation',
   async () => {
     await withSql(async (sql) => {
