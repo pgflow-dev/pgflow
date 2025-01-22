@@ -1,15 +1,17 @@
 # pgflow
 
-pgflow - Postgres-centric workflow engine with deep integration with Supabase
+**pgflow** - Postgres-centric workflow engine with deep integration with Supabase
+
+#### check docs at [pgflow.dev](https://pgflow.dev)
 
 ## Monorepo
 
 This repository is a monorepo that contains the following packages:
 
-| Nx Package     | NPM Package | Description |
-|--------------|-------------|-------------|
-| `edge-worker` | `@pgflow/edge-worker` | An auto-restarting task queue worker implemented for Supabase Edge Functions and PGMQ |
-| `cli` | `@pgflow/cli` (`pgflow`) | A CLI tool for interacting with whole stack |
+| Nx Package     | Description |
+|--------------|-------------|
+| [edge-worker](./pkgs/edge-worker/)  | An auto-restarting task queue worker implemented for Supabase Edge Functions and PGMQ |
+|  [pgflow.dev](./pkgs/pgflow.dev/)  | Documentation Site |
 
 ## NX Readme
 
