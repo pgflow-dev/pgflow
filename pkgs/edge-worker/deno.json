@@ -8,6 +8,7 @@
     "@std/async": "jsr:@std/async",
     "@std/assert": "jsr:@std/assert",
     "@std/testing/mock": "jsr:@std/testing/mock",
+    "@std/log": "jsr:@std/log",
     "p-queue": "npm:p-queue"
   }
 }
