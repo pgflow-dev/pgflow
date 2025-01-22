@@ -16,7 +16,7 @@ export type WorkerConfig = {
   maxPgConnections?: number;
 } & Partial<ExecutionConfig> &
   Partial<LifecycleConfig> &
-  Partial<PollerConfig>;
+  Partial<Omit<PollerConfig, 'batchSize'>>;
 
 export class Worker<MessagePayload extends Json> {
   private config: Required<WorkerConfig>;
@@ -31,14 +31,13 @@ export class Worker<MessagePayload extends Json> {
 
   private static readonly DEFAULT_CONFIG = {
     queueName: 'tasks',
-    maxConcurrent: 20,
+    maxConcurrent: 10,
     maxPgConnections: 4,
     maxPollSeconds: 5,
     pollIntervalMs: 200,
     retryDelay: 5,
-    retryLimit: 0,
+    retryLimit: 5,
     visibilityTimeout: 3,
-    batchSize: 20,
   } as const;
 
   constructor(

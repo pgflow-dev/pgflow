@@ -16,7 +16,7 @@ export class Heartbeat {
     const now = Date.now();
     if (now - this.lastHeartbeat >= this.interval) {
       await this.queries.sendHeartbeat(this.workerRow);
-      this.logger.debug('Heartbeat OK');
+      this.logger.debug('OK');
       this.lastHeartbeat = now;
     }
   }

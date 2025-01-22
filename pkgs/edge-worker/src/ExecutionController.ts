@@ -48,18 +48,13 @@ export class ExecutionController<MessagePayload extends Json> {
       this.retryDelay
     );
 
-    this.logger.info(
-      `[ExecutionController] Starting execution for ${executor.msgId}`
-    );
+    this.logger.info(`Starting execution for ${executor.msgId}`);
 
     return await this.pqueue.add(async () => {
       try {
         await executor.execute();
       } catch (error) {
-        this.logger.error(
-          `[ExecutionController] Execution failed for ${executor.msgId}:`,
-          error
-        );
+        this.logger.error(`Execution failed for ${executor.msgId}:`, error);
         throw error;
       }
     });

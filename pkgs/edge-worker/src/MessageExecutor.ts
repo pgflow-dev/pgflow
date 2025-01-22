@@ -48,7 +48,7 @@ export class MessageExecutor<MessagePayload extends Json> {
       await this.messageHandler(this.record.message!);
 
       this.logger.debug(
-        `[MessageExecutor] Task ${this.msgId} completed successfully, archiving...`
+        `Task ${this.msgId} completed successfully, archiving...`
       );
       await this.queue.archive(this.msgId);
 

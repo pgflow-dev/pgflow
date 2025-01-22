@@ -25,8 +25,11 @@ EdgeWorker.start(console.log);
 
 ```typescript
 EdgeWorker.start(handler, {
+  // name of the queue to poll for messages
+  queueName: 'tasks',
+
   // how many tasks are processed at the same time
-  maxConcurrent: 20,
+  maxConcurrent: 10,
 
   // how many connections to the database are opened
   maxPgConnections: 4,
@@ -119,23 +122,21 @@ EdgeWorker.start(handler, {
 
 ### `retryLimit`
 **Type:** `number`
-**Default:** `0`
+**Default:** `5`
 
 Maximum number of retry attempts for failed message processing before marking the message as dead.
 
-<Aside title="No retries by default!" type="danger">
-By default messages will not be retried, you need to set this option explicitly.
-</Aside>
+Set to `0` to disable retries.
 
 ```ts
 EdgeWorker.start(handler, {
-  retryLimit: 5
+  retryLimit: 0 // retries are disabled
 });
 ```
 
 ### `visibilityTimeout`
 **Type:** `number`
-**Default:** `30`
+**Default:** `3`
 
 The duration in seconds that a message is hidden from other consumers while being processed.
 
