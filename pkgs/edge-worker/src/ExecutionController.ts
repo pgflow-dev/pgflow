@@ -36,7 +36,7 @@ export class ExecutionController<MessagePayload extends Json> {
 
   async start(
     record: MessageRecord<MessagePayload>,
-    handler: (message: MessagePayload) => Promise<void>
+    handler: (message: MessagePayload) => Promise<void> | void
   ) {
     const executor = new MessageExecutor(
       this.queue,

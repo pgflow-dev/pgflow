@@ -21,7 +21,7 @@ export type WorkerConfig = {
 export class Worker<MessagePayload extends Json> {
   private config: Required<WorkerConfig>;
   private executionController: ExecutionController<MessagePayload>;
-  private messageHandler: (message: MessagePayload) => Promise<void>;
+  private messageHandler: (message: MessagePayload) => Promise<void> | void;
   private lifecycle: WorkerLifecycle<MessagePayload>;
   private logger = getLogger('Worker');
   private abortController = new AbortController();
@@ -41,7 +41,7 @@ export class Worker<MessagePayload extends Json> {
   } as const;
 
   constructor(
-    messageHandler: (message: MessagePayload) => Promise<void>,
+    messageHandler: (message: MessagePayload) => Promise<void> | void,
     configOverrides: WorkerConfig
   ) {
     this.config = {

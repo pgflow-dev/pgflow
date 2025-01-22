@@ -25,7 +25,9 @@ export class MessageExecutor<MessagePayload extends Json> {
   constructor(
     private readonly queue: Queue<MessagePayload>,
     private readonly record: MessageRecord<MessagePayload>,
-    private readonly messageHandler: (message: MessagePayload) => Promise<void>,
+    private readonly messageHandler: (
+      message: MessagePayload
+    ) => Promise<void> | void,
     private readonly signal: AbortSignal,
     private readonly batchArchiver: BatchArchiver<MessagePayload>,
     private readonly retryLimit: number,

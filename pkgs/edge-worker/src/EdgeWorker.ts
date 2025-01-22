@@ -1,7 +1,7 @@
-import { Worker, WorkerConfig } from './Worker.ts';
+import { Worker, type WorkerConfig } from './Worker.ts';
 import spawnNewEdgeFunction from './spawnNewEdgeFunction.ts';
-import { Json } from './types.ts';
-import { getLogger } from './Logger.ts';
+import type { Json } from './types.ts';
+import { getLogger, setupLogger } from './Logger.ts';
 
 export type EdgeWorkerConfig = Omit<WorkerConfig, 'connectionString'>;
 
@@ -10,19 +10,17 @@ export class EdgeWorker {
   private static wasCalled = false;
 
   static start<MessagePayload extends Json = Json>(
-    handler: (message: MessagePayload) => Promise<unknown> | unknown,
+    handler: (message: MessagePayload) => Promise<void> | void,
     config: EdgeWorkerConfig = {}
   ) {
     this.ensureFirstCall();
     const connectionString = this.getConnectionString();
 
-    const worker = this.initializeWorker(handler, {
+    const workerConfig: WorkerConfig = {
       ...config,
       connectionString,
-    });
-
-    this.setupShutdownHandler(worker);
-    this.setupRequestHandler(worker);
+    };
+    this.setupRequestHandler(handler, workerConfig);
   }
 
   private static ensureFirstCall() {
@@ -45,18 +43,13 @@ export class EdgeWorker {
   }
 
   private static initializeWorker<MessagePayload extends Json>(
-    handler: (message: MessagePayload) => Promise<unknown> | unknown,
+    handler: (message: MessagePayload) => Promise<void> | void,
     config: WorkerConfig
   ): Worker<MessagePayload> {
-    return new Worker<MessagePayload>(
-      async (message) => {
-        await handler(message);
-      },
-      {
-        queueName: config.queueName || 'tasks',
-        ...config,
-      }
-    );
+    return new Worker<MessagePayload>(handler, {
+      queueName: config.queueName || 'tasks',
+      ...config,
+    });
   }
 
   private static setupShutdownHandler<MessagePayload extends Json>(
@@ -76,17 +69,31 @@ export class EdgeWorker {
   }
 
   private static setupRequestHandler<MessagePayload extends Json>(
-    worker: Worker<MessagePayload>
+    handler: (message: MessagePayload) => Promise<void> | void,
+    workerConfig: WorkerConfig
   ) {
+    let worker: Worker<MessagePayload> | null = null;
+
     Deno.serve({}, (req) => {
-      const edgeFunctionName = this.extractFunctionName(req);
+      if (!worker) {
+        const edgeFunctionName = this.extractFunctionName(req);
+        const sbExecutionId = Deno.env.get('SB_EXECUTION_ID')!;
+        setupLogger(sbExecutionId);
 
-      worker.startOnlyOnce({
-        edgeFunctionName,
-        workerId: Deno.env.get('SB_EXECUTION_ID')!,
-      });
+        this.logger.info(`HTTP Request: ${edgeFunctionName}`);
 
-      this.logger.info(`HTTP Request: ${edgeFunctionName}`);
+        worker = this.initializeWorker(handler, {
+          ...workerConfig,
+          connectionString: this.getConnectionString(),
+        });
+        worker.startOnlyOnce({
+          edgeFunctionName,
+          workerId: sbExecutionId,
+        });
+
+        this.setupShutdownHandler(worker);
+      }
+
       return new Response('ok', {
         headers: { 'Content-Type': 'application/json' },
       });

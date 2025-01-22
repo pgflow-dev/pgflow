@@ -27,7 +27,7 @@ const defaultLoggerConfig: log.LoggerConfig = {
 export function setupLogger(workerId: string) {
   log.setup({
     handlers: {
-      console: new log.ConsoleHandler('DEBUG', {
+      console: new log.ConsoleHandler(getLogLevelFromEnv(), {
         formatter: (record: {
           loggerName: string;
           msg: string;

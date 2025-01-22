@@ -26,16 +26,17 @@ export class BatchProcessor<MessagePayload extends Json> {
   }
 
   async processBatch(
-    messageHandler: (message: MessagePayload) => Promise<void>
+    messageHandler: (message: MessagePayload) => Promise<void> | void
   ) {
+    this.logger.debug('Polling for new batch of messages...');
     const messageRecords = await this.poller.poll();
 
     if (this.signal.aborted) {
-      this.logger.info(
-        '-> Discarding messageRecords because worker is stopping'
-      );
+      this.logger.info('Discarding messageRecords because worker is stopping');
       return;
     }
+
+    this.logger.debug(`Starting ${messageRecords.length} messages`);
 
     const startPromises = messageRecords.map(
       (messageRecord: MessageRecord<MessagePayload>) =>
