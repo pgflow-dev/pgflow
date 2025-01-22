@@ -27,7 +27,7 @@ export class WorkerLifecycle<MessagePayload extends Json> {
     this.workerState.transitionTo(States.Starting);
 
     this.logger.log(`Ensuring queue '${this.queue.queueName}' exists...`);
-    this.queue.safeCreate();
+    await this.queue.safeCreate();
 
     this.workerRow = await this.queries.onWorkerStarted({
       queueName: this.queueName,
