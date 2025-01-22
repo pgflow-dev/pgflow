@@ -1,5 +1,6 @@
 -- Inactive workers are workers that have not sent 
 -- a heartbeat in the last 6 seconds
+create or replace view edge_worker.inactive_workers as
 select
     worker_id,
     queue_name,
