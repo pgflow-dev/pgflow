@@ -4,7 +4,7 @@ title: ⚠️ Project Status
 
 :::danger[Not ready for production!]
 
-**Edge Worker** is currently in **Alpha Stage**.
+**Edge Worker** is currently in **Advanced Proof of Concept** stage.
 
 :::
 
