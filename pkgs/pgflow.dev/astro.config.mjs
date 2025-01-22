@@ -35,6 +35,7 @@ export default defineConfig({
             },
             { label: 'Configuration', slug: 'edge-worker/configuration' },
             { label: 'Observability', slug: 'edge-worker/observability' },
+            { label: '⚠️ Project Status', slug: 'edge-worker/project-status' },
           ],
         },
       ],

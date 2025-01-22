@@ -9,14 +9,12 @@ next:
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 import { FileTree } from '@astrojs/starlight/components';
+import NotProductionReady from '../../../components/NotProductionReady.astro';
 
 Let's set up a few things before working with Edge Worker.
 This setup needs to be done only once per project.
 
-<Aside type="danger" title="Not production ready!">
-**Edge Worker** is in alpha stage and is not production ready yet,
-but we will get there!
-</Aside>
+<NotProductionReady />
 
 <Aside type="caution" title="Prerequisites">
 Make sure you have the Supabase CLI installed and a local project set up.
