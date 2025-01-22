@@ -1,10 +1,12 @@
 import { Worker, WorkerConfig } from './Worker.ts';
 import spawnNewEdgeFunction from './spawnNewEdgeFunction.ts';
 import { Json } from './types.ts';
+import { getLogger } from './Logger.ts';
 
 export type EdgeWorkerConfig = Omit<WorkerConfig, 'connectionString'>;
 
 export class EdgeWorker {
+  private static logger = getLogger('EdgeWorker');
   private static wasCalled = false;
 
   static start<MessagePayload extends Json = Json>(
@@ -84,7 +86,7 @@ export class EdgeWorker {
         workerId: Deno.env.get('SB_EXECUTION_ID')!,
       });
 
-      console.log(`HTTP Request: ${edgeFunctionName}`);
+      this.logger.info(`HTTP Request: ${edgeFunctionName}`);
       return new Response('ok', {
         headers: { 'Content-Type': 'application/json' },
       });

@@ -2,6 +2,7 @@ import type { Json } from './types.ts';
 import type { MessageRecord } from './types.ts';
 import type { Queue } from './Queue.ts';
 import type { BatchArchiver } from './BatchArchiver.ts';
+import { getLogger } from './Logger.ts';
 
 class AbortError extends Error {
   constructor() {
@@ -19,6 +20,8 @@ class AbortError extends Error {
  * It also handles the abort signal and logs the error.
  */
 export class MessageExecutor<MessagePayload extends Json> {
+  private logger = getLogger('MessageExecutor');
+
   constructor(
     private readonly queue: Queue<MessagePayload>,
     private readonly record: MessageRecord<MessagePayload>,
@@ -44,10 +47,12 @@ export class MessageExecutor<MessagePayload extends Json> {
 
       await this.messageHandler(this.record.message!);
 
-      console.log(
+      this.logger.debug(
         `[MessageExecutor] Task ${this.msgId} completed successfully, archiving...`
       );
       await this.queue.archive(this.msgId);
+
+      // TODO: uncomment when ready to debug this
       // await this.batchArchiver.add(this.msgId);
     } catch (error) {
       await this.handleExecutionError(error);
@@ -64,14 +69,12 @@ export class MessageExecutor<MessagePayload extends Json> {
    */
   private async handleExecutionError(error: unknown) {
     if (error instanceof Error && error.name === 'AbortError') {
-      console.log(`[MessageExecutor] Aborted execution for ${this.msgId}`);
+      this.logger.debug(`Aborted execution for ${this.msgId}`);
       // Do not throw - the worker was aborted and stopping,
       // the message will reappear after the visibility timeout
       // and be picked up by another worker
     } else {
-      console.log(
-        `[MessageExecutor] Task ${this.msgId} failed with error: ${error}`
-      );
+      this.logger.debug(`Task ${this.msgId} failed with error: ${error}`);
       await this.retryOrArchive();
     }
   }
@@ -83,11 +86,16 @@ export class MessageExecutor<MessagePayload extends Json> {
   private async retryOrArchive() {
     if (this.retryAvailable) {
       // adjust visibility timeout for message to appear after retryDelay
+      this.logger.debug(`Retrying ${this.msgId} in ${this.retryDelay} seconds`);
       await this.queue.setVt(this.msgId, this.retryDelay);
     } else {
       // archive message forever and stop processing it
       // TODO: set 'permanently_failed' in headers when pgmq 1.5.0 is released
-      await this.batchArchiver.add(this.msgId);
+      this.logger.debug(`Archiving ${this.msgId} forever`);
+      await this.queue.archive(this.msgId);
+
+      // TODO: uncomment when ready to debug this
+      // await this.batchArchiver.add(this.msgId);
     }
   }
 

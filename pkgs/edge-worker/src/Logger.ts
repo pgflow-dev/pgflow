@@ -1,4 +1,4 @@
-import * as log from '@std/log';
+import * as log from 'jsr:@std/log';
 
 const defaultLoggerConfig: log.LoggerConfig = {
   level: 'DEBUG',

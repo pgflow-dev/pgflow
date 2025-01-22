@@ -4,6 +4,7 @@ import { Queue } from './Queue.ts';
 import { Json } from './types.ts';
 import { MessageRecord } from './types.ts';
 import { BatchArchiver } from './BatchArchiver.ts';
+import { getLogger } from './Logger.ts';
 
 export interface ExecutionConfig {
   maxConcurrent: number;
@@ -12,6 +13,7 @@ export interface ExecutionConfig {
 }
 
 export class ExecutionController<MessagePayload extends Json> {
+  private logger = getLogger('ExecutionController');
   private queue: Queue<MessagePayload>;
   private pqueue: PQueue;
   private archiver: BatchArchiver<MessagePayload>;
@@ -46,7 +48,7 @@ export class ExecutionController<MessagePayload extends Json> {
       this.retryDelay
     );
 
-    console.log(
+    this.logger.info(
       `[ExecutionController] Starting execution for ${executor.msgId}`
     );
 
@@ -54,7 +56,7 @@ export class ExecutionController<MessagePayload extends Json> {
       try {
         await executor.execute();
       } catch (error) {
-        console.error(
+        this.logger.error(
           `[ExecutionController] Execution failed for ${executor.msgId}:`,
           error
         );

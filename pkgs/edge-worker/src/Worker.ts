@@ -6,7 +6,7 @@ import {
   ExecutionController,
   type ExecutionConfig,
 } from './ExecutionController.ts';
-import { Logger } from './Logger.ts';
+import { getLogger, setupLogger } from './Logger.ts';
 import { WorkerLifecycle, type LifecycleConfig } from './WorkerLifecycle.ts';
 import type { PollerConfig } from './ReadWithPollPoller.ts';
 import { BatchProcessor } from './BatchProcessor.ts';
@@ -23,7 +23,7 @@ export class Worker<MessagePayload extends Json> {
   private executionController: ExecutionController<MessagePayload>;
   private messageHandler: (message: MessagePayload) => Promise<void>;
   private lifecycle: WorkerLifecycle<MessagePayload>;
-  private logger: Logger;
+  private logger = getLogger('Worker');
   private abortController = new AbortController();
 
   private batchProcessor: BatchProcessor<MessagePayload>;
@@ -50,7 +50,6 @@ export class Worker<MessagePayload extends Json> {
       ...configOverrides,
     };
 
-    this.logger = new Logger();
     this.messageHandler = messageHandler;
 
     this.sql = postgres(this.config.connectionString, {
@@ -61,11 +60,7 @@ export class Worker<MessagePayload extends Json> {
     const queue = new Queue<MessagePayload>(this.sql, this.config.queueName);
     const queries = new Queries(this.sql);
 
-    this.lifecycle = new WorkerLifecycle<MessagePayload>(
-      queries,
-      queue,
-      this.logger
-    );
+    this.lifecycle = new WorkerLifecycle<MessagePayload>(queries, queue);
 
     this.executionController = new ExecutionController<MessagePayload>(
       queue,
@@ -80,7 +75,6 @@ export class Worker<MessagePayload extends Json> {
     this.batchProcessor = new BatchProcessor(
       this.executionController,
       queue,
-      this.logger,
       this.abortSignal,
       {
         batchSize: this.config.maxConcurrent,
@@ -93,7 +87,7 @@ export class Worker<MessagePayload extends Json> {
 
   async startOnlyOnce(workerBootstrap: WorkerBootstrap) {
     if (this.lifecycle.isRunning()) {
-      this.logger.log('Worker already running, ignoring start request');
+      this.logger.debug('Worker already running, ignoring start request');
       return;
     }
 
@@ -101,6 +95,8 @@ export class Worker<MessagePayload extends Json> {
   }
 
   private async start(workerBootstrap: WorkerBootstrap) {
+    setupLogger(workerBootstrap.workerId);
+
     try {
       await this.lifecycle.acknowledgeStart(workerBootstrap);
 
@@ -108,19 +104,19 @@ export class Worker<MessagePayload extends Json> {
         try {
           await this.lifecycle.sendHeartbeat();
         } catch (error: unknown) {
-          this.logger.log(`Error sending heartbeat: ${error}`);
+          this.logger.error(`Error sending heartbeat: ${error}`);
           // Continue execution - a failed heartbeat shouldn't stop processing
         }
 
         try {
           await this.batchProcessor.processBatch(this.messageHandler);
         } catch (error: unknown) {
-          this.logger.log(`Error processing batch: ${error}`);
+          this.logger.error(`Error processing batch: ${error}`);
           // Continue to next iteration - failed batch shouldn't stop the worker
         }
       }
     } catch (error) {
-      this.logger.log(`Error in worker main loop: ${error}`);
+      this.logger.error(`Error in worker main loop: ${error}`);
       throw error;
     }
   }
@@ -129,20 +125,20 @@ export class Worker<MessagePayload extends Json> {
     this.lifecycle.transitionToStopping();
 
     try {
-      this.logger.log('-> Stopped accepting new messages');
+      this.logger.debug('-> Stopped accepting new messages');
       this.abortController.abort();
 
-      this.logger.log('-> Waiting for pending tasks to complete...');
+      this.logger.debug('-> Waiting for pending tasks to complete...');
       await this.executionController.awaitCompletion();
-      this.logger.log('-> Pending tasks completed!');
+      this.logger.debug('-> Pending tasks completed!');
 
       this.lifecycle.acknowledgeStop();
 
-      this.logger.log('-> Closing SQL connection...');
+      this.logger.debug('-> Closing SQL connection...');
       await this.sql.end();
-      this.logger.log('-> SQL connection closed!');
+      this.logger.debug('-> SQL connection closed!');
     } catch (error) {
-      this.logger.log(`Error during worker stop: ${error}`);
+      this.logger.debug(`Error during worker stop: ${error}`);
       throw error;
     }
   }

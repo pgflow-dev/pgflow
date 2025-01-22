@@ -1,5 +1,6 @@
 import { Queue } from './Queue.ts';
 import { Json } from './types.ts';
+import { getLogger } from './Logger.ts';
 
 interface BatchConfig {
   batchSize?: number;
@@ -10,6 +11,7 @@ interface BatchConfig {
  * A class that manages the archiving of messages in batches.
  */
 export class BatchArchiver<MessagePayload extends Json> {
+  private logger = getLogger('BatchArchiver');
   private pending = new Set<number>();
   private timeoutId?: number;
   private config: Required<BatchConfig>;
@@ -70,7 +72,7 @@ export class BatchArchiver<MessagePayload extends Json> {
       try {
         await this.archiveBatch();
       } catch (error) {
-        console.error('Timeout-triggered archive failed:', error);
+        this.logger.error('Timeout-triggered archive failed:', error);
       }
     }, this.config.timeoutMs);
   }
@@ -92,7 +94,7 @@ export class BatchArchiver<MessagePayload extends Json> {
       await this.queue.archiveBatch(batch);
       this.pending.clear();
     } catch (error) {
-      console.error('Failed to archive batch:', error);
+      this.logger.error('Failed to archive batch:', error);
       throw error;
     }
   }
