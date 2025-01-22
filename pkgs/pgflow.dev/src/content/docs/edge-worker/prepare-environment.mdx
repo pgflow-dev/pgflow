@@ -56,11 +56,12 @@ If not, see Supabase's [installation guide](https://supabase.com/docs/guides/cli
 1. ### Setup Connection Pool
 
     Modify the `db.pooler` section in your `supabase/config.toml` file
-    to switch to Supavisor **Session Mode**:
+    to enable pooler and switch it to Supavisor **Session Mode**:
 
     ```diff lang="toml"
       [db.pooler]
-      enabled = false
+    - enabled = false
+    + enabled = true
       # Port to use for the local connection pooler.
       port = 54329
       # Specifies when a server connection can be reused by other clients.

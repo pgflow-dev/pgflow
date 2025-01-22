@@ -33,7 +33,20 @@ Before starting, please read the [Prepare environment](/prepare-environment) gui
     });
     ```
 
-3. ### Start your worker
+1. ### Start Edge Runtime
+
+    Start the Edge Runtime by running the following command:
+
+    ```bash frame="none"
+		npx supabase functions serve
+    ```
+
+		:::note[Restarting Edge Runtime]
+		You must stop and start the Edge Runtime everytime you make changes 
+		to your workers, because of `per_worker` policy.
+		:::
+
+1. ### Start your worker
 
     Start the worker by sending an HTTP request to your Edge Function:
 
