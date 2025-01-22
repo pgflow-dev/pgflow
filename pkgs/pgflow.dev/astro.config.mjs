@@ -2,27 +2,24 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
+const GITHUB_REPO_URL = 'https://github.com/pgflow-dev/pgflow';
+
 // https://astro.build/config
 export default defineConfig({
+  site: 'https://pgflow.dev',
   integrations: [
     starlight({
       title: 'pgflow',
+      editLink: {
+        baseUrl: `${GITHUB_REPO_URL}/edit/main/pkgs/pgflow.dev/`,
+      },
       social: {
-        github: 'https://github.com/pgflow-dev/pgflow',
+        github: GITHUB_REPO_URL,
         discord: 'https://discord.gg/fyMHqy9h',
         twitter: 'https://x.com/pgflow_dev',
         blueSky: 'https://bsky.app/profile/pgflow.bsky.social',
       },
       components: {},
-      head: [
-        {
-          tag: 'script',
-          content: `
-            import { inject } from '@vercel/analytics';
-            inject();
-          `,
-        },
-      ],
       sidebar: [
         {
           label: 'Edge Worker',
@@ -38,14 +35,9 @@ export default defineConfig({
             },
             { label: 'Configuration', slug: 'edge-worker/configuration' },
             { label: 'Monitoring', slug: 'edge-worker/monitoring' },
-            // { label: 'Troubleshooting', slug: 'edge-worker/troubleshooting' },
-            // { label: 'Ideas', slug: 'edge-worker/ideas' },
           ],
         },
       ],
-      // expressiveCode: {
-      //   themes: ['tokyo-night'],
-      // },
     }),
   ],
 });
