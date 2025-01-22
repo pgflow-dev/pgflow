@@ -1,7 +1,7 @@
-import { Json } from './types.ts';
-import { type MessageRecord } from './types.ts';
-import { Queue } from './Queue.ts';
-import { BatchArchiver } from './BatchArchiver.ts';
+import type { Json } from './types.ts';
+import type { MessageRecord } from './types.ts';
+import type { Queue } from './Queue.ts';
+import type { BatchArchiver } from './BatchArchiver.ts';
 
 class AbortError extends Error {
   constructor() {
@@ -45,6 +45,9 @@ export class MessageExecutor<MessagePayload extends Json> {
           this.signal.addEventListener(
             'abort',
             () => {
+              console.log(
+                `################ MessageExecutor aborted during execution: ${this.msgId} ##`
+              );
               reject(new AbortError());
             },
             { once: true }

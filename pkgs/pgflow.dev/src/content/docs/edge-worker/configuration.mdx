@@ -12,7 +12,13 @@ You can pass an optional configuration object as the second argument to `EdgeWor
 to tweak the worker's behavior.
 
 <Aside title="Zero configuration needed" type="tip">
-All configuration options are optional and have sane defaults.
+All configuration options are optional and have good defaults.
+
+You only need to provide the handler function:
+
+```ts
+EdgeWorker.start(console.log);
+```
 </Aside>
 
 ### Default configuration
