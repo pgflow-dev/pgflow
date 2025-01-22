@@ -2,12 +2,12 @@ import * as log from 'jsr:@std/log';
 
 function getLogLevelFromEnv(): log.LevelName {
   const validLevels = [
-    'NOTSET',
+    // 'NOTSET',
     'DEBUG',
     'INFO',
-    'WARNING',
+    // 'WARNING',
     'ERROR',
-    'CRITICAL',
+    // 'CRITICAL',
   ];
   const logLevel = Deno.env.get('EDGE_WORKER_LOG_LEVEL')?.toUpperCase();
 
