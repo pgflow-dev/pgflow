@@ -96,7 +96,7 @@
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
-          "deno test --allow-all --env-file=supabase/functions/.env tests/unit/"
+          "deno test --allow-all --env=supabase/functions/.env tests/unit/"
         ],
         "parallel": false
       }
@@ -107,7 +107,7 @@
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
-          "deno test --allow-all --env-file=supabase/.env tests/e2e/"
+          "deno test --allow-all --env=supabase/.env tests/e2e/"
         ],
         "parallel": false
       }
