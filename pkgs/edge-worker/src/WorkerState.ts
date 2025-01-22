@@ -1,3 +1,5 @@
+import { getLogger } from './Logger.ts';
+
 export enum States {
   /** The worker has been created but has not yet started. */
   Created = 'created',
@@ -34,6 +36,7 @@ export class TransitionError extends Error {
  * Represents the state of a worker and exposes method for doing allowed transitions
  */
 export class WorkerState {
+  private logger = getLogger('WorkerState');
   private state: States = States.Created;
 
   get current() {
@@ -57,13 +60,17 @@ export class WorkerState {
   }
 
   transitionTo(state: States) {
+    this.logger.debug(
+      `[WorkerState] Starting transition to '${state}' (current state: ${this.state})`
+    );
+
     if (this.state === state) {
       return;
     }
 
     if (Transitions[this.state].includes(state)) {
       this.state = state;
-      console.log(`[WorkerState] Transitioned to '${state}'`);
+      this.logger.debug(`[WorkerState] Transitioned to '${state}'`);
     } else {
       throw new TransitionError({
         from: this.state,

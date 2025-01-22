@@ -1,8 +1,8 @@
 import { Heartbeat } from './Heartbeat.ts';
-import { Logger } from './Logger.ts';
-import { Queries } from './Queries.ts';
-import { Queue } from './Queue.ts';
-import { Json, WorkerBootstrap, WorkerRow } from './types.ts';
+import { getLogger } from './Logger.ts';
+import type { Queries } from './Queries.ts';
+import type { Queue } from './Queue.ts';
+import type { Json, WorkerBootstrap, WorkerRow } from './types.ts';
 import { States, WorkerState } from './WorkerState.ts';
 
 export interface LifecycleConfig {
@@ -12,35 +12,28 @@ export interface LifecycleConfig {
 export class WorkerLifecycle<MessagePayload extends Json> {
   private workerState: WorkerState = new WorkerState();
   private heartbeat?: Heartbeat;
-  private logger: Logger;
+  private logger = getLogger('WorkerLifecycle');
   private queries: Queries;
   private queue: Queue<MessagePayload>;
   private workerRow?: WorkerRow;
 
-  constructor(queries: Queries, queue: Queue<MessagePayload>, logger: Logger) {
+  constructor(queries: Queries, queue: Queue<MessagePayload>) {
     this.queries = queries;
-    this.logger = logger;
     this.queue = queue;
   }
 
   async acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void> {
     this.workerState.transitionTo(States.Starting);
 
-    this.logger.log(`Ensuring queue '${this.queue.queueName}' exists...`);
+    this.logger.info(`Ensuring queue '${this.queue.queueName}' exists...`);
     await this.queue.safeCreate();
 
     this.workerRow = await this.queries.onWorkerStarted({
       queueName: this.queueName,
       ...workerBootstrap,
     });
-    this.logger.setWorkerRow(this.workerRow);
 
-    this.heartbeat = new Heartbeat(
-      5000,
-      this.queries,
-      this.workerRow,
-      this.logger.log.bind(this.logger)
-    );
+    this.heartbeat = new Heartbeat(5000, this.queries, this.workerRow);
 
     this.workerState.transitionTo(States.Running);
   }
@@ -53,7 +46,7 @@ export class WorkerLifecycle<MessagePayload extends Json> {
     }
 
     try {
-      this.logger.log('Acknowledging worker stop...');
+      this.logger.debug('Acknowledging worker stop...');
 
       // TODO: commented out because we can live without this
       //       but it is causing problems with DbHandler - workes does not have
@@ -63,9 +56,9 @@ export class WorkerLifecycle<MessagePayload extends Json> {
       // await this.queries.onWorkerStopped(this.workerRow);
 
       this.workerState.transitionTo(States.Stopped);
-      this.logger.log('Worker stop acknowledged');
+      this.logger.debug('Worker stop acknowledged');
     } catch (error) {
-      this.logger.log(`Error acknowledging worker stop: ${error}`);
+      this.logger.debug(`Error acknowledging worker stop: ${error}`);
       throw error;
     }
   }

@@ -1,5 +1,5 @@
 ---
-title: Monitoring
+title: Observability
 prev: 
   link: /edge-worker/configuration
 ---
@@ -7,6 +7,27 @@ prev:
 import { Code } from "@astrojs/starlight/components";
 import activeWorkersSql from '../../../../../edge-worker/sql/990_active_workers.sql?raw';
 import inactiveWorkersSql from '../../../../../edge-worker/sql/991_inactive_workers.sql?raw';
+
+## Logging
+
+Edge Worker logs various events to the stdin. You can change the log level
+by setting `EDGE_WORKER_LOG_LEVEL` environment variable:
+
+```bash
+// supabase/functions/.env
+EDGE_WORKER_LOG_LEVEL=debug
+```
+
+Available log levels are:
+
+- `debug`
+- `info`
+- `error`
+- (more will come)
+
+By default, Edge Worker's log level is `info`.
+
+## Heartbeats
 
 Edge Worker sends heartbeats every 5 seconds and updates `last_heartbeat_at` column in `edge_worker.workers` table.
 

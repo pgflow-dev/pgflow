@@ -34,7 +34,7 @@ export default defineConfig({
               slug: 'edge-worker/create-first-worker',
             },
             { label: 'Configuration', slug: 'edge-worker/configuration' },
-            { label: 'Monitoring', slug: 'edge-worker/monitoring' },
+            { label: 'Observability', slug: 'edge-worker/observability' },
           ],
         },
       ],
