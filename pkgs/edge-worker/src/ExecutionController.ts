@@ -1,4 +1,4 @@
-import PQueue from 'npm:p-queue';
+import PQueue from 'p-queue';
 import { MessageExecutor } from './MessageExecutor.ts';
 import { Queue } from './Queue.ts';
 import { Json } from './types.ts';

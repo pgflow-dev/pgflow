@@ -4,11 +4,11 @@
   "license": "MIT",
   "exports": "./mod.ts",
   "imports": {
-    "postgres": "https://deno.land/x/postgresjs@v3.4.5/mod.js",
+    "postgres": "npm:postgres@3.4.5",
     "@std/async": "jsr:@std/async",
     "@std/assert": "jsr:@std/assert",
     "@std/testing/mock": "jsr:@std/testing/mock",
-    "@std/log": "jsr:@std/log",
-    "p-queue": "npm:p-queue"
+    "@std/log": "jsr:@std/log@^0.224.13",
+    "p-queue": "npm:p-queue@^8.0.1"
   }
 }
