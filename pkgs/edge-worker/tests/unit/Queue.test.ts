@@ -49,9 +49,10 @@ Deno.test(
 
 Deno.test('Queue operations integration test', async (t) => {
   await withSql(async (sql) => {
-    await clearDb(sql, 'test_queue');
     const queue = new Queue<TestPayload>(sql, 'test_queue');
     await queue.safeCreate();
+    await clearDb(sql, 'test_queue');
+
     const testMessage: TestPayload = {
       id: '123',
       data: 'test data',
@@ -84,9 +85,10 @@ Deno.test('Queue operations integration test', async (t) => {
 
 Deno.test('Queue batch operations', async (t) => {
   await withSql(async (sql) => {
-    await clearDb(sql, 'test_queue_batch');
     const queue = new Queue<TestPayload>(sql, 'test_queue_batch');
     await queue.safeCreate();
+    await clearDb(sql, 'test_queue_batch');
+
     const testMessages: TestPayload[] = [
       { id: '1', data: 'test 1' },
       { id: '2', data: 'test 2' },

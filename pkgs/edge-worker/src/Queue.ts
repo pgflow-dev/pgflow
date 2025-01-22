@@ -1,6 +1,5 @@
 import type postgres from 'postgres';
-import { type Json } from './types.ts';
-import { MessageRecord } from './types.ts';
+import type { Json, MessageRecord } from './types.ts';
 
 export class Queue<MessagePayload extends Json> {
   constructor(private readonly sql: postgres.Sql, readonly queueName: string) {}
@@ -9,9 +8,25 @@ export class Queue<MessagePayload extends Json> {
    * Creates a queue if it doesn't exist.
    * If the queue already exists, this method does nothing.
    */
-  async safeCreate(): Promise<void> {
-    await this.sql`
-        select * from pgmq.create(${this.queueName});
+  async safeCreate() {
+    return await this.sql`
+        select * from pgmq.create(${this.queueName}) 
+        where not exists (
+          select 1 from pgmq.list_queues() where queue_name = ${this.queueName}
+        );
+    `;
+  }
+
+  /**
+   * Drops a queue if it exists.
+   * If the queue doesn't exist, this method does nothing.
+   */
+  async safeDrop() {
+    return await this.sql`
+        select * from pgmq.drop_queue(${this.queueName})
+        where exists (
+          select 1 from pgmq.list_queues() where queue_name = ${this.queueName}
+        );
     `;
   }
 
