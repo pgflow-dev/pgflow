@@ -25,7 +25,7 @@ Before starting, please read the [Prepare environment](/prepare-environment) gui
     First, create a new Edge Function using the Supabase CLI. Then, replace its content with this code:
 
     ```typescript
-    import { EdgeWorker } from "@pgflow/edge-worker";
+    import { EdgeWorker } from "jsr:@pgflow/edge-worker";
 
     EdgeWorker.start(async (payload: { urlToScrape: string }) => {
       // do something with the message

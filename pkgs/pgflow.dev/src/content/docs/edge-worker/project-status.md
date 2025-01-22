@@ -41,8 +41,9 @@ When this error occurs, it prevents the system from spawning new instances.
 
 ### Postgres Deadlocks
 
-In high-concurrency scenarios, we've observed occasional deadlocks. These occur due to
-race conditions between message archiving and message pickup when visibility timeouts expire.
+In high-concurrency scenarios, I've observed occasional deadlocks. These occur due to
+race conditions between message archiving and message pickup 
+when visibility timeouts expire (educated guess).
 
 The planned solution involves implementing worker-side retries for SQL queries.
 
