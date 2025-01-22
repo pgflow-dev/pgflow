@@ -39,26 +39,16 @@ export class MessageExecutor<MessagePayload extends Json> {
         throw new AbortError();
       }
 
-      await Promise.race([
-        this.messageHandler(this.record.message!),
-        new Promise((_, reject) => {
-          this.signal.addEventListener(
-            'abort',
-            () => {
-              console.log(
-                `################ MessageExecutor aborted during execution: ${this.msgId} ##`
-              );
-              reject(new AbortError());
-            },
-            { once: true }
-          );
-        }),
-      ]);
+      // Check if already aborted before starting
+      this.signal.throwIfAborted();
+
+      await this.messageHandler(this.record.message!);
 
       console.log(
         `[MessageExecutor] Task ${this.msgId} completed successfully, archiving...`
       );
-      await this.batchArchiver.add(this.msgId);
+      await this.queue.archive(this.msgId);
+      // await this.batchArchiver.add(this.msgId);
     } catch (error) {
       await this.handleExecutionError(error);
     }

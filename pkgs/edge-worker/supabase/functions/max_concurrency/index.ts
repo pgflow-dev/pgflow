@@ -8,9 +8,9 @@ console.log('EDGE_WORKER_DB_URL', EDGE_WORKER_DB_URL);
 const sql = postgres(EDGE_WORKER_DB_URL, { prepare: true });
 
 async function incrementSeq() {
-  await delay(100);
-  // const randTimeMs = Math.floor(Math.random() * 10);
-  // await delay(randTimeMs);
+  // await delay(1000);
+  const randTimeMs = Math.floor(Math.random() * 100 + 50);
+  await delay(randTimeMs);
   console.log(
     '[max_concurrency] last_val =',
     await sql`SELECT nextval('test_seq')`
@@ -19,6 +19,6 @@ async function incrementSeq() {
 
 EdgeWorker.start(incrementSeq, {
   queueName: 'max_concurrency',
-  maxConcurrent: 40,
+  maxConcurrent: 10,
   maxPgConnections: 4,
 });
