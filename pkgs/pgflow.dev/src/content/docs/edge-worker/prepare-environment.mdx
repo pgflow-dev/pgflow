@@ -58,7 +58,8 @@ If not, see Supabase's [installation guide](https://supabase.com/docs/guides/cli
 1. ### Setup Connection Pool
 
     Modify the `db.pooler` section in your `supabase/config.toml` file
-    to switch to Supavisor **Session Mode** connection pooling:
+    to switch to Supavisor **Session Mode**. It's also good to increase the 
+		default pool size:
 
     ```diff lang="toml"
       [db.pooler]
@@ -70,7 +71,8 @@ If not, see Supabase's [installation guide](https://supabase.com/docs/guides/cli
     - pool_mode = "transaction"
     + pool_mode = "session"
       # How many server connections to allow per user/database pair.
-      default_pool_size = 20
+    - default_pool_size = 20
+    + default_pool_size = 50
       # Maximum number of client connections allowed.
       max_client_conn = 100
     ```
