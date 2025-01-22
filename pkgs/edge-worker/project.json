@@ -114,6 +114,16 @@
     },
     "test": {
       "dependsOn": ["test:unit"]
+    },
+    "jsr:publish": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "commands": [
+          "pnpm dlx jsr publish"
+        ],
+        "parallel": false
+      }
     }
   },
   "tags": []
