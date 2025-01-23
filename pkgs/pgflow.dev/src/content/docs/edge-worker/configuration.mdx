@@ -1,9 +1,9 @@
 ---
 title: Configuration
 prev:
-  link: /edge-worker/prepare-environment
+  link: prepare-environment
 next:
-  link: /edge-worker/observability
+  link: observability
 ---
 
 import { Aside, Steps } from "@astrojs/starlight/components";
@@ -11,10 +11,10 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 You can pass an optional configuration object as the second argument to `EdgeWorker.start()`
 to tweak the worker's behavior.
 
-<Aside title="Zero configuration needed" type="tip">
-All configuration options are optional and have good defaults.
+<Aside title="Zero Configuration" type="tip">
+Edge Worker comes with sensible defaults for all configuration options.
 
-You only need to provide the handler function:
+You only need to provide a handler function:
 
 ```ts
 EdgeWorker.start(console.log);
@@ -44,7 +44,7 @@ EdgeWorker.start(handler, {
   retryDelay: 5,
 
   // how many times to retry a failed job
-  retryLimit: 0,
+  retryLimit: 5,
 
   // how long a job is invisible after reading
   // if not successful, will reappear after this time
@@ -87,8 +87,8 @@ EdgeWorker.start(handler, {
 **Type:** `number`
 **Default:** `200`
 
-The interval for in-database polling that `pgmq.read_with_poll` does.
-Most of the time, you don't need to change this value.
+The interval (in milliseconds) between database polling attempts by `pgmq.read_with_poll`.
+The default value is suitable for most use cases.
 
 <Aside type="caution">
   This value should be lower than the `maxPollSeconds` value.
@@ -138,17 +138,15 @@ EdgeWorker.start(handler, {
 **Type:** `number`
 **Default:** `3`
 
-The duration in seconds that a message is hidden from other consumers while being processed.
+The duration (in seconds) that a message remains invisible to other consumers while being processed.
 
 <Aside title="Timeouts" type="caution">
-Make sure to set it bigger than max time your task can take to complete, otherwise
-it will be processed multiple times.
+Set this value higher than your task's maximum expected processing time to prevent duplicate processing.
 </Aside>
 
 <Aside title="Work-in-Progress" type="danger">
-This option is probably subject to be refactored to `timeoutMs` that will
-affect timeout for the tasks (wip) and visibility timeout.
-**Do not rely on this option heavily for now!**
+This option will likely be refactored into `timeoutMs` to control both task timeouts and visibility timeouts.
+**Consider this configuration unstable for now.**
 </Aside>
 
 ```ts
@@ -176,8 +174,8 @@ EdgeWorker.start(handler, {
 **Type:** `number`
 **Default:** `4`
 
-This option limits the number of connections to the database.
-Increase for IO-heavy tasks (network or db calls), decrease for CPU-heavy tasks.
+Maximum number of concurrent database connections.
+Increase for IO-heavy tasks (network or database operations), decrease for CPU-heavy tasks.
 
 ```ts
 EdgeWorker.start(handler, {
