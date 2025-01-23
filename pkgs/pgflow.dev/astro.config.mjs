@@ -27,8 +27,8 @@ export default defineConfig({
           items: [
             { label: 'How it works?', slug: 'edge-worker/how-it-works' },
             {
-              label: 'Prepare environment',
-              slug: 'edge-worker/prepare-environment',
+              label: 'Install Edge Worker',
+              slug: 'edge-worker/install-edge-worker',
             },
             {
               label: 'Create your first worker',
