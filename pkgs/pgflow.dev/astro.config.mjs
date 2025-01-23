@@ -27,15 +27,20 @@ export default defineConfig({
           items: [
             { label: 'How it works?', slug: 'edge-worker/how-it-works' },
             {
-              label: 'Install Edge Worker',
-              slug: 'edge-worker/install-edge-worker',
+              label: 'Getting Started',
+              items: [
+                {
+                  label: 'Install Edge Worker',
+                  slug: 'edge-worker/install-edge-worker',
+                },
+                {
+                  label: 'Create your first worker',
+                  slug: 'edge-worker/create-first-worker',
+                },
+                { label: 'Configuration', slug: 'edge-worker/configuration' },
+                { label: 'Observability', slug: 'edge-worker/observability' },
+              ],
             },
-            {
-              label: 'Create your first worker',
-              slug: 'edge-worker/create-first-worker',
-            },
-            { label: 'Configuration', slug: 'edge-worker/configuration' },
-            { label: 'Observability', slug: 'edge-worker/observability' },
             { label: '⚠️ Project Status', slug: 'edge-worker/project-status' },
           ],
         },
