@@ -27,9 +27,9 @@ Before starting, please read the [Install Edge Worker](/edge-worker/install-edge
     ```typescript
     import { EdgeWorker } from "jsr:@pgflow/edge-worker";
 
-    EdgeWorker.start(async (payload: { urlToScrape: string }) => {
+    EdgeWorker.start(async (payload: { url: string }) => {
       // do something with the message
-      console.log('Scraping URL...', payload.urlToScrape);
+      console.log('Scraping URL...', payload.url);
     });
     ```
 
@@ -69,11 +69,15 @@ Before starting, please read the [Install Edge Worker](/edge-worker/install-edge
     ```sql frame="none"
     SELECT pgmq.send(
       queue_name => 'tasks',
-      msg => '{"urlToScrape": "https://example.com"}'::jsonb
+      msg => '{"url": "https://example.com"}'::jsonb
     );
     ```
 
-    The message will be processed immediately.
+    The message will be processed immediately and you should see the following output:
+
+    ```bash frame="none"
+    [Info] Scraping URL... https://example.com/
+    ```
 
     <Aside title="Queue Name">
       By default, your worker uses a queue named `tasks`. You can change this by setting the [`queueName` option](/edge-worker/configuration#queuename) - useful when running multiple workers or integrating with existing queues.

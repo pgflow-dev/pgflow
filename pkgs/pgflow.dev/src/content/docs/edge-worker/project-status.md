@@ -4,7 +4,7 @@ title: ⚠️ Project Status
 
 :::danger[Not ready for production!]
 
-**Edge Worker** is currently in **Advanced Proof of Concept** stage.
+**Edge Worker** is currently in **Alpha** stage.
 
 :::
 
@@ -42,14 +42,14 @@ When this error occurs, it prevents the system from spawning new instances.
 ### Postgres Deadlocks
 
 In high-concurrency scenarios, I've observed occasional deadlocks. These occur due to
-race conditions between message archiving and message pickup 
+race conditions between message archiving and message pickup
 when visibility timeouts expire (educated guess).
 
 The planned solution involves implementing worker-side retries for SQL queries.
 
 ### Planned Architecture Improvements
 
-Following the resolution of current issues, a major architectural refactor is planned. 
+Following the resolution of current issues, a major architectural refactor is planned.
 The main goals are to:
 
 - Implement proper dependency injection
@@ -59,8 +59,7 @@ The main goals are to:
   - Polling mechanism (replacing ReadWithPollPoller with ListenNotifyPoller for improved performance)
 
 :::note[API Stability]
-The core `EdgeWorker.start()` API will remain stable. However, the configuration options structure 
-will be reorganized into logical sub-configurations. The current configuration shape should not be 
+The core `EdgeWorker.start()` API will remain stable. However, the configuration options structure
+will be reorganized into logical sub-configurations. The current configuration shape should not be
 considered stable and will change in future releases.
 :::
-
