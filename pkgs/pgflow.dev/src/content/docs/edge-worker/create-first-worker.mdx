@@ -51,18 +51,18 @@ Before starting, please read the [Install Edge Worker](/edge-worker/install-edge
 
 1. ### Start your worker
 
-    Start the worker by sending an HTTP request to your Edge Function URL:
+    Start the worker by sending an HTTP request to your new Edge Function
+    (replace `<function-name>` with the name of yours):
 
     ```bash frame="none"
     curl http://localhost:54321/functions/v1/<function-name>
     ```
 
-    This will boot a new instance of given Edge Function, effectively booting
-    up your worker.
+    This will boot a new instance, effectively starting up your worker:
 
 4. ### Process your first message
 
-    Your worker is now running and listening to the `tasks` queue (which was automatically created during startup).
+    Your worker is now running and long-polling for messages on `tasks` queue (which was automatically created during startup).
 
     Send a test message:
 
