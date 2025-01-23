@@ -41,18 +41,24 @@ Before starting, please read the [Install Edge Worker](/edge-worker/install-edge
 		npx supabase functions serve
     ```
 
-		:::note[Restarting Edge Runtime]
-		You must stop and start the Edge Runtime everytime you make changes 
-		to your workers, because of `per_worker` policy.
-		:::
+    This makes Supabase listen for incoming HTTP requests, but does not start
+    your worker yet.
+
+    :::note[Restarting Edge Runtime]
+    You must stop and start the Edge Runtime everytime you make changes 
+    to your workers, because of `per_worker` policy.
+    :::
 
 1. ### Start your worker
 
-    Start the worker by sending an HTTP request to your Edge Function:
+    Start the worker by sending an HTTP request to your Edge Function URL:
 
     ```bash frame="none"
     curl http://localhost:54321/functions/v1/<function-name>
     ```
+
+    This will boot a new instance of given Edge Function, effectively booting
+    up your worker.
 
 4. ### Process your first message
 
