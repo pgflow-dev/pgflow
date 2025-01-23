@@ -56,9 +56,9 @@ Before starting, please read the [Install Edge Worker](/edge-worker/install-edge
 
 4. ### Process your first message
 
-    By default, the worker looks for messages in the `tasks` queue (this name is configurable).
+    Your worker is now running and listening to the `tasks` queue (which was automatically created during startup).
 
-    Send a test message to the queue:
+    Send a test message:
 
     ```sql frame="none"
     SELECT pgmq.send(
@@ -67,11 +67,10 @@ Before starting, please read the [Install Edge Worker](/edge-worker/install-edge
     );
     ```
 
-    The worker will process the message immediately.
+    The message will be processed immediately.
 
-    <Aside title="Creating queues">
-      If you haven't created the queue beforehand, the worker will automatically create
-      a logged, non-partitioned queue during startup.
+    <Aside title="Queue Name">
+      By default, your worker uses a queue named `tasks`. You can change this by setting the [`queueName` option](/edge-worker/configuration#queuename) - useful when running multiple workers or integrating with existing queues.
     </Aside>
 
 </Steps>
