@@ -13,13 +13,15 @@ prev:
 
 **pgflow** is a Postgres-first workflow engine I began building in November. I wanted a **deeply integrated**, open-source solution that **runs entirely on Supabase—no external workers or self-hosting required**. Since I couldn’t find one, I decided to build it.
 
-##### Can I use it yet?
+##### Can I use it?
 
-**Not yet** - I'm aiming to have the first version ready in early 2025.
+**Not yet** - I've released [Edge Worker](/edge-worker) first and the flow engine will follow
+after gathering some feedback and improving the worker.
 
-Living with **ADHD**, I bring a lot of **hyperfocus** and **passion** to this project, but my process can be a bit scattered at times, and the scope can feel huge.
-The worker, a critical piece of pgflow, is already extracted from my private stuff and lives happily in a new monorepo. Stay tuned!
+I'm aiming to have the alpha version and docs ready in Q1 2025 (soft deadline :-)).
 
 ##### Have questions or want to say Hi?
 
-I'm `u/jumski` on Reddit, [@jumski](https://github.com/jumski) on GitHub and `@jumski` on Supabase Discord.
+I'm [u/jumski](https://reddit.com/u/jumski) on Reddit, [@jumski](https://github.com/jumski) on GitHub and `@jumski` on Supabase Discord.
+
+Follow **pgflow** on [Twitter / X](https://twitter.com/pgflow_dev) and [BlueSky](https://bsky.app/profile/pgflow.bsky.social).
