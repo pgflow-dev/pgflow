@@ -15,7 +15,6 @@ export default defineConfig({
       },
       social: {
         github: GITHUB_REPO_URL,
-        discord: 'https://discord.gg/fyMHqy9h',
         twitter: 'https://x.com/pgflow_dev',
         blueSky: 'https://bsky.app/profile/pgflow.bsky.social',
       },
