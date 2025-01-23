@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import starlightLinksValidator from 'starlight-links-validator';
 
 const GITHUB_REPO_URL = 'https://github.com/pgflow-dev/pgflow';
 
@@ -9,6 +10,7 @@ export default defineConfig({
   site: 'https://pgflow.dev',
   integrations: [
     starlight({
+      plugins: [starlightLinksValidator()],
       title: 'pgflow',
       editLink: {
         baseUrl: `${GITHUB_REPO_URL}/edit/main/pkgs/pgflow.dev/`,
