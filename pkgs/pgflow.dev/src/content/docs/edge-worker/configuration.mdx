@@ -21,6 +21,13 @@ EdgeWorker.start(console.log);
 ```
 </Aside>
 
+:::caution[Configuration Validation]
+Currently, configuration options are not validated at runtime. Please double-check your settings carefully.
+
+Runtime validation is planned as part of the upcoming [configuration system improvements](/edge-worker/project-status#planned-architecture-improvements).
+:::
+
+
 ### Default configuration
 
 ```typescript
@@ -77,6 +84,14 @@ EdgeWorker.start(handler, {
 
 Amount of seconds to wait for a message to be available in the queue.
 
+:::caution[Polling and Worker Health]
+Keep `maxPollSeconds` at 5 seconds or lower. Here's why:
+- Heartbeats are sent once per main loop iteration
+- Each iteration can take up to `maxPollSeconds` to complete
+- Workers are considered inactive after 6 seconds without a heartbeat
+- Therefore, `maxPollSeconds` must be lower than 5 seconds to account for any additional delays
+:::
+
 ```ts
 EdgeWorker.start(handler, {
   maxPollSeconds: 5 // Long-poll for 5 seconds waiting for a message
@@ -90,8 +105,12 @@ EdgeWorker.start(handler, {
 The interval (in milliseconds) between database polling attempts by `pgmq.read_with_poll`.
 The default value is suitable for most use cases.
 
-<Aside type="caution">
-  This value should be lower than the `maxPollSeconds`.
+<Aside type="caution" title="Polling Intervals">
+Keep `pollIntervalMs` lower than `maxPollSeconds * 1000`. Here's why:
+- The worker polls the database every `pollIntervalMs` milliseconds
+- This polling continues until `maxPollSeconds` is reached
+- If `pollIntervalMs` is too high, the worker might exit after just one poll
+- For example: with `maxPollSeconds: 5` and `pollIntervalMs: 6000`, only one poll would occur
 </Aside>
 
 
