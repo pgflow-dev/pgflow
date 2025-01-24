@@ -14,7 +14,7 @@ Setting up your first worker is straightforward and takes just a few minutes.
 <NotProductionReady />
 
 <Aside type="caution" title="Requirements">
-Before starting, please read the [Prepare environment](/prepare-environment) guide.
+Before starting, please read the [Install Edge Worker](/edge-worker/install-edge-worker) guide.
 </Aside>
 
 <Steps>
@@ -27,51 +27,60 @@ Before starting, please read the [Prepare environment](/prepare-environment) gui
     ```typescript
     import { EdgeWorker } from "jsr:@pgflow/edge-worker";
 
-    EdgeWorker.start(async (payload: { urlToScrape: string }) => {
+    EdgeWorker.start(async (payload: { url: string }) => {
       // do something with the message
-      console.log('Scraping URL...', payload.urlToScrape);
+      console.log('Scraping URL...', payload.url);
     });
     ```
 
 1. ### Start Edge Runtime
 
-    Start the Edge Runtime by running the following command:
+    Start the Edge Runtime with the following command:
 
     ```bash frame="none"
 		npx supabase functions serve
     ```
 
-		:::note[Restarting Edge Runtime]
-		You must stop and start the Edge Runtime everytime you make changes 
-		to your workers, because of `per_worker` policy.
-		:::
+    This makes Supabase listen for incoming HTTP requests, but does not start
+    your worker yet.
+
+    :::note[Restarting Edge Runtime]
+    You must stop and start the Edge Runtime every time you make changes 
+    to your workers because of the `per_worker` policy.
+    :::
 
 1. ### Start your worker
 
-    Start the worker by sending an HTTP request to your Edge Function:
+    Start the worker by sending an HTTP request to your new Edge Function
+    (replace `<function-name>` with your function name):
 
     ```bash frame="none"
     curl http://localhost:54321/functions/v1/<function-name>
     ```
 
+    This will boot a new instance and start your worker.
+
 4. ### Process your first message
 
-    By default, the worker looks for messages in the `tasks` queue (this name is configurable).
+    Your worker is now polling for messages on the `tasks` queue (which was automatically created during startup).
 
-    Send a test message to the queue:
+    Send a test message:
 
     ```sql frame="none"
     SELECT pgmq.send(
       queue_name => 'tasks',
-      msg => '{"urlToScrape": "https://example.com"}'::jsonb
+      msg => '{"url": "https://example.com"}'::jsonb
     );
     ```
 
-    The worker will process the message immediately.
+    The message will be processed immediately and you should see the following output:
 
-    <Aside title="Creating queues">
-      If you haven't created the queue beforehand, the worker will automatically create
-      a logged, non-partitioned queue during startup.
+    ```bash frame="none"
+    [Info] Scraping URL... https://example.com/
+    ```
+
+    <Aside title="Queue Name">
+      By default, your worker uses a queue named `tasks`. You can change this by setting the [`queueName` option](/edge-worker/configuration#queuename) - useful when running multiple workers or integrating with existing queues.
     </Aside>
 
 </Steps>
