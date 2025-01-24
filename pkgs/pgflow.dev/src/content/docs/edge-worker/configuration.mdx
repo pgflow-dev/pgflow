@@ -155,13 +155,13 @@ EdgeWorker.start(handler, {
 
 The duration (in seconds) that a message remains invisible to other consumers while being processed.
 
-<Aside title="Timeouts" type="caution">
-Set this value higher than your task's maximum expected processing time to prevent duplicate processing.
-</Aside>
-
-<Aside title="Work-in-Progress" type="danger">
-This option will likely be refactored into `timeoutMs` to control both task timeouts and visibility timeouts.
-**Consider this configuration unstable for now.**
+<Aside title="Message Visibility and Processing" type="caution">
+Keep `visibilityTimeout` higher than your task's maximum processing time. Here's why:
+- When a worker picks up a message, it becomes invisible for `visibilityTimeout` seconds
+- If processing takes longer than `visibilityTimeout`, the message becomes visible again
+- Other workers can then pick up and process the same message
+- This leads to duplicate processing of the same task
+- For example: with `visibilityTimeout: 3` and a task that takes 5 seconds, the message could be processed twice
 </Aside>
 
 ```ts
