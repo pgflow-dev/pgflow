@@ -35,7 +35,7 @@ Before starting, please read the [Install Edge Worker](/edge-worker/install-edge
 
 1. ### Start Edge Runtime
 
-    Start the Edge Runtime by running the following command:
+    Start the Edge Runtime with the following command:
 
     ```bash frame="none"
 		npx supabase functions serve
@@ -45,24 +45,24 @@ Before starting, please read the [Install Edge Worker](/edge-worker/install-edge
     your worker yet.
 
     :::note[Restarting Edge Runtime]
-    You must stop and start the Edge Runtime everytime you make changes 
-    to your workers, because of `per_worker` policy.
+    You must stop and start the Edge Runtime every time you make changes 
+    to your workers because of the `per_worker` policy.
     :::
 
 1. ### Start your worker
 
     Start the worker by sending an HTTP request to your new Edge Function
-    (replace `<function-name>` with the name of yours):
+    (replace `<function-name>` with your function name):
 
     ```bash frame="none"
     curl http://localhost:54321/functions/v1/<function-name>
     ```
 
-    This will boot a new instance, effectively starting up your worker:
+    This will boot a new instance and start your worker.
 
 4. ### Process your first message
 
-    Your worker is now running and long-polling for messages on `tasks` queue (which was automatically created during startup).
+    Your worker is now polling for messages on the `tasks` queue (which was automatically created during startup).
 
     Send a test message:
 
