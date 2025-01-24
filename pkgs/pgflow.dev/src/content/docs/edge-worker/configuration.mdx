@@ -59,7 +59,12 @@ EdgeWorker.start(handler, {
 });
 ```
 
-## Queue and polling
+## Queue configuration
+
+:::tip[You don't need to create queues manually]
+The worker will automatically create a logged, non-partitioned queue
+with configured name during startup if it does not exist.
+:::
 
 ### `queueName`
 **Type:** `string`
@@ -67,16 +72,62 @@ EdgeWorker.start(handler, {
 
 The name of the PGMQ queue to listen to for messages.
 
-<Aside title="You don't need to create queues manually" type="tip">
-The worker will automatically create a logged, non-partitioned queue
-with configured name during startup if it does not exist.
-</Aside>
-
 ```ts
 EdgeWorker.start(handler, {
   queueName: 'my_custom_queue'
 });
 ```
+
+## Message Processing
+
+### `visibilityTimeout`
+**Type:** `number`
+**Default:** `3`
+
+The duration (in seconds) that a message remains invisible to other consumers while being processed.
+
+<Aside title="Message Visibility and Processing" type="caution">
+Keep `visibilityTimeout` higher than your task's maximum processing time. Here's why:
+- When a worker picks up a message, it becomes invisible for `visibilityTimeout` seconds
+- If processing takes longer than `visibilityTimeout`, the message becomes visible again
+- Other workers can then pick up and process the same message
+- This leads to duplicate processing of the same task
+- For example: with `visibilityTimeout: 3` and a task that takes 5 seconds, the message could be processed twice
+</Aside>
+
+```ts
+EdgeWorker.start(handler, {
+  visibilityTimeout: 5 // message will re-appear in queue after 5 seconds if not processed
+});
+```
+
+### `maxConcurrent`
+**Type:** `number`
+**Default:** `10`
+
+This option limits concurrency - the maximum number of messages that can be processed at the same time.
+Increase for IO-heavy tasks (network or db calls), decrease for CPU-heavy tasks.
+
+```ts
+EdgeWorker.start(handler, {
+  maxConcurrent: 10 // Process up to 10 messages at once
+});
+```
+
+### `maxPgConnections`
+**Type:** `number`
+**Default:** `4`
+
+Maximum number of concurrent database connections.
+Increase for IO-heavy tasks (network or database operations), decrease for CPU-heavy tasks.
+
+```ts
+EdgeWorker.start(handler, {
+  maxPgConnections: 10 // Use up to 10 connections to the database
+});
+```
+
+## Polling Behavior
 
 ### `maxPollSeconds`
 **Type:** `number`
@@ -149,50 +200,3 @@ EdgeWorker.start(handler, {
 });
 ```
 
-### `visibilityTimeout`
-**Type:** `number`
-**Default:** `3`
-
-The duration (in seconds) that a message remains invisible to other consumers while being processed.
-
-<Aside title="Message Visibility and Processing" type="caution">
-Keep `visibilityTimeout` higher than your task's maximum processing time. Here's why:
-- When a worker picks up a message, it becomes invisible for `visibilityTimeout` seconds
-- If processing takes longer than `visibilityTimeout`, the message becomes visible again
-- Other workers can then pick up and process the same message
-- This leads to duplicate processing of the same task
-- For example: with `visibilityTimeout: 3` and a task that takes 5 seconds, the message could be processed twice
-</Aside>
-
-```ts
-EdgeWorker.start(handler, {
-  visibilityTimeout: 5 // message will re-appear in queue after 5 seconds if not processed
-});
-```
-
-## Concurrency
-
-### `maxConcurrent`
-**Type:** `number`
-**Default:** `10`
-
-This option limits concurrency - the maximum number of messages that can be processed at the same time.
-Increase for IO-heavy tasks (network or db calls), decrease for CPU-heavy tasks.
-
-```ts
-EdgeWorker.start(handler, {
-  maxConcurrent: 10 // Process up to 10 messages at once
-});
-```
-
-### `maxPgConnections`
-**Type:** `number`
-**Default:** `4`
-
-Maximum number of concurrent database connections.
-Increase for IO-heavy tasks (network or database operations), decrease for CPU-heavy tasks.
-
-```ts
-EdgeWorker.start(handler, {
-  maxPgConnections: 10 // Use up to 10 connections to the database
-});
