@@ -56,8 +56,13 @@ The planned solution involves implementing worker-side retries for SQL queries.
 Following the resolution of current issues, a major architectural refactor is planned.
 The main goals are to:
 
-- Implement proper dependency injection
+#### Implement proper dependency injection
 - Introduce a factory/builder pattern
 - Enable easy component swapping, including:
   - MessageExecutor (required for pgflow orchestrator integration)
   - Polling mechanism (replacing ReadWithPollPoller with ListenNotifyPoller for improved performance)
+
+#### Improve configuration handling
+
+- Split the configuration into logical sub-configurations
+- Add configuration validation
