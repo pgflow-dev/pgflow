@@ -8,11 +8,15 @@ title: ⚠️ Project Status
 
 :::
 
-Edge Worker should be considered an advanced Proof of Concept.
+:::note[API Stability]
+The core `EdgeWorker.start()` API will remain stable. However, the configuration options structure
+will be reorganized into logical sub-configurations. The current configuration shape should not be
+considered stable and will change in future releases.
+:::
 
-It is **not production-ready** at this time.
+I am actively working on fixing various issues and improving the overall system reliability.
 
-I am actively working on resolving several known issues.
+Here are few that I managed to observe but have not yet fixed:
 
 ### PostgresError: DbHandler exited
 
@@ -57,9 +61,3 @@ The main goals are to:
 - Enable easy component swapping, including:
   - MessageExecutor (required for pgflow orchestrator integration)
   - Polling mechanism (replacing ReadWithPollPoller with ListenNotifyPoller for improved performance)
-
-:::note[API Stability]
-The core `EdgeWorker.start()` API will remain stable. However, the configuration options structure
-will be reorganized into logical sub-configurations. The current configuration shape should not be
-considered stable and will change in future releases.
-:::
