@@ -3,7 +3,7 @@ import { delay } from 'jsr:@std/async';
 import postgres from 'postgres';
 
 const EDGE_WORKER_DB_URL = Deno.env.get('EDGE_WORKER_DB_URL')!;
-const sql = postgres(EDGE_WORKER_DB_URL, { prepare: true });
+const sql = postgres(EDGE_WORKER_DB_URL, { prepare: false });
 await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
 await sql`SELECT pgmq.create('serial_sleep')`;
 

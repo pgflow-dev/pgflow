@@ -53,7 +53,7 @@ export class Worker<MessagePayload extends Json> {
 
     this.sql = postgres(this.config.connectionString, {
       max: this.config.maxPgConnections,
-      prepare: true,
+      prepare: false,
     });
 
     const queue = new Queue<MessagePayload>(this.sql, this.config.queueName);

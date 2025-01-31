@@ -5,7 +5,7 @@ import { crypto } from 'jsr:@std/crypto';
 const EDGE_WORKER_DB_URL = Deno.env.get('EDGE_WORKER_DB_URL')!;
 console.log('EDGE_WORKER_DB_URL', EDGE_WORKER_DB_URL);
 
-const sql = postgres(EDGE_WORKER_DB_URL, { prepare: true });
+const sql = postgres(EDGE_WORKER_DB_URL, { prepare: false });
 
 async function cpuIntensiveTask() {
   let data = new TextEncoder().encode('burn');
