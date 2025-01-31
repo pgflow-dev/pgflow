@@ -47,12 +47,14 @@ export class MessageExecutor<MessagePayload extends Json> {
       // Check if already aborted before starting
       this.signal.throwIfAborted();
 
+      this.logger.debug(`Executing task ${this.msgId}...`);
       await this.messageHandler(this.record.message!);
 
       this.logger.debug(
         `Task ${this.msgId} completed successfully, archiving...`
       );
       await this.queue.archive(this.msgId);
+      this.logger.debug(`Archived task ${this.msgId} successfully`);
 
       // TODO: uncomment when ready to debug this
       // await this.batchArchiver.add(this.msgId);
