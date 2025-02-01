@@ -14,7 +14,7 @@ enabled = true
 port = 50329
 pool_mode = "transaction"
 default_pool_size = 200
-max_client_conn = 200
+max_client_conn = 250
 
 [db.seed]
 enabled = true

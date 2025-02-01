@@ -4,11 +4,12 @@
   "license": "MIT",
   "exports": "./mod.ts",
   "imports": {
-    "postgres": "npm:postgres@3.4.5",
-    "@std/async": "jsr:@std/async",
+    "@henrygd/queue": "jsr:@henrygd/queue@^1.0.7",
     "@std/assert": "jsr:@std/assert",
-    "@std/testing/mock": "jsr:@std/testing/mock",
+    "@std/async": "jsr:@std/async",
     "@std/log": "jsr:@std/log@^0.224.13",
-    "p-queue": "npm:p-queue@^8.0.1"
+    "@std/testing/mock": "jsr:@std/testing/mock",
+    "p-queue": "npm:p-queue@^8.0.1",
+    "postgres": "npm:postgres@3.4.5"
   }
 }
