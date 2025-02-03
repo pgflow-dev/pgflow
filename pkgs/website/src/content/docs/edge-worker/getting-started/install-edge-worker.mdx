@@ -54,7 +54,7 @@ If you haven't installed the CLI yet or need to upgrade, see Supabase's [install
     Modify the `db.pooler` section in your `supabase/config.toml` file
     to enable pooler and make sure that `db.pool_mode` is set to `"transaction"`.
 
-    ```diff lang="toml" /pool_mode = "transaction"/
+    ```diff lang="toml" {8}
       [db.pooler]
     - enabled = false
     + enabled = true
