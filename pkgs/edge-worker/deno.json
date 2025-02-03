@@ -9,7 +9,6 @@
     "@std/async": "jsr:@std/async",
     "@std/log": "jsr:@std/log@^0.224.13",
     "@std/testing/mock": "jsr:@std/testing/mock",
-    "p-queue": "npm:p-queue@^8.0.1",
     "postgres": "npm:postgres@3.4.5"
   }
 }
