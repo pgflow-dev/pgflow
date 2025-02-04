@@ -32,23 +32,12 @@ export default defineConfig({
         {
           label: 'Edge Worker',
           items: [
-            { label: 'How it works?', slug: 'edge-worker/how-it-works' },
+            { label: 'How it works?', link: '/edge-worker/how-it-works' },
             {
-              label: 'Getting Started',
-              items: [
-                {
-                  label: 'Install Edge Worker',
-                  slug: 'edge-worker/install-edge-worker',
-                },
-                {
-                  label: 'Create your first worker',
-                  slug: 'edge-worker/create-first-worker',
-                },
-                { label: 'Configuration', slug: 'edge-worker/configuration' },
-                { label: 'Observability', slug: 'edge-worker/observability' },
-              ],
+              label: 'Getting started',
+              autogenerate: { directory: 'edge-worker/getting-started' },
             },
-            { label: '⚠️ Project Status', slug: 'edge-worker/project-status' },
+            { label: '⚠️ Project Status', link: '/edge-worker/project-status' },
           ],
         },
       ],
