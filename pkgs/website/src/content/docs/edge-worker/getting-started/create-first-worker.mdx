@@ -1,5 +1,7 @@
 ---
 title: Create your first worker
+sidebar:
+  order: 2
 ---
 
 import { Aside, Steps } from "@astrojs/starlight/components";
@@ -11,7 +13,7 @@ Setting up your first worker is straightforward and takes just a few minutes.
 <NotProductionReady />
 
 <Aside type="caution" title="Requirements">
-Before starting, please read the [Install Edge Worker](/edge-worker/install-edge-worker) guide.
+Before starting, please read the [Install Edge Worker](/edge-worker/getting-started/install-edge-worker) guide.
 </Aside>
 
 <Steps>
@@ -77,7 +79,7 @@ Before starting, please read the [Install Edge Worker](/edge-worker/install-edge
     ```
 
     <Aside title="Queue Name">
-      By default, your worker uses a queue named `tasks`. You can change this by setting the [`queueName` option](/edge-worker/configuration#queuename) - useful when running multiple workers or integrating with existing queues.
+      By default, your worker uses a queue named `tasks`. You can change this by setting the [`queueName` option](/edge-worker/getting-started/configuration#queuename) - useful when running multiple workers or integrating with existing queues.
     </Aside>
 
 </Steps>
