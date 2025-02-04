@@ -124,20 +124,20 @@ export class Worker<MessagePayload extends Json> {
     this.lifecycle.transitionToStopping();
 
     try {
-      this.logger.debug('-> Stopped accepting new messages');
+      this.logger.info('-> Stopped accepting new messages');
       this.abortController.abort();
 
-      this.logger.debug('-> Waiting for pending tasks to complete...');
+      this.logger.info('-> Waiting for pending tasks to complete...');
       await this.executionController.awaitCompletion();
-      this.logger.debug('-> Pending tasks completed!');
+      this.logger.info('-> Pending tasks completed!');
 
       this.lifecycle.acknowledgeStop();
 
-      this.logger.debug('-> Closing SQL connection...');
+      this.logger.info('-> Closing SQL connection...');
       await this.sql.end();
-      this.logger.debug('-> SQL connection closed!');
+      this.logger.info('-> SQL connection closed!');
     } catch (error) {
-      this.logger.debug(`Error during worker stop: ${error}`);
+      this.logger.info(`Error during worker stop: ${error}`);
       throw error;
     }
   }
