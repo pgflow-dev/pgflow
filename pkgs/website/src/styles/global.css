@@ -28,3 +28,21 @@
 	--sl-color-gray-7: #f4f7f9;
 	--sl-color-black: #ffffff;
 }
+
+/* Logo styling */
+svg .primary {
+	fill: var(--sl-color-accent);
+}
+
+svg .secondary {
+	fill: var(--sl-color-accent-high);
+}
+
+.hero img {
+	transition: all 1.5s ease;
+}
+
+.hero img:hover {
+	transform: scale(1.2);
+	filter: drop-shadow(0 0 15px var(--sl-color-accent));
+}
