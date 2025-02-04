@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightLinksValidator from 'starlight-links-validator';
+import starlightSidebarTopics from 'starlight-sidebar-topics';
 
 const GITHUB_REPO_URL = 'https://github.com/pgflow-dev/pgflow';
 
@@ -11,7 +12,48 @@ export default defineConfig({
   integrations: [
     starlight({
       favicon: '/favicons/favicon.ico',
-      plugins: [starlightLinksValidator()],
+      plugins: [
+        starlightLinksValidator(),
+        starlightSidebarTopics([
+          {
+            label: 'Edge Worker',
+            icon: 'open-book',
+            link: '/edge-worker/',
+            items: [
+              { label: 'How it works?', link: '/edge-worker/how-it-works' },
+              {
+                label: 'Getting started',
+                autogenerate: { directory: 'edge-worker/getting-started' },
+              },
+              {
+                label: '⚠️ Project Status',
+                link: '/edge-worker/project-status',
+              },
+            ],
+          },
+          {
+            label: 'pgflow',
+            icon: 'open-book',
+            link: '/pgflow/',
+            badge: {
+              text: 'soon!',
+              variant: 'note',
+            },
+            items: [
+              { label: 'Getting started', link: '/pgflow/getting-started' },
+              {
+                label: '⚠️ Project Status',
+                link: '/pgflow/project-status',
+              },
+            ],
+          },
+          {
+            label: 'Found a bug?',
+            icon: 'github',
+            link: 'https://github.com/pgflow-dev/pgflow/issues/new',
+          },
+        ]),
+      ],
       title: 'pgflow',
       description: 'Simple, Postgres-First Workflow Orchestration for Supabase',
       logo: {
@@ -29,19 +71,6 @@ export default defineConfig({
         blueSky: 'https://bsky.app/profile/pgflow.bsky.social',
       },
       components: {},
-      sidebar: [
-        {
-          label: 'Edge Worker',
-          items: [
-            { label: 'How it works?', link: '/edge-worker/how-it-works' },
-            {
-              label: 'Getting started',
-              autogenerate: { directory: 'edge-worker/getting-started' },
-            },
-            { label: '⚠️ Project Status', link: '/edge-worker/project-status' },
-          ],
-        },
-      ],
     }),
   ],
 });
