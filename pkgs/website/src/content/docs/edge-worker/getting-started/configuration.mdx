@@ -1,9 +1,7 @@
 ---
 title: Configuration
-prev:
-  link: /edge-worker/install-edge-worker
-next:
-  link: /edge-worker/observability
+sidebar:
+  order: 3
 ---
 
 import { Aside, Steps } from "@astrojs/starlight/components";
@@ -87,12 +85,17 @@ EdgeWorker.start(handler, {
 The duration (in seconds) that a message remains invisible to other consumers while being processed.
 
 <Aside title="Message Visibility and Processing" type="caution">
-Keep `visibilityTimeout` higher than your task's maximum processing time. Here's why:
-- When a worker picks up a message, it becomes invisible for `visibilityTimeout` seconds
-- If processing takes longer than `visibilityTimeout`, the message becomes visible again
-- Other workers can then pick up and process the same message
-- This leads to duplicate processing of the same task
-- For example: with `visibilityTimeout: 3` and a task that takes 5 seconds, the message could be processed twice
+Keep `visibilityTimeout` higher than your task's maximum processing time.
+  <details>
+  <summary>
+  Here's why:
+  </summary>
+  - When a worker picks up a message, it becomes invisible for `visibilityTimeout` seconds
+  - If processing takes longer than `visibilityTimeout`, the message becomes visible again
+  - Other workers can then pick up and process the same message
+  - This leads to duplicate processing of the same task
+  - For example: with `visibilityTimeout: 3` and a task that takes 5 seconds, the message could be processed twice
+  </details>
 </Aside>
 
 ```ts
@@ -136,11 +139,16 @@ EdgeWorker.start(handler, {
 Amount of seconds to wait for a message to be available in the queue.
 
 :::caution[Polling and Worker Health]
-Keep `maxPollSeconds` at 5 seconds or lower. Here's why:
-- Heartbeats are sent once per main loop iteration
-- Each iteration can take up to `maxPollSeconds` to complete
-- Workers are considered inactive after 6 seconds without a heartbeat
-- Therefore, `maxPollSeconds` must be lower than 5 seconds to account for any additional delays
+Keep `maxPollSeconds` at 5 seconds or lower. 
+  <details>
+  <summary>
+  Here's why:
+  </summary>
+  - Heartbeats are sent once per main loop iteration
+  - Each iteration can take up to `maxPollSeconds` to complete
+  - Workers are considered inactive after 6 seconds without a heartbeat
+  - Therefore, `maxPollSeconds` must be lower than 5 seconds to account for any additional delays
+  </details>
 :::
 
 ```ts
@@ -157,11 +165,16 @@ The interval (in milliseconds) between database polling attempts by `pgmq.read_w
 The default value is suitable for most use cases.
 
 <Aside type="caution" title="Polling Intervals">
-Keep `pollIntervalMs` lower than `maxPollSeconds * 1000`. Here's why:
-- The worker polls the database every `pollIntervalMs` milliseconds
-- This polling continues until `maxPollSeconds` is reached
-- If `pollIntervalMs` is too high, the worker might exit after just one poll
-- For example: with `maxPollSeconds: 5` and `pollIntervalMs: 6000`, only one poll would occur
+Keep `pollIntervalMs` lower than `maxPollSeconds * 1000`. 
+  <details>
+  <summary>
+  Here's why:
+  </summary>
+  - The worker polls the database every `pollIntervalMs` milliseconds
+  - This polling continues until `maxPollSeconds` is reached
+  - If `pollIntervalMs` is too high, the worker might exit after just one poll
+  - For example: with `maxPollSeconds: 5` and `pollIntervalMs: 6000`, only one poll would occur
+  </details>
 </Aside>
 
 
