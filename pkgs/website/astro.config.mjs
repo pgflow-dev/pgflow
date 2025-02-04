@@ -18,7 +18,7 @@ export default defineConfig({
           {
             label: 'Edge Worker',
             icon: 'open-book',
-            link: '/edge-worker/',
+            link: '/edge-worker/how-it-works',
             items: [
               { label: 'How it works?', link: '/edge-worker/how-it-works' },
               {
