@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .primary { fill: var(--sl-color-black, #ffffff); }
+    .secondary { fill: var(--sl-color-accent-high, #007a6d); }
+  </style>
+  <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+  <g id="SVGRepo_tracerCarrier"></g>
+  <g id="SVGRepo_iconCarrier"> 
+    <title>nodes-groups</title> 
+    <g id="Layer_2" data-name="Layer 2"> 
+      <g id="invisible_box" data-name="invisible box"> 
+        <rect width="48" height="48" fill="none"></rect> 
+      </g> 
+      <g id="Layer_6" data-name="Layer 6"> 
+        <g> 
+          <path class="primary" d="M27,17.7l-9-6-9,6v6.7L2,29.1V38l9,6,7-4.7L25,44l9-6V29.1l-7-4.7ZM16,35.9l-5,3.3L6,35.8V31.2l5-3.3,5,3.4Zm2-8.1-5-3.4V19.8l5-3.3,5,3.3v4.6Zm12,3.4v4.7l-5,3.3-5-3.4V31.3l5-3.4Z"></path> 
+          <path class="secondary" d="M33,13.7,25.1,8.4a2.1,2.1,0,0,0-2.8.5,2.1,2.1,0,0,0,.6,2.8L29,15.8v6.7l7,4.7v5.7a2,2,0,1,0,4,0V25.1l-7-4.7Z"></path> 
+          <path class="secondary" d="M39,16.3V9.6L31.1,4.3a2.1,2.1,0,0,0-2.8.6,2.1,2.1,0,0,0,.6,2.8l6.1,4v6.8l7,4.6v5.7a2,2,0,0,0,4,0V21Z"></path> 
+        </g> 
+      </g> 
+    </g> 
+  </g>
+</svg>

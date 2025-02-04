@@ -10,6 +10,7 @@ export default defineConfig({
   site: 'https://pgflow.dev',
   integrations: [
     starlight({
+      favicon: '/favicons/favicon.ico',
       plugins: [starlightLinksValidator()],
       title: 'pgflow',
       description:
