@@ -8,10 +8,10 @@
 
 This repository is a monorepo that contains the following packages:
 
-| Nx Package     | Description |
-|--------------|-------------|
-| [edge-worker](./pkgs/edge-worker/)  | An auto-restarting task queue worker implemented for Supabase Edge Functions and PGMQ |
-|  [pgflow.dev](./pkgs/pgflow.dev/)  | Documentation Site |
+| Nx Package                         | Description                                                                           |
+| ---------------------------------- | ------------------------------------------------------------------------------------- |
+| [edge-worker](./pkgs/edge-worker/) | An auto-restarting task queue worker implemented for Supabase Edge Functions and PGMQ |
+| [website](./pkgs/website/)         | Documentation Site                                                                    |
 
 ## NX Readme
 

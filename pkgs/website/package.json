@@ -1,5 +1,5 @@
 {
-  "name": "pgflow-dev",
+  "name": "@pgflow/website",
   "type": "module",
   "version": "0.0.1",
   "scripts": {

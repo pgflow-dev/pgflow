@@ -13,7 +13,7 @@ export default defineConfig({
       plugins: [starlightLinksValidator()],
       title: 'pgflow',
       editLink: {
-        baseUrl: `${GITHUB_REPO_URL}/edit/main/pkgs/pgflow.dev/`,
+        baseUrl: `${GITHUB_REPO_URL}/edit/main/pkgs/website/`,
       },
       social: {
         github: GITHUB_REPO_URL,
