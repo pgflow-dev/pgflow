@@ -13,8 +13,7 @@ export default defineConfig({
       favicon: '/favicons/favicon.ico',
       plugins: [starlightLinksValidator()],
       title: 'pgflow',
-      description:
-        'Postgres-native workflow Engine with deep Supabase integration',
+      description: 'Simple, Postgres-First Workflow Orchestration for Supabase',
       logo: {
         replacesTitle: true,
         light: './src/assets/pgflow-logo-light.svg',
