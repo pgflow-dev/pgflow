@@ -12,6 +12,13 @@ export default defineConfig({
     starlight({
       plugins: [starlightLinksValidator()],
       title: 'pgflow',
+      description:
+        'Postgres-native workflow Engine with deep Supabase integration',
+      logo: {
+        replacesTitle: true,
+        light: './src/assets/pgflow-logo-light.svg',
+        dark: './src/assets/pgflow-logo-dark.svg',
+      },
       editLink: {
         baseUrl: `${GITHUB_REPO_URL}/edit/main/pkgs/website/`,
       },
