@@ -19,6 +19,7 @@ export default defineConfig({
         light: './src/assets/pgflow-logo-light.svg',
         dark: './src/assets/pgflow-logo-dark.svg',
       },
+      customCss: ['./src/styles/global.css'],
       editLink: {
         baseUrl: `${GITHUB_REPO_URL}/edit/main/pkgs/website/`,
       },
