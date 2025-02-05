@@ -8,7 +8,7 @@ import {
   waitForBatchArchiver,
 } from './_helpers.ts';
 
-const MESSAGES_TO_SEND = 20000;
+const MESSAGES_TO_SEND = 100000;
 const WORKER_NAME = 'max_concurrency';
 
 Deno.test(
