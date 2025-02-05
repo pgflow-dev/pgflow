@@ -75,8 +75,16 @@ export class WorkerLifecycle<MessagePayload extends Json> {
     await this.heartbeat?.send();
   }
 
-  isRunning(): boolean {
+  get isRunning() {
     return this.workerState.isRunning;
+  }
+
+  get isStopping() {
+    return this.workerState.isStopping;
+  }
+
+  get isStopped() {
+    return this.workerState.isStopped;
   }
 
   transitionToStopping() {
