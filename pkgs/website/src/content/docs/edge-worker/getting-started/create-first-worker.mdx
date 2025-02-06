@@ -28,16 +28,16 @@ Before starting, please read the [Install Edge Worker](/edge-worker/getting-star
     First, create a new Edge Function using the Supabase CLI. Then, replace its content with this code:
 
     ```typescript
-		import { EdgeWorker } from "jsr:@pgflow/edge-worker";
-
-		EdgeWorker.start(async (payload: { url: string }) => {
-			const response = await fetch(payload.url);
-
-			console.log("Scraped website!", {
-				url: payload.url,
-				status: response.status,
-			});
-		});
+    import { EdgeWorker } from "jsr:@pgflow/edge-worker";
+    
+    EdgeWorker.start(async (payload: { url: string }) => {
+      const response = await fetch(payload.url);
+    
+      console.log("Scraped website!", {
+        url: payload.url,
+        status: response.status,
+      });
+    });
     ```
 
 1. ### Start Edge Runtime
@@ -45,7 +45,7 @@ Before starting, please read the [Install Edge Worker](/edge-worker/getting-star
     Start the Edge Runtime with the following command:
 
     ```bash frame="none"
-		npx supabase functions serve
+    npx supabase functions serve
     ```
 
     This makes Supabase listen for incoming HTTP requests, but does not start
