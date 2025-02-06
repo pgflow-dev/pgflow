@@ -1,12 +1,8 @@
 import { EdgeWorker } from '../_src/EdgeWorker.ts';
-import postgres from 'postgres';
+import { sql } from '../utils.ts';
 
-const EDGE_WORKER_DB_URL = Deno.env.get('EDGE_WORKER_DB_URL')!;
-console.log('EDGE_WORKER_DB_URL', EDGE_WORKER_DB_URL);
-
-const sql = postgres(EDGE_WORKER_DB_URL);
-await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
-await sql`SELECT pgmq.create('increment_sequence')`;
+// await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
+// await sql`SELECT pgmq.create('increment_sequence')`;
 
 async function incrementCounter() {
   console.log(
