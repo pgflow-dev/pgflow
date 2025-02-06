@@ -10,14 +10,29 @@ select EXTRACT(EPOCH FROM (max(archived_at) - min(enqueued_at))) as total_second
 
 -- Processing time ranges per read_ct
 SELECT 
-    read_ct,
+    read_ct - 1 as retry_count,
     COUNT(*) as messages,
-    round(avg(EXTRACT(EPOCH FROM (archived_at - enqueued_at))), 2) as avg_s,
-    round(min(EXTRACT(EPOCH FROM (archived_at - enqueued_at))), 2) as min_s,
-    round(max(EXTRACT(EPOCH FROM (archived_at - enqueued_at))), 2) as max_s
+    round(avg(EXTRACT(EPOCH FROM (vt - make_interval(secs => 3) - enqueued_at))), 2) as avg_s,
+    round(min(EXTRACT(EPOCH FROM (vt - make_interval(secs => 3) - enqueued_at))), 2) as min_s,
+    round(max(EXTRACT(EPOCH FROM (vt - make_interval(secs => 3) - enqueued_at))), 2) as max_s
 FROM pgmq.a_max_concurrency 
 GROUP BY read_ct 
 ORDER BY read_ct;
+
+-- Processing time percentiles
+WITH processing_times AS (
+    SELECT archived_at - (vt - make_interval(secs=>3)) as processing_time
+    FROM pgmq.a_max_concurrency
+)
+SELECT 
+    ROUND(EXTRACT(epoch FROM percentile_cont(0.50) WITHIN GROUP (ORDER BY processing_time)) * 1000) as p50_ms,
+    ROUND(EXTRACT(epoch FROM percentile_cont(0.75) WITHIN GROUP (ORDER BY processing_time)) * 1000) as p75_ms,
+    ROUND(EXTRACT(epoch FROM percentile_cont(0.90) WITHIN GROUP (ORDER BY processing_time)) * 1000) as p90_ms,
+    ROUND(EXTRACT(epoch FROM percentile_cont(0.95) WITHIN GROUP (ORDER BY processing_time)) * 1000) as p95_ms,
+    ROUND(EXTRACT(epoch FROM percentile_cont(0.99) WITHIN GROUP (ORDER BY processing_time)) * 1000) as p99_ms,
+    ROUND(EXTRACT(epoch FROM MIN(processing_time)) * 1000) as min_ms,
+    ROUND(EXTRACT(epoch FROM MAX(processing_time)) * 1000) as max_ms
+FROM processing_times;
 
 -- Total processing time for messages with read_ct 1 or 2
 SELECT 
@@ -97,3 +112,4 @@ SELECT
 FROM processing_times
 GROUP BY time_bucket, read_ct
 ORDER BY time_bucket, read_ct;
+
