@@ -29,6 +29,15 @@
   --sl-color-black: #ffffff;
 }
 
+/* glow variables */
+:root {
+  --logo-glow-color: rgba(153, 121, 211, 0.4);
+}
+
+:root[data-theme='light'] {
+  --logo-glow-color: rgba(153, 121, 211, 0.7);
+}
+
 /* Logo styling */
 svg .primary {
   fill: var(--sl-color-accent);
@@ -60,6 +69,6 @@ svg .secondary {
   }
 
   50% {
-    filter: drop-shadow(0 0 30px rgba(153, 121, 211, 0.6));
+    filter: drop-shadow(0 0 30px var(--logo-glow-color));
   }
 }
