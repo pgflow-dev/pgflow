@@ -26,7 +26,8 @@ export default defineConfig({
                 autogenerate: { directory: 'edge-worker/getting-started' },
               },
               {
-                label: '⚠️ Project Status',
+                label: 'Project Status',
+                badge: { text: 'important', variant: 'caution' },
                 link: '/edge-worker/project-status',
               },
             ],

@@ -1,4 +1,4 @@
-import PQueue from 'p-queue';
+import { newQueue, type Queue as PromiseQueue } from '@henrygd/queue';
 import { MessageExecutor } from './MessageExecutor.ts';
 import { Queue } from './Queue.ts';
 import { Json } from './types.ts';
@@ -15,7 +15,7 @@ export interface ExecutionConfig {
 export class ExecutionController<MessagePayload extends Json> {
   private logger = getLogger('ExecutionController');
   private queue: Queue<MessagePayload>;
-  private pqueue: PQueue;
+  private promiseQueue: PromiseQueue;
   private archiver: BatchArchiver<MessagePayload>;
   private signal: AbortSignal;
   private retryLimit: number;
@@ -30,7 +30,7 @@ export class ExecutionController<MessagePayload extends Json> {
     this.signal = abortSignal;
     this.retryLimit = config.retryLimit;
     this.retryDelay = config.retryDelay;
-    this.pqueue = new PQueue({ concurrency: config.maxConcurrent });
+    this.promiseQueue = newQueue(config.maxConcurrent);
     this.archiver = new BatchArchiver(queue);
   }
 
@@ -48,11 +48,13 @@ export class ExecutionController<MessagePayload extends Json> {
       this.retryDelay
     );
 
-    this.logger.info(`Starting execution for ${executor.msgId}`);
+    this.logger.info(`Scheduling execution of task ${executor.msgId}`);
 
-    return await this.pqueue.add(async () => {
+    return await this.promiseQueue.add(async () => {
       try {
+        this.logger.debug(`Executing task ${executor.msgId}...`);
         await executor.execute();
+        this.logger.debug(`Execution successful for ${executor.msgId}`);
       } catch (error) {
         this.logger.error(`Execution failed for ${executor.msgId}:`, error);
         throw error;
@@ -61,7 +63,7 @@ export class ExecutionController<MessagePayload extends Json> {
   }
 
   async awaitCompletion() {
-    await this.pqueue.onIdle();
-    await this.archiver.flush();
+    await this.promiseQueue.done();
+    // await this.archiver.flush();
   }
 }

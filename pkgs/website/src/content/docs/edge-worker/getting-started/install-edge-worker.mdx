@@ -41,9 +41,6 @@ If you haven't installed the CLI yet or need to upgrade, see Supabase's [install
 
     Your worker needs to connect to your Supabase project's database.
 
-    Since the worker is a long-lived process, we should use Supavisor **Session Mode** connection
-    (see more in [Connect to your database](https://supabase.com/docs/guides/database/connecting-to-postgres#more-about-connection-pooling) docs).
-
     Edge Worker looks for the connection string in the `EDGE_WORKER_DB_URL` environment variable.
 
     For local development, put this in `supabase/functions/.env`:
@@ -55,9 +52,9 @@ If you haven't installed the CLI yet or need to upgrade, see Supabase's [install
 1. ### Setup Connection Pool
 
     Modify the `db.pooler` section in your `supabase/config.toml` file
-    to enable pooler and switch it to Supavisor **Session Mode**:
+    to enable pooler and make sure that `db.pool_mode` is set to `"transaction"`.
 
-    ```diff lang="toml"
+    ```diff lang="toml" {8}
       [db.pooler]
     - enabled = false
     + enabled = true
@@ -65,13 +62,17 @@ If you haven't installed the CLI yet or need to upgrade, see Supabase's [install
       port = 54329
       # Specifies when a server connection can be reused by other clients.
       # Configure one of the supported pooler modes: `transaction`, `session`.
-    - pool_mode = "transaction"
-    + pool_mode = "session"
+      pool_mode = "transaction"
       # How many server connections to allow per user/database pair.
       default_pool_size = 20
       # Maximum number of client connections allowed.
       max_client_conn = 100
     ```
+
+		:::note[Transaction Mode]
+		Edge Worker requires **transaction mode** connection because of Edge
+		Function early termination. This will change in the future.
+		:::
 
 1. ### Setup Edge Runtime policy
 

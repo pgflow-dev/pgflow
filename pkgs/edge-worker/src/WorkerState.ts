@@ -59,6 +59,10 @@ export class WorkerState {
     return this.state === States.Stopping;
   }
 
+  get isStopped() {
+    return this.state === States.Stopped;
+  }
+
   transitionTo(state: States) {
     this.logger.debug(
       `[WorkerState] Starting transition to '${state}' (current state: ${this.state})`

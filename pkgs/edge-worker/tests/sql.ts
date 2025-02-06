@@ -4,7 +4,7 @@ const DB_URL = 'postgresql://postgres:postgres@127.0.0.1:50322/postgres';
 
 export function createSql() {
   return postgres(DB_URL, {
-    prepare: true,
+    prepare: false,
     onnotice(_: unknown) {
       // no-op to silence notices
     },

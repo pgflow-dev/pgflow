@@ -1,5 +1,5 @@
 ---
-title: ⚠️ Project Status
+title: Project Status
 ---
 
 :::danger[Not ready for production!]
@@ -14,42 +14,30 @@ will be reorganized into logical sub-configurations. The current configuration s
 considered stable and will change in future releases.
 :::
 
-I am actively working on fixing various issues and improving the overall system reliability.
+This page is an overview of the issues that are observed but not yet resolved fully.
 
-Here are few that I managed to observe but have not yet fixed:
+> I am actively working and communicating with Supabase Edge Runtime team to make
+> the worker as robust as possible, so it can be a solid foundation
+> for the Workflow Orchestration Engine I am building.
 
-### PostgresError: DbHandler exited
+### Connection Pool Saturation Under High Load
 
-When processing a high volume of jobs with increased concurrency (10 or more),
-the system occasionally fails with the following error:
+**Scenario:**  
+A large volume of messages is processed continuously at high concurrency (10 or more) with fast handlers (<50ms execution time).
 
-```
-[Error] Timeout-triggered archive failed: PostgresError: DbHandler exited
-    at ErrorResponse (https://deno.land/x/postgresjs@v3.4.5/src/connection.js:791:26)
-    at handle (https://deno.land/x/postgresjs@v3.4.5/src/connection.js:477:6)
-    at data (https://deno.land/x/postgresjs@v3.4.5/src/connection.js:318:9)
-    at https://deno.land/x/postgresjs@v3.4.5/polyfills.js:138:30
-    at Array.forEach (<anonymous>)
-    at call (https://deno.land/x/postgresjs@v3.4.5/polyfills.js:138:16)
-    at success (https://deno.land/x/postgresjs@v3.4.5/polyfills.js:98:9)
-    at eventLoopTick (ext:core/01_core.js:168:7) {
-  name: "PostgresError",
-  severity_local: "FATAL",
-  severity: "FATAL",
-  code: "XX000"
-}
-```
+**Observed Behavior:**  
+  - Some connections are not properly closed by the worker before being hard-terminated
+  - This results in zombie connections
+  - The connection pooler should reclaim these connections after `client_idle_timeout`
+  - However, if the worker respawns too quickly, the pooler cannot keep up
+  - This can trigger **"Max client connections reached"** errors
+  - These errors automatically resolve after zombie connections are reclaimed, but will reoccur if high load persists
 
-This issue appears to be related to abruptly terminated SQL connections in Session Mode.
-When this error occurs, it prevents the system from spawning new instances.
+**Impact:**  
+Most users under normal operating conditions will not encounter this behavior.
 
-### Postgres Deadlocks
-
-In high-concurrency scenarios, I've observed occasional deadlocks. These occur due to
-race conditions between message archiving and message pickup
-when visibility timeouts expire (educated guess).
-
-The planned solution involves implementing worker-side retries for SQL queries.
+**Next Steps:**  
+An RFC for updates to Supabase Edge Runtime is in progress.
 
 ### Planned Architecture Improvements
 
@@ -57,6 +45,7 @@ Following the resolution of current issues, a major architectural refactor is pl
 The main goals are to:
 
 #### Implement proper dependency injection
+
 - Introduce a factory/builder pattern
 - Enable easy component swapping, including:
   - MessageExecutor (required for pgflow orchestrator integration)

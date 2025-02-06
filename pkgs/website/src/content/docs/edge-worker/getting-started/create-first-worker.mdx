@@ -8,9 +8,13 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 import { FileTree } from '@astrojs/starlight/components';
 import NotProductionReady from '../../../../components/NotProductionReady.astro';
 
-Setting up your first worker is straightforward and takes just a few minutes.
+We will create a simple **web scraping worker** that listens for URLs to scrape,
+fetches the content, and logs the results.
 
-<NotProductionReady />
+Web scraping is a perfect use case for task queue workers,
+because of built in retries and ability to fetch websites in parallel.
+
+Setting it up is straightforward and takes just a few minutes.
 
 <Aside type="caution" title="Requirements">
 Before starting, please read the [Install Edge Worker](/edge-worker/getting-started/install-edge-worker) guide.
@@ -24,12 +28,16 @@ Before starting, please read the [Install Edge Worker](/edge-worker/getting-star
     First, create a new Edge Function using the Supabase CLI. Then, replace its content with this code:
 
     ```typescript
-    import { EdgeWorker } from "jsr:@pgflow/edge-worker";
+		import { EdgeWorker } from "jsr:@pgflow/edge-worker";
 
-    EdgeWorker.start(async (payload: { url: string }) => {
-      // do something with the message
-      console.log('Scraping URL...', payload.url);
-    });
+		EdgeWorker.start(async (payload: { url: string }) => {
+			const response = await fetch(payload.url);
+
+			console.log("Scraped website!", {
+				url: payload.url,
+				status: response.status,
+			});
+		});
     ```
 
 1. ### Start Edge Runtime
@@ -57,7 +65,11 @@ Before starting, please read the [Install Edge Worker](/edge-worker/getting-star
     curl http://localhost:54321/functions/v1/<function-name>
     ```
 
-    This will boot a new instance and start your worker.
+    This will boot a new instance and start your worker:
+
+		```bash frame="none"
+    [Info] worker_id=<uuid> [WorkerLifecycle] Ensuring queue 'tasks' exists...
+		```
 
 4. ### Process your first message
 
@@ -75,7 +87,9 @@ Before starting, please read the [Install Edge Worker](/edge-worker/getting-star
     The message will be processed immediately and you should see the following output:
 
     ```bash frame="none"
-    [Info] Scraping URL... https://example.com/
+    [Info] worker_id=<uuid> [ExecutionController] Scheduling execution of task 1
+
+    [Info] Scraped website! { url: "https://example.com", status: 200 }
     ```
 
     <Aside title="Queue Name">

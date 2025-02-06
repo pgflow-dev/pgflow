@@ -1,11 +1,6 @@
 import { EdgeWorker } from '../_src/EdgeWorker.ts';
-import postgres from 'postgres';
 import { crypto } from 'jsr:@std/crypto';
-
-const EDGE_WORKER_DB_URL = Deno.env.get('EDGE_WORKER_DB_URL')!;
-console.log('EDGE_WORKER_DB_URL', EDGE_WORKER_DB_URL);
-
-const sql = postgres(EDGE_WORKER_DB_URL, { prepare: true });
+import { sql } from '../utils.ts';
 
 async function cpuIntensiveTask() {
   let data = new TextEncoder().encode('burn');
