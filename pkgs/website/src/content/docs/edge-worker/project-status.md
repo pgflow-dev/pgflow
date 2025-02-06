@@ -1,5 +1,5 @@
 ---
-title: ⚠️ Project Status
+title: Project Status
 ---
 
 :::danger[Not ready for production!]
