@@ -57,7 +57,11 @@ Before starting, please read the [Install Edge Worker](/edge-worker/getting-star
     curl http://localhost:54321/functions/v1/<function-name>
     ```
 
-    This will boot a new instance and start your worker.
+    This will boot a new instance and start your worker:
+
+		```bash frame="none"
+    [Info] worker_id=<uuid> [WorkerLifecycle] Ensuring queue 'tasks' exists...
+		```
 
 4. ### Process your first message
 
@@ -75,7 +79,9 @@ Before starting, please read the [Install Edge Worker](/edge-worker/getting-star
     The message will be processed immediately and you should see the following output:
 
     ```bash frame="none"
-    [Info] Scraping URL... https://example.com/
+    [Info] worker_id=<uuid> [ExecutionController] Scheduling execution of task 1
+
+    [Info] Scraped website! { url: "https://example.com", status: 200 }
     ```
 
     <Aside title="Queue Name">
