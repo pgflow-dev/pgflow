@@ -39,10 +39,27 @@ svg .secondary {
 }
 
 .hero img {
-  transition: all 4s ease;
+  animation: scale-up 4s ease-in-out forwards,
+    breathing-glow 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-.hero img:hover {
-  transform: scale(1.2);
-  filter: drop-shadow(0 0 15px var(--sl-color-accent));
+@keyframes scale-up {
+  from {
+    transform: scale(0.7);
+  }
+
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes breathing-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 transparent);
+  }
+
+  50% {
+    filter: drop-shadow(0 0 30px rgba(153, 121, 211, 0.6));
+  }
 }
