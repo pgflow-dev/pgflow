@@ -20,3 +20,74 @@ hero:
       link: 'pgflow'
       variant: minimal
 ---
+
+import { CardGrid, Card, Tabs, TabItem } from '@astrojs/starlight/components';
+
+<Card title="Examples" icon="information">
+<Tabs>
+<TabItem label="Web Scraping">
+<div style="display: flex; gap: 1rem;">
+  <div class="card">
+
+  ```typescript
+  // your worker lives in Edge Function
+  EdgeWorker.start((payload: { url: string }) => {
+    const response = await fetch(url);
+    const html = await response.text();
+
+    await supabase.from('websites').insert({ url, html })
+  })
+  ```
+
+  </div>
+
+  <div class="card">
+
+  ```sql
+  -- trigger new web scraping task
+  SELECT pgmq.send(
+    queue_name => 'tasks', 
+    msg => '{"url": "https://supabase.com/blog"}'::jsonb
+  )
+  ```
+
+  </div>
+</div>
+</TabItem>
+
+<TabItem label="LLM Summarization">
+<div style="display: flex; gap: 1rem;">
+  <div class="card">
+
+  ```typescript
+  // your worker lives in Edge Function
+  EdgeWorker.start((payload: { documentId: string }) => {
+    const doc = await supabase
+      .from('documents')
+      .select('content')
+      .eq('id', documentId)
+      .single()
+
+    const summary = await openai.
+
+    await supabase.from('websites').insert({ url, html })
+  })
+  ```
+
+  </div>
+
+  <div class="card">
+
+  ```sql
+  -- trigger new web scraping task
+  SELECT pgmq.send(
+    queue_name => 'tasks', 
+    msg => '{"url": "https://supabase.com/blog"}'::jsonb
+  )
+  ```
+
+  </div>
+</div>
+</TabItem>
+</Tabs>
+</Card>
