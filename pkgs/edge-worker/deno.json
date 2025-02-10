@@ -16,5 +16,6 @@
     "db:prepare": "./scripts/concatenate-migrations.sh",
     "db:run": "cd tests/db && docker compose up --detach && ../../scripts/wait-for-localhost 5432",
     "db:ensure": "deno task db:clean && deno task db:prepare && deno task db:run",
+    "test:integration": "deno task db:ensure && sleep 3 && deno test --allow-net --allow-env tests/integration",
   }
 }
