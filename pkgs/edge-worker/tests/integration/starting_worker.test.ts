@@ -1,4 +1,5 @@
 import postgres from 'postgres';
+import { Worker } from '../../src/Worker.ts';
 
 const DB_URL = 'postgresql://postgres:postgres@localhost:5432/postgres';
 
@@ -11,11 +12,11 @@ export function createSql() {
   });
 }
 
-Deno.test('mvp', async () => {
+Deno.test('Starting worker', async () => {
   let sql = createSql();
 
   try {
-    const dbTime = await sql`select now()`;
+    const dbTime = await sql`select * from edge_worker.workers`;
 
     console.log(dbTime);
   }

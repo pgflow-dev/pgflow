@@ -12,8 +12,9 @@
     "postgres": "npm:postgres@3.4.5"
   },
   "tasks": {
-    "db:clean": "cd tests/db && docker compose down --volumes && rm *.sql",
-    "db:prepare": "cp migrations/*.sql tests/db/",
+    "db:clean": "cd tests/db && docker compose down --volumes && rm *.sql || true",
+    "db:prepare": "./scripts/concatenate-migrations.sh",
     "db:run": "cd tests/db && docker compose up --detach && ../../scripts/wait-for-localhost 5432",
+    "db:ensure": "deno task db:clean && deno task db:prepare && deno task db:run",
   }
 }
