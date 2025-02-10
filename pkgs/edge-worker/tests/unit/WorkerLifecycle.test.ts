@@ -56,7 +56,7 @@ test('acknowledgeStart - should set worker ID, edge function name', async () => 
   await lifecycle.acknowledgeStart(bootstrapDouble);
 
   assertEquals(bootstrapDouble.workerId, 'test-execution-id');
-  assert(lifecycle.isRunning(), 'Worker should be running after start');
+  assert(lifecycle.isRunning, 'Worker should be running after start');
   assertSpyCalls(onWorkerStartedSpy, 1);
 });
 
@@ -102,7 +102,7 @@ test('sendHeartbeat - should handle database errors', async () => {
 
   const lifecycle = new WorkerLifecycle(mockQueries, mockQueue);
   assertFalse(
-    lifecycle.isRunning(),
+    lifecycle.isRunning,
     'Worker should not be running before start'
   );
 
@@ -110,7 +110,7 @@ test('sendHeartbeat - should handle database errors', async () => {
     edgeFunctionName: 'test-function',
     workerId: 'test-execution-id',
   });
-  assert(lifecycle.isRunning(), 'Worker should be running after start');
+  assert(lifecycle.isRunning, 'Worker should be running after start');
 
   await assertRejects(
     async () => await lifecycle.sendHeartbeat(),
@@ -127,7 +127,7 @@ test('sendHeartbeat - should do nothing if heartbeat not initialized', async () 
   const lifecycle = new WorkerLifecycle(mockQueries, mockQueue);
   // Note: Not calling acknowledgeStart()
   assertFalse(
-    lifecycle.isRunning(),
+    lifecycle.isRunning,
     'Worker should not be running before start'
   );
 
@@ -146,10 +146,10 @@ test({
     const lifecycle = new WorkerLifecycle(mockQueries, mockQueue);
     await lifecycle.acknowledgeStart(bootstrapDouble);
 
-    assert(lifecycle.isRunning(), 'Worker should be running before stop');
+    assert(lifecycle.isRunning, 'Worker should be running before stop');
     lifecycle.acknowledgeStop();
     assertFalse(
-      lifecycle.isRunning(),
+      lifecycle.isRunning,
       'Worker should not be running after stop'
     );
 
