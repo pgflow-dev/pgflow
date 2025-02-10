@@ -10,5 +10,10 @@
     "@std/log": "jsr:@std/log@^0.224.13",
     "@std/testing/mock": "jsr:@std/testing/mock",
     "postgres": "npm:postgres@3.4.5"
+  },
+  "tasks": {
+    "db:clean": "cd tests/db && docker compose down --volumes && rm *.sql",
+    "db:prepare": "cp migrations/*.sql tests/db/",
+    "db:run": "cd tests/db && docker compose up --detach && ../../scripts/wait-for-localhost 5432",
   }
 }
