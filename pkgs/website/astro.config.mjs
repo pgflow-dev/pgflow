@@ -9,6 +9,10 @@ const GITHUB_REPO_URL = 'https://github.com/pgflow-dev/pgflow';
 // https://astro.build/config
 export default defineConfig({
   site: 'https://pgflow.dev',
+  redirects: {
+    '/edge-worker/how-to/run-on-hosted-supabase':
+      '/edge-worker/how-to/deploy-to-supabasecom',
+  },
   integrations: [
     starlight({
       favicon: '/favicons/favicon.ico',

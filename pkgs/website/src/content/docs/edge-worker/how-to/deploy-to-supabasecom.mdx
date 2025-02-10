@@ -1,5 +1,5 @@
 ---
-title: Run on Hosted Supabase
+title: Deploy to Supabase.com
 sidebar:
   order: 1
 ---
@@ -7,12 +7,13 @@ sidebar:
 import { Aside, Steps } from "@astrojs/starlight/components";
 import NotProductionReady from '../../../../components/NotProductionReady.astro';
 
-This guide explains the current process for deploying and maintaining workers in a hosted environment.
+This guide explains the current process for deploying and maintaining workers in hosted environment.
 
 <NotProductionReady />
 
 :::note
-Running Edge Worker on hosted Supabase currently requires a few additional setup steps. Thanks to ongoing collaboration with the Supabase team, these requirements will be simplified in future releases.
+Running Edge Worker on Supabase.com currently requires a few additional setup steps. 
+Thanks to ongoing collaboration with the Supabase team, these requirements will be simplified in future releases.
 :::
 
 ## Deploying workers
@@ -33,7 +34,7 @@ This behavior will be improved in future releases.
 ## Starting Workers
 
 Just like in local development, workers are started with a simple HTTP request.
-However, you need to pass Authorization header with your ANON key when calling hosted function.
+However, you need to pass Authorization header with your ANON_KEY when calling function.
 Consult this Supabase Docs page for details: [Invoking remote functions](https://supabase.com/docs/guides/functions/deploy#invoking-remote-functions)
 
 After the initial request, the worker will auto-respawn if terminated.
