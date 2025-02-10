@@ -19,7 +19,7 @@ Deno.test('Starting worker', async () => {
 
   const worker = new Worker(console.log, {
     connectionString: DB_URL,
-    maxPollSeconds: 1
+    maxPollSeconds: 0.001
   });
 
   worker.startOnlyOnce({
