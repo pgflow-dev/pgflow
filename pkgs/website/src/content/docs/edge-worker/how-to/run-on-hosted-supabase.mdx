@@ -1,0 +1,61 @@
+---
+title: Run on Hosted Supabase
+sidebar:
+  order: 1
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+import NotProductionReady from '../../../../components/NotProductionReady.astro';
+
+This guide explains the current process for deploying and maintaining workers in a hosted environment.
+
+<NotProductionReady />
+
+:::note
+Running Edge Worker on hosted Supabase currently requires a few additional setup steps. Thanks to ongoing collaboration with the Supabase team, these requirements will be simplified in future releases.
+:::
+
+## Deploying workers
+
+Workers are just regular Edge Functions that run for few minutes and auto-respawn
+when CPU or Wall clock limits are reached (read more on those [Limits | Supabase Docs](https://supabase.com/docs/guides/functions/limits)).
+
+Deploying new version is straightforward - you just update worker code
+and call `npx supabase functions deploy worker-name` to deploy it.
+
+When deploying a new version of your worker, be aware of the following:
+
+<Aside type="caution" title="Version Management">
+Currently, deploying a new version **does not automatically terminate** the previous version.
+This behavior will be improved in future releases.
+</Aside>
+
+## Starting Workers
+
+Just like in local development, workers are started with a simple HTTP request.
+However, you need to pass Authorization header with your ANON key when calling hosted function.
+Consult this Supabase Docs page for details: [Invoking remote functions](https://supabase.com/docs/guides/functions/deploy#invoking-remote-functions)
+
+After the initial request, the worker will auto-respawn if terminated.
+
+## Stopping Workers
+
+Currently, there's no built-in way to gracefully stop a running worker.
+You need to remove it from the Supabase Dashboard and wait for its CPU or clock limits to be reached
+for it to stop.
+
+**This will change in future releases.**
+
+## Ensuring Worker Availability
+
+To ensure your worker stays active, it's recommended to use Cron to ping
+your worker edge function every few seconds. 
+This is recommended in case there are any bugs in the respawn process,
+which currently is triggered from withing the worker that is shutting down.
+
+Use this Supabase guide [Invoking Supabase Function ever few seconds](https://supabase.com/docs/guides/cron/quickstart#invoke-supabase-edge-function-every-30-seconds).
+but use `5 seconds` instead of `30 seconds`.
+
+:::note
+Make sure to **set your own ANON key** in the `Authorization` header!
+:::
