@@ -12,10 +12,11 @@
     "postgres": "npm:postgres@3.4.5"
   },
   "tasks": {
-    "db:clean": "docker compose -f tests/db/compose.yaml down --volumes && rm 999_*.sql || true",
+    "db:down": "docker compose -f tests/db/compose.yaml down --volumes",
+    "db:clean": "rm 99*_*.sql || true",
     "db:copy-migrations": "./scripts/concatenate-migrations.sh",
-    "db:run": "docker compose -f tests/db/compose.yaml up --detach && ./scripts/wait-for-localhost 5432",
-    "db:ensure": "deno task db:clean && deno task db:copy-migrations && deno task db:run && sleep 5",
+    "db:up": "docker compose -f tests/db/compose.yaml up --detach && ./scripts/wait-for-localhost 5432",
+    "db:ensure": "deno task db:down && deno task db:clean && deno task db:copy-migrations && deno task db:up && sleep 5",
     "test:integration": "deno task db:ensure && deno test --allow-net --allow-env tests/integration"
   }
 }
