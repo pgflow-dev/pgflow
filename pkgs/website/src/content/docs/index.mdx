@@ -12,14 +12,23 @@ hero:
     dark: ../../assets/edge-worker-logo-dark.svg
     light: ../../assets/edge-worker-logo-light.svg
   actions:
-    - text: How it works?
-      link: 'edge-worker/how-it-works'
-      variant: secondary
-    - text: Get started
-      link: 'edge-worker/getting-started/install-edge-worker'
+    - link: 'edge-worker/getting-started/install-edge-worker'
       variant: primary
-      icon: right-arrow
-    - text: What is pgflow?
-      link: 'pgflow'
-      variant: minimal
+      text: "Start processing jobs in 5 minutes 🚀"
+      attrs:
+        style: |
+          margin-top: 1rem;
+          font-weight: bold; 
+          box-shadow: 0 0 25px var(--logo-glow-color), 0 0 45px var(--logo-glow-color);
+          filter: brightness(1.1);
+          animation: breathing 3s ease-in-out infinite;
+          @keyframes breathing {
+            0%, 100% {
+              box-shadow: 0 0 15px var(--logo-glow-color), 0 0 45px var(--logo-glow-color);
+            }
+            50% {
+              box-shadow: 0 0 45px var(--logo-glow-color), 0 0 60px var(--logo-glow-color);
+            }
+          }
+      # text: "🚀 Get Started – Run Your First Worker!"
 ---
