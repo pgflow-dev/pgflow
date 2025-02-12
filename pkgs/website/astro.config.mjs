@@ -8,7 +8,7 @@ const GITHUB_REPO_URL = 'https://github.com/pgflow-dev/pgflow';
 const PLAUSIBLE_PROXY = {
   url: 'https://wispy-pond-c6f8.wojciech-majewski.workers.dev',
   eventPath: '/data/event',
-  scriptPath: '/assets/script.js',
+  scriptPath: '/assets/script.hash.outbound-links.pageview-props.tagged-events.js',
 }
 const DOMAIN_NAME = 'pgflow.dev';
 
