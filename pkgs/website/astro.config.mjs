@@ -80,7 +80,9 @@ export default defineConfig({
         twitter: 'https://x.com/pgflow_dev',
         blueSky: 'https://bsky.app/profile/pgflow.bsky.social',
       },
-      components: {},
+      components: {
+        Hero: './src/components/HeroWithSlot.astro',
+      },
     }),
   ],
 });
