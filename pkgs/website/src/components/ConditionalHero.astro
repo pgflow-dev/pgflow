@@ -10,9 +10,43 @@ const isHomepage = Astro.props.id === '';
 {
 isHomepage ? (
 <HeroWithSlot {...Astro.props}>
-  <LandingPageCodeExamples class="fixed-height"/>
+  <div class="glow-box">
+  <LandingPageCodeExamples/>
+  </div>
 </HeroWithSlot>
 ) : (
 <Default {...Astro.props}/>
 )
 }
+
+<style>
+  .glow-box {
+    position: relative;
+    transition: transform 0.6s ease;
+  }
+
+  .glow-box::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    background: linear-gradient(45deg,
+      /* color-mix(in srgb, var(--logo-glow-color) 80%, white), */
+      color-mix(in srgb, var(--sl-color-accent-low) 80%, white),
+      color-mix(in srgb, var(--sl-color-accent-low) 80%, white)
+    );
+    border-radius: 16px;
+    filter: blur(12px);
+    opacity: 0.2;
+    z-index: -1;
+    transition: all 0.6s ease;
+  }
+
+  .glow-box:hover {
+    transform: translateY(-4px);
+  }
+
+  .glow-box:hover::before {
+    filter: blur(20px);
+    opacity: 0.4;
+  }
+</style>
