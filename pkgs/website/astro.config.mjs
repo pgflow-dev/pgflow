@@ -5,10 +5,16 @@ import starlightLinksValidator from 'starlight-links-validator';
 import starlightSidebarTopics from 'starlight-sidebar-topics';
 
 const GITHUB_REPO_URL = 'https://github.com/pgflow-dev/pgflow';
+const PLAUSIBLE_PROXY = {
+  url: 'https://wispy-pond-c6f8.wojciech-majewski.workers.dev',
+  eventPath: '/data/event',
+  scriptPath: '/assets/script.js',
+}
+const DOMAIN_NAME = 'pgflow.dev';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://pgflow.dev',
+  site: `https://${DOMAIN_NAME}`,
   redirects: {
     '/edge-worker/how-to/run-on-hosted-supabase':
       '/edge-worker/how-to/deploy-to-supabasecom',
@@ -16,6 +22,17 @@ export default defineConfig({
   integrations: [
     starlight({
       favicon: '/favicons/favicon.ico',
+      head: [
+        {
+          tag: 'script',
+          attrs: {
+            defer: true,
+            'data-domain': DOMAIN_NAME,
+            'data-api': PLAUSIBLE_PROXY.url + PLAUSIBLE_PROXY.eventPath,
+            src: PLAUSIBLE_PROXY.url + PLAUSIBLE_PROXY.scriptPath,
+          },
+        },
+      ],
       plugins: [
         starlightLinksValidator(),
         starlightSidebarTopics([
