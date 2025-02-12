@@ -1,53 +1,54 @@
-import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Tabs, TabItem, LinkButton, Steps } from '@astrojs/starlight/components';
+
 
 <Tabs>
-
 <TabItem label="Scraping">
 
-```typescript
-import { EdgeWorker } from "jsr:@pgflow/edge-worker";
+<Steps>
 
-EdgeWorker.start(async (payload: { url: string }) => {
-  const response = await fetch(payload.url);
-  console.log("Scraped website!", {
-    url: payload.url,
-    status: response.status,
-  });
-});
-```
 
+1. Define how you want to scrape the websites
+
+   ```typescript
+   EdgeWorker.start(async (message) => {
+     const response = await fetch(payload.url);
+
+     await supabase.from("websites").insert({ 
+       url: payload.url,
+       content: await response.text()
+     });
+   });
+   ```
+
+2. Send a message to the worker to start scraping
+
+   <Tabs>
+   <TabItem label="TypeScript">
+
+   ```typescript
+   await supabase.schema('pgmq_public').rpc('send', {
+     queue_name: 'tasks',
+     message: { url: 'https://pgflow.dev' }
+   })
+   ```
+
+   </TabItem>
+
+   <TabItem label="SQL">
+
+   ```sql
+   SELECT pgmq.send(
+     queue_name => 'tasks',
+     message => '{"url": "https://pgflow.dev"}'::jsonb
+   );
+   ```
+   </TabItem>
+   </Tabs>
+
+3. The worker processes your message. Check results in **websites** table
+
+
+</Steps>
 </TabItem>
-
-<TabItem label="LLMs">
-
-```typescript
-import { EdgeWorker } from "jsr:@pgflow/edge-worker";
-
-EdgeWorker.start(async (payload: { url: string }) => {
-  const response = await fetch(payload.url);
-  console.log("Scraped website!", {
-    url: payload.url,
-    status: response.status,
-  });
-});
-```
-
-</TabItem>
-
-<TabItem label="Docs processing">
-
-```typescript
-import { EdgeWorker } from "jsr:@pgflow/edge-worker";
-
-EdgeWorker.start(async (payload: { url: string }) => {
-  const response = await fetch(payload.url);
-  console.log("Scraped website!", {
-    url: payload.url,
-    status: response.status,
-  });
-});
-```
-
-</TabItem>
-
+{/* <LinkButton variant="minimal" icon="external">Check more examples in Use Cases</LinkButton> */}
 </Tabs>
