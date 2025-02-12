@@ -1,0 +1,27 @@
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+<Tabs>
+
+<TabItem label="Web Scraping">
+
+```typescript
+import { EdgeWorker } from "jsr:@pgflow/edge-worker";
+
+EdgeWorker.start(async (payload: { url: string }) => {
+  const response = await fetch(payload.url);
+  console.log("Scraped website!", {
+    url: payload.url,
+    status: response.status,
+  });
+});
+```
+
+</TabItem>
+
+<TabItem label="AI Summary">
+</TabItem>
+
+<TabItem label="Processing Docs">
+</TabItem>
+
+</Tabs>
