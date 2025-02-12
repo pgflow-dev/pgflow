@@ -81,7 +81,7 @@ export default defineConfig({
         blueSky: 'https://bsky.app/profile/pgflow.bsky.social',
       },
       components: {
-        Hero: './src/components/HeroWithSlot.astro',
+        Hero: './src/components/ConditionalHero.astro',
       },
     }),
   ],
