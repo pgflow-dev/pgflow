@@ -1,0 +1,18 @@
+---
+import type { Props } from '@astrojs/starlight/props';
+import Default from '@astrojs/starlight/components/Hero.astro';
+import HeroWithSlot from './HeroWithSlot.astro';
+import LandingPageCodeExamples from './LandingPageCodeExamples.mdx';
+
+const isHomepage = Astro.props.id === 'index3';
+---
+
+{
+isHomepage ? (
+<HeroWithSlot {...Astro.props}>
+  <LandingPageCodeExamples class="fixed-height"/>
+</HeroWithSlot>
+) : (
+<Default {...Astro.props}/>
+)
+}

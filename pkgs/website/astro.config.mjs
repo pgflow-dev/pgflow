@@ -23,6 +23,7 @@ export default defineConfig({
             label: 'Edge Worker',
             icon: 'open-book',
             link: '/edge-worker/how-it-works',
+            id: 'edge-worker',
             items: [
               { label: 'How it works?', link: '/edge-worker/how-it-works' },
               {
@@ -79,7 +80,9 @@ export default defineConfig({
         twitter: 'https://x.com/pgflow_dev',
         blueSky: 'https://bsky.app/profile/pgflow.bsky.social',
       },
-      components: {},
+      components: {
+        Hero: './src/components/ConditionalHero.astro',
+      },
     }),
   ],
 });

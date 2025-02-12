@@ -1,0 +1,20 @@
+```typescript
+// 1. Create your web scraping worker
+//    (it's just a normal Edge Function!!!)
+EdgeWorker.start(async (payload) => {
+  const response = await fetch(payload.url);
+
+  await supabase.from("websites").insert({
+    url: payload.url,
+    content: await response.text()
+  });
+});
+
+// 2. Trigger it to scrape a website
+SELECT pgmq.send(
+  queue_name => 'tasks', 
+  message => '{"url": "https://supabase.com"}'::jsonb
+)
+
+// 3. DONE! Worker picked message and called your function.
+```
