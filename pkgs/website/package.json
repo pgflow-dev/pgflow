@@ -17,8 +17,7 @@
     "sharp": "^0.32.5",
     "starlight-links-validator": "^0.14.1",
     "starlight-sidebar-topics": "^0.3.0",
-    "typescript": "^5.6.3",
-    "sitespeed": "pnpm dlx sitespeed.io --chrome -d 4 --crawler.include pgflow --darkMode https://pgflow.dev"
+    "typescript": "^5.6.3"
   },
   "devDependencies": {
     "prettier-plugin-astro": "^0.14.1"
