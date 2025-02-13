@@ -3,6 +3,7 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightLinksValidator from 'starlight-links-validator';
 import starlightSidebarTopics from 'starlight-sidebar-topics';
+import cloudflare from '@astrojs/cloudflare';
 
 const GITHUB_REPO_URL = 'https://github.com/pgflow-dev/pgflow';
 const PLAUSIBLE_PROXY = {
@@ -16,14 +17,17 @@ const DOMAIN_NAME = 'www.pgflow.dev';
 export default defineConfig({
   site: `https://${DOMAIN_NAME}`,
   trailingSlash: 'never',
+
   build: {
     // prevents problems with trailing slash redirects (SEO issue)
     format: 'file'
   },
+
   redirects: {
     '/edge-worker/how-to/run-on-hosted-supabase':
       '/edge-worker/how-to/deploy-to-supabasecom',
   },
+
   integrations: [
     starlight({
       favicon: '/favicons/favicon.ico',
@@ -107,4 +111,9 @@ export default defineConfig({
       },
     }),
   ],
+
+  output: 'static',
+  adapter: cloudflare({
+    imageService: 'compile'
+  }),
 });
