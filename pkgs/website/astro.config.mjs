@@ -22,7 +22,7 @@ export default defineConfig({
   },
   redirects: {
     '/edge-worker/how-to/run-on-hosted-supabase':
-      '/edge-worker/how-to/deploy-to-supabasecom',
+      '/edge-worker/how-to/deploy-to-supabasecom/',
   },
   integrations: [
     starlight({
@@ -44,38 +44,38 @@ export default defineConfig({
           {
             label: 'Edge Worker',
             icon: 'open-book',
-            link: '/edge-worker/how-it-works',
+            link: '/edge-worker/how-it-works/',
             id: 'edge-worker',
             items: [
-              { label: 'How it works?', link: '/edge-worker/how-it-works' },
+              { label: 'How it works?', link: '/edge-worker/how-it-works/' },
               {
                 label: 'Getting started',
-                autogenerate: { directory: 'edge-worker/getting-started' },
+                autogenerate: { directory: 'edge-worker/getting-started/' },
               },
               {
                 label: 'How to?',
-                autogenerate: { directory: 'edge-worker/how-to' },
+                autogenerate: { directory: 'edge-worker/how-to/' },
               },
               {
                 label: 'Project Status',
                 badge: { text: 'important', variant: 'caution' },
-                link: '/edge-worker/project-status',
+                link: '/edge-worker/project-status/',
               },
             ],
           },
           {
             label: 'pgflow',
             icon: 'open-book',
-            link: '/pgflow',
+            link: '/pgflow/',
             badge: {
               text: 'soon!',
               variant: 'note',
             },
             items: [
-              { label: 'Getting started', link: '/pgflow/getting-started' },
+              { label: 'Getting started', link: '/pgflow/getting-started/' },
               {
                 label: '⚠️ Project Status',
-                link: '/pgflow/project-status',
+                link: '/pgflow/project-status/',
               },
             ],
           },

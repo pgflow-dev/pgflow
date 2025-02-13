@@ -18,7 +18,7 @@ prev:
 
 ##### Can I use it?
 
-**Not yet** - I've released [Edge Worker](/edge-worker/how-it-works) first and the flow engine will follow
+**Not yet** - I've released [Edge Worker](/edge-worker/how-it-works/) first and the flow engine will follow
 after gathering some feedback and improving the worker.
 
 I'm aiming to have the alpha version and docs ready in Q1 2025 (soft deadline :-)).
