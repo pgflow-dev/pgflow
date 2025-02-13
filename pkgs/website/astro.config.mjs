@@ -16,6 +16,10 @@ const DOMAIN_NAME = 'www.pgflow.dev';
 export default defineConfig({
   site: `https://${DOMAIN_NAME}`,
   trailingSlash: 'never',
+  build: {
+    // prevents problems with trailing slash redirects (SEO issue)
+    format: 'file'
+  },
   redirects: {
     '/edge-worker/how-to/run-on-hosted-supabase':
       '/edge-worker/how-to/deploy-to-supabasecom',
@@ -62,7 +66,7 @@ export default defineConfig({
           {
             label: 'pgflow',
             icon: 'open-book',
-            link: '/pgflow/',
+            link: '/pgflow',
             badge: {
               text: 'soon!',
               variant: 'note',
