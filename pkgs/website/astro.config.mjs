@@ -15,10 +15,10 @@ const DOMAIN_NAME = 'www.pgflow.dev';
 // https://astro.build/config
 export default defineConfig({
   site: `https://${DOMAIN_NAME}`,
-  trailingSlash: 'never',
+  trailingSlash: 'always',
   build: {
     // prevents problems with trailing slash redirects (SEO issue)
-    format: 'file'
+    format: 'directory', 
   },
   redirects: {
     '/edge-worker/how-to/run-on-hosted-supabase':
