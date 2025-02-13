@@ -10,7 +10,7 @@ const PLAUSIBLE_PROXY = {
   eventPath: '/data/event',
   scriptPath: '/assets/script.hash.outbound-links.pageview-props.tagged-events.js',
 }
-const DOMAIN_NAME = 'pgflow.dev';
+const DOMAIN_NAME = 'www.pgflow.dev';
 
 // https://astro.build/config
 export default defineConfig({
