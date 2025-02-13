@@ -6,7 +6,7 @@ template: splash
 hero:
   tagline: Simple, Postgres-First Workflow Orchestration for Supabase
   image:
-    alt: pgflow logo - layers of three-stacked haxagons
+    alt: pgflow logo - layers of three-stacked haxagons representing Supabase Workflows definitions and runs
     dark: ../../../assets/pgflow-logo-dark.svg
     light: ../../../assets/pgflow-logo-light.svg
 prev:
