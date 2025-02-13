@@ -19,9 +19,8 @@ export default defineConfig({
 
   build: {
     // prevents problems with trailing slash redirects (SEO issue)
-    format: 'file'
+    format: 'directory',
   },
-
   redirects: {
     '/edge-worker/how-to/run-on-hosted-supabase':
       '/edge-worker/how-to/deploy-to-supabasecom',
