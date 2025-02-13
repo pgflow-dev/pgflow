@@ -15,6 +15,7 @@ const DOMAIN_NAME = 'pgflow.dev';
 // https://astro.build/config
 export default defineConfig({
   site: `https://${DOMAIN_NAME}`,
+  trailingSlash: 'never',
   redirects: {
     '/edge-worker/how-to/run-on-hosted-supabase':
       '/edge-worker/how-to/deploy-to-supabasecom',
