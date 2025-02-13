@@ -3,7 +3,6 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightLinksValidator from 'starlight-links-validator';
 import starlightSidebarTopics from 'starlight-sidebar-topics';
-import cloudflare from '@astrojs/cloudflare';
 
 const GITHUB_REPO_URL = 'https://github.com/pgflow-dev/pgflow';
 const PLAUSIBLE_PROXY = {
@@ -111,9 +110,4 @@ export default defineConfig({
       },
     }),
   ],
-
-  output: 'server',
-  adapter: cloudflare({
-    imageService: 'compile'
-  }),
 });
