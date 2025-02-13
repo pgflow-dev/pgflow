@@ -15,6 +15,7 @@ const DOMAIN_NAME = 'pgflow.dev';
 // https://astro.build/config
 export default defineConfig({
   site: `https://${DOMAIN_NAME}`,
+  trailingSlash: 'never',
   redirects: {
     '/edge-worker/how-to/run-on-hosted-supabase':
       '/edge-worker/how-to/deploy-to-supabasecom',
@@ -81,8 +82,8 @@ export default defineConfig({
           },
         ]),
       ],
-      title: 'pgflow',
-      description: 'Simple, Postgres-First Workflow Orchestration for Supabase',
+      title: 'pgflow (Postgres Workflow Engine on top of Supabase Background Tasks and Queues)',
+      description: "A workflow engine for Postgres using Supabase queues and background tasks to process jobs in parallel. Simple and built for a great developer experience.",
       logo: {
         replacesTitle: true,
         light: './src/assets/pgflow-logo-light.svg',

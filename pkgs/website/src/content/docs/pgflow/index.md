@@ -1,11 +1,12 @@
 ---
 title: pgflow
+description: Open-source workflow engine built on Supabase Background Tasks and Queues. Run complex workflows entirely within Supabase - no external hosting needed.
 tagline: Simple, Postgres-First Workflow Orchestration for Supabase
 template: splash
 hero:
   tagline: Simple, Postgres-First Workflow Orchestration for Supabase
   image:
-    alt: pgflow logo - layers of three-stacked haxagons
+    alt: pgflow logo - layers of three-stacked haxagons representing Supabase Workflows definitions and runs
     dark: ../../../assets/pgflow-logo-dark.svg
     light: ../../../assets/pgflow-logo-light.svg
 prev:

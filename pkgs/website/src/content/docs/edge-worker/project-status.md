@@ -1,5 +1,6 @@
 ---
 title: Project Status
+description: Current status of Edge Worker on Supabase Background Tasks, including known issues, stability notes, and planned architectural improvements.
 ---
 
 :::danger[Not ready for production!]
