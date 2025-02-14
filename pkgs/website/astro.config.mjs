@@ -4,6 +4,7 @@ import starlight from '@astrojs/starlight';
 import starlightLinksValidator from 'starlight-links-validator';
 import starlightSidebarTopics from 'starlight-sidebar-topics';
 import robotsTxt from 'astro-robots-txt';
+import starlightLlmsTxt from 'starlight-llms-txt';
 
 const GITHUB_REPO_URL = 'https://github.com/pgflow-dev/pgflow';
 const PLAUSIBLE_PROXY = {
@@ -39,6 +40,7 @@ export default defineConfig({
       },
     ],
     plugins: [
+      starlightLlmsTxt(),
       starlightLinksValidator(),
       starlightSidebarTopics([
         {
