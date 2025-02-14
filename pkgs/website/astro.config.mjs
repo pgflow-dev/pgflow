@@ -29,6 +29,16 @@ export default defineConfig({
   integrations: [starlight({
     favicon: '/favicons/favicon.ico',
     head: [
+      // prevent robots from indexing the preview branches
+      // it can be determined by checking the appropriate env variable
+      // CF_PAGES_BRANCH != 'main'
+      {
+        tag: 'meta',
+        attrs: {
+          name: 'robots',
+          content: process.env.CF_PAGES_BRANCH === 'main' ? 'index,follow' : 'noindex,nofollow',
+        },
+      },
       {
         tag: 'script',
         attrs: {
@@ -107,5 +117,13 @@ export default defineConfig({
     components: {
       Hero: './src/components/ConditionalHero.astro',
     },
-  }), robotsTxt()],
+  }), robotsTxt({
+    policy: [
+      {
+        userAgent: '*',
+        allow: process.env.CF_PAGES_BRANCH === 'main' ? '/' : '',
+        disallow: process.env.CF_PAGES_BRANCH === 'main' ? '' : '/',
+      }
+    ],
+  })],
 });
