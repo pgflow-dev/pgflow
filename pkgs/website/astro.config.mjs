@@ -86,7 +86,7 @@ export default defineConfig({
           },
         ]),
       ],
-      title: 'pgflow (Postgres Workflow Engine on top of Supabase Background Tasks and Queues)',
+      title: 'pgflow (Workflow Engine for Supabase Background Tasks and Queues)',
       description: "A workflow engine for Postgres using Supabase queues and background tasks to process jobs in parallel. Simple and built for a great developer experience.",
       logo: {
         replacesTitle: true,
