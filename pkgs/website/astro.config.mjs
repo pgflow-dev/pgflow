@@ -111,8 +111,7 @@ export default defineConfig({
     },
     social: {
       github: GITHUB_REPO_URL,
-      twitter: 'https://x.com/pgflow_dev',
-      blueSky: 'https://bsky.app/profile/pgflow.bsky.social',
+      twitter: 'https://x.com/pgflow_dev'
     },
     components: {
       Hero: './src/components/ConditionalHero.astro',
