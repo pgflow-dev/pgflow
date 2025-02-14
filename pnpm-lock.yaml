@@ -114,12 +114,18 @@ importers:
       astro:
         specifier: ^5.1.7
         version: 5.1.8(@types/node@18.16.20)(typescript@5.6.3)
+      astro-robots-txt:
+        specifier: ^1.0.0
+        version: 1.0.0
       sharp:
         specifier: ^0.32.5
         version: 0.32.6
       starlight-links-validator:
         specifier: ^0.14.1
         version: 0.14.1(@astrojs/starlight@0.31.1)
+      starlight-llms-txt:
+        specifier: ^0.4.1
+        version: 0.4.1(@astrojs/starlight@0.31.1)(astro@5.1.8)
       starlight-sidebar-topics:
         specifier: ^0.3.0
         version: 0.3.0(@astrojs/starlight@0.31.1)
@@ -4456,6 +4462,10 @@ packages:
       '@babel/types': 7.26.3
     dev: true
 
+  /@types/braces@3.0.5:
+    resolution: {integrity: sha512-SQFof9H+LXeWNz8wDe7oN5zu7ket0qwMu5vZubW4GCJ8Kkeh6nBWUz87+KTz/G3Kqsrp0j/W253XJb3KMEeg3w==}
+    dev: false
+
   /@types/cacheable-request@6.0.3:
     resolution: {integrity: sha512-IQ3EbTzGxIigb1I3qPZc1rWJnH0BmSKv5QYTalEwweFvyBDLSAe24zP0le/hyi7ecGfZVlIVAg4BZqb8WBwKqw==}
     dependencies:
@@ -4538,6 +4548,12 @@ packages:
 
   /@types/mdx@2.0.13:
     resolution: {integrity: sha512-+OWZQfAYyio6YkJb3HLxDrvnx6SWWDbC0zVPfBRzUk0/nqoDyf6dNxQi3eArPe8rJ473nobTMQ/8Zk+LxJ+Yuw==}
+    dev: false
+
+  /@types/micromatch@4.0.9:
+    resolution: {integrity: sha512-7V+8ncr22h4UoYRLnLXSpTxjQrNUXtWHGeMPRJt1nULXI57G9bIcpyrHlmrQ7QK24EyyuXvYcSSWAM8GA9nqCg==}
+    dependencies:
+      '@types/braces': 3.0.5
     dev: false
 
   /@types/ms@2.1.0:
@@ -5132,6 +5148,13 @@ packages:
     dependencies:
       astro: 5.1.8(@types/node@18.16.20)(typescript@5.6.3)
       rehype-expressive-code: 0.40.1
+    dev: false
+
+  /astro-robots-txt@1.0.0:
+    resolution: {integrity: sha512-6JQSLid4gMhoWjOm85UHLkgrw0+hHIjnJVIUqxjU2D6feKlVyYukMNYjH44ZDZBK1P8hNxd33PgWlHzCASvedA==}
+    dependencies:
+      valid-filename: 4.0.0
+      zod: 3.24.1
     dev: false
 
   /astro@5.1.8(@types/node@18.16.20)(typescript@5.6.3):
@@ -6805,7 +6828,6 @@ packages:
   /filename-reserved-regex@3.0.0:
     resolution: {integrity: sha512-hn4cQfU6GOT/7cFHXBqeBg2TbrMBgdD0kcjLhvSQYYwm3s4B6cjvBfb7nBALJLAXqmU5xajSa7X2NnUud/VCdw==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
-    dev: true
 
   /filenamify@5.1.1:
     resolution: {integrity: sha512-M45CbrJLGACfrPOkrTp3j2EcO9OBkKUYME0eiqOCa7i2poaklU0jhlIaMlr8ijLorT0uLAzrn3qXOp5684CkfA==}
@@ -7318,6 +7340,25 @@ packages:
       vfile-message: 4.0.2
     transitivePeerDependencies:
       - supports-color
+    dev: false
+
+  /hast-util-to-mdast@10.1.2:
+    resolution: {integrity: sha512-FiCRI7NmOvM4y+f5w32jPRzcxDIz+PUqDwEqn1A+1q2cdp3B8Gx7aVrXORdOKjMNDQsD1ogOr896+0jJHW1EFQ==}
+    dependencies:
+      '@types/hast': 3.0.4
+      '@types/mdast': 4.0.4
+      '@ungap/structured-clone': 1.2.1
+      hast-util-phrasing: 3.0.1
+      hast-util-to-html: 9.0.4
+      hast-util-to-text: 4.0.2
+      hast-util-whitespace: 3.0.0
+      mdast-util-phrasing: 4.1.0
+      mdast-util-to-hast: 13.2.0
+      mdast-util-to-string: 4.0.0
+      rehype-minify-whitespace: 6.0.2
+      trim-trailing-lines: 2.1.0
+      unist-util-position: 5.0.0
+      unist-util-visit: 5.0.0
     dev: false
 
   /hast-util-to-parse5@8.0.0:
@@ -10067,6 +10108,13 @@ packages:
       hast-util-format: 1.1.0
     dev: false
 
+  /rehype-minify-whitespace@6.0.2:
+    resolution: {integrity: sha512-Zk0pyQ06A3Lyxhe9vGtOtzz3Z0+qZ5+7icZ/PL/2x1SHPbKao5oB/g/rlc6BCTajqBb33JcOe71Ye1oFsuYbnw==}
+    dependencies:
+      '@types/hast': 3.0.4
+      hast-util-minify-whitespace: 1.0.1
+    dev: false
+
   /rehype-parse@9.0.1:
     resolution: {integrity: sha512-ksCzCD0Fgfh7trPDxr2rSylbwq9iYDkSn8TCDmEJ49ljEUBxDVCzCHv7QNzZOfODanX4+bWQ4WZqLCRWYLfhag==}
     dependencies:
@@ -10091,6 +10139,16 @@ packages:
       hast-util-to-estree: 3.1.1
     transitivePeerDependencies:
       - supports-color
+    dev: false
+
+  /rehype-remark@10.0.0:
+    resolution: {integrity: sha512-+aDXY/icqMFOafJQomVjxe3BAP7aR3lIsQ3GV6VIwpbCD2nvNFOXjGvotMe5p0Ny+Gt6L13DhEf/FjOOpTuUbQ==}
+    dependencies:
+      '@types/hast': 3.0.4
+      '@types/mdast': 4.0.4
+      hast-util-to-mdast: 10.1.2
+      unified: 11.0.5
+      vfile: 6.0.3
     dev: false
 
   /rehype-stringify@10.0.1:
@@ -10648,6 +10706,31 @@ packages:
       unist-util-visit: 5.0.0
     dev: false
 
+  /starlight-llms-txt@0.4.1(@astrojs/starlight@0.31.1)(astro@5.1.8):
+    resolution: {integrity: sha512-lrMvDBOxsZ70je4FIRn77J+aS9J7XVARusxrfjsrWYNoO7sosIyEeEyCK5HEmVBRFdR9uNRXw3uCUuDoz5OabA==}
+    engines: {node: ^18.17.1 || ^20.3.0 || >=21.0.0}
+    peerDependencies:
+      '@astrojs/starlight': '>=0.31'
+      astro: ^5.1.6
+    dependencies:
+      '@astrojs/mdx': 4.0.7(astro@5.1.8)
+      '@astrojs/starlight': 0.31.1(astro@5.1.8)
+      '@types/hast': 3.0.4
+      '@types/micromatch': 4.0.9
+      astro: 5.1.8(@types/node@18.16.20)(typescript@5.6.3)
+      github-slugger: 2.0.0
+      hast-util-select: 6.0.3
+      micromatch: 4.0.8
+      rehype-parse: 9.0.1
+      rehype-remark: 10.0.0
+      remark-gfm: 4.0.0
+      remark-stringify: 11.0.0
+      unified: 11.0.5
+      unist-util-remove: 4.0.0
+    transitivePeerDependencies:
+      - supports-color
+    dev: false
+
   /starlight-sidebar-topics@0.3.0(@astrojs/starlight@0.31.1):
     resolution: {integrity: sha512-B7ma+xtRNBHtxEYi5yGYtAnJZviAoj1PXNh5CjuoEqKIBVB7uRAjWsWuPLzv/OrY81jHRjaZc3ilw5mNzks7kg==}
     engines: {node: '>=18'}
@@ -10994,6 +11077,10 @@ packages:
       escape-string-regexp: 5.0.0
     dev: true
 
+  /trim-trailing-lines@2.1.0:
+    resolution: {integrity: sha512-5UR5Biq4VlVOtzqkm2AZlgvSlDJtME46uV0br0gENbwN4l5+mMKT4b9gJKqWtuL2zAIqajGJGuvbCbcAJUZqBg==}
+    dev: false
+
   /trough@2.2.0:
     resolution: {integrity: sha512-tmMpK00BjZiUyVyvrBK7knerNgmgvcV/KLVyuma/SC+TQN167GrMRciANTz09+k3zW8L8t60jWO1GpfkZdjTaw==}
     dev: false
@@ -11229,6 +11316,14 @@ packages:
       unist-util-visit: 5.0.0
     dev: false
 
+  /unist-util-remove@4.0.0:
+    resolution: {integrity: sha512-b4gokeGId57UVRX/eVKej5gXqGlc9+trkORhFJpu9raqZkZhU0zm8Doi05+HaiBsMEIJowL+2WtQ5ItjsngPXg==}
+    dependencies:
+      '@types/unist': 3.0.3
+      unist-util-is: 6.0.0
+      unist-util-visit-parents: 6.0.1
+    dev: false
+
   /unist-util-stringify-position@4.0.0:
     resolution: {integrity: sha512-0ASV06AAoKCDkS2+xw5RXJywruurpbC4JZSm7nr7MOt1ojAzvyyaO+UxZf18j8FCF6kmzCZKcAgN/yu2gm2XgQ==}
     dependencies:
@@ -11378,6 +11473,13 @@ packages:
       '@types/istanbul-lib-coverage': 2.0.6
       convert-source-map: 2.0.0
     dev: true
+
+  /valid-filename@4.0.0:
+    resolution: {integrity: sha512-VEYTpTVPMgO799f2wI7zWf0x2C54bPX6NAfbZ2Z8kZn76p+3rEYCTYVYzMUcVSMvakxMQTriBf24s3+WeXJtEg==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+    dependencies:
+      filename-reserved-regex: 3.0.0
+    dev: false
 
   /validate-npm-package-name@5.0.1:
     resolution: {integrity: sha512-OljLrQ9SQdOUqTaQxqL5dEfZWrXExyyWsozYlAWFawPVNuD83igl7uJD2RTkNMbniIYgt8l81eCJGIdQF7avLQ==}
