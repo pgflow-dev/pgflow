@@ -9,8 +9,7 @@ services:
     ports:
       - '5432:5432'
     volumes:
-      - ./migrations/900_init.sql:/docker-entrypoint-initdb.d/migrations/900_init.sql
-      - ./migrations/950_edge_worker.sql:/docker-entrypoint-initdb.d/migrations/950_edge_worker.sql
+      - ./migrations/edge_worker.sql:/docker-entrypoint-initdb.d/migrations/950_edge_worker.sql
     environment:
       POSTGRES_DB: postgres
       # commented out because of the problems with supabase_admin permissions

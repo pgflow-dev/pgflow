@@ -66,7 +66,19 @@ export function withPg(callback: (sql: postgres.Sql) => Promise<unknown>) {
     try {
       console.log('calling callback');
 
-      await localSql.begin(callback);
+      await localSql.begin((sql: postgres.Sql) => {
+        // Create a proxy that adds no-op end() method to transaction-local sql
+        const wrappedSql = new Proxy(sql, {
+          get(target, prop) {
+            if (prop === 'end') {
+              return async () => { /* no-op */ };
+            }
+            return target[prop as keyof typeof target];
+          }
+        });
+
+        return callback(wrappedSql);
+      });
 
       console.log('callback called');
     } catch (err) {

@@ -17,7 +17,7 @@ export function createSql() {
 Deno.test('Starting worker', withPg(async (sql) => {
   const worker = new Worker(console.log, {
     sql,
-    maxPollSeconds: 0.001,
+    maxPollSeconds: 1
   });
 
   worker.startOnlyOnce({
@@ -33,11 +33,15 @@ Deno.test('Starting worker', withPg(async (sql) => {
 
     console.log(workers);
   } finally {
-    await Promise.all([sql.end(), worker.stop()]);
+    await worker.stop();
   }
 }));
 
-Deno.test('test even works', withPg(async (sql) => {
-  const result = await sql`select now()`; 
-  console.log('is working', result);
+Deno.test('check pgmq version', withPg(async (sql) => {
+  const result = await sql`
+    SELECT extversion 
+    FROM pg_extension 
+    WHERE extname = 'pgmq'
+  `; 
+  console.log('pgmq version:', result);
 }));
