@@ -1,18 +1,6 @@
-import postgres from 'postgres';
 import { Worker } from '../../src/Worker.ts';
 import { withPg } from "../db.ts";
 import { delay } from "@std/async";
-
-const DB_URL = 'postgresql://supabase_admin:postgres@localhost:5432/postgres';
-
-export function createSql() {
-  return postgres(DB_URL, {
-    prepare: false,
-    onnotice(_: unknown) {
-      // no-op to silence notices
-    },
-  });
-}
 
 Deno.test('Starting worker', withPg(async (sql) => {
   const worker = new Worker(console.log, {
