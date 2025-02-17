@@ -12,8 +12,8 @@
     "postgres": "npm:postgres@3.4.5"
   },
   "tasks": {
-    "db:down": "docker compose -f tests/db/compose.yaml down --volumes",
-    "db:clean": "rm 99*_*.sql || true",
+    "db:down": "docker compose -f tests/db/compose.yaml down --volumes --remove-orphans",
+    "db:clean": "rm tests/db/migrations/*.sql || true",
     "db:copy-migrations": "./scripts/concatenate-migrations.sh",
     "db:up": "docker compose -f tests/db/compose.yaml up --detach && ./scripts/wait-for-localhost 5432",
     "db:ensure": "deno task db:down && deno task db:clean && deno task db:copy-migrations && deno task db:up && sleep 5",
