@@ -1,7 +1,6 @@
 import postgres from 'postgres';
 import { Worker } from '../../src/Worker.ts';
-import { delay } from '@std/async/delay';
-import { withTestDatabase } from "../db.ts";
+import { withPg } from "../db.ts";
 
 const DB_URL = 'postgresql://supabase_admin:postgres@localhost:5432/postgres';
 
@@ -14,10 +13,7 @@ export function createSql() {
   });
 }
 
-// Deno.test('Starting worker', async () => {
-//   const sql = createSql();
-//   await sql`delete from edge_worker.workers`;
-//
+// Deno.test('Starting worker', withPg(async (sql) => {
 //   const worker = new Worker(console.log, {
 //     connectionString: DB_URL,
 //     maxPollSeconds: 0.001,
@@ -38,9 +34,9 @@ export function createSql() {
 //   } finally {
 //     await Promise.all([sql.end(), worker.stop()]);
 //   }
-// });
+// }));
 
-Deno.test('maxConcurrent option works', withTestDatabase(async (sql) => {
+Deno.test('test even works', withPg(async (sql) => {
   const result = await sql`select now()`; 
   console.log('is working', result);
 }));

@@ -57,3 +57,23 @@ export function withTestDatabase(callback: (sql: postgres.Sql) => Promise<unknow
     }
   }
 }
+
+export function withPg(callback: (sql: postgres.Sql) => Promise<unknown>) {
+  const dbUrl = `postgresql://supabase_admin:postgres@localhost:5432/postgres`;
+  const localSql = createSql(dbUrl);
+
+  return async () => {
+    try {
+      console.log('calling callback');
+
+      await localSql.begin(callback);
+
+      console.log('callback called');
+    } catch (err) {
+      console.error('Error in withPg:', err);
+      throw err; // Re-throw to ensure the error is not swallowed
+    } finally {
+      await localSql.end();
+    }
+  }
+}
