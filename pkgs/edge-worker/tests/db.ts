@@ -24,7 +24,6 @@ export function withPg(callback: (sql: postgres.Sql) => Promise<unknown>) {
     try {
       console.log('calling callback');
 
-      let result;
       await localSql.begin(async (sql: postgres.Sql) => {
         try {
           // Create a proxy that adds no-op end() method to transaction-local sql
@@ -37,18 +36,18 @@ export function withPg(callback: (sql: postgres.Sql) => Promise<unknown>) {
             }
           });
 
-          result = await callback(wrappedSql);
+          await callback(wrappedSql);
         } catch (error) {
           console.error('Error in callback:', error);
           throw error; // This will trigger rollback
         } finally {
           console.log('Rolling back transaction');
+
+          // deno-lint-ignore no-unsafe-finally
           throw new TransactionRollback();
         }
       });
-
       console.log('callback called');
-      return result;
     } catch (err) {
       // Only log and re-throw if it's not our intentional rollback
       if (!(err instanceof TransactionRollback)) {
