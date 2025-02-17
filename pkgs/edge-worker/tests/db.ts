@@ -13,6 +13,9 @@ const utilSql = createSql(
   'postgresql://supabase_admin:postgres@localhost:5432/postgres'
 )
 
+// this is the name of the template database that is used to create
+// new databases for testing
+const TEST_DB_TEMPLATE = 'test_template';
 
 // this function creates a new database from the template,
 // initializes sql connection with createSql using modified
@@ -33,7 +36,7 @@ export function withTestDatabase(callback: (sql: postgres.Sql) => Promise<unknow
 
     try {
       console.log('creating database', dbName);
-      await utilSql`CREATE DATABASE ${utilSql(dbName)} WITH TEMPLATE postgres`;
+      await utilSql`CREATE DATABASE ${utilSql(dbName)} WITH TEMPLATE ${utilSql(TEST_DB_TEMPLATE)}`;
       // console.log('granting to postgres');
       // await utilSql`GRANT ALL PRIVILEGES ON DATABASE ${utilSql(dbName)} TO postgres`;
       // console.log('granting to supabase_admin');
@@ -41,6 +44,9 @@ export function withTestDatabase(callback: (sql: postgres.Sql) => Promise<unknow
       console.log('calling callback');
       await callback(sql);
       console.log('callback called');
+    } catch (err) {
+      console.error('Error in withTestDatabase:', err);
+      throw err; // Re-throw to ensure the error is not swallowed
     } finally {
       console.log('closing sql connection');
       await sql.end();
