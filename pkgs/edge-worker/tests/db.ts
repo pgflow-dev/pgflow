@@ -26,14 +26,9 @@ export function withPg(callback: (sql: postgres.Sql) => Promise<unknown>) {
 
       await localSql.begin(async (sql: postgres.Sql) => {
         try {
-          // Create a proxy that adds no-op end() method to transaction-local sql
-          const wrappedSql = new Proxy(sql, {
-            get(target, prop) {
-              if (prop === 'end') {
-                return async () => { /* no-op */ };
-              }
-              return target[prop as keyof typeof target];
-            }
+          // Add no-op end() method to transaction-local sql
+          const wrappedSql = Object.assign(sql, {
+            end: async () => { /* no-op */ }
           });
 
           await callback(wrappedSql);
