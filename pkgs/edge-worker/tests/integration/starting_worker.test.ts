@@ -23,7 +23,7 @@ Deno.test('Starting worker', withPg(async (sql) => {
   worker.startOnlyOnce({
     edgeFunctionName: 'test',
     // random uuid
-    workerId: '12345678-1234-1234-1234-123456789012',
+    workerId: crypto.randomUUID(),
   });
 
   await delay(100);

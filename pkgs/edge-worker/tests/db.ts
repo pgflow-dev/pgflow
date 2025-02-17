@@ -1,5 +1,12 @@
 import postgres from 'postgres';
 
+class TransactionRollback extends Error {
+  constructor() {
+    super('Rolling back transaction for clean test state');
+    this.name = 'TransactionRollback';
+  }
+}
+
 function createSql(dbUrl: string) {
   return postgres(dbUrl, {
     prepare: false,
@@ -66,25 +73,39 @@ export function withPg(callback: (sql: postgres.Sql) => Promise<unknown>) {
     try {
       console.log('calling callback');
 
-      await localSql.begin((sql: postgres.Sql) => {
-        // Create a proxy that adds no-op end() method to transaction-local sql
-        const wrappedSql = new Proxy(sql, {
-          get(target, prop) {
-            if (prop === 'end') {
-              return async () => { /* no-op */ };
+      let result;
+      await localSql.begin(async (sql: postgres.Sql) => {
+        try {
+          // Create a proxy that adds no-op end() method to transaction-local sql
+          const wrappedSql = new Proxy(sql, {
+            get(target, prop) {
+              if (prop === 'end') {
+                return async () => { /* no-op */ };
+              }
+              return target[prop as keyof typeof target];
             }
-            return target[prop as keyof typeof target];
-          }
-        });
+          });
 
-        return callback(wrappedSql);
+          result = await callback(wrappedSql);
+        } catch (error) {
+          console.error('Error in callback:', error);
+          throw error; // This will trigger rollback
+        } finally {
+          console.log('Rolling back transaction');
+          throw new TransactionRollback();
+        }
       });
 
       console.log('callback called');
+      return result;
     } catch (err) {
-      console.error('Error in withPg:', err);
-      throw err; // Re-throw to ensure the error is not swallowed
+      // Only log and re-throw if it's not our intentional rollback
+      if (!(err instanceof TransactionRollback)) {
+        console.error('Error in withPg:', err);
+        throw err;
+      }
     } finally {
+      console.log('Closing connection');
       await localSql.end();
     }
   }
