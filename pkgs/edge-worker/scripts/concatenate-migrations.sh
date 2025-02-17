@@ -3,22 +3,22 @@
 #######################################################################
 ########################### TEMPLATE DB ###############################
 #######################################################################
-cat <<'SQL' > ./tests/db/init_test_template.sql
+cat <<'SQL' > ./tests/db/migrations/900_init.sql
 ----------------------------------------------------------------------
 
 CREATE DATABASE test_template;
-ALTER DATABASE test_template OWNER TO postgres;
+ALTER DATABASE test_template OWNER TO supabase_admin;
 ALTER DATABASE test_template WITH is_template TRUE;
-GRANT ALL PRIVILEGES ON DATABASE test_template TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE test_template TO supabase_admin;
 
 ----------------------------------------------------------------------
 SQL
 
 # Create or clear the target file
-target_file="./tests/db/990_edge_worker_migrations.sql"
+target_file="./tests/db/migrations/950_edge_worker.sql"
 echo "-- Combined migrations file" > "$target_file"
 echo "-- Generated on $(date)" >> "$target_file"
-echo ""
+echo "" >> "$target_file"
 echo "-- Connect to the test template database" >> "$target_file"
 echo '\c test_template;' >> "$target_file"
 echo "" >> "$target_file"
