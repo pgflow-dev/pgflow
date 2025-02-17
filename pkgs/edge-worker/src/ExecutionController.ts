@@ -63,6 +63,10 @@ export class ExecutionController<MessagePayload extends Json> {
   }
 
   async awaitCompletion() {
+    const active = this.promiseQueue.active()
+    const all = this.promiseQueue.size();
+
+    this.logger.debug(`Awaiting completion of all tasks... (active/all: ${active}}/${all})`);
     await this.promiseQueue.done();
     // await this.archiver.flush();
   }
