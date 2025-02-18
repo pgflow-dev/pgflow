@@ -72,11 +72,10 @@ export class Queue<MessagePayload extends Json> {
     vtOffsetSeconds: number
   ): Promise<MessageRecord<MessagePayload>> {
     const records = await this.sql<MessageRecord<MessagePayload>[]>`
-      SELECT * FROM pgmq.set_vt(
-        queue_name => ${this.queueName},
-        msg_id => ${msgId}::bigint,
-        vt => ${vtOffsetSeconds}::integer
-      );
+      UPDATE ${this.sql('pgmq.q_' + this.queueName)}
+      SET vt = (now() + make_interval(secs => ${vtOffsetSeconds}))
+      WHERE msg_id = ${msgId}::bigint
+      RETURNING *;
     `;
     return records[0];
   }
