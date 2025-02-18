@@ -2,82 +2,75 @@ import { assertEquals, assertGreaterOrEqual } from '@std/assert';
 import { Worker } from '../../src/Worker.ts';
 import { withPg } from "../db.ts";
 import { log, waitFor } from "../e2e/_helpers.ts";
-import { sendBatch } from "../helpers.ts";
-import { PgmqMessageRecord } from "../../src/types.ts";
+import { getArchivedMessages, sendBatch } from "../helpers.ts";
 
+const workerConfig = {
+  maxPollSeconds: 1,
+  retryDelay: 2,      // seconds between retries
+  retryLimit: 2,      // number of retries
+  queueName: 'failing_always',
+} as const;
 
-// NOTE:
-// This test is fragile because of interplay between retry_delay and max_poll_seconds.
-// Because processing time is not 0, a max_poll_seconds set to same amount as retry_delay
-// would cause the additional polling call, because the delays and processing time would take more
-// than accumulated max_poll_seconds intervals.
-//
-// Take caution when setting up those values!
-const MAX_POLL_SECONDS = 1;
-const RETRY_DELAY = 2;
-const RETRY_LIMIT = 2;
-const QUEUE_NAME = 'failing_always';
-
-Deno.test('retries works', withPg(async (sql) => {
-  // worker retries each after 1s
-  // se we will expect roughly 1 message per second
-  const startTime = Date.now();
-
-  function failingAlways() {
-    const elapsedMs = Date.now() - startTime;
-    const elapsedSec = (elapsedMs / 1000).toFixed(2);
+/**
+ * Creates a handler that always fails and logs elapsed time
+ * @param startTime - reference time for elapsed calculations
+ */
+function createFailingHandler(startTime: number) {
+  return function failingHandler() {
+    const elapsedSec = ((Date.now() - startTime) / 1000).toFixed(2);
     log(`[elapsed: ${elapsedSec}s] Failed as expected (╯°□°)╯︵ ┻━┻`);
     throw new Error('Intentional failure');
-  }
+  };
+}
 
-  const worker = new Worker(failingAlways, {
+/**
+ * Test verifies that:
+ * 1. Message processing takes at least RETRY_LIMIT * RETRY_DELAY seconds
+ * 2. Message is read exactly RETRY_LIMIT + 1 times (initial + retries)
+ */
+Deno.test('message retry mechanism works correctly', withPg(async (sql) => {
+  const startTime = Date.now();
+  const worker = new Worker(createFailingHandler(startTime), {
     sql,
-    queueName: QUEUE_NAME,
-    retryLimit: RETRY_LIMIT,
-    retryDelay: RETRY_DELAY,
-    maxPollSeconds: MAX_POLL_SECONDS,
+    ...workerConfig
   });
 
   try {
+    // Start worker and send test message
     worker.startOnlyOnce({
       edgeFunctionName: 'test',
-      // random uuid
       workerId: crypto.randomUUID(),
     });
-    await sendBatch(1, QUEUE_NAME, sql);
+    await sendBatch(1, workerConfig.queueName, sql);
 
-    const expectedMinimumTime = RETRY_LIMIT * RETRY_DELAY * 1000;
-    
+    // Calculate expected processing time
+    const expectedMinimumMs = workerConfig.retryLimit * workerConfig.retryDelay * 1000;
+
+    // Wait for message to be archived
     const [message] = await waitFor(
       async () => {
-        const archivedMessages = await sql<
-          PgmqMessageRecord[]
-        >`SELECT * FROM ${sql('pgmq.a_' + QUEUE_NAME)}`;
-
-        return archivedMessages.length >= 1 && archivedMessages;
+        const messages = await getArchivedMessages(sql, workerConfig.queueName);
+        return messages.length >= 1 && messages;
       },
       {
-        pollIntervalMs: 50,
-        timeoutMs: expectedMinimumTime + 500,
+        timeoutMs: expectedMinimumMs + 500,
       }
     );
 
-    const endTime = Date.now();
-    const totalMs = Math.round(endTime - startTime);
-    console.log('totalMs', { totalMs, expected: expectedMinimumTime });
-
+    // Verify timing
+    const totalMs = Date.now() - startTime;
     assertGreaterOrEqual(
       totalMs,
-      expectedMinimumTime,
-      `Should take at least ${expectedMinimumTime}s to process all messages, took ${totalMs}ms instead`
+      expectedMinimumMs,
+      `Processing time ${totalMs}ms was shorter than minimum ${expectedMinimumMs}ms`
     );
 
+    // Verify retry count
+    const expectedReads = workerConfig.retryLimit + 1;
     assertEquals(
       message.read_ct,
-      RETRY_LIMIT + 1,
-      `messages should be read ${
-        RETRY_LIMIT + 1
-      } times - initial read and ${RETRY_LIMIT} retries`
+      expectedReads,
+      `Message should be read ${expectedReads} times (1 initial + ${workerConfig.retryLimit} retries)`
     );
   } finally {
     await worker.stop();

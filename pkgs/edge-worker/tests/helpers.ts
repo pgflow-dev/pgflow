@@ -1,3 +1,4 @@
+import type { PgmqMessageRecord } from "../src/types.ts";
 import type { postgres } from "./sql.ts";
 
 export async function sendBatch(count: number, queueName: string, sql: postgres.Sql) {
@@ -9,5 +10,13 @@ export async function sendBatch(count: number, queueName: string, sql: postgres.
         FROM generate_series(1, ${count}::integer)
       )
     )`;
+}
+
+/**
+ * Fetches archived messages from the queue
+ */
+export async function getArchivedMessages(sql: postgres.Sql, queueName: string) {
+  return await sql<PgmqMessageRecord[]>
+    `SELECT * FROM ${sql('pgmq.a_' + queueName)}`;
 }
 
