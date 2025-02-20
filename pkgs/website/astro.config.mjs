@@ -69,10 +69,10 @@ export default defineConfig({
                 label: 'Getting started',
                 autogenerate: { directory: 'edge-worker/getting-started/' },
               },
-              {
-                label: 'How to?',
-                autogenerate: { directory: 'edge-worker/how-to/' },
-              },
+              // {
+              //   label: 'How to?',
+              //   autogenerate: { directory: 'edge-worker/how-to/' },
+              // },
               {
                 label: 'Project Status',
                 badge: { text: 'important', variant: 'caution' },

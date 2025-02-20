@@ -1,5 +1,6 @@
 ---
 title: Deploy to Supabase.com
+draft: true
 description: Learn how to deploy, manage and monitor Edge Worker on Supabase Background Tasks. Step-by-step guide for deployment, starting, and maintaining workers.
 sidebar:
   order: 1
@@ -13,7 +14,7 @@ This guide explains the current process for deploying and maintaining workers in
 <NotProductionReady />
 
 :::note
-Running Edge Worker on Supabase.com currently requires a few additional setup steps. 
+Running Edge Worker on Supabase.com currently requires a few additional setup steps.
 Thanks to ongoing collaboration with the Supabase team, these requirements will be simplified in future releases.
 :::
 
@@ -51,7 +52,7 @@ for it to stop.
 ## Ensuring Worker Availability
 
 To ensure your worker stays active, it's recommended to use Cron to ping
-your worker edge function every few seconds. 
+your worker edge function every few seconds.
 This is recommended in case there are any bugs in the respawn process,
 which currently is triggered from withing the worker that is shutting down.
 
