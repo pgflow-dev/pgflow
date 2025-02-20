@@ -122,7 +122,7 @@
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
-          "pnpm dlx jsr publish"
+          "pnpm dlx jsr publish --allow-slow-types"
         ],
         "parallel": false
       }

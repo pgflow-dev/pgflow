@@ -2,6 +2,7 @@ import { getLogger } from './Logger.ts';
 
 // @ts-ignore - TODO: fix the types
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') as string;
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') as string;
 
 const logger = getLogger('spawnNewEdgeFunction');
 
@@ -17,7 +18,7 @@ export default async function spawnNewEdgeFunction(
   const response = await fetch(`${SUPABASE_URL}/functions/v1/${functionName}`, {
     method: 'POST',
     headers: {
-      // Authorization: `Bearer ${supabaseAnonKey}`,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
       'Content-Type': 'application/json',
     },
     // body: JSON.stringify(body),
