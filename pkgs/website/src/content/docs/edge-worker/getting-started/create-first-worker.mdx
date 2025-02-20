@@ -29,7 +29,7 @@ Before starting, please read the [Install Edge Worker](/edge-worker/getting-star
     First, create a new Edge Function using the Supabase CLI. Then, replace its content with this code:
 
     ```typescript
-    import { EdgeWorker } from "jsr:@pgflow/edge-worker@0.0.3";
+    import { EdgeWorker } from "jsr:@pgflow/edge-worker@0.0.4";
     
     EdgeWorker.start(async (payload: { url: string }) => {
       const response = await fetch(payload.url);
