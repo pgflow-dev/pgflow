@@ -37,5 +37,7 @@ jobs:
 
       - name: Create Release Pull Request
         uses: changesets/action@v1
+        with:
+          title: 'Release: Update Package Versions $(date +%Y-%m-%d) (${{ github.run_number }})'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
