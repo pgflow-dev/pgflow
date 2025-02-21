@@ -117,7 +117,8 @@ export default defineConfig({
       },
       social: {
         github: GITHUB_REPO_URL,
-        twitter: 'https://x.com/pgflow_dev',
+        'x.com': 'https://x.com/pgflow_dev',
+        mastodon: 'https://mastodon.social/@pgflow',
       },
       components: {
         Hero: './src/components/ConditionalHero.astro',
