@@ -29,7 +29,9 @@ export function withPg(callback: (sql: postgres.Sql) => Promise<unknown>) {
       await localSql.begin(async (sql: postgres.Sql) => {
         // Add no-op end() method to transaction-local sql
         const wrappedSql = Object.assign(sql, {
-          end: async () => { /* no-op */ }
+          end: async () => {
+            /* no-op */
+          },
         });
 
         try {
@@ -55,5 +57,20 @@ export function withPg(callback: (sql: postgres.Sql) => Promise<unknown>) {
       console.log('Closing connection');
       await localSql.end();
     }
-  }
+  };
+}
+
+export function withPgNoTransaction(
+  callback: (sql: postgres.Sql) => Promise<unknown>
+) {
+  const dbUrl = 'postgresql://supabase_admin:postgres@localhost:5432/postgres';
+  const sql = createSql(dbUrl);
+
+  return async () => {
+    try {
+      await callback(sql);
+    } finally {
+      await sql.end();
+    }
+  };
 }
