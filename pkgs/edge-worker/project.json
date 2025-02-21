@@ -117,7 +117,7 @@
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
-          "deno test --parallel --allow-all --env=supabase/functions/.env tests/integration/"
+          "deno test --allow-all --env=supabase/functions/.env tests/integration/"
         ],
         "parallel": false
       }
