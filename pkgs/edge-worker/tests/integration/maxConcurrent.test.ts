@@ -1,6 +1,6 @@
 import { assertEquals, assertGreaterOrEqual } from '@std/assert';
 import { Worker } from '../../src/Worker.ts';
-import { withPg } from "../db.ts";
+import { withTx } from "../db.ts";
 import { log, waitFor } from "../e2e/_helpers.ts";
 import type { PgmqMessageRecord } from "../../src/types.ts";
 import { delay } from "@std/async";
@@ -13,7 +13,7 @@ async function sleepFor1s() {
   await delay(1000);
 }
 
-Deno.test('maxConcurrent option is respected', withPg(async (sql) => {
+Deno.test('maxConcurrent option is respected', withTx(async (sql) => {
   const worker = new Worker(sleepFor1s, {
     sql,
     maxConcurrent: 1,

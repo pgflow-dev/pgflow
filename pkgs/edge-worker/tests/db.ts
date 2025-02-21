@@ -16,7 +16,7 @@ function createSql(dbUrl: string) {
   });
 }
 
-export function withPg(callback: (sql: postgres.Sql) => Promise<unknown>) {
+export function withTx(callback: (sql: postgres.Sql) => Promise<unknown>) {
   const dbUrl = `postgresql://supabase_admin:postgres@localhost:5432/postgres`;
   const localSql = createSql(dbUrl);
 
@@ -51,7 +51,7 @@ export function withPg(callback: (sql: postgres.Sql) => Promise<unknown>) {
         throw callbackError;
       }
     } catch (err) {
-      console.error('Error in withPg:', err);
+      console.error('Error in withTx:', err);
       throw err;
     } finally {
       console.log('Closing connection');

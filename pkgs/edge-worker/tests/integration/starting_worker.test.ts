@@ -1,8 +1,8 @@
 import { Worker } from '../../src/Worker.ts';
-import { withPg } from "../db.ts";
+import { withTx } from "../db.ts";
 import { delay } from "@std/async";
 
-Deno.test('Starting worker', withPg(async (sql) => {
+Deno.test('Starting worker', withTx(async (sql) => {
   const worker = new Worker(console.log, {
     sql,
     maxPollSeconds: 1
@@ -25,7 +25,7 @@ Deno.test('Starting worker', withPg(async (sql) => {
   }
 }));
 
-Deno.test('check pgmq version', withPg(async (sql) => {
+Deno.test('check pgmq version', withTx(async (sql) => {
   const result = await sql`
     SELECT extversion 
     FROM pg_extension 

@@ -1,9 +1,9 @@
 import { assertEquals } from "@std/assert";
 import { Worker } from '../../src/Worker.ts';
-import { withPg } from "../db.ts";
+import { withTx } from "../db.ts";
 import { delay } from "@std/async";
 
-Deno.test('creates queue when starting worker', withPg(async (sql) => {
+Deno.test('creates queue when starting worker', withTx(async (sql) => {
   const worker = new Worker(console.log, {
     sql,
     maxPollSeconds: 1,
