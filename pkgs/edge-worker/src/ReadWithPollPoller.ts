@@ -1,5 +1,5 @@
-import { Queue } from './Queue.ts';
-import { Json, MessageRecord } from './types.ts';
+import type { Queue } from './Queue.ts';
+import type { Json, MessageRecord } from './types.ts';
 
 export interface PollerConfig {
   batchSize: number;

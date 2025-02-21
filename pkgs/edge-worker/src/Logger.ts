@@ -31,7 +31,7 @@ export function setupLogger(workerId: string) {
         formatter: (record: {
           loggerName: string;
           msg: string;
-          args: any[];
+          args: unknown[];
         }) => {
           const prefix = `worker_id=${workerId}`;
           const module = record.loggerName;

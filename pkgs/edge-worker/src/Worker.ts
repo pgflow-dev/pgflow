@@ -1,4 +1,4 @@
-import postgres from 'postgres';
+import type postgres from 'postgres';
 import type { Json, WorkerBootstrap } from './types.ts';
 import { Queue } from './Queue.ts';
 import { Queries } from './Queries.ts';
