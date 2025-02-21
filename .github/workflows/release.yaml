@@ -6,6 +6,8 @@ on:
       - main
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
+permissions:
+  contents: write # Grants write permission to contents
 
 jobs:
   release:
@@ -21,7 +23,7 @@ jobs:
           node-version: 20
 
       - name: Install Dependencies
-        run: yarn
+        run: pnpm install
 
       - name: Create Release Pull Request
         uses: changesets/action@v1
