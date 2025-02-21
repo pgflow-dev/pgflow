@@ -1,6 +1,6 @@
 import { assertEquals, assertGreaterOrEqual } from '@std/assert';
 import { Worker } from '../../src/Worker.ts';
-import { withTx } from "../db.ts";
+import { withTransaction } from "../db.ts";
 import { log, waitFor } from "../e2e/_helpers.ts";
 import { getArchivedMessages, sendBatch } from "../helpers.ts";
 
@@ -28,7 +28,7 @@ function createFailingHandler(startTime: number) {
  * 1. Message processing takes at least RETRY_LIMIT * RETRY_DELAY seconds
  * 2. Message is read exactly RETRY_LIMIT + 1 times (initial + retries)
  */
-Deno.test('message retry mechanism works correctly', withTx(async (sql) => {
+Deno.test('message retry mechanism works correctly', withTransaction(async (sql) => {
   const startTime = Date.now();
   const worker = new Worker(createFailingHandler(startTime), {
     sql,

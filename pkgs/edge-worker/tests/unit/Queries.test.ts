@@ -1,6 +1,6 @@
 import { assertEquals, assertExists, assertRejects } from 'jsr:@std/assert';
 import { Queries } from '../../src/Queries.ts';
-import { withTx, withPgNoTransaction } from '../db.ts';
+import { withTransaction, withPgNoTransaction } from '../db.ts';
 import { WorkerRow } from '../../src/types.ts';
 import { delay } from '@std/async';
 
@@ -8,7 +8,7 @@ const FAKE_UUID = '123e4567-e89b-12d3-a456-426614174000';
 
 Deno.test(
   'Queries.onWorkerStarted integration test',
-  withTx(async (sql) => {
+  withTransaction(async (sql) => {
     await sql`TRUNCATE edge_worker.workers CASCADE`;
     const queries = new Queries(sql);
     // Test data
@@ -70,7 +70,7 @@ Deno.test(
 
 Deno.test(
   'Queries.sendHeartbeat updates last_heartbeat_at for started worker',
-  withTx(async (sql) => {
+  withTransaction(async (sql) => {
     const queries = new Queries(sql);
 
     // First create a worker
@@ -108,7 +108,7 @@ Deno.test(
 
 Deno.test(
   'Queries.onWorkerStopped updates stopped_at and last_heartbeat_at',
-  withTx(async (sql) => {
+  withTransaction(async (sql) => {
     await sql`TRUNCATE edge_worker.workers CASCADE`;
     const queries = new Queries(sql);
 
