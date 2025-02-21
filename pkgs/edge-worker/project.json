@@ -92,8 +92,16 @@
         "parallel": false
       }
     },
+    "db:ensure": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "commands": ["deno task db:ensure"],
+        "parallel": false
+      }
+    },
     "test:unit": {
-      "dependsOn": ["supabase:start"],
+      "dependsOn": ["db:ensure"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",
@@ -103,27 +111,25 @@
         "parallel": false
       }
     },
-    "test:e2e": {
-      "dependsOn": ["supabase:start"],
+    "test:integration": {
+      "dependsOn": ["db:ensure"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
-          "deno test --allow-all --env=supabase/.env tests/e2e/"
+          "deno test --parallel --allow-all --env=supabase/functions/.env tests/integration/"
         ],
         "parallel": false
       }
     },
     "test": {
-      "dependsOn": ["test:unit"]
+      "dependsOn": ["test:unit", "test:integration"]
     },
     "jsr:publish": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",
-        "commands": [
-          "pnpm dlx jsr publish --allow-slow-types"
-        ],
+        "commands": ["pnpm dlx jsr publish --allow-slow-types"],
         "parallel": false
       }
     }
