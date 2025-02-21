@@ -21,5 +21,8 @@
   },
   "lint": {
     "exclude": ["supabase/functions/_src/", "dist/", "build/", "node_modules/"]
+    "rules": {
+      "exclude": ["no-slow-types"]
+    }
   }
 }
