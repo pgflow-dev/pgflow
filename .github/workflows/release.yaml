@@ -43,7 +43,6 @@ jobs:
             pnpm changeset version
             chmod +x scripts/sync-versions
             ./scripts/sync-versions
-            git add "**/jsr.json"
-            git commit --amend --no-edit
+          commit: 'chore: update versions and sync JSR metadata'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
