@@ -1,4 +1,4 @@
-import postgres from 'postgres';
+import type postgres from 'postgres';
 import type { Json, WorkerBootstrap } from './types.ts';
 import { Queue } from './Queue.ts';
 import { Queries } from './Queries.ts';
@@ -12,7 +12,7 @@ import type { PollerConfig } from './ReadWithPollPoller.ts';
 import { BatchProcessor } from './BatchProcessor.ts';
 
 export type WorkerConfig = {
-  connectionString: string;
+  sql: postgres.Sql;
   maxPgConnections?: number;
 } & Partial<ExecutionConfig> &
   Partial<LifecycleConfig> &
@@ -51,10 +51,7 @@ export class Worker<MessagePayload extends Json> {
 
     this.messageHandler = messageHandler;
 
-    this.sql = postgres(this.config.connectionString, {
-      max: this.config.maxPgConnections,
-      prepare: false,
-    });
+    this.sql = this.config.sql;
 
     const queue = new Queue<MessagePayload>(this.sql, this.config.queueName);
     const queries = new Queries(this.sql);

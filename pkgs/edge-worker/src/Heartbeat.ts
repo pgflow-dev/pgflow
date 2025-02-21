@@ -1,5 +1,5 @@
 import type { Queries } from './Queries.ts';
-import { WorkerRow } from './types.ts';
+import type { WorkerRow } from './types.ts';
 import { getLogger } from './Logger.ts';
 
 export class Heartbeat {

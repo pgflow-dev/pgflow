@@ -1,8 +1,8 @@
 import { newQueue, type Queue as PromiseQueue } from '@henrygd/queue';
 import { MessageExecutor } from './MessageExecutor.ts';
-import { Queue } from './Queue.ts';
-import { Json } from './types.ts';
-import { MessageRecord } from './types.ts';
+import type { Queue } from './Queue.ts';
+import type { Json } from './types.ts';
+import type { MessageRecord } from './types.ts';
 import { BatchArchiver } from './BatchArchiver.ts';
 import { getLogger } from './Logger.ts';
 
@@ -63,10 +63,12 @@ export class ExecutionController<MessagePayload extends Json> {
   }
 
   async awaitCompletion() {
-    const active = this.promiseQueue.active()
+    const active = this.promiseQueue.active();
     const all = this.promiseQueue.size();
 
-    this.logger.debug(`Awaiting completion of all tasks... (active/all: ${active}}/${all})`);
+    this.logger.debug(
+      `Awaiting completion of all tasks... (active/all: ${active}}/${all})`
+    );
     await this.promiseQueue.done();
     // await this.archiver.flush();
   }

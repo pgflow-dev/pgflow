@@ -1,0 +1,20 @@
+services:
+  db:
+    # image: postgres:15.8-alpine
+    # image: supabase/postgres:15.8.1.039
+    # image: supabase/postgres:15.1.0.37
+
+    image: supabase/postgres:15.8.1.020
+    # image: supabase/postgres:15.8.1.018
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./migrations/edge_worker.sql:/docker-entrypoint-initdb.d/migrations/950_edge_worker.sql
+    environment:
+      POSTGRES_DB: postgres
+      # commented out because of the problems with supabase_admin permissions
+      # see: https://github.com/supabase/postgres/issues/1219#issuecomment-2362955730
+      # POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: /var/run/postgresql
+      POSTGRES_PORT: 5432

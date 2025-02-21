@@ -1,0 +1,17 @@
+#!/bin/bash
+port_number=$1
+
+# exit if port is not provided
+if [ -z "$port_number" ]; then
+  echo "Port number is not provided"
+  exit 1
+fi
+
+echo "Waiting for localhost:$port_number..."
+
+until nc -z localhost "$port_number" 2>/dev/null; do
+  echo -n "."
+  sleep 0.1
+done
+
+echo -e "\nPort $port_number is available!"

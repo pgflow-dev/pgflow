@@ -67,16 +67,24 @@ export class Queue<MessagePayload extends Json> {
     `;
   }
 
+  /**
+   * Sets the visibility timeout of a message to the current time plus the given offset.
+   *
+   * This is an inlined version of the pgmq.set_vt in order to fix the bug.
+   * The original uses now() instead of clock_timestamp() which is problematic in transactions.
+   * See more details here: https://github.com/tembo-io/pgmq/issues/367
+   *
+   * The only change made is now() replaced with clock_timestamp().
+   */
   async setVt(
     msgId: number,
     vtOffsetSeconds: number
   ): Promise<MessageRecord<MessagePayload>> {
     const records = await this.sql<MessageRecord<MessagePayload>[]>`
-      SELECT * FROM pgmq.set_vt(
-        queue_name => ${this.queueName},
-        msg_id => ${msgId}::bigint,
-        vt => ${vtOffsetSeconds}::integer
-      );
+      UPDATE ${this.sql('pgmq.q_' + this.queueName)}
+      SET vt = (clock_timestamp() + make_interval(secs => ${vtOffsetSeconds}))
+      WHERE msg_id = ${msgId}::bigint
+      RETURNING *;
     `;
     return records[0];
   }

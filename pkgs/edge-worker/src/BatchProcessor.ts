@@ -1,7 +1,7 @@
-import { ExecutionController } from './ExecutionController.ts';
-import { Queue } from './Queue.ts';
-import { PollerConfig, ReadWithPollPoller } from './ReadWithPollPoller.ts';
-import { Json, MessageRecord } from './types.ts';
+import type { ExecutionController } from './ExecutionController.ts';
+import type { Queue } from './Queue.ts';
+import { type PollerConfig, ReadWithPollPoller } from './ReadWithPollPoller.ts';
+import type { Json, MessageRecord } from './types.ts';
 import { getLogger } from './Logger.ts';
 
 export class BatchProcessor<MessagePayload extends Json> {

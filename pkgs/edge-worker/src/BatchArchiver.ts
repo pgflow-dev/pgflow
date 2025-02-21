@@ -1,5 +1,5 @@
-import { Queue } from './Queue.ts';
-import { Json } from './types.ts';
+import type { Queue } from './Queue.ts';
+import type { Json } from './types.ts';
 import { getLogger } from './Logger.ts';
 
 interface BatchConfig {

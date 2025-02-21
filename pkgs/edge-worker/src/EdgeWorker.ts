@@ -2,8 +2,9 @@ import { Worker, type WorkerConfig } from './Worker.ts';
 import spawnNewEdgeFunction from './spawnNewEdgeFunction.ts';
 import type { Json } from './types.ts';
 import { getLogger, setupLogger } from './Logger.ts';
+import postgres from 'postgres';
 
-export type EdgeWorkerConfig = Omit<WorkerConfig, 'connectionString'>;
+export type EdgeWorkerConfig = Omit<WorkerConfig, 'connectionString' | 'sql'>;
 
 export class EdgeWorker {
   private static logger = getLogger('EdgeWorker');
@@ -14,11 +15,15 @@ export class EdgeWorker {
     config: EdgeWorkerConfig = {}
   ) {
     this.ensureFirstCall();
-    const connectionString = this.getConnectionString();
+
+    const sql = postgres(this.getConnectionString(), {
+      max: config.maxPgConnections,
+      prepare: false,
+    });
 
     const workerConfig: WorkerConfig = {
       ...config,
-      connectionString,
+      sql
     };
     this.setupRequestHandler(handler, workerConfig);
   }
