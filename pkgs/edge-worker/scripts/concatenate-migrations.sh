@@ -2,6 +2,7 @@
 
 # Create or clear the target file
 target_file="./tests/db/migrations/edge_worker.sql"
+mkdir -p $(dirname "$target_file")
 echo "-- Combined migrations file" > "$target_file"
 echo "-- Generated on $(date)" >> "$target_file"
 echo "" >> "$target_file"
