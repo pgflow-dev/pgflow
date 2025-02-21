@@ -7,8 +7,6 @@ on:
       - completed
     branches:
       - main
-    paths:
-      - 'pkgs/**/jsr.json' # Specifically watch for jsr.json changes
 jobs:
   publish:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
@@ -22,8 +20,12 @@ jobs:
         uses: denoland/setup-deno@v2
         with:
           deno-version: 1.x
-      - name: Publish Packages
+      - name: Sync Versions and Publish Packages
         run: |
+          # Run the sync script if needed
+          chmod +x scripts/sync-versions
+          ./scripts/sync-versions
+          # Publish each package with a jsr.json
           for pkg in pkgs/*/; do
             if [ -f "${pkg}jsr.json" ]; then
               cd "$pkg"

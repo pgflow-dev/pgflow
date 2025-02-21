@@ -39,10 +39,5 @@ jobs:
         uses: changesets/action@v1
         with:
           title: 'Release: Update Package Versions'
-          version: |
-            pnpm changeset version
-            chmod +x scripts/sync-versions
-            ./scripts/sync-versions
-          commit: 'chore: update versions and sync JSR metadata'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
