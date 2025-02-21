@@ -2,3 +2,4 @@ supabase/migrations/*
 supabase/functions/_src/*
 supabase/functions/**/deno.json
 supabase/functions/**/deno.lock
+jsr.json

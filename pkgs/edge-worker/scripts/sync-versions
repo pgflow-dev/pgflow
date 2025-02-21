@@ -1,0 +1,6 @@
+#!/bin/bash
+jq -n \
+  --arg name "$(jq -r .name package.json)" \
+  --arg version "$(jq -r .version package.json)" \
+  --rawfile exports <(jq .exports deno.json) \
+  '{name: $name, version: $version, exports: $exports | fromjson}' > jsr.json
