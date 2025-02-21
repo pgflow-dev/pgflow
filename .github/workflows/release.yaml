@@ -11,6 +11,7 @@ on:
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 permissions:
   contents: write # Grants write permission to contents
+  pull-requests: write
 
 jobs:
   release:
