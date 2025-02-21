@@ -1,12 +1,5 @@
 import postgres from 'postgres';
 
-class TransactionRollback extends Error {
-  constructor() {
-    super('Rolling back transaction for clean test state');
-    this.name = 'TransactionRollback';
-  }
-}
-
 function createSql(dbUrl: string) {
   return postgres(dbUrl, {
     prepare: false,
@@ -16,7 +9,9 @@ function createSql(dbUrl: string) {
   });
 }
 
-export function withTransaction(callback: (sql: postgres.Sql) => Promise<unknown>) {
+export function withTransaction(
+  callback: (sql: postgres.Sql) => Promise<unknown>
+) {
   const dbUrl = `postgresql://supabase_admin:postgres@localhost:5432/postgres`;
   const localSql = createSql(dbUrl);
 
