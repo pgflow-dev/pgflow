@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Find all deno.json files in pkgs/ subdirectories
+find pkgs -maxdepth 2 -mindepth 2 -name "deno.json" -type f | while read -r deno_file; do
+    # Get the package directory
+    pkg_dir=$(dirname "$deno_file")
+
+    echo "Processing package in: $pkg_dir"
+
+    # Check if package.json exists in the same directory
+    if [ ! -f "$pkg_dir/package.json" ]; then
+        echo "Warning: package.json not found in $pkg_dir, skipping..."
+        continue
+    fi;
+
+    # Change to package directory
+    cd "$pkg_dir" || exit
+
+    # Create jsr.json
+    jq -n \
+        --arg name "$(jq -r .name package.json)" \
+        --arg version "$(jq -r .version package.json)" \
+        --rawfile exports <(jq .exports deno.json) \
+        '{name: $name, version: $version, exports: $exports | fromjson}' > jsr.json
+
+    # Return to original directory
+    cd - > /dev/null
+
+    echo "Created jsr.json for $pkg_dir"
+done

@@ -1,0 +1,29 @@
+name: Publish JSR
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'pkgs/**/jsr.json' # Specifically watch for jsr.json changes
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # The OIDC ID token is used for authentication with JSR.
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: 1.x
+      - name: Publish Packages
+        run: |
+          for pkg in pkgs/*/; do
+            if [ -f "${pkg}jsr.json" ]; then
+              cd "$pkg"
+              deno publish
+              cd ../../
+            fi
+          done
