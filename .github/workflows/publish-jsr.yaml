@@ -1,15 +1,18 @@
 name: Publish JSR
 
 on:
-  push:
+  workflow_run:
+    workflows: ['Release']
+    types:
+      - completed
     branches:
       - main
     paths:
       - 'pkgs/**/jsr.json' # Specifically watch for jsr.json changes
 jobs:
   publish:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    needs: [ci, release] # This makes release wait for CI to complete
     permissions:
       contents: read
       id-token: write # The OIDC ID token is used for authentication with JSR.
