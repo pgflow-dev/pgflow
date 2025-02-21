@@ -2,7 +2,9 @@
   "name": "@pgflow/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "version-packages": "changeset version && ./scripts/sync-versions"
+  },
   "private": true,
   "devDependencies": {
     "@axhxrx/nx-deno": "^1.0.2",
