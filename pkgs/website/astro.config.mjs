@@ -6,6 +6,8 @@ import starlightSidebarTopics from 'starlight-sidebar-topics';
 import robotsTxt from 'astro-robots-txt';
 import starlightLlmsTxt from 'starlight-llms-txt';
 
+import svelte from '@astrojs/svelte';
+
 const GITHUB_REPO_URL = 'https://github.com/pgflow-dev/pgflow';
 const PLAUSIBLE_PROXY = {
   url: 'https://wispy-pond-c6f8.wojciech-majewski.workers.dev',
@@ -142,5 +144,7 @@ export default defineConfig({
         },
       ],
     }),
+    svelte(),
   ],
 });
+
