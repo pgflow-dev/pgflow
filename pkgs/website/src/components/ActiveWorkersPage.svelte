@@ -48,7 +48,7 @@ onDestroy(() => {
       <th>Function</th>
       <th>Queue</th>
       <th>ID</th>
-      <!-- <th>Started at</th> -->
+      <th>Started at</th>
       <th>Last heartbeat</th>
     </tr>
   </thead>
@@ -59,7 +59,7 @@ onDestroy(() => {
         <td>{row.function_name}</td>
         <td>{row.queue_name}</td>
         <td>{row.worker_id}</td>
-        <!-- <td>{getSecondsAgo(row.started_at)}</td> -->
+        <td>{getSecondsAgo(row.started_at)}</td>
         <td>{getSecondsAgo(row.last_heartbeat_at)}</td>
       </tr>
     {/each}
