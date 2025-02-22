@@ -1,7 +1,6 @@
 <script lang="ts">
 import { onMount, onDestroy } from 'svelte';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from 'astro:env/client';
-import { createClient } from '@supabase/supabase-js';
+import { fetchWorkers } from '../libs/db';
 
 type Worker = {
   function_name: string;
@@ -12,7 +11,6 @@ type Worker = {
   worker_id: string;
 };
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let rows: Worker[] = [];
 let interval: number;
 
@@ -21,20 +19,13 @@ function getSecondsAgo(timestamp: string): string {
   return `${diff} seconds ago`;
 }
 
-async function fetchWorkers() {
-  const { data, error } = await supabase.schema('edge_worker').from('active_workers').select('*').order('last_heartbeat_at', { ascending: false });
-  
-  if (error) {
-    console.error(error);
-    return;
-  }
-  
-  rows = data;
+async function refreshWorkers() {
+  rows = await fetchWorkers();
 }
 
 onMount(() => {
-  fetchWorkers();
-  interval = setInterval(fetchWorkers, 1000);
+  refreshWorkers();
+  interval = setInterval(refreshWorkers, 1000);
 });
 
 onDestroy(() => {
