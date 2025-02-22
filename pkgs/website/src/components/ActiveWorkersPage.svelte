@@ -16,8 +16,13 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let rows: Worker[] = [];
 let interval: number;
 
+function getSecondsAgo(timestamp: string): string {
+  const diff = Math.round((Date.now() - new Date(timestamp).getTime()) / 1000);
+  return `${diff} seconds ago`;
+}
+
 async function fetchWorkers() {
-  const { data, error } = await supabase.schema('edge_worker').from('active_workers').select('*');
+  const { data, error } = await supabase.schema('edge_worker').from('active_workers').select('*').order('last_heartbeat_at', { ascending: false });
   
   if (error) {
     console.error(error);
@@ -29,7 +34,7 @@ async function fetchWorkers() {
 
 onMount(() => {
   fetchWorkers();
-  interval = setInterval(fetchWorkers, 5000);
+  interval = setInterval(fetchWorkers, 1000);
 });
 
 onDestroy(() => {
@@ -43,7 +48,7 @@ onDestroy(() => {
       <th>Function</th>
       <th>Queue</th>
       <th>ID</th>
-      <th>Started at</th>
+      <!-- <th>Started at</th> -->
       <th>Last heartbeat</th>
     </tr>
   </thead>
@@ -54,8 +59,8 @@ onDestroy(() => {
         <td>{row.function_name}</td>
         <td>{row.queue_name}</td>
         <td>{row.worker_id}</td>
-        <td>{row.started_at}</td>
-        <td>{row.last_heartbeat_at}</td>
+        <!-- <td>{getSecondsAgo(row.started_at)}</td> -->
+        <td>{getSecondsAgo(row.last_heartbeat_at)}</td>
       </tr>
     {/each}
   </tbody>
