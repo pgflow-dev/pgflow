@@ -21,4 +21,4 @@ onMount(async () => {
 
 </script>
 
-<h3>Active workers: {rows.length}</h3>
+<span>{rows.length}</span>

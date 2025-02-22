@@ -133,6 +133,7 @@ export default defineConfig({
       },
       components: {
         Hero: './src/components/ConditionalHero.astro',
+        Search: './src/components/SearchAndWorkers.astro',
       },
     }),
     robotsTxt({
@@ -147,4 +148,3 @@ export default defineConfig({
     svelte(),
   ],
 });
-

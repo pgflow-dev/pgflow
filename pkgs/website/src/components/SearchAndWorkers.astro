@@ -1,0 +1,21 @@
+---
+import DefaultSearch from "@astrojs/starlight/components/Search.astro";
+import type { Props } from "@astrojs/starlight/props";
+import HeaderWidget from '../components/HeaderWidget.svelte';
+
+type SearchProps = Props;
+const props = Astro.props as SearchProps;
+---
+
+<div class="search-wrapper">
+	<DefaultSearch {...props} />
+  <HeaderWidget client:only />
+</div>
+
+<style>
+  .search-wrapper {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+</style>
