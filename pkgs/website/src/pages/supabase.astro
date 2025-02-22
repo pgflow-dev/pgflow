@@ -1,12 +1,8 @@
 ---
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from 'astro:env/client';
-import HeaderWidget from '../components/HeaderWidget.svelte';
+import ActiveWorkersPage from '../components/ActiveWorkersPage.svelte';
 ---
 
 <StarlightPage frontmatter={{ title: 'Supabase', topic: 'edge-worker', template: 'splash' }}>
-  <HeaderWidget client:only />
-  <p>This is a custom page with a custom component:</p>
-  url: <a href={SUPABASE_URL}>{SUPABASE_URL}</a>
-  anon key: {SUPABASE_ANON_KEY}
+  <ActiveWorkersPage client:only />
 </StarlightPage>
