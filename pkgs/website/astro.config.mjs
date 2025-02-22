@@ -1,5 +1,5 @@
 // @ts-check
-import { defineConfig } from 'astro/config';
+import { defineConfig, envField } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightLinksValidator from 'starlight-links-validator';
 import starlightSidebarTopics from 'starlight-sidebar-topics';
@@ -22,6 +22,15 @@ export default defineConfig({
   build: {
     // prevents problems with trailing slash redirects (SEO issue)
     format: 'directory',
+  },
+  env: {
+    schema: {
+      SUPABASE_URL: envField.string({ context: 'client', access: 'public' }),
+      SUPABASE_ANON_KEY: envField.string({
+        context: 'client',
+        access: 'public',
+      }),
+    },
   },
   redirects: {
     '/edge-worker/how-to/run-on-hosted-supabase':

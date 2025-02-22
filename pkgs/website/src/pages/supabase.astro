@@ -1,0 +1,9 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { SUPABASE_URL } from 'astro:env/client';
+---
+
+<StarlightPage frontmatter={{ title: 'Supabase', topic: 'edge-worker', template: 'splash' }}>
+  <p>This is a custom page with a custom component:</p>
+  url: <a href={SUPABASE_URL}>{SUPABASE_URL}</a>
+</StarlightPage>
