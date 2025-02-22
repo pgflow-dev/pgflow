@@ -1,8 +1,11 @@
 ---
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import ActiveWorkersPage from '../components/ActiveWorkersPage.svelte';
+import SveltePage from '../components/SveltePage.svelte';
 ---
-
 <StarlightPage frontmatter={{ title: 'Supabase', topic: 'edge-worker', template: 'splash' }}>
-  <ActiveWorkersPage client:only />
+  <SveltePage client:only>
+    <ActiveWorkersPage client:only />
+  </SveltePage>
 </StarlightPage>
+
