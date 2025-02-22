@@ -1,5 +1,5 @@
 <script lang="ts">
-import { onMount } from 'svelte';
+import { onMount, onDestroy } from 'svelte';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from 'astro:env/client';
 import { createClient } from '@supabase/supabase-js';
 
@@ -13,21 +13,28 @@ type Worker = {
 };
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-console.log(supabase);
 let rows: Worker[] = [];
+let interval: number;
 
-onMount(async () => {
+async function fetchWorkers() {
   const { data, error } = await supabase.schema('edge_worker').from('active_workers').select('*');
-  console.log(data);
-
+  
   if (error) {
-    console.log(error);
+    console.error(error);
+    return;
   }
-  else {
-    rows = data;
-  }
+  
+  rows = data;
+}
+
+onMount(() => {
+  fetchWorkers();
+  interval = setInterval(fetchWorkers, 5000);
 });
 
+onDestroy(() => {
+  clearInterval(interval);
+});
 </script>
 
 <table>
