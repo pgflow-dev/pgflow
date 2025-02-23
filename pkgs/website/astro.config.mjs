@@ -45,6 +45,27 @@ export default defineConfig({
           },
         },
         {
+          tag: 'meta',
+          attrs: {
+            property: 'og:title',
+            content: 'pgflow - Postgres-First Workflow Engine for Supabase',
+          },
+        },
+        {
+          tag: 'meta',
+          attrs: {
+            property: 'og:description',
+            content: 'pgflow is an open-source workflow engine built on Supabase Background Tasks and Queues. It enables developers to run complex workflows entirely within Supabase, offering simplicity, scalability, and a seamless developer experience.',
+          },
+        },
+        {
+          tag: 'meta',
+          attrs: {
+            property: 'og:image',
+            content: 'https://www.pgflow.dev/assets/pgflow-logo-light.svg',
+          },
+        },
+        {
           tag: 'script',
           attrs: {
             defer: true,
@@ -103,9 +124,9 @@ export default defineConfig({
           },
         ]),
       ],
-      title: 'pgflow (Workflow Engine for Supabase)',
+      title: 'pgflow - Postgres-First Workflow Engine for Supabase',
       description:
-        'A workflow engine for Postgres using Supabase queues and background tasks to process jobs in parallel. Simple and built for a great developer experience.',
+        'pgflow is an open-source workflow engine built on Supabase Background Tasks and Queues. It enables developers to run complex workflows entirely within Supabase, offering simplicity, scalability, and a seamless developer experience.',
       logo: {
         replacesTitle: true,
         light: './src/assets/pgflow-logo-light.svg',
