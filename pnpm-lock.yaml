@@ -142,6 +142,9 @@ importers:
         specifier: ^2.0.2
         version: 2.0.5(zod@3.24.1)
     devDependencies:
+      '@nxext/sveltekit':
+        specifier: ^20.0.3
+        version: 20.0.3(@nx/devkit@20.3.0)(@nx/eslint@20.2.2)(@nx/js@20.3.0)(@nx/vite@20.2.2)(@nx/workspace@20.3.0)(nx@20.2.2)
       '@sveltejs/adapter-auto':
         specifier: ^3.0.0
         version: 3.3.1(@sveltejs/kit@2.17.2)
@@ -3938,6 +3941,33 @@ packages:
       - verdaccio
     dev: true
 
+  /@nx/eslint@20.2.2(@swc-node/register@1.9.2)(@swc/core@1.5.29)(@types/node@18.16.20)(eslint@8.57.1)(nx@20.2.2):
+    resolution: {integrity: sha512-GID3r539okSIdqqaLJxOttjbC8xaAbyrGJfSo/jyFLVASN4ZYuwFwWU94Vdn1NsOPHc2kiDa/qQj5mv0gbBfUw==}
+    peerDependencies:
+      '@zkochan/js-yaml': 0.0.7
+      eslint: ^8.0.0 || ^9.0.0
+    peerDependenciesMeta:
+      '@zkochan/js-yaml':
+        optional: true
+    dependencies:
+      '@nx/devkit': 20.2.2(nx@20.2.2)
+      '@nx/js': 20.2.2(@swc-node/register@1.9.2)(@swc/core@1.5.29)(@types/node@18.16.20)(nx@20.2.2)(typescript@5.6.3)
+      eslint: 8.57.1
+      semver: 7.6.3
+      tslib: 2.8.1
+      typescript: 5.6.3
+    transitivePeerDependencies:
+      - '@babel/traverse'
+      - '@swc-node/register'
+      - '@swc/core'
+      - '@swc/wasm'
+      - '@types/node'
+      - debug
+      - nx
+      - supports-color
+      - verdaccio
+    dev: true
+
   /@nx/eslint@20.2.2(@swc-node/register@1.9.2)(@swc/core@1.5.29)(@types/node@18.16.20)(eslint@9.17.0)(nx@20.2.2):
     resolution: {integrity: sha512-GID3r539okSIdqqaLJxOttjbC8xaAbyrGJfSo/jyFLVASN4ZYuwFwWU94Vdn1NsOPHc2kiDa/qQj5mv0gbBfUw==}
     peerDependencies:
@@ -4582,6 +4612,26 @@ packages:
       - '@swc-node/register'
       - '@swc/core'
       - debug
+    dev: true
+
+  /@nxext/sveltekit@20.0.3(@nx/devkit@20.3.0)(@nx/eslint@20.2.2)(@nx/js@20.3.0)(@nx/vite@20.2.2)(@nx/workspace@20.3.0)(nx@20.2.2):
+    resolution: {integrity: sha512-Ai8rY3X3Zi6DQDVdZo/g6y18T4bPStc06YrnnCX0TnwWHfkJ6Telx4pxrFtDN9RwFJVb7eJmJMjLGQjznv79HA==}
+    peerDependencies:
+      '@nx/devkit': ^20.0.0
+      '@nx/eslint': ^20.0.0
+      '@nx/js': ^20.0.0
+      '@nx/vite': ^20.0.0
+      '@nx/workspace': ^20.0.0
+      nx: ^20.0.0
+    dependencies:
+      '@nx/devkit': 20.3.0(nx@20.2.2)
+      '@nx/eslint': 20.2.2(@swc-node/register@1.9.2)(@swc/core@1.5.29)(@types/node@18.16.20)(eslint@8.57.1)(nx@20.2.2)
+      '@nx/js': 20.3.0(@swc-node/register@1.9.2)(@swc/core@1.5.29)(@types/node@18.16.20)(nx@20.2.2)(typescript@5.6.3)
+      '@nx/vite': 20.2.2(@swc-node/register@1.9.2)(@swc/core@1.5.29)(@types/node@18.16.20)(nx@20.2.2)(typescript@5.6.3)(vite@5.4.11)(vitest@1.6.0)
+      '@nx/workspace': 20.3.0(@swc-node/register@1.9.2)(@swc/core@1.5.29)
+      nx: 20.2.2(@swc-node/register@1.9.2)(@swc/core@1.5.29)
+      tslib: 2.8.1
+      typescript: 5.6.3
     dev: true
 
   /@oslojs/encoding@1.1.0:

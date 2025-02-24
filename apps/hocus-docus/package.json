@@ -13,6 +13,7 @@
 		"db:generate": "drizzle-kit generate"
 	},
 	"devDependencies": {
+		"@nxext/sveltekit": "^20.0.3",
 		"@sveltejs/adapter-auto": "^3.0.0",
 		"@sveltejs/adapter-cloudflare": "^5.0.3",
 		"@sveltejs/kit": "^2.0.0",
