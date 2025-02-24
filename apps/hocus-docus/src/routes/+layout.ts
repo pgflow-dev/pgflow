@@ -1,11 +1,18 @@
 import { createBrowserClient, createServerClient, isBrowser, parse } from '@supabase/ssr';
-import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 
-export const load: LayoutLoad = async ({ data, depends, fetch }) => {
+export const load = async ({ data, depends, fetch }) => {
 	depends('supabase:auth');
 
+	const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
+	const supabaseAnonKey =
+		import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY || process.env.PUBLIC_SUPABASE_ANON_KEY;
+
+	if (!supabaseUrl || !supabaseAnonKey) {
+		console.error('Missing Supabase environment variables');
+	}
+
 	const supabase = isBrowser()
-		? createBrowserClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
+		? createBrowserClient(supabaseUrl, supabaseAnonKey, {
 				global: { fetch },
 				cookies: {
 					get(key) {
@@ -14,7 +21,7 @@ export const load: LayoutLoad = async ({ data, depends, fetch }) => {
 					}
 				}
 			})
-		: createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
+		: createServerClient(supabaseUrl, supabaseAnonKey, {
 				global: { fetch },
 				cookies: {
 					get() {

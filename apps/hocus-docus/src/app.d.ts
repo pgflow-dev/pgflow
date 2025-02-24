@@ -3,22 +3,18 @@
 declare global {
 	namespace App {
 		interface Locals {
-			supabase: SupabaseClient;
-			getSession(): Promise<Session | null>;
+			supabase: import('@supabase/supabase-js').SupabaseClient;
+			getSession(): Promise<import('@supabase/supabase-js').Session | null>;
 		}
 		interface PageData {
-			session: Session | null;
+			session: import('@supabase/supabase-js').Session | null;
 		}
-		interface Error {
-			message: string;
-		}
-		interface Platform {
-			env: {
-				PUBLIC_SUPABASE_URL: string;
-				PUBLIC_SUPABASE_ANON_KEY: string;
-				DATABASE_URL: string;
-			};
-		}
+	}
+
+	interface ImportMetaEnv {
+		VITE_PUBLIC_SUPABASE_URL: string;
+		VITE_PUBLIC_SUPABASE_ANON_KEY: string;
+		VITE_DATABASE_URL: string;
 	}
 }
 
