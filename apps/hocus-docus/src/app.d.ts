@@ -1,31 +1,24 @@
-import type { Session, SupabaseClient, User } from '@supabase/supabase-js';
+/// <reference types="@sveltejs/kit" />
 
 declare global {
 	namespace App {
-		// interface Error {}
 		interface Locals {
 			supabase: SupabaseClient;
-			safeGetSession: () => Promise<{ session: Session | null; user: User | null }>;
-			session: Session | null;
-			user: User | null;
+			getSession(): Promise<Session | null>;
 		}
-
+		interface PageData {
+			session: Session | null;
+		}
+		interface Error {
+			message: string;
+		}
 		interface Platform {
 			env: {
-				COUNTER: DurableObjectNamespace;
 				PUBLIC_SUPABASE_URL: string;
 				PUBLIC_SUPABASE_ANON_KEY: string;
 				DATABASE_URL: string;
 			};
-			context: {
-				waitUntil(promise: Promise<any>): void;
-			};
-			caches: CacheStorage & { default: Cache };
 		}
-
-		// interface PageData {}
-		// interface PageState {}
-		// interface Platform {}
 	}
 }
 
