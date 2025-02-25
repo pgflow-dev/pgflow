@@ -2,20 +2,13 @@
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
-    "production": [
-      "default",
-      "!{projectRoot}/.eslintrc.json",
-      "!{projectRoot}/eslint.config.cjs",
-      "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
-      "!{projectRoot}/tsconfig.spec.json",
-      "!{projectRoot}/src/test-setup.[jt]s"
-    ],
+    "production": ["default"],
     "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"]
   },
   "nxCloudId": "676490227393fa777407053a",
   "plugins": [
     {
-      "plugin": "@nx/js/typescript",
+      "plugin": "@nx/js/typescript"
     },
     "@nx/eslint/plugin",
     "@axhxrx/nx-deno",
@@ -28,24 +21,10 @@
         "build": {
           "targetName": "build",
           "configName": "tsconfig.lib.json"
+          "buildDepsName": "build-deps",
+          "watchDepsName": "watch-deps"
         }
       }
     }
-  ],
-  "targetDefaults": {
-    "@nx/esbuild:esbuild": {
-      "cache": true,
-      "dependsOn": ["^build"],
-      "inputs": ["production", "^production"]
-    },
-    "@nx/js:tsc": {
-      "cache": true,
-      "dependsOn": ["^build"],
-      "inputs": ["production", "^production"]
-    },
-    "@nx/vite:test": {
-      "cache": true,
-      "inputs": ["default", "^production"]
-    }
-  }
+  ]
 }
