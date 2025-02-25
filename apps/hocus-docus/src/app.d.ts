@@ -9,12 +9,11 @@ declare global {
 		interface PageData {
 			session: import('@supabase/supabase-js').Session | null;
 		}
-	}
-
-	interface ImportMetaEnv {
-		VITE_PUBLIC_SUPABASE_URL: string;
-		VITE_PUBLIC_SUPABASE_ANON_KEY: string;
-		VITE_DATABASE_URL: string;
+		interface Platform {
+			env: Env;
+			cf: CfProperties;
+			ctx: ExecutionContext;
+		}
 	}
 }
 
