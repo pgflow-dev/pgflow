@@ -10,9 +10,15 @@ declare global {
 			session: import('@supabase/supabase-js').Session | null;
 		}
 		interface Platform {
-			env: Env;
-			cf: CfProperties;
-			ctx: ExecutionContext;
+			env: {
+				PUBLIC_SUPABASE_URL: string;
+				PUBLIC_SUPABASE_ANON_KEY: string;
+				DATABASE_URL: string;
+			};
+			context: {
+				waitUntil(promise: Promise<any>): void;
+			};
+			caches: CacheStorage & { default: Cache };
 		}
 	}
 }
