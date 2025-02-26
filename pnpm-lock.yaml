@@ -100,12 +100,6 @@ importers:
         specifier: ^1.3.1
         version: 1.6.0(@types/node@18.16.20)(@vitest/ui@1.6.0)(jsdom@22.1.0)
 
-  apps/hocus-docus:
-    devDependencies:
-      '@nxext/sveltekit':
-        specifier: ^20.0.3
-        version: 20.0.3(@nx/devkit@20.3.0)(@nx/eslint@20.3.0)(@nx/js@20.3.0)(@nx/vite@20.3.0)(@nx/workspace@20.3.0)(nx@20.3.0)
-
   pkgs/website:
     dependencies:
       '@astrojs/check':
@@ -3221,7 +3215,7 @@ packages:
       enquirer: 2.3.6
       ignore: 5.3.2
       minimatch: 9.0.3
-      nx: 20.3.0
+      nx: 20.3.0(@swc-node/register@1.9.2)(@swc/core@1.5.29)
       semver: 7.6.3
       tmp: 0.2.3
       tslib: 2.8.1
@@ -3329,33 +3323,6 @@ packages:
     dependencies:
       '@nx/devkit': 20.3.0(nx@20.2.2)
       '@nx/js': 20.3.0(@swc-node/register@1.9.2)(@swc/core@1.5.29)(@types/node@18.16.20)(nx@20.2.2)(typescript@5.6.3)
-      eslint: 9.17.0
-      semver: 7.6.3
-      tslib: 2.8.1
-      typescript: 5.6.3
-    transitivePeerDependencies:
-      - '@babel/traverse'
-      - '@swc-node/register'
-      - '@swc/core'
-      - '@swc/wasm'
-      - '@types/node'
-      - debug
-      - nx
-      - supports-color
-      - verdaccio
-    dev: true
-
-  /@nx/eslint@20.3.0(@types/node@18.16.20)(eslint@9.17.0)(nx@20.3.0):
-    resolution: {integrity: sha512-QhApF0HAcMm0tc7kXna4XuFUuO3oroWvGmvzGqBSa3GyuXbAz1VJ1RFWYkyQzjAsltaBcMUFCA+ORUM+PN1sWA==}
-    peerDependencies:
-      '@zkochan/js-yaml': 0.0.7
-      eslint: ^8.0.0 || ^9.0.0
-    peerDependenciesMeta:
-      '@zkochan/js-yaml':
-        optional: true
-    dependencies:
-      '@nx/devkit': 20.3.0(nx@20.3.0)
-      '@nx/js': 20.3.0(@types/node@18.16.20)(nx@20.3.0)(typescript@5.6.3)
       eslint: 9.17.0
       semver: 7.6.3
       tslib: 2.8.1
@@ -3542,56 +3509,6 @@ packages:
       source-map-support: 0.5.19
       tinyglobby: 0.2.10
       ts-node: 10.9.1(@swc/core@1.5.29)(@types/node@18.16.20)(typescript@5.6.3)
-      tsconfig-paths: 4.2.0
-      tslib: 2.8.1
-    transitivePeerDependencies:
-      - '@babel/traverse'
-      - '@swc-node/register'
-      - '@swc/core'
-      - '@swc/wasm'
-      - '@types/node'
-      - debug
-      - nx
-      - supports-color
-      - typescript
-    dev: true
-
-  /@nx/js@20.3.0(@types/node@18.16.20)(nx@20.3.0)(typescript@5.6.3):
-    resolution: {integrity: sha512-hnO1jzJUvO7+bBsC2uaUElpX9gpMiSA3wdt34V8nnPcIBWtdMrjKX7yRFSwZKimeNauesiX0uorTJf+z28R2bg==}
-    peerDependencies:
-      verdaccio: ^5.0.4
-    peerDependenciesMeta:
-      verdaccio:
-        optional: true
-    dependencies:
-      '@babel/core': 7.26.0
-      '@babel/plugin-proposal-decorators': 7.25.9(@babel/core@7.26.0)
-      '@babel/plugin-transform-class-properties': 7.25.9(@babel/core@7.26.0)
-      '@babel/plugin-transform-runtime': 7.25.9(@babel/core@7.26.0)
-      '@babel/preset-env': 7.26.0(@babel/core@7.26.0)
-      '@babel/preset-typescript': 7.26.0(@babel/core@7.26.0)
-      '@babel/runtime': 7.26.0
-      '@nx/devkit': 20.3.0(nx@20.3.0)
-      '@nx/workspace': 20.3.0
-      '@zkochan/js-yaml': 0.0.7
-      babel-plugin-const-enum: 1.2.0(@babel/core@7.26.0)
-      babel-plugin-macros: 2.8.0
-      babel-plugin-transform-typescript-metadata: 0.3.2(@babel/core@7.26.0)
-      chalk: 4.1.2
-      columnify: 1.6.0
-      detect-port: 1.6.1
-      enquirer: 2.3.6
-      ignore: 5.3.2
-      js-tokens: 4.0.0
-      jsonc-parser: 3.2.0
-      minimatch: 9.0.3
-      npm-package-arg: 11.0.1
-      npm-run-path: 4.0.1
-      ora: 5.3.0
-      semver: 7.6.3
-      source-map-support: 0.5.19
-      tinyglobby: 0.2.10
-      ts-node: 10.9.1(@types/node@18.16.20)(typescript@5.6.3)
       tsconfig-paths: 4.2.0
       tslib: 2.8.1
     transitivePeerDependencies:
@@ -3946,34 +3863,6 @@ packages:
       - verdaccio
     dev: true
 
-  /@nx/vite@20.3.0(@types/node@18.16.20)(nx@20.3.0)(typescript@5.6.3)(vite@5.4.11)(vitest@1.6.0):
-    resolution: {integrity: sha512-vb4crrU6rCl03kiVu5mJ34PvSzTI72/DQJEi4cFQu4KAwQ6gVigVOf4kW+d3dYelrJ52/Fzb/CEY94ZzdKyBFA==}
-    peerDependencies:
-      vite: ^5.0.0
-      vitest: ^1.3.1 || ^2.0.0
-    dependencies:
-      '@nx/devkit': 20.3.0(nx@20.3.0)
-      '@nx/js': 20.3.0(@types/node@18.16.20)(nx@20.3.0)(typescript@5.6.3)
-      '@phenomnomnominal/tsquery': 5.0.1(typescript@5.6.3)
-      '@swc/helpers': 0.5.15
-      enquirer: 2.3.6
-      minimatch: 9.0.3
-      tsconfig-paths: 4.2.0
-      vite: 5.4.11(@types/node@18.16.20)
-      vitest: 1.6.0(@types/node@18.16.20)
-    transitivePeerDependencies:
-      - '@babel/traverse'
-      - '@swc-node/register'
-      - '@swc/core'
-      - '@swc/wasm'
-      - '@types/node'
-      - debug
-      - nx
-      - supports-color
-      - typescript
-      - verdaccio
-    dev: true
-
   /@nx/web@20.3.0(@swc-node/register@1.9.2)(@swc/core@1.5.29)(@types/node@18.16.20)(nx@20.2.2)(typescript@5.6.3):
     resolution: {integrity: sha512-MKmXI9uAX+fdLY0GfF/3rH4EXrEjyLI6FSt3kUuF1/UzAUUUqww6owoM+9EaC1mRcCYDd0nwN7piblVz/wIVLw==}
     dependencies:
@@ -4027,21 +3916,6 @@ packages:
       - debug
     dev: true
 
-  /@nx/workspace@20.3.0:
-    resolution: {integrity: sha512-z8NSAo5SiLEMPuwasDvLdCCtaTGdINh1cSZMCom8HeLbT8F7risbR0IlHVqVrKj9FPKqrAIsH+4knVb4dHHCnQ==}
-    dependencies:
-      '@nx/devkit': 20.3.0(nx@20.3.0)
-      chalk: 4.1.2
-      enquirer: 2.3.6
-      nx: 20.3.0
-      tslib: 2.8.1
-      yargs-parser: 21.1.1
-    transitivePeerDependencies:
-      - '@swc-node/register'
-      - '@swc/core'
-      - debug
-    dev: true
-
   /@nx/workspace@20.3.0(@swc-node/register@1.9.2)(@swc/core@1.5.29):
     resolution: {integrity: sha512-z8NSAo5SiLEMPuwasDvLdCCtaTGdINh1cSZMCom8HeLbT8F7risbR0IlHVqVrKj9FPKqrAIsH+4knVb4dHHCnQ==}
     dependencies:
@@ -4055,26 +3929,6 @@ packages:
       - '@swc-node/register'
       - '@swc/core'
       - debug
-    dev: true
-
-  /@nxext/sveltekit@20.0.3(@nx/devkit@20.3.0)(@nx/eslint@20.3.0)(@nx/js@20.3.0)(@nx/vite@20.3.0)(@nx/workspace@20.3.0)(nx@20.3.0):
-    resolution: {integrity: sha512-Ai8rY3X3Zi6DQDVdZo/g6y18T4bPStc06YrnnCX0TnwWHfkJ6Telx4pxrFtDN9RwFJVb7eJmJMjLGQjznv79HA==}
-    peerDependencies:
-      '@nx/devkit': ^20.0.0
-      '@nx/eslint': ^20.0.0
-      '@nx/js': ^20.0.0
-      '@nx/vite': ^20.0.0
-      '@nx/workspace': ^20.0.0
-      nx: ^20.0.0
-    dependencies:
-      '@nx/devkit': 20.3.0(nx@20.3.0)
-      '@nx/eslint': 20.3.0(@types/node@18.16.20)(eslint@9.17.0)(nx@20.3.0)
-      '@nx/js': 20.3.0(@types/node@18.16.20)(nx@20.3.0)(typescript@5.6.3)
-      '@nx/vite': 20.3.0(@types/node@18.16.20)(nx@20.3.0)(typescript@5.6.3)(vite@5.4.11)(vitest@1.6.0)
-      '@nx/workspace': 20.3.0
-      nx: 20.3.0
-      tslib: 2.8.1
-      typescript: 5.6.3
     dev: true
 
   /@oslojs/encoding@1.1.0:
@@ -9531,68 +9385,6 @@ packages:
     transitivePeerDependencies:
       - debug
 
-  /nx@20.3.0:
-    resolution: {integrity: sha512-Nzi4k7tV22zwO2iBLk+pHxorLEWPJpPrVCACtz0SQ63j/LiAgfhoqruJO+VU+V+E9qdyPsvmqIL/Iaf/GRQlqA==}
-    hasBin: true
-    requiresBuild: true
-    peerDependencies:
-      '@swc-node/register': ^1.8.0
-      '@swc/core': ^1.3.85
-    peerDependenciesMeta:
-      '@swc-node/register':
-        optional: true
-      '@swc/core':
-        optional: true
-    dependencies:
-      '@napi-rs/wasm-runtime': 0.2.4
-      '@yarnpkg/lockfile': 1.1.0
-      '@yarnpkg/parsers': 3.0.2
-      '@zkochan/js-yaml': 0.0.7
-      axios: 1.7.9
-      chalk: 4.1.2
-      cli-cursor: 3.1.0
-      cli-spinners: 2.6.1
-      cliui: 8.0.1
-      dotenv: 16.4.7
-      dotenv-expand: 11.0.7
-      enquirer: 2.3.6
-      figures: 3.2.0
-      flat: 5.0.2
-      front-matter: 4.0.2
-      ignore: 5.3.2
-      jest-diff: 29.7.0
-      jsonc-parser: 3.2.0
-      lines-and-columns: 2.0.3
-      minimatch: 9.0.3
-      node-machine-id: 1.1.12
-      npm-run-path: 4.0.1
-      open: 8.4.2
-      ora: 5.3.0
-      resolve.exports: 2.0.3
-      semver: 7.6.3
-      string-width: 4.2.3
-      tar-stream: 2.2.0
-      tmp: 0.2.3
-      tsconfig-paths: 4.2.0
-      tslib: 2.8.1
-      yaml: 2.6.1
-      yargs: 17.7.2
-      yargs-parser: 21.1.1
-    optionalDependencies:
-      '@nx/nx-darwin-arm64': 20.3.0
-      '@nx/nx-darwin-x64': 20.3.0
-      '@nx/nx-freebsd-x64': 20.3.0
-      '@nx/nx-linux-arm-gnueabihf': 20.3.0
-      '@nx/nx-linux-arm64-gnu': 20.3.0
-      '@nx/nx-linux-arm64-musl': 20.3.0
-      '@nx/nx-linux-x64-gnu': 20.3.0
-      '@nx/nx-linux-x64-musl': 20.3.0
-      '@nx/nx-win32-arm64-msvc': 20.3.0
-      '@nx/nx-win32-x64-msvc': 20.3.0
-    transitivePeerDependencies:
-      - debug
-    dev: true
-
   /nx@20.3.0(@swc-node/register@1.9.2)(@swc/core@1.5.29):
     resolution: {integrity: sha512-Nzi4k7tV22zwO2iBLk+pHxorLEWPJpPrVCACtz0SQ63j/LiAgfhoqruJO+VU+V+E9qdyPsvmqIL/Iaf/GRQlqA==}
     hasBin: true
@@ -11334,37 +11126,6 @@ packages:
       yn: 3.1.1
     dev: true
 
-  /ts-node@10.9.1(@types/node@18.16.20)(typescript@5.6.3):
-    resolution: {integrity: sha512-NtVysVPkxxrwFGUUxGYhfux8k78pQB3JqYBXlLRZgdGUqTO5wU/UyHop5p70iEbGhB7q5KmiZiU0Y3KlJrScEw==}
-    hasBin: true
-    peerDependencies:
-      '@swc/core': '>=1.2.50'
-      '@swc/wasm': '>=1.2.50'
-      '@types/node': '*'
-      typescript: '>=2.7'
-    peerDependenciesMeta:
-      '@swc/core':
-        optional: true
-      '@swc/wasm':
-        optional: true
-    dependencies:
-      '@cspotcode/source-map-support': 0.8.1
-      '@tsconfig/node10': 1.0.11
-      '@tsconfig/node12': 1.0.11
-      '@tsconfig/node14': 1.0.3
-      '@tsconfig/node16': 1.0.4
-      '@types/node': 18.16.20
-      acorn: 8.14.0
-      acorn-walk: 8.3.4
-      arg: 4.1.3
-      create-require: 1.1.1
-      diff: 4.0.2
-      make-error: 1.3.6
-      typescript: 5.6.3
-      v8-compile-cache-lib: 3.0.1
-      yn: 3.1.1
-    dev: true
-
   /tsconfck@3.1.4(typescript@5.6.3):
     resolution: {integrity: sha512-kdqWFGVJqe+KGYvlSO9NIaWn9jT1Ny4oKVzAJsKii5eoE9snzTJzL4+MMVOMn+fikWGFmKEylcXL710V/kIPJQ==}
     engines: {node: ^18 || >=20}
@@ -11865,63 +11626,6 @@ packages:
     dependencies:
       vite: 6.0.11(@types/node@18.16.20)
     dev: false
-
-  /vitest@1.6.0(@types/node@18.16.20):
-    resolution: {integrity: sha512-H5r/dN06swuFnzNFhq/dnz37bPXnq8xB2xB5JOVk8K09rUtoeNN+LHWkoQ0A/i3hvbUKKcCei9KpbxqHMLhLLA==}
-    engines: {node: ^18.0.0 || >=20.0.0}
-    hasBin: true
-    peerDependencies:
-      '@edge-runtime/vm': '*'
-      '@types/node': ^18.0.0 || >=20.0.0
-      '@vitest/browser': 1.6.0
-      '@vitest/ui': 1.6.0
-      happy-dom: '*'
-      jsdom: '*'
-    peerDependenciesMeta:
-      '@edge-runtime/vm':
-        optional: true
-      '@types/node':
-        optional: true
-      '@vitest/browser':
-        optional: true
-      '@vitest/ui':
-        optional: true
-      happy-dom:
-        optional: true
-      jsdom:
-        optional: true
-    dependencies:
-      '@types/node': 18.16.20
-      '@vitest/expect': 1.6.0
-      '@vitest/runner': 1.6.0
-      '@vitest/snapshot': 1.6.0
-      '@vitest/spy': 1.6.0
-      '@vitest/utils': 1.6.0
-      acorn-walk: 8.3.4
-      chai: 4.5.0
-      debug: 4.4.0
-      execa: 8.0.1
-      local-pkg: 0.5.1
-      magic-string: 0.30.17
-      pathe: 1.1.2
-      picocolors: 1.1.1
-      std-env: 3.8.0
-      strip-literal: 2.1.1
-      tinybench: 2.9.0
-      tinypool: 0.8.4
-      vite: 5.4.11(@types/node@18.16.20)
-      vite-node: 1.6.0(@types/node@18.16.20)
-      why-is-node-running: 2.3.0
-    transitivePeerDependencies:
-      - less
-      - lightningcss
-      - sass
-      - sass-embedded
-      - stylus
-      - sugarss
-      - supports-color
-      - terser
-    dev: true
 
   /vitest@1.6.0(@types/node@18.16.20)(@vitest/ui@1.6.0)(jsdom@22.1.0):
     resolution: {integrity: sha512-H5r/dN06swuFnzNFhq/dnz37bPXnq8xB2xB5JOVk8K09rUtoeNN+LHWkoQ0A/i3hvbUKKcCei9KpbxqHMLhLLA==}
