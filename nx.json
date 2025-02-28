@@ -15,7 +15,7 @@
   "nxCloudId": "676490227393fa777407053a",
   "plugins": [
     {
-      "plugin": "@nx/js/typescript",
+      "plugin": "@nx/js/typescript"
     },
     "@nx/eslint/plugin",
     "@axhxrx/nx-deno",
@@ -29,6 +29,17 @@
           "targetName": "build",
           "configName": "tsconfig.lib.json"
         }
+      }
+    },
+    {
+      "plugin": "@nx/vite/plugin",
+      "options": {
+        "buildTargetName": "build",
+        "testTargetName": "test",
+        "serveTargetName": "serve",
+        "previewTargetName": "preview",
+        "serveStaticTargetName": "serve-static",
+        "typecheckTargetName": "typecheck"
       }
     }
   ],
@@ -46,6 +57,23 @@
     "@nx/vite:test": {
       "cache": true,
       "inputs": ["default", "^production"]
+    }
+  },
+  "generators": {
+    "@nx/react": {
+      "application": {
+        "babel": true,
+        "style": "css",
+        "linter": "none",
+        "bundler": "vite"
+      },
+      "component": {
+        "style": "css"
+      },
+      "library": {
+        "style": "css",
+        "linter": "none"
+      }
     }
   }
 }

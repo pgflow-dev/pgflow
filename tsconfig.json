@@ -3,5 +3,11 @@
   "compileOnSave": false,
   "files": [],
   "references": [
+    {
+      "path": "./pkgs/ts1"
+    },
+    {
+      "path": "./pkgs/ts2"
+    }
   ]
 }
