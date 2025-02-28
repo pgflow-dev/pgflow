@@ -1,0 +1,10 @@
+{
+  "name": "@pgflow/ts2",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "name": "ts2",
+    "projectType": "application",
+    "sourceRoot": "pkgs/ts2/src"
+  }
+}
