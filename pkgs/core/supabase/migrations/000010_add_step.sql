@@ -29,3 +29,17 @@ WITH
 -- Return the created step
 SELECT * FROM create_step;
 $$;
+
+-- New overloaded function without deps_slugs parameter
+CREATE OR REPLACE FUNCTION pgflow.add_step(
+    flow_slug text,
+    step_slug text
+)
+RETURNS pgflow.steps
+LANGUAGE sql
+SET search_path TO ''
+VOLATILE
+AS $$
+    -- Call the original function with an empty array
+    SELECT * FROM pgflow.add_step(flow_slug, step_slug, ARRAY[]::text[]);
+$$;
