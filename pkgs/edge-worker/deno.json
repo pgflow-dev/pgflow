@@ -17,7 +17,8 @@
     "db:copy-migrations": "./scripts/concatenate-migrations.sh",
     "db:up": "docker compose -f tests/db/compose.yaml up --detach && ./scripts/wait-for-localhost 5432",
     "db:ensure": "deno task db:down && deno task db:clean && deno task db:copy-migrations && deno task db:up && sleep 5",
-    "test:integration": "deno task db:ensure && deno test --allow-net --allow-env tests/integration"
+    "test:integration": "deno task db:ensure && deno test --allow-net --allow-env tests/integration",
+    "jsr:download-count": "deno run --allow-net jsr:@inbestigator/saves @pgflow/edge-worker"
   },
   "lint": {
     "exclude": ["supabase/functions/_src/", "dist/", "build/", "node_modules/"]
