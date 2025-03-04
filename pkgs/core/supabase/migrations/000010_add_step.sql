@@ -9,12 +9,6 @@ SET search_path TO ''
 VOLATILE
 AS $$
 WITH
-  ensure_flow AS (
-    INSERT INTO pgflow.flows (flow_slug)
-    VALUES (flow_slug)
-    ON CONFLICT (flow_slug) DO NOTHING
-    RETURNING flow_slug
-  ),
   create_step AS (
     INSERT INTO pgflow.steps (flow_slug, step_slug)
     VALUES (flow_slug, step_slug)

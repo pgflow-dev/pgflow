@@ -1,9 +1,13 @@
 BEGIN;
-SELECT plan(13);
+SELECT plan(14);
 
 DELETE FROM pgflow.deps;
 DELETE FROM pgflow.steps;
 DELETE FROM pgflow.flows;
+
+-- Create flows first
+SELECT pgflow.create_flow('test_flow');
+SELECT pgflow.create_flow('another_flow');
 
 -- Test 1: Basic step addition with no dependencies
 SELECT pgflow.add_step('test_flow', 'first_step');
@@ -26,8 +30,8 @@ SELECT results_eq(
 );
 SELECT results_eq(
     $$
-      SELECT dep_slug, step_slug 
-      FROM pgflow.deps WHERE flow_slug = 'test_flow' 
+      SELECT dep_slug, step_slug
+      FROM pgflow.deps WHERE flow_slug = 'test_flow'
       ORDER BY dep_slug, step_slug
     $$,
     $$ VALUES ('first_step', 'second_step') $$,
@@ -45,9 +49,9 @@ SELECT results_eq(
     'All steps should be in the steps table'
 );
 SELECT set_eq(
-    $$ 
-      SELECT dep_slug, step_slug 
-      FROM pgflow.deps 
+    $$
+      SELECT dep_slug, step_slug
+      FROM pgflow.deps
       WHERE flow_slug = 'test_flow'
     $$,
     $$ VALUES
@@ -63,9 +67,9 @@ SELECT set_eq(
 SELECT pgflow.add_step('another_flow', 'first_step');
 SELECT pgflow.add_step('another_flow', 'another_step', ARRAY['first_step']);
 SELECT set_eq(
-    $$ 
-      SELECT flow_slug, step_slug 
-      FROM pgflow.steps WHERE flow_slug = 'another_flow' 
+    $$
+      SELECT flow_slug, step_slug
+      FROM pgflow.steps WHERE flow_slug = 'another_flow'
     $$,
     $$ VALUES
        ('another_flow', 'another_step'),
@@ -115,6 +119,13 @@ SELECT throws_ok(
     $$ SELECT pgflow.add_step('test_flow', 'step_a', ARRAY['step_b']) $$,
     'duplicate key value violates unique constraint "steps_pkey"',
     'Should detect and prevent circular dependency through multiple steps'
+);
+
+-- Test 10: Cannot add step to non-existent flow
+SELECT throws_ok(
+    $$ SELECT pgflow.add_step('nonexistent_flow', 'some_step') $$,
+    'insert or update on table "steps" violates foreign key constraint "steps_flow_slug_fkey"',
+    'Should not allow adding step to non-existent flow'
 );
 
 SELECT * FROM finish();
