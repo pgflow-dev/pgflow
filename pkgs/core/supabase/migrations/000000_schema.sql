@@ -60,14 +60,14 @@ CREATE TABLE pgflow.steps (
 -- Dependencies table - stores relationships between steps
 CREATE TABLE pgflow.deps (
     flow_slug text NOT NULL REFERENCES pgflow.flows (flow_slug),
-    dep_step_slug text NOT NULL,  -- The step that must complete first
-    step_slug text NOT NULL,   -- The step that depends on dep_step_slug
-    PRIMARY KEY (flow_slug, dep_step_slug, step_slug),
-    FOREIGN KEY (flow_slug, dep_step_slug)
+    dep_slug text NOT NULL,  -- The step that must complete first
+    step_slug text NOT NULL,   -- The step that depends on dep_slug
+    PRIMARY KEY (flow_slug, dep_slug, step_slug),
+    FOREIGN KEY (flow_slug, dep_slug)
     REFERENCES pgflow.steps (flow_slug, step_slug),
     FOREIGN KEY (flow_slug, step_slug)
     REFERENCES pgflow.steps (flow_slug, step_slug),
-    CHECK (dep_step_slug != step_slug),  -- Prevent self-dependencies
-    CHECK (is_valid_slug(dep_step_slug)),
+    CHECK (dep_slug != step_slug),  -- Prevent self-dependencies
+    CHECK (is_valid_slug(dep_slug)),
     CHECK (is_valid_slug(step_slug))
 );
