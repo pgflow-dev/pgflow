@@ -38,16 +38,10 @@
       }
     },
     "supabase:reset": {
-      "dependsOn": ["supabase:prepare"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
-        "commands": [
-          "rm -f supabase/migrations/*.sql",
-          "cp migrations/*.sql supabase/migrations/",
-          "cp sql/*_*.sql supabase/migrations/",
-          "supabase db reset"
-        ],
+        "commands": ["supabase db reset"],
         "parallel": false
       }
     }
