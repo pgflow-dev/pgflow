@@ -44,6 +44,14 @@
         "commands": ["supabase db reset"],
         "parallel": false
       }
+    },
+    "supabase:test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["supabase db test"],
+        "parallel": false
+      }
     }
   }
 }
