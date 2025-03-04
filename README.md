@@ -6,7 +6,8 @@
 
 ## Monorepo
 
-This repository is a monorepo that contains the following packages:
+This repository is a monorepo.
+Packages live in `pkgs/` (its less tha `packages/` and does not confuse TAB completion with package.json :)).
 
 | Nx Package                         | Description                                                                           |
 | ---------------------------------- | ------------------------------------------------------------------------------------- |
