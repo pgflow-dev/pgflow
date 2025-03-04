@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(12);
+SELECT plan(13);
 
 DELETE FROM pgflow.deps;
 DELETE FROM pgflow.steps;
@@ -79,10 +79,6 @@ SELECT set_eq(
 );
 
 -- Test 5: Idempotent step addition (ignore duplicates)
--- SELECT lives_ok(
---     $$ SELECT pgflow.add_step('test_flow', 'first_step') $$,
---     'Does not raise error when adding same step again'
--- );
 SELECT pgflow.add_step('test_flow', 'first_step');
 SELECT results_eq(
     $$
@@ -99,12 +95,12 @@ SELECT throws_ok(
     'Should not allow self-depending steps'
 );
 
--- -- Test 7: Non-existent dependency step
--- SELECT throws_ok(
---     $$ SELECT pgflow.add_step('test_flow', 'invalid_dep_step', ARRAY['nonexistent_step']) $$,
---     'insert or update on table "deps" violates foreign key constraint "deps_flow_slug_dep_slug_fkey"',
---     'Should detect and prevent dependency on non-existent step'
--- );
+-- Test 7: Non-existent dependency step
+SELECT throws_ok(
+    $$ SELECT pgflow.add_step('test_flow', 'invalid_dep_step', ARRAY['nonexistent_step']) $$,
+    'insert or update on table "deps" violates foreign key constraint "deps_flow_slug_dep_slug_fkey"',
+    'Should detect and prevent dependency on non-existent step'
+);
 
 -- Test 8: Invalid slug format
 SELECT throws_ok(
@@ -119,16 +115,7 @@ SELECT throws_ok(
     'Should detect and prevent invalid flow slug'
 );
 
--- -- Test 9: Circular dependency detection through longer path
--- SELECT pgflow.add_step('test_flow', 'step_a');
--- SELECT pgflow.add_step('test_flow', 'step_b', ARRAY['step_a']);
--- SELECT throws_ok(
---     $$ SELECT pgflow.add_step('test_flow', 'step_a', ARRAY['step_b']) $$,
---     'duplicate key value violates unique constraint "steps_pkey"',
---     'Should detect and prevent circular dependency through multiple steps'
--- );
-
--- Test 10: Cannot add step to non-existent flow
+-- Test 9: Cannot add step to non-existent flow
 SELECT throws_ok(
     $$ SELECT pgflow.add_step('nonexistent_flow', 'some_step') $$,
     'insert or update on table "steps" violates foreign key constraint "steps_flow_slug_fkey"',
