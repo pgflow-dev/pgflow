@@ -6,8 +6,8 @@
 
 ## Monorepo
 
-This repository is a monorepo.
-Packages live in `pkgs/` (its less tha `packages/` and does not confuse TAB completion with package.json :)).
+This repository is a monorepo containing components of pgflow.
+Packages live in `pkgs/`
 
 | Nx Package                         | Description                                                                           |
 | ---------------------------------- | ------------------------------------------------------------------------------------- |
