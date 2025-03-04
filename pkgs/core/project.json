@@ -4,6 +4,52 @@
   "sourceRoot": "pkgs/core/src",
   "projectType": "library",
   "tags": [],
-  "// targets": "to see all targets run: nx show project core --web",
-  "targets": {}
+  "targets": {
+    "supabase:start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["supabase start"],
+        "parallel": false
+      }
+    },
+    "supabase:stop": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["supabase stop --no-backup"],
+        "parallel": false
+      }
+    },
+    "supabase:status": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["supabase status"],
+        "parallel": false
+      }
+    },
+    "supabase:restart": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["supabase stop --no-backup", "supabase start"],
+        "parallel": false
+      }
+    },
+    "supabase:reset": {
+      "dependsOn": ["supabase:prepare"],
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          "rm -f supabase/migrations/*.sql",
+          "cp migrations/*.sql supabase/migrations/",
+          "cp sql/*_*.sql supabase/migrations/",
+          "supabase db reset"
+        ],
+        "parallel": false
+      }
+    }
+  }
 }
