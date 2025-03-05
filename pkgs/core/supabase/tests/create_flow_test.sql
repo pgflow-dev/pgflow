@@ -5,7 +5,7 @@ DELETE FROM pgflow.deps;
 DELETE FROM pgflow.steps;
 DELETE FROM pgflow.flows;
 
--- Test 1: Basic flow creation
+-- TEST: Flow should be added to the flows table
 SELECT pgflow.create_flow('test_flow');
 SELECT results_eq(
     $$ SELECT flow_slug FROM pgflow.flows $$,
@@ -13,15 +13,15 @@ SELECT results_eq(
     'Flow should be added to the flows table'
 );
 
--- Test 2: Idempotent flow creation (no duplicate entries)
+-- TEST: No duplicate flow should be created and no error thrown
 SELECT pgflow.create_flow('test_flow');
 SELECT results_eq(
     $$ SELECT flow_slug FROM pgflow.flows $$,
     ARRAY['test_flow']::text[],
-    'No duplicate flow should be created'
+    'No duplicate flow should be created and no error thrown'
 );
 
--- Test 3: Invalid slug format
+-- TEST: Should detect and prevent invalid flow slug
 SELECT throws_ok(
     $$ SELECT pgflow.create_flow('invalid-flow') $$,
     'new row for relation "flows" violates check constraint "flows_flow_slug_check"',
