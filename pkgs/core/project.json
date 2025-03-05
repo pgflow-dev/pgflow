@@ -45,11 +45,19 @@
         "parallel": false
       }
     },
-    "supabase:test": {
+    "test": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["supabase db test"],
+        "parallel": false
+      }
+    },
+    "test:watch": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["ls supabase/**/*.sql | entr -rc pnpm supabase db test"],
         "parallel": false
       }
     }
