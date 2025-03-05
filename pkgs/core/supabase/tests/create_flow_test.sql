@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(4);
+SELECT plan(5);
 
 DELETE FROM pgflow.deps;
 DELETE FROM pgflow.steps;
@@ -26,12 +26,21 @@ SELECT results_eq(
     'Creating a flow should create a PGMQ queue with the same name'
 );
 
--- TEST: No duplicate flow should be created and no error thrown
+-- SETUP: Create flow again to ensure it doesn't throw
 SELECT pgflow.create_flow('test_flow');
+
+-- TEST: No duplicate flow should be created
 SELECT results_eq(
     $$ SELECT flow_slug FROM pgflow.flows $$,
     ARRAY['test_flow']::text[],
-    'No duplicate flow should be created and no error thrown'
+    'No duplicate flow should be created'
+);
+
+--TEST: Creating a flow with existing flow_slug should still return the flow
+SELECT results_eq(
+    $$ SELECT * FROM pgflow.create_flow('test_flow') $$,
+    $$ VALUES ('test_flow') $$,
+    'Creating a flow with existing flow_slug should still return the flow'
 );
 
 -- TEST: Should detect and prevent invalid flow slug
