@@ -53,23 +53,20 @@ create table pgflow.steps (
     flow_slug text not null references flows (flow_slug),
     step_slug text not null,
     primary key (flow_slug, step_slug),
-    check (is_valid_slug(flow_slug)),
     check (is_valid_slug(step_slug))
 );
 
 -- Dependencies table - stores relationships between steps
 create table pgflow.deps (
     flow_slug text not null references pgflow.flows (flow_slug),
-    dep_slug text not null,  -- The step that must complete first
-    step_slug text not null,   -- The step that depends on dep_slug
+    dep_slug text not null, -- slug of the dependency 
+    step_slug text not null, -- slug of the dependent
     primary key (flow_slug, dep_slug, step_slug),
     foreign key (flow_slug, dep_slug)
     references pgflow.steps (flow_slug, step_slug),
     foreign key (flow_slug, step_slug)
     references pgflow.steps (flow_slug, step_slug),
-    check (dep_slug != step_slug),  -- Prevent self-dependencies
-    check (is_valid_slug(dep_slug)),
-    check (is_valid_slug(step_slug))
+    check (dep_slug != step_slug)  -- Prevent self-dependencies
 );
 
 ------------------------------------------
@@ -77,19 +74,21 @@ create table pgflow.deps (
 ------------------------------------------
 
 -- Runs table - tracks flow execution instances
+drop table if exists pgflow.step_states;
 drop table if exists pgflow.runs;
 create table pgflow.runs (
     flow_slug text not null references pgflow.flows (flow_slug),
     run_id uuid primary key not null default gen_random_uuid(),
-    status text not null default 'pending',
+    status text not null default 'started',
     payload jsonb not null,
-    check (status in ('pending', 'failed', 'completed'))
+    check (status in ('started', 'failed', 'completed'))
 );
 
 -- Step states table - tracks the state of individual steps within a run
-drop table if exists pgflow.step_states;
 create table pgflow.step_states (
     flow_slug text not null references pgflow.flows (flow_slug),
     run_id uuid not null references pgflow.runs (run_id),
-    step_slug text not null
+    step_slug text not null,
+    status text not null default 'created',
+    check (status in ('created', 'started', 'completed', 'failed'))
 );

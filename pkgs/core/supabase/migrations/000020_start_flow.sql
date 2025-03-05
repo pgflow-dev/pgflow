@@ -1,17 +1,13 @@
-CREATE OR REPLACE FUNCTION pgflow.start_flow(
+-- drop function if exists pgflow.start_flow;
+create or replace function pgflow.start_flow(
     flow_slug TEXT,
     payload JSONB
 )
-RETURNS TABLE (
-    flow_slug TEXT,
-    run_id UUID,
-    status TEXT,
-    payload JSONB
-)
-LANGUAGE sql
-SET search_path TO ''
-VOLATILE
-AS $$
+returns setof pgflow.step_states
+language sql
+set search_path to ''
+volatile
+as $$
 
 WITH
   created_run AS (
@@ -24,20 +20,32 @@ WITH
     FROM pgflow.steps
     WHERE flow_slug = start_flow.flow_slug
   ),
-  -- root_steps AS (
-  --   SELECT s.flow_slug, s.step_slug
-  --   FROM pgflow.steps AS s
-  --   LEFT JOIN pgflow.deps AS d ON
-  --     s.flow_slug = d.flow_slug AND
-  --     s.step_slug = d.step_slug
-  --   WHERE d.step_slug IS NULL
-  -- ),
+  root_steps AS (
+    SELECT s.flow_slug, s.step_slug
+    FROM flow_steps AS s
+    LEFT JOIN pgflow.deps AS d ON
+      s.flow_slug = d.flow_slug AND
+      s.step_slug = d.step_slug
+    WHERE s.flow_slug = start_flow.flow_slug
+      AND d.step_slug IS NULL
+  ),
   created_step_states AS (
-    INSERT INTO pgflow.step_states (flow_slug, run_id, step_slug)
-    SELECT fs.flow_slug, cr.run_id, fs.step_slug
-    FROM created_run AS cr 
-    CROSS JOIN flow_steps AS fs
+    INSERT INTO pgflow.step_states (flow_slug, run_id, step_slug, status)
+    SELECT
+      start_flow.flow_slug,
+      (SELECT run_id FROM created_run),
+      fs.step_slug,
+      CASE 
+        WHEN EXISTS (
+          SELECT 1 FROM root_steps rs 
+          WHERE rs.step_slug = fs.step_slug
+        ) THEN 'started'
+        ELSE 'created'
+      END AS status
+    FROM flow_steps fs
+    RETURNING *
   )
-SELECT * FROM created_run;
+
+SELECT * FROM created_step_states WHERE status = 'started';
 
 $$;
