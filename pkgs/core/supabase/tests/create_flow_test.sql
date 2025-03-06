@@ -1,13 +1,10 @@
 BEGIN;
 SELECT plan(5);
-
-DELETE FROM pgflow.deps;
-DELETE FROM pgflow.steps;
-DELETE FROM pgflow.flows;
+SELECT pgflow_tests.reset_db();
 
 -- Clean up any existing test queue by first checking if it exists
-SELECT pgmq.drop_queue('test_flow') 
-FROM pgmq.list_queues() 
+SELECT pgmq.drop_queue('test_flow')
+FROM pgmq.list_queues()
 WHERE queue_name = 'test_flow'
 LIMIT 1;
 

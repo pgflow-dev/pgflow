@@ -1,11 +1,6 @@
 BEGIN;
 SELECT plan(2);
-
-DELETE FROM pgflow.step_states;
-DELETE FROM pgflow.runs;
-DELETE FROM pgflow.deps;
-DELETE FROM pgflow.steps;
-DELETE FROM pgflow.flows;
+SELECT pgflow_tests.reset_db();
 
 -- SETUP: Create flows first
 SELECT pgflow.create_flow('sequential');

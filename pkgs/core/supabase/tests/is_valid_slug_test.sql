@@ -1,5 +1,6 @@
 BEGIN;
 SELECT plan(10);
+SELECT pgflow_tests.reset_db();
 
 -- Test case 1: Null input
 SELECT ok(
