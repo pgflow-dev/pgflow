@@ -6,6 +6,8 @@ create or replace function pgflow_tests.reset_db() returns void as $$
   DELETE FROM pgflow.deps;
   DELETE FROM pgflow.steps;
   DELETE FROM pgflow.flows;
+
+  SELECT pgmq.drop_queue(queue_name) FROM pgmq.list_queues();
 $$ language sql;
 
 create or replace function pgflow_tests.setup_flow(
