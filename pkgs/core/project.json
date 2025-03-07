@@ -57,9 +57,9 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["ls supabase/**/*.sql | entr -rc pnpm supabase db test"],
-        "parallel": false
-      }
+        "command": "nx watch --projects=core -- nx test core"
+      },
+      "cache": false
     }
   }
 }
