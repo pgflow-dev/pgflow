@@ -59,7 +59,7 @@ create table pgflow.steps (
 -- Dependencies table - stores relationships between steps
 create table pgflow.deps (
     flow_slug text not null references pgflow.flows (flow_slug),
-    dep_slug text not null, -- slug of the dependency 
+    dep_slug text not null, -- slug of the dependency
     step_slug text not null, -- slug of the dependent
     primary key (flow_slug, dep_slug, step_slug),
     foreign key (flow_slug, dep_slug)
@@ -77,8 +77,8 @@ create table pgflow.deps (
 drop table if exists pgflow.step_states;
 drop table if exists pgflow.runs;
 create table pgflow.runs (
-    flow_slug text not null references pgflow.flows (flow_slug),
     run_id uuid primary key not null default gen_random_uuid(),
+    flow_slug text not null references pgflow.flows (flow_slug), -- denormalized
     status text not null default 'started',
     payload jsonb not null,
     check (status in ('started', 'failed', 'completed'))
@@ -90,5 +90,21 @@ create table pgflow.step_states (
     run_id uuid not null references pgflow.runs (run_id),
     step_slug text not null,
     status text not null default 'created',
+    primary key (run_id, step_slug),
+    foreign key (flow_slug, step_slug)
+    references pgflow.steps (flow_slug, step_slug),
     check (status in ('created', 'started', 'completed', 'failed'))
 );
+
+-- Step tasks table - tracks units of work for step
+create table pgflow.step_tasks (
+    flow_slug text not null references pgflow.flows (flow_slug),
+    run_id uuid not null references pgflow.runs (run_id),
+    step_slug text not null,
+    message_id bigint,
+    status text not null default 'queued',
+    constraint step_tasks_pkey primary key (run_id, step_slug),
+    foreign key (run_id, step_slug)
+    references pgflow.step_states (run_id, step_slug),
+    check (status in ('queued', 'started', 'completed', 'failed'))
+)

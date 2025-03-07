@@ -35,17 +35,39 @@ WITH
       start_flow.flow_slug,
       (SELECT run_id FROM created_run),
       fs.step_slug,
-      CASE 
+      CASE
         WHEN EXISTS (
-          SELECT 1 FROM root_steps rs 
+          SELECT 1 FROM root_steps rs
           WHERE rs.step_slug = fs.step_slug
         ) THEN 'started'
         ELSE 'created'
       END AS status
     FROM flow_steps fs
     RETURNING *
+  ),
+  started_step_states AS (
+    SELECT *
+    FROM created_step_states
+    WHERE status = 'started'
+    ORDER BY step_slug
+  ),
+  sent_messages AS (
+    SELECT 
+      flow_slug, run_id, step_slug,
+      pgmq.send(flow_slug, jsonb_build_object(
+        'flow_slug', flow_slug,
+        'run_id', run_id,
+        'step_slug', step_slug
+      )) AS msg_id
+    FROM started_step_states
+  ),
+  created_step_tasks AS (
+    INSERT INTO pgflow.step_tasks (flow_slug, run_id, step_slug, message_id)
+    SELECT
+      flow_slug, run_id, step_slug, msg_id
+    FROM sent_messages
   )
 
-SELECT * FROM created_step_states WHERE status = 'started';
+SELECT * FROM started_step_states;
 
 $$;
