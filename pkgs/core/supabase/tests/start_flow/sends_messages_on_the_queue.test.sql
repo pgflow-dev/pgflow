@@ -5,11 +5,12 @@ SELECT pgflow_tests.setup_flow('sequential');
 
 SELECT pgflow.start_flow('sequential', '"hello"'::jsonb);
 
-SELECT results_eq(
-    $$ SELECT step_slug 
-     FROM pgflow.step_tasks 
-     WHERE flow_slug = 'sequential' 
-     GROUP BY step_slug $$,
+SELECT is(
+    (
+      SELECT array_agg(step_slug ORDER BY step_slug)
+      FROM pgflow.step_tasks 
+      WHERE flow_slug = 'sequential' 
+    ),
     ARRAY['first']::text[],
     'A step_task record should be created only for the root step'
 );
