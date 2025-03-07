@@ -13,8 +13,8 @@ SELECT is(
                 step_slug
                 ORDER BY step_slug
             )
-        FROM pgflow.step_tasks 
-        WHERE flow_slug = 'sequential' 
+        FROM pgflow.step_tasks
+        WHERE flow_slug = 'sequential'
     ),
     ARRAY['first']::text[],
     'A step_task record should be created only for the root step'
@@ -25,19 +25,19 @@ SELECT is(
     (
         SELECT q.message
         FROM pgflow.step_tasks AS st
-        JOIN pgmq.q_sequential AS q 
+        INNER JOIN pgmq.q_sequential AS q
             ON st.message_id = q.msg_id
         WHERE
-            st.flow_slug = 'sequential' 
+            st.flow_slug = 'sequential'
             AND st.step_slug = 'first'
     ),
     jsonb_build_object(
         'flow_slug', 'sequential',
         'run_id', (
-            SELECT run_id 
-            FROM pgflow.step_tasks 
+            SELECT run_id
+            FROM pgflow.step_tasks
             WHERE
-                flow_slug = 'sequential' 
+                flow_slug = 'sequential'
                 AND step_slug = 'first'
         ),
         'step_slug', 'first'
