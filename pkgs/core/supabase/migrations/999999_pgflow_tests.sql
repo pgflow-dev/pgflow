@@ -25,6 +25,11 @@ elsif flow_slug = 'sequential_other' then
   PERFORM pgflow.add_step('other', 'first');
   PERFORM pgflow.add_step('other', 'second', ARRAY['first']);
   PERFORM pgflow.add_step('other', 'last', ARRAY['second']);
+elsif flow_slug = 'two_roots' then
+  PERFORM pgflow.create_flow('two_roots');
+  PERFORM pgflow.add_step('two_roots', 'root_a');
+  PERFORM pgflow.add_step('two_roots', 'root_b');
+  PERFORM pgflow.add_step('two_roots', 'last', ARRAY['root_a', 'root_b']);
 else
   RAISE EXCEPTION 'Unknown test flow: %', flow_slug;
 end if;
