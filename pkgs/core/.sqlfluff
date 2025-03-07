@@ -1,4 +1,4 @@
 [sqlfluff]
 dialect = postgres
 
-exclude_rules = CP05,LT01
+exclude_rules = CP05,LT01,LT02
