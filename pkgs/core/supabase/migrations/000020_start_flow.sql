@@ -52,7 +52,7 @@ WITH
     ORDER BY step_slug
   ),
   sent_messages AS (
-    SELECT 
+    SELECT
       flow_slug, run_id, step_slug,
       pgmq.send(flow_slug, jsonb_build_object(
         'flow_slug', flow_slug,

@@ -52,8 +52,10 @@ create table pgflow.flows (
 create table pgflow.steps (
     flow_slug text not null references flows (flow_slug),
     step_slug text not null,
+    step_type text not null default 'single',
     primary key (flow_slug, step_slug),
-    check (is_valid_slug(step_slug))
+    check (is_valid_slug(step_slug)),
+    check (step_type in ('single'))
 );
 
 -- Dependencies table - stores relationships between steps
@@ -74,8 +76,6 @@ create table pgflow.deps (
 ------------------------------------------
 
 -- Runs table - tracks flow execution instances
-drop table if exists pgflow.step_states;
-drop table if exists pgflow.runs;
 create table pgflow.runs (
     run_id uuid primary key not null default gen_random_uuid(),
     flow_slug text not null references pgflow.flows (flow_slug), -- denormalized
@@ -102,9 +102,11 @@ create table pgflow.step_tasks (
     run_id uuid not null references pgflow.runs (run_id),
     step_slug text not null,
     message_id bigint,
+    task_index int not null default 0,
     status text not null default 'queued',
-    constraint step_tasks_pkey primary key (run_id, step_slug),
+    constraint step_tasks_pkey primary key (run_id, step_slug, task_index),
     foreign key (run_id, step_slug)
     references pgflow.step_states (run_id, step_slug),
-    check (status in ('queued', 'started', 'completed', 'failed'))
+    check (status in ('queued', 'started', 'completed', 'failed')),
+    check (task_index = 0)
 )
