@@ -11,4 +11,11 @@ SELECT * FROM pgflow.step_states;
 SELECT * FROM pgflow.step_tasks;
 SELECT * FROM pgmq.q_temp;
 
+
+-- SELECT array_agg(message->>'step_slug') FROM pgmq.q_temp;
+SELECT
+    array_agg(DISTINCT message->>'flow_slug'),
+array_agg(DISTINCT message->>'step_slug')
+FROM pgmq.q_temp;
+
 ROLLBACK;
