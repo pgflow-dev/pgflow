@@ -3,7 +3,7 @@ create or replace function pgflow.start_flow(
     flow_slug TEXT,
     payload JSONB
 )
-returns setof pgflow.step_states
+returns setof pgflow.runs
 language sql
 set search_path to ''
 volatile
@@ -45,12 +45,6 @@ WITH
     FROM flow_steps fs
     RETURNING *
   ),
-  started_step_states AS (
-    SELECT *
-    FROM created_step_states
-    WHERE status = 'started'
-    ORDER BY step_slug
-  ),
   sent_messages AS (
     SELECT
       flow_slug, run_id, step_slug,
@@ -59,7 +53,9 @@ WITH
         'run_id', run_id,
         'step_slug', step_slug
       )) AS msg_id
-    FROM started_step_states
+    FROM created_step_states
+    WHERE status = 'started'
+    ORDER BY step_slug
   ),
   created_step_tasks AS (
     INSERT INTO pgflow.step_tasks (flow_slug, run_id, step_slug, message_id)
@@ -68,6 +64,6 @@ WITH
     FROM sent_messages
   )
 
-SELECT * FROM started_step_states;
+SELECT * FROM created_run;
 
 $$;
