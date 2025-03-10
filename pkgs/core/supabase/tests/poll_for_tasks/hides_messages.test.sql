@@ -7,37 +7,28 @@ SELECT pgflow_tests.setup_flow('sequential');
 SELECT pgflow.start_flow('sequential', '"hello"'::jsonb);
 
 -- TEST: Poll a single task with big visibility timeout (vt = 10)
-WITH messages AS (
-  SELECT
-      pgflow.poll_for_tasks(
-          queue_name => 'sequential'::text,
-          vt => 2,
-          qty => 1,
-          max_poll_seconds => 1
-      )
-)
-
 SELECT is(
-  (SELECT count(*)::integer FROM messages),
+  (SELECT count(*)::integer FROM pgflow.poll_for_tasks(
+    queue_name => 'sequential'::text,
+    vt => 5,
+    qty => 1,
+    max_poll_seconds => 1
+  )),
   1::integer,
-  'Read a single message'
+  'First poll should get the available task'
 );
 
--- TEST: Polling again yields no messages becuase of vt = 10 in previous poll
-WITH messages AS (
-  SELECT
-      pgflow.poll_for_tasks(
-          queue_name => 'sequential'::text,
-          vt => 2,
-          qty => 1,
-          max_poll_seconds => 1
-      )
-)
-
+-- TEST: Immediate second poll (simulating concurrent access) should get nothing
+-- because the message is hidden with vt=5
 SELECT is(
-  (SELECT count(*)::integer FROM messages),
+  (SELECT count(*)::integer FROM pgflow.poll_for_tasks(
+    queue_name => 'sequential'::text,
+    vt => 5,
+    qty => 1,
+    max_poll_seconds => 1
+  )),
   0::integer,
-  'Read no messages because the message is still hidden'
+  'Concurrent poll should not get the same task (due to visibility timeout)'
 );
 
 SELECT * FROM finish();
