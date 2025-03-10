@@ -1,44 +1,33 @@
 BEGIN;
-SELECT plan(4);
+SELECT plan(1);
 SELECT pgflow_tests.reset_db();
 SELECT pgflow_tests.setup_flow('sequential');
 
 -- SETUP: Start a flow run
 SELECT pgflow.start_flow('sequential', '"hello"'::jsonb);
 
-WITH
-tasks AS (
-  SELECT * 
-  FROM pgflow.poll_for_tasks(
-    queue_name => 'sequential',
-    vt => 1,
-    qty => 1
-  )
-  LIMIT 1
+-- Prepare the actual query
+PREPARE actual AS
+SELECT flow_slug, run_id, step_slug, payload
+FROM pgflow.poll_for_tasks(
+  queue_name => 'sequential',
+  vt => 1,
+  qty => 1
 )
+LIMIT 1;
 
-SELECT is(
-  (SELECT count(*)::integer FROM tasks),
-  1::integer,
-  'Returns worker_task row with correct structure'
-)
-UNION ALL
-SELECT is(
-  (SELECT flow_slug FROM tasks),
-  'sequential'::text,
-  'Returns proper flow_slug'
-)
-UNION ALL
-SELECT is(
-  (SELECT step_slug FROM tasks),
-  'first'::text,
-  'Returns proper step_slug'
-)
-UNION ALL
-SELECT is(
-  (SELECT payload FROM tasks),
-  jsonb_build_object('run', 'hello')::jsonb,
-  'Returns proper step_slug'
+-- Prepare the expected result
+PREPARE expected AS
+SELECT 'sequential'::text AS flow_slug,
+       (SELECT run_id FROM pgflow.runs WHERE flow_slug = 'sequential' LIMIT 1) AS run_id,
+       'first'::text AS step_slug,
+       jsonb_build_object('run', 'hello')::jsonb AS payload;
+
+-- Compare the results
+SELECT results_eq(
+  'actual',
+  'expected',
+  'poll_for_tasks() returns the expected worker task'
 );
 
 SELECT finish();
