@@ -85,6 +85,7 @@ A static definition of a step within a flow (a DAG "nodes"):
 CREATE TABLE pgflow.steps (
     flow_slug text NOT NULL REFERENCES flows (flow_slug),
     step_slug text NOT NULL,
+    step_type text NOT NULL DEFAULT 'single',
     PRIMARY KEY (flow_slug, step_slug),
     CHECK (is_valid_slug(flow_slug)),
     CHECK (is_valid_slug(step_slug))
@@ -98,15 +99,14 @@ A static definition of dependencies between steps (a DAG "edges"):
 ```sql
 CREATE TABLE pgflow.deps (
     flow_slug text NOT NULL REFERENCES pgflow.flows (flow_slug),
-    dep_step_slug text NOT NULL,  -- The step that must complete first
-    step_slug text NOT NULL,   -- The step that depends on dep_step_slug
-    PRIMARY KEY (flow_slug, dep_step_slug, step_slug),
-    FOREIGN KEY (flow_slug, dep_step_slug)
+    dep_slug text NOT NULL,  -- The step that must complete first
+    step_slug text NOT NULL,   -- The step that depends on dep_slug
+    PRIMARY KEY (flow_slug, dep_slug, step_slug),
+    FOREIGN KEY (flow_slug, dep_slug)
     REFERENCES pgflow.steps (flow_slug, step_slug),
     FOREIGN KEY (flow_slug, step_slug)
     REFERENCES pgflow.steps (flow_slug, step_slug),
-    CHECK (dep_step_slug != step_slug),  -- Prevent self-dependencies
-    CHECK (is_valid_slug(dep_step_slug)),
+    CHECK (dep_slug != step_slug)  -- Prevent self-dependencies
     CHECK (is_valid_slug(step_slug))
 );
 ```
@@ -118,21 +118,15 @@ A run is identified by a `flow_slug` and `run_id`.
 
 ```sql
 CREATE TABLE pgflow.runs (
-    flow_slug text NOT NULL REFERENCES pgflow.flows (flow_slug),
-    run_id uuid PRIMARY KEY NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    failed_at timestamptz,
-    completed_at timestamptz,
-    status text NOT NULL GENERATED ALWAYS AS (
-    CASE
-    WHEN failed_at IS NOT NULL THEN 'failed'
-    WHEN completed_at IS NOT NULL THEN 'completed'
-    ELSE 'pending'
-    END,
+    run_id uuid PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+    flow_slug text NOT NULL REFERENCES pgflow.flows (flow_slug), -- denormalized
+    status text NOT NULL DEFAULT 'started',
     payload jsonb NOT NULL,
-    CHECK (NOT (completed_at IS NOT NULL AND failed_at IS NOT NULL)),
-    CHECK (status IN ('pending', 'failed', 'completed')),
-    CHECK (is_valid_slug(flow_slug))
+    CHECK (status IN ('started', 'failed', 'completed'))
+)
+```
+
+There is also `status` that currently can be started, failed or completed.
 );
 ```
 
@@ -142,37 +136,19 @@ There is also `status` that currently can be pending, failed or completed.
 
 Represents a state of a particular step in a particular run.
 
-Interesting columns are:
-
-- `status` - the current status of the step, its calculated.
-- `step_result` - the return value of the step handler function captured by the worker and passed when acknowledging completion of the task.
-  in case of a failure, this will contain the error message/stacktrace, also saved by worker when acknowledging failure
-
 ```sql
 
 -- Step states table - tracks the state of individual steps within a run
 CREATE TABLE pgflow.step_states (
-flow_slug text NOT NULL REFERENCES pgflow.flows (flow_slug), -- denormalized column for performance
-step_slug text NOT NULL,
-run_id uuid NOT NULL REFERENCES pgflow.runs (run_id),
-created_at timestamptz NOT NULL DEFAULT now(),
-failed_at timestamptz,
-completed_at timestamptz,
-status text NOT NULL GENERATED ALWAYS AS (
-CASE
-WHEN failed_at IS NOT NULL THEN 'failed'
-WHEN completed_at IS NOT NULL THEN 'completed'
-ELSE 'pending'
-END
-) STORED,
-step_result jsonb,
-PRIMARY KEY (run_id, step_slug),
-FOREIGN KEY (flow_slug, step_slug)
-REFERENCES pgflow.steps (flow_slug, step_slug),
-CHECK (NOT (completed_at IS NOT NULL AND failed_at IS NOT NULL)),
-CHECK (status IN ('pending', 'failed', 'completed')),
-CHECK (is_valid_slug(flow_slug)),
-CHECK (is_valid_slug(step_slug))
+    flow_slug text NOT NULL REFERENCES pgflow.flows (flow_slug),
+    run_id uuid NOT NULL REFERENCES pgflow.runs (run_id),
+    step_slug text NOT NULL,
+    status text NOT NULL DEFAULT 'created',
+    PRIMARY KEY (run_id, step_slug),
+    FOREIGN KEY (flow_slug, step_slug)
+    REFERENCES pgflow.steps (flow_slug, step_slug),
+    CHECK (status IN ('created', 'started', 'completed', 'failed'))
+);
 );
 ```
 
