@@ -81,7 +81,7 @@ create table pgflow.runs (
     run_id uuid primary key not null default gen_random_uuid(),
     flow_slug text not null references pgflow.flows (flow_slug), -- denormalized
     status text not null default 'started',
-    payload jsonb not null,
+    input jsonb not null,
     check (status in ('started', 'failed', 'completed'))
 );
 

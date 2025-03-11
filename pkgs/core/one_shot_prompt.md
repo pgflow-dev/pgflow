@@ -6,7 +6,7 @@ and expose SQL functions that will allow to propagate through the state.
 Real work is done on the task queue workers and the functions from pgflow are only orchestrating
 the queue messages.
 
-Workers are supposed to call user functions with the payload from the queue message,
+Workers are supposed to call user functions with the input from the queue message,
 and should acknowledge the completion of the task or its failure (error thrown) by
 calling appropriate pgflow SQL functions.
 
@@ -121,14 +121,15 @@ CREATE TABLE pgflow.runs (
     run_id uuid PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     flow_slug text NOT NULL REFERENCES pgflow.flows (flow_slug), -- denormalized
     status text NOT NULL DEFAULT 'started',
-    payload jsonb NOT NULL,
+    input jsonb NOT NULL,
     CHECK (status IN ('started', 'failed', 'completed'))
 )
 ```
 
 There is also `status` that currently can be started, failed or completed.
 );
-```
+
+````
 
 There is also `status` that currently can be pending, failed or completed.
 
@@ -150,7 +151,7 @@ CREATE TABLE pgflow.step_states (
     CHECK (status IN ('created', 'started', 'completed', 'failed'))
 );
 );
-```
+````
 
 ### pgflow.step_tasks
 
@@ -173,8 +174,8 @@ flow_slug text NOT NULL REFERENCES pgflow.flows (flow_slug),
 step_slug text NOT NULL,
 run_id uuid NOT NULL REFERENCES pgflow.runs (run_id),
 status text NOT NULL DEFAULT 'queued',
-payload jsonb NOT NULL, -- payload that will be passed to queue message
-result jsonb, -- like step_result but for task, can store result or error/stacktrace
+input jsonb NOT NULL, -- payload that will be passed to queue message
+output jsonb, -- like step_result but for task, can store result or error/stacktrace
 message_id bigint, -- an id of the queue message
 CONSTRAINT step_tasks_pkey PRIMARY KEY (run_id, step_slug),
 FOREIGN KEY (run_id, step_slug)
@@ -195,16 +196,16 @@ Typescript DSL looks like this:
 
 ```ts
 const BasicFlow = new Flow<string>()
-  .step("root", ({ run }) => {
+  .step('root', ({ run }) => {
     return `[${run}]r00t`;
   })
-  .step("left", ["root"], ({ root: r }) => {
+  .step('left', ['root'], ({ root: r }) => {
     return `${r}/left`;
   })
-  .step("right", ["root"], ({ root: r }) => {
+  .step('right', ['root'], ({ root: r }) => {
     return `${r}/right`;
   })
-  .step("end", ["left", "right"], ({ left, right, run }) => {
+  .step('end', ['left', 'right'], ({ left, right, run }) => {
     return `<${left}> and <${right}> of (${run})`;
   });
 ```
@@ -225,7 +226,7 @@ and to the workers.
 
 Developer calls `start_flow` and rest is called by the workers.
 
-### pgflow.start_flow(flow_slug::text, payload::jsonb)
+### pgflow.start_flow(flow_slug::text, input::jsonb)
 
 This function is used to start a flow.
 It should work like this:
@@ -256,16 +257,16 @@ But probably each step type would have its own implementation of this function,
 and a simple step type will just create a new step_task row and enqueue it.
 
 But an array/foreach step type would need a different implementation.
-Would need to check the payload for the step which is an array, and would
+Would need to check the input for the step which is an array, and would
 create a new step_task for each array item and enqueue as many messages as there are items in the array.
 
-### pgflow.complete_step_task(run_id::uuid, step_slug::text, result::jsonb)
+### pgflow.complete_step_task(run_id::uuid, step_slug::text, output::jsonb)
 
 This will be called by the worker when a step_task is completed.
 It will work like this in the simplified version when one step_state corresponds to one step_task:
 
-- it marks step_task as completed, saving the result
-- it in turns mark step_state as completed, saving the result
+- it marks step_task as completed, saving the output
+- it in turns mark step_state as completed, saving the output
 - then it should check for any dependant steps (steps that depend on just completed step) in the same run
 - it should then check if any of those dependant steps are "ready" - meaning, all their dependencies are completed
 - for each of those

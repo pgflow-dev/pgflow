@@ -1,7 +1,7 @@
 -- drop function if exists pgflow.start_flow;
 create or replace function pgflow.start_flow(
     flow_slug TEXT,
-    payload JSONB
+    input JSONB
 )
 returns setof pgflow.runs
 language sql
@@ -11,8 +11,8 @@ as $$
 
 WITH
   created_run AS (
-    INSERT INTO pgflow.runs (flow_slug, payload)
-    VALUES (start_flow.flow_slug, start_flow.payload)
+    INSERT INTO pgflow.runs (flow_slug, input)
+    VALUES (start_flow.flow_slug, start_flow.input)
     RETURNING *
   ),
   flow_steps AS (

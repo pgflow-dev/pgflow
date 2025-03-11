@@ -8,9 +8,9 @@ SELECT pgflow.start_flow('sequential', '"hello"'::jsonb);
 
 -- TEST: Run should be created
 SELECT results_eq(
-    $$ SELECT flow_slug, status, payload from pgflow.runs $$,
+    $$ SELECT flow_slug, status, input from pgflow.runs $$,
     $$ VALUES ('sequential', 'started', '"hello"'::jsonb) $$,
-    'Run should be created with appropriate status and payload'
+    'Run should be created with appropriate status and input'
 );
 
 SELECT finish();

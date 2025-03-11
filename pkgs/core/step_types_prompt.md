@@ -19,7 +19,7 @@ Regular Steps
 - Each step will be able to specify a condition, regardless of its type
 - Steps that run only when certain conditions are met
 - A condition is provided (as a JSON fragment)
-- At runtime, the inpuyt payload for a step (from all deps) is matched via @> against the condition
+- At runtime, the inpuyt input for a step (from all deps) is matched via @> against the condition
 - If the condition is not met, the step does not run and marked as skipped
 - Dependent steps are not run and should probably be marked as skipped as well.
 
@@ -27,7 +27,7 @@ Regular Steps
 
 - Steps that pause for human intervention.
 - They do not immediately queue a task.
-- Instead, they wait for an external update by calling **complete_step** to set their result and trigger downstream steps.
+- Instead, they wait for an external update by calling **complete_step** to set their output and trigger downstream steps.
 
 ### Subflow Steps
 
@@ -41,7 +41,7 @@ Regular Steps
 
 - Optional step to shape the overall output of the flow.
 - It does not require explicit dependencies; it gathers all leaf step outputs.
-- The handler processes these aggregated values to produce a final result.
+- The handler processes these aggregated values to produce a final output.
 - If not provided, the flow returns a default aggregation of leaf outputs.
 
 ### Fanout subflows step
@@ -55,4 +55,4 @@ We simplify as much as possible and use other tools instead of reinventing the w
 
 - Recurrent tasks are handled externally via Cron triggers.
 - Delays can be implemented using pgmq visibility timeouts.
-- The overall design treats a flow as a single function with one input (parameters) and one output (final aggregated result).
+- The overall design treats a flow as a single function with one input (parameters) and one output (final aggregated output).

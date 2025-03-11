@@ -8,7 +8,7 @@ SELECT pgflow.start_flow('sequential', '"hello"'::jsonb);
 
 -- Prepare the actual query
 PREPARE actual AS
-SELECT flow_slug, run_id, step_slug, payload
+SELECT flow_slug, run_id, step_slug, input
 FROM pgflow.poll_for_tasks(
   queue_name => 'sequential',
   vt => 1,
@@ -21,7 +21,7 @@ PREPARE expected AS
 SELECT 'sequential'::text AS flow_slug,
        (SELECT run_id FROM pgflow.runs WHERE flow_slug = 'sequential' LIMIT 1) AS run_id,
        'first'::text AS step_slug,
-       jsonb_build_object('run', 'hello')::jsonb AS payload;
+       jsonb_build_object('run', 'hello')::jsonb AS input;
 
 -- Compare the results
 SELECT results_eq(

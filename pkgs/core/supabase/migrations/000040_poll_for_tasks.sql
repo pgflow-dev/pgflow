@@ -2,7 +2,7 @@ create type pgflow.worker_task as (
   flow_slug TEXT,
   run_id UUID,
   step_slug TEXT,
-  payload JSONB
+  input JSONB
 );
 
 create function pgflow.poll_for_tasks(
@@ -38,7 +38,7 @@ updated_step_tasks as (
 runs_data as (
   select
     r.run_id,
-    r.payload
+    r.input
   from pgflow.runs r
   where r.run_id in (select run_id from updated_step_tasks)
 )
@@ -47,7 +47,7 @@ select
   st.flow_slug,
   st.run_id,
   st.step_slug,
-  jsonb_build_object('run', r.payload)
+  jsonb_build_object('run', r.input)
 from updated_step_tasks st
 join runs_data r on st.run_id = r.run_id;
 
