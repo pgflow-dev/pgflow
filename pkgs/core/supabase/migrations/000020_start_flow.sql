@@ -19,14 +19,14 @@ WITH
     RETURNING *
   ),
   flow_steps AS (
-    SELECT flow_slug, step_slug, deps_count
+    SELECT steps.flow_slug, steps.step_slug, steps.deps_count
     FROM pgflow.steps
-    WHERE flow_slug = start_flow.flow_slug
+    WHERE steps.flow_slug = start_flow.flow_slug
   ),
   created_step_states AS (
     INSERT INTO pgflow.step_states (flow_slug, run_id, step_slug, remaining_deps)
     SELECT
-      start_flow.flow_slug,
+      fs.flow_slug,
       (SELECT run_id FROM created_run),
       fs.step_slug,
       fs.deps_count
@@ -34,9 +34,9 @@ WITH
   )
 SELECT * FROM created_run INTO v_created_run;
 
-PERFORM pgflow.start_ready_steps(v_created_run.id);
+PERFORM pgflow.start_ready_steps(v_created_run.run_id);
 
-SELECT * FROM v_created_run;
+RETURN QUERY SELECT * FROM pgflow.runs where run_id = v_created_run.run_id;
 
 end;
 $$;

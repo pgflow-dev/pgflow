@@ -25,22 +25,24 @@ started_step_states AS (
 ),
 sent_messages AS (
   SELECT
-    flow_slug, run_id, step_slug,
-    pgmq.send(flow_slug, jsonb_build_object(
-      'flow_slug', flow_slug,
-      'run_id', run_id,
-      'step_slug', step_slug,
+    started_step_states.flow_slug, 
+    started_step_states.run_id, 
+    started_step_states.step_slug,
+    pgmq.send(started_step_states.flow_slug, jsonb_build_object(
+      'flow_slug', started_step_states.flow_slug,
+      'run_id', started_step_states.run_id,
+      'step_slug', started_step_states.step_slug,
       'task_index', 0
     )) AS msg_id
   FROM started_step_states
-),
-created_step_tasks AS (
-  INSERT INTO pgflow.step_tasks (flow_slug, run_id, step_slug, message_id)
-  SELECT
-    flow_slug, run_id, step_slug, msg_id
-  FROM sent_messages
 )
-SELECT 1;
+INSERT INTO pgflow.step_tasks (flow_slug, run_id, step_slug, message_id)
+SELECT
+  sent_messages.flow_slug, 
+  sent_messages.run_id, 
+  sent_messages.step_slug, 
+  sent_messages.msg_id
+FROM sent_messages;
 
 end;
 $$;
