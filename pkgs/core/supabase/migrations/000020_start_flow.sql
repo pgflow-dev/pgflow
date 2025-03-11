@@ -4,10 +4,13 @@ create or replace function pgflow.start_flow(
     input JSONB
 )
 returns setof pgflow.runs
-language sql
+language plpgsql
 set search_path to ''
 volatile
 as $$
+declare
+  v_created_run pgflow.runs%ROWTYPE;
+begin
 
 WITH
   created_run AS (
@@ -21,39 +24,19 @@ WITH
     WHERE flow_slug = start_flow.flow_slug
   ),
   created_step_states AS (
-    INSERT INTO pgflow.step_states (flow_slug, run_id, step_slug, status, remaining_deps)
+    INSERT INTO pgflow.step_states (flow_slug, run_id, step_slug, remaining_deps)
     SELECT
       start_flow.flow_slug,
       (SELECT run_id FROM created_run),
       fs.step_slug,
-      CASE
-        WHEN fs.deps_count = 0 THEN 'started'
-        ELSE 'created'
-      END AS status,
       fs.deps_count
     FROM flow_steps fs
-    RETURNING *
-  ),
-  sent_messages AS (
-    SELECT
-      flow_slug, run_id, step_slug,
-      pgmq.send(flow_slug, jsonb_build_object(
-        'flow_slug', flow_slug,
-        'run_id', run_id,
-        'step_slug', step_slug,
-        'task_index', 0
-      )) AS msg_id
-    FROM created_step_states
-    WHERE status = 'started'
-    ORDER BY step_slug
-  ),
-  created_step_tasks AS (
-    INSERT INTO pgflow.step_tasks (flow_slug, run_id, step_slug, message_id)
-    SELECT
-      flow_slug, run_id, step_slug, msg_id
-    FROM sent_messages
   )
+SELECT * FROM created_run INTO v_created_run;
 
-SELECT * FROM created_run;
+PERFORM pgflow.start_ready_steps(v_created_run.id);
 
+SELECT * FROM v_created_run;
+
+end;
 $$;

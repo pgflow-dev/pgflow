@@ -5,10 +5,11 @@ create or replace function pgflow.complete_task(
     output jsonb
 )
 returns void
-language sql
+language plpgsql
 volatile
 set search_path to ''
 as $$
+begin
 
 WITH step_lock AS (
   -- Acquire a row-level lock on the step_states row
@@ -54,16 +55,15 @@ dependent_steps_lock AS (
   WHERE pgflow.step_states.run_id = complete_task.run_id
     AND pgflow.step_states.step_slug IN (SELECT dependent_step_slug FROM dependent_steps)
   FOR UPDATE
-),
--- Update all dependent steps
-dependent_steps_update AS (
-  UPDATE pgflow.step_states
-  SET remaining_deps = pgflow.step_states.remaining_deps - 1
-  FROM dependent_steps
-  WHERE pgflow.step_states.run_id = complete_task.run_id
-    AND pgflow.step_states.step_slug = dependent_steps.dependent_step_slug
-  RETURNING pgflow.step_states.*
 )
-SELECT * FROM task;
+-- Update all dependent steps
+UPDATE pgflow.step_states
+SET remaining_deps = pgflow.step_states.remaining_deps - 1
+FROM dependent_steps
+WHERE pgflow.step_states.run_id = complete_task.run_id
+  AND pgflow.step_states.step_slug = dependent_steps.dependent_step_slug;
 
+PERFORM pgflow.start_ready_steps(complete_task.run_id);
+
+end;
 $$;
