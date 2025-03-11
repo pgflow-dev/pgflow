@@ -14,8 +14,8 @@ begin
 WITH step_lock AS (
   -- Acquire a row-level lock on the step_states row
   SELECT * FROM pgflow.step_states
-  WHERE run_id = complete_task.run_id
-    AND step_slug = complete_task.step_slug
+  WHERE pgflow.step_states.run_id = complete_task.run_id
+    AND pgflow.step_states.step_slug = complete_task.step_slug
   FOR UPDATE
 ),
 task AS (
@@ -23,9 +23,9 @@ task AS (
   SET
     status = 'completed',
     output = complete_task.output
-  WHERE run_id = complete_task.run_id
-    AND step_slug = complete_task.step_slug
-    AND task_index = complete_task.task_index
+  WHERE pgflow.step_tasks.run_id = complete_task.run_id
+    AND pgflow.step_tasks.step_slug = complete_task.step_slug
+    AND pgflow.step_tasks.task_index = complete_task.task_index
   RETURNING *
 ),
 step_state AS (
