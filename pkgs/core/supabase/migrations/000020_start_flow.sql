@@ -40,7 +40,8 @@ WITH
       pgmq.send(flow_slug, jsonb_build_object(
         'flow_slug', flow_slug,
         'run_id', run_id,
-        'step_slug', step_slug
+        'step_slug', step_slug,
+        'task_index', 0
       )) AS msg_id
     FROM created_step_states
     WHERE status = 'started'

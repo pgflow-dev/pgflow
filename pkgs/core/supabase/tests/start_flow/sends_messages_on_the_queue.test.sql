@@ -40,7 +40,8 @@ SELECT is(
                 flow_slug = 'sequential'
                 AND step_slug = 'first'
         ),
-        'step_slug', 'first'
+        'step_slug', 'first',
+        'task_index', 0
     ),
     'The message in the queue should contain the correct step info'
 );
