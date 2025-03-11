@@ -16,32 +16,21 @@ WITH
     RETURNING *
   ),
   flow_steps AS (
-    SELECT flow_slug, step_slug
+    SELECT flow_slug, step_slug, deps_count
     FROM pgflow.steps
     WHERE flow_slug = start_flow.flow_slug
   ),
-  root_steps AS (
-    SELECT s.flow_slug, s.step_slug
-    FROM flow_steps AS s
-    LEFT JOIN pgflow.deps AS d ON
-      s.flow_slug = d.flow_slug AND
-      s.step_slug = d.step_slug
-    WHERE s.flow_slug = start_flow.flow_slug
-      AND d.step_slug IS NULL
-  ),
   created_step_states AS (
-    INSERT INTO pgflow.step_states (flow_slug, run_id, step_slug, status)
+    INSERT INTO pgflow.step_states (flow_slug, run_id, step_slug, status, remaining_deps)
     SELECT
       start_flow.flow_slug,
       (SELECT run_id FROM created_run),
       fs.step_slug,
       CASE
-        WHEN EXISTS (
-          SELECT 1 FROM root_steps rs
-          WHERE rs.step_slug = fs.step_slug
-        ) THEN 'started'
+        WHEN fs.deps_count = 0 THEN 'started'
         ELSE 'created'
-      END AS status
+      END AS status,
+      fs.deps_count
     FROM flow_steps fs
     RETURNING *
   ),

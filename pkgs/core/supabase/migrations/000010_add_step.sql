@@ -10,8 +10,8 @@ VOLATILE
 AS $$
 WITH
   create_step AS (
-    INSERT INTO pgflow.steps (flow_slug, step_slug)
-    VALUES (flow_slug, step_slug)
+    INSERT INTO pgflow.steps (flow_slug, step_slug, deps_count)
+    VALUES (flow_slug, step_slug, COALESCE(array_length(deps_slugs, 1), 0))
     ON CONFLICT (flow_slug, step_slug) DO NOTHING
     RETURNING *
   ),

@@ -53,6 +53,7 @@ create table pgflow.steps (
     flow_slug text not null references flows (flow_slug),
     step_slug text not null,
     step_type text not null default 'single',
+    deps_count int not null default 0 check (deps_count >= 0),
     primary key (flow_slug, step_slug),
     check (is_valid_slug(step_slug)),
     check (step_type in ('single'))
@@ -90,10 +91,13 @@ create table pgflow.step_states (
     run_id uuid not null references pgflow.runs (run_id),
     step_slug text not null,
     status text not null default 'created',
+    remaining_tasks int not null default 1 check (remaining_tasks >= 0),
+    remaining_deps int not null default 0 check (remaining_deps >= 0),
     primary key (run_id, step_slug),
     foreign key (flow_slug, step_slug)
     references pgflow.steps (flow_slug, step_slug),
-    check (status in ('created', 'started', 'completed', 'failed'))
+    check (status in ('created', 'started', 'completed', 'failed')),
+    check (status != 'completed' or remaining_tasks = 0)
 );
 
 -- Step tasks table - tracks units of work for step

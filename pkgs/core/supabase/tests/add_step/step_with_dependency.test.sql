@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(2);
+SELECT plan(3);
 SELECT pgflow_tests.reset_db();
 
 -- Setup
@@ -12,6 +12,11 @@ SELECT results_eq(
     $$ SELECT step_slug FROM pgflow.steps WHERE flow_slug = 'test_flow' ORDER BY step_slug $$,
     ARRAY['first_step', 'second_step']::text[],
     'Second step should be added to the steps table'
+);
+SELECT is(
+    (SELECT deps_count::int FROM pgflow.steps WHERE flow_slug = 'test_flow' AND step_slug = 'second_step'),
+    1::int,
+    'deps_count should be 1 because "second_step" has one dependency'
 );
 SELECT results_eq(
     $$
