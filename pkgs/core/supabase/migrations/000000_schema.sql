@@ -108,6 +108,7 @@ create table pgflow.step_tasks (
     message_id bigint,
     task_index int not null default 0,
     status text not null default 'queued',
+    output JSONB check (output is NULL or status = 'completed'),
     constraint step_tasks_pkey primary key (run_id, step_slug, task_index),
     foreign key (run_id, step_slug)
     references pgflow.step_states (run_id, step_slug),
