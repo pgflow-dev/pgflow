@@ -8,7 +8,7 @@ SELECT pgflow_tests.setup_flow('sequential_other');
 SELECT pgflow.start_flow('sequential', '"hello"'::jsonb);
 
 -- TEST: All step states from flow should be created
-SELECT results_eq(
+SELECT set_eq(
     $$ SELECT step_slug
        FROM pgflow.step_states WHERE flow_slug = 'sequential' $$,
     ARRAY['first', 'second', 'last']::text[],
