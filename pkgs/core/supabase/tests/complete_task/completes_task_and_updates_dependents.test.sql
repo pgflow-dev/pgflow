@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(3);
+SELECT plan(5);
 SELECT pgflow_tests.reset_db();
 SELECT pgflow_tests.setup_flow('sequential');
 
@@ -42,21 +42,21 @@ SELECT results_eq(
 );
 
 -- TEST: Dependent step task should be created and queued
--- SELECT results_eq(
---   $$ SELECT status FROM pgflow.step_tasks
---      WHERE run_id = (SELECT run_id FROM pgflow.runs LIMIT 1)
---      AND step_slug = 'second' $$,
---   $$ VALUES ('queued') $$,
---   'Dependent step task should be created and queued'
--- );
+SELECT results_eq(
+  $$ SELECT status FROM pgflow.step_tasks
+     WHERE run_id = (SELECT run_id FROM pgflow.runs LIMIT 1)
+     AND step_slug = 'second' $$,
+  $$ VALUES ('queued') $$,
+  'Dependent step task should be created and queued'
+);
 
 -- TEST: Message should be in the queue for the dependent step
--- SELECT is(
---   (SELECT count(*)::int FROM pgmq.q_sequential
---    WHERE message->>'step_slug' = 'second'),
---   1::int,
---   'Message should be in the queue for the dependent step'
--- );
+SELECT is(
+  (SELECT count(*)::int FROM pgmq.q_sequential
+   WHERE message->>'step_slug' = 'second'),
+  1::int,
+  'Message should be in the queue for the dependent step'
+);
 
 SELECT finish();
 ROLLBACK;
