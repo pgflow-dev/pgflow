@@ -81,6 +81,7 @@ create table pgflow.runs (
     flow_slug text not null references pgflow.flows (flow_slug), -- denormalized
     status text not null default 'started',
     input jsonb not null,
+    remaining_steps int not null default 0 check (remaining_steps >= 0),
     check (status in ('started', 'failed', 'completed'))
 );
 

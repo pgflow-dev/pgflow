@@ -13,15 +13,19 @@ declare
 begin
 
 WITH
-  created_run AS (
-    INSERT INTO pgflow.runs (flow_slug, input)
-    VALUES (start_flow.flow_slug, start_flow.input)
-    RETURNING *
-  ),
   flow_steps AS (
     SELECT steps.flow_slug, steps.step_slug, steps.deps_count
     FROM pgflow.steps
     WHERE steps.flow_slug = start_flow.flow_slug
+  ),
+  created_run AS (
+    INSERT INTO pgflow.runs (flow_slug, input, remaining_steps)
+    VALUES (
+      start_flow.flow_slug, 
+      start_flow.input,
+      (SELECT count(*) FROM flow_steps)
+    )
+    RETURNING *
   ),
   created_step_states AS (
     INSERT INTO pgflow.step_states (flow_slug, run_id, step_slug, remaining_deps)
