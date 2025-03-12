@@ -36,7 +36,8 @@ begin
       slug is not null
       and slug <> ''
       and length(slug) <= 128
-      and slug ~ '^[a-zA-Z_][a-zA-Z0-9_]*$';
+      and slug ~ '^[a-zA-Z_][a-zA-Z0-9_]*$'
+      and slug NOT IN ('run'); -- reserved words
 end;
 $$;
 
