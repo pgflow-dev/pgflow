@@ -31,6 +31,12 @@ elsif flow_slug = 'two_roots' then
   PERFORM pgflow.add_step('two_roots', 'root_a');
   PERFORM pgflow.add_step('two_roots', 'root_b');
   PERFORM pgflow.add_step('two_roots', 'last', ARRAY['root_a', 'root_b']);
+elsif flow_slug = 'two_roots_left_right' then
+  PERFORM pgflow.create_flow('two_roots_left_right');
+  PERFORM pgflow.add_step('two_roots_left_right', 'connected_root');
+  PERFORM pgflow.add_step('two_roots_left_right', 'disconnected_root');
+  PERFORM pgflow.add_step('two_roots_left_right', 'left', ARRAY['connected_root']);
+  PERFORM pgflow.add_step('two_roots_left_right', 'right', ARRAY['connected_root']);
 else
   RAISE EXCEPTION 'Unknown test flow: %', flow_slug;
 end if;
