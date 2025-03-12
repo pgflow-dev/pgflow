@@ -57,7 +57,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
-        "command": "nx watch --projects=core -- nx test core"
+        "command": "scripts/watch-test"
       },
       "cache": false
     }
