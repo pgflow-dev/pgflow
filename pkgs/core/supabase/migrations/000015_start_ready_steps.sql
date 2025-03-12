@@ -1,10 +1,8 @@
 create or replace function pgflow.start_ready_steps(run_id uuid)
 returns void
-language plpgsql
+language sql
 set search_path to ''
 as $$
-begin
--- Remove the semicolon after begin
 
 WITH ready_steps AS (
   SELECT *
@@ -44,5 +42,4 @@ SELECT
   sent_messages.msg_id
 FROM sent_messages;
 
-end;
 $$;
