@@ -1,9 +1,9 @@
 -- drop function if exists pgflow.complete_task(uuid, text, int, jsonb);
 create or replace function pgflow.complete_task(
-    run_id uuid,
-    step_slug text,
-    task_index int,
-    output jsonb
+  run_id uuid,
+  step_slug text,
+  task_index int,
+  output jsonb
 )
 returns setof pgflow.step_tasks
 language plpgsql
@@ -13,13 +13,11 @@ as $$
 begin
 
 WITH run_lock AS (
-  -- Acquire a row-level lock on the run as early as possible
   SELECT * FROM pgflow.runs
   WHERE pgflow.runs.run_id = complete_task.run_id
   FOR UPDATE
 ),
 step_lock AS (
-  -- Acquire a row-level lock on the step_states row
   SELECT * FROM pgflow.step_states
   WHERE pgflow.step_states.run_id = complete_task.run_id
     AND pgflow.step_states.step_slug = complete_task.step_slug
@@ -71,18 +69,16 @@ dependent_steps_update AS (
   WHERE pgflow.step_states.run_id = complete_task.run_id
     AND pgflow.step_states.step_slug = dependent_steps.dependent_step_slug
 )
+-- Only decrement remaining_steps, don't update status
 UPDATE pgflow.runs
-SET
-  status = CASE
-  WHEN pgflow.runs.remaining_steps = 1 THEN 'completed'  -- Will be 0 after decrement
-  ELSE 'started'
-  END,
-  remaining_steps = pgflow.runs.remaining_steps - 1
+SET remaining_steps = pgflow.runs.remaining_steps - 1
 FROM step_state
 WHERE pgflow.runs.run_id = complete_task.run_id
   AND step_state.status = 'completed';
 
 PERFORM pgflow.start_ready_steps(complete_task.run_id);
+
+PERFORM pgflow.maybe_complete_run(complete_task.run_id);
 
 RETURN QUERY SELECT *
 FROM pgflow.step_tasks AS step_task
@@ -91,4 +87,5 @@ WHERE step_task.run_id = complete_task.run_id
   AND step_task.task_index = complete_task.task_index;
 
 end;
-$$;
+$$ ;
+

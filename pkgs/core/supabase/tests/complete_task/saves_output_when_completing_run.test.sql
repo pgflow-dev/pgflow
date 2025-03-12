@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(1);
+SELECT plan(2);
 SELECT pgflow_tests.reset_db();
 SELECT pgflow_tests.setup_flow('two_roots_left_right');
 
@@ -39,7 +39,7 @@ SELECT results_eq(
     'Run was completed'
 );
 
- -- noqa: disable=all
+-- noqa: disable=all
 PREPARE expected_output AS SELECT
     jsonb_build_object(
         'disconnected_root', '"disconnected successful"'::JSONB,
@@ -48,10 +48,11 @@ PREPARE expected_output AS SELECT
     );
 -- noqa: enable=all
 SELECT results_eq(
-  $$ SELECT output FROM pgflow.runs LIMIT 1 $$,
-  'expected_output',
-  'Outputs of all final steps were saved as run output'
+    $$ SELECT output FROM pgflow.runs LIMIT 1 $$,
+    'expected_output',
+    'Outputs of all final steps were saved as run output'
 );
 
-SELECT finish();
-ROLLBACK;
+SELECT finish () ;
+ROLLBACK ;
+
