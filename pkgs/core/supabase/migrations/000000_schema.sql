@@ -19,8 +19,6 @@ grant all on routines to anon, authenticated, service_role;
 alter default privileges for role postgres in schema pgflow
 grant all on sequences to anon, authenticated, service_role;
 
-select pgmq.create('pgflow');
-
 ------------------------------------------
 -- Core flow definition tables
 ------------------------------------------
