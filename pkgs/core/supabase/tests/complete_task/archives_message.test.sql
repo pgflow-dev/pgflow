@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(3);
+SELECT plan(5);
 SELECT pgflow_tests.reset_db();
 SELECT pgflow_tests.setup_flow('sequential');
 
@@ -33,42 +33,17 @@ SELECT is(
   'The message should be archived'
 );
 
--- -- TEST: After completing first step, remaining_steps should be 2 and status still 'started'
--- SELECT results_eq(
---     $$ SELECT remaining_steps::int, status FROM pgflow.runs LIMIT 1 $$,
---     $$ VALUES (2::int, 'started'::text) $$,
---     'After completing first step, remaining_steps should be 2 and status still started'
--- );
---
--- -- Complete the second step's task
--- SELECT pgflow.complete_task(
---     (SELECT run_id FROM pgflow.runs LIMIT 1),
---     'second',
---     0,
---     '"second was successful"'::JSONB
--- );
---
--- -- TEST: After completing second step, remaining_steps should be 1 and status still 'started'
--- SELECT results_eq(
---     $$ SELECT remaining_steps::int, status FROM pgflow.runs LIMIT 1 $$,
---     $$ VALUES (1::int, 'started'::text) $$,
---     'After completing second step, remaining_steps should be 1 and status still started'
--- );
---
--- -- Complete the last step's task
--- SELECT pgflow.complete_task(
---     (SELECT run_id FROM pgflow.runs LIMIT 1),
---     'last',
---     0,
---     '"last was successful"'::JSONB
--- );
---
--- -- TEST: Final remaining_steps should be 0 and status should be 'completed'
--- SELECT results_eq(
---     $$ SELECT remaining_steps::int, status FROM pgflow.runs LIMIT 1 $$,
---     $$ VALUES (0::int, 'completed'::text) $$,
---     'Final remaining_steps should be 0 and status should be completed'
--- );
+-- TEST: Other messages shoud not be archived
+SELECT is(
+  (SELECT count(*)::int FROM pgmq.q_sequential WHERE message->>'step_slug' = 'second'),
+  1::int,
+  'There should be no messages in the queue'
+);
+SELECT is(
+  (SELECT count(*)::int FROM pgmq.a_sequential WHERE message->>'step_slug' = 'second' LIMIT 1),
+  0::int,
+  'The other message should not be archived'
+);
 
 SELECT finish();
 ROLLBACK;
