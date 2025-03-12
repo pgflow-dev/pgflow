@@ -8,7 +8,19 @@ BEGIN {
     RESET="\033[0m";
 }
 
-/Connecting|Dubious|Failed|error|ERROR|exit 1|Result: FAIL/ {
+/Dubious|Failed|error|exit 1|Result: FAIL/ {
+    print RED $0 RESET;
+    next;
+}
+
+# Match any line containing ERROR: (PostgreSQL error messages)
+/ERROR:/ {
+    print RED $0 RESET;
+    next;
+}
+
+# Match DETAIL: and CONTEXT: lines that are part of PostgreSQL error messages
+/DETAIL:|CONTEXT:/ {
     print RED $0 RESET;
     next;
 }
