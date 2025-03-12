@@ -72,17 +72,22 @@ dependent_steps_update AS (
     AND pgflow.step_states.step_slug = dependent_steps.dependent_step_slug
 )
 UPDATE pgflow.runs
-SET remaining_steps = pgflow.runs.remaining_steps - 1
+SET
+  status = CASE
+  WHEN pgflow.runs.remaining_steps = 1 THEN 'completed'  -- Will be 0 after decrement
+  ELSE 'started'
+  END,
+  remaining_steps = pgflow.runs.remaining_steps - 1
 FROM step_state
 WHERE pgflow.runs.run_id = complete_task.run_id
   AND step_state.status = 'completed';
 
 PERFORM pgflow.start_ready_steps(complete_task.run_id);
 
-RETURN QUERY SELECT * 
+RETURN QUERY SELECT *
 FROM pgflow.step_tasks AS step_task
-WHERE step_task.run_id = complete_task.run_id 
-  AND step_task.step_slug = complete_task.step_slug 
+WHERE step_task.run_id = complete_task.run_id
+  AND step_task.step_slug = complete_task.step_slug
   AND step_task.task_index = complete_task.task_index;
 
 end;
