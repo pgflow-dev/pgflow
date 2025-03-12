@@ -2,3 +2,4 @@
 
 # Run the Supabase tests and colorize the output
 pnpm supabase db test "$@" 2>&1 | awk -f ./scripts/colorize-pgtap-output.awk
+exit ${PIPESTATUS[0]}
