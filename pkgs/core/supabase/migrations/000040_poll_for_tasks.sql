@@ -5,7 +5,7 @@ create type pgflow.worker_task as (
   input JSONB
 );
 
-create function pgflow.poll_for_tasks(
+create or replace function pgflow.poll_for_tasks(
   queue_name TEXT,
   vt INTEGER,
   qty INTEGER,
