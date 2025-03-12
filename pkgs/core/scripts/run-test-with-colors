@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# Run the Supabase tests and colorize the output
+pnpm supabase db test "$@" | awk -f ./scripts/colorize-pgtap-output.awk

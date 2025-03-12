@@ -49,7 +49,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["supabase db test"],
+        "commands": ["{projectRoot}/scripts/run-test-with-colors"],
         "parallel": false
       }
     },
