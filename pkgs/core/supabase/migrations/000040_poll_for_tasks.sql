@@ -32,6 +32,7 @@ updated_step_tasks as (
   set status = 'started'
   from polled_messages
   where message_id = polled_messages.msg_id
+    and status = 'queued'
   returning
     pgflow.step_tasks.*
 ),
