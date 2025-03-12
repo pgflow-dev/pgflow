@@ -1,17 +1,24 @@
+-- drop function if exists pgflow.complete_task(uuid, text, int, jsonb);
 create or replace function pgflow.complete_task(
     run_id uuid,
     step_slug text,
     task_index int,
     output jsonb
 )
-returns void
+returns setof pgflow.step_tasks
 language plpgsql
 volatile
 set search_path to ''
 as $$
 begin
 
-WITH step_lock AS (
+WITH run_lock AS (
+  -- Acquire a row-level lock on the run as early as possible
+  SELECT * FROM pgflow.runs
+  WHERE pgflow.runs.run_id = complete_task.run_id
+  FOR UPDATE
+),
+step_lock AS (
   -- Acquire a row-level lock on the step_states row
   SELECT * FROM pgflow.step_states
   WHERE pgflow.step_states.run_id = complete_task.run_id
@@ -55,15 +62,28 @@ dependent_steps_lock AS (
   WHERE pgflow.step_states.run_id = complete_task.run_id
     AND pgflow.step_states.step_slug IN (SELECT dependent_step_slug FROM dependent_steps)
   FOR UPDATE
-)
+),
 -- Update all dependent steps
-UPDATE pgflow.step_states
-SET remaining_deps = pgflow.step_states.remaining_deps - 1
-FROM dependent_steps
-WHERE pgflow.step_states.run_id = complete_task.run_id
-  AND pgflow.step_states.step_slug = dependent_steps.dependent_step_slug;
+dependent_steps_update AS (
+  UPDATE pgflow.step_states
+  SET remaining_deps = pgflow.step_states.remaining_deps - 1
+  FROM dependent_steps
+  WHERE pgflow.step_states.run_id = complete_task.run_id
+    AND pgflow.step_states.step_slug = dependent_steps.dependent_step_slug
+)
+UPDATE pgflow.runs
+SET remaining_steps = pgflow.runs.remaining_steps - 1
+FROM step_state
+WHERE pgflow.runs.run_id = complete_task.run_id
+  AND step_state.status = 'completed';
 
 PERFORM pgflow.start_ready_steps(complete_task.run_id);
+
+RETURN QUERY SELECT * 
+FROM pgflow.step_tasks AS step_task
+WHERE step_task.run_id = complete_task.run_id 
+  AND step_task.step_slug = complete_task.step_slug 
+  AND step_task.task_index = complete_task.task_index;
 
 end;
 $$;
