@@ -39,12 +39,14 @@ SELECT results_eq(
     'Run was completed'
 );
 
+ -- noqa: disable=all
 PREPARE expected_output AS SELECT
     jsonb_build_object(
         'disconnected_root', '"disconnected successful"'::JSONB,
         'left', '"left successful"'::JSONB,
         'right', '"right successful"'::JSONB
     );
+-- noqa: enable=all
 SELECT results_eq(
   $$ SELECT output FROM pgflow.runs LIMIT 1 $$,
   'expected_output',
