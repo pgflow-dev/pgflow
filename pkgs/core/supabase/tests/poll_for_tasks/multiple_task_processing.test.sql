@@ -1,16 +1,16 @@
-BEGIN;
-SELECT * FROM plan(2);
-SELECT pgflow_tests.reset_db();
-SELECT pgflow_tests.setup_flow('sequential');
+begin;
+select * from plan(2);
+select pgflow_tests.reset_db();
+select pgflow_tests.setup_flow('sequential');
 
 -- SETUP: Start multiple flow runs which will put multiple tasks in the queue
-SELECT pgflow.start_flow('sequential', '{"id": 1}'::jsonb);
-SELECT pgflow.start_flow('sequential', '{"id": 2}'::jsonb);
-SELECT pgflow.start_flow('sequential', '{"id": 3}'::jsonb);
+select pgflow.start_flow('sequential', '{"id": 1}'::jsonb);
+select pgflow.start_flow('sequential', '{"id": 2}'::jsonb);
+select pgflow.start_flow('sequential', '{"id": 3}'::jsonb);
 
 -- TEST: Poll multiple tasks at once (qty = 3)
-SELECT is(
-  (SELECT count(*)::integer FROM pgflow.poll_for_tasks(
+select is(
+  (select count(*)::integer from pgflow.poll_for_tasks(
     queue_name => 'sequential'::text,
     vt => 5,
     qty => 3,
@@ -21,12 +21,14 @@ SELECT is(
 );
 
 -- TEST: Verify all polled tasks have status updated to 'started'
-SELECT is(
-  (SELECT count(*)::integer FROM pgflow.step_tasks
-WHERE status = 'started'),
+select is(
+  (
+    select count(*)::integer from pgflow.step_tasks
+    where status = 'started'
+  ),
   3::integer,
   'Should update all 3 polled tasks to status=started'
 );
 
-SELECT * FROM finish();
-ROLLBACK;
+select * from finish();
+rollback;

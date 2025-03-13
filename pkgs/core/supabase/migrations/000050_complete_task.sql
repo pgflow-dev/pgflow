@@ -95,5 +95,4 @@ WHERE step_task.run_id = complete_task.run_id
   AND step_task.task_index = complete_task.task_index;
 
 end;
-$$ ;
-
+$$;

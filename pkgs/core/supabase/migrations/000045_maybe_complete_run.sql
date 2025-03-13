@@ -1,4 +1,4 @@
-create or replace function pgflow.maybe_complete_run (run_id uuid)
+create or replace function pgflow.maybe_complete_run(run_id uuid)
 returns void
 language sql
 volatile
@@ -27,5 +27,4 @@ as $$
   WHERE pgflow.runs.run_id = maybe_complete_run.run_id
     AND pgflow.runs.remaining_steps = 0
     AND pgflow.runs.status != 'completed';
-$$ ;
-
+$$;

@@ -53,4 +53,3 @@ from updated_step_tasks st
 join runs_data r on st.run_id = r.run_id;
 
 $$ language sql;
-

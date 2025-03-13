@@ -10,14 +10,14 @@
 -- This will be removed once Supabase upgrades to 1.5.0 or higher.            --
 --------------------------------------------------------------------------------
 create function pgflow.read_with_poll(
-    queue_name TEXT,
-    vt INTEGER,
-    qty INTEGER,
-    max_poll_seconds INTEGER default 5,
-    poll_interval_ms INTEGER default 100,
-    conditional JSONB default '{}'
+  queue_name TEXT,
+  vt INTEGER,
+  qty INTEGER,
+  max_poll_seconds INTEGER default 5,
+  poll_interval_ms INTEGER default 100,
+  conditional JSONB default '{}'
 )
-returns setof pgmq.message_record as $$
+returns setof PGMQ.MESSAGE_RECORD as $$
 DECLARE
     r pgmq.message_record;
     stop_at TIMESTAMP;

@@ -12,7 +12,7 @@ create or replace function pgflow_tests.reset_db() returns void as $$
 $$ language sql;
 
 create or replace function pgflow_tests.setup_flow(
-    flow_slug text
+  flow_slug text
 ) returns void as $$
 begin
 

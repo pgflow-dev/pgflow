@@ -1,9 +1,9 @@
 -- drop function if exists pgflow.start_flow;
 create or replace function pgflow.start_flow(
-    flow_slug TEXT,
-    input JSONB
+  flow_slug TEXT,
+  input JSONB
 )
-returns setof pgflow.runs
+returns setof PGFLOW.RUNS
 language plpgsql
 set search_path to ''
 volatile

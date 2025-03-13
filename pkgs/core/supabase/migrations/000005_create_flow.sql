@@ -1,9 +1,9 @@
-CREATE OR REPLACE FUNCTION pgflow.create_flow(flow_slug text)
-RETURNS pgflow.flows
-LANGUAGE sql
-SET search_path TO ''
-VOLATILE
-AS $$
+create or replace function pgflow.create_flow(flow_slug text)
+returns pgflow.flows
+language sql
+set search_path to ''
+volatile
+as $$
 WITH
   flow_upsert AS (
     INSERT INTO pgflow.flows (flow_slug)

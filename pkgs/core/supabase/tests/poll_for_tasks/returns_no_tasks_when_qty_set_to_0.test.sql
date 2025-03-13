@@ -1,14 +1,14 @@
-BEGIN;
-SELECT * FROM plan(1);
-SELECT pgflow_tests.reset_db();
-SELECT pgflow_tests.setup_flow('sequential');
+begin;
+select * from plan(1);
+select pgflow_tests.reset_db();
+select pgflow_tests.setup_flow('sequential');
 
 -- SETUP: Start a flow run which will put a task in the queue
-SELECT pgflow.start_flow('sequential', '{"id": 1}'::jsonb);
+select pgflow.start_flow('sequential', '{"id": 1}'::jsonb);
 
 -- TEST: Calling with qty = 0 should return no tasks
-SELECT is(
-  (SELECT count(*)::integer FROM pgflow.poll_for_tasks(
+select is(
+  (select count(*)::integer from pgflow.poll_for_tasks(
     queue_name => 'sequential'::text,
     vt => 5,
     qty => 0,
@@ -18,5 +18,5 @@ SELECT is(
   'Should return no tasks when qty=0'
 );
 
-SELECT * FROM finish();
-ROLLBACK;
+select * from finish();
+rollback;

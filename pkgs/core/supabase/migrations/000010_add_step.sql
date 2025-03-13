@@ -1,13 +1,13 @@
-CREATE OR REPLACE FUNCTION pgflow.add_step(
-    flow_slug text,
-    step_slug text,
-    deps_slugs text []
+create or replace function pgflow.add_step(
+  flow_slug text,
+  step_slug text,
+  deps_slugs text []
 )
-RETURNS pgflow.steps
-LANGUAGE sql
-SET search_path TO ''
-VOLATILE
-AS $$
+returns pgflow.steps
+language sql
+set search_path to ''
+volatile
+as $$
 WITH
   create_step AS (
     INSERT INTO pgflow.steps (flow_slug, step_slug, deps_count)
@@ -27,15 +27,15 @@ SELECT * FROM create_step;
 $$;
 
 -- New overloaded function without deps_slugs parameter
-CREATE OR REPLACE FUNCTION pgflow.add_step(
-    flow_slug text,
-    step_slug text
+create or replace function pgflow.add_step(
+  flow_slug text,
+  step_slug text
 )
-RETURNS pgflow.steps
-LANGUAGE sql
-SET search_path TO ''
-VOLATILE
-AS $$
+returns pgflow.steps
+language sql
+set search_path to ''
+volatile
+as $$
     -- Call the original function with an empty array
     SELECT * FROM pgflow.add_step(flow_slug, step_slug, ARRAY[]::text[]);
 $$;

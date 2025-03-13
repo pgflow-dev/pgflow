@@ -1,14 +1,14 @@
-BEGIN;
-SELECT * FROM plan(2);
-SELECT pgflow_tests.reset_db();
-SELECT pgflow_tests.setup_flow('sequential');
+begin;
+select * from plan(2);
+select pgflow_tests.reset_db();
+select pgflow_tests.setup_flow('sequential');
 
 -- SETUP: Start a flow run which will put a single task in the queue
-SELECT pgflow.start_flow('sequential', '"hello"'::jsonb);
+select pgflow.start_flow('sequential', '"hello"'::jsonb);
 
 -- TEST: Poll a single task with big visibility timeout (vt = 10)
-SELECT is(
-  (SELECT count(*)::integer FROM pgflow.poll_for_tasks(
+select is(
+  (select count(*)::integer from pgflow.poll_for_tasks(
     queue_name => 'sequential'::text,
     vt => 5,
     qty => 1,
@@ -20,8 +20,8 @@ SELECT is(
 
 -- TEST: Immediate second poll (simulating concurrent access) should get nothing
 -- because the message is hidden with vt=5
-SELECT is(
-  (SELECT count(*)::integer FROM pgflow.poll_for_tasks(
+select is(
+  (select count(*)::integer from pgflow.poll_for_tasks(
     queue_name => 'sequential'::text,
     vt => 5,
     qty => 1,
@@ -31,5 +31,5 @@ SELECT is(
   'Concurrent poll should not get the same task (due to visibility timeout)'
 );
 
-SELECT * FROM finish();
-ROLLBACK;
+select * from finish();
+rollback;

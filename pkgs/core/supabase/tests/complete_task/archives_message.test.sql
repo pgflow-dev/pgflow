@@ -1,49 +1,67 @@
-BEGIN;
-SELECT plan(5);
-SELECT pgflow_tests.reset_db();
-SELECT pgflow_tests.setup_flow('sequential');
+begin;
+select plan(5);
+select pgflow_tests.reset_db();
+select pgflow_tests.setup_flow('sequential');
 
 -- SETUP
-SELECT pgflow.start_flow('sequential', '{"test": true}'::JSONB);
+select pgflow.start_flow('sequential', '{"test": true}'::JSONB);
 
 -- TEST: First message shoud be in the queue
-SELECT is(
-  (SELECT message->>'step_slug' FROM pgmq.q_sequential LIMIT 1),
+select is(
+  (select message ->> 'step_slug' from pgmq.q_sequential limit 1),
   'first',
   'First message should be in the queue'
 );
 
 -- SETUP
-SELECT pgflow.complete_task(
-    (SELECT run_id FROM pgflow.runs LIMIT 1),
-    'first',
-    0,
-    '"first was successful"'::JSONB
+select pgflow.complete_task(
+  (select run_id from pgflow.runs limit 1),
+  'first',
+  0,
+  '"first was successful"'::JSONB
 );
 
 -- TEST: First message shoud be archived
-SELECT is(
-  (SELECT count(*)::int FROM pgmq.q_sequential WHERE message->>'step_slug' = 'first'),
-  0::int,
+select is(
+  (
+    select count(*)::INT
+    from pgmq.q_sequential
+    where message ->> 'step_slug' = 'first'
+  ),
+  0::INT,
   'There should be no messages in the queue'
 );
-SELECT is(
-  (SELECT count(*)::int FROM pgmq.a_sequential WHERE message->>'step_slug' = 'first' LIMIT 1),
-  1::int,
+select is(
+  (
+    select count(*)::INT
+    from pgmq.a_sequential
+    where message ->> 'step_slug' = 'first'
+    limit 1
+  ),
+  1::INT,
   'The message should be archived'
 );
 
 -- TEST: Other messages shoud not be archived
-SELECT is(
-  (SELECT count(*)::int FROM pgmq.q_sequential WHERE message->>'step_slug' = 'second'),
-  1::int,
+select is(
+  (
+    select count(*)::INT
+    from pgmq.q_sequential
+    where message ->> 'step_slug' = 'second'
+  ),
+  1::INT,
   'There should be no messages in the queue'
 );
-SELECT is(
-  (SELECT count(*)::int FROM pgmq.a_sequential WHERE message->>'step_slug' = 'second' LIMIT 1),
-  0::int,
+select is(
+  (
+    select count(*)::INT
+    from pgmq.a_sequential
+    where message ->> 'step_slug' = 'second'
+    limit 1
+  ),
+  0::INT,
   'The other message should not be archived'
 );
 
-SELECT finish();
-ROLLBACK;
+select finish();
+rollback;
