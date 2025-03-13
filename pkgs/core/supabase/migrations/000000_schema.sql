@@ -120,4 +120,18 @@ create table pgflow.step_tasks (
     output is null or status = 'completed'
   ),
   constraint only_single_task_per_step check (task_index = 0)
-)
+);
+
+------------------------------------------
+-- Types
+------------------------------------------
+
+create type pgflow.worker_task as (
+  flow_slug TEXT,
+  run_id UUID,
+  step_slug TEXT,
+  input JSONB
+);
+
+
+
