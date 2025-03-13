@@ -5,6 +5,17 @@
   "projectType": "library",
   "tags": [],
   "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{workspaceRoot}",
+        "commands": [
+          "sqruff --parsing-errors --config ./.sqruff lint {projectRoot}/supabase/tests {projectRoot}/**/*.sql"
+        ],
+        "inputs": ["{projectRoot}/**/*.sql", "{workspaceRoot}/.sqruff"],
+        "parallel": false
+      }
+    },
     "supabase:start": {
       "executor": "nx:run-commands",
       "options": {
