@@ -23,12 +23,14 @@ select pgflow.complete_task(
 select is(
   (select input from pgflow.poll_for_tasks('two_roots', 1, 1)),
   jsonb_build_object(
-    'run', '"root input"'::jsonb,
-    'root_a', '"root_a output"'::jsonb,
-    'root_b', '"root_b output"'::jsonb
+    'run', 'root input',
+    'root_a', 'root_a output',
+    'root_b', 'root_b output'
   )
 );
 
 select finish();
 rollback;
+
+select '"yolox"'::jsonb @> '"yolo"'::jsonb;
 
