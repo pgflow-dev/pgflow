@@ -8,10 +8,8 @@
     "lint": {
       "executor": "nx:run-commands",
       "options": {
-        "cwd": "{workspaceRoot}",
-        "commands": [
-          "sqruff --parsing-errors --config ./.sqruff lint {projectRoot}/**/*.sql"
-        ],
+        "cwd": "{projectRoot}",
+        "commands": ["sqruff --parsing-errors --config ../../.sqruff lint"],
         "inputs": ["{projectRoot}/**/*.sql", "{workspaceRoot}/.sqruff"],
         "parallel": false
       }
