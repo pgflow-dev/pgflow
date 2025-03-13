@@ -1,3 +1,4 @@
+\x
 begin;
 
 select pgflow_tests.reset_db();
@@ -18,7 +19,7 @@ select pgflow.complete_task(
   0,
   '"left completed"'::jsonb
 );
--- select * from pgflow.step_tasks;
+select * from pgflow.step_tasks;
 select pgflow.poll_for_tasks('two_roots_left_right', 1, 1);
 select pgflow.complete_task(
   (select run_id from pgflow.runs limit 1),
@@ -35,5 +36,5 @@ select pgflow.complete_task(
 );
 
 select * from pgflow.runs;
-
+select * from pgflow.step_tasks;
 rollback;

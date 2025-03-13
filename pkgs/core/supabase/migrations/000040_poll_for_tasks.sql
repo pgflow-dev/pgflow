@@ -27,21 +27,23 @@ with polled_messages as (
     poll_interval_ms
   )
 ),
-updated_step_tasks as (
-  update pgflow.step_tasks
-  set status = 'started'
-  from polled_messages
-  where message_id = polled_messages.msg_id
-    and status = 'queued'
-  returning
-    pgflow.step_tasks.*
+step_tasks as (
+  select
+    task.flow_slug,
+    task.run_id,
+    task.step_slug,
+    task.task_index
+  from pgflow.step_tasks as task
+  join polled_messages as message on message.msg_id = task.message_id
+  where task.message_id = message.msg_id
+    and task.status = 'queued'
 ),
 runs_data as (
   select
     r.run_id,
     r.input
   from pgflow.runs r
-  where r.run_id in (select run_id from updated_step_tasks)
+  where r.run_id in (select run_id from step_tasks)
 )
 
 select
@@ -49,7 +51,7 @@ select
   st.run_id,
   st.step_slug,
   jsonb_build_object('run', r.input)
-from updated_step_tasks st
+from step_tasks st
 join runs_data r on st.run_id = r.run_id;
 
 $$ language sql;

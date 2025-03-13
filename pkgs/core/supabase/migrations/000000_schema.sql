@@ -114,7 +114,7 @@ create table pgflow.step_tasks (
   foreign key (run_id, step_slug)
   references pgflow.step_states (run_id, step_slug),
   constraint valid_status check (
-    status in ('queued', 'started', 'completed', 'failed')
+    status in ('queued', 'completed', 'failed')
   ),
   constraint output_valid_only_for_completed check (
     output is null or status = 'completed'

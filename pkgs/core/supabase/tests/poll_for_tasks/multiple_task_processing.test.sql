@@ -1,5 +1,5 @@
 begin;
-select * from plan(2);
+select plan(1);
 select pgflow_tests.reset_db();
 select pgflow_tests.setup_flow('sequential');
 
@@ -20,15 +20,5 @@ select is(
   'Should return 3 tasks when qty=3 and 3 tasks are available'
 );
 
--- TEST: Verify all polled tasks have status updated to 'started'
-select is(
-  (
-    select count(*)::integer from pgflow.step_tasks
-    where status = 'started'
-  ),
-  3::integer,
-  'Should update all 3 polled tasks to status=started'
-);
-
-select * from finish();
+select finish();
 rollback;
