@@ -6,11 +6,11 @@ create type pgflow.worker_task as (
 );
 
 create or replace function pgflow.poll_for_tasks(
-  queue_name TEXT,
-  vt INTEGER,
-  qty INTEGER,
-  max_poll_seconds INTEGER default 5,
-  poll_interval_ms INTEGER default 100
+  queue_name text,
+  vt integer,
+  qty integer,
+  max_poll_seconds integer default 5,
+  poll_interval_ms integer default 100
 )
 returns setof pgflow.worker_task
 volatile
@@ -53,3 +53,4 @@ from updated_step_tasks st
 join runs_data r on st.run_id = r.run_id;
 
 $$ language sql;
+
