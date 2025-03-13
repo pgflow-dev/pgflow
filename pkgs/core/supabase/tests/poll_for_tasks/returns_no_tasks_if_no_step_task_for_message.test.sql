@@ -4,9 +4,7 @@ select pgflow_tests.reset_db();
 select pgflow_tests.setup_flow('sequential');
 
 -- SETUP: Start a flow run which will put a task in the queue
-with flow_run as (
-  select * from pgflow.start_flow('sequential', '{"id": 1}'::jsonb)
-)
+select * from pgflow.start_flow('sequential', '{"id": 1}'::jsonb);
 
 -- Manually delete a step_task but keep the message in the queue
 -- This simulates an inconsistent state where a message exists
@@ -34,3 +32,4 @@ select is(
 
 select * from finish();
 rollback;
+

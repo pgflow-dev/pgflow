@@ -29,8 +29,8 @@ select is(
 
 -- TEST; Messages have appropriate flow slugs
 select is(
-  (select DISTINCT message ->> 'flow_slug' from pgmq.q_two_roots),
-  'two_roots'::text,
+  (select array_agg(message ->> 'flow_slug') from pgmq.q_two_roots),
+  array['two_roots', 'two_roots'],
   'Messages have appropriate flow slugs'
 );
 
@@ -52,3 +52,4 @@ select is(
 
 select finish();
 rollback;
+

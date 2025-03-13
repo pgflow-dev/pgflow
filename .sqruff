@@ -1,5 +1,9 @@
 [sqruff]
 dialect = postgres
+max_line_length = 120
+nocolor = True
+# LT12 - End Of File Newline
+exclude_rules = LT12
 
 [sqruff:indentation]
 indent_unit = space
