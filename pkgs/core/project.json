@@ -10,7 +10,7 @@
       "options": {
         "cwd": "{workspaceRoot}",
         "commands": [
-          "sqruff --parsing-errors --config ./.sqruff lint {projectRoot}/supabase/tests {projectRoot}/**/*.sql"
+          "sqruff --parsing-errors --config ./.sqruff lint {projectRoot}/**/*.sql"
         ],
         "inputs": ["{projectRoot}/**/*.sql", "{workspaceRoot}/.sqruff"],
         "parallel": false
