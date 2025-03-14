@@ -14,7 +14,6 @@ declare
   v_retry_delay int := 1;
 begin
 
-RETURN QUERY
 WITH run_lock AS (
   SELECT * FROM pgflow.runs
   WHERE pgflow.runs.run_id = fail_task.run_id
@@ -44,25 +43,6 @@ fail_or_retry_task as (
     AND task.status = 'queued'
   RETURNING *
 ),
-maybe_delay_message AS (
-  SELECT
-    pgmq.set_vt(
-      (SELECT flow_slug FROM run_lock),  -- queue_name
-      message_id,                        -- msg_id
-      v_retry_delay                      -- vt_offset
-    ) as message_delayed
-  FROM fail_or_retry_task
-  WHERE fail_or_retry_task.status = 'queued'
-),
-maybe_archive_message AS (
-  SELECT
-    pgmq.archive(
-      (SELECT flow_slug FROM run_lock),  -- queue_name
-      message_id                         -- msg_id
-    ) as message_archived
-  FROM fail_or_retry_task
-  WHERE fail_or_retry_task.status = 'failed'
-),
 maybe_fail_step AS (
   UPDATE pgflow.step_states
   SET
@@ -74,17 +54,39 @@ maybe_fail_step AS (
   WHERE pgflow.step_states.run_id = fail_task.run_id
     AND pgflow.step_states.step_slug = fail_task.step_slug
   RETURNING pgflow.step_states.*
-),
-maybe_fail_run AS (
-  UPDATE pgflow.runs
-  SET status = CASE
-               WHEN (select status from maybe_fail_step) = 'failed' THEN 'failed'
-               ELSE status
-               END
-  WHERE pgflow.runs.run_id = fail_task.run_id
-  RETURNING pgflow.runs.*
 )
-SELECT * FROM fail_or_retry_task;
+UPDATE pgflow.runs
+SET status = CASE
+              WHEN (select status from maybe_fail_step) = 'failed' THEN 'failed'
+              ELSE status
+              END
+WHERE pgflow.runs.run_id = fail_task.run_id;
+
+-- Handle message queue operations based on task status
+-- For queued tasks: delay the message for retry
+-- For failed tasks: archive the message
+PERFORM pgmq.set_vt(r.flow_slug, st.message_id, v_retry_delay)
+FROM pgflow.step_tasks st
+JOIN pgflow.runs r ON st.run_id = r.run_id
+WHERE st.run_id = fail_task.run_id
+  AND st.step_slug = fail_task.step_slug
+  AND st.task_index = fail_task.task_index
+  AND st.status = 'queued';
+
+-- For failed tasks: archive the message
+PERFORM pgmq.archive(r.flow_slug, st.message_id)
+FROM pgflow.step_tasks st
+JOIN pgflow.runs r ON st.run_id = r.run_id
+WHERE st.run_id = fail_task.run_id
+  AND st.step_slug = fail_task.step_slug
+  AND st.task_index = fail_task.task_index
+  AND st.status = 'failed';
+
+return query select * 
+from pgflow.step_tasks st 
+where st.run_id = fail_task.run_id
+  and st.step_slug = fail_task.step_slug
+  and st.task_index = fail_task.task_index;
 
 end;
 $$;
