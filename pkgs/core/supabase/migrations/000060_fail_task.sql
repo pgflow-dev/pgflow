@@ -11,7 +11,7 @@ set search_path to ''
 as $$
 declare
   v_retry_limit int := 1;
-  v_retry_delay int := 0;
+  v_retry_delay int := 1;
 begin
 
 RETURN QUERY
