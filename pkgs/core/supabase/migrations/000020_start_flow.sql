@@ -21,7 +21,7 @@ WITH
   created_run AS (
     INSERT INTO pgflow.runs (flow_slug, input, remaining_steps)
     VALUES (
-      start_flow.flow_slug, 
+      start_flow.flow_slug,
       start_flow.input,
       (SELECT count(*) FROM flow_steps)
     )
@@ -44,3 +44,4 @@ RETURN QUERY SELECT * FROM pgflow.runs where run_id = v_created_run.run_id;
 
 end;
 $$;
+

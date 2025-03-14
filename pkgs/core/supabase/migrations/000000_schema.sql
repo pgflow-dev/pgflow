@@ -133,5 +133,3 @@ create type pgflow.worker_task as (
   input JSONB
 );
 
-
-

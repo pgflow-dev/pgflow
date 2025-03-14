@@ -13,12 +13,13 @@ WITH
     RETURNING *
   ),
   ensure_queue AS (
-    SELECT pgmq.create(flow_slug) 
+    SELECT pgmq.create(flow_slug)
     WHERE NOT EXISTS (
       SELECT 1 FROM pgmq.list_queues() WHERE queue_name = flow_slug
     )
   )
-SELECT f.* 
+SELECT f.*
 FROM flow_upsert f
 LEFT JOIN (SELECT 1 FROM ensure_queue) _dummy ON true; -- Left join ensures flow is returned
 $$;
+

@@ -79,8 +79,8 @@ WHERE pgflow.runs.run_id = complete_task.run_id
 PERFORM pgmq.archive(
   queue_name => (SELECT run.flow_slug FROM pgflow.runs AS run WHERE run.run_id = complete_task.run_id),
   msg_id => (SELECT message_id FROM pgflow.step_tasks AS step_task
-             WHERE step_task.run_id = complete_task.run_id 
-             AND step_task.step_slug = complete_task.step_slug 
+             WHERE step_task.run_id = complete_task.run_id
+             AND step_task.step_slug = complete_task.step_slug
              AND step_task.task_index = complete_task.task_index)
 );
 
@@ -96,3 +96,4 @@ WHERE step_task.run_id = complete_task.run_id
 
 end;
 $$;
+

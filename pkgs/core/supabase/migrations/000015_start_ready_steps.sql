@@ -43,3 +43,4 @@ SELECT
 FROM sent_messages;
 
 $$;
+
