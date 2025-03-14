@@ -1,5 +1,5 @@
 begin;
-select plan(3);
+select plan(4);
 select pgflow_tests.reset_db();
 select pgflow_tests.setup_helpers();
 select pgflow_tests.setup_flow('sequential');
@@ -19,6 +19,13 @@ select is(
 select is(
   (select retry_count from pgflow.step_tasks where flow_slug = 'sequential' and step_slug = 'first'),
   1,
+  'The task should have retry_count incremented'
+);
+
+-- TEST: The task should have null error_message
+select is(
+  (select error_message from pgflow.step_tasks where flow_slug = 'sequential' and step_slug = 'first'),
+  'first FAILED',
   'The task should have retry_count incremented'
 );
 
