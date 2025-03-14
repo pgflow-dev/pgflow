@@ -33,6 +33,10 @@ fail_or_retry_task as (
     WHEN task.retry_count < v_retry_limit THEN 'queued'
     ELSE 'failed'
     END,
+    retry_count = CASE
+    WHEN task.retry_count < v_retry_limit THEN retry_count + 1
+    ELSE retry_count
+    END,
     error_message = fail_task.error_message
   WHERE task.run_id = fail_task.run_id
     AND task.step_slug = fail_task.step_slug
@@ -41,7 +45,7 @@ fail_or_retry_task as (
   RETURNING *
 ),
 maybe_delay_message AS (
-  SELECT 
+  SELECT
     pgmq.set_vt(
       (SELECT flow_slug FROM run_lock),  -- queue_name
       message_id,                        -- msg_id
@@ -51,7 +55,7 @@ maybe_delay_message AS (
   WHERE fail_or_retry_task.status = 'queued'
 ),
 maybe_archive_message AS (
-  SELECT 
+  SELECT
     pgmq.archive(
       (SELECT flow_slug FROM run_lock),  -- queue_name
       message_id                         -- msg_id
