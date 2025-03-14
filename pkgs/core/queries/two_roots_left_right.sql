@@ -28,13 +28,32 @@ select pgflow.complete_task(
   '"disconnected_root completed"'::jsonb
 );
 select pgflow.poll_for_tasks('two_roots_left_right', 1, 1);
-select pgflow.complete_task(
+-- select pgflow.complete_task(
+--   (select run_id from pgflow.runs limit 1),
+--   'right',
+--   0,
+--   '"right completed"'::jsonb
+-- );
+select pgflow.fail_task(
   (select run_id from pgflow.runs limit 1),
   'right',
   0,
-  '"right completed"'::jsonb
+  'invalid http request'
+);
+select pgflow.fail_task(
+  (select run_id from pgflow.runs limit 1),
+  'right',
+  0,
+  'invalid http request'
+);
+select pgflow.fail_task(
+  (select run_id from pgflow.runs limit 1),
+  'right',
+  0,
+  'invalid http request'
 );
 
 select * from pgflow.runs;
 select * from pgflow.step_tasks;
+select * from pgflow.step_states;
 rollback;
