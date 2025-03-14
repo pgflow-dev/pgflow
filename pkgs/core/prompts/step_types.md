@@ -26,7 +26,7 @@ Regular Steps
 ### Manual Approval Steps
 
 - Steps that pause for human intervention.
-- They do not immediately queue a task.
+- They just differ by NOT immediately queueing a task.
 - Instead, they wait for an external update by calling **complete_step** to set their output and trigger downstream steps.
 
 ### Subflow Steps
@@ -37,17 +37,21 @@ Regular Steps
 - The subflow step triggers the subflow and waits until its output is ready.
 - The aggregated output from the subflow becomes the output of the subflow step.
 
-### Final (Output) Steps
-
-- Optional step to shape the overall output of the flow.
-- It does not require explicit dependencies; it gathers all leaf step outputs.
-- The handler processes these aggregated values to produce a final output.
-- If not provided, the flow returns a default aggregation of leaf outputs.
-
 ### Fanout subflows step
 
 - Like Map steps, but instead of a task per array item, it runs a subflow per array item.
 - It gathers final steps from subflows into an output array for the fanout subflow step
+
+####
+
+• “Fanout subflow” steps do not have local tasks. Instead, they spawn child subflows and wait for them to finish.
+• You can track subflow completion with the same remaining_tasks field:
+  – Increment remaining_tasks by the number of child subflows.
+  – Decrement it each time a child subflow completes.
+  – When remaining_tasks reaches zero, the fanout subflow step is done.
+• Alternatively, you can add a remaining_subflows column to separate child‐subflow tracking from local tasks.
+  – This gives clearer semantics but requires extra logic to handle multiple completion conditions.
+• Most implementations unify subflow runs under remaining_tasks to reuse existing “remaining_tasks = 0 means done” checks.
 
 ### Additional Techniques
 
