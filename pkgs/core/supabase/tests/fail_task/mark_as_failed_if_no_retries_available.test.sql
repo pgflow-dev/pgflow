@@ -1,5 +1,5 @@
 begin;
-select plan(3);
+select plan(5);
 select pgflow_tests.reset_db();
 select pgflow_tests.setup_helpers();
 select pgflow_tests.setup_flow('sequential');
@@ -30,6 +30,20 @@ select is(
   (select count(*)::int from pgmq.q_sequential),
   0,
   'There should be no messages in the queue'
+);
+
+-- TEST: The step should be marked as failed
+select is(
+  (select status from pgflow.step_states where flow_slug = 'sequential' and step_slug = 'first' limit 1),
+  'failed',
+  'The step should be marked as failed'
+);
+
+-- TEST: The run should be marked as failed
+select is(
+  (select status from pgflow.runs where flow_slug = 'sequential' limit 1),
+  'failed',
+  'The run should be marked as failed'
 );
 
 select finish();
