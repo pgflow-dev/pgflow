@@ -1,5 +1,8 @@
 create schema if not exists pgflow_tests;
 
+--------------------------------------------------------------------------------
+--------- reset_db -------------------------------------------------------------
+--------------------------------------------------------------------------------
 create or replace function pgflow_tests.reset_db() returns void as $$
   DELETE FROM pgflow.step_tasks;
   DELETE FROM pgflow.step_states;
@@ -11,6 +14,9 @@ create or replace function pgflow_tests.reset_db() returns void as $$
   SELECT pgmq.drop_queue(queue_name) FROM pgmq.list_queues();
 $$ language sql;
 
+--------------------------------------------------------------------------------
+--------- setup_flow -----------------------------------------------------------
+--------------------------------------------------------------------------------
 create or replace function pgflow_tests.setup_flow(
   flow_slug text
 ) returns void as $$
@@ -41,5 +47,51 @@ else
   RAISE EXCEPTION 'Unknown test flow: %', flow_slug;
 end if;
 
+end;
+$$ language plpgsql;
+
+--------------------------------------------------------------------------------
+------- setup_helpers ----------------------------------------------------------
+--------------------------------------------------------------------------------
+create or replace function pgflow_tests.setup_helpers() returns void as $$
+begin
+
+--------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION poll_and_fail(
+  flow_slug TEXT,
+  vt INTEGER default 1,
+  qty INTEGER default 1
+) RETURNS VOID AS $sql$
+  -- Poll for a task and complete it in one step
+  WITH task AS (
+    SELECT * FROM pgflow.poll_for_tasks(flow_slug, vt, qty) LIMIT 1
+  )
+  SELECT pgflow.fail_task(
+    (SELECT run_id FROM task),
+    (SELECT step_slug FROM task),
+    0,
+    concat(task.step_slug, ' FAILED')
+  )
+  FROM task;
+$sql$ LANGUAGE sql;
+--------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION poll_and_complete(
+  flow_slug TEXT,
+  vt INTEGER default 1,
+  qty INTEGER default 1
+) RETURNS VOID AS $sql$
+  -- Poll for a task and complete it in one step
+  WITH task AS (
+    SELECT * FROM pgflow.poll_for_tasks(flow_slug, vt, qty) LIMIT 1
+  )
+  SELECT pgflow.complete_task(
+    (SELECT run_id FROM task),
+    (SELECT step_slug FROM task),
+    0,
+    jsonb_build_object('input', task.input)
+  )
+  FROM task;
+$sql$ LANGUAGE sql;
+--------------------------------------------------------------------------------
 end;
 $$ language plpgsql;
