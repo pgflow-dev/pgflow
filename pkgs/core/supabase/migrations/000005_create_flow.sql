@@ -22,4 +22,3 @@ SELECT f.*
 FROM flow_upsert f
 LEFT JOIN (SELECT 1 FROM ensure_queue) _dummy ON true; -- Left join ensures flow is returned
 $$;
-

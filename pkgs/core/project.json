@@ -9,7 +9,18 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["sqruff --parsing-errors --config ../../.sqruff lint"],
+        "commands": ["sqruff --config=../../.sqruff lint --parsing-errors"],
+        "inputs": ["{projectRoot}/**/*.sql", "{workspaceRoot}/.sqruff"],
+        "parallel": false
+      }
+    },
+    "fix-sql": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          "sqruff --config=../../.sqruff fix --force --parsing-errors"
+        ],
         "inputs": ["{projectRoot}/**/*.sql", "{workspaceRoot}/.sqruff"],
         "parallel": false
       }

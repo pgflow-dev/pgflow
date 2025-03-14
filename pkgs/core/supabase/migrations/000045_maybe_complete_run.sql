@@ -28,4 +28,3 @@ as $$
     AND pgflow.runs.remaining_steps = 0
     AND pgflow.runs.status != 'completed';
 $$;
-

@@ -33,4 +33,3 @@ select finish();
 rollback;
 
 select '"yolox"'::jsonb @> '"yolo"'::jsonb;
-

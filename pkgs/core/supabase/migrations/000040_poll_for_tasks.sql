@@ -73,4 +73,3 @@ left join deps_outputs dep_out on
   dep_out.step_slug = st.step_slug;
 
 $$ language sql;
-

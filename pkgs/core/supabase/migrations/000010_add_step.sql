@@ -39,4 +39,3 @@ as $$
     -- Call the original function with an empty array
     SELECT * FROM pgflow.add_step(flow_slug, step_slug, ARRAY[]::text[]);
 $$;
-

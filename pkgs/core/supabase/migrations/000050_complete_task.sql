@@ -96,4 +96,3 @@ WHERE step_task.run_id = complete_task.run_id
 
 end;
 $$;
-

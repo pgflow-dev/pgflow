@@ -132,4 +132,3 @@ create type pgflow.worker_task as (
   step_slug TEXT,
   input JSONB
 );
-

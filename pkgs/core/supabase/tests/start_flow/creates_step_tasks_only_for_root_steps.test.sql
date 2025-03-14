@@ -52,4 +52,3 @@ select is(
 
 select finish();
 rollback;
-
