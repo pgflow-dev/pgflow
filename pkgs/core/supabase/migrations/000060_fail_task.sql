@@ -37,6 +37,7 @@ fail_or_retry_task as (
   WHERE task.run_id = fail_task.run_id
     AND task.step_slug = fail_task.step_slug
     AND task.task_index = fail_task.task_index
+    AND task.status = 'queued'
   RETURNING *
 ),
 maybe_delay_message AS (
