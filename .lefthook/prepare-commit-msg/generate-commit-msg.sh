@@ -10,7 +10,7 @@ ADDITIONAL_PROMPT="
 "
 
 if [ -z "$COMMIT_SOURCE" ]; then
-    diff=$(git diff --cached --no-ext-diff --unified -- . ':(exclude)pnpm-lock.yaml' | head -c 5000)
+    diff=$(git diff --cached --no-ext-diff --unified -- . ':(exclude)pnpm-lock.yaml' | head -c 20000)
 
     echo $diff |
       ./.lefthook/diff-to-commit-msg.sh "$ADDITIONAL_PROMPT" |
