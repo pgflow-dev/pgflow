@@ -1,7 +1,9 @@
 create or replace function pgflow.add_step(
   flow_slug text,
   step_slug text,
-  deps_slugs text []
+  deps_slugs text [],
+  retry_limit int default null,
+  retry_delay int default null
 )
 returns pgflow.steps
 language sql
@@ -10,9 +12,10 @@ volatile
 as $$
 WITH
   create_step AS (
-    INSERT INTO pgflow.steps (flow_slug, step_slug, deps_count)
-    VALUES (flow_slug, step_slug, COALESCE(array_length(deps_slugs, 1), 0))
-    ON CONFLICT (flow_slug, step_slug) DO NOTHING
+    INSERT INTO pgflow.steps (flow_slug, step_slug, deps_count, retry_limit, retry_delay)
+    VALUES (flow_slug, step_slug, COALESCE(array_length(deps_slugs, 1), 0), retrylimit, retry_delay)
+    ON CONFLICT (flow_slug, step_slug) 
+    DO UPDATE SET step_slug = pgflow.steps.step_slug
     RETURNING *
   ),
   insert_deps AS (
@@ -29,7 +32,9 @@ $$;
 -- New overloaded function without deps_slugs parameter
 create or replace function pgflow.add_step(
   flow_slug text,
-  step_slug text
+  step_slug text,
+  retry_limit int default null,
+  retry_delay int default null
 )
 returns pgflow.steps
 language sql
@@ -37,5 +42,5 @@ set search_path to ''
 volatile
 as $$
     -- Call the original function with an empty array
-    SELECT * FROM pgflow.add_step(flow_slug, step_slug, ARRAY[]::text[]);
+    SELECT * FROM pgflow.add_step(flow_slug, step_slug, ARRAY[]::text[], retry_limit, retry_delay);
 $$;

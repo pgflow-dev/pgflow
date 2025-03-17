@@ -9,9 +9,6 @@ language plpgsql
 volatile
 set search_path to ''
 as $$
-declare
-  v_retry_limit int := 1;
-  v_retry_delay int := 1;
 begin
 
 WITH run_lock AS (
@@ -25,15 +22,29 @@ step_lock AS (
     AND pgflow.step_states.step_slug = fail_task.step_slug
   FOR UPDATE
 ),
+flow_info AS (
+  SELECT r.flow_slug
+  FROM pgflow.runs r
+  WHERE r.run_id = fail_task.run_id
+),
+config AS (
+  SELECT
+    COALESCE(s.retry_limit, f.retry_limit) AS retry_limit,
+    COALESCE(s.retry_delay, f.retry_delay) AS retry_delay
+  FROM pgflow.steps s
+  JOIN pgflow.flows f ON f.flow_slug = s.flow_slug
+  JOIN flow_info fi ON fi.flow_slug = s.flow_slug
+  WHERE s.flow_slug = fi.flow_slug AND s.step_slug = fail_task.step_slug
+),
 fail_or_retry_task as (
   UPDATE pgflow.step_tasks as task
   SET
     status = CASE
-      WHEN task.retry_count < v_retry_limit THEN 'queued'
+      WHEN task.retry_count < (SELECT retry_limit FROM config) THEN 'queued'
       ELSE 'failed'
     END,
     retry_count =
-      CASE WHEN task.retry_count < v_retry_limit THEN retry_count + 1
+      CASE WHEN task.retry_count < (SELECT retry_limit FROM config) THEN retry_count + 1
       ELSE retry_count
     END,
     error_message = fail_task.error_message

@@ -1,4 +1,8 @@
-create or replace function pgflow.create_flow(flow_slug text)
+create or replace function pgflow.create_flow(
+  flow_slug text,
+  retry_limit int default 3,
+  retry_delay int default 5
+)
 returns pgflow.flows
 language sql
 set search_path to ''
@@ -6,7 +10,7 @@ volatile
 as $$
 WITH
   flow_upsert AS (
-    INSERT INTO pgflow.flows (flow_slug)
+    INSERT INTO pgflow.flows (flow_slug, retry_limit, retry_delay)
     VALUES (flow_slug)
     ON CONFLICT (flow_slug) DO UPDATE
     SET flow_slug = pgflow.flows.flow_slug -- Dummy update
@@ -22,3 +26,4 @@ SELECT f.*
 FROM flow_upsert f
 LEFT JOIN (SELECT 1 FROM ensure_queue) _dummy ON true; -- Left join ensures flow is returned
 $$;
+
