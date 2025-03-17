@@ -2,6 +2,34 @@
 
 Flow DSL is used do define shape of the flow and tie functions to particular steps.
 
+## Full flow example
+
+```ts
+const ScrapeWebsiteFlow = new Flow<Input>()
+  .step('table_of_contents', async (payload) => {
+    // Placeholder function
+    return await fetchTableOfContents(payload.run.url);
+  })
+  .step('subpages', ['table_of_contents'], async (payload) => {
+    // Placeholder function
+    return await scrapeSubpages(payload.run.url, payload.table_of_contents.urls_of_subpages);
+  })
+  .step('summaries', ['subpages'], async (payload) => {
+    // Placeholder function
+    return await generateSummaries(payload.subpages.contentsOfSubpages);
+  })
+  .step('sentiments', ['subpages'], async (payload) => {
+    // Placeholder function
+    return await analyzeSentiments(payload.subpages.contentsOfSubpages);
+  })
+  .step('save_to_db', ['subpages', 'summaries', 'sentiments'], async (payload) => {
+    // Placeholder function
+    return await saveToDb(payload.subpages, payload.summaries, payload.sentiments);
+  });
+```
+
+## Explanation
+
 This is Fluent API stype DSL but it is very simple:
 
 1. Users create a flow by initializing a `Flow` object with a mandatory
