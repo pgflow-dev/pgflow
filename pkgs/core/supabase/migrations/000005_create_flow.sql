@@ -11,7 +11,7 @@ as $$
 WITH
   flow_upsert AS (
     INSERT INTO pgflow.flows (flow_slug, retry_limit, retry_delay)
-    VALUES (flow_slug)
+    VALUES (flow_slug, retry_limit, retry_delay)
     ON CONFLICT (flow_slug) DO UPDATE
     SET flow_slug = pgflow.flows.flow_slug -- Dummy update
     RETURNING *

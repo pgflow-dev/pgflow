@@ -13,7 +13,7 @@ as $$
 WITH
   create_step AS (
     INSERT INTO pgflow.steps (flow_slug, step_slug, deps_count, retry_limit, retry_delay)
-    VALUES (flow_slug, step_slug, COALESCE(array_length(deps_slugs, 1), 0), retrylimit, retry_delay)
+    VALUES (flow_slug, step_slug, COALESCE(array_length(deps_slugs, 1), 0), retry_limit, retry_delay)
     ON CONFLICT (flow_slug, step_slug) 
     DO UPDATE SET step_slug = pgflow.steps.step_slug
     RETURNING *
