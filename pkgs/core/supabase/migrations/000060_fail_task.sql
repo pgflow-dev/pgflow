@@ -36,6 +36,7 @@ config AS (
   JOIN flow_info fi ON fi.flow_slug = s.flow_slug
   WHERE s.flow_slug = fi.flow_slug AND s.step_slug = fail_task.step_slug
 ),
+
 fail_or_retry_task as (
   UPDATE pgflow.step_tasks as task
   SET
@@ -76,7 +77,20 @@ WHERE pgflow.runs.run_id = fail_task.run_id;
 -- Handle message queue operations based on task status
 -- For queued tasks: delay the message for retry
 -- For failed tasks: archive the message
-PERFORM pgmq.set_vt(r.flow_slug, st.message_id, v_retry_delay)
+WITH flow_info AS (
+  SELECT r.flow_slug
+  FROM pgflow.runs r
+  WHERE r.run_id = fail_task.run_id
+),
+config AS (
+  SELECT
+    COALESCE(s.retry_delay, f.retry_delay) AS retry_delay
+  FROM pgflow.steps s
+  JOIN pgflow.flows f ON f.flow_slug = s.flow_slug
+  JOIN flow_info fi ON fi.flow_slug = s.flow_slug
+  WHERE s.flow_slug = fi.flow_slug AND s.step_slug = fail_task.step_slug
+)
+SELECT pgmq.set_vt(r.flow_slug, st.message_id, (SELECT retry_delay FROM config))
 FROM pgflow.step_tasks st
 JOIN pgflow.runs r ON st.run_id = r.run_id
 WHERE st.run_id = fail_task.run_id
