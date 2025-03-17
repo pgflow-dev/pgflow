@@ -59,9 +59,7 @@ const ScrapeWebsiteFlow = new Flow<Input>()
       title
     }
   })
-
-  // do something
-})
+```
 
 The `payload` object always have a special key `run` which is value passed as flow input -
 every step can access and use it.
