@@ -29,12 +29,12 @@ fail_or_retry_task as (
   UPDATE pgflow.step_tasks as task
   SET
     status = CASE
-    WHEN task.retry_count < v_retry_limit THEN 'queued'
-    ELSE 'failed'
+      WHEN task.retry_count < v_retry_limit THEN 'queued'
+      ELSE 'failed'
     END,
-    retry_count = CASE
-    WHEN task.retry_count < v_retry_limit THEN retry_count + 1
-    ELSE retry_count
+    retry_count =
+      CASE WHEN task.retry_count < v_retry_limit THEN retry_count + 1
+      ELSE retry_count
     END,
     error_message = fail_task.error_message
   WHERE task.run_id = fail_task.run_id
@@ -82,8 +82,8 @@ WHERE st.run_id = fail_task.run_id
   AND st.task_index = fail_task.task_index
   AND st.status = 'failed';
 
-return query select * 
-from pgflow.step_tasks st 
+return query select *
+from pgflow.step_tasks st
 where st.run_id = fail_task.run_id
   and st.step_slug = fail_task.step_slug
   and st.task_index = fail_task.task_index;
