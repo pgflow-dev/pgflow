@@ -13,8 +13,6 @@ SELECT pgflow.start_flow('custom_retry', '{"test": true}'::JSONB);
 -- Fail the task first time
 SELECT poll_and_fail('custom_retry');
 
-select * from pgflow.step_tasks;
-
 -- TEST: The task should be queued (first retry)
 SELECT is(
   (SELECT status FROM pgflow.step_tasks LIMIT 1),
