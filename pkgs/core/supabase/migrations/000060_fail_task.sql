@@ -85,7 +85,7 @@ PERFORM (
     SELECT
       r.flow_slug,
       st.message_id,
-      floor((SELECT base_delay FROM retry_config) * POWER(2, st.attempts_count))::int AS calculated_delay
+      pgflow.calculate_retry_delay((SELECT base_delay FROM retry_config), st.attempts_count) AS calculated_delay
     FROM pgflow.step_tasks st
     JOIN pgflow.runs r ON st.run_id = r.run_id
     WHERE st.run_id = fail_task.run_id

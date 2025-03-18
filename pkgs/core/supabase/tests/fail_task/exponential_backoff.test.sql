@@ -23,10 +23,10 @@ select is(
 );
 
 -- TEST: verify exponential backoff is set properly
-select cmp_ok(
+select is(
   (select vt_seconds from pgflow_tests.message_timing('first', 'backoff_test') limit 1),
-  '>=',
-  floor(1 * power(2, 2))::int,
+  pgflow.calculate_retry_delay(1, 2),
+  -- floor(1 * power(2, 2))::int,
   'first step task should have visible time set to at least the base delay'
 );
 
@@ -50,10 +50,10 @@ select is(
 );
 
 -- TEST: verify exponential backoff is set properly
-select cmp_ok(
+select is(
   (select vt_seconds from pgflow_tests.message_timing('last', 'backoff_test') limit 1),
-  '>',
-  floor(3 * power(2, 2))::int,
+  pgflow.calculate_retry_delay(2, 3),
+  -- floor(3 * power(2, 2))::int,
   'last step task should have visible time set to at least the base delay'
 );
 
