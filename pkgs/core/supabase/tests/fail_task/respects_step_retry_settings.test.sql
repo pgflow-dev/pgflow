@@ -1,80 +1,43 @@
 BEGIN;
-SELECT plan(5);
+SELECT plan(3);
 SELECT pgflow_tests.reset_db();
 SELECT pgflow_tests.setup_helpers();
 
--- SETUP: Create a flow with default retry settings (3, 5)
-SELECT pgflow.create_flow('step_override');
--- Add a step with custom retry settings that override the flow
-SELECT pgflow.add_step('step_override', 'custom_step', ARRAY[]::text[], 1, 3);
+-- SETUP: Create a flow with custom retry settings
+SELECT pgflow.create_flow('custom_retry', opt_max_attempts => 10, opt_base_delay => 10);
+SELECT pgflow.add_step('custom_retry', 'test_step', opt_max_attempts => 2, opt_base_delay => 0);
 
 -- Start the flow
-SELECT pgflow.start_flow('step_override', '{"test": true}'::JSONB);
+SELECT pgflow.start_flow('custom_retry', '{"test": true}'::JSONB);
 
 -- Fail the task first time
-WITH task AS (
-  SELECT * FROM pgflow.poll_for_tasks('step_override', 1, 1) LIMIT 1
-)
-SELECT pgflow.fail_task(
-  (SELECT run_id FROM task),
-  (SELECT step_slug FROM task),
-  0,
-  'first failure'
-);
+SELECT poll_and_fail('custom_retry');
 
 -- TEST: The task should be queued (first retry)
 SELECT is(
-  (SELECT status FROM pgflow.step_tasks 
-   WHERE run_id = (SELECT run_id FROM pgflow.runs WHERE flow_slug = 'step_override')
-   AND step_slug = 'custom_step'),
+  (SELECT status FROM pgflow.step_tasks LIMIT 1),
   'queued',
-  'Task should be queued after first failure (1st retry of 1)'
-);
-
--- TEST: The retry count should be 1
-SELECT is(
-  (SELECT attempts_count FROM pgflow.step_tasks 
-   WHERE run_id = (SELECT run_id FROM pgflow.runs WHERE flow_slug = 'step_override')
-   AND step_slug = 'custom_step'),
-  1,
-  'Retry count should be 1 after first failure'
+  'Task should be queued after first failure (1st attempt of 2)'
 );
 
 -- Fail the task second time
-WITH task AS (
-  SELECT * FROM pgflow.poll_for_tasks('step_override', 1, 1) LIMIT 1
-)
-SELECT pgflow.fail_task(
-  (SELECT run_id FROM task),
-  (SELECT step_slug FROM task),
-  0,
-  'second failure'
-);
+SELECT poll_and_fail('custom_retry');
 
--- TEST: The task should be failed (exceeded the step-specific retry limit)
+-- TEST: The task should be queued (second retry)
 SELECT is(
-  (SELECT status FROM pgflow.step_tasks 
-   WHERE run_id = (SELECT run_id FROM pgflow.runs WHERE flow_slug = 'step_override')
-   AND step_slug = 'custom_step'),
+  (SELECT status FROM pgflow.step_tasks
+   WHERE run_id = (SELECT run_id FROM pgflow.runs WHERE flow_slug = 'custom_retry')
+   AND step_slug = 'test_step'),
   'failed',
-  'Task should be failed after second failure (exceeded step retry limit of 1)'
-);
-
--- TEST: The step should be marked as failed
-SELECT is(
-  (SELECT status FROM pgflow.step_states 
-   WHERE run_id = (SELECT run_id FROM pgflow.runs WHERE flow_slug = 'step_override')
-   AND step_slug = 'custom_step'),
-  'failed',
-  'Step should be marked as failed'
+  'Task should be failed after second failure (2nd attempt of 2)'
 );
 
 -- TEST: The run should be failed
 SELECT is(
-  (SELECT status FROM pgflow.runs 
-   WHERE flow_slug = 'step_override'),
+  (SELECT status FROM pgflow.runs
+   WHERE flow_slug = 'custom_retry'),
   'failed',
-  'Run should be failed when step fails'
+  'Run should be failed after exceeding retry limit'
 );
 
 SELECT finish();

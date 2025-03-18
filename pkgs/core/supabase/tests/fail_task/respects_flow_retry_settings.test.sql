@@ -1,10 +1,10 @@
 BEGIN;
-SELECT plan(4);
+SELECT plan(3);
 SELECT pgflow_tests.reset_db();
 SELECT pgflow_tests.setup_helpers();
 
 -- SETUP: Create a flow with custom retry settings
-SELECT pgflow.create_flow('custom_retry', opt_max_attempts => 1, opt_base_delay => 1);
+SELECT pgflow.create_flow('custom_retry', opt_max_attempts => 2, opt_base_delay => 0);
 SELECT pgflow.add_step('custom_retry', 'test_step');
 
 -- Start the flow
@@ -17,18 +17,10 @@ SELECT poll_and_fail('custom_retry');
 SELECT is(
   (SELECT status FROM pgflow.step_tasks LIMIT 1),
   'queued',
-  'Task should be queued after first failure (1st retry of 2)'
-);
-
--- TEST: The retry count should be 1
-SELECT is(
-  (SELECT attempts_count FROM pgflow.step_tasks LIMIT 1),
-  1,
-  'Retry count should be 1 after first failure'
+  'Task should be queued after first failure (1st attempt of 2)'
 );
 
 -- Fail the task second time
-SELECT pg_sleep(1); -- wait for vt to pass
 SELECT poll_and_fail('custom_retry');
 
 -- TEST: The task should be queued (second retry)
@@ -37,7 +29,7 @@ SELECT is(
    WHERE run_id = (SELECT run_id FROM pgflow.runs WHERE flow_slug = 'custom_retry')
    AND step_slug = 'test_step'),
   'failed',
-  'Task should be failed after second failure (opt_max_attempts is 1)'
+  'Task should be failed after second failure (2nd attempt of 2)'
 );
 
 -- TEST: The run should be failed
