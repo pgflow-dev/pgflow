@@ -1,5 +1,5 @@
 begin;
-select plan(3);
+select plan(4);
 select pgflow_tests.reset_db();
 
 -- SETUP: flow with all default values
@@ -30,6 +30,17 @@ select results_eq(
   $$ SELECT retry_limit, retry_delay FROM pgflow.create_flow('test_flow_3') $$,
   $$ VALUES (3, 10) $$,
   'Should allow overriding retry_delay'
+);
+
+-- SETUP: create same flow again to make sure it doesnt get updated
+select pgflow.create_flow('test_flow_4', retry_limit => 10, retry_delay => 15);
+select pgflow.create_flow('test_flow_4', retry_limit => 20, retry_delay => 30);
+
+--TEST: Should not update retry_limit and retry_delay
+select results_eq(
+  $$ SELECT retry_limit, retry_delay FROM pgflow.create_flow('test_flow_4') $$,
+  $$ VALUES (10, 15) $$,
+  'Should not update retry_limit and retry_delay'
 );
 
 select * from finish();
