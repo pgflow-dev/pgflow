@@ -51,17 +51,13 @@ end;
 $$ language plpgsql;
 
 --------------------------------------------------------------------------------
-------- setup_helpers ----------------------------------------------------------
---------------------------------------------------------------------------------
-create or replace function pgflow_tests.setup_helpers() returns void as $$
-begin
-
+------- poll_and_fail ----------------------------------------------------------
 --------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION pgflow_tests.poll_and_fail(
   flow_slug TEXT,
   vt INTEGER default 1,
   qty INTEGER default 1
-) RETURNS setof pgflow.step_tasks AS $sql$
+) RETURNS setof pgflow.step_tasks AS $$
   -- Poll for a task and complete it in one step
   WITH task AS (
     SELECT * FROM pgflow.poll_for_tasks(flow_slug, vt, qty) LIMIT 1
@@ -73,13 +69,16 @@ CREATE OR REPLACE FUNCTION pgflow_tests.poll_and_fail(
     concat(task.step_slug, ' FAILED')
   )
   FROM task;
-$sql$ LANGUAGE sql;
+$$ LANGUAGE sql;
+
+--------------------------------------------------------------------------------
+------- poll_and_complete ------------------------------------------------------
 --------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION pgflow_tests.poll_and_complete(
   flow_slug TEXT,
   vt INTEGER default 1,
   qty INTEGER default 1
-) RETURNS setof pgflow.step_tasks AS $sql$
+) RETURNS setof pgflow.step_tasks AS $$
   -- Poll for a task and complete it in one step
   WITH task AS (
     SELECT * FROM pgflow.poll_for_tasks(flow_slug, vt, qty) LIMIT 1
@@ -91,7 +90,47 @@ CREATE OR REPLACE FUNCTION pgflow_tests.poll_and_complete(
     jsonb_build_object('input', task.input)
   )
   FROM task;
-$sql$ LANGUAGE sql;
+$$ LANGUAGE sql;
+
 --------------------------------------------------------------------------------
-end;
-$$ language plpgsql;
+------- message_timing ---------------------------------------------------------
+--------------------------------------------------------------------------------
+--    Column    |           Type           | Collation | Nullable |           Default            | Storage  | Compression | Stats target | Description 
+-- -------------+--------------------------+-----------+----------+------------------------------+----------+-------------+--------------+-------------
+--  msg_id      | bigint                   |           | not null | generated always as identity | plain    |             |              | 
+--  read_ct     | integer                  |           | not null | 0                            | plain    |             |              | 
+--  enqueued_at | timestamp with time zone |           | not null | now()                        | plain    |             |              | 
+--  vt          | timestamp with time zone |           | not null |                              | plain    |             |              | 
+--  message     | jsonb                    |           |          |                              | extended |             |              | 
+create or replace function pgflow_tests.message_timing(step_slug text, queue_name text)
+returns table(
+  msg_id bigint,
+  read_ct int,
+  enqueued_at timestamptz,
+  vt timestamptz,
+  message jsonb,
+  vt_seconds int
+)
+language plpgsql
+as $$
+DECLARE
+  qtable TEXT;
+  query TEXT;
+BEGIN
+  qtable := pgmq.format_table_name(queue_name, 'q');
+  
+  query := format('
+    SELECT 
+      q.msg_id,
+      q.read_ct,
+      q.enqueued_at,
+      q.vt,
+      q.message,
+      extract(epoch from (q.vt - q.enqueued_at))::int as vt_seconds
+    FROM pgmq.%s q
+    JOIN pgflow.step_tasks st ON st.message_id = q.msg_id
+    WHERE st.step_slug = $1', qtable);
+  
+  RETURN QUERY EXECUTE query USING step_slug;
+END;
+$$;
