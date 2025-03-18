@@ -1,7 +1,6 @@
 begin;
 select plan(5);
 select pgflow_tests.reset_db();
-select pgflow_tests.setup_helpers();
 
 -- SETUP
 select pgflow.create_flow('with_retry');

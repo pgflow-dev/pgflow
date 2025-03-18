@@ -1,5 +1,4 @@
 select pgflow_tests.reset_db();
-select pgflow_tests.setup_helpers();
 select pgflow_tests.setup_flow('sequential');
 
 -- SETUP

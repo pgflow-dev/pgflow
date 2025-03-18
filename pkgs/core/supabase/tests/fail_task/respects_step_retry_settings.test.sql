@@ -1,7 +1,6 @@
 BEGIN;
 SELECT plan(3);
 SELECT pgflow_tests.reset_db();
-SELECT pgflow_tests.setup_helpers();
 
 -- SETUP: Create a flow with custom retry settings
 SELECT pgflow.create_flow('custom_retry', max_attempts => 10, base_delay => 10);
