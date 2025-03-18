@@ -7,7 +7,8 @@ major_version = 15
 
 # disable unused features
 [db.seed]
-enabled = false
+enabled = true
+
 [api]
 port = 50421  # Add custom port for Kong
 enabled = false  # Keep disabled as per your config
