@@ -12,7 +12,11 @@ select pgflow.start_flow('backoff_test', '{"test": true}'::jsonb);
 
 -- simulate a task failure
 select pgflow_tests.poll_and_fail('backoff_test', 1, 1);
-select pgflow_tests.unhide_messages('backoff_test');
+
+-- make the message immediately visible (bypassing the retry delay)
+select pgflow_tests.reset_message_visibility('backoff_test');
+
+-- simulate a task failure
 select pgflow_tests.poll_and_fail('backoff_test', 1, 1);
 
 -- TEST: make sure we have proper attempts_count
@@ -26,20 +30,19 @@ select is(
 select is(
   (select vt_seconds from pgflow_tests.message_timing('first', 'backoff_test') limit 1),
   pgflow.calculate_retry_delay(1, 2),
-  -- floor(1 * power(2, 2))::int,
   'first step task should have visible time set to at least the base delay'
 );
 
 -- SETUP: proceed to next step
-select pgflow_tests.unhide_messages('backoff_test');
+select pgflow_tests.reset_message_visibility('backoff_test');
 select pgflow_tests.poll_and_complete('backoff_test', 1, 1);
-select pgflow_tests.unhide_messages('backoff_test');
+select pgflow_tests.reset_message_visibility('backoff_test');
 
 -- SETUP: fail twice to verify appropriate backoff
 select pgflow_tests.poll_and_fail('backoff_test', 1, 1);
-select pgflow_tests.unhide_messages('backoff_test');
+select pgflow_tests.reset_message_visibility('backoff_test');
 select pgflow_tests.poll_and_fail('backoff_test', 1, 1);
-select pgflow_tests.unhide_messages('backoff_test');
+select pgflow_tests.reset_message_visibility('backoff_test');
 select pgflow_tests.poll_and_fail('backoff_test', 1, 1);
 --
 -- TEST: make sure we have proper attempts_count
@@ -50,12 +53,18 @@ select is(
 );
 
 -- TEST: verify exponential backoff is set properly
-select is(
-  (select vt_seconds from pgflow_tests.message_timing('last', 'backoff_test') limit 1),
-  pgflow.calculate_retry_delay(2, 3),
-  -- floor(3 * power(2, 2))::int,
-  'last step task should have visible time set to at least the base delay'
+select pgflow_tests.assert_retry_delay(
+  queue_name => 'backoff_test',
+  step_slug => 'last',
+  expected_delay => pgflow.calculate_retry_delay(2, 3),
+  description => 'last step task should have visible time set to at least the base delay'
 );
+
+-- select is(
+--   (select vt_seconds from pgflow_tests.message_timing('last', 'backoff_test') limit 1),
+--   pgflow.calculate_retry_delay(2, 3),
+--   'last step task should have visible time set to at least the base delay'
+-- );
 
 select finish();
 rollback;

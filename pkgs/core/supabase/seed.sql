@@ -111,9 +111,9 @@ DECLARE
   query TEXT;
 BEGIN
   qtable := pgmq.format_table_name(queue_name, 'q');
-  
+
   query := format('
-    SELECT 
+    SELECT
       q.msg_id,
       q.read_ct,
       q.enqueued_at,
@@ -123,15 +123,25 @@ BEGIN
     FROM pgmq.%s q
     JOIN pgflow.step_tasks st ON st.message_id = q.msg_id
     WHERE st.step_slug = $1', qtable);
-  
+
   RETURN QUERY EXECUTE query USING step_slug;
 END;
 $$;
 
 --------------------------------------------------------------------------------
-------- unhide_messages - updates vt to clock_timestamp() for hidden messages --
+------- reset_message_visibility -----------------------------------------------
 --------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION pgflow_tests.unhide_messages(
+--
+-- Makes all hidden messages in a queue immediately visible by setting their
+-- visibility time (vt) to the current timestamp.
+--
+-- This is a test utility that allows testing retry logic without waiting for
+-- actual delays to expire. It directly modifies the pgmq queue table.
+--
+-- @param queue_name The name of the queue to modify
+-- @return The number of messages that were made visible
+--
+CREATE OR REPLACE FUNCTION pgflow_tests.reset_message_visibility(
   queue_name TEXT
 ) RETURNS INTEGER AS $$
 DECLARE
@@ -141,18 +151,52 @@ DECLARE
 BEGIN
   -- Get the formatted table name for the queue
   qtable := pgmq.format_table_name(queue_name, 'q');
-  
+
   -- Construct and execute the query to update all messages' visibility time
   query := format('
     UPDATE pgmq.%s
     SET vt = clock_timestamp()
     WHERE vt > clock_timestamp()
     RETURNING 1', qtable);
-  
+
   -- Execute the query and count the number of updated rows
   EXECUTE query INTO updated_count;
-  
+
   -- Return the number of messages that were made visible
   RETURN COALESCE(updated_count, 0);
+END;
+$$ LANGUAGE plpgsql;
+
+
+--------------------------------------------------------------------------------
+------- assert_retry_delay -----------------------------------------------------
+--------------------------------------------------------------------------------
+--
+-- Asserts that the calculated retry delay matches the expected value.
+--
+-- @param step_slug The slug of the step to check
+-- @param queue_name The name of the queue to check
+-- @param expected_delay The expected delay value
+-- @param description A description of the test case
+-- @return TEXT result from the is() function
+--
+CREATE OR REPLACE FUNCTION pgflow_tests.assert_retry_delay(
+  queue_name TEXT,
+  step_slug TEXT,
+  expected_delay INTEGER,
+  description TEXT
+) RETURNS TEXT AS $$
+DECLARE
+  actual_delay INTEGER;
+BEGIN
+  SELECT vt_seconds INTO actual_delay 
+  FROM pgflow_tests.message_timing(step_slug, queue_name) 
+  LIMIT 1;
+  
+  RETURN is(
+    actual_delay,
+    expected_delay,
+    description
+  );
 END;
 $$ LANGUAGE plpgsql;
