@@ -6,7 +6,7 @@ select pgflow_tests.setup_flow('sequential');
 
 -- SETUP
 select pgflow.start_flow('sequential', '{"test": true}'::JSONB);
-select poll_and_fail('sequential');
+select pgflow_tests.poll_and_fail('sequential');
 
 -- TEST: The task should be queued
 select is(

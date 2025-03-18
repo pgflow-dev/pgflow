@@ -11,10 +11,10 @@ select pgflow_tests.setup_flow('two_roots_left_right');
 
 select pgflow.start_flow('two_roots_left_right', '"hello"'::jsonb);
 
-select poll_and_complete('two_roots_left_right');
-select poll_and_complete('two_roots_left_right');
-select poll_and_complete('two_roots_left_right');
-select poll_and_complete('two_roots_left_right');
+select pgflow_tests.poll_and_complete('two_roots_left_right');
+select pgflow_tests.poll_and_complete('two_roots_left_right');
+select pgflow_tests.poll_and_complete('two_roots_left_right');
+select pgflow_tests.poll_and_complete('two_roots_left_right');
 
 select jsonb_pretty(output) from pgflow.runs;
 select * from pgflow.runs;

@@ -12,7 +12,7 @@ SELECT pgflow.add_step('backoff_test', 'last', max_attempts => 3, base_delay => 
 SELECT pgflow.start_flow('backoff_test', '{"test": true}'::JSONB);
 
 -- Simulate a task failure
-SELECT poll_and_fail('backoff_test', 1, 1);
+SELECT pgflow_tests.poll_and_fail('backoff_test', 1, 1);
 
 -- Test that exponential backoff is working correctly
 WITH 

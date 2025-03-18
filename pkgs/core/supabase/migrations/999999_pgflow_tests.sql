@@ -57,7 +57,7 @@ create or replace function pgflow_tests.setup_helpers() returns void as $$
 begin
 
 --------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION poll_and_fail(
+CREATE OR REPLACE FUNCTION pgflow_tests.poll_and_fail(
   flow_slug TEXT,
   vt INTEGER default 1,
   qty INTEGER default 1
@@ -75,7 +75,7 @@ CREATE OR REPLACE FUNCTION poll_and_fail(
   FROM task;
 $sql$ LANGUAGE sql;
 --------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION poll_and_complete(
+CREATE OR REPLACE FUNCTION pgflow_tests.poll_and_complete(
   flow_slug TEXT,
   vt INTEGER default 1,
   qty INTEGER default 1

@@ -9,8 +9,8 @@ select pgflow.add_step('simple', 'last');
 select pgflow.start_flow('simple', '"hello"'::jsonb);
 
 -- SETUP: poll twice, first fialing them completing
-select poll_and_fail('simple', 1, 1);
-select poll_and_complete('simple', 1, 1);
+select pgflow_tests.poll_and_fail('simple', 1, 1);
+select pgflow_tests.poll_and_complete('simple', 1, 1);
 
 -- TEST: polling increments, regardless of failure/completion
 select is(
@@ -20,9 +20,9 @@ select is(
 );
 
 -- SETUP:
-select poll_and_fail('simple', 1, 1);
-select poll_and_fail('simple', 1, 1);
-select poll_and_fail('simple', 1, 1);
+select pgflow_tests.poll_and_fail('simple', 1, 1);
+select pgflow_tests.poll_and_fail('simple', 1, 1);
+select pgflow_tests.poll_and_fail('simple', 1, 1);
 
 -- TEST: polling increments, regardless of failure/completion
 select is(

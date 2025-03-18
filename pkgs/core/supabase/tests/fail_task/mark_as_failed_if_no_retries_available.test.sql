@@ -9,7 +9,7 @@ select pgflow.add_step('with_retry', 'first', max_attempts => 0, base_delay => 0
 select pgflow.start_flow('with_retry', '{"test": true}'::JSONB);
 
 -- max_attempts is 0, so failing once should mark the task as failed
-select poll_and_fail('with_retry');
+select pgflow_tests.poll_and_fail('with_retry');
 
 -- TEST: The task should be queued
 select is(

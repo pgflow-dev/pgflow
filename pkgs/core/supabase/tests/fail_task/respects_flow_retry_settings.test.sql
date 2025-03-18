@@ -11,7 +11,7 @@ SELECT pgflow.add_step('custom_retry', 'test_step');
 SELECT pgflow.start_flow('custom_retry', '{"test": true}'::JSONB);
 
 -- Fail the task first time
-SELECT poll_and_fail('custom_retry');
+SELECT pgflow_tests.poll_and_fail('custom_retry');
 
 -- TEST: The task should be queued (first retry)
 SELECT is(
@@ -21,7 +21,7 @@ SELECT is(
 );
 
 -- Fail the task second time
-SELECT poll_and_fail('custom_retry');
+SELECT pgflow_tests.poll_and_fail('custom_retry');
 
 -- TEST: The task should be queued (second retry)
 SELECT is(
