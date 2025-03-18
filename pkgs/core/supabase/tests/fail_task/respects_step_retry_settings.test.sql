@@ -4,8 +4,8 @@ SELECT pgflow_tests.reset_db();
 SELECT pgflow_tests.setup_helpers();
 
 -- SETUP: Create a flow with custom retry settings
-SELECT pgflow.create_flow('custom_retry', opt_max_attempts => 10, opt_base_delay => 10);
-SELECT pgflow.add_step('custom_retry', 'test_step', opt_max_attempts => 2, opt_base_delay => 0);
+SELECT pgflow.create_flow('custom_retry', max_attempts => 10, base_delay => 10);
+SELECT pgflow.add_step('custom_retry', 'test_step', max_attempts => 2, base_delay => 0);
 
 -- Start the flow
 SELECT pgflow.start_flow('custom_retry', '{"test": true}'::JSONB);
