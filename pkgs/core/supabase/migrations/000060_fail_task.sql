@@ -44,10 +44,7 @@ fail_or_retry_task as (
       WHEN task.attempts_count < (SELECT opt_max_attempts FROM config) THEN 'queued'
       ELSE 'failed'
     END,
-    attempts_count =
-      CASE WHEN task.attempts_count < (SELECT opt_max_attempts FROM config) THEN attempts_count + 1
-      ELSE attempts_count
-    END,
+    attempts_count = least(task.attempts_count + 1, (SELECT opt_max_attempts FROM config)),
     error_message = fail_task.error_message
   WHERE task.run_id = fail_task.run_id
     AND task.step_slug = fail_task.step_slug
