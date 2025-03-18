@@ -61,28 +61,25 @@ CREATE OR REPLACE FUNCTION poll_and_fail(
   flow_slug TEXT,
   vt INTEGER default 1,
   qty INTEGER default 1
-) RETURNS VOID AS $sql$
+) RETURNS setof pgflow.step_tasks AS $sql$
   -- Poll for a task and complete it in one step
   WITH task AS (
     SELECT * FROM pgflow.poll_for_tasks(flow_slug, vt, qty) LIMIT 1
-  ),
-  fail_result AS (
-    SELECT pgflow.fail_task(
-      (SELECT run_id FROM task),
-      (SELECT step_slug FROM task),
-      0,
-      concat(task.step_slug, ' FAILED')
-    )
-    FROM task
   )
-  SELECT 1 WHERE false;
+  SELECT pgflow.fail_task(
+    (SELECT run_id FROM task),
+    (SELECT step_slug FROM task),
+    0,
+    concat(task.step_slug, ' FAILED')
+  )
+  FROM task;
 $sql$ LANGUAGE sql;
 --------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION poll_and_complete(
   flow_slug TEXT,
   vt INTEGER default 1,
   qty INTEGER default 1
-) RETURNS VOID AS $sql$
+) RETURNS setof pgflow.step_tasks AS $sql$
   -- Poll for a task and complete it in one step
   WITH task AS (
     SELECT * FROM pgflow.poll_for_tasks(flow_slug, vt, qty) LIMIT 1
