@@ -13,7 +13,7 @@ const ScrapeWebsiteFlow = new Flow<Input>()
         payload.table_of_contents.urls_of_subpages
       );
     },
-    { runIf: { status: 'success' } }
+    { runIf: { verify_status: { status: 'success' } } }
   )
   .step(
     'when_server_error',
@@ -22,7 +22,7 @@ const ScrapeWebsiteFlow = new Flow<Input>()
       // Placeholder function
       return await generateSummaries(payload.subpages.contentsOfSubpages);
     },
-    { runUnless: { status: 'success' } }
+    { runUnless: { verify_status: { status: 'success' } } }
   )
 
   .step(
