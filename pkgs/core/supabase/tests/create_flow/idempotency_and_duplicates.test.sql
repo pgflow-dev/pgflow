@@ -17,7 +17,7 @@ select results_eq(
 
 --TEST: Creating a flow with existing flow_slug should still return the flow
 select results_eq(
-  $$ SELECT * FROM pgflow.create_flow('test_flow') $$,
+  $$ SELECT flow_slug FROM pgflow.create_flow('test_flow') $$,
   $$ VALUES ('test_flow') $$,
   'Creating a flow with existing flow_slug should still return the flow'
 );
