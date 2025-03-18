@@ -1,7 +1,7 @@
 create schema if not exists pgflow_tests;
 
 --------------------------------------------------------------------------------
---------- reset_db -------------------------------------------------------------
+--------- reset_db - clears all tables and drops all queues --------------------
 --------------------------------------------------------------------------------
 create or replace function pgflow_tests.reset_db() returns void as $$
   DELETE FROM pgflow.step_tasks;
@@ -15,7 +15,7 @@ create or replace function pgflow_tests.reset_db() returns void as $$
 $$ language sql;
 
 --------------------------------------------------------------------------------
---------- setup_flow -----------------------------------------------------------
+--------- setup_flow - creates a predefined flow and adds steps to it ----------
 --------------------------------------------------------------------------------
 create or replace function pgflow_tests.setup_flow(
   flow_slug text
@@ -51,7 +51,7 @@ end;
 $$ language plpgsql;
 
 --------------------------------------------------------------------------------
-------- poll_and_fail ----------------------------------------------------------
+------- poll_and_fail - polls for a task and fails it immediately --------------
 --------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION pgflow_tests.poll_and_fail(
   flow_slug TEXT,
@@ -72,7 +72,7 @@ CREATE OR REPLACE FUNCTION pgflow_tests.poll_and_fail(
 $$ LANGUAGE sql;
 
 --------------------------------------------------------------------------------
-------- poll_and_complete ------------------------------------------------------
+------- poll_and_complete - polls for a task and completes it immediately ------
 --------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION pgflow_tests.poll_and_complete(
   flow_slug TEXT,
@@ -93,15 +93,8 @@ CREATE OR REPLACE FUNCTION pgflow_tests.poll_and_complete(
 $$ LANGUAGE sql;
 
 --------------------------------------------------------------------------------
-------- message_timing ---------------------------------------------------------
+------- message_timing - returns messages with added vt_seconds int ------------
 --------------------------------------------------------------------------------
---    Column    |           Type           | Collation | Nullable |           Default            | Storage  | Compression | Stats target | Description 
--- -------------+--------------------------+-----------+----------+------------------------------+----------+-------------+--------------+-------------
---  msg_id      | bigint                   |           | not null | generated always as identity | plain    |             |              | 
---  read_ct     | integer                  |           | not null | 0                            | plain    |             |              | 
---  enqueued_at | timestamp with time zone |           | not null | now()                        | plain    |             |              | 
---  vt          | timestamp with time zone |           | not null |                              | plain    |             |              | 
---  message     | jsonb                    |           |          |                              | extended |             |              | 
 create or replace function pgflow_tests.message_timing(step_slug text, queue_name text)
 returns table(
   msg_id bigint,
@@ -136,7 +129,7 @@ END;
 $$;
 
 --------------------------------------------------------------------------------
-------- make_all_visible -------------------------------------------------------
+------- unhide_messages - updates vt to clock_timestamp() for hidden messages --
 --------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION pgflow_tests.unhide_messages(
   queue_name TEXT
