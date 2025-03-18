@@ -71,12 +71,11 @@ SET status = CASE
               END
 WHERE pgflow.runs.run_id = fail_task.run_id;
 
--- Handle message queue operations based on task status
--- For queued tasks: delay the message for retry
+-- For queued tasks: delay the message for retry with exponential backoff
 PERFORM (
   WITH retry_config AS (
     SELECT
-      COALESCE(s.opt_base_delay, f.opt_base_delay) AS opt_base_delay
+      COALESCE(s.opt_base_delay, f.opt_base_delay) AS base_delay
     FROM pgflow.steps s
     JOIN pgflow.flows f ON f.flow_slug = s.flow_slug
     JOIN pgflow.runs r ON r.flow_slug = f.flow_slug
@@ -84,7 +83,11 @@ PERFORM (
       AND s.step_slug = fail_task.step_slug
   ),
   queued_tasks AS (
-    SELECT r.flow_slug, st.message_id
+    SELECT 
+      r.flow_slug, 
+      st.message_id,
+      st.attempts_count,
+      floor((SELECT base_delay FROM retry_config) * POWER(2, st.attempts_count))::int AS calculated_delay
     FROM pgflow.step_tasks st
     JOIN pgflow.runs r ON st.run_id = r.run_id
     WHERE st.run_id = fail_task.run_id
@@ -92,7 +95,7 @@ PERFORM (
       AND st.task_index = fail_task.task_index
       AND st.status = 'queued'
   )
-  SELECT pgmq.set_vt(qt.flow_slug, qt.message_id, (SELECT opt_base_delay FROM retry_config))
+  SELECT pgmq.set_vt(qt.flow_slug, qt.message_id, qt.calculated_delay)
   FROM queued_tasks qt
   WHERE EXISTS (SELECT 1 FROM queued_tasks)
 );
