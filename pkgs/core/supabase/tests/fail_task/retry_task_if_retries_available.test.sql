@@ -15,18 +15,18 @@ select is(
   'The task should be queued'
 );
 
--- TEST: The task should have retry_count incremented
+-- TEST: The task should have attempts_count incremented
 select is(
-  (select retry_count from pgflow.step_tasks where flow_slug = 'sequential' and step_slug = 'first'),
+  (select attempts_count from pgflow.step_tasks where flow_slug = 'sequential' and step_slug = 'first'),
   1,
-  'The task should have retry_count incremented'
+  'The task should have attempts_count incremented'
 );
 
 -- TEST: The task should have null error_message
 select is(
   (select error_message from pgflow.step_tasks where flow_slug = 'sequential' and step_slug = 'first'),
   'first FAILED',
-  'The task should have retry_count incremented'
+  'The task should have attempts_count incremented'
 );
 
 -- TEST: The task's message should be in the queue

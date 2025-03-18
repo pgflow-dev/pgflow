@@ -44,11 +44,11 @@ $$;
 -- Flows table - stores flow definitions
 create table pgflow.flows (
   flow_slug text primary key not null,  -- Unique identifier for the flow
-  retry_limit int not null default 3,
-  retry_delay int not null default 5,
+  opt_max_attempts int not null default 3,
+  opt_base_delay int not null default 1,
   constraint slug_is_valid check (is_valid_slug(flow_slug)),
-  constraint retry_limit_is_nonnegative check (retry_limit >= 0),
-  constraint retry_delay_is_nonnegative check (retry_delay >= 0)
+  constraint opt_max_attempts_is_nonnegative check (opt_max_attempts >= 0),
+  constraint opt_base_delay_is_nonnegative check (opt_base_delay >= 0)
 );
 
 -- Steps table - stores individual steps within flows
@@ -57,13 +57,13 @@ create table pgflow.steps (
   step_slug text not null,
   step_type text not null default 'single',
   deps_count int not null default 0 check (deps_count >= 0),
-  retry_limit int,
-  retry_delay int,
+  opt_max_attempts int,
+  opt_base_delay int,
   primary key (flow_slug, step_slug),
   check (is_valid_slug(step_slug)),
   check (step_type in ('single')),
-  constraint retry_limit_is_nonnegative check (retry_limit is null or retry_limit >= 0),
-  constraint retry_delay_is_nonnegative check (retry_delay is null or retry_delay >= 0)
+  constraint opt_max_attempts_is_nonnegative check (opt_max_attempts is null or opt_max_attempts >= 0),
+  constraint opt_base_delay_is_nonnegative check (opt_base_delay is null or opt_base_delay >= 0)
 );
 
 -- Dependencies table - stores relationships between steps
@@ -117,7 +117,7 @@ create table pgflow.step_tasks (
   message_id bigint,
   task_index int not null default 0,
   status text not null default 'queued',
-  retry_count int not null default 0,
+  attempts_count int not null default 0,
   error_message text,
   output jsonb,
   constraint step_tasks_pkey primary key (run_id, step_slug, task_index),
@@ -130,7 +130,7 @@ create table pgflow.step_tasks (
     output is null or status = 'completed'
   ),
   constraint only_single_task_per_step check (task_index = 0),
-  constraint retry_count_nonnegative check (retry_count >= 0)
+  constraint attempts_count_nonnegative check (attempts_count >= 0)
 );
 
 ------------------------------------------

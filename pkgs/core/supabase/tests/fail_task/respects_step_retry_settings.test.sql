@@ -33,7 +33,7 @@ SELECT is(
 
 -- TEST: The retry count should be 1
 SELECT is(
-  (SELECT retry_count FROM pgflow.step_tasks 
+  (SELECT attempts_count FROM pgflow.step_tasks 
    WHERE run_id = (SELECT run_id FROM pgflow.runs WHERE flow_slug = 'step_override')
    AND step_slug = 'custom_step'),
   1,

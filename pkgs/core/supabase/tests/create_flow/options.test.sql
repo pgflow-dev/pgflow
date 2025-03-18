@@ -5,42 +5,42 @@ select pgflow_tests.reset_db();
 -- SETUP: flow with all default values
 select pgflow.create_flow('test_flow');
 
---TEST: Should create flow with default retry_limit and retry_delay
+--TEST: Should create flow with default opt_max_attempts and opt_base_delay
 select results_eq(
-  $$ SELECT retry_limit, retry_delay FROM pgflow.create_flow('test_flow') $$,
+  $$ SELECT opt_max_attempts, opt_base_delay FROM pgflow.create_flow('test_flow') $$,
   $$ VALUES (3, 5) $$,
-  'Should create flow with default retry_limit and retry_delay'
+  'Should create flow with default opt_max_attempts and opt_base_delay'
 );
 
--- SETUP: flow with overriden retry_limit
-select pgflow.create_flow('test_flow_2', retry_limit => 10);
+-- SETUP: flow with overriden opt_max_attempts
+select pgflow.create_flow('test_flow_2', opt_max_attempts => 10);
 
---TEST: Should allow overriding retry_limit
+--TEST: Should allow overriding opt_max_attempts
 select results_eq(
-  $$ SELECT retry_limit, retry_delay FROM pgflow.create_flow('test_flow_2') $$,
+  $$ SELECT opt_max_attempts, opt_base_delay FROM pgflow.create_flow('test_flow_2') $$,
   $$ VALUES (10, 5) $$,
-  'Should allow overriding retry_limit'
+  'Should allow overriding opt_max_attempts'
 );
 
--- SETUP: flow with overriden retry_delay
-select pgflow.create_flow('test_flow_3', retry_delay => 10);
+-- SETUP: flow with overriden opt_base_delay
+select pgflow.create_flow('test_flow_3', opt_base_delay => 10);
 
---TEST: Should allow overriding retry_delay
+--TEST: Should allow overriding opt_base_delay
 select results_eq(
-  $$ SELECT retry_limit, retry_delay FROM pgflow.create_flow('test_flow_3') $$,
+  $$ SELECT opt_max_attempts, opt_base_delay FROM pgflow.create_flow('test_flow_3') $$,
   $$ VALUES (3, 10) $$,
-  'Should allow overriding retry_delay'
+  'Should allow overriding opt_base_delay'
 );
 
 -- SETUP: create same flow again to make sure it doesnt get updated
-select pgflow.create_flow('test_flow_4', retry_limit => 10, retry_delay => 15);
-select pgflow.create_flow('test_flow_4', retry_limit => 20, retry_delay => 30);
+select pgflow.create_flow('test_flow_4', opt_max_attempts => 10, opt_base_delay => 15);
+select pgflow.create_flow('test_flow_4', opt_max_attempts => 20, opt_base_delay => 30);
 
---TEST: Should not update retry_limit and retry_delay
+--TEST: Should not update opt_max_attempts and opt_base_delay
 select results_eq(
-  $$ SELECT retry_limit, retry_delay FROM pgflow.create_flow('test_flow_4') $$,
+  $$ SELECT opt_max_attempts, opt_base_delay FROM pgflow.create_flow('test_flow_4') $$,
   $$ VALUES (10, 15) $$,
-  'Should not update retry_limit and retry_delay'
+  'Should not update opt_max_attempts and opt_base_delay'
 );
 
 select * from finish();

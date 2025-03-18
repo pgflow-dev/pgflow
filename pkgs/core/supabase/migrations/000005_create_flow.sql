@@ -1,7 +1,7 @@
 create or replace function pgflow.create_flow(
   flow_slug text,
-  retry_limit int default 3,
-  retry_delay int default 5
+  opt_max_attempts int default 3,
+  opt_base_delay int default 5
 )
 returns pgflow.flows
 language sql
@@ -10,8 +10,8 @@ volatile
 as $$
 WITH
   flow_upsert AS (
-    INSERT INTO pgflow.flows (flow_slug, retry_limit, retry_delay)
-    VALUES (flow_slug, retry_limit, retry_delay)
+    INSERT INTO pgflow.flows (flow_slug, opt_max_attempts, opt_base_delay)
+    VALUES (flow_slug, opt_max_attempts, opt_base_delay)
     ON CONFLICT (flow_slug) DO UPDATE
     SET flow_slug = pgflow.flows.flow_slug -- Dummy update
     RETURNING *

@@ -29,8 +29,8 @@ flow_info AS (
 ),
 config AS (
   SELECT
-    COALESCE(s.retry_limit, f.retry_limit) AS retry_limit,
-    COALESCE(s.retry_delay, f.retry_delay) AS retry_delay
+    COALESCE(s.opt_max_attempts, f.opt_max_attempts) AS opt_max_attempts,
+    COALESCE(s.opt_base_delay, f.opt_base_delay) AS opt_base_delay
   FROM pgflow.steps s
   JOIN pgflow.flows f ON f.flow_slug = s.flow_slug
   JOIN flow_info fi ON fi.flow_slug = s.flow_slug
@@ -41,12 +41,12 @@ fail_or_retry_task as (
   UPDATE pgflow.step_tasks as task
   SET
     status = CASE
-      WHEN task.retry_count < (SELECT retry_limit FROM config) THEN 'queued'
+      WHEN task.attempts_count < (SELECT opt_max_attempts FROM config) THEN 'queued'
       ELSE 'failed'
     END,
-    retry_count =
-      CASE WHEN task.retry_count < (SELECT retry_limit FROM config) THEN retry_count + 1
-      ELSE retry_count
+    attempts_count =
+      CASE WHEN task.attempts_count < (SELECT opt_max_attempts FROM config) THEN attempts_count + 1
+      ELSE attempts_count
     END,
     error_message = fail_task.error_message
   WHERE task.run_id = fail_task.run_id
@@ -79,7 +79,7 @@ WHERE pgflow.runs.run_id = fail_task.run_id;
 PERFORM (
   WITH retry_config AS (
     SELECT
-      COALESCE(s.retry_delay, f.retry_delay) AS retry_delay
+      COALESCE(s.opt_base_delay, f.opt_base_delay) AS opt_base_delay
     FROM pgflow.steps s
     JOIN pgflow.flows f ON f.flow_slug = s.flow_slug
     JOIN pgflow.runs r ON r.flow_slug = f.flow_slug
@@ -95,7 +95,7 @@ PERFORM (
       AND st.task_index = fail_task.task_index
       AND st.status = 'queued'
   )
-  SELECT pgmq.set_vt(qt.flow_slug, qt.message_id, (SELECT retry_delay FROM retry_config))
+  SELECT pgmq.set_vt(qt.flow_slug, qt.message_id, (SELECT opt_base_delay FROM retry_config))
   FROM queued_tasks qt
   WHERE EXISTS (SELECT 1 FROM queued_tasks)
 );

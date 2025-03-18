@@ -5,10 +5,10 @@ select pgflow_tests.setup_helpers();
 
 -- SETUP
 select pgflow.create_flow('with_retry');
-select pgflow.add_step('with_retry', 'first', retry_limit => 0, retry_delay => 0);
+select pgflow.add_step('with_retry', 'first', opt_max_attempts => 0, opt_base_delay => 0);
 select pgflow.start_flow('with_retry', '{"test": true}'::JSONB);
 
--- retry_limit is 0, so failing once should mark the task as failed
+-- opt_max_attempts is 0, so failing once should mark the task as failed
 select poll_and_fail('with_retry');
 
 -- TEST: The task should be queued
@@ -22,7 +22,7 @@ select is(
 select is(
   (select error_message from pgflow.step_tasks where flow_slug = 'with_retry' and step_slug = 'first'),
   'first FAILED',
-  'The task should have retry_count incremented'
+  'The task should have attempts_count incremented'
 );
 
 -- TEST: The task's message should be in the queue
