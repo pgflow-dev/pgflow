@@ -134,3 +134,32 @@ BEGIN
   RETURN QUERY EXECUTE query USING step_slug;
 END;
 $$;
+
+--------------------------------------------------------------------------------
+------- make_all_visible -------------------------------------------------------
+--------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION pgflow_tests.unhide_messages(
+  queue_name TEXT
+) RETURNS INTEGER AS $$
+DECLARE
+  qtable TEXT;
+  query TEXT;
+  updated_count INTEGER;
+BEGIN
+  -- Get the formatted table name for the queue
+  qtable := pgmq.format_table_name(queue_name, 'q');
+  
+  -- Construct and execute the query to update all messages' visibility time
+  query := format('
+    UPDATE pgmq.%s
+    SET vt = clock_timestamp()
+    WHERE vt > clock_timestamp()
+    RETURNING 1', qtable);
+  
+  -- Execute the query and count the number of updated rows
+  EXECUTE query INTO updated_count;
+  
+  -- Return the number of messages that were made visible
+  RETURN COALESCE(updated_count, 0);
+END;
+$$ LANGUAGE plpgsql;
