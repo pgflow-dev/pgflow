@@ -44,7 +44,6 @@ fail_or_retry_task as (
       WHEN task.attempts_count < (SELECT opt_max_attempts FROM config) THEN 'queued'
       ELSE 'failed'
     END,
-    attempts_count = least(task.attempts_count + 1, (SELECT opt_max_attempts FROM config)),
     error_message = fail_task.error_message
   WHERE task.run_id = fail_task.run_id
     AND task.step_slug = fail_task.step_slug
@@ -83,10 +82,9 @@ PERFORM (
       AND s.step_slug = fail_task.step_slug
   ),
   queued_tasks AS (
-    SELECT 
-      r.flow_slug, 
+    SELECT
+      r.flow_slug,
       st.message_id,
-      st.attempts_count,
       floor((SELECT base_delay FROM retry_config) * POWER(2, st.attempts_count))::int AS calculated_delay
     FROM pgflow.step_tasks st
     JOIN pgflow.runs r ON st.run_id = r.run_id

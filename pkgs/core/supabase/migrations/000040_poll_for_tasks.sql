@@ -25,11 +25,19 @@ tasks as (
     task.flow_slug,
     task.run_id,
     task.step_slug,
-    task.task_index
+    task.task_index,
+    task.message_id
   from pgflow.step_tasks as task
   join read_messages as message on message.msg_id = task.message_id
   where task.message_id = message.msg_id
     and task.status = 'queued'
+),
+increment_attempts as (
+  update pgflow.step_tasks
+  set attempts_count = attempts_count + 1
+  from tasks
+  where step_tasks.message_id = tasks.message_id
+  and status = 'queued'
 ),
 runs as (
   select
