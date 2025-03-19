@@ -30,6 +30,7 @@ I have chosen the Business Source License (BSL) for the following reasons:
 
 pgflow consists of multiple packages, each with its own license:
 
+- **`pkgs/core/`** – Licensed under **BSL**, with the goal of revisiting the licensing model in the future.  
 - **`pkgs/edge-worker/`** – Licensed under **Apache 2.0**, so you can freely use and modify it with no additional restrictions.
 - **`pkgs/website/`** – Licensed under **Apache 2.0**, same as the edge-worker package, allowing free use, modification, and distribution of the documentation website.
 
