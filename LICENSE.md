@@ -2,7 +2,7 @@
 
 > ✅ **You can freely build and host your apps on Supabase using pgflow**  
 > ✅ **You can fork, modify, and contribute to pgflow in the spirit of open source**  
-> ❌ Offering pgflow as a managed/hosted service requires a separate agreement **<u>for now</u>** 
+> ❌ Offering pgflow as a managed/hosted service requires a separate agreement
 
 ## Introduction
 
