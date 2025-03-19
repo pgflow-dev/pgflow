@@ -11,7 +11,9 @@ select pgflow.add_step('test_flow', 'overriden_timeout', timeout => 30);
 
 -- TEST: opt_max_attempts, opt_base_delay and opt_timeout are NULL by default
 select results_eq(
-  $$ SELECT opt_max_attempts is null, opt_base_delay is null, opt_timeout is null FROM pgflow.steps WHERE step_slug = 'default_options' $$,
+  $$ SELECT opt_max_attempts is null, opt_base_delay is null, opt_timeout is null
+     FROM pgflow.steps
+     WHERE step_slug = 'default_options' $$,
   $$ VALUES (true, true, true) $$,
   'opt_max_attempts, opt_base_delay and opt_timeout are NULL by default'
 );
@@ -53,7 +55,9 @@ select pgflow.add_step('test_flow', 'default_options', max_attempts => 0, base_d
 
 -- TEST: Should not update opt_max_attempts, opt_base_delay and opt_timeout
 select results_eq(
-  $$ SELECT opt_max_attempts is null, opt_base_delay is null, opt_timeout is null FROM pgflow.steps WHERE step_slug = 'default_options' $$,
+  $$ SELECT opt_max_attempts is null, opt_base_delay is null, opt_timeout is null 
+     FROM pgflow.steps 
+     WHERE step_slug = 'default_options' $$,
   $$ VALUES (true, true, true) $$,
   'Should not update opt_max_attempts, opt_base_delay and opt_timeout for step with default values'
 );
