@@ -23,22 +23,22 @@ create or replace function pgflow_tests.setup_flow(
 begin
 
 if flow_slug = 'sequential' then
-  PERFORM pgflow.create_flow('sequential');
+  PERFORM pgflow.create_flow('sequential', timeout => 1);
   PERFORM pgflow.add_step('sequential', 'first');
   PERFORM pgflow.add_step('sequential', 'second', ARRAY['first']);
   PERFORM pgflow.add_step('sequential', 'last', ARRAY['second']);
 elsif flow_slug = 'sequential_other' then
-  PERFORM pgflow.create_flow('other');
+  PERFORM pgflow.create_flow('other', timeout => 1);
   PERFORM pgflow.add_step('other', 'first');
   PERFORM pgflow.add_step('other', 'second', ARRAY['first']);
   PERFORM pgflow.add_step('other', 'last', ARRAY['second']);
 elsif flow_slug = 'two_roots' then
-  PERFORM pgflow.create_flow('two_roots');
+  PERFORM pgflow.create_flow('two_roots', timeout => 1);
   PERFORM pgflow.add_step('two_roots', 'root_a');
   PERFORM pgflow.add_step('two_roots', 'root_b');
   PERFORM pgflow.add_step('two_roots', 'last', ARRAY['root_a', 'root_b']);
 elsif flow_slug = 'two_roots_left_right' then
-  PERFORM pgflow.create_flow('two_roots_left_right');
+  PERFORM pgflow.create_flow('two_roots_left_right', timeout => 1);
   PERFORM pgflow.add_step('two_roots_left_right', 'connected_root');
   PERFORM pgflow.add_step('two_roots_left_right', 'disconnected_root');
   PERFORM pgflow.add_step('two_roots_left_right', 'left', ARRAY['connected_root']);
@@ -189,10 +189,10 @@ CREATE OR REPLACE FUNCTION pgflow_tests.assert_retry_delay(
 DECLARE
   actual_delay INTEGER;
 BEGIN
-  SELECT vt_seconds INTO actual_delay 
-  FROM pgflow_tests.message_timing(step_slug, queue_name) 
+  SELECT vt_seconds INTO actual_delay
+  FROM pgflow_tests.message_timing(step_slug, queue_name)
   LIMIT 1;
-  
+
   RETURN is(
     actual_delay,
     expected_delay,
