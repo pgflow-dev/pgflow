@@ -21,6 +21,29 @@ The actual execution of workflow tasks is handled by the [Edge Worker](../edge-w
 - **Queue Integration**: Built on pgmq for reliable task processing
 - **Transactional Guarantees**: All state transitions are ACID-compliant
 
+## Schema Design
+
+### Static definition tables
+
+- `flows` (just an identity for the workflow with some global options)
+- `steps` (DAG nodes belonging to particular `flows`, with option overrides)
+- `deps` (DAG edges between `steps`)
+
+### Runtime state tables
+
+- `runs` (execution instances of `flows`)
+- `step_states` (states of individual `steps` within a `run`)
+- `step_tasks` (units of work for individual `steps` within a `run`, so we can have fanouts)
+
+## Execution Model
+
+The SQL Core handles the workflow lifecycle through these key operations:
+
+1. **Definition**: Workflows are defined using `create_flow` and `add_step`
+2. **Instantiation**: Workflow instances are started with `start_flow`, creating a new run
+3. **Task Management**: The [Edge Worker](../edge-worker/README.md) polls for available tasks using `poll_for_tasks`
+4. **State Transitions**: When the Edge Worker reports back using `complete_task` or `fail_task`, the SQL Core handles state transitions and schedules dependent steps
+
 ## Core API
 
 ### Define shape of the flow
@@ -28,6 +51,16 @@ The actual execution of workflow tasks is handled by the [Edge Worker](../edge-w
 Defining a flow is done using two SQL functions: `create_flow` and `add_step`.
 
 `add_step` accepts an optionsl `deps` array of step slugs that the new step depends on.
+
+To define following workflow (left to right), where:
+
+- `fetch_url` is entry point ("root step" in pgflow nomenclature)
+- `analyze_text` and `extract_images` are parallel steps, depending on `fetch_url`
+- `create_report` is a final step, depending on `analyze_text` and `extract_images`
+
+![workflow graph](./flow.svg)
+
+You would call following SQL functions:
 
 ```sql
 -- Define workflow with parallel steps
@@ -38,14 +71,23 @@ SELECT pgflow.add_step('web_analysis', 'extract_images', deps => ARRAY['fetch_ur
 SELECT pgflow.add_step('web_analysis', 'create_report', deps => ARRAY['analyze_text', 'extract_images']);
 ```
 
-### Start a flow run
+> [!WARNING]
+> You need to call `add_step` in topological order, which is enforced by foreign key constraints.
+> Is't it neat?
+
+> [!NOTE]
+> You can have an arbitrary number of "root steps". 
+> You can even create w flow with multiple root steps only - they will be converged
+> at the end of a run and their `output`s saved as run's `output`
+
+### Starting a flow run
 
 To start a flow, you just need to call `start_flow` with a flow slug and JSONB object representing input arguments.
 
 ```sql
 SELECT * FROM pgflow.start_flow(
   flow_slug => 'web_analysis', 
-  input => '{"url": "https://example.com"}'
+  input => '{"url": "https://example.com"}'::jsonb
 );
 
 --     run_id  | flow_slug    | status  |  input                         | output | remaining_steps 
@@ -55,10 +97,13 @@ SELECT * FROM pgflow.start_flow(
 
 This will:
 
-- create `step_states` for all steps in the flow
-- start root steps (in our case `fetch_url`)
-- create a task for the root steps
-- enqueue a message on PGMQ queue
+- create initial state for each step (`step_states` rows)
+- start root steps (in our case `fetch_url`) by marking them `started`
+- create a task for the root steps (tasks are units of work and used by workers)
+- enqueue a message on PGMQ queue that carries metadata about the `step_task`
+
+> [!NOTE]
+> The `input` argument must be a valid JSONB object: string, number, boolean, array, object or null.
 
 ### Worker polls for tasks and executes handlers
 
@@ -72,11 +117,16 @@ SELECT * FROM pgflow.poll_for_tasks(
 );
 ```
 
-When a task is polled:
-1. The message is locked (hidden) from other workers for the specified visibility timeout
-2. The attempts counter is incremented for the task
-3. The step input is constructed by combining the run input with outputs from completed dependency steps
-4. The worker executes the appropriate handler with this input payload
+When a task is polled, we:
+
+1. Hide the message from other workers for the specified `timeout + 2s` (configurable per flow and step basis)
+1. Increment the task's attempts counter for retry tracking
+1. Build step `input` object by combining the run input with outputs from completed dependency steps (more on this later)is constructed 
+1. Task metadata (flow_slug, step_slug, run_id) and step `input` are returned to the worker
+
+This happens in a single transaction, so if the worker dies, the task is not lost.
+Then, the worker executes the appropriate handler function based on task metadata.
+It calls it with step `input` payload (more on handlers later!)
 
 ### Worker acknowledges completion of successful executions
 
@@ -86,18 +136,18 @@ After a task is successfully processed, the worker calls `complete_task` to ackn
 SELECT pgflow.complete_task(
   run_id => '<run_uuid>',
   step_slug => 'fetch_url',
-  task_index => 0,
-  output => '{"content": "HTML content", "status": 200}'
+  task_index => 0, -- we will have multiple tasks for a step in the future
+  output => '{"content": "HTML content", "status": 200}'::jsonb
 );
 ```
 
 When a task is completed:
-1. The task status is updated to 'completed' and the output is saved
-2. The message is archived in the PGMQ archive table
-3. The corresponding step state is updated (to 'completed' if all tasks for this step are done)
+1. The task status is updated to 'completed' and the `output` is saved
+2. The message is archived in the PGMQ archive table.
+3. The corresponding `step_state` is updated to 'completed'
 4. Any dependent steps that now have all dependencies completed are automatically started
-5. The run's remaining_steps counter is decremented if a step was completed
-6. If all steps are complete, the run is marked as completed and final outputs are aggregated
+5. The run's remaining_steps counter is decremented
+6. If all steps are completed, the run is marked as completed and final outputs are aggregated in the same way, as `input` for a task is produced
 
 ### Worker acknowledges failure of executions
 
@@ -107,21 +157,24 @@ If a task fails during processing, the worker acknowledges this using `fail_task
 SELECT pgflow.fail_task(
   run_id => '<run_uuid>',
   step_slug => 'fetch_url',
-  task_index => 0,
-  error_message => 'Connection timeout when fetching URL'
+  task_index => 0, -- we will have multiple tasks for a step in the future
+  error_message => 'Connection timeout when fetching URL'::text
 );
 ```
 
 When a task fails:
+
 1. The system checks if there are remaining retry attempts available
 2. If retries are available:
    - The task remains in 'queued' status for another attempt
    - The message is given a delayed visibility based on exponential backoff
+   - No worker is able to process the task until the visibility timout expires
 3. If no retries remain:
    - The task is marked as 'failed'
    - The step is marked as 'failed'
    - The run is marked as 'failed'
    - The message is archived in the PGMQ archive table
+   - Workers are notified of run failure and abort any pending tasks (to be implemented!)
 
 ### Retries and timeouts
 
@@ -152,7 +205,9 @@ The system applies exponential backoff for retries using the formula:
 delay = base_delay * (2 ^ attempts_count)
 ```
 
-Timeouts are enforced by setting the message visibility timeout to the step's timeout value plus a small buffer. If a worker doesn't acknowledge completion or failure within this period, the task becomes visible again and can be retried.
+Timeouts are enforced by setting the message visibility timeout to the step's timeout value plus a small buffer. 
+Edge Worker will use `timeout` (without the buffer) to terminate any pending tasks that exceed this limit.
+If a worker doesn't acknowledge completion or failure within this period, the task becomes visible again and can be retried.
 
 ### Run completion with output
 
@@ -165,26 +220,4 @@ SELECT run_id, status, output FROM pgflow.runs WHERE run_id = '<run_uuid>';
 --     run_id  | status    | output
 -- ------------+-----------+-----------------------------------------------------
 --  <run uuid> | completed | {"create_report": {"summary": "...", "images": 5}}
-
-## Schema Design
-
-### Static definition tables
-
-- `flows` (just an identity for the workflow with some global options)
-- `steps` (DAG nodes belonging to particular `flows`, with option overrides)
-- `deps` (DAG edges between `steps`)
-
-### Runtime state tables
-
-- `runs` (execution instances of `flows`)
-- `step_states` (states of individual `steps` within a `run`)
-- `step_tasks` (units of work for individual `steps` within a `run`, so we can have fanouts)
-
-## Execution Model
-
-The SQL Core handles the workflow lifecycle through these key operations:
-
-1. **Definition**: Workflows are defined using `create_flow` and `add_step`
-2. **Instantiation**: Workflow instances are started with `start_flow`, creating a new run
-3. **Task Management**: The [Edge Worker](../edge-worker/README.md) polls for available tasks using `poll_for_tasks`
-4. **State Transitions**: When the Edge Worker reports back using `complete_task` or `fail_task`, the SQL Core handles state transitions and schedules dependent steps
+```
