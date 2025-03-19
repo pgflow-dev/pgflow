@@ -1,0 +1,26 @@
+[sqruff]
+dialect = postgres
+max_line_length = 120
+nocolor = True
+# LT12 - End Of File Newline
+#exclude_rules = LT12
+
+[sqruff:indentation]
+indent_unit = space
+tab_space_size = 2
+indented_joins = True
+
+[sqruff:rules:capitalisation.keywords]
+capitalisation_policy = lower
+
+[sqruff:rules:capitalisation.types]
+capitalisation_policy = lower
+
+[sqruff:rules:capitalisation.identifiers]
+capitalisation_policy = lower
+
+[sqruff:rules:capitalisation.functions]
+capitalisation_policy = lower
+
+[sqruff:rules:capitalisation.literals]
+capitalisation_policy = lower

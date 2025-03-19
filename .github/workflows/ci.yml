@@ -39,6 +39,9 @@ jobs:
         with:
           deno-version: 1.x
 
+      - name: Install sqruff
+        uses: quarylabs/install-sqruff-cli-action@main
+
       - run: pnpm install --frozen-lockfile
       - uses: nrwl/nx-set-shas@v4
 

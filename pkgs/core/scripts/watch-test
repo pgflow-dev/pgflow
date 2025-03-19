@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Get all arguments passed to this script
+args="$@"
+
+# Watch for changes in SQL files and run the test with the provided arguments
+find -iname '*.sql' | entr -r -c sh -c "scripts/run-test-with-colors $args"

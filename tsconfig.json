@@ -3,5 +3,8 @@
   "compileOnSave": false,
   "files": [],
   "references": [
+    {
+      "path": "./pkgs/core"
+    }
   ]
 }

@@ -1,0 +1,32 @@
+project_id = "core"
+
+[db]
+port = 50422
+shadow_port = 50420
+major_version = 15
+
+# disable unused features
+[db.seed]
+enabled = true
+
+[api]
+port = 50421  # Add custom port for Kong
+enabled = false  # Keep disabled as per your config
+[db.pooler]
+enabled = false
+[edge_runtime]
+enabled = false
+[realtime]
+enabled = false
+[studio]
+enabled = false
+[inbucket]
+enabled = false
+[analytics]
+enabled = false
+[storage]
+enabled = false
+[auth]
+enabled = false
+
+

@@ -1,0 +1,96 @@
+{
+  "name": "core",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "pkgs/core/src",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["sqruff --config=../../.sqruff lint --parsing-errors"],
+        "inputs": ["{projectRoot}/**/*.sql", "{workspaceRoot}/.sqruff"],
+        "parallel": false
+      }
+    },
+    "fix-sql": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          "sqruff --config=../../.sqruff fix --force --parsing-errors"
+        ],
+        "inputs": ["{projectRoot}/**/*.sql", "{workspaceRoot}/.sqruff"],
+        "parallel": false
+      }
+    },
+    "supabase:ensure-started": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          "supabase status || (echo \"Starting Supabase...\" && supabase start)"
+        ],
+        "parallel": false
+      }
+    },
+    "supabase:start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["supabase start"],
+        "parallel": false
+      }
+    },
+    "supabase:stop": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["supabase stop --no-backup"],
+        "parallel": false
+      }
+    },
+    "supabase:status": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["supabase status"],
+        "parallel": false
+      }
+    },
+    "supabase:restart": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["supabase stop --no-backup", "supabase start"],
+        "parallel": false
+      }
+    },
+    "supabase:reset": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["supabase db reset"],
+        "parallel": false
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["supabase:ensure-started"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["scripts/run-test-with-colors"],
+        "parallel": false
+      }
+    },
+    "test:watch": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "scripts/watch-test"
+      },
+      "cache": false
+    }
+  }
+}
