@@ -26,7 +26,7 @@ select is(
 
 -- TEST: The task's message should be in the queue
 select is(
-  (select count(*)::int from pgmq.q_with_retry),
+  (select count(*)::INT from pgmq.q_with_retry),
   0,
   'There should be no messages in the queue'
 );

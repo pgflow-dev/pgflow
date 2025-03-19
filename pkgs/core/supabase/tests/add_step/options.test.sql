@@ -49,7 +49,7 @@ select results_eq(
 );
 
 -- SETUP: Add step defined with default values again to make sure it doesnt get updated
-SELECT pgflow.add_step('test_flow', 'default_options', max_attempts => 0, base_delay => 15, timeout => 90);
+select pgflow.add_step('test_flow', 'default_options', max_attempts => 0, base_delay => 15, timeout => 90);
 
 -- TEST: Should not update opt_max_attempts, opt_base_delay and opt_timeout
 select results_eq(

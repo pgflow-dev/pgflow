@@ -53,11 +53,11 @@ $$ language plpgsql;
 --------------------------------------------------------------------------------
 ------- poll_and_fail - polls for a task and fails it immediately --------------
 --------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION pgflow_tests.poll_and_fail(
-  flow_slug TEXT,
-  vt INTEGER default 1,
-  qty INTEGER default 1
-) RETURNS setof pgflow.step_tasks AS $$
+create or replace function pgflow_tests.poll_and_fail(
+  flow_slug text,
+  vt integer default 1,
+  qty integer default 1
+) returns setof pgflow.step_tasks as $$
   -- Poll for a task and complete it in one step
   WITH task AS (
     SELECT * FROM pgflow.poll_for_tasks(flow_slug, vt, qty) LIMIT 1
@@ -69,16 +69,16 @@ CREATE OR REPLACE FUNCTION pgflow_tests.poll_and_fail(
     concat(task.step_slug, ' FAILED')
   )
   FROM task;
-$$ LANGUAGE sql;
+$$ language sql;
 
 --------------------------------------------------------------------------------
 ------- poll_and_complete - polls for a task and completes it immediately ------
 --------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION pgflow_tests.poll_and_complete(
-  flow_slug TEXT,
-  vt INTEGER default 1,
-  qty INTEGER default 1
-) RETURNS setof pgflow.step_tasks AS $$
+create or replace function pgflow_tests.poll_and_complete(
+  flow_slug text,
+  vt integer default 1,
+  qty integer default 1
+) returns setof pgflow.step_tasks as $$
   -- Poll for a task and complete it in one step
   WITH task AS (
     SELECT * FROM pgflow.poll_for_tasks(flow_slug, vt, qty) LIMIT 1
@@ -90,13 +90,13 @@ CREATE OR REPLACE FUNCTION pgflow_tests.poll_and_complete(
     jsonb_build_object('input', task.input)
   )
   FROM task;
-$$ LANGUAGE sql;
+$$ language sql;
 
 --------------------------------------------------------------------------------
 ------- message_timing - returns messages with added vt_seconds int ------------
 --------------------------------------------------------------------------------
 create or replace function pgflow_tests.message_timing(step_slug text, queue_name text)
-returns table(
+returns table (
   msg_id bigint,
   read_ct int,
   enqueued_at timestamptz,
@@ -141,9 +141,9 @@ $$;
 -- @param queue_name The name of the queue to modify
 -- @return The number of messages that were made visible
 --
-CREATE OR REPLACE FUNCTION pgflow_tests.reset_message_visibility(
-  queue_name TEXT
-) RETURNS INTEGER AS $$
+create or replace function pgflow_tests.reset_message_visibility(
+  queue_name text
+) returns integer as $$
 DECLARE
   qtable TEXT;
   query TEXT;
@@ -165,7 +165,7 @@ BEGIN
   -- Return the number of messages that were made visible
   RETURN COALESCE(updated_count, 0);
 END;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
 
 
 --------------------------------------------------------------------------------
@@ -180,12 +180,12 @@ $$ LANGUAGE plpgsql;
 -- @param description A description of the test case
 -- @return TEXT result from the is() function
 --
-CREATE OR REPLACE FUNCTION pgflow_tests.assert_retry_delay(
-  queue_name TEXT,
-  step_slug TEXT,
-  expected_delay INTEGER,
-  description TEXT
-) RETURNS TEXT AS $$
+create or replace function pgflow_tests.assert_retry_delay(
+  queue_name text,
+  step_slug text,
+  expected_delay integer,
+  description text
+) returns text as $$
 DECLARE
   actual_delay INTEGER;
 BEGIN
@@ -199,4 +199,4 @@ BEGIN
     description
   );
 END;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
