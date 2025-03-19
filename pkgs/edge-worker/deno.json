@@ -22,7 +22,7 @@
     "test:integration": "deno task db:ensure && deno test --allow-net --allow-env tests/integration"
   },
   "lint": {
-    "exclude": ["supabase/functions/_src/", "dist/", "build/", "node_modules/"]
+    "exclude": ["supabase/functions/_src/", "dist/", "build/", "node_modules/"],
     "rules": {
       "exclude": ["no-slow-types"]
     }

@@ -83,18 +83,15 @@ export default defineConfig({
           {
             label: 'pgflow',
             icon: 'open-book',
-            link: '/pgflow/',
+            link: '/pgflow/what-is-pgflow/',
+            id: 'pgflow',
             badge: {
               text: 'soon!',
               variant: 'note',
             },
-            items: [
-              { label: 'Getting started', link: '/pgflow/getting-started/' },
-              {
-                label: '⚠️ Project Status',
-                link: '/pgflow/project-status/',
-              },
-            ],
+            items: {
+              { label: 'What is pgflow?', link: '/pgflow/what-is-pgflow/' },
+            }
           },
           {
             label: 'Found a bug?',
