@@ -221,3 +221,32 @@ SELECT run_id, status, output FROM pgflow.runs WHERE run_id = '<run_uuid>';
 -- ------------+-----------+-----------------------------------------------------
 --  <run uuid> | completed | {"create_report": {"summary": "...", "images": 5}}
 ```
+
+## Inputs and Outputs
+
+Handlers in pgflow **must return** JSON-serializable values that are captured and saved when `complete_step` is called. These outputs become available as inputs to dependent steps, allowing data to flow through your workflow pipeline.
+
+When a step is executed, it receives an input object where each key is a step_slug of a completed dependency, with the value being that step's output. Each step also receives a special "run" key containing the original input the flow was started with.
+
+### Example: `analyze_text`
+
+When the `analyze_text` step runs, it receives an input object containing the output from its dependency (`fetch_url`) and the original run input. This allows the handler to access both the initial parameters and the results of previous steps.
+
+```json
+{
+  "run": {"url": "https://example.com"},
+  "fetch_url": {"content": "HTML content", "status": 200}
+}
+```
+
+### Example: `create_report`
+
+The `create_report` step depends on both `analyze_text` and `extract_images`. Its input object will contain outputs from both dependencies along with the original run input.
+
+```json
+{
+  "run": {"url": "https://example.com"},
+  "analyze_text": {"sentiment": "positive", "word_count": 1250},
+  "extract_images": {"images": ["image1.jpg", "image2.jpg"], "count": 2}
+}
+```
