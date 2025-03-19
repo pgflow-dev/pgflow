@@ -23,7 +23,7 @@ The actual execution of workflow tasks is handled by the [Edge Worker](../edge-w
 
 ## Schema Design
 
-![Schema ERD Diagram](./schema.svg)
+<a href="./schema.svg"><img src="./schema.svg" alt="Schema ERD Diagram" width="25%" height="25%"></a>
 
 ### Static definition tables
 
