@@ -30,7 +30,7 @@ I have chosen the Elastic License 2.0 for the following reasons:
 
 pgflow consists of multiple packages, each with its own license:
 
-- **`pkgs/core/`** – Licensed under **BSL**, with the goal of revisiting the licensing model in the future.  
+- **`pkgs/core/`** – Licensed under **Elastic License 2.0**, with the goal of revisiting the licensing model in the future.  
 - **`pkgs/edge-worker/`** – Licensed under **Apache 2.0**, so you can freely use and modify it with no additional restrictions.
 - **`pkgs/website/`** – Licensed under **Apache 2.0**, same as the edge-worker package, allowing free use, modification, and distribution of the documentation website.
 
