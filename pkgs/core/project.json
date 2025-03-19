@@ -25,6 +25,16 @@
         "parallel": false
       }
     },
+    "supabase:ensure-started": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          "supabase status || (echo \"Starting Supabase...\" && supabase start)"
+        ],
+        "parallel": false
+      }
+    },
     "supabase:start": {
       "executor": "nx:run-commands",
       "options": {
@@ -67,6 +77,7 @@
     },
     "test": {
       "executor": "nx:run-commands",
+      "dependsOn": ["supabase:ensure-started"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["scripts/run-test-with-colors"],
