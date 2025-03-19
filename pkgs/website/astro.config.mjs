@@ -89,9 +89,9 @@ export default defineConfig({
               text: 'soon!',
               variant: 'note',
             },
-            items: {
+            items: [
               { label: 'What is pgflow?', link: '/pgflow/what-is-pgflow/' },
-            }
+            ]
           },
           {
             label: 'Found a bug?',
