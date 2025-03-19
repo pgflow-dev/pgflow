@@ -23,6 +23,8 @@ The actual execution of workflow tasks is handled by the [Edge Worker](../edge-w
 
 ## Schema Design
 
+![Schema ERD Diagram](./schema.svg)
+
 ### Static definition tables
 
 - `flows` (just an identity for the workflow with some global options)
