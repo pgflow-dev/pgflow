@@ -25,7 +25,7 @@ I have chosen the Business Source License (BSL) for the following reasons:
 
 ## Licensing for Different Parts of pgflow
 
-> [!CAUTION]
+> [!WARNING]
 > Unless explicitly stated otherwise, all components of pgflow are licensed under the Business Source License (BSL). The `LICENSE` file in each respective package is the source of truth and should be consulted for definitive licensing information.
 
 pgflow consists of multiple packages, each with its own license:
