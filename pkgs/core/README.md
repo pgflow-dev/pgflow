@@ -36,8 +36,6 @@ PostgreSQL-native workflow engine for defining, managing, and tracking DAG-based
 
 The pgflow SQL Core provides the data model, state machine, and transactional functions for workflow management. It treats workflows as Directed Acyclic Graphs (DAGs) of steps, each step being a simple state machine.
 
-<a href="./flow-lifecycle.svg"><img src="./flow-lifecycle.svg" alt="Flow Lifecycle" width="25%" height="25%"></a>
-
 This package focuses on:
 
 - Defining and storing workflow shapes
@@ -83,6 +81,8 @@ The SQL Core handles the workflow lifecycle through these key operations:
 2. **Instantiation**: Workflow instances are started with `start_flow`, creating a new run
 3. **Task Management**: The [Edge Worker](../edge-worker/README.md) polls for available tasks using `poll_for_tasks`
 4. **State Transitions**: When the Edge Worker reports back using `complete_task` or `fail_task`, the SQL Core handles state transitions and schedules dependent steps
+
+<a href="./flow-lifecycle.svg"><img src="./flow-lifecycle.svg" alt="Flow Lifecycle" width="25%" height="25%"></a>
 
 ## Getting Started
 
