@@ -36,7 +36,7 @@ PostgreSQL-native workflow engine for defining, managing, and tracking DAG-based
 
 The pgflow SQL Core provides the data model, state machine, and transactional functions for workflow management. It treats workflows as Directed Acyclic Graphs (DAGs) of steps, each step being a simple state machine.
 
-<a href="./flow_lifecycle.svg"><img src="./flow_lifecycle.svg" alt="Flow Lifecycle" width="25%" height="25%"></a>
+<a href="./flow-lifecycle.svg"><img src="./flow-lifecycle.svg" alt="Flow Lifecycle" width="25%" height="25%"></a>
 
 This package focuses on:
 
