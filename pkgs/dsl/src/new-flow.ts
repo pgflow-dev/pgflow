@@ -72,18 +72,13 @@ export class Flow<
 
   step<
     Slug extends string,
-    RetType extends Json,
-    Deps extends keyof Steps & string = never,
-    Payload extends { run: RunPayload } & { [K in Deps]: Steps[K] } = {
-      run: RunPayload;
-    } & { [K in Deps]: Steps[K] }
+    Deps extends Extract<keyof Steps, string> = never,
+    RetType extends Json = Json,
+    Payload = { run: RunPayload } & { [K in Deps]: Steps[K] }
   >(
-    opts: StepOptions,
+    opts: StepOptions & { slug: Slug; dependsOn?: Deps[] },
     handler: (payload: Simplify<Payload>) => RetType | Promise<RetType>
-  ): Flow<
-    RunPayload,
-    MergeObjects<Steps, { [K in Slug]: UnwrapPromise<RetType> }>
-  > {
+  ): Flow<RunPayload, Steps & { [K in Slug]: UnwrapPromise<RetType> }> {
     type NewSteps = MergeObjects<
       Steps,
       { [K in Slug]: UnwrapPromise<RetType> }

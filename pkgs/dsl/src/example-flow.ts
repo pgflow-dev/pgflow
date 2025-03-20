@@ -5,15 +5,32 @@ type Input = {
   url: string;
 };
 
-// noop but async
-async function noop(..._args: any[]) {
-  return Promise.race([]);
+async function scrapeWebsite(url: string) {
+  return {
+    content: `Lorem ipsum ${url.length}`,
+  };
 }
 
-const scrapeWebsite = noop;
-const analyzeSentiment = noop;
-const summarizeWithAI = noop;
-const saveToDb = noop;
+const analyzeSentiment = async (_content: string) => {
+  return {
+    score: Math.random(),
+  };
+};
+const summarizeWithAI = async (content: string) => {
+  return {
+    aiSummary: `Lorem ipsum ${content.length}`,
+  };
+};
+
+const saveToDb = async (_input: {
+  websiteUrl: string;
+  sentiment: number;
+  summary: string;
+}) => {
+  return {
+    status: 'success',
+  };
+};
 
 export const AnalyzeWebsite = new Flow<Input>({
   slug: 'analyze_website',
@@ -35,10 +52,12 @@ export const AnalyzeWebsite = new Flow<Input>({
   )
   .step(
     { slug: 'saveToDb', dependsOn: ['sentiment', 'summary'] },
-    async (input) =>
-      await saveToDb({
+    async (input) => {
+      const results = await saveToDb({
         websiteUrl: input.run.url,
         sentiment: input.sentiment.score,
-        summary: input.summary,
-      }).status
+        summary: input.summary.aiSummary,
+      });
+      return results.status;
+    }
   );
