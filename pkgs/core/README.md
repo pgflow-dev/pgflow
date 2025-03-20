@@ -13,14 +13,14 @@ PostgreSQL-native workflow engine for defining, managing, and tracking DAG-based
 - [Architecture](#architecture)
   - [Schema Design](#schema-design)
   - [Execution Model](#execution-model)
-- [Getting Started](#getting-started)
+- [Example Flow and its life](#getting-started)
   - [Defining a Workflow](#defining-a-workflow)
   - [Starting a Workflow Run](#starting-a-workflow-run)
-- [Workflow Execution](#workflow-execution)
-  - [Task Polling](#task-polling)
-  - [Task Completion](#task-completion)
-  - [Error Handling](#error-handling)
-  - [Retries and Timeouts](#retries-and-timeouts)
+  - [Workflow Execution](#workflow-execution)
+    - [Task Polling](#task-polling)
+    - [Task Completion](#task-completion)
+    - [Error Handling](#error-handling)
+    - [Retries and Timeouts](#retries-and-timeouts)
 - [TypeScript Flow DSL](#typescript-flow-dsl)
   - [Overview](#overview-1)
   - [Type Inference System](#type-inference-system)
@@ -92,7 +92,7 @@ The SQL Core handles the workflow lifecycle through these key operations:
 
 <a href="./flow-lifecycle.svg"><img src="./flow-lifecycle.svg" alt="Flow Lifecycle" width="25%" height="25%"></a>
 
-## Getting Started
+## Example flow and its life
 
 Let's walk through creating and running a workflow that fetches a URL, analyzes the content, extracts images, and creates a report.
 
@@ -147,9 +147,9 @@ When a workflow starts:
 > [!NOTE]
 > The `input` argument must be a valid JSONB object: string, number, boolean, array, object or null.
 
-## Workflow Execution
+### Workflow Execution
 
-### Task Polling
+#### Task Polling
 
 The Edge Worker continuously polls for available tasks using the `poll_for_tasks` function:
 
@@ -170,7 +170,7 @@ When a task is polled:
 
 This process happens in a single transaction to ensure reliability. The worker then executes the appropriate handler function based on the task metadata.
 
-### Task Completion
+#### Task Completion
 
 After successful processing, the worker acknowledges completion:
 
@@ -191,7 +191,7 @@ When a task completes:
 5. The run's remaining_steps counter is decremented
 6. If all steps are completed, the run is marked as completed with aggregated outputs
 
-### Error Handling
+#### Error Handling
 
 If a task fails, the worker acknowledges this using `fail_task`:
 
@@ -218,7 +218,7 @@ The system handles failures by:
    - Archiving the message in PGMQ
    - Notifying workers to abort pending tasks (future feature)
 
-### Retries and Timeouts
+#### Retries and Timeouts
 
 Retry behavior can be configured at both the flow and step level:
 
