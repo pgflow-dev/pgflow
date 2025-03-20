@@ -57,7 +57,13 @@ The actual execution of workflow tasks is handled by the [Edge Worker](../edge-w
 
 ### Schema Design
 
-<a href="./schema.svg"><img src="./schema.svg" alt="Schema ERD Diagram" width="25%" height="25%"></a>
+[Schema ERD Diagram (click to enlarge)](./schema.svg)
+
+<a href="./schema.svg">
+  <img src="./schema.svg" alt="Schema ERD Diagram" width="25%" height="25%">
+</a>
+
+---
 
 The schema consists of two main categories of tables:
 
@@ -81,6 +87,8 @@ The SQL Core handles the workflow lifecycle through these key operations:
 2. **Instantiation**: Workflow instances are started with `start_flow`, creating a new run
 3. **Task Management**: The [Edge Worker](../edge-worker/README.md) polls for available tasks using `poll_for_tasks`
 4. **State Transitions**: When the Edge Worker reports back using `complete_task` or `fail_task`, the SQL Core handles state transitions and schedules dependent steps
+
+[Flow lifecycle diagram (click to enlarge)](./flow-lifecycle.svg)
 
 <a href="./flow-lifecycle.svg"><img src="./flow-lifecycle.svg" alt="Flow Lifecycle" width="25%" height="25%"></a>
 
