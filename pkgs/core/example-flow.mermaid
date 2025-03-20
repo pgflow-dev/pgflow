@@ -33,7 +33,7 @@ sequenceDiagram
 
     Worker->>Handler: Call handler function with task input
 
-    rect rgb(230, 255, 240)
+    rect rgb(235, 255, 235)
       note left of Handler: Task succeeds
       activate Handler
       Handler-->>Worker: Return result
@@ -53,7 +53,7 @@ sequenceDiagram
       deactivate pgflow
     end
 
-    rect rgb(193, 236, 245)
+    rect rgb(250, 240, 240)
       note left of Handler: Handler throws or exceeds timeout
 
       activate Handler
@@ -64,15 +64,15 @@ sequenceDiagram
       activate pgflow
       pgflow->>pgflow: Check remaining retry attempts
 
-      rect rgb(255, 240, 240)
+      rect rgb(240, 250, 240)
         note right of pgflow: Retries remaining
         pgflow->>PGMQ: Delay message visibility
         PGMQ->>PGMQ: Message becomes visible
         note right of Worker: Worker attempts execution again
         Worker->>pgflow: poll_for_tasks(...)
       end
-      rect rgb(255, 240, 240)
-        note right of pgflow: No retries remaining 
+      rect rgb(255, 225, 225)
+        note right of pgflow: No retries remaining
         pgflow->>pgflow: Mark task as 'failed'
         pgflow->>pgflow: Mark step as 'failed'
         pgflow->>pgflow: Mark run as 'failed'
