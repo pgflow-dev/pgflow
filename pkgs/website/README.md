@@ -1,4 +1,10 @@
-# Starlight Starter Kit: Basics
+# pgflow.dev documentation website
+
+This is documentation website for **pgflow** stack, hosted at [pgflow.dev](https://pgflow.dev).
+
+> [!NOTE]
+> This project is licensed under [AGPL v3](./LICENSE.md) license and is part of **pgflow** stack.
+> See [LICENSING_OVERVIEW.md](../../LICENSING_OVERVIEW.md) in root of this monorepo for more details.
 
 [![Built with Starlight](https://astro.badg.es/v2/built-with-starlight/tiny.svg)](https://starlight.astro.build)
 

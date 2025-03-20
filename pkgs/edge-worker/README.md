@@ -9,6 +9,10 @@
 
 A task queue worker for Supabase Edge Functions that extends background tasks with useful features.
 
+> [!NOTE]
+> This project is licensed under [AGPL v3](./LICENSE.md) license and is part of **pgflow** stack.
+> See [LICENSING_OVERVIEW.md](../../LICENSING_OVERVIEW.md) in root of this monorepo for more details.
+
 ## What is Edge Worker?
 
 Edge Worker processes messages from a queue and executes user-defined functions with their payloads. It builds upon [Supabase Background Tasks](https://supabase.com/docs/guides/functions/background-tasks) to add reliability features like retries, concurrency control and monitoring.
