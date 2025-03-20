@@ -285,19 +285,19 @@ const AnalyzeWebsite = new Flow<Input>({
   baseDelay: 5,
   timeout: 10,
 })
-  .step({ slug: "website" }, async (input) => scrapeWebsite(input.run.url))
+  .step({ slug: "website" }, async (input) => await scrapeWebsite(input.run.url))
   .step(
     { slug: "sentiment", dependsOn: ["website"], timeout: 30, maxAttempts: 5 },
-    async (input) => analyzeSentiment(input.website.content)
+    async (input) => await analyzeSentiment(input.website.content)
   )
   .step(
     { slug: "summary", dependsOn: ["website"] },
-    async (input) => summarizeWithAI(input.website.content)
+    async (input) => await summarizeWithAI(input.website.content)
   )
   .step(
     { slug: "saveToDb", dependsOn: ["sentiment", "summary"] },
     async (input) =>
-      saveToDb({
+      await saveToDb({
         websiteUrl: input.run.url,
         sentiment: input.sentiment.score,
         summary: input.summary,
