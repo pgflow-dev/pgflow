@@ -56,9 +56,9 @@ The SQL Core handles the workflow lifecycle through these key operations:
 
 Defining a flow is done using two SQL functions: `create_flow` and `add_step`.
 
-`add_step` accepts an optionsl `deps` array of step slugs that the new step depends on.
+`add_step` accepts an optional `deps` array of step slugs that the new step depends on.
 
-To define following workflow (left to right), where:
+To define the following workflow (left to right), where:
 
 - `fetch_url` is entry point ("root step" in pgflow nomenclature)
 - `analyze_text` and `extract_images` are parallel steps, depending on `fetch_url`
@@ -66,7 +66,7 @@ To define following workflow (left to right), where:
 
 ![workflow graph](./flow.svg)
 
-You would call following SQL functions:
+You would call the following SQL functions:
 
 ```sql
 -- Define workflow with parallel steps
@@ -79,12 +79,12 @@ SELECT pgflow.add_step('web_analysis', 'create_report', deps => ARRAY['analyze_t
 
 > [!WARNING]
 > You need to call `add_step` in topological order, which is enforced by foreign key constraints.
-> Is't it neat?
+> Isn't it neat?
 
 > [!NOTE]
 > You can have an arbitrary number of "root steps". 
-> You can even create w flow with multiple root steps only - they will be converged
-> at the end of a run and their `output`s saved as run's `output`
+> You can even create a flow with multiple root steps only - they will be converged
+> at the end of a run and their `output`s saved as the run's `output`
 
 ### Starting a flow run
 
@@ -127,7 +127,7 @@ When a task is polled, we:
 
 1. Hide the message from other workers for the specified `timeout + 2s` (configurable per flow and step basis)
 1. Increment the task's attempts counter for retry tracking
-1. Build step `input` object by combining the run input with outputs from completed dependency steps (more on this later)is constructed 
+1. Build step `input` object by combining the run input with outputs from completed dependency steps (more on this later)
 1. Task metadata (flow_slug, step_slug, run_id) and step `input` are returned to the worker
 
 This happens in a single transaction, so if the worker dies, the task is not lost.
@@ -174,7 +174,7 @@ When a task fails:
 2. If retries are available:
    - The task remains in 'queued' status for another attempt
    - The message is given a delayed visibility based on exponential backoff
-   - No worker is able to process the task until the visibility timout expires
+   - No worker is able to process the task until the visibility timeout expires
 3. If no retries remain:
    - The task is marked as 'failed'
    - The step is marked as 'failed'
@@ -230,7 +230,7 @@ SELECT run_id, status, output FROM pgflow.runs WHERE run_id = '<run_uuid>';
 
 ## Inputs and Outputs
 
-Handlers in pgflow **must return** JSON-serializable values that are captured and saved when `complete_step` is called. These outputs become available as inputs to dependent steps, allowing data to flow through your workflow pipeline.
+Handlers in pgflow **must return** JSON-serializable values that are captured and saved when `complete_task` is called. These outputs become available as inputs to dependent steps, allowing data to flow through your workflow pipeline.
 
 When a step is executed, it receives an input object where each key is a step_slug of a completed dependency, with the value being that step's output. Each step also receives a special "run" key containing the original input the flow was started with.
 
