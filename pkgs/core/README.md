@@ -2,6 +2,10 @@
 
 PostgreSQL-native workflow engine for defining, managing, and tracking DAG-based workflows directly in your database.
 
+> [!NOTE]
+> This project is licensed under [AGPL v3](./LICENSE.md) license and is part of **pgflow** stack.
+> See [LICENSING_OVERVIEW.md](../../LICENSING_OVERVIEW.md) in root of this monorepo for more details.
+
 ## Overview
 
 The pgflow SQL Core provides the data model, state machine, and transactional functions for workflow management. It treats workflows as DAGs of steps, each step being a simple state machine. This package focuses on:
