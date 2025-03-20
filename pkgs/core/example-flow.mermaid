@@ -1,0 +1,5 @@
+graph LR
+      A[fetch_url] --> B[sentiment]
+      A --> C[summary]
+      B --> D[saveToDb]
+      C --> D
