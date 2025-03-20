@@ -1,0 +1,65 @@
+sequenceDiagram
+    participant Client
+    participant PgFlow as PgFlow SQL Core
+    participant PGMQ as PGMQ Queue
+    participant Worker as Edge Worker
+    participant Handler as Task Handler
+
+    Client->>PgFlow: create_flow('web_analysis')
+    Client->>PgFlow: add_step('web_analysis', 'fetch_url')
+    Client->>PgFlow: add_step('web_analysis', 'analyze_text', deps=>['fetch_url'])
+    Client->>PgFlow: start_flow('web_analysis', input)
+    
+    activate PgFlow
+    PgFlow->>PgFlow: Create run record
+    PgFlow->>PgFlow: Initialize step_states
+    PgFlow->>PgFlow: Create step_tasks for root steps
+    PgFlow->>PGMQ: Enqueue message for root step task
+    PgFlow-->>Client: Return run details
+    deactivate PgFlow
+    
+    Worker->>PgFlow: poll_for_tasks('web_analysis', vt, qty)
+    
+    activate PgFlow
+    PgFlow->>PGMQ: Get visible messages
+    PGMQ-->>PgFlow: Return messages
+    PgFlow->>PgFlow: Mark tasks as processing
+    PgFlow->>PgFlow: Build step input by combining run input & dependency outputs
+    PgFlow-->>Worker: Return tasks with metadata
+    deactivate PgFlow
+    
+    Worker->>Handler: Execute task with step input
+    
+    activate Handler
+    Handler-->>Worker: Return result
+    deactivate Handler
+    
+    Worker->>PgFlow: complete_task(run_id, step_slug, task_index, output)
+    
+    activate PgFlow
+    PgFlow->>PgFlow: Update task status to 'completed'
+    PgFlow->>PGMQ: Archive message
+    PgFlow->>PgFlow: Update step_state to 'completed'
+    PgFlow->>PgFlow: Check & start dependent steps
+    PgFlow->>PGMQ: Enqueue messages for ready dependent steps
+    PgFlow->>PgFlow: Decrement remaining_steps counter
+    PgFlow->>PgFlow: If all steps completed, mark run as 'completed'
+    PgFlow-->>Worker: Confirmation
+    deactivate PgFlow
+    
+    Worker->>PgFlow: fail_task(run_id, step_slug, task_index, error_message)
+    
+    activate PgFlow
+    PgFlow->>PgFlow: Check remaining retry attempts
+    
+    alt Retries remaining
+        PgFlow->>PGMQ: Delay message visibility (exponential backoff)
+        PgFlow-->>Worker: Confirmation (will retry)
+    else No retries remaining
+        PgFlow->>PgFlow: Mark task as 'failed'
+        PgFlow->>PgFlow: Mark step as 'failed'
+        PgFlow->>PgFlow: Mark run as 'failed'
+        PgFlow->>PGMQ: Archive message
+        PgFlow-->>Worker: Confirmation (failure)
+    end
+    deactivate PgFlow

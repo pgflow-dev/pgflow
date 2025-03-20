@@ -17,6 +17,10 @@ The pgflow SQL Core provides the data model, state machine, and transactional fu
 
 The actual execution of workflow tasks is handled by the [Edge Worker](../edge-worker/README.md), which calls back to the SQL Core to acknowledge task completion or failure.
 
+### Lifecycle of a workflow run
+
+<a href="./flow_lifecycle.svg"><img src="./flow_lifecycle.svg" alt="Flow Lifecycle" width="25%" height="25%"></a>
+
 ## Features
 
 - **Declarative Workflows**: Define flows and steps via SQL tables
@@ -25,7 +29,18 @@ The actual execution of workflow tasks is handled by the [Edge Worker](../edge-w
 - **Queue Integration**: Built on pgmq for reliable task processing
 - **Transactional Guarantees**: All state transitions are ACID-compliant
 
+## Execution Model
+
+The SQL Core handles the workflow lifecycle through these key operations:
+
+1. **Definition**: Workflows are defined using `create_flow` and `add_step`
+2. **Instantiation**: Workflow instances are started with `start_flow`, creating a new run
+3. **Task Management**: The [Edge Worker](../edge-worker/README.md) polls for available tasks using `poll_for_tasks`
+4. **State Transitions**: When the Edge Worker reports back using `complete_task` or `fail_task`, the SQL Core handles state transitions and schedules dependent steps
+
 ## Schema Design
+
+(click to view bigger image)
 
 <a href="./schema.svg"><img src="./schema.svg" alt="Schema ERD Diagram" width="25%" height="25%"></a>
 
@@ -41,16 +56,10 @@ The actual execution of workflow tasks is handled by the [Edge Worker](../edge-w
 - `step_states` (states of individual `steps` within a `run`)
 - `step_tasks` (units of work for individual `steps` within a `run`, so we can have fanouts)
 
-## Execution Model
+## Example Flow and its lifecycle
 
-The SQL Core handles the workflow lifecycle through these key operations:
-
-1. **Definition**: Workflows are defined using `create_flow` and `add_step`
-2. **Instantiation**: Workflow instances are started with `start_flow`, creating a new run
-3. **Task Management**: The [Edge Worker](../edge-worker/README.md) polls for available tasks using `poll_for_tasks`
-4. **State Transitions**: When the Edge Worker reports back using `complete_task` or `fail_task`, the SQL Core handles state transitions and schedules dependent steps
-
-## Core API
+We will create and start a workflow that fetches a URL, analyzes the content, and extracts images from the content,
+then creates a report from the results.
 
 ### Define shape of the flow
 
@@ -103,6 +112,7 @@ SELECT * FROM pgflow.start_flow(
 
 This will:
 
+- create a new `run` record
 - create initial state for each step (`step_states` rows)
 - start root steps (in our case `fetch_url`) by marking them `started`
 - create a task for the root steps (tasks are units of work and used by workers)
