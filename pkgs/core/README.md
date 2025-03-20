@@ -21,6 +21,12 @@ PostgreSQL-native workflow engine for defining, managing, and tracking DAG-based
   - [Task Completion](#task-completion)
   - [Error Handling](#error-handling)
   - [Retries and Timeouts](#retries-and-timeouts)
+- [TypeScript Flow DSL](#typescript-flow-dsl)
+  - [Overview](#overview-1)
+  - [Type Inference System](#type-inference-system)
+  - [Basic Example](#basic-example)
+  - [How Payload Types Are Built](#how-payload-types-are-built)
+  - [Benefits of Automatic Type Inference](#benefits-of-automatic-type-inference)
 - [Data Flow](#data-flow)
   - [Input and Output Handling](#input-and-output-handling)
   - [Run Completion](#run-completion)
@@ -234,6 +240,120 @@ delay = base_delay * (2 ^ attempts_count)
 ```
 
 Timeouts are enforced by setting the message visibility timeout to the step's timeout value plus a small buffer. If a worker doesn't acknowledge completion or failure within this period, the task becomes visible again and can be retried.
+
+## TypeScript Flow DSL
+
+> [!NOTE]
+> TypeScript Flow DSL is a Work In Progress and is not ready yet!
+
+### Overview
+
+While the SQL Core engine handles workflow definitions and state management, the primary way to define and work with your workflow logic is via the Flow DSL in TypeScript. This DSL offers a fluent API that makes it straightforward to outline the steps in your flow with full type safety.
+
+### Type Inference System
+
+The most powerful feature of the Flow DSL is its **automatic type inference system**:
+
+1. You only need to annotate the initial Flow input type
+2. The return type of each step is automatically inferred from your handler function
+3. These return types become available in the payload of dependent steps
+4. The TypeScript compiler builds a complete type graph matching your workflow DAG
+
+This means you get full IDE autocompletion and type checking throughout your workflow without manual type annotations.
+
+### Basic Example
+
+Here's an example that matches our web analysis workflow:
+
+```ts
+import { Flow } from 'pgflow-dsl';
+
+// The only type annotation you need to provide
+type Input = {
+  url: string;
+};
+
+const WebAnalysisFlow = new Flow<Input>({ 
+  slug: "web_analysis",
+  maxAttempts: 3,
+  baseDelay: 5,
+  timeout: 10
+})
+  .step(
+    {
+      slug: 'fetch_url',
+      maxAttempts: 5,
+      timeout: 30
+    },
+    async (payload) => {
+      // payload is typed as: { run: Input }
+      // In a real-world scenario, you'd fetch the URL here
+      return { content: '<html>...fetched content...</html>' };
+    }
+  )
+  .step(
+    {
+      slug: 'analyze_text',
+      dependsOn: ['fetch_url'],
+    },
+    async (payload) => {
+      // payload is automatically typed as:
+      // {
+      //   run: Input,
+      //   fetch_url: { content: string }
+      // }
+      
+      // TypeScript knows payload.fetch_url.content exists!
+      return { sentiment: 'positive', wordCount: 1234 };
+    }
+  )
+  .step(
+    {
+      slug: 'extract_images',
+      dependsOn: ['fetch_url'],
+    },
+    async (payload) => {
+      // payload has the same type as in analyze_text
+      return { images: ['image1.jpg', 'image2.jpg'], count: 2 };
+    }
+  )
+  .step(
+    {
+      slug: 'create_report',
+      dependsOn: ['analyze_text', 'extract_images'],
+    },
+    async (payload) => {
+      // payload is automatically typed as:
+      // {
+      //   run: Input,
+      //   analyze_text: { sentiment: string, wordCount: number },
+      //   extract_images: { images: string[], count: number }
+      // }
+      
+      // TypeScript knows all these properties exist!
+      return {
+        summary: `Found ${payload.extract_images.count} images with sentiment: ${payload.analyze_text.sentiment}`,
+      };
+    }
+  );
+```
+
+### How Payload Types Are Built
+
+The payload object for each step is constructed dynamically based on:
+
+1. **The `run` property**: Always contains the original workflow input
+2. **Dependency outputs**: Each dependency's output is available under a key matching the dependency's ID
+3. **DAG structure**: Only outputs from direct dependencies are included in the payload
+
+This means your step handlers receive exactly the data they need, properly typed, without any manual type declarations beyond the initial Flow input type.
+
+### Benefits of Automatic Type Inference
+
+- **Refactoring safety**: Change a step's output, and TypeScript will flag all dependent steps that need updates
+- **Discoverability**: IDE autocompletion shows exactly what data is available in each step
+- **Error prevention**: Catch typos and type mismatches at compile time, not runtime
+- **Documentation**: The types themselves serve as living documentation of your workflow's data flow
 
 ## Data Flow
 
