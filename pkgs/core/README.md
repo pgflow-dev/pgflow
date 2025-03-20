@@ -92,20 +92,20 @@ Let's walk through creating and running a workflow that fetches a URL, analyzes 
 
 Workflows are defined using two SQL functions: `create_flow` and `add_step`.
 
-![workflow graph](./flow.svg)
+![example flow graph](./example-flow.svg)
 
 In this example, we'll create a workflow with:
-- `fetch_url` as the entry point ("root step")
-- `analyze_text` and `extract_images` as parallel steps that depend on `fetch_url`
-- `create_report` as the final step, depending on both parallel steps
+- `website` as the entry point ("root step")
+- `sentiment` and `summary` as parallel steps that depend on `website`
+- `saveToDb` as the final step, depending on both parallel steps
 
 ```sql
 -- Define workflow with parallel steps
-SELECT pgflow.create_flow('web_analysis');
-SELECT pgflow.add_step('web_analysis', 'fetch_url');
-SELECT pgflow.add_step('web_analysis', 'analyze_text', deps => ARRAY['fetch_url']);
-SELECT pgflow.add_step('web_analysis', 'extract_images', deps => ARRAY['fetch_url']);
-SELECT pgflow.add_step('web_analysis', 'create_report', deps => ARRAY['analyze_text', 'extract_images']);
+SELECT pgflow.create_flow('analyze_website');
+SELECT pgflow.add_step('analyze_website', 'website');
+SELECT pgflow.add_step('analyze_website', 'sentiment', deps => ARRAY['website']);
+SELECT pgflow.add_step('analyze_website', 'summary', deps => ARRAY['website']);
+SELECT pgflow.add_step('analyze_website', 'saveToDb', deps => ARRAY['sentiment', 'summary']);
 ```
 
 > [!WARNING]
@@ -120,13 +120,13 @@ To start a workflow, call `start_flow` with a flow slug and input arguments:
 
 ```sql
 SELECT * FROM pgflow.start_flow(
-  flow_slug => 'web_analysis', 
+  flow_slug => 'analyze_website', 
   input => '{"url": "https://example.com"}'::jsonb
 );
 
---     run_id  | flow_slug    | status  |  input                         | output | remaining_steps 
--- ------------+--------------+---------+--------------------------------+--------+-----------------
---  <run uuid> | web_analysis | started | {"url": "https://example.com"} | [NULL] |               4
+--     run_id  | flow_slug       | status  |  input                         | output | remaining_steps 
+-- ------------+-----------------+---------+--------------------------------+--------+-----------------
+--  <run uuid> | analyze_website | started | {"url": "https://example.com"} | [NULL] |               4
 ```
 
 When a workflow starts:
@@ -147,7 +147,7 @@ The Edge Worker continuously polls for available tasks using the `poll_for_tasks
 
 ```sql
 SELECT * FROM pgflow.poll_for_tasks(
-  queue_name => 'web_analysis',
+  queue_name => 'analyze_website',
   vt => 60, -- visibility timeout in seconds
   qty => 5  -- maximum number of tasks to fetch
 );
@@ -169,7 +169,7 @@ After successful processing, the worker acknowledges completion:
 ```sql
 SELECT pgflow.complete_task(
   run_id => '<run_uuid>',
-  step_slug => 'fetch_url',
+  step_slug => 'website',
   task_index => 0, -- we will have multiple tasks for a step in the future
   output => '{"content": "HTML content", "status": 200}'::jsonb
 );
@@ -190,7 +190,7 @@ If a task fails, the worker acknowledges this using `fail_task`:
 ```sql
 SELECT pgflow.fail_task(
   run_id => '<run_uuid>',
-  step_slug => 'fetch_url',
+  step_slug => 'website',
   task_index => 0,
   error_message => 'Connection timeout when fetching URL'::text
 );
@@ -217,7 +217,7 @@ Retry behavior can be configured at both the flow and step level:
 ```sql
 -- Flow-level defaults
 SELECT pgflow.create_flow(
-  flow_slug => 'web_analysis',
+  flow_slug => 'analyze_website',
   max_attempts => 3,    -- Maximum retry attempts (including first attempt)
   base_delay => 5,      -- Base delay in seconds for exponential backoff
   timeout => 60         -- Task timeout in seconds
@@ -225,9 +225,9 @@ SELECT pgflow.create_flow(
 
 -- Step-level overrides
 SELECT pgflow.add_step(
-  flow_slug => 'web_analysis',
-  step_slug => 'fetch_url',
-  deps_slugs => ARRAY[]::text[],
+  flow_slug => 'analyze_website',
+  step_slug => 'sentiment',
+  deps_slugs => ARRAY['website']::text[],
   max_attempts => 5,    -- Override max attempts for this step
   base_delay => 2,      -- Override base delay for exponential backoff
   timeout => 30         -- Override timeout for this step
@@ -263,78 +263,37 @@ This means you get full IDE autocompletion and type checking throughout your wor
 
 ### Basic Example
 
-Here's an example that matches our web analysis workflow:
+Here's an example that matches our website analysis workflow:
 
 ```ts
-import { Flow } from 'pgflow-dsl';
-
-// The only type annotation you need to provide
+// Provide a type for the input of the Flow
 type Input = {
   url: string;
 };
 
-const WebAnalysisFlow = new Flow<Input>({ 
-  slug: "web_analysis",
+const AnalyzeWebsite = new Flow<Input>({
+  slug: "analyze_website",
   maxAttempts: 3,
   baseDelay: 5,
-  timeout: 10
+  timeout: 10,
 })
+  .step({ slug: "website" }, async (input) => scrapeWebsite(input.run.url))
   .step(
-    {
-      slug: 'fetch_url',
-      maxAttempts: 5,
-      timeout: 30
-    },
-    async (payload) => {
-      // payload is typed as: { run: Input }
-      // In a real-world scenario, you'd fetch the URL here
-      return { content: '<html>...fetched content...</html>' };
-    }
+    { slug: "sentiment", dependsOn: ["website"], timeout: 30, maxAttempts: 5 },
+    async (input) => analyzeSentiment(input.website.content)
   )
   .step(
-    {
-      slug: 'analyze_text',
-      dependsOn: ['fetch_url'],
-    },
-    async (payload) => {
-      // payload is automatically typed as:
-      // {
-      //   run: Input,
-      //   fetch_url: { content: string }
-      // }
-      
-      // TypeScript knows payload.fetch_url.content exists!
-      return { sentiment: 'positive', wordCount: 1234 };
-    }
+    { slug: "summary", dependsOn: ["website"] },
+    async (input) => summarizeWithAI(input.website.content)
   )
   .step(
-    {
-      slug: 'extract_images',
-      dependsOn: ['fetch_url'],
-    },
-    async (payload) => {
-      // payload has the same type as in analyze_text
-      return { images: ['image1.jpg', 'image2.jpg'], count: 2 };
-    }
-  )
-  .step(
-    {
-      slug: 'create_report',
-      dependsOn: ['analyze_text', 'extract_images'],
-    },
-    async (payload) => {
-      // payload is automatically typed as:
-      // {
-      //   run: Input,
-      //   analyze_text: { sentiment: string, wordCount: number },
-      //   extract_images: { images: string[], count: number }
-      // }
-      
-      // TypeScript knows all these properties exist!
-      return {
-        summary: `Found ${payload.extract_images.count} images with sentiment: ${payload.analyze_text.sentiment}`,
-      };
-    }
+    { slug: "saveToDb", dependsOn: ["sentiment", "summary"] },
+    async (input) =>
+      saveToDb({
+        websiteUrl: input.run.url,
+        sentiment: input.sentiment.score,
+        summary: input.summary,
+      }).status
   );
 ```
 
@@ -366,26 +325,26 @@ When a step is executed, it receives an input object where:
 - Each value is that step's output
 - A special "run" key contains the original workflow input
 
-#### Example: `analyze_text`
+#### Example: `sentiment`
 
-When the `analyze_text` step runs, it receives:
+When the `sentiment` step runs, it receives:
 
 ```json
 {
   "run": {"url": "https://example.com"},
-  "fetch_url": {"content": "HTML content", "status": 200}
+  "website": {"content": "HTML content", "status": 200}
 }
 ```
 
-#### Example: `create_report`
+#### Example: `saveToDb`
 
-The `create_report` step depends on both `analyze_text` and `extract_images`:
+The `saveToDb` step depends on both `sentiment` and `summary`:
 
 ```json
 {
   "run": {"url": "https://example.com"},
-  "analyze_text": {"sentiment": "positive", "word_count": 1250},
-  "extract_images": {"images": ["image1.jpg", "image2.jpg"], "count": 2}
+  "sentiment": {"score": 0.85, "label": "positive"},
+  "summary": "This website discusses various topics related to technology and innovation."
 }
 ```
 
@@ -399,7 +358,7 @@ SELECT run_id, status, output FROM pgflow.runs WHERE run_id = '<run_uuid>';
 
 --     run_id  | status    | output
 -- ------------+-----------+-----------------------------------------------------
---  <run uuid> | completed | {"create_report": {"summary": "...", "images": 5}}
+--  <run uuid> | completed | {"saveToDb": {"status": "success"}}
 ```
 
 ## Advanced Usage
