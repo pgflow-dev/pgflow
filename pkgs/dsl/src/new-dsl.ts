@@ -1,9 +1,21 @@
+import { Flow } from './new-flow.ts';
+
 // Provide a type for the input of the Flow
 type Input = {
   url: string;
 };
 
-const AnalyzeWebsite = new Flow<Input>({
+// noop but async
+async function noop(..._args: any[]) {
+  return Promise.race([]);
+}
+
+const scrapeWebsite = noop;
+const analyzeSentiment = noop;
+const summarizeWithAI = noop;
+const saveToDb = noop;
+
+export const AnalyzeWebsite = new Flow<Input>({
   slug: 'analyze_website',
   maxAttempts: 3,
   baseDelay: 5,
