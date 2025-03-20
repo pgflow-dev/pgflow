@@ -2,7 +2,7 @@
   "name": "@pgflow/website",
   "type": "module",
   "version": "0.0.1",
-  "license": "Elastic-2.0",
+  "license": "AGPL-3.0",
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
