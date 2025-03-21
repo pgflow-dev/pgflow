@@ -7,18 +7,14 @@ export type Json =
   | Json[]
   | { [key: string]: Json | undefined };
 
-// Flow options interface
-export interface FlowOptions {
-  slug: string;
-  maxAttempts?: number;
-  baseDelay?: number;
-  timeout?: number;
-}
+// Used to flatten the types of a union of objects for readability
+type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
 
-// Step options interface
-export interface StepOptions {
-  slug: string;
-  dependsOn?: string[];
+// Runtime options interface
+// Separate from StepDefinition interface to make StepDefinition more focused
+// and easier to understand - it is conceptually concerned about enforcing
+// the type graph, not just validating the values
+export interface RuntimeOptions {
   maxAttempts?: number;
   baseDelay?: number;
   timeout?: number;
@@ -54,7 +50,7 @@ export class Flow<
   private stepOptionsStore: StepOptionsStore;
 
   constructor(
-    public flowOptions: FlowOptions,
+    public flowOptions: Simplify<{ slug: string } & RuntimeOptions>,
     stepDefinitions: Record<string, StepDefinition<Json, Json>> = {},
     stepOptionsStore: StepOptionsStore = {}
   ) {
@@ -69,7 +65,7 @@ export class Flow<
     RetType extends Json = Json,
     Payload = { run: RunPayload } & { [K in Deps]: Steps[K] }
   >(
-    opts: StepOptions & { slug: Slug; dependsOn?: Deps[] },
+    opts: Simplify<{ slug: Slug; dependsOn?: Deps[] } & RuntimeOptions>,
     handler: (payload: { [KeyType in keyof Payload]: Payload[KeyType] }) => RetType | Promise<RetType>
   ): Flow<RunPayload, Steps & { [K in Slug]: Awaited<RetType> }> {
     type NewSteps = MergeObjects<
