@@ -109,6 +109,8 @@ importers:
         specifier: ^2.6.8
         version: 2.6.8
 
+  pkgs/dsl: {}
+
   pkgs/website:
     dependencies:
       '@astrojs/check':
