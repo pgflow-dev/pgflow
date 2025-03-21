@@ -94,7 +94,9 @@ The SQL Core handles the workflow lifecycle through these key operations:
 
 ## Example flow and its life
 
-Let's walk through creating and running a workflow that fetches a URL, analyzes the content, extracts images, and creates a report.
+Let's walk through creating and running a workflow that fetches a website, 
+does summarization and sentiment analysis in parallel steps
+and saves the results to a database.
 
 ### Defining a Workflow
 
@@ -120,7 +122,9 @@ SELECT pgflow.add_step('analyze_website', 'saveToDb', deps => ARRAY['sentiment',
 > You need to call `add_step` in topological order, which is enforced by foreign key constraints.
 
 > [!NOTE]
-> You can have multiple "root steps" in a workflow. Their outputs will be converged at the end of a run.
+> You can have multiple "root steps" in a workflow. You can even create a root-steps-only workflow
+> to process a single input in parallel, because at the end, all of the outputs from steps 
+> that does not have dependents ("final steps") are aggregated and saved as run's `output`.
 
 ### Starting a Workflow Run
 
@@ -368,7 +372,3 @@ SELECT run_id, status, output FROM pgflow.runs WHERE run_id = '<run_uuid>';
 -- ------------+-----------+-----------------------------------------------------
 --  <run uuid> | completed | {"saveToDb": {"status": "success"}}
 ```
-
-## Advanced Usage
-
-For more advanced usage patterns and integration examples, please refer to our [documentation site](https://pgflow.dev/docs) or explore the [examples directory](../examples/).
