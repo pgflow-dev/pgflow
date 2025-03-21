@@ -7,10 +7,6 @@ export type Json =
   | Json[]
   | { [key: string]: Json | undefined };
 
-// Utility type copy-pasted from type-fest
-// Used to flatten payloads types
-type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
-
 // Flow options interface
 export interface FlowOptions {
   slug: string;
@@ -31,7 +27,7 @@ export interface StepOptions {
 // Define the StepDefinition interface
 export interface StepDefinition<Payload extends Json, RetType extends Json> {
   slug: string;
-  handler: (payload: Simplify<Payload>) => RetType | Promise<RetType>;
+  handler: (payload: Payload) => RetType | Promise<RetType>;
   dependencies: string[];
 }
 
@@ -74,7 +70,7 @@ export class Flow<
     Payload = { run: RunPayload } & { [K in Deps]: Steps[K] }
   >(
     opts: StepOptions & { slug: Slug; dependsOn?: Deps[] },
-    handler: (payload: Simplify<Payload>) => RetType | Promise<RetType>
+    handler: (payload: { [KeyType in keyof Payload]: Payload[KeyType] }) => RetType | Promise<RetType>
   ): Flow<RunPayload, Steps & { [K in Slug]: Awaited<RetType> }> {
     type NewSteps = MergeObjects<
       Steps,
