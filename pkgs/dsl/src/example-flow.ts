@@ -1,4 +1,4 @@
-import { Flow } from './new-flow.ts';
+import { Flow } from './dsl.ts';
 
 // Provide a type for the input of the Flow
 type Input = {
