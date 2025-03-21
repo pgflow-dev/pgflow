@@ -44,9 +44,6 @@ interface StepOptionsStore {
   };
 }
 
-// Utility type to extract the resolved type from a Promise or a value
-type UnwrapPromise<T> = T extends Promise<infer U> ? UnwrapPromise<U> : T;
-
 // Utility type to merge two object types and preserve required properties
 type MergeObjects<T1 extends object, T2 extends object> = T1 & T2;
 
@@ -78,10 +75,10 @@ export class Flow<
   >(
     opts: StepOptions & { slug: Slug; dependsOn?: Deps[] },
     handler: (payload: Simplify<Payload>) => RetType | Promise<RetType>
-  ): Flow<RunPayload, Steps & { [K in Slug]: UnwrapPromise<RetType> }> {
+  ): Flow<RunPayload, Steps & { [K in Slug]: Awaited<RetType> }> {
     type NewSteps = MergeObjects<
       Steps,
-      { [K in Slug]: UnwrapPromise<RetType> }
+      { [K in Slug]: Awaited<RetType> }
     >;
 
     const slug = opts.slug as Slug;
