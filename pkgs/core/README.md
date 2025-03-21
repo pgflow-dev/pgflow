@@ -13,7 +13,7 @@ PostgreSQL-native workflow engine for defining, managing, and tracking DAG-based
 - [Architecture](#architecture)
   - [Schema Design](#schema-design)
   - [Execution Model](#execution-model)
-- [Example Flow and its life](#getting-started)
+- [Example Flow and its life](#example-flow-and-its-life)
   - [Defining a Workflow](#defining-a-workflow)
   - [Starting a Workflow Run](#starting-a-workflow-run)
   - [Workflow Execution](#workflow-execution)
@@ -30,7 +30,6 @@ PostgreSQL-native workflow engine for defining, managing, and tracking DAG-based
 - [Data Flow](#data-flow)
   - [Input and Output Handling](#input-and-output-handling)
   - [Run Completion](#run-completion)
-- [Advanced Usage](#advanced-usage)
 
 ## Overview
 
