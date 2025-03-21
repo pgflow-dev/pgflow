@@ -1,8 +1,9 @@
 # pgflow License - AGPLv3
 
-> ✅ **You can freely build and host your apps on Supabase using pgflow**
-> ✅ **You can fork, modify, and contribute to pgflow in the spirit of open source**
-> ❌ Offering pgflow as a managed/hosted service requires adherence to AGPLv3 or obtaining a separate agreement ([contact me for details](mailto:owner@pgflow.dev))
+- ✅ You can freely **build and host your apps** on Supabase using pgflow
+- ✅ You can **fork, modify, and contribute** to pgflow in the spirit of open source
+- ❌ You cannot offer modified pgflow as a service without sharing your modifications (AGPLv3 requirement)
+- 🤝 Need something different? [Contact me](mailto:owner@pgflow.dev) to discuss custom licensing options
 
 ## Introduction
 
