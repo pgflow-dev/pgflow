@@ -98,11 +98,11 @@ Let's walk through creating and running a workflow that fetches a website,
 does summarization and sentiment analysis in parallel steps
 and saves the results to a database.
 
+![example flow graph](./example-flow.svg)
+
 ### Defining a Workflow
 
 Workflows are defined using two SQL functions: `create_flow` and `add_step`.
-
-![example flow graph](./example-flow.svg)
 
 In this example, we'll create a workflow with:
 - `website` as the entry point ("root step")
