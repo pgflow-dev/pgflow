@@ -44,18 +44,18 @@ export class Flow<
   RunPayload extends Json,
   Steps extends Record<string, Json> = Record<never, never>
 > {
-  // Update the stepDefinitions property to hold the correct types
-  private stepDefinitions: Record<string, StepDefinition<Json, Json>>;
+  // Store step definitions in an array to preserve order
+  private stepDefinitionsArray: Array<StepDefinition<Json, Json>>;
   // Store additional step options separately
   private stepOptionsStore: StepOptionsStore;
 
   constructor(
     public flowOptions: Simplify<{ slug: string } & RuntimeOptions>,
-    stepDefinitions: Record<string, StepDefinition<Json, Json>> = {},
+    stepDefinitionsArray: Array<StepDefinition<Json, Json>> = [],
     stepOptionsStore: StepOptionsStore = {}
   ) {
     this.flowOptions = flowOptions;
-    this.stepDefinitions = stepDefinitions;
+    this.stepDefinitionsArray = stepDefinitionsArray;
     this.stepOptionsStore = stepOptionsStore;
   }
 
@@ -66,12 +66,11 @@ export class Flow<
     Payload = { run: RunPayload } & { [K in Deps]: Steps[K] }
   >(
     opts: Simplify<{ slug: Slug; dependsOn?: Deps[] } & RuntimeOptions>,
-    handler: (payload: { [KeyType in keyof Payload]: Payload[KeyType] }) => RetType | Promise<RetType>
+    handler: (payload: { [KeyType in keyof Payload]: Payload[KeyType] }) =>
+      | RetType
+      | Promise<RetType>
   ): Flow<RunPayload, Steps & { [K in Slug]: Awaited<RetType> }> {
-    type NewSteps = MergeObjects<
-      Steps,
-      { [K in Slug]: Awaited<RetType> }
-    >;
+    type NewSteps = MergeObjects<Steps, { [K in Slug]: Awaited<RetType> }>;
 
     const slug = opts.slug as Slug;
     const dependencies = opts.dependsOn || [];
@@ -89,10 +88,11 @@ export class Flow<
     if (opts.baseDelay !== undefined) stepOptions.baseDelay = opts.baseDelay;
     if (opts.timeout !== undefined) stepOptions.timeout = opts.timeout;
 
-    const newStepDefinitions = {
-      ...this.stepDefinitions,
-      [slug]: newStepDefinition,
-    };
+    // Create new arrays for immutability
+    const newStepDefinitionsArray = [
+      ...this.stepDefinitionsArray,
+      newStepDefinition,
+    ];
 
     const newStepOptionsStore = {
       ...this.stepOptionsStore,
@@ -101,33 +101,41 @@ export class Flow<
 
     return new Flow<RunPayload, NewSteps>(
       this.flowOptions,
-      newStepDefinitions,
+      newStepDefinitionsArray,
       newStepOptionsStore
     );
   }
 
-  public getSteps(): {
-    [K in keyof Steps]: StepDefinition<Json, Steps[K]> & {
+  public getSteps(): Array<
+    StepDefinition<Json, Json> & {
       maxAttempts?: number;
       baseDelay?: number;
       timeout?: number;
-    };
-  } {
-    const result: Record<string, any> = {};
+    }
+  > {
+    // Return steps in the order they were added
+    return this.stepDefinitionsArray.map((stepDef) => ({
+      ...stepDef,
+      ...this.stepOptionsStore[stepDef.slug],
+    }));
+  }
 
-    Object.keys(this.stepDefinitions).forEach((slug) => {
-      result[slug] = {
-        ...this.stepDefinitions[slug],
-        ...this.stepOptionsStore[slug],
-      };
-    });
-
-    return result as {
-      [K in keyof Steps]: StepDefinition<Json, Steps[K]> & {
+  // Helper method to find a step by slug if needed
+  public getStepBySlug(slug: string):
+    | (StepDefinition<Json, Json> & {
         maxAttempts?: number;
         baseDelay?: number;
         timeout?: number;
-      };
+      })
+    | undefined {
+    const stepDef = this.stepDefinitionsArray.find(
+      (step) => step.slug === slug
+    );
+    if (!stepDef) return undefined;
+
+    return {
+      ...stepDef,
+      ...this.stepOptionsStore[stepDef.slug],
     };
   }
 }
@@ -154,4 +162,4 @@ const ExampleFlow = new Flow<{ value: number }>({
 
 export default ExampleFlow;
 
-export type StepsType = ReturnType<typeof ExampleFlow.getSteps>;
+export type StepsType = ReturnType<typeof ExampleFlow.getSteps>[number];
