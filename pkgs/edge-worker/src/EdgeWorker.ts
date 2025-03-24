@@ -1,11 +1,16 @@
-import type { Worker, WorkerConfig } from './Worker.ts';
+import type { Worker } from './Worker.ts';
 import spawnNewEdgeFunction from './spawnNewEdgeFunction.ts';
 import type { Json, MessageRecord } from './types.ts';
 import { getLogger, setupLogger } from './Logger.ts';
-import postgres from 'postgres';
 import { createPgmqWorker } from './factories/createPgmqWorker.ts';
+import type { PgmqWorkerConfig } from './factories/createPgmqWorker.ts';
 
-export type EdgeWorkerConfig = Omit<WorkerConfig, 'connectionString' | 'sql'>;
+export type EdgeWorkerConfig = PgmqWorkerConfig & {
+  /**
+   * Optional database connection string. If not provided, it will be read from EDGE_WORKER_DB_URL environment variable.
+   */
+  connectionString?: string;
+};
 
 export class EdgeWorker {
   private static logger = getLogger('EdgeWorker');
@@ -17,16 +22,13 @@ export class EdgeWorker {
   ) {
     this.ensureFirstCall();
 
-    const sql = postgres(this.getConnectionString(), {
-      max: config.maxPgConnections,
-      prepare: false,
-    });
+    // If connectionString is not provided in config, get it from environment
+    const connectionString = config.connectionString || this.getConnectionStringFromEnv();
 
-    const workerConfig: WorkerConfig = {
+    this.setupRequestHandler(handler, {
       ...config,
-      sql
-    };
-    this.setupRequestHandler(handler, workerConfig);
+      connectionString
+    });
   }
 
   private static ensureFirstCall() {
@@ -36,7 +38,7 @@ export class EdgeWorker {
     this.wasCalled = true;
   }
 
-  private static getConnectionString(): string {
+  private static getConnectionStringFromEnv(): string {
     // @ts-ignore - TODO: fix the types
     const connectionString = Deno.env.get('EDGE_WORKER_DB_URL');
     if (!connectionString) {
@@ -66,7 +68,7 @@ export class EdgeWorker {
 
   private static setupRequestHandler<MessagePayload extends Json>(
     handler: (message: MessagePayload) => Promise<void> | void,
-    workerConfig: WorkerConfig
+    config: EdgeWorkerConfig
   ) {
     let worker: Worker<MessageRecord<MessagePayload>> | null = null;
 
@@ -79,9 +81,10 @@ export class EdgeWorker {
         this.logger.info(`HTTP Request: ${edgeFunctionName}`);
 
         worker = createPgmqWorker(handler, {
-          queueName: workerConfig.queueName || 'tasks',
-          ...workerConfig,
+          queueName: config.queueName || 'tasks',
+          ...config,
         });
+
         worker.startOnlyOnce({
           edgeFunctionName,
           workerId: sbExecutionId,

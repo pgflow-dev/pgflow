@@ -5,7 +5,70 @@ import { Queries } from '../Queries.ts';
 import { PgmqLifecycle } from '../pgmq/PgmqLifecycle.ts';
 import { PgmqPoller } from '../pgmq/PgmqPoller.ts';
 import { PgmqExecutor } from '../pgmq/PgmqExecutor.ts';
-import type { WorkerConfig } from '../Worker.ts';
+import postgres from 'postgres';
+
+/**
+ * Configuration options for PGMQ Worker
+ */
+export type PgmqWorkerConfig = {
+  /**
+   * Database connection string
+   */
+  connectionString?: string;
+
+  /**
+   * SQL client instance (if provided, connectionString is ignored)
+   */
+  sql?: postgres.Sql;
+
+  /**
+   * Queue name to process messages from
+   * @default 'tasks'
+   */
+  queueName?: string;
+
+  /**
+   * Maximum number of PostgreSQL connections
+   * @default 10
+   */
+  maxPgConnections?: number;
+
+  /**
+   * Maximum number of concurrent tasks
+   * @default 10
+   */
+  maxConcurrent?: number;
+
+  /**
+   * Maximum time in seconds to wait for new messages
+   * @default 5
+   */
+  maxPollSeconds?: number;
+
+  /**
+   * Interval in milliseconds between polling attempts
+   * @default 200
+   */
+  pollIntervalMs?: number;
+
+  /**
+   * Delay in seconds before retrying a failed message
+   * @default 5
+   */
+  retryDelay?: number;
+
+  /**
+   * Maximum number of retries for a failed message
+   * @default 5
+   */
+  retryLimit?: number;
+
+  /**
+   * Time in seconds that a message is hidden from other consumers
+   * @default 3
+   */
+  visibilityTimeout?: number;
+};
 
 /**
  * Creates a Worker instance configured for PGMQ
@@ -15,7 +78,7 @@ import type { WorkerConfig } from '../Worker.ts';
  */
 export function createPgmqWorker<MessagePayload extends Json>(
   messageHandler: (message: MessagePayload) => Promise<void> | void,
-  config: WorkerConfig
+  config: PgmqWorkerConfig
 ): Worker<MessageRecord<MessagePayload>> {
   const abortController = new AbortController();
 
@@ -28,9 +91,15 @@ export function createPgmqWorker<MessagePayload extends Json>(
   const retryLimit = config.retryLimit || 5;
   const retryDelay = config.retryDelay || 5;
 
+  // Create SQL client if not provided
+  const sql = config.sql || postgres(config.connectionString!, {
+    max: config.maxPgConnections || 10,
+    prepare: false,
+  });
+
   // Create dependencies
-  const queue = new Queue<MessagePayload>(config.sql, queueName);
-  const queries = new Queries(config.sql);
+  const queue = new Queue<MessagePayload>(sql, queueName);
+  const queries = new Queries(sql);
   const lifecycle = new PgmqLifecycle<MessagePayload>(queries, queue);
 
   // Create poller

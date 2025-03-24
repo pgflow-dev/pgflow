@@ -3,7 +3,6 @@ import { getLogger, setupLogger } from './Logger.ts';
 import type { Poller } from './interfaces/Poller.ts';
 import type { Executor } from './interfaces/Executor.ts';
 import type { Lifecycle } from './interfaces/Lifecycle.ts';
-import type postgres from 'postgres';
 
 /**
  * Core Worker class that processes tasks from a queue
@@ -125,18 +124,3 @@ export class Worker<TPayload> {
     return this.abortController.signal.aborted;
   }
 }
-
-/**
- * Configuration options for Worker
- */
-export type WorkerConfig = {
-  sql: postgres.Sql; // Match the type from EdgeWorker.ts
-  queueName?: string;
-  maxPgConnections?: number;
-  maxConcurrent?: number;
-  maxPollSeconds?: number;
-  pollIntervalMs?: number;
-  retryDelay?: number;
-  retryLimit?: number;
-  visibilityTimeout?: number;
-};
