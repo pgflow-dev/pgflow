@@ -3,7 +3,7 @@ import type { WorkerBootstrap } from '../types.ts';
 /**
  * Interface for managing worker lifecycle
  */
-export interface WorkerLifecycle {
+export interface Lifecycle {
   /**
    * Acknowledge worker start
    * @param workerBootstrap Worker bootstrap information

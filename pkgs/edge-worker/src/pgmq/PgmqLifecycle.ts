@@ -1,18 +1,18 @@
-import { Heartbeat } from './Heartbeat.ts';
-import { getLogger } from './Logger.ts';
-import type { Queries } from './Queries.ts';
-import type { Queue } from './Queue.ts';
-import type { Json, WorkerBootstrap, WorkerRow } from './types.ts';
-import { States, WorkerState } from './WorkerState.ts';
+import { Heartbeat } from '../Heartbeat.ts';
+import { getLogger } from '../Logger.ts';
+import type { Queries } from '../Queries.ts';
+import type { Queue } from '../Queue.ts';
+import type { Json, WorkerBootstrap, WorkerRow } from '../types.ts';
+import { States, WorkerState } from '../WorkerState.ts';
+import type { Lifecycle } from '../interfaces/Lifecycle.ts';
 
-export interface LifecycleConfig {
-  queueName: string;
-}
-
-export class WorkerLifecycle<MessagePayload extends Json> {
+/**
+ * Implementation of Lifecycle for PGMQ
+ */
+export class PgmqLifecycle<MessagePayload extends Json> implements Lifecycle {
   private workerState: WorkerState = new WorkerState();
   private heartbeat?: Heartbeat;
-  private logger = getLogger('WorkerLifecycle');
+  private logger = getLogger('PgmqLifecycle');
   private queries: Queries;
   private queue: Queue<MessagePayload>;
   private workerRow?: WorkerRow;

@@ -57,7 +57,7 @@ export function setupLogger(workerId: string) {
       Logger: defaultLoggerConfig,
       MessageExecutor: defaultLoggerConfig,
       Worker: defaultLoggerConfig,
-      WorkerLifecycle: defaultLoggerConfig,
+      Lifecycle: defaultLoggerConfig,
       WorkerState: defaultLoggerConfig,
       spawnNewEdgeFunction: defaultLoggerConfig,
     },

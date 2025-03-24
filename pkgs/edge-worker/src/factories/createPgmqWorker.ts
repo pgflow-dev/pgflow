@@ -2,7 +2,7 @@ import type { Json, MessageRecord } from '../types.ts';
 import { Worker } from '../Worker.ts';
 import { Queue } from '../Queue.ts';
 import { Queries } from '../Queries.ts';
-import { PgmqWorkerLifecycle } from '../pgmq/PgmqWorkerLifecycle.ts';
+import { PgmqLifecycle } from '../pgmq/PgmqLifecycle.ts';
 import { PgmqPoller } from '../pgmq/PgmqPoller.ts';
 import { PgmqExecutor } from '../pgmq/PgmqExecutor.ts';
 import { BatchArchiver } from '../BatchArchiver.ts';
@@ -32,7 +32,7 @@ export function createPgmqWorker<MessagePayload extends Json>(
   // Create dependencies
   const queue = new Queue<MessagePayload>(config.sql, queueName);
   const queries = new Queries(config.sql);
-  const lifecycle = new PgmqWorkerLifecycle<MessagePayload>(queries, queue);
+  const lifecycle = new PgmqLifecycle<MessagePayload>(queries, queue);
   const batchArchiver = new BatchArchiver<MessagePayload>(queue);
   
   // Create poller

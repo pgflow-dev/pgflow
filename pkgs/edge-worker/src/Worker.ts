@@ -2,13 +2,13 @@ import type { WorkerBootstrap } from './types.ts';
 import { getLogger, setupLogger } from './Logger.ts';
 import type { Poller } from './interfaces/Poller.ts';
 import type { Executor } from './interfaces/Executor.ts';
-import type { WorkerLifecycle } from './interfaces/WorkerLifecycle.ts';
+import type { Lifecycle } from './interfaces/Lifecycle.ts';
 
 /**
  * Core Worker class that processes tasks from a queue
  * 
  * This class is now backend-agnostic and can work with any implementation
- * of Poller, Executor, and WorkerLifecycle.
+ * of Poller, Executor, and Lifecycle.
  */
 export class Worker<TPayload> {
   private logger = getLogger('Worker');
@@ -16,7 +16,7 @@ export class Worker<TPayload> {
   constructor(
     private readonly poller: Poller<TPayload>,
     private readonly executor: Executor<TPayload>,
-    private readonly lifecycle: WorkerLifecycle,
+    private readonly lifecycle: Lifecycle,
     private readonly abortController: AbortController
   ) {}
 
