@@ -3,7 +3,7 @@ import { getLogger } from './Logger.ts';
 /**
  * Interface for objects that can send heartbeats
  */
-interface HeartbeatSender {
+export interface HeartbeatSender {
   sendHeartbeat(): Promise<void>;
 }
 

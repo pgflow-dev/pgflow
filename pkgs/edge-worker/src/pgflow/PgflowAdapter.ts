@@ -1,4 +1,4 @@
-import type { ILifecycleBackendAdapter } from '../interfaces/LifecycleBackendAdapter.ts';
+import type { LifecycleBackendAdapter } from '../interfaces/LifecycleBackendAdapter.ts';
 import type { Queries } from '../Queries.ts';
 import type { WorkerRow } from '../types.ts';
 import type { FlowDefinition } from './types.ts';
@@ -8,7 +8,7 @@ import { getLogger } from '../Logger.ts';
 /**
  * PGFlow-specific implementation of the lifecycle backend adapter
  */
-export class PgflowAdapter<RunPayload extends Json> implements ILifecycleBackendAdapter {
+export class PgflowAdapter<RunPayload extends Json> implements LifecycleBackendAdapter {
   private logger = getLogger('PgflowAdapter');
 
   constructor(

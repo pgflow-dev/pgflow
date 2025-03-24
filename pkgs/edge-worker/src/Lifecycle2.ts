@@ -3,12 +3,13 @@ import { getLogger } from './Logger.ts';
 import type { WorkerBootstrap, WorkerRow } from './types.ts';
 import { States, WorkerState } from './WorkerState.ts';
 import type { ILifecycleBackendAdapter } from './interfaces/LifecycleBackendAdapter.ts';
+import type { Lifecycle as ILifecycle } from './interfaces/Lifecycle.ts';
 
 /**
  * Unified Lifecycle class that works with any backend adapter
  * This replaces the separate PgmqLifecycle and FlowLifecycle classes
  */
-export class Lifecycle {
+export class Lifecycle implements ILifecycle {
   private workerState: WorkerState = new WorkerState();
   private heartbeat?: Heartbeat;
   private logger = getLogger('Lifecycle');

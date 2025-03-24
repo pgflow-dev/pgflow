@@ -2,9 +2,9 @@ import type { WorkerBootstrap, WorkerRow } from '../types.ts';
 
 /**
  * Interface for backend adapters that handle lifecycle operations
- * This allows the Lifecycle class to work with different backends (SQL, HTTP, etc.)
+ * This allows the Lifecycle implementation to work with different backends (SQL, HTTP, etc.)
  */
-export interface ILifecycleBackendAdapter {
+export interface LifecycleBackendAdapter {
   /**
    * Perform any one-time setup or checks needed before the worker can run.
    * For PGMQ, that might be queue creation.

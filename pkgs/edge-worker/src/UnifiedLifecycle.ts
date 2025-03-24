@@ -2,16 +2,17 @@ import { Heartbeat } from './Heartbeat.ts';
 import { getLogger } from './Logger.ts';
 import type { WorkerBootstrap, WorkerRow } from './types.ts';
 import { States, WorkerState } from './WorkerState.ts';
-import type { Lifecycle } from './interfaces/Lifecycle.ts';
 import type { LifecycleBackendAdapter } from './interfaces/LifecycleBackendAdapter.ts';
+import type { Lifecycle } from './interfaces/Lifecycle.ts';
 
 /**
  * Unified Lifecycle implementation that works with any backend adapter
+ * This replaces the separate PgmqLifecycle and FlowLifecycle classes
  */
 export class UnifiedLifecycle implements Lifecycle {
   private workerState: WorkerState = new WorkerState();
   private heartbeat?: Heartbeat;
-  private logger = getLogger('Lifecycle');
+  private logger = getLogger('UnifiedLifecycle');
   private workerRow?: WorkerRow;
   private resourceName: string;
 
@@ -25,15 +26,21 @@ export class UnifiedLifecycle implements Lifecycle {
   async acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void> {
     this.workerState.transitionTo(States.Starting);
 
-    this.logger.info(`Preparing resource '${this.resourceName}' for start...`);
-    await this.adapter.prepareForStart(this.resourceName);
+    this.logger.info(`Preparing for start with resource '${this.resourceName}'...`);
+    await this.adapter.prepareForStart({ resourceName: this.resourceName });
 
     this.workerRow = await this.adapter.onWorkerStarted({
       resourceName: this.resourceName,
       ...workerBootstrap,
     });
 
-    this.heartbeat = new Heartbeat(5000, this.adapter, this.workerRow);
+    this.heartbeat = new Heartbeat(5000, {
+      sendHeartbeat: async () => {
+        if (this.workerRow) {
+          await this.adapter.sendHeartbeat(this.workerRow);
+        }
+      }
+    });
 
     this.workerState.transitionTo(States.Running);
   }

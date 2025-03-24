@@ -6,7 +6,7 @@ import type { WorkerTask, FlowWorkerConfig, FlowDefinition } from './types.ts';
 import { SqlFlowAdapter } from './SqlFlowAdapter.ts';
 import { FlowPoller } from './FlowPoller.ts';
 import { FlowExecutor } from './FlowExecutor.ts';
-import { Lifecycle } from '../Lifecycle2.ts';
+import { UnifiedLifecycle } from '../UnifiedLifecycle.ts';
 import { PgflowAdapter } from './PgflowAdapter.ts';
 import type { Json } from '../types.ts';
 
@@ -48,7 +48,7 @@ export function createFlowWorker<RunPayload extends Json>(
   
   // Create lifecycle adapter and lifecycle
   const lifecycleAdapter = new PgflowAdapter<RunPayload>(queries, flow);
-  const lifecycle = new Lifecycle(lifecycleAdapter, queueName);
+  const lifecycle = new UnifiedLifecycle(lifecycleAdapter, queueName);
 
   // Create poller
   const poller = new FlowPoller(

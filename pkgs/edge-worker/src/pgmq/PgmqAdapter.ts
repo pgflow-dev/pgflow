@@ -1,4 +1,4 @@
-import type { ILifecycleBackendAdapter } from '../interfaces/LifecycleBackendAdapter.ts';
+import type { LifecycleBackendAdapter } from '../interfaces/LifecycleBackendAdapter.ts';
 import type { Queue } from '../Queue.ts';
 import type { Queries } from '../Queries.ts';
 import type { WorkerRow } from '../types.ts';
@@ -8,7 +8,7 @@ import { getLogger } from '../Logger.ts';
 /**
  * PGMQ-specific implementation of the lifecycle backend adapter
  */
-export class PgmqAdapter<MessagePayload extends Json> implements ILifecycleBackendAdapter {
+export class PgmqAdapter<MessagePayload extends Json> implements LifecycleBackendAdapter {
   private logger = getLogger('PgmqAdapter');
 
   constructor(

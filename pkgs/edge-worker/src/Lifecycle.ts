@@ -1,39 +1,47 @@
 import { Heartbeat } from './Heartbeat.ts';
 import { getLogger } from './Logger.ts';
-import type { Queries } from './Queries.ts';
-import type { Queue } from './Queue.ts';
-import type { Json, WorkerBootstrap, WorkerRow } from './types.ts';
+import type { WorkerBootstrap, WorkerRow } from './types.ts';
 import { States, WorkerState } from './WorkerState.ts';
+import type { ILifecycleBackendAdapter } from './interfaces/LifecycleBackendAdapter.ts';
+import type { Lifecycle as ILifecycle } from './interfaces/Lifecycle.ts';
 
-export interface LifecycleConfig {
-  queueName: string;
-}
-
-export class Lifecycle<MessagePayload extends Json> {
+/**
+ * Unified Lifecycle class that works with any backend adapter
+ * This replaces the separate PgmqLifecycle and FlowLifecycle classes
+ */
+export class Lifecycle implements ILifecycle {
   private workerState: WorkerState = new WorkerState();
   private heartbeat?: Heartbeat;
   private logger = getLogger('Lifecycle');
-  private queries: Queries;
-  private queue: Queue<MessagePayload>;
   private workerRow?: WorkerRow;
+  private resourceName: string;
 
-  constructor(queries: Queries, queue: Queue<MessagePayload>) {
-    this.queries = queries;
-    this.queue = queue;
+  constructor(
+    private readonly adapter: ILifecycleBackendAdapter,
+    resourceName: string
+  ) {
+    this.resourceName = resourceName;
   }
 
   async acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void> {
     this.workerState.transitionTo(States.Starting);
 
-    this.logger.info(`Ensuring queue '${this.queue.queueName}' exists...`);
-    await this.queue.safeCreate();
+    this.logger.info(`Preparing for start with resource '${this.resourceName}'...`);
+    await this.adapter.prepareForStart({ resourceName: this.resourceName });
 
-    this.workerRow = await this.queries.onWorkerStarted({
-      queueName: this.queueName,
+    this.workerRow = await this.adapter.onWorkerStarted({
+      resourceName: this.resourceName,
       ...workerBootstrap,
     });
 
-    this.heartbeat = new Heartbeat(5000, this.queries, this.workerRow);
+    // Create a heartbeat that uses the adapter to send heartbeats
+    this.heartbeat = new Heartbeat(5000, {
+      sendHeartbeat: async () => {
+        if (this.workerRow) {
+          await this.adapter.sendHeartbeat(this.workerRow);
+        }
+      }
+    });
 
     this.workerState.transitionTo(States.Running);
   }
@@ -53,7 +61,7 @@ export class Lifecycle<MessagePayload extends Json> {
       //       enough time to fire this query before hard-terimnated
       //       We can always check the heartbeat to see if it is still running
       //
-      // await this.queries.onWorkerStopped(this.workerRow);
+      // await this.adapter.onWorkerStopped(this.workerRow);
 
       this.workerState.transitionTo(States.Stopped);
       this.logger.debug('Worker stop acknowledged');
@@ -68,7 +76,7 @@ export class Lifecycle<MessagePayload extends Json> {
   }
 
   get queueName() {
-    return this.queue.queueName;
+    return this.resourceName;
   }
 
   async sendHeartbeat() {
