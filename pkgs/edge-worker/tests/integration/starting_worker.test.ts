@@ -1,9 +1,9 @@
-import { Worker } from '../../src/Worker.ts';
+import { createPgmqWorker } from '../../src/factories/createPgmqWorker.ts';
 import { withTransaction } from "../db.ts";
 import { delay } from "@std/async";
 
 Deno.test('Starting worker', withTransaction(async (sql) => {
-  const worker = new Worker(console.log, {
+  const worker = createPgmqWorker(console.log, {
     sql,
     maxPollSeconds: 1
   });
@@ -27,9 +27,9 @@ Deno.test('Starting worker', withTransaction(async (sql) => {
 
 Deno.test('check pgmq version', withTransaction(async (sql) => {
   const result = await sql`
-    SELECT extversion 
-    FROM pg_extension 
+    SELECT extversion
+    FROM pg_extension
     WHERE extname = 'pgmq'
-  `; 
+  `;
   console.log('pgmq version:', result);
 }));
