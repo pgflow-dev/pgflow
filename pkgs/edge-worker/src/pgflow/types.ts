@@ -1,6 +1,6 @@
-import type { Database } from '../../core/src/types.ts';
+import type { Database } from '../../../core/src/types.d.ts';
 import type { Json } from '../types.ts';
-import type { Flow } from '../../dsl/src/dsl.ts';
+import type { Flow } from '../../../dsl/src/dsl.ts';
 
 // Type aliases for pgflow database types
 export type FlowRow = Database["pgflow"]["Tables"]["flows"]["Row"];
