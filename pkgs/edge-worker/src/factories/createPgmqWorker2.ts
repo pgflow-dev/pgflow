@@ -3,7 +3,7 @@ import { Worker } from '../Worker.ts';
 import { Queue } from '../Queue.ts';
 import { Queries } from '../Queries.ts';
 import { PgmqAdapter } from '../pgmq/PgmqAdapter.ts';
-import { UnifiedLifecycle } from '../UnifiedLifecycle.ts';
+import { Lifecycle } from '../Lifecycle2.ts';
 import { PgmqPoller } from '../pgmq/PgmqPoller.ts';
 import { PgmqExecutor } from '../pgmq/PgmqExecutor.ts';
 import postgres from 'postgres';
@@ -102,8 +102,9 @@ export function createPgmqWorker<MessagePayload extends Json>(
   const queue = new Queue<MessagePayload>(sql, queueName);
   const queries = new Queries(sql);
   
+  // Create adapter and lifecycle
   const adapter = new PgmqAdapter<MessagePayload>(queries, queue);
-  const lifecycle = new UnifiedLifecycle(adapter, queueName);
+  const lifecycle = new Lifecycle(adapter, queueName);
 
   // Create poller
   const poller = new PgmqPoller<MessagePayload>(

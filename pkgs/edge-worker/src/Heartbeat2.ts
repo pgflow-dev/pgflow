@@ -1,24 +1,28 @@
-import type { WorkerRow } from './types.ts';
 import { getLogger } from './Logger.ts';
 
+/**
+ * Interface for objects that can send heartbeats
+ */
 interface HeartbeatSender {
-  sendHeartbeat(workerRow: WorkerRow): Promise<void>;
+  sendHeartbeat(): Promise<void>;
 }
 
+/**
+ * Updated Heartbeat class that works with any heartbeat sender
+ */
 export class Heartbeat {
   private logger = getLogger('Heartbeat');
   private lastHeartbeat = 0;
 
   constructor(
     private interval: number,
-    private sender: HeartbeatSender,
-    private workerRow: WorkerRow
+    private sender: HeartbeatSender
   ) {}
 
   async send(): Promise<void> {
     const now = Date.now();
     if (now - this.lastHeartbeat >= this.interval) {
-      await this.sender.sendHeartbeat(this.workerRow);
+      await this.sender.sendHeartbeat();
       this.logger.debug('OK');
       this.lastHeartbeat = now;
     }

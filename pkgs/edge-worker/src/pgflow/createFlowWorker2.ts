@@ -1,0 +1,80 @@
+import postgres from 'postgres';
+import { Worker } from '../Worker.ts';
+import { Queries } from '../Queries.ts';
+import { getLogger } from '../Logger.ts';
+import type { WorkerTask, FlowWorkerConfig, FlowDefinition } from './types.ts';
+import { SqlFlowAdapter } from './SqlFlowAdapter.ts';
+import { FlowPoller } from './FlowPoller.ts';
+import { FlowExecutor } from './FlowExecutor.ts';
+import { Lifecycle } from '../Lifecycle2.ts';
+import { PgflowAdapter } from './PgflowAdapter.ts';
+import type { Json } from '../types.ts';
+
+const logger = getLogger('createFlowWorker');
+
+/**
+ * Creates a Worker instance configured for pgflow
+ *
+ * This factory function creates all the necessary dependencies and injects them into the Worker.
+ */
+export function createFlowWorker<RunPayload extends Json>(
+  flow: FlowDefinition<RunPayload>,
+  config: FlowWorkerConfig = {}
+): Worker<WorkerTask> {
+  const abortController = new AbortController();
+
+  // Default configuration values
+  const maxConcurrent = config.maxConcurrent || 10;
+  const maxPollSeconds = config.maxPollSeconds || 5;
+  const pollIntervalMs = config.pollIntervalMs || 200;
+  const visibilityTimeout = config.visibilityTimeout || 30;
+
+  // Queue name is derived from the flow slug
+  const queueName = `flow_${flow.flowOptions.slug}`;
+
+  logger.debug(`Creating flow worker for flow ${flow.flowOptions.slug}`);
+
+  // Create SQL client if not provided
+  const sql = config.sql || postgres(config.connectionString!, {
+    max: config.maxPgConnections || 10,
+    prepare: false,
+  });
+
+  // Create dependencies
+  const queries = new Queries(sql);
+
+  // Create flow adapter for SQL operations
+  const sqlAdapter = new SqlFlowAdapter(sql);
+  
+  // Create lifecycle adapter and lifecycle
+  const lifecycleAdapter = new PgflowAdapter<RunPayload>(queries, flow);
+  const lifecycle = new Lifecycle(lifecycleAdapter, queueName);
+
+  // Create poller
+  const poller = new FlowPoller(
+    sqlAdapter,
+    abortController.signal,
+    {
+      queueName,
+      maxConcurrent,
+      maxPollSeconds,
+      pollIntervalMs,
+      visibilityTimeout,
+    }
+  );
+
+  // Create executor
+  const executor = new FlowExecutor<RunPayload>(
+    sqlAdapter,
+    flow,
+    abortController.signal
+  );
+
+  // Create and return worker
+  return new Worker<WorkerTask>({
+    poller,
+    executor,
+    lifecycle,
+    abortController
+  });
+}
