@@ -1,0 +1,9 @@
+{
+  "name": "@pgflow/dsl",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "pkgs/dsl/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project @pgflow/dsl --web",
+  "targets": {}
+}

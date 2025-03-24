@@ -28,6 +28,6 @@ by creating steps with mutually-exclusive conditions, so only one branch will be
 
 ```ts
 const ScrapeWebsiteFlow = new Flow<{ input: true }>()
-  .step('run_if_true', handler, { runIf: { run: { input: true } } })
-  .step('run_if_false', handler, { runUnless: { run: { input: true } } })
+  .step({ slug: 'run_if_true', runIf: { run: { input: true } } }, handler)
+  .step({ slug: 'run_if_false', runUnless: { run: { input: true } } }, handler);
 ```
