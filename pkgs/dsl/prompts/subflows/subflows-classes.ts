@@ -1,6 +1,3 @@
-Let me create an example agentic flow that uses LLMs and has branching, then implement it with the new DSL method you provided.
-
-```typescript
 import { Flow } from './dsl.ts';
 
 // Define the input type for our flow
@@ -84,15 +81,3 @@ export const QueryAnswerFlow = new Flow<Input>({
         response: input.formatOutput.formattedResponse,
       })
   );
-```
-
-This flow demonstrates:
-
-1. Language detection using an LLM
-2. Branching based on the detected language and user preferences:
-   - If the query is in a different language than preferred, it goes through translation
-   - If it's already in the preferred language, it proceeds directly to answering
-3. Both branches produce compatible outputs that are merged in the formatOutput step
-4. The flow ends with logging the response
-
-The new `.branch()` DSL method makes the flow much more readable by clearly indicating the conditional execution paths rather than having to manage conditionals within each step or use complex slug naming conventions.
