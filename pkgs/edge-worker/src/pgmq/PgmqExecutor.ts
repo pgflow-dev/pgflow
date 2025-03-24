@@ -1,6 +1,6 @@
 import type { Json, MessageRecord } from '../types.ts';
 import type { Queue } from '../Queue.ts';
-import type { BatchArchiver } from '../BatchArchiver.ts';
+// import type { BatchArchiver } from '../BatchArchiver.ts';
 import { getLogger } from '../Logger.ts';
 import type { Executor } from '../interfaces/Executor.ts';
 
@@ -24,7 +24,7 @@ export class PgmqExecutor<MessagePayload extends Json> implements Executor<Messa
       message: MessagePayload
     ) => Promise<void> | void,
     private readonly signal: AbortSignal,
-    private readonly batchArchiver: BatchArchiver<MessagePayload>,
+    // private readonly batchArchiver: BatchArchiver<MessagePayload>,
     private readonly retryLimit: number,
     private readonly retryDelay: number
   ) {}
@@ -35,7 +35,7 @@ export class PgmqExecutor<MessagePayload extends Json> implements Executor<Messa
 
   async execute(record: MessageRecord<MessagePayload>): Promise<void> {
     this.currentMsgId = record.msg_id;
-    
+
     try {
       if (this.signal.aborted) {
         throw new AbortError();
