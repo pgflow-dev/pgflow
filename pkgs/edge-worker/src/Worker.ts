@@ -3,10 +3,11 @@ import { getLogger, setupLogger } from './Logger.ts';
 import type { Poller } from './interfaces/Poller.ts';
 import type { Executor } from './interfaces/Executor.ts';
 import type { Lifecycle } from './interfaces/Lifecycle.ts';
+import type postgres from 'postgres';
 
 /**
  * Core Worker class that processes tasks from a queue
- * 
+ *
  * This class is now backend-agnostic and can work with any implementation
  * of Poller, Executor, and Lifecycle.
  */
@@ -46,19 +47,19 @@ export class Worker<TPayload> {
         try {
           // Poll for new payloads
           const payloads = await this.poller.poll();
-          
+
           if (this.abortSignal.aborted) {
             this.logger.info('Discarding payloads because worker is stopping');
             continue;
           }
 
           this.logger.debug(`Starting ${payloads.length} tasks`);
-          
+
           // Process each payload concurrently
-          const executionPromises = payloads.map(payload => 
+          const executionPromises = payloads.map(payload =>
             this.executor.execute(payload)
           );
-          
+
           await Promise.all(executionPromises);
         } catch (error: unknown) {
           this.logger.error(`Error processing batch: ${error}`);
@@ -120,7 +121,7 @@ export class Worker<TPayload> {
  * Configuration options for Worker
  */
 export type WorkerConfig = {
-  sql: any; // postgres.Sql
+  sql: postgres.Sql; // Match the type from EdgeWorker.ts
   queueName?: string;
   maxPgConnections?: number;
   maxConcurrent?: number;

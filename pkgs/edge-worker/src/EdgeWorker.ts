@@ -1,6 +1,6 @@
-import { Worker, type WorkerConfig } from './Worker.ts';
+import type { Worker, WorkerConfig } from './Worker.ts';
 import spawnNewEdgeFunction from './spawnNewEdgeFunction.ts';
-import type { Json } from './types.ts';
+import type { Json, MessageRecord } from './types.ts';
 import { getLogger, setupLogger } from './Logger.ts';
 import postgres from 'postgres';
 import { createPgmqWorker } from './factories/createPgmqWorker.ts';
@@ -51,7 +51,7 @@ export class EdgeWorker {
   private static initializeWorker<MessagePayload extends Json>(
     handler: (message: MessagePayload) => Promise<void> | void,
     config: WorkerConfig
-  ): Worker<any> {
+  ): Worker<MessageRecord<MessagePayload>> {
     // Use the factory function instead of direct instantiation
     return createPgmqWorker(handler, {
       queueName: config.queueName || 'tasks',
@@ -60,7 +60,7 @@ export class EdgeWorker {
   }
 
   private static setupShutdownHandler(
-    worker: Worker<any>
+    worker: Worker<MessageRecord<Json>>
   ) {
     globalThis.onbeforeunload = async () => {
       if (worker.edgeFunctionName) {
@@ -79,7 +79,7 @@ export class EdgeWorker {
     handler: (message: MessagePayload) => Promise<void> | void,
     workerConfig: WorkerConfig
   ) {
-    let worker: Worker<any> | null = null;
+    let worker: Worker<MessageRecord<MessagePayload>> | null = null;
 
     Deno.serve({}, (req) => {
       if (!worker) {
@@ -91,7 +91,6 @@ export class EdgeWorker {
 
         worker = this.initializeWorker(handler, {
           ...workerConfig,
-          connectionString: this.getConnectionString(),
         });
         worker.startOnlyOnce({
           edgeFunctionName,
