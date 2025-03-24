@@ -48,17 +48,6 @@ export class EdgeWorker {
     return connectionString;
   }
 
-  private static initializeWorker<MessagePayload extends Json>(
-    handler: (message: MessagePayload) => Promise<void> | void,
-    config: WorkerConfig
-  ): Worker<MessageRecord<MessagePayload>> {
-    // Use the factory function instead of direct instantiation
-    return createPgmqWorker(handler, {
-      queueName: config.queueName || 'tasks',
-      ...config,
-    });
-  }
-
   private static setupShutdownHandler(
     worker: Worker<MessageRecord<Json>>
   ) {
@@ -89,7 +78,8 @@ export class EdgeWorker {
 
         this.logger.info(`HTTP Request: ${edgeFunctionName}`);
 
-        worker = this.initializeWorker(handler, {
+        worker = createPgmqWorker(handler, {
+          queueName: workerConfig.queueName || 'tasks',
           ...workerConfig,
         });
         worker.startOnlyOnce({
