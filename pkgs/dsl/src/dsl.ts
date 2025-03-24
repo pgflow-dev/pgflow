@@ -132,26 +132,26 @@ export class Flow<
   }
 }
 
-// // Example usage
-// const ExampleFlow = new Flow<{ value: number }>({
-//   slug: 'example_flow',
-//   maxAttempts: 3,
-// })
-//   // rootStep return type will be inferred to:
-//   //
-//   // { doubledValue: number; };
-//   .step({ slug: 'rootStep' }, async (payload) => ({
-//     doubledValue: payload.run.value * 2,
-//   }))
-//   // normalStep return type will be inferred to:
-//   // { doubledValueArray: number[] };
-//   .step(
-//     { slug: 'normalStep', dependsOn: ['rootStep'], maxAttempts: 5 },
-//     async (payload) => ({
-//       doubledValueArray: [payload.rootStep.doubledValue],
-//     })
-//   );
-//
-// export default ExampleFlow;
-//
-// export type StepsType = ReturnType<typeof ExampleFlow.getSteps>;
+// Example usage
+const ExampleFlow = new Flow<{ value: number }>({
+  slug: 'example_flow',
+  maxAttempts: 3,
+})
+  // rootStep return type will be inferred to:
+  //
+  // { doubledValue: number; };
+  .step({ slug: 'rootStep' }, async (payload) => ({
+    doubledValue: payload.run.value * 2,
+  }))
+  // normalStep return type will be inferred to:
+  // { doubledValueArray: number[] };
+  .step(
+    { slug: 'normalStep', dependsOn: ['rootStep'], maxAttempts: 5 },
+    async (payload) => ({
+      doubledValueArray: [payload.rootStep.doubledValue],
+    })
+  );
+
+export default ExampleFlow;
+
+export type StepsType = ReturnType<typeof ExampleFlow.getSteps>;
