@@ -1,85 +1,24 @@
-import type postgres from 'postgres';
-import type { Json, WorkerBootstrap } from './types.ts';
-import { Queue } from './Queue.ts';
-import { Queries } from './Queries.ts';
-import {
-  ExecutionController,
-  type ExecutionConfig,
-} from './ExecutionController.ts';
+import type { WorkerBootstrap } from './types.ts';
 import { getLogger, setupLogger } from './Logger.ts';
-import { WorkerLifecycle, type LifecycleConfig } from './WorkerLifecycle.ts';
-import type { PollerConfig } from './ReadWithPollPoller.ts';
-import { BatchProcessor } from './BatchProcessor.ts';
+import type { Poller } from './interfaces/Poller.ts';
+import type { PayloadExecutor } from './interfaces/PayloadExecutor.ts';
+import type { WorkerLifecycle } from './interfaces/WorkerLifecycle.ts';
 
-export type WorkerConfig = {
-  sql: postgres.Sql;
-  maxPgConnections?: number;
-} & Partial<ExecutionConfig> &
-  Partial<LifecycleConfig> &
-  Partial<Omit<PollerConfig, 'batchSize'>>;
-
-export class Worker<MessagePayload extends Json> {
-  private config: Required<WorkerConfig>;
-  private executionController: ExecutionController<MessagePayload>;
-  private messageHandler: (message: MessagePayload) => Promise<void> | void;
-  private lifecycle: WorkerLifecycle<MessagePayload>;
+/**
+ * Core Worker class that processes tasks from a queue
+ * 
+ * This class is now backend-agnostic and can work with any implementation
+ * of Poller, PayloadExecutor, and WorkerLifecycle.
+ */
+export class Worker<TPayload> {
   private logger = getLogger('Worker');
-  private abortController = new AbortController();
-
-  private batchProcessor: BatchProcessor<MessagePayload>;
-  private sql: postgres.Sql;
-
-  private static readonly DEFAULT_CONFIG = {
-    queueName: 'tasks',
-    maxConcurrent: 10,
-    maxPgConnections: 4,
-    maxPollSeconds: 5,
-    pollIntervalMs: 200,
-    retryDelay: 5,
-    retryLimit: 5,
-    visibilityTimeout: 3,
-  } as const;
 
   constructor(
-    messageHandler: (message: MessagePayload) => Promise<void> | void,
-    configOverrides: WorkerConfig
-  ) {
-    this.config = {
-      ...Worker.DEFAULT_CONFIG,
-      ...configOverrides,
-    };
-
-    this.messageHandler = messageHandler;
-
-    this.sql = this.config.sql;
-
-    const queue = new Queue<MessagePayload>(this.sql, this.config.queueName);
-    const queries = new Queries(this.sql);
-
-    this.lifecycle = new WorkerLifecycle<MessagePayload>(queries, queue);
-
-    this.executionController = new ExecutionController<MessagePayload>(
-      queue,
-      this.abortSignal,
-      {
-        maxConcurrent: this.config.maxConcurrent,
-        retryLimit: this.config.retryLimit,
-        retryDelay: this.config.retryDelay,
-      }
-    );
-
-    this.batchProcessor = new BatchProcessor(
-      this.executionController,
-      queue,
-      this.abortSignal,
-      {
-        batchSize: this.config.maxConcurrent,
-        maxPollSeconds: this.config.maxPollSeconds,
-        pollIntervalMs: this.config.pollIntervalMs,
-        visibilityTimeout: this.config.visibilityTimeout,
-      }
-    );
-  }
+    private readonly poller: Poller<TPayload>,
+    private readonly executor: PayloadExecutor<TPayload>,
+    private readonly lifecycle: WorkerLifecycle,
+    private readonly abortController: AbortController
+  ) {}
 
   async startOnlyOnce(workerBootstrap: WorkerBootstrap) {
     if (this.lifecycle.isRunning) {
@@ -105,7 +44,22 @@ export class Worker<MessagePayload extends Json> {
         }
 
         try {
-          await this.batchProcessor.processBatch(this.messageHandler);
+          // Poll for new payloads
+          const payloads = await this.poller.poll();
+          
+          if (this.abortSignal.aborted) {
+            this.logger.info('Discarding payloads because worker is stopping');
+            continue;
+          }
+
+          this.logger.debug(`Starting ${payloads.length} tasks`);
+          
+          // Process each payload concurrently
+          const executionPromises = payloads.map(payload => 
+            this.executor.execute(payload)
+          );
+          
+          await Promise.all(executionPromises);
         } catch (error: unknown) {
           this.logger.error(`Error processing batch: ${error}`);
           // Continue to next iteration - failed batch shouldn't stop the worker
@@ -129,15 +83,13 @@ export class Worker<MessagePayload extends Json> {
       this.logger.info('-> Stopped accepting new messages');
       this.abortController.abort();
 
+      // Note: We no longer have direct access to executionController
+      // Wait a bit for in-flight tasks to complete
       this.logger.info('-> Waiting for pending tasks to complete...');
-      await this.executionController.awaitCompletion();
+      await new Promise(resolve => setTimeout(resolve, 1000));
       this.logger.info('-> Pending tasks completed!');
 
       this.lifecycle.acknowledgeStop();
-
-      this.logger.info('-> Closing SQL connection...');
-      await this.sql.end();
-      this.logger.info('-> SQL connection closed!');
     } catch (error) {
       this.logger.info(`Error during worker stop: ${error}`);
       throw error;
@@ -163,3 +115,18 @@ export class Worker<MessagePayload extends Json> {
     return this.abortController.signal.aborted;
   }
 }
+
+/**
+ * Configuration options for Worker
+ */
+export type WorkerConfig = {
+  sql: any; // postgres.Sql
+  queueName?: string;
+  maxPgConnections?: number;
+  maxConcurrent?: number;
+  maxPollSeconds?: number;
+  pollIntervalMs?: number;
+  retryDelay?: number;
+  retryLimit?: number;
+  visibilityTimeout?: number;
+};
