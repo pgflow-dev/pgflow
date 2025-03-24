@@ -49,7 +49,6 @@ export function setupLogger(workerId: string) {
     },
 
     loggers: {
-      BatchArchiver: defaultLoggerConfig,
       BatchProcessor: defaultLoggerConfig,
       EdgeWorker: defaultLoggerConfig,
       ExecutionController: defaultLoggerConfig,

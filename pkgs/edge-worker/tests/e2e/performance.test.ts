@@ -5,7 +5,6 @@ import {
   waitForSeqToIncrementBy,
   startWorker,
   log,
-  waitForBatchArchiver,
 } from './_helpers.ts';
 
 const MESSAGES_TO_SEND = 20000;
@@ -24,7 +23,7 @@ Deno.test(
       async () => {
         const [{ worker_count }] = await sql`
         SELECT COUNT(*)::integer AS worker_count
-        FROM edge_worker.active_workers 
+        FROM edge_worker.active_workers
         WHERE function_name = ${WORKER_NAME}
       `;
 
@@ -44,7 +43,6 @@ Deno.test(
         timeoutMs: MESSAGES_TO_SEND * 1000 + 1000,
         pollIntervalMs: 1000,
       });
-      await waitForBatchArchiver();
 
       const endTime = Date.now();
       const totalMs = Math.round(endTime - startTime);

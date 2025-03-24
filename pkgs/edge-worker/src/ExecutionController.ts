@@ -3,7 +3,6 @@ import { MessageExecutor } from './MessageExecutor.ts';
 import type { Queue } from './Queue.ts';
 import type { Json } from './types.ts';
 import type { MessageRecord } from './types.ts';
-import { BatchArchiver } from './BatchArchiver.ts';
 import { getLogger } from './Logger.ts';
 
 export interface ExecutionConfig {
@@ -16,7 +15,6 @@ export class ExecutionController<MessagePayload extends Json> {
   private logger = getLogger('ExecutionController');
   private queue: Queue<MessagePayload>;
   private promiseQueue: PromiseQueue;
-  private archiver: BatchArchiver<MessagePayload>;
   private signal: AbortSignal;
   private retryLimit: number;
   private retryDelay: number;
@@ -31,7 +29,6 @@ export class ExecutionController<MessagePayload extends Json> {
     this.retryLimit = config.retryLimit;
     this.retryDelay = config.retryDelay;
     this.promiseQueue = newQueue(config.maxConcurrent);
-    this.archiver = new BatchArchiver(queue);
   }
 
   async start(
@@ -43,7 +40,6 @@ export class ExecutionController<MessagePayload extends Json> {
       record,
       handler,
       this.signal,
-      this.archiver,
       this.retryLimit,
       this.retryDelay
     );

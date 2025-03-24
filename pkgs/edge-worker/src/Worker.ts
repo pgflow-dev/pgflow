@@ -13,13 +13,22 @@ import type postgres from 'postgres';
  */
 export class Worker<TPayload> {
   private logger = getLogger('Worker');
+  private readonly poller: Poller<TPayload>;
+  private readonly executor: Executor<TPayload>;
+  private readonly lifecycle: Lifecycle;
+  private readonly abortController: AbortController;
 
-  constructor(
-    private readonly poller: Poller<TPayload>,
-    private readonly executor: Executor<TPayload>,
-    private readonly lifecycle: Lifecycle,
-    private readonly abortController: AbortController
-  ) {}
+  constructor(options: {
+    poller: Poller<TPayload>;
+    executor: Executor<TPayload>;
+    lifecycle: Lifecycle;
+    abortController: AbortController;
+  }) {
+    this.poller = options.poller;
+    this.executor = options.executor;
+    this.lifecycle = options.lifecycle;
+    this.abortController = options.abortController;
+  }
 
   async startOnlyOnce(workerBootstrap: WorkerBootstrap) {
     if (this.lifecycle.isRunning) {

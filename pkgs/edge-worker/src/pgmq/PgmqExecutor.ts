@@ -1,6 +1,5 @@
 import type { Json, MessageRecord } from '../types.ts';
 import type { Queue } from '../Queue.ts';
-// import type { BatchArchiver } from '../BatchArchiver.ts';
 import { getLogger } from '../Logger.ts';
 import type { Executor } from '../interfaces/Executor.ts';
 
@@ -24,7 +23,6 @@ export class PgmqExecutor<MessagePayload extends Json> implements Executor<Messa
       message: MessagePayload
     ) => Promise<void> | void,
     private readonly signal: AbortSignal,
-    // private readonly batchArchiver: BatchArchiver<MessagePayload>,
     private readonly retryLimit: number,
     private readonly retryDelay: number
   ) {}
@@ -54,7 +52,6 @@ export class PgmqExecutor<MessagePayload extends Json> implements Executor<Messa
       this.logger.debug(`Archived task ${record.msg_id} successfully`);
 
       // TODO: uncomment when ready to debug this
-      // await this.batchArchiver.add(record.msg_id);
     } catch (error) {
       await this.handleExecutionError(error, record);
     } finally {
@@ -84,9 +81,6 @@ export class PgmqExecutor<MessagePayload extends Json> implements Executor<Messa
       // TODO: set 'permanently_failed' in headers when pgmq 1.5.0 is released
       this.logger.debug(`Archiving ${record.msg_id} forever`);
       await this.queue.archive(record.msg_id);
-
-      // TODO: uncomment when ready to debug this
-      // await this.batchArchiver.add(record.msg_id);
     }
   }
 
