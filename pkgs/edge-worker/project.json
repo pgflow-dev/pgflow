@@ -72,9 +72,8 @@
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
-          "rm -f supabase/functions/_src/*.ts",
-          "rm -f supabase/functions/_src/deno.*",
-          "cp src/*.ts ./supabase/functions/_src/",
+          "rm -f supabase/functions/_src/*",
+          "cp -r src/* ./supabase/functions/_src/",
           "cp deno.* ./supabase/functions/_src/",
           "find supabase/functions -maxdepth 1 -mindepth 1 -type d -not -name '_src' -exec cp deno.* {} \\;"
         ],
