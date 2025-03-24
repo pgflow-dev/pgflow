@@ -142,8 +142,8 @@ create table pgflow.step_tasks (
 ------------------------------------------
 
 create type pgflow.worker_task as (
-  flow_slug TEXT,
-  run_id UUID,
-  step_slug TEXT,
-  input JSONB
+  flow_slug text,
+  run_id uuid,
+  step_slug text,
+  input jsonb
 );
