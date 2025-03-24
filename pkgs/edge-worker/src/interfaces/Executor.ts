@@ -1,7 +1,7 @@
 /**
  * Generic interface for executing a payload
  */
-export interface PayloadExecutor<TPayload> {
+export interface Executor<TPayload> {
   /**
    * Execute a payload
    * @param payload The payload to execute

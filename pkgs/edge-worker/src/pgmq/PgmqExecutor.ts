@@ -2,7 +2,7 @@ import type { Json, MessageRecord } from '../types.ts';
 import type { Queue } from '../Queue.ts';
 import type { BatchArchiver } from '../BatchArchiver.ts';
 import { getLogger } from '../Logger.ts';
-import type { PayloadExecutor } from '../interfaces/PayloadExecutor.ts';
+import type { Executor } from '../interfaces/Executor.ts';
 
 class AbortError extends Error {
   constructor() {
@@ -12,9 +12,9 @@ class AbortError extends Error {
 }
 
 /**
- * Implementation of PayloadExecutor for PGMQ
+ * Implementation of Executor for PGMQ
  */
-export class PgmqExecutor<MessagePayload extends Json> implements PayloadExecutor<MessageRecord<MessagePayload>> {
+export class PgmqExecutor<MessagePayload extends Json> implements Executor<MessageRecord<MessagePayload>> {
   private logger = getLogger('PgmqExecutor');
   private currentMsgId: number | null = null;
 
