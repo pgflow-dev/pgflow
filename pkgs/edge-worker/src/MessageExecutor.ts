@@ -53,8 +53,6 @@ export class MessageExecutor<TPayload extends Json> {
       );
       await this.queue.archive(this.msgId);
       this.logger.debug(`Archived task ${this.msgId} successfully`);
-
-      // TODO: uncomment when ready to debug this
     } catch (error) {
       await this.handleExecutionError(error);
     }
@@ -91,7 +89,6 @@ export class MessageExecutor<TPayload extends Json> {
       await this.queue.setVt(this.msgId, this.retryDelay);
     } else {
       // archive message forever and stop processing it
-      // TODO: set 'permanently_failed' in headers when pgmq 1.5.0 is released
       this.logger.debug(`Archiving ${this.msgId} forever`);
       await this.queue.archive(this.msgId);
     }

@@ -20,8 +20,7 @@ export default async function spawnNewEdgeFunction(
     headers: {
       Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
       'Content-Type': 'application/json',
-    },
-    // body: JSON.stringify(body),
+    }
   });
 
   logger.debug('Edge Function spawned successfully!');

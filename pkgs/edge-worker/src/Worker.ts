@@ -10,17 +10,6 @@ export class Worker {
   private batchProcessor: IBatchProcessor;
   private sql: postgres.Sql;
 
-  // private static readonly DEFAULT_CONFIG = {
-  //   queueName: 'tasks',
-  //   maxConcurrent: 10,
-  //   maxPgConnections: 4,
-  //   maxPollSeconds: 5,
-  //   pollIntervalMs: 200,
-  //   retryDelay: 5,
-  //   retryLimit: 5,
-  //   visibilityTimeout: 3,
-  // } as const;
-
   constructor(
     batchProcessor: IBatchProcessor,
     lifecycle: ILifecycle,

@@ -22,9 +22,7 @@ export class ExecutionController<TMessage extends IMessage> {
     this.promiseQueue = newQueue(config.maxConcurrent);
   }
 
-  async start(
-    record: TMessage,
-  ) {
+  async start(record: TMessage) {
     const executor = this.createExecutor(record, this.signal);
 
     this.logger.info(`Scheduling execution of task ${executor.msgId}`);
