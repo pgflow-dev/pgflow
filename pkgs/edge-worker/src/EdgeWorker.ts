@@ -62,8 +62,8 @@ export class EdgeWorker {
     return connectionString;
   }
 
-  private static setupShutdownHandler<MessagePayload extends Json>(
-    worker: Worker<MessagePayload>
+  private static setupShutdownHandler(
+    worker: Worker
   ) {
     globalThis.onbeforeunload = async () => {
       if (worker.edgeFunctionName) {
@@ -86,7 +86,7 @@ export class EdgeWorker {
       retryDelay: number;
     }
   ) {
-    let worker: Worker<MessagePayload> | null = null;
+    let worker: Worker | null = null;
 
     Deno.serve({}, (req) => {
       if (!worker) {

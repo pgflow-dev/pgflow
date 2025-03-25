@@ -33,6 +33,11 @@ export interface ILifecycle {
   transitionToStopping(): void;
 }
 
+export interface IBatchProcessor {
+  processBatch(): Promise<void>;
+  awaitCompletion(): Promise<void>;
+}
+
 export type PgmqMessageRecord<TPayload extends Json | null = Json> = {
   msg_id: number | null;
   read_ct: number | null;

@@ -35,7 +35,7 @@ export type QueueWorkerConfig = EdgeWorkerConfig & {
 export function createQueueWorker<MessagePayload extends Json>(
   handler: (message: MessagePayload) => Promise<void> | void,
   config: QueueWorkerConfig
-): Worker<MessagePayload> {
+): Worker {
   type QueueMessage = MessageRecord<MessagePayload>;
 
   const abortController = new AbortController();
@@ -89,5 +89,5 @@ export function createQueueWorker<MessagePayload extends Json>(
     ...config,
   }
 
-  return new Worker<QueueMessage>(batchProcessor, lifecycle, workerConfig);
+  return new Worker(batchProcessor, lifecycle, workerConfig);
 }

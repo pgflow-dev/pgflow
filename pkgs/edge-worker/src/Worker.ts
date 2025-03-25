@@ -1,5 +1,5 @@
 import type postgres from 'postgres';
-import type { ILifecycle, Json, WorkerBootstrap } from './types.ts';
+import type { IBatchProcessor, ILifecycle, Json, WorkerBootstrap } from './types.ts';
 import type {
   ExecutionConfig,
 } from './ExecutionController.ts';
@@ -14,13 +14,13 @@ export type WorkerConfig = {
   Partial<LifecycleConfig> &
   Partial<Omit<PollerConfig, 'batchSize'>>;
 
-export class Worker<TMessage extends Json> {
+export class Worker {
   private config: Required<WorkerConfig>;
   private lifecycle: ILifecycle;
   private logger = getLogger('Worker');
   private abortController = new AbortController();
 
-  private batchProcessor: BatchProcessor<TMessage>;
+  private batchProcessor: IBatchProcessor;
   private sql: postgres.Sql;
 
   private static readonly DEFAULT_CONFIG = {
@@ -35,7 +35,7 @@ export class Worker<TMessage extends Json> {
   } as const;
 
   constructor(
-    batchProcessor: BatchProcessor<TMessage>,
+    batchProcessor: IBatchProcessor,
     lifecycle: ILifecycle,
     configOverrides: WorkerConfig
   ) {
