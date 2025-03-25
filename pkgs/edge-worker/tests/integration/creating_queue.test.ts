@@ -1,10 +1,10 @@
 import { assertEquals } from "@std/assert";
-import { Worker } from '../../src/Worker.ts';
+import { createQueueWorker } from '../../src/createQueueWorker.ts';
 import { withTransaction } from "../db.ts";
 import { delay } from "@std/async";
 
 Deno.test('creates queue when starting worker', withTransaction(async (sql) => {
-  const worker = new Worker(console.log, {
+  const worker = createQueueWorker(console.log, {
     sql,
     maxPollSeconds: 1,
     queueName: 'custom_queue'
@@ -22,8 +22,8 @@ Deno.test('creates queue when starting worker', withTransaction(async (sql) => {
     const result: {queue_name: string}[] = await sql`select queue_name from pgmq.list_queues();`;
 
     assertEquals(
-      [...result], 
-      [{ queue_name: 'custom_queue' }], 
+      [...result],
+      [{ queue_name: 'custom_queue' }],
       'queue "custom_queue" was created'
     );
   } finally {
