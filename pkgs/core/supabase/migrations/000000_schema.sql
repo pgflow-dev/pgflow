@@ -145,5 +145,6 @@ create type pgflow.worker_task as (
   flow_slug text,
   run_id uuid,
   step_slug text,
-  input jsonb
+  input jsonb,
+  msg_id bigint
 );

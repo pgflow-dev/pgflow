@@ -415,6 +415,7 @@ export type Database = {
         run_id: string | null
         step_slug: string | null
         input: Json | null
+        msg_id: number | null
       }
     }
   }
