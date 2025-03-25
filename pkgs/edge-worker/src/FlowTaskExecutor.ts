@@ -57,7 +57,7 @@ export class FlowTaskExecutor<
       const result = await stepDef.handler(this.task.input);
 
       this.logger.debug(`Flow task ${this.task.msg_id} completed successfully, marking as complete`);
-      await this.adapter.completeTask(this.task.msg_id, result);
+      await this.adapter.completeTask(this.task, result);
 
       this.logger.debug(`Flow task ${this.task.msg_id} marked as complete`);
     } catch (error) {
@@ -80,7 +80,7 @@ export class FlowTaskExecutor<
       // the task will be picked up by another worker later
     } else {
       this.logger.error(`Flow task ${this.task.msg_id} failed with error: ${error}`);
-      await this.adapter.failTask(this.task.msg_id, error);
+      await this.adapter.failTask(this.task, error);
     }
   }
 }

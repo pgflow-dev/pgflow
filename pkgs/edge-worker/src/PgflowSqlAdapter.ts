@@ -30,21 +30,23 @@ export class PgflowSqlAdapter<TPayload extends Json = Json> implements IPgflowAd
     `;
   }
 
-  async completeTask(msgId: number, output?: Json): Promise<void> {
-    this.logger.debug(`Completing flow task ${msgId}`);
-
+  async completeTask(taskRecord: FlowTaskRecord<TPayload>, output?: Json): Promise<void> {
+    this.logger.debug(`Completing flow task ${taskRecord.msg_id}`);
+    
     await this.sql`
       SELECT pgflow.complete_task(
-        ${msgId},
-        ${output ? JSON.stringify(output) : null}::jsonb
+        run_id => ${taskRecord.run_id}::uuid,
+        step_slug => ${taskRecord.step_slug}::text,
+        task_index => ${0}::int,
+        output => ${this.sql.json(output || null)}::jsonb
       );
     `;
 
-    this.logger.debug(`Completed flow task ${msgId}`);
+    this.logger.debug(`Completed flow task ${taskRecord.msg_id}`);
   }
 
-  async failTask(msgId: number, error: unknown): Promise<void> {
-    this.logger.debug(`Failing flow task ${msgId} with error: ${error}`);
+  async failTask(taskRecord: FlowTaskRecord<TPayload>, error: unknown): Promise<void> {
+    this.logger.debug(`Failing flow task ${taskRecord.msg_id} with error: ${error}`);
 
     // Convert error to a string
     const errorString = typeof error === 'string'
@@ -54,9 +56,14 @@ export class PgflowSqlAdapter<TPayload extends Json = Json> implements IPgflowAd
         : JSON.stringify(error);
 
     await this.sql`
-      SELECT pgflow.fail_task(${msgId}, ${errorString});
+      SELECT pgflow.fail_task(
+        run_id => ${taskRecord.run_id}::uuid,
+        step_slug => ${taskRecord.step_slug}::text,
+        task_index => ${0}::int,
+        output => ${errorString}::text
+      );
     `;
 
-    this.logger.debug(`Failed flow task ${msgId}`);
+    this.logger.debug(`Failed flow task ${taskRecord.msg_id}`);
   }
 }

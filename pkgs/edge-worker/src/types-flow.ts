@@ -33,12 +33,12 @@ export interface IPgflowAdapter<TPayload extends Json = Json> {
    * @param msgId - Message ID for the task
    * @param output - Result from step handler, or null if none
    */
-  completeTask(msgId: number, output?: Json): Promise<void>;
+  completeTask(taskRecord: FlowTaskRecord<TPayload>, output?: Json): Promise<void>;
 
   /**
    * Marks a task as failed
    * @param msgId - Message ID for the task
    * @param error - Error details (string or object) to record
    */
-  failTask(msgId: number, error: unknown): Promise<void>;
+  failTask(taskRecord: FlowTaskRecord<TPayload>, error: unknown): Promise<void>;
 }
