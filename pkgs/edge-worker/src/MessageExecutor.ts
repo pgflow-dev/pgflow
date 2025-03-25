@@ -94,9 +94,6 @@ export class MessageExecutor<MessagePayload extends Json> {
       // TODO: set 'permanently_failed' in headers when pgmq 1.5.0 is released
       this.logger.debug(`Archiving ${this.msgId} forever`);
       await this.queue.archive(this.msgId);
-
-      // TODO: uncomment when ready to debug this
-      // await this.batchArchiver.add(this.msgId);
     }
   }
 

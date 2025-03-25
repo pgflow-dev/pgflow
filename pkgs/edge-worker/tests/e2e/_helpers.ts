@@ -58,11 +58,11 @@ export async function seqLastValue(
   // but incrementing them for the first time does not increment the last_value,
   // only sets is_called to true
   const seqResult = await sql`
-    SELECT 
-      CASE 
-        WHEN is_called THEN last_value::integer 
-        ELSE 0 
-      END as last_value 
+    SELECT
+      CASE
+        WHEN is_called THEN last_value::integer
+        ELSE 0
+      END as last_value
     FROM ${sql(seqName)}`;
   return seqResult[0].last_value;
 }
@@ -71,11 +71,6 @@ interface WaitForSeqValueOptions {
   pollIntervalMs?: number;
   seqName?: string;
   timeoutMs?: number;
-}
-
-export async function waitForBatchArchiver() {
-  // TODO: find a better way, good enough for now
-  await delay(2000);
 }
 
 export async function waitForSeqToIncrementBy(
