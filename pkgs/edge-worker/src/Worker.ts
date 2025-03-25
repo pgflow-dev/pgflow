@@ -1,12 +1,11 @@
 import type postgres from 'postgres';
-import type { IBatchProcessor, ILifecycle, Json, WorkerBootstrap } from './types.ts';
+import type { IBatchProcessor, ILifecycle, WorkerBootstrap } from './types.ts';
 import type {
   ExecutionConfig,
 } from './ExecutionController.ts';
 import { getLogger, setupLogger } from './Logger.ts';
-import type { WorkerLifecycle, LifecycleConfig } from './WorkerLifecycle.ts';
+import type { LifecycleConfig } from './WorkerLifecycle.ts';
 import type { PollerConfig } from './ReadWithPollPoller.ts';
-import type { BatchProcessor } from './BatchProcessor.ts';
 
 export type WorkerConfig = {
   sql: postgres.Sql;
@@ -123,10 +122,6 @@ export class Worker {
    */
   private get isMainLoopActive() {
     return this.lifecycle.isRunning && !this.isAborted;
-  }
-
-  private get abortSignal() {
-    return this.abortController.signal;
   }
 
   private get isAborted() {

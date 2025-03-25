@@ -10,7 +10,7 @@ export class Queue<MessagePayload extends Json> {
    */
   async safeCreate() {
     return await this.sql`
-        select * from pgmq.create(${this.queueName}) 
+        select * from pgmq.create(${this.queueName})
         where not exists (
           select 1 from pgmq.list_queues() where queue_name = ${this.queueName}
         );
