@@ -1,14 +1,12 @@
 import type postgres from 'postgres';
 import type { Json, WorkerBootstrap } from './types.ts';
-import { Queue } from './Queue.ts';
 import type {
-  ExecutionController,
   ExecutionConfig,
 } from './ExecutionController.ts';
 import { getLogger, setupLogger } from './Logger.ts';
 import type { WorkerLifecycle, LifecycleConfig } from './WorkerLifecycle.ts';
 import type { PollerConfig } from './ReadWithPollPoller.ts';
-import { BatchProcessor } from './BatchProcessor.ts';
+import type { BatchProcessor } from './BatchProcessor.ts';
 
 export type WorkerConfig = {
   sql: postgres.Sql;
@@ -19,7 +17,6 @@ export type WorkerConfig = {
 
 export class Worker<MessagePayload extends Json> {
   private config: Required<WorkerConfig>;
-  private executionController: ExecutionController<MessagePayload>;
   private lifecycle: WorkerLifecycle<MessagePayload>;
   private logger = getLogger('Worker');
   private abortController = new AbortController();
@@ -39,7 +36,7 @@ export class Worker<MessagePayload extends Json> {
   } as const;
 
   constructor(
-    executionController: ExecutionController<MessagePayload>,
+    batchProcessor: BatchProcessor<MessagePayload>,
     lifecycle: WorkerLifecycle<MessagePayload>,
     configOverrides: WorkerConfig
   ) {
@@ -50,23 +47,9 @@ export class Worker<MessagePayload extends Json> {
 
     this.sql = this.config.sql;
 
-    const queue = new Queue<MessagePayload>(this.sql, this.config.queueName);
-
     this.lifecycle = lifecycle;
 
-    this.executionController = executionController;
-
-    this.batchProcessor = new BatchProcessor(
-      this.executionController,
-      queue,
-      this.abortSignal,
-      {
-        batchSize: this.config.maxConcurrent,
-        maxPollSeconds: this.config.maxPollSeconds,
-        pollIntervalMs: this.config.pollIntervalMs,
-        visibilityTimeout: this.config.visibilityTimeout,
-      }
-    );
+    this.batchProcessor = batchProcessor;
   }
 
   async startOnlyOnce(workerBootstrap: WorkerBootstrap) {
@@ -118,7 +101,7 @@ export class Worker<MessagePayload extends Json> {
       this.abortController.abort();
 
       this.logger.info('-> Waiting for pending tasks to complete...');
-      await this.executionController.awaitCompletion();
+      await this.batchProcessor.awaitCompletion();
       this.logger.info('-> Pending tasks completed!');
 
       this.lifecycle.acknowledgeStop();

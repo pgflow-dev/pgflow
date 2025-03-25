@@ -42,4 +42,8 @@ export class BatchProcessor<MessagePayload extends Json> {
     );
     await Promise.all(startPromises);
   }
+
+  async awaitCompletion() {
+    return await this.executionController.awaitCompletion();
+  }
 }

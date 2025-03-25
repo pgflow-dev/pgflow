@@ -7,6 +7,7 @@ import type { Json, MessageRecord } from './types.ts';
 import { Worker, type WorkerConfig } from './Worker.ts';
 import postgres from 'postgres';
 import { WorkerLifecycle } from "./WorkerLifecycle.ts";
+import { BatchProcessor } from "./BatchProcessor.ts";
 
 /**
  * Configuration for the queue worker
@@ -63,6 +64,17 @@ export function createQueueWorker<MessagePayload extends Json>(
       // retryDelay: config.retryDelay,
     }
   );
+  const batchProcessor = new BatchProcessor(
+    executionController,
+    queue,
+    abortSignal,
+    {
+      batchSize: config.maxConcurrent || 10,
+      maxPollSeconds: config.maxPollSeconds || 5,
+      pollIntervalMs: config.pollIntervalMs || 200,
+      visibilityTimeout: config.visibilityTimeout || 3,
+    }
+  );
 
   const workerConfig: WorkerConfig = {
     queueName: config.queueName || 'tasks',
@@ -70,5 +82,5 @@ export function createQueueWorker<MessagePayload extends Json>(
     ...config,
   }
 
-  return new Worker<MessagePayload>(executionController, lifecycle, workerConfig);
+  return new Worker<MessagePayload>(batchProcessor, lifecycle, workerConfig);
 }
