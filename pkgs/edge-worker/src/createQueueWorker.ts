@@ -1,11 +1,12 @@
 import type { EdgeWorkerConfig } from "./EdgeWorker.ts";
 import { ExecutionController } from "./ExecutionController.ts";
 import { MessageExecutor } from "./MessageExecutor.ts";
-// import { Queries } from "./Queries.ts";
+import { Queries } from "./Queries.ts";
 import { Queue } from "./Queue.ts";
 import type { Json, MessageRecord } from './types.ts';
 import { Worker, type WorkerConfig } from './Worker.ts';
 import postgres from 'postgres';
+import { WorkerLifecycle } from "./WorkerLifecycle.ts";
 
 /**
  * Configuration for the queue worker
@@ -38,7 +39,9 @@ export function createQueueWorker<MessagePayload extends Json>(
   });
 
   const queue = new Queue<MessagePayload>(sql, config.queueName || 'tasks');
-  // const queries = new Queries(sql);
+  const queries = new Queries(sql);
+
+  const lifecycle = new WorkerLifecycle<MessagePayload>(queries, queue);
 
   const executorFactory = (record: MessageRecord<MessagePayload>, signal: AbortSignal) => {
     return new MessageExecutor(
@@ -67,5 +70,5 @@ export function createQueueWorker<MessagePayload extends Json>(
     ...config,
   }
 
-  return new Worker<MessagePayload>(executionController, workerConfig);
+  return new Worker<MessagePayload>(executionController, lifecycle, workerConfig);
 }
