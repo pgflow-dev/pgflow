@@ -112,9 +112,9 @@ In this example, we'll create a workflow with:
 -- Define workflow with parallel steps
 SELECT pgflow.create_flow('analyze_website');
 SELECT pgflow.add_step('analyze_website', 'website');
-SELECT pgflow.add_step('analyze_website', 'sentiment', deps => ARRAY['website']);
-SELECT pgflow.add_step('analyze_website', 'summary', deps => ARRAY['website']);
-SELECT pgflow.add_step('analyze_website', 'saveToDb', deps => ARRAY['sentiment', 'summary']);
+SELECT pgflow.add_step('analyze_website', 'sentiment', deps_slugs => ARRAY['website']);
+SELECT pgflow.add_step('analyze_website', 'summary', deps_slugs => ARRAY['website']);
+SELECT pgflow.add_step('analyze_website', 'saveToDb', deps_slugs => ARRAY['sentiment', 'summary']);
 ```
 
 > [!WARNING]
