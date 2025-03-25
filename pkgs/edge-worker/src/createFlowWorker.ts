@@ -64,6 +64,7 @@ export function createFlowWorker<
   // Create FlowPoller
   const pollerConfig: FlowPollerConfig = {
     batchSize: config.batchSize || 10,
+    queueName: flow.flowOptions.slug
   };
   const poller = new FlowPoller<TRunPayload>(pgflowAdapter, abortSignal, pollerConfig);
 

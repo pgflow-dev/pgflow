@@ -20,7 +20,13 @@ export interface IPgflowAdapter<TPayload extends Json = Json> {
    * @param limit - The batch size or number of tasks to retrieve
    * @returns FlowTaskRecord[] - The set of tasks polled from pgflow
    */
-  pollForTasks(limit: number): Promise<FlowTaskRecord<TPayload>[]>;
+  pollForTasks(
+    queueName: string,
+    batchSize?: number,
+    visibilityTimeout?: number,
+    maxPollSeconds?: number,
+    pollIntervalMs?: number
+  ): Promise<FlowTaskRecord<TPayload>[]>;
 
   /**
    * Marks a task as completed

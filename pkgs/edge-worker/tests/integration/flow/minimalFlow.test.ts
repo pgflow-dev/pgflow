@@ -1,14 +1,13 @@
 import { assertEquals } from "@std/assert";
 import { createFlowWorker } from '../../../src/createFlowWorker.ts';
 import { withTransaction } from "../../db.ts";
-import { delay } from "@std/async";
 import { Flow } from "../../../../dsl/src/dsl.ts";
 import { waitFor } from "../../e2e/_helpers.ts";
 
 // Define a minimal flow with two steps:
 // 1. Convert a number to a string
 // 2. Wrap the string in an array
-const MinimalFlow = new Flow<number>({ slug: 'test-minimal-flow' })
+const MinimalFlow = new Flow<number>({ slug: 'test_minimal_flow' })
   .step(
     { slug: 'toStringStep' },
     (payload) => {
@@ -36,9 +35,13 @@ Deno.test('minimal flow executes successfully', withTransaction(async (sql) => {
   try {
     // Start the worker
     worker.startOnlyOnce({
-      edgeFunctionName: 'test-flow',
+      edgeFunctionName: 'test_flow',
       workerId: crypto.randomUUID(),
     });
+
+    await sql`select pgflow.create_flow('test_minimal_flow');`;
+    await sql`select pgflow.add_step('test_minimal_flow', 'toStringStep');`;
+    await sql`select pgflow.add_step('test_minimal_flow', 'wrapInArrayStep', deps => ARRAY['toString']::text[]);`;
 
     // Start a flow run with input value 42
     const [{ run_id }] = await sql<{ run_id: string }[]>`

@@ -4,6 +4,7 @@ import { getLogger } from './Logger.ts';
 
 export interface FlowPollerConfig {
   batchSize: number;
+  queueName: string;
 }
 
 /**
@@ -25,7 +26,7 @@ export class FlowPoller<TPayload extends Json = Json> implements IPoller<FlowTas
     }
 
     this.logger.debug(`Polling for flow tasks with batch size ${this.config.batchSize}`);
-    const tasks = await this.adapter.pollForTasks(this.config.batchSize);
+    const tasks = await this.adapter.pollForTasks(this.config.queueName);
     this.logger.debug(`Retrieved ${tasks.length} flow tasks`);
 
     return tasks;

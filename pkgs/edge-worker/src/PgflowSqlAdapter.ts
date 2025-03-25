@@ -11,15 +11,23 @@ export class PgflowSqlAdapter<TPayload extends Json = Json> implements IPgflowAd
 
   constructor(private readonly sql: postgres.Sql) {}
 
-  async pollForTasks(limit: number): Promise<FlowTaskRecord<TPayload>[]> {
-    this.logger.debug(`Polling for up to ${limit} flow tasks`);
-
-    const records = await this.sql<FlowTaskRecord<TPayload>[]>`
-      SELECT * FROM pgflow.poll_for_tasks(_limit => ${limit});
+  async pollForTasks(
+    queueName: string,
+    batchSize = 20,
+    visibilityTimeout = 2,
+    maxPollSeconds = 5,
+    pollIntervalMs = 200
+  ): Promise<FlowTaskRecord<TPayload>[]> {
+    return await this.sql<FlowTaskRecord<TPayload>[]>`
+      SELECT *
+      FROM pgflow.poll_for_tasks(
+        queue_name => ${queueName},
+        vt => ${visibilityTimeout},
+        qty => ${batchSize},
+        max_poll_seconds => ${maxPollSeconds},
+        poll_interval_ms => ${pollIntervalMs}
+      );
     `;
-
-    this.logger.debug(`Retrieved ${records.length} flow tasks`);
-    return records;
   }
 
   async completeTask(msgId: number, output?: Json): Promise<void> {
