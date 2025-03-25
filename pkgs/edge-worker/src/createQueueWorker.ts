@@ -17,6 +17,7 @@ export type QueueWorkerConfig = EdgeWorkerConfig & {
   retryDelay?: number;
   connectionString?: string;
   sql?: postgres.Sql;
+  maxPgConnections?: number;
 };
 
 /**

@@ -10,7 +10,6 @@ import type { BatchProcessor } from './BatchProcessor.ts';
 
 export type WorkerConfig = {
   sql: postgres.Sql;
-  maxPgConnections?: number;
 } & Partial<ExecutionConfig> &
   Partial<LifecycleConfig> &
   Partial<Omit<PollerConfig, 'batchSize'>>;
