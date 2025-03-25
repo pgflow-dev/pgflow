@@ -1,13 +1,12 @@
 import type postgres from 'postgres';
 import type { Json, WorkerBootstrap } from './types.ts';
 import { Queue } from './Queue.ts';
-import { Queries } from './Queries.ts';
-import {
+import type {
   ExecutionController,
-  type ExecutionConfig,
+  ExecutionConfig,
 } from './ExecutionController.ts';
 import { getLogger, setupLogger } from './Logger.ts';
-import { WorkerLifecycle, type LifecycleConfig } from './WorkerLifecycle.ts';
+import type { WorkerLifecycle, LifecycleConfig } from './WorkerLifecycle.ts';
 import type { PollerConfig } from './ReadWithPollPoller.ts';
 import { BatchProcessor } from './BatchProcessor.ts';
 
@@ -56,15 +55,6 @@ export class Worker<MessagePayload extends Json> {
     this.lifecycle = lifecycle;
 
     this.executionController = executionController;
-    // this.executionController = new ExecutionController<MessagePayload>(
-    //   queue,
-    //   this.abortSignal,
-    //   {
-    //     maxConcurrent: this.config.maxConcurrent,
-    //     retryLimit: this.config.retryLimit,
-    //     retryDelay: this.config.retryDelay,
-    //   }
-    // );
 
     this.batchProcessor = new BatchProcessor(
       this.executionController,
