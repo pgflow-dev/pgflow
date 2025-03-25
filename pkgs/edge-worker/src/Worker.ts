@@ -1,20 +1,8 @@
 import type postgres from 'postgres';
 import type { IBatchProcessor, ILifecycle, WorkerBootstrap } from './types.ts';
-import type {
-  ExecutionConfig,
-} from './ExecutionController.ts';
 import { getLogger, setupLogger } from './Logger.ts';
-import type { LifecycleConfig } from './WorkerLifecycle.ts';
-import type { PollerConfig } from './ReadWithPollPoller.ts';
-
-export type WorkerConfig = {
-  sql: postgres.Sql;
-} & Partial<ExecutionConfig> &
-  Partial<LifecycleConfig> &
-  Partial<Omit<PollerConfig, 'batchSize'>>;
 
 export class Worker {
-  private config: Required<WorkerConfig>;
   private lifecycle: ILifecycle;
   private logger = getLogger('Worker');
   private abortController = new AbortController();
@@ -22,28 +10,23 @@ export class Worker {
   private batchProcessor: IBatchProcessor;
   private sql: postgres.Sql;
 
-  private static readonly DEFAULT_CONFIG = {
-    queueName: 'tasks',
-    maxConcurrent: 10,
-    maxPgConnections: 4,
-    maxPollSeconds: 5,
-    pollIntervalMs: 200,
-    retryDelay: 5,
-    retryLimit: 5,
-    visibilityTimeout: 3,
-  } as const;
+  // private static readonly DEFAULT_CONFIG = {
+  //   queueName: 'tasks',
+  //   maxConcurrent: 10,
+  //   maxPgConnections: 4,
+  //   maxPollSeconds: 5,
+  //   pollIntervalMs: 200,
+  //   retryDelay: 5,
+  //   retryLimit: 5,
+  //   visibilityTimeout: 3,
+  // } as const;
 
   constructor(
     batchProcessor: IBatchProcessor,
     lifecycle: ILifecycle,
-    configOverrides: WorkerConfig
+    sql: postgres.Sql,
   ) {
-    this.config = {
-      ...Worker.DEFAULT_CONFIG,
-      ...configOverrides,
-    };
-
-    this.sql = this.config.sql;
+    this.sql = sql;
 
     this.lifecycle = lifecycle;
 

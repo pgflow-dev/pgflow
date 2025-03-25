@@ -5,7 +5,7 @@ import { Queries } from "./Queries.ts";
 import { Queue } from "./Queue.ts";
 import { ReadWithPollPoller } from './ReadWithPollPoller.ts';
 import type { IExecutor, IPoller, Json, MessageRecord } from './types.ts';
-import { Worker, type WorkerConfig } from './Worker.ts';
+import { Worker } from './Worker.ts';
 import postgres from 'postgres';
 import { WorkerLifecycle } from "./WorkerLifecycle.ts";
 import { BatchProcessor } from "./BatchProcessor.ts";
@@ -14,6 +14,8 @@ import { BatchProcessor } from "./BatchProcessor.ts";
  * Configuration for the queue worker
  */
 export type QueueWorkerConfig = EdgeWorkerConfig & {
+  queueName?: string;
+  maxConcurrent?: number;
   retryLimit?: number;
   retryDelay?: number;
   connectionString?: string;
@@ -83,11 +85,5 @@ export function createQueueWorker<MessagePayload extends Json>(
     abortSignal
   );
 
-  const workerConfig: WorkerConfig = {
-    queueName: config.queueName || 'tasks',
-    sql,
-    ...config,
-  }
-
-  return new Worker(batchProcessor, lifecycle, workerConfig);
+  return new Worker(batchProcessor, lifecycle, sql);
 }

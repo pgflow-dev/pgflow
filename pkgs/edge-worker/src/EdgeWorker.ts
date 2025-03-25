@@ -1,10 +1,10 @@
-import type { Worker, WorkerConfig } from './Worker.ts';
+import type { Worker } from './Worker.ts';
 import spawnNewEdgeFunction from './spawnNewEdgeFunction.ts';
 import type { Json } from './types.ts';
 import { getLogger, setupLogger } from './Logger.ts';
 import { createQueueWorker } from './createQueueWorker.ts';
 
-export type EdgeWorkerConfig = Omit<WorkerConfig, 'sql'> & {
+export type EdgeWorkerConfig = {
   /**
    * PostgreSQL connection string.
    * If not provided, it will be read from the EDGE_WORKER_DB_URL environment variable.
