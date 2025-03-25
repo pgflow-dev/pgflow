@@ -95,7 +95,7 @@
     "gen-types": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "supabase gen types --local --schema pgflow > src/types.ts",
+        "command": "supabase gen types --local --schema pgflow --schema pgmq > src/types.ts",
         "cwd": "{projectRoot}"
       }
     }
