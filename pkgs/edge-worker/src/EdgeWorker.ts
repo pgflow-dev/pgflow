@@ -1,8 +1,9 @@
-import { Worker, type WorkerConfig } from './Worker.ts';
+import type { Worker, WorkerConfig } from './Worker.ts';
 import spawnNewEdgeFunction from './spawnNewEdgeFunction.ts';
 import type { Json } from './types.ts';
 import { getLogger, setupLogger } from './Logger.ts';
 import postgres from 'postgres';
+import { createQueueWorker } from './createQueueWorker.ts';
 
 export type EdgeWorkerConfig = Omit<WorkerConfig, 'sql'> & {
   /**
@@ -54,16 +55,6 @@ export class EdgeWorker {
     return connectionString;
   }
 
-  private static initializeWorker<MessagePayload extends Json>(
-    handler: (message: MessagePayload) => Promise<void> | void,
-    config: WorkerConfig
-  ): Worker<MessagePayload> {
-    return new Worker<MessagePayload>(handler, {
-      queueName: config.queueName || 'tasks',
-      ...config,
-    });
-  }
-
   private static setupShutdownHandler<MessagePayload extends Json>(
     worker: Worker<MessagePayload>
   ) {
@@ -94,7 +85,7 @@ export class EdgeWorker {
 
         this.logger.info(`HTTP Request: ${edgeFunctionName}`);
 
-        worker = this.initializeWorker(handler, workerConfig);
+        worker = createQueueWorker(handler, workerConfig);
         worker.startOnlyOnce({
           edgeFunctionName,
           workerId: sbExecutionId,
