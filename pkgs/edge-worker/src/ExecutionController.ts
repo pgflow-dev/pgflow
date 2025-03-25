@@ -1,21 +1,19 @@
 import { newQueue, type Queue as PromiseQueue } from '@henrygd/queue';
-import type { MessageExecutor } from './MessageExecutor.ts';
-import type { Json } from './types.ts';
-import type { MessageRecord } from './types.ts';
+import type { IExecutor, Json } from './types.ts';
 import { getLogger } from './Logger.ts';
 
 export interface ExecutionConfig {
   maxConcurrent: number;
 }
 
-export class ExecutionController<MessagePayload extends Json> {
+export class ExecutionController<TMessage extends Json> {
   private logger = getLogger('ExecutionController');
   private promiseQueue: PromiseQueue;
   private signal: AbortSignal;
-  private createExecutor: (record: MessageRecord<MessagePayload>, signal: AbortSignal) => MessageExecutor<MessagePayload>;
+  private createExecutor: (record: TMessage, signal: AbortSignal) => IExecutor;
 
   constructor(
-    executorFactory: (record: MessageRecord<MessagePayload>, signal: AbortSignal) => MessageExecutor<MessagePayload>,
+    executorFactory: (record: TMessage, signal: AbortSignal) => IExecutor,
     abortSignal: AbortSignal,
     config: ExecutionConfig
   ) {
@@ -25,7 +23,7 @@ export class ExecutionController<MessagePayload extends Json> {
   }
 
   async start(
-    record: MessageRecord<MessagePayload>,
+    record: TMessage,
   ) {
     const executor = this.createExecutor(record, this.signal);
 

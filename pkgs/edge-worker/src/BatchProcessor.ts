@@ -1,28 +1,18 @@
 import type { ExecutionController } from './ExecutionController.ts';
-import type { Queue } from './Queue.ts';
-import { type PollerConfig, ReadWithPollPoller } from './ReadWithPollPoller.ts';
-import type { Json, MessageRecord } from './types.ts';
+import type { IPoller, Json } from './types.ts';
 import { getLogger } from './Logger.ts';
 
-export class BatchProcessor<MessagePayload extends Json> {
+export class BatchProcessor<TMessage extends Json> {
   private logger = getLogger('BatchProcessor');
-  private poller: ReadWithPollPoller<MessagePayload>;
 
   constructor(
-    private executionController: ExecutionController<MessagePayload>,
-    queue: Queue<MessagePayload>,
-    private signal: AbortSignal,
-    config: PollerConfig
+    private executionController: ExecutionController<TMessage>,
+    private poller: IPoller<TMessage>,
+    private signal: AbortSignal
   ) {
     this.executionController = executionController;
     this.signal = signal;
-
-    this.poller = new ReadWithPollPoller(queue, signal, {
-      batchSize: config.batchSize,
-      maxPollSeconds: config.maxPollSeconds,
-      pollIntervalMs: config.pollIntervalMs,
-      visibilityTimeout: config.visibilityTimeout,
-    });
+    this.poller = poller;
   }
 
   async processBatch() {
@@ -37,8 +27,7 @@ export class BatchProcessor<MessagePayload extends Json> {
     this.logger.debug(`Starting ${messageRecords.length} messages`);
 
     const startPromises = messageRecords.map(
-      (messageRecord: MessageRecord<MessagePayload>) =>
-        this.executionController.start(messageRecord)
+      (message) => this.executionController.start(message)
     );
     await Promise.all(startPromises);
   }

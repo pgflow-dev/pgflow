@@ -9,15 +9,15 @@ export interface LifecycleConfig {
   queueName: string;
 }
 
-export class WorkerLifecycle<MessagePayload extends Json> {
+export class WorkerLifecycle<IMessage extends Json> {
   private workerState: WorkerState = new WorkerState();
   private heartbeat?: Heartbeat;
   private logger = getLogger('WorkerLifecycle');
   private queries: Queries;
-  private queue: Queue<MessagePayload>;
+  private queue: Queue<IMessage>;
   private workerRow?: WorkerRow;
 
-  constructor(queries: Queries, queue: Queue<MessagePayload>) {
+  constructor(queries: Queries, queue: Queue<IMessage>) {
     this.queries = queries;
     this.queue = queue;
   }

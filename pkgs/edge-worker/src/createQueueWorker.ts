@@ -3,7 +3,8 @@ import { ExecutionController } from "./ExecutionController.ts";
 import { MessageExecutor } from "./MessageExecutor.ts";
 import { Queries } from "./Queries.ts";
 import { Queue } from "./Queue.ts";
-import type { Json, MessageRecord } from './types.ts';
+import { ReadWithPollPoller } from './ReadWithPollPoller.ts';
+import type { IExecutor, IPoller, Json, MessageRecord } from './types.ts';
 import { Worker, type WorkerConfig } from './Worker.ts';
 import postgres from 'postgres';
 import { WorkerLifecycle } from "./WorkerLifecycle.ts";
@@ -18,6 +19,10 @@ export type QueueWorkerConfig = EdgeWorkerConfig & {
   connectionString?: string;
   sql?: postgres.Sql;
   maxPgConnections?: number;
+  batchSize?: number;
+  maxPollSeconds?: number;
+  pollIntervalMs?: number;
+  visibilityTimeout?: number;
 };
 
 /**
@@ -31,6 +36,8 @@ export function createQueueWorker<MessagePayload extends Json>(
   handler: (message: MessagePayload) => Promise<void> | void,
   config: QueueWorkerConfig
 ): Worker<MessagePayload> {
+  type QueueMessage = MessageRecord<MessagePayload>;
+
   const abortController = new AbortController();
   const abortSignal = abortController.signal;
 
@@ -45,7 +52,7 @@ export function createQueueWorker<MessagePayload extends Json>(
 
   const lifecycle = new WorkerLifecycle<MessagePayload>(queries, queue);
 
-  const executorFactory = (record: MessageRecord<MessagePayload>, signal: AbortSignal) => {
+  const executorFactory = (record: QueueMessage, signal: AbortSignal): IExecutor => {
     return new MessageExecutor(
       queue,
       record,
@@ -56,25 +63,24 @@ export function createQueueWorker<MessagePayload extends Json>(
     );
   }
 
-  const executionController = new ExecutionController<MessagePayload>(
+  const poller: IPoller<QueueMessage> = new ReadWithPollPoller(queue, abortSignal, {
+    batchSize: config.maxConcurrent || 10,
+    maxPollSeconds: config.maxPollSeconds || 5,
+    pollIntervalMs: config.pollIntervalMs || 200,
+    visibilityTimeout: config.visibilityTimeout || 3,
+  });
+
+  const executionController = new ExecutionController<QueueMessage>(
     executorFactory,
     abortSignal,
     {
       maxConcurrent: config.maxConcurrent || 10,
-      // retryLimit: config.retryLimit,
-      // retryDelay: config.retryDelay,
     }
   );
-  const batchProcessor = new BatchProcessor(
+  const batchProcessor = new BatchProcessor<QueueMessage>(
     executionController,
-    queue,
-    abortSignal,
-    {
-      batchSize: config.maxConcurrent || 10,
-      maxPollSeconds: config.maxPollSeconds || 5,
-      pollIntervalMs: config.pollIntervalMs || 200,
-      visibilityTimeout: config.visibilityTimeout || 3,
-    }
+    poller,
+    abortSignal
   );
 
   const workerConfig: WorkerConfig = {
@@ -83,5 +89,5 @@ export function createQueueWorker<MessagePayload extends Json>(
     ...config,
   }
 
-  return new Worker<MessagePayload>(batchProcessor, lifecycle, workerConfig);
+  return new Worker<QueueMessage>(batchProcessor, lifecycle, workerConfig);
 }

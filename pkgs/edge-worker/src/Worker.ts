@@ -14,13 +14,13 @@ export type WorkerConfig = {
   Partial<LifecycleConfig> &
   Partial<Omit<PollerConfig, 'batchSize'>>;
 
-export class Worker<MessagePayload extends Json> {
+export class Worker<TMessage extends Json> {
   private config: Required<WorkerConfig>;
-  private lifecycle: WorkerLifecycle<MessagePayload>;
+  private lifecycle: WorkerLifecycle<TMessage>;
   private logger = getLogger('Worker');
   private abortController = new AbortController();
 
-  private batchProcessor: BatchProcessor<MessagePayload>;
+  private batchProcessor: BatchProcessor<TMessage>;
   private sql: postgres.Sql;
 
   private static readonly DEFAULT_CONFIG = {
@@ -35,8 +35,8 @@ export class Worker<MessagePayload extends Json> {
   } as const;
 
   constructor(
-    batchProcessor: BatchProcessor<MessagePayload>,
-    lifecycle: WorkerLifecycle<MessagePayload>,
+    batchProcessor: BatchProcessor<TMessage>,
+    lifecycle: WorkerLifecycle<TMessage>,
     configOverrides: WorkerConfig
   ) {
     this.config = {
