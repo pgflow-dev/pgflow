@@ -8,6 +8,16 @@ import { Worker, type WorkerConfig } from './Worker.ts';
 import postgres from 'postgres';
 
 /**
+ * Configuration for the queue worker
+ */
+export type QueueWorkerConfig = EdgeWorkerConfig & {
+  retryLimit?: number;
+  retryDelay?: number;
+  connectionString?: string;
+  sql?: postgres.Sql;
+};
+
+/**
  * Creates a new Worker instance for processing queue messages.
  *
  * @param handler - The message handler function that processes each message from the queue
@@ -16,15 +26,17 @@ import postgres from 'postgres';
  */
 export function createQueueWorker<MessagePayload extends Json>(
   handler: (message: MessagePayload) => Promise<void> | void,
-  config: EdgeWorkerConfig & { connectionString: string; retryLimit: number; retryDelay: number }
+  config: QueueWorkerConfig
 ): Worker<MessagePayload> {
   const abortController = new AbortController();
   const abortSignal = abortController.signal;
 
-  const sql = postgres(config.connectionString, {
+  // Use provided SQL connection if available, otherwise create one from connection string
+  const sql = config.sql || postgres(config.connectionString!, {
     max: config.maxPgConnections,
     prepare: false,
   });
+
   const queue = new Queue<MessagePayload>(sql, config.queueName || 'tasks');
   // const queries = new Queries(sql);
 
@@ -34,8 +46,8 @@ export function createQueueWorker<MessagePayload extends Json>(
       record,
       handler,
       signal,
-      config.retryLimit,
-      config.retryDelay
+      config.retryLimit || 5,
+      config.retryDelay || 3
     );
   }
 

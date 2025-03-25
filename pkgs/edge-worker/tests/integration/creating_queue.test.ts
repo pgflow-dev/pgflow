@@ -5,6 +5,7 @@ import { delay } from "@std/async";
 
 Deno.test('creates queue when starting worker', withTransaction(async (sql) => {
   const worker = createQueueWorker(console.log, {
+    sql,
     maxPollSeconds: 1,
     queueName: 'custom_queue'
   });
