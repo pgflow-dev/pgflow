@@ -1,5 +1,6 @@
-import type { Flow } from '../dsl/src/dsl.ts';
-import type { FlowTaskRecord, IPgflowAdapter, Json } from './types-flow.ts';
+import type { Flow } from '../../dsl/src/dsl.ts';
+import type { FlowTaskRecord, IPgflowAdapter } from './types-flow.ts';
+import type { Json } from './types.ts';
 import type { IExecutor } from './types.ts';
 import { getLogger } from './Logger.ts';
 
@@ -12,14 +13,18 @@ class AbortError extends Error {
 
 /**
  * An executor that processes flow tasks using an IPgflowAdapter
+ * with strong typing for the flow's step handlers
  */
-export class FlowTaskExecutor<TPayload extends Json = Json> implements IExecutor {
+export class FlowTaskExecutor<
+  TRunPayload extends Json,
+  TSteps extends Record<string, Json> = Record<never, never>
+> implements IExecutor {
   private logger = getLogger('FlowTaskExecutor');
 
   constructor(
-    private readonly flow: Flow<TPayload>,
-    private readonly task: FlowTaskRecord<TPayload>,
-    private readonly adapter: IPgflowAdapter<TPayload>,
+    private readonly flow: Flow<TRunPayload, TSteps>,
+    private readonly task: FlowTaskRecord<any>,
+    private readonly adapter: IPgflowAdapter<any>,
     private readonly signal: AbortSignal
   ) {}
 
@@ -39,15 +44,16 @@ export class FlowTaskExecutor<TPayload extends Json = Json> implements IExecutor
       const stepSlug = this.task.step_slug;
       this.logger.debug(`Executing flow task ${this.task.msg_id} for step ${stepSlug}`);
 
-      // Get the step handler from the flow
+      // Get the step handler from the flow with proper typing
       const steps = this.flow.getSteps();
-      const stepDef = steps[stepSlug];
+      const stepDef = steps[stepSlug as keyof typeof steps];
 
       if (!stepDef) {
         throw new Error(`No step definition found for slug=${stepSlug}`);
       }
 
       // Execute the step handler with the input data
+      // The handler is properly typed based on the Flow definition
       const result = await stepDef.handler(this.task.input);
 
       this.logger.debug(`Flow task ${this.task.msg_id} completed successfully, marking as complete`);

@@ -4,6 +4,7 @@ export { EdgeWorker } from './EdgeWorker.ts';
 
 // Export new flow-based worker
 export { createFlowWorker } from './createFlowWorker.ts';
+export { FlowWorkerLifecycle } from './FlowWorkerLifecycle.ts';
 
 // Export types
 export type { FlowTaskRecord } from './FlowTaskRecord.ts';

@@ -1,5 +1,6 @@
 import type postgres from 'postgres';
-import type { FlowTaskRecord, IPgflowAdapter, Json } from './types-flow.ts';
+import type { FlowTaskRecord, IPgflowAdapter } from './types-flow.ts';
+import type { Json } from './types.ts';
 import { getLogger } from './Logger.ts';
 
 /**

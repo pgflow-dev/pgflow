@@ -5,12 +5,11 @@ import { FlowPoller, type FlowPollerConfig } from "./FlowPoller.ts";
 import { FlowTaskExecutor } from "./FlowTaskExecutor.ts";
 import { PgflowSqlAdapter } from "./PgflowSqlAdapter.ts";
 import { Queries } from "./Queries.ts";
-import { Queue } from "./Queue.ts";
 import type { FlowTaskRecord } from './types-flow.ts';
 import type { IExecutor, Json } from './types.ts';
 import { Worker } from './Worker.ts';
 import postgres from 'postgres';
-import { WorkerLifecycle } from "./WorkerLifecycle.ts";
+import { FlowWorkerLifecycle } from "./FlowWorkerLifecycle.ts";
 import { BatchProcessor } from "./BatchProcessor.ts";
 import { getLogger } from "./Logger.ts";
 
@@ -32,8 +31,11 @@ export type FlowWorkerConfig = EdgeWorkerConfig & {
  * @param config - Configuration options for the worker
  * @returns A configured Worker instance ready to be started
  */
-export function createFlowWorker<TPayload extends Json>(
-  flow: Flow<TPayload>,
+export function createFlowWorker<
+  TRunPayload extends Json,
+  TSteps extends Record<string, Json> = Record<never, never>
+>(
+  flow: Flow<TRunPayload, TSteps>,
   config: FlowWorkerConfig
 ): Worker {
   const logger = getLogger('createFlowWorker');
@@ -49,44 +51,29 @@ export function createFlowWorker<TPayload extends Json>(
   });
 
   // Create the pgflow adapter
-  const pgflowAdapter = new PgflowSqlAdapter<TPayload>(sql);
+  const pgflowAdapter = new PgflowSqlAdapter<TRunPayload>(sql);
 
   // Use flow slug as queue name, or fallback to 'tasks'
   const queueName = flow.flowOptions?.slug || 'tasks';
   logger.debug(`Using queue name: ${queueName}`);
 
-  // Create a real Queue but wrap it with a Proxy to make safeCreate a no-op
-  const realQueue = new Queue<Json>(sql, queueName);
-  const proxiedQueue = new Proxy(realQueue, {
-    get(target, propKey, receiver) {
-      if (propKey === 'safeCreate') {
-        logger.debug('Intercepted safeCreate call, returning no-op function');
-        return async () => {
-          logger.debug('No-op safeCreate called');
-          // No-op for flows
-        };
-      }
-      return Reflect.get(target, propKey, receiver);
-    },
-  });
-
-  // Create standard WorkerLifecycle with the proxied queue
+  // Create specialized FlowWorkerLifecycle with the proxied queue and flow
   const queries = new Queries(sql);
-  const lifecycle = new WorkerLifecycle<Json>(queries, proxiedQueue);
+  const lifecycle = new FlowWorkerLifecycle<TRunPayload, TSteps>(queries, flow);
 
   // Create FlowPoller
   const pollerConfig: FlowPollerConfig = {
     batchSize: config.batchSize || 10,
   };
-  const poller = new FlowPoller<TPayload>(pgflowAdapter, abortSignal, pollerConfig);
+  const poller = new FlowPoller<TRunPayload>(pgflowAdapter, abortSignal, pollerConfig);
 
-  // Create executor factory
-  const executorFactory = (record: FlowTaskRecord<TPayload>, signal: AbortSignal): IExecutor => {
-    return new FlowTaskExecutor<TPayload>(flow, record, pgflowAdapter, signal);
+  // Create executor factory with proper typing
+  const executorFactory = (record: FlowTaskRecord<TRunPayload>, signal: AbortSignal): IExecutor => {
+    return new FlowTaskExecutor(flow, record, pgflowAdapter, signal);
   };
 
   // Create ExecutionController
-  const executionController = new ExecutionController<FlowTaskRecord<TPayload>>(
+  const executionController = new ExecutionController<FlowTaskRecord<TRunPayload>>(
     executorFactory,
     abortSignal,
     {
@@ -95,7 +82,7 @@ export function createFlowWorker<TPayload extends Json>(
   );
 
   // Create BatchProcessor
-  const batchProcessor = new BatchProcessor<FlowTaskRecord<TPayload>>(
+  const batchProcessor = new BatchProcessor<FlowTaskRecord<TRunPayload>>(
     executionController,
     poller,
     abortSignal

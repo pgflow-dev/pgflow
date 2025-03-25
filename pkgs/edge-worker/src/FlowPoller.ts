@@ -1,5 +1,5 @@
-import type { FlowTaskRecord, IPgflowAdapter, Json } from './types-flow.ts';
-import type { IPoller } from './types.ts';
+import type { FlowTaskRecord, IPgflowAdapter } from './types-flow.ts';
+import type { IPoller, Json } from './types.ts';
 import { getLogger } from './Logger.ts';
 
 export interface FlowPollerConfig {
@@ -27,7 +27,7 @@ export class FlowPoller<TPayload extends Json = Json> implements IPoller<FlowTas
     this.logger.debug(`Polling for flow tasks with batch size ${this.config.batchSize}`);
     const tasks = await this.adapter.pollForTasks(this.config.batchSize);
     this.logger.debug(`Retrieved ${tasks.length} flow tasks`);
-    
+
     return tasks;
   }
 
