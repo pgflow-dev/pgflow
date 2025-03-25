@@ -53,18 +53,18 @@ Deno.test('minimal flow executes successfully', withTransaction(async (sql) => {
     await waitFor(
       async () => {
         // Check run status
-        const [runStatus] = await sql<{ status: string }[]>`
-          SELECT status FROM pgflow.runs WHERE run_id = ${flowRun.run_id};
+        const [run] = await sql<{ status: string }[]>`
+          SELECT * FROM pgflow.runs WHERE run_id = ${flowRun.run_id};
         `;
 
-        console.log(`Run status: ${runStatus.status}`);
+        console.log(`Run:`, run);
 
-        return runStatus.status === 'succeeded' ? true : false;
+        return run.status === 'completed' ? true : false;
       },
       {
         pollIntervalMs: 500,
         timeoutMs: 5000,
-        description: `flow run ${flowRun.run_id} to succeed`
+        description: `flow run ${flowRun.run_id} to be 'completed'`
       }
     );
 
@@ -92,7 +92,7 @@ Deno.test('minimal flow executes successfully', withTransaction(async (sql) => {
     console.log('Step tasks:', stepTasks);
     assertEquals(
       stepTasks.map(s => s.status),
-      ['succeeded', 'succeeded'],
+      ['completed', 'completed'],
       'All step tasks should be succeeded'
     );
 
@@ -104,7 +104,7 @@ Deno.test('minimal flow executes successfully', withTransaction(async (sql) => {
     console.log('Final run:', finalRun);
     assertEquals(
       finalRun.status,
-      'succeeded',
+      'completed',
       'Run should be succeeded'
     );
 
