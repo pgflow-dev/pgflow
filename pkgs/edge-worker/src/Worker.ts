@@ -1,5 +1,5 @@
 import type postgres from 'postgres';
-import type { Json, WorkerBootstrap } from './types.ts';
+import type { ILifecycle, Json, WorkerBootstrap } from './types.ts';
 import type {
   ExecutionConfig,
 } from './ExecutionController.ts';
@@ -16,7 +16,7 @@ export type WorkerConfig = {
 
 export class Worker<TMessage extends Json> {
   private config: Required<WorkerConfig>;
-  private lifecycle: WorkerLifecycle<TMessage>;
+  private lifecycle: ILifecycle;
   private logger = getLogger('Worker');
   private abortController = new AbortController();
 
@@ -36,7 +36,7 @@ export class Worker<TMessage extends Json> {
 
   constructor(
     batchProcessor: BatchProcessor<TMessage>,
-    lifecycle: WorkerLifecycle<TMessage>,
+    lifecycle: ILifecycle,
     configOverrides: WorkerConfig
   ) {
     this.config = {

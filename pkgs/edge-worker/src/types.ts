@@ -19,6 +19,20 @@ export interface IMessage {
   msg_id: number;
 }
 
+export interface ILifecycle {
+  acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void>;
+  acknowledgeStop(): void;
+  sendHeartbeat(): Promise<void>;
+
+  get edgeFunctionName(): string | undefined;
+  get queueName(): string;
+  get isRunning(): boolean;
+  get isStopping(): boolean;
+  get isStopped(): boolean;
+
+  transitionToStopping(): void;
+}
+
 export type PgmqMessageRecord<TPayload extends Json | null = Json> = {
   msg_id: number | null;
   read_ct: number | null;
