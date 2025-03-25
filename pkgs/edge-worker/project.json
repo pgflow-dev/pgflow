@@ -61,6 +61,7 @@
         "commands": [
           "rm -f supabase/migrations/*.sql",
           "cp migrations/*.sql supabase/migrations/",
+          "cp ../core/supabase/migrations/*.sql supabase/migrations/",
           "cp sql/*_*.sql supabase/migrations/",
           "supabase db reset"
         ],
