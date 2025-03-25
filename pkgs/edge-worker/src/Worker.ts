@@ -21,7 +21,6 @@ export type WorkerConfig = {
 export class Worker<MessagePayload extends Json> {
   private config: Required<WorkerConfig>;
   private executionController: ExecutionController<MessagePayload>;
-  private messageHandler: (message: MessagePayload) => Promise<void> | void;
   private lifecycle: WorkerLifecycle<MessagePayload>;
   private logger = getLogger('Worker');
   private abortController = new AbortController();
@@ -41,15 +40,13 @@ export class Worker<MessagePayload extends Json> {
   } as const;
 
   constructor(
-    messageHandler: (message: MessagePayload) => Promise<void> | void,
+    executionController: ExecutionController<MessagePayload>,
     configOverrides: WorkerConfig
   ) {
     this.config = {
       ...Worker.DEFAULT_CONFIG,
       ...configOverrides,
     };
-
-    this.messageHandler = messageHandler;
 
     this.sql = this.config.sql;
 
@@ -58,15 +55,16 @@ export class Worker<MessagePayload extends Json> {
 
     this.lifecycle = new WorkerLifecycle<MessagePayload>(queries, queue);
 
-    this.executionController = new ExecutionController<MessagePayload>(
-      queue,
-      this.abortSignal,
-      {
-        maxConcurrent: this.config.maxConcurrent,
-        retryLimit: this.config.retryLimit,
-        retryDelay: this.config.retryDelay,
-      }
-    );
+    this.executionController = executionController;
+    // this.executionController = new ExecutionController<MessagePayload>(
+    //   queue,
+    //   this.abortSignal,
+    //   {
+    //     maxConcurrent: this.config.maxConcurrent,
+    //     retryLimit: this.config.retryLimit,
+    //     retryDelay: this.config.retryDelay,
+    //   }
+    // );
 
     this.batchProcessor = new BatchProcessor(
       this.executionController,
@@ -105,7 +103,7 @@ export class Worker<MessagePayload extends Json> {
         }
 
         try {
-          await this.batchProcessor.processBatch(this.messageHandler);
+          await this.batchProcessor.processBatch();
         } catch (error: unknown) {
           this.logger.error(`Error processing batch: ${error}`);
           // Continue to next iteration - failed batch shouldn't stop the worker

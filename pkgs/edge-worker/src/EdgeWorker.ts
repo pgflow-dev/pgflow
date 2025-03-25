@@ -2,7 +2,6 @@ import type { Worker, WorkerConfig } from './Worker.ts';
 import spawnNewEdgeFunction from './spawnNewEdgeFunction.ts';
 import type { Json } from './types.ts';
 import { getLogger, setupLogger } from './Logger.ts';
-import postgres from 'postgres';
 import { createQueueWorker } from './createQueueWorker.ts';
 
 export type EdgeWorkerConfig = Omit<WorkerConfig, 'sql'> & {
@@ -11,6 +10,16 @@ export type EdgeWorkerConfig = Omit<WorkerConfig, 'sql'> & {
    * If not provided, it will be read from the EDGE_WORKER_DB_URL environment variable.
    */
   connectionString?: string;
+  /**
+   * Number of retry attempts for failed message processing
+   * @default 5
+   */
+  retryLimit?: number;
+  /**
+   * Delay in seconds between retry attempts
+   * @default 5
+   */
+  retryDelay?: number;
 };
 
 export class EdgeWorker {
@@ -24,16 +33,14 @@ export class EdgeWorker {
     this.ensureFirstCall();
 
     const connectionString = config.connectionString || this.getConnectionString();
-    const sql = postgres(connectionString, {
-      max: config.maxPgConnections,
-      prepare: false,
-    });
-
-    const workerConfig: WorkerConfig = {
+    const retryLimit = config.retryLimit ?? 5;
+    const retryDelay = config.retryDelay ?? 5;
+    this.setupRequestHandler(handler, {
       ...config,
-      sql
-    };
-    this.setupRequestHandler(handler, workerConfig);
+      connectionString,
+      retryLimit,
+      retryDelay
+    });
   }
 
   private static ensureFirstCall() {
@@ -73,7 +80,11 @@ export class EdgeWorker {
 
   private static setupRequestHandler<MessagePayload extends Json>(
     handler: (message: MessagePayload) => Promise<void> | void,
-    workerConfig: WorkerConfig
+    workerConfig: EdgeWorkerConfig & {
+      connectionString: string;
+      retryLimit: number;
+      retryDelay: number;
+    }
   ) {
     let worker: Worker<MessagePayload> | null = null;
 

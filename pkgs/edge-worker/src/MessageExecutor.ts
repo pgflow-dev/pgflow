@@ -1,7 +1,6 @@
 import type { Json } from './types.ts';
 import type { MessageRecord } from './types.ts';
 import type { Queue } from './Queue.ts';
-import type { BatchArchiver } from './BatchArchiver.ts';
 import { getLogger } from './Logger.ts';
 
 class AbortError extends Error {
@@ -29,7 +28,6 @@ export class MessageExecutor<MessagePayload extends Json> {
       message: MessagePayload
     ) => Promise<void> | void,
     private readonly signal: AbortSignal,
-    private readonly batchArchiver: BatchArchiver<MessagePayload>,
     private readonly retryLimit: number,
     private readonly retryDelay: number
   ) {}
@@ -57,7 +55,6 @@ export class MessageExecutor<MessagePayload extends Json> {
       this.logger.debug(`Archived task ${this.msgId} successfully`);
 
       // TODO: uncomment when ready to debug this
-      // await this.batchArchiver.add(this.msgId);
     } catch (error) {
       await this.handleExecutionError(error);
     }
