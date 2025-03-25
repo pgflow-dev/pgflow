@@ -41,21 +41,20 @@ Deno.test('minimal flow executes successfully', withTransaction(async (sql) => {
 
     await sql`select pgflow.create_flow('test_minimal_flow');`;
     await sql`select pgflow.add_step('test_minimal_flow', 'toStringStep');`;
-    await sql`select pgflow.add_step('test_minimal_flow', 'wrapInArrayStep', deps => ARRAY['toString']::text[]);`;
+    await sql`select pgflow.add_step('test_minimal_flow', 'wrapInArrayStep', deps_slugs => ARRAY['toStringStep']::text[]);`;
 
     // Start a flow run with input value 42
-    const [{ run_id }] = await sql<{ run_id: string }[]>`
-      SELECT pgflow.start_flow('test-minimal-flow', ${42}::jsonb) AS run_id;
+    const [flowRun] = await sql<{ run_id: string }[]>`
+      SELECT * FROM pgflow.start_flow('test_minimal_flow', ${42}::jsonb);
     `;
-
-    console.log(`Started flow run with ID: ${run_id}`);
+    console.log(`Started flow run`, flowRun);
 
     // Wait for the run to complete with a timeout
     await waitFor(
       async () => {
         // Check run status
         const [runStatus] = await sql<{ status: string }[]>`
-          SELECT status FROM pgflow.runs WHERE run_id = ${run_id};
+          SELECT status FROM pgflow.runs WHERE run_id = ${flowRun.run_id};
         `;
 
         console.log(`Run status: ${runStatus.status}`);
@@ -65,14 +64,14 @@ Deno.test('minimal flow executes successfully', withTransaction(async (sql) => {
       {
         pollIntervalMs: 500,
         timeoutMs: 5000,
-        description: `flow run ${run_id} to succeed`
+        description: `flow run ${flowRun.run_id} to succeed`
       }
     );
 
     // Verify step_states are all completed
     const stepStates = await sql<{ step_slug: string, status: string }[]>`
       SELECT step_slug, status FROM pgflow.step_states
-      WHERE run_id = ${run_id}
+      WHERE run_id = ${flowRun.run_id}
       ORDER BY step_slug;
     `;
 
@@ -86,7 +85,7 @@ Deno.test('minimal flow executes successfully', withTransaction(async (sql) => {
     // Verify step_tasks are all succeeded
     const stepTasks = await sql<{ step_slug: string, status: string }[]>`
       SELECT step_slug, status FROM pgflow.step_tasks
-      WHERE run_id = ${run_id}
+      WHERE run_id = ${flowRun.run_id}
       ORDER BY step_slug;
     `;
 
@@ -99,7 +98,7 @@ Deno.test('minimal flow executes successfully', withTransaction(async (sql) => {
 
     // Verify run is succeeded
     const [finalRun] = await sql<{ status: string, output: unknown }[]>`
-      SELECT status, output FROM pgflow.runs WHERE run_id = ${run_id};
+      SELECT status, output FROM pgflow.runs WHERE run_id = ${flowRun.run_id};
     `;
 
     console.log('Final run:', finalRun);
