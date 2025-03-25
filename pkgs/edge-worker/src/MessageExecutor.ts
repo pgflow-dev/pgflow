@@ -1,5 +1,5 @@
 import type { Json } from './types.ts';
-import type { MessageRecord } from './types.ts';
+import type { PgmqMessageRecord } from './types.ts';
 import type { Queue } from './Queue.ts';
 import { getLogger } from './Logger.ts';
 
@@ -18,14 +18,14 @@ class AbortError extends Error {
  *
  * It also handles the abort signal and logs the error.
  */
-export class MessageExecutor<MessagePayload extends Json> {
+export class MessageExecutor<TPayload extends Json> {
   private logger = getLogger('MessageExecutor');
 
   constructor(
-    private readonly queue: Queue<MessagePayload>,
-    private readonly record: MessageRecord<MessagePayload>,
+    private readonly queue: Queue<TPayload>,
+    private readonly record: PgmqMessageRecord<TPayload>,
     private readonly messageHandler: (
-      message: MessagePayload
+      message: TPayload
     ) => Promise<void> | void,
     private readonly signal: AbortSignal,
     private readonly retryLimit: number,

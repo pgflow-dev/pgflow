@@ -1,7 +1,7 @@
 import type postgres from 'postgres';
-import type { Json, MessageRecord } from './types.ts';
+import type { Json, PgmqMessageRecord } from './types.ts';
 
-export class Queue<MessagePayload extends Json> {
+export class Queue<TPayload extends Json> {
   constructor(private readonly sql: postgres.Sql, readonly queueName: string) {}
 
   /**
@@ -42,7 +42,7 @@ export class Queue<MessagePayload extends Json> {
     `;
   }
 
-  async send(message: MessagePayload): Promise<void> {
+  async send(message: TPayload): Promise<void> {
     const msgJson = JSON.stringify(message);
     await this.sql`
       SELECT pgmq.send(queue_name => ${this.queueName}, msg => ${msgJson}::jsonb)
@@ -55,7 +55,7 @@ export class Queue<MessagePayload extends Json> {
     maxPollSeconds = 5,
     pollIntervalMs = 200
   ) {
-    return await this.sql<MessageRecord<MessagePayload>[]>`
+    return await this.sql<PgmqMessageRecord<TPayload>[]>`
       SELECT *
       FROM edge_worker.read_with_poll(
         queue_name => ${this.queueName},
@@ -79,8 +79,8 @@ export class Queue<MessagePayload extends Json> {
   async setVt(
     msgId: number,
     vtOffsetSeconds: number
-  ): Promise<MessageRecord<MessagePayload>> {
-    const records = await this.sql<MessageRecord<MessagePayload>[]>`
+  ): Promise<PgmqMessageRecord<TPayload>> {
+    const records = await this.sql<PgmqMessageRecord<TPayload>[]>`
       UPDATE ${this.sql('pgmq.q_' + this.queueName)}
       SET vt = (clock_timestamp() + make_interval(secs => ${vtOffsetSeconds}))
       WHERE msg_id = ${msgId}::bigint

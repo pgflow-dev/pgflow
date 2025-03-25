@@ -1,5 +1,5 @@
 import type { Queue } from './Queue.ts';
-import type { Json, MessageRecord } from './types.ts';
+import type { Json, PgmqMessageRecord } from './types.ts';
 
 export interface PollerConfig {
   batchSize: number;
@@ -8,14 +8,14 @@ export interface PollerConfig {
   visibilityTimeout: number;
 }
 
-export class ReadWithPollPoller<MessagePayload extends Json> {
+export class ReadWithPollPoller<TPayload extends Json> {
   constructor(
-    protected readonly queue: Queue<MessagePayload>,
+    protected readonly queue: Queue<TPayload>,
     protected readonly signal: AbortSignal,
     protected readonly config: PollerConfig
   ) {}
 
-  async poll(): Promise<MessageRecord<MessagePayload>[]> {
+  async poll(): Promise<PgmqMessageRecord<TPayload>[]> {
     if (this.isAborted()) {
       return [];
     }

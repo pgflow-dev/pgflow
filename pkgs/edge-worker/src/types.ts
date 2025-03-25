@@ -38,13 +38,17 @@ export interface IBatchProcessor {
   awaitCompletion(): Promise<void>;
 }
 
-export type PgmqMessageRecord<TPayload extends Json | null = Json> = {
-  msg_id: number | null;
-  read_ct: number | null;
-  enqueued_at: string | null;
-  vt: string | null;
+/**
+ * Fields are nullable because types in postgres does not allow NOT NULL,
+ * but all those values except `message` come from queue table columns,
+ * which are explicitely marked as NOT NULL.
+ */
+export interface PgmqMessageRecord<TPayload extends Json | null = Json> extends IMessage {
+  read_ct: number;
+  enqueued_at: string;
+  vt: string;
   message: TPayload;
-};
+}
 
 export type WorkerRow = {
   last_heartbeat_at: string;
@@ -54,15 +58,6 @@ export type WorkerRow = {
   worker_id: string;
   function_name: string;
 };
-
-// Make MessageRecord implement Json interface to fix type compatibility issues
-export interface MessageRecord<MessagePayload extends Json = Json> extends Record<string, Json | undefined> {
-  msg_id: number;
-  read_ct: number;
-  enqueued_at: string;
-  vt: string;
-  message: MessagePayload | null;
-}
 
 export interface WorkerBootstrap {
   edgeFunctionName: string;

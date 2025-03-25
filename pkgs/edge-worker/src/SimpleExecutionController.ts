@@ -1,5 +1,5 @@
 import type { Json } from './types.ts';
-import type { MessageRecord } from './types.ts';
+import type { PgmqMessageRecord } from './types.ts';
 
 export class SimpleExecutionController<T extends Json> {
   private running = new Set<Promise<void>>();
@@ -7,7 +7,7 @@ export class SimpleExecutionController<T extends Json> {
   constructor(private maxConcurrent: number = 10) {}
 
   async start(
-    record: MessageRecord<T>,
+    record: PgmqMessageRecord<T>,
     handler: (message: T) => Promise<void>
   ) {
     while (this.running.size >= this.maxConcurrent) {
@@ -25,7 +25,7 @@ export class SimpleExecutionController<T extends Json> {
   }
 
   private async execute(
-    record: MessageRecord<T>,
+    record: PgmqMessageRecord<T>,
     handler: (message: T) => Promise<void>
   ) {
     try {

@@ -4,7 +4,7 @@ import { MessageExecutor } from "./MessageExecutor.ts";
 import { Queries } from "./Queries.ts";
 import { Queue } from "./Queue.ts";
 import { ReadWithPollPoller } from './ReadWithPollPoller.ts';
-import type { IExecutor, IPoller, Json, MessageRecord } from './types.ts';
+import type { IExecutor, IPoller, Json, PgmqMessageRecord } from './types.ts';
 import { Worker } from './Worker.ts';
 import postgres from 'postgres';
 import { WorkerLifecycle } from "./WorkerLifecycle.ts";
@@ -34,11 +34,11 @@ export type QueueWorkerConfig = EdgeWorkerConfig & {
  * @param config - Configuration options for the worker
  * @returns A configured Worker instance ready to be started
  */
-export function createQueueWorker<MessagePayload extends Json>(
-  handler: (message: MessagePayload) => Promise<void> | void,
+export function createQueueWorker<TPayload extends Json>(
+  handler: (message: TPayload) => Promise<void> | void,
   config: QueueWorkerConfig
 ): Worker {
-  type QueueMessage = MessageRecord<MessagePayload>;
+  type QueueMessage = PgmqMessageRecord<TPayload>;
 
   const abortController = new AbortController();
   const abortSignal = abortController.signal;
@@ -49,10 +49,10 @@ export function createQueueWorker<MessagePayload extends Json>(
     prepare: false,
   });
 
-  const queue = new Queue<MessagePayload>(sql, config.queueName || 'tasks');
+  const queue = new Queue<TPayload>(sql, config.queueName || 'tasks');
   const queries = new Queries(sql);
 
-  const lifecycle = new WorkerLifecycle<MessagePayload>(queries, queue);
+  const lifecycle = new WorkerLifecycle<TPayload>(queries, queue);
 
   const executorFactory = (record: QueueMessage, signal: AbortSignal): IExecutor => {
     return new MessageExecutor(

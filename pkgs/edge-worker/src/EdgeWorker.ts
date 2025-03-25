@@ -26,8 +26,8 @@ export class EdgeWorker {
   private static logger = getLogger('EdgeWorker');
   private static wasCalled = false;
 
-  static start<MessagePayload extends Json = Json>(
-    handler: (message: MessagePayload) => Promise<void> | void,
+  static start<TPayload extends Json = Json>(
+    handler: (message: TPayload) => Promise<void> | void,
     config: EdgeWorkerConfig = {}
   ) {
     this.ensureFirstCall();
@@ -78,8 +78,8 @@ export class EdgeWorker {
     EdgeRuntime.waitUntil(new Promise(() => {}));
   }
 
-  private static setupRequestHandler<MessagePayload extends Json>(
-    handler: (message: MessagePayload) => Promise<void> | void,
+  private static setupRequestHandler<TPayload extends Json>(
+    handler: (message: TPayload) => Promise<void> | void,
     workerConfig: EdgeWorkerConfig & {
       connectionString: string;
       retryLimit: number;

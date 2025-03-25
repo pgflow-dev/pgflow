@@ -1,8 +1,8 @@
 import type { ExecutionController } from './ExecutionController.ts';
-import type { IPoller, Json } from './types.ts';
+import type { IMessage, IPoller } from './types.ts';
 import { getLogger } from './Logger.ts';
 
-export class BatchProcessor<TMessage extends Json> {
+export class BatchProcessor<TMessage extends IMessage> {
   private logger = getLogger('BatchProcessor');
 
   constructor(

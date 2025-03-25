@@ -1,12 +1,12 @@
 import { newQueue, type Queue as PromiseQueue } from '@henrygd/queue';
-import type { IExecutor, Json } from './types.ts';
+import type { IExecutor, IMessage } from './types.ts';
 import { getLogger } from './Logger.ts';
 
 export interface ExecutionConfig {
   maxConcurrent: number;
 }
 
-export class ExecutionController<TMessage extends Json> {
+export class ExecutionController<TMessage extends IMessage> {
   private logger = getLogger('ExecutionController');
   private promiseQueue: PromiseQueue;
   private signal: AbortSignal;
