@@ -1,53 +1,34 @@
-import type postgres from 'postgres';
-import { getLogger } from './Logger.ts';
+import type { FlowTaskRecord, IPgflowAdapter, Json } from './types-flow.ts';
 import type { IPoller } from './types.ts';
-import type { FlowTaskRecord } from './FlowTaskRecord.ts';
-import type { Json } from './types.ts';
+import { getLogger } from './Logger.ts';
 
 export interface FlowPollerConfig {
   batchSize: number;
-  maxPollSeconds?: number;
-  pollIntervalMs?: number;
 }
 
 /**
- * A poller that fetches flow tasks from pgflow.poll_for_tasks
+ * A poller that retrieves flow tasks using an IPgflowAdapter
  */
-export class FlowPoller<TPayload extends Json> implements IPoller<FlowTaskRecord<TPayload>> {
+export class FlowPoller<TPayload extends Json = Json> implements IPoller<FlowTaskRecord<TPayload>> {
   private logger = getLogger('FlowPoller');
 
   constructor(
-    private readonly sql: postgres.Sql,
+    private readonly adapter: IPgflowAdapter<TPayload>,
     private readonly signal: AbortSignal,
-    private readonly config: FlowPollerConfig,
-    private readonly flowSlug: string
+    private readonly config: FlowPollerConfig
   ) {}
 
   async poll(): Promise<FlowTaskRecord<TPayload>[]> {
     if (this.isAborted()) {
+      this.logger.debug('Polling aborted, returning empty array');
       return [];
     }
 
-    this.logger.debug(`Polling for flow tasks from flow '${this.flowSlug}'...`);
+    this.logger.debug(`Polling for flow tasks with batch size ${this.config.batchSize}`);
+    const tasks = await this.adapter.pollForTasks(this.config.batchSize);
+    this.logger.debug(`Retrieved ${tasks.length} flow tasks`);
     
-    try {
-      // Call pgflow.poll_for_tasks to get available tasks
-      const records = await this.sql<FlowTaskRecord<TPayload>[]>`
-        SELECT *, id::text as msg_id FROM pgflow.poll_for_tasks(
-          _flow_slug => ${this.flowSlug},
-          _limit => ${this.config.batchSize}
-        );
-      `;
-
-      // Add msg_id property to satisfy IMessage interface if not already present
-      return records.map(record => ({
-        ...record,
-        msg_id: typeof record.msg_id === 'number' ? record.msg_id : Number(record.id)
-      }));
-    } catch (error) {
-      this.logger.error(`Error polling for flow tasks: ${error}`);
-      return [];
-    }
+    return tasks;
   }
 
   private isAborted(): boolean {

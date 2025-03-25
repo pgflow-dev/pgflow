@@ -1,9 +1,7 @@
-import type postgres from 'postgres';
-import { getLogger } from './Logger.ts';
-import type { IExecutor } from './types.ts';
-import type { FlowTaskRecord } from './FlowTaskRecord.ts';
-import type { Json } from './types.ts';
 import type { Flow } from '../dsl/src/dsl.ts';
+import type { FlowTaskRecord, IPgflowAdapter, Json } from './types-flow.ts';
+import type { IExecutor } from './types.ts';
+import { getLogger } from './Logger.ts';
 
 class AbortError extends Error {
   constructor() {
@@ -13,20 +11,19 @@ class AbortError extends Error {
 }
 
 /**
- * Executes a flow task by calling the appropriate step handler
- * and then marking the task as complete or failed in pgflow.
+ * An executor that processes flow tasks using an IPgflowAdapter
  */
-export class FlowTaskExecutor<TPayload extends Json> implements IExecutor {
+export class FlowTaskExecutor<TPayload extends Json = Json> implements IExecutor {
   private logger = getLogger('FlowTaskExecutor');
 
   constructor(
     private readonly flow: Flow<TPayload>,
     private readonly task: FlowTaskRecord<TPayload>,
-    private readonly signal: AbortSignal,
-    private readonly sql: postgres.Sql
+    private readonly adapter: IPgflowAdapter<TPayload>,
+    private readonly signal: AbortSignal
   ) {}
 
-  get msgId(): number {
+  get msgId() {
     return this.task.msg_id;
   }
 
@@ -40,23 +37,23 @@ export class FlowTaskExecutor<TPayload extends Json> implements IExecutor {
       this.signal.throwIfAborted();
 
       const stepSlug = this.task.step_slug;
-      this.logger.debug(`Executing flow task ${this.msgId} for step '${stepSlug}'...`);
-      
+      this.logger.debug(`Executing flow task ${this.task.msg_id} for step ${stepSlug}`);
+
       // Get the step handler from the flow
       const steps = this.flow.getSteps();
       const stepDef = steps[stepSlug];
-      
-      if (!stepDef || !stepDef.handler) {
-        throw new Error(`No handler found for step '${stepSlug}'`);
+
+      if (!stepDef) {
+        throw new Error(`No step definition found for slug=${stepSlug}`);
       }
 
       // Execute the step handler with the input data
-      const result = await stepDef.handler(this.task.input_data);
+      const result = await stepDef.handler(this.task.input);
 
-      // Mark the task as complete in pgflow
-      this.logger.debug(`Task ${this.msgId} completed successfully, marking as complete...`);
-      await this.sql`SELECT pgflow.complete_task(${this.task.id}, ${JSON.stringify(result)}::jsonb);`;
-      this.logger.debug(`Marked task ${this.msgId} as complete`);
+      this.logger.debug(`Flow task ${this.task.msg_id} completed successfully, marking as complete`);
+      await this.adapter.completeTask(this.task.msg_id, result);
+
+      this.logger.debug(`Flow task ${this.task.msg_id} marked as complete`);
     } catch (error) {
       await this.handleExecutionError(error);
     }
@@ -68,24 +65,16 @@ export class FlowTaskExecutor<TPayload extends Json> implements IExecutor {
    * If the error is an AbortError, it means that the worker was aborted and stopping,
    * the task will be picked up by another worker later.
    *
-   * Otherwise, it marks the task as failed in pgflow.
+   * Otherwise, it marks the task as failed.
    */
-  private async handleExecutionError(error: unknown): Promise<void> {
+  private async handleExecutionError(error: unknown) {
     if (error instanceof Error && error.name === 'AbortError') {
-      this.logger.debug(`Aborted execution for ${this.msgId}`);
+      this.logger.debug(`Aborted execution for flow task ${this.task.msg_id}`);
       // Do not mark as failed - the worker was aborted and stopping,
       // the task will be picked up by another worker later
     } else {
-      this.logger.error(`Task ${this.msgId} failed with error: ${error}`);
-      
-      // Mark the task as failed in pgflow
-      try {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        await this.sql`SELECT pgflow.fail_task(${this.task.id}, ${errorMessage});`;
-        this.logger.debug(`Marked task ${this.msgId} as failed`);
-      } catch (markFailedError) {
-        this.logger.error(`Error marking task ${this.msgId} as failed: ${markFailedError}`);
-      }
+      this.logger.error(`Flow task ${this.task.msg_id} failed with error: ${error}`);
+      await this.adapter.failTask(this.task.msg_id, error);
     }
   }
 }
