@@ -4,7 +4,13 @@ import type { Json } from './types.ts';
 import { getLogger, setupLogger } from './Logger.ts';
 import postgres from 'postgres';
 
-export type EdgeWorkerConfig = Omit<WorkerConfig, 'connectionString' | 'sql'>;
+export type EdgeWorkerConfig = Omit<WorkerConfig, 'sql'> & {
+  /**
+   * PostgreSQL connection string.
+   * If not provided, it will be read from the EDGE_WORKER_DB_URL environment variable.
+   */
+  connectionString?: string;
+};
 
 export class EdgeWorker {
   private static logger = getLogger('EdgeWorker');
@@ -16,7 +22,8 @@ export class EdgeWorker {
   ) {
     this.ensureFirstCall();
 
-    const sql = postgres(this.getConnectionString(), {
+    const connectionString = config.connectionString || this.getConnectionString();
+    const sql = postgres(connectionString, {
       max: config.maxPgConnections,
       prepare: false,
     });
@@ -87,10 +94,7 @@ export class EdgeWorker {
 
         this.logger.info(`HTTP Request: ${edgeFunctionName}`);
 
-        worker = this.initializeWorker(handler, {
-          ...workerConfig,
-          connectionString: this.getConnectionString(),
-        });
+        worker = this.initializeWorker(handler, workerConfig);
         worker.startOnlyOnce({
           edgeFunctionName,
           workerId: sbExecutionId,
