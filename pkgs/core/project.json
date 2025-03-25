@@ -91,6 +91,13 @@
         "command": "scripts/watch-test"
       },
       "cache": false
+    },
+    "gen-types": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "supabase gen types --local --schema pgflow > src/types.ts",
+        "cwd": "{projectRoot}"
+      }
     }
   }
 }
