@@ -4,7 +4,7 @@ import { Flow } from '../../../../dsl/src/dsl.ts';
 import { waitFor } from '../../e2e/_helpers.ts';
 import { delay } from '@std/async';
 import type { Json } from '../../../src/core/types.ts';
-import { startWorker } from "../_helpers.ts";
+import { startFlow, startWorker } from "../_helpers.ts";
 
 // Define a minimal flow with two steps:
 // 1. Convert a number to a string
@@ -39,7 +39,7 @@ Deno.test(
       await sql`select pgflow.add_step('test_minimal_flow', 'wrapInArrayStep', deps_slugs => ARRAY['toStringStep']::text[]);`;
 
       // Start a flow run with input value 42
-      await startFlow(sql, MinimalFlow, 42);
+      const flowRun = await startFlow(sql, MinimalFlow, 42);
 
       let i = 0;
       // Wait for the run to complete with a timeout

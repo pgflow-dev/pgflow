@@ -1,4 +1,4 @@
-import type { StepTaskRecord, IPgflowAdapter } from './types.ts';
+import type { StepTaskRecord, IPgflowClient } from './types.ts';
 import type { IPoller, Json } from '../core/types.ts';
 import { getLogger } from '../core/Logger.ts';
 
@@ -8,13 +8,13 @@ export interface StepTaskPollerConfig {
 }
 
 /**
- * A poller that retrieves flow tasks using an IPgflowAdapter
+ * A poller that retrieves flow tasks using an IPgflowClient
  */
 export class StepTaskPoller<TPayload extends Json = Json> implements IPoller<StepTaskRecord<TPayload>> {
   private logger = getLogger('StepTaskPoller');
 
   constructor(
-    private readonly adapter: IPgflowAdapter<TPayload>,
+    private readonly adapter: IPgflowClient<TPayload>,
     private readonly signal: AbortSignal,
     private readonly config: StepTaskPollerConfig
   ) {}

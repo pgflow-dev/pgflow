@@ -1,16 +1,13 @@
 import type postgres from 'postgres';
-import type { StepTaskRecord, IPgflowAdapter } from './types.ts';
-import type { Json } from '../core/types.ts';
-import { getLogger } from '../core/Logger.ts';
+import type { StepTaskRecord, IPgflowClient } from './types.ts';
+import type { Json, StepTaskKey } from './types.ts';
 
 /**
- * Implementation of IPgflowAdapter that uses direct SQL calls to pgflow functions
+ * Implementation of IPgflowClient that uses direct SQL calls to pgflow functions
  */
-export class PgflowSqlAdapter<TPayload extends Json = Json>
-  implements IPgflowAdapter<TPayload>
+export class PgflowSqlClient<TPayload extends Json = Json>
+  implements IPgflowClient<TPayload>
 {
-  private logger = getLogger('PgflowSqlAdapter');
-
   constructor(private readonly sql: postgres.Sql) {}
 
   async pollForTasks(
@@ -33,32 +30,23 @@ export class PgflowSqlAdapter<TPayload extends Json = Json>
   }
 
   async completeTask(
-    stepTaskRecord: StepTaskRecord<TPayload>,
+    stepTask: StepTaskKey,
     output?: Json
   ): Promise<void> {
-    this.logger.debug(`Completing flow task ${stepTaskRecord.msg_id}`);
-
     await this.sql`
       SELECT pgflow.complete_task(
-        run_id => ${stepTaskRecord.run_id}::uuid,
-        step_slug => ${stepTaskRecord.step_slug}::text,
+        run_id => ${stepTask.run_id}::uuid,
+        step_slug => ${stepTask.step_slug}::text,
         task_index => ${0}::int,
         output => ${this.sql.json(output || null)}::jsonb
       );
     `;
-
-    this.logger.debug(`Completed flow task ${stepTaskRecord.msg_id}`);
   }
 
   async failTask(
-    stepTaskRecord: StepTaskRecord<TPayload>,
+    stepTask: StepTaskKey,
     error: unknown
   ): Promise<void> {
-    this.logger.debug(
-      `Failing flow task ${stepTaskRecord.msg_id} with error: ${error}`
-    );
-
-    // Convert error to a string
     const errorString =
       typeof error === 'string'
         ? error
@@ -68,13 +56,11 @@ export class PgflowSqlAdapter<TPayload extends Json = Json>
 
     await this.sql`
       SELECT pgflow.fail_task(
-        run_id => ${stepTaskRecord.run_id}::uuid,
-        step_slug => ${stepTaskRecord.step_slug}::text,
+        run_id => ${stepTask.run_id}::uuid,
+        step_slug => ${stepTask.step_slug}::text,
         task_index => ${0}::int,
         error_message => ${errorString}::text
       );
     `;
-
-    this.logger.debug(`Failed flow task ${stepTaskRecord.msg_id}`);
   }
 }

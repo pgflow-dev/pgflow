@@ -1,5 +1,5 @@
 import type { Flow } from '../../../dsl/src/dsl.ts';
-import type { StepTaskRecord, IPgflowAdapter } from './types.ts';
+import type { StepTaskRecord, IPgflowClient } from './types.ts';
 import type { Json, IExecutor } from '../core/types.ts';
 import { getLogger } from '../core/Logger.ts';
 
@@ -11,7 +11,7 @@ class AbortError extends Error {
 }
 
 /**
- * An executor that processes step tasks using an IPgflowAdapter
+ * An executor that processes step tasks using an IPgflowClient
  * with strong typing for the flow's step handlers
  */
 export class StepTaskExecutor<
@@ -23,7 +23,7 @@ export class StepTaskExecutor<
   constructor(
     private readonly flow: Flow<TRunPayload, TSteps>,
     private readonly task: StepTaskRecord<any>,
-    private readonly adapter: IPgflowAdapter<any>,
+    private readonly adapter: IPgflowClient<any>,
     private readonly signal: AbortSignal
   ) {}
 

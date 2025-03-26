@@ -3,7 +3,7 @@ import type { EdgeWorkerConfig } from "../EdgeWorker.ts";
 import { ExecutionController } from "../core/ExecutionController.ts";
 import { StepTaskPoller, type StepTaskPollerConfig } from "./StepTaskPoller.ts";
 import { StepTaskExecutor } from "./StepTaskExecutor.ts";
-import { PgflowSqlAdapter } from "./PgflowSqlAdapter.ts";
+import { PgflowSqlClient } from "../../../core/src/PgflowSqlClient.ts";
 import { Queries } from "../core/Queries.ts";
 import type { StepTaskRecord } from './types.ts';
 import type { IExecutor, Json } from '../core/types.ts';
@@ -51,7 +51,7 @@ export function createFlowWorker<
   });
 
   // Create the pgflow adapter
-  const pgflowAdapter = new PgflowSqlAdapter<TRunPayload>(sql);
+  const pgflowAdapter = new PgflowSqlClient<TRunPayload>(sql);
 
   // Use flow slug as queue name, or fallback to 'tasks'
   const queueName = flow.flowOptions?.slug || 'tasks';

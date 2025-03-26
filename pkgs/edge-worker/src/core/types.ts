@@ -1,10 +1,4 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[];
+export type { Json } from '../../../core/src/types.ts';
 
 export interface IPoller<IMessage> {
   poll(): Promise<IMessage[]>;
