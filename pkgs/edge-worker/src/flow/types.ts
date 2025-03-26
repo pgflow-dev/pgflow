@@ -1,4 +1,5 @@
 import type { Json } from '../core/types.ts';
+import type { Database as PgflowDatabase } from '../../../core/src/types.ts';
 
 /**
  * Record representing a task from pgflow.poll_for_tasks
@@ -10,6 +11,15 @@ export interface StepTaskRecord<TPayload extends Json = Json> {
   input: TPayload;
   msg_id: number;
 }
+
+/**
+ * Record representing a flow from pgflow.flows
+ */
+export type FlowRow = PgflowDatabase['pgflow']['Tables']['flows']['Row'];
+
+/**
+ * Record representing a run from pgflow.runs
+ */
 
 /**
  * Interface for interacting with pgflow database functions

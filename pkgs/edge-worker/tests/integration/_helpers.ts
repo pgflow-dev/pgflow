@@ -24,3 +24,11 @@ export function startWorker<T extends Json>(sql: postgres.Sql, flow: Flow<T>, op
 
   return worker;
 }
+
+export async function startFlow<T extends Json>(sql: postgres.Sql, flow: Flow<T>, input: T) {
+  const [flowRun] = await sql<{ run_id: string }[]>`
+    SELECT * FROM pgflow.start_flow(${flow.flowOptions.slug}::text, ${sql.json(input)}::jsonb);
+  `;
+
+  return flowRun;
+}

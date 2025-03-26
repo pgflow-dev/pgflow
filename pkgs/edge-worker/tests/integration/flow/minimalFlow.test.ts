@@ -39,10 +39,7 @@ Deno.test(
       await sql`select pgflow.add_step('test_minimal_flow', 'wrapInArrayStep', deps_slugs => ARRAY['toStringStep']::text[]);`;
 
       // Start a flow run with input value 42
-      const [flowRun] = await sql<{ run_id: string }[]>`
-        SELECT * FROM pgflow.start_flow('test_minimal_flow', ${42}::jsonb);
-      `;
-      console.log(`Started flow run`, flowRun);
+      await startFlow(sql, MinimalFlow, 42);
 
       let i = 0;
       // Wait for the run to complete with a timeout
