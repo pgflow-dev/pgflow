@@ -23,6 +23,19 @@ export type StepOutput<F, S extends string> = F extends {
     : never
   : never;
 
+// Utility type to extract the input type of a step handler from a Flow
+// Usage:
+//   StepInput<typeof flow, 'step1'>
+export type StepInput<F, S extends string> = F extends {
+  getSteps(): Record<string, StepDefinition<any, any>>;
+}
+  ? S extends keyof ReturnType<F['getSteps']>
+    ? ReturnType<F['getSteps']>[S] extends StepDefinition<infer P, any>
+      ? P
+      : never
+    : never
+  : never;
+
 // Runtime options interface
 // Separate from StepDefinition interface to make StepDefinition more focused
 // and easier to understand - it is conceptually concerned about enforcing

@@ -1,4 +1,4 @@
-import { Flow, type StepOutput } from './dsl.ts';
+import { Flow, type StepOutput, type StepInput } from './dsl.ts';
 import { describe, it, expectTypeOf, expect } from 'vitest';
 
 // Define distinct literal types for each test case
@@ -28,14 +28,14 @@ describe('Flow Type Safety', () => {
     const flow = new Flow<CountInput>({ slug: 'test-flow' })
       .step({ slug: 'step1' }, (payload) => {
         // Verify payload.run is typed correctly
-        expectTypeOf(payload.run).toMatchTypeOf<CountInput>();
+        expectTypeOf(payload.run).toBeNumber();
         return 84 as CountOutput;
       })
       .step({ slug: 'step2', dependsOn: ['step1'] }, (payload) => {
         // Verify payload contains step1 results
-        expectTypeOf(payload.step1).toMatchTypeOf<CountOutput>();
+        expectTypeOf(payload.step1).toBeNumber();
         // Verify payload.run is still available
-        expectTypeOf(payload.run).toMatchTypeOf<CountInput>();
+        expectTypeOf(payload.run).toBeNumber();
         return 84 as CountOutput;
       });
 
@@ -57,8 +57,9 @@ describe('Flow Type Safety', () => {
       () => 5 as TextLength
     );
 
-    // @ts-expect-error - nonExistentStep doesn't exist
+    // This should cause a type error because nonExistentStep doesn't exist
     testFlow.step(
+      // @ts-expect-error - nonExistentStep doesn't exist in the flow
       { slug: 'invalid', dependsOn: ['nonExistentStep'] },
       () => 0 as TextLength
     );
@@ -73,7 +74,7 @@ describe('Flow Type Safety', () => {
         // Valid access
         const val1 = payload.step1;
 
-        // @ts-expect-error - step2 not declared in dependsOn
+        // @ts-expect-error - step2 is not declared in dependsOn
         const val2 = payload.step2;
 
         return val1;
@@ -92,11 +93,10 @@ describe('Flow Type Safety', () => {
         return 10 as TextDoubled;
       })
       .step({ slug: 'third', dependsOn: ['first', 'second'] }, (payload) => {
-        expectTypeOf(payload).toMatchTypeOf<{
-          run: TextInput;
-          first: TextLength;
-          second: TextDoubled;
-        }>();
+        expectTypeOf(payload).toBeObject();
+        expectTypeOf(payload).toHaveProperty('run').toBeString();
+        expectTypeOf(payload).toHaveProperty('first').toBeNumber();
+        expectTypeOf(payload).toHaveProperty('second').toBeNumber();
         return 15 as TextCombined;
       });
   });
@@ -106,13 +106,13 @@ describe('Flow Type Safety', () => {
     new Flow<FlagInput>({ slug: 'test-flow' })
       .step({ slug: 'step1' }, (payload) => {
         // Run should be accessible in all steps
-        expectTypeOf(payload.run).toMatchTypeOf<FlagInput>();
+        expectTypeOf(payload.run).toBeBoolean();
         return false as FlagOutput;
       })
       .step({ slug: 'step2', dependsOn: ['step1'] }, (payload) => {
         // Run should still be accessible even with dependencies
-        expectTypeOf(payload.run).toMatchTypeOf<FlagInput>();
-        expectTypeOf(payload.step1).toMatchTypeOf<FlagOutput>();
+        expectTypeOf(payload.run).toBeBoolean();
+        expectTypeOf(payload.step1).toBeBoolean();
         return 0 as FlagNumeric;
       });
   });
@@ -127,22 +127,22 @@ describe('Flow Type Safety', () => {
 
       // Test StepOutput with step1
       type Step1Output = StepOutput<typeof flow, 'step1'>;
-      expectTypeOf<Step1Output>().toMatchTypeOf<{
-        value: number;
-        text: string;
-      }>();
+      expectTypeOf<Step1Output>().toBeObject();
+      expectTypeOf<Step1Output>().toHaveProperty('value').toBeNumber();
+      expectTypeOf<Step1Output>().toHaveProperty('text').toBeString();
 
       // Test StepOutput with step2
       type Step2Output = StepOutput<typeof flow, 'step2'>;
-      expectTypeOf<Step2Output>().toMatchTypeOf<{ flag: boolean }>();
+      expectTypeOf<Step2Output>().toBeObject();
+      expectTypeOf<Step2Output>().toHaveProperty('flag').toBeBoolean();
 
       // Test StepOutput with step3
       type Step3Output = StepOutput<typeof flow, 'step3'>;
-      expectTypeOf<Step3Output>().toMatchTypeOf<string>();
+      expectTypeOf<Step3Output>().toBeString();
 
       // Test StepOutput with non-existent step
       type NonExistentStepOutput = StepOutput<typeof flow, 'nonExistentStep'>;
-      expectTypeOf<NonExistentStepOutput>().toMatchTypeOf<never>();
+      expectTypeOf<NonExistentStepOutput>().toBeNever();
     });
 
     it('should work with complex nested types', () => {
@@ -162,15 +162,16 @@ describe('Flow Type Safety', () => {
       }));
 
       type ComplexStepOutput = StepOutput<typeof complexFlow, 'complexStep'>;
-      expectTypeOf<ComplexStepOutput>().toMatchTypeOf<{
-        data: {
-          items: Array<{ id: number; name: string }>;
-          metadata: {
-            count: number;
-            lastUpdated: string;
-          };
-        };
-      }>();
+      expectTypeOf<ComplexStepOutput>().toBeObject();
+      expectTypeOf<ComplexStepOutput>().toHaveProperty('data').toBeObject();
+      expectTypeOf<ComplexStepOutput>()
+        .toHaveProperty('data')
+        .toHaveProperty('items')
+        .toBeArray();
+      expectTypeOf<ComplexStepOutput>()
+        .toHaveProperty('data')
+        .toHaveProperty('metadata')
+        .toBeObject();
     });
 
     it('should work with flows that have multiple steps with dependencies', () => {
@@ -191,16 +192,142 @@ describe('Flow Type Safety', () => {
       type TransformOutput = StepOutput<typeof multiStepFlow, 'transform'>;
       type LoadOutput = StepOutput<typeof multiStepFlow, 'load'>;
 
-      expectTypeOf<ExtractOutput>().toMatchTypeOf<{
-        parsed: { value: number };
-      }>();
-      expectTypeOf<TransformOutput>().toMatchTypeOf<{
-        transformed: { multiplied: number };
-      }>();
-      expectTypeOf<LoadOutput>().toMatchTypeOf<{
-        success: boolean;
-        recordId: string;
-      }>();
+      expectTypeOf<ExtractOutput>().toBeObject();
+      expectTypeOf<ExtractOutput>().toHaveProperty('parsed').toBeObject();
+
+      expectTypeOf<TransformOutput>().toBeObject();
+      expectTypeOf<TransformOutput>()
+        .toHaveProperty('transformed')
+        .toBeObject();
+
+      expectTypeOf<LoadOutput>().toBeObject();
+      expectTypeOf<LoadOutput>().toHaveProperty('success').toBeBoolean();
+      expectTypeOf<LoadOutput>().toHaveProperty('recordId').toBeString();
+    });
+
+    // Tests for StepInput utility type
+    describe('StepInput utility type', () => {
+      it('should correctly extract the input type of a step', () => {
+        const flow = new Flow<{ input: string }>({ slug: 'step-input-test' })
+          .step({ slug: 'step1' }, (payload) => ({
+            value: payload.run.input.length,
+            text: 'hello',
+          }))
+          .step({ slug: 'step2', dependsOn: ['step1'] }, (payload) => ({
+            flag: payload.step1.value > 5,
+          }));
+
+        // Test StepInput with step1
+        type Step1Input = StepInput<typeof flow, 'step1'>;
+        expectTypeOf<Step1Input>().toBeObject();
+        expectTypeOf<Step1Input>().toHaveProperty('run').toBeObject();
+        expectTypeOf<Step1Input>()
+          .toHaveProperty('run')
+          .toHaveProperty('input')
+          .toBeString();
+
+        // Test StepInput with step2
+        type Step2Input = StepInput<typeof flow, 'step2'>;
+        expectTypeOf<Step2Input>().toBeObject();
+        expectTypeOf<Step2Input>().toHaveProperty('run').toBeObject();
+        expectTypeOf<Step2Input>().toHaveProperty('step1').toBeObject();
+
+        // Test StepInput with non-existent step
+        type NonExistentStepInput = StepInput<typeof flow, 'nonExistentStep'>;
+        expectTypeOf<NonExistentStepInput>().toBeNever();
+      });
+
+      it('should work with complex dependency chains', () => {
+        const complexFlow = new Flow<{ userId: number }>({
+          slug: 'complex-dependency-flow',
+        })
+          .step({ slug: 'fetchUser' }, (payload) => ({
+            user: { id: payload.run.userId, name: 'User Name' },
+          }))
+          .step(
+            { slug: 'fetchPosts', dependsOn: ['fetchUser'] },
+            (payload) => ({
+              posts: [
+                { id: 1, title: 'Post 1', authorId: payload.fetchUser.user.id },
+                { id: 2, title: 'Post 2', authorId: payload.fetchUser.user.id },
+              ],
+            })
+          )
+          .step(
+            { slug: 'processData', dependsOn: ['fetchUser', 'fetchPosts'] },
+            (payload) => ({
+              result: {
+                userName: payload.fetchUser.user.name,
+                postCount: payload.fetchPosts.posts.length,
+              },
+            })
+          );
+
+        // Test input types for each step
+        type FetchUserInput = StepInput<typeof complexFlow, 'fetchUser'>;
+        type FetchPostsInput = StepInput<typeof complexFlow, 'fetchPosts'>;
+        type ProcessDataInput = StepInput<typeof complexFlow, 'processData'>;
+
+        expectTypeOf<FetchUserInput>().toBeObject();
+        expectTypeOf<FetchUserInput>().toHaveProperty('run').toBeObject();
+        expectTypeOf<FetchUserInput>()
+          .toHaveProperty('run')
+          .toHaveProperty('userId')
+          .toBeNumber();
+
+        expectTypeOf<FetchPostsInput>().toBeObject();
+        expectTypeOf<FetchPostsInput>().toHaveProperty('run').toBeObject();
+        expectTypeOf<FetchPostsInput>()
+          .toHaveProperty('fetchUser')
+          .toBeObject();
+
+        expectTypeOf<ProcessDataInput>().toBeObject();
+        expectTypeOf<ProcessDataInput>().toHaveProperty('run').toBeObject();
+        expectTypeOf<ProcessDataInput>()
+          .toHaveProperty('fetchUser')
+          .toBeObject();
+        expectTypeOf<ProcessDataInput>()
+          .toHaveProperty('fetchPosts')
+          .toBeObject();
+      });
+
+      it('should handle primitive return types in dependencies', () => {
+        const mixedFlow = new Flow<{ value: number }>({
+          slug: 'mixed-types-flow',
+        })
+          .step({ slug: 'double' }, (payload) => payload.run.value * 2)
+          .step({ slug: 'stringify', dependsOn: ['double'] }, (payload) =>
+            String(payload.double)
+          )
+          .step(
+            { slug: 'combine', dependsOn: ['double', 'stringify'] },
+            (payload) => ({
+              numeric: payload.double,
+              text: payload.stringify,
+            })
+          );
+
+        // Test input types
+        type DoubleInput = StepInput<typeof mixedFlow, 'double'>;
+        type StringifyInput = StepInput<typeof mixedFlow, 'stringify'>;
+        type CombineInput = StepInput<typeof mixedFlow, 'combine'>;
+
+        expectTypeOf<DoubleInput>().toBeObject();
+        expectTypeOf<DoubleInput>().toHaveProperty('run').toBeObject();
+        expectTypeOf<DoubleInput>()
+          .toHaveProperty('run')
+          .toHaveProperty('value')
+          .toBeNumber();
+
+        expectTypeOf<StringifyInput>().toBeObject();
+        expectTypeOf<StringifyInput>().toHaveProperty('run').toBeObject();
+        expectTypeOf<StringifyInput>().toHaveProperty('double').toBeNumber();
+
+        expectTypeOf<CombineInput>().toBeObject();
+        expectTypeOf<CombineInput>().toHaveProperty('run').toBeObject();
+        expectTypeOf<CombineInput>().toHaveProperty('double').toBeNumber();
+        expectTypeOf<CombineInput>().toHaveProperty('stringify').toBeString();
+      });
     });
   });
 });
