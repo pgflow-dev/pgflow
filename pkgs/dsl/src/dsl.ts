@@ -10,6 +10,19 @@ export type Json =
 // Used to flatten the types of a union of objects for readability
 type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
 
+// Utility type to extract the output type of a step handler from a Flow
+// Usage:
+//   StepOutput<typeof flow, 'step1'>
+export type StepOutput<F, S extends string> = F extends {
+  getSteps(): Record<string, StepDefinition<any, any>>;
+}
+  ? S extends keyof ReturnType<F['getSteps']>
+    ? ReturnType<F['getSteps']>[S] extends StepDefinition<any, infer R>
+      ? R
+      : never
+    : never
+  : never;
+
 // Runtime options interface
 // Separate from StepDefinition interface to make StepDefinition more focused
 // and easier to understand - it is conceptually concerned about enforcing
@@ -66,12 +79,11 @@ export class Flow<
     Payload = { run: RunPayload } & { [K in Deps]: Steps[K] }
   >(
     opts: Simplify<{ slug: Slug; dependsOn?: Deps[] } & RuntimeOptions>,
-    handler: (payload: { [KeyType in keyof Payload]: Payload[KeyType] }) => RetType | Promise<RetType>
+    handler: (payload: { [KeyType in keyof Payload]: Payload[KeyType] }) =>
+      | RetType
+      | Promise<RetType>
   ): Flow<RunPayload, Steps & { [K in Slug]: Awaited<RetType> }> {
-    type NewSteps = MergeObjects<
-      Steps,
-      { [K in Slug]: Awaited<RetType> }
-    >;
+    type NewSteps = MergeObjects<Steps, { [K in Slug]: Awaited<RetType> }>;
 
     const slug = opts.slug as Slug;
     const dependencies = opts.dependsOn || [];
