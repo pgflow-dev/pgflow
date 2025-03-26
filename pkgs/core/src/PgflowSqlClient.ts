@@ -73,9 +73,15 @@ export class PgflowSqlClient<TPayload extends Json = Json>
 
 
   async startFlow<T extends Json>(flow: Flow<T>, input: T) {
-    const [flowRun] = await this.sql<RunRow[]>`
+    const results = await this.sql<RunRow[]>`
       SELECT * FROM pgflow.start_flow(${flow.flowOptions.slug}::text, ${this.sql.json(input)}::jsonb);
     `;
+
+    if (results.length === 0) {
+      throw new Error(`Failed to start flow ${flow.flowOptions.slug}`);
+    }
+
+    const [flowRun] = results;
 
     return flowRun;
   }

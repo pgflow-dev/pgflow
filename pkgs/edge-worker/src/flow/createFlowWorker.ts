@@ -44,7 +44,10 @@ export function createFlowWorker<
   const abortController = new AbortController();
   const abortSignal = abortController.signal;
 
-  // Use provided SQL connection if available, otherwise create one from connection string
+  if (!config.sql && !config.connectionString) {
+    throw new Error("Either 'sql' or 'connectionString' must be provided in FlowWorkerConfig.");
+  }
+
   const sql = config.sql || postgres(config.connectionString!, {
     max: config.maxPgConnections,
     prepare: false,
