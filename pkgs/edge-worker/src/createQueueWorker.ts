@@ -4,7 +4,7 @@ import { MessageExecutor } from "./MessageExecutor.ts";
 import { Queries } from "./Queries.ts";
 import { Queue } from "./Queue.ts";
 import { ReadWithPollPoller } from './ReadWithPollPoller.ts';
-import type { IExecutor, IPoller, Json, PgmqMessageRecord } from './types.ts';
+import type { Json, PgmqMessageRecord } from './types.ts';
 import { Worker } from './Worker.ts';
 import postgres from 'postgres';
 import { WorkerLifecycle } from "./WorkerLifecycle.ts";
@@ -54,7 +54,7 @@ export function createQueueWorker<TPayload extends Json>(
 
   const lifecycle = new WorkerLifecycle<TPayload>(queries, queue);
 
-  const executorFactory = (record: QueueMessage, signal: AbortSignal): IExecutor => {
+  const executorFactory = (record: QueueMessage, signal: AbortSignal) => {
     return new MessageExecutor(
       queue,
       record,
@@ -65,7 +65,7 @@ export function createQueueWorker<TPayload extends Json>(
     );
   }
 
-  const poller: IPoller<QueueMessage> = new ReadWithPollPoller(queue, abortSignal, {
+  const poller = new ReadWithPollPoller(queue, abortSignal, {
     batchSize: config.maxConcurrent || 10,
     maxPollSeconds: config.maxPollSeconds || 5,
     pollIntervalMs: config.pollIntervalMs || 200,
