@@ -4,6 +4,9 @@
   "include": [],
   "references": [
     {
+      "path": "../dsl"
+    },
+    {
       "path": "./tsconfig.lib.json"
     },
     {
