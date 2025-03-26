@@ -3,7 +3,7 @@ import type { Json } from './types.ts';
 /**
  * Record representing a task from pgflow.poll_for_tasks
  */
-export interface FlowTaskRecord<TPayload extends Json = Json> {
+export interface StepTaskRecord<TPayload extends Json = Json> {
   flow_slug: string;
   run_id: string;
   step_slug: string;
@@ -18,7 +18,7 @@ export interface IPgflowAdapter<TPayload extends Json = Json> {
   /**
    * Fetches tasks from pgflow
    * @param limit - The batch size or number of tasks to retrieve
-   * @returns FlowTaskRecord[] - The set of tasks polled from pgflow
+   * @returns StepTaskRecord[] - The set of tasks polled from pgflow
    */
   pollForTasks(
     queueName: string,
@@ -26,19 +26,19 @@ export interface IPgflowAdapter<TPayload extends Json = Json> {
     visibilityTimeout?: number,
     maxPollSeconds?: number,
     pollIntervalMs?: number
-  ): Promise<FlowTaskRecord<TPayload>[]>;
+  ): Promise<StepTaskRecord<TPayload>[]>;
 
   /**
    * Marks a task as completed
    * @param msgId - Message ID for the task
    * @param output - Result from step handler, or null if none
    */
-  completeTask(taskRecord: FlowTaskRecord<TPayload>, output?: Json): Promise<void>;
+  completeTask(stepTask: StepTaskRecord<TPayload>, output?: Json): Promise<void>;
 
   /**
    * Marks a task as failed
    * @param msgId - Message ID for the task
    * @param error - Error details (string or object) to record
    */
-  failTask(taskRecord: FlowTaskRecord<TPayload>, error: unknown): Promise<void>;
+  failTask(stepTask: StepTaskRecord<TPayload>, error: unknown): Promise<void>;
 }

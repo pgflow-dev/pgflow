@@ -7,9 +7,9 @@ export { createFlowWorker } from './createFlowWorker.ts';
 export { FlowWorkerLifecycle } from './FlowWorkerLifecycle.ts';
 
 // Export types
-export type { FlowTaskRecord } from './FlowTaskRecord.ts';
+export type { StepTaskRecord } from './StepTaskRecord.ts';
 export type { FlowWorkerConfig } from './createFlowWorker.ts';
-export type { FlowPollerConfig } from './FlowPoller.ts';
+export type { StepTaskPollerConfig } from './StepTaskPoller.ts';
 
 // Re-export types from the base system
 export type { Json, IExecutor, IPoller, IMessage, ILifecycle, IBatchProcessor } from './types.ts';

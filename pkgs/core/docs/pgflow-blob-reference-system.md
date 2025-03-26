@@ -27,7 +27,7 @@ CREATE TABLE pgflow.output_blobs (
 The `poll_for_tasks` function returns tasks with both regular inputs and blob references through a custom type:
 
 ```sql
-CREATE TYPE pgflow.worker_task AS (
+CREATE TYPE pgflow.step_task_record AS (
   flow_slug TEXT,
   run_id UUID,
   step_slug TEXT,

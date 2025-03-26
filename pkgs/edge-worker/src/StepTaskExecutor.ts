@@ -1,5 +1,5 @@
 import type { Flow } from '../../dsl/src/dsl.ts';
-import type { FlowTaskRecord, IPgflowAdapter } from './types-flow.ts';
+import type { StepTaskRecord, IPgflowAdapter } from './types-flow.ts';
 import type { Json } from './types.ts';
 import type { IExecutor } from './types.ts';
 import { getLogger } from './Logger.ts';
@@ -12,18 +12,18 @@ class AbortError extends Error {
 }
 
 /**
- * An executor that processes flow tasks using an IPgflowAdapter
+ * An executor that processes step tasks using an IPgflowAdapter
  * with strong typing for the flow's step handlers
  */
-export class FlowTaskExecutor<
+export class StepTaskExecutor<
   TRunPayload extends Json,
   TSteps extends Record<string, Json> = Record<never, never>
 > implements IExecutor {
-  private logger = getLogger('FlowTaskExecutor');
+  private logger = getLogger('StepTaskExecutor');
 
   constructor(
     private readonly flow: Flow<TRunPayload, TSteps>,
-    private readonly task: FlowTaskRecord<any>,
+    private readonly task: StepTaskRecord<any>,
     private readonly adapter: IPgflowAdapter<any>,
     private readonly signal: AbortSignal
   ) {}
@@ -42,7 +42,7 @@ export class FlowTaskExecutor<
       this.signal.throwIfAborted();
 
       const stepSlug = this.task.step_slug;
-      this.logger.debug(`Executing flow task ${this.task.msg_id} for step ${stepSlug}`);
+      this.logger.debug(`Executing step task ${this.task.msg_id} for step ${stepSlug}`);
 
       // Get the step handler from the flow with proper typing
       const steps = this.flow.getSteps();
@@ -56,10 +56,10 @@ export class FlowTaskExecutor<
       // The handler is properly typed based on the Flow definition
       const result = await stepDef.handler(this.task.input);
 
-      this.logger.debug(`Flow task ${this.task.msg_id} completed successfully, marking as complete`);
+      this.logger.debug(`step task ${this.task.msg_id} completed successfully, marking as complete`);
       await this.adapter.completeTask(this.task, result);
 
-      this.logger.debug(`Flow task ${this.task.msg_id} marked as complete`);
+      this.logger.debug(`step task ${this.task.msg_id} marked as complete`);
     } catch (error) {
       await this.handleExecutionError(error);
     }
@@ -75,11 +75,11 @@ export class FlowTaskExecutor<
    */
   private async handleExecutionError(error: unknown) {
     if (error instanceof Error && error.name === 'AbortError') {
-      this.logger.debug(`Aborted execution for flow task ${this.task.msg_id}`);
+      this.logger.debug(`Aborted execution for step task ${this.task.msg_id}`);
       // Do not mark as failed - the worker was aborted and stopping,
       // the task will be picked up by another worker later
     } else {
-      this.logger.error(`Flow task ${this.task.msg_id} failed with error: ${error}`);
+      this.logger.error(`step task ${this.task.msg_id} failed with error: ${error}`);
       await this.adapter.failTask(this.task, error);
     }
   }

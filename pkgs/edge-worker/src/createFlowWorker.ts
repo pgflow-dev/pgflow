@@ -1,11 +1,11 @@
 import type { Flow } from '../../dsl/src/dsl.ts';
 import type { EdgeWorkerConfig } from "./EdgeWorker.ts";
 import { ExecutionController } from "./ExecutionController.ts";
-import { FlowPoller, type FlowPollerConfig } from "./FlowPoller.ts";
-import { FlowTaskExecutor } from "./FlowTaskExecutor.ts";
+import { StepTaskPoller, type StepTaskPollerConfig } from "./StepTaskPoller.ts";
+import { StepTaskExecutor } from "./StepTaskExecutor.ts";
 import { PgflowSqlAdapter } from "./PgflowSqlAdapter.ts";
 import { Queries } from "./Queries.ts";
-import type { FlowTaskRecord } from './types-flow.ts';
+import type { StepTaskRecord } from './types-flow.ts';
 import type { IExecutor, Json } from './types.ts';
 import { Worker } from './Worker.ts';
 import postgres from 'postgres';
@@ -61,20 +61,20 @@ export function createFlowWorker<
   const queries = new Queries(sql);
   const lifecycle = new FlowWorkerLifecycle<TRunPayload, TSteps>(queries, flow);
 
-  // Create FlowPoller
-  const pollerConfig: FlowPollerConfig = {
+  // Create StepTaskPoller
+  const pollerConfig: StepTaskPollerConfig = {
     batchSize: config.batchSize || 10,
     queueName: flow.flowOptions.slug
   };
-  const poller = new FlowPoller<TRunPayload>(pgflowAdapter, abortSignal, pollerConfig);
+  const poller = new StepTaskPoller<TRunPayload>(pgflowAdapter, abortSignal, pollerConfig);
 
   // Create executor factory with proper typing
-  const executorFactory = (record: FlowTaskRecord<TRunPayload>, signal: AbortSignal): IExecutor => {
-    return new FlowTaskExecutor(flow, record, pgflowAdapter, signal);
+  const executorFactory = (record: StepTaskRecord<TRunPayload>, signal: AbortSignal): IExecutor => {
+    return new StepTaskExecutor(flow, record, pgflowAdapter, signal);
   };
 
   // Create ExecutionController
-  const executionController = new ExecutionController<FlowTaskRecord<TRunPayload>>(
+  const executionController = new ExecutionController<StepTaskRecord<TRunPayload>>(
     executorFactory,
     abortSignal,
     {
@@ -83,7 +83,7 @@ export function createFlowWorker<
   );
 
   // Create BatchProcessor
-  const batchProcessor = new BatchProcessor<FlowTaskRecord<TRunPayload>>(
+  const batchProcessor = new BatchProcessor<StepTaskRecord<TRunPayload>>(
     executionController,
     poller,
     abortSignal

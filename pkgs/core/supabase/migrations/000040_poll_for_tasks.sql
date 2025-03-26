@@ -5,7 +5,7 @@ create or replace function pgflow.poll_for_tasks(
   max_poll_seconds integer default 5,
   poll_interval_ms integer default 100
 )
-returns setof pgflow.worker_task
+returns setof pgflow.step_task_record
 volatile
 set search_path to ''
 as $$

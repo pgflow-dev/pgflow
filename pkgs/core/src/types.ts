@@ -372,7 +372,7 @@ export type Database = {
           max_poll_seconds?: number
           poll_interval_ms?: number
         }
-        Returns: Database["pgflow"]["CompositeTypes"]["worker_task"][]
+        Returns: Database["pgflow"]["CompositeTypes"]["step_task_record"][]
       }
       read_with_poll: {
         Args: {
@@ -410,7 +410,7 @@ export type Database = {
       [_ in never]: never
     }
     CompositeTypes: {
-      worker_task: {
+      step_task_record: {
         flow_slug: string | null
         run_id: string | null
         step_slug: string | null
