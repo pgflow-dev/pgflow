@@ -23,6 +23,19 @@ export type StepOutput<F, S extends string> = F extends {
     : never
   : never;
 
+/**
+ * Utility type to extract the input type for a specific step in a flow
+ */
+export type StepInput<
+  TRunPayload extends Json,
+  TSteps extends Record<string, Json>,
+  TStepSlug extends string
+> = TStepSlug extends keyof TSteps
+  ? { run: TRunPayload } & {
+      [K in Exclude<keyof TSteps, TStepSlug>]?: TSteps[K];
+    }
+  : { run: TRunPayload };
+
 // Runtime options interface
 // Separate from StepDefinition interface to make StepDefinition more focused
 // and easier to understand - it is conceptually concerned about enforcing

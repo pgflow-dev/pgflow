@@ -17,13 +17,14 @@ class AbortError extends Error {
 export class StepTaskExecutor<
   TRunPayload extends Json,
   TSteps extends Record<string, Json> = Record<never, never>
-> implements IExecutor {
+> implements IExecutor
+{
   private logger = getLogger('StepTaskExecutor');
 
   constructor(
     private readonly flow: Flow<TRunPayload, TSteps>,
-    private readonly task: StepTaskRecord<any>,
-    private readonly adapter: IPgflowClient<any>,
+    private readonly task: StepTaskRecord,
+    private readonly adapter: IPgflowClient,
     private readonly signal: AbortSignal
   ) {}
 
@@ -41,7 +42,9 @@ export class StepTaskExecutor<
       this.signal.throwIfAborted();
 
       const stepSlug = this.task.step_slug;
-      this.logger.debug(`Executing step task ${this.task.msg_id} for step ${stepSlug}`);
+      this.logger.debug(
+        `Executing step task ${this.task.msg_id} for step ${stepSlug}`
+      );
 
       // Get the step handler from the flow with proper typing
       const steps = this.flow.getSteps();
@@ -55,7 +58,9 @@ export class StepTaskExecutor<
       // The handler is properly typed based on the Flow definition
       const result = await stepDef.handler(this.task.input);
 
-      this.logger.debug(`step task ${this.task.msg_id} completed successfully, marking as complete`);
+      this.logger.debug(
+        `step task ${this.task.msg_id} completed successfully, marking as complete`
+      );
       await this.adapter.completeTask(this.task, result);
 
       this.logger.debug(`step task ${this.task.msg_id} marked as complete`);
@@ -78,7 +83,9 @@ export class StepTaskExecutor<
       // Do not mark as failed - the worker was aborted and stopping,
       // the task will be picked up by another worker later
     } else {
-      this.logger.error(`step task ${this.task.msg_id} failed with error: ${error}`);
+      this.logger.error(
+        `step task ${this.task.msg_id} failed with error: ${error}`
+      );
       await this.adapter.failTask(this.task, error);
     }
   }
