@@ -1,6 +1,13 @@
 import type postgres from 'postgres';
-import type { StepTaskRecord, IPgflowClient } from './types.ts';
-import type { Json, StepTaskKey } from './types.ts';
+import type { StepTaskRecord, IPgflowClient, StepTaskKey, RunRow } from './types.ts';
+import type { Json } from './types.ts';
+
+// Define a local Flow type to avoid importing from outside the package
+interface Flow<T> {
+  flowOptions: {
+    slug: string;
+  };
+}
 
 /**
  * Implementation of IPgflowClient that uses direct SQL calls to pgflow functions
@@ -62,5 +69,14 @@ export class PgflowSqlClient<TPayload extends Json = Json>
         error_message => ${errorString}::text
       );
     `;
+  }
+
+
+  async startFlow<T extends Json>(flow: Flow<T>, input: T) {
+    const [flowRun] = await this.sql<RunRow[]>`
+      SELECT * FROM pgflow.start_flow(${flow.flowOptions.slug}::text, ${this.sql.json(input)}::jsonb);
+    `;
+
+    return flowRun;
   }
 }
