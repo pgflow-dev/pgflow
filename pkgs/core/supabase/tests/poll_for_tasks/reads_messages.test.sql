@@ -22,17 +22,17 @@ SELECT 'sequential'::text AS flow_slug,
 (SELECT run_id FROM pgflow.runs WHERE flow_slug = 'sequential' LIMIT 1) AS run_id,
 'first'::text AS step_slug,
 jsonb_build_object ('run', 'hello')::jsonb AS input,
-(SELECT message_id FROM pgflow.step_tasks 
- WHERE flow_slug = 'sequential' 
- AND step_slug = 'first' 
- LIMIT 1) AS msg_id;
+(SELECT message_id FROM pgflow.step_tasks
+WHERE flow_slug = 'sequential'
+AND step_slug = 'first'
+LIMIT 1) AS msg_id ;
 
 -- Compare the results
 SELECT results_eq (
 'actual',
 'expected',
 'poll_for_tasks() returns the expected worker task'
-);
+) ;
 
 SELECT finish () ;
-ROLLBACK;
+ROLLBACK ;
