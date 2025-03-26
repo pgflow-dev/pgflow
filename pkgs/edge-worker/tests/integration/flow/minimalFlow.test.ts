@@ -1,10 +1,10 @@
 import { assert, assertEquals } from '@std/assert';
-import { createFlowWorker } from '../../../src/flow/createFlowWorker.ts';
 import { withPgNoTransaction } from '../../db.ts';
 import { Flow } from '../../../../dsl/src/dsl.ts';
 import { waitFor } from '../../e2e/_helpers.ts';
 import { delay } from '@std/async';
 import type { Json } from '../../../src/core/types.ts';
+import { startWorker } from "../_helpers.ts";
 
 // Define a minimal flow with two steps:
 // 1. Convert a number to a string
@@ -27,19 +27,12 @@ Deno.test(
   withPgNoTransaction(async (sql) => {
     await sql`select pgflow_tests.reset_db();`;
 
-    // Create and start the flow worker
-    const worker = createFlowWorker(MinimalFlow, {
-      sql,
+    const worker = startWorker(sql, MinimalFlow, {
       maxConcurrent: 1,
       batchSize: 10,
     });
 
     try {
-      // Start the worker
-      worker.startOnlyOnce({
-        edgeFunctionName: 'test_flow',
-        workerId: crypto.randomUUID(),
-      });
 
       await sql`select pgflow.create_flow('test_minimal_flow');`;
       await sql`select pgflow.add_step('test_minimal_flow', 'toStringStep');`;
