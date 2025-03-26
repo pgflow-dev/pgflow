@@ -1,7 +1,7 @@
 import type postgres from 'postgres';
-import type { StepTaskRecord, IPgflowAdapter } from './types-flow.ts';
-import type { Json } from './types.ts';
-import { getLogger } from './Logger.ts';
+import type { StepTaskRecord, IPgflowAdapter } from './types.ts';
+import type { Json } from '../core/types.ts';
+import { getLogger } from '../core/Logger.ts';
 
 /**
  * Implementation of IPgflowAdapter that uses direct SQL calls to pgflow functions

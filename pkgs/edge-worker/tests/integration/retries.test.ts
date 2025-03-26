@@ -1,5 +1,5 @@
 import { assertEquals, assertGreaterOrEqual } from '@std/assert';
-import { createQueueWorker } from '../../src/createQueueWorker.ts';
+import { createQueueWorker } from '../../src/queue/createQueueWorker.ts';
 import { withTransaction } from "../db.ts";
 import { log, waitFor } from "../e2e/_helpers.ts";
 import { getArchivedMessages, sendBatch } from "../helpers.ts";

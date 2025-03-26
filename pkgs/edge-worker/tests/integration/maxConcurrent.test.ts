@@ -1,8 +1,8 @@
 import { assertEquals, assertGreaterOrEqual } from '@std/assert';
-import { createQueueWorker } from '../../src/createQueueWorker.ts';
+import { createQueueWorker } from '../../src/queue/createQueueWorker.ts';
 import { withTransaction } from '../db.ts';
 import { waitFor } from '../e2e/_helpers.ts';
-import type { PgmqMessageRecord } from '../../src/types.ts';
+import type { PgmqMessageRecord } from '../../src/queue/types.ts';
 import { delay } from '@std/async';
 import { sendBatch } from '../helpers.ts';
 

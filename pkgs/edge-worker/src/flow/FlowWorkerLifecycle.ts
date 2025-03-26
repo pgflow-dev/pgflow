@@ -1,9 +1,9 @@
-import { Heartbeat } from './Heartbeat.ts';
-import { getLogger } from './Logger.ts';
-import type { Queries } from './Queries.ts';
-import type { ILifecycle, Json, WorkerBootstrap, WorkerRow } from './types.ts';
-import { States, WorkerState } from './WorkerState.ts';
-import type { Flow } from '../../dsl/src/dsl.ts';
+import { Heartbeat } from '../core/Heartbeat.ts';
+import { getLogger } from '../core/Logger.ts';
+import type { Queries } from '../core/Queries.ts';
+import type { ILifecycle, Json, WorkerBootstrap, WorkerRow } from '../core/types.ts';
+import { States, WorkerState } from '../core/WorkerState.ts';
+import type { Flow } from '../../../dsl/src/dsl.ts';
 
 /**
  * A specialized WorkerLifecycle for Flow-based workers that is aware of the Flow's step types

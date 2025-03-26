@@ -1,4 +1,4 @@
-import { getLogger } from './Logger.ts';
+import { getLogger } from './core/Logger.ts';
 
 // @ts-ignore - TODO: fix the types
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') as string;

@@ -1,4 +1,4 @@
-import { createQueueWorker } from '../../src/createQueueWorker.ts';
+import { createQueueWorker } from '../../src/queue/createQueueWorker.ts';
 import { withTransaction } from "../db.ts";
 import { delay } from "@std/async";
 

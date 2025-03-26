@@ -1,7 +1,7 @@
 import { Heartbeat } from './Heartbeat.ts';
 import { getLogger } from './Logger.ts';
 import type { Queries } from './Queries.ts';
-import type { Queue } from './Queue.ts';
+import type { Queue } from '../queue/Queue.ts';
 import type { ILifecycle, Json, WorkerBootstrap, WorkerRow } from './types.ts';
 import { States, WorkerState } from './WorkerState.ts';
 

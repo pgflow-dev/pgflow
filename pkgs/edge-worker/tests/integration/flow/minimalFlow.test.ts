@@ -1,10 +1,10 @@
 import { assert, assertEquals } from '@std/assert';
-import { createFlowWorker } from '../../../src/createFlowWorker.ts';
+import { createFlowWorker } from '../../../src/flow/createFlowWorker.ts';
 import { withPgNoTransaction } from '../../db.ts';
 import { Flow } from '../../../../dsl/src/dsl.ts';
 import { waitFor } from '../../e2e/_helpers.ts';
 import { delay } from '@std/async';
-import type { Json } from '../../../src/types.ts';
+import type { Json } from '../../../src/core/types.ts';
 
 // Define a minimal flow with two steps:
 // 1. Convert a number to a string

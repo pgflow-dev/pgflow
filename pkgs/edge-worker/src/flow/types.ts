@@ -1,4 +1,4 @@
-import type { Json } from './types.ts';
+import type { Json } from '../core/types.ts';
 
 /**
  * Record representing a task from pgflow.poll_for_tasks

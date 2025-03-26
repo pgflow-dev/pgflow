@@ -1,7 +1,7 @@
-import type { Json } from './types.ts';
+import type { Json } from '../core/types.ts';
 import type { PgmqMessageRecord } from './types.ts';
 import type { Queue } from './Queue.ts';
-import { getLogger } from './Logger.ts';
+import { getLogger } from '../core/Logger.ts';
 
 class AbortError extends Error {
   constructor() {

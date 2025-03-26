@@ -1,6 +1,6 @@
-import type { StepTaskRecord, IPgflowAdapter } from './types-flow.ts';
-import type { IPoller, Json } from './types.ts';
-import { getLogger } from './Logger.ts';
+import type { StepTaskRecord, IPgflowAdapter } from './types.ts';
+import type { IPoller, Json } from '../core/types.ts';
+import { getLogger } from '../core/Logger.ts';
 
 export interface StepTaskPollerConfig {
   batchSize: number;

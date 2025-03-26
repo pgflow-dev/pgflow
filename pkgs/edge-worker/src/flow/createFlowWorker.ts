@@ -1,17 +1,17 @@
-import type { Flow } from '../../dsl/src/dsl.ts';
-import type { EdgeWorkerConfig } from "./EdgeWorker.ts";
-import { ExecutionController } from "./ExecutionController.ts";
+import type { Flow } from '../../../dsl/src/dsl.ts';
+import type { EdgeWorkerConfig } from "../EdgeWorker.ts";
+import { ExecutionController } from "../core/ExecutionController.ts";
 import { StepTaskPoller, type StepTaskPollerConfig } from "./StepTaskPoller.ts";
 import { StepTaskExecutor } from "./StepTaskExecutor.ts";
 import { PgflowSqlAdapter } from "./PgflowSqlAdapter.ts";
-import { Queries } from "./Queries.ts";
-import type { StepTaskRecord } from './types-flow.ts';
-import type { IExecutor, Json } from './types.ts';
-import { Worker } from './Worker.ts';
+import { Queries } from "../core/Queries.ts";
+import type { StepTaskRecord } from './types.ts';
+import type { IExecutor, Json } from '../core/types.ts';
+import { Worker } from '../core/Worker.ts';
 import postgres from 'postgres';
 import { FlowWorkerLifecycle } from "./FlowWorkerLifecycle.ts";
-import { BatchProcessor } from "./BatchProcessor.ts";
-import { getLogger } from "./Logger.ts";
+import { BatchProcessor } from "../core/BatchProcessor.ts";
+import { getLogger } from "../core/Logger.ts";
 
 /**
  * Configuration for the flow worker

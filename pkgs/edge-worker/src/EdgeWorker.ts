@@ -1,8 +1,8 @@
-import type { Worker } from './Worker.ts';
+import type { Worker } from './core/Worker.ts';
 import spawnNewEdgeFunction from './spawnNewEdgeFunction.ts';
-import type { Json } from './types.ts';
-import { getLogger, setupLogger } from './Logger.ts';
-import { createQueueWorker } from './createQueueWorker.ts';
+import type { Json } from './core/types.ts';
+import { getLogger, setupLogger } from './core/Logger.ts';
+import { createQueueWorker } from './queue/createQueueWorker.ts';
 
 export type EdgeWorkerConfig = {
   /**

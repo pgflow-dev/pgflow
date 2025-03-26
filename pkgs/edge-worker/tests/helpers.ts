@@ -1,4 +1,4 @@
-import type { PgmqMessageRecord } from "../src/types.ts";
+import type { PgmqMessageRecord } from "../src/queue/types.ts";
 import type { postgres } from "./sql.ts";
 
 export async function sendBatch(count: number, queueName: string, sql: postgres.Sql) {
