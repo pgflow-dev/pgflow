@@ -1,21 +1,32 @@
-import { assertEquals } from '@std/assert';
+import { assert, assertEquals } from '@std/assert';
 import { createFlowWorker } from '../../../src/createFlowWorker.ts';
-import { withTransaction } from '../../db.ts';
+import { withPgNoTransaction } from '../../db.ts';
 import { Flow } from '../../../../dsl/src/dsl.ts';
 import { waitFor } from '../../e2e/_helpers.ts';
+import { delay } from '@std/async';
+import type { Json } from '../../../src/types.ts';
 
 // Define a minimal flow with two steps:
 // 1. Convert a number to a string
 // 2. Wrap the string in an array
 const MinimalFlow = new Flow<number>({ slug: 'test_minimal_flow' })
-  .step({ slug: 'toStringStep' }, (payload) => payload.run.toString())
-  .step({ slug: 'wrapInArrayStep', dependsOn: ['toStringStep'] }, (payload) => [
-    payload.toStringStep,
-  ]);
+  .step({ slug: 'toStringStep' }, async (input) => {
+    await delay(1);
+    return input.run.toString();
+  })
+  .step(
+    { slug: 'wrapInArrayStep', dependsOn: ['toStringStep'] },
+    async (input) => {
+      await delay(1);
+      return [input.toStringStep];
+    }
+  );
 
 Deno.test(
   'minimal flow executes successfully',
-  withTransaction(async (sql) => {
+  withPgNoTransaction(async (sql) => {
+    await sql`select pgflow_tests.reset_db();`;
+
     // Create and start the flow worker
     const worker = createFlowWorker(MinimalFlow, {
       sql,
@@ -36,21 +47,27 @@ Deno.test(
 
       // Start a flow run with input value 42
       const [flowRun] = await sql<{ run_id: string }[]>`
-      SELECT * FROM pgflow.start_flow('test_minimal_flow', ${42}::jsonb);
-    `;
+        SELECT * FROM pgflow.start_flow('test_minimal_flow', ${42}::jsonb);
+      `;
       console.log(`Started flow run`, flowRun);
 
+      let i = 0;
       // Wait for the run to complete with a timeout
-      await waitFor(
+      const polledRun = await waitFor(
         async () => {
           // Check run status
-          const [run] = await sql<{ status: string }[]>`
-          SELECT * FROM pgflow.runs WHERE run_id = ${flowRun.run_id};
-        `;
+          const [run] = await sql`
+            SELECT * FROM pgflow.runs WHERE run_id = ${flowRun.run_id};
+          `;
 
-          console.log(`Run:`, run);
+          i += 1;
+          console.log(`Run ${i}`, run);
 
-          return run.status === 'completed' ? true : false;
+          if (run.status != 'completed' && run.status != 'failed') {
+            return false;
+          }
+
+          return run;
         },
         {
           pollIntervalMs: 500,
@@ -59,12 +76,16 @@ Deno.test(
         }
       );
 
+      console.log('Polled run', polledRun);
+
+      assert(polledRun.status === 'completed', 'Run should be completed');
+
       // Verify step_states are all completed
       const stepStates = await sql<{ step_slug: string; status: string }[]>`
-      SELECT step_slug, status FROM pgflow.step_states
-      WHERE run_id = ${flowRun.run_id}
-      ORDER BY step_slug;
-    `;
+        SELECT step_slug, status FROM pgflow.step_states
+        WHERE run_id = ${flowRun.run_id}
+        ORDER BY step_slug;
+      `;
 
       console.log('Step states:', stepStates);
       assertEquals(
@@ -74,11 +95,13 @@ Deno.test(
       );
 
       // Verify step_tasks are all succeeded
-      const stepTasks = await sql<{ step_slug: string; status: string }[]>`
-      SELECT step_slug, status FROM pgflow.step_tasks
-      WHERE run_id = ${flowRun.run_id}
-      ORDER BY step_slug;
-    `;
+      const stepTasks = await sql<
+        { step_slug: string; status: string; output: Json }[]
+      >`
+        SELECT step_slug, status, output FROM pgflow.step_tasks
+        WHERE run_id = ${flowRun.run_id}
+        ORDER BY step_slug;
+      `;
 
       console.log('Step tasks:', stepTasks);
       assertEquals(
@@ -89,8 +112,8 @@ Deno.test(
 
       // Verify run is succeeded
       const [finalRun] = await sql<{ status: string; output: unknown }[]>`
-      SELECT status, output FROM pgflow.runs WHERE run_id = ${flowRun.run_id};
-    `;
+        SELECT status, output FROM pgflow.runs WHERE run_id = ${flowRun.run_id};
+      `;
 
       console.log('Final run:', finalRun);
       assertEquals(finalRun.status, 'completed', 'Run should be succeeded');
