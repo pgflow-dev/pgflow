@@ -3,7 +3,7 @@ import type { StepTaskRecord, IPgflowClient, StepTaskKey, RunRow } from './types
 import type { Json } from './types.ts';
 
 // Define a local Flow type to avoid importing from outside the package
-interface Flow<T> {
+interface Flow<T extends Json> {
   flowOptions: {
     slug: string;
   };

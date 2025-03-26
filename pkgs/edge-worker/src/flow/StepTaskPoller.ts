@@ -26,10 +26,15 @@ export class StepTaskPoller<TPayload extends Json = Json> implements IPoller<Ste
     }
 
     this.logger.debug(`Polling for flow tasks with batch size ${this.config.batchSize}`);
-    const tasks = await this.adapter.pollForTasks(this.config.queueName, this.config.batchSize);
-    this.logger.debug(`Retrieved ${tasks.length} flow tasks`);
 
-    return tasks;
+    try {
+      const tasks = await this.adapter.pollForTasks(this.config.queueName, this.config.batchSize);
+      this.logger.debug(`Retrieved ${tasks.length} flow tasks`);
+      return tasks;
+    } catch (err: unknown) {
+      this.logger.error(`Error polling for flow tasks: ${err}`);
+      return [];
+    }
   }
 
   private isAborted(): boolean {
