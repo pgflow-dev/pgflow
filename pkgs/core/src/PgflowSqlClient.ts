@@ -1,13 +1,12 @@
 import type postgres from 'postgres';
-import type { StepTaskRecord, IPgflowClient, StepTaskKey, RunRow } from './types.ts';
+import type {
+  StepTaskRecord,
+  IPgflowClient,
+  StepTaskKey,
+  RunRow,
+} from './types.ts';
 import type { Json } from './types.ts';
-
-// Define a local Flow type to avoid importing from outside the package
-interface Flow<T extends Json> {
-  flowOptions: {
-    slug: string;
-  };
-}
+import type { Flow } from '../../dsl/src/dsl.ts';
 
 /**
  * Implementation of IPgflowClient that uses direct SQL calls to pgflow functions
@@ -36,10 +35,7 @@ export class PgflowSqlClient<TPayload extends Json = Json>
     `;
   }
 
-  async completeTask(
-    stepTask: StepTaskKey,
-    output?: Json
-  ): Promise<void> {
+  async completeTask(stepTask: StepTaskKey, output?: Json): Promise<void> {
     await this.sql`
       SELECT pgflow.complete_task(
         run_id => ${stepTask.run_id}::uuid,
@@ -50,10 +46,7 @@ export class PgflowSqlClient<TPayload extends Json = Json>
     `;
   }
 
-  async failTask(
-    stepTask: StepTaskKey,
-    error: unknown
-  ): Promise<void> {
+  async failTask(stepTask: StepTaskKey, error: unknown): Promise<void> {
     const errorString =
       typeof error === 'string'
         ? error
@@ -71,10 +64,11 @@ export class PgflowSqlClient<TPayload extends Json = Json>
     `;
   }
 
-
   async startFlow<T extends Json>(flow: Flow<T>, input: T): Promise<RunRow> {
     const results = await this.sql<RunRow[]>`
-      SELECT * FROM pgflow.start_flow(${flow.flowOptions.slug}::text, ${this.sql.json(input)}::jsonb);
+      SELECT * FROM pgflow.start_flow(${
+        flow.flowOptions.slug
+      }::text, ${this.sql.json(input)}::jsonb);
     `;
 
     if (results.length === 0) {
