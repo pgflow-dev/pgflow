@@ -1,0 +1,3 @@
+- dependsOn is strongly typed and allows only to select steps that were added before the current step
+- the "input" argument of a current step handler is strongly typed by the RunPayload and the types of return values of handlers of all its dependencies, where each dependency slug is used as key in the object and the value is the return type of that dependency handler plus the "run" key with the value of what was passed when triggering a new run of the flow
+- getStepDefinition() should return a StepDefinition that holds exacly the same strong 
