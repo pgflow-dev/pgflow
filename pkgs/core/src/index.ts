@@ -1,1 +1,1 @@
-export * from './lib/core.js';
+export * from './types.ts';

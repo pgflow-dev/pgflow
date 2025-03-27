@@ -1,5 +1,5 @@
 import { assertEquals, assertGreaterOrEqual } from '@std/assert';
-import { Worker } from '../../src/Worker.ts';
+import { createQueueWorker } from '../../src/queue/createQueueWorker.ts';
 import { withTransaction } from "../db.ts";
 import { log, waitFor } from "../e2e/_helpers.ts";
 import { getArchivedMessages, sendBatch } from "../helpers.ts";
@@ -30,7 +30,7 @@ function createFailingHandler(startTime: number) {
  */
 Deno.test('message retry mechanism works correctly', withTransaction(async (sql) => {
   const startTime = Date.now();
-  const worker = new Worker(createFailingHandler(startTime), {
+  const worker = createQueueWorker(createFailingHandler(startTime), {
     sql,
     ...workerConfig
   });

@@ -1,8 +1,7 @@
-import type { Json } from './types.ts';
-import type { MessageRecord } from './types.ts';
+import type { Json } from '../core/types.ts';
+import type { PgmqMessageRecord } from './types.ts';
 import type { Queue } from './Queue.ts';
-import type { BatchArchiver } from './BatchArchiver.ts';
-import { getLogger } from './Logger.ts';
+import { getLogger } from '../core/Logger.ts';
 
 class AbortError extends Error {
   constructor() {
@@ -19,17 +18,16 @@ class AbortError extends Error {
  *
  * It also handles the abort signal and logs the error.
  */
-export class MessageExecutor<MessagePayload extends Json> {
+export class MessageExecutor<TPayload extends Json> {
   private logger = getLogger('MessageExecutor');
 
   constructor(
-    private readonly queue: Queue<MessagePayload>,
-    private readonly record: MessageRecord<MessagePayload>,
+    private readonly queue: Queue<TPayload>,
+    private readonly record: PgmqMessageRecord<TPayload>,
     private readonly messageHandler: (
-      message: MessagePayload
+      message: TPayload
     ) => Promise<void> | void,
     private readonly signal: AbortSignal,
-    private readonly batchArchiver: BatchArchiver<MessagePayload>,
     private readonly retryLimit: number,
     private readonly retryDelay: number
   ) {}
@@ -55,9 +53,6 @@ export class MessageExecutor<MessagePayload extends Json> {
       );
       await this.queue.archive(this.msgId);
       this.logger.debug(`Archived task ${this.msgId} successfully`);
-
-      // TODO: uncomment when ready to debug this
-      // await this.batchArchiver.add(this.msgId);
     } catch (error) {
       await this.handleExecutionError(error);
     }
@@ -94,12 +89,8 @@ export class MessageExecutor<MessagePayload extends Json> {
       await this.queue.setVt(this.msgId, this.retryDelay);
     } else {
       // archive message forever and stop processing it
-      // TODO: set 'permanently_failed' in headers when pgmq 1.5.0 is released
       this.logger.debug(`Archiving ${this.msgId} forever`);
       await this.queue.archive(this.msgId);
-
-      // TODO: uncomment when ready to debug this
-      // await this.batchArchiver.add(this.msgId);
     }
   }
 

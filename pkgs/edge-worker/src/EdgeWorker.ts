@@ -1,31 +1,46 @@
-import { Worker, type WorkerConfig } from './Worker.ts';
+import type { Worker } from './core/Worker.ts';
 import spawnNewEdgeFunction from './spawnNewEdgeFunction.ts';
-import type { Json } from './types.ts';
-import { getLogger, setupLogger } from './Logger.ts';
-import postgres from 'postgres';
+import type { Json } from './core/types.ts';
+import { getLogger, setupLogger } from './core/Logger.ts';
+import { createQueueWorker } from './queue/createQueueWorker.ts';
 
-export type EdgeWorkerConfig = Omit<WorkerConfig, 'connectionString' | 'sql'>;
+export type EdgeWorkerConfig = {
+  /**
+   * PostgreSQL connection string.
+   * If not provided, it will be read from the EDGE_WORKER_DB_URL environment variable.
+   */
+  connectionString?: string;
+  /**
+   * Number of retry attempts for failed message processing
+   * @default 5
+   */
+  retryLimit?: number;
+  /**
+   * Delay in seconds between retry attempts
+   * @default 5
+   */
+  retryDelay?: number;
+};
 
 export class EdgeWorker {
   private static logger = getLogger('EdgeWorker');
   private static wasCalled = false;
 
-  static start<MessagePayload extends Json = Json>(
-    handler: (message: MessagePayload) => Promise<void> | void,
+  static start<TPayload extends Json = Json>(
+    handler: (message: TPayload) => Promise<void> | void,
     config: EdgeWorkerConfig = {}
   ) {
     this.ensureFirstCall();
 
-    const sql = postgres(this.getConnectionString(), {
-      max: config.maxPgConnections,
-      prepare: false,
-    });
-
-    const workerConfig: WorkerConfig = {
+    const connectionString = config.connectionString || this.getConnectionString();
+    const retryLimit = config.retryLimit ?? 5;
+    const retryDelay = config.retryDelay ?? 5;
+    this.setupRequestHandler(handler, {
       ...config,
-      sql
-    };
-    this.setupRequestHandler(handler, workerConfig);
+      connectionString,
+      retryLimit,
+      retryDelay
+    });
   }
 
   private static ensureFirstCall() {
@@ -47,18 +62,8 @@ export class EdgeWorker {
     return connectionString;
   }
 
-  private static initializeWorker<MessagePayload extends Json>(
-    handler: (message: MessagePayload) => Promise<void> | void,
-    config: WorkerConfig
-  ): Worker<MessagePayload> {
-    return new Worker<MessagePayload>(handler, {
-      queueName: config.queueName || 'tasks',
-      ...config,
-    });
-  }
-
-  private static setupShutdownHandler<MessagePayload extends Json>(
-    worker: Worker<MessagePayload>
+  private static setupShutdownHandler(
+    worker: Worker
   ) {
     globalThis.onbeforeunload = async () => {
       if (worker.edgeFunctionName) {
@@ -73,11 +78,15 @@ export class EdgeWorker {
     EdgeRuntime.waitUntil(new Promise(() => {}));
   }
 
-  private static setupRequestHandler<MessagePayload extends Json>(
-    handler: (message: MessagePayload) => Promise<void> | void,
-    workerConfig: WorkerConfig
+  private static setupRequestHandler<TPayload extends Json>(
+    handler: (message: TPayload) => Promise<void> | void,
+    workerConfig: EdgeWorkerConfig & {
+      connectionString: string;
+      retryLimit: number;
+      retryDelay: number;
+    }
   ) {
-    let worker: Worker<MessagePayload> | null = null;
+    let worker: Worker | null = null;
 
     Deno.serve({}, (req) => {
       if (!worker) {
@@ -87,10 +96,7 @@ export class EdgeWorker {
 
         this.logger.info(`HTTP Request: ${edgeFunctionName}`);
 
-        worker = this.initializeWorker(handler, {
-          ...workerConfig,
-          connectionString: this.getConnectionString(),
-        });
+        worker = createQueueWorker(handler, workerConfig);
         worker.startOnlyOnce({
           edgeFunctionName,
           workerId: sbExecutionId,

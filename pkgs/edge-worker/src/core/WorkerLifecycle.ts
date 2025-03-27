@@ -1,23 +1,23 @@
 import { Heartbeat } from './Heartbeat.ts';
 import { getLogger } from './Logger.ts';
 import type { Queries } from './Queries.ts';
-import type { Queue } from './Queue.ts';
-import type { Json, WorkerBootstrap, WorkerRow } from './types.ts';
+import type { Queue } from '../queue/Queue.ts';
+import type { ILifecycle, Json, WorkerBootstrap, WorkerRow } from './types.ts';
 import { States, WorkerState } from './WorkerState.ts';
 
 export interface LifecycleConfig {
   queueName: string;
 }
 
-export class WorkerLifecycle<MessagePayload extends Json> {
+export class WorkerLifecycle<IMessage extends Json> implements ILifecycle {
   private workerState: WorkerState = new WorkerState();
   private heartbeat?: Heartbeat;
   private logger = getLogger('WorkerLifecycle');
   private queries: Queries;
-  private queue: Queue<MessagePayload>;
+  private queue: Queue<IMessage>;
   private workerRow?: WorkerRow;
 
-  constructor(queries: Queries, queue: Queue<MessagePayload>) {
+  constructor(queries: Queries, queue: Queue<IMessage>) {
     this.queries = queries;
     this.queue = queue;
   }

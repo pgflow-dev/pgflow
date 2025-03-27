@@ -1,5 +1,5 @@
 import { assertEquals, assertThrows } from '@std/assert';
-import { WorkerState, States, TransitionError } from '../../src/WorkerState.ts';
+import { WorkerState, States, TransitionError } from '../../src/core/WorkerState.ts';
 
 Deno.test('WorkerState - initial state should be Created', () => {
   const state = new WorkerState();

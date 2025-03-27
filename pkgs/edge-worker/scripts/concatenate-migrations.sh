@@ -14,3 +14,17 @@ for f in $(find ./migrations -name '*.sql' | sort); do
   echo "" >> "$target_file"
   echo "" >> "$target_file"
 done
+
+# Also add core migrations
+for f in $(find ../core/supabase/migrations -name '*.sql' | sort); do
+  echo "-- From file: $(basename $f)" >> "$target_file"
+  cat "$f" >> "$target_file"
+  echo "" >> "$target_file"
+  echo "" >> "$target_file"
+done
+
+# And copy the pgflow_tests 
+echo "-- From file: seed.sql" >> "$target_file"
+cat "../core/supabase/seed.sql" >> "$target_file"
+echo "" >> "$target_file"
+echo "" >> "$target_file"

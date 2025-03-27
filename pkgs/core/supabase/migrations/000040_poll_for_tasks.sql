@@ -5,7 +5,7 @@ create or replace function pgflow.poll_for_tasks(
   max_poll_seconds integer default 5,
   poll_interval_ms integer default 100
 )
-returns setof pgflow.worker_task
+returns setof pgflow.step_task_record
 volatile
 set search_path to ''
 as $$
@@ -81,7 +81,8 @@ select
   st.run_id,
   st.step_slug,
   jsonb_build_object('run', r.input) ||
-  coalesce(dep_out.deps_output, '{}'::jsonb) as input
+  coalesce(dep_out.deps_output, '{}'::jsonb) as input,
+  st.message_id as msg_id
 from tasks st
 join runs r on st.run_id = r.run_id
 left join deps_outputs dep_out on

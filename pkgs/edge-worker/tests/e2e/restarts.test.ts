@@ -5,7 +5,6 @@ import {
   sendBatch,
   seqLastValue,
   startWorker,
-  waitForBatchArchiver,
   waitForSeqToIncrementBy,
 } from './_helpers.ts';
 
@@ -25,9 +24,9 @@ Deno.test('should spawn next worker when CPU clock limit hits', async () => {
   }
   await sql`SELECT pgmq.create(${WORKER_NAME})`;
   await sql`
-    DELETE FROM edge_worker.workers 
+    DELETE FROM edge_worker.workers
     WHERE worker_id IN (
-      SELECT worker_id 
+      SELECT worker_id
       FROM edge_worker.inactive_workers
     )`;
   await startWorker(WORKER_NAME);
@@ -38,7 +37,6 @@ Deno.test('should spawn next worker when CPU clock limit hits', async () => {
       timeoutMs: 35000,
       pollIntervalMs: 300,
     });
-    await waitForBatchArchiver();
 
     assertGreaterOrEqual(
       await seqLastValue(),
