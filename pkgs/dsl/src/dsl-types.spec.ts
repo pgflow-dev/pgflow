@@ -57,9 +57,12 @@ describe('Flow Type Safety', () => {
       () => 5 as TextLength
     );
 
-    // @ts-expect-error - nonExistentStep doesn't exist
     testFlow.step(
-      { slug: 'invalid', dependsOn: ['nonExistentStep'] },
+      {
+        slug: 'invalid',
+        // @ts-expect-error - nonExistentStep doesn't exist
+        dependsOn: ['nonExistentStep'],
+      },
       () => 0 as TextLength
     );
   });
