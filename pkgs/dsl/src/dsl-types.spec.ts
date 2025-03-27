@@ -43,19 +43,35 @@ describe('Flow Type Safety', () => {
   });
 
   // Test dependsOn type constraints
-  it('should not allow depending on non-existent steps', () => {
+  it('should catch non-existent steps at compile time', () => {
     const testFlow = new Flow<TextInput>({ slug: 'test-flow' }).step(
       { slug: 'step1' },
       () => 5 as TextLength
     );
 
-    testFlow.step(
-      {
-        slug: 'invalid',
-        // @ts-expect-error - nonExistentStep doesn't exist
-        dependsOn: ['nonExistentStep'],
-      },
-      () => 0 as TextLength
+    // Type assertion to verify compile-time error
+    type TestType = Parameters<typeof testFlow.step>[0]['dependsOn'];
+    // @ts-expect-error - should only allow 'step1' as a valid dependency
+    const invalidDeps: TestType = ['nonExistentStep'];
+  });
+
+  it('should throw an error when depending on non-existent steps at runtime', () => {
+    const testFlow = new Flow<TextInput>({ slug: 'test-flow' }).step(
+      { slug: 'step1' },
+      () => 5 as TextLength
+    );
+
+    // Test runtime validation
+    expect(() => {
+      testFlow.step(
+        {
+          slug: 'runtimeInvalid',
+          dependsOn: ['nonExistentStep' as any], // Cast to bypass TypeScript error
+        },
+        () => 0 as TextLength
+      );
+    }).toThrow(
+      'Step "runtimeInvalid" depends on undefined step "nonExistentStep"'
     );
   });
 
@@ -110,6 +126,20 @@ describe('Flow Type Safety', () => {
         expectTypeOf(payload.step1).toMatchTypeOf<FlagOutput>();
         return 0 as FlagNumeric;
       });
+  });
+
+  // Test getStepDefinition with non-existent step
+  it('should throw an error when getStepDefinition is called for a non-existent step', () => {
+    const testFlow = new Flow<TextInput>({ slug: 'test-flow' }).step(
+      { slug: 'step1' },
+      () => 5 as TextLength
+    );
+
+    // Test runtime validation for getStepDefinition
+    expect(() => {
+      // Using type assertion to bypass TypeScript's type checking
+      testFlow.getStepDefinition('nonExistentStep' as any);
+    }).toThrow('Step "nonExistentStep" does not exist in flow "test-flow"');
   });
 
   // Tests for StepOutput utility type

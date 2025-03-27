@@ -57,18 +57,60 @@ export class Flow<
 > {
   // Update the stepDefinitions property to hold the correct types
   private stepDefinitions: Record<string, StepDefinition<Json, Json>>;
+  private stepOrder: string[];
   public readonly slug: string;
   public readonly options: RuntimeOptions;
 
   constructor(
     config: Simplify<{ slug: string } & RuntimeOptions>,
-    stepDefinitions: Record<string, StepDefinition<Json, Json>> = {}
+    stepDefinitions: Record<string, StepDefinition<Json, Json>> = {},
+    stepOrder: string[] = []
   ) {
     // Extract slug and options separately
     const { slug, ...options } = config;
     this.slug = slug;
     this.options = options;
     this.stepDefinitions = stepDefinitions;
+    // Defensive copy of stepOrder
+    this.stepOrder = [...stepOrder];
+  }
+
+  /**
+   * Returns all step definitions for this flow
+   */
+  getSteps(): Record<string, StepDefinition<Json, Json>> {
+    return this.stepDefinitions;
+  }
+
+  /**
+   * Get a specific step definition by slug with proper typing
+   * @throws Error if the step with the given slug doesn't exist
+   */
+  getStepDefinition<SlugType extends keyof Steps>(
+    slug: SlugType
+  ): StepDefinition<
+    StepInput<RunPayload, Steps, string & SlugType>,
+    Steps[SlugType]
+  > {
+    const stepDef = this.stepDefinitions[slug as string];
+    if (!stepDef) {
+      throw new Error(
+        `Step "${String(slug)}" does not exist in flow "${this.slug}"`
+      );
+    }
+
+    // Use type assertion with unknown as intermediate step for safer conversion
+    return stepDef as unknown as StepDefinition<
+      StepInput<RunPayload, Steps, string & SlugType>,
+      Steps[SlugType]
+    >;
+  }
+
+  /**
+   * Returns step definitions in the order they were added
+   */
+  getStepsInOrder(): StepDefinition<Json, Json>[] {
+    return this.stepOrder.map((slug) => this.stepDefinitions[slug]);
   }
 
   step<
@@ -86,6 +128,14 @@ export class Flow<
 
     const slug = opts.slug as Slug;
     const dependencies = opts.dependsOn || [];
+    // Validate dependencies - check if all referenced steps exist
+    if (dependencies.length > 0) {
+      for (const dep of dependencies) {
+        if (!this.stepDefinitions[dep as string]) {
+          throw new Error(`Step "${slug}" depends on undefined step "${dep}"`);
+        }
+      }
+    }
 
     // Extract RuntimeOptions from opts
     const options: RuntimeOptions = {};
@@ -105,10 +155,14 @@ export class Flow<
       [slug]: newStepDefinition,
     };
 
+    // Create a new stepOrder array with the new slug appended
+    const newStepOrder = [...this.stepOrder, slug];
+
     // Create a new flow with the same slug and options
     return new Flow<RunPayload, NewSteps>(
       { slug: this.slug, ...this.options },
-      newStepDefinitions
+      newStepDefinitions,
+      newStepOrder
     );
   }
 }
