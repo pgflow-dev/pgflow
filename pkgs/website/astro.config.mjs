@@ -74,6 +74,10 @@ export default defineConfig({
                 autogenerate: { directory: 'edge-worker/how-to/' },
               },
               {
+                label: 'FAQ - Common Questions',
+                link: '/edge-worker/faq/',
+              },
+              {
                 label: 'Project Status',
                 badge: { text: 'important', variant: 'caution' },
                 link: '/edge-worker/project-status/',
@@ -91,7 +95,7 @@ export default defineConfig({
             },
             items: [
               { label: 'What is pgflow?', link: '/pgflow/what-is-pgflow/' },
-            ]
+            ],
           },
           {
             label: 'Found a bug?',
