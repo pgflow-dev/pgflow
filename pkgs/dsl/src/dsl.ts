@@ -25,19 +25,17 @@ export type StepOutput<F, S extends string> = F extends Flow<
 /**
  * This ensures that:
  * 1. The run payload is always included
- * 2. All dependencies are required
+ * 2. Only declared dependencies are included
  * 3. No extra properties are allowed
  * Utility type to extract the input type for a specific step in a flow
  */
 export type StepInput<
   TRunPayload extends Json,
   TSteps extends Record<string, Json>,
-  TStepSlug extends string
-> = TStepSlug extends keyof TSteps
-  ? { run: TRunPayload } & {
-      [K in Exclude<keyof TSteps, TStepSlug>]: TSteps[K];
-    }
-  : { run: TRunPayload };
+  TDeps extends keyof TSteps = never
+> = { run: TRunPayload } & {
+  [K in TDeps]: TSteps[K];
+};
 
 // Runtime options interface
 export interface RuntimeOptions {
@@ -60,17 +58,18 @@ type MergeObjects<T1 extends object, T2 extends object> = T1 & T2;
 // Flow class definition
 export class Flow<
   RunPayload extends Json,
-  Steps extends Record<string, Json> = Record<never, never>
+  Steps extends Record<string, Json> = Record<never, never>,
+  StepDependencies extends Record<string, string[]> = Record<string, never[]>
 > {
-  // Update the stepDefinitions property to hold the correct types
-  private stepDefinitions: Record<string, StepDefinition<Json, Json>>;
+  // Store step definitions with their proper types
+  private stepDefinitions: Record<string, StepDefinition<any, Json>>;
   private stepOrder: string[];
   public readonly slug: string;
   public readonly options: RuntimeOptions;
 
   constructor(
     config: Simplify<{ slug: string } & RuntimeOptions>,
-    stepDefinitions: Record<string, StepDefinition<Json, Json>> = {},
+    stepDefinitions: Record<string, StepDefinition<any, Json>> = {},
     stepOrder: string[] = []
   ) {
     // Extract slug and options separately
@@ -85,7 +84,7 @@ export class Flow<
   /**
    * Returns all step definitions for this flow
    */
-  getSteps(): Record<string, StepDefinition<Json, Json>> {
+  getSteps(): Record<string, StepDefinition<any, Json>> {
     return this.stepDefinitions;
   }
 
@@ -93,10 +92,14 @@ export class Flow<
    * Get a specific step definition by slug with proper typing
    * @throws Error if the step with the given slug doesn't exist
    */
-  getStepDefinition<SlugType extends keyof Steps>(
+  getStepDefinition<SlugType extends keyof Steps & keyof StepDependencies>(
     slug: SlugType
   ): StepDefinition<
-    StepInput<RunPayload, Steps, string & SlugType>,
+    StepInput<
+      RunPayload,
+      Steps,
+      Extract<keyof Steps & string, StepDependencies[SlugType][number]>
+    >,
     Steps[SlugType]
   > {
     // Check if the slug exists in stepDefinitions using a more explicit pattern
@@ -109,7 +112,11 @@ export class Flow<
     // Use unknown as an intermediate step for safer type conversion
     // This follows TypeScript's recommendation for this kind of type conversion
     return this.stepDefinitions[slug as string] as unknown as StepDefinition<
-      StepInput<RunPayload, Steps, string & SlugType>,
+      StepInput<
+        RunPayload,
+        Steps,
+        Extract<keyof Steps & string, StepDependencies[SlugType][number]>
+      >,
       Steps[SlugType]
     >;
   }
@@ -117,7 +124,7 @@ export class Flow<
   /**
    * Returns step definitions in the order they were added with proper typing
    */
-  getStepsInOrder(): Array<StepDefinition<Json, Json>> {
+  getStepsInOrder(): Array<StepDefinition<any, Json>> {
     return this.stepOrder.map((slug) => {
       // We need to use a simpler type here to avoid complex type issues
       return this.stepDefinitions[slug];
@@ -127,15 +134,23 @@ export class Flow<
   step<
     Slug extends string,
     Deps extends Extract<keyof Steps, string> = never,
-    RetType extends Json = Json,
-    Payload = { run: RunPayload } & { [K in Deps]: Steps[K] }
+    RetType extends Json = Json
   >(
     opts: Simplify<{ slug: Slug; dependsOn?: Deps[] } & RuntimeOptions>,
-    handler: (payload: { [KeyType in keyof Payload]: Payload[KeyType] }) =>
-      | RetType
-      | Promise<RetType>
-  ): Flow<RunPayload, Steps & { [K in Slug]: Awaited<RetType> }> {
+    handler: (
+      payload: StepInput<RunPayload, Steps, Deps>
+    ) => RetType | Promise<RetType>
+  ): Flow<
+    RunPayload,
+    Steps & { [K in Slug]: Awaited<RetType> },
+    StepDependencies & { [K in Slug]: Deps[] }
+  > {
+    type StepInputType = StepInput<RunPayload, Steps, Deps>;
     type NewSteps = MergeObjects<Steps, { [K in Slug]: Awaited<RetType> }>;
+    type NewDependencies = MergeObjects<
+      StepDependencies,
+      { [K in Slug]: Deps[] }
+    >;
 
     const slug = opts.slug as Slug;
     const dependencies = opts.dependsOn || [];
@@ -154,10 +169,13 @@ export class Flow<
     if (opts.baseDelay !== undefined) options.baseDelay = opts.baseDelay;
     if (opts.timeout !== undefined) options.timeout = opts.timeout;
 
-    const newStepDefinition: StepDefinition<any, RetType> = {
+    // Preserve the exact type of the handler
+    const newStepDefinition: StepDefinition<StepInputType, RetType> = {
       slug,
-      handler,
-      dependencies,
+      handler: handler as (
+        payload: StepInputType
+      ) => RetType | Promise<RetType>,
+      dependencies: dependencies as string[],
       options,
     };
 
@@ -169,12 +187,12 @@ export class Flow<
     // Create a new stepOrder array with the new slug appended
     const newStepOrder = [...this.stepOrder, slug];
 
-    // Create a new flow with the same slug and options
-    return new Flow<RunPayload, NewSteps>(
+    // Create a new flow with the same slug and options but with updated type parameters
+    return new Flow<RunPayload, NewSteps, NewDependencies>(
       { slug: this.slug, ...this.options },
-      newStepDefinitions,
+      newStepDefinitions as any,
       newStepOrder
-    );
+    ) as Flow<RunPayload, NewSteps, NewDependencies>;
   }
 }
 
@@ -191,11 +209,18 @@ const ExampleFlow = new Flow<{ value: number }>({
   }))
   // normalStep return type will be inferred to:
   // { doubledValueArray: number[] };
+  // The payload will only include 'run' and 'rootStep' properties
   .step(
     { slug: 'normalStep', dependsOn: ['rootStep'], maxAttempts: 5 },
     async (payload) => ({
       doubledValueArray: [payload.rootStep.doubledValue],
     })
-  );
+  )
+  // This step depends on normalStep, so its payload will include 'run', 'normalStep'
+  // but not 'rootStep' since it's not directly declared as a dependency
+  .step({ slug: 'thirdStep', dependsOn: ['normalStep'] }, async (payload) => ({
+    // payload.rootStep would be a type error since it's not in dependsOn
+    finalValue: payload.normalStep.doubledValueArray.length,
+  }));
 
 export default ExampleFlow;
