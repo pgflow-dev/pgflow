@@ -57,12 +57,17 @@ export class Flow<
 > {
   // Update the stepDefinitions property to hold the correct types
   private stepDefinitions: Record<string, StepDefinition<Json, Json>>;
+  public readonly slug: string;
+  public readonly options: RuntimeOptions;
 
   constructor(
-    public flowOptions: Simplify<{ slug: string } & RuntimeOptions>,
+    config: Simplify<{ slug: string } & RuntimeOptions>,
     stepDefinitions: Record<string, StepDefinition<Json, Json>> = {}
   ) {
-    this.flowOptions = flowOptions;
+    // Extract slug and options separately
+    const { slug, ...options } = config;
+    this.slug = slug;
+    this.options = options;
     this.stepDefinitions = stepDefinitions;
   }
 
@@ -100,7 +105,11 @@ export class Flow<
       [slug]: newStepDefinition,
     };
 
-    return new Flow<RunPayload, NewSteps>(this.flowOptions, newStepDefinitions);
+    // Create a new flow with the same slug and options
+    return new Flow<RunPayload, NewSteps>(
+      { slug: this.slug, ...this.options },
+      newStepDefinitions
+    );
   }
 }
 

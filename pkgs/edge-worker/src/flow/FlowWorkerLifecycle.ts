@@ -1,7 +1,12 @@
 import { Heartbeat } from '../core/Heartbeat.ts';
 import { getLogger } from '../core/Logger.ts';
 import type { Queries } from '../core/Queries.ts';
-import type { ILifecycle, Json, WorkerBootstrap, WorkerRow } from '../core/types.ts';
+import type {
+  ILifecycle,
+  Json,
+  WorkerBootstrap,
+  WorkerRow,
+} from '../core/types.ts';
 import { States, WorkerState } from '../core/WorkerState.ts';
 import type { Flow } from '../../../dsl/src/dsl.ts';
 
@@ -11,7 +16,8 @@ import type { Flow } from '../../../dsl/src/dsl.ts';
 export class FlowWorkerLifecycle<
   TRunPayload extends Json,
   TSteps extends Record<string, Json> = Record<never, never>
-> implements ILifecycle {
+> implements ILifecycle
+{
   private workerState: WorkerState = new WorkerState();
   private heartbeat?: Heartbeat;
   private logger = getLogger('FlowWorkerLifecycle');
@@ -19,10 +25,7 @@ export class FlowWorkerLifecycle<
   private workerRow?: WorkerRow;
   private flow: Flow<TRunPayload, TSteps>;
 
-  constructor(
-    queries: Queries,
-    flow: Flow<TRunPayload, TSteps>
-  ) {
+  constructor(queries: Queries, flow: Flow<TRunPayload, TSteps>) {
     this.queries = queries;
     this.flow = flow;
   }
@@ -69,7 +72,7 @@ export class FlowWorkerLifecycle<
   }
 
   get queueName() {
-    return this.flow.flowOptions.slug;
+    return this.flow.slug;
   }
 
   async sendHeartbeat() {
