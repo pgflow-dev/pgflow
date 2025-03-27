@@ -13,13 +13,9 @@ type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
 // Utility type to extract the output type of a step handler from a Flow
 // Usage:
 //   StepOutput<typeof flow, 'step1'>
-export type StepOutput<F, S extends string> = F extends {
-  getSteps(): Record<string, StepDefinition<any, any>>;
-}
-  ? S extends keyof ReturnType<F['getSteps']>
-    ? ReturnType<F['getSteps']>[S] extends StepDefinition<any, infer R>
-      ? R
-      : never
+export type StepOutput<F, S extends string> = F extends Flow<any, infer Steps>
+  ? S extends keyof Steps
+    ? Steps[S]
     : never
   : never;
 
@@ -130,37 +126,6 @@ export class Flow<
       newStepOptionsStore
     );
   }
-
-  public getSteps(): {
-    [K in keyof Steps]: StepDefinition<
-      StepInput<RunPayload, Steps, string & K>,
-      Steps[K]
-    > & {
-      maxAttempts?: number;
-      baseDelay?: number;
-      timeout?: number;
-    };
-  } {
-    const result: Record<string, any> = {};
-
-    Object.keys(this.stepDefinitions).forEach((slug) => {
-      result[slug] = {
-        ...this.stepDefinitions[slug],
-        ...this.stepOptionsStore[slug],
-      };
-    });
-
-    return result as {
-      [K in keyof Steps]: StepDefinition<
-        StepInput<RunPayload, Steps, string & K>,
-        Steps[K]
-      > & {
-        maxAttempts?: number;
-        baseDelay?: number;
-        timeout?: number;
-      };
-    };
-  }
 }
 
 // Example usage
@@ -184,5 +149,3 @@ const ExampleFlow = new Flow<{ value: number }>({
   );
 
 export default ExampleFlow;
-
-export type StepsType = ReturnType<typeof ExampleFlow.getSteps>;

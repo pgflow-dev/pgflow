@@ -25,7 +25,7 @@ type AccessOutput2 = 2;
 describe('Flow Type Safety', () => {
   // Test basic flow setup and type inference
   it('should correctly type the payload based on dependsOn', () => {
-    const flow = new Flow<CountInput>({ slug: 'test-flow' })
+    new Flow<CountInput>({ slug: 'test-flow' })
       .step({ slug: 'step1' }, (payload) => {
         // Verify payload.run is typed correctly
         expectTypeOf(payload.run).toMatchTypeOf<CountInput>();
@@ -39,15 +39,7 @@ describe('Flow Type Safety', () => {
         return 84 as CountOutput;
       });
 
-    // Type-level verification of flow's step types
-    type Steps = ReturnType<typeof flow.getSteps>;
-    expectTypeOf<Steps['step1']['handler']>().toBeCallableWith({
-      run: 42 as CountInput,
-    });
-    expectTypeOf<Steps['step2']['handler']>().toBeCallableWith({
-      run: 42 as CountInput,
-      step1: 84 as CountOutput,
-    });
+    // Type-level verification is now done directly through the Flow type system
   });
 
   // Test dependsOn type constraints
@@ -118,48 +110,6 @@ describe('Flow Type Safety', () => {
         expectTypeOf(payload.step1).toMatchTypeOf<FlagOutput>();
         return 0 as FlagNumeric;
       });
-  });
-
-  // Tests for getSteps() handler type preservation
-  describe('getSteps() handler type preservation', () => {
-    it('should preserve handler argument types from run input and dependencies', () => {
-      // Define a flow with specific input and output types
-      type RunInput = { userId: number; action: string };
-
-      const flow = new Flow<RunInput>({ slug: 'handler-type-test' })
-        .step({ slug: 'step1' }, (payload) => {
-          // Verify run input type
-          expectTypeOf(payload.run).toMatchTypeOf<RunInput>();
-          return { count: 42, status: 'processed' };
-        })
-        .step({ slug: 'step2', dependsOn: ['step1'] }, (payload) => {
-          // Verify both run input and step1 output types
-          expectTypeOf(payload.run).toMatchTypeOf<RunInput>();
-          expectTypeOf(payload.step1).toMatchTypeOf<{
-            count: number;
-            status: string;
-          }>();
-          return { success: true };
-        });
-
-      // Get the steps and verify handler argument types
-      const steps = flow.getSteps();
-
-      // Extract the handler types
-      type Step1HandlerArgType = Parameters<typeof steps.step1.handler>[0];
-      type Step2HandlerArgType = Parameters<typeof steps.step2.handler>[0];
-
-      // Verify step1 handler argument type includes run input
-      expectTypeOf<Step1HandlerArgType>().toMatchTypeOf<{
-        run: RunInput;
-      }>();
-
-      // Verify step2 handler argument type includes both run input and step1 output
-      expectTypeOf<Step2HandlerArgType>().toMatchTypeOf<{
-        run: RunInput;
-        step1: { count: number; status: string };
-      }>();
-    });
   });
 
   // Tests for StepOutput utility type
