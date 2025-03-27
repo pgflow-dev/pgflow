@@ -132,7 +132,10 @@ export class Flow<
   }
 
   public getSteps(): {
-    [K in keyof Steps]: StepDefinition<Json, Steps[K]> & {
+    [K in keyof Steps]: StepDefinition<
+      StepInput<RunPayload, Steps, string & K>,
+      Steps[K]
+    > & {
       maxAttempts?: number;
       baseDelay?: number;
       timeout?: number;
@@ -148,7 +151,10 @@ export class Flow<
     });
 
     return result as {
-      [K in keyof Steps]: StepDefinition<Json, Steps[K]> & {
+      [K in keyof Steps]: StepDefinition<
+        StepInput<RunPayload, Steps, string & K>,
+        Steps[K]
+      > & {
         maxAttempts?: number;
         baseDelay?: number;
         timeout?: number;
