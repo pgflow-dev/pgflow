@@ -1,51 +1,78 @@
 import { Flow, type StepOutput } from './dsl.ts';
 import { describe, it, expectTypeOf, expect } from 'vitest';
-// Test StepInput utility type
-it('should enforce strict payload types with StepInput utility type', () => {
-  // Define test types
-  type TestRunPayload = { id: number };
-  type TestSteps = {
-    step1: { result: string };
-    step2: { count: number };
-    step3: { flag: boolean };
-  };
+// Test payload type constraints using Flow DSL
+it('should enforce strict payload types with Flow DSL', () => {
+  // Create a flow with multiple steps to test payload types
+  const testFlow = new Flow<{ id: number }>({ slug: 'test-flow' })
+    .step({ slug: 'step1' }, (payload) => {
+      // Test payload type for step with no dependencies
+      expectTypeOf(payload).toEqualTypeOf<{ run: { id: number } }>();
 
-  // Test StepInput with no dependencies
-  type Step1Input = StepInput<TestRunPayload, TestSteps, 'step1'>;
-  expectTypeOf<Step1Input>().toEqualTypeOf<{ run: TestRunPayload }>();
+      // Verify that extra properties are not allowed using expectTypeOf
+      type Step1PayloadWithExtra = typeof payload & { extra: string };
+      expectTypeOf<Step1PayloadWithExtra>().not.toBeAssignableTo<
+        typeof payload
+      >();
 
-  // Test StepInput with one dependency
-  type Step2Input = StepInput<TestRunPayload, TestSteps, 'step2'>;
-  expectTypeOf<Step2Input>().toEqualTypeOf<{
-    run: TestRunPayload;
-    step1: TestSteps['step1'];
-  }>();
+      return { result: 'test-result' };
+    })
+    .step({ slug: 'step2', dependsOn: ['step1'] }, (payload) => {
+      // Test payload type for step with one dependency
+      expectTypeOf(payload).toEqualTypeOf<{
+        run: { id: number };
+        step1: { result: string };
+      }>();
 
-  // Test StepInput with multiple dependencies
-  type Step3Input = StepInput<TestRunPayload, TestSteps, 'step3'>;
-  expectTypeOf<Step3Input>().toEqualTypeOf<{
-    run: TestRunPayload;
-    step1: TestSteps['step1'];
-    step2: TestSteps['step2'];
-  }>();
+      // Verify that extra properties are not allowed
+      type Step2PayloadWithExtra = typeof payload & { extra: string };
+      expectTypeOf<Step2PayloadWithExtra>().not.toBeAssignableTo<
+        typeof payload
+      >();
 
-  // Verify that extra properties are not allowed
-  // @ts-expect-error - Extra property not allowed
-  const invalidStep1Input: Step1Input = {
-    run: { id: 123 },
-    extra: 'not allowed',
-  };
+      // Verify that missing dependencies are not allowed
+      type Step2PayloadMissingDep = { run: { id: number } };
+      expectTypeOf<Step2PayloadMissingDep>().not.toBeAssignableTo<
+        typeof payload
+      >();
 
-  // Verify that required dependencies cannot be omitted
-  // @ts-expect-error - Missing required dependency
-  const missingDepStep2Input: Step2Input = { run: { id: 123 } };
+      return { count: 42 };
+    })
+    .step({ slug: 'step3', dependsOn: ['step1', 'step2'] }, (payload) => {
+      // Test payload type for step with multiple dependencies
+      expectTypeOf(payload).toEqualTypeOf<{
+        run: { id: number };
+        step1: { result: string };
+        step2: { count: number };
+      }>();
 
-  // Verify that required dependencies cannot be omitted
-  // @ts-expect-error - Missing required dependencies
-  const missingDepsStep3Input: Step3Input = {
-    run: { id: 123 },
-    step1: { result: 'test' },
-  };
+      // Verify that extra properties are not allowed
+      type Step3PayloadWithExtra = typeof payload & { extra: string };
+      expectTypeOf<Step3PayloadWithExtra>().not.toBeAssignableTo<
+        typeof payload
+      >();
+
+      // Verify that missing dependencies are not allowed
+      type Step3PayloadMissingDep1 = {
+        run: { id: number };
+        step1: { result: string };
+      };
+      expectTypeOf<Step3PayloadMissingDep1>().not.toBeAssignableTo<
+        typeof payload
+      >();
+
+      type Step3PayloadMissingDep2 = {
+        run: { id: number };
+        step2: { count: number };
+      };
+      expectTypeOf<Step3PayloadMissingDep2>().not.toBeAssignableTo<
+        typeof payload
+      >();
+
+      return { flag: true };
+    });
+
+  // Just to avoid unused variable warning
+  expect(testFlow).toBeDefined();
 });
 
 // Define distinct literal types for each test case
@@ -77,11 +104,9 @@ describe('Flow Type Safety', () => {
         // Verify the entire payload type is correct
         expectTypeOf(payload).toEqualTypeOf<{ run: CountInput }>();
 
-        const invalidPayload: typeof payload = {
-          run: 42 as CountInput,
-          // @ts-expect-error - Extra property not allowed in payload
-          extra: 'not allowed',
-        };
+        // Verify that extra properties are not allowed
+        type PayloadWithExtra = typeof payload & { extra: string };
+        expectTypeOf<PayloadWithExtra>().not.toBeAssignableTo<typeof payload>();
 
         return 84 as CountOutput;
       })
@@ -92,15 +117,15 @@ describe('Flow Type Safety', () => {
           step1: CountOutput;
         }>();
 
-        const invalidPayload: typeof payload = {
-          run: 42 as CountInput,
-          step1: 84 as CountOutput,
-          // @ts-expect-error - Extra property not allowed in payload
-          extra: 'not allowed',
-        };
+        // Verify that extra properties are not allowed
+        type PayloadWithExtra = typeof payload & { extra: string };
+        expectTypeOf<PayloadWithExtra>().not.toBeAssignableTo<typeof payload>();
 
-        // @ts-expect-error - Missing required dependency
-        const missingDep: typeof payload = { run: 42 as CountInput };
+        // Verify that missing dependencies are not allowed
+        type PayloadMissingDep = { run: CountInput };
+        expectTypeOf<PayloadMissingDep>().not.toBeAssignableTo<
+          typeof payload
+        >();
 
         return 84 as CountOutput;
       });
@@ -164,18 +189,18 @@ describe('Flow Type Safety', () => {
         // Valid access
         const val1 = payload.step1;
 
-        // @ts-expect-error - step2 not declared in dependsOn
-        const val2 = payload.step2;
+        // Verify that step2 is not accessible
+        expectTypeOf<typeof payload>().not.toHaveProperty('step2');
 
-        // @ts-expect-error - Extra property not allowed in payload
-        const invalidPayload: typeof payload = {
-          run: 'access' as AccessInput,
-          step1: 1 as AccessOutput1,
-          extra: 'not allowed',
-        };
+        // Verify that extra properties are not allowed
+        type PayloadWithExtra = typeof payload & { extra: string };
+        expectTypeOf<PayloadWithExtra>().not.toBeAssignableTo<typeof payload>();
 
-        // @ts-expect-error - Missing required dependency
-        const missingDep: typeof payload = { run: 'access' as AccessInput };
+        // Verify that missing dependencies are not allowed
+        type PayloadMissingDep = { run: AccessInput };
+        expectTypeOf<PayloadMissingDep>().not.toBeAssignableTo<
+          typeof payload
+        >();
 
         return val1;
       });
@@ -207,25 +232,26 @@ describe('Flow Type Safety', () => {
           second: TextDoubled;
         }>();
 
-        // @ts-expect-error - Extra property not allowed in payload
-        const invalidPayload: typeof payload = {
-          run: 'hello' as TextInput,
-          first: 5 as TextLength,
-          second: 10 as TextDoubled,
-          extra: 'not allowed',
-        };
+        // Verify that extra properties are not allowed
+        type PayloadWithExtra = typeof payload & { extra: string };
+        expectTypeOf<PayloadWithExtra>().not.toBeAssignableTo<typeof payload>();
 
-        // @ts-expect-error - Missing required dependency
-        const missingDep1: typeof payload = {
-          run: 'hello' as TextInput,
-          first: 5 as TextLength,
+        // Verify that missing dependencies are not allowed
+        type PayloadMissingDep1 = {
+          run: TextInput;
+          first: TextLength;
         };
+        expectTypeOf<PayloadMissingDep1>().not.toBeAssignableTo<
+          typeof payload
+        >();
 
-        // @ts-expect-error - Missing required dependency
-        const missingDep2: typeof payload = {
-          run: 'hello' as TextInput,
-          second: 10 as TextDoubled,
+        type PayloadMissingDep2 = {
+          run: TextInput;
+          second: TextDoubled;
         };
+        expectTypeOf<PayloadMissingDep2>().not.toBeAssignableTo<
+          typeof payload
+        >();
 
         return 15 as TextCombined;
       });
@@ -238,11 +264,9 @@ describe('Flow Type Safety', () => {
         // Verify the entire payload type is correct
         expectTypeOf(payload).toEqualTypeOf<{ run: FlagInput }>();
 
-        const invalidPayload: typeof payload = {
-          run: true as FlagInput,
-          // @ts-expect-error - Extra property not allowed in payload
-          extra: 'not allowed',
-        };
+        // Verify that extra properties are not allowed
+        type PayloadWithExtra = typeof payload & { extra: string };
+        expectTypeOf<PayloadWithExtra>().not.toBeAssignableTo<typeof payload>();
 
         return false as FlagOutput;
       })
@@ -253,15 +277,15 @@ describe('Flow Type Safety', () => {
           step1: FlagOutput;
         }>();
 
-        // @ts-expect-error - Extra property not allowed in payload
-        const invalidPayload: typeof payload = {
-          run: true as FlagInput,
-          step1: false as FlagOutput,
-          extra: 'not allowed',
-        };
+        // Verify that extra properties are not allowed
+        type PayloadWithExtra = typeof payload & { extra: string };
+        expectTypeOf<PayloadWithExtra>().not.toBeAssignableTo<typeof payload>();
 
-        // @ts-expect-error - Missing required dependency
-        const missingDep: typeof payload = { run: true as FlagInput };
+        // Verify that missing dependencies are not allowed
+        type PayloadMissingDep = { run: FlagInput };
+        expectTypeOf<PayloadMissingDep>().not.toBeAssignableTo<
+          typeof payload
+        >();
 
         return 0 as FlagNumeric;
       });

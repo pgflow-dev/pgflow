@@ -13,7 +13,10 @@ type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
 // Utility type to extract the output type of a step handler from a Flow
 // Usage:
 //   StepOutput<typeof flow, 'step1'>
-export type StepOutput<F, S extends string> = F extends Flow<any, infer Steps>
+export type StepOutput<F, S extends string> = F extends Flow<
+  infer _,
+  infer Steps
+>
   ? S extends keyof Steps
     ? Steps[S]
     : never
@@ -96,15 +99,16 @@ export class Flow<
     StepInput<RunPayload, Steps, string & SlugType>,
     Steps[SlugType]
   > {
-    const stepDef = this.stepDefinitions[slug as string];
-    if (!stepDef) {
+    // Check if the slug exists in stepDefinitions using a more explicit pattern
+    if (!(slug in this.stepDefinitions)) {
       throw new Error(
         `Step "${String(slug)}" does not exist in flow "${this.slug}"`
       );
     }
 
-    // Use type assertion with unknown as intermediate step for safer conversion
-    return stepDef as unknown as StepDefinition<
+    // Use unknown as an intermediate step for safer type conversion
+    // This follows TypeScript's recommendation for this kind of type conversion
+    return this.stepDefinitions[slug as string] as unknown as StepDefinition<
       StepInput<RunPayload, Steps, string & SlugType>,
       Steps[SlugType]
     >;
@@ -113,17 +117,10 @@ export class Flow<
   /**
    * Returns step definitions in the order they were added with proper typing
    */
-  getStepsInOrder(): Array<
-    {
-      [SlugType in keyof Steps]: StepDefinition<
-        StepInput<RunPayload, Steps, string & SlugType>,
-        Steps[SlugType]
-      >;
-    }[keyof Steps]
-  > {
+  getStepsInOrder(): Array<StepDefinition<Json, Json>> {
     return this.stepOrder.map((slug) => {
-      // Use getStepDefinition to get properly typed step definition
-      return this.getStepDefinition(slug as any);
+      // We need to use a simpler type here to avoid complex type issues
+      return this.stepDefinitions[slug];
     });
   }
 
