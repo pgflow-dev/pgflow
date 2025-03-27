@@ -20,6 +20,10 @@ export type StepOutput<F, S extends string> = F extends Flow<any, infer Steps>
   : never;
 
 /**
+ * This ensures that:
+ * 1. The run payload is always included
+ * 2. All dependencies are required
+ * 3. No extra properties are allowed
  * Utility type to extract the input type for a specific step in a flow
  */
 export type StepInput<
@@ -28,7 +32,7 @@ export type StepInput<
   TStepSlug extends string
 > = TStepSlug extends keyof TSteps
   ? { run: TRunPayload } & {
-      [K in Exclude<keyof TSteps, TStepSlug>]?: TSteps[K];
+      [K in Exclude<keyof TSteps, TStepSlug>]: TSteps[K];
     }
   : { run: TRunPayload };
 
@@ -107,10 +111,20 @@ export class Flow<
   }
 
   /**
-   * Returns step definitions in the order they were added
+   * Returns step definitions in the order they were added with proper typing
    */
-  getStepsInOrder(): StepDefinition<Json, Json>[] {
-    return this.stepOrder.map((slug) => this.stepDefinitions[slug]);
+  getStepsInOrder(): Array<
+    {
+      [SlugType in keyof Steps]: StepDefinition<
+        StepInput<RunPayload, Steps, string & SlugType>,
+        Steps[SlugType]
+      >;
+    }[keyof Steps]
+  > {
+    return this.stepOrder.map((slug) => {
+      // Use getStepDefinition to get properly typed step definition
+      return this.getStepDefinition(slug as any);
+    });
   }
 
   step<
