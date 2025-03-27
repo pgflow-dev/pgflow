@@ -33,29 +33,18 @@ export type StepInput<
   : { run: TRunPayload };
 
 // Runtime options interface
-// Separate from StepDefinition interface to make StepDefinition more focused
-// and easier to understand - it is conceptually concerned about enforcing
-// the type graph, not just validating the values
 export interface RuntimeOptions {
   maxAttempts?: number;
   baseDelay?: number;
   timeout?: number;
 }
 
-// Define the StepDefinition interface
+// Define the StepDefinition interface with integrated options
 export interface StepDefinition<Payload extends Json, RetType extends Json> {
   slug: string;
   handler: (payload: Payload) => RetType | Promise<RetType>;
   dependencies: string[];
-}
-
-// Store for additional step options
-interface StepOptionsStore {
-  [slug: string]: {
-    maxAttempts?: number;
-    baseDelay?: number;
-    timeout?: number;
-  };
+  options: RuntimeOptions;
 }
 
 // Utility type to merge two object types and preserve required properties
@@ -68,17 +57,13 @@ export class Flow<
 > {
   // Update the stepDefinitions property to hold the correct types
   private stepDefinitions: Record<string, StepDefinition<Json, Json>>;
-  // Store additional step options separately
-  private stepOptionsStore: StepOptionsStore;
 
   constructor(
     public flowOptions: Simplify<{ slug: string } & RuntimeOptions>,
-    stepDefinitions: Record<string, StepDefinition<Json, Json>> = {},
-    stepOptionsStore: StepOptionsStore = {}
+    stepDefinitions: Record<string, StepDefinition<Json, Json>> = {}
   ) {
     this.flowOptions = flowOptions;
     this.stepDefinitions = stepDefinitions;
-    this.stepOptionsStore = stepOptionsStore;
   }
 
   step<
@@ -97,34 +82,25 @@ export class Flow<
     const slug = opts.slug as Slug;
     const dependencies = opts.dependsOn || [];
 
+    // Extract RuntimeOptions from opts
+    const options: RuntimeOptions = {};
+    if (opts.maxAttempts !== undefined) options.maxAttempts = opts.maxAttempts;
+    if (opts.baseDelay !== undefined) options.baseDelay = opts.baseDelay;
+    if (opts.timeout !== undefined) options.timeout = opts.timeout;
+
     const newStepDefinition: StepDefinition<any, RetType> = {
       slug,
       handler,
       dependencies,
+      options,
     };
-
-    // Store additional options separately
-    const stepOptions: StepOptionsStore[string] = {};
-    if (opts.maxAttempts !== undefined)
-      stepOptions.maxAttempts = opts.maxAttempts;
-    if (opts.baseDelay !== undefined) stepOptions.baseDelay = opts.baseDelay;
-    if (opts.timeout !== undefined) stepOptions.timeout = opts.timeout;
 
     const newStepDefinitions = {
       ...this.stepDefinitions,
       [slug]: newStepDefinition,
     };
 
-    const newStepOptionsStore = {
-      ...this.stepOptionsStore,
-      [slug]: stepOptions,
-    };
-
-    return new Flow<RunPayload, NewSteps>(
-      this.flowOptions,
-      newStepDefinitions,
-      newStepOptionsStore
-    );
+    return new Flow<RunPayload, NewSteps>(this.flowOptions, newStepDefinitions);
   }
 }
 
