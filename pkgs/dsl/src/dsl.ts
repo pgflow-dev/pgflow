@@ -13,24 +13,27 @@ type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
 // Utility type to extract the output type of a step handler from a Flow
 // Usage:
 //   StepOutput<typeof flow, 'step1'>
-export type StepOutput<F, S extends string> = F extends Flow<any, infer Steps>
-  ? S extends keyof Steps
-    ? Steps[S]
+export type StepOutput<TFlow, TStepSlug extends string> = TFlow extends Flow<
+  any,
+  infer Steps
+>
+  ? TStepSlug extends keyof Steps
+    ? Steps[TStepSlug]
     : never
   : never;
 
 /**
  * This ensures that:
- * 1. The run payload is always included
+ * 1. The run input is always included
  * 2. Only declared dependencies are included
  * 3. No extra properties are allowed
  * Utility type to extract the input type for a specific step in a flow
  */
 export type StepInput<
-  TRunPayload extends Json,
+  TRunInput extends Json,
   TSteps extends Record<string, Json>,
   TDeps extends keyof TSteps = never
-> = { run: TRunPayload } & {
+> = { run: TRunInput } & {
   [K in TDeps]: TSteps[K];
 };
 
@@ -42,9 +45,9 @@ export interface RuntimeOptions {
 }
 
 // Define the StepDefinition interface with integrated options
-export interface StepDefinition<Payload extends Json, RetType extends Json> {
+export interface StepDefinition<Input extends Json, RetType extends Json> {
   slug: string;
-  handler: (payload: Payload) => RetType | Promise<RetType>;
+  handler: (input: Input) => RetType | Promise<RetType>;
   dependencies: string[];
   options: RuntimeOptions;
 }
@@ -54,7 +57,7 @@ type MergeObjects<T1 extends object, T2 extends object> = T1 & T2;
 
 // Flow class definition
 export class Flow<
-  RunPayload extends Json,
+  TRunInput extends Json,
   Steps extends Record<string, Json> = Record<never, never>,
   StepDependencies extends Record<string, string[]> = Record<string, string[]>
 > {
@@ -93,7 +96,7 @@ export class Flow<
     slug: SlugType
   ): StepDefinition<
     StepInput<
-      RunPayload,
+      TRunInput,
       Steps,
       Extract<keyof Steps & string, StepDependencies[SlugType][number]>
     >,
@@ -108,9 +111,9 @@ export class Flow<
 
     // Use unknown as an intermediate step for safer type conversion
     // This follows TypeScript's recommendation for this kind of type conversion
-    return this.stepDefinitions[slug as string] as unknown as StepDefinition<
+    return this.stepDefinitions[slug as string] as StepDefinition<
       StepInput<
-        RunPayload,
+        TRunInput,
         Steps,
         Extract<keyof Steps & string, StepDependencies[SlugType][number]>
       >,
@@ -135,14 +138,14 @@ export class Flow<
   >(
     opts: Simplify<{ slug: Slug; dependsOn?: Deps[] } & RuntimeOptions>,
     handler: (
-      payload: StepInput<RunPayload, Steps, Deps>
+      input: StepInput<TRunInput, Steps, Deps>
     ) => RetType | Promise<RetType>
   ): Flow<
-    RunPayload,
+    TRunInput,
     Steps & { [K in Slug]: Awaited<RetType> },
     StepDependencies & { [K in Slug]: Deps[] }
   > {
-    type StepInputType = StepInput<RunPayload, Steps, Deps>;
+    type StepInputType = StepInput<TRunInput, Steps, Deps>;
     type NewSteps = MergeObjects<Steps, { [K in Slug]: Awaited<RetType> }>;
     type NewDependencies = MergeObjects<
       StepDependencies,
@@ -169,9 +172,7 @@ export class Flow<
     // Preserve the exact type of the handler
     const newStepDefinition: StepDefinition<StepInputType, RetType> = {
       slug,
-      handler: handler as (
-        payload: StepInputType
-      ) => RetType | Promise<RetType>,
+      handler: handler as (input: StepInputType) => RetType | Promise<RetType>,
       dependencies: dependencies as string[],
       options,
     };
@@ -185,11 +186,11 @@ export class Flow<
     const newStepOrder = [...this.stepOrder, slug];
 
     // Create a new flow with the same slug and options but with updated type parameters
-    return new Flow<RunPayload, NewSteps, NewDependencies>(
+    return new Flow<TRunInput, NewSteps, NewDependencies>(
       { slug: this.slug, ...this.options },
       newStepDefinitions as any,
       newStepOrder
-    ) as Flow<RunPayload, NewSteps, NewDependencies>;
+    ) as Flow<TRunInput, NewSteps, NewDependencies>;
   }
 }
 
@@ -201,23 +202,23 @@ const ExampleFlow = new Flow<{ value: number }>({
   // rootStep return type will be inferred to:
   //
   // { doubledValue: number; };
-  .step({ slug: 'rootStep' }, async (payload) => ({
-    doubledValue: payload.run.value * 2,
+  .step({ slug: 'rootStep' }, async (input) => ({
+    doubledValue: input.run.value * 2,
   }))
   // normalStep return type will be inferred to:
   // { doubledValueArray: number[] };
-  // The payload will only include 'run' and 'rootStep' properties
+  // The input will only include 'run' and 'rootStep' properties
   .step(
     { slug: 'normalStep', dependsOn: ['rootStep'], maxAttempts: 5 },
-    async (payload) => ({
-      doubledValueArray: [payload.rootStep.doubledValue],
+    async (input) => ({
+      doubledValueArray: [input.rootStep.doubledValue],
     })
   )
-  // This step depends on normalStep, so its payload will include 'run', 'normalStep'
+  // This step depends on normalStep, so its input will include 'run', 'normalStep'
   // but not 'rootStep' since it's not directly declared as a dependency
-  .step({ slug: 'thirdStep', dependsOn: ['normalStep'] }, async (payload) => ({
-    // payload.rootStep would be a type error since it's not in dependsOn
-    finalValue: payload.normalStep.doubledValueArray.length,
+  .step({ slug: 'thirdStep', dependsOn: ['normalStep'] }, async (input) => ({
+    // input.rootStep would be a type error since it's not in dependsOn
+    finalValue: input.normalStep.doubledValueArray.length,
   }));
 
 export default ExampleFlow;
