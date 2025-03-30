@@ -1,75 +1,174 @@
-import { Flow } from './dsl.ts';
-import { it, expectTypeOf } from 'vitest';
+import { Flow, type StepOutput } from './dsl.ts';
+import { describe, it, expectTypeOf } from 'vitest';
 
-// Utility types for checking exact key matching
-type ExactKeys<T, U> = keyof T extends keyof U
-  ? keyof U extends keyof T
-    ? true
-    : false
-  : false;
-
-// Type that will only be true if T and U have exactly the same keys
-type HasExactKeys<T, U> = ExactKeys<T, U> extends true ? true : false;
-
-it('properly types input argument for root steps', () => {
-  new Flow<{ id: number; email: string }>({
-    slug: 'test_flow',
-  }).step({ slug: 'root_a' }, (input) => {
-    expectTypeOf(input).toMatchTypeOf<{ run: { id: number; email: string } }>();
-    expectTypeOf(input).not.toMatchTypeOf<{ nonexistent_dep: string }>();
-    return { result: 'test-result' };
-  });
-});
-
-it('properly types input argument for dependent steps', () => {
-  new Flow<{ id: number; email: string }>({
-    slug: 'test_flow',
-  })
-    .step({ slug: 'root_a' }, (input) => Object.values(input.run).length)
-    .step({ slug: 'step_a', dependsOn: ['root_a'] }, (input) =>
-      Object.values(input).join(',')
-    )
-    .step({ slug: 'final_step', dependsOn: ['root_a', 'step_a'] }, (input) => {
-      const { run, root_a, step_a } = input;
-
-      // Check individual properties
-      expectTypeOf(run).toEqualTypeOf<{ id: number; email: string }>();
-      expectTypeOf(root_a).toEqualTypeOf<number>();
-      expectTypeOf(step_a).toEqualTypeOf<string>();
-
-      return true;
-    });
-});
-
-it('ensures input has exactly the expected keys', () => {
-  new Flow<{ id: number; email: string }>({
-    slug: 'test_flow',
-  })
-    .step({ slug: 'root_a' }, (input) => Object.values(input.run).length)
-    .step({ slug: 'step_a', dependsOn: ['root_a'] }, (input) =>
-      Object.values(input).join(',')
-    )
-    .step({ slug: 'final_step', dependsOn: ['root_a', 'step_a'] }, (input) => {
-      // Define the expected shape of the input
-      type ExpectedInput = {
+describe('Flow Type System Tests', () => {
+  it('should properly type input argument for root steps', () => {
+    new Flow<{ id: number; email: string }>({
+      slug: 'test_flow',
+    }).step({ slug: 'root_a' }, (input) => {
+      expectTypeOf(input).toMatchTypeOf<{
         run: { id: number; email: string };
-        root_a: number;
-        step_a: string;
-      };
-
-      // Check that the input type has exactly the same keys as ExpectedInput
-      type Result = HasExactKeys<typeof input, ExpectedInput>;
-
-      // This will fail if input has extra or missing keys compared to ExpectedInput
-      expectTypeOf<Result>().toEqualTypeOf<true>();
-
-      // Another approach: check that the keys are exactly the same
-      expectTypeOf<keyof typeof input>().toEqualTypeOf<keyof ExpectedInput>();
-
-      // Check that we can't access any non-existent property
-      // @ts-expect-error - This should fail type checking
-      const nonExistent = input.nonExistentProperty;
-
-      return true;
+      }>();
+      return { result: 'test-result' };
     });
+  });
+
+  it('should properly type input argument for dependent steps', () => {
+    new Flow<{ id: number; email: string }>({
+      slug: 'test_flow',
+    })
+      .step({ slug: 'root_a' }, (input) => Object.values(input.run).length)
+      .step({ slug: 'step_a', dependsOn: ['root_a'] }, (input) => {
+        expectTypeOf(input).toMatchTypeOf<{
+          run: { id: number; email: string };
+          root_a: number;
+        }>();
+        return 'stringValue';
+      })
+      .step(
+        { slug: 'final_step', dependsOn: ['root_a', 'step_a'] },
+        (input) => {
+          expectTypeOf(input).toMatchTypeOf<{
+            run: { id: number; email: string };
+            root_a: number;
+            step_a: string;
+          }>();
+          return true;
+        }
+      );
+  });
+
+  it('should enforce strict payload types with Flow DSL', () => {
+    new Flow<{ id: number }>({ slug: 'test_flow' })
+      .step({ slug: 'step1' }, (payload) => {
+        expectTypeOf(payload).toMatchTypeOf<{ run: { id: number } }>();
+        return { result: 'test-result' };
+      })
+      .step({ slug: 'step2', dependsOn: ['step1'] }, (payload) => {
+        expectTypeOf(payload).toMatchTypeOf<{
+          run: { id: number };
+          step1: { result: string };
+        }>();
+        return { count: 42 };
+      })
+      .step({ slug: 'step3', dependsOn: ['step1', 'step2'] }, (payload) => {
+        expectTypeOf(payload).toMatchTypeOf<{
+          run: { id: number };
+          step1: { result: string };
+          step2: { count: number };
+        }>();
+        return { flag: true };
+      });
+  });
+
+  describe('Flow dependency validation', () => {
+    it('should catch non-existent steps at compile time', () => {
+      const testFlow = new Flow<string>({ slug: 'test_flow' }).step(
+        { slug: 'step1' },
+        () => 5
+      );
+
+      // Type assertion to verify compile-time error
+      type TestType = Parameters<typeof testFlow.step>[0]['dependsOn'];
+      // @ts-expect-error - should only allow 'step1' as a valid dependency
+      const invalidDeps: TestType = ['nonExistentStep'];
+    });
+
+    it('should not allow access to non-dependencies', () => {
+      new Flow<string>({ slug: 'test_flow' })
+        .step({ slug: 'step1' }, () => 1)
+        .step({ slug: 'step2' }, () => 2)
+        .step({ slug: 'step3', dependsOn: ['step1'] }, (payload) => {
+          expectTypeOf(payload).toMatchTypeOf<{
+            run: string;
+            step1: number;
+          }>();
+
+          // Verify that step2 is not accessible
+          expectTypeOf<typeof payload>().not.toHaveProperty('step2');
+
+          return payload.step1;
+        });
+    });
+  });
+
+  describe('Multi-level dependencies', () => {
+    it('should correctly type multi-level dependencies', () => {
+      new Flow<string>({ slug: 'test_flow' })
+        .step({ slug: 'first' }, (payload) => {
+          expectTypeOf(payload).toMatchTypeOf<{ run: string }>();
+          return 5;
+        })
+        .step({ slug: 'second', dependsOn: ['first'] }, (payload) => {
+          expectTypeOf(payload).toMatchTypeOf<{
+            run: string;
+            first: number;
+          }>();
+
+          return [payload.run] as string[];
+        })
+        .step({ slug: 'third', dependsOn: ['first', 'second'] }, (payload) => {
+          expectTypeOf(payload).toMatchTypeOf<{
+            run: string;
+            first: number;
+            second: string[];
+          }>();
+
+          return 15;
+        });
+    });
+  });
+
+  describe('StepOutput utility type', () => {
+    it('should correctly extract the output type of a step', () => {
+      const flow = new Flow<{ input: string }>({ slug: 'step-output-test' })
+        .step({ slug: 'step1' }, () => ({ value: 42, text: 'hello' }))
+        .step({ slug: 'step2', dependsOn: ['step1'] }, () => ({ flag: true }))
+        .step({ slug: 'step3' }, () => 'plain string');
+
+      // Test various StepOutput types
+      type Step1Output = StepOutput<typeof flow, 'step1'>;
+      expectTypeOf<Step1Output>().toMatchTypeOf<{
+        value: number;
+        text: string;
+      }>();
+
+      type Step2Output = StepOutput<typeof flow, 'step2'>;
+      expectTypeOf<Step2Output>().toMatchTypeOf<{ flag: boolean }>();
+
+      type Step3Output = StepOutput<typeof flow, 'step3'>;
+      expectTypeOf<Step3Output>().toMatchTypeOf<string>();
+
+      type NonExistentOutput = StepOutput<typeof flow, 'nonExistentStep'>;
+      expectTypeOf<NonExistentOutput>().toMatchTypeOf<never>();
+    });
+
+    it('should work with complex nested types', () => {
+      const complexFlow = new Flow<{ id: number }>({
+        slug: 'complex-flow',
+      }).step({ slug: 'complexStep' }, () => ({
+        data: {
+          items: [
+            { id: 1, name: 'Item 1' },
+            { id: 2, name: 'Item 2' },
+          ],
+          metadata: {
+            count: 2,
+            lastUpdated: '2023-01-01',
+          },
+        },
+      }));
+
+      type ComplexStepOutput = StepOutput<typeof complexFlow, 'complexStep'>;
+      expectTypeOf<ComplexStepOutput>().toMatchTypeOf<{
+        data: {
+          items: Array<{ id: number; name: string }>;
+          metadata: {
+            count: number;
+            lastUpdated: string;
+          };
+        };
+      }>();
+    });
+  });
 });
