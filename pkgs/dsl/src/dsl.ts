@@ -56,7 +56,7 @@ type MergeObjects<T1 extends object, T2 extends object> = T1 & T2;
 export class Flow<
   RunPayload extends Json,
   Steps extends Record<string, Json> = Record<never, never>,
-  StepDependencies extends Record<string, string[]> = Record<string, never[]>
+  StepDependencies extends Record<string, string[]> = Record<string, string[]>
 > {
   // Store step definitions with their proper types
   private stepDefinitions: Record<string, StepDefinition<any, Json>>;
