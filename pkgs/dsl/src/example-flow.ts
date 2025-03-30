@@ -5,33 +5,6 @@ type Input = {
   url: string;
 };
 
-async function scrapeWebsite(url: string) {
-  return {
-    content: `Lorem ipsum ${url.length}`,
-  };
-}
-
-const analyzeSentiment = async (_content: string) => {
-  return {
-    score: Math.random(),
-  };
-};
-const summarizeWithAI = async (content: string) => {
-  return {
-    aiSummary: `Lorem ipsum ${content.length}`,
-  };
-};
-
-const saveToDb = async (_input: {
-  websiteUrl: string;
-  sentiment: number;
-  summary: string;
-}) => {
-  return {
-    status: 'success',
-  };
-};
-
 export const AnalyzeWebsite = new Flow<Input>({
   slug: 'analyze_website',
   maxAttempts: 3,
@@ -61,3 +34,34 @@ export const AnalyzeWebsite = new Flow<Input>({
       return results.status;
     }
   );
+
+/***********************************************************************
+ ****** functions *******************************************************
+ ***********************************************************************/
+
+async function scrapeWebsite(url: string) {
+  return {
+    content: `Lorem ipsum ${url.length}`,
+  };
+}
+
+const analyzeSentiment = async (_content: string) => {
+  return {
+    score: Math.random(),
+  };
+};
+const summarizeWithAI = async (content: string) => {
+  return {
+    aiSummary: `Lorem ipsum ${content.length}`,
+  };
+};
+
+const saveToDb = async (_input: {
+  websiteUrl: string;
+  sentiment: number;
+  summary: string;
+}) => {
+  return {
+    status: 'success',
+  };
+};
