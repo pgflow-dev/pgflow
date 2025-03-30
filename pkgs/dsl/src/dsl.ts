@@ -13,10 +13,7 @@ type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
 // Utility type to extract the output type of a step handler from a Flow
 // Usage:
 //   StepOutput<typeof flow, 'step1'>
-export type StepOutput<F, S extends string> = F extends Flow<
-  infer _,
-  infer Steps
->
+export type StepOutput<F, S extends string> = F extends Flow<any, infer Steps>
   ? S extends keyof Steps
     ? Steps[S]
     : never
