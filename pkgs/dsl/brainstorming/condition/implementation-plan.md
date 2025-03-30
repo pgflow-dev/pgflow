@@ -19,19 +19,20 @@ Similarly, the `steps` table has no columns for conditions like `runIf` or `runU
 
 ### Changes in This Stage
 
-**1.** We will add two columns to the `steps` table for storing condition data:  
-- `run_if_condition jsonb` (optional)  
+**1.** We will add two columns to the `steps` table for storing condition data:
+
+- `run_if_condition jsonb` (optional)
 - `run_unless_condition jsonb` (optional)
 
 **2.** We will add a new state `skipped` in `step_states.status`. This allows us to mark a step as definitively skipped (distinct from `completed` or `failed`).
 
-**3.** We will allow `runIf` and `runUnless` to co-exist. If both are given, the engine must pass both conditions (i.e., `runIf(verbose) && !runUnless(verbose)`) for the step to run.  
+**3.** We will allow `runIf` and `runUnless` to co-exist. If both are given, the engine must pass both conditions (i.e., `runIf(verbose) && !runUnless(verbose)`) for the step to run.
 
 ### End Result
 
 After Stage 1:
 
-- The database schema can store conditions in `steps.run_if_condition` and `steps.run_unless_condition`.  
+- The database schema can store conditions in `steps.run_if_condition` and `steps.run_unless_condition`.
 - We can mark steps as `skipped` in `step_states` when conditions do not match, making the skip “visible” at runtime.
 
 ### Code Snippets
@@ -49,8 +50,9 @@ ALTER TABLE pgflow.steps
 ADD COLUMN run_unless_condition JSONB DEFAULT NULL;
 ```
 
-> **Commentary**:  
-> - We choose `JSONB` to store advanced or structured conditions.  
+> **Commentary**:
+>
+> - We choose `JSONB` to store advanced or structured conditions.
 > - Defaulting to `NULL` means “no condition.”
 
 #### 2. Introduce Skipped Status
@@ -75,7 +77,7 @@ If your existing constraint is named differently, adjust accordingly.
 
 ### Additional Bonus Ideas
 
-- **Add a short text column for condition expressions**: If you eventually want to store a small “human-readable” string describing the condition, it’s quite cheap to add a text column that mirrors the JSON structure or a snippet of code.  
+- **Add a short text column for condition expressions**: If you eventually want to store a small “human-readable” string describing the condition, it’s quite cheap to add a text column that mirrors the JSON structure or a snippet of code.
 - **Add an indexed expression on `run_if_condition`** if you plan to do partial lookups or advanced queries. This is easy to maintain if you rely on standard Postgres JSON indexing.
 
 ---
@@ -93,7 +95,7 @@ Right now, the Flow DSL does not parse or accept `runIf` / `runUnless` fields on
 ```ts
 flow.step(
   {
-    slug: "myStep",
+    slug: 'myStep',
     runIf: { run: { userIsVIP: true } },
     runUnless: { run: { userIsDisabled: true } },
   },
@@ -105,7 +107,7 @@ flow.step(
 
 ### End Result
 
-- The DSL can safely parse `runIf` and `runUnless` (both optional).  
+- The DSL can safely parse `runIf` and `runUnless` (both optional).
 - If both exist, we don’t treat them as mutually exclusive; we simply store both in the database. They are combined (the step must satisfy the `runIf` condition and fail the `runUnless` condition to run).
 
 ### Code Snippets
@@ -116,7 +118,7 @@ Below is a conceptual snippet showing how you might adapt your `addStep` functio
 interface StepOptions {
   slug: string;
   dependsOn?: string[];
-  runIf?: Record<string, any>;       // or a more structured type
+  runIf?: Record<string, any>; // or a more structured type
   runUnless?: Record<string, any>;
   maxAttempts?: number;
   baseDelay?: number;
@@ -133,7 +135,8 @@ export async function addStepToDB(flowSlug: string, opts: StepOptions) {
   const runUnlessJSON = runUnless ? JSON.stringify(runUnless) : null;
 
   // Insert into DB. Sample with direct SQL or a query builder:
-  await db.query(`
+  await db.query(
+    `
     SELECT pgflow.add_step(
       $1,   -- flow_slug
       $2,   -- step_slug
@@ -142,26 +145,25 @@ export async function addStepToDB(flowSlug: string, opts: StepOptions) {
       $5,   -- base_delay
       $6    -- timeout
     )
-  `, [
-      flowSlug,
-      slug,
-      dependsOn || [],
-      maxAttempts,
-      baseDelay,
-      timeout,
-    ]);
+  `,
+    [flowSlug, slug, dependsOn || [], maxAttempts, baseDelay, timeout]
+  );
 
   // Now update the runIf and runUnless columns (or inline them in the add_step function)
-  await db.query(`
+  await db.query(
+    `
     UPDATE pgflow.steps
       SET run_if_condition = $1::jsonb,
           run_unless_condition = $2::jsonb
     WHERE flow_slug = $3 AND step_slug = $4
-  `, [runIfJSON, runUnlessJSON, flowSlug, slug]);
+  `,
+    [runIfJSON, runUnlessJSON, flowSlug, slug]
+  );
 }
 ```
 
-> **Commentary**:  
+> **Commentary**:
+>
 > - You can either expand `pgflow.add_step` to include the condition columns or do a second `UPDATE` as shown. The “second update” method is a typical approach if you want to keep your existing `pgflow.add_step` signature minimal.
 
 ### Alternatives That We Dismissed
@@ -183,24 +185,26 @@ Our engine logic (e.g. `start_ready_steps`, `complete_task`, etc.) does not eval
 
 ### Changes in This Stage
 
-**1.** **Teaching the Engine to Evaluate Conditions**  
-   - Before a step transitions from `created` → `started`, we:  
-     1. Compute the step input (merging run input + outputs of dependencies).  
-     2. Check `run_if_condition` (if present) → must be satisfied.  
-     3. Check `run_unless_condition` (if present) → must *not* be satisfied.  
-   - If the final result is “does not pass,” mark the step as `skipped`.
+**1.** **Teaching the Engine to Evaluate Conditions**
 
-**2.** **Skipping All Dependents**  
-   - If we skip a step, we also skip all steps that depend on it, transitively. This can be done by:  
-     - Marking the step `skipped`.  
-     - Setting `remaining_tasks = 0` (so it’s not started).  
-     - Recursively marking all children that have this step as a dependency (or waiting until those children check their own conditions and find a missing dependency output).  
-   - The simplest approach is an immediate cascade: once we skip a step, we locate all steps that depend on it, set their states to `skipped`, and continue recursively.
+- Before a step transitions from `created` → `started`, we:
+  1.  Compute the step input (merging run input + outputs of dependencies).
+  2.  Check `run_if_condition` (if present) → must be satisfied.
+  3.  Check `run_unless_condition` (if present) → must _not_ be satisfied.
+- If the final result is “does not pass,” mark the step as `skipped`.
+
+**2.** **Skipping All Dependents**
+
+- If we skip a step, we also skip all steps that depend on it, transitively. This can be done by:
+  - Marking the step `skipped`.
+  - Setting `remaining_tasks = 0` (so it’s not started).
+  - Recursively marking all children that have this step as a dependency (or waiting until those children check their own conditions and find a missing dependency output).
+- The simplest approach is an immediate cascade: once we skip a step, we locate all steps that depend on it, set their states to `skipped`, and continue recursively.
 
 ### End Result
 
-- Steps are conditionally skipped if `runIf` / `runUnless` doesn’t match.  
-- Once a step is marked skipped, all of its downstream steps are also skipped.  
+- Steps are conditionally skipped if `runIf` / `runUnless` doesn’t match.
+- Once a step is marked skipped, all of its downstream steps are also skipped.
 - This pairs neatly with future subflows logic, so skipping an entry step to a subflow means the entire subflow is effectively skipped.
 
 ### Code Snippets
@@ -249,8 +253,9 @@ WHERE run_id = <...> AND step_slug = <...>;
 
 …and proceed to recursively skip or not schedule the dependents.
 
-> **Commentary**:  
-> - The function `evaluate_json_condition` is an example utility or snippet to do partial matching. The simplest approach might be a containment check `input @> condition` for `runIf`, but real use cases may require more advanced logic.  
+> **Commentary**:
+>
+> - The function `evaluate_json_condition` is an example utility or snippet to do partial matching. The simplest approach might be a containment check `input @> condition` for `runIf`, but real use cases may require more advanced logic.
 > - For `runUnless`, invert that check.
 
 ### Alternatives That We Dismissed
@@ -259,8 +264,8 @@ WHERE run_id = <...> AND step_slug = <...>;
 
 ### Additional Bonus Ideas
 
-- **Add a dedicated skip function**: e.g., `pgflow.skip_step(run_id, step_slug)`, which handles the cascade by walking the `deps` table. This can be re-used in other automation or for manually skipping certain parts of a flow.  
-- **Add a column to store "skip reason"** if you want to see *why* a step was skipped. This can be as simple as a text column stating “Condition not met.”
+- **Add a dedicated skip function**: e.g., `pgflow.skip_step(run_id, step_slug)`, which handles the cascade by walking the `deps` table. This can be re-used in other automation or for manually skipping certain parts of a flow.
+- **Add a column to store "skip reason"** if you want to see _why_ a step was skipped. This can be as simple as a text column stating “Condition not met.”
 
 ---
 
@@ -272,7 +277,7 @@ Currently, **step outputs** live in `step_tasks.output` when a task completes. W
 
 ### Changes in This Stage
 
-- If we decide to store outputs in `step_states.output`, we would add a new column, for example:  
+- If we decide to store outputs in `step_states.output`, we would add a new column, for example:
   ```sql
   ALTER TABLE pgflow.step_states
   ADD COLUMN output jsonb DEFAULT NULL;
@@ -281,11 +286,11 @@ Currently, **step outputs** live in `step_tasks.output` when a task completes. W
 
 ### End Result
 
-- **Pros**:  
-  - Easier to query the final output of a step; you can see it directly on `step_states` without additional joins.  
-  - Potentially simpler logic for building subflow or advanced branching.  
-- **Cons**:  
-  - Data duplication (the same JSON also lives in `step_tasks.output`).  
+- **Pros**:
+  - Easier to query the final output of a step; you can see it directly on `step_states` without additional joins.
+  - Potentially simpler logic for building subflow or advanced branching.
+- **Cons**:
+  - Data duplication (the same JSON also lives in `step_tasks.output`).
   - Slightly more overhead on `complete_task` updates (we store output in two places).
 
 ### Code Snippet Example
@@ -313,11 +318,11 @@ step_state AS (
 
 ### Alternatives That We Dismissed
 
-- **Not storing outputs**: We already are storing them, but only in `step_tasks`. That might be enough if your usage is straightforward.  
+- **Not storing outputs**: We already are storing them, but only in `step_tasks`. That might be enough if your usage is straightforward.
 
 ### Additional Bonus Ideas
 
-- **Store partial outputs**: If you have steps that produce large or multiple results, you could store a summary or hash in `step_states.output` while the full result remains in `step_tasks.output`.  
+- **Store partial outputs**: If you have steps that produce large or multiple results, you could store a summary or hash in `step_states.output` while the full result remains in `step_tasks.output`.
 - **Prune or archive outputs**: If data grows large, you might add a policy to prune older outputs from `step_tasks` but keep a final summary in `step_states`.
 
 ---
@@ -326,16 +331,18 @@ step_state AS (
 
 Below is the TODO-like checklist you can use for your Monday planning. Each item references the most relevant section above.
 
-- TODO Update schema to include condition columns  
+- TODO Update schema to include condition columns
+
   - ```sql
-    -- example sql 
+    -- example sql
     ALTER TABLE pgflow.steps
     ADD COLUMN run_if_condition JSONB DEFAULT NULL,
     ADD COLUMN run_unless_condition JSONB DEFAULT NULL;
     ```
   - see [link to relevant section](#stage-1-add-condition-columns-and-skipped-status)
 
-- TODO Allow "skipped" in step_states.status  
+- TODO Allow "skipped" in step_states.status
+
   - ```sql
     ALTER TABLE pgflow.step_states
     DROP CONSTRAINT step_states_status_check,
@@ -345,16 +352,19 @@ Below is the TODO-like checklist you can use for your Monday planning. Each item
     ```
   - see [link to relevant section](#stage-1-add-condition-columns-and-skipped-status)
 
-- TODO Extend DSL to parse runIf / runUnless and store them in DB  
+- TODO Extend DSL to parse runIf / runUnless and store them in DB
+
   - see [link to relevant section](#stage-2-extend-flow-dsl-to-accept-runif-and-rununless)
 
-- TODO Implement skip logic in start_ready_steps (or a new function)  
+- TODO Implement skip logic in start_ready_steps (or a new function)
+
   - see [link to relevant section](#stage-3-implement-the-skipping-logic-in-the-engine)
 
-- TODO Implement cascade skipping approach to mark all dependents as skipped  
+- TODO Implement cascade skipping approach to mark all dependents as skipped
+
   - see [link to relevant section](#stage-3-implement-the-skipping-logic-in-the-engine)
 
-- TODO (Optional) Add output column to step_states to simplify final lookups  
+- TODO (Optional) Add output column to step_states to simplify final lookups
   - see [link to relevant section](#stage-4-evaluating-whether-to-store-task-outputs-in-step_states)
 
 ---
