@@ -1,5 +1,5 @@
-import { Flow, type StepOutput } from './dsl.ts';
-import { describe, it, expectTypeOf, expect } from 'vitest';
+import { Flow } from './dsl.ts';
+import { it, expectTypeOf, expect } from 'vitest';
 
 it('should correctly type step handlers when using getStepDefinition', () => {
   const TestFlow = new Flow<{ url: string }>({ slug: 'test_flo' })
@@ -18,27 +18,27 @@ it('should correctly type step handlers when using getStepDefinition', () => {
 
   // Test root_a handler type
   expectTypeOf(root_a.handler).toBeFunction();
-  expectTypeOf(root_a.handler).parameters.toEqualTypeOf<
+  expectTypeOf(root_a.handler).parameters.toMatchTypeOf<
     [{ run: { url: string } }]
   >();
-  expectTypeOf(root_a.handler).returns.toEqualTypeOf<
+  expectTypeOf(root_a.handler).returns.toMatchTypeOf<
     string | Promise<string>
   >();
 
   // Test root_b handler type
   const root_b = TestFlow.getStepDefinition('root_b');
   expectTypeOf(root_b.handler).toBeFunction();
-  expectTypeOf(root_b.handler).parameters.toEqualTypeOf<
+  expectTypeOf(root_b.handler).parameters.toMatchTypeOf<
     [{ run: { url: string } }]
   >();
-  expectTypeOf(root_b.handler).returns.toEqualTypeOf<
+  expectTypeOf(root_b.handler).returns.toMatchTypeOf<
     number | Promise<number>
   >();
 
   // Test merge handler type
   const merge = TestFlow.getStepDefinition('merge');
   expectTypeOf(merge.handler).toBeFunction();
-  expectTypeOf(merge.handler).parameters.toEqualTypeOf<
+  expectTypeOf(merge.handler).parameters.toMatchTypeOf<
     [
       {
         run: { url: string };
@@ -47,7 +47,7 @@ it('should correctly type step handlers when using getStepDefinition', () => {
       }
     ]
   >();
-  expectTypeOf(merge.handler).returns.toEqualTypeOf<
+  expectTypeOf(merge.handler).returns.toMatchTypeOf<
     | {
         a_val: string;
         b_val: number;

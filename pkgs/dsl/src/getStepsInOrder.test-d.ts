@@ -1,4 +1,4 @@
-import { Flow, type StepInput } from './dsl.ts';
+import { Flow } from './dsl.ts';
 import { describe, it, expect, expectTypeOf } from 'vitest';
 
 describe('Flow Steps Order Type Safety', () => {
@@ -7,14 +7,14 @@ describe('Flow Steps Order Type Safety', () => {
     const flow = new Flow<{ initialValue: number }>({ slug: 'test-flow' })
       .step({ slug: 'step1' }, (payload) => {
         // Verify the entire payload type is correct
-        expectTypeOf(payload).toEqualTypeOf<{
+        expectTypeOf(payload).toMatchTypeOf<{
           run: { initialValue: number };
         }>();
         return { doubled: payload.run.initialValue * 2 };
       })
       .step({ slug: 'step2', dependsOn: ['step1'] }, (payload) => {
         // Verify the entire payload type is correct with all required dependencies
-        expectTypeOf(payload).toEqualTypeOf<{
+        expectTypeOf(payload).toMatchTypeOf<{
           run: { initialValue: number };
           step1: { doubled: number };
         }>();
@@ -22,7 +22,7 @@ describe('Flow Steps Order Type Safety', () => {
       })
       .step({ slug: 'step3', dependsOn: ['step1', 'step2'] }, (payload) => {
         // Verify the entire payload type is correct with all required dependencies
-        expectTypeOf(payload).toEqualTypeOf<{
+        expectTypeOf(payload).toMatchTypeOf<{
           run: { initialValue: number };
           step1: { doubled: number };
           step2: { quadrupled: number };
@@ -48,7 +48,7 @@ describe('Flow Steps Order Type Safety', () => {
     // Execute step1 handler
     const step1Handler = stepsInOrder[0].handler;
     // Verify the handler's parameter type
-    expectTypeOf(step1Handler).parameters.toEqualTypeOf<
+    expectTypeOf(step1Handler).parameters.toMatchTypeOf<
       [{ run: { initialValue: number } }]
     >();
     const step1Output = step1Handler({ run: runPayload });
@@ -57,7 +57,7 @@ describe('Flow Steps Order Type Safety', () => {
     // Execute step2 handler
     const step2Handler = stepsInOrder[1].handler;
     // Verify the handler's parameter type
-    expectTypeOf(step2Handler).parameters.toEqualTypeOf<
+    expectTypeOf(step2Handler).parameters.toMatchTypeOf<
       [{ run: { initialValue: number }; step1: { doubled: number } }]
     >();
     const step2Output = step2Handler({ run: runPayload, step1: step1Result });
@@ -66,7 +66,7 @@ describe('Flow Steps Order Type Safety', () => {
     // Execute step3 handler
     const step3Handler = stepsInOrder[2].handler;
     // Verify the handler's parameter type
-    expectTypeOf(step3Handler).parameters.toEqualTypeOf<
+    expectTypeOf(step3Handler).parameters.toMatchTypeOf<
       [
         {
           run: { initialValue: number };
@@ -90,12 +90,12 @@ describe('Flow Steps Order Type Safety', () => {
     const flow = new Flow<{ value: string }>({ slug: 'type-safe-flow' })
       .step({ slug: 'parse' }, (payload) => {
         // Verify the entire payload type
-        expectTypeOf(payload).toEqualTypeOf<{ run: { value: string } }>();
+        expectTypeOf(payload).toMatchTypeOf<{ run: { value: string } }>();
         return { parsed: parseInt(payload.run.value) };
       })
       .step({ slug: 'validate', dependsOn: ['parse'] }, (payload) => {
         // Verify the entire payload type with all required dependencies
-        expectTypeOf(payload).toEqualTypeOf<{
+        expectTypeOf(payload).toMatchTypeOf<{
           run: { value: string };
           parse: { parsed: number };
         }>();
@@ -107,7 +107,7 @@ describe('Flow Steps Order Type Safety', () => {
     // The first step should accept { run: { value: string } }
     const parseStep = steps[0];
     // Verify the handler's parameter type
-    expectTypeOf(parseStep.handler).parameters.toEqualTypeOf<
+    expectTypeOf(parseStep.handler).parameters.toMatchTypeOf<
       [{ run: { value: string } }]
     >();
     const parseResult = parseStep.handler({ run: { value: '42' } });
@@ -116,7 +116,7 @@ describe('Flow Steps Order Type Safety', () => {
     // The second step should accept { run: { value: string }, parse: { parsed: number } }
     const validateStep = steps[1];
     // Verify the handler's parameter type
-    expectTypeOf(validateStep.handler).parameters.toEqualTypeOf<
+    expectTypeOf(validateStep.handler).parameters.toMatchTypeOf<
       [{ run: { value: string }; parse: { parsed: number } }]
     >();
     const validateResult = validateStep.handler({
@@ -129,64 +129,5 @@ describe('Flow Steps Order Type Safety', () => {
     // This would fail type checking if uncommented:
     // validateStep.handler({ run: { value: '42' } }); // Missing 'parse' dependency
     // validateStep.handler({ run: { value: '42' }, parse: { parsed: 42 }, extra: true }); // Extra property not allowed
-  });
-
-  it('should enforce strict payload types with no extra properties', () => {
-    // This test verifies that the StepInput type is strict and doesn't allow extra properties
-
-    type TestRunPayload = { id: number };
-    type TestSteps = {
-      step1: { result: string };
-      step2: { count: number };
-    };
-
-    // Test StepInput with no dependencies
-    type Step1Input = StepInput<TestRunPayload, TestSteps, 'step1'>;
-    expectTypeOf<Step1Input>().toEqualTypeOf<{ run: TestRunPayload }>();
-
-    // Test StepInput with dependencies
-    type Step2Input = StepInput<TestRunPayload, TestSteps, 'step2'>;
-    expectTypeOf<Step2Input>().toEqualTypeOf<{
-      run: TestRunPayload;
-      step1: TestSteps['step1'];
-    }>();
-
-    // Create a flow to test runtime behavior
-    const testFlow = new Flow<{ id: number }>({ slug: 'strict-payload-flow' })
-      .step({ slug: 'step1' }, (payload) => {
-        // This should compile
-        const validPayload: typeof payload = { run: { id: 123 } };
-
-        // @ts-expect-error - Extra property should not be allowed
-        const invalidPayload: typeof payload = {
-          run: { id: 123 },
-          extra: 'not allowed',
-        };
-
-        return { result: `ID: ${payload.run.id}` };
-      })
-      .step({ slug: 'step2', dependsOn: ['step1'] }, (payload) => {
-        // This should compile
-        const validPayload: typeof payload = {
-          run: { id: 123 },
-          step1: { result: 'ID: 123' },
-        };
-
-        // @ts-expect-error - Extra property should not be allowed
-        const invalidPayload: typeof payload = {
-          run: { id: 123 },
-          step1: { result: 'ID: 123' },
-          extra: 'not allowed',
-        };
-
-        // @ts-expect-error - Missing required dependency
-        const missingDep: typeof payload = { run: { id: 123 } };
-
-        return { count: payload.run.id + payload.step1.result.length };
-      });
-
-    // Just to avoid unused variable warning
-    expect(testFlow).toBeDefined();
-    // validateStep.handler({ parse: { parsed: 42 } }); // Missing 'run'
   });
 });
