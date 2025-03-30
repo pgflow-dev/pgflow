@@ -138,7 +138,7 @@ export class Flow<
   >(
     opts: Simplify<{ slug: Slug; dependsOn?: Deps[] } & RuntimeOptions>,
     handler: (
-      input: StepInput<TRunInput, Steps, Deps>
+      input: Simplify<StepInput<TRunInput, Steps, Deps>>
     ) => RetType | Promise<RetType>
   ): Flow<
     TRunInput,
