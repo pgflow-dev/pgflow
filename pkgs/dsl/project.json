@@ -6,6 +6,21 @@
   "tags": [],
   "// targets": "to see all targets run: nx show project @pgflow/dsl --web",
   "targets": {
+    "test": {
+      "executor": "nx:noop",
+      "dependsOn": [
+        "test:original",
+        "test:typecheck"
+      ]
+    },
+    "test:original": {
+      "executor": "@nx/vite:test",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "passWithNoTests": true,
+        "reportsDirectory": "{workspaceRoot}/coverage/{projectRoot}"
+      }
+    },
     "test:typecheck": {
       "executor": "nx:run-commands",
       "options": {
