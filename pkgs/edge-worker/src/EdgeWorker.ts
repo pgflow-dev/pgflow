@@ -83,10 +83,10 @@ export class EdgeWorker {
 
     // Create a complete configuration object with defaults
     const completeConfig: EdgeWorkerConfig = {
-      // Required parameters
-      connectionString,
+      // Pass through any config options first
+      ...config,
 
-      // Optional parameters with defaults
+      // Then override with defaults for missing values
       queueName: config.queueName || 'tasks',
       maxConcurrent: config.maxConcurrent ?? 10,
       maxPgConnections: config.maxPgConnections ?? 4,
@@ -96,8 +96,8 @@ export class EdgeWorker {
       retryLimit: config.retryLimit ?? 5,
       visibilityTimeout: config.visibilityTimeout ?? 3,
 
-      // Pass through any other config options
-      ...config,
+      // Ensure connectionString is always set
+      connectionString,
     };
 
     this.setupRequestHandler(handler, completeConfig);
@@ -138,9 +138,7 @@ export class EdgeWorker {
 
   private static setupRequestHandler<TPayload extends Json>(
     handler: (message: TPayload) => Promise<void> | void,
-    workerConfig: EdgeWorkerConfig & {
-      connectionString: string;
-    }
+    workerConfig: EdgeWorkerConfig
   ) {
     let worker: Worker | null = null;
 

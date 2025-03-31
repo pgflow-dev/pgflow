@@ -100,7 +100,7 @@ export function createQueueWorker<TPayload extends Json>(
   // Use provided SQL connection if available, otherwise create one from connection string
   const sql =
     config.sql ||
-    postgres(config.connectionString!, {
+    postgres(config.connectionString || '', {
       max: config.maxPgConnections,
       prepare: false,
     });
