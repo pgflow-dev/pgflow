@@ -109,7 +109,7 @@
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
-          "vitest --typecheck --typecheck.tsconfig=tsconfig.lib.json"
+          "vitest --typecheck --typecheck.tsconfig=tsconfig.typecheck.json"
         ],
         "parallel": true
       }
