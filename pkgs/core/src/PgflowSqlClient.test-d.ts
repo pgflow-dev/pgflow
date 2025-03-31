@@ -10,7 +10,7 @@ describe('PgflowSqlClient Type Compatibility with Flow', () => {
     const sql = {} as postgres.Sql;
     const client = new PgflowSqlClient(sql);
     const flow = new Flow<{ userId: number }>({
-      slug: 'test-flow',
+      slug: 'test_flow',
       maxAttempts: undefined,
       baseDelay: undefined,
       timeout: undefined,
@@ -36,7 +36,7 @@ describe('PgflowSqlClient Type Compatibility with Flow', () => {
 
     // Simple flow with string input
     const stringFlow = new Flow<string>({
-      slug: 'string-flow',
+      slug: 'string_flow',
       maxAttempts: undefined,
       baseDelay: undefined,
       timeout: undefined,
@@ -49,7 +49,7 @@ describe('PgflowSqlClient Type Compatibility with Flow', () => {
 
     // Complex flow with object input
     const complexFlow = new Flow<{ id: number; data: string[] }>({
-      slug: 'complex-flow',
+      slug: 'complex_flow',
       maxAttempts: undefined,
       baseDelay: undefined,
       timeout: undefined,
@@ -62,7 +62,7 @@ describe('PgflowSqlClient Type Compatibility with Flow', () => {
 
     // Generic flow with any JSON input
     const genericFlow = new Flow<Json>({
-      slug: 'generic-flow',
+      slug: 'generic_flow',
       maxAttempts: undefined,
       baseDelay: undefined,
       timeout: undefined,
@@ -84,7 +84,7 @@ describe('PgflowSqlClient Type Compatibility with Flow', () => {
       maxAttempts: undefined,
       baseDelay: undefined,
       timeout: undefined,
-      slug: 'user-flow',
+      slug: 'user_flow',
     });
 
     // Correct usage - TypeScript should not error
@@ -144,7 +144,7 @@ describe('PgflowSqlClient Type Compatibility with Flow', () => {
     // Client with specific payload type
     const typedClient = new PgflowSqlClient<{ userId: number }>(sql);
     const typedFlow = new Flow<{ userId: number }>({
-      slug: 'typed-flow',
+      slug: 'typed_flow',
       maxAttempts: undefined,
       baseDelay: undefined,
       timeout: undefined,
@@ -157,7 +157,7 @@ describe('PgflowSqlClient Type Compatibility with Flow', () => {
 
     // Incompatible flow with the typed client - using type assertion
     const stringFlow = new Flow<string>({
-      slug: 'string-flow',
+      slug: 'string_flow',
       maxAttempts: undefined,
       baseDelay: undefined,
       timeout: undefined,

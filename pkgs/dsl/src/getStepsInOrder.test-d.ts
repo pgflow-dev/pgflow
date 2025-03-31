@@ -4,7 +4,7 @@ import { describe, it, expect, expectTypeOf } from 'vitest';
 describe('Flow Steps Order Type Safety', () => {
   it('should return step handlers with correctly typed input arguments', () => {
     // Create a flow with multiple steps and dependencies
-    const flow = new Flow<{ initialValue: number }>({ slug: 'test-flow' })
+    const flow = new Flow<{ initialValue: number }>({ slug: 'test_flow' })
       .step({ slug: 'step1' }, (payload) => {
         // Verify the entire payload type is correct
         expectTypeOf(payload).toMatchTypeOf<{
@@ -87,7 +87,7 @@ describe('Flow Steps Order Type Safety', () => {
     // This test verifies that TypeScript correctly enforces type safety
     // when accessing step handlers from getStepsInOrder
 
-    const flow = new Flow<{ value: string }>({ slug: 'type-safe-flow' })
+    const flow = new Flow<{ value: string }>({ slug: 'type_safe_flow' })
       .step({ slug: 'parse' }, (payload) => {
         // Verify the entire payload type
         expectTypeOf(payload).toMatchTypeOf<{ run: { value: string } }>();

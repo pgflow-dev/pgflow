@@ -4,7 +4,7 @@ import { describe, it, expect, expectTypeOf } from 'vitest';
 describe('Flow Steps Order Type Safety', () => {
   // Create original flow outside of tests
   const originalFlow = new Flow<{ initialValue: number }>({
-    slug: 'test-flow',
+    slug: 'test_flow',
   })
     .step({ slug: 'step1' }, (payload) => {
       return { doubled: payload.run.initialValue * 2 };
@@ -28,7 +28,7 @@ describe('Flow Steps Order Type Safety', () => {
         },
         stepDef.handler
       );
-    }, new Flow<{ initialValue: number }>({ slug: 'reconstructed-flow' }));
+    }, new Flow<{ initialValue: number }>({ slug: 'reconstructed_flow' }));
   };
 
   it('should reconstruct a flow with the same number of steps', () => {

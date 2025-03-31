@@ -121,7 +121,7 @@ describe('Flow Type System Tests', () => {
 
   describe('StepOutput utility type', () => {
     it('should correctly extract the output type of a step', () => {
-      const flow = new Flow<{ input: string }>({ slug: 'step-output-test' })
+      const flow = new Flow<{ input: string }>({ slug: 'step_output_test' })
         .step({ slug: 'step1' }, () => ({ value: 42, text: 'hello' }))
         .step({ slug: 'step2', dependsOn: ['step1'] }, () => ({ flag: true }))
         .step({ slug: 'step3' }, () => 'plain string');
@@ -145,7 +145,7 @@ describe('Flow Type System Tests', () => {
 
     it('should work with complex nested types', () => {
       const complexFlow = new Flow<{ id: number }>({
-        slug: 'complex-flow',
+        slug: 'complex_flow',
       }).step({ slug: 'complexStep' }, () => ({
         data: {
           items: [
