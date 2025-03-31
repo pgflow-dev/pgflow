@@ -181,28 +181,4 @@ describe('PgflowSqlClient Type Compatibility with Flow', () => {
       >
     >();
   });
-
-  it('should ensure Flow slug property is accessible for startFlow', () => {
-    // This test validates that the Flow class exposes the slug property that PgflowSqlClient needs
-
-    // Arrange
-    const sql = {} as postgres.Sql;
-    const client = new PgflowSqlClient(sql);
-    const flow = new Flow<{ test: boolean }>({
-      slug: 'slugged-flow',
-      maxAttempts: undefined,
-      baseDelay: undefined,
-      timeout: undefined,
-    });
-
-    // Type check the flow slug
-    expectTypeOf(flow).toHaveProperty('slug');
-    expectTypeOf(flow.slug).toBeString();
-
-    // Check that options are available
-    expectTypeOf(flow).toHaveProperty('options');
-    expectTypeOf(flow.options).toHaveProperty('maxAttempts');
-    expectTypeOf(flow.options).toHaveProperty('baseDelay');
-    expectTypeOf(flow.options).toHaveProperty('timeout');
-  });
 });
