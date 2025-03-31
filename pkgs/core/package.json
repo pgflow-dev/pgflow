@@ -16,7 +16,8 @@
   "types": "./dist/index.d.ts",
   "module": "./dist/index.js",
   "devDependencies": {
-    "supabase": "^2.6.8"
+    "supabase": "^2.6.8",
+    "vitest": "*"
   },
   "dependencies": {
     "postgres": "^3.4.5"
