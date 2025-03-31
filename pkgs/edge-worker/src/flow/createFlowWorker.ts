@@ -33,8 +33,12 @@ export type FlowWorkerConfig = EdgeWorkerConfig & {
  */
 export function createFlowWorker<
   TRunPayload extends Json,
-  TSteps extends Record<string, Json> = Record<never, never>
->(flow: Flow<TRunPayload, TSteps>, config: FlowWorkerConfig): Worker {
+  TSteps extends Record<string, Json> = Record<never, never>,
+  TDependencies extends Record<string, string[]> = Record<string, string[]>
+>(
+  flow: Flow<TRunPayload, TSteps, TDependencies>,
+  config: FlowWorkerConfig
+): Worker {
   const logger = getLogger('createFlowWorker');
 
   // Create abort controller for graceful shutdown

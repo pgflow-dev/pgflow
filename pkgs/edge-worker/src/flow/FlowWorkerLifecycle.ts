@@ -15,7 +15,8 @@ import type { Flow } from '../../../dsl/src/dsl.ts';
  */
 export class FlowWorkerLifecycle<
   TRunPayload extends Json,
-  TSteps extends Record<string, Json> = Record<never, never>
+  TSteps extends Record<string, Json> = Record<never, never>,
+  TDependencies extends Record<string, string[]> = Record<string, string[]>
 > implements ILifecycle
 {
   private workerState: WorkerState = new WorkerState();
@@ -23,9 +24,12 @@ export class FlowWorkerLifecycle<
   private logger = getLogger('FlowWorkerLifecycle');
   private queries: Queries;
   private workerRow?: WorkerRow;
-  private flow: Flow<TRunPayload, TSteps>;
+  private flow: Flow<TRunPayload, TSteps, TDependencies>;
 
-  constructor(queries: Queries, flow: Flow<TRunPayload, TSteps>) {
+  constructor(
+    queries: Queries,
+    flow: Flow<TRunPayload, TSteps, TDependencies>
+  ) {
     this.queries = queries;
     this.flow = flow;
   }

@@ -64,7 +64,11 @@ export class PgflowSqlClient<TPayload extends Json = Json>
     `;
   }
 
-  async startFlow<T extends Json>(flow: Flow<T>, input: T): Promise<RunRow> {
+  async startFlow<
+    T extends Json,
+    S extends Record<string, Json> = Record<never, never>,
+    D extends Record<string, string[]> = Record<string, string[]>
+  >(flow: Flow<T, S, D>, input: T): Promise<RunRow> {
     const results = await this.sql<RunRow[]>`
       SELECT * FROM pgflow.start_flow(${flow.slug}::text, ${this.sql.json(
       input
