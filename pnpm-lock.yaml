@@ -112,8 +112,17 @@ importers:
       supabase:
         specifier: ^2.6.8
         version: 2.6.8
+      vitest:
+        specifier: '*'
+        version: 1.6.0(@types/node@18.16.20)(@vitest/ui@1.6.0)(jsdom@22.1.0)
 
-  pkgs/dsl: {}
+  pkgs/dsl:
+    devDependencies:
+      vitest:
+        specifier: '*'
+        version: 1.6.0(@types/node@18.16.20)(@vitest/ui@1.6.0)(jsdom@22.1.0)
+
+  pkgs/edge-worker: {}
 
   pkgs/website:
     dependencies:
