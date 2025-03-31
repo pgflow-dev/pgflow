@@ -76,12 +76,24 @@
       }
     },
     "test": {
+      "executor": "nx:noop",
+      "dependsOn": ["test:sql", "test:unit", "test:typecheck"]
+    },
+    "test:sql": {
       "executor": "nx:run-commands",
       "dependsOn": ["supabase:ensure-started"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["scripts/run-test-with-colors"],
         "parallel": false
+      }
+    },
+    "test:vitest": {
+      "executor": "@nx/vite:test",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "passWithNoTests": true,
+        "reportsDirectory": "{workspaceRoot}/coverage/{projectRoot}"
       }
     },
     "test:watch": {
@@ -91,6 +103,16 @@
         "command": "scripts/watch-test"
       },
       "cache": false
+    },
+    "test:typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          "vitest --typecheck --typecheck.tsconfig=tsconfig.lib.json"
+        ],
+        "parallel": true
+      }
     },
     "gen-types": {
       "executor": "nx:run-commands",
