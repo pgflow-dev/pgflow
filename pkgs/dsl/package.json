@@ -1,7 +1,7 @@
 {
   "name": "@pgflow/dsl",
   "version": "0.0.1",
-  "devDependencies": {
+  "dependencies": {
     "vitest": "*"
   },
   "main": "./dist/index.js",
