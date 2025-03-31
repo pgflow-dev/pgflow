@@ -13,52 +13,34 @@ describe('Flow Type System Tests', () => {
     });
   });
 
-  it('should properly type input argument for dependent steps', () => {
+  it('should properly type input arguments for dependent steps', () => {
     new Flow<{ id: number; email: string }>({
       slug: 'test_flow',
     })
-      .step({ slug: 'root_a' }, (input) => Object.values(input.run).length)
+      .step({ slug: 'root_a' }, (input) => {
+        expectTypeOf(input).toMatchTypeOf<{
+          run: { id: number; email: string };
+        }>();
+        return { result: 'test-result' };
+      })
       .step({ slug: 'step_a', dependsOn: ['root_a'] }, (input) => {
         expectTypeOf(input).toMatchTypeOf<{
           run: { id: number; email: string };
-          root_a: number;
+          root_a: { result: string };
         }>();
-        return 'stringValue';
+        return { count: 42 };
       })
       .step(
         { slug: 'final_step', dependsOn: ['root_a', 'step_a'] },
         (input) => {
           expectTypeOf(input).toMatchTypeOf<{
             run: { id: number; email: string };
-            root_a: number;
-            step_a: string;
+            root_a: { result: string };
+            step_a: { count: number };
           }>();
-          return true;
+          return { flag: true };
         }
       );
-  });
-
-  it('should enforce strict payload types with Flow DSL', () => {
-    new Flow<{ id: number }>({ slug: 'test_flow' })
-      .step({ slug: 'step1' }, (payload) => {
-        expectTypeOf(payload).toMatchTypeOf<{ run: { id: number } }>();
-        return { result: 'test-result' };
-      })
-      .step({ slug: 'step2', dependsOn: ['step1'] }, (payload) => {
-        expectTypeOf(payload).toMatchTypeOf<{
-          run: { id: number };
-          step1: { result: string };
-        }>();
-        return { count: 42 };
-      })
-      .step({ slug: 'step3', dependsOn: ['step1', 'step2'] }, (payload) => {
-        expectTypeOf(payload).toMatchTypeOf<{
-          run: { id: number };
-          step1: { result: string };
-          step2: { count: number };
-        }>();
-        return { flag: true };
-      });
   });
 
   describe('Flow dependency validation', () => {
