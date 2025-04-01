@@ -13,21 +13,18 @@ export type Json =
  * Record representing a task from pgflow.poll_for_tasks
  *
  * Same as pgflow.step_task_record type, but with not-null fields and type argument for payload.
- * The input type is automatically inferred based on the step_slug.
+ * The input type is automatically inferred based on the step_slug using a discriminated union.
+ * This ensures that each step only receives inputs from its declared dependencies and the flow's run input.
  */
-export type StepTaskRecord<
-  TFlow extends Flow<any, any, any>,
-  TStepSlug extends Extract<keyof ExtractFlowSteps<TFlow>, string> = Extract<
-    keyof ExtractFlowSteps<TFlow>,
-    string
-  >
-> = {
-  flow_slug: string;
-  run_id: string;
-  step_slug: TStepSlug;
-  input: StepInput<TFlow, TStepSlug>;
-  msg_id: number;
-};
+export type StepTaskRecord<TFlow extends Flow<any, any, any>> = {
+  [K in Extract<keyof ExtractFlowSteps<TFlow>, string>]: {
+    flow_slug: string;
+    run_id: string;
+    step_slug: K;
+    input: StepInput<TFlow, K>;
+    msg_id: number;
+  };
+}[Extract<keyof ExtractFlowSteps<TFlow>, string>];
 
 /**
  * Composite key that is enough to find a particular step task
