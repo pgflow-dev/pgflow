@@ -7,7 +7,7 @@
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "emitDeclarationOnly": false,
     "types": ["node", "vite/client"],
-    "allowImportingTsExtensions": true,
+    "allowImportingTsExtensions": true
   },
   "include": ["src/**/*.ts", "../dsl/src/*.ts", "../core/src/*.ts"],
   "references": [
