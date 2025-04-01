@@ -16,7 +16,7 @@
   "plugins": [
     {
       "plugin": "@nx/js/typescript",
-      "exclude": ["pkgs/core/*", "pkgs/dsl/*"]
+      "exclude": ["pkgs/core/*", "pkgs/dsl/*", "pkgs/example-flows/*"]
     },
     "@nx/eslint/plugin",
     "@axhxrx/nx-deno",

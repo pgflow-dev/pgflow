@@ -1,4 +1,4 @@
-import { Flow } from '../src/dsl.ts';
+import { Flow } from '../../dsl/src/dsl.ts';
 import type { StepTaskRecord } from '../../core/src/types.ts';
 
 // Example usage
