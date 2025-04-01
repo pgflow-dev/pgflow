@@ -1,3 +1,6 @@
+import { Flow } from '../src/dsl.ts';
+import type { StepTaskRecord } from '../../core/src/types.ts';
+
 // Example usage
 export const ExampleFlow = new Flow<{ value: number }>({
   slug: 'example_flow',
@@ -28,13 +31,13 @@ export const ExampleFlow = new Flow<{ value: number }>({
 export const stepTaskRecord: StepTaskRecord<typeof ExampleFlow> = {
   flow_slug: 'example_flow',
   run_id: '123',
-  step_slug: 'thirdStep',
+  step_slug: 'normalStep',
   // TODO; this input should be typed based on the `step_slug` above
   //       so it should only accept the properties for the thirdStep
   input: {
     run: { value: 23 },
     rootStep: { doubledValue: 23 },
-    thirdStep: { finalValue: 23 },
+    // thirdStep: { finalValue: 23 },
     normalStep: { doubledValueArray: [1, 2, 3] },
   },
   msg_id: 1,
