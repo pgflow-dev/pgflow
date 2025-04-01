@@ -1,4 +1,4 @@
-import { validateSlug } from './utils.ts';
+import { validateRuntimeOptions, validateSlug } from './utils.ts';
 
 // JSON type enforcement so we can serialize the results to JSONB columns
 export type Json =
@@ -79,6 +79,9 @@ export class Flow<
 
     // Validate the slug
     validateSlug(slug);
+
+    // Validate runtime options (optional for Flow level)
+    validateRuntimeOptions(options, { optional: true });
 
     this.slug = slug;
     this.options = options;
@@ -178,6 +181,9 @@ export class Flow<
     if (opts.maxAttempts !== undefined) options.maxAttempts = opts.maxAttempts;
     if (opts.baseDelay !== undefined) options.baseDelay = opts.baseDelay;
     if (opts.timeout !== undefined) options.timeout = opts.timeout;
+
+    // Validate runtime options (optional for step level)
+    validateRuntimeOptions(options, { optional: true });
 
     // Preserve the exact type of the handler
     const newStepDefinition: StepDefinition<StepInputType, RetType> = {
