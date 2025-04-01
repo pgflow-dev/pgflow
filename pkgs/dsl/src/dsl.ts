@@ -91,13 +91,6 @@ export class Flow<
   }
 
   /**
-   * Returns all step definitions for this flow
-   */
-  getSteps(): Record<string, StepDefinition<any, Json>> {
-    return this.stepDefinitions;
-  }
-
-  /**
    * Get a specific step definition by slug with proper typing
    * @throws Error if the step with the given slug doesn't exist
    */
@@ -128,16 +121,6 @@ export class Flow<
       >,
       Steps[SlugType]
     >;
-  }
-
-  /**
-   * Returns step definitions in the order they were added with proper typing
-   */
-  getStepsInOrder(): Array<StepDefinition<any, Json>> {
-    return this.stepOrder.map((slug) => {
-      // We need to use a simpler type here to avoid complex type issues
-      return this.stepDefinitions[slug];
-    });
   }
 
   step<

@@ -10,8 +10,6 @@ describe('Flow', () => {
       const flow = new Flow({ slug: 'valid_flow' });
       expect(flow.slug).toBe('valid_flow');
       expect(flow.options).toEqual({});
-      expect(flow.getSteps()).toEqual({});
-      expect(flow.getStepsInOrder()).toEqual([]);
     });
 
     it('creates a flow with custom runtime options', () => {

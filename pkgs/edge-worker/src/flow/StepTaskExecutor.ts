@@ -48,8 +48,7 @@ export class StepTaskExecutor<
       );
 
       // Get the step handler from the flow with proper typing
-      const steps = this.flow.getSteps();
-      const stepDef = steps[stepSlug as keyof typeof steps];
+      const stepDef = this.flow.getStepDefinition(stepSlug);
 
       if (!stepDef) {
         throw new Error(`No step definition found for slug=${stepSlug}`);

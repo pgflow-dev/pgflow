@@ -64,13 +64,6 @@ export class FlowWorkerLifecycle<
     }
   }
 
-  /**
-   * Get the steps defined in this flow with their proper types
-   */
-  getFlowSteps() {
-    return this.flow.getSteps();
-  }
-
   get edgeFunctionName() {
     return this.workerRow?.function_name;
   }

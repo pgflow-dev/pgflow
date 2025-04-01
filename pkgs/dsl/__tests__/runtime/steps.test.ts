@@ -15,16 +15,7 @@ describe('Steps', () => {
       const handler = () => ({ result: 42 });
       const newFlow = flow.step({ slug: 'test_step' }, handler);
 
-      expect(newFlow.getSteps()['test_step'].handler).toBe(handler);
-    });
-
-    it('adds steps in the correct order', () => {
-      const newFlow = flow
-        .step({ slug: 'step1' }, () => ({ a: 1 }))
-        .step({ slug: 'step2' }, () => ({ b: 2 }));
-
-      const stepsInOrder = newFlow.getStepsInOrder();
-      expect(stepsInOrder.map((s) => s.slug)).toEqual(['step1', 'step2']);
+      expect(newFlow.getStepDefinition('test_step').handler).toBe(handler);
     });
 
     it('throws when adding step with the same slug', () => {
