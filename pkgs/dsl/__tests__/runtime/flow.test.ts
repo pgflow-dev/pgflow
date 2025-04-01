@@ -1,6 +1,6 @@
 import { describe, it, vi, expect } from 'vitest';
-import { Flow } from './dsl.ts';
-import * as utils from './utils.ts';
+import { Flow } from '../../src/dsl.ts';
+import * as utils from '../../src/utils.ts';
 
 const noop = () => null;
 

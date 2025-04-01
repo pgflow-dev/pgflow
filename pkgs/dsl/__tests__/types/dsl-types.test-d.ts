@@ -1,4 +1,4 @@
-import { Flow, type StepOutput } from './dsl.ts';
+import { Flow, type StepOutput } from '../../src/dsl.ts';
 import { describe, it, expectTypeOf } from 'vitest';
 
 describe('Flow Type System Tests', () => {

@@ -1,4 +1,4 @@
-import { Flow } from './dsl.ts';
+import { Flow } from '../../src/dsl.ts';
 import { describe, it, expect, expectTypeOf } from 'vitest';
 
 describe('Flow Steps Order Type Safety', () => {

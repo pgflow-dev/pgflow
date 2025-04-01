@@ -1,5 +1,5 @@
 import { it, expectTypeOf } from 'vitest';
-import { AnalyzeWebsite } from './example-flow.ts';
+import { AnalyzeWebsite } from '../../src/example-flow.ts';
 
 const websiteStepDef = AnalyzeWebsite.getStepDefinition('website');
 const sentimentStepDef = AnalyzeWebsite.getStepDefinition('sentiment');
