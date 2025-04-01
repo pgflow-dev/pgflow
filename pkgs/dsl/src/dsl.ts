@@ -12,16 +12,25 @@ export type Json =
 // Used to flatten the types of a union of objects for readability
 type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
 
+export type ExtractFlowInput<TFlow extends Flow<any, any, any>> =
+  TFlow extends Flow<infer TR, any, any> ? TR : never;
+
+// Extract the TSteps
+export type ExtractFlowSteps<TFlow extends Flow<any, any, any>> =
+  TFlow extends Flow<any, infer TS, any> ? TS : never;
+
+// Extract the TDependencies
+export type ExtractFlowDeps<TFlow extends Flow<any, any, any>> =
+  TFlow extends Flow<any, any, infer TD> ? TD : never;
+
 // Utility type to extract the output type of a step handler from a Flow
 // Usage:
 //   StepOutput<typeof flow, 'step1'>
-export type StepOutput<TFlow, TStepSlug extends string> = TFlow extends Flow<
-  any,
-  infer Steps
->
-  ? TStepSlug extends keyof Steps
-    ? Steps[TStepSlug]
-    : never
+export type StepOutput<
+  TFlow extends Flow<any, any, any>,
+  TStepSlug extends string
+> = TStepSlug extends keyof ExtractFlowSteps<TFlow>
+  ? ExtractFlowSteps<TFlow>[TStepSlug]
   : never;
 
 /**
@@ -32,11 +41,15 @@ export type StepOutput<TFlow, TStepSlug extends string> = TFlow extends Flow<
  * Utility type to extract the input type for a specific step in a flow
  */
 export type StepInput<
-  TRunInput extends Json,
-  TSteps extends Record<string, Json>,
-  TDeps extends keyof TSteps = never
-> = { run: TRunInput } & {
-  [K in TDeps]: TSteps[K];
+  TFlow extends Flow<any, any, any>,
+  TStepSlug extends string
+> = {
+  run: ExtractFlowInput<TFlow>;
+} & {
+  [K in Extract<
+    keyof ExtractFlowSteps<TFlow>,
+    ExtractFlowDeps<TFlow>[TStepSlug][number]
+  >]: ExtractFlowSteps<TFlow>[K];
 };
 
 // Runtime options interface
@@ -96,14 +109,7 @@ export class Flow<
    */
   getStepDefinition<SlugType extends keyof Steps & keyof StepDependencies>(
     slug: SlugType
-  ): StepDefinition<
-    StepInput<
-      TRunInput,
-      Steps,
-      Extract<keyof Steps & string, StepDependencies[SlugType][number]>
-    >,
-    Steps[SlugType]
-  > {
+  ): StepDefinition<StepInput<this, SlugType & string>, Steps[SlugType]> {
     // Check if the slug exists in stepDefinitions using a more explicit pattern
     if (!(slug in this.stepDefinitions)) {
       throw new Error(
@@ -114,11 +120,7 @@ export class Flow<
     // Use unknown as an intermediate step for safer type conversion
     // This follows TypeScript's recommendation for this kind of type conversion
     return this.stepDefinitions[slug as string] as StepDefinition<
-      StepInput<
-        TRunInput,
-        Steps,
-        Extract<keyof Steps & string, StepDependencies[SlugType][number]>
-      >,
+      StepInput<this, SlugType & string>,
       Steps[SlugType]
     >;
   }
@@ -130,14 +132,14 @@ export class Flow<
   >(
     opts: Simplify<{ slug: Slug; dependsOn?: Deps[] } & RuntimeOptions>,
     handler: (
-      input: Simplify<StepInput<TRunInput, Steps, Deps>>
+      input: Simplify<StepInput<this, Slug>>
     ) => RetType | Promise<RetType>
   ): Flow<
     TRunInput,
     Steps & { [K in Slug]: Awaited<RetType> },
     StepDependencies & { [K in Slug]: Deps[] }
   > {
-    type StepInputType = StepInput<TRunInput, Steps, Deps>;
+    type StepInputType = StepInput<this, Slug>;
     type NewSteps = MergeObjects<Steps, { [K in Slug]: Awaited<RetType> }>;
     type NewDependencies = MergeObjects<
       StepDependencies,
