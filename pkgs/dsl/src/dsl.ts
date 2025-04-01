@@ -208,7 +208,7 @@ export class Flow<
     // Create a new flow with the same slug and options but with updated type parameters
     return new Flow<TRunInput, NewSteps, NewDependencies>(
       { slug: this.slug, ...this.options },
-      newStepDefinitions as any,
+      newStepDefinitions,
       newStepOrder
     ) as Flow<TRunInput, NewSteps, NewDependencies>;
   }

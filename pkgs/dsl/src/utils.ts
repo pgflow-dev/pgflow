@@ -26,7 +26,7 @@ export function validateSlug(slug: string): void {
     throw new Error(`Slug cannot contain spaces`);
   }
 
-  if (/[\/:#\-?]/.test(slug)) {
+  if (/[/:#\-?]/.test(slug)) {
     throw new Error(
       `Slug cannot contain special characters like /, :, ?, #, -`
     );

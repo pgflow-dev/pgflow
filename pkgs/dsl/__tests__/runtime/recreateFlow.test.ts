@@ -20,14 +20,18 @@ describe('Flow Steps Order Type Safety', () => {
   const createReconstructedFlow = () => {
     const stepsInOrder = originalFlow.getStepsInOrder();
     return stepsInOrder.reduce((flow, stepDef) => {
-      return flow.step(
-        {
-          slug: stepDef.slug,
-          dependsOn: stepDef.dependencies as any,
-          ...stepDef.options,
-        },
-        stepDef.handler
-      );
+      // Only include dependsOn if there are dependencies
+      const stepConfig = {
+        slug: stepDef.slug,
+        ...stepDef.options,
+      };
+
+      // Add dependencies only if they exist
+      if (stepDef.dependencies.length > 0) {
+        Object.assign(stepConfig, { dependsOn: stepDef.dependencies });
+      }
+
+      return flow.step(stepConfig, stepDef.handler);
     }, new Flow<{ initialValue: number }>({ slug: 'reconstructed_flow' }));
   };
 
