@@ -69,8 +69,8 @@ describe('Steps', () => {
 
     it('does not allow adding step with non-existing dependencies', () => {
       expect(() =>
-        // @ts-expect-error - dependsOn references non-existing step
         flow.step(
+          // @ts-expect-error - dependsOn references non-existing step
           { slug: 'invalid_deps', dependsOn: ['non_existing_step'] },
           noop
         )

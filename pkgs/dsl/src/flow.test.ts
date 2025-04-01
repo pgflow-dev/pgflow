@@ -1,4 +1,4 @@
-import { describe, it, vi, beforeEach, expect } from 'vitest';
+import { describe, it, vi, expect } from 'vitest';
 import { Flow } from './dsl.ts';
 import * as utils from './utils.ts';
 
