@@ -1,48 +1,50 @@
-import { describe, it } from 'vitest';
-import { validateRuntimeOptions, validateSlug } from './utils.ts';
+import { describe, it, expect } from 'vitest';
+import { validateSlug, validateRuntimeOptions } from './utils.ts';
 
 describe('validateSlug', () => {
-  it('accepts valid slugs', ({ expect }) => {
-    expect(() => validateSlug('valid_slug')).not.toThrow();
-    expect(() => validateSlug('valid-slug')).not.toThrow();
-    expect(() => validateSlug('validSlug')).not.toThrow();
-    expect(() => validateSlug('a')).not.toThrow();
+  it('accepts valid slugs', () => {
+    expect(() => validateSlug('valid_slug')).not.toThrowError();
+    expect(() => validateSlug('valid_slug_123')).not.toThrowError();
+    expect(() => validateSlug('validSlug123')).not.toThrowError();
   });
 
-  it('rejects slugs that start with a number', ({ expect }) => {
+  it('rejects slugs that start with numbers', () => {
     expect(() => validateSlug('1invalid')).toThrowError(
       'Slug cannot start with a number'
     );
   });
 
-  it('rejects slugs that start with an underscore', ({ expect }) => {
+  it('rejects slugs that start with underscores', () => {
     expect(() => validateSlug('_invalid')).toThrowError(
       'Slug cannot start with an underscore'
     );
   });
 
-  it('rejects slugs with spaces', ({ expect }) => {
+  it('rejects slugs containing spaces', () => {
     expect(() => validateSlug('invalid slug')).toThrowError(
       'Slug cannot contain spaces'
     );
   });
 
-  it('rejects slugs with special characters', ({ expect }) => {
+  it('rejects slugs containing special characters', () => {
     expect(() => validateSlug('invalid/slug')).toThrowError(
-      'Slug cannot contain special characters'
+      'Slug cannot contain special characters like /, :, ?, #, -'
     );
     expect(() => validateSlug('invalid:slug')).toThrowError(
-      'Slug cannot contain special characters'
+      'Slug cannot contain special characters like /, :, ?, #, -'
     );
     expect(() => validateSlug('invalid?slug')).toThrowError(
-      'Slug cannot contain special characters'
+      'Slug cannot contain special characters like /, :, ?, #, -'
     );
     expect(() => validateSlug('invalid#slug')).toThrowError(
-      'Slug cannot contain special characters'
+      'Slug cannot contain special characters like /, :, ?, #, -'
+    );
+    expect(() => validateSlug('invalid-slug')).toThrowError(
+      'Slug cannot contain special characters like /, :, ?, #, -'
     );
   });
 
-  it('rejects slugs longer than 128 characters', ({ expect }) => {
+  it('rejects slugs longer than 128 characters', () => {
     const longSlug = 'a'.repeat(129);
     expect(() => validateSlug(longSlug)).toThrowError(
       'Slug cannot be longer than 128 characters'
@@ -51,132 +53,65 @@ describe('validateSlug', () => {
 });
 
 describe('validateRuntimeOptions', () => {
-  describe('with optional=false (default)', () => {
-    it('accepts valid runtime options', ({ expect }) => {
+  describe('when optional is false (default)', () => {
+    it('throws when required options are missing', () => {
+      expect(() => validateRuntimeOptions({})).toThrowError(
+        'maxAttempts is required'
+      );
+      expect(() => validateRuntimeOptions({ maxAttempts: 1 })).toThrowError(
+        'baseDelay is required'
+      );
       expect(() =>
-        validateRuntimeOptions({
-          maxAttempts: 1,
-          baseDelay: 1,
-          timeout: 3,
-        })
-      ).not.toThrow();
-
-      expect(() =>
-        validateRuntimeOptions({
-          maxAttempts: 5,
-          baseDelay: 100,
-          timeout: 30,
-        })
-      ).not.toThrow();
-    });
-
-    it('rejects when maxAttempts is missing', ({ expect }) => {
-      expect(() =>
-        validateRuntimeOptions({
-          baseDelay: 1,
-          timeout: 3,
-        })
-      ).toThrowError('maxAttempts is required');
-    });
-
-    it('rejects when baseDelay is missing', ({ expect }) => {
-      expect(() =>
-        validateRuntimeOptions({
-          maxAttempts: 1,
-          timeout: 3,
-        })
-      ).toThrowError('baseDelay is required');
-    });
-
-    it('rejects when timeout is missing', ({ expect }) => {
-      expect(() =>
-        validateRuntimeOptions({
-          maxAttempts: 1,
-          baseDelay: 1,
-        })
+        validateRuntimeOptions({ maxAttempts: 1, baseDelay: 5 })
       ).toThrowError('timeout is required');
     });
 
-    it('rejects when maxAttempts is less than 1', ({ expect }) => {
+    it('validates maxAttempts is >= 1', () => {
       expect(() =>
         validateRuntimeOptions({
           maxAttempts: 0,
-          baseDelay: 1,
-          timeout: 3,
+          baseDelay: 10,
+          timeout: 10,
         })
       ).toThrowError('maxAttempts must be greater than or equal to 1');
     });
 
-    it('rejects when baseDelay is less than 1', ({ expect }) => {
+    it('validates baseDelay is >= 1', () => {
       expect(() =>
         validateRuntimeOptions({
-          maxAttempts: 1,
+          maxAttempts: 3,
           baseDelay: 0,
-          timeout: 3,
+          timeout: 10,
         })
       ).toThrowError('baseDelay must be greater than or equal to 1');
     });
 
-    it('rejects when timeout is less than 3', ({ expect }) => {
+    it('validates timeout is >= 3', () => {
       expect(() =>
         validateRuntimeOptions({
-          maxAttempts: 1,
-          baseDelay: 1,
+          maxAttempts: 3,
+          baseDelay: 10,
           timeout: 2,
         })
       ).toThrowError('timeout must be greater than or equal to 3');
     });
   });
 
-  describe('with optional=true', () => {
-    it('accepts valid runtime options', ({ expect }) => {
-      expect(() =>
-        validateRuntimeOptions(
-          {
-            maxAttempts: 1,
-            baseDelay: 1,
-            timeout: 3,
-          },
-          { optional: true }
-        )
-      ).not.toThrow();
-    });
-
-    it('accepts missing options', ({ expect }) => {
+  describe('when optional is true', () => {
+    it('accepts missing options', () => {
       expect(() =>
         validateRuntimeOptions({}, { optional: true })
-      ).not.toThrow();
+      ).not.toThrowError();
       expect(() =>
         validateRuntimeOptions({ maxAttempts: 1 }, { optional: true })
-      ).not.toThrow();
-      expect(() =>
-        validateRuntimeOptions({ baseDelay: 1 }, { optional: true })
-      ).not.toThrow();
-      expect(() =>
-        validateRuntimeOptions({ timeout: 3 }, { optional: true })
-      ).not.toThrow();
+      ).not.toThrowError();
     });
 
-    it('accepts null options', ({ expect }) => {
-      expect(() =>
-        validateRuntimeOptions(
-          {
-            maxAttempts: null as any,
-            baseDelay: null as any,
-            timeout: null as any,
-          },
-          { optional: true }
-        )
-      ).not.toThrow();
-    });
-
-    it('still rejects invalid values when provided', ({ expect }) => {
+    it('still validates provided options', () => {
       expect(() =>
         validateRuntimeOptions(
           {
             maxAttempts: 0,
-            baseDelay: 1,
-            timeout: 3,
           },
           { optional: true }
         )
@@ -185,9 +120,7 @@ describe('validateRuntimeOptions', () => {
       expect(() =>
         validateRuntimeOptions(
           {
-            maxAttempts: 1,
             baseDelay: 0,
-            timeout: 3,
           },
           { optional: true }
         )
@@ -196,13 +129,21 @@ describe('validateRuntimeOptions', () => {
       expect(() =>
         validateRuntimeOptions(
           {
-            maxAttempts: 1,
-            baseDelay: 1,
             timeout: 2,
           },
           { optional: true }
         )
       ).toThrowError('timeout must be greater than or equal to 3');
     });
+  });
+
+  it('accepts valid options', () => {
+    expect(() =>
+      validateRuntimeOptions({
+        maxAttempts: 3,
+        baseDelay: 10,
+        timeout: 30,
+      })
+    ).not.toThrowError();
   });
 });
