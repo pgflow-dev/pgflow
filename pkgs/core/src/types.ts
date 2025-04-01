@@ -40,7 +40,9 @@ export type StepTaskKey = Pick<StepTaskRecord<any>, 'run_id' | 'step_slug'>;
 /**
  * Interface for interacting with pgflow database functions
  */
-export interface IPgflowClient<TPayload extends Json = Json> {
+export interface IPgflowClient<
+  TFlow extends Flow<any, any, any> = Flow<Json, any, any>
+> {
   /**
    * Fetches tasks from pgflow
    * @param queueName - Name
@@ -55,7 +57,7 @@ export interface IPgflowClient<TPayload extends Json = Json> {
     visibilityTimeout?: number,
     maxPollSeconds?: number,
     pollIntervalMs?: number
-  ): Promise<StepTaskRecord<Flow<TPayload, any, any>>[]>;
+  ): Promise<StepTaskRecord<TFlow>[]>;
 
   /**
    * Marks a task as completed

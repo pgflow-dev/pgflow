@@ -14,18 +14,15 @@ class AbortError extends Error {
  * An executor that processes step tasks using an IPgflowClient
  * with strong typing for the flow's step handlers
  */
-export class StepTaskExecutor<
-  TRunPayload extends Json,
-  TSteps extends Record<string, Json> = Record<never, never>,
-  TDependencies extends Record<string, string[]> = Record<string, string[]>
-> implements IExecutor
+export class StepTaskExecutor<TFlow extends Flow<any, any, any>>
+  implements IExecutor
 {
   private logger = getLogger('StepTaskExecutor');
 
   constructor(
-    private readonly flow: Flow<TRunPayload, TSteps, TDependencies>,
-    private readonly task: StepTaskRecord,
-    private readonly adapter: IPgflowClient,
+    private readonly flow: TFlow,
+    private readonly task: StepTaskRecord<TFlow>,
+    private readonly adapter: IPgflowClient<TFlow>,
     private readonly signal: AbortSignal
   ) {}
 
