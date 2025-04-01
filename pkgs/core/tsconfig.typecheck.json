@@ -9,7 +9,7 @@
     "noEmit": true,
     "types": ["node", "vite/client"]
   },
-  "include": ["src/**/*.ts", "../dsl/src/dsl.ts"],
+  "include": ["src/**/*.ts", "../dsl/src/dsl.ts", "../dsl/src/utils.ts"],
   "exclude": [
     "vite.config.ts",
     "vite.config.mts",
