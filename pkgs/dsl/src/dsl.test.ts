@@ -134,14 +134,16 @@ describe('Deps', () => {
   it('does not allow to add step with dependsOn set to not existing step', () => {
     expect(() =>
       // @ts-expect-error - the dependsOn array contains a non-existing step
-      flow.step({ slug: '_hello_world', dependsOn: ['hello_world'] }, noop)
-    ).toThrowError();
+      flow.step({ slug: 'hello_world', dependsOn: ['non_existing_step'] }, noop)
+    ).toThrowError(
+      'Step "hello_world" depends on undefined step "non_existing_step"'
+    );
   });
 
   it('does not allow to add step with dependsOn set to non-slug value', () => {
     expect(() =>
       // @ts-expect-error - the dependsOn array contains a non-slug value
-      flow.step({ slug: 'hello world', dependsOn: [12345] }, noop)
-    ).toThrowError();
+      flow.step({ slug: 'hello_world', dependsOn: [12345] }, noop)
+    ).toThrowError('Step "hello_world" depends on undefined step "12345"');
   });
 });
