@@ -16,13 +16,14 @@ class AbortError extends Error {
  */
 export class StepTaskExecutor<
   TRunPayload extends Json,
-  TSteps extends Record<string, Json> = Record<never, never>
+  TSteps extends Record<string, Json> = Record<never, never>,
+  TDependencies extends Record<string, string[]> = Record<string, string[]>
 > implements IExecutor
 {
   private logger = getLogger('StepTaskExecutor');
 
   constructor(
-    private readonly flow: Flow<TRunPayload, TSteps>,
+    private readonly flow: Flow<TRunPayload, TSteps, TDependencies>,
     private readonly task: StepTaskRecord,
     private readonly adapter: IPgflowClient,
     private readonly signal: AbortSignal
@@ -47,8 +48,7 @@ export class StepTaskExecutor<
       );
 
       // Get the step handler from the flow with proper typing
-      const steps = this.flow.getSteps();
-      const stepDef = steps[stepSlug as keyof typeof steps];
+      const stepDef = this.flow.getStepDefinition(stepSlug);
 
       if (!stepDef) {
         throw new Error(`No step definition found for slug=${stepSlug}`);

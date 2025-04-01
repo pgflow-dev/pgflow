@@ -1,16 +1,26 @@
-
-import type { Flow, Json } from "../../../dsl/src/index.ts";
-import { createFlowWorker, type FlowWorkerConfig } from '../../src/flow/createFlowWorker.ts';
-import type { postgres } from "../sql.ts";
+import type { Flow, Json } from '../../../dsl/src/index.ts';
+import {
+  createFlowWorker,
+  type FlowWorkerConfig,
+} from '../../src/flow/createFlowWorker.ts';
+import type { postgres } from '../sql.ts';
 import { PgflowSqlClient } from '../../../core/src/PgflowSqlClient.ts';
 
-export async function startFlow<T extends Json>(sql: postgres.Sql, flow: Flow<T>, input: T) {
+export async function startFlow<
+  T extends Json,
+  S extends Record<string, Json> = Record<never, never>,
+  D extends Record<string, string[]> = Record<string, string[]>
+>(sql: postgres.Sql, flow: Flow<T, S, D>, input: T) {
   const pgflow = new PgflowSqlClient(sql);
 
   return await pgflow.startFlow(flow, input);
 }
 
-export function startWorker<T extends Json>(sql: postgres.Sql, flow: Flow<T>, options: FlowWorkerConfig) {
+export function startWorker<
+  T extends Json,
+  S extends Record<string, Json> = Record<never, never>,
+  D extends Record<string, string[]> = Record<string, string[]>
+>(sql: postgres.Sql, flow: Flow<T, S, D>, options: FlowWorkerConfig) {
   const defaultOptions = {
     sql,
     maxConcurrent: 1,
@@ -20,7 +30,7 @@ export function startWorker<T extends Json>(sql: postgres.Sql, flow: Flow<T>, op
   const mergedOptions = {
     ...defaultOptions,
     ...options,
-  }
+  };
 
   const worker = createFlowWorker(flow, mergedOptions);
 

@@ -2,16 +2,14 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "baseUrl": ".",
-    "rootDir": "src",
+    "rootDir": "../../",
     "outDir": "dist",
-    "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
-    "emitDeclarationOnly": false,
-    "types": ["node", "vite/client"],
+    "tsBuildInfoFile": "dist/tsconfig.typecheck.tsbuildinfo",
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "types": ["node", "vite/client"]
   },
-  "include": ["src/**/*.ts", "../dsl/src/dsl.ts"],
-  "references": [{ "path": "../dsl/tsconfig.lib.json" }],
+  "include": ["src/**/*.ts", "../dsl/src/dsl.ts", "../dsl/src/utils.ts"],
   "exclude": [
     "vite.config.ts",
     "vite.config.mts",

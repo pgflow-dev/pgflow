@@ -123,6 +123,17 @@
         "parallel": false
       }
     },
+    "test:e2e": {
+      "dependsOn": ["supabase:prepare-edge-fn"],
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "commands": [
+          "deno test --allow-all --env=supabase/functions/.env tests/e2e/"
+        ],
+        "parallel": false
+      }
+    },
     "test": {
       "dependsOn": ["test:unit", "test:integration"]
     },
