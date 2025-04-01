@@ -51,9 +51,9 @@ export class StepTaskExecutor<TFlow extends Flow<any, any, any>>
         throw new Error(`No step definition found for slug=${stepSlug}`);
       }
 
-      // Execute the step handler with the input data
-      // The handler is properly typed based on the Flow definition
+      // !!! HANDLER EXECUTION !!!
       const result = await stepDef.handler(this.task.input);
+      // !!! HANDLER EXECUTION !!!
 
       this.logger.debug(
         `step task ${this.task.msg_id} completed successfully, marking as complete`
