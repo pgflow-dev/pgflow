@@ -2,6 +2,8 @@ import { describe, it, vi, expect } from 'vitest';
 import { Flow } from './dsl.ts';
 import * as utils from './utils.ts';
 
+const noop = () => null;
+
 describe('Flow', () => {
   describe('constructor', () => {
     it('creates a flow with valid defaults', () => {
@@ -88,15 +90,25 @@ describe('Flow', () => {
   });
 
   describe('getStepDefinition', () => {
-    it('returns the step definition when step exists', () => {
+    it('returns the root step definition when step exists', () => {
       const flow = new Flow<{ value: number }>({ slug: 'test_flow' }).step(
-        { slug: 'test_step' },
-        () => ({ result: 42 })
+        { slug: 'root_step' },
+        noop
       );
 
-      const stepDef = flow.getStepDefinition('test_step');
-      expect(stepDef.slug).toBe('test_step');
+      const stepDef = flow.getStepDefinition('root_step');
+      expect(stepDef.slug).toBe('root_step');
       expect(stepDef.dependencies).toEqual([]);
+    });
+
+    it('returns the normal step definition when step exists', () => {
+      const flow = new Flow<{ value: number }>({ slug: 'test_flow' })
+        .step({ slug: 'root_step' }, noop)
+        .step({ slug: 'last_step', dependsOn: ['root_step'] }, noop);
+
+      const stepDef = flow.getStepDefinition('last_step');
+      expect(stepDef.slug).toBe('last_step');
+      expect(stepDef.dependencies).toEqual(['root_step']);
     });
 
     it('throws error when step does not exist', () => {
