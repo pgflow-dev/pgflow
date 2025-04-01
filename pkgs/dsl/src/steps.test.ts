@@ -26,6 +26,14 @@ describe('Steps', () => {
       const stepsInOrder = newFlow.getStepsInOrder();
       expect(stepsInOrder.map((s) => s.slug)).toEqual(['step1', 'step2']);
     });
+
+    it('throws when adding step with the same slug', () => {
+      const newFlow = flow.step({ slug: 'test_step' }, noop);
+
+      expect(() => newFlow.step({ slug: 'test_step' }, noop)).toThrowError(
+        'Step "test_step" already exists in flow "test_flow"'
+      );
+    });
   });
 
   describe('slug validation', () => {

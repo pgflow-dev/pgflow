@@ -166,6 +166,10 @@ export class Flow<
     // Validate the step slug
     validateSlug(slug);
 
+    if (this.stepDefinitions[slug]) {
+      throw new Error(`Step "${slug}" already exists in flow "${this.slug}"`);
+    }
+
     const dependencies = opts.dependsOn || [];
     // Validate dependencies - check if all referenced steps exist
     if (dependencies.length > 0) {
