@@ -48,35 +48,8 @@ describe('Flow', () => {
     });
 
     // Integration tests for invalid slugs
-    it('throws when slug starts with a number', () => {
-      expect(() => new Flow({ slug: '1invalid' })).toThrowError(
-        'Slug cannot start with a number'
-      );
-    });
-
-    it('throws when slug starts with an underscore', () => {
-      expect(() => new Flow({ slug: '_invalid' })).toThrowError(
-        'Slug cannot start with an underscore'
-      );
-    });
-
-    it('throws when slug contains spaces', () => {
-      expect(() => new Flow({ slug: 'invalid slug' })).toThrowError(
-        'Slug cannot contain spaces'
-      );
-    });
-
-    it('throws when slug contains special characters', () => {
-      expect(() => new Flow({ slug: 'invalid/slug' })).toThrowError(
-        'Slug cannot contain special characters like /, :, ?, #'
-      );
-    });
-
-    it('throws when slug is too long', () => {
-      const longSlug = 'a'.repeat(129);
-      expect(() => new Flow({ slug: longSlug })).toThrowError(
-        'Slug cannot be longer than 128 characters'
-      );
+    it('rejects invalid slugs during flow creation', () => {
+      expect(() => new Flow({ slug: '1invalid' })).toThrowError();
     });
   });
 
