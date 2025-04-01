@@ -10,7 +10,7 @@ export type Json =
   | { [key: string]: Json | undefined };
 
 // Used to flatten the types of a union of objects for readability
-type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
+export type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
 
 export type ExtractFlowInput<TFlow extends Flow<any, any, any>> =
   TFlow extends Flow<infer TR, any, any> ? TR : never;

@@ -1,4 +1,9 @@
-import type { ExtractFlowSteps, Flow, StepInput } from '../../dsl/src/dsl.ts';
+import type {
+  ExtractFlowSteps,
+  Flow,
+  StepInput,
+  Simplify,
+} from '../../dsl/src/dsl.ts';
 import type { Database } from './database-types.ts';
 
 export type Json =
@@ -21,7 +26,7 @@ export type StepTaskRecord<TFlow extends Flow<any, any, any>> = {
     flow_slug: string;
     run_id: string;
     step_slug: K;
-    input: StepInput<TFlow, K>;
+    input: Simplify<StepInput<TFlow, K>>;
     msg_id: number;
   };
 }[Extract<keyof ExtractFlowSteps<TFlow>, string>];
