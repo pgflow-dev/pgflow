@@ -32,13 +32,13 @@ export const stepTaskRecord: StepTaskRecord<typeof ExampleFlow> = {
   flow_slug: 'example_flow',
   run_id: '123',
   step_slug: 'normalStep',
-  // TODO; this input should be typed based on the `step_slug` above
-  //       so it should only accept the properties for the thirdStep
   input: {
     run: { value: 23 },
     rootStep: { doubledValue: 23 },
-    // thirdStep: { finalValue: 23 },
-    normalStep: { doubledValueArray: [1, 2, 3] },
+    // thirdStep: { finalValue: 23 }, --- this should be an error
+    // normalStep: { doubledValueArray: [1, 2, 3] }, --- this should be an error
   },
   msg_id: 1,
 };
+
+// export const yolo: { value: number } = { value: 23, otherValue: 'yolo' };
