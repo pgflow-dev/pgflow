@@ -67,7 +67,7 @@ describe('Flow Type System Tests', () => {
           }>();
 
           // Verify that step2 is not accessible
-          expectTypeOf<typeof payload>().not.toHaveProperty('step2');
+          expectTypeOf(payload).not.toHaveProperty('step2');
 
           return payload.step1;
         });
