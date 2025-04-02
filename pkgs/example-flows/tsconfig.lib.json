@@ -1,18 +1,21 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "rootDir": "../../",
     "outDir": "dist",
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "emitDeclarationOnly": false,
     "types": ["node", "vite/client"],
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "noEmit": true
   },
-  "include": ["src/**/*.ts", "../dsl/src/*.ts", "../core/src/*.ts"],
+  "include": ["src/**/*.ts"],
   "references": [
-    { "path": "../dsl/tsconfig.lib.json" },
-    { "path": "../core/tsconfig.lib.json" }
+    {
+      "path": "../dsl/tsconfig.lib.json"
+    },
+    {
+      "path": "../core/tsconfig.lib.json"
+    }
   ],
   "exclude": [
     "vite.config.ts",

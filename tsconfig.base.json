@@ -30,6 +30,7 @@
     "strict": true,
     "target": "es2022",
     "verbatimModuleSyntax": false,
+    "baseUrl": ".",
     "paths": {
       "@pgflow/core": ["./pkgs/core/src/index.ts"],
       "@pgflow/dsl": ["./pkgs/dsl/src/index.ts"],

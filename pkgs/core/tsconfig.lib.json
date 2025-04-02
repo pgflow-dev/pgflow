@@ -1,8 +1,6 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "rootDir": "src",
     "outDir": "dist",
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "emitDeclarationOnly": false,
@@ -10,7 +8,7 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "../dsl/src/dsl.ts"],
+  "include": ["src/**/*.ts"],
   "references": [{ "path": "../dsl/tsconfig.lib.json" }],
   "exclude": [
     "vite.config.ts",
