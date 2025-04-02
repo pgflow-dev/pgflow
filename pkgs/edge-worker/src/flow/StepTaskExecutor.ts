@@ -1,4 +1,4 @@
-import type { Flow } from '../../../dsl/src/dsl.ts';
+import type { Flow } from '@pgflow/dsl';
 import type { StepTaskRecord, IPgflowClient } from './types.ts';
 import type { Json, IExecutor } from '../core/types.ts';
 import { getLogger } from '../core/Logger.ts';

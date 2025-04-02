@@ -1,9 +1,9 @@
-import type { Flow, Json } from '../../../dsl/src/dsl.ts';
+import type { Flow, Json } from '@pgflow/dsl';
 import type { EdgeWorkerConfig } from '../EdgeWorker.ts';
 import { ExecutionController } from '../core/ExecutionController.ts';
 import { StepTaskPoller, type StepTaskPollerConfig } from './StepTaskPoller.ts';
 import { StepTaskExecutor } from './StepTaskExecutor.ts';
-import { PgflowSqlClient } from '../../../core/src/PgflowSqlClient.ts';
+import { PgflowSqlClient } from '@pgflow/core';
 import { Queries } from '../core/Queries.ts';
 import type { StepTaskRecord } from './types.ts';
 import type { IExecutor } from '../core/types.ts';

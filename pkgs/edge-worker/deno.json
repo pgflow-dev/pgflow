@@ -9,7 +9,9 @@
     "@std/async": "jsr:@std/async",
     "@std/log": "jsr:@std/log@^0.224.13",
     "@std/testing/mock": "jsr:@std/testing/mock",
-    "postgres": "npm:postgres@3.4.5"
+    "postgres": "npm:postgres@3.4.5",
+    "@pgflow/core": "../core/src/index.ts",
+    "@pgflow/dsl": "../dsl/src/index.ts"
   },
   "tasks": {
     "db:down": "docker compose -f tests/db/compose.yaml down --volumes --remove-orphans",
