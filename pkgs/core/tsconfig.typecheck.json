@@ -1,4 +1,4 @@
 {
   "extends": "../../tsconfig.typecheck.json",
-  "references": [{ "path": "../dsl/tsconfig.lib.json" }],
+  "references": [{ "path": "../dsl/tsconfig.lib.json" }]
 }

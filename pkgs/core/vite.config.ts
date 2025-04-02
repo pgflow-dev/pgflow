@@ -43,11 +43,14 @@ export default defineConfig({
     watch: false,
     globals: true,
     environment: 'node',
-    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    include: ['__tests__/**/*.{test,spec}.ts'],
     reporters: ['default'],
     coverage: {
       reportsDirectory: '../../coverage/pkgs/core',
       provider: 'v8',
+    },
+    typecheck: {
+      include: ['__tests__/**/*.{test,spec}-d.ts'],
     },
   },
 });
