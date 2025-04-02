@@ -104,10 +104,10 @@ export interface RuntimeOptions {
 // Define the StepDefinition interface with integrated options
 export interface StepDefinition<
   TInput extends AnyInput,
-  TRetType extends AnyOutput
+  TOutput extends AnyOutput
 > {
   slug: string;
-  handler: (input: TInput) => TRetType | Promise<TRetType>;
+  handler: (input: TInput) => TOutput | Promise<TOutput>;
   dependencies: string[];
   options: RuntimeOptions;
 }
@@ -174,6 +174,7 @@ export class Flow<
     return this.stepDefinitions[slug as string];
   }
 
+  // SlugType extends keyof Steps & keyof StepDependencies
   step<
     Slug extends string,
     Deps extends Extract<keyof Steps, string> = never,
@@ -181,14 +182,19 @@ export class Flow<
   >(
     opts: Simplify<{ slug: Slug; dependsOn?: Deps[] } & RuntimeOptions>,
     handler: (
-      input: Simplify<StepInput<this, Slug>>
+      input: Simplify<
+        {
+          run: TFlowInput;
+        } & {
+          [K in Deps]: K extends keyof Steps ? Steps[K] : never;
+        }
+      >
     ) => RetType | Promise<RetType>
   ): Flow<
     TFlowInput,
     Steps & { [K in Slug]: Awaited<RetType> },
     StepDependencies & { [K in Slug]: Deps[] }
   > {
-    type StepInputType = StepInput<this, Slug>;
     type NewSteps = MergeObjects<Steps, { [K in Slug]: Awaited<RetType> }>;
     type NewDependencies = MergeObjects<
       StepDependencies,
