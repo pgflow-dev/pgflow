@@ -1,6 +1,6 @@
 import { describe, it, expectTypeOf } from 'vitest';
-import { PgflowSqlClient } from '../src/PgflowSqlClient.ts';
-import type { Json, StepTaskKey } from '../src/types.ts';
+import { PgflowSqlClient } from '../../src/PgflowSqlClient.ts';
+import type { Json, StepTaskKey } from '../../src/types.ts';
 import type postgres from 'postgres';
 import { Flow } from '@pgflow/dsl';
 
@@ -8,7 +8,8 @@ describe('PgflowSqlClient Type Compatibility with Flow', () => {
   it('should properly type IPgflowClient methods', () => {
     // Arrange
     const sql = {} as postgres.Sql;
-    const client = new PgflowSqlClient(sql);
+    const flow = new Flow<{ url: string }>({ slug: 'test_flow' });
+    const client = new PgflowSqlClient<typeof flow>(sql);
 
     // Check pollForTasks method types
     expectTypeOf(client.pollForTasks).toBeFunction();
@@ -31,8 +32,8 @@ describe('PgflowSqlClient Type Compatibility with Flow', () => {
 
   it('allows only valid Flow input', () => {
     const sql = {} as postgres.Sql;
-    const client = new PgflowSqlClient(sql);
     const flow = new Flow<{ url: string }>({ slug: 'test_flow' });
+    const client = new PgflowSqlClient<typeof flow>(sql);
 
     // @ts-expect-error - Flow expects { url: string } not a number
     client.startFlow(flow, 23);

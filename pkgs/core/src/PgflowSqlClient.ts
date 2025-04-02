@@ -11,7 +11,7 @@ import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
 /**
  * Implementation of IPgflowClient that uses direct SQL calls to pgflow functions
  */
-export class PgflowSqlClient<TFlow extends AnyFlow = AnyFlow>
+export class PgflowSqlClient<TFlow extends AnyFlow>
   implements IPgflowClient<TFlow>
 {
   constructor(private readonly sql: postgres.Sql) {}
