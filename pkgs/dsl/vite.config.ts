@@ -43,14 +43,13 @@ export default defineConfig({
     watch: false,
     globals: true,
     environment: 'node',
-    include: ['__tests__/**/*.{test,spec}.ts'],
+    include: [
+      '{src,__tests__}/**/*.{test,spec,test-d,spec-d}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+    ],
     reporters: ['default'],
     coverage: {
       reportsDirectory: './test-output/vitest/coverage',
       provider: 'v8',
-    },
-    typecheck: {
-      include: ['__tests__/**/*.{test,spec}-d.ts'],
     },
   },
 });

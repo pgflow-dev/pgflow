@@ -77,9 +77,9 @@
     },
     "test": {
       "executor": "nx:noop",
-      "dependsOn": ["test:sql", "test:unit", "test:typecheck"]
+      "dependsOn": ["test:pgtap", "test:vitest"]
     },
-    "test:sql": {
+    "test:pgtap": {
       "executor": "nx:run-commands",
       "dependsOn": ["supabase:ensure-started"],
       "options": {
@@ -96,23 +96,13 @@
         "reportsDirectory": "{workspaceRoot}/coverage/{projectRoot}"
       }
     },
-    "test:watch": {
+    "test:pgtap:watch": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
         "command": "scripts/watch-test"
       },
       "cache": false
-    },
-    "test:typecheck": {
-      "executor": "nx:run-commands",
-      "options": {
-        "cwd": "{projectRoot}",
-        "commands": [
-          "vitest --typecheck --typecheck.tsconfig=tsconfig.typecheck.json"
-        ],
-        "parallel": true
-      }
     },
     "gen-types": {
       "executor": "nx:run-commands",
