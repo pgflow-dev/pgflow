@@ -14,10 +14,6 @@
   },
   "nxCloudId": "676490227393fa777407053a",
   "plugins": [
-    {
-      "plugin": "@nx/js/typescript",
-      "exclude": ["pkgs/core/*", "pkgs/dsl/*", "pkgs/example-flows/*"]
-    },
     "@nx/eslint/plugin",
     "@axhxrx/nx-deno",
     {
