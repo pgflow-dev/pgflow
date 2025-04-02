@@ -5,8 +5,7 @@
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "emitDeclarationOnly": false,
     "types": ["node", "vite/client"],
-    "allowImportingTsExtensions": true,
-    "noEmit": true
+    "allowImportingTsExtensions": true
   },
   "include": ["src/**/*.ts"],
   "references": [{ "path": "../dsl/tsconfig.lib.json" }],
