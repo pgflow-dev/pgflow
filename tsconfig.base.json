@@ -31,8 +31,8 @@
     "target": "es2022",
     "verbatimModuleSyntax": false,
     "paths": {
-      "@pgflow/dsl": ["pkgs/dsl/src/index.ts"],
       "@pgflow/core": ["pkgs/core/src/index.ts"],
+      "@pgflow/dsl": ["pkgs/dsl/src/index.ts"],
       "@pgflow/edge-worker": ["pkgs/edge-worker/mod.ts"]
     }
   }
