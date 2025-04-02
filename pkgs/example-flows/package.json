@@ -1,7 +1,10 @@
 {
   "name": "@pgflow/example-flows",
   "version": "0.0.1",
-  "dependencies": {},
+  "dependencies": {
+    "@pgflow/core": "workspace:*",
+    "@pgflow/dsl": "workspace:*"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "typings": "./dist/index.d.ts",

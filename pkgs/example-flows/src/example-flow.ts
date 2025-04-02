@@ -1,5 +1,5 @@
-import { Flow } from '../../dsl/src/dsl.ts';
-import type { StepTaskRecord } from '../../core/src/types.ts';
+import { Flow } from '@pgflow/dsl';
+import type { StepTaskRecord } from '@pgflow/core';
 
 // Example usage
 export const ExampleFlow = new Flow<{ value: number }>({
