@@ -38,7 +38,7 @@ export type AnyDeps = Record<string, string[]>;
 // ========================
 
 export type EmptyFlow = Flow<AnyInput, EmptySteps, EmptyDeps>;
-export type AnyFlow = Flow<Json, AnySteps, AnyDeps>;
+export type AnyFlow = Flow<AnyInput, AnySteps, AnyDeps>;
 
 // ========================
 // UTILITY TYPES (with proper constraints)
@@ -72,7 +72,7 @@ export type ExtractFlowDeps<TFlow> = TFlow extends Flow<
 // Usage:
 //   StepOutput<typeof flow, 'step1'>
 export type StepOutput<
-  TFlow extends AnyFlow,
+  TFlow extends Flow<any, any, any>,
   TStepSlug extends string
 > = TStepSlug extends keyof ExtractFlowSteps<TFlow>
   ? ExtractFlowSteps<TFlow>[TStepSlug]
