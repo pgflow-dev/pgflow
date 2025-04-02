@@ -160,7 +160,18 @@ export class Flow<
    */
   getStepDefinition<SlugType extends keyof Steps & keyof StepDependencies>(
     slug: SlugType
-  ): StepDefinition<StepInput<this, SlugType & string>, Steps[SlugType]> {
+  ): StepDefinition<
+    Simplify<
+      {
+        run: TFlowInput;
+      } & {
+        [K in StepDependencies[SlugType][number]]: K extends keyof Steps
+          ? Steps[K]
+          : never;
+      }
+    >,
+    Steps[SlugType]
+  > {
     // Check if the slug exists in stepDefinitions using a more explicit pattern
     if (!(slug in this.stepDefinitions)) {
       throw new Error(
@@ -230,9 +241,26 @@ export class Flow<
     validateRuntimeOptions(options, { optional: true });
 
     // Preserve the exact type of the handler
-    const newStepDefinition: StepDefinition<StepInputType, RetType> = {
+    const newStepDefinition: StepDefinition<
+      Simplify<
+        {
+          run: TFlowInput;
+        } & {
+          [K in Deps]: K extends keyof Steps ? Steps[K] : never;
+        }
+      >,
+      RetType
+    > = {
       slug,
-      handler: handler as (input: StepInputType) => RetType | Promise<RetType>,
+      handler: handler as (
+        input: Simplify<
+          {
+            run: TFlowInput;
+          } & {
+            [K in Deps]: K extends keyof Steps ? Steps[K] : never;
+          }
+        >
+      ) => RetType | Promise<RetType>,
       dependencies: dependencies as string[],
       options,
     };
