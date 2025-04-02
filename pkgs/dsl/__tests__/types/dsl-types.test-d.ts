@@ -1,4 +1,4 @@
-import { Flow, type StepOutput } from '@pgflow/dsl';
+import { Flow, type StepOutput } from '../../src/index.ts';
 import { describe, it, expectTypeOf } from 'vitest';
 
 describe('Flow Type System Tests', () => {
