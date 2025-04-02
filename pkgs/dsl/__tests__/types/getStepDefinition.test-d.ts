@@ -1,4 +1,4 @@
-import { Flow } from '../../src/dsl.ts';
+import { Flow } from '@pgflow/dsl';
 import { it, expectTypeOf, expect } from 'vitest';
 
 it('should correctly type step handlers when using getStepDefinition', () => {
