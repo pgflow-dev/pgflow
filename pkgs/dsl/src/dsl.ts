@@ -1,5 +1,9 @@
 import { validateRuntimeOptions, validateSlug } from './utils.ts';
 
+// ========================
+// CORE TYPE DEFINITIONS
+// ========================
+
 // JSON type enforcement so we can serialize the results to JSONB columns
 export type Json =
   | string
@@ -12,22 +16,63 @@ export type Json =
 // Used to flatten the types of a union of objects for readability
 export type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
 
-export type ExtractFlowInput<TFlow extends Flow<any, any, any>> =
-  TFlow extends Flow<infer TR, any, any> ? TR : never;
+// ========================
+// FLOW COMPONENT TYPES
+// ========================
 
-// Extract the TSteps
-export type ExtractFlowSteps<TFlow extends Flow<any, any, any>> =
-  TFlow extends Flow<any, infer TS, any> ? TS : never;
+// Input Types
+export type AnyInput = Json;
+export type AnyOutput = Json;
 
-// Extract the TDependencies
-export type ExtractFlowDeps<TFlow extends Flow<any, any, any>> =
-  TFlow extends Flow<any, any, infer TD> ? TD : never;
+// Step Types
+export type EmptySteps = Record<never, never>;
+export type AnySteps = Record<string, AnyOutput>; // Could use unknown if needed
+
+// Dependency Types
+export type EmptyDeps = Record<never, never[]>;
+export type DefaultDeps = Record<string, string[]>;
+export type AnyDeps = Record<string, string[]>;
+
+// ========================
+// FLOW TYPE VARIANTS
+// ========================
+
+export type EmptyFlow = Flow<AnyInput, EmptySteps, EmptyDeps>;
+export type AnyFlow = Flow<Json, AnySteps, AnyDeps>;
+
+// ========================
+// UTILITY TYPES (with proper constraints)
+// ========================
+
+export type ExtractFlowInput<TFlow> = TFlow extends Flow<
+  infer TI,
+  AnySteps,
+  AnyDeps
+>
+  ? TI
+  : never;
+
+export type ExtractFlowSteps<TFlow> = TFlow extends Flow<
+  AnyInput,
+  infer TS,
+  AnyDeps
+>
+  ? TS
+  : never;
+
+export type ExtractFlowDeps<TFlow> = TFlow extends Flow<
+  AnyInput,
+  AnySteps,
+  infer TD
+>
+  ? TD
+  : never;
 
 // Utility type to extract the output type of a step handler from a Flow
 // Usage:
 //   StepOutput<typeof flow, 'step1'>
 export type StepOutput<
-  TFlow extends Flow<any, any, any>,
+  TFlow extends AnyFlow,
   TStepSlug extends string
 > = TStepSlug extends keyof ExtractFlowSteps<TFlow>
   ? ExtractFlowSteps<TFlow>[TStepSlug]
@@ -40,10 +85,7 @@ export type StepOutput<
  * 3. No extra properties are allowed
  * Utility type to extract the input type for a specific step in a flow
  */
-export type StepInput<
-  TFlow extends Flow<any, any, any>,
-  TStepSlug extends string
-> = {
+export type StepInput<TFlow extends AnyFlow, TStepSlug extends string> = {
   run: ExtractFlowInput<TFlow>;
 } & {
   [K in Extract<
@@ -60,9 +102,12 @@ export interface RuntimeOptions {
 }
 
 // Define the StepDefinition interface with integrated options
-export interface StepDefinition<Input extends Json, RetType extends Json> {
+export interface StepDefinition<
+  TInput extends AnyInput,
+  TRetType extends AnyOutput
+> {
   slug: string;
-  handler: (input: Input) => RetType | Promise<RetType>;
+  handler: (input: TInput) => TRetType | Promise<TRetType>;
   dependencies: string[];
   options: RuntimeOptions;
 }
@@ -72,19 +117,25 @@ type MergeObjects<T1 extends object, T2 extends object> = T1 & T2;
 
 // Flow class definition
 export class Flow<
-  TRunInput extends Json,
-  Steps extends Record<string, Json> = Record<never, never>,
-  StepDependencies extends Record<string, string[]> = Record<string, string[]>
+  TFlowInput extends AnyInput = AnyInput,
+  Steps extends AnySteps = EmptySteps,
+  StepDependencies extends AnyDeps = EmptyDeps
 > {
-  // Store step definitions with their proper types
-  private stepDefinitions: Record<string, StepDefinition<any, Json>>;
+  /**
+   * Store step definitions with their proper types
+   *
+   * This is typed as a generic record because TypeScript cannot track the exact relationship
+   * between step slugs and their corresponding input/output types at the container level.
+   * Type safety is enforced at the method level when adding or retrieving steps.
+   */
+  private stepDefinitions: Record<string, StepDefinition<AnyInput, AnyOutput>>;
   private stepOrder: string[];
   public readonly slug: string;
   public readonly options: RuntimeOptions;
 
   constructor(
     config: Simplify<{ slug: string } & RuntimeOptions>,
-    stepDefinitions: Record<string, StepDefinition<any, Json>> = {},
+    stepDefinitions: Record<string, StepDefinition<AnyInput, AnyOutput>> = {},
     stepOrder: string[] = []
   ) {
     // Extract slug and options separately
@@ -117,25 +168,23 @@ export class Flow<
       );
     }
 
-    // Use unknown as an intermediate step for safer type conversion
-    // This follows TypeScript's recommendation for this kind of type conversion
-    return this.stepDefinitions[slug as string] as StepDefinition<
-      StepInput<this, SlugType & string>,
-      Steps[SlugType]
-    >;
+    // Use a type assertion directive to tell TypeScript that this is safe
+    // @ts-expect-error The type system cannot track that this.stepDefinitions[slug] has the correct type
+    // but we know it's safe because we only add steps through the strongly-typed `step` method
+    return this.stepDefinitions[slug as string];
   }
 
   step<
     Slug extends string,
     Deps extends Extract<keyof Steps, string> = never,
-    RetType extends Json = Json
+    RetType extends AnyOutput = AnyOutput
   >(
     opts: Simplify<{ slug: Slug; dependsOn?: Deps[] } & RuntimeOptions>,
     handler: (
       input: Simplify<StepInput<this, Slug>>
     ) => RetType | Promise<RetType>
   ): Flow<
-    TRunInput,
+    TFlowInput,
     Steps & { [K in Slug]: Awaited<RetType> },
     StepDependencies & { [K in Slug]: Deps[] }
   > {
@@ -191,10 +240,13 @@ export class Flow<
     const newStepOrder = [...this.stepOrder, slug];
 
     // Create a new flow with the same slug and options but with updated type parameters
-    return new Flow<TRunInput, NewSteps, NewDependencies>(
+    // We need to use type assertions here because TypeScript cannot track the exact relationship
+    // between the specific step definition types and the generic Flow type parameters
+    // This is safe because we're constructing the newStepDefinitions in a type-safe way above
+    return new Flow<TFlowInput, NewSteps, NewDependencies>(
       { slug: this.slug, ...this.options },
-      newStepDefinitions,
+      newStepDefinitions as Record<string, StepDefinition<AnyInput, AnyOutput>>,
       newStepOrder
-    ) as Flow<TRunInput, NewSteps, NewDependencies>;
+    ) as Flow<TFlowInput, NewSteps, NewDependencies>;
   }
 }
