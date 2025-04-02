@@ -2,7 +2,7 @@ import { describe, it, expectTypeOf } from 'vitest';
 import { PgflowSqlClient } from '../src/PgflowSqlClient.ts';
 import type { Json, StepTaskKey } from '../src/types.ts';
 import type postgres from 'postgres';
-import { Flow } from '../../dsl/src/dsl.ts';
+import { Flow } from '@pgflow/dsl';
 
 describe('PgflowSqlClient Type Compatibility with Flow', () => {
   it('should properly type IPgflowClient methods', () => {

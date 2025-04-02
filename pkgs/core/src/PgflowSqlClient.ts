@@ -6,7 +6,7 @@ import type {
   RunRow,
 } from './types.ts';
 import type { Json } from './types.ts';
-import type { Flow } from '../../dsl/src/dsl.ts';
+import type { Flow } from '@pgflow/dsl';
 
 /**
  * Implementation of IPgflowClient that uses direct SQL calls to pgflow functions

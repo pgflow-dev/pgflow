@@ -124,6 +124,15 @@ importers:
 
   pkgs/edge-worker: {}
 
+  pkgs/example-flows:
+    dependencies:
+      '@pgflow/core':
+        specifier: workspace:*
+        version: link:../core
+      '@pgflow/dsl':
+        specifier: workspace:*
+        version: link:../dsl
+
   pkgs/website:
     dependencies:
       '@astrojs/check':
