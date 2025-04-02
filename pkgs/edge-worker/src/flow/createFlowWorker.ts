@@ -1,4 +1,4 @@
-import type { Flow, Json } from '@pgflow/dsl';
+import type { AnyFlow } from '@pgflow/dsl';
 import type { EdgeWorkerConfig } from '../EdgeWorker.ts';
 import { ExecutionController } from '../core/ExecutionController.ts';
 import { StepTaskPoller, type StepTaskPollerConfig } from './StepTaskPoller.ts';
@@ -31,7 +31,7 @@ export type FlowWorkerConfig = EdgeWorkerConfig & {
  * @param config - Configuration options for the worker
  * @returns A configured Worker instance ready to be started
  */
-export function createFlowWorker<TFlow extends Flow<any, any, any>>(
+export function createFlowWorker<TFlow extends AnyFlow>(
   flow: TFlow,
   config: FlowWorkerConfig
 ): Worker {

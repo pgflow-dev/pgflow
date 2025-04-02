@@ -1,7 +1,7 @@
 import type { StepTaskRecord, IPgflowClient } from './types.ts';
 import type { IPoller } from '../core/types.ts';
 import { getLogger } from '../core/Logger.ts';
-import type { Flow } from '@pgflow/dsl';
+import type { AnyFlow } from '@pgflow/dsl';
 
 export interface StepTaskPollerConfig {
   batchSize: number;
@@ -11,7 +11,7 @@ export interface StepTaskPollerConfig {
 /**
  * A poller that retrieves flow tasks using an IPgflowClient
  */
-export class StepTaskPoller<TFlow extends Flow<any, any, any>>
+export class StepTaskPoller<TFlow extends AnyFlow>
   implements IPoller<StepTaskRecord<TFlow>>
 {
   private logger = getLogger('StepTaskPoller');

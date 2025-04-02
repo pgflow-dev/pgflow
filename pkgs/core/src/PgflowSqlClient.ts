@@ -6,14 +6,13 @@ import type {
   RunRow,
 } from './types.ts';
 import type { Json } from './types.ts';
-import type { Flow } from '@pgflow/dsl';
+import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
 
 /**
  * Implementation of IPgflowClient that uses direct SQL calls to pgflow functions
  */
-export class PgflowSqlClient<
-  TFlow extends Flow<any, any, any> = Flow<Json, any, any>
-> implements IPgflowClient<TFlow>
+export class PgflowSqlClient<TFlow extends AnyFlow = AnyFlow>
+  implements IPgflowClient<TFlow>
 {
   constructor(private readonly sql: postgres.Sql) {}
 
@@ -65,9 +64,9 @@ export class PgflowSqlClient<
     `;
   }
 
-  async startFlow<T extends Flow<any, any, any>>(
-    flow: T,
-    input: T extends Flow<infer I, any, any> ? I : never
+  async startFlow<TFlow extends AnyFlow>(
+    flow: TFlow,
+    input: ExtractFlowInput<TFlow>
   ): Promise<RunRow> {
     const results = await this.sql<RunRow[]>`
       SELECT * FROM pgflow.start_flow(${flow.slug}::text, ${this.sql.json(

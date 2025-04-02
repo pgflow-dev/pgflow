@@ -1,6 +1,6 @@
-import type { Flow } from '@pgflow/dsl';
+import type { AnyFlow } from '@pgflow/dsl';
 import type { StepTaskRecord, IPgflowClient } from './types.ts';
-import type { Json, IExecutor } from '../core/types.ts';
+import type { IExecutor } from '../core/types.ts';
 import { getLogger } from '../core/Logger.ts';
 
 class AbortError extends Error {
@@ -14,9 +14,7 @@ class AbortError extends Error {
  * An executor that processes step tasks using an IPgflowClient
  * with strong typing for the flow's step handlers
  */
-export class StepTaskExecutor<TFlow extends Flow<any, any, any>>
-  implements IExecutor
-{
+export class StepTaskExecutor<TFlow extends AnyFlow> implements IExecutor {
   private logger = getLogger('StepTaskExecutor');
 
   constructor(

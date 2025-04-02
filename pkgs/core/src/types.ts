@@ -1,9 +1,9 @@
 import type {
   ExtractFlowSteps,
-  Flow,
   StepInput,
   Simplify,
-} from '../../dsl/src/dsl.ts';
+  AnyFlow,
+} from '@pgflow/dsl';
 import type { Database } from './database-types.ts';
 
 export type Json =
@@ -21,12 +21,12 @@ export type Json =
  * The input type is automatically inferred based on the step_slug using a discriminated union.
  * This ensures that each step only receives inputs from its declared dependencies and the flow's run input.
  */
-export type StepTaskRecord<TFlow extends Flow<any, any, any>> = {
-  [K in Extract<keyof ExtractFlowSteps<TFlow>, string>]: {
+export type StepTaskRecord<TFlow extends AnyFlow> = {
+  [StepSlug in Extract<keyof ExtractFlowSteps<TFlow>, string>]: {
     flow_slug: string;
     run_id: string;
-    step_slug: K;
-    input: Simplify<StepInput<TFlow, K>>;
+    step_slug: StepSlug;
+    input: Simplify<StepInput<TFlow, StepSlug>>;
     msg_id: number;
   };
 }[Extract<keyof ExtractFlowSteps<TFlow>, string>];
@@ -40,9 +40,7 @@ export type StepTaskKey = Pick<StepTaskRecord<any>, 'run_id' | 'step_slug'>;
 /**
  * Interface for interacting with pgflow database functions
  */
-export interface IPgflowClient<
-  TFlow extends Flow<any, any, any> = Flow<Json, any, any>
-> {
+export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow> {
   /**
    * Fetches tasks from pgflow
    * @param queueName - Name
