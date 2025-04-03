@@ -89,6 +89,17 @@ export type ExtractFlowDeps<TFlow extends AnyFlow> = TFlow extends Flow<
   ? TD
   : never;
 
+/**
+ * Extracts the dependencies type from a Flow
+ * @template TFlow - The Flow type to extract from
+ */
+type StepDepsOf<
+  TFlow extends AnyFlow,
+  TStepSlug extends string
+> = TStepSlug extends keyof ExtractFlowDeps<TFlow>
+  ? ExtractFlowDeps<TFlow>[TStepSlug][number] // The string slugs that TStepSlug depends on
+  : never;
+
 // Utility type to extract the output type of a step handler from a Flow
 // Usage:
 //   StepOutput<typeof flow, 'step1'>
@@ -111,7 +122,7 @@ export type StepInput<TFlow extends AnyFlow, TStepSlug extends string> = {
 } & {
   [K in Extract<
     keyof ExtractFlowSteps<TFlow>,
-    ExtractFlowDeps<TFlow>[TStepSlug][number]
+    StepDepsOf<TFlow, TStepSlug>
   >]: ExtractFlowSteps<TFlow>[K];
 };
 

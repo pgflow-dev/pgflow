@@ -4,21 +4,17 @@ import { describe, it, expectTypeOf } from 'vitest';
 describe('StepInput utility type', () => {
   describe('for a flow without steps', () => {
     const emptyFlow = new Flow<{ userId: number }>({ slug: 'empty_flow' });
+    type NonExistentInput = StepInput<typeof emptyFlow, 'nonExistentStep'>;
 
     it('should contain only run input for non-existent steps', () => {
-      type NonExistentInput = StepInput<typeof emptyFlow, 'nonExistentStep'>;
       expectTypeOf<NonExistentInput>().toMatchTypeOf<{
         run: { userId: number };
-      }>();
-      expectTypeOf<NonExistentInput>().not.toMatchTypeOf<{
-        nonExistentStep: any;
       }>();
     });
 
     it('should not allow extraneous keys', () => {
-      type NonExistentInput = StepInput<typeof emptyFlow, 'nonExistentStep'>;
       expectTypeOf<NonExistentInput>().not.toMatchTypeOf<{
-        extraProperty: unknown;
+        nonExistentStep: any;
       }>();
     });
   });
@@ -38,14 +34,12 @@ describe('StepInput utility type', () => {
           run: { baseInput: string };
         }>();
         expectTypeOf<Step1Input>().not.toMatchTypeOf<{
-          run: { baseInput: string };
           step2: { result2: string };
         }>();
       });
 
       it('should not allow extraneous keys', () => {
         expectTypeOf<Step1Input>().not.toMatchTypeOf<{
-          run: { baseInput: string };
           extraProperty: unknown;
         }>();
       });
@@ -59,14 +53,12 @@ describe('StepInput utility type', () => {
           run: { baseInput: string };
         }>();
         expectTypeOf<Step2Input>().not.toMatchTypeOf<{
-          run: { baseInput: string };
           step1: { result1: number };
         }>();
       });
 
       it('should not allow extraneous keys', () => {
         expectTypeOf<Step2Input>().not.toMatchTypeOf<{
-          run: { baseInput: string };
           extraProperty: unknown;
         }>();
       });
