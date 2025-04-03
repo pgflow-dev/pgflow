@@ -42,6 +42,7 @@ export default defineConfig({
   test: {
     watch: false,
     globals: true,
+    passWithNoTests: true,
     environment: 'node',
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     reporters: ['default'],
