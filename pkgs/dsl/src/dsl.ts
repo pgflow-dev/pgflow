@@ -37,14 +37,27 @@ export type AnyDeps = Record<string, string[]>;
 // FLOW TYPE VARIANTS
 // ========================
 
+/**
+ * Represents a Flow that has not steps nor deps defined yet
+ */
 export type EmptyFlow = Flow<AnyInput, EmptySteps, EmptyDeps>;
-export type AnyFlow = Flow<AnyInput, AnySteps, AnyDeps>;
+
+/**
+ * Represents any Flow with flexible input, steps, and dependencies.
+ * This type is intentionally more permissive to allow for better type inference
+ * in utility types like StepOutput.
+ */
+export type AnyFlow = Flow<any, any, any>;
 
 // ========================
 // UTILITY TYPES (with proper constraints)
 // ========================
 
-export type ExtractFlowInput<TFlow> = TFlow extends Flow<
+/**
+ * Extracts the input type from a Flow
+ * @template TFlow - The Flow type to extract from
+ */
+export type ExtractFlowInput<TFlow extends AnyFlow> = TFlow extends Flow<
   infer TI,
   infer _TS,
   infer _TD
@@ -52,7 +65,11 @@ export type ExtractFlowInput<TFlow> = TFlow extends Flow<
   ? TI
   : never;
 
-export type ExtractFlowSteps<TFlow> = TFlow extends Flow<
+/**
+ * Extracts the steps type from a Flow
+ * @template TFlow - The Flow type to extract from
+ */
+export type ExtractFlowSteps<TFlow extends AnyFlow> = TFlow extends Flow<
   infer _TI,
   infer TS,
   infer _TD
@@ -60,7 +77,11 @@ export type ExtractFlowSteps<TFlow> = TFlow extends Flow<
   ? TS
   : never;
 
-export type ExtractFlowDeps<TFlow> = TFlow extends Flow<
+/**
+ * Extracts the dependencies type from a Flow
+ * @template TFlow - The Flow type to extract from
+ */
+export type ExtractFlowDeps<TFlow extends AnyFlow> = TFlow extends Flow<
   infer _TI,
   infer _TS,
   infer TD
@@ -72,7 +93,7 @@ export type ExtractFlowDeps<TFlow> = TFlow extends Flow<
 // Usage:
 //   StepOutput<typeof flow, 'step1'>
 export type StepOutput<
-  TFlow extends Flow<any, any, any>,
+  TFlow extends AnyFlow,
   TStepSlug extends string
 > = TStepSlug extends keyof ExtractFlowSteps<TFlow>
   ? ExtractFlowSteps<TFlow>[TStepSlug]
