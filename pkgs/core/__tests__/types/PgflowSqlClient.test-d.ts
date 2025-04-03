@@ -13,12 +13,8 @@ import postgres from 'postgres';
 import { Flow } from '@pgflow/dsl';
 
 describe('PgflowSqlClient Type Compatibility with Flow', () => {
-  let mockSql: ReturnType<typeof postgres>;
-
   beforeEach(() => {
-    // Clear all mock instances before each test
     vi.clearAllMocks();
-    mockSql = postgres();
   });
 
   it('should properly type IPgflowClient methods', () => {
