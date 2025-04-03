@@ -6,12 +6,12 @@ create schema if not exists edge_worker;
 -- Workers Table --------------------------------------------------------------
 -------------------------------------------------------------------------------
 create table if not exists edge_worker.workers (
-    worker_id UUID not null primary key,
-    queue_name TEXT not null,
-    function_name TEXT not null,
-    started_at TIMESTAMPTZ not null default now(),
-    stopped_at TIMESTAMPTZ,
-    last_heartbeat_at TIMESTAMPTZ not null default now()
+  worker_id uuid not null primary key,
+  queue_name text not null,
+  function_name text not null,
+  started_at timestamptz not null default now(),
+  stopped_at timestamptz,
+  last_heartbeat_at timestamptz not null default now()
 );
 
 --------------------------------------------------------------------------------
@@ -26,19 +26,19 @@ create table if not exists edge_worker.workers (
 -- This will be removed once Supabase upgrades to 1.5.0 or higher.            --
 --------------------------------------------------------------------------------
 create function edge_worker.read_with_poll(
-    queue_name TEXT,
-    vt INTEGER,
-    qty INTEGER,
-    max_poll_seconds INTEGER default 5,
-    poll_interval_ms INTEGER default 100,
-    conditional JSONB default '{}'
+  queue_name text,
+  vt integer,
+  qty integer,
+  max_poll_seconds integer default 5,
+  poll_interval_ms integer default 100,
+  conditional jsonb default '{}'
 )
 returns setof pgmq.message_record as $$
 DECLARE
     r pgmq.message_record;
-    stop_at TIMESTAMP;
-    sql TEXT;
-    qtable TEXT := pgmq.format_table_name(queue_name, 'q');
+    stop_at timestamp;
+    sql text;
+    qtable text := pgmq.format_table_name(queue_name, 'q');
 BEGIN
     stop_at := clock_timestamp() + make_interval(secs => max_poll_seconds);
     LOOP
