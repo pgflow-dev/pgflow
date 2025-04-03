@@ -1,6 +1,6 @@
-import type { Flow } from '../../../dsl/src/dsl.ts';
+import type { AnyFlow } from '@pgflow/dsl';
 import type { StepTaskRecord, IPgflowClient } from './types.ts';
-import type { Json, IExecutor } from '../core/types.ts';
+import type { IExecutor } from '../core/types.ts';
 import { getLogger } from '../core/Logger.ts';
 
 class AbortError extends Error {
@@ -14,18 +14,13 @@ class AbortError extends Error {
  * An executor that processes step tasks using an IPgflowClient
  * with strong typing for the flow's step handlers
  */
-export class StepTaskExecutor<
-  TRunPayload extends Json,
-  TSteps extends Record<string, Json> = Record<never, never>,
-  TDependencies extends Record<string, string[]> = Record<string, string[]>
-> implements IExecutor
-{
+export class StepTaskExecutor<TFlow extends AnyFlow> implements IExecutor {
   private logger = getLogger('StepTaskExecutor');
 
   constructor(
-    private readonly flow: Flow<TRunPayload, TSteps, TDependencies>,
-    private readonly task: StepTaskRecord,
-    private readonly adapter: IPgflowClient,
+    private readonly flow: TFlow,
+    private readonly task: StepTaskRecord<TFlow>,
+    private readonly adapter: IPgflowClient<TFlow>,
     private readonly signal: AbortSignal
   ) {}
 
@@ -54,9 +49,9 @@ export class StepTaskExecutor<
         throw new Error(`No step definition found for slug=${stepSlug}`);
       }
 
-      // Execute the step handler with the input data
-      // The handler is properly typed based on the Flow definition
+      // !!! HANDLER EXECUTION !!!
       const result = await stepDef.handler(this.task.input);
+      // !!! HANDLER EXECUTION !!!
 
       this.logger.debug(
         `step task ${this.task.msg_id} completed successfully, marking as complete`

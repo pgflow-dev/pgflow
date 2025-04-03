@@ -6,13 +6,13 @@ import type {
   RunRow,
 } from './types.ts';
 import type { Json } from './types.ts';
-import type { Flow } from '../../dsl/src/dsl.ts';
+import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
 
 /**
  * Implementation of IPgflowClient that uses direct SQL calls to pgflow functions
  */
-export class PgflowSqlClient<TPayload extends Json = Json>
-  implements IPgflowClient<TPayload>
+export class PgflowSqlClient<TFlow extends AnyFlow>
+  implements IPgflowClient<TFlow>
 {
   constructor(private readonly sql: postgres.Sql) {}
 
@@ -22,8 +22,8 @@ export class PgflowSqlClient<TPayload extends Json = Json>
     visibilityTimeout = 2,
     maxPollSeconds = 5,
     pollIntervalMs = 200
-  ): Promise<StepTaskRecord<TPayload>[]> {
-    return await this.sql<StepTaskRecord<TPayload>[]>`
+  ): Promise<StepTaskRecord<TFlow>[]> {
+    return await this.sql<StepTaskRecord<TFlow>[]>`
       SELECT *
       FROM pgflow.poll_for_tasks(
         queue_name => ${queueName},
@@ -64,11 +64,10 @@ export class PgflowSqlClient<TPayload extends Json = Json>
     `;
   }
 
-  async startFlow<
-    T extends Json,
-    S extends Record<string, Json> = Record<never, never>,
-    D extends Record<string, string[]> = Record<string, string[]>
-  >(flow: Flow<T, S, D>, input: T): Promise<RunRow> {
+  async startFlow<TFlow extends AnyFlow>(
+    flow: TFlow,
+    input: ExtractFlowInput<TFlow>
+  ): Promise<RunRow> {
     const results = await this.sql<RunRow[]>`
       SELECT * FROM pgflow.start_flow(${flow.slug}::text, ${this.sql.json(
       input

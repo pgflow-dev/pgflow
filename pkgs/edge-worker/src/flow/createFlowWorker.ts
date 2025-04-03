@@ -1,12 +1,12 @@
-import type { Flow } from '../../../dsl/src/dsl.ts';
+import type { AnyFlow } from '@pgflow/dsl';
 import type { EdgeWorkerConfig } from '../EdgeWorker.ts';
 import { ExecutionController } from '../core/ExecutionController.ts';
 import { StepTaskPoller, type StepTaskPollerConfig } from './StepTaskPoller.ts';
 import { StepTaskExecutor } from './StepTaskExecutor.ts';
-import { PgflowSqlClient } from '../../../core/src/PgflowSqlClient.ts';
+import { PgflowSqlClient } from '@pgflow/core';
 import { Queries } from '../core/Queries.ts';
 import type { StepTaskRecord } from './types.ts';
-import type { IExecutor, Json } from '../core/types.ts';
+import type { IExecutor } from '../core/types.ts';
 import { Worker } from '../core/Worker.ts';
 import postgres from 'postgres';
 import { FlowWorkerLifecycle } from './FlowWorkerLifecycle.ts';
@@ -31,12 +31,8 @@ export type FlowWorkerConfig = EdgeWorkerConfig & {
  * @param config - Configuration options for the worker
  * @returns A configured Worker instance ready to be started
  */
-export function createFlowWorker<
-  TRunPayload extends Json,
-  TSteps extends Record<string, Json> = Record<never, never>,
-  TDependencies extends Record<string, string[]> = Record<string, string[]>
->(
-  flow: Flow<TRunPayload, TSteps, TDependencies>,
+export function createFlowWorker<TFlow extends AnyFlow>(
+  flow: TFlow,
   config: FlowWorkerConfig
 ): Worker {
   const logger = getLogger('createFlowWorker');
@@ -59,7 +55,7 @@ export function createFlowWorker<
     });
 
   // Create the pgflow adapter
-  const pgflowAdapter = new PgflowSqlClient<TRunPayload>(sql);
+  const pgflowAdapter = new PgflowSqlClient<TFlow>(sql);
 
   // Use flow slug as queue name, or fallback to 'tasks'
   const queueName = flow.slug || 'tasks';
@@ -67,14 +63,14 @@ export function createFlowWorker<
 
   // Create specialized FlowWorkerLifecycle with the proxied queue and flow
   const queries = new Queries(sql);
-  const lifecycle = new FlowWorkerLifecycle<TRunPayload, TSteps>(queries, flow);
+  const lifecycle = new FlowWorkerLifecycle<TFlow>(queries, flow);
 
   // Create StepTaskPoller
   const pollerConfig: StepTaskPollerConfig = {
     batchSize: config.batchSize || 10,
     queueName: flow.slug,
   };
-  const poller = new StepTaskPoller<TRunPayload>(
+  const poller = new StepTaskPoller<TFlow>(
     pgflowAdapter,
     abortSignal,
     pollerConfig
@@ -82,21 +78,23 @@ export function createFlowWorker<
 
   // Create executor factory with proper typing
   const executorFactory = (
-    record: StepTaskRecord<TRunPayload>,
+    record: StepTaskRecord<TFlow>,
     signal: AbortSignal
   ): IExecutor => {
-    return new StepTaskExecutor(flow, record, pgflowAdapter, signal);
+    return new StepTaskExecutor<TFlow>(flow, record, pgflowAdapter, signal);
   };
 
   // Create ExecutionController
-  const executionController = new ExecutionController<
-    StepTaskRecord<TRunPayload>
-  >(executorFactory, abortSignal, {
-    maxConcurrent: config.maxConcurrent || 10,
-  });
+  const executionController = new ExecutionController<StepTaskRecord<TFlow>>(
+    executorFactory,
+    abortSignal,
+    {
+      maxConcurrent: config.maxConcurrent || 10,
+    }
+  );
 
   // Create BatchProcessor
-  const batchProcessor = new BatchProcessor<StepTaskRecord<TRunPayload>>(
+  const batchProcessor = new BatchProcessor<StepTaskRecord<TFlow>>(
     executionController,
     poller,
     abortSignal

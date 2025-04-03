@@ -1,3 +1,9 @@
+import type {
+  ExtractFlowSteps,
+  StepInput,
+  Simplify,
+  AnyFlow,
+} from '@pgflow/dsl';
 import type { Database } from './database-types.ts';
 
 export type Json =
@@ -8,30 +14,33 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-
 /**
  * Record representing a task from pgflow.poll_for_tasks
  *
  * Same as pgflow.step_task_record type, but with not-null fields and type argument for payload.
+ * The input type is automatically inferred based on the step_slug using a discriminated union.
+ * This ensures that each step only receives inputs from its declared dependencies and the flow's run input.
  */
-export interface StepTaskRecord<TPayload extends Json = Json> {
-  flow_slug: string;
-  run_id: string;
-  step_slug: string;
-  input: TPayload;
-  msg_id: number;
-}
+export type StepTaskRecord<TFlow extends AnyFlow> = {
+  [StepSlug in Extract<keyof ExtractFlowSteps<TFlow>, string>]: {
+    flow_slug: string;
+    run_id: string;
+    step_slug: StepSlug;
+    input: Simplify<StepInput<TFlow, StepSlug>>;
+    msg_id: number;
+  };
+}[Extract<keyof ExtractFlowSteps<TFlow>, string>];
 
 /**
- * Composite key that is enought o find particular step task row
+ * Composite key that is enough to find a particular step task
+ * Contains only the minimum fields needed to identify a task
  */
-export type StepTaskKey = Pick<StepTaskRow, 'run_id' | 'step_slug'>;
-
+export type StepTaskKey = Pick<StepTaskRecord<any>, 'run_id' | 'step_slug'>;
 
 /**
  * Interface for interacting with pgflow database functions
  */
-export interface IPgflowClient<TPayload extends Json = Json> {
+export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow> {
   /**
    * Fetches tasks from pgflow
    * @param queueName - Name
@@ -46,7 +55,7 @@ export interface IPgflowClient<TPayload extends Json = Json> {
     visibilityTimeout?: number,
     maxPollSeconds?: number,
     pollIntervalMs?: number
-  ): Promise<StepTaskRecord<TPayload>[]>;
+  ): Promise<StepTaskRecord<TFlow>[]>;
 
   /**
    * Marks a task as completed
@@ -57,7 +66,7 @@ export interface IPgflowClient<TPayload extends Json = Json> {
 
   /**
    * Marks a task as failed
-   * @param stepTask - Step task identifier containing run_id and step_slug
+   * @param stepTask - Step task key containing run_id and step_slug
    * @param error - Error to fail task with
    */
   failTask(stepTask: StepTaskKey, error: unknown): Promise<void>;

@@ -6,7 +6,7 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
   root: __dirname,
-  cacheDir: '../../node_modules/.vite/pkgs/core',
+  cacheDir: '../../node_modules/.vite/pkgs/example-flows',
   plugins: [
     tsconfigPaths(),
     dts({
@@ -30,7 +30,7 @@ export default defineConfig({
     lib: {
       // Could also be a dictionary or array of multiple entry points.
       entry: 'src/index.ts',
-      name: 'core',
+      name: 'example-flows',
       fileName: 'index',
       // Change this to the formats you want to support.
       // Don't forget to update your package.json as well.
@@ -38,16 +38,15 @@ export default defineConfig({
     },
     rollupOptions: {
       // External packages that should not be bundled into your library.
-      external: [],
+      external: ['@pgflow/core', '@pgflow/dsl'],
     },
   },
   test: {
     watch: false,
     globals: true,
+    passWithNoTests: true,
     environment: 'node',
-    include: [
-      '{src,__tests__}/**/*.{test,spec,test-d,spec-d}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-    ],
+    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     reporters: ['default'],
     coverage: {
       reportsDirectory: './test-output/vitest/coverage',

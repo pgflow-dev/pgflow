@@ -3,8 +3,8 @@ import { withPgNoTransaction } from '../../db.ts';
 import { Flow } from '../../../../dsl/src/dsl.ts';
 import { waitFor } from '../../e2e/_helpers.ts';
 import { delay } from '@std/async';
-import type { Json } from '../../../src/core/types.ts';
-import { startFlow, startWorker } from "../_helpers.ts";
+import type { Json } from '@pgflow/core';
+import { startFlow, startWorker } from '../_helpers.ts';
 
 // Define a minimal flow with two steps:
 // 1. Convert a number to a string
@@ -33,7 +33,6 @@ Deno.test(
     });
 
     try {
-
       await sql`select pgflow.create_flow('test_minimal_flow');`;
       await sql`select pgflow.add_step('test_minimal_flow', 'toStringStep');`;
       await sql`select pgflow.add_step('test_minimal_flow', 'wrapInArrayStep', deps_slugs => ARRAY['toStringStep']::text[]);`;

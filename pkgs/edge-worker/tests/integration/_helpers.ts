@@ -1,4 +1,4 @@
-import type { Flow, Json } from '../../../dsl/src/index.ts';
+import type { AnyFlow, ExtractFlowInput, Flow, Json } from '@pgflow/dsl';
 import {
   createFlowWorker,
   type FlowWorkerConfig,
@@ -6,12 +6,12 @@ import {
 import type { postgres } from '../sql.ts';
 import { PgflowSqlClient } from '../../../core/src/PgflowSqlClient.ts';
 
-export async function startFlow<
-  T extends Json,
-  S extends Record<string, Json> = Record<never, never>,
-  D extends Record<string, string[]> = Record<string, string[]>
->(sql: postgres.Sql, flow: Flow<T, S, D>, input: T) {
-  const pgflow = new PgflowSqlClient(sql);
+export async function startFlow<TFlow extends AnyFlow>(
+  sql: postgres.Sql,
+  flow: TFlow,
+  input: ExtractFlowInput<TFlow>
+) {
+  const pgflow = new PgflowSqlClient<TFlow>(sql);
 
   return await pgflow.startFlow(flow, input);
 }

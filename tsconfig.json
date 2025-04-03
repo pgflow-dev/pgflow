@@ -8,6 +8,9 @@
     },
     {
       "path": "./pkgs/dsl"
+    },
+    {
+      "path": "./pkgs/example-flows"
     }
   ]
 }

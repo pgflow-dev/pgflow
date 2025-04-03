@@ -1,35 +1,22 @@
 import { Heartbeat } from '../core/Heartbeat.ts';
 import { getLogger } from '../core/Logger.ts';
 import type { Queries } from '../core/Queries.ts';
-import type {
-  ILifecycle,
-  Json,
-  WorkerBootstrap,
-  WorkerRow,
-} from '../core/types.ts';
+import type { ILifecycle, WorkerBootstrap, WorkerRow } from '../core/types.ts';
 import { States, WorkerState } from '../core/WorkerState.ts';
-import type { Flow } from '../../../dsl/src/dsl.ts';
+import type { AnyFlow } from '@pgflow/dsl';
 
 /**
  * A specialized WorkerLifecycle for Flow-based workers that is aware of the Flow's step types
  */
-export class FlowWorkerLifecycle<
-  TRunPayload extends Json,
-  TSteps extends Record<string, Json> = Record<never, never>,
-  TDependencies extends Record<string, string[]> = Record<string, string[]>
-> implements ILifecycle
-{
+export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
   private workerState: WorkerState = new WorkerState();
   private heartbeat?: Heartbeat;
   private logger = getLogger('FlowWorkerLifecycle');
   private queries: Queries;
   private workerRow?: WorkerRow;
-  private flow: Flow<TRunPayload, TSteps, TDependencies>;
+  private flow: TFlow;
 
-  constructor(
-    queries: Queries,
-    flow: Flow<TRunPayload, TSteps, TDependencies>
-  ) {
+  constructor(queries: Queries, flow: TFlow) {
     this.queries = queries;
     this.flow = flow;
   }
