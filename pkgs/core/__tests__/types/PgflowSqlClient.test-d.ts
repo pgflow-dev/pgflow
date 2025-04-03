@@ -1,13 +1,13 @@
 import { describe, it, expectTypeOf } from 'vitest';
 import { PgflowSqlClient } from '../../src/PgflowSqlClient.ts';
 import type { Json, StepTaskKey } from '../../src/types.ts';
-import type postgres from 'postgres';
+import postgres from 'postgres';
 import { Flow } from '@pgflow/dsl';
 
 describe('PgflowSqlClient Type Compatibility with Flow', () => {
   it('should properly type IPgflowClient methods', () => {
     // Arrange
-    const sql = {} as postgres.Sql;
+    const sql = postgres();
     const flow = new Flow<{ url: string }>({ slug: 'test_flow' });
     const client = new PgflowSqlClient<typeof flow>(sql);
 
@@ -31,7 +31,7 @@ describe('PgflowSqlClient Type Compatibility with Flow', () => {
   });
 
   it('allows only valid Flow input', () => {
-    const sql = {} as postgres.Sql;
+    const sql = postgres();
     const flow = new Flow<{ url: string }>({ slug: 'test_flow' });
     const client = new PgflowSqlClient<typeof flow>(sql);
 
