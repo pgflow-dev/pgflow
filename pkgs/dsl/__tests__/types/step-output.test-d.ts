@@ -8,8 +8,8 @@ describe('StepOutput utility type', () => {
       .step({ slug: 'step2', dependsOn: ['step1'] }, () => ({ flag: true }))
       .step({ slug: 'step3' }, () => 'plain string');
 
-    // Test various StepOutput types
     type Step1Output = StepOutput<typeof flow, 'step1'>;
+
     expectTypeOf<Step1Output>().toMatchTypeOf<{
       value: number;
       text: string;

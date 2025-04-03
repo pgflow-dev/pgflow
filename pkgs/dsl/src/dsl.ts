@@ -46,23 +46,23 @@ export type AnyFlow = Flow<AnyInput, AnySteps, AnyDeps>;
 
 export type ExtractFlowInput<TFlow> = TFlow extends Flow<
   infer TI,
-  AnySteps,
-  AnyDeps
+  infer _TS,
+  infer _TD
 >
   ? TI
   : never;
 
 export type ExtractFlowSteps<TFlow> = TFlow extends Flow<
-  AnyInput,
+  infer _TI,
   infer TS,
-  AnyDeps
+  infer _TD
 >
   ? TS
   : never;
 
 export type ExtractFlowDeps<TFlow> = TFlow extends Flow<
-  AnyInput,
-  AnySteps,
+  infer _TI,
+  infer _TS,
   infer TD
 >
   ? TD
