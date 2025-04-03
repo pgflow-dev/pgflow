@@ -4,7 +4,48 @@ import type { Json, StepTaskKey } from '../../src/types.ts';
 import postgres from 'postgres';
 import { Flow } from '@pgflow/dsl';
 
+// Mock the postgres module so that it never makes a real connection.
+vi.mock('postgres', () => {
+  // Create a properly typed SQL client with methods
+  type SqlClient = {
+    (strings: TemplateStringsArray, ...values: unknown[]): Promise<unknown[]>;
+    json: (data: unknown) => string;
+    begin: () => Promise<void>;
+    commit: () => Promise<void>;
+    rollback: () => Promise<void>;
+    end: () => Promise<void>;
+  };
+
+  // Create the main postgres function that returns the SQL client
+  const sql = vi.fn(() => {
+    // Create a complete mock SQL client with all required methods
+    const sqlClient = Object.assign(
+      vi.fn(() => Promise.resolve(['empty response'])),
+      {
+        json: vi.fn((data: unknown) => JSON.stringify(data)),
+        begin: vi.fn(() => Promise.resolve()),
+        commit: vi.fn(() => Promise.resolve()),
+        rollback: vi.fn(() => Promise.resolve()),
+        end: vi.fn(() => Promise.resolve()),
+      }
+    ) as SqlClient;
+
+    return sqlClient;
+  });
+
+  // Return an object with a default key since postgres is imported as a default export
+  return { default: sql };
+});
+
 describe('PgflowSqlClient Type Compatibility with Flow', () => {
+  let mockSql: ReturnType<typeof postgres>;
+
+  beforeEach(() => {
+    // Clear all mock instances before each test
+    vi.clearAllMocks();
+    mockSql = postgres();
+  });
+
   it('should properly type IPgflowClient methods', () => {
     // Arrange
     const sql = postgres();
