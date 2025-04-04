@@ -1,10 +1,9 @@
 {
   "name": "pgflow",
-  "version": "0.0.1",
+  "version": "0.0.1-prealpha.0",
   "type": "module",
   "main": "./dist/index.js",
   "typings": "./dist/index.d.ts",
-  "private": true,
   "exports": {
     "./package.json": "./package.json",
     ".": {
