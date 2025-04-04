@@ -6,6 +6,21 @@
   "tags": [],
   "// targets": "to see all targets run: nx show project cli --web",
   "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "main": "{projectRoot}/src/index.ts",
+        "tsConfig": "{projectRoot}/tsconfig.lib.json",
+        "outputPath": "{projectRoot}/dist",
+        "assets": [
+          {
+            "input": "{workspaceRoot}/pkgs/core/supabase/migrations",
+            "glob": "*.sql",
+            "output": "sql"
+          }
+        ]
+      }
+    },
     "serve": {
       "executor": "nx:run-commands",
       "options": {
