@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import installCommand from './commands/install.ts';
 
 // Create a function to handle errors
 const errorHandler = (error: unknown) => {
@@ -13,21 +14,9 @@ const errorHandler = (error: unknown) => {
 process.on('unhandledRejection', errorHandler);
 
 const program = new Command();
+installCommand(program);
 
 program.exitOverride();
-
-export const installSubcommand = program
-  .command('install')
-  .description('Installs pgflow migration and worker edge function')
-  .argument('<supabase-path>', 'Path to supabase project')
-  .action(async (supabasePath: string) => {
-    try {
-      console.log(`Installing pgflow into ${supabasePath}`);
-      // Any async operations would go here
-    } catch (error) {
-      errorHandler(error);
-    }
-  });
 
 // Use a promise-aware approach to parse arguments
 async function main() {

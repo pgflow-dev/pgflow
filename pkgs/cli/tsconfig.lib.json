@@ -6,7 +6,8 @@
     "outDir": "dist",
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "emitDeclarationOnly": false,
-    "types": ["node", "vite/client"]
+    "types": ["node", "vite/client"],
+    "allowImportingTsExtensions": true
   },
   "include": ["src/**/*.ts"],
   "references": [],
