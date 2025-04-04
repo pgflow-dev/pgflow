@@ -1,9 +1,17 @@
 {
   "name": "cli",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "pkgs/cli/src",
+  "sourceRoot": "{projectRoot}/src",
   "projectType": "library",
   "tags": [],
   "// targets": "to see all targets run: nx show project cli --web",
-  "targets": {}
+  "targets": {
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsx src/index.ts",
+        "cwd": "{projectRoot}"
+      }
+    }
+  }
 }
