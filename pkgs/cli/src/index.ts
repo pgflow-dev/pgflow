@@ -1,1 +1,13 @@
-export * from './lib/cli.js';
+import { Command } from 'commander';
+
+const program = new Command();
+
+export const installSubcommand = program
+  .command('install')
+  .description('Installs pgflow migration and worker edge function')
+  .argument('<supabase-path>', 'Path to supabase project')
+  .action(async (supabasePath: string) => {
+    console.log(`Installing pgflow into ${supabasePath}`);
+  });
+
+program.parse(process.argv);
