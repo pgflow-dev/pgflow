@@ -5,12 +5,15 @@
   "projectType": "library",
   "targets": {
     "build": {
-      "executor": "@axhxrx/nx-deno:build",
+      "executor": "@nx/esbuild:esbuild",
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "pkgs/edge-worker/dist",
-        "denoConfig": "pkgs/edge-worker/deno.json",
-        "entryPoint": "pkgs/edge-worker/src/index.ts"
+        "main": "pkgs/edge-worker/src/index.ts",
+        "tsConfig": "pkgs/edge-worker/tsconfig.lib.json",
+        "platform": "node",
+        "format": ["cjs", "esm"],
+        "assets": ["pkgs/edge-worker/*.md"]
       }
     },
     "test:nx-deno": {
