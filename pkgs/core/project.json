@@ -5,6 +5,16 @@
   "projectType": "library",
   "tags": [],
   "targets": {
+    "build": {
+      "executor": "@nx/vite:build",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "pkgs/core/dist",
+        "main": "pkgs/core/src/index.ts",
+        "tsConfig": "pkgs/core/tsconfig.lib.json",
+        "assets": ["pkgs/core/*.md"]
+      }
+    },
     "lint": {
       "executor": "nx:run-commands",
       "options": {

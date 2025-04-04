@@ -2,7 +2,9 @@
   "name": "@pgflow/source",
   "version": "0.0.0",
   "license": "AGPL-3.0",
-  "scripts": {},
+  "scripts": {
+    "build": "nx run-many --target=build --all"
+  },
   "private": true,
   "devDependencies": {
     "@axhxrx/nx-deno": "^1.0.2",

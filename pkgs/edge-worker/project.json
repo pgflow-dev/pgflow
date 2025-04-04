@@ -4,6 +4,15 @@
   "sourceRoot": "pkgs/edge-worker",
   "projectType": "library",
   "targets": {
+    "build": {
+      "executor": "@axhxrx/nx-deno:build",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "pkgs/edge-worker/dist",
+        "denoConfig": "pkgs/edge-worker/deno.json",
+        "entryPoint": "pkgs/edge-worker/src/index.ts"
+      }
+    },
     "test:nx-deno": {
       "executor": "@axhxrx/nx-deno:test",
       "outputs": ["{workspaceRoot}/coverage/pkgs/edge-worker"],
