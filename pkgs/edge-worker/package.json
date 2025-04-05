@@ -1,6 +1,6 @@
 {
   "name": "@pgflow/edge-worker",
-  "version": "0.0.5-prealpha.0",
+  "version": "0.0.5-prealpha.1",
   "license": "AGPL-3.0",
   "type": "module",
   "dependencies": {
