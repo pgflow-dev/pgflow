@@ -1,8 +1,7 @@
 {
   "name": "@pgflow/edge-worker",
-  "version": "0.0.4",
+  "version": "0.0.5-prealpha.0",
   "license": "AGPL-3.0",
-  "private": true,
   "type": "module",
   "dependencies": {
     "@jsr/henrygd__queue": "^1.0.7",

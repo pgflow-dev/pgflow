@@ -12,9 +12,9 @@
         "main": "pkgs/edge-worker/src/index.ts",
         "tsConfig": "pkgs/edge-worker/tsconfig.lib.json",
         "platform": "node",
-        "format": ["cjs", "esm"],
+        "format": ["esm"],
         "assets": ["pkgs/edge-worker/*.md"],
-        "external": ["@jsr/*"],
+        "external": ["@jsr/*", "postgres"],
         "bundle": true,
         "sourcemap": true
       }
