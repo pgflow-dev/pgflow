@@ -41,5 +41,8 @@
   },
   "dependencies": {
     "@nx/devkit": "20.3.0"
+  },
+  "publishConfig": {
+    "@jsr:registry": "https://npm.jsr.io"
   }
 }

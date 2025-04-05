@@ -3,5 +3,13 @@
   "version": "0.0.4",
   "license": "AGPL-3.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@jsr/henrygd__queue": "^1.0.7",
+    "@jsr/std__assert": "^0.224.0",
+    "@jsr/std__async": "^0.224.0",
+    "@jsr/std__log": "^0.224.13",
+    "@jsr/std__testing__mock": "^0.224.0",
+    "postgres": "3.4.5"
+  }
 }

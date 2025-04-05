@@ -13,7 +13,10 @@
         "tsConfig": "pkgs/edge-worker/tsconfig.lib.json",
         "platform": "node",
         "format": ["cjs", "esm"],
-        "assets": ["pkgs/edge-worker/*.md"]
+        "assets": ["pkgs/edge-worker/*.md"],
+        "external": ["@jsr/*"],
+        "bundle": true,
+        "sourcemap": true
       }
     },
     "test:nx-deno": {

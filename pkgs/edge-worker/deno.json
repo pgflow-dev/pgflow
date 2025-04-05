@@ -4,11 +4,11 @@
   "license": "AGPL-3.0",
   "exports": "./mod.ts",
   "imports": {
-    "@henrygd/queue": "jsr:@henrygd/queue@^1.0.7",
-    "@std/assert": "jsr:@std/assert",
-    "@std/async": "jsr:@std/async",
-    "@std/log": "jsr:@std/log@^0.224.13",
-    "@std/testing/mock": "jsr:@std/testing/mock",
+    "@henrygd/queue": "npm:@jsr/henrygd__queue@^1.0.7",
+    "@std/assert": "npm:@jsr/std__assert@^0.224.0",
+    "@std/async": "npm:@jsr/std__async@^0.224.0",
+    "@std/log": "npm:@jsr/std__log@^0.224.13",
+    "@std/testing/mock": "npm:@jsr/std__testing__mock@^0.224.0",
     "postgres": "npm:postgres@3.4.5",
     "@pgflow/core": "../core/src/index.ts",
     "@pgflow/dsl": "../dsl/src/index.ts"
