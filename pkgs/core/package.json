@@ -20,7 +20,8 @@
     "vitest": "*"
   },
   "dependencies": {
-    "postgres": "^3.4.5"
+    "postgres": "^3.4.5",
+    "@pgflow/dsl": "^0.0.5-prealpha.2"
   },
   "publishConfig": {
     "access": "public"
