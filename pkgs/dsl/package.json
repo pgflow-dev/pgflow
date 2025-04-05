@@ -7,7 +7,7 @@
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "typings": "./dist/index.d.ts",
-  "private": true,
+  "private": false,
   "exports": {
     "./package.json": "./package.json",
     ".": {
@@ -16,5 +16,8 @@
     }
   },
   "types": "./dist/index.d.ts",
-  "type": "module"
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  }
 }
