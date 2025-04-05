@@ -4,7 +4,7 @@
   "license": "AGPL-3.0",
   "exports": "./mod.ts",
   "imports": {
-    "@henrygd/queue": "npm:@jsr/henrygd__queue@^1.0.7",
+    "@henrygd/queue": "jsr:@henrygd/queue@^1.0.7",
     "@std/assert": "npm:@jsr/std__assert@^0.224.0",
     "@std/async": "npm:@jsr/std__async@^0.224.0",
     "@std/log": "npm:@jsr/std__log@^0.224.13",
