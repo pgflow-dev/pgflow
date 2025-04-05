@@ -1,4 +1,4 @@
-import { newQueue, type Queue as PromiseQueue } from '@henrygd/queue';
+import { newQueue, type Queue as PromiseQueue } from '@jsr/henrygd__queue';
 import type { IExecutor, IMessage } from './types.ts';
 import { getLogger } from './Logger.ts';
 

@@ -1,4 +1,4 @@
-import * as log from '@std/log';
+import * as log from '@jsr/std__log';
 
 function getLogLevelFromEnv(): log.LevelName {
   const validLevels = [
