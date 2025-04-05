@@ -5,7 +5,7 @@
   "type": "module",
   "dependencies": {
     "@henrygd/queue": "^1.0.7",
-    "@jsr/std__log": "^0.224.13",
+    "pino": "^9.6.0",
     "postgres": "3.4.5"
   },
   "publishConfig": {
