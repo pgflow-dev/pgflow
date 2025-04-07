@@ -3,5 +3,15 @@
   "version": "0.0.7",
   "license": "AGPL-3.0",
   "exports": "./mod.ts",
-  "imports": {}
+  "imports": {},
+  "publish": {
+    "include": [
+      "LICENSE.md",
+      "CHANGELOG.md",
+      "README.md",
+      "src/**/*.ts",
+      "mod.ts"
+    ],
+    "exclude": ["__tests__/**/*", "src/**/*.test.ts", "src/**/*.test-d.ts"]
+  }
 }
