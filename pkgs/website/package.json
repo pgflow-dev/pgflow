@@ -1,7 +1,7 @@
 {
   "name": "@pgflow/website",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.0.5",
   "license": "AGPL-3.0",
   "scripts": {
     "dev": "astro dev",

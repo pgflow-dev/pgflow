@@ -1,6 +1,6 @@
 {
   "name": "@pgflow/core",
-  "version": "0.0.5-prealpha.2",
+  "version": "0.0.5",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "postgres": "^3.4.5",
-    "@pgflow/dsl": "^0.0.5-prealpha.2"
+    "@pgflow/dsl": "^0.0.5"
   },
   "publishConfig": {
     "access": "public"

@@ -1,6 +1,6 @@
 {
   "name": "@pgflow/dsl",
-  "version": "0.0.5-prealpha.2",
+  "version": "0.0.5",
   "dependencies": {
     "vitest": "*"
   },
