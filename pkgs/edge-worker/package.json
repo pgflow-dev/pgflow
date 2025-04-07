@@ -3,6 +3,12 @@
   "version": "0.0.6",
   "license": "AGPL-3.0",
   "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "dependencies": {
     "@henrygd/queue": "^1.0.7",
     "pino": "^9.6.0",
@@ -10,9 +16,6 @@
     "@pgflow/core": "^0.0.6",
     "@pgflow/dsl": "^0.0.6"
   },
-  "files": [
-    "dist"
-  ],
   "publishConfig": {
     "access": "public"
   }

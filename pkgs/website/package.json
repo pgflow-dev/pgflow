@@ -2,6 +2,12 @@
   "name": "@pgflow/website",
   "type": "module",
   "version": "0.0.6",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "license": "AGPL-3.0",
   "scripts": {
     "dev": "astro dev",
@@ -22,9 +28,6 @@
     "starlight-sidebar-topics": "^0.3.0",
     "typescript": "^5.6.3"
   },
-  "files": [
-    "dist"
-  ],
   "devDependencies": {
     "prettier-plugin-astro": "^0.14.1"
   },
