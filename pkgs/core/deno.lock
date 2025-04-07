@@ -2,11 +2,17 @@
   "version": "3",
   "packages": {
     "specifiers": {
+      "jsr:@pgflow/dsl@^0.0.7-prealpha.1": "jsr:@pgflow/dsl@0.0.7-prealpha.1",
       "npm:@pgflow/dsl@^0.0.7": "npm:@pgflow/dsl@0.0.7",
       "npm:postgres@3.4.5": "npm:postgres@3.4.5",
       "npm:postgres@^3.4.5": "npm:postgres@3.4.5",
       "npm:supabase@^2.6.8": "npm:supabase@2.20.5",
       "npm:vitest": "npm:vitest@3.1.1_vite@6.2.5"
+    },
+    "jsr": {
+      "@pgflow/dsl@0.0.7-prealpha.1": {
+        "integrity": "0e1497dbd20f10b12ac42e9bbf7cc52dfe4e2f5b95677a3599778d9b8e3dc3dd"
+      }
     },
     "npm": {
       "@esbuild/aix-ppc64@0.25.2": {
@@ -630,6 +636,7 @@
   "remote": {},
   "workspace": {
     "dependencies": [
+      "jsr:@pgflow/dsl@^0.0.7-prealpha.1",
       "npm:postgres@3.4.5"
     ],
     "packageJson": {
