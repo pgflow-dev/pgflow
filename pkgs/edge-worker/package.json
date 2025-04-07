@@ -10,6 +10,9 @@
     "@pgflow/core": "^0.0.5",
     "@pgflow/dsl": "^0.0.5"
   },
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public"
   }

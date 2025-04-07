@@ -13,6 +13,10 @@
       "import": "./dist/index.js"
     }
   },
+  "files": [
+    "dist",
+    "supabase/migrations/*.sql"
+  ],
   "types": "./dist/index.d.ts",
   "module": "./dist/index.js",
   "devDependencies": {
