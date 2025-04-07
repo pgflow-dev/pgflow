@@ -1,6 +1,6 @@
 {
   "name": "@pgflow/core",
-  "version": "0.0.7",
+  "version": "0.0.7-prealpha.1",
   "license": "AGPL-3.0",
   "exports": "./mod.ts",
   "imports": {
