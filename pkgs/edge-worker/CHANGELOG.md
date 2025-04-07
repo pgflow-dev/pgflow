@@ -1,5 +1,13 @@
 # @pgflow/edge-worker
 
+## 0.0.6
+
+### Patch Changes
+
+- 9dd4676: Update package.json configuration
+  - @pgflow/core@0.0.6
+  - @pgflow/dsl@0.0.6
+
 ## 0.0.5
 
 ### Patch Changes
