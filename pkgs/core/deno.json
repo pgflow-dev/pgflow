@@ -1,0 +1,9 @@
+{
+  "name": "@pgflow/core",
+  "version": "0.0.7",
+  "license": "AGPL-3.0",
+  "exports": "./mod.ts",
+  "imports": {
+    "postgres": "npm:postgres@3.4.5"
+  }
+}

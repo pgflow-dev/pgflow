@@ -16,6 +16,22 @@
         "assets": ["pkgs/dsl/*.md"]
       }
     },
+    "build:deno": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/pkgs/dsl/deno-dist"],
+      "options": {
+        "cwd": "pkgs/dsl",
+        "commands": [
+          "mkdir -p deno-dist",
+          "rm -r deno-dist/*",
+          "cp -r src/* deno-dist/",
+          "cp mod.ts deno-dist/",
+          "cp deno.json deno-dist/",
+          "cp deno.lock deno-dist/"
+        ],
+        "parallel": false
+      }
+    },
     "test": {
       "executor": "@nx/vite:test",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],

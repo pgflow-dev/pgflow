@@ -16,7 +16,7 @@
       "import": "./dist/index.js"
     }
   },
-  "dependencies": {
+  "devDependencies": {
     "vitest": "*"
   },
   "publishConfig": {

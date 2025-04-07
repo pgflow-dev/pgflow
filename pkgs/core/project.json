@@ -15,6 +15,22 @@
         "assets": ["pkgs/core/*.md"]
       }
     },
+    "build:deno": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/pkgs/core/deno-dist"],
+      "options": {
+        "cwd": "pkgs/core",
+        "commands": [
+          "mkdir -p deno-dist",
+          "rm -r deno-dist/*",
+          "cp -r src/* deno-dist/",
+          "cp mod.ts deno-dist/",
+          "cp deno.json deno-dist/",
+          "cp deno.lock deno-dist/"
+        ],
+        "parallel": false
+      }
+    },
     "lint": {
       "executor": "nx:run-commands",
       "options": {
