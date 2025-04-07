@@ -18,9 +18,9 @@
     },
     "jsr:publish": {
       "executor": "nx:run-commands",
-      "outputs": ["{workspaceRoot}/pkgs/core/"],
+      "outputs": ["{workspaceRoot}/pkgs/dsl/"],
       "options": {
-        "cwd": "pkgs/core",
+        "cwd": "pkgs/dsl",
         "commands": ["jsr publish"],
         "parallel": false
       }

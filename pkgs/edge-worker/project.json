@@ -21,9 +21,9 @@
     },
     "jsr:publish": {
       "executor": "nx:run-commands",
-      "outputs": ["{workspaceRoot}/pkgs/core/"],
+      "outputs": ["{workspaceRoot}/pkgs/edge-worker/"],
       "options": {
-        "cwd": "pkgs/core",
+        "cwd": "pkgs/edge-worker",
         "commands": ["jsr publish"],
         "parallel": false
       }
