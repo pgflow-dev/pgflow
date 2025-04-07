@@ -22,7 +22,7 @@
         "cwd": "pkgs/core",
         "commands": [
           "mkdir -p deno-dist",
-          "rm -r deno-dist/*",
+          "rm -rf deno-dist/*",
           "cp -r src/* deno-dist/",
           "cp mod.ts deno-dist/",
           "cp deno.json deno-dist/",
