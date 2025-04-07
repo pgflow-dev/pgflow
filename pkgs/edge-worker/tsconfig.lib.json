@@ -4,10 +4,9 @@
     "rootDir": "src",
     "outDir": "dist",
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
-    "emitDeclarationOnly": false,
     "types": ["node"],
-    "target": "es2020",
-    "module": "commonjs",
+    "target": "ES2020",
+    "module": "esm",
     "moduleResolution": "node"
   },
   "include": ["src/**/*.ts"],

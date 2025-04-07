@@ -5,8 +5,8 @@
     "outDir": "dist",
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "emitDeclarationOnly": false,
-    "types": ["node"],
-    "allowImportingTsExtensions": true
+    "target": "es2020",
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"],
   "references": [
