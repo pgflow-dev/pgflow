@@ -19,19 +19,12 @@
         "sourcemap": true
       }
     },
-    "build:deno": {
+    "jsr:publish": {
       "executor": "nx:run-commands",
-      "outputs": ["{workspaceRoot}/pkgs/edge-worker/deno-dist"],
+      "outputs": ["{workspaceRoot}/pkgs/core/"],
       "options": {
-        "cwd": "pkgs/edge-worker",
-        "commands": [
-          "mkdir -p deno-dist",
-          "rm -rf deno-dist/*",
-          "cp -r src/* deno-dist/",
-          "cp mod.ts deno-dist/",
-          "cp deno.json deno-dist/",
-          "cp deno.lock deno-dist/"
-        ],
+        "cwd": "pkgs/core",
+        "commands": ["jsr publish"],
         "parallel": false
       }
     },
