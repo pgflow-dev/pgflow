@@ -6,7 +6,7 @@
   "implicitDependencies": ["core", "dsl"],
   "targets": {
     "build": {
-      "executor": "@nx/esbuild:esbuild",
+      "executor": "@nx/js:tsc",
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "pkgs/edge-worker/dist",

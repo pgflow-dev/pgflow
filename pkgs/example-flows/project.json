@@ -7,7 +7,7 @@
   "// targets": "to see all targets run: nx show project example-flows --web",
   "targets": {
     "build": {
-      "executor": "@nx/esbuild:esbuild",
+      "executor": "@nx/js:tsc",
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "pkgs/example-flows/dist",
