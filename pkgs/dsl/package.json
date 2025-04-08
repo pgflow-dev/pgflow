@@ -16,9 +16,6 @@
       "import": "./dist/index.js"
     }
   },
-  "devDependencies": {
-    "vitest": "*"
-  },
   "publishConfig": {
     "access": "public"
   }

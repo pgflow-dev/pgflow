@@ -19,8 +19,7 @@
     }
   },
   "devDependencies": {
-    "supabase": "^2.6.8",
-    "vitest": "*"
+    "supabase": "^2.6.8"
   },
   "dependencies": {
     "postgres": "^3.4.5",
