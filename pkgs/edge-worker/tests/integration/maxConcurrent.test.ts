@@ -67,8 +67,6 @@ Deno.test(
         MESSAGES_TO_SEND * 1000, // 3 messages, each takes 1s
         `Should take at least ${MESSAGES_TO_SEND}s to process all messages, took ${totalMs}ms instead`
       );
-    } catch (error) {
-      throw error;
     } finally {
       await worker.stop();
     }
