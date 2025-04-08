@@ -1,3 +1,6 @@
+/// <reference lib="deno.ns" />
+/// <reference lib="deno.unstable" />
+
 import type { Worker } from './core/Worker.ts';
 import spawnNewEdgeFunction from './spawnNewEdgeFunction.ts';
 import type { Json } from './core/types.ts';
@@ -111,7 +114,6 @@ export class EdgeWorker {
   }
 
   private static getConnectionString(): string {
-    // @ts-ignore - TODO: fix the types
     const connectionString = Deno.env.get('EDGE_WORKER_DB_URL');
     if (!connectionString) {
       const message =
@@ -132,7 +134,7 @@ export class EdgeWorker {
     };
 
     // use waitUntil to prevent the function from exiting
-    // @ts-ignore: TODO: fix the types
+    // For Supabase Edge Functions environment
     EdgeRuntime.waitUntil(new Promise(() => {}));
   }
 
