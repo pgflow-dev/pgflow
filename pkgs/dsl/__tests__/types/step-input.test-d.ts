@@ -1,4 +1,4 @@
-import { Flow, type StepInput } from '../../src/index.ts';
+import { Flow, type StepInput } from '../../src/index.js';
 import { describe, it, expectTypeOf } from 'vitest';
 
 describe('StepInput utility type', () => {

@@ -1,4 +1,4 @@
-import { AnyFlow, ExtractFlowInput, Flow } from '../../src/index.ts';
+import { AnyFlow, ExtractFlowInput, Flow } from '../../src/index.js';
 import { describe, it, expectTypeOf } from 'vitest';
 
 describe('ExtractFlowInput utility type', () => {

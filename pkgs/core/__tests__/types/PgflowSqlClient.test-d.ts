@@ -1,5 +1,5 @@
 import { describe, it, expectTypeOf, vi, beforeEach } from 'vitest';
-import { setupPostgresMock } from '../mocks/postgres.ts';
+import { setupPostgresMock } from '../mocks/postgres.js';
 
 // Mock the postgres module so that it never makes a real connection.
 // This must come before the postgres import
@@ -7,8 +7,8 @@ vi.mock('postgres', () => {
   return setupPostgresMock();
 });
 
-import { PgflowSqlClient } from '../../src/PgflowSqlClient.ts';
-import type { Json, StepTaskKey } from '../../src/types.ts';
+import { PgflowSqlClient } from '../../src/PgflowSqlClient.js';
+import type { Json, StepTaskKey } from '../../src/types.js';
 import postgres from 'postgres';
 import { Flow } from '@pgflow/dsl';
 

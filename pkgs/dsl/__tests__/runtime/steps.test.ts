@@ -1,6 +1,6 @@
 import { describe, it, vi, beforeEach, expect } from 'vitest';
-import { Flow } from '../../src/dsl.ts';
-import * as utils from '../../src/utils.ts';
+import { Flow } from '../../src/dsl.js';
+import * as utils from '../../src/utils.js';
 
 describe('Steps', () => {
   let flow: Flow<any>;

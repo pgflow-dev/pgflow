@@ -1,4 +1,4 @@
-import { Flow } from './dsl.ts';
+import { Flow } from './dsl.js';
 
 // Provide a type for the input of the Flow
 type Input = {

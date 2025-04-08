@@ -1,4 +1,4 @@
-import { validateRuntimeOptions, validateSlug } from './utils.ts';
+import { validateRuntimeOptions, validateSlug } from './utils.js';
 
 // ========================
 // CORE TYPE DEFINITIONS

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateSlug, validateRuntimeOptions } from '../../src/utils.ts';
+import { validateSlug, validateRuntimeOptions } from '../../src/utils.js';
 
 describe('validateSlug', () => {
   it('accepts valid slugs', () => {

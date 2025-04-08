@@ -4,7 +4,7 @@ import type {
   Simplify,
   AnyFlow,
 } from '@pgflow/dsl';
-import type { Database } from './database-types.ts';
+import type { Database } from './database-types.js';
 
 export type Json =
   | string
