@@ -8,8 +8,7 @@
       "vite/client",
       "node",
       "vitest"
-    ],
-    "allowImportingTsExtensions": true
+    ]
   },
   "include": [
     "vite.config.ts",
@@ -24,12 +23,6 @@
     "src/**/*.spec.js",
     "src/**/*.test.jsx",
     "src/**/*.spec.jsx",
-    "src/**/*.d.ts",
-    "__tests__/**/*.ts"
-  ],
-  "references": [
-    {
-      "path": "./tsconfig.lib.json"
-    }
+    "src/**/*.d.ts"
   ]
 }
