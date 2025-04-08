@@ -23,9 +23,16 @@
     "jsr:download-count": "deno run --allow-net jsr:@inbestigator/saves @pgflow/edge-worker"
   },
   "lint": {
-    "exclude": ["supabase/functions/_src/", "dist/", "build/", "node_modules/"],
+    "exclude": [
+      "supabase/functions/_src/",
+      "dist/",
+      "build/",
+      "node_modules/"
+    ],
     "rules": {
-      "exclude": ["no-slow-types"]
+      "exclude": [
+        "no-slow-types"
+      ]
     }
   },
   "publish": {
@@ -36,6 +43,8 @@
       "mod.ts",
       "src/**/*.ts"
     ],
-    "exclude": ["__tests__/**/*"]
+    "exclude": [
+      "__tests__/**/*"
+    ]
   }
 }

@@ -12,6 +12,8 @@
       "mod.ts",
       "src/**/*.ts"
     ],
-    "exclude": ["__tests__/**/*"]
+    "exclude": [
+      "__tests__/**/*"
+    ]
   }
 }
