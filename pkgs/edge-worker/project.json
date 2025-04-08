@@ -3,6 +3,7 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "pkgs/edge-worker",
   "projectType": "library",
+  "implicitDependencies": ["core", "dsl"],
   "targets": {
     "build": {
       "executor": "@nx/esbuild:esbuild",

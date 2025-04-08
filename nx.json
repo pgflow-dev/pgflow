@@ -55,5 +55,8 @@
       "cache": true,
       "inputs": ["default", "^production"]
     }
+  },
+  "implicitDependencies": {
+    "deno.json": "*"
   }
 }
