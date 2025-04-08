@@ -25,7 +25,7 @@
       "outputs": ["{workspaceRoot}/pkgs/edge-worker/"],
       "options": {
         "cwd": "pkgs/edge-worker",
-        "commands": ["jsr publish"],
+        "commands": ["jsr publish --allow-slow-types"],
         "parallel": false
       }
     },
@@ -160,14 +160,6 @@
     },
     "test": {
       "dependsOn": ["test:unit", "test:integration"]
-    },
-    "jsr:publish": {
-      "executor": "nx:run-commands",
-      "options": {
-        "cwd": "pkgs/edge-worker",
-        "commands": ["pnpm dlx jsr publish --allow-slow-types"],
-        "parallel": false
-      }
     }
   },
   "tags": []
