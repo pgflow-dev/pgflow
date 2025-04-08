@@ -10,8 +10,8 @@
     "@std/log": "jsr:@std/log@^0.224.13",
     "@std/testing/mock": "jsr:@std/testing/mock@^0.224.0",
     "postgres": "npm:postgres@3.4.5",
-    "@pgflow/core": "jsr:@pgflow/core@0.0.7-prealpha.1",
-    "@pgflow/dsl": "jsr:@pgflow/dsl@0.0.7-prealpha.1"
+    "@pgflow/core": "../core/src/index.ts",
+    "@pgflow/dsl": "../dsl/src/index.ts"
   },
   "tasks": {
     "db:down": "docker compose -f tests/db/compose.yaml down --volumes --remove-orphans",
@@ -23,16 +23,9 @@
     "jsr:download-count": "deno run --allow-net jsr:@inbestigator/saves @pgflow/edge-worker"
   },
   "lint": {
-    "exclude": [
-      "supabase/functions/_src/",
-      "dist/",
-      "build/",
-      "node_modules/"
-    ],
+    "exclude": ["supabase/functions/_src/", "dist/", "build/", "node_modules/"],
     "rules": {
-      "exclude": [
-        "no-slow-types"
-      ]
+      "exclude": ["no-slow-types"]
     }
   },
   "publish": {
@@ -43,8 +36,6 @@
       "mod.ts",
       "src/**/*.ts"
     ],
-    "exclude": [
-      "__tests__/**/*"
-    ]
+    "exclude": ["__tests__/**/*"]
   }
 }
