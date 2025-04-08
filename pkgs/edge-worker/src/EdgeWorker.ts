@@ -135,7 +135,8 @@ export class EdgeWorker {
 
     // use waitUntil to prevent the function from exiting
     // For Supabase Edge Functions environment
-    EdgeRuntime.waitUntil(new Promise(() => {}));
+    const promiseThatNeverResolves = new Promise(() => {}); // eslint-disable-line @typescript-eslint/no-empty-function
+    EdgeRuntime.waitUntil(promiseThatNeverResolves);
   }
 
   private static setupRequestHandler<TPayload extends Json>(

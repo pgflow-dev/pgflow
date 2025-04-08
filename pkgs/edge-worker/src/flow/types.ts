@@ -1,1 +1,1 @@
-export * from '../../../core/src/types.ts';
+export * from '@pgflow/core';

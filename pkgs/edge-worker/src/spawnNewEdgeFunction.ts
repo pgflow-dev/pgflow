@@ -1,6 +1,5 @@
 import { getLogger } from './core/Logger.ts';
 
-// @ts-ignore - TODO: fix the types
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') as string;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') as string;
 
@@ -20,7 +19,7 @@ export default async function spawnNewEdgeFunction(
     headers: {
       Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
       'Content-Type': 'application/json',
-    }
+    },
   });
 
   logger.debug('Edge Function spawned successfully!');
