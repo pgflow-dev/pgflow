@@ -1,6 +1,6 @@
 {
   "name": "@pgflow/edge-worker",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -13,8 +13,8 @@
     "@henrygd/queue": "^1.0.7",
     "pino": "^9.6.0",
     "postgres": "3.4.5",
-    "@pgflow/core": "^0.0.8",
-    "@pgflow/dsl": "^0.0.8"
+    "@pgflow/core": "^0.0.9",
+    "@pgflow/dsl": "^0.0.9"
   },
   "publishConfig": {
     "access": "public"

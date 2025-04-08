@@ -1,5 +1,11 @@
 # @pgflow/dsl
 
+## 0.0.9
+
+### Patch Changes
+
+- 70d3f2d: Tweak extension setting in tsconfig.base.json
+
 ## 0.0.8
 
 ## 0.0.7
