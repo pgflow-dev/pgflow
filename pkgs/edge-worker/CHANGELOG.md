@@ -1,5 +1,13 @@
 # @pgflow/edge-worker
 
+## 0.0.8
+
+### Patch Changes
+
+- Test jsr version writing
+  - @pgflow/core@0.0.8
+  - @pgflow/dsl@0.0.8
+
 ## 0.0.7
 
 ### Patch Changes

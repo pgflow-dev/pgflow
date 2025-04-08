@@ -1,6 +1,6 @@
 {
   "name": "@pgflow/dsl",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "license": "AGPL-3.0",
   "exports": "./mod.ts",
   "imports": {},
