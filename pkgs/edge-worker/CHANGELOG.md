@@ -1,5 +1,13 @@
 # @pgflow/edge-worker
 
+## 0.0.10
+
+### Patch Changes
+
+- Release again on NPM
+  - @pgflow/core@0.0.10
+  - @pgflow/dsl@0.0.10
+
 ## 0.0.9
 
 ### Patch Changes
