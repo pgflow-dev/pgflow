@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "license": "AGPL-3.0",
   "scripts": {
-    "build": "nx run-many --target=build --all"
+    "build": "nx run-many --target=build --all",
+    "version": "pnpm changeset version && ./scripts/update-deno-json-version.sh",
+    "release": "pnpm nx run-many -t build && changeset publish && ./scripts/jsr-publish.sh"
   },
   "private": true,
   "devDependencies": {
