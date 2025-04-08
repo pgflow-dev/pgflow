@@ -1,17 +1,17 @@
 {
   "name": "@pgflow/dsl",
-  "version": "0.0.7-prealpha.1",
+  "version": "0.0.7",
   "license": "AGPL-3.0",
   "exports": "./mod.ts",
   "imports": {},
   "publish": {
     "include": [
+      "README.md",
       "LICENSE.md",
       "CHANGELOG.md",
-      "README.md",
-      "src/**/*.ts",
-      "mod.ts"
+      "mod.ts",
+      "src/**/*.ts"
     ],
-    "exclude": ["__tests__/**/*", "src/**/*.test.ts", "src/**/*.test-d.ts"]
+    "exclude": ["__tests__/**/*"]
   }
 }
