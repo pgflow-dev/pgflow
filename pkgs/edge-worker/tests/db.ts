@@ -3,7 +3,9 @@ import postgres from 'postgres';
 function createSql(dbUrl: string) {
   return postgres(dbUrl, {
     prepare: false,
+
     onnotice(_: unknown) {
+      // @eslint-ignore
       // no-op to silence notices
     },
   });

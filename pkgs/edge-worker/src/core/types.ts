@@ -1,4 +1,4 @@
-export type { Json } from '../../../core/src/types.ts';
+export type { Json } from '@pgflow/core';
 
 export interface IPoller<IMessage> {
   poll(): Promise<IMessage[]>;
