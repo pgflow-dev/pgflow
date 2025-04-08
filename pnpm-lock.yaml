@@ -115,7 +115,7 @@ importers:
   pkgs/core:
     dependencies:
       '@pgflow/dsl':
-        specifier: ^0.0.8
+        specifier: ^0.0.10
         version: link:../dsl
       postgres:
         specifier: ^3.4.5
@@ -140,10 +140,10 @@ importers:
         specifier: ^1.0.7
         version: 1.0.7
       '@pgflow/core':
-        specifier: ^0.0.8
+        specifier: ^0.0.10
         version: link:../core
       '@pgflow/dsl':
-        specifier: ^0.0.8
+        specifier: ^0.0.10
         version: link:../dsl
       pino:
         specifier: ^9.6.0
