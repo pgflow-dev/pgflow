@@ -7,7 +7,7 @@ const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') as string;
 const logger = getLogger('spawnNewEdgeFunction');
 
 export default async function spawnNewEdgeFunction(
-  functionName: string = 'edge-worker'
+  functionName = 'edge-worker'
 ): Promise<void> {
   if (!functionName) {
     throw new Error('functionName cannot be null or empty');
