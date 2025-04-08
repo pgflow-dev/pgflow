@@ -4,8 +4,8 @@ function createSql(dbUrl: string) {
   return postgres(dbUrl, {
     prepare: false,
 
+    // eslint-disable-next-line
     onnotice(_: unknown) {
-      // @eslint-ignore
       // no-op to silence notices
     },
   });
