@@ -13,8 +13,8 @@
     "@henrygd/queue": "^1.0.7",
     "pino": "^9.6.0",
     "postgres": "3.4.5",
-    "@pgflow/core": "^0.0.10",
-    "@pgflow/dsl": "^0.0.10"
+    "@pgflow/core": "workspace:*",
+    "@pgflow/dsl": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

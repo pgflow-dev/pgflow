@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "postgres": "^3.4.5",
-    "@pgflow/dsl": "^0.0.10"
+    "@pgflow/dsl": "workspace:*"
   },
   "publishConfig": {
     "access": "public"
