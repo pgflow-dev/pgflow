@@ -6,17 +6,12 @@
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",
-      "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "pkgs/edge-worker/dist",
         "main": "pkgs/edge-worker/src/index.ts",
         "tsConfig": "pkgs/edge-worker/tsconfig.lib.json",
-        "platform": "node",
-        "format": ["esm"],
         "assets": ["pkgs/edge-worker/*.md"],
-        "external": ["@jsr/*", "postgres"],
-        "bundle": true,
-        "sourcemap": true
+        "rootDir": "pkgs/edge-worker/src"
       }
     },
     "jsr:publish": {
