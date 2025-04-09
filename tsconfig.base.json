@@ -2,7 +2,7 @@
   "compilerOptions": {
     "allowJs": false,
     "allowSyntheticDefaultImports": true,
-    "allowImportingTsExtensions": true,
+    "allowImportingTsExtensions": false,
     "composite": true,
     "declaration": true,
     "declarationMap": true,
@@ -15,7 +15,7 @@
     "incremental": true,
     "isolatedModules": true,
     "lib": ["es2022"],
-    "module": "ESM",
+    "module": "nodenext",
     "moduleResolution": "NodeNext",
     "noEmit": false,
     "noEmitOnError": true,
