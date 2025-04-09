@@ -78,6 +78,7 @@
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
+          "mkdir -p supabase/migrations/",
           "rm -f supabase/migrations/*.sql",
           "cp ../core/supabase/migrations/*.sql supabase/migrations/",
           "cp sql/*_*.sql supabase/migrations/",
@@ -91,16 +92,12 @@
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
-          "rm -f supabase/functions/_src/*.ts",
-          "rm -f supabase/functions/_src/deno.*",
-          "cp -r src/* ./supabase/functions/_src/",
-          "cp deno.test.json ./supabase/functions/_src/deno.json",
-          "cp deno.lock ./supabase/functions/_src/deno.lock",
-          "find supabase/functions -maxdepth 1 -mindepth 1 -type d -not -name '_src' -exec cp deno.test.json {}/deno.json \\;",
-          "find supabase/functions -maxdepth 1 -mindepth 1 -type d -not -name '_src' -exec cp deno.lock {}/deno.lock \\;"
+          "find supabase/functions -maxdepth 1 -mindepth 1 -type d -exec cp deno.test.json {}/deno.json \\;",
+          "find supabase/functions -maxdepth 1 -mindepth 1 -type d -exec cp deno.lock {}/deno.lock \\;"
         ],
         "parallel": false
-      }
+      },
+      "dependsOn": ["build"]
     },
     "supabase:functions-serve": {
       "dependsOn": ["supabase:start", "supabase:prepare-edge-fn"],
