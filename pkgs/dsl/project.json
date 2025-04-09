@@ -8,12 +8,12 @@
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",
-      "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "pkgs/dsl/dist",
         "main": "pkgs/dsl/src/index.ts",
         "tsConfig": "pkgs/dsl/tsconfig.lib.json",
-        "assets": ["pkgs/dsl/*.md"]
+        "assets": ["pkgs/dsl/*.md"],
+        "rootDir": "pkgs/dsl/src"
       }
     },
     "jsr:publish": {
