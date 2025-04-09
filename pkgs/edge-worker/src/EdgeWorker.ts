@@ -1,6 +1,3 @@
-/// <reference lib="deno.ns" />
-/// <reference lib="deno.unstable" />
-
 import type { Worker } from './core/Worker.js';
 import spawnNewEdgeFunction from './spawnNewEdgeFunction.js';
 import type { Json } from './core/types.js';
