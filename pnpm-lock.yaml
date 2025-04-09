@@ -116,20 +116,7 @@ importers:
     dependencies:
       '@pgflow/dsl':
         specifier: workspace:*
-        version: link:../dsl/dist
-      postgres:
-        specifier: ^3.4.5
-        version: 3.4.5
-    devDependencies:
-      supabase:
-        specifier: ^2.6.8
-        version: 2.6.8
-
-  pkgs/core/dist:
-    dependencies:
-      '@pgflow/dsl':
-        specifier: workspace:*
-        version: link:../../dsl/dist
+        version: link:../dsl
       postgres:
         specifier: ^3.4.5
         version: 3.4.5
@@ -140,8 +127,6 @@ importers:
 
   pkgs/dsl: {}
 
-  pkgs/dsl/dist: {}
-
   pkgs/edge-worker:
     dependencies:
       '@henrygd/queue':
@@ -149,10 +134,10 @@ importers:
         version: 1.0.7
       '@pgflow/core':
         specifier: workspace:*
-        version: link:../core/dist
+        version: link:../core
       '@pgflow/dsl':
         specifier: workspace:*
-        version: link:../dsl/dist
+        version: link:../dsl
       pino:
         specifier: ^9.6.0
         version: 9.6.0
@@ -164,10 +149,10 @@ importers:
     dependencies:
       '@pgflow/core':
         specifier: workspace:*
-        version: link:../core/dist
+        version: link:../core
       '@pgflow/dsl':
         specifier: workspace:*
-        version: link:../dsl/dist
+        version: link:../dsl
 
   pkgs/website:
     dependencies:
