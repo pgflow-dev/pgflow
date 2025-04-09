@@ -1,9 +1,9 @@
-import { Heartbeat } from './Heartbeat.ts';
-import { getLogger } from './Logger.ts';
-import type { Queries } from './Queries.ts';
-import type { Queue } from '../queue/Queue.ts';
-import type { ILifecycle, Json, WorkerBootstrap, WorkerRow } from './types.ts';
-import { States, WorkerState } from './WorkerState.ts';
+import { Heartbeat } from './Heartbeat.js';
+import { getLogger } from './Logger.js';
+import type { Queries } from './Queries.js';
+import type { Queue } from '../queue/Queue.js';
+import type { ILifecycle, Json, WorkerBootstrap, WorkerRow } from './types.js';
+import { States, WorkerState } from './WorkerState.js';
 
 export interface LifecycleConfig {
   queueName: string;

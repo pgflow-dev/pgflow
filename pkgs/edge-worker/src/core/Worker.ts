@@ -1,6 +1,6 @@
 import type postgres from 'postgres';
-import type { IBatchProcessor, ILifecycle, WorkerBootstrap } from './types.ts';
-import { getLogger, setupLogger } from './Logger.ts';
+import type { IBatchProcessor, ILifecycle, WorkerBootstrap } from './types.js';
+import { getLogger, setupLogger } from './Logger.js';
 
 export class Worker {
   private lifecycle: ILifecycle;
@@ -13,7 +13,7 @@ export class Worker {
   constructor(
     batchProcessor: IBatchProcessor,
     lifecycle: ILifecycle,
-    sql: postgres.Sql,
+    sql: postgres.Sql
   ) {
     this.sql = sql;
 

@@ -1,14 +1,14 @@
 /// <reference lib="deno.ns" />
 /// <reference lib="deno.unstable" />
 
-import type { Worker } from './core/Worker.ts';
-import spawnNewEdgeFunction from './spawnNewEdgeFunction.ts';
-import type { Json } from './core/types.ts';
-import { getLogger, setupLogger } from './core/Logger.ts';
+import type { Worker } from './core/Worker.js';
+import spawnNewEdgeFunction from './spawnNewEdgeFunction.js';
+import type { Json } from './core/types.js';
+import { getLogger, setupLogger } from './core/Logger.js';
 import {
   createQueueWorker,
   type QueueWorkerConfig,
-} from './queue/createQueueWorker.ts';
+} from './queue/createQueueWorker.js';
 
 /**
  * Configuration options for the EdgeWorker.

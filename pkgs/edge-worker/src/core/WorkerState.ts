@@ -1,4 +1,4 @@
-import { getLogger } from './Logger.ts';
+import { getLogger } from './Logger.js';
 
 export enum States {
   /** The worker has been created but has not yet started. */

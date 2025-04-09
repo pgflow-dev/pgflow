@@ -1,4 +1,4 @@
-import { getLogger } from './core/Logger.ts';
+import { getLogger } from './core/Logger.js';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') as string;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') as string;

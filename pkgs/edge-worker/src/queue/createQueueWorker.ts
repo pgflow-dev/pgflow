@@ -1,14 +1,14 @@
-import { ExecutionController } from '../core/ExecutionController.ts';
-import { MessageExecutor } from './MessageExecutor.ts';
-import { Queries } from '../core/Queries.ts';
-import { Queue } from './Queue.ts';
-import { ReadWithPollPoller } from './ReadWithPollPoller.ts';
-import type { Json } from '../core/types.ts';
-import type { PgmqMessageRecord } from './types.ts';
-import { Worker } from '../core/Worker.ts';
+import { ExecutionController } from '../core/ExecutionController.js';
+import { MessageExecutor } from './MessageExecutor.js';
+import { Queries } from '../core/Queries.js';
+import { Queue } from './Queue.js';
+import { ReadWithPollPoller } from './ReadWithPollPoller.js';
+import type { Json } from '../core/types.js';
+import type { PgmqMessageRecord } from './types.js';
+import { Worker } from '../core/Worker.js';
 import postgres from 'postgres';
-import { WorkerLifecycle } from '../core/WorkerLifecycle.ts';
-import { BatchProcessor } from '../core/BatchProcessor.ts';
+import { WorkerLifecycle } from '../core/WorkerLifecycle.js';
+import { BatchProcessor } from '../core/BatchProcessor.js';
 
 /**
  * Configuration for the queue worker

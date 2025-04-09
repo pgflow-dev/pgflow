@@ -1,8 +1,8 @@
-import { Heartbeat } from '../core/Heartbeat.ts';
-import { getLogger } from '../core/Logger.ts';
-import type { Queries } from '../core/Queries.ts';
-import type { ILifecycle, WorkerBootstrap, WorkerRow } from '../core/types.ts';
-import { States, WorkerState } from '../core/WorkerState.ts';
+import { Heartbeat } from '../core/Heartbeat.js';
+import { getLogger } from '../core/Logger.js';
+import type { Queries } from '../core/Queries.js';
+import type { ILifecycle, WorkerBootstrap, WorkerRow } from '../core/types.js';
+import { States, WorkerState } from '../core/WorkerState.js';
 import type { AnyFlow } from '@pgflow/dsl';
 
 /**
