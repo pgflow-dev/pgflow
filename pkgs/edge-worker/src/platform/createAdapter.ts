@@ -11,7 +11,7 @@ export async function createAdapter(): Promise<PlatformAdapter> {
     await adapter.initialize();
     return adapter;
   }
-  
+
   // For now, only support Deno
   // Later add NodeAdapter, BrowserAdapter, etc.
   throw new Error('Unsupported environment');

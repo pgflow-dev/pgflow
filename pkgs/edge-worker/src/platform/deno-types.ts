@@ -6,21 +6,13 @@
 
 // Define minimal Deno namespace interface
 declare global {
-  interface DenoNamespace {
-    serve(options: any, handler: (req: Request) => Response | Promise<Response>): void;
-    env: {
-      get(key: string): string | undefined;
-    };
-  }
-
   // Define EdgeRuntime interface
   interface EdgeRuntimeNamespace {
-    waitUntil(promise: Promise<any>): void;
+    waitUntil(promise: Promise<unknown>): void;
   }
 
   // In DenoAdapter.ts, we assume these are always available
   // This makes TypeScript happy without requiring non-null assertions
-  var Deno: DenoNamespace;
   var EdgeRuntime: EdgeRuntimeNamespace;
 }
 
