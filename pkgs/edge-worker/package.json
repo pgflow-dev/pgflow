@@ -20,7 +20,6 @@
     "@henrygd/queue": "^1.0.7",
     "@pgflow/core": "workspace:*",
     "@pgflow/dsl": "workspace:*",
-    "pino": "^9.6.0",
     "postgres": "3.4.5"
   },
   "devDependencies": {

@@ -150,9 +150,6 @@ importers:
       '@pgflow/dsl':
         specifier: workspace:*
         version: link:../dsl/dist
-      pino:
-        specifier: ^9.6.0
-        version: 9.6.0
       postgres:
         specifier: 3.4.5
         version: 3.4.5
