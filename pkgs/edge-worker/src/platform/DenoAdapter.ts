@@ -11,18 +11,10 @@ export class DenoAdapter implements PlatformAdapter {
 
   constructor() {
     // Guard clause to ensure we're in a Deno environment
-    if (typeof Deno === 'undefined') {
-      // This is just for type checking during build
-      // At runtime, this class should only be instantiated in Deno
-      console.warn(
-        'DenoAdapter created in non-Deno environment - this is expected during build only'
-      );
-    }
-
-    if (typeof EdgeRuntime !== 'undefined') {
-      // This is just for type checking during build
-      // At runtime, this class should only be instantiated in Deno
-      console.warn(
+    // This is just for type checking during build
+    // At runtime, this class should only be instantiated in Deno
+    if (typeof Deno === 'undefined' || typeof EdgeRuntime === 'undefined') {
+      throw new Error(
         'DenoAdapter created in non-Deno environment - this is expected during build only'
       );
     }

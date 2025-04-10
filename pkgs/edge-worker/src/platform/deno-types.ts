@@ -18,10 +18,10 @@ declare global {
     waitUntil(promise: Promise<any>): void;
   }
 
-  // Make these available globally but as potentially undefined
-  // This allows our code to check if they exist before using them
-  var Deno: DenoNamespace | undefined;
-  var EdgeRuntime: EdgeRuntimeNamespace | undefined;
+  // In DenoAdapter.ts, we assume these are always available
+  // This makes TypeScript happy without requiring non-null assertions
+  var Deno: DenoNamespace;
+  var EdgeRuntime: EdgeRuntimeNamespace;
 }
 
 // Export empty object to make this a module
