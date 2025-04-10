@@ -14,6 +14,16 @@
         "rootDir": "pkgs/edge-worker/src"
       }
     },
+    "build:e2e": {
+      "executor": "@nx/esbuild:esbuild",
+      "options": {
+        "main": "pkgs/edge-worker/src/index.ts",
+        "outputPath": "supabase/functions/_dist",
+        "tsConfig": "pkgs/edge-worker/tsconfig.lib.json",
+        "bundle": true,
+        "format": ["esm"]
+      }
+    },
     "jsr:publish": {
       "executor": "nx:run-commands",
       "outputs": ["{workspaceRoot}/pkgs/edge-worker/"],
@@ -141,7 +151,7 @@
       }
     },
     "test:e2e": {
-      "dependsOn": ["supabase:prepare-edge-fn"],
+      "dependsOn": ["supabase:prepare-edge-fn", "build:e2e"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",
