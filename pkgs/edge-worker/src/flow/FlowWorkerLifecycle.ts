@@ -16,9 +16,11 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
   private workerRow?: WorkerRow;
   private flow: TFlow;
 
-  constructor(queries: Queries, flow: TFlow) {
+  constructor(queries: Queries, flow: TFlow, logger: Logger) {
     this.queries = queries;
     this.flow = flow;
+    this.logger = logger;
+    this.workerState = new WorkerState(logger);
   }
 
   async acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void> {
@@ -29,7 +31,7 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
       ...workerBootstrap,
     });
 
-    this.heartbeat = new Heartbeat(5000, this.queries, this.workerRow);
+    this.heartbeat = new Heartbeat(5000, this.queries, this.workerRow, this.logger);
 
     this.workerState.transitionTo(States.Running);
   }

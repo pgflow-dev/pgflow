@@ -10,7 +10,7 @@ export interface LifecycleConfig {
 }
 
 export class WorkerLifecycle<IMessage extends Json> implements ILifecycle {
-  private workerState: WorkerState = new WorkerState();
+  private workerState: WorkerState;
   private heartbeat?: Heartbeat;
   private logger: Logger;
   private queries: Queries;
@@ -21,6 +21,7 @@ export class WorkerLifecycle<IMessage extends Json> implements ILifecycle {
     this.queries = queries;
     this.queue = queue;
     this.logger = logger;
+    this.workerState = new WorkerState(logger);
   }
 
   async acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void> {
@@ -34,7 +35,7 @@ export class WorkerLifecycle<IMessage extends Json> implements ILifecycle {
       ...workerBootstrap,
     });
 
-    this.heartbeat = new Heartbeat(5000, this.queries, this.workerRow);
+    this.heartbeat = new Heartbeat(5000, this.queries, this.workerRow, this.logger);
 
     this.workerState.transitionTo(States.Running);
   }
