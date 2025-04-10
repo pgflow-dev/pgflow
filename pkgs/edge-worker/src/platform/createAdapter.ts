@@ -8,7 +8,6 @@ import './deno-types.js';
 export async function createAdapter(): Promise<PlatformAdapter> {
   if (isDenoEnvironment()) {
     const adapter = new DenoAdapter();
-    await adapter.initialize();
     return adapter;
   }
 

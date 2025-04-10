@@ -1,3 +1,4 @@
+import type { Worker } from '../core/Worker.js';
 /**
  * Basic logger interface used throughout the application
  */
@@ -7,6 +8,16 @@ export interface Logger {
   warn(message: string, ...args: any[]): void;
   error(message: string, ...args: any[]): void;
 }
+
+/**
+ * Logger factory function
+ */
+export type CreateLoggerFn = (module: string) => Logger;
+
+/**
+ * Logger factory function
+ */
+export type CreateWorkerFn = (createLoggerFn: CreateLoggerFn) => Worker;
 
 /**
  * Type for platform-specific environment variables
@@ -23,22 +34,18 @@ export interface PlatformEnvironment {
  */
 export interface PlatformAdapter {
   /**
-   * Initialize the platform adapter
+   * Initialize the platform adapter with a worker factory function
+   * @param createWorkerFn Function that creates a worker instance when called with a logger
    */
-  initialize(): Promise<void>;
-  
+  initialize(createWorkerFn: CreateWorkerFn): Promise<void>;
+
   /**
    * Clean up resources when shutting down
    */
   terminate(): Promise<void>;
-  
+
   /**
    * Get platform-specific environment variables
    */
   getEnv(): PlatformEnvironment;
-  
-  /**
-   * Create a logger for a specific module/component
-   */
-  createLogger(module: string): Logger;
 }

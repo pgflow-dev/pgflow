@@ -1,11 +1,14 @@
-import type { Worker } from './core/Worker.js';
 import type { Json } from './core/types.js';
 import {
   createQueueWorker,
   type QueueWorkerConfig,
 } from './queue/createQueueWorker.js';
 import { createAdapter } from './platform/createAdapter.js';
-import type { PlatformAdapter } from './platform/types.js';
+import type {
+  PlatformAdapter,
+  CreateLoggerFn,
+  CreateWorkerFn,
+} from './platform/types.js';
 
 /**
  * Configuration options for the EdgeWorker.
@@ -33,9 +36,8 @@ export type EdgeWorkerConfig = QueueWorkerConfig;
  */
 export class EdgeWorker {
   private static adapter: PlatformAdapter | null = null;
-  private static worker: Worker | null = null;
   private static wasCalled = false;
-  
+
   /**
    * Start the EdgeWorker with the given message handler and configuration.
    *
@@ -77,17 +79,14 @@ export class EdgeWorker {
     config: EdgeWorkerConfig = {}
   ) {
     this.ensureFirstCall();
-    
-    // Initialize the platform adapter
-    await this.initializeAdapter();
-    
-    // Get logger from adapter
-    const logger = this.adapter!.createLogger('EdgeWorker');
-    
-    // Get environment info
-    const env = this.adapter!.getEnv();
-    
-    // Complete the config with environment information
+
+    // First, create the adapter
+    this.adapter = await createAdapter();
+
+    // Get environment info from adapter
+    const env = this.adapter.getEnv();
+
+    // Complete the config with default values and environment info
     const completeConfig: EdgeWorkerConfig = {
       ...config,
       queueName: config.queueName || 'tasks',
@@ -100,63 +99,35 @@ export class EdgeWorker {
       visibilityTimeout: config.visibilityTimeout ?? 3,
       connectionString: config.connectionString || env.connectionString,
     };
-    
-    logger.info(`Creating queue worker for ${completeConfig.queueName}`);
-    
-    // Create worker with the adapter's createLogger function
-    this.worker = createQueueWorker(
-      handler, 
-      completeConfig,
-      (module: string) => this.adapter!.createLogger(module)
-    );
-    
-    // Set worker reference in adapter if it supports it
-    if ('setWorker' in this.adapter!) {
-      (this.adapter as any).setWorker(this.worker);
-    }
-    
-    // For Deno, set up shutdown handler if adapter supports it
-    if ('setupShutdownHandler' in this.adapter!) {
-      (this.adapter as any).setupShutdownHandler();
-    }
-    
-    // Start worker if needed
-    if ('startOnlyOnce' in this.worker) {
-      const edgeFunctionName = 'edgeFunctionName' in this.adapter! ? 
-        (this.adapter as any).edgeFunctionName || '' : '';
-        
-      await this.worker.startOnlyOnce({
-        edgeFunctionName,
-        workerId: env.executionId,
-      });
-    }
-    
-    return this.worker;
+
+    // Create a worker factory function that will be called by the adapter
+    const createWorkerFn: CreateWorkerFn = (createLoggerFn: CreateLoggerFn) => {
+      return createQueueWorker(handler, completeConfig, createLoggerFn);
+    };
+
+    // Initialize the adapter with the worker factory function
+    await this.adapter.initialize(createWorkerFn);
+
+    return this.adapter;
   }
-  
+
   /**
    * Stop the EdgeWorker and clean up resources.
    */
   static async stop() {
-    if (this.worker) {
-      await this.worker.stop();
-      this.worker = null;
-    }
-    
     if (this.adapter) {
       await this.adapter.terminate();
-      this.adapter = null;
+    } else {
+      throw new Error('EdgeWorker.start() must be called first');
     }
   }
-  
+
   private static ensureFirstCall() {
     if (this.wasCalled) {
       throw new Error('EdgeWorker.start() can only be called once');
     }
     this.wasCalled = true;
   }
-  
-  private static async initializeAdapter() {
-    this.adapter = await createAdapter();
-  }
+
+  // No longer needed as we initialize the adapter in start()
 }

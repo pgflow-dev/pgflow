@@ -1,4 +1,9 @@
-import type { Logger, PlatformAdapter, PlatformEnvironment } from './types.js';
+import type {
+  CreateWorkerFn,
+  Logger,
+  PlatformAdapter,
+  PlatformEnvironment,
+} from './types.js';
 import './deno-types.js';
 
 /**
@@ -20,7 +25,7 @@ export class DenoAdapter implements PlatformAdapter {
     }
   }
 
-  async initialize(): Promise<void> {
+  async initialize(createWorkerFn: CreateWorkerFn): Promise<void> {
     // Get environment information
     this.env = this.detectEnvironment();
 
@@ -29,9 +34,12 @@ export class DenoAdapter implements PlatformAdapter {
       if (!this.worker) {
         this.edgeFunctionName = this.extractFunctionName(req);
 
-        // Log using our createLogger method
+        // Create a logger for the adapter
         const logger = this.createLogger('DenoAdapter');
         logger.info(`HTTP Request: ${this.edgeFunctionName}`);
+
+        // Create the worker using the factory function and the logger
+        this.worker = createWorkerFn(this.createLogger.bind(this));
       }
 
       return new Response('ok', {
@@ -163,6 +171,7 @@ export class DenoAdapter implements PlatformAdapter {
 
       if (this.worker) {
         this.worker.stop();
+        this.worker = null;
       }
     };
   }
