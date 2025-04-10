@@ -427,6 +427,7 @@
     "packageJson": {
       "dependencies": [
         "npm:@henrygd/queue@^1.0.7",
+        "npm:@teidesu/deno-types@1.42.4",
         "npm:pino@^9.6.0",
         "npm:postgres@3.4.5"
       ]
