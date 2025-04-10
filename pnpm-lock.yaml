@@ -181,6 +181,13 @@ importers:
       postgres:
         specifier: 3.4.5
         version: 3.4.5
+    devDependencies:
+      '@teidesu/deno-types':
+        specifier: 1.42.4
+        version: 1.42.4
+      supabase:
+        specifier: 2.21.1
+        version: 2.21.1
 
   pkgs/example-flows:
     dependencies:
