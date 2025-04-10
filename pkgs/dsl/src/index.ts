@@ -1,1 +1,1 @@
-export * from './dsl.ts';
+export * from './dsl.js';

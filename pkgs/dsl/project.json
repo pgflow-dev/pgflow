@@ -6,6 +6,25 @@
   "tags": [],
   "// targets": "to see all targets run: nx show project @pgflow/dsl --web",
   "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "outputPath": "pkgs/dsl/dist",
+        "main": "pkgs/dsl/src/index.ts",
+        "tsConfig": "pkgs/dsl/tsconfig.lib.json",
+        "assets": ["pkgs/dsl/*.md"],
+        "rootDir": "pkgs/dsl/src"
+      }
+    },
+    "jsr:publish": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/pkgs/dsl/"],
+      "options": {
+        "cwd": "pkgs/dsl",
+        "commands": ["jsr publish"],
+        "parallel": false
+      }
+    },
     "test": {
       "executor": "@nx/vite:test",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],

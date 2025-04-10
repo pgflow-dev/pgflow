@@ -1,17 +1,17 @@
 import type { AnyFlow } from '@pgflow/dsl';
-import type { EdgeWorkerConfig } from '../EdgeWorker.ts';
-import { ExecutionController } from '../core/ExecutionController.ts';
-import { StepTaskPoller, type StepTaskPollerConfig } from './StepTaskPoller.ts';
-import { StepTaskExecutor } from './StepTaskExecutor.ts';
+import type { EdgeWorkerConfig } from '../EdgeWorker.js';
+import { ExecutionController } from '../core/ExecutionController.js';
+import { StepTaskPoller, type StepTaskPollerConfig } from './StepTaskPoller.js';
+import { StepTaskExecutor } from './StepTaskExecutor.js';
 import { PgflowSqlClient } from '@pgflow/core';
-import { Queries } from '../core/Queries.ts';
-import type { StepTaskRecord } from './types.ts';
-import type { IExecutor } from '../core/types.ts';
-import { Worker } from '../core/Worker.ts';
+import { Queries } from '../core/Queries.js';
+import type { StepTaskRecord } from './types.js';
+import type { IExecutor } from '../core/types.js';
+import { Worker } from '../core/Worker.js';
 import postgres from 'postgres';
-import { FlowWorkerLifecycle } from './FlowWorkerLifecycle.ts';
-import { BatchProcessor } from '../core/BatchProcessor.ts';
-import { getLogger } from '../core/Logger.ts';
+import { FlowWorkerLifecycle } from './FlowWorkerLifecycle.js';
+import { BatchProcessor } from '../core/BatchProcessor.js';
+import { getLogger } from '../core/Logger.js';
 
 /**
  * Configuration for the flow worker

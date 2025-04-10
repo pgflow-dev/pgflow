@@ -5,6 +5,25 @@
   "projectType": "library",
   "tags": [],
   "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "outputPath": "pkgs/core/dist",
+        "main": "pkgs/core/src/index.ts",
+        "tsConfig": "pkgs/core/tsconfig.lib.json",
+        "assets": ["pkgs/core/*.md"],
+        "rootDir": "pkgs/core/src"
+      }
+    },
+    "jsr:publish": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/pkgs/core/"],
+      "options": {
+        "cwd": "pkgs/core",
+        "commands": ["jsr publish"],
+        "parallel": false
+      }
+    },
     "lint": {
       "executor": "nx:run-commands",
       "options": {

@@ -1,20 +1,22 @@
 {
   "name": "@pgflow/dsl",
-  "version": "0.0.1",
-  "dependencies": {
-    "vitest": "*"
-  },
+  "version": "0.0.10",
+  "type": "module",
   "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "typings": "./dist/index.d.ts",
-  "private": true,
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "private": false,
   "exports": {
     "./package.json": "./package.json",
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./index.d.ts",
+      "import": "./index.js"
     }
   },
-  "types": "./dist/index.d.ts",
-  "type": "module"
+  "publishConfig": {
+    "access": "public"
+  }
 }

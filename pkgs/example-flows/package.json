@@ -1,14 +1,17 @@
 {
   "name": "@pgflow/example-flows",
-  "version": "0.0.1",
+  "version": "0.0.10",
   "dependencies": {
     "@pgflow/core": "workspace:*",
     "@pgflow/dsl": "workspace:*"
   },
   "type": "module",
   "main": "./dist/index.js",
-  "typings": "./dist/index.d.ts",
-  "private": true,
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "exports": {
     "./package.json": "./package.json",
     ".": {
@@ -16,6 +19,7 @@
       "import": "./dist/index.js"
     }
   },
-  "types": "./dist/index.d.ts",
-  "module": "./dist/index.js"
+  "publishConfig": {
+    "access": "public"
+  }
 }

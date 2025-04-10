@@ -1,25 +1,31 @@
 {
   "name": "@pgflow/core",
-  "version": "0.0.1",
+  "version": "0.0.10",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "./dist/index.js",
-  "typings": "./dist/index.d.ts",
-  "private": true,
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "supabase/migrations/*.sql"
+  ],
+  "private": false,
   "exports": {
     "./package.json": "./package.json",
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./index.d.ts",
+      "import": "./index.js"
     }
   },
-  "types": "./dist/index.d.ts",
-  "module": "./dist/index.js",
   "devDependencies": {
-    "supabase": "^2.6.8",
-    "vitest": "*"
+    "supabase": "^2.6.8"
   },
   "dependencies": {
-    "postgres": "^3.4.5"
+    "postgres": "^3.4.5",
+    "@pgflow/dsl": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

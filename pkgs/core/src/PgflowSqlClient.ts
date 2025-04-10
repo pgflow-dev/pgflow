@@ -4,8 +4,8 @@ import type {
   IPgflowClient,
   StepTaskKey,
   RunRow,
-} from './types.ts';
-import type { Json } from './types.ts';
+} from './types.js';
+import type { Json } from './types.js';
 import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
 
 /**

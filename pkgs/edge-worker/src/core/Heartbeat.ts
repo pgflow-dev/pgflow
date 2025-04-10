@@ -1,6 +1,6 @@
-import type { Queries } from './Queries.ts';
-import type { WorkerRow } from './types.ts';
-import { getLogger } from './Logger.ts';
+import type { Queries } from './Queries.js';
+import type { WorkerRow } from './types.js';
+import { getLogger } from './Logger.js';
 
 export class Heartbeat {
   private logger = getLogger('Heartbeat');

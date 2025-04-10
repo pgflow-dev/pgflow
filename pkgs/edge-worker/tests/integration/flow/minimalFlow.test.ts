@@ -1,6 +1,6 @@
 import { assert, assertEquals } from '@std/assert';
 import { withPgNoTransaction } from '../../db.ts';
-import { Flow } from '../../../../dsl/src/dsl.ts';
+import { Flow } from '@pgflow/dsl';
 import { waitFor } from '../../e2e/_helpers.ts';
 import { delay } from '@std/async';
 import type { Json } from '@pgflow/core';

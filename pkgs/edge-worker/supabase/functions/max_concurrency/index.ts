@@ -1,4 +1,4 @@
-import { EdgeWorker } from '../_src/EdgeWorker.ts';
+import { EdgeWorker } from '../../../dist/index.js';
 import { sleep, sql } from '../utils.ts';
 
 async function incrementSeq() {

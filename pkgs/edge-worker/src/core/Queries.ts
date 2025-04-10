@@ -1,5 +1,5 @@
 import type postgres from 'postgres';
-import type { WorkerRow } from './types.ts';
+import type { WorkerRow } from './types.js';
 
 export class Queries {
   constructor(private readonly sql: postgres.Sql) {}

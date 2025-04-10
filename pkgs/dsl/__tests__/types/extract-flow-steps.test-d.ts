@@ -1,4 +1,4 @@
-import { Flow, type ExtractFlowSteps } from '../../src/index.ts';
+import { Flow, type ExtractFlowSteps } from '../../src/index.js';
 import { describe, it, expectTypeOf } from 'vitest';
 
 describe('ExtractFlowSteps utility type', () => {

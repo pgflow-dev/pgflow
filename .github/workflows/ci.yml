@@ -42,7 +42,9 @@ jobs:
       - name: Install sqruff
         uses: quarylabs/install-sqruff-cli-action@main
 
-      - run: pnpm install --frozen-lockfile
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
       - uses: nrwl/nx-set-shas@v4
 
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud

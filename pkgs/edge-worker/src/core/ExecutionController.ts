@@ -1,6 +1,6 @@
 import { newQueue, type Queue as PromiseQueue } from '@henrygd/queue';
-import type { IExecutor, IMessage } from './types.ts';
-import { getLogger } from './Logger.ts';
+import type { IExecutor, IMessage } from './types.js';
+import { getLogger } from './Logger.js';
 
 export interface ExecutionConfig {
   maxConcurrent: number;

@@ -1,4 +1,4 @@
-import { Flow, type StepOutput } from '../../src/index.ts';
+import { Flow, type StepOutput } from '../../src/index.js';
 import { describe, it, expectTypeOf } from 'vitest';
 
 describe('StepOutput utility type', () => {

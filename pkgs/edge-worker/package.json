@@ -1,7 +1,29 @@
 {
   "name": "@pgflow/edge-worker",
-  "version": "0.0.4",
+  "version": "0.0.10",
   "license": "AGPL-3.0",
-  "private": true,
-  "type": "module"
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@henrygd/queue": "^1.0.7",
+    "pino": "^9.6.0",
+    "postgres": "3.4.5",
+    "@pgflow/core": "workspace:*",
+    "@pgflow/dsl": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

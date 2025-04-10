@@ -1,0 +1,32 @@
+{
+  "name": "website",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "pkgs/website/src",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "cwd": "pkgs/website",
+        "command": "astro build",
+        "outputPath": "pkgs/website/dist"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/website",
+        "command": "astro dev"
+      }
+    },
+    "preview": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/website",
+        "command": "astro preview"
+      }
+    }
+  }
+}

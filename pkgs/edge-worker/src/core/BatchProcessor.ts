@@ -1,6 +1,6 @@
-import type { ExecutionController } from './ExecutionController.ts';
-import type { IMessage, IPoller } from './types.ts';
-import { getLogger } from './Logger.ts';
+import type { ExecutionController } from './ExecutionController.js';
+import type { IMessage, IPoller } from './types.js';
+import { getLogger } from './Logger.js';
 
 export class BatchProcessor<TMessage extends IMessage> {
   private logger = getLogger('BatchProcessor');
@@ -26,8 +26,8 @@ export class BatchProcessor<TMessage extends IMessage> {
 
     this.logger.debug(`Starting ${messageRecords.length} messages`);
 
-    const startPromises = messageRecords.map(
-      (message) => this.executionController.start(message)
+    const startPromises = messageRecords.map((message) =>
+      this.executionController.start(message)
     );
     await Promise.all(startPromises);
   }

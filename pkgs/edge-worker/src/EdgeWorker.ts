@@ -1,11 +1,11 @@
-import type { Worker } from './core/Worker.ts';
-import spawnNewEdgeFunction from './spawnNewEdgeFunction.ts';
-import type { Json } from './core/types.ts';
-import { getLogger, setupLogger } from './core/Logger.ts';
+import type { Worker } from './core/Worker.js';
+import spawnNewEdgeFunction from './spawnNewEdgeFunction.js';
+import type { Json } from './core/types.js';
+import { getLogger, setupLogger } from './core/Logger.js';
 import {
   createQueueWorker,
   type QueueWorkerConfig,
-} from './queue/createQueueWorker.ts';
+} from './queue/createQueueWorker.js';
 
 /**
  * Configuration options for the EdgeWorker.
@@ -111,7 +111,6 @@ export class EdgeWorker {
   }
 
   private static getConnectionString(): string {
-    // @ts-ignore - TODO: fix the types
     const connectionString = Deno.env.get('EDGE_WORKER_DB_URL');
     if (!connectionString) {
       const message =
@@ -132,8 +131,9 @@ export class EdgeWorker {
     };
 
     // use waitUntil to prevent the function from exiting
-    // @ts-ignore: TODO: fix the types
-    EdgeRuntime.waitUntil(new Promise(() => {}));
+    // For Supabase Edge Functions environment
+    const promiseThatNeverResolves = new Promise(() => {}); // eslint-disable-line @typescript-eslint/no-empty-function
+    EdgeRuntime.waitUntil(promiseThatNeverResolves);
   }
 
   private static setupRequestHandler<TPayload extends Json>(

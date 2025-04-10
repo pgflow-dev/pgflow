@@ -1,4 +1,4 @@
-import { EdgeWorker } from '../_src/EdgeWorker.ts';
+import { EdgeWorker } from '../../../dist/index.js';
 import { crypto } from 'jsr:@std/crypto';
 import { sql } from '../utils.ts';
 

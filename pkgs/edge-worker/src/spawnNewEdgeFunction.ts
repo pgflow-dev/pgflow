@@ -1,13 +1,12 @@
-import { getLogger } from './core/Logger.ts';
+import { getLogger } from './core/Logger.js';
 
-// @ts-ignore - TODO: fix the types
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') as string;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') as string;
 
 const logger = getLogger('spawnNewEdgeFunction');
 
 export default async function spawnNewEdgeFunction(
-  functionName: string = 'edge-worker'
+  functionName = 'edge-worker'
 ): Promise<void> {
   if (!functionName) {
     throw new Error('functionName cannot be null or empty');
@@ -20,7 +19,7 @@ export default async function spawnNewEdgeFunction(
     headers: {
       Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
       'Content-Type': 'application/json',
-    }
+    },
   });
 
   logger.debug('Edge Function spawned successfully!');

@@ -4,20 +4,39 @@
   "sourceRoot": "pkgs/edge-worker",
   "projectType": "library",
   "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "outputPath": "pkgs/edge-worker/dist",
+        "main": "pkgs/edge-worker/src/index.ts",
+        "tsConfig": "pkgs/edge-worker/tsconfig.lib.json",
+        "assets": ["pkgs/edge-worker/*.md"],
+        "rootDir": "pkgs/edge-worker/src"
+      }
+    },
+    "jsr:publish": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/pkgs/edge-worker/"],
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "commands": ["jsr publish --allow-slow-types"],
+        "parallel": false
+      }
+    },
     "test:nx-deno": {
       "executor": "@axhxrx/nx-deno:test",
       "outputs": ["{workspaceRoot}/coverage/pkgs/edge-worker"],
       "options": {
         "coverageDirectory": "coverage/pkgs/edge-worker",
-        "denoConfig": "pkgs/edge-worker/deno.json",
+        "denoConfig": "pkgs/edge-worker/deno.test.json",
         "allowNone": false,
         "check": "local"
       }
     },
-    "lint": {
+    "lint:nx-deno": {
       "executor": "@axhxrx/nx-deno:lint",
       "options": {
-        "denoConfig": "pkgs/edge-worker/deno.json",
+        "denoConfig": "pkgs/edge-worker/deno.test.json",
         "ignore": "pkgs/edge-worker/supabase/functions/_src/"
       }
     },
@@ -59,6 +78,7 @@
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
+          "mkdir -p supabase/migrations/",
           "rm -f supabase/migrations/*.sql",
           "cp ../core/supabase/migrations/*.sql supabase/migrations/",
           "cp sql/*_*.sql supabase/migrations/",
@@ -72,14 +92,12 @@
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
-          "rm -f supabase/functions/_src/*.ts",
-          "rm -f supabase/functions/_src/deno.*",
-          "cp -r src/* ./supabase/functions/_src/",
-          "cp deno.* ./supabase/functions/_src/",
-          "find supabase/functions -maxdepth 1 -mindepth 1 -type d -not -name '_src' -exec cp deno.* {} \\;"
+          "find supabase/functions -maxdepth 1 -mindepth 1 -type d -exec cp deno.test.json {}/deno.json \\;",
+          "find supabase/functions -maxdepth 1 -mindepth 1 -type d -exec cp deno.lock {}/deno.lock \\;"
         ],
         "parallel": false
-      }
+      },
+      "dependsOn": ["build"]
     },
     "supabase:functions-serve": {
       "dependsOn": ["supabase:start", "supabase:prepare-edge-fn"],
@@ -128,21 +146,13 @@
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
-          "deno test --allow-all --env=supabase/functions/.env tests/e2e/"
+          "deno test --config deno.test.json --allow-all --env=supabase/functions/.env tests/e2e/"
         ],
         "parallel": false
       }
     },
     "test": {
       "dependsOn": ["test:unit", "test:integration"]
-    },
-    "jsr:publish": {
-      "executor": "nx:run-commands",
-      "options": {
-        "cwd": "pkgs/edge-worker",
-        "commands": ["pnpm dlx jsr publish --allow-slow-types"],
-        "parallel": false
-      }
     }
   },
   "tags": []

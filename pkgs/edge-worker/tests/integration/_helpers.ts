@@ -4,7 +4,7 @@ import {
   type FlowWorkerConfig,
 } from '../../src/flow/createFlowWorker.ts';
 import type { postgres } from '../sql.ts';
-import { PgflowSqlClient } from '../../../core/src/PgflowSqlClient.ts';
+import { PgflowSqlClient } from '@pgflow/core';
 
 export async function startFlow<TFlow extends AnyFlow>(
   sql: postgres.Sql,

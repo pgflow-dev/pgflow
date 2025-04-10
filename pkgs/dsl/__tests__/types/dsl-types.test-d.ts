@@ -1,4 +1,4 @@
-import { Flow } from '../../src/index.ts';
+import { Flow } from '../../src/index.js';
 import { describe, it, expectTypeOf } from 'vitest';
 
 describe('Flow Type System Tests', () => {

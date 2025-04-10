@@ -1,3 +1,3 @@
-export * from './types.ts';
-export * from './PgflowSqlClient.ts';
-export type { Database } from './database-types.ts';
+export * from './types.js';
+export * from './PgflowSqlClient.js';
+export type { Database } from './database-types.js';

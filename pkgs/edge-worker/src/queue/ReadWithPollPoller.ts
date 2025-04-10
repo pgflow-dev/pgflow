@@ -1,6 +1,6 @@
-import type { Queue } from './Queue.ts';
-import type { PgmqMessageRecord } from './types.ts';
-import type { Json } from '../core/types.ts';
+import type { Queue } from './Queue.js';
+import type { PgmqMessageRecord } from './types.js';
+import type { Json } from '../core/types.js';
 
 export interface PollerConfig {
   batchSize: number;
