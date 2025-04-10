@@ -1,11 +1,11 @@
 import type { Worker } from './core/Worker.js';
-import spawnNewEdgeFunction from './spawnNewEdgeFunction.js';
 import type { Json } from './core/types.js';
-import { getLogger, setupLogger } from './core/Logger.js';
 import {
   createQueueWorker,
   type QueueWorkerConfig,
 } from './queue/createQueueWorker.js';
+import { createAdapter } from './platform/createAdapter.js';
+import type { PlatformAdapter } from './platform/types.js';
 
 /**
  * Configuration options for the EdgeWorker.
@@ -32,9 +32,10 @@ export type EdgeWorkerConfig = QueueWorkerConfig;
  * ```
  */
 export class EdgeWorker {
-  private static logger = getLogger('EdgeWorker');
+  private static adapter: PlatformAdapter | null = null;
+  private static worker: Worker | null = null;
   private static wasCalled = false;
-
+  
   /**
    * Start the EdgeWorker with the given message handler and configuration.
    *
@@ -71,22 +72,24 @@ export class EdgeWorker {
    * });
    * ```
    */
-  static start<TPayload extends Json = Json>(
+  static async start<TPayload extends Json = Json>(
     handler: (message: TPayload) => Promise<void> | void,
     config: EdgeWorkerConfig = {}
   ) {
     this.ensureFirstCall();
-
-    // Get connection string from config or environment
-    const connectionString =
-      config.connectionString || this.getConnectionString();
-
-    // Create a complete configuration object with defaults
+    
+    // Initialize the platform adapter
+    await this.initializeAdapter();
+    
+    // Get logger from adapter
+    const logger = this.adapter!.createLogger('EdgeWorker');
+    
+    // Get environment info
+    const env = this.adapter!.getEnv();
+    
+    // Complete the config with environment information
     const completeConfig: EdgeWorkerConfig = {
-      // Pass through any config options first
       ...config,
-
-      // Then override with defaults for missing values
       queueName: config.queueName || 'tasks',
       maxConcurrent: config.maxConcurrent ?? 10,
       maxPgConnections: config.maxPgConnections ?? 4,
@@ -95,78 +98,65 @@ export class EdgeWorker {
       retryDelay: config.retryDelay ?? 5,
       retryLimit: config.retryLimit ?? 5,
       visibilityTimeout: config.visibilityTimeout ?? 3,
-
-      // Ensure connectionString is always set
-      connectionString,
+      connectionString: config.connectionString || env.connectionString,
     };
-
-    this.setupRequestHandler(handler, completeConfig);
+    
+    logger.info(`Creating queue worker for ${completeConfig.queueName}`);
+    
+    // Create worker with the adapter's createLogger function
+    this.worker = createQueueWorker(
+      handler, 
+      completeConfig,
+      (module: string) => this.adapter!.createLogger(module)
+    );
+    
+    // Set worker reference in adapter if it supports it
+    if ('setWorker' in this.adapter!) {
+      (this.adapter as any).setWorker(this.worker);
+    }
+    
+    // For Deno, set up shutdown handler if adapter supports it
+    if ('setupShutdownHandler' in this.adapter!) {
+      (this.adapter as any).setupShutdownHandler();
+    }
+    
+    // Start worker if needed
+    if ('startOnlyOnce' in this.worker) {
+      const edgeFunctionName = 'edgeFunctionName' in this.adapter! ? 
+        (this.adapter as any).edgeFunctionName || '' : '';
+        
+      await this.worker.startOnlyOnce({
+        edgeFunctionName,
+        workerId: env.executionId,
+      });
+    }
+    
+    return this.worker;
   }
-
+  
+  /**
+   * Stop the EdgeWorker and clean up resources.
+   */
+  static async stop() {
+    if (this.worker) {
+      await this.worker.stop();
+      this.worker = null;
+    }
+    
+    if (this.adapter) {
+      await this.adapter.terminate();
+      this.adapter = null;
+    }
+  }
+  
   private static ensureFirstCall() {
     if (this.wasCalled) {
       throw new Error('EdgeWorker.start() can only be called once');
     }
     this.wasCalled = true;
   }
-
-  private static getConnectionString(): string {
-    const connectionString = Deno.env.get('EDGE_WORKER_DB_URL');
-    if (!connectionString) {
-      const message =
-        'EDGE_WORKER_DB_URL is not set!\n' +
-        'See https://pgflow.pages.dev/edge-worker/prepare-environment/#prepare-connection-string';
-      throw new Error(message);
-    }
-    return connectionString;
-  }
-
-  private static setupShutdownHandler(worker: Worker) {
-    globalThis.onbeforeunload = async () => {
-      if (worker.edgeFunctionName) {
-        await spawnNewEdgeFunction(worker.edgeFunctionName);
-      }
-
-      worker.stop();
-    };
-
-    // use waitUntil to prevent the function from exiting
-    // For Supabase Edge Functions environment
-    const promiseThatNeverResolves = new Promise(() => {}); // eslint-disable-line @typescript-eslint/no-empty-function
-    EdgeRuntime.waitUntil(promiseThatNeverResolves);
-  }
-
-  private static setupRequestHandler<TPayload extends Json>(
-    handler: (message: TPayload) => Promise<void> | void,
-    workerConfig: EdgeWorkerConfig
-  ) {
-    let worker: Worker | null = null;
-
-    Deno.serve({}, (req) => {
-      if (!worker) {
-        const edgeFunctionName = this.extractFunctionName(req);
-        const sbExecutionId = Deno.env.get('SB_EXECUTION_ID')!;
-        setupLogger(sbExecutionId);
-
-        this.logger.info(`HTTP Request: ${edgeFunctionName}`);
-        // Create the worker with all configuration options
-
-        worker = createQueueWorker(handler, workerConfig);
-        worker.startOnlyOnce({
-          edgeFunctionName,
-          workerId: sbExecutionId,
-        });
-
-        this.setupShutdownHandler(worker);
-      }
-
-      return new Response('ok', {
-        headers: { 'Content-Type': 'application/json' },
-      });
-    });
-  }
-
-  private static extractFunctionName(req: Request): string {
-    return new URL(req.url).pathname.replace(/^\/+|\/+$/g, '');
+  
+  private static async initializeAdapter() {
+    this.adapter = await createAdapter();
   }
 }

@@ -9,6 +9,7 @@ import { Worker } from '../core/Worker.js';
 import postgres from 'postgres';
 import { WorkerLifecycle } from '../core/WorkerLifecycle.js';
 import { BatchProcessor } from '../core/BatchProcessor.js';
+import type { Logger } from '../platform/types.js';
 
 /**
  * Configuration for the queue worker
@@ -86,13 +87,19 @@ export type QueueWorkerConfig = {
  *
  * @param handler - The message handler function that processes each message from the queue
  * @param config - Configuration options for the worker
+ * @param createLogger - Function to create loggers for different components
  * @returns A configured Worker instance ready to be started
  */
 export function createQueueWorker<TPayload extends Json>(
   handler: (message: TPayload) => Promise<void> | void,
-  config: QueueWorkerConfig
+  config: QueueWorkerConfig,
+  createLogger: (module: string) => Logger
 ): Worker {
   type QueueMessage = PgmqMessageRecord<TPayload>;
+
+  // Create component-specific loggers
+  const logger = createLogger('QueueWorker');
+  logger.info(`Creating queue worker for ${config.queueName || 'tasks'}`);
 
   const abortController = new AbortController();
   const abortSignal = abortController.signal;
@@ -105,10 +112,19 @@ export function createQueueWorker<TPayload extends Json>(
       prepare: false,
     });
 
-  const queue = new Queue<TPayload>(sql, config.queueName || 'tasks');
+  const queue = new Queue<TPayload>(
+    sql, 
+    config.queueName || 'tasks',
+    createLogger('Queue')
+  );
+  
   const queries = new Queries(sql);
 
-  const lifecycle = new WorkerLifecycle<TPayload>(queries, queue);
+  const lifecycle = new WorkerLifecycle<TPayload>(
+    queries, 
+    queue,
+    createLogger('WorkerLifecycle')
+  );
 
   const executorFactory = (record: QueueMessage, signal: AbortSignal) => {
     return new MessageExecutor(
@@ -117,29 +133,43 @@ export function createQueueWorker<TPayload extends Json>(
       handler,
       signal,
       config.retryLimit || 5,
-      config.retryDelay || 3
+      config.retryDelay || 3,
+      createLogger('MessageExecutor')
     );
   };
 
-  const poller = new ReadWithPollPoller(queue, abortSignal, {
-    batchSize: config.batchSize || config.maxConcurrent || 10,
-    maxPollSeconds: config.maxPollSeconds || 5,
-    pollIntervalMs: config.pollIntervalMs || 200,
-    visibilityTimeout: config.visibilityTimeout || 3,
-  });
+  const poller = new ReadWithPollPoller(
+    queue, 
+    abortSignal, 
+    {
+      batchSize: config.batchSize || config.maxConcurrent || 10,
+      maxPollSeconds: config.maxPollSeconds || 5,
+      pollIntervalMs: config.pollIntervalMs || 200,
+      visibilityTimeout: config.visibilityTimeout || 3,
+    },
+    createLogger('ReadWithPollPoller')
+  );
 
   const executionController = new ExecutionController<QueueMessage>(
     executorFactory,
     abortSignal,
     {
       maxConcurrent: config.maxConcurrent || 10,
-    }
+    },
+    createLogger('ExecutionController')
   );
+  
   const batchProcessor = new BatchProcessor<QueueMessage>(
     executionController,
     poller,
-    abortSignal
+    abortSignal,
+    createLogger('BatchProcessor')
   );
 
-  return new Worker(batchProcessor, lifecycle, sql);
+  return new Worker(
+    batchProcessor, 
+    lifecycle, 
+    sql,
+    createLogger('Worker')
+  );
 }
