@@ -7,7 +7,7 @@ import './deno-types.js';
 export class DenoAdapter implements PlatformAdapter {
   private env: PlatformEnvironment | null = null;
   private edgeFunctionName: string | null = null;
-  private worker: any | null = null;
+  private worker: { stop(): void } | null = null;
 
   constructor() {
     // Guard clause to ensure we're in a Deno environment
@@ -25,7 +25,7 @@ export class DenoAdapter implements PlatformAdapter {
     this.env = this.detectEnvironment();
 
     // Set up HTTP listener for Deno
-    Deno.serve({}, (req) => {
+    Deno.serve({}, (req: Request) => {
       if (!this.worker) {
         this.edgeFunctionName = this.extractFunctionName(req);
 
@@ -100,7 +100,7 @@ export class DenoAdapter implements PlatformAdapter {
     };
   }
 
-  setWorker(worker: any): void {
+  setWorker(worker: { stop(): void }): void {
     this.worker = worker;
   }
 
@@ -145,7 +145,7 @@ export class DenoAdapter implements PlatformAdapter {
     }
 
     return {
-      executionId: Deno.env.get('SB_EXECUTION_ID') || crypto.randomUUID(),
+      executionId: Deno.env.get('SB_EXECUTION_ID'),
       logLevel: Deno.env.get('EDGE_WORKER_LOG_LEVEL') || 'info',
       connectionString,
     };
