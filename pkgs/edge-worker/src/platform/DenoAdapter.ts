@@ -4,15 +4,16 @@ import type {
   PlatformAdapter,
   PlatformEnvironment,
 } from './types.js';
+import type { Worker } from '../core/Worker.js';
 import './deno-types.js';
 
 /**
  * Adapter for Deno runtime environment
  */
 export class DenoAdapter implements PlatformAdapter {
-  private env: PlatformEnvironment | null = null;
+  private env: PlatformEnvironment;
   private edgeFunctionName: string | null = null;
-  private worker: { stop(): void } | null = null;
+  private worker: Worker | null = null;
 
   constructor() {
     // Guard clause to ensure we're in a Deno environment
@@ -23,12 +24,11 @@ export class DenoAdapter implements PlatformAdapter {
         'DenoAdapter created in non-Deno environment - this is expected during build only'
       );
     }
+
+    this.env = this.detectEnvironment();
   }
 
   async initialize(createWorkerFn: CreateWorkerFn): Promise<void> {
-    // Get environment information
-    this.env = this.detectEnvironment();
-
     // Set up HTTP listener for Deno
     Deno.serve({}, (req: Request) => {
       if (!this.worker) {
@@ -40,6 +40,10 @@ export class DenoAdapter implements PlatformAdapter {
 
         // Create the worker using the factory function and the logger
         this.worker = createWorkerFn(this.createLogger.bind(this));
+        this.worker.startOnlyOnce({
+          edgeFunctionName: this.edgeFunctionName,
+          workerId: this.env.executionId,
+        });
       }
 
       return new Response('ok', {
@@ -54,13 +58,11 @@ export class DenoAdapter implements PlatformAdapter {
 
   async terminate(): Promise<void> {
     if (this.worker) {
-      this.worker.stop();
-      this.worker = null;
+      await this.worker.stop();
     }
   }
 
   getEnv(): PlatformEnvironment {
-    if (!this.env) throw new Error('Adapter not initialized');
     return this.env;
   }
 
@@ -106,10 +108,6 @@ export class DenoAdapter implements PlatformAdapter {
         }
       },
     };
-  }
-
-  setWorker(worker: { stop(): void }): void {
-    this.worker = worker;
   }
 
   async spawnNewEdgeFunction(functionName: string): Promise<void> {
