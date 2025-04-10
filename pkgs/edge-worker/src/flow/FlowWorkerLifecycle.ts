@@ -9,9 +9,9 @@ import type { AnyFlow } from '@pgflow/dsl';
  * A specialized WorkerLifecycle for Flow-based workers that is aware of the Flow's step types
  */
 export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
-  private workerState: WorkerState = new WorkerState();
+  private workerState: WorkerState;
   private heartbeat?: Heartbeat;
-  private logger = getLogger('FlowWorkerLifecycle');
+  private logger: Logger;
   private queries: Queries;
   private workerRow?: WorkerRow;
   private flow: TFlow;
@@ -31,7 +31,12 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
       ...workerBootstrap,
     });
 
-    this.heartbeat = new Heartbeat(5000, this.queries, this.workerRow, this.logger);
+    this.heartbeat = new Heartbeat(
+      5000,
+      this.queries,
+      this.workerRow,
+      this.logger
+    );
 
     this.workerState.transitionTo(States.Running);
   }
