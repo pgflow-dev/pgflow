@@ -14,6 +14,7 @@ export class DenoAdapter implements PlatformAdapter {
   private env: PlatformEnvironment;
   private edgeFunctionName: string | null = null;
   private worker: Worker | null = null;
+  private logger: Logger;
 
   constructor() {
     // Guard clause to ensure we're in a Deno environment
@@ -110,8 +111,8 @@ export class DenoAdapter implements PlatformAdapter {
     };
   }
 
-  async spawnNewEdgeFunction(functionName: string): Promise<void> {
-    if (!functionName) {
+  async spawnNewEdgeFunction(): Promise<void> {
+    if (!this.edgeFunctionName) {
       throw new Error('functionName cannot be null or empty');
     }
 
@@ -122,7 +123,7 @@ export class DenoAdapter implements PlatformAdapter {
     const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') as string;
 
     const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/${functionName}`,
+      `${SUPABASE_URL}/functions/v1/${this.edgeFunctionName}`,
       {
         method: 'POST',
         headers: {
@@ -169,8 +170,9 @@ export class DenoAdapter implements PlatformAdapter {
 
   setupShutdownHandler(): void {
     globalThis.onbeforeunload = async () => {
+      this.logger.info('Shutting down...');
       if (this.worker && this.edgeFunctionName) {
-        await this.spawnNewEdgeFunction(this.edgeFunctionName);
+        await this.spawnNewEdgeFunction();
       }
 
       if (this.worker) {

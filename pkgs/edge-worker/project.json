@@ -14,7 +14,7 @@
         "rootDir": "pkgs/edge-worker/src"
       }
     },
-    "build:e2e": {
+    "build:bundle": {
       "executor": "@nx/esbuild:esbuild",
       "options": {
         "main": "pkgs/edge-worker/src/index.ts",
@@ -97,20 +97,8 @@
         "parallel": false
       }
     },
-    "supabase:prepare-edge-fn": {
-      "executor": "nx:run-commands",
-      "options": {
-        "cwd": "pkgs/edge-worker",
-        "commands": [
-          "find supabase/functions -maxdepth 1 -mindepth 1 -type d -exec cp deno.test.json {}/deno.json \\;",
-          "find supabase/functions -maxdepth 1 -mindepth 1 -type d -exec cp deno.lock {}/deno.lock \\;"
-        ],
-        "parallel": false
-      },
-      "dependsOn": ["build"]
-    },
     "supabase:functions-serve": {
-      "dependsOn": ["supabase:start", "supabase:prepare-edge-fn"],
+      "dependsOn": ["supabase:start", "build:bundle"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",
@@ -151,7 +139,7 @@
       }
     },
     "test:e2e": {
-      "dependsOn": ["supabase:prepare-edge-fn", "build:e2e"],
+      "dependsOn": ["build:bundle"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",
