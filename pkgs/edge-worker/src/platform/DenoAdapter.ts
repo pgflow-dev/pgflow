@@ -152,8 +152,14 @@ export class DenoAdapter implements PlatformAdapter {
       throw new Error(message);
     }
 
+    const executionId = Deno.env.get('SB_EXECUTION_ID');
+
+    if (!executionId) {
+      throw new Error('SB_EXECUTION_ID is not set!');
+    }
+
     return {
-      executionId: Deno.env.get('SB_EXECUTION_ID'),
+      executionId,
       logLevel: Deno.env.get('EDGE_WORKER_LOG_LEVEL') || 'info',
       connectionString,
     };
