@@ -7,11 +7,11 @@ import { PgflowSqlClient } from '@pgflow/core';
 import { Queries } from '../core/Queries.js';
 import type { StepTaskRecord } from './types.js';
 import type { IExecutor } from '../core/types.js';
+import type { Logger } from '../platform/types.js';
 import { Worker } from '../core/Worker.js';
 import postgres from 'postgres';
 import { FlowWorkerLifecycle } from './FlowWorkerLifecycle.js';
 import { BatchProcessor } from '../core/BatchProcessor.js';
-import { getLogger } from '../core/Logger.js';
 
 /**
  * Configuration for the flow worker
@@ -33,9 +33,10 @@ export type FlowWorkerConfig = EdgeWorkerConfig & {
  */
 export function createFlowWorker<TFlow extends AnyFlow>(
   flow: TFlow,
-  config: FlowWorkerConfig
+  config: FlowWorkerConfig,
+  createLogger: (module: string) => Logger
 ): Worker {
-  const logger = getLogger('createFlowWorker');
+  const logger = createLogger('createFlowWorker');
 
   // Create abort controller for graceful shutdown
   const abortController = new AbortController();
@@ -63,7 +64,11 @@ export function createFlowWorker<TFlow extends AnyFlow>(
 
   // Create specialized FlowWorkerLifecycle with the proxied queue and flow
   const queries = new Queries(sql);
-  const lifecycle = new FlowWorkerLifecycle<TFlow>(queries, flow);
+  const lifecycle = new FlowWorkerLifecycle<TFlow>(
+    queries,
+    flow,
+    createLogger('FlowWorkerLifecycle')
+  );
 
   // Create StepTaskPoller
   const pollerConfig: StepTaskPollerConfig = {
@@ -73,7 +78,8 @@ export function createFlowWorker<TFlow extends AnyFlow>(
   const poller = new StepTaskPoller<TFlow>(
     pgflowAdapter,
     abortSignal,
-    pollerConfig
+    pollerConfig,
+    createLogger('StepTaskPoller')
   );
 
   // Create executor factory with proper typing
@@ -81,7 +87,13 @@ export function createFlowWorker<TFlow extends AnyFlow>(
     record: StepTaskRecord<TFlow>,
     signal: AbortSignal
   ): IExecutor => {
-    return new StepTaskExecutor<TFlow>(flow, record, pgflowAdapter, signal);
+    return new StepTaskExecutor<TFlow>(
+      flow,
+      record,
+      pgflowAdapter,
+      signal,
+      createLogger('StepTaskExecutor')
+    );
   };
 
   // Create ExecutionController
@@ -90,16 +102,23 @@ export function createFlowWorker<TFlow extends AnyFlow>(
     abortSignal,
     {
       maxConcurrent: config.maxConcurrent || 10,
-    }
+    },
+    createLogger('ExecutionController')
   );
 
   // Create BatchProcessor
   const batchProcessor = new BatchProcessor<StepTaskRecord<TFlow>>(
     executionController,
     poller,
-    abortSignal
+    abortSignal,
+    createLogger('BatchProcessor')
   );
 
   // Return Worker
-  return new Worker(batchProcessor, lifecycle, sql);
+  return new Worker(
+    batchProcessor,
+    lifecycle,
+    sql,
+    createLogger('Worker')
+  );
 }

@@ -1,7 +1,7 @@
 import { Heartbeat } from '../core/Heartbeat.js';
-import { getLogger } from '../core/Logger.js';
 import type { Queries } from '../core/Queries.js';
 import type { ILifecycle, WorkerBootstrap, WorkerRow } from '../core/types.js';
+import type { Logger } from '../platform/types.js';
 import { States, WorkerState } from '../core/WorkerState.js';
 import type { AnyFlow } from '@pgflow/dsl';
 
