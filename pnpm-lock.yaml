@@ -160,9 +160,9 @@ importers:
         specifier: 3.4.5
         version: 3.4.5
     devDependencies:
-      '@types/deno':
-        specifier: npm:@teidesu/deno-types@1.42.4
-        version: /@teidesu/deno-types@1.42.4
+      '@teidesu/deno-types':
+        specifier: 1.42.4
+        version: 1.42.4
 
   pkgs/edge-worker/dist:
     dependencies:
@@ -181,6 +181,10 @@ importers:
       postgres:
         specifier: 3.4.5
         version: 3.4.5
+    devDependencies:
+      '@types/deno':
+        specifier: npm:@teidesu/deno-types@1.42.4
+        version: /@teidesu/deno-types@1.42.4
 
   pkgs/example-flows:
     dependencies:
