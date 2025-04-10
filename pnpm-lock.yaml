@@ -159,6 +159,10 @@ importers:
       postgres:
         specifier: 3.4.5
         version: 3.4.5
+    devDependencies:
+      '@types/deno':
+        specifier: npm:@teidesu/deno-types@1.42.4
+        version: /@teidesu/deno-types@1.42.4
 
   pkgs/edge-worker/dist:
     dependencies:
@@ -4562,6 +4566,10 @@ packages:
     engines: {node: '>=10'}
     dependencies:
       defer-to-connect: 2.0.1
+    dev: true
+
+  /@teidesu/deno-types@1.42.4:
+    resolution: {integrity: sha512-MMDkfWOsfedYWy+aPK4fAYyZfrBsY6+DeC7DGg6eESzh90zxuf1fSvXRsY8y09Hh4mm04tAf1632S2/JLaTXQg==}
     dev: true
 
   /@tokenizer/token@0.3.0:

@@ -23,6 +23,9 @@
     "@pgflow/core": "workspace:*",
     "@pgflow/dsl": "workspace:*"
   },
+  "devDependencies": {
+    "@types/deno": "npm:@teidesu/deno-types@1.42.4"
+  },
   "publishConfig": {
     "access": "public"
   }
