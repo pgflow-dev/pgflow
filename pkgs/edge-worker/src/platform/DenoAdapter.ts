@@ -27,6 +27,8 @@ export class DenoAdapter implements PlatformAdapter {
     }
 
     this.env = this.detectEnvironment();
+    // Initialize logger with a default module name
+    this.logger = this.createLogger('DenoAdapter');
   }
 
   async initialize(createWorkerFn: CreateWorkerFn): Promise<void> {
@@ -37,10 +39,7 @@ export class DenoAdapter implements PlatformAdapter {
       if (!this.worker) {
         this.edgeFunctionName = this.extractFunctionName(req);
 
-        // Create a logger for the adapter
-        const logger = this.createLogger('DenoAdapter');
-        this.logger = logger;
-        logger.info(`HTTP Request: ${this.edgeFunctionName}`);
+        this.logger.info(`HTTP Request: ${this.edgeFunctionName}`);
 
         // Create the worker using the factory function and the logger
         this.worker = createWorkerFn(this.createLogger.bind(this));
