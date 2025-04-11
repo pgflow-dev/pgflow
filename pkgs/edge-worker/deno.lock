@@ -13,6 +13,7 @@
       "jsr:@std/io@0.225.0": "jsr:@std/io@0.225.0",
       "jsr:@std/io@^0.225.0": "jsr:@std/io@0.225.0",
       "npm:@henrygd/queue@^1.0.7": "npm:@henrygd/queue@1.0.7",
+      "npm:@teidesu/deno-types@1.42.4": "npm:@teidesu/deno-types@1.42.4",
       "npm:postgres@3.4.5": "npm:postgres@3.4.5"
     },
     "jsr": {
@@ -55,6 +56,10 @@
     "npm": {
       "@henrygd/queue@1.0.7": {
         "integrity": "sha512-Jmt/iO6yDlz9UYGILkm/Qzi/ckkEiTNZcqDvt3QFLE4OThPeiCj6tKsynHFm/ppl8RumWXAx1dZPBPiRPaaGig==",
+        "dependencies": {}
+      },
+      "@teidesu/deno-types@1.42.4": {
+        "integrity": "sha512-MMDkfWOsfedYWy+aPK4fAYyZfrBsY6+DeC7DGg6eESzh90zxuf1fSvXRsY8y09Hh4mm04tAf1632S2/JLaTXQg==",
         "dependencies": {}
       },
       "postgres@3.4.5": {
@@ -351,6 +356,7 @@
       "jsr:@std/assert@^0.224.0",
       "jsr:@std/async@^0.224.0",
       "jsr:@std/log@^0.224.13",
+      "npm:@teidesu/deno-types@1.42.4",
       "npm:postgres@3.4.5"
     ],
     "packageJson": {

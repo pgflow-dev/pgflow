@@ -12,7 +12,8 @@
     "@std/testing/mock": "jsr:@std/testing/mock@^0.224.0",
     "postgres": "npm:postgres@3.4.5",
     "@pgflow/core": "../core/src/index.ts",
-    "@pgflow/dsl": "../dsl/src/index.ts"
+    "@pgflow/dsl": "../dsl/src/index.ts",
+    "deno/full.d.ts": "npm:@teidesu/deno-types@1.42.4/full.d.ts"
   },
   "tasks": {
     "db:down": "docker compose -f tests/db/compose.yaml down --volumes --remove-orphans",
