@@ -1,7 +1,7 @@
 import type { AnyFlow } from '@pgflow/dsl';
 import type { StepTaskRecord, IPgflowClient } from './types.js';
 import type { IExecutor } from '../core/types.js';
-import { getLogger } from '../core/Logger.js';
+import type { Logger } from '../platform/types.js';
 
 class AbortError extends Error {
   constructor() {
@@ -15,14 +15,17 @@ class AbortError extends Error {
  * with strong typing for the flow's step handlers
  */
 export class StepTaskExecutor<TFlow extends AnyFlow> implements IExecutor {
-  private logger = getLogger('StepTaskExecutor');
+  private logger: Logger;
 
   constructor(
     private readonly flow: TFlow,
     private readonly task: StepTaskRecord<TFlow>,
     private readonly adapter: IPgflowClient<TFlow>,
-    private readonly signal: AbortSignal
-  ) {}
+    private readonly signal: AbortSignal,
+    logger: Logger
+  ) {
+    this.logger = logger;
+  }
 
   get msgId() {
     return this.task.msg_id;

@@ -1,4 +1,4 @@
-import { getLogger } from './Logger.js';
+import type { Logger } from '../platform/types.js';
 
 export enum States {
   /** The worker has been created but has not yet started. */
@@ -36,8 +36,12 @@ export class TransitionError extends Error {
  * Represents the state of a worker and exposes method for doing allowed transitions
  */
 export class WorkerState {
-  private logger = getLogger('WorkerState');
+  private logger: Logger;
   private state: States = States.Created;
+  
+  constructor(logger: Logger) {
+    this.logger = logger;
+  }
 
   get current() {
     return this.state;

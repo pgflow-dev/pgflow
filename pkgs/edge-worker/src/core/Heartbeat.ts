@@ -1,16 +1,19 @@
 import type { Queries } from './Queries.js';
 import type { WorkerRow } from './types.js';
-import { getLogger } from './Logger.js';
+import type { Logger } from '../platform/types.js';
 
 export class Heartbeat {
-  private logger = getLogger('Heartbeat');
+  private logger: Logger;
   private lastHeartbeat = 0;
 
   constructor(
     private interval: number,
     private queries: Queries,
-    private workerRow: WorkerRow
-  ) {}
+    private workerRow: WorkerRow,
+    logger: Logger
+  ) {
+    this.logger = logger;
+  }
 
   async send(): Promise<void> {
     const now = Date.now();

@@ -13,7 +13,8 @@
         "outputPath": "pkgs/example-flows/dist",
         "main": "pkgs/example-flows/src/index.ts",
         "tsConfig": "pkgs/example-flows/tsconfig.lib.json",
-        "assets": ["pkgs/example-flows/*.md"]
+        "assets": ["pkgs/example-flows/*.md"],
+        "rootDir": "pkgs/example-flows/src"
       }
     }
   }

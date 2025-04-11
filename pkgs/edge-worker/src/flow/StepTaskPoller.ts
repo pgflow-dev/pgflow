@@ -1,6 +1,6 @@
 import type { StepTaskRecord, IPgflowClient } from './types.js';
 import type { IPoller } from '../core/types.js';
-import { getLogger } from '../core/Logger.js';
+import type { Logger } from '../platform/types.js';
 import type { AnyFlow } from '@pgflow/dsl';
 
 export interface StepTaskPollerConfig {
@@ -14,13 +14,16 @@ export interface StepTaskPollerConfig {
 export class StepTaskPoller<TFlow extends AnyFlow>
   implements IPoller<StepTaskRecord<TFlow>>
 {
-  private logger = getLogger('StepTaskPoller');
+  private logger: Logger;
 
   constructor(
     private readonly adapter: IPgflowClient<TFlow>,
     private readonly signal: AbortSignal,
-    private readonly config: StepTaskPollerConfig
-  ) {}
+    private readonly config: StepTaskPollerConfig,
+    logger: Logger
+  ) {
+    this.logger = logger;
+  }
 
   async poll(): Promise<StepTaskRecord<TFlow>[]> {
     if (this.isAborted()) {

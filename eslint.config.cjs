@@ -3,8 +3,18 @@ const nx = require('@nx/eslint-plugin');
 module.exports = [
   {
     files: ['**/*.json'],
-    // Override or add rules here
-    rules: {},
+    rules: {
+      '@nx/dependency-checks': [
+        'error',
+        {
+          ignoredFiles: [
+            '{projectRoot}/eslint.config.{js,cjs,mjs}',
+            '{projectRoot}/vite.config.{js,ts,mjs,mts}',
+          ],
+          ignoredDependencies: ['tslib'],
+        },
+      ],
+    },
     languageOptions: {
       parser: require('jsonc-eslint-parser'),
     },

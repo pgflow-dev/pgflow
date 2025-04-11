@@ -6,6 +6,9 @@ export { EdgeWorker } from './EdgeWorker.js';
 export { createFlowWorker } from './flow/createFlowWorker.js';
 export { FlowWorkerLifecycle } from './flow/FlowWorkerLifecycle.js';
 
+// Export platform adapters
+export * from './platform/index.js';
+
 // Export types
 export type { StepTaskRecord } from './flow/types.js';
 export type { FlowWorkerConfig } from './flow/createFlowWorker.js';

@@ -1,25 +1,27 @@
 import { Heartbeat } from './Heartbeat.js';
-import { getLogger } from './Logger.js';
 import type { Queries } from './Queries.js';
 import type { Queue } from '../queue/Queue.js';
 import type { ILifecycle, Json, WorkerBootstrap, WorkerRow } from './types.js';
 import { States, WorkerState } from './WorkerState.js';
+import type { Logger } from '../platform/types.js';
 
 export interface LifecycleConfig {
   queueName: string;
 }
 
 export class WorkerLifecycle<IMessage extends Json> implements ILifecycle {
-  private workerState: WorkerState = new WorkerState();
+  private workerState: WorkerState;
   private heartbeat?: Heartbeat;
-  private logger = getLogger('WorkerLifecycle');
+  private logger: Logger;
   private queries: Queries;
   private queue: Queue<IMessage>;
   private workerRow?: WorkerRow;
 
-  constructor(queries: Queries, queue: Queue<IMessage>) {
+  constructor(queries: Queries, queue: Queue<IMessage>, logger: Logger) {
     this.queries = queries;
     this.queue = queue;
+    this.logger = logger;
+    this.workerState = new WorkerState(logger);
   }
 
   async acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void> {
@@ -33,7 +35,7 @@ export class WorkerLifecycle<IMessage extends Json> implements ILifecycle {
       ...workerBootstrap,
     });
 
-    this.heartbeat = new Heartbeat(5000, this.queries, this.workerRow);
+    this.heartbeat = new Heartbeat(5000, this.queries, this.workerRow, this.logger);
 
     this.workerState.transitionTo(States.Running);
   }

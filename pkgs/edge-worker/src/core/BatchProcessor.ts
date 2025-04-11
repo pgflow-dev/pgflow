@@ -1,18 +1,20 @@
 import type { ExecutionController } from './ExecutionController.js';
 import type { IMessage, IPoller } from './types.js';
-import { getLogger } from './Logger.js';
+import type { Logger } from '../platform/types.js';
 
 export class BatchProcessor<TMessage extends IMessage> {
-  private logger = getLogger('BatchProcessor');
+  private logger: Logger;
 
   constructor(
     private executionController: ExecutionController<TMessage>,
     private poller: IPoller<TMessage>,
-    private signal: AbortSignal
+    private signal: AbortSignal,
+    logger: Logger
   ) {
     this.executionController = executionController;
     this.signal = signal;
     this.poller = poller;
+    this.logger = logger;
   }
 
   async processBatch() {

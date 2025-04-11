@@ -1,7 +1,7 @@
 import type { Json } from '../core/types.js';
-import type { PgmqMessageRecord } from './types.js';
+import type { MessageHandlerFn, PgmqMessageRecord } from './types.js';
 import type { Queue } from './Queue.js';
-import { getLogger } from '../core/Logger.js';
+import type { Logger } from '../platform/types.js';
 
 class AbortError extends Error {
   constructor() {
@@ -19,18 +19,19 @@ class AbortError extends Error {
  * It also handles the abort signal and logs the error.
  */
 export class MessageExecutor<TPayload extends Json> {
-  private logger = getLogger('MessageExecutor');
+  private logger: Logger;
 
   constructor(
     private readonly queue: Queue<TPayload>,
     private readonly record: PgmqMessageRecord<TPayload>,
-    private readonly messageHandler: (
-      message: TPayload
-    ) => Promise<void> | void,
+    private readonly messageHandler: MessageHandlerFn<TPayload>,
     private readonly signal: AbortSignal,
     private readonly retryLimit: number,
-    private readonly retryDelay: number
-  ) {}
+    private readonly retryDelay: number,
+    logger: Logger
+  ) {
+    this.logger = logger;
+  }
 
   get msgId() {
     return this.record.msg_id;
