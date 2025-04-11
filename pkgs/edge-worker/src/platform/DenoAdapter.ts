@@ -30,6 +30,8 @@ export class DenoAdapter implements PlatformAdapter {
   }
 
   async initialize(createWorkerFn: CreateWorkerFn): Promise<void> {
+    this.setupShutdownHandler();
+
     // Set up HTTP listener for Deno
     Deno.serve({}, (req: Request) => {
       if (!this.worker) {
@@ -37,6 +39,7 @@ export class DenoAdapter implements PlatformAdapter {
 
         // Create a logger for the adapter
         const logger = this.createLogger('DenoAdapter');
+        this.logger = logger;
         logger.info(`HTTP Request: ${this.edgeFunctionName}`);
 
         // Create the worker using the factory function and the logger
@@ -175,10 +178,7 @@ export class DenoAdapter implements PlatformAdapter {
         await this.spawnNewEdgeFunction();
       }
 
-      if (this.worker) {
-        this.worker.stop();
-        this.worker = null;
-      }
+      await this.terminate();
     };
   }
 }
