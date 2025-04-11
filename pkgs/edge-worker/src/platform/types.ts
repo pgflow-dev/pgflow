@@ -24,15 +24,15 @@ export type CreateWorkerFn = (createLoggerFn: CreateLoggerFn) => Worker;
  */
 export interface PlatformAdapter {
   /**
-   * Initialize the platform adapter with a worker factory function
+   * startWorker the platform adapter with a worker factory function
    * @param createWorkerFn Function that creates a worker instance when called with a logger
    */
-  initialize(createWorkerFn: CreateWorkerFn): Promise<void>;
+  startWorker(createWorkerFn: CreateWorkerFn): Promise<void>;
 
   /**
    * Clean up resources when shutting down
    */
-  terminate(): Promise<void>;
+  stopWorker(): Promise<void>;
 
   /**
    * Get the connection string for the database

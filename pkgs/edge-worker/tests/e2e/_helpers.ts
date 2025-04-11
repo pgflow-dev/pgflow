@@ -54,7 +54,7 @@ export async function sendBatch(count: number, queueName: string) {
 export async function seqLastValue(
   seqName = 'test_seq'
 ): Promise<number> {
-  // Postgres sequences are initialized with a value of 1,
+  // Postgres sequences are startWorkerd with a value of 1,
   // but incrementing them for the first time does not increment the last_value,
   // only sets is_called to true
   const seqResult = await sql`

@@ -36,7 +36,7 @@ export type EdgeWorkerConfig = QueueWorkerConfig;
  * ```
  */
 export class EdgeWorker {
-  private static adapter: PlatformAdapter | null = null;
+  private static platform: PlatformAdapter | null = null;
   private static wasCalled = false;
 
   /**
@@ -82,7 +82,7 @@ export class EdgeWorker {
     this.ensureFirstCall();
 
     // First, create the adapter
-    this.adapter = await createAdapter();
+    this.platform = await createAdapter();
 
     // Apply default values to the config
     const workerConfig: EdgeWorkerConfig = {
@@ -96,25 +96,24 @@ export class EdgeWorker {
       retryLimit: config.retryLimit ?? 5,
       visibilityTimeout: config.visibilityTimeout ?? 3,
       connectionString:
-        config.connectionString || this.adapter.getConnectionString(),
+        config.connectionString || this.platform.getConnectionString(),
     };
 
-    // Create a worker factory function that will be called by the adapter
+    // Create a worker factory function that will be called by the platform
     const createWorkerFn: CreateWorkerFn = (createLoggerFn: CreateLoggerFn) =>
       createQueueWorker(handler, workerConfig, createLoggerFn);
 
-    // Initialize the adapter with the worker factory function
-    await this.adapter.initialize(createWorkerFn);
+    await this.platform.startWorker(createWorkerFn);
 
-    return this.adapter;
+    return this.platform;
   }
 
   /**
    * Stop the EdgeWorker and clean up resources.
    */
   static async stop() {
-    if (this.adapter) {
-      await this.adapter.terminate();
+    if (this.platform) {
+      await this.platform.stopWorker();
     } else {
       throw new Error('EdgeWorker.start() must be called first');
     }

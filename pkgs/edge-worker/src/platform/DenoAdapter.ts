@@ -30,21 +30,21 @@ export class DenoAdapter implements PlatformAdapter {
     const logLevel = this.getEnvVarOrThrow('EDGE_WORKER_LOG_LEVEL') || 'info';
     this.loggingFactory.setLogLevel(logLevel);
 
-    // Initialize logger with a default module name
+    // startWorker logger with a default module name
     this.logger = this.loggingFactory.createLogger('DenoAdapter');
   }
 
   /**
-   * Initialize the platform adapter with a worker factory function
+   * startWorker the platform adapter with a worker factory function
    * @param createWorkerFn Function that creates a worker instance when called with a logger
    */
-  async initialize(createWorkerFn: CreateWorkerFn): Promise<void> {
+  async startWorker(createWorkerFn: CreateWorkerFn): Promise<void> {
     this.extendLifetimeOfEdgeFunction();
     this.setupShutdownHandler();
     this.setupStartupHandler(createWorkerFn);
   }
 
-  async terminate(): Promise<void> {
+  async stopWorker(): Promise<void> {
     if (this.worker) {
       await this.worker.stop();
     }
@@ -120,7 +120,7 @@ export class DenoAdapter implements PlatformAdapter {
         await this.spawnNewEdgeFunction();
       }
 
-      await this.terminate();
+      await this.stopWorker();
     };
   }
 
