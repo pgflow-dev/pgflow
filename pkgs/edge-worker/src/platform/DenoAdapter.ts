@@ -124,7 +124,15 @@ export class DenoAdapter implements PlatformAdapter {
     };
   }
 
+  /**
+   * Supabase EdgeRuntime exposes waitUntil method as a way to extend
+   * the lifetime of the function until the promise resolves.
+   *
+   * We leverage this to extend the lifetime to the absolute maximum,
+   * by passing a promise that never resolves.
+   */
   private extendLifetimeOfEdgeFunction(): void {
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     const promiseThatNeverResolves = new Promise(() => {});
     EdgeRuntime.waitUntil(promiseThatNeverResolves);
   }

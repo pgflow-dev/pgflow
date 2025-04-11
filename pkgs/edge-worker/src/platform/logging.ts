@@ -6,7 +6,7 @@ import type { Logger } from './types.js';
 export function createLoggingFactory() {
   // Shared state for all loggers
   let sharedWorkerId = 'unknown';
-  let logLevel: string = 'info';
+  let logLevel = 'info';
 
   // All created logger instances - using Map for efficient lookup
   const loggers: Map<string, Logger> = new Map();

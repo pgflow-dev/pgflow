@@ -13,6 +13,8 @@ declare global {
 
   // In DenoAdapter.ts, we assume these are always available
   // This makes TypeScript happy without requiring non-null assertions
+  // We need to use 'var' here for proper global declaration in TypeScript
+  // eslint-disable-next-line no-var
   var EdgeRuntime: EdgeRuntimeNamespace;
 }
 
