@@ -23,8 +23,8 @@
     "postgres": "3.4.5"
   },
   "devDependencies": {
-    "@teidesu/deno-types": "1.42.4",
-    "supabase": "2.21.1"
+    "supabase": "2.21.1",
+    "@types/deno": "npm:@teidesu/deno-types@1.42.4"
   },
   "publishConfig": {
     "access": "public"

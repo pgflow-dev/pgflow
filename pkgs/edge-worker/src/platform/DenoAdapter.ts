@@ -1,3 +1,5 @@
+/// <reference types="deno/full" />
+
 import type {
   CreateWorkerFn,
   Logger,
@@ -41,33 +43,8 @@ export class DenoAdapter implements PlatformAdapter {
 
   async initialize(createWorkerFn: CreateWorkerFn): Promise<void> {
     this.setupShutdownHandler();
-
-    // Set up HTTP listener for Deno
-    Deno.serve({}, (req: Request) => {
-      if (!this.worker) {
-        this.edgeFunctionName = this.extractFunctionName(req);
-
-        // Update the workerId for all loggers
-        this.loggingFactory.setWorkerId(this.env.executionId);
-
-        this.logger.info(`HTTP Request: ${this.edgeFunctionName}`);
-
-        // Create the worker using the factory function and the logger
-        this.worker = createWorkerFn(this.loggingFactory.createLogger);
-        this.worker.startOnlyOnce({
-          edgeFunctionName: this.edgeFunctionName,
-          workerId: this.env.executionId,
-        });
-      }
-
-      return new Response('ok', {
-        headers: { 'Content-Type': 'application/json' },
-      });
-    });
-
-    // Keep function alive for Supabase Edge Functions
-    const promiseThatNeverResolves = new Promise(() => {});
-    EdgeRuntime.waitUntil(promiseThatNeverResolves);
+    this.keepEdgeFunctionAlive();
+    this.setupHttpHandler(createWorkerFn);
   }
 
   async terminate(): Promise<void> {
@@ -84,7 +61,7 @@ export class DenoAdapter implements PlatformAdapter {
     return this.loggingFactory.createLogger(module);
   }
 
-  async spawnNewEdgeFunction(): Promise<void> {
+  private async spawnNewEdgeFunction(): Promise<void> {
     if (!this.edgeFunctionName) {
       throw new Error('functionName cannot be null or empty');
     }
@@ -141,7 +118,7 @@ export class DenoAdapter implements PlatformAdapter {
     return new URL(req.url).pathname.replace(/^\/+|\/+$/g, '');
   }
 
-  setupShutdownHandler(): void {
+  private setupShutdownHandler(): void {
     globalThis.onbeforeunload = async () => {
       this.logger.info('Shutting down...');
       if (this.worker && this.edgeFunctionName) {
@@ -150,5 +127,33 @@ export class DenoAdapter implements PlatformAdapter {
 
       await this.terminate();
     };
+  }
+
+  private keepEdgeFunctionAlive(): void {
+    const promiseThatNeverResolves = new Promise(() => {});
+    EdgeRuntime.waitUntil(promiseThatNeverResolves);
+  }
+
+  private setupHttpHandler(createWorkerFn: CreateWorkerFn): void {
+    Deno.serve({}, (req: Request) => {
+      this.logger.info(`HTTP Request: ${this.edgeFunctionName}`);
+
+      if (!this.worker) {
+        this.edgeFunctionName = this.extractFunctionName(req);
+
+        this.loggingFactory.setWorkerId(this.env.executionId);
+
+        // Create the worker using the factory function and the logger
+        this.worker = createWorkerFn(this.loggingFactory.createLogger);
+        this.worker.startOnlyOnce({
+          edgeFunctionName: this.edgeFunctionName,
+          workerId: this.env.executionId,
+        });
+      }
+
+      return new Response('ok', {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
   }
 }
