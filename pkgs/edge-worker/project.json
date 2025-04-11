@@ -112,28 +112,28 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",
-        "commands": ["deno task db:ensure"],
+        "commands": ["deno task --config deno.test.json db:ensure"],
         "parallel": false
       }
     },
     "test:unit": {
-      "dependsOn": ["db:ensure"],
+      "dependsOn": ["db:ensure", "build"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
-          "deno test --allow-all --env=supabase/functions/.env tests/unit/"
+          "deno test --config deno.test.json --allow-all --env=supabase/functions/.env tests/unit/"
         ],
         "parallel": false
       }
     },
     "test:integration": {
-      "dependsOn": ["db:ensure"],
+      "dependsOn": ["db:ensure", "build"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
-          "deno test --allow-all --env=supabase/functions/.env tests/integration/"
+          "deno test --config deno.test.json --allow-all --env=supabase/functions/.env tests/integration/"
         ],
         "parallel": false
       }
