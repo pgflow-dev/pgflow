@@ -1,14 +1,23 @@
 import { assertEquals, assertThrows } from '@std/assert';
-import { WorkerState, States, TransitionError } from '../../src/core/WorkerState.ts';
+import {
+  WorkerState,
+  States,
+  TransitionError,
+} from '../../src/core/WorkerState.ts';
+import { createLoggingFactory } from '../../src/platform/logging.ts';
+
+const loggingFactory = createLoggingFactory();
+loggingFactory.setLogLevel('info');
+const logger = loggingFactory.createLogger('WorkerState');
 
 Deno.test('WorkerState - initial state should be Created', () => {
-  const state = new WorkerState();
+  const state = new WorkerState(logger);
   assertEquals(state.current, States.Created);
   assertEquals(state.isCreated, true);
 });
 
 Deno.test('WorkerState - valid state transitions', () => {
-  const state = new WorkerState();
+  const state = new WorkerState(logger);
 
   // Created -> Starting
   state.transitionTo(States.Starting);
@@ -31,7 +40,7 @@ Deno.test('WorkerState - valid state transitions', () => {
 });
 
 Deno.test('WorkerState - invalid state transitions should throw', () => {
-  const state = new WorkerState();
+  const state = new WorkerState(logger);
 
   // Cannot transition from Created to Running
   assertThrows(
@@ -53,7 +62,7 @@ Deno.test('WorkerState - invalid state transitions should throw', () => {
 });
 
 Deno.test('WorkerState - transitioning to same state should be no-op', () => {
-  const state = new WorkerState();
+  const state = new WorkerState(logger);
 
   // Transition to Starting first
   state.transitionTo(States.Starting);
@@ -65,7 +74,7 @@ Deno.test('WorkerState - transitioning to same state should be no-op', () => {
 });
 
 Deno.test('WorkerState - state getters', () => {
-  const state = new WorkerState();
+  const state = new WorkerState(logger);
 
   assertEquals(state.isCreated, true);
   assertEquals(state.isStarting, false);
