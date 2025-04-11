@@ -99,11 +99,9 @@ export class EdgeWorker {
         config.connectionString || this.platform.getConnectionString(),
     };
 
-    // Create a worker factory function that will be called by the platform
-    const createWorkerFn: CreateWorkerFn = (createLoggerFn: CreateLoggerFn) =>
-      createQueueWorker(handler, workerConfig, createLoggerFn);
-
-    await this.platform.startWorker(createWorkerFn);
+    await this.platform.startWorker((createLoggerFn) =>
+      createQueueWorker(handler, workerConfig, createLoggerFn)
+    );
 
     return this.platform;
   }
