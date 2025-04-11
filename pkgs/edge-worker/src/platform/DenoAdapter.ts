@@ -6,6 +6,7 @@ import type {
 } from './types.js';
 import type { Worker } from '../core/Worker.js';
 import './deno-types.js';
+import { createLoggingFactory } from './logging.js';
 
 /**
  * Adapter for Deno runtime environment
@@ -15,6 +16,9 @@ export class DenoAdapter implements PlatformAdapter {
   private edgeFunctionName: string | null = null;
   private worker: Worker | null = null;
   private logger: Logger;
+
+  // Logging factory with dynamic workerId support
+  private loggingFactory = createLoggingFactory();
 
   constructor() {
     // Guard clause to ensure we're in a Deno environment
@@ -27,8 +31,12 @@ export class DenoAdapter implements PlatformAdapter {
     }
 
     this.env = this.detectEnvironment();
+
+    // Set initial log level
+    this.loggingFactory.setLogLevel(this.env.logLevel || 'info');
+
     // Initialize logger with a default module name
-    this.logger = this.createLogger('DenoAdapter');
+    this.logger = this.loggingFactory.createLogger('DenoAdapter');
   }
 
   async initialize(createWorkerFn: CreateWorkerFn): Promise<void> {
@@ -39,10 +47,13 @@ export class DenoAdapter implements PlatformAdapter {
       if (!this.worker) {
         this.edgeFunctionName = this.extractFunctionName(req);
 
+        // Update the workerId for all loggers
+        this.loggingFactory.setWorkerId(this.env.executionId);
+
         this.logger.info(`HTTP Request: ${this.edgeFunctionName}`);
 
         // Create the worker using the factory function and the logger
-        this.worker = createWorkerFn(this.createLogger.bind(this));
+        this.worker = createWorkerFn(this.loggingFactory.createLogger);
         this.worker.startOnlyOnce({
           edgeFunctionName: this.edgeFunctionName,
           workerId: this.env.executionId,
@@ -70,47 +81,7 @@ export class DenoAdapter implements PlatformAdapter {
   }
 
   createLogger(module: string): Logger {
-    const workerId = this.env?.executionId || 'unknown';
-    const logLevel = this.env?.logLevel || 'info';
-
-    // Simple level filtering
-    const levels = { error: 0, warn: 1, info: 2, debug: 3 };
-    const levelValue = levels[logLevel as keyof typeof levels] ?? levels.info;
-
-    return {
-      debug: (message, ...args) => {
-        if (levelValue >= levels.debug) {
-          console.debug(
-            `worker_id=${workerId} module=${module} ${message}`,
-            ...args
-          );
-        }
-      },
-      info: (message, ...args) => {
-        if (levelValue >= levels.info) {
-          console.info(
-            `worker_id=${workerId} module=${module} ${message}`,
-            ...args
-          );
-        }
-      },
-      warn: (message, ...args) => {
-        if (levelValue >= levels.warn) {
-          console.warn(
-            `worker_id=${workerId} module=${module} ${message}`,
-            ...args
-          );
-        }
-      },
-      error: (message, ...args) => {
-        if (levelValue >= levels.error) {
-          console.error(
-            `worker_id=${workerId} module=${module} ${message}`,
-            ...args
-          );
-        }
-      },
-    };
+    return this.loggingFactory.createLogger(module);
   }
 
   async spawnNewEdgeFunction(): Promise<void> {
@@ -118,7 +89,7 @@ export class DenoAdapter implements PlatformAdapter {
       throw new Error('functionName cannot be null or empty');
     }
 
-    const logger = this.createLogger('spawnNewEdgeFunction');
+    const logger = this.loggingFactory.createLogger('spawnNewEdgeFunction');
     logger.debug('Spawning a new Edge Function...');
 
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL') as string;
