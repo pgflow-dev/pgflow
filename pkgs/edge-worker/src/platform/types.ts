@@ -20,16 +20,6 @@ export type CreateLoggerFn = (module: string) => Logger;
 export type CreateWorkerFn = (createLoggerFn: CreateLoggerFn) => Worker;
 
 /**
- * Type for platform-specific environment variables
- */
-export interface PlatformEnvironment {
-  executionId: string;
-  logLevel: string;
-  connectionString: string;
-  // Add other environment variables as needed
-}
-
-/**
  * Common interface for all platform adapters
  */
 export interface PlatformAdapter {
@@ -45,7 +35,7 @@ export interface PlatformAdapter {
   terminate(): Promise<void>;
 
   /**
-   * Get platform-specific environment variables
+   * Get the connection string for the database
    */
-  getEnv(): PlatformEnvironment;
+  getConnectionString(): string;
 }

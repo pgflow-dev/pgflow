@@ -1,5 +1,5 @@
 import type { Json } from '../core/types.js';
-import type { PgmqMessageRecord } from './types.js';
+import type { MessageHandlerFn, PgmqMessageRecord } from './types.js';
 import type { Queue } from './Queue.js';
 import type { Logger } from '../platform/types.js';
 
@@ -24,9 +24,7 @@ export class MessageExecutor<TPayload extends Json> {
   constructor(
     private readonly queue: Queue<TPayload>,
     private readonly record: PgmqMessageRecord<TPayload>,
-    private readonly messageHandler: (
-      message: TPayload
-    ) => Promise<void> | void,
+    private readonly messageHandler: MessageHandlerFn<TPayload>,
     private readonly signal: AbortSignal,
     private readonly retryLimit: number,
     private readonly retryDelay: number,

@@ -9,6 +9,7 @@ import type {
   CreateLoggerFn,
   CreateWorkerFn,
 } from './platform/types.js';
+import { MessageHandlerFn } from './queue/types.js';
 
 /**
  * Configuration options for the EdgeWorker.
@@ -75,7 +76,7 @@ export class EdgeWorker {
    * ```
    */
   static async start<TPayload extends Json = Json>(
-    handler: (message: TPayload) => Promise<void> | void,
+    handler: MessageHandlerFn<TPayload>,
     config: EdgeWorkerConfig = {}
   ) {
     this.ensureFirstCall();
@@ -83,11 +84,8 @@ export class EdgeWorker {
     // First, create the adapter
     this.adapter = await createAdapter();
 
-    // Get environment info from adapter
-    const env = this.adapter.getEnv();
-
-    // Complete the config with default values and environment info
-    const completeConfig: EdgeWorkerConfig = {
+    // Apply default values to the config
+    const workerConfig: EdgeWorkerConfig = {
       ...config,
       queueName: config.queueName || 'tasks',
       maxConcurrent: config.maxConcurrent ?? 10,
@@ -97,13 +95,13 @@ export class EdgeWorker {
       retryDelay: config.retryDelay ?? 5,
       retryLimit: config.retryLimit ?? 5,
       visibilityTimeout: config.visibilityTimeout ?? 3,
-      connectionString: config.connectionString || env.connectionString,
+      connectionString:
+        config.connectionString || this.adapter.getConnectionString(),
     };
 
     // Create a worker factory function that will be called by the adapter
-    const createWorkerFn: CreateWorkerFn = (createLoggerFn: CreateLoggerFn) => {
-      return createQueueWorker(handler, completeConfig, createLoggerFn);
-    };
+    const createWorkerFn: CreateWorkerFn = (createLoggerFn: CreateLoggerFn) =>
+      createQueueWorker(handler, workerConfig, createLoggerFn);
 
     // Initialize the adapter with the worker factory function
     await this.adapter.initialize(createWorkerFn);

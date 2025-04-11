@@ -1,11 +1,6 @@
 /// <reference types="deno/full.d.ts" />
 
-import type {
-  CreateWorkerFn,
-  Logger,
-  PlatformAdapter,
-  PlatformEnvironment,
-} from './types.js';
+import type { CreateWorkerFn, Logger, PlatformAdapter } from './types.js';
 import type { Worker } from '../core/Worker.js';
 import './deno-types.js';
 import { createLoggingFactory } from './logging.js';
@@ -14,7 +9,6 @@ import { createLoggingFactory } from './logging.js';
  * Adapter for Deno runtime environment
  */
 export class DenoAdapter implements PlatformAdapter {
-  private env: PlatformEnvironment;
   private edgeFunctionName: string | null = null;
   private worker: Worker | null = null;
   private logger: Logger;
@@ -32,19 +26,22 @@ export class DenoAdapter implements PlatformAdapter {
       );
     }
 
-    this.env = this.detectEnvironment();
-
     // Set initial log level
-    this.loggingFactory.setLogLevel(this.env.logLevel || 'info');
+    const logLevel = this.getEnvVarOrThrow('EDGE_WORKER_LOG_LEVEL') || 'info';
+    this.loggingFactory.setLogLevel(logLevel);
 
     // Initialize logger with a default module name
     this.logger = this.loggingFactory.createLogger('DenoAdapter');
   }
 
+  /**
+   * Initialize the platform adapter with a worker factory function
+   * @param createWorkerFn Function that creates a worker instance when called with a logger
+   */
   async initialize(createWorkerFn: CreateWorkerFn): Promise<void> {
+    this.extendLifetimeOfEdgeFunction();
     this.setupShutdownHandler();
-    this.keepEdgeFunctionAlive();
-    this.setupHttpHandler(createWorkerFn);
+    this.setupStartupHandler(createWorkerFn);
   }
 
   async terminate(): Promise<void> {
@@ -53,12 +50,32 @@ export class DenoAdapter implements PlatformAdapter {
     }
   }
 
-  getEnv(): PlatformEnvironment {
-    return this.env;
-  }
-
   createLogger(module: string): Logger {
     return this.loggingFactory.createLogger(module);
+  }
+
+  /**
+   * Ensures the config has a connectionString by using the environment value if needed
+   */
+  getConnectionString(): string {
+    return this.getEnvVarOrThrow('EDGE_WORKER_DB_URL');
+  }
+
+  /**
+   * Get the Supabase URL for the current environment
+   */
+  private getEnvVarOrThrow(name: string): string {
+    const envVar = Deno.env.get(name);
+
+    if (!envVar) {
+      const message =
+        `${name} is not set!\n` +
+        'See docs to learn how to prepare the environment:\n' +
+        'https://pgflow.pages.dev/edge-worker/prepare-environment';
+      throw new Error(message);
+    }
+
+    return envVar;
   }
 
   private async spawnNewEdgeFunction(): Promise<void> {
@@ -66,52 +83,29 @@ export class DenoAdapter implements PlatformAdapter {
       throw new Error('functionName cannot be null or empty');
     }
 
-    const logger = this.loggingFactory.createLogger('spawnNewEdgeFunction');
-    logger.debug('Spawning a new Edge Function...');
+    const supabaseUrl = this.getEnvVarOrThrow('SUPABASE_URL');
+    const supabaseAnonKey = this.getEnvVarOrThrow('SUPABASE_ANON_KEY');
 
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL') as string;
-    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') as string;
+    this.logger.debug('Spawning a new Edge Function...');
 
     const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/${this.edgeFunctionName}`,
+      `${supabaseUrl}/functions/v1/${this.edgeFunctionName}`,
       {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          Authorization: `Bearer ${supabaseAnonKey}`,
           'Content-Type': 'application/json',
         },
       }
     );
 
-    logger.debug('Edge Function spawned successfully!');
+    this.logger.debug('Edge Function spawned successfully!');
 
     if (!response.ok) {
       throw new Error(
         `Edge function returned non-OK status: ${response.status} ${response.statusText}`
       );
     }
-  }
-
-  private detectEnvironment(): PlatformEnvironment {
-    const connectionString = Deno.env.get('EDGE_WORKER_DB_URL');
-    if (!connectionString) {
-      const message =
-        'EDGE_WORKER_DB_URL is not set!\n' +
-        'See https://pgflow.pages.dev/edge-worker/prepare-environment/#prepare-connection-string';
-      throw new Error(message);
-    }
-
-    const executionId = Deno.env.get('SB_EXECUTION_ID');
-
-    if (!executionId) {
-      throw new Error('SB_EXECUTION_ID is not set!');
-    }
-
-    return {
-      executionId,
-      logLevel: Deno.env.get('EDGE_WORKER_LOG_LEVEL') || 'info',
-      connectionString,
-    };
   }
 
   private extractFunctionName(req: Request): string {
@@ -121,7 +115,8 @@ export class DenoAdapter implements PlatformAdapter {
   private setupShutdownHandler(): void {
     globalThis.onbeforeunload = async () => {
       this.logger.info('Shutting down...');
-      if (this.worker && this.edgeFunctionName) {
+
+      if (this.worker) {
         await this.spawnNewEdgeFunction();
       }
 
@@ -129,25 +124,27 @@ export class DenoAdapter implements PlatformAdapter {
     };
   }
 
-  private keepEdgeFunctionAlive(): void {
+  private extendLifetimeOfEdgeFunction(): void {
     const promiseThatNeverResolves = new Promise(() => {});
     EdgeRuntime.waitUntil(promiseThatNeverResolves);
   }
 
-  private setupHttpHandler(createWorkerFn: CreateWorkerFn): void {
+  private setupStartupHandler(createWorkerFn: CreateWorkerFn): void {
     Deno.serve({}, (req: Request) => {
       this.logger.info(`HTTP Request: ${this.edgeFunctionName}`);
 
       if (!this.worker) {
         this.edgeFunctionName = this.extractFunctionName(req);
 
-        this.loggingFactory.setWorkerId(this.env.executionId);
+        const workerId = this.getEnvVarOrThrow('SB_EXECUTION_ID');
+
+        this.loggingFactory.setWorkerId(workerId);
 
         // Create the worker using the factory function and the logger
         this.worker = createWorkerFn(this.loggingFactory.createLogger);
         this.worker.startOnlyOnce({
           edgeFunctionName: this.edgeFunctionName,
-          workerId: this.env.executionId,
+          workerId,
         });
       }
 

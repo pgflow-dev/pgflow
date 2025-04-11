@@ -4,7 +4,7 @@ import { Queries } from '../core/Queries.js';
 import { Queue } from './Queue.js';
 import { ReadWithPollPoller } from './ReadWithPollPoller.js';
 import type { Json } from '../core/types.js';
-import type { PgmqMessageRecord } from './types.js';
+import type { PgmqMessageRecord, MessageHandlerFn } from './types.js';
 import { Worker } from '../core/Worker.js';
 import postgres from 'postgres';
 import { WorkerLifecycle } from '../core/WorkerLifecycle.js';
@@ -91,7 +91,7 @@ export type QueueWorkerConfig = {
  * @returns A configured Worker instance ready to be started
  */
 export function createQueueWorker<TPayload extends Json>(
-  handler: (message: TPayload) => Promise<void> | void,
+  handler: MessageHandlerFn<TPayload>,
   config: QueueWorkerConfig,
   createLogger: (module: string) => Logger
 ): Worker {
@@ -113,15 +113,15 @@ export function createQueueWorker<TPayload extends Json>(
     });
 
   const queue = new Queue<TPayload>(
-    sql, 
+    sql,
     config.queueName || 'tasks',
     createLogger('Queue')
   );
-  
+
   const queries = new Queries(sql);
 
   const lifecycle = new WorkerLifecycle<TPayload>(
-    queries, 
+    queries,
     queue,
     createLogger('WorkerLifecycle')
   );
@@ -139,8 +139,8 @@ export function createQueueWorker<TPayload extends Json>(
   };
 
   const poller = new ReadWithPollPoller(
-    queue, 
-    abortSignal, 
+    queue,
+    abortSignal,
     {
       batchSize: config.batchSize || config.maxConcurrent || 10,
       maxPollSeconds: config.maxPollSeconds || 5,
@@ -158,7 +158,7 @@ export function createQueueWorker<TPayload extends Json>(
     },
     createLogger('ExecutionController')
   );
-  
+
   const batchProcessor = new BatchProcessor<QueueMessage>(
     executionController,
     poller,
@@ -166,10 +166,5 @@ export function createQueueWorker<TPayload extends Json>(
     createLogger('BatchProcessor')
   );
 
-  return new Worker(
-    batchProcessor, 
-    lifecycle, 
-    sql,
-    createLogger('Worker')
-  );
+  return new Worker(batchProcessor, lifecycle, sql, createLogger('Worker'));
 }
