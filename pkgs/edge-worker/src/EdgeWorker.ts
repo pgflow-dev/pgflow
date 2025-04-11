@@ -128,6 +128,4 @@ export class EdgeWorker {
     }
     this.wasCalled = true;
   }
-
-  // No longer needed as we initialize the adapter in start()
 }
