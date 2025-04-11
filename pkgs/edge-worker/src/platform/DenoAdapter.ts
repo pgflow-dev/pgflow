@@ -1,4 +1,4 @@
-/// <reference types="deno/full" />
+/// <reference types="deno/full.d.ts" />
 
 import type {
   CreateWorkerFn,
