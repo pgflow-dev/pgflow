@@ -37,7 +37,7 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: 1.x
+          deno-version: '1.45.2'
 
       - name: Install sqruff
         uses: quarylabs/install-sqruff-cli-action@main
