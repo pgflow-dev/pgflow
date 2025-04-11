@@ -20,6 +20,6 @@ module.exports = [
     },
   },
   {
-    ignores: ['**/supabase/functions/_src/**/*'],
+    ignores: ['**/supabase/functions/_dist/**/*'],
   },
 ];
