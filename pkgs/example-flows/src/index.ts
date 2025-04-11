@@ -1,1 +1,1 @@
-export * from './example-flow.ts';
+export * from './example-flow.js';
