@@ -4,11 +4,7 @@ import {
   type QueueWorkerConfig,
 } from './queue/createQueueWorker.js';
 import { createAdapter } from './platform/createAdapter.js';
-import type {
-  PlatformAdapter,
-  CreateLoggerFn,
-  CreateWorkerFn,
-} from './platform/types.js';
+import type { PlatformAdapter } from './platform/types.js';
 import { MessageHandlerFn } from './queue/types.js';
 
 /**
