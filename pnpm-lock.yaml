@@ -177,8 +177,8 @@ importers:
         version: 3.4.5
     devDependencies:
       '@types/deno':
-        specifier: '@teidesu/deno-types@2.1.10'
-        version: link:@teidesu/deno-types@2.1.10
+        specifier: npm:@teidesu/deno-types@2.1.10
+        version: /@teidesu/deno-types@2.1.10
       supabase:
         specifier: 2.21.1
         version: 2.21.1
