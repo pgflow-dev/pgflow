@@ -1,5 +1,3 @@
-/// <reference types="deno/full" />
-
 import type { CreateWorkerFn, Logger, PlatformAdapter } from './types.js';
 import type { Worker } from '../core/Worker.js';
 import './deno-types.js';
