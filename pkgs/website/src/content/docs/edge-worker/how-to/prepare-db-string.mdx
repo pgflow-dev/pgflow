@@ -63,18 +63,27 @@ postgresql://username:ENCODED_PASSWORD@host:port/database
 
 Example:
 ```
-postgresql://postgres:my%40complex%26password%21@db.example.com:5432/postgres
+postgresql://postgres.pooler-dev:my%40complex%26password%21@db.example.com:6543/postgres
 ```
+
+:::caution
+Because we are using a DB pool connection, the user in the connection string
+is `postgres.pooler-dev` not `postgres` and the port is `6543` not `5432`.
+
+For production, copy-paste a **Transaction Mode Connection String** from Supabase Dashboard
+:::
 
 ### 3. Add to Environment
 
-Local development:
+#### Local development:
+
 ```bash
 # supabase/functions/.env
-EDGE_WORKER_DB_URL="postgresql://postgres:my%40complex%26password%21@db.example.com:5432/postgres"
+EDGE_WORKER_DB_URL="postgresql://postgres.pooler-dev:my%40complex%26password%21@db.example.com:6543/postgres"
 ```
 
-Deployment:
+#### Deployment:
+
 ```bash
 npx supabase secrets set EDGE_WORKER_DB_URL="postgresql://postgres:my%40complex%26password%21@db.example.com:5432/postgres"
 ```
