@@ -362,7 +362,7 @@
     "packageJson": {
       "dependencies": [
         "npm:@henrygd/queue@^1.0.7",
-        "npm:@teidesu/deno-types@1.42.4",
+        "npm:@teidesu/deno-types@1.45.2",
         "npm:postgres@3.4.5",
         "npm:supabase@2.21.1"
       ]

@@ -1,6 +1,5 @@
 import type { PlatformAdapter } from './types.js';
 import { DenoAdapter } from './DenoAdapter.js';
-import './deno-types.js';
 
 /**
  * Creates the appropriate platform adapter based on the runtime environment

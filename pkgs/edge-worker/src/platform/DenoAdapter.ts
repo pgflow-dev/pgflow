@@ -1,5 +1,3 @@
-/// <reference types="../../node_modules/@types/deno/ext_tslib/lib.deno.fetch.d.ts" />
-/// <reference types="../../node_modules/@types/deno/ext_tslib/lib.deno.window.d.ts" />
 /// <reference types="./deno-types.d.ts" />
 
 import type { CreateWorkerFn, Logger, PlatformAdapter } from './types.js';
