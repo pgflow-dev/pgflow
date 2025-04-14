@@ -154,9 +154,9 @@ importers:
         specifier: 3.4.5
         version: 3.4.5
     devDependencies:
-      '@types/deno':
-        specifier: npm:@teidesu/deno-types@latest
-        version: /@teidesu/deno-types@2.1.10
+      '@teidesu/deno-types':
+        specifier: 2.1.10
+        version: 2.1.10
       supabase:
         specifier: 2.21.1
         version: 2.21.1
@@ -177,8 +177,8 @@ importers:
         version: 3.4.5
     devDependencies:
       '@types/deno':
-        specifier: npm:@teidesu/deno-types@1.42.4
-        version: /@teidesu/deno-types@1.42.4
+        specifier: npm:@teidesu/deno-types@latest
+        version: /@teidesu/deno-types@2.1.10
       supabase:
         specifier: 2.21.1
         version: 2.21.1
@@ -4580,10 +4580,6 @@ packages:
     engines: {node: '>=10'}
     dependencies:
       defer-to-connect: 2.0.1
-    dev: true
-
-  /@teidesu/deno-types@1.42.4:
-    resolution: {integrity: sha512-MMDkfWOsfedYWy+aPK4fAYyZfrBsY6+DeC7DGg6eESzh90zxuf1fSvXRsY8y09Hh4mm04tAf1632S2/JLaTXQg==}
     dev: true
 
   /@teidesu/deno-types@2.1.10:

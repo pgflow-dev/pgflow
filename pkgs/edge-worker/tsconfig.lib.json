@@ -1,11 +1,5 @@
 {
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "dist",
-    "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
-    "types": ["node", "deno/full.d.ts"]
-  },
+  "extends": "./tsconfig.json",
   "include": ["src/**/*.ts"],
   "references": [
     {

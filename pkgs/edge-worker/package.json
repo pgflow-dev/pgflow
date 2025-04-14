@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "supabase": "2.21.1",
-    "@types/deno": "npm:@teidesu/deno-types@latest"
+    "@teidesu/deno-types": "2.1.10"
   },
   "publishConfig": {
     "access": "public"

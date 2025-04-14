@@ -11,6 +11,9 @@
     },
     {
       "path": "./pkgs/example-flows"
+    },
+    {
+      "path": "./pkgs/edge-worker"
     }
   ]
 }

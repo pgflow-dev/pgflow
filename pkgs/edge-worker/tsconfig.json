@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "files": [],
+  "include": [],
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
+    "types": ["node", "@teidesu/deno-types/full"]
+  },
+  "references": [
+    {
+      "path": "../dsl"
+    },
+    {
+      "path": "../core"
+    }
+  ]
+}
