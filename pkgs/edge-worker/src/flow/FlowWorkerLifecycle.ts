@@ -1,7 +1,7 @@
 import { Heartbeat } from '../core/Heartbeat.js';
-import { getLogger } from '../core/Logger.js';
 import type { Queries } from '../core/Queries.js';
 import type { ILifecycle, WorkerBootstrap, WorkerRow } from '../core/types.js';
+import type { Logger } from '../platform/types.js';
 import { States, WorkerState } from '../core/WorkerState.js';
 import type { AnyFlow } from '@pgflow/dsl';
 
@@ -9,16 +9,18 @@ import type { AnyFlow } from '@pgflow/dsl';
  * A specialized WorkerLifecycle for Flow-based workers that is aware of the Flow's step types
  */
 export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
-  private workerState: WorkerState = new WorkerState();
+  private workerState: WorkerState;
   private heartbeat?: Heartbeat;
-  private logger = getLogger('FlowWorkerLifecycle');
+  private logger: Logger;
   private queries: Queries;
   private workerRow?: WorkerRow;
   private flow: TFlow;
 
-  constructor(queries: Queries, flow: TFlow) {
+  constructor(queries: Queries, flow: TFlow, logger: Logger) {
     this.queries = queries;
     this.flow = flow;
+    this.logger = logger;
+    this.workerState = new WorkerState(logger);
   }
 
   async acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void> {
@@ -29,7 +31,12 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
       ...workerBootstrap,
     });
 
-    this.heartbeat = new Heartbeat(5000, this.queries, this.workerRow);
+    this.heartbeat = new Heartbeat(
+      5000,
+      this.queries,
+      this.workerRow,
+      this.logger
+    );
 
     this.workerState.transitionTo(States.Running);
   }

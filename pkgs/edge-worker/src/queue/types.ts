@@ -12,3 +12,10 @@ export interface PgmqMessageRecord<TPayload extends Json | null = Json>
   vt: string;
   message: TPayload;
 }
+
+/**
+ * User-provided handler function, called for each message in the queue
+ */
+export type MessageHandlerFn<TPayload> = (
+  message: TPayload
+) => Promise<void> | void;

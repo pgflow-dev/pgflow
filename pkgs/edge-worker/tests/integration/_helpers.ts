@@ -4,6 +4,7 @@ import {
   type FlowWorkerConfig,
 } from '../../src/flow/createFlowWorker.ts';
 import type { postgres } from '../sql.ts';
+import { createFakeLogger } from '../fakes.ts';
 import { PgflowSqlClient } from '@pgflow/core';
 
 export async function startFlow<TFlow extends AnyFlow>(
@@ -32,7 +33,7 @@ export function startWorker<
     ...options,
   };
 
-  const worker = createFlowWorker(flow, mergedOptions);
+  const worker = createFlowWorker(flow, mergedOptions, createFakeLogger);
 
   worker.startOnlyOnce({
     edgeFunctionName: 'test_flow',

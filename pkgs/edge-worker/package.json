@@ -9,8 +9,8 @@
   "exports": {
     "./package.json": "./package.json",
     ".": {
-      "types": "./index.d.ts",
-      "import": "./index.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
   "files": [
@@ -18,10 +18,14 @@
   ],
   "dependencies": {
     "@henrygd/queue": "^1.0.7",
-    "pino": "^9.6.0",
-    "postgres": "3.4.5",
     "@pgflow/core": "workspace:*",
-    "@pgflow/dsl": "workspace:*"
+    "@pgflow/dsl": "workspace:*",
+    "postgres": "3.4.5"
+  },
+  "devDependencies": {
+    "@types/deno": "npm:@teidesu/deno-types@1.45.2",
+    "@types/node": "~18.16.9",
+    "supabase": "2.21.1"
   },
   "publishConfig": {
     "access": "public"

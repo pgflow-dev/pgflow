@@ -1,15 +1,25 @@
 import type postgres from 'postgres';
 import type { PgmqMessageRecord } from './types.js';
 import type { Json } from '../core/types.js';
+import type { Logger } from '../platform/types.js';
 
 export class Queue<TPayload extends Json> {
-  constructor(private readonly sql: postgres.Sql, readonly queueName: string) {}
+  private logger: Logger;
+
+  constructor(
+    private readonly sql: postgres.Sql, 
+    readonly queueName: string,
+    logger: Logger
+  ) {
+    this.logger = logger;
+  }
 
   /**
    * Creates a queue if it doesn't exist.
    * If the queue already exists, this method does nothing.
    */
   async safeCreate() {
+    this.logger.debug(`Creating queue '${this.queueName}' if it doesn't exist`);
     return await this.sql`
         select * from pgmq.create(${this.queueName})
         where not exists (
@@ -23,6 +33,7 @@ export class Queue<TPayload extends Json> {
    * If the queue doesn't exist, this method does nothing.
    */
   async safeDrop() {
+    this.logger.debug(`Dropping queue '${this.queueName}' if it exists`);
     return await this.sql`
         select * from pgmq.drop_queue(${this.queueName})
         where exists (
@@ -32,18 +43,21 @@ export class Queue<TPayload extends Json> {
   }
 
   async archive(msgId: number): Promise<void> {
+    this.logger.debug(`Archiving message ${msgId} from queue '${this.queueName}'`);
     await this.sql`
       SELECT pgmq.archive(queue_name => ${this.queueName}, msg_id => ${msgId}::bigint);
     `;
   }
 
   async archiveBatch(msgIds: number[]): Promise<void> {
+    this.logger.debug(`Archiving ${msgIds.length} messages from queue '${this.queueName}'`);
     await this.sql`
       SELECT pgmq.archive(queue_name => ${this.queueName}, msg_ids => ${msgIds}::bigint[]);
     `;
   }
 
   async send(message: TPayload): Promise<void> {
+    this.logger.debug(`Sending message to queue '${this.queueName}'`);
     const msgJson = JSON.stringify(message);
     await this.sql`
       SELECT pgmq.send(queue_name => ${this.queueName}, msg => ${msgJson}::jsonb)
@@ -56,6 +70,7 @@ export class Queue<TPayload extends Json> {
     maxPollSeconds = 5,
     pollIntervalMs = 200
   ) {
+    this.logger.debug(`Reading messages from queue '${this.queueName}' with poll`);
     return await this.sql<PgmqMessageRecord<TPayload>[]>`
       SELECT *
       FROM edge_worker.read_with_poll(
@@ -81,6 +96,7 @@ export class Queue<TPayload extends Json> {
     msgId: number,
     vtOffsetSeconds: number
   ): Promise<PgmqMessageRecord<TPayload>> {
+    this.logger.debug(`Setting visibility timeout for message ${msgId} to ${vtOffsetSeconds} seconds`);
     const records = await this.sql<PgmqMessageRecord<TPayload>[]>`
       UPDATE ${this.sql('pgmq.q_' + this.queueName)}
       SET vt = (clock_timestamp() + make_interval(secs => ${vtOffsetSeconds}))

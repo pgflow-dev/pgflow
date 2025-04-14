@@ -1,10 +1,10 @@
 import type postgres from 'postgres';
 import type { IBatchProcessor, ILifecycle, WorkerBootstrap } from './types.js';
-import { getLogger, setupLogger } from './Logger.js';
+import type { Logger } from '../platform/types.js';
 
 export class Worker {
   private lifecycle: ILifecycle;
-  private logger = getLogger('Worker');
+  private logger: Logger;
   private abortController = new AbortController();
 
   private batchProcessor: IBatchProcessor;
@@ -13,13 +13,13 @@ export class Worker {
   constructor(
     batchProcessor: IBatchProcessor,
     lifecycle: ILifecycle,
-    sql: postgres.Sql
+    sql: postgres.Sql,
+    logger: Logger
   ) {
     this.sql = sql;
-
     this.lifecycle = lifecycle;
-
     this.batchProcessor = batchProcessor;
+    this.logger = logger;
   }
 
   async startOnlyOnce(workerBootstrap: WorkerBootstrap) {
@@ -32,8 +32,6 @@ export class Worker {
   }
 
   private async start(workerBootstrap: WorkerBootstrap) {
-    setupLogger(workerBootstrap.workerId);
-
     try {
       await this.lifecycle.acknowledgeStart(workerBootstrap);
 

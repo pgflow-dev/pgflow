@@ -1,13 +1,13 @@
 import { newQueue, type Queue as PromiseQueue } from '@henrygd/queue';
 import type { IExecutor, IMessage } from './types.js';
-import { getLogger } from './Logger.js';
+import type { Logger } from '../platform/types.js';
 
 export interface ExecutionConfig {
   maxConcurrent: number;
 }
 
 export class ExecutionController<TMessage extends IMessage> {
-  private logger = getLogger('ExecutionController');
+  private logger: Logger;
   private promiseQueue: PromiseQueue;
   private signal: AbortSignal;
   private createExecutor: (record: TMessage, signal: AbortSignal) => IExecutor;
@@ -15,11 +15,13 @@ export class ExecutionController<TMessage extends IMessage> {
   constructor(
     executorFactory: (record: TMessage, signal: AbortSignal) => IExecutor,
     abortSignal: AbortSignal,
-    config: ExecutionConfig
+    config: ExecutionConfig,
+    logger: Logger
   ) {
     this.signal = abortSignal;
     this.createExecutor = executorFactory;
     this.promiseQueue = newQueue(config.maxConcurrent);
+    this.logger = logger;
   }
 
   async start(record: TMessage) {
