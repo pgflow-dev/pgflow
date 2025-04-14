@@ -50,6 +50,10 @@ If you haven't installed the CLI yet or need to upgrade, see Supabase's [install
     EDGE_WORKER_DB_URL="postgresql://postgres.pooler-dev:postgres@pooler:6543/postgres"
     ```
 
+    :::caution[Special Characters in Passwords]
+    If your database password contains special characters (`@`, `&`, `:`, etc.), you must URL-encode them to avoid authentication errors. See our [DB Connection URLs](/edge-worker/how-to/prepare-db-string/) guide for detailed instructions.
+    :::
+
 1. ### Setup Connection Pool
 
     Modify the `db.pooler` section in your `supabase/config.toml` file
