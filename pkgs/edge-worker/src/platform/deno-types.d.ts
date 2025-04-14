@@ -1,3 +1,5 @@
+/// <reference types="deno/full.d.ts" />
+
 /**
  * Minimal type definitions for Deno APIs used in our codebase.
  * These are used for type checking during build in Node.js environment.

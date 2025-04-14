@@ -9,7 +9,8 @@
     "types": [
       "node",
       "./node_modules/@types/deno/ext/lib.deno.fetch.d.ts",
-      "./node_modules/@types/deno/ext/lib.deno.window.d.ts"
+      "./node_modules/@types/deno/ext/lib.deno.window.d.ts",
+      "./src/platform/deno-types.d.ts"
     ]
   },
   "references": [
