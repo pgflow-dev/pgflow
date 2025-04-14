@@ -150,13 +150,13 @@ importers:
       '@pgflow/dsl':
         specifier: workspace:*
         version: link:../dsl/dist
-      '@teidesu/deno-types':
-        specifier: 2.1.10
-        version: 2.1.10
       postgres:
         specifier: 3.4.5
         version: 3.4.5
     devDependencies:
+      '@types/deno':
+        specifier: npm:@teidesu/deno-types@2.1.10
+        version: /@teidesu/deno-types@2.1.10
       supabase:
         specifier: 2.21.1
         version: 2.21.1
@@ -177,8 +177,8 @@ importers:
         version: 3.4.5
     devDependencies:
       '@types/deno':
-        specifier: npm:@teidesu/deno-types@latest
-        version: /@teidesu/deno-types@2.1.10
+        specifier: '@teidesu/deno-types@2.1.10'
+        version: link:@teidesu/deno-types@2.1.10
       supabase:
         specifier: 2.21.1
         version: 2.21.1
@@ -4584,6 +4584,7 @@ packages:
 
   /@teidesu/deno-types@2.1.10:
     resolution: {integrity: sha512-oxMkUtshAL2tzRT//GcMDtfXelu9tLn8PFdg6qoPg1yFUfVp0YHCbQQRtZaOU0SyALFM9PCOBXu3V8hef2Geug==}
+    dev: true
 
   /@tokenizer/token@0.3.0:
     resolution: {integrity: sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A==}
