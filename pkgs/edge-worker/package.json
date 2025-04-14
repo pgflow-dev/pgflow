@@ -20,11 +20,11 @@
     "@henrygd/queue": "^1.0.7",
     "@pgflow/core": "workspace:*",
     "@pgflow/dsl": "workspace:*",
-    "postgres": "3.4.5"
+    "postgres": "3.4.5",
+    "@teidesu/deno-types": "2.1.10"
   },
   "devDependencies": {
-    "supabase": "2.21.1",
-    "@teidesu/deno-types": "2.1.10"
+    "supabase": "2.21.1"
   },
   "publishConfig": {
     "access": "public"
