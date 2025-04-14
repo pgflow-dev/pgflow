@@ -1,6 +1,7 @@
 import fs from 'fs';
 import { type Command } from 'commander';
-import { intro, isCancel, text, log, note } from '@clack/prompts';
+import { intro, isCancel, text, log } from '@clack/prompts';
+import { copyMigrations } from './copy-migrations.js';
 
 function validate(path: string) {
   const pathsToTest = [
@@ -40,6 +41,7 @@ export default (program: Command) => {
       }
 
       log.info(`Copying migrations`);
+      copyMigrations({ supabasePath: result });
       log.info(`Updating config.toml`);
       log.info(`Restarting Supabase`);
     });
