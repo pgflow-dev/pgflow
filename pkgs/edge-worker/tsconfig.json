@@ -6,11 +6,12 @@
     "rootDir": "src",
     "outDir": "dist",
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
+    "typeRoots": ["./node_modules/@types", "."],
     "types": [
       "node",
-      "./node_modules/@types/deno/ext/lib.deno.fetch.d.ts",
-      "./node_modules/@types/deno/ext/lib.deno.window.d.ts",
-      "./src/platform/deno-types.d.ts"
+      "deno/ext/lib.deno.fetch.d.ts",
+      "deno/ext/lib.deno.window.d.ts",
+      "src/platform/deno-types.d.ts"
     ]
   },
   "references": [
