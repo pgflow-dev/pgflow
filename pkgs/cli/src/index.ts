@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import installCommand from './commands/install.js';
+import installCommand from './commands/install/index.js';
 
 // Create a function to handle errors
 const errorHandler = (error: unknown) => {
