@@ -117,6 +117,25 @@ importers:
       '@commander-js/extra-typings':
         specifier: ^13.1.0
         version: 13.1.0(commander@13.1.0)
+      '@iarna/toml':
+        specifier: ^2.2.5
+        version: 2.2.5
+      commander:
+        specifier: ^13.1.0
+        version: 13.1.0
+    devDependencies:
+      tsx:
+        specifier: ^4.19.3
+        version: 4.19.3
+
+  pkgs/cli/dist:
+    dependencies:
+      '@clack/prompts':
+        specifier: ^0.10.1
+        version: 0.10.1
+      '@commander-js/extra-typings':
+        specifier: ^13.1.0
+        version: 13.1.0(commander@13.1.0)
       commander:
         specifier: ^13.1.0
         version: 13.1.0
@@ -2948,6 +2967,10 @@ packages:
     resolution: {integrity: sha512-c7hNEllBlenFTHBky65mhq8WD2kbN9Q6gk0bTk8lSBvc554jpXSkST1iePudpt7+A/AQvuHs9EMqjHDXMY1lrA==}
     engines: {node: '>=18.18'}
     dev: true
+
+  /@iarna/toml@2.2.5:
+    resolution: {integrity: sha512-trnsAYxU3xnS1gPHPyU961coFyLkh4gAD/0zQ5mymY4yOZ+CYvsPqUbOFSw0aDM4y0tV7tiFxL/1XfXPNC6IPg==}
+    dev: false
 
   /@img/sharp-darwin-arm64@0.33.5:
     resolution: {integrity: sha512-UT4p+iz/2H4twwAoLCqfA9UH5pI6DggwKEGuaPy7nCVQ8ZsiY5PIcrRvD1DzuY3qYL07NtIQcWnBSY/heikIFQ==}
