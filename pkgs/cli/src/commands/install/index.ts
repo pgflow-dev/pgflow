@@ -8,7 +8,6 @@ function validate(path: string) {
   const pathsToTest = [
     [path, 'is not a valid path'],
     [`${path}/config.toml`, 'does not contain config.toml'],
-    [`${path}/migrations`, 'does not contain migrations folder!'],
   ];
 
   // if any of the pathsToTest fail, return the error message
@@ -41,8 +40,8 @@ export default (program: Command) => {
         return;
       }
 
-      copyMigrations({ supabasePath: result });
-      updateConfigToml({ supabasePath: result });
+      await copyMigrations({ supabasePath: result });
+      await updateConfigToml({ supabasePath: result });
       log.info(`Restarting Supabase`);
     });
 };

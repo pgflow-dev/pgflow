@@ -1,7 +1,8 @@
 import fs from 'fs';
 import path from 'path';
-import { log } from '@clack/prompts';
+import { log, confirm, note } from '@clack/prompts';
 import * as TOML from '@iarna/toml';
+import chalk from 'chalk';
 
 /**
  * Updates the config.toml file with necessary configurations for EdgeWorker
@@ -13,12 +14,12 @@ import * as TOML from '@iarna/toml';
  *
  * @param options.supabasePath - Path to the supabase directory
  */
-export function updateConfigToml({
+export async function updateConfigToml({
   supabasePath,
 }: {
   supabasePath: string;
-}): void {
-  log.step(`Updating config.toml`);
+}): Promise<void> {
+  log.step(`Preparing to update config.toml`);
 
   const configPath = path.join(supabasePath, 'config.toml');
 
@@ -39,12 +40,68 @@ export function updateConfigToml({
           pool_mode?: string;
         };
       };
-      functions?: {
-        edge_runtime?: {
-          policy?: string;
-        };
+      edge_runtime?: {
+        policy?: string;
       };
     };
+
+    // Get current settings
+    const currentSettings = {
+      poolerEnabled: config.db?.pooler?.enabled ?? false,
+      poolMode: config.db?.pooler?.pool_mode ?? 'none',
+      edgeRuntimePolicy: config.edge_runtime?.policy ?? 'oneshot',
+    };
+
+    // Check if any changes are needed
+    const needsChanges =
+      currentSettings.poolerEnabled !== true ||
+      currentSettings.poolMode !== 'transaction' ||
+      currentSettings.edgeRuntimePolicy !== 'per_worker';
+
+    if (!needsChanges) {
+      log.success(
+        `No changes needed in config.toml - all required settings are already configured`
+      );
+      return;
+    }
+
+    // Prepare diff-like changes summary
+    const changes = [];
+
+    // DB Pooler enabled
+    if (currentSettings.poolerEnabled !== true) {
+      changes.push(`[db.pooler]
+${chalk.red(`- enabled = ${currentSettings.poolerEnabled}`)}
+${chalk.green('+ enabled = true')}`);
+    }
+
+    // Pool mode
+    if (currentSettings.poolMode !== 'transaction') {
+      changes.push(`[db.pooler]
+${chalk.red(`- pool_mode = "${currentSettings.poolMode}"`)}
+${chalk.green('+ pool_mode = "transaction"')}`);
+    }
+
+    // Edge runtime policy
+    if (currentSettings.edgeRuntimePolicy !== 'per_worker') {
+      changes.push(`[edge_runtime]
+${chalk.red(`- policy = "${currentSettings.edgeRuntimePolicy}"`)}
+${chalk.green('+ policy = "per_worker"')}`);
+    }
+
+    // Show summary and ask for confirmation
+    note(changes.join('\n\n'), 'Config Changes');
+
+    const shouldContinue = await confirm({
+      message: 'Do you want to proceed with these configuration changes?',
+    });
+
+    if (!shouldContinue) {
+      log.info('Configuration update cancelled');
+      return;
+    }
+
+    log.info(`Updating config.toml`);
 
     // Update pooler configuration
     if (!config.db) {
@@ -62,14 +119,10 @@ export function updateConfigToml({
     config.db.pooler.pool_mode = 'transaction';
 
     // 3. Update edge_runtime policy
-    if (config.functions && config.functions.edge_runtime) {
-      config.functions.edge_runtime.policy = 'per_worker';
-    } else if (config.functions) {
-      config.functions.edge_runtime = { policy: 'per_worker' };
+    if (config.edge_runtime) {
+      config.edge_runtime.policy = 'per_worker';
     } else {
-      config.functions = {
-        edge_runtime: { policy: 'per_worker' },
-      };
+      config.edge_runtime = { policy: 'per_worker' };
     }
 
     // Convert back to TOML and write to file
