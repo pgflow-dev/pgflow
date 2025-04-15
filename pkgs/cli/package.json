@@ -1,0 +1,34 @@
+{
+  "name": "pgflow",
+  "version": "0.0.1-prealpha.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "typings": "./dist/index.d.ts",
+  "bin": {
+    "pgflow": "./dist/index.js"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "module": "./dist/index.js",
+  "devDependencies": {
+    "@types/node": "^22.14.1",
+    "tsx": "^4.19.3"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.10.1",
+    "@commander-js/extra-typings": "^13.1.0",
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "toml-patch": "^0.2.3"
+  },
+  "publishConfig": {
+    "access": "public",
+    "directory": "."
+  }
+}
