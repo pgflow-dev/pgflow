@@ -1,5 +1,11 @@
 # pgflow
 
+## 0.0.16
+
+### Patch Changes
+
+- 590b36e: Update paths
+
 ## 0.0.15
 
 ### Patch Changes
