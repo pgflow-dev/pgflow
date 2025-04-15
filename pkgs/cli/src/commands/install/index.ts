@@ -31,7 +31,6 @@ export default (program: Command) => {
       const result = await text({
         message: 'Enter the path to your supabase/ directory',
         placeholder: 'supabase/',
-        initialValue: 'supabase/',
         validate,
       });
 
@@ -42,6 +41,8 @@ export default (program: Command) => {
 
       await copyMigrations({ supabasePath: result });
       await updateConfigToml({ supabasePath: result });
-      log.info(`Restarting Supabase`);
+
+      await log.success('pgflow installaction is completed');
+      await log.warn('Remember to restart Supabase and apply the migrations!');
     });
 };
