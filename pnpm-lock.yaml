@@ -130,25 +130,7 @@ importers:
       tsx:
         specifier: ^4.19.3
         version: 4.19.3
-
-  pkgs/cli/dist:
-    dependencies:
-      '@clack/prompts':
-        specifier: ^0.10.1
-        version: 0.10.1
-      '@commander-js/extra-typings':
-        specifier: ^13.1.0
-        version: 13.1.0(commander@13.1.0)
-      '@iarna/toml':
-        specifier: ^2.2.5
-        version: 2.2.5
-      commander:
-        specifier: ^13.1.0
-        version: 13.1.0
-    devDependencies:
-      tsx:
-        specifier: ^4.19.3
-        version: 4.19.3
+    publishDirectory: .
 
   pkgs/core:
     dependencies:
@@ -162,8 +144,10 @@ importers:
       supabase:
         specifier: ^2.6.8
         version: 2.6.8
+    publishDirectory: .
 
-  pkgs/dsl: {}
+  pkgs/dsl:
+    publishDirectory: .
 
   pkgs/edge-worker:
     dependencies:
@@ -189,6 +173,7 @@ importers:
       supabase:
         specifier: 2.21.1
         version: 2.21.1
+    publishDirectory: .
 
   pkgs/example-flows:
     dependencies:
@@ -198,6 +183,7 @@ importers:
       '@pgflow/dsl':
         specifier: workspace:*
         version: link:../dsl
+    publishDirectory: .
 
   pkgs/website:
     dependencies:
@@ -235,6 +221,7 @@ importers:
       prettier-plugin-astro:
         specifier: ^0.14.1
         version: 0.14.1
+    publishDirectory: .
 
 packages:
 

@@ -26,6 +26,7 @@
     "@pgflow/dsl": "workspace:*"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "directory": "."
   }
 }

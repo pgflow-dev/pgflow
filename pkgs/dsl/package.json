@@ -17,6 +17,7 @@
     }
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "directory": "."
   }
 }
