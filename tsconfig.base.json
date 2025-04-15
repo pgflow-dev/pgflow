@@ -14,7 +14,9 @@
     "importHelpers": true,
     "incremental": true,
     "isolatedModules": true,
-    "lib": ["es2022"],
+    "lib": [
+      "es2022"
+    ],
     "module": "nodenext",
     "moduleResolution": "NodeNext",
     "noEmit": false,
@@ -34,9 +36,15 @@
     "verbatimModuleSyntax": false,
     "baseUrl": ".",
     "paths": {
-      "@pgflow/core": ["./pkgs/core/src/index.ts"],
-      "@pgflow/dsl": ["./pkgs/dsl/src/index.ts"],
-      "@pgflow/edge-worker": ["./pkgs/edge-worker/mod.ts"]
+      "@pgflow/core": [
+        "./pkgs/core/src/index.ts"
+      ],
+      "@pgflow/dsl": [
+        "./pkgs/dsl/src/index.ts"
+      ],
+      "@pgflow/edge-worker": [
+        "./pkgs/edge-worker/mod.ts"
+      ]
     }
   }
 }

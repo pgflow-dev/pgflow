@@ -14,18 +14,20 @@
   "exports": {
     "./package.json": "./package.json",
     ".": {
-      "types": "./index.d.ts",
-      "import": "./index.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
   "devDependencies": {
+    "@types/node": "^22.14.1",
     "supabase": "^2.6.8"
   },
   "dependencies": {
-    "postgres": "^3.4.5",
-    "@pgflow/dsl": "workspace:*"
+    "@pgflow/dsl": "workspace:*",
+    "postgres": "^3.4.5"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "directory": "."
   }
 }

@@ -12,11 +12,15 @@
   "exports": {
     "./package.json": "./package.json",
     ".": {
-      "types": "./index.d.ts",
-      "import": "./index.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "directory": "."
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.1"
   }
 }
