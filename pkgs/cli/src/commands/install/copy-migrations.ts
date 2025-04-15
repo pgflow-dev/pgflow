@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Path to the pgflow migrations
-const sourcePath = path.resolve(__dirname, '../../../migrations');
+const sourcePath = path.resolve(__dirname, '../../migrations');
 
 export async function copyMigrations({
   supabasePath,
