@@ -19,8 +19,6 @@ export async function updateConfigToml({
 }: {
   supabasePath: string;
 }): Promise<void> {
-  log.step(`Preparing to update config.toml`);
-
   const configPath = path.join(supabasePath, 'config.toml');
 
   try {

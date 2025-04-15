@@ -16,8 +16,6 @@ export async function copyMigrations({
 }: {
   supabasePath: string;
 }) {
-  log.info(`Preparing to copy migrations`);
-
   const migrationsPath = `${supabasePath}/migrations`;
 
   if (!fs.existsSync(migrationsPath)) {

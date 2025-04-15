@@ -15,12 +15,12 @@ export default (program: Command) => {
 
       if (isCancel(supabasePath)) {
         log.error('Aborting installation');
-        return false;
+        return;
       }
 
       await copyMigrations({ supabasePath });
       await updateConfigToml({ supabasePath });
-      await log.success('pgflow installaction is completed');
-      await log.warn('Remember to restart Supabase and apply the migrations!');
+      log.success('pgflow installation is completed');
+      log.warn('Remember to restart Supabase and apply the migrations!');
     });
 };
