@@ -19,6 +19,14 @@
             "output": "migrations"
           }
         ]
+      },
+      "postTargets": ["cli:make-executable"]
+    },
+    "make-executable": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "chmod +x {projectRoot}/dist/index.js",
+        "cwd": "."
       }
     },
     "serve": {
