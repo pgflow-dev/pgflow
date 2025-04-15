@@ -2,18 +2,18 @@
   "name": "pgflow",
   "version": "0.0.14",
   "type": "module",
-  "main": "./dist/index.js",
-  "typings": "./dist/index.d.ts",
+  "main": "./dist/src/index.js",
+  "typings": "./dist/src/index.d.ts",
   "bin": "./dist/src/index.js",
   "exports": {
     "./package.json": "./package.json",
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
     }
   },
-  "types": "./dist/index.d.ts",
-  "module": "./dist/index.js",
+  "types": "./dist/src/index.d.ts",
+  "module": "./dist/src/index.js",
   "devDependencies": {
     "@types/node": "^22.14.1",
     "tsx": "^4.19.3"

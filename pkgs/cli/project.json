@@ -25,7 +25,7 @@
     "make-executable": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "chmod +x {projectRoot}/dist/index.js",
+        "command": "chmod +x {projectRoot}/dist/src/index.js",
         "cwd": "."
       }
     },

@@ -1,0 +1,5 @@
+---
+'pgflow': patch
+---
+
+Update paths
