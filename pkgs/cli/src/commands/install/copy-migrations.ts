@@ -16,7 +16,7 @@ export async function copyMigrations({
 }: {
   supabasePath: string;
 }): Promise<boolean> {
-  const migrationsPath = `${supabasePath}/migrations`;
+  const migrationsPath = path.join(supabasePath, 'migrations');
 
   if (!fs.existsSync(migrationsPath)) {
     fs.mkdirSync(migrationsPath);
@@ -38,7 +38,7 @@ export async function copyMigrations({
 
   // Determine which files need to be copied
   for (const file of files) {
-    const destination = `${migrationsPath}/${file}`;
+    const destination = path.join(migrationsPath, file);
 
     if (fs.existsSync(destination)) {
       skippedFiles.push(file);
@@ -84,8 +84,8 @@ ${skippedFiles.map((file) => `${chalk.yellow('=')} ${file}`).join('\n')}`);
 
   // Copy the files
   for (const file of filesToCopy) {
-    const source = `${sourcePath}/${file}`;
-    const destination = `${migrationsPath}/${file}`;
+    const source = path.join(sourcePath, file);
+    const destination = path.join(migrationsPath, file);
 
     fs.copyFileSync(source, destination);
     log.step(`Copied ${file}`);

@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 import { text } from '@clack/prompts';
 
 export async function supabasePathPrompt() {
@@ -9,10 +10,10 @@ export async function supabasePathPrompt() {
   });
 }
 
-function validate(path: string) {
+function validate(inputPath: string) {
   const pathsToTest = [
-    [path, 'is not a valid path'],
-    [`${path}/config.toml`, 'does not contain config.toml'],
+    [inputPath, 'is not a valid path'],
+    [path.join(inputPath, 'config.toml'), 'does not contain config.toml'],
   ];
 
   // if any of the pathsToTest fail, return the error message
