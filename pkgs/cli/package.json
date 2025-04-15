@@ -22,9 +22,9 @@
   "dependencies": {
     "@clack/prompts": "^0.10.1",
     "@commander-js/extra-typings": "^13.1.0",
-    "@iarna/toml": "^2.2.5",
     "chalk": "^5.4.1",
-    "commander": "^13.1.0"
+    "commander": "^13.1.0",
+    "toml-patch": "^0.2.3"
   },
   "publishConfig": {
     "access": "public",

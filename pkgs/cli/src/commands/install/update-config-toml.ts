@@ -1,11 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 import { log, confirm, note } from '@clack/prompts';
-import * as TOML from '@iarna/toml';
+import * as TOML from 'toml-patch';
 import chalk from 'chalk';
 
 /**
  * Updates the config.toml file with necessary configurations for EdgeWorker
+ * while preserving comments and formatting
  *
  * Makes the following changes:
  * 1. Enables the connection pooler
@@ -107,30 +108,32 @@ ${chalk.green('+ policy = "per_worker"')}`);
 
     log.info(`Updating config.toml`);
 
-    // Update pooler configuration
-    if (!config.db) {
-      config.db = {};
+    // Create updated configuration object
+    const updatedConfig = { ...config };
+
+    // Ensure db and pooler objects exist
+    if (!updatedConfig.db) {
+      updatedConfig.db = {};
     }
 
-    if (!config.db.pooler) {
-      config.db.pooler = {};
+    if (!updatedConfig.db.pooler) {
+      updatedConfig.db.pooler = {};
     }
 
     // 1. Enable the connection pooler
-    config.db.pooler.enabled = true;
+    updatedConfig.db.pooler.enabled = true;
 
     // 2. Ensure pool_mode is set to "transaction"
-    config.db.pooler.pool_mode = 'transaction';
+    updatedConfig.db.pooler.pool_mode = 'transaction';
 
     // 3. Update edge_runtime policy
-    if (config.edge_runtime) {
-      config.edge_runtime.policy = 'per_worker';
-    } else {
-      config.edge_runtime = { policy: 'per_worker' };
+    if (!updatedConfig.edge_runtime) {
+      updatedConfig.edge_runtime = {};
     }
+    updatedConfig.edge_runtime.policy = 'per_worker';
 
-    // Convert back to TOML and write to file
-    const updatedContent = TOML.stringify(config);
+    // Use toml-patch to update the config while preserving comments and formatting
+    const updatedContent = TOML.patch(configContent, updatedConfig);
     fs.writeFileSync(configPath, updatedContent);
 
     log.success(
