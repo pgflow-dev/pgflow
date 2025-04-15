@@ -33,6 +33,6 @@
     "dist"
   ],
   "scripts": {
-    "postinstall": "test -f dist/index.js && chmod +x dist/index.js"
+    "postinstall": "chmod +x dist/index.js || true"
   }
 }
