@@ -7,7 +7,7 @@ import { supabasePathPrompt } from './supabase-path-prompt.js';
 export default (program: Command) => {
   program
     .command('install')
-    .description('Installs pgflow migration and worker edge function')
+    .description('Copies migrations and sets config.toml values')
     .action(async () => {
       intro('pgflow - Postgres-native workflows for Supabase');
 

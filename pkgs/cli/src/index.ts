@@ -34,7 +34,9 @@ function getVersion(): string {
 
 const program = new Command();
 program
-  .version(getVersion(), '-V, --version', 'Output the current version')
+  .name('npx pgflow')
+  .description('Command line interface to help you work with pgflow')
+  .version(getVersion())
   .exitOverride((err) => {
     // Don't treat version display as an error
     if (err.code === 'commander.version') {
