@@ -4,9 +4,7 @@
   "type": "module",
   "main": "./dist/index.js",
   "typings": "./dist/index.d.ts",
-  "bin": {
-    "pgflow": "./dist/index.js"
-  },
+  "bin": "./dist/index.js",
   "exports": {
     "./package.json": "./package.json",
     ".": {
