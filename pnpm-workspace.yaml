@@ -1,3 +1,4 @@
 packages:
   - 'pkgs/*'
-  - '!**/dist'
+  - '!pkgs/*/dist'
+  - '!**/dist/**'
