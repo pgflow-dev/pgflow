@@ -14,7 +14,7 @@
         "outputPath": "{projectRoot}/dist",
         "assets": [
           {
-            "input": "{projectRoot}/../core/supabase/migrations",
+            "input": "pkgs/core/supabase/migrations",
             "glob": "*.sql",
             "output": "migrations"
           }
