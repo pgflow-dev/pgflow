@@ -1,5 +1,12 @@
 # pgflow
 
+## 0.0.17
+
+### Patch Changes
+
+- 4a5b13b: Hopefully fixed
+- c976d51: Fix postinstall script
+
 ## 0.0.16
 
 ### Patch Changes
