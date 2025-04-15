@@ -4,7 +4,7 @@
   "type": "module",
   "main": "./dist/index.js",
   "typings": "./dist/index.d.ts",
-  "bin": "./dist/index.js",
+  "bin": "./dist/src/index.js",
   "exports": {
     "./package.json": "./package.json",
     ".": {
