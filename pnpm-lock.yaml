@@ -125,37 +125,11 @@ importers:
         specifier: ^4.19.3
         version: 4.19.3
 
-  pkgs/cli/dist:
-    dependencies:
-      '@commander-js/extra-typings':
-        specifier: ^13.1.0
-        version: 13.1.0(commander@13.1.0)
-      commander:
-        specifier: ^13.1.0
-        version: 13.1.0
-    devDependencies:
-      tsx:
-        specifier: ^4.19.3
-        version: 4.19.3
-
   pkgs/core:
     dependencies:
       '@pgflow/dsl':
         specifier: workspace:*
-        version: link:../dsl/dist
-      postgres:
-        specifier: ^3.4.5
-        version: 3.4.5
-    devDependencies:
-      supabase:
-        specifier: ^2.6.8
-        version: 2.6.8
-
-  pkgs/core/dist:
-    dependencies:
-      '@pgflow/dsl':
-        specifier: workspace:*
-        version: link:../../dsl/dist
+        version: link:../dsl
       postgres:
         specifier: ^3.4.5
         version: 3.4.5
@@ -166,8 +140,6 @@ importers:
 
   pkgs/dsl: {}
 
-  pkgs/dsl/dist: {}
-
   pkgs/edge-worker:
     dependencies:
       '@henrygd/queue':
@@ -175,35 +147,10 @@ importers:
         version: 1.0.7
       '@pgflow/core':
         specifier: workspace:*
-        version: link:../core/dist
+        version: link:../core
       '@pgflow/dsl':
         specifier: workspace:*
-        version: link:../dsl/dist
-      postgres:
-        specifier: 3.4.5
-        version: 3.4.5
-    devDependencies:
-      '@types/deno':
-        specifier: npm:@teidesu/deno-types@1.45.2
-        version: /@teidesu/deno-types@1.45.2
-      '@types/node':
-        specifier: ~18.16.9
-        version: 18.16.20
-      supabase:
-        specifier: 2.21.1
-        version: 2.21.1
-
-  pkgs/edge-worker/dist:
-    dependencies:
-      '@henrygd/queue':
-        specifier: ^1.0.7
-        version: 1.0.7
-      '@pgflow/core':
-        specifier: workspace:*
-        version: link:../../core/dist
-      '@pgflow/dsl':
-        specifier: workspace:*
-        version: link:../../dsl/dist
+        version: link:../dsl
       postgres:
         specifier: 3.4.5
         version: 3.4.5
@@ -222,10 +169,10 @@ importers:
     dependencies:
       '@pgflow/core':
         specifier: workspace:*
-        version: link:../core/dist
+        version: link:../core
       '@pgflow/dsl':
         specifier: workspace:*
-        version: link:../dsl/dist
+        version: link:../dsl
 
   pkgs/website:
     dependencies:
