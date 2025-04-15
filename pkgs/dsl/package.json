@@ -19,5 +19,8 @@
   "publishConfig": {
     "access": "public",
     "directory": "."
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.1"
   }
 }

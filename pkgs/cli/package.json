@@ -17,6 +17,7 @@
   "types": "./dist/index.d.ts",
   "module": "./dist/index.js",
   "devDependencies": {
+    "@types/node": "^22.14.1",
     "tsx": "^4.19.3"
   },
   "dependencies": {
