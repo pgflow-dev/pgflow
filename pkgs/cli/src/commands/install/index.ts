@@ -1,25 +1,8 @@
-import fs from 'fs';
 import { type Command } from 'commander';
-import { intro, isCancel, text, log } from '@clack/prompts';
+import { intro, isCancel, log } from '@clack/prompts';
 import { copyMigrations } from './copy-migrations.js';
 import { updateConfigToml } from './update-config-toml.js';
-
-function validate(path: string) {
-  const pathsToTest = [
-    [path, 'is not a valid path'],
-    [`${path}/config.toml`, 'does not contain config.toml'],
-  ];
-
-  // if any of the pathsToTest fail, return the error message
-  for (const [testPath, errorMessage] of pathsToTest) {
-    if (!fs.existsSync(testPath)) {
-      return `${path} ${errorMessage}`;
-    }
-  }
-
-  // otherwise, return undefined
-  return undefined;
-}
+import { supabasePathPrompt } from './supabase-path-prompt.js';
 
 export default (program: Command) => {
   program
@@ -28,20 +11,15 @@ export default (program: Command) => {
     .action(async () => {
       intro('pgflow - Postgres-native workflows for Supabase');
 
-      const result = await text({
-        message: 'Enter the path to your supabase/ directory',
-        placeholder: 'supabase/',
-        validate,
-      });
+      const supabasePath = await supabasePathPrompt();
 
-      if (isCancel(result)) {
+      if (isCancel(supabasePath)) {
         log.error('Aborting installation');
-        return;
+        return false;
       }
 
-      await copyMigrations({ supabasePath: result });
-      await updateConfigToml({ supabasePath: result });
-
+      await copyMigrations({ supabasePath });
+      await updateConfigToml({ supabasePath });
       await log.success('pgflow installaction is completed');
       await log.warn('Remember to restart Supabase and apply the migrations!');
     });
