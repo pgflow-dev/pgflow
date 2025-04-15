@@ -4,7 +4,7 @@
   "type": "module",
   "main": "./dist/src/index.js",
   "typings": "./dist/src/index.d.ts",
-  "bin": "./dist/src/index.js",
+  "bin": "./src/index.js",
   "exports": {
     "./package.json": "./package.json",
     ".": {
@@ -31,5 +31,8 @@
   },
   "files": [
     "dist"
-  ]
+  ],
+  "scripts": {
+    "postinstall": "chmod +x dist/src/index.js"
+  }
 }
