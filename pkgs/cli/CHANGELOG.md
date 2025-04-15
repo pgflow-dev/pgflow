@@ -1,5 +1,11 @@
 # pgflow
 
+## 0.0.13
+
+### Patch Changes
+
+- c34f349: Fix the missing executable bit and "files" setting in package.json
+
 ## 0.0.12
 
 ### Patch Changes
