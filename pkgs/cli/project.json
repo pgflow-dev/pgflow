@@ -1,7 +1,7 @@
 {
   "name": "cli",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "{projectRoot}/src",
+  "sourceRoot": "pkgs/cli/src",
   "projectType": "library",
   "tags": [],
   "// targets": "to see all targets run: nx show project cli --web",
@@ -12,6 +12,7 @@
         "main": "{projectRoot}/src/index.ts",
         "tsConfig": "{projectRoot}/tsconfig.lib.json",
         "outputPath": "{projectRoot}/dist",
+        "rootDir": "{projectRoot}/src",
         "assets": [
           {
             "input": "pkgs/core/supabase/migrations",
