@@ -128,25 +128,6 @@ importers:
         specifier: ^4.19.3
         version: 4.19.3
 
-  pkgs/cli/dist:
-    dependencies:
-      '@clack/prompts':
-        specifier: ^0.10.1
-        version: 0.10.1
-      '@commander-js/extra-typings':
-        specifier: ^13.1.0
-        version: 13.1.0(commander@13.1.0)
-      '@iarna/toml':
-        specifier: ^2.2.5
-        version: 2.2.5
-      commander:
-        specifier: ^13.1.0
-        version: 13.1.0
-    devDependencies:
-      tsx:
-        specifier: ^4.19.3
-        version: 4.19.3
-
   pkgs/core:
     dependencies:
       '@pgflow/dsl':
