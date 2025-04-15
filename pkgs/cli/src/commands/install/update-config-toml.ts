@@ -18,6 +18,8 @@ export function updateConfigToml({
 }: {
   supabasePath: string;
 }): void {
+  log.step(`Updating config.toml`);
+
   const configPath = path.join(supabasePath, 'config.toml');
 
   try {

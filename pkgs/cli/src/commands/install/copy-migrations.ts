@@ -15,6 +15,8 @@ export async function copyMigrations({
 }: {
   supabasePath: string;
 }) {
+  log.info(`Copying migrations`);
+
   const migrationsPath = `${supabasePath}/migrations`;
 
   if (!fs.existsSync(migrationsPath)) {
@@ -38,11 +40,11 @@ export async function copyMigrations({
     const destination = `${migrationsPath}/${file}`;
 
     if (fs.existsSync(destination)) {
-      log.info(`Skipping ${file}`);
+      log.step(`Skipping ${file}`);
       continue;
     }
 
     fs.copyFileSync(source, destination);
-    log.info(`Copied ${file}`);
+    log.step(`Copied ${file}`);
   }
 }
