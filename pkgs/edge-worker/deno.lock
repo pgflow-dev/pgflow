@@ -363,7 +363,7 @@
       "dependencies": [
         "npm:@henrygd/queue@^1.0.7",
         "npm:@teidesu/deno-types@1.45.2",
-        "npm:@types/node@~18.16.9",
+        "npm:@types/node@~18.16.20",
         "npm:postgres@3.4.5",
         "npm:supabase@2.21.1"
       ]
