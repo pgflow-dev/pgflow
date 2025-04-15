@@ -11,6 +11,7 @@ import chalk from 'chalk';
  * 1. Enables the connection pooler
  * 2. Ensures pool_mode is set to "transaction"
  * 3. Changes edge_runtime policy from "oneshot" to "per_worker"
+ * 4. Creates a backup of the original config.toml file before making changes
  *
  * @param options.supabasePath - Path to the supabase directory
  */
@@ -20,6 +21,7 @@ export async function updateConfigToml({
   supabasePath: string;
 }): Promise<boolean> {
   const configPath = path.join(supabasePath, 'config.toml');
+  const backupPath = `${configPath}.backup`;
 
   try {
     // Check if config.toml exists
@@ -91,13 +93,17 @@ ${chalk.green('+ policy = "per_worker"')}`);
     note(changes.join('\n\n'), 'Config Changes');
 
     const shouldContinue = await confirm({
-      message: 'Do you want to proceed with these configuration changes?',
+      message: `Do you want to proceed with these configuration changes? A backup will be created at ${backupPath}`,
     });
 
     if (!shouldContinue) {
       log.info('Configuration update cancelled');
       return false;
     }
+
+    // Create a backup of the original config file
+    fs.copyFileSync(configPath, backupPath);
+    log.info(`Created backup at ${backupPath}`);
 
     log.info(`Updating config.toml`);
 
@@ -127,7 +133,9 @@ ${chalk.green('+ policy = "per_worker"')}`);
     const updatedContent = TOML.stringify(config);
     fs.writeFileSync(configPath, updatedContent);
 
-    log.success(`Successfully updated ${configPath}`);
+    log.success(
+      `Successfully updated ${configPath} (backup created at ${backupPath})`
+    );
     return true; // Return true to indicate config was updated
   } catch (error) {
     log.error(

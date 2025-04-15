@@ -19,7 +19,7 @@ function validate(inputPath: string) {
   // if any of the pathsToTest fail, return the error message
   for (const [testPath, errorMessage] of pathsToTest) {
     if (!fs.existsSync(testPath)) {
-      return `${path} ${errorMessage}`;
+      return `${testPath} ${errorMessage}`;
     }
   }
 
