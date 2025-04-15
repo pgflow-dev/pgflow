@@ -18,7 +18,7 @@ export async function updateConfigToml({
   supabasePath,
 }: {
   supabasePath: string;
-}): Promise<void> {
+}): Promise<boolean> {
   const configPath = path.join(supabasePath, 'config.toml');
 
   try {
@@ -57,10 +57,10 @@ export async function updateConfigToml({
       currentSettings.edgeRuntimePolicy !== 'per_worker';
 
     if (!needsChanges) {
-      log.success(
+      log.info(
         `No changes needed in config.toml - all required settings are already configured`
       );
-      return;
+      return false;
     }
 
     // Prepare diff-like changes summary
@@ -96,7 +96,7 @@ ${chalk.green('+ policy = "per_worker"')}`);
 
     if (!shouldContinue) {
       log.info('Configuration update cancelled');
-      return;
+      return false;
     }
 
     log.info(`Updating config.toml`);
@@ -128,6 +128,7 @@ ${chalk.green('+ policy = "per_worker"')}`);
     fs.writeFileSync(configPath, updatedContent);
 
     log.success(`Successfully updated ${configPath}`);
+    return true; // Return true to indicate config was updated
   } catch (error) {
     log.error(
       `Failed to update ${configPath}: ${

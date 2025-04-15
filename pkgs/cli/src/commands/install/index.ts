@@ -18,9 +18,28 @@ export default (program: Command) => {
         return;
       }
 
-      await copyMigrations({ supabasePath });
-      await updateConfigToml({ supabasePath });
-      log.success('pgflow installation is completed');
-      log.warn('Remember to restart Supabase and apply the migrations!');
+      const migrationsCopied = await copyMigrations({ supabasePath });
+      const configUpdated = await updateConfigToml({ supabasePath });
+
+      if (migrationsCopied || configUpdated) {
+        log.success('pgflow installation is completed');
+      }
+
+      if (!migrationsCopied && !configUpdated) {
+        log.success(
+          'No changes were made - pgflow is already properly configured.'
+        );
+      }
+
+      // Show specific reminders based on what was actually done
+      if (configUpdated) {
+        log.warn(
+          'Remember to restart Supabase for the configuration changes to take effect!'
+        );
+      }
+
+      if (migrationsCopied) {
+        log.warn('Remember to apply the migrations!');
+      }
     });
 };

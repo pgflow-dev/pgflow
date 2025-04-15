@@ -15,7 +15,7 @@ export async function copyMigrations({
   supabasePath,
 }: {
   supabasePath: string;
-}) {
+}): Promise<boolean> {
   const migrationsPath = `${supabasePath}/migrations`;
 
   if (!fs.existsSync(migrationsPath)) {
@@ -29,7 +29,7 @@ export async function copyMigrations({
       "This might happen if you're running from source instead of the built package."
     );
     log.info('Try building the package first with: nx build cli');
-    return;
+    return false;
   }
 
   const files = fs.readdirSync(sourcePath);
@@ -47,12 +47,10 @@ export async function copyMigrations({
     }
   }
 
-  // If no files to copy, show message and return
+  // If no files to copy, show message and return false (no changes made)
   if (filesToCopy.length === 0) {
-    log.success(
-      'No new migrations to copy - all migrations are already in place'
-    );
-    return;
+    log.info('No new migrations to copy - all migrations are already in place');
+    return false;
   }
 
   // Prepare summary message with colored output
@@ -79,7 +77,7 @@ ${skippedFiles.map((file) => `${chalk.yellow('=')} ${file}`).join('\n')}`);
 
   if (!shouldContinue) {
     log.info('Migration copy cancelled');
-    return;
+    return false;
   }
 
   log.info(`Copying migrations`);
@@ -98,4 +96,6 @@ ${skippedFiles.map((file) => `${chalk.yellow('=')} ${file}`).join('\n')}`);
       filesToCopy.length !== 1 ? 's' : ''
     }`
   );
+
+  return true; // Return true to indicate migrations were copied
 }
