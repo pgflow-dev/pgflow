@@ -1,5 +1,11 @@
 # @pgflow/dsl
 
+## 0.0.18
+
+### Patch Changes
+
+- 53abf4a: Fix pnpm issues with linking to dist/
+
 ## 0.0.17
 
 ## 0.0.16
