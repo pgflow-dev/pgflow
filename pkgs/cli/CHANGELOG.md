@@ -1,5 +1,11 @@
 # pgflow
 
+## 0.0.15
+
+### Patch Changes
+
+- c734379: Fix the bin path
+
 ## 0.0.14
 
 ### Patch Changes
