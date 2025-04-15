@@ -1,5 +1,12 @@
 # @pgflow/edge-worker
 
+## 0.0.15
+
+### Patch Changes
+
+- @pgflow/core@0.0.15
+- @pgflow/dsl@0.0.15
+
 ## 0.0.14
 
 ### Patch Changes
