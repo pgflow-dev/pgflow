@@ -13,9 +13,11 @@ const sourcePath = path.resolve(__dirname, '../../migrations');
 
 export async function copyMigrations({
   supabasePath,
+  autoConfirm = false,
 }: {
   supabasePath: string;
-}): Promise<boolean> {
+  autoConfirm?: boolean;
+}): Promise<true> {
   const migrationsPath = path.join(supabasePath, 'migrations');
 
   if (!fs.existsSync(migrationsPath)) {
@@ -24,12 +26,9 @@ export async function copyMigrations({
 
   // Check if pgflow migrations directory exists
   if (!fs.existsSync(sourcePath)) {
-    log.error(`Source migrations directory not found at ${sourcePath}`);
-    log.info(
-      "This might happen if you're running from source instead of the built package."
-    );
-    log.info('Try building the package first with: nx build cli');
-    return false;
+    throw new Error(`Source migrations directory not found at ${sourcePath}.
+This might happen if you're running from source instead of the built package.
+Try building the package first with: nx build cli`);
   }
 
   const files = fs.readdirSync(sourcePath);
@@ -47,10 +46,11 @@ export async function copyMigrations({
     }
   }
 
-  // If no files to copy, show message and return false (no changes made)
+  // If no files to copy, throw an error
   if (filesToCopy.length === 0) {
-    log.info('No new migrations to copy - all migrations are already in place');
-    return false;
+    throw new Error(
+      'No new migrations to copy - all migrations are already in place'
+    );
   }
 
   // Prepare summary message with colored output
@@ -69,15 +69,16 @@ ${skippedFiles.map((file) => `${chalk.yellow('=')} ${file}`).join('\n')}`);
   // Show summary and ask for confirmation
   note(summaryParts.join('\n\n'), 'Migration Summary');
 
-  const shouldContinue = await confirm({
-    message: `Do you want to proceed with copying ${
-      filesToCopy.length
-    } migration file${filesToCopy.length !== 1 ? 's' : ''}?`,
-  });
+  const shouldContinue =
+    autoConfirm ||
+    (await confirm({
+      message: `Do you want to proceed with copying ${
+        filesToCopy.length
+      } migration file${filesToCopy.length !== 1 ? 's' : ''}?`,
+    }));
 
   if (!shouldContinue) {
-    log.info('Migration copy cancelled');
-    return false;
+    throw new Error('Copying migrations cancelled');
   }
 
   log.info(`Copying migrations`);

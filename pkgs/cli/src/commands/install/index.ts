@@ -18,28 +18,39 @@ export default (program: Command) => {
         return;
       }
 
-      const migrationsCopied = await copyMigrations({ supabasePath });
-      const configUpdated = await updateConfigToml({ supabasePath });
-
-      if (migrationsCopied || configUpdated) {
-        log.success('pgflow installation is completed');
-      }
-
-      if (!migrationsCopied && !configUpdated) {
-        log.success(
-          'No changes were made - pgflow is already properly configured.'
+      // Try to copy migrations first - this is a required step
+      try {
+        await copyMigrations({ supabasePath });
+      } catch (error) {
+        log.error(
+          `Error copying migrations: ${
+            error instanceof Error ? error.message : String(error)
+          }`
         );
+
+        return;
       }
 
-      // Show specific reminders based on what was actually done
-      if (configUpdated) {
-        log.warn(
-          'Remember to restart Supabase for the configuration changes to take effect!'
+      // Only proceed with config update if migrations were successful
+      try {
+        await updateConfigToml({ supabasePath });
+      } catch (error) {
+        log.error(
+          `Error updating config.toml: ${
+            error instanceof Error ? error.message : String(error)
+          }`
         );
+
+        return;
       }
 
-      if (migrationsCopied) {
-        log.warn('Remember to apply the migrations!');
-      }
+      // If we got here, installation was successful
+      log.success('pgflow installation is completed');
+
+      // Show specific reminders
+      log.warn(
+        'Remember to restart Supabase for the configuration changes to take effect!'
+      );
+      log.warn('Remember to apply the migrations!');
     });
 };
