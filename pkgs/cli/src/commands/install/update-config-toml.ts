@@ -112,7 +112,9 @@ ${chalk.green('+ policy = "per_worker"')}`);
     updatedConfig.db.pooler.pool_mode = 'transaction';
     updatedConfig.edge_runtime.policy = 'per_worker';
 
-    const updatedContent = TOML.patch(configContent, updatedConfig);
+    const updatedContent = TOML.patch(configContent, updatedConfig, {
+      trailingComma: false,
+    });
     fs.writeFileSync(configPath, updatedContent);
 
     log.success(
