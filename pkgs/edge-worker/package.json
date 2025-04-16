@@ -1,6 +1,6 @@
 {
   "name": "@pgflow/edge-worker",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "./dist/index.js",
