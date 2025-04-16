@@ -12,7 +12,7 @@ EdgeWorker.start(async (payload) => {
 
 // 2. Trigger it to scrape a website
 SELECT pgmq.send(
-  queue_name => 'tasks', 
+  queue_name => 'tasks',
   message => '{"url": "https://supabase.com"}'::jsonb
 )
 
