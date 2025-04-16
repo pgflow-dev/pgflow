@@ -1,5 +1,12 @@
 # @pgflow/core
 
+## 0.0.19
+
+### Patch Changes
+
+- 042bc64: Move migrations to pkgs/core
+  - @pgflow/dsl@0.0.19
+
 ## 0.0.18
 
 ### Patch Changes
