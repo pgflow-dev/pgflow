@@ -1,5 +1,12 @@
 # pgflow
 
+## 0.0.23
+
+### Patch Changes
+
+- 7eddeec: Fix trailing comma in updateConfigToml
+  - @pgflow/core@0.0.23
+
 ## 0.0.22
 
 ### Patch Changes
