@@ -117,6 +117,9 @@ importers:
       '@commander-js/extra-typings':
         specifier: ^13.1.0
         version: 13.1.0(commander@13.1.0)
+      '@pgflow/core':
+        specifier: workspace:*
+        version: link:../core
       chalk:
         specifier: ^5.4.1
         version: 5.4.1

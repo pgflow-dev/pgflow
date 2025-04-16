@@ -12,14 +12,7 @@
         "main": "{projectRoot}/src/index.ts",
         "tsConfig": "{projectRoot}/tsconfig.lib.json",
         "outputPath": "{projectRoot}/dist",
-        "rootDir": "{projectRoot}/src",
-        "assets": [
-          {
-            "input": "pkgs/core/supabase/migrations",
-            "glob": "*.sql",
-            "output": "migrations"
-          }
-        ]
+        "rootDir": "{projectRoot}/src"
       }
     },
     "serve": {

@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import { log, confirm, note } from '@clack/prompts';
 import chalk from 'chalk';
@@ -8,8 +9,67 @@ import chalk from 'chalk';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Path to the pgflow migrations
-const sourcePath = path.resolve(__dirname, '../../migrations');
+// Create a require function to use require.resolve
+const require = createRequire(import.meta.url);
+
+// Function to find migrations directory
+function findMigrationsDirectory() {
+  try {
+    // First try: resolve from installed @pgflow/core package
+    const corePackageJsonPath = require.resolve('@pgflow/core/package.json');
+    const corePackageFolder = path.dirname(corePackageJsonPath);
+    const packageMigrationsPath = path.join(
+      corePackageFolder,
+      'dist',
+      'supabase',
+      'migrations'
+    );
+
+    if (fs.existsSync(packageMigrationsPath)) {
+      return packageMigrationsPath;
+    }
+
+    // If that fails, try development path
+    log.info(
+      'Could not find migrations in installed package, trying development paths...'
+    );
+  } catch (error) {
+    log.info(
+      'Could not resolve @pgflow/core package, trying development paths...'
+    );
+  }
+
+  // Try development paths
+  // 1. Try relative to CLI dist folder (when running built CLI)
+  const distRelativePath = path.resolve(
+    __dirname,
+    '../../../../core/supabase/migrations'
+  );
+  if (fs.existsSync(distRelativePath)) {
+    return distRelativePath;
+  }
+
+  // 2. Try relative to CLI source folder (when running from source)
+  const sourceRelativePath = path.resolve(
+    __dirname,
+    '../../../../../core/supabase/migrations'
+  );
+  if (fs.existsSync(sourceRelativePath)) {
+    return sourceRelativePath;
+  }
+
+  // 3. Try local migrations directory (for backward compatibility)
+  const localMigrationsPath = path.resolve(__dirname, '../../migrations');
+  if (fs.existsSync(localMigrationsPath)) {
+    return localMigrationsPath;
+  }
+
+  // No migrations found
+  return null;
+}
+
+// Find the migrations directory
+const sourcePath = findMigrationsDirectory();
 
 export async function copyMigrations({
   supabasePath,
@@ -23,12 +83,17 @@ export async function copyMigrations({
   }
 
   // Check if pgflow migrations directory exists
-  if (!fs.existsSync(sourcePath)) {
-    log.error(`Source migrations directory not found at ${sourcePath}`);
+  if (!sourcePath || !fs.existsSync(sourcePath)) {
+    log.error(`Could not find migrations directory`);
     log.info(
-      "This might happen if you're running from source instead of the built package."
+      'This might happen if @pgflow/core is not properly installed or built.'
     );
-    log.info('Try building the package first with: nx build cli');
+    log.info(
+      'Make sure @pgflow/core is installed and contains the migrations.'
+    );
+    log.info(
+      'If running in development mode, try building the core package first with: nx build core'
+    );
     return false;
   }
 
