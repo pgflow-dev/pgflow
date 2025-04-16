@@ -1,15 +1,23 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
 import { log, confirm, note } from '@clack/prompts';
 import chalk from 'chalk';
 
-// Get the directory name in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Create a require function to use require.resolve
+const require = createRequire(import.meta.url);
 
-// Path to the pgflow migrations
-const sourcePath = path.resolve(__dirname, '../../migrations');
+// Resolve the path to the @pgflow/core package
+const corePackageJsonPath = require.resolve('@pgflow/core/package.json');
+// Get the directory containing the core package
+const corePackageFolder = path.dirname(corePackageJsonPath);
+// Path to the pgflow migrations in the published core package
+const sourcePath = path.join(
+  corePackageFolder,
+  'dist',
+  'supabase',
+  'migrations'
+);
 
 export async function copyMigrations({
   supabasePath,
@@ -26,9 +34,11 @@ export async function copyMigrations({
   if (!fs.existsSync(sourcePath)) {
     log.error(`Source migrations directory not found at ${sourcePath}`);
     log.info(
-      "This might happen if you're running from source instead of the built package."
+      'This might happen if @pgflow/core is not properly installed or built.'
     );
-    log.info('Try building the package first with: nx build cli');
+    log.info(
+      'Make sure @pgflow/core is installed and contains the migrations.'
+    );
     return false;
   }
 

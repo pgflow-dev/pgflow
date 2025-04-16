@@ -8,7 +8,7 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
-    "supabase/migrations/*.sql"
+    "dist/supabase/migrations"
   ],
   "private": false,
   "exports": {
