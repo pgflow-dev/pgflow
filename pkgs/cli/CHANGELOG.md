@@ -1,5 +1,12 @@
 # pgflow
 
+## 0.0.22
+
+### Patch Changes
+
+- c855aa0: Fix the changesets publish option
+  - @pgflow/core@0.0.22
+
 ## 0.0.21
 
 ### Patch Changes
