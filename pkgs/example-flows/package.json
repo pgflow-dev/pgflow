@@ -1,6 +1,6 @@
 {
   "name": "@pgflow/example-flows",
-  "version": "0.0.20",
+  "version": "0.0.21",
   "dependencies": {
     "@pgflow/core": "workspace:*",
     "@pgflow/dsl": "workspace:*"
