@@ -5,7 +5,7 @@
   "scripts": {
     "build": "nx run-many --target=build --all",
     "deprecated:version": "pnpm changeset version && ./scripts/update-deno-json-version.sh",
-    "deprecated:release": "// outdated: pnpm nx run-many -t build && changeset publish && pnpm jsr:publish",
+    "release": "pnpm nx run-many -t build && pnpm changeset publish",
     "jsr:publish": "pnpm nx run-many --target=jsr:publish --all --parallel=false"
   },
   "private": true,
