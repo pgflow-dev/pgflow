@@ -1,10 +1,10 @@
 import { Code } from "@astrojs/starlight/components";
+import codeExample from '../code-examples/landing-page-flow.ts?raw';
 
-<div style="font-size: 1.2rem; margin-bottom: 1rem">🐘 <strong>Postgres-First</strong> and 100% in Supabase</div>
+<div style="font-size: 1.2rem">🐘 <strong>Postgres-First</strong> and 100% in Supabase</div>
 
-<div style="font-size: 1.2rem; margin-bottom: 1rem">🪄 <strong>TypeScript DSL</strong> with autocomplete</div>
+<div style="font-size: 1.2rem">🪄 <strong>TypeScript DSL</strong> with autocomplete</div>
 
-<div style="font-size: 1.2rem; margin-bottom: 3rem">⚡ <strong>Retries, Concurrency & Observability</strong></div>
+<div style="font-size: 1.2rem; margin-bottom: 1rem">⚡ <strong>Retries, Concurrency & Observability</strong></div>
 
-<Code code="npx pgflow install" lang="bash" frame="terminal" />
-
+<Code code={codeExample} lang="typescript" frame="none" />
