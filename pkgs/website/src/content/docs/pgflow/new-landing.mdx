@@ -8,7 +8,7 @@ hero:
   title: AI Agents and Workflows on Supabase
   tagline: pgflow adds deterministic, parallel orchestration on Supabase Edge Functions - no extra servers.
   actions:
-    - link: 'edge-worker/getting-started/install-edge-worker/'
+    - link: '#install--run-in-5-minutes'
       variant: primary
       text: "Get started in 5 min 🚀"
       attrs:
@@ -21,6 +21,8 @@ prev: false
 editUrl: false
 ---
 
+import { Steps } from '@astrojs/starlight/components';
+
 ## How it works
 
 1. **Create your flow** in a simple TypeScript DSL with full autocomplete.
@@ -32,16 +34,69 @@ editUrl: false
 
 ## Install & run in 5 minutes 🚀
 
-```typescript
-// setup it once for project
-npx pgflow install
+<Steps>
 
-// generate a new flow
-npx pgflow create
+1. Install pgflow
 
-// deploy a flow worker locally or on production
-npx pgflow deploy
-```
+    ```typescript
+    npx pgflow install
+    ```
+
+2. Create your first flow
+
+    ```typescript
+    npx pgflow create
+    ```
+
+3. Deploy your flow locally
+
+    ```bash
+    npx pgflow deploy
+    ```
+
+4. Trigger your flow
+
+    ```typescript
+    import { createPgflowClient } from '@pgflow/client';
+    import { AnalyzeWebsiteFlow } from './flows/analyze-website';
+
+    const pgflow = createPgflowClient({ supabase });
+
+    const flowRun = pgflow.startFlow(AnalyzeWebsiteFlow, { url: 'https://supabase.com' });
+    ```
+
+5. Monitor your flow
+
+    #### Wait for a step to complete and use its output
+
+    ```typescript
+    const websiteContent = await flowRun.waitForStep('fetch-website');
+    ```
+
+    #### React to step events
+
+    ```typescript
+    flowRun.on('completed', (step) => { 
+      console.log(step.slug);
+      console.log(step.output);
+    });
+    ```
+
+    #### React to failures
+
+    ```typescript
+    try {
+      await flowRun
+    } catch (error) {
+      console.log(error.data);
+    }
+
+    flowRun.on('failed', (step) => { 
+      console.log(step.slug);
+      console.log(step.error);
+    });
+    ```
+</Steps>
 
 ---
 
