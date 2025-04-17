@@ -1,7 +1,6 @@
 create extension if not exists pgmq version '1.4.4';
 
 create schema if not exists pgflow;
-set search_path to pgflow;
 
 --------------------------------------------------------------------------
 ------------------ TODO: fix me, UNSECURE --------------------------------
@@ -47,7 +46,7 @@ create table pgflow.flows (
   opt_max_attempts int not null default 3,
   opt_base_delay int not null default 1,
   opt_timeout int not null default 60,
-  constraint slug_is_valid check (is_valid_slug(flow_slug)),
+  constraint slug_is_valid check (pgflow.is_valid_slug(flow_slug)),
   constraint opt_max_attempts_is_nonnegative check (opt_max_attempts >= 0),
   constraint opt_base_delay_is_nonnegative check (opt_base_delay >= 0),
   constraint opt_timeout_is_positive check (opt_timeout > 0)
@@ -55,7 +54,7 @@ create table pgflow.flows (
 
 -- Steps table - stores individual steps within flows
 create table pgflow.steps (
-  flow_slug text not null references flows (flow_slug),
+  flow_slug text not null references pgflow.flows (flow_slug),
   step_slug text not null,
   step_type text not null default 'single',
   deps_count int not null default 0 check (deps_count >= 0),
@@ -63,7 +62,7 @@ create table pgflow.steps (
   opt_base_delay int,
   opt_timeout int,
   primary key (flow_slug, step_slug),
-  check (is_valid_slug(step_slug)),
+  check (pgflow.is_valid_slug(step_slug)),
   check (step_type in ('single')),
   constraint opt_max_attempts_is_nonnegative check (opt_max_attempts is null or opt_max_attempts >= 0),
   constraint opt_base_delay_is_nonnegative check (opt_base_delay is null or opt_base_delay >= 0),
