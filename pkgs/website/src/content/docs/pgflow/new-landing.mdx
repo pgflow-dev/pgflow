@@ -1,114 +1,116 @@
 ---
-draft: true
 title: pgflow
-description: Open-source workflow engine built on Supabase Background Tasks and Queues. Run complex workflows entirely within Supabase - no external hosting needed.
-tagline: Simple, Postgres-First Workflow Orchestration for Supabase
+description: Postgres-First Workflow Orchestration—All in SQL
 template: splash
 hero:
-  title: Build AI Agent Workflows on Supabase
-  tagline: pgflow adds deterministic, parallel orchestration on top of Supabase Background Jobs - no extra servers needed
+  title: pgflow
+  tagline: DAG-based workflow engine, fully integrated with Supabase & PGMQ queues
+  image:
+    dark: ../../../assets/pgflow-logo-dark.svg
+    light: ../../../assets/pgflow-logo-light.svg
   actions:
-    - link: '#install--run-in-5-minutes'
+    - text: Get Started
+      link: /pgflow/getting-started/install-pgflow/
+      icon: right-arrow
       variant: primary
-      text: "Get started in 5 min 🚀"
-      attrs:
-        class: 'call-to-action'
-    - link: 'pgflow/getting-started/install-pgflow/'
+    - text: View on GitHub
+      link: https://github.com/pgflow-dev/pgflow
+      icon: github
       variant: minimal
-      icon: external
-      text: "Docs"
-prev: false
-editUrl: false
 ---
 
-import { Steps } from '@astrojs/starlight/components';
+import { Card, CardGrid } from '@astrojs/starlight/components';
 
-## How it works
+## SQL Core, TypeScript DSL, and Edge Workers in one
 
-1. **Create your flow** in a simple TypeScript DSL with full autocomplete.
-2. **Deploy it** via simple to use CLI
-3. **Trigger your flow** from database trigger, SQL function, REST API or frontend client
-4. **Stream workflow progress** in browser with full visibility into steps and their results (coming soon!)
+pgflow brings together essential components to create a powerful workflow engine that operates entirely within Postgres:
 
----
+<CardGrid>
+  <Card title="SQL Core" icon="database">
+    Pure SQL implementation stored in your database that handles workflow definitions, state transitions, and ACID-compliant processing.
+  </Card>
+  <Card title="TypeScript DSL" icon="pencil">
+    Define your workflows with a type-safe, developer-friendly API that automatically infers step input/output types from your handler functions.
+  </Card>
+  <Card title="Edge Worker" icon="setting">
+    Self-restarting Supabase Edge Function worker that processes tasks reliably with built-in retries and error handling.
+  </Card>
+  <Card title="CLI Tools" icon="terminal">
+    Simple installation and deployment tools to help you get started in minutes. Just run `npx pgflow install` to begin.
+  </Card>
+</CardGrid>
 
-## Install & run in 5 minutes 🚀
+## The simplicity of DAG-based workflows
 
-<Steps>
+pgflow brings the power of Directed Acyclic Graphs (DAGs) to your Supabase projects:
 
-1. Install pgflow
-
-    ```typescript
-    npx pgflow install
-    ```
-
-2. Create your first flow
-
-    ```typescript
-    npx pgflow create
-    ```
-
-3. Deploy your flow locally
-
-    ```bash
-    npx pgflow deploy
-    ```
-
-4. Trigger your flow
-
-    ```typescript
-    import { createPgflowClient } from '@pgflow/client';
-    import { AnalyzeWebsiteFlow } from './flows/analyze-website';
-
-    const pgflow = createPgflowClient({ supabase });
-
-    const flowRun = pgflow.startFlow(AnalyzeWebsiteFlow, { url: 'https://supabase.com' });
-    ```
-
-5. Monitor your flow
-
-    #### Wait for a step to complete and use its output
-
-    ```typescript
-    const websiteContent = await flowRun.waitForStep('fetch-website');
-    ```
-
-    #### React to step events
-
-    ```typescript
-    flowRun.on('completed', (step) => { 
-      console.log(step.slug);
-      console.log(step.output);
+```typescript
+// Define a workflow with parallel steps
+new Flow<{ url: string }>()
+  .step("website", async ({ url }) => {
+    const response = await fetch(url);
+    return { content: await response.text() };
+  })
+  .step("sentiment", ["website"], async ({ website }) => {
+    return await analyzeSentiment(website.content);
+  })
+  .step("summary", ["website"], async ({ website }) => {
+    return await summarizeWithAI(website.content);
+  })
+  .step("saveToDb", ["sentiment", "summary"], async (input) => {
+    return await saveResults({
+      url: input.run.url,
+      sentiment: input.sentiment.score,
+      summary: input.summary
     });
-    ```
+  });
+```
 
-    #### React to failures
+## End-to-end workflow orchestration
 
-    ```typescript
-    try {
-      await flowRun
-    } catch (error) {
-      console.log(error.data);
-    }
+<CardGrid>
+  <Card title="Store everything in Postgres" icon="open-book">
+    Workflow definitions, state, and execution history are stored directly in your Postgres database, providing a single source of truth.
+  </Card>
+  
+  <Card title="Reliable execution with PGMQ" icon="rocket">
+    Built on top of [PGMQ](https://github.com/tembo-io/pgmq), ensuring at-least-once delivery with visibility timeouts and dead-letter support.
+  </Card>
+  
+  <Card title="Seamless Supabase integration" icon="puzzle">
+    Deploy workflow workers as Supabase Edge Functions that automatically restart when needed, with migrations that install directly into your project.
+  </Card>
+  
+  <Card title="Type-safe development" icon="approve-check">
+    Full type inference for step inputs and outputs throughout your workflow DAG, providing compile-time safety and IDE autocompletion.
+  </Card>
+</CardGrid>
 
-    flowRun.on('failed', (step) => { 
-      console.log(step.slug);
-      console.log(step.error);
-    });
-    ```
-</Steps>
+## Architectural diagram
 
----
+<img 
+  src="../../assets/architecture-diagram.svg" 
+  alt="pgflow architecture diagram showing the workflow from TypeScript DSL through SQL Core to Edge Workers" 
+  width="100%" 
+  style="margin: 2rem 0"
+/>
 
-## FAQ - Supabase Workflows and Background jobs
 
-#### Q: How is pgflow different from Supabase cron?
+## From workflow DSL to execution
 
-A: pgflow adds retries, concurrency control & observability that cron lacks—plus multi‑step DAGs.
+The developer experience with pgflow is designed to be simple, while the execution model ensures reliability:
 
-#### Q: Can I run pgflow on Supabase Edge?
+1. **Define your workflow** in TypeScript with the Flow DSL
+2. **Deploy to Supabase** with `npx pgflow deploy`
+3. **Run your worker** as a Supabase Edge Function
+4. **Start workflows** from your application code, SQL triggers, or APIs
 
-A: Yes. The worker ships as a Deno function that deploys with supabase functions deploy.
+The execution system handles the rest - scheduling parallel steps when dependencies are met, retrying failed tasks, and aggregating results from all completed steps.
 
-#### Q: Does pgflow handle AI agent workflows?
-A: Absolutely. Chain LLM calls or vector ops as steps; pgflow persists state so nothing is lost on timeouts.
+## Ready to get started?
+
+Install pgflow in your Supabase project in minutes:
+
+```bash
+npx pgflow install
+```
