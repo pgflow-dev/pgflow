@@ -86,34 +86,6 @@ new Flow<{ url: string }>()
   </Card>
 </CardGrid>
 
-## Architecture
-
-```d2
-Postgres Database: {
-  pgflow: "pgflow Schema"
-  pgmq: "PGMQ Queues"
-  definitions: "Flow Definitions"
-  runs: "Flow Runs"
-}
-
-Edge Workers: {
-  worker1: "Worker 1"
-  worker2: "Worker 2"
-}
-
-Client Applications: {
-  dsl: "TypeScript DSL"
-  client: "Client SDK (Coming Soon)"
-}
-
-dsl -> definitions: "Define Flows"
-client -> pgflow: "Start Flows"
-pgflow -> pgmq: "Enqueue Tasks"
-pgmq -> Edge Workers: "Poll Tasks"
-Edge Workers -> pgflow: "Complete Tasks"
-pgflow -> runs: "Update Run Status"
-```
-
 ## From workflow DSL to execution
 
 Create and run workflows with a straightforward process:
