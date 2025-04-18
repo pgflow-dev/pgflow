@@ -1,10 +1,8 @@
-const AnalyzeWebsite = new Flow<{ url: string }>({
-  slug: 'analyze_website',
-})
-  .step({ slug: 'scrape' }, (input) => fetchWebsite(input.run))
-  .step({ slug: 'analyze', dependsOn: ['scrape'] }, (input) => {
-    return {
-      summary: summarizeContent(input.scrape),
-      sentiment: analyzeSentiment(input.scrape),
-    };
-  });
+const WebsiteFlow = new Flow<{ url: string }>({ slug: 'website' })
+  .step({ slug: 'fetch' }, input => scrape(input.run.url))
+  .step({ slug: 'sentiment', dependsOn: ['fetch'] },
+        input => analyzeSentiment(input.fetch))
+  .step({ slug: 'summary',   dependsOn: ['fetch'] },
+        input => summarize(input.fetch))
+  .step({ slug: 'save', dependsOn: ['sentiment', 'summary'] },
+        input => save({ ...input.sentiment, ...input.summary }));
