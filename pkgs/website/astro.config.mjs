@@ -95,6 +95,7 @@ export default defineConfig({
             },
             items: [
               { label: 'What is pgflow?', link: '/pgflow/what-is-pgflow/' },
+              { label: 'New landing', link: '/pgflow/new-landing/' },
             ],
           },
           {
