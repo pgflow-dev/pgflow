@@ -21,28 +21,28 @@ hero:
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-## SQL Core, TypeScript DSL, and Edge Workers in one
+## A complete workflow engine built on Postgres
 
-pgflow brings together essential components to create a powerful workflow engine that operates entirely within Postgres:
+pgflow is a workflow orchestration system with its core state management in your database, combining:
 
 <CardGrid>
   <Card title="SQL Core" icon="database">
-    Pure SQL implementation stored in your database that handles workflow definitions, state transitions, and ACID-compliant processing.
+    Pure SQL implementation that handles workflow definitions, state transitions, and ACID-compliant processing directly in your Postgres database.
   </Card>
   <Card title="TypeScript DSL" icon="pencil">
-    Define your workflows with a type-safe, developer-friendly API that automatically infers step input/output types from your handler functions.
+    Type-safe API for defining workflows that automatically infers input/output types between steps, providing compile-time safety.
   </Card>
   <Card title="Edge Worker" icon="setting">
-    Self-restarting Supabase Edge Function worker that processes tasks reliably with built-in retries and error handling.
+    Self-restarting worker that processes tasks with built-in retries and error handling, designed for Supabase Edge Functions.
   </Card>
   <Card title="CLI Tools" icon="terminal">
-    Simple installation and deployment tools to help you get started in minutes. Just run `npx pgflow install` to begin.
+    One-command setup with `npx pgflow install` that handles migrations, configuration, and deployment.
   </Card>
 </CardGrid>
 
-## The simplicity of DAG-based workflows
+## Type-safe DAG workflows in TypeScript
 
-pgflow brings the power of Directed Acyclic Graphs (DAGs) to your Supabase projects:
+Define complex workflows with parallel execution and dependencies using a simple, type-safe API:
 
 ```typescript
 // Define a workflow with parallel steps
@@ -69,47 +69,47 @@ new Flow<{ url: string }>()
 ## End-to-end workflow orchestration
 
 <CardGrid>
-  <Card title="Store everything in Postgres" icon="open-book">
-    Workflow definitions, state, and execution history are stored directly in your Postgres database, providing a single source of truth.
+  <Card title="Single source of truth" icon="open-book">
+    All workflow definitions, state, and execution history stored in your Postgres database—simplifying monitoring and debugging.
   </Card>
-  
-  <Card title="Reliable execution with PGMQ" icon="rocket">
-    Built on top of [PGMQ](https://github.com/tembo-io/pgmq), ensuring at-least-once delivery with visibility timeouts and dead-letter support.
+
+  <Card title="Reliable task processing" icon="rocket">
+    Built on [PGMQ](https://github.com/tembo-io/pgmq) for at-least-once delivery with automatic retries, timeouts, and dead-letter handling.
   </Card>
-  
-  <Card title="Seamless Supabase integration" icon="puzzle">
-    Deploy workflow workers as Supabase Edge Functions that automatically restart when needed, with migrations that install directly into your project.
+
+  <Card title="Supabase-native" icon="puzzle">
+    Deploy as Edge Functions with automatic restarts and zero-config integration with your existing Supabase project.
   </Card>
-  
-  <Card title="Type-safe development" icon="approve-check">
-    Full type inference for step inputs and outputs throughout your workflow DAG, providing compile-time safety and IDE autocompletion.
+
+  <Card title="Developer experience" icon="approve-check">
+    Full type inference between workflow steps with IDE autocompletion and compile-time safety for your entire workflow DAG.
   </Card>
 </CardGrid>
 
 ## Architectural diagram
 
-<img 
-  src="../../assets/architecture-diagram.svg" 
-  alt="pgflow architecture diagram showing the workflow from TypeScript DSL through SQL Core to Edge Workers" 
-  width="100%" 
+<img
+  src="../../assets/architecture-diagram.svg"
+  alt="pgflow architecture diagram showing the workflow from TypeScript DSL through SQL Core to Edge Workers"
+  width="100%"
   style="margin: 2rem 0"
 />
 
 
 ## From workflow DSL to execution
 
-The developer experience with pgflow is designed to be simple, while the execution model ensures reliability:
+Create and run workflows with a straightforward process:
 
-1. **Define your workflow** in TypeScript with the Flow DSL
-2. **Deploy to Supabase** with `npx pgflow deploy`
-3. **Run your worker** as a Supabase Edge Function
+1. **Define your workflow** in TypeScript with the Flow DSL, specifying handlers and dependencies
+2. **Generate SQL migrations** from your workflow definition
+3. **Create a dedicated worker** as a Supabase Edge Function for your flow
 4. **Start workflows** from your application code, SQL triggers, or APIs
 
-The execution system handles the rest - scheduling parallel steps when dependencies are met, retrying failed tasks, and aggregating results from all completed steps.
+The execution system handles the rest—scheduling steps when dependencies complete, retrying failed tasks, and aggregating results automatically.
 
 ## Ready to get started?
 
-Install pgflow in your Supabase project in minutes:
+Install pgflow in your Supabase project with a single command:
 
 ```bash
 npx pgflow install
