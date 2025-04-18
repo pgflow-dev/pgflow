@@ -1,11 +1,14 @@
-import { createQueueWorker } from '../../src/queue/createQueueWorker.ts';
-import { withTransaction } from '../db.ts';
-import { createFakeLogger } from '../fakes.ts';
-import { delay } from '@std/async';
+import { describe, it, expect } from 'vitest';
+import { createQueueWorker } from '../../src/queue/createQueueWorker.js';
+import { setupTransactionTests } from '../db.js';
+import { createFakeLogger } from '../fakes.js';
+import { sleep } from '../utils.js';
 
-Deno.test(
-  'Starting worker',
-  withTransaction(async (sql) => {
+describe('Worker integration tests', () => {
+  const getSql = setupTransactionTests();
+
+  it('should start a worker', async () => {
+    const sql = getSql();
     const worker = createQueueWorker(
       console.log,
       {
@@ -21,26 +24,25 @@ Deno.test(
       workerId: crypto.randomUUID(),
     });
 
-    await delay(100);
+    await sleep(100);
 
     try {
       const workers = await sql`select * from edge_worker.workers`;
-
-      console.log(workers);
+      expect(workers).toBeDefined();
+      expect(workers.length).toBeGreaterThan(0);
     } finally {
       await worker.stop();
     }
-  })
-);
+  });
 
-Deno.test(
-  'check pgmq version',
-  withTransaction(async (sql) => {
+  it('should check pgmq version', async () => {
+    const sql = getSql();
     const result = await sql`
-    SELECT extversion
-    FROM pg_extension
-    WHERE extname = 'pgmq'
-  `;
-    console.log('pgmq version:', result);
-  })
-);
+      SELECT extversion
+      FROM pg_extension
+      WHERE extname = 'pgmq'
+    `;
+    expect(result).toBeDefined();
+    expect(result.length).toBeGreaterThan(0);
+  });
+});

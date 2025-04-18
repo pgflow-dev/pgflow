@@ -1,9 +1,9 @@
-import { assertEquals, assertGreaterOrEqual } from '@std/assert';
-import { createQueueWorker } from '../../src/queue/createQueueWorker.ts';
-import { withTransaction } from '../db.ts';
-import { createFakeLogger } from '../fakes.ts';
-import { log, waitFor } from '../e2e/_helpers.ts';
-import { getArchivedMessages, sendBatch } from '../helpers.ts';
+import { describe, it, expect } from 'vitest';
+import { createQueueWorker } from '../../src/queue/createQueueWorker.js';
+import { setupTransactionTests } from '../db.js';
+import { createFakeLogger } from '../fakes.js';
+import { log, waitFor } from '../e2e/_helpers.js';
+import { getArchivedMessages, sendBatch } from '../helpers.js';
 
 const workerConfig = {
   maxPollSeconds: 1,
@@ -24,14 +24,16 @@ function createFailingHandler(startTime: number) {
   };
 }
 
-/**
- * Test verifies that:
- * 1. Message processing takes at least RETRY_LIMIT * RETRY_DELAY seconds
- * 2. Message is read exactly RETRY_LIMIT + 1 times (initial + retries)
- */
-Deno.test(
-  'message retry mechanism works correctly',
-  withTransaction(async (sql) => {
+describe('Message retries', () => {
+  const getSql = setupTransactionTests();
+
+  /**
+   * Test verifies that:
+   * 1. Message processing takes at least RETRY_LIMIT * RETRY_DELAY seconds
+   * 2. Message is read exactly RETRY_LIMIT + 1 times (initial + retries)
+   */
+  it('message retry mechanism works correctly', async () => {
+    const sql = getSql();
     const startTime = Date.now();
     const worker = createQueueWorker(
       createFailingHandler(startTime),
@@ -70,21 +72,19 @@ Deno.test(
 
       // Verify timing
       const totalMs = Date.now() - startTime;
-      assertGreaterOrEqual(
-        totalMs,
+      expect(totalMs).toBeGreaterThanOrEqual(
         expectedMinimumMs,
         `Processing time ${totalMs}ms was shorter than minimum ${expectedMinimumMs}ms`
       );
 
       // Verify retry count
       const expectedReads = workerConfig.retryLimit + 1;
-      assertEquals(
-        message.read_ct,
+      expect(message.read_ct).toBe(
         expectedReads,
         `Message should be read ${expectedReads} times (1 initial + ${workerConfig.retryLimit} retries)`
       );
     } finally {
       await worker.stop();
     }
-  })
-);
+  });
+});

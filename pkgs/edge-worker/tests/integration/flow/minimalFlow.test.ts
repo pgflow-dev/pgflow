@@ -1,10 +1,10 @@
-import { assert, assertEquals } from '@std/assert';
-import { withPgNoTransaction } from '../../db.ts';
+import { describe, it, expect } from 'vitest';
+import { setupTransactionTests } from '../../db.js';
 import { Flow } from '@pgflow/dsl';
-import { waitFor } from '../../e2e/_helpers.ts';
-import { delay } from '@std/async';
+import { waitFor } from '../../e2e/_helpers.js';
+import { setTimeout as delay } from 'node:timers/promises';
 import type { Json } from '@pgflow/core';
-import { startFlow, startWorker } from '../_helpers.ts';
+import { startFlow, startWorker } from '../_helpers.js';
 
 // Define a minimal flow with two steps:
 // 1. Convert a number to a string
@@ -22,9 +22,11 @@ const MinimalFlow = new Flow<number>({ slug: 'test_minimal_flow' })
     }
   );
 
-Deno.test(
-  'minimal flow executes successfully',
-  withPgNoTransaction(async (sql) => {
+describe('Flow execution', () => {
+  const getSql = setupTransactionTests();
+
+  it('minimal flow executes successfully', async () => {
+    const sql = getSql();
     await sql`select pgflow_tests.reset_db();`;
 
     const worker = startWorker(sql, MinimalFlow, {
@@ -67,7 +69,7 @@ Deno.test(
 
       console.log('Polled run', polledRun);
 
-      assert(polledRun.status === 'completed', 'Run should be completed');
+      expect(polledRun.status).toBe('completed', 'Run should be completed');
 
       // Verify step_states are all completed
       const stepStates = await sql<{ step_slug: string; status: string }[]>`
@@ -77,8 +79,7 @@ Deno.test(
       `;
 
       console.log('Step states:', stepStates);
-      assertEquals(
-        stepStates.map((s) => s.status),
+      expect(stepStates.map((s) => s.status)).toEqual(
         ['completed', 'completed'],
         'All step states should be completed'
       );
@@ -93,8 +94,7 @@ Deno.test(
       `;
 
       console.log('Step tasks:', stepTasks);
-      assertEquals(
-        stepTasks.map((s) => s.status),
+      expect(stepTasks.map((s) => s.status)).toEqual(
         ['completed', 'completed'],
         'All step tasks should be succeeded'
       );
@@ -105,11 +105,10 @@ Deno.test(
       `;
 
       console.log('Final run:', finalRun);
-      assertEquals(finalRun.status, 'completed', 'Run should be succeeded');
+      expect(finalRun.status).toBe('completed', 'Run should be succeeded');
 
       // Verify run output matches expected ["42"]
-      assertEquals(
-        finalRun.output,
+      expect(finalRun.output).toEqual(
         { wrapInArrayStep: ['42'] },
         'Run output should match expected value'
       );
@@ -117,5 +116,5 @@ Deno.test(
       // Stop the worker
       await worker.stop();
     }
-  })
-);
+  });
+});

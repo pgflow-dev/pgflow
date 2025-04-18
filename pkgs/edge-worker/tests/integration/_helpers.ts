@@ -2,9 +2,9 @@ import type { AnyFlow, ExtractFlowInput, Flow, Json } from '@pgflow/dsl';
 import {
   createFlowWorker,
   type FlowWorkerConfig,
-} from '../../src/flow/createFlowWorker.ts';
-import type { postgres } from '../sql.ts';
-import { createFakeLogger } from '../fakes.ts';
+} from '../../src/flow/createFlowWorker.js';
+import type { postgres } from '../sql.js';
+import { createFakeLogger } from '../fakes.js';
 import { PgflowSqlClient } from '@pgflow/core';
 
 export async function startFlow<TFlow extends AnyFlow>(

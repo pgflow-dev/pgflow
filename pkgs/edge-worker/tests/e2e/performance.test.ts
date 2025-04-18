@@ -1,18 +1,18 @@
-import { sql } from '../sql.ts';
+import { describe, it } from 'vitest';
+import { sql } from '../sql.js';
 import {
   waitFor,
   sendBatch,
   waitForSeqToIncrementBy,
   startWorker,
   log,
-} from './_helpers.ts';
+} from './_helpers.js';
 
 const MESSAGES_TO_SEND = 20000;
 const WORKER_NAME = 'max_concurrency';
 
-Deno.test(
-  'worker can handle tens of thousands of jobs queued at once',
-  async () => {
+describe('Performance tests', () => {
+  it('worker can handle tens of thousands of jobs queued at once', async () => {
     await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
     await sql`ALTER SEQUENCE test_seq RESTART WITH 1`;
     await sql`SELECT pgmq.create(${WORKER_NAME})`;
@@ -56,5 +56,5 @@ Deno.test(
     } finally {
       await sql.end();
     }
-  }
-);
+  });
+});

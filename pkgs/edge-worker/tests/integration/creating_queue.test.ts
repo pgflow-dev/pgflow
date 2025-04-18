@@ -1,12 +1,14 @@
-import { assertEquals } from '@std/assert';
-import { createQueueWorker } from '../../src/queue/createQueueWorker.ts';
-import { withTransaction } from '../db.ts';
-import { createFakeLogger } from '../fakes.ts';
-import { delay } from '@std/async';
+import { describe, it, expect } from 'vitest';
+import { createQueueWorker } from '../../src/queue/createQueueWorker.js';
+import { setupTransactionTests } from '../db.js';
+import { createFakeLogger } from '../fakes.js';
+import { setTimeout as delay } from 'node:timers/promises';
 
-Deno.test(
-  'creates queue when starting worker',
-  withTransaction(async (sql) => {
+describe('Queue creation', () => {
+  const getSql = setupTransactionTests();
+
+  it('creates queue when starting worker', async () => {
+    const sql = getSql();
     const worker = createQueueWorker(
       console.log,
       {
@@ -29,13 +31,12 @@ Deno.test(
       const result: { queue_name: string }[] =
         await sql`select queue_name from pgmq.list_queues();`;
 
-      assertEquals(
-        [...result],
+      expect(result).toEqual(
         [{ queue_name: 'custom_queue' }],
         'queue "custom_queue" was created'
       );
     } finally {
       await worker.stop();
     }
-  })
-);
+  });
+});

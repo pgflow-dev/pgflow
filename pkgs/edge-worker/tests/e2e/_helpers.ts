@@ -1,7 +1,7 @@
-import { sql } from '../sql.ts';
-import { delay } from '@std/async';
-import ProgressBar from 'jsr:@deno-library/progress';
-import { dim } from 'https://deno.land/std@0.224.0/fmt/colors.ts';
+import { sql } from '../sql.js';
+import { setTimeout as delay } from 'node:timers/promises';
+import ProgressBar from 'progress';
+import chalk from 'chalk';
 
 interface WaitForOptions {
   pollIntervalMs?: number;
@@ -10,7 +10,7 @@ interface WaitForOptions {
 }
 
 export function log(message: string, ...args: unknown[]) {
-  console.log(dim(` -> ${message}`), ...args);
+  console.log(chalk.dim(` -> ${message}`), ...args);
 }
 
 export async function waitFor<T>(
@@ -81,15 +81,17 @@ export async function waitForSeqToIncrementBy(
 
   const perSecond = 0;
 
-  const progress = new ProgressBar({
-    title: `${seqName} (${perSecond}/s)`,
-    total: value,
-    width: 20,
-    display: dim(
-      ` -> incrementing "${seqName}": :completed/:total (:eta left) [:bar] :percent`
+  const progress = new ProgressBar(
+    chalk.dim(
+      ` -> incrementing "${seqName}": :current/:total (:eta s) [:bar] :percent`
     ),
-    prettyTime: true,
-  });
+    {
+      total: value,
+      width: 20,
+      complete: '=',
+      incomplete: ' ',
+    }
+  );
 
   const startVal = await seqLastValue(seqName);
   let lastVal = startVal;
@@ -97,7 +99,7 @@ export async function waitForSeqToIncrementBy(
   return await waitFor(
     async () => {
       lastVal = await seqLastValue(seqName);
-      progress.render(lastVal);
+      progress.tick(lastVal - progress.curr);
       const incrementedBy = lastVal - startVal;
 
       return incrementedBy >= value ? lastVal : false;

@@ -1,11 +1,11 @@
-import { assertEquals, assertGreaterOrEqual } from '@std/assert';
-import { createQueueWorker } from '../../src/queue/createQueueWorker.ts';
-import { withTransaction } from '../db.ts';
-import { createFakeLogger } from '../fakes.ts';
-import { waitFor } from '../e2e/_helpers.ts';
-import type { PgmqMessageRecord } from '../../src/queue/types.ts';
-import { delay } from '@std/async';
-import { sendBatch } from '../helpers.ts';
+import { describe, it, expect } from 'vitest';
+import { createQueueWorker } from '../../src/queue/createQueueWorker.js';
+import { setupTransactionTests } from '../db.js';
+import { createFakeLogger } from '../fakes.js';
+import { waitFor } from '../e2e/_helpers.js';
+import type { PgmqMessageRecord } from '../../src/queue/types.js';
+import { setTimeout as delay } from 'node:timers/promises';
+import { sendBatch } from '../helpers.js';
 
 const QUEUE_NAME = 'max_concurrent';
 const MESSAGES_TO_SEND = 3;
@@ -14,9 +14,11 @@ async function sleepFor1s() {
   await delay(1000);
 }
 
-Deno.test(
-  'maxConcurrent option is respected',
-  withTransaction(async (sql) => {
+describe('Worker concurrency', () => {
+  const getSql = setupTransactionTests();
+
+  it('maxConcurrent option is respected', async () => {
+    const sql = getSql();
     const worker = createQueueWorker(
       sleepFor1s,
       {
@@ -57,9 +59,8 @@ Deno.test(
         }
       );
 
-      assertEquals(messages.length, 3, 'there should be 3 archived messages');
-      assertEquals(
-        messages.map((m) => m.read_ct),
+      expect(messages.length).toBe(3, 'there should be 3 archived messages');
+      expect(messages.map((m) => m.read_ct)).toEqual(
         [1, 1, 1],
         'each message should be read exacly once'
       );
@@ -67,13 +68,12 @@ Deno.test(
       const endTime = Date.now();
       const totalMs = Math.round(endTime - startTime);
 
-      assertGreaterOrEqual(
-        totalMs,
+      expect(totalMs).toBeGreaterThanOrEqual(
         MESSAGES_TO_SEND * 1000, // 3 messages, each takes 1s
         `Should take at least ${MESSAGES_TO_SEND}s to process all messages, took ${totalMs}ms instead`
       );
     } finally {
       await worker.stop();
     }
-  })
-);
+  });
+});

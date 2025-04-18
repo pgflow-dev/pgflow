@@ -1,4 +1,5 @@
 import postgres from 'postgres';
+import { beforeEach, afterEach } from 'vitest';
 
 function createSql(dbUrl: string) {
   return postgres(dbUrl, {
@@ -11,6 +12,31 @@ function createSql(dbUrl: string) {
   });
 }
 
+/**
+ * Vitest-compatible transaction wrapper
+ * Use this in a describe block to set up a transaction for each test
+ */
+export function setupTransactionTests() {
+  const dbUrl = `postgresql://supabase_admin:postgres@localhost:5432/postgres`;
+  let sql: postgres.Sql;
+
+  beforeEach(async () => {
+    sql = createSql(dbUrl);
+    await sql`BEGIN`;
+  });
+
+  afterEach(async () => {
+    await sql`ROLLBACK`;
+    await sql.end();
+  });
+
+  return () => sql;
+}
+
+/**
+ * Legacy transaction wrapper for compatibility
+ * This should be gradually replaced with setupTransactionTests
+ */
 export function withTransaction(
   callback: (sql: postgres.Sql) => Promise<unknown>
 ) {
@@ -57,6 +83,10 @@ export function withTransaction(
   };
 }
 
+/**
+ * Legacy non-transaction wrapper for compatibility
+ * This should be gradually replaced with a Vitest-compatible approach
+ */
 export function withPgNoTransaction(
   callback: (sql: postgres.Sql) => Promise<unknown>
 ) {

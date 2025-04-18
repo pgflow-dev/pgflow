@@ -14,6 +14,14 @@
         "rootDir": "pkgs/edge-worker/src"
       }
     },
+    "test:vitest": {
+      "executor": "@nx/vite:test",
+      "outputs": ["{workspaceRoot}/coverage/pkgs/edge-worker"],
+      "options": {
+        "passWithNoTests": true,
+        "reportsDirectory": "../../coverage/pkgs/edge-worker"
+      }
+    },
     "build:bundle": {
       "executor": "@nx/esbuild:esbuild",
       "options": {
@@ -118,6 +126,36 @@
     },
     "test:unit": {
       "dependsOn": ["db:ensure", "build"],
+      "executor": "@nx/vite:test",
+      "options": {
+        "passWithNoTests": true,
+        "reportsDirectory": "../../coverage/pkgs/edge-worker",
+        "testPathPattern": ["tests/unit"]
+      }
+    },
+    "test:integration": {
+      "dependsOn": ["db:ensure", "build"],
+      "executor": "@nx/vite:test",
+      "options": {
+        "passWithNoTests": true,
+        "reportsDirectory": "../../coverage/pkgs/edge-worker",
+        "testPathPattern": ["tests/integration"]
+      }
+    },
+    "test:e2e": {
+      "dependsOn": ["build:bundle"],
+      "executor": "@nx/vite:test",
+      "options": {
+        "passWithNoTests": true,
+        "reportsDirectory": "../../coverage/pkgs/edge-worker",
+        "testPathPattern": ["tests/e2e"]
+      }
+    },
+    "test": {
+      "dependsOn": ["test:unit", "test:integration"]
+    },
+    "test:deno:unit": {
+      "dependsOn": ["db:ensure", "build"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",
@@ -127,7 +165,7 @@
         "parallel": false
       }
     },
-    "test:integration": {
+    "test:deno:integration": {
       "dependsOn": ["db:ensure", "build"],
       "executor": "nx:run-commands",
       "options": {
@@ -138,7 +176,7 @@
         "parallel": false
       }
     },
-    "test:e2e": {
+    "test:deno:e2e": {
       "dependsOn": ["build:bundle"],
       "executor": "nx:run-commands",
       "options": {
@@ -149,8 +187,8 @@
         "parallel": false
       }
     },
-    "test": {
-      "dependsOn": ["test:unit", "test:integration"]
+    "test:deno": {
+      "dependsOn": ["test:deno:unit", "test:deno:integration"]
     }
   },
   "tags": []

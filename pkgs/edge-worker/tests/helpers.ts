@@ -1,5 +1,5 @@
-import type { PgmqMessageRecord } from "../src/queue/types.ts";
-import type { postgres } from "./sql.ts";
+import type { PgmqMessageRecord } from "../src/queue/types.js";
+import type { postgres } from "./sql.js";
 
 export async function sendBatch(count: number, queueName: string, sql: postgres.Sql) {
   return await sql`
@@ -19,4 +19,3 @@ export async function getArchivedMessages(sql: postgres.Sql, queueName: string) 
   return await sql<PgmqMessageRecord[]>
     `SELECT * FROM ${sql('pgmq.a_' + queueName)}`;
 }
-
