@@ -1,5 +1,4 @@
 import type { AnyFlow } from '@pgflow/dsl';
-import type { EdgeWorkerConfig } from '../EdgeWorker.js';
 import { ExecutionController } from '../core/ExecutionController.js';
 import { StepTaskPoller, type StepTaskPollerConfig } from './StepTaskPoller.js';
 import { StepTaskExecutor } from './StepTaskExecutor.js';
