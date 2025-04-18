@@ -1,5 +1,15 @@
 # @pgflow/core
 
+## 0.1.0
+
+### Minor Changes
+
+- 7c40238: fix migration files to not set `search_path`
+
+### Patch Changes
+
+- @pgflow/dsl@0.1.0
+
 ## 0.0.23
 
 ### Patch Changes
