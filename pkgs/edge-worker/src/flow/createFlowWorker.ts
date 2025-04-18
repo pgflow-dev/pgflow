@@ -1,5 +1,4 @@
 import type { AnyFlow } from '@pgflow/dsl';
-import type { EdgeWorkerConfig } from '../EdgeWorker.js';
 import { ExecutionController } from '../core/ExecutionController.js';
 import { StepTaskPoller, type StepTaskPollerConfig } from './StepTaskPoller.js';
 import { StepTaskExecutor } from './StepTaskExecutor.js';
@@ -16,11 +15,34 @@ import { BatchProcessor } from '../core/BatchProcessor.js';
 /**
  * Configuration for the flow worker
  */
-export type FlowWorkerConfig = EdgeWorkerConfig & {
+export type FlowWorkerConfig = {
+  /**
+   * How many tasks are processed at the same time
+   * @default 10
+   */
   maxConcurrent?: number;
+
+  /**
+   * PostgreSQL connection string.
+   * If not provided, it will be read from the EDGE_WORKER_DB_URL environment variable.
+   */
   connectionString?: string;
+
+  /**
+   * Optional SQL client instance
+   */
   sql?: postgres.Sql;
+
+  /**
+   * How many connections to the database are opened
+   * @default 4
+   */
   maxPgConnections?: number;
+
+  /**
+   * Batch size for polling messages
+   * @default 10
+   */
   batchSize?: number;
 };
 
@@ -115,10 +137,5 @@ export function createFlowWorker<TFlow extends AnyFlow>(
   );
 
   // Return Worker
-  return new Worker(
-    batchProcessor,
-    lifecycle,
-    sql,
-    createLogger('Worker')
-  );
+  return new Worker(batchProcessor, lifecycle, sql, createLogger('Worker'));
 }
