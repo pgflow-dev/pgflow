@@ -27,6 +27,7 @@ export const ExampleFlow = new Flow<{ value: number }>({
     // input.rootStep would be a type error since it's not in dependsOn
     finalValue: input.normalStep.doubledValueArray.length,
   }));
+export default ExampleFlow;
 
 export const stepTaskRecord: StepTaskRecord<typeof ExampleFlow> = {
   flow_slug: 'example_flow',
