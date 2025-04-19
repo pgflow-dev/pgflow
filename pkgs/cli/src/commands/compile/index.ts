@@ -1,5 +1,6 @@
 import { type Command } from 'commander';
-import { intro, log, spinner } from '@clack/prompts';
+import chalk from 'chalk';
+import { intro, log, spinner, note } from '@clack/prompts';
 import path from 'path';
 import fs from 'fs';
 import { spawn } from 'child_process';
@@ -8,6 +9,28 @@ import { fileURLToPath } from 'url';
 // Get the directory name in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+/**
+ * Formats a command and its arguments for display with syntax highlighting
+ * Each argument is displayed on a separate line for better readability
+ */
+function formatCommand(command: string, args: string[]): string {
+  const cmd = chalk.cyan(command);
+  const formattedArgs = args.map((arg) => {
+    // Highlight import map and file paths differently
+    if (arg.startsWith('--import-map=')) {
+      const [flag, value] = arg.split('=');
+      return `  ${chalk.yellow(flag)}=${chalk.green(value)}`;
+    } else if (arg.startsWith('--')) {
+      return `  ${chalk.yellow(arg)}`;
+    } else if (arg.endsWith('.ts') || arg.endsWith('.json')) {
+      return `  ${chalk.green(arg)}`;
+    }
+    return `  ${chalk.white(arg)}`;
+  });
+
+  return `$ ${cmd}\n${formattedArgs.join('\n')}`;
+}
 
 export default (program: Command) => {
   program
@@ -116,8 +139,8 @@ async function runDenoCompilation(
     // Add the script path and flow path
     args.push(scriptPath, flowPath);
 
-    // Log the command for debugging
-    console.debug(`Running: deno ${args.join(' ')}`);
+    // Log the command for debugging with colored output
+    note(formatCommand('deno', args), 'Compile in Deno');
 
     const deno = spawn('deno', args);
 
