@@ -66,10 +66,10 @@ export default (program: Command) => {
           process.exit(1);
         }
 
-        // Find the internal_compile.ts script
+        // Find the internal_compile.js script
         const internalCompileScript = path.resolve(
           __dirname,
-          '../../../deno/internal_compile.ts'
+          '../../../deno/internal_compile.js'
         );
 
         // Create migrations directory if it doesn't exist
