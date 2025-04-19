@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import installCommand from './commands/install/index.js';
+import compileCommand from './commands/compile/index.js';
 
 // Create a function to handle errors
 const errorHandler = (error: unknown) => {
@@ -47,7 +48,9 @@ program
     throw err;
   });
 
+// Register commands
 installCommand(program);
+compileCommand(program);
 
 // Use a promise-aware approach to parse arguments
 async function main() {
