@@ -1,5 +1,12 @@
 # pgflow
 
+## 0.1.4
+
+### Patch Changes
+
+- 9348751: Fix .ts being invalid in npm package
+  - @pgflow/core@0.1.4
+
 ## 0.1.3
 
 ### Patch Changes
