@@ -1,5 +1,12 @@
 # pgflow
 
+## 0.1.2
+
+### Patch Changes
+
+- e3863f6: Implement a compile command in pgflow cli
+  - @pgflow/core@0.1.2
+
 ## 0.1.1
 
 ### Patch Changes
