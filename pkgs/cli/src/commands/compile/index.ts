@@ -96,6 +96,8 @@ async function runDenoCompilation(
     const deno = spawn('deno', [
       'run',
       '--allow-read',
+      '--allow-net',
+      '--allow-env',
       `--import-map=${denoJsonPath}`,
       scriptPath,
       flowPath,
