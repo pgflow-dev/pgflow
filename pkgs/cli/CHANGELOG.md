@@ -1,5 +1,12 @@
 # pgflow
 
+## 0.1.3
+
+### Patch Changes
+
+- 5538709: Fixes missing deno typescript script
+  - @pgflow/core@0.1.3
+
 ## 0.1.2
 
 ### Patch Changes
