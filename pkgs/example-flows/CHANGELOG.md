@@ -1,5 +1,13 @@
 # @pgflow/example-flows
 
+## 0.1.2
+
+### Patch Changes
+
+- e3863f6: Add Wide Flow to example-flows
+  - @pgflow/core@0.1.2
+  - @pgflow/dsl@0.1.2
+
 ## 0.1.1
 
 ### Patch Changes
