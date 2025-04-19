@@ -24,21 +24,78 @@ try {
     Deno.exit(1);
   }
 
-  // Import the compileFlow function from pgflow DSL
+  // Import the DSL module
   // The import map in deno.json will resolve this import
-  const dslModule = await import('npm:@pgflow/dsl@0.1.1');
+  const dslModule = await import('npm:@pgflow/dsl');
 
-  // Compile the flow to SQL
+  // Debug available exports
+  console.error('Available exports from @pgflow/dsl:', Object.keys(dslModule));
+
+  // Get the flow instance
   const flow = flowModule.default;
 
-  // Check if compileFlow exists in the module
-  if (typeof dslModule.compileFlow !== 'function') {
+  let compileFlow;
+  let sqlStatements;
+
+  // Try different ways to access the compileFlow function
+  if (typeof dslModule.compileFlow === 'function') {
+    // Direct export
+    compileFlow = dslModule.compileFlow;
+  } else if (
+    dslModule.default &&
+    typeof dslModule.default.compileFlow === 'function'
+  ) {
+    // Default export with compileFlow as a property
+    compileFlow = dslModule.default.compileFlow;
+  } else {
+    // Try to import the compile-flow module directly
+    try {
+      const compileFlowModule = await import(
+        'npm:@pgflow/dsl/dist/compile-flow.js'
+      );
+      if (typeof compileFlowModule.compileFlow === 'function') {
+        compileFlow = compileFlowModule.compileFlow;
+      } else if (
+        compileFlowModule.default &&
+        typeof compileFlowModule.default === 'function'
+      ) {
+        compileFlow = compileFlowModule.default;
+      }
+    } catch (importError) {
+      console.error(
+        'Failed to import compile-flow module:',
+        importError.message
+      );
+
+      // Try another path
+      try {
+        const altModule = await import('npm:@pgflow/dsl/src/compile-flow.js');
+        if (typeof altModule.compileFlow === 'function') {
+          compileFlow = altModule.compileFlow;
+        } else if (
+          altModule.default &&
+          typeof altModule.default === 'function'
+        ) {
+          compileFlow = altModule.default;
+        }
+      } catch (altError) {
+        console.error(
+          'Failed to import alternative compile-flow module:',
+          altError.message
+        );
+      }
+    }
+  }
+
+  // Check if we found a valid compileFlow function
+  if (typeof compileFlow !== 'function') {
     console.error('Error: compileFlow function not found in @pgflow/dsl');
     console.error('Available exports:', Object.keys(dslModule));
     Deno.exit(1);
   }
 
-  const sqlStatements = dslModule.compileFlow(flow);
+  // Compile the flow to SQL
+  sqlStatements = compileFlow(flow);
 
   // Output the SQL statements to stdout
   console.log(sqlStatements.join('\n'));

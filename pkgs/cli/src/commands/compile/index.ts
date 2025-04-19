@@ -14,7 +14,7 @@ export default (program: Command) => {
     .command('compile')
     .description('Compiles a TypeScript-defined flow into SQL migration')
     .argument('<flowPath>', 'Path to the flow TypeScript file')
-    .requiredOption(
+    .option(
       '--deno-json <denoJsonPath>',
       'Path to deno.json with valid importMap'
     )
@@ -24,19 +24,22 @@ export default (program: Command) => {
       try {
         // Resolve paths
         const resolvedFlowPath = path.resolve(process.cwd(), flowPath);
-        const resolvedDenoJsonPath = path.resolve(
-          process.cwd(),
-          options.denoJson
-        );
 
-        // Validate paths
-        if (!fs.existsSync(resolvedFlowPath)) {
-          log.error(`Flow file not found: ${resolvedFlowPath}`);
-          process.exit(1);
+        // Only resolve denoJsonPath if it's provided
+        let resolvedDenoJsonPath: string | undefined;
+        if (options.denoJson) {
+          resolvedDenoJsonPath = path.resolve(process.cwd(), options.denoJson);
+
+          // Validate deno.json path if provided
+          if (!fs.existsSync(resolvedDenoJsonPath)) {
+            log.error(`deno.json file not found: ${resolvedDenoJsonPath}`);
+            process.exit(1);
+          }
         }
 
-        if (!fs.existsSync(resolvedDenoJsonPath)) {
-          log.error(`deno.json file not found: ${resolvedDenoJsonPath}`);
+        // Validate flow path
+        if (!fs.existsSync(resolvedFlowPath)) {
+          log.error(`Flow file not found: ${resolvedFlowPath}`);
           process.exit(1);
         }
 
@@ -90,18 +93,33 @@ export default (program: Command) => {
 async function runDenoCompilation(
   scriptPath: string,
   flowPath: string,
-  denoJsonPath: string
+  denoJsonPath?: string
 ): Promise<string> {
   return new Promise((resolve, reject) => {
-    const deno = spawn('deno', [
-      'run',
-      '--allow-read',
-      '--allow-net',
-      '--allow-env',
-      `--import-map=${denoJsonPath}`,
-      scriptPath,
-      flowPath,
-    ]);
+    // Validate input paths
+    if (!scriptPath) {
+      return reject(new Error('Internal script path is required'));
+    }
+
+    if (!flowPath) {
+      return reject(new Error('Flow path is required'));
+    }
+
+    // Build the command arguments array
+    const args = ['run', '--allow-read', '--allow-net', '--allow-env'];
+
+    // Only add the import-map argument if denoJsonPath is provided and valid
+    if (denoJsonPath && typeof denoJsonPath === 'string') {
+      args.push(`--import-map=${denoJsonPath}`);
+    }
+
+    // Add the script path and flow path
+    args.push(scriptPath, flowPath);
+
+    // Log the command for debugging
+    console.debug(`Running: deno ${args.join(' ')}`);
+
+    const deno = spawn('deno', args);
 
     let stdout = '';
     let stderr = '';
