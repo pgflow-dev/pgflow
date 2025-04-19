@@ -1,4 +1,6 @@
 import { Flow } from '@pgflow/dsl';
+
+// eslint-disable-next-line @typescript-eslint/no-empty-function
 async function simulateWorkThenError() {}
 
 const WideFlow = new Flow<string>({

@@ -35,7 +35,7 @@ try {
   const flow = flowModule.default;
 
   let compileFlow;
-  let sqlStatements;
+  const sqlStatements;
 
   // Try different ways to access the compileFlow function
   if (typeof dslModule.compileFlow === 'function') {
