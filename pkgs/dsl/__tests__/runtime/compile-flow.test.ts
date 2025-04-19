@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Flow } from '../../src/dsl.js';
 import { compileFlow } from '../../src/compile-flow.js';
+import { AnalyzeWebsite } from '../../src/example-flow.js';
 
 describe('compileFlow', () => {
   it('should compile a simple flow with no steps', () => {
@@ -93,5 +94,20 @@ describe('compileFlow', () => {
     expect(statements[4]).toBe(
       "SELECT pgflow.add_step('complex_flow', 'step4', ARRAY['step3'], timeout => 60);"
     );
+  });
+
+  it('should compile the example AnalyzeWebsite flow with snapshot testing', () => {
+    const statements = compileFlow(AnalyzeWebsite);
+
+    // Use snapshot testing to verify the entire array of SQL statements
+    expect(statements).toMatchInlineSnapshot(`
+      [
+        "SELECT pgflow.create_flow('analyze_website', max_attempts => 3, base_delay => 5, timeout => 10);",
+        "SELECT pgflow.add_step('analyze_website', 'website');",
+        "SELECT pgflow.add_step('analyze_website', 'sentiment', ARRAY['website'], max_attempts => 5, timeout => 30);",
+        "SELECT pgflow.add_step('analyze_website', 'summary', ARRAY['website']);",
+        "SELECT pgflow.add_step('analyze_website', 'saveToDb', ARRAY['sentiment', 'summary']);",
+      ]
+    `);
   });
 });
