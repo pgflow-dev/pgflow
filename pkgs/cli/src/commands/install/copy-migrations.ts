@@ -114,7 +114,7 @@ export async function copyMigrations({
 
   // If no files to copy, show message and return false (no changes made)
   if (filesToCopy.length === 0) {
-    log.info('No new migrations to copy - all migrations are already in place');
+    log.info('All pgflow migrations are already in place');
     return false;
   }
 
@@ -122,30 +122,30 @@ export async function copyMigrations({
   const summaryParts = [];
 
   if (filesToCopy.length > 0) {
-    summaryParts.push(`${chalk.green('Files to be copied:')}
+    summaryParts.push(`${chalk.green('New migrations to install:')}
 ${filesToCopy.map((file) => `${chalk.green('+')} ${file}`).join('\n')}`);
   }
 
   if (skippedFiles.length > 0) {
-    summaryParts.push(`${chalk.yellow('Files to be skipped (already exist):')}
-${skippedFiles.map((file) => `${chalk.yellow('=')} ${file}`).join('\n')}`);
+    summaryParts.push(`${chalk.yellow('Already installed:')}
+${skippedFiles.map((file) => `${chalk.yellow('•')} ${file}`).join('\n')}`);
   }
 
   // Show summary and ask for confirmation
-  note(summaryParts.join('\n\n'), 'Migration Summary');
+  note(summaryParts.join('\n\n'), 'pgflow Migrations');
 
   const shouldContinue = await confirm({
-    message: `Do you want to proceed with copying ${
-      filesToCopy.length
-    } migration file${filesToCopy.length !== 1 ? 's' : ''}?`,
+    message: `Install ${filesToCopy.length} new migration${
+      filesToCopy.length !== 1 ? 's' : ''
+    }?`,
   });
 
   if (!shouldContinue) {
-    log.info('Migration copy cancelled');
+    log.info('Migration installation skipped');
     return false;
   }
 
-  log.info(`Copying migrations`);
+  log.step(`Installing pgflow migrations...`);
 
   // Copy the files
   for (const file of filesToCopy) {
@@ -153,13 +153,13 @@ ${skippedFiles.map((file) => `${chalk.yellow('=')} ${file}`).join('\n')}`);
     const destination = path.join(migrationsPath, file);
 
     fs.copyFileSync(source, destination);
-    log.step(`Copied ${file}`);
+    log.step(`Added ${file}`);
   }
 
   log.success(
-    `Successfully copied ${filesToCopy.length} migration file${
+    `Installed ${filesToCopy.length} migration${
       filesToCopy.length !== 1 ? 's' : ''
-    }`
+    } to your Supabase project`
   );
 
   return true; // Return true to indicate migrations were copied

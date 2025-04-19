@@ -60,46 +60,44 @@ export async function updateConfigToml({
       currentSettings.edgeRuntimePolicy !== 'per_worker';
 
     if (!needsChanges) {
-      log.info(
-        `No changes needed in config.toml - all required settings are already configured`
-      );
+      log.info(`Supabase configuration is already set up for pgflow`);
       return false;
     }
 
     const changes = [];
 
     if (currentSettings.poolerEnabled !== true) {
-      changes.push(`[db.pooler]
+      changes.push(`${chalk.bold('Enable connection pooler:')}
 ${chalk.red(`- enabled = ${currentSettings.poolerEnabled}`)}
 ${chalk.green('+ enabled = true')}`);
     }
 
     if (currentSettings.poolMode !== 'transaction') {
-      changes.push(`[db.pooler]
+      changes.push(`${chalk.bold('Set pool mode to transaction:')}
 ${chalk.red(`- pool_mode = "${currentSettings.poolMode}"`)}
 ${chalk.green('+ pool_mode = "transaction"')}`);
     }
 
     if (currentSettings.edgeRuntimePolicy !== 'per_worker') {
-      changes.push(`[edge_runtime]
+      changes.push(`${chalk.bold('Set edge runtime policy:')}
 ${chalk.red(`- policy = "${currentSettings.edgeRuntimePolicy}"`)}
 ${chalk.green('+ policy = "per_worker"')}`);
     }
 
-    note(changes.join('\n\n'), 'Config Changes');
+    note(changes.join('\n\n'), 'Required Configuration Changes');
 
     const shouldContinue = await confirm({
-      message: `Do you want to proceed with these configuration changes? A backup will be created at ${backupPath}`,
+      message: `Update Supabase configuration? (a backup will be created)`,
     });
 
     if (!shouldContinue) {
-      log.info('Configuration update cancelled');
+      log.info('Configuration update skipped');
       return false;
     }
 
     fs.copyFileSync(configPath, backupPath);
-    log.info(`Created backup at ${backupPath}`);
-    log.info(`Updating config.toml`);
+    log.step(`Created backup of config.toml`);
+    log.step(`Updating Supabase configuration...`);
 
     const updatedConfig = { ...config };
 
@@ -144,13 +142,11 @@ ${chalk.green('+ policy = "per_worker"')}`);
 
     fs.writeFileSync(configPath, updatedContent);
 
-    log.success(
-      `Successfully updated ${configPath} (backup created at ${backupPath})`
-    );
+    log.success(`Supabase configuration updated successfully`);
     return true;
   } catch (error) {
     log.error(
-      `Failed to update ${configPath}: ${
+      `Configuration update failed: ${
         error instanceof Error ? error.message : String(error)
       }`
     );

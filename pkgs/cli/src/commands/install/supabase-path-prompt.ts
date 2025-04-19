@@ -1,28 +1,44 @@
 import fs from 'fs';
 import path from 'path';
-import { text } from '@clack/prompts';
+import { text, log } from '@clack/prompts';
 
 export async function supabasePathPrompt() {
+  // Try to detect the Supabase directory automatically
+  const possiblePaths = ['./supabase', '../supabase', '../../supabase'];
+
+  let detectedPath = '';
+  for (const testPath of possiblePaths) {
+    if (
+      fs.existsSync(testPath) &&
+      fs.existsSync(path.join(testPath, 'config.toml'))
+    ) {
+      detectedPath = testPath;
+      break;
+    }
+  }
+
+  if (detectedPath) {
+    log.success(`Found Supabase project at: ${detectedPath}`);
+  }
+
+  const promptMessage = 'Where is your Supabase project located?';
+
   return await text({
-    message: 'Enter the path to your supabase/ directory',
-    placeholder: 'supabase/',
+    message: promptMessage,
+    placeholder: detectedPath || 'supabase/',
+    initialValue: detectedPath,
     validate,
   });
 }
 
 function validate(inputPath: string) {
-  const pathsToTest = [
-    [inputPath, 'is not a valid path'],
-    [path.join(inputPath, 'config.toml'), 'does not contain config.toml'],
-  ];
-
-  // if any of the pathsToTest fail, return the error message
-  for (const [testPath, errorMessage] of pathsToTest) {
-    if (!fs.existsSync(testPath)) {
-      return `${testPath} ${errorMessage}`;
-    }
+  if (!fs.existsSync(inputPath)) {
+    return `Directory not found: ${inputPath}`;
   }
 
-  // otherwise, return undefined
+  if (!fs.existsSync(path.join(inputPath, 'config.toml'))) {
+    return `Not a valid Supabase project (missing config.toml)`;
+  }
+
   return undefined;
 }
