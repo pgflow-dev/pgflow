@@ -161,7 +161,7 @@ export class Flow<
    * Type safety is enforced at the method level when adding or retrieving steps.
    */
   private stepDefinitions: Record<string, StepDefinition<AnyInput, AnyOutput>>;
-  private stepOrder: string[];
+  public readonly stepOrder: string[];
   public readonly slug: string;
   public readonly options: RuntimeOptions;
 
