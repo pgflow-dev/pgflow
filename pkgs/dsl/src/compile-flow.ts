@@ -27,7 +27,7 @@ export function compileFlow(flow: AnyFlow): string[] {
     }
 
     statements.push(
-      `SELECT pgflow.add_step2('${flow.slug}', '${step.slug}'${depsClause}${stepOptions});`
+      `SELECT pgflow.add_step('${flow.slug}', '${step.slug}'${depsClause}${stepOptions});`
     );
   }
 
