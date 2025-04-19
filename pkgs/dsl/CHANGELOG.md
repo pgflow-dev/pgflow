@@ -1,5 +1,11 @@
 # @pgflow/dsl
 
+## 0.1.1
+
+### Patch Changes
+
+- b362364: Add compileFlow function
+
 ## 0.1.0
 
 ## 0.0.23
