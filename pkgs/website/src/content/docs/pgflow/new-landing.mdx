@@ -1,10 +1,10 @@
 ---
-title: pgflow
-description: Postgres-First Workflow Orchestration—All in SQL
+title: pgflow - Supabase Workflow Orchestration
+description: Build AI Agent Workflows and Background Jobs on Supabase - All in SQL with Zero Infrastructure
 template: splash
 hero:
-  title: Build AI Agent Workflows on Supabase
-  tagline: pgflow adds deterministic, parallel orchestration on top of Supabase Background Jobs - no extra servers needed
+  title: Build AI Agents and Workflows on Supabase
+  tagline: Run reliable, parallel workflows on Supabase Background Jobs - zero infrastructure, with database-backed reliability
   image:
     dark: ../../../assets/pgflow-logo-dark.svg
     light: ../../../assets/pgflow-logo-light.svg
@@ -21,83 +21,89 @@ hero:
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-## A complete workflow engine built on Postgres
+## Postgres-Native Workflow Engine for Supabase
 
-pgflow is a workflow orchestration system with its core state management in your database, combining:
+pgflow supercharges your Supabase project with reliable workflow orchestration:
 
 <CardGrid>
-  <Card title="SQL Core" icon="star">
-    Pure SQL implementation that handles workflow definitions, state transitions, and ACID-compliant processing directly in your Postgres database.
+  <Card title="Zero Infrastructure" icon="rocket">
+    Run complex workflows directly on Supabase Edge Functions and Background Jobs - no additional servers or message brokers required.
   </Card>
-  <Card title="TypeScript DSL" icon="seti:typescript">
-    Type-safe API for defining workflows that automatically infers input/output types between steps, providing compile-time safety.
+  <Card title="AI Agent Orchestration" icon="star">
+    Build multi-step AI agent workflows with parallel execution, dependency management, and reliable state tracking.
   </Card>
-  <Card title="Edge Worker" icon="rocket">
-    Self-restarting worker that processes tasks with built-in retries and error handling, designed for Supabase Edge Functions.
+  <Card title="Type-Safe Workflows" icon="seti:typescript">
+    Define workflows in TypeScript with full type inference between steps, providing compile-time safety and IDE autocompletion.
   </Card>
-  <Card title="CLI Tools" icon="seti:powershell">
-    One-command setup with `npx pgflow install` that handles migrations, configuration, and deployment.
+  <Card title="Postgres-First Design" icon="open-book">
+    All workflow state lives in your database with ACID-compliant processing - no external state to manage or sync.
   </Card>
 </CardGrid>
 
-## Type-safe DAG workflows in TypeScript
+## Build AI Agent Workflows in Minutes
 
-Define complex workflows with parallel execution and dependencies using a simple, type-safe API:
+Define complex AI workflows with parallel execution and dependencies using a simple, type-safe API:
 
 ```typescript
-// Define a workflow with parallel steps
-new Flow<{ url: string }>()
-  .step("website", async ({ url }) => {
-    const response = await fetch(url);
-    return { content: await response.text() };
+// AI Agent workflow with parallel processing
+new Flow<{ userQuery: string }>()
+  .step("retrieveContext", async ({ userQuery }) => {
+    return await vectorSearch(userQuery);
   })
-  .step("sentiment", ["website"], async ({ website }) => {
-    return await analyzeSentiment(website.content);
+  .step("generateResponse", ["retrieveContext"], async ({ retrieveContext, run }) => {
+    return await callLLM({
+      prompt: run.userQuery,
+      context: retrieveContext.results
+    });
   })
-  .step("summary", ["website"], async ({ website }) => {
-    return await summarizeWithAI(website.content);
+  .step("analyzeSentiment", ["generateResponse"], async ({ generateResponse }) => {
+    return await analyzeSentiment(generateResponse.text);
   })
-  .step("saveToDb", ["sentiment", "summary"], async (input) => {
+  .step("summarize", ["generateResponse"], async ({ generateResponse }) => {
+    return await summarizeWithAI(generateResponse.text);
+  })
+  .step("saveToDb", ["analyzeSentiment", "summarize", "generateResponse"], async (input) => {
     return await saveResults({
-      url: input.run.url,
-      sentiment: input.sentiment.score,
-      summary: input.summary
+      query: input.run.userQuery,
+      response: input.generateResponse.text,
+      sentiment: input.analyzeSentiment.score,
+      summary: input.summarize
     });
   });
 ```
 
-## End-to-end workflow orchestration
+## Perfect for Supabase Projects
 
 <CardGrid>
-  <Card title="Single source of truth" icon="open-book">
-    All workflow definitions, state, and execution history stored in your Postgres database—simplifying monitoring and debugging.
+  <Card title="For Supabase Power Users" icon="puzzle">
+    Extend your Supabase project with reliable background jobs and workflow orchestration without leaving the Supabase ecosystem.
   </Card>
 
-  <Card title="Reliable task processing" icon="rocket">
-    Built on [PGMQ](https://github.com/tembo-io/pgmq) for at-least-once delivery with automatic retries, timeouts, and dead-letter handling.
+  <Card title="For AI/LLM Developers" icon="rocket">
+    Orchestrate complex AI agent workflows with parallel processing, retries, and state management - all with type safety.
   </Card>
 
-  <Card title="Supabase-native" icon="puzzle">
-    Deploy as Edge Functions with automatic restarts and zero-config integration with your existing Supabase project.
+  <Card title="For Solo SaaS Builders" icon="approve-check">
+    Zero infrastructure overhead - run production-grade workflows on your existing Supabase project without managing servers.
   </Card>
 
-  <Card title="Developer experience" icon="approve-check">
-    Full type inference between workflow steps with IDE autocompletion and compile-time safety for your entire workflow DAG.
+  <Card title="For Postgres-Native Teams" icon="open-book">
+    Built on [PGMQ](https://github.com/tembo-io/pgmq) with all workflow state in your database - monitor and debug with standard SQL queries.
   </Card>
 </CardGrid>
 
-## From workflow DSL to execution
+## Supercharge Supabase Background Jobs
 
 Create and run workflows with a straightforward process:
 
-1. **Define your workflow** in TypeScript with the Flow DSL, specifying handlers and dependencies
-2. **Generate SQL migrations** from your workflow definition
-3. **Create a dedicated worker** as a Supabase Edge Function for your flow
-4. **Start workflows** from your application code, SQL triggers, or APIs
+1. **Define your workflow** in TypeScript with full type safety and IDE autocompletion
+2. **Deploy with one command** - `npx pgflow install` handles migrations and configuration
+3. **Run as Supabase Edge Functions** with automatic restarts and zero infrastructure overhead
+4. **Start workflows** from your application code, database triggers, or REST APIs
 
 The execution system handles the rest—scheduling steps when dependencies complete, retrying failed tasks, and aggregating results automatically.
 
-## Ready to get started?
+## Ready to build AI workflows on Supabase?
 
 Install pgflow in your Supabase project with a single command:
 
