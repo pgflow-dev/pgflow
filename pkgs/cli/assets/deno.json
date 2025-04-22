@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "@pgflow/dsl": "npm:@pgflow/dsl"
+  }
+}
