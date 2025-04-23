@@ -1,5 +1,13 @@
 # @pgflow/core
 
+## 0.1.6
+
+### Patch Changes
+
+- Test release to verify problem with bumping edge-worker
+- Updated dependencies
+  - @pgflow/dsl@0.1.6
+
 ## 0.1.5
 
 ### Patch Changes
