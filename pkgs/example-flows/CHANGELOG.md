@@ -1,5 +1,14 @@
 # @pgflow/example-flows
 
+## 0.1.8
+
+### Patch Changes
+
+- 05f5bd8: Update release script
+- Updated dependencies [05f5bd8]
+  - @pgflow/core@0.1.8
+  - @pgflow/dsl@0.1.8
+
 ## 0.1.7
 
 ### Patch Changes
