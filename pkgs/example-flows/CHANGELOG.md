@@ -1,5 +1,14 @@
 # @pgflow/example-flows
 
+## 0.1.5
+
+### Patch Changes
+
+- 5820e7a: Bump version for tests
+- Updated dependencies [5820e7a]
+  - @pgflow/core@0.1.5
+  - @pgflow/dsl@0.1.5
+
 ## 0.1.4
 
 ### Patch Changes
