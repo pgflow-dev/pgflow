@@ -136,7 +136,6 @@ importers:
       tsx:
         specifier: ^4.19.3
         version: 4.19.3
-    publishDirectory: .
 
   pkgs/core:
     dependencies:
@@ -153,14 +152,12 @@ importers:
       supabase:
         specifier: ^2.6.8
         version: 2.6.8
-    publishDirectory: .
 
   pkgs/dsl:
     devDependencies:
       '@types/node':
         specifier: ^22.14.1
         version: 22.14.1
-    publishDirectory: .
 
   pkgs/edge-worker:
     dependencies:
@@ -186,7 +183,6 @@ importers:
       supabase:
         specifier: 2.21.1
         version: 2.21.1
-    publishDirectory: .
 
   pkgs/example-flows:
     dependencies:
@@ -196,7 +192,6 @@ importers:
       '@pgflow/dsl':
         specifier: workspace:*
         version: link:../dsl
-    publishDirectory: .
 
   pkgs/website:
     dependencies:
@@ -234,7 +229,6 @@ importers:
       prettier-plugin-astro:
         specifier: ^0.14.1
         version: 0.14.1
-    publishDirectory: .
 
 packages:
 

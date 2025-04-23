@@ -32,7 +32,6 @@
     "prettier-plugin-astro": "^0.14.1"
   },
   "publishConfig": {
-    "access": "public",
-    "directory": "."
+    "access": "public"
   }
 }

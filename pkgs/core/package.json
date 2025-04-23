@@ -27,7 +27,6 @@
     "postgres": "^3.4.5"
   },
   "publishConfig": {
-    "access": "public",
-    "directory": "."
+    "access": "public"
   }
 }

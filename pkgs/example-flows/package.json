@@ -20,7 +20,6 @@
     }
   },
   "publishConfig": {
-    "access": "public",
-    "directory": "."
+    "access": "public"
   }
 }

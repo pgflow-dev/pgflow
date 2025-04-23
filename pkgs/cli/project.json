@@ -14,9 +14,8 @@
         "outputPath": "{projectRoot}/dist",
         "rootDir": "{projectRoot}/src",
         "assets": [
-          "{projectRoot}/deno/*",
           {
-            "input": "{projectRoot}/deno",
+            "input": "{projectRoot}/src/deno",
             "glob": "**/*",
             "output": "deno"
           }
