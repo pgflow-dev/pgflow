@@ -1,5 +1,13 @@
 # pgflow
 
+## 0.1.9
+
+### Patch Changes
+
+- 1a30c6c: Make sure to tag and push tags
+- Updated dependencies [1a30c6c]
+  - @pgflow/core@0.1.9
+
 ## 0.1.8
 
 ### Patch Changes
