@@ -2,6 +2,7 @@
 title: What is pgflow?
 description: Open-source workflow engine built on Supabase Background Tasks and Queues. Run complex workflows entirely within Supabase - no external hosting needed.
 tagline: Simple, Postgres-First Workflow Orchestration for Supabase
+topic: pgflow
 # template: splash
 hero:
   tagline: Simple, Postgres-First Workflow Orchestration for Supabase
