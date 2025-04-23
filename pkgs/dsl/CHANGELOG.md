@@ -1,5 +1,11 @@
 # @pgflow/dsl
 
+## 0.1.12
+
+### Patch Changes
+
+- 7b1328e: Include invalid slug in validateSlug error message
+
 ## 0.1.11
 
 ## 0.1.10
