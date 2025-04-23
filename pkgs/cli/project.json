@@ -16,7 +16,7 @@
         "assets": [
           "{projectRoot}/deno/*",
           {
-            "input": "{projectRoot}/deno",
+            "input": "{projectRoot}/src/deno",
             "glob": "**/*",
             "output": "deno"
           }
