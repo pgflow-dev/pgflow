@@ -28,7 +28,6 @@
     "supabase": "2.21.1"
   },
   "publishConfig": {
-    "access": "public",
-    "directory": "."
+    "access": "public"
   }
 }

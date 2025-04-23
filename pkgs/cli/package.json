@@ -27,8 +27,7 @@
     "toml-patch": "^0.2.3"
   },
   "publishConfig": {
-    "access": "public",
-    "directory": "."
+    "access": "public"
   },
   "files": [
     "dist"
