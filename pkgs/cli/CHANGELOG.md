@@ -1,5 +1,12 @@
 # pgflow
 
+## 0.1.11
+
+### Patch Changes
+
+- b456210: Fix npm: specifier
+  - @pgflow/core@0.1.11
+
 ## 0.1.10
 
 ### Patch Changes
