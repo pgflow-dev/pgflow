@@ -25,7 +25,7 @@ create table if not exists edge_worker.workers (
 --                                                                            --
 -- This will be removed once Supabase upgrades to 1.5.0 or higher.            --
 --------------------------------------------------------------------------------
-create function edge_worker.read_with_poll(
+create or replace function edge_worker.read_with_poll(
   queue_name text,
   vt integer,
   qty integer,
@@ -84,3 +84,4 @@ BEGIN
     END LOOP;
 END;
 $$ language plpgsql;
+
