@@ -1,4 +1,6 @@
 packages:
+  - 'examples/*'
+  - '!examples/*/dist'
   - 'pkgs/*'
   - '!pkgs/*/dist'
   - '!**/dist/**'
