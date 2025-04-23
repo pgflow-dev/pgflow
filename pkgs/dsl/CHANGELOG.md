@@ -1,5 +1,11 @@
 # @pgflow/dsl
 
+## 0.1.10
+
+### Patch Changes
+
+- bafe767: Fix deno/ folder for cli being missing
+
 ## 0.1.9
 
 ### Patch Changes

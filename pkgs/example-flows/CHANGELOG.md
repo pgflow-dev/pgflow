@@ -1,5 +1,14 @@
 # @pgflow/example-flows
 
+## 0.1.10
+
+### Patch Changes
+
+- bafe767: Fix deno/ folder for cli being missing
+- Updated dependencies [bafe767]
+  - @pgflow/core@0.1.10
+  - @pgflow/dsl@0.1.10
+
 ## 0.1.9
 
 ### Patch Changes
