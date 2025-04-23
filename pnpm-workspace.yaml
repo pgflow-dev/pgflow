@@ -1,4 +1,8 @@
 packages:
+  - 'apps/*'
+  - '!apps/*/dist'
+  - 'libs/*'
+  - '!libs/*/dist'
   - 'pkgs/*'
   - '!pkgs/*/dist'
   - '!**/dist/**'
