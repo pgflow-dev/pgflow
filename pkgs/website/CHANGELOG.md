@@ -1,5 +1,11 @@
 # @pgflow/website
 
+## 0.1.8
+
+### Patch Changes
+
+- 05f5bd8: Update release script
+
 ## 0.1.7
 
 ## 0.1.6
