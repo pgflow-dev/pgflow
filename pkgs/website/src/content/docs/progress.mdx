@@ -1,0 +1,117 @@
+---
+title: Development Progress
+description: Current development status of pgflow components and future roadmap
+---
+
+import { Card } from '@astrojs/starlight/components';
+import { Aside } from '@astrojs/starlight/components';
+
+This page explains main components and what is the completion progress of each of them.
+
+It also outlines the future features that I have planned or even spiked an implementation for.
+
+## MVP Features
+
+These are the core components that make up the current pgflow system.
+
+<Card title="SQL Engine - 95% done" icon="star">
+  The SQL Core is a database-based workflow engine that manages state transitions for directed acyclic graph (DAG) workflows, providing functions to define, start, and track work through a PostgreSQL-native state machine.
+
+  ##### Progress: 95%
+
+  Well tested and works, small chores to be done (cleaning migrations, adding indexes etc)
+</Card>
+
+<Card title="TypeScript DSL - 100% done" icon="seti:typescript">
+  The TypeScript DSL is a strongly-typed, fluent API for defining PostgreSQL-native workflows that automatically infers input and output types through the dependency graph, providing type safety and autocompletion without requiring manual type annotations beyond the initial flow input.
+
+  ##### Progress: 100%
+
+  Well tested and usable
+</Card>
+
+<Card title="Edge Worker - 90% done" icon="rocket">
+  The Edge Worker is a specialized task queue worker designed for serverless environments that retrieves tasks from a database queue, executes them, and acknowledges their completion or failure, serving as the execution engine that processes the workflow steps defined in the SQL Core.
+
+  ##### Progress: 90%
+
+  Tested and usable, need option validation and more integration tests
+</Card>
+
+<Card title="CLI - 60% done" icon="seti:powershell">
+  The pgflow CLI is a command-line interface that facilitates the installation, configuration, and usage of the pgflow workflow engine, providing tools for setting up the necessary database migrations, configuring Supabase projects, and compiling TypeScript workflow definitions into SQL migrations.
+
+  ##### Progress: 60%
+
+  Usable, have quirks (requires Deno binary to be installed).
+  Need to install an example flow when installing into project.
+</Card>
+
+## Roadmap
+
+These are the planned features and enhancements for future pgflow development.
+
+<Card title="Client Library" icon="setting">
+  The Client Library will allow developers to start and observe flows from their applications. Will have the same strong type safety guarantees as the TypeScript DSL and will use Supabase's "Broadcast from Database" Realtime feature to stream progress of the steps and their outputs via websockets. This will allow developers to build real time applications like Perplexity with fraction of the effort.
+
+  **Progress: 1/5** | **Effort: 3/5**
+
+  <Aside type="note">
+    Spiked to verify the concept, have concrete implementation plan
+  </Aside>
+</Card>
+
+<Card title="Conditional Execution" icon="random">
+  The Condition feature will allow skipping parts of workflow execution by matching input parameters to a JSON object defined in the DSL, enabling conditional execution based on runtime data. This powerful capability will enable more dynamic workflows that can adapt to various conditions and branch logic, making workflows more responsive to the state of data passing through the system.
+
+  **Progress: 1/5** | **Effort: 2/5**
+
+  <Aside type="note">
+    Spiked to verify the concept, have concrete implementation plan
+  </Aside>
+</Card>
+
+<Card title="Branching / Inlined Subflows" icon="right-arrow">
+  Branching will be an extension to DSL that will encapsulate a set of steps in a separate "branch" with its own name, condition, retry logic, inputs and outputs, but will just inline the steps under the hood. Extremely useful when combined with conditional execution feature.
+
+  **Progress: 1/5** | **Effort: 2/5**
+
+  <Aside type="note">
+    Spiked a simple implementation, have concrete implementation plan
+  </Aside>
+</Card>
+
+<Card title="Fanout Steps" icon="open-book">
+  Fanout steps will allow to depend on an input array and will queue a separate task for each element in the array for parallel processing. The outputs from the tasks will get merged into a single output array in the order of the input array. Allows do dynamically process things in parallel.
+
+  **Progress: 0/5** | **Effort: 4/5**
+
+  <Aside type="note">
+    No code spiked yet but have a good plan on how to implement it and system have already some contraptions in place (task_index in step_states table).
+  </Aside>
+</Card>
+
+<Card title="Subruns (Real Subflows)" icon="puzzle">
+  This will allow users to use an existing flow as a single step in another flow, and the runs will be separate (will involve keeping relationship between parent and child runs).
+
+  **Progress: 0/5** | **Effort: 4/5**
+
+  <Aside type="note">
+    No spike yet, but rather concrete implementation plan
+  </Aside>
+</Card>
+
+## Ideas
+
+This section describes the ideas that I have had in mind for future features,
+but haven't verified or planned them yet, so it is not certain if they will be implemented at all.
+
+<Card title="Subrun Fanouts" icon="list-format">
+  This is the combination of the Subruns and fanouts - it will allow to start a subrun for each element in the input array.
+
+  **Progress: 0/5** | **Effort: 5/5**
+
+  <Aside type="note">
+    Only vague idea on how to implement it, its possible it will not be performant enough
+  </Aside>
+</Card>
