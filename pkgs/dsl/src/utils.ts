@@ -11,24 +11,24 @@
  */
 export function validateSlug(slug: string): void {
   if (slug.length > 128) {
-    throw new Error(`Slug cannot be longer than 128 characters`);
+    throw new Error(`Slug '${slug}' cannot be longer than 128 characters`);
   }
 
   if (/^\d/.test(slug)) {
-    throw new Error(`Slug cannot start with a number`);
+    throw new Error(`Slug '${slug}' cannot start with a number`);
   }
 
   if (/^_/.test(slug)) {
-    throw new Error(`Slug cannot start with an underscore`);
+    throw new Error(`Slug '${slug}' cannot start with an underscore`);
   }
 
   if (/\s/.test(slug)) {
-    throw new Error(`Slug cannot contain spaces`);
+    throw new Error(`Slug '${slug}' cannot contain spaces`);
   }
 
   if (/[/:#\-?]/.test(slug)) {
     throw new Error(
-      `Slug cannot contain special characters like /, :, ?, #, -`
+      `Slug '${slug}' cannot contain special characters like /, :, ?, #, -`
     );
   }
 }

@@ -10,44 +10,44 @@ describe('validateSlug', () => {
 
   it('rejects slugs that start with numbers', () => {
     expect(() => validateSlug('1invalid')).toThrowError(
-      'Slug cannot start with a number'
+      `Slug '1invalid' cannot start with a number`
     );
   });
 
   it('rejects slugs that start with underscores', () => {
     expect(() => validateSlug('_invalid')).toThrowError(
-      'Slug cannot start with an underscore'
+      `Slug '_invalid' cannot start with an underscore`
     );
   });
 
   it('rejects slugs containing spaces', () => {
     expect(() => validateSlug('invalid slug')).toThrowError(
-      'Slug cannot contain spaces'
+      `Slug 'invalid slug' cannot contain spaces`
     );
   });
 
   it('rejects slugs containing special characters', () => {
     expect(() => validateSlug('invalid/slug')).toThrowError(
-      'Slug cannot contain special characters like /, :, ?, #, -'
+      `Slug 'invalid/slug' cannot contain special characters like /, :, ?, #, -`
     );
     expect(() => validateSlug('invalid:slug')).toThrowError(
-      'Slug cannot contain special characters like /, :, ?, #, -'
+      `Slug 'invalid:slug' cannot contain special characters like /, :, ?, #, -`
     );
     expect(() => validateSlug('invalid?slug')).toThrowError(
-      'Slug cannot contain special characters like /, :, ?, #, -'
+      `Slug 'invalid?slug' cannot contain special characters like /, :, ?, #, -`
     );
     expect(() => validateSlug('invalid#slug')).toThrowError(
-      'Slug cannot contain special characters like /, :, ?, #, -'
+      `Slug 'invalid#slug' cannot contain special characters like /, :, ?, #, -`
     );
     expect(() => validateSlug('invalid-slug')).toThrowError(
-      'Slug cannot contain special characters like /, :, ?, #, -'
+      `Slug 'invalid-slug' cannot contain special characters like /, :, ?, #, -`
     );
   });
 
   it('rejects slugs longer than 128 characters', () => {
     const longSlug = 'a'.repeat(129);
     expect(() => validateSlug(longSlug)).toThrowError(
-      'Slug cannot be longer than 128 characters'
+      `Slug '${longSlug}' cannot be longer than 128 characters`
     );
   });
 });
