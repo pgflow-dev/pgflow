@@ -6,8 +6,7 @@
     "baseUrl": ".",
     "outDir": "dist",
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
-    "types": ["node"],
-    "exclude": ["deno/**/*"],
+    "types": ["node"]
   },
   "references": [
     {
