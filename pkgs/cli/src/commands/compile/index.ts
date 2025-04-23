@@ -41,6 +41,7 @@ export default (program: Command) => {
       '--deno-json <denoJsonPath>',
       'Path to deno.json with valid importMap'
     )
+    .option('--supabase-path <supabasePath>', 'Path to the Supabase folder')
     .action(async (flowPath, options) => {
       intro('pgflow - Compile Flow to SQL');
 
@@ -66,6 +67,24 @@ export default (program: Command) => {
           process.exit(1);
         }
 
+        // Validate Supabase path
+        let supabasePath: string;
+        if (options.supabasePath) {
+          supabasePath = path.resolve(process.cwd(), options.supabasePath);
+        } else {
+          // Default to ./supabase/ if not provided
+          supabasePath = path.resolve(process.cwd(), 'supabase');
+        }
+
+        // Check if Supabase path exists
+        if (!fs.existsSync(supabasePath)) {
+          log.error(
+            `Supabase directory not found: ${supabasePath}\n` +
+              `Please provide a valid Supabase path using --supabase-path option or ensure ./supabase/ directory exists.`
+          );
+          process.exit(1);
+        }
+
         // Find the internal_compile.js script
         const internalCompileScript = path.resolve(
           __dirname,
@@ -73,15 +92,31 @@ export default (program: Command) => {
         );
 
         // Create migrations directory if it doesn't exist
-        const migrationsDir = path.resolve(process.cwd(), 'migrations');
+        const migrationsDir = path.resolve(supabasePath, 'migrations');
         if (!fs.existsSync(migrationsDir)) {
           fs.mkdirSync(migrationsDir, { recursive: true });
           log.info(`Created migrations directory: ${migrationsDir}`);
         }
 
-        // Generate timestamp for migration file
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '_');
-        const migrationFileName = `pgflow_${timestamp}.sql`;
+        // Generate timestamp for migration file in format YYYYMMDDHHMMSS
+        const now = new Date();
+        const timestamp = [
+          now.getFullYear(),
+          String(now.getMonth() + 1).padStart(2, '0'),
+          String(now.getDate()).padStart(2, '0'),
+          String(now.getHours()).padStart(2, '0'),
+          String(now.getMinutes()).padStart(2, '0'),
+          String(now.getSeconds()).padStart(2, '0'),
+        ].join('');
+
+        // Extract the base filename without extension from the flow path
+        const flowBasename = path.basename(
+          resolvedFlowPath,
+          path.extname(resolvedFlowPath)
+        );
+
+        // Create migration filename in the format: <timestamp>_create_<flow_file_basename>_flow.sql
+        const migrationFileName = `${timestamp}_create_${flowBasename}_flow.sql`;
         const migrationFilePath = path.join(migrationsDir, migrationFileName);
 
         // Run the compilation
@@ -98,7 +133,12 @@ export default (program: Command) => {
         fs.writeFileSync(migrationFilePath, compiledSql);
 
         s.stop(`Successfully compiled flow to SQL`);
-        log.success(`Migration file created: ${migrationFilePath}`);
+        // Show the migration file path relative to the current directory
+        const relativeFilePath = path.relative(
+          process.cwd(),
+          migrationFilePath
+        );
+        log.success(`Migration file created: ${relativeFilePath}`);
       } catch (error) {
         log.error(
           `Compilation failed: ${
