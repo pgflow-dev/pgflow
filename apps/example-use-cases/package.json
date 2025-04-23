@@ -1,9 +1,9 @@
 {
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "dev": "nx next:dev",
+    "build": "nx next:build",
+    "start": "nx next:start"
   },
   "dependencies": {
     "@supabase/ssr": "latest",

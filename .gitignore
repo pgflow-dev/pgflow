@@ -47,3 +47,7 @@ vitest.config.*.timestamp*
 .env*
 tsconfig.vitest-temp.json
 deno-dist/
+
+# Next.js
+.next
+out
