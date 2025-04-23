@@ -8,7 +8,7 @@
 
 // Import the compileFlow function directly from @pgflow/dsl
 // The import map in deno.json will resolve this import
-import { compileFlow } from 'npm:@pgflow/dsl';
+import { compileFlow } from '@pgflow/dsl';
 
 // Get the flow file path from command line arguments
 const flowFilePath = Deno.args[0];
