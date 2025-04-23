@@ -4,7 +4,7 @@
   "commit": false,
   "fixed": [["@pgflow/*", "pgflow"]],
   "linked": [],
-  "access": "restricted",
+  "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": []
