@@ -1,5 +1,11 @@
 # @pgflow/dsl
 
+## 0.1.18
+
+### Patch Changes
+
+- 3a7e132: Do not build edge-worker for npm
+
 ## 0.1.17
 
 ### Patch Changes
