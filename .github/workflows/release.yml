@@ -14,8 +14,9 @@ jobs:
 
     # required for JSR to be able to read the OIDC token and accept the publish request
     permissions:
-      contents: read
+      contents: write
       id-token: write # The OIDC ID token is used for authentication with JSR.
+      pull-requests: write # Required for creating version PRs
     steps:
       - uses: actions/checkout@v4
         with:
