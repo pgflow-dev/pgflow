@@ -90,11 +90,13 @@ export class EdgeWorker {
     config: EdgeWorkerConfig = {}
   ): Promise<PlatformAdapter> {
     if (typeof handlerOrFlow === 'function') {
+      console.log('start() if typeof handlerOrFlow is function');
       return this.startQueueWorker(
         handlerOrFlow as MessageHandlerFn<TPayload>,
         config as QueueWorkerConfig
       );
     } else {
+      console.log('start() if typeof handlerOrFlow is FLOW');
       return this.startFlowWorker(
         handlerOrFlow as TFlow,
         config as FlowWorkerConfig
@@ -162,9 +164,10 @@ export class EdgeWorker {
         config.connectionString || this.platform.getConnectionString(),
     };
 
-    await this.platform.startWorker((createLoggerFn) =>
-      createQueueWorker(handler, workerConfig, createLoggerFn)
-    );
+    await this.platform.startWorker((createLoggerFn) => {
+      console.log('QUEUE: platform.startWorker callback');
+      return createQueueWorker(handler, workerConfig, createLoggerFn);
+    });
 
     return this.platform;
   }
@@ -208,9 +211,10 @@ export class EdgeWorker {
         config.connectionString || this.platform.getConnectionString(),
     };
 
-    await this.platform.startWorker((createLoggerFn) =>
-      createFlowWorker(flow, workerConfig, createLoggerFn)
-    );
+    await this.platform.startWorker((createLoggerFn) => {
+      console.log('FLOW: platform.startWorker callback');
+      return createFlowWorker(flow, workerConfig, createLoggerFn);
+    });
 
     return this.platform;
   }
