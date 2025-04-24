@@ -5,12 +5,12 @@
   "scripts": {
     "build": "nx run-many --target=build --all",
     "version": "pnpm changeset version && ./scripts/update-jsr-json-version.sh",
-    "release": "pnpm nx run-many -t build && pnpm publish --recursive && pnpm changeset tag && git push --follow-tags",
-    "jsr:publish": "pnpm nx run-many --target=jsr:publish --all --parallel=false",
-    "publish:jsr": "./scripts/jsr-publish.sh",
-    "publish:jsr:dry": "./scripts/jsr-publish.sh --dry",
+    "publish:npm": "pnpm nx run-many -t build && pnpm publish --recursive && pnpm changeset tag && git push --follow-tags",
+    "publish:npm:dry": "./scripts/publish-npm-dry.sh",
+    "publish:jsr": "./scripts/publish-jsr.sh",
+    "publish:jsr:dry": "./scripts/publish-jsr.sh --dry",
     "validate:publish": "./scripts/validate-publish.sh",
-    "release:full": "./scripts/full-release.sh"
+    "release": "pnpm run validate:publish && pnpm run publish:npm && pnpm run publish:jsr"
   },
   "private": true,
   "devDependencies": {

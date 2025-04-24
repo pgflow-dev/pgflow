@@ -3,8 +3,8 @@
 # Script to publish @pgflow/edge-worker to JSR
 # 
 # Usage:
-#   ./scripts/jsr-publish.sh        # Publish to JSR
-#   ./scripts/jsr-publish.sh --dry  # Validate without publishing (dry run)
+#   ./scripts/publish-jsr.sh        # Publish to JSR
+#   ./scripts/publish-jsr.sh --dry  # Validate without publishing (dry run)
 
 DRY_RUN=""
 if [ "$1" == "--dry" ] || [ "$1" == "--dry-run" ]; then

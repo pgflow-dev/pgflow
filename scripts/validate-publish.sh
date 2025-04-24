@@ -9,15 +9,15 @@
 set -e  # Exit immediately if any command fails
 
 echo "=== Validating npm publishing ==="
-pnpm nx run-many -t build
-pnpm publish --recursive --dry-run
+pnpm run publish:npm:dry
 
 echo ""
 echo "=== Validating JSR publishing for edge-worker ==="
-./scripts/jsr-publish.sh --dry
+pnpm run publish:jsr:dry
 
 echo ""
 echo "✅ All validation checks passed!"
 echo "You can safely run the following commands to publish:"
-echo "  1. pnpm run release       # Publish to npm"
+echo "  1. pnpm run publish:npm   # Publish to npm"
 echo "  2. pnpm run publish:jsr   # Publish to JSR"
+echo "  3. pnpm run release       # Run both publishes after validation"
