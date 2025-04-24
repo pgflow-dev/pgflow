@@ -1,6 +1,6 @@
 {
   "name": "@pgflow/edge-worker",
-  "version": "0.1.14-alpha.1",
+  "version": "0.1.14",
   "license": "AGPL-3.0",
   "exports": "./src/index.ts",
   "imports": {
@@ -10,7 +10,12 @@
     "@pgflow/dsl": "npm:@pgflow/dsl@0.1.14"
   },
   "publish": {
-    "include": ["README.md", "LICENSE.md", "CHANGELOG.md", "src/**/*.ts"],
+    "include": [
+      "README.md",
+      "LICENSE.md",
+      "CHANGELOG.md",
+      "src/**/*.ts"
+    ],
     "exclude": [
       "__tests__/**/*",
       "tests/",
