@@ -1,5 +1,13 @@
 # @pgflow/edge-worker
 
+## 0.1.13
+
+### Patch Changes
+
+- 2a2a7bc: Add debug statements to find logger issue
+  - @pgflow/core@0.1.13
+  - @pgflow/dsl@0.1.13
+
 ## 0.1.12
 
 ### Patch Changes
