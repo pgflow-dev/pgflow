@@ -28,15 +28,3 @@ enabled = false
 enabled = false
 [auth]
 enabled = false
-
-[db.migrations]
-schema_paths = [
-  "./schemas/extensions.sql",
-  "./schemas/schemas.sql",
-  "./schemas/utilities.sql",
-  "./schemas/types.sql",
-  "./schemas/tables_definitions.sql",
-  "./schemas/tables_runtime.sql",
-  "./schemas/tables_edge_worker.sql",
-  "./schemas/*.sql",
-]
