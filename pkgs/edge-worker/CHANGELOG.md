@@ -1,5 +1,14 @@
 # @pgflow/edge-worker
 
+## 0.1.15
+
+### Patch Changes
+
+- ce34a2c: Update release pipeline to publish to jsr
+- Updated dependencies [ce34a2c]
+  - @pgflow/core@0.1.15
+  - @pgflow/dsl@0.1.15
+
 ## 0.1.14
 
 ### Patch Changes

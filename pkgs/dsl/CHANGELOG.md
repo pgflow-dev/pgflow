@@ -1,5 +1,11 @@
 # @pgflow/dsl
 
+## 0.1.15
+
+### Patch Changes
+
+- ce34a2c: Update release pipeline to publish to jsr
+
 ## 0.1.14
 
 ## 0.1.13

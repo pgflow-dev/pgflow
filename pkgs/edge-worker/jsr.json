@@ -1,6 +1,6 @@
 {
   "name": "@pgflow/edge-worker",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "license": "AGPL-3.0",
   "exports": "./src/index.ts",
   "imports": {
