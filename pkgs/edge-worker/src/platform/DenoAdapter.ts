@@ -75,11 +75,11 @@ export class DenoAdapter implements PlatformAdapter {
   /**
    * Get the environment variable value or undefined if it doesn't exist
    */
-  private getEnvVar(name: string, default?: string): string | undefined {
+  private getEnvVar(name: string, defaultValue?: string): string | undefined {
     const envVar = Deno.env.get(name);
 
-    if (envVar === undefined && default !== undefined) {
-      return default;
+    if (envVar === undefined && defaultValue !== undefined) {
+      return defaultValue;
     }
 
     return envVar;

@@ -8,6 +8,7 @@
     "@std/testing/mock": "jsr:@std/testing/mock@^0.224.0",
     "postgres": "npm:postgres@3.4.5",
     "@pgflow/core": "../../../../core/dist/index.js",
-    "@pgflow/dsl": "../../../../dsl/dist/index.js"
+    "@pgflow/dsl": "../../../../dsl/dist/index.js",
+    "@pgflow/edge-worker": "../../../src/index.ts"
   }
 }
