@@ -41,9 +41,6 @@
       ],
       "@pgflow/dsl": [
         "./pkgs/dsl/src/index.ts"
-      ],
-      "@pgflow/edge-worker": [
-        "./pkgs/edge-worker/mod.ts"
       ]
     }
   }

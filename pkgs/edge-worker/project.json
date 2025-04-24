@@ -18,18 +18,6 @@
         "rootDir": "pkgs/edge-worker/src"
       }
     },
-    "build:bundle": {
-      "executor": "@nx/esbuild:esbuild",
-      "options": {
-        "outputPath": "pkgs/edge-worker/supabase/functions/_dist",
-        "main": "pkgs/edge-worker/src/index.ts",
-        "tsConfig": "pkgs/edge-worker/tsconfig.lib.json",
-        "assets": ["pkgs/edge-worker/*.md"],
-        "rootDir": "pkgs/edge-worker/src",
-        "bundle": true,
-        "format": ["esm"]
-      }
-    },
     "test:nx-deno": {
       "executor": "@axhxrx/nx-deno:test",
       "outputs": ["{workspaceRoot}/coverage/pkgs/edge-worker"],
@@ -40,7 +28,7 @@
         "check": "local"
       }
     },
-    "lint:nx-deno": {
+    "lint": {
       "executor": "@axhxrx/nx-deno:lint",
       "options": {
         "denoConfig": "pkgs/edge-worker/deno.test.json",
@@ -95,7 +83,7 @@
       }
     },
     "supabase:functions-serve": {
-      "dependsOn": ["supabase:start", "build:bundle"],
+      "dependsOn": ["supabase:start"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",
@@ -136,7 +124,6 @@
       }
     },
     "test:e2e": {
-      "dependsOn": ["build:bundle"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",

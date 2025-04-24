@@ -18,8 +18,6 @@ export function createLoggingFactory() {
    * Creates a new logger for a specific module
    */
   const createLogger = (module: string): Logger => {
-    console.log('--- createLoggingFactory CALLED ---'); // See how many times this appears
-
     // Create a logger that directly references the shared state
     const logger: Logger = {
       debug: (message, ...args) => {

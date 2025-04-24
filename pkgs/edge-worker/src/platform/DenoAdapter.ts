@@ -6,7 +6,7 @@ import { createLoggingFactory } from './logging.js';
  * Adapter for Deno runtime environment.
  * IMPORTANT: This class assumes it is running within a Deno environment
  * with access to the `Deno` and `EdgeRuntime` global objects.
- * 
+ *
  * NOTE: This code uses Deno specific APIs and is not meant to be executed in Node.js environments.
  * The TypeScript compilation in Node.js is only used for type checking and distribution.
  */
@@ -21,9 +21,7 @@ export class DenoAdapter implements PlatformAdapter {
   constructor() {
     // Set initial log level
     const logLevel = this.getEnvVarOrThrow('EDGE_WORKER_LOG_LEVEL') || 'info';
-    console.log(`--- DenoAdapter: Raw log level from env: ${logLevel} ---`); // Raw console log
     this.loggingFactory.setLogLevel(logLevel);
-    console.log('--- DenoAdapter: Log level set in factory ---'); // Raw console log
 
     // startWorker logger with a default module name
     this.logger = this.loggingFactory.createLogger('DenoAdapter');
@@ -38,6 +36,8 @@ export class DenoAdapter implements PlatformAdapter {
     this.extendLifetimeOfEdgeFunction();
     this.setupShutdownHandler();
     this.setupStartupHandler(createWorkerFn);
+    // Return a resolved promise to satisfy the async requirement
+    await Promise.resolve();
   }
 
   async stopWorker(): Promise<void> {
@@ -61,7 +61,7 @@ export class DenoAdapter implements PlatformAdapter {
    * Get the Supabase URL for the current environment
    */
   private getEnvVarOrThrow(name: string): string {
-    const envVar = Deno.env.get(name);
+    const envVar = this.getEnvVar(name);
 
     if (!envVar) {
       const message =
@@ -69,6 +69,19 @@ export class DenoAdapter implements PlatformAdapter {
         'See docs to learn how to prepare the environment:\n' +
         'https://pgflow.pages.dev/edge-worker/prepare-environment';
       throw new Error(message);
+    }
+
+    return envVar;
+  }
+
+  /**
+   * Get the environment variable value or undefined if it doesn't exist
+   */
+  private getEnvVar(name: string, defaultValue?: string): string | undefined {
+    const envVar = Deno.env.get(name);
+
+    if (envVar === undefined && defaultValue !== undefined) {
+      return defaultValue;
     }
 
     return envVar;
@@ -128,7 +141,6 @@ export class DenoAdapter implements PlatformAdapter {
    * by passing a promise that never resolves.
    */
   private extendLifetimeOfEdgeFunction(): void {
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     const promiseThatNeverResolves = new Promise(() => {});
     EdgeRuntime.waitUntil(promiseThatNeverResolves);
   }

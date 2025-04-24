@@ -4,7 +4,7 @@ import { DenoAdapter } from './DenoAdapter.js';
 /**
  * Creates the appropriate platform adapter based on the runtime environment
  */
-export async function createAdapter(): Promise<PlatformAdapter> {
+export function createAdapter(): PlatformAdapter {
   if (isDenoEnvironment()) {
     const adapter = new DenoAdapter();
     return adapter;

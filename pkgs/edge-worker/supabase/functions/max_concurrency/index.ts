@@ -1,4 +1,4 @@
-import { EdgeWorker } from '../_dist/index.js';
+import { EdgeWorker } from '@pgflow/edge-worker';
 import { sleep, sql } from '../utils.ts';
 
 async function incrementSeq() {

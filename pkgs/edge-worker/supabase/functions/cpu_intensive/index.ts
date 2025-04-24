@@ -1,4 +1,4 @@
-import { EdgeWorker } from '../_dist/index.js';
+import { EdgeWorker } from '@pgflow/edge-worker';
 import { crypto } from 'jsr:@std/crypto';
 import { sql } from '../utils.ts';
 
