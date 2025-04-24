@@ -1,5 +1,14 @@
 # @pgflow/example-flows
 
+## 0.1.18
+
+### Patch Changes
+
+- 3a7e132: Do not build edge-worker for npm
+- Updated dependencies [3a7e132]
+  - @pgflow/core@0.1.18
+  - @pgflow/dsl@0.1.18
+
 ## 0.1.17
 
 ### Patch Changes
