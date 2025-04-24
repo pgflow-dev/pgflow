@@ -141,7 +141,6 @@ export class DenoAdapter implements PlatformAdapter {
    * by passing a promise that never resolves.
    */
   private extendLifetimeOfEdgeFunction(): void {
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     const promiseThatNeverResolves = new Promise(() => {});
     EdgeRuntime.waitUntil(promiseThatNeverResolves);
   }

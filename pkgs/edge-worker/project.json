@@ -28,7 +28,7 @@
         "check": "local"
       }
     },
-    "lint:nx-deno": {
+    "lint": {
       "executor": "@axhxrx/nx-deno:lint",
       "options": {
         "denoConfig": "pkgs/edge-worker/deno.test.json",
