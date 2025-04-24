@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.14.1",
-    "supabase": "^2.6.8"
+    "supabase": "^2.21.1"
   },
   "dependencies": {
     "@pgflow/dsl": "workspace:*",

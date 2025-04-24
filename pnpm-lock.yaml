@@ -150,8 +150,8 @@ importers:
         specifier: ^22.14.1
         version: 22.14.1
       supabase:
-        specifier: ^2.6.8
-        version: 2.6.8
+        specifier: ^2.21.1
+        version: 2.21.1
 
   pkgs/dsl:
     devDependencies:
@@ -11663,20 +11663,6 @@ packages:
 
   /supabase@2.21.1:
     resolution: {integrity: sha512-xef5mK2vrs/ApaHMOCeL/0rooq2M8xdV632/3VFY2gaoQqYiSGQlh1Yd/Yqa1TPUoPcsszuK6YsjkOdGs+e1iQ==}
-    engines: {npm: '>=8'}
-    hasBin: true
-    requiresBuild: true
-    dependencies:
-      bin-links: 5.0.0
-      https-proxy-agent: 7.0.6
-      node-fetch: 3.3.2
-      tar: 7.4.3
-    transitivePeerDependencies:
-      - supports-color
-    dev: true
-
-  /supabase@2.6.8:
-    resolution: {integrity: sha512-rgz9DVLso6LQ9VLKYXPDkvKgyFCYi6os1+3QS439yKkq4etbYn3KsedFBen0m4lgrHylBNL6W2qOB4+J/kgOLQ==}
     engines: {npm: '>=8'}
     hasBin: true
     requiresBuild: true
