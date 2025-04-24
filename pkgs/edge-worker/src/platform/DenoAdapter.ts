@@ -27,10 +27,13 @@ export class DenoAdapter implements PlatformAdapter {
 
     // Set initial log level
     const logLevel = this.getEnvVarOrThrow('EDGE_WORKER_LOG_LEVEL') || 'info';
+    console.log(`--- DenoAdapter: Raw log level from env: ${logLevel} ---`); // Raw console log
     this.loggingFactory.setLogLevel(logLevel);
+    console.log('--- DenoAdapter: Log level set in factory ---'); // Raw console log
 
     // startWorker logger with a default module name
     this.logger = this.loggingFactory.createLogger('DenoAdapter');
+    this.logger.info('DenoAdapter logger instance created and working.'); // Use the created logger
   }
 
   /**

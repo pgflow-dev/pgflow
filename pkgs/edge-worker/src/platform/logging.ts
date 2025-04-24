@@ -18,14 +18,17 @@ export function createLoggingFactory() {
    * Creates a new logger for a specific module
    */
   const createLogger = (module: string): Logger => {
+    console.log('--- createLoggingFactory CALLED ---'); // See how many times this appears
+
     // Create a logger that directly references the shared state
     const logger: Logger = {
       debug: (message, ...args) => {
         const levelValue =
           levels[logLevel as keyof typeof levels] ?? levels.info;
         if (levelValue >= levels.debug) {
-          console.debug(
-            `worker_id=${sharedWorkerId} module=${module} ${message}`,
+          // Use console.log for debug messages since console.debug isn't available in Supabase
+          console.log(
+            `[DEBUG] worker_id=${sharedWorkerId} module=${module} ${message}`,
             ...args
           );
         }
@@ -34,8 +37,9 @@ export function createLoggingFactory() {
         const levelValue =
           levels[logLevel as keyof typeof levels] ?? levels.info;
         if (levelValue >= levels.info) {
-          console.info(
-            `worker_id=${sharedWorkerId} module=${module} ${message}`,
+          // Use console.log for info messages since console.info isn't available in Supabase
+          console.log(
+            `[INFO] worker_id=${sharedWorkerId} module=${module} ${message}`,
             ...args
           );
         }

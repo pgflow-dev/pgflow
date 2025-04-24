@@ -17,9 +17,11 @@
     "build:bundle": {
       "executor": "@nx/esbuild:esbuild",
       "options": {
+        "outputPath": "pkgs/edge-worker/supabase/functions/_dist",
         "main": "pkgs/edge-worker/src/index.ts",
-        "outputPath": "supabase/functions/_dist",
         "tsConfig": "pkgs/edge-worker/tsconfig.lib.json",
+        "assets": ["pkgs/edge-worker/*.md"],
+        "rootDir": "pkgs/edge-worker/src",
         "bundle": true,
         "format": ["esm"]
       }
