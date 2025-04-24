@@ -4,9 +4,11 @@
   "license": "AGPL-3.0",
   "scripts": {
     "build": "nx run-many --target=build --all",
-    "deprecated:version": "pnpm changeset version && ./scripts/update-deno-json-version.sh",
-    "release": "pnpm nx run-many -t build && pnpm publish --recursive && pnpm changeset tag && git push --follow-tags",
-    "jsr:publish": "pnpm nx run-many --target=jsr:publish --all --parallel=false"
+    "version": "pnpm changeset version && ./scripts/update-jsr-json-version.sh",
+    "publish:npm": "pnpm nx run-many -t build && pnpm publish --recursive",
+    "publish:jsr": "cd ./pkgs/edge-worker && jsr publish --allow-slow-types",
+    "changeset:tag": "pnpm changeset tag && git push --follow-tags",
+    "release": "pnpm run publish:npm && pnpm run publish:jsr && pnpm run changeset:tag"
   },
   "private": true,
   "devDependencies": {

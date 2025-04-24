@@ -5,6 +5,10 @@
   "projectType": "library",
   "targets": {
     "build": {
+      "executor": "nx:noop",
+      "dependsOn": []
+    },
+    "_build_disabled": {
       "executor": "@nx/js:tsc",
       "options": {
         "outputPath": "pkgs/edge-worker/dist",
@@ -24,15 +28,6 @@
         "rootDir": "pkgs/edge-worker/src",
         "bundle": true,
         "format": ["esm"]
-      }
-    },
-    "jsr:publish": {
-      "executor": "nx:run-commands",
-      "outputs": ["{workspaceRoot}/pkgs/edge-worker/"],
-      "options": {
-        "cwd": "pkgs/edge-worker",
-        "commands": ["jsr publish --allow-slow-types"],
-        "parallel": false
       }
     },
     "test:nx-deno": {
@@ -119,7 +114,7 @@
       }
     },
     "test:unit": {
-      "dependsOn": ["db:ensure", "build"],
+      "dependsOn": ["db:ensure"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",
@@ -130,7 +125,7 @@
       }
     },
     "test:integration": {
-      "dependsOn": ["db:ensure", "build"],
+      "dependsOn": ["db:ensure"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",

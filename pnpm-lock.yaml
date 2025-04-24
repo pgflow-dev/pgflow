@@ -175,8 +175,8 @@ importers:
         version: 3.4.5
     devDependencies:
       '@types/deno':
-        specifier: npm:@teidesu/deno-types@1.45.2
-        version: /@teidesu/deno-types@1.45.2
+        specifier: ^2.2.0
+        version: 2.2.0
       '@types/node':
         specifier: ~18.16.20
         version: 18.16.20
@@ -4831,10 +4831,6 @@ packages:
       defer-to-connect: 2.0.1
     dev: true
 
-  /@teidesu/deno-types@1.45.2:
-    resolution: {integrity: sha512-ELSqIZoR+nsH1t/Qb5WypRBVdW46jA8lQrMUXQo8Un0MwlYlVnwyfQOXQdMUepKvmFJfOJfPWgNDXn7+SOzpKg==}
-    dev: true
-
   /@tokenizer/token@0.3.0:
     resolution: {integrity: sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A==}
     dev: true
@@ -4926,6 +4922,10 @@ packages:
     dependencies:
       '@types/ms': 2.1.0
     dev: false
+
+  /@types/deno@2.2.0:
+    resolution: {integrity: sha512-4x6M/ZSyoQy6fJeMArP0dvvNT4IOolfySyukuqqKhsLmSXDV4wGanqXIZ+xFihw3TlReS6JTa4hRG9nAZInpmw==}
+    dev: true
 
   /@types/estree-jsx@1.0.5:
     resolution: {integrity: sha512-52CcUVNFyfb1A2ALocQw/Dd1BQFNmSdkuC3BkZ6iqhdMfQz7JWOFRuJFloOzjk+6WijU56m9oKXFAXc7o3Towg==}
