@@ -36,6 +36,8 @@ export class DenoAdapter implements PlatformAdapter {
     this.extendLifetimeOfEdgeFunction();
     this.setupShutdownHandler();
     this.setupStartupHandler(createWorkerFn);
+    // Return a resolved promise to satisfy the async requirement
+    await Promise.resolve();
   }
 
   async stopWorker(): Promise<void> {

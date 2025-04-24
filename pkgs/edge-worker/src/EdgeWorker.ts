@@ -9,7 +9,7 @@ import {
 } from './flow/createFlowWorker.js';
 import { createAdapter } from './platform/createAdapter.js';
 import type { PlatformAdapter } from './platform/types.js';
-import { MessageHandlerFn } from './queue/types.js';
+import type { MessageHandlerFn } from './queue/types.js';
 import type { AnyFlow } from '@pgflow/dsl';
 
 /**
@@ -90,12 +90,12 @@ export class EdgeWorker {
     config: EdgeWorkerConfig = {}
   ): Promise<PlatformAdapter> {
     if (typeof handlerOrFlow === 'function') {
-      return this.startQueueWorker(
+      return await this.startQueueWorker(
         handlerOrFlow as MessageHandlerFn<TPayload>,
         config as QueueWorkerConfig
       );
     } else {
-      return this.startFlowWorker(
+      return await this.startFlowWorker(
         handlerOrFlow as TFlow,
         config as FlowWorkerConfig
       );
