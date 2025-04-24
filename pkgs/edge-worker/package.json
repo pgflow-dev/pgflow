@@ -1,6 +1,6 @@
 {
   "name": "@pgflow/edge-worker",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -23,7 +23,7 @@
     "postgres": "3.4.5"
   },
   "devDependencies": {
-    "@types/deno": "npm:@teidesu/deno-types@1.45.2",
+    "@types/deno": "^2.2.0",
     "@types/node": "~18.16.20",
     "supabase": "2.21.1"
   },
