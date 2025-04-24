@@ -1,5 +1,11 @@
 # @pgflow/dsl
 
+## 0.1.16
+
+### Patch Changes
+
+- cc7c431: Test release to verify combined publishing of both npm and jsr packages
+
 ## 0.1.15
 
 ### Patch Changes
