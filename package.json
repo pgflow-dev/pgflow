@@ -4,7 +4,7 @@
   "license": "AGPL-3.0",
   "scripts": {
     "build": "nx run-many --target=build --all",
-    "deprecated:version": "pnpm changeset version && ./scripts/update-deno-json-version.sh",
+    "version": "pnpm changeset version && ./scripts/update-jsr-json-version.sh",
     "release": "pnpm nx run-many -t build && pnpm publish --recursive && pnpm changeset tag && git push --follow-tags",
     "jsr:publish": "pnpm nx run-many --target=jsr:publish --all --parallel=false"
   },
