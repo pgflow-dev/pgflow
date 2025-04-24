@@ -8,7 +8,9 @@
     "release": "pnpm nx run-many -t build && pnpm publish --recursive && pnpm changeset tag && git push --follow-tags",
     "jsr:publish": "pnpm nx run-many --target=jsr:publish --all --parallel=false",
     "publish:jsr": "./scripts/jsr-publish.sh",
-    "publish:jsr:dry": "./scripts/jsr-publish.sh --dry"
+    "publish:jsr:dry": "./scripts/jsr-publish.sh --dry",
+    "validate:publish": "./scripts/validate-publish.sh",
+    "release:full": "./scripts/full-release.sh"
   },
   "private": true,
   "devDependencies": {
