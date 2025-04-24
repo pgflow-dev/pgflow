@@ -1,5 +1,13 @@
 # @pgflow/edge-worker
 
+## 0.1.14
+
+### Patch Changes
+
+- 956224b: Add debug statements in EdgeWorker
+  - @pgflow/core@0.1.14
+  - @pgflow/dsl@0.1.14
+
 ## 0.1.13
 
 ### Patch Changes
