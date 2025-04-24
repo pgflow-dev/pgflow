@@ -11,6 +11,11 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+
+    # required for JSR to be able to read the OIDC token and accept the publish request
+    permissions:
+      contents: read
+      id-token: write # The OIDC ID token is used for authentication with JSR.
     steps:
       - uses: actions/checkout@v4
         with:
