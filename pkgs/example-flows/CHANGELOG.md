@@ -1,5 +1,14 @@
 # @pgflow/example-flows
 
+## 0.1.16
+
+### Patch Changes
+
+- cc7c431: Test release to verify combined publishing of both npm and jsr packages
+- Updated dependencies [cc7c431]
+  - @pgflow/core@0.1.16
+  - @pgflow/dsl@0.1.16
+
 ## 0.1.15
 
 ### Patch Changes
