@@ -1,5 +1,14 @@
 # @pgflow/edge-worker
 
+## 0.1.17
+
+### Patch Changes
+
+- d215ed2: Trigger version change
+- Updated dependencies [d215ed2]
+  - @pgflow/core@0.1.17
+  - @pgflow/dsl@0.1.17
+
 ## 0.1.16
 
 ### Patch Changes
