@@ -6,8 +6,8 @@
   "imports": {
     "@henrygd/queue": "jsr:@henrygd/queue@^1.0.7",
     "postgres": "npm:postgres@3.4.5",
-    "@pgflow/core": "npm:@pgflow/core@0.1.14",
-    "@pgflow/dsl": "npm:@pgflow/dsl@0.1.14"
+    "@pgflow/core": "npm:@pgflow/core@0.1.15",
+    "@pgflow/dsl": "npm:@pgflow/dsl@0.1.15"
   },
   "publish": {
     "include": [
