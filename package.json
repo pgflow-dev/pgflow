@@ -6,7 +6,9 @@
     "build": "nx run-many --target=build --all",
     "version": "pnpm changeset version && ./scripts/update-jsr-json-version.sh",
     "release": "pnpm nx run-many -t build && pnpm publish --recursive && pnpm changeset tag && git push --follow-tags",
-    "jsr:publish": "pnpm nx run-many --target=jsr:publish --all --parallel=false"
+    "jsr:publish": "pnpm nx run-many --target=jsr:publish --all --parallel=false",
+    "publish:jsr": "./scripts/jsr-publish.sh",
+    "publish:jsr:dry": "./scripts/jsr-publish.sh --dry"
   },
   "private": true,
   "devDependencies": {
