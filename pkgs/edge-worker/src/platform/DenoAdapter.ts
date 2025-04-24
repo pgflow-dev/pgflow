@@ -6,6 +6,9 @@ import { createLoggingFactory } from './logging.js';
  * Adapter for Deno runtime environment.
  * IMPORTANT: This class assumes it is running within a Deno environment
  * with access to the `Deno` and `EdgeRuntime` global objects.
+ * 
+ * NOTE: This code uses Deno specific APIs and is not meant to be executed in Node.js environments.
+ * The TypeScript compilation in Node.js is only used for type checking and distribution.
  */
 export class DenoAdapter implements PlatformAdapter {
   private edgeFunctionName: string | null = null;

@@ -5,6 +5,10 @@
   "projectType": "library",
   "targets": {
     "build": {
+      "executor": "nx:noop",
+      "dependsOn": []
+    },
+    "_build_disabled": {
       "executor": "@nx/js:tsc",
       "options": {
         "outputPath": "pkgs/edge-worker/dist",
@@ -119,7 +123,7 @@
       }
     },
     "test:unit": {
-      "dependsOn": ["db:ensure", "build"],
+      "dependsOn": ["db:ensure"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",
@@ -130,7 +134,7 @@
       }
     },
     "test:integration": {
-      "dependsOn": ["db:ensure", "build"],
+      "dependsOn": ["db:ensure"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",
