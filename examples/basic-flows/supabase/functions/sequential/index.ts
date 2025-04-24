@@ -1,4 +1,4 @@
 import { EdgeWorker } from '@pgflow/edge-worker';
-import SequentialFlow from './flow.ts';
+import SequentialFlow from './sequential.ts';
 
 EdgeWorker.start(SequentialFlow);

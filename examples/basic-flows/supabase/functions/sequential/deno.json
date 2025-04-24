@@ -1,6 +1,6 @@
 {
   "imports": {
-    "@pgflow/dsl": "npm:@pgflow/dsl@0.1.9",
-    "@pgflow/edge-worker": "npm:@pgflow/edge-worker@0.1.9"
+    "@pgflow/dsl": "npm:@pgflow/dsl@0.1.18",
+    "@pgflow/edge-worker": "jsr:@pgflow/edge-worker@0.1.18"
   }
 }
