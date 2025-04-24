@@ -1,11 +1,11 @@
-/// <reference types="./deno-types.d.ts" />
-
 import type { CreateWorkerFn, Logger, PlatformAdapter } from './types.js';
 import type { Worker } from '../core/Worker.js';
 import { createLoggingFactory } from './logging.js';
 
 /**
- * Adapter for Deno runtime environment
+ * Adapter for Deno runtime environment.
+ * IMPORTANT: This class assumes it is running within a Deno environment
+ * with access to the `Deno` and `EdgeRuntime` global objects.
  */
 export class DenoAdapter implements PlatformAdapter {
   private edgeFunctionName: string | null = null;
@@ -16,15 +16,6 @@ export class DenoAdapter implements PlatformAdapter {
   private loggingFactory = createLoggingFactory();
 
   constructor() {
-    // Guard clause to ensure we're in a Deno environment
-    // This is just for type checking during build
-    // At runtime, this class should only be instantiated in Deno
-    if (typeof Deno === 'undefined' || typeof EdgeRuntime === 'undefined') {
-      throw new Error(
-        'DenoAdapter created in non-Deno environment - this is expected during build only'
-      );
-    }
-
     // Set initial log level
     const logLevel = this.getEnvVarOrThrow('EDGE_WORKER_LOG_LEVEL') || 'info';
     console.log(`--- DenoAdapter: Raw log level from env: ${logLevel} ---`); // Raw console log
