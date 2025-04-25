@@ -10,4 +10,4 @@ fi
 # Use the provided migration name
 migration_name=$1
 
-atlas migrate diff "$migration_name" --dev-url "docker+postgres://jumski/postgres-15-pgmq:latest/postgres" --to "file://supabase/schemas/" --dir "file://supabase/migrations"
+atlas migrate diff "$migration_name" --env local
