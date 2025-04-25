@@ -5,6 +5,44 @@
   "projectType": "library",
   "tags": [],
   "targets": {
+    "verify-schemas-synced": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "{projectRoot}/schemas/**/*.sql",
+        "{projectRoot}/supabase/migrations/**/*.sql",
+        "{projectRoot}/atlas.hcl",
+        "{projectRoot}/Dockerfile.atlas",
+        "{projectRoot}/supabase/migrations/atlas.sum",
+        "{projectRoot}/scripts/atlas-verify-schemas-synced",
+        "{projectRoot}/.nx-inputs/verify-schemas-synced.txt"
+      ],
+      "outputs": ["{projectRoot}/.nx-inputs/verify-schemas-synced.txt"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          "mkdir -p .nx-inputs",
+          "scripts/atlas-verify-schemas-synced > .nx-inputs/verify-schemas-synced.txt 2>&1 || (cat .nx-inputs/verify-schemas-synced.txt && exit 1)"
+        ],
+        "parallel": false
+      },
+      "cache": true
+    },
+    "verify-migrations": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["verify-schemas-synced"],
+      "inputs": ["{projectRoot}/.nx-inputs/verify-migrations.txt"],
+      "outputs": ["{projectRoot}/.nx-inputs/verify-migrations.txt"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          "mkdir -p .nx-inputs",
+          "supabase start",
+          "supabase db reset > .nx-inputs/verify-migrations.txt 2>&1 || (cat .nx-inputs/verify-migrations.txt && exit 1)"
+        ],
+        "parallel": false
+      },
+      "cache": true
+    },
     "build": {
       "executor": "@nx/js:tsc",
       "options": {
@@ -107,7 +145,7 @@
     },
     "test:pgtap": {
       "executor": "nx:run-commands",
-      "dependsOn": ["supabase:ensure-started"],
+      "dependsOn": ["verify-migrations", "supabase:ensure-started"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["scripts/run-test-with-colors"],
