@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Run atlas schema diff and capture output
+output=$(atlas schema diff \
+  --env local \
+  --from file://supabase/migrations \
+  --to file://schemas/)
+
+# Print the output
+echo "$output"
+
+# Check if the output contains the "Schemas are synced" message
+if [[ "$output" == *"Schemas are synced"* ]]; then
+  # Schemas are synced, exit with success code
+  exit 0
+else
+  # Schemas are not synced, exit with error code
+  echo "Error: Schemas are not synced. Please update migrations or schemas."
+  exit 1
+fi
