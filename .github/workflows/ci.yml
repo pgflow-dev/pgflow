@@ -52,6 +52,10 @@ jobs:
 
       - uses: nrwl/nx-set-shas@v4
 
+      # Clear Nx cache before running affected commands
+      - name: Clear Nx cache
+        run: pnpm exec nx reset
+
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
       # - run: pnpm exec nx-cloud record -- echo Hello World
       # Nx Affected runs only tasks affected by the changes in this PR/commit. Learn more: https://nx.dev/ci/features/affected
