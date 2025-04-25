@@ -29,14 +29,13 @@
     },
     "verify-migrations": {
       "executor": "nx:run-commands",
-      "dependsOn": ["verify-schemas-synced"],
+      "dependsOn": ["verify-schemas-synced", "supabase:ensure-started"],
       "inputs": ["{projectRoot}/.nx-inputs/verify-migrations.txt"],
       "outputs": ["{projectRoot}/.nx-inputs/verify-migrations.txt"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
           "mkdir -p .nx-inputs",
-          "supabase start",
           "supabase db reset > .nx-inputs/verify-migrations.txt 2>&1 || (cat .nx-inputs/verify-migrations.txt && exit 1)"
         ],
         "parallel": false
@@ -73,7 +72,9 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["sqruff --config=../../.sqruff lint --parsing-errors schemas/"],
+        "commands": [
+          "sqruff --config=../../.sqruff lint --parsing-errors schemas/"
+        ],
         "inputs": ["{projectRoot}/schemas/**/*.sql", "{workspaceRoot}/.sqruff"],
         "parallel": false
       }
@@ -133,6 +134,7 @@
     },
     "supabase:reset": {
       "executor": "nx:run-commands",
+      "dependsOn": ["supabase:ensure-started"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["supabase db reset"],
@@ -162,6 +164,7 @@
     },
     "test:pgtap:watch": {
       "executor": "nx:run-commands",
+      "dependsOn": ["verify-migrations", "supabase:ensure-started"],
       "options": {
         "cwd": "{projectRoot}",
         "command": "scripts/watch-test"
@@ -170,6 +173,7 @@
     },
     "gen-types": {
       "executor": "nx:run-commands",
+      "dependsOn": ["supabase:ensure-started"],
       "options": {
         "command": "supabase gen types --local --schema pgflow --schema pgmq > src/database-types.ts",
         "cwd": "{projectRoot}"
