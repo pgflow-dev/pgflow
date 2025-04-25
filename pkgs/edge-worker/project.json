@@ -95,6 +95,7 @@
     },
     "db:ensure": {
       "executor": "nx:run-commands",
+      "dependsOn": ["^verify-migrations"],
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": ["deno task --config deno.test.json db:ensure"],
