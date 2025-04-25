@@ -56,6 +56,15 @@ jobs:
       - name: Clear Nx cache
         run: pnpm exec nx reset
 
+      # Ensure core migrations run and types are generated
+      - name: Ensure Supabase is reset with latest migrations
+        run: |
+          cd pkgs/core
+          pnpm supabase stop --no-backup || true
+          pnpm supabase start
+          pnpm supabase db reset || true
+          pnpm supabase gen types --local --schema pgflow --schema pgmq > src/database-types.ts
+
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
       # - run: pnpm exec nx-cloud record -- echo Hello World
       # Nx Affected runs only tasks affected by the changes in this PR/commit. Learn more: https://nx.dev/ci/features/affected
