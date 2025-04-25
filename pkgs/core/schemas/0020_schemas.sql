@@ -22,4 +22,3 @@ create schema if not exists _dummy_;
 -- grant all on routines to anon, authenticated, service_role;
 -- alter default privileges for role postgres in schema pgflow
 -- grant all on sequences to anon, authenticated, service_role;
-

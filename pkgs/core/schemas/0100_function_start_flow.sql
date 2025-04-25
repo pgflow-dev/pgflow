@@ -43,4 +43,3 @@ RETURN QUERY SELECT * FROM pgflow.runs where run_id = v_created_run.run_id;
 
 end;
 $$;
-
