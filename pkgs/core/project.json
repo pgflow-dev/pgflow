@@ -45,6 +45,9 @@
     "build": {
       "executor": "@nx/js:tsc",
       "dependsOn": ["gen-types"],
+      "inputs": [
+        "{projectRoot}/src/database-types.ts"
+      ],
       "options": {
         "outputPath": "pkgs/core/dist",
         "main": "pkgs/core/src/index.ts",
