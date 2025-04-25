@@ -60,10 +60,10 @@ The actual execution of workflow tasks is handled by the [Edge Worker](../edge-w
 
 ### Schema Design
 
-[Schema ERD Diagram (click to enlarge)](./schema.svg)
+[Schema ERD Diagram (click to enlarge)](./assets/schema.svg)
 
-<a href="./schema.svg">
-  <img src="./schema.svg" alt="Schema ERD Diagram" width="25%" height="25%">
+<a href="./assets/schema.svg">
+  <img src="./assets/schema.svg" alt="Schema ERD Diagram" width="25%" height="25%">
 </a>
 
 ---
@@ -91,23 +91,24 @@ The SQL Core handles the workflow lifecycle through these key operations:
 3. **Task Management**: The [Edge Worker](../edge-worker/README.md) polls for available tasks using `poll_for_tasks`
 4. **State Transitions**: When the Edge Worker reports back using `complete_task` or `fail_task`, the SQL Core handles state transitions and schedules dependent steps
 
-[Flow lifecycle diagram (click to enlarge)](./flow-lifecycle.svg)
+[Flow lifecycle diagram (click to enlarge)](./assets/flow-lifecycle.svg)
 
-<a href="./flow-lifecycle.svg"><img src="./flow-lifecycle.svg" alt="Flow Lifecycle" width="25%" height="25%"></a>
+<a href="./assets/flow-lifecycle.svg"><img src="./assets/flow-lifecycle.svg" alt="Flow Lifecycle" width="25%" height="25%"></a>
 
 ## Example flow and its life
 
-Let's walk through creating and running a workflow that fetches a website, 
+Let's walk through creating and running a workflow that fetches a website,
 does summarization and sentiment analysis in parallel steps
 and saves the results to a database.
 
-![example flow graph](./example-flow.svg)
+![example flow graph](./assets/example-flow.svg)
 
 ### Defining a Workflow
 
 Workflows are defined using two SQL functions: `create_flow` and `add_step`.
 
 In this example, we'll create a workflow with:
+
 - `website` as the entry point ("root step")
 - `sentiment` and `summary` as parallel steps that depend on `website`
 - `saveToDb` as the final step, depending on both parallel steps
@@ -126,7 +127,7 @@ SELECT pgflow.add_step('analyze_website', 'saveToDb', deps_slugs => ARRAY['senti
 
 > [!NOTE]
 > You can have multiple "root steps" in a workflow. You can even create a root-steps-only workflow
-> to process a single input in parallel, because at the end, all of the outputs from steps 
+> to process a single input in parallel, because at the end, all of the outputs from steps
 > that does not have dependents ("final steps") are aggregated and saved as run's `output`.
 
 ### Starting a Workflow Run
@@ -135,16 +136,17 @@ To start a workflow, call `start_flow` with a flow slug and input arguments:
 
 ```sql
 SELECT * FROM pgflow.start_flow(
-  flow_slug => 'analyze_website', 
+  flow_slug => 'analyze_website',
   input => '{"url": "https://example.com"}'::jsonb
 );
 
---     run_id  | flow_slug       | status  |  input                         | output | remaining_steps 
+--     run_id  | flow_slug       | status  |  input                         | output | remaining_steps
 -- ------------+-----------------+---------+--------------------------------+--------+-----------------
 --  <run uuid> | analyze_website | started | {"url": "https://example.com"} | [NULL] |               4
 ```
 
 When a workflow starts:
+
 - A new `run` record is created
 - Initial states for all steps are created
 - Root steps are marked as `started`
@@ -191,6 +193,7 @@ SELECT pgflow.complete_task(
 ```
 
 When a task completes:
+
 1. The task status is updated to 'completed' and the output is saved
 2. The message is archived in PGMQ
 3. The step state is updated to 'completed'
@@ -250,6 +253,7 @@ SELECT pgflow.add_step(
 ```
 
 The system applies exponential backoff for retries using the formula:
+
 ```
 delay = base_delay * (2 ^ attempts_count)
 ```
@@ -287,22 +291,25 @@ type Input = {
 };
 
 const AnalyzeWebsite = new Flow<Input>({
-  slug: "analyze_website",
+  slug: 'analyze_website',
   maxAttempts: 3,
   baseDelay: 5,
   timeout: 10,
 })
-  .step({ slug: "website" }, async (input) => await scrapeWebsite(input.run.url))
   .step(
-    { slug: "sentiment", dependsOn: ["website"], timeout: 30, maxAttempts: 5 },
+    { slug: 'website' },
+    async (input) => await scrapeWebsite(input.run.url)
+  )
+  .step(
+    { slug: 'sentiment', dependsOn: ['website'], timeout: 30, maxAttempts: 5 },
     async (input) => await analyzeSentiment(input.website.content)
   )
   .step(
-    { slug: "summary", dependsOn: ["website"] },
+    { slug: 'summary', dependsOn: ['website'] },
     async (input) => await summarizeWithAI(input.website.content)
   )
   .step(
-    { slug: "saveToDb", dependsOn: ["sentiment", "summary"] },
+    { slug: 'saveToDb', dependsOn: ['sentiment', 'summary'] },
     async (input) =>
       await saveToDb({
         websiteUrl: input.run.url,
@@ -336,6 +343,7 @@ This means your step handlers receive exactly the data they need, properly typed
 Handlers in pgflow **must return** JSON-serializable values that are captured and saved when `complete_task` is called. These outputs become available as inputs to dependent steps, allowing data to flow through your workflow pipeline.
 
 When a step is executed, it receives an input object where:
+
 - Each key is a step_slug of a completed dependency
 - Each value is that step's output
 - A special "run" key contains the original workflow input
@@ -346,8 +354,8 @@ When the `sentiment` step runs, it receives:
 
 ```json
 {
-  "run": {"url": "https://example.com"},
-  "website": {"content": "HTML content", "status": 200}
+  "run": { "url": "https://example.com" },
+  "website": { "content": "HTML content", "status": 200 }
 }
 ```
 
@@ -357,8 +365,8 @@ The `saveToDb` step depends on both `sentiment` and `summary`:
 
 ```json
 {
-  "run": {"url": "https://example.com"},
-  "sentiment": {"score": 0.85, "label": "positive"},
+  "run": { "url": "https://example.com" },
+  "sentiment": { "score": 0.85, "label": "positive" },
   "summary": "This website discusses various topics related to technology and innovation."
 }
 ```
