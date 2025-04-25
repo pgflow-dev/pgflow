@@ -23,7 +23,7 @@ Deno.test(
       async () => {
         const [{ worker_count }] = await sql`
         SELECT COUNT(*)::integer AS worker_count
-        FROM edge_worker.active_workers
+        FROM pgflow.active_workers
         WHERE function_name = ${WORKER_NAME}
       `;
 

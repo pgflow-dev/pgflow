@@ -2,15 +2,15 @@ create extension if not exists pg_net;
 
 -- Calls edge function asynchronously, requires Vault secrets to be set:
 --   - supabase_anon_key
---   - app_url 
-create or replace function edge_worker.call_edgefn_async(
-    function_name text,
-    body text
+--   - app_url
+create or replace function pgflow.call_edgefn_async(
+  function_name text,
+  body text
 )
 returns bigint
 language plpgsql
 volatile
-set search_path to edge_worker
+set search_path to pgflow
 as $$
 declare
     request_id bigint;
@@ -42,10 +42,10 @@ end;
 $$;
 
 -- Spawn a new worker asynchronously via edge function
--- 
+--
 -- It is intended to be used in a cron job that ensures continuos operation
-create or replace function edge_worker.spawn(
-    function_name text
+create or replace function pgflow.spawn(
+  function_name text
 ) returns integer as $$
 declare
     p_function_name text := function_name;
@@ -53,12 +53,12 @@ declare
 begin
     SELECT COUNT(*)
     INTO v_active_count
-    FROM edge_worker.active_workers AS aw
+    FROM pgflow.active_workers AS aw
     WHERE aw.function_name = p_function_name;
 
     IF v_active_count < 1 THEN
         raise notice 'Spawning new worker: %', p_function_name;
-        PERFORM edge_worker.call_edgefn_async(p_function_name, '');
+        PERFORM pgflow.call_edgefn_async(p_function_name, '');
         return 1;
     ELSE
         raise notice 'Worker Exists for queue: NOT spawning new worker for queue: %', p_function_name;

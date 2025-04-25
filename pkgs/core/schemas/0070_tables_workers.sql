@@ -1,6 +1,6 @@
 -- Edge Worker Tables
 
-create table if not exists edge_worker.workers (
+create table if not exists pgflow.workers (
   worker_id uuid not null primary key,
   queue_name text not null,
   function_name text not null,

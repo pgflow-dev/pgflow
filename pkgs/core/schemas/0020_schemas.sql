@@ -1,6 +1,5 @@
 -- Create schemas
 create schema if not exists pgflow;
-create schema if not exists edge_worker;
 
 -- it is impossible to use "set search_path = ''" and generate valid migration with atlas
 -- so this empty schema is a workaround so i can "set search_path = '_dummy_'",

@@ -5,10 +5,6 @@ sidebar:
   order: 4
 ---
 
-import { Code } from "@astrojs/starlight/components";
-import activeWorkersSql from '../../../../../../edge-worker/sql/990_active_workers.sql?raw';
-import inactiveWorkersSql from '../../../../../../edge-worker/sql/991_inactive_workers.sql?raw';
-
 ## Logging
 
 Edge Worker logs various events to the console. You can change the log level
@@ -41,15 +37,3 @@ SELECT *
 FROM edge_worker.workers 
 WHERE last_heartbeat_at > now() - make_interval(secs => 6)
 ```
-
-### Helper SQL Views
-
-Alterntively, use following SQL views to simplify those queries:
-
-#### Active Workers
-
-<Code code={activeWorkersSql} lang="sql" />
-
-#### Inactive Workers
-
-<Code code={inactiveWorkersSql} lang="sql" />

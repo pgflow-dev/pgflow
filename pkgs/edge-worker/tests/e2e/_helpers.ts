@@ -51,9 +51,7 @@ export async function sendBatch(count: number, queueName: string) {
     )`;
 }
 
-export async function seqLastValue(
-  seqName = 'test_seq'
-): Promise<number> {
+export async function seqLastValue(seqName = 'test_seq'): Promise<number> {
   // Postgres sequences are startWorkerd with a value of 1,
   // but incrementing them for the first time does not increment the last_value,
   // only sets is_called to true
@@ -113,7 +111,7 @@ export async function waitForActiveWorker() {
   return await waitFor(
     async () => {
       const [{ has_active: hasActiveWorker }] =
-        await sql`SELECT count(*) > 0 AS has_active FROM edge_worker.active_workers`;
+        await sql`SELECT count(*) > 0 AS has_active FROM pgflow.active_workers`;
       log('waiting for active worker ', hasActiveWorker);
       return hasActiveWorker;
     },
@@ -125,11 +123,11 @@ export async function waitForActiveWorker() {
 }
 
 export async function fetchWorkers(functionName: string) {
-  return await sql`SELECT * FROM edge_worker.workers WHERE function_name = ${functionName}`;
+  return await sql`SELECT * FROM pgflow.workers WHERE function_name = ${functionName}`;
 }
 
 export async function startWorker(workerName: string) {
-  await sql`SELECT edge_worker.spawn(${workerName}::text)`;
+  await sql`SELECT pgflow.spawn(${workerName}::text)`;
   await waitForActiveWorker();
   log('worker spawned!');
 }
