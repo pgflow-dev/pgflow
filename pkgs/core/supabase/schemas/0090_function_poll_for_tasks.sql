@@ -7,7 +7,7 @@ create or replace function pgflow.poll_for_tasks(
 )
 returns setof pgflow.step_task_record
 volatile
-set search_path to ''
+set search_path to '_dummy_'
 as $$
 
 with read_messages as (

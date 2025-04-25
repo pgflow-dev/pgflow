@@ -7,7 +7,7 @@ create or replace function pgflow.fail_task(
 returns setof pgflow.step_tasks
 language plpgsql
 volatile
-set search_path to ''
+set search_path to '_dummy_'
 as $$
 begin
 

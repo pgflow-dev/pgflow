@@ -2,7 +2,7 @@ create or replace function pgflow.maybe_complete_run(run_id uuid)
 returns void
 language sql
 volatile
-set search_path to ''
+set search_path to '_dummy_'
 as $$
   -- Update run status to completed and set output when there are no remaining steps
   -- All done in a single declarative SQL statement

@@ -8,7 +8,7 @@ create or replace function pgflow.add_step(
 )
 returns pgflow.steps
 language sql
-set search_path to ''
+set search_path to '_dummy_'
 volatile
 as $$
 WITH
@@ -40,7 +40,7 @@ create or replace function pgflow.add_step(
 )
 returns pgflow.steps
 language sql
-set search_path to ''
+set search_path to '_dummy_'
 volatile
 as $$
     -- Call the original function with an empty array

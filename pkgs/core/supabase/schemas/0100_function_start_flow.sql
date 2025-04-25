@@ -4,7 +4,7 @@ create or replace function pgflow.start_flow(
 )
 returns setof PGFLOW.RUNS
 language plpgsql
-set search_path to ''
+set search_path to '_dummy_'
 volatile
 as $$
 declare
@@ -43,3 +43,4 @@ RETURN QUERY SELECT * FROM pgflow.runs where run_id = v_created_run.run_id;
 
 end;
 $$;
+
