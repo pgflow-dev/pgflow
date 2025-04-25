@@ -73,8 +73,8 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["sqruff --config=../../.sqruff lint --parsing-errors"],
-        "inputs": ["{projectRoot}/**/*.sql", "{workspaceRoot}/.sqruff"],
+        "commands": ["sqruff --config=../../.sqruff lint --parsing-errors schemas/"],
+        "inputs": ["{projectRoot}/schemas/**/*.sql", "{workspaceRoot}/.sqruff"],
         "parallel": false
       }
     },
@@ -83,9 +83,9 @@
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
-          "sqruff --config=../../.sqruff fix --force --parsing-errors"
+          "sqruff --config=../../.sqruff fix --force --parsing-errors schemas/"
         ],
-        "inputs": ["{projectRoot}/**/*.sql", "{workspaceRoot}/.sqruff"],
+        "inputs": ["{projectRoot}/schemas/**/*.sql", "{workspaceRoot}/.sqruff"],
         "parallel": false
       }
     },
