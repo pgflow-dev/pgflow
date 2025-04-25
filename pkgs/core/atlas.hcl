@@ -3,7 +3,7 @@ env "local" {
   dev = "docker+postgres://jumski/postgres-15-pgmq:latest/postgres"
 
   // Specify the desired schema source
-  src = "file://supabase/schemas/"
+  src = "file://schemas/"
 
   // Specify the directory to place generated migrations
   migration {
