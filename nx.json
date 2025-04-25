@@ -53,7 +53,14 @@
     },
     "@nx/vite:test": {
       "cache": true,
+      "dependsOn": ["^build"],
       "inputs": ["default", "^production"]
+    },
+    "serve": {
+      "dependsOn": ["^build"]
+    },
+    "preview": {
+      "dependsOn": ["^build"]
     }
   }
 }
