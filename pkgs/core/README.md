@@ -6,6 +6,10 @@ PostgreSQL-native workflow engine for defining, managing, and tracking DAG-based
 > This project is licensed under [AGPL v3](./LICENSE.md) license and is part of **pgflow** stack.
 > See [LICENSING_OVERVIEW.md](../../LICENSING_OVERVIEW.md) in root of this monorepo for more details.
 
+> [!WARNING]
+> This project uses [Atlas](https://atlasgo.io/docs) to manage the schemas and migrations.
+> See [ATLAS.md](ATLAS.md) for more details.
+
 ## Table of Contents
 
 - [Overview](#overview)
