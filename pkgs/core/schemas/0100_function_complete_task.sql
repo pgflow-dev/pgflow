@@ -7,7 +7,7 @@ create or replace function pgflow.complete_task(
 returns setof pgflow.step_tasks
 language plpgsql
 volatile
-set search_path to '_dummy_'
+set search_path to ''
 as $$
 begin
 

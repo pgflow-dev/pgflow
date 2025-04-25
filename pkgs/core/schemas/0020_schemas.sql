@@ -1,12 +1,6 @@
 -- Create schemas
 create schema if not exists pgflow;
 
--- it is impossible to use "set search_path = ''" and generate valid migration with atlas
--- so this empty schema is a workaround so i can "set search_path = '_dummy_'",
--- which will make sure that all the objects in function body needs to be fully qualified,
--- and will make atlas happy
-create schema if not exists _dummy_;
-
 --------------------------------------------------------------------------
 ------------------ TODO: fix me, UNSECURE --------------------------------
 --------------------------------------------------------------------------

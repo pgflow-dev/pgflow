@@ -1,7 +1,7 @@
 create or replace function pgflow.start_ready_steps(run_id uuid)
 returns void
 language sql
-set search_path to '_dummy_'
+set search_path to ''
 as $$
 
 WITH ready_steps AS (

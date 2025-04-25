@@ -4,7 +4,7 @@ create or replace function pgflow.start_flow(
 )
 returns setof PGFLOW.RUNS
 language plpgsql
-set search_path to '_dummy_'
+set search_path to ''
 volatile
 as $$
 declare

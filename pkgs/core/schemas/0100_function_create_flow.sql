@@ -6,7 +6,7 @@ create or replace function pgflow.create_flow(
 )
 returns pgflow.flows
 language sql
-set search_path to '_dummy_'
+set search_path to ''
 volatile
 as $$
 WITH
