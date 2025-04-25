@@ -44,6 +44,7 @@
     },
     "build": {
       "executor": "@nx/js:tsc",
+      "dependsOn": ["gen-types"],
       "options": {
         "outputPath": "pkgs/core/dist",
         "main": "pkgs/core/src/index.ts",
@@ -68,7 +69,7 @@
         "parallel": false
       }
     },
-    "lint": {
+    "lint:sqruff": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
@@ -78,6 +79,10 @@
         "inputs": ["{projectRoot}/schemas/**/*.sql", "{workspaceRoot}/.sqruff"],
         "parallel": false
       }
+    },
+    "lint": {
+      "executor": "nx:noop",
+      "dependsOn": ["lint:sqruff"]
     },
     "fix-sql": {
       "executor": "nx:run-commands",
@@ -174,10 +179,15 @@
     "gen-types": {
       "executor": "nx:run-commands",
       "dependsOn": ["supabase:ensure-started"],
+      "inputs": [
+        "{projectRoot}/supabase/migrations/**/*.sql"
+      ],
+      "outputs": ["{projectRoot}/src/database-types.ts"],
       "options": {
         "command": "supabase gen types --local --schema pgflow --schema pgmq > src/database-types.ts",
         "cwd": "{projectRoot}"
-      }
+      },
+      "cache": true
     }
   }
 }
