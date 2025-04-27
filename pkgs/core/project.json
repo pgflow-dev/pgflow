@@ -45,9 +45,7 @@
     "build": {
       "executor": "@nx/js:tsc",
       "dependsOn": ["gen-types"],
-      "inputs": [
-        "{projectRoot}/src/database-types.ts"
-      ],
+      "inputs": ["{projectRoot}/src/database-types.ts"],
       "options": {
         "outputPath": "pkgs/core/dist",
         "main": "pkgs/core/src/index.ts",
@@ -182,12 +180,13 @@
     "gen-types": {
       "executor": "nx:run-commands",
       "dependsOn": ["supabase:ensure-started"],
-      "inputs": [
-        "{projectRoot}/supabase/migrations/**/*.sql"
-      ],
+      "inputs": ["{projectRoot}/supabase/migrations/**/*.sql"],
       "outputs": ["{projectRoot}/src/database-types.ts"],
       "options": {
-        "command": "supabase gen types --local --schema pgflow --schema pgmq > src/database-types.ts",
+        "commands": [
+          "supabase gen types --local --schema pgflow --schema pgmq > src/database-types.ts",
+          "cat src/database-types.ts"
+        ],
         "cwd": "{projectRoot}"
       },
       "cache": true
