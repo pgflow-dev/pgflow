@@ -179,7 +179,7 @@
     },
     "gen-types": {
       "executor": "nx:run-commands",
-      "dependsOn": ["supabase:ensure-started"],
+      "dependsOn": ["verify-migrations"],
       "inputs": ["{projectRoot}/supabase/migrations/**/*.sql"],
       "outputs": ["{projectRoot}/src/database-types.ts"],
       "options": {
