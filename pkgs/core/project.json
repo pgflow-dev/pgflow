@@ -185,7 +185,9 @@
       "options": {
         "commands": [
           "supabase gen types --local --schema pgflow --schema pgmq > src/database-types.ts",
-          "cat src/database-types.ts"
+          "echo BEFORE cat",
+          "cat src/database-types.ts",
+          "echo AFTER cat"
         ],
         "cwd": "{projectRoot}"
       },
