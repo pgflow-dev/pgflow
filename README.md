@@ -15,6 +15,7 @@ Packages live in `pkgs/`
 
 | Package                         | Description                                                                           |
 | ---------------------------------- | ------------------------------------------------------------------------------------- |
+| [cli](./pkgs/cli/) | Command-line interface for installing pgflow and compiling flows |
 | [core](./pkgs/core/) | SQL Core for the workflow engine - foundational part of **pgflow** stack |
 | [dsl](./pkgs/dsl/) | Flow DSL - the TypeScript library used to define flows and their handlers|
 | [edge-worker](./pkgs/edge-worker/) | An auto-restarting task queue worker implemented for Supabase Edge Functions and PGMQ |
