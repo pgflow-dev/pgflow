@@ -184,12 +184,14 @@
       "outputs": ["{projectRoot}/src/database-types.ts"],
       "options": {
         "commands": [
+          "echo 'Generating database types...'",
           "supabase gen types --local --schema pgflow --schema pgmq > src/database-types.ts",
-          "echo BEFORE cat",
-          "cat src/database-types.ts",
-          "echo AFTER cat"
+          "echo 'Verifying generated types...'",
+          "grep -q 'pgflow' src/database-types.ts || (echo 'ERROR: Generated types file does not contain pgflow schema!' && exit 1)",
+          "[ -s src/database-types.ts ] || (echo 'ERROR: Generated types file is empty!' && exit 1)"
         ],
-        "cwd": "{projectRoot}"
+        "cwd": "{projectRoot}",
+        "parallel": false
       },
       "cache": true
     }
