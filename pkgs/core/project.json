@@ -4,19 +4,29 @@
   "sourceRoot": "pkgs/core/src",
   "projectType": "library",
   "tags": [],
+  "namedInputs": {
+    "schemas": ["{projectRoot}/schemas/**/*.sql"],
+    "migrations": ["{projectRoot}/supabase/migrations/**/*.sql"],
+    "atlas": [
+      "{projectRoot}/atlas.hcl",
+      "{projectRoot}/Dockerfile.atlas",
+      "{projectRoot}/supabase/migrations/atlas.sum",
+      "{projectRoot}/scripts/atlas-verify-schemas-synced"
+    ],
+    "atlasVerificationCache": ["{projectRoot}/.nx-inputs/verify-schemas-synced.txt"],
+    "migrationVerificationCache": ["{projectRoot}/.nx-inputs/verify-migrations.txt"],
+    "databaseTypes": ["{projectRoot}/src/database-types.ts"]
+  },
   "targets": {
     "verify-schemas-synced": {
       "executor": "nx:run-commands",
       "inputs": [
-        "{projectRoot}/schemas/**/*.sql",
-        "{projectRoot}/supabase/migrations/**/*.sql",
-        "{projectRoot}/atlas.hcl",
-        "{projectRoot}/Dockerfile.atlas",
-        "{projectRoot}/supabase/migrations/atlas.sum",
-        "{projectRoot}/scripts/atlas-verify-schemas-synced",
-        "{projectRoot}/.nx-inputs/verify-schemas-synced.txt"
+        "{schemas}",
+        "{migrations}",
+        "{atlas}",
+        "{atlasVerificationCache}"
       ],
-      "outputs": ["{projectRoot}/.nx-inputs/verify-schemas-synced.txt"],
+      "outputs": ["{atlasVerificationCache}"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
@@ -30,8 +40,8 @@
     "verify-migrations": {
       "executor": "nx:run-commands",
       "dependsOn": ["verify-schemas-synced", "supabase:ensure-started"],
-      "inputs": ["{projectRoot}/.nx-inputs/verify-migrations.txt"],
-      "outputs": ["{projectRoot}/.nx-inputs/verify-migrations.txt"],
+      "inputs": ["{migrationVerificationCache}"],
+      "outputs": ["{migrationVerificationCache}"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
@@ -45,7 +55,7 @@
     "build": {
       "executor": "@nx/js:tsc",
       "dependsOn": ["gen-types"],
-      "inputs": ["{projectRoot}/src/database-types.ts"],
+      "inputs": ["{databaseTypes}"],
       "options": {
         "outputPath": "pkgs/core/dist",
         "main": "pkgs/core/src/index.ts",
@@ -77,7 +87,7 @@
         "commands": [
           "sqruff --config=../../.sqruff lint --parsing-errors schemas/"
         ],
-        "inputs": ["{projectRoot}/schemas/**/*.sql", "{workspaceRoot}/.sqruff"],
+        "inputs": ["{schemas}", "{sqruffConfig}"],
         "parallel": false
       }
     },
@@ -92,7 +102,7 @@
         "commands": [
           "sqruff --config=../../.sqruff fix --force --parsing-errors schemas/"
         ],
-        "inputs": ["{projectRoot}/schemas/**/*.sql", "{workspaceRoot}/.sqruff"],
+        "inputs": ["{schemas}", "{sqruffConfig}"],
         "parallel": false
       }
     },
@@ -180,7 +190,7 @@
     "gen-types": {
       "executor": "nx:run-commands",
       "dependsOn": ["verify-migrations"],
-      "inputs": ["{projectRoot}/supabase/migrations/**/*.sql"],
+      "inputs": ["{migrations}"],
       "outputs": ["{projectRoot}/src/database-types.ts"],
       "options": {
         "commands": [
