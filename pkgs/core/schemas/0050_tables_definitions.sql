@@ -41,3 +41,6 @@ create table pgflow.deps (
   references pgflow.steps (flow_slug, step_slug),
   check (dep_slug != step_slug)  -- Prevent self-dependencies
 );
+
+create index if not exists idx_deps_by_flow_step on pgflow.deps (flow_slug, step_slug);
+create index if not exists idx_deps_by_flow_dep on pgflow.deps (flow_slug, dep_slug);
