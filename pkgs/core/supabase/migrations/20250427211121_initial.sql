@@ -75,12 +75,36 @@ CREATE TABLE "pgflow"."flows" ("flow_slug" text NOT NULL, "opt_max_attempts" int
 CREATE TABLE "pgflow"."steps" ("flow_slug" text NOT NULL, "step_slug" text NOT NULL, "step_type" text NOT NULL DEFAULT 'single', "deps_count" integer NOT NULL DEFAULT 0, "opt_max_attempts" integer NULL, "opt_base_delay" integer NULL, "opt_timeout" integer NULL, PRIMARY KEY ("flow_slug", "step_slug"), CONSTRAINT "steps_flow_slug_fkey" FOREIGN KEY ("flow_slug") REFERENCES "pgflow"."flows" ("flow_slug") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "opt_base_delay_is_nonnegative" CHECK ((opt_base_delay IS NULL) OR (opt_base_delay >= 0)), CONSTRAINT "opt_max_attempts_is_nonnegative" CHECK ((opt_max_attempts IS NULL) OR (opt_max_attempts >= 0)), CONSTRAINT "opt_timeout_is_positive" CHECK ((opt_timeout IS NULL) OR (opt_timeout > 0)), CONSTRAINT "steps_deps_count_check" CHECK (deps_count >= 0), CONSTRAINT "steps_step_slug_check" CHECK (pgflow.is_valid_slug(step_slug)), CONSTRAINT "steps_step_type_check" CHECK (step_type = 'single'::text));
 -- Create "deps" table
 CREATE TABLE "pgflow"."deps" ("flow_slug" text NOT NULL, "dep_slug" text NOT NULL, "step_slug" text NOT NULL, PRIMARY KEY ("flow_slug", "dep_slug", "step_slug"), CONSTRAINT "deps_flow_slug_dep_slug_fkey" FOREIGN KEY ("flow_slug", "dep_slug") REFERENCES "pgflow"."steps" ("flow_slug", "step_slug") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "deps_flow_slug_fkey" FOREIGN KEY ("flow_slug") REFERENCES "pgflow"."flows" ("flow_slug") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "deps_flow_slug_step_slug_fkey" FOREIGN KEY ("flow_slug", "step_slug") REFERENCES "pgflow"."steps" ("flow_slug", "step_slug") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "deps_check" CHECK (dep_slug <> step_slug));
+-- Create index "idx_deps_by_flow_dep" to table: "deps"
+CREATE INDEX "idx_deps_by_flow_dep" ON "pgflow"."deps" ("flow_slug", "dep_slug");
+-- Create index "idx_deps_by_flow_step" to table: "deps"
+CREATE INDEX "idx_deps_by_flow_step" ON "pgflow"."deps" ("flow_slug", "step_slug");
 -- Create "runs" table
 CREATE TABLE "pgflow"."runs" ("run_id" uuid NOT NULL DEFAULT gen_random_uuid(), "flow_slug" text NOT NULL, "status" text NOT NULL DEFAULT 'started', "input" jsonb NOT NULL, "output" jsonb NULL, "remaining_steps" integer NOT NULL DEFAULT 0, PRIMARY KEY ("run_id"), CONSTRAINT "runs_flow_slug_fkey" FOREIGN KEY ("flow_slug") REFERENCES "pgflow"."flows" ("flow_slug") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "runs_remaining_steps_check" CHECK (remaining_steps >= 0), CONSTRAINT "runs_status_check" CHECK (status = ANY (ARRAY['started'::text, 'failed'::text, 'completed'::text])));
+-- Create index "idx_runs_flow_slug" to table: "runs"
+CREATE INDEX "idx_runs_flow_slug" ON "pgflow"."runs" ("flow_slug");
+-- Create index "idx_runs_status" to table: "runs"
+CREATE INDEX "idx_runs_status" ON "pgflow"."runs" ("status");
 -- Create "step_states" table
 CREATE TABLE "pgflow"."step_states" ("flow_slug" text NOT NULL, "run_id" uuid NOT NULL, "step_slug" text NOT NULL, "status" text NOT NULL DEFAULT 'created', "remaining_tasks" integer NOT NULL DEFAULT 1, "remaining_deps" integer NOT NULL DEFAULT 0, PRIMARY KEY ("run_id", "step_slug"), CONSTRAINT "step_states_flow_slug_fkey" FOREIGN KEY ("flow_slug") REFERENCES "pgflow"."flows" ("flow_slug") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "step_states_flow_slug_step_slug_fkey" FOREIGN KEY ("flow_slug", "step_slug") REFERENCES "pgflow"."steps" ("flow_slug", "step_slug") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "step_states_run_id_fkey" FOREIGN KEY ("run_id") REFERENCES "pgflow"."runs" ("run_id") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "step_states_check" CHECK ((status <> 'completed'::text) OR (remaining_tasks = 0)), CONSTRAINT "step_states_remaining_deps_check" CHECK (remaining_deps >= 0), CONSTRAINT "step_states_remaining_tasks_check" CHECK (remaining_tasks >= 0), CONSTRAINT "step_states_status_check" CHECK (status = ANY (ARRAY['created'::text, 'started'::text, 'completed'::text, 'failed'::text])));
+-- Create index "idx_step_states_failed" to table: "step_states"
+CREATE INDEX "idx_step_states_failed" ON "pgflow"."step_states" ("run_id", "step_slug") WHERE (status = 'failed'::text);
+-- Create index "idx_step_states_flow_slug" to table: "step_states"
+CREATE INDEX "idx_step_states_flow_slug" ON "pgflow"."step_states" ("flow_slug");
+-- Create index "idx_step_states_ready" to table: "step_states"
+CREATE INDEX "idx_step_states_ready" ON "pgflow"."step_states" ("run_id", "status", "remaining_deps") WHERE ((status = 'created'::text) AND (remaining_deps = 0));
 -- Create "step_tasks" table
 CREATE TABLE "pgflow"."step_tasks" ("flow_slug" text NOT NULL, "run_id" uuid NOT NULL, "step_slug" text NOT NULL, "message_id" bigint NULL, "task_index" integer NOT NULL DEFAULT 0, "status" text NOT NULL DEFAULT 'queued', "attempts_count" integer NOT NULL DEFAULT 0, "error_message" text NULL, "output" jsonb NULL, PRIMARY KEY ("run_id", "step_slug", "task_index"), CONSTRAINT "step_tasks_flow_slug_fkey" FOREIGN KEY ("flow_slug") REFERENCES "pgflow"."flows" ("flow_slug") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "step_tasks_run_id_fkey" FOREIGN KEY ("run_id") REFERENCES "pgflow"."runs" ("run_id") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "step_tasks_run_id_step_slug_fkey" FOREIGN KEY ("run_id", "step_slug") REFERENCES "pgflow"."step_states" ("run_id", "step_slug") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "attempts_count_nonnegative" CHECK (attempts_count >= 0), CONSTRAINT "only_single_task_per_step" CHECK (task_index = 0), CONSTRAINT "output_valid_only_for_completed" CHECK ((output IS NULL) OR (status = 'completed'::text)), CONSTRAINT "valid_status" CHECK (status = ANY (ARRAY['queued'::text, 'completed'::text, 'failed'::text])));
+-- Create index "idx_step_tasks_completed" to table: "step_tasks"
+CREATE INDEX "idx_step_tasks_completed" ON "pgflow"."step_tasks" ("run_id", "step_slug") WHERE (status = 'completed'::text);
+-- Create index "idx_step_tasks_failed" to table: "step_tasks"
+CREATE INDEX "idx_step_tasks_failed" ON "pgflow"."step_tasks" ("run_id", "step_slug") WHERE (status = 'failed'::text);
+-- Create index "idx_step_tasks_flow_run_step" to table: "step_tasks"
+CREATE INDEX "idx_step_tasks_flow_run_step" ON "pgflow"."step_tasks" ("flow_slug", "run_id", "step_slug");
+-- Create index "idx_step_tasks_message_id" to table: "step_tasks"
+CREATE INDEX "idx_step_tasks_message_id" ON "pgflow"."step_tasks" ("message_id");
+-- Create index "idx_step_tasks_queued" to table: "step_tasks"
+CREATE INDEX "idx_step_tasks_queued" ON "pgflow"."step_tasks" ("run_id", "step_slug") WHERE (status = 'queued'::text);
 -- Create "poll_for_tasks" function
 CREATE FUNCTION "pgflow"."poll_for_tasks" ("queue_name" text, "vt" integer, "qty" integer, "max_poll_seconds" integer DEFAULT 5, "poll_interval_ms" integer DEFAULT 100) RETURNS SETOF "pgflow"."step_task_record" LANGUAGE sql SET "search_path" = '' AS $$
 with read_messages as (
@@ -526,3 +550,5 @@ end;
 $$;
 -- Create "workers" table
 CREATE TABLE "pgflow"."workers" ("worker_id" uuid NOT NULL, "queue_name" text NOT NULL, "function_name" text NOT NULL, "started_at" timestamptz NOT NULL DEFAULT now(), "stopped_at" timestamptz NULL, "last_heartbeat_at" timestamptz NOT NULL DEFAULT now(), PRIMARY KEY ("worker_id"));
+-- Create index "idx_workers_queue_name" to table: "workers"
+CREATE INDEX "idx_workers_queue_name" ON "pgflow"."workers" ("queue_name");
