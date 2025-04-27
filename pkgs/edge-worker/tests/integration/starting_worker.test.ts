@@ -24,7 +24,7 @@ Deno.test(
     await delay(100);
 
     try {
-      const workers = await sql`select * from edge_worker.workers`;
+      const workers = await sql`select * from pgflow.workers`;
 
       console.log(workers);
     } finally {

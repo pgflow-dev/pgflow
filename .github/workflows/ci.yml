@@ -45,10 +45,25 @@ jobs:
       - name: Install sqruff
         uses: quarylabs/install-sqruff-cli-action@main
 
+      - uses: ariga/setup-atlas@master
+
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
       - uses: nrwl/nx-set-shas@v4
+
+      # # Clear Nx cache before running affected commands
+      # - name: Clear Nx cache
+      #   run: pnpm exec nx reset
+      #
+      # # Ensure core migrations run and types are generated
+      # - name: Ensure Supabase is reset with latest migrations
+      #   run: |
+      #     cd pkgs/core
+      #     pnpm supabase stop --no-backup || true
+      #     pnpm supabase start
+      #     pnpm supabase db reset || true
+      #     pnpm supabase gen types --local --schema pgflow --schema pgmq > src/database-types.ts
 
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
       # - run: pnpm exec nx-cloud record -- echo Hello World

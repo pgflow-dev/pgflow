@@ -1,0 +1,2 @@
+#!/bin/bash
+docker build -t jumski/postgres-15-pgmq:latest --file Dockerfile.atlas .

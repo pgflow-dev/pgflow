@@ -14,7 +14,7 @@ export class Queries {
     edgeFunctionName: string;
   }): Promise<WorkerRow> {
     const [worker] = await this.sql<WorkerRow[]>`
-      INSERT INTO edge_worker.workers (queue_name, worker_id, function_name)
+      INSERT INTO pgflow.workers (queue_name, worker_id, function_name)
       VALUES (${queueName}, ${workerId}, ${edgeFunctionName})
       RETURNING *;
     `;
@@ -24,7 +24,7 @@ export class Queries {
 
   async onWorkerStopped(workerRow: WorkerRow): Promise<WorkerRow> {
     const [worker] = await this.sql<WorkerRow[]>`
-      UPDATE edge_worker.workers AS w
+      UPDATE pgflow.workers AS w
       SET stopped_at = clock_timestamp(), last_heartbeat_at = clock_timestamp()
       WHERE w.worker_id = ${workerRow.worker_id}
       RETURNING *;
@@ -35,7 +35,7 @@ export class Queries {
 
   async sendHeartbeat(workerRow: WorkerRow): Promise<void> {
     await this.sql<WorkerRow[]>`
-      UPDATE edge_worker.workers AS w
+      UPDATE pgflow.workers AS w
       SET last_heartbeat_at = clock_timestamp()
       WHERE w.worker_id = ${workerRow.worker_id}
       RETURNING *;

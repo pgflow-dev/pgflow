@@ -1,4 +1,3 @@
--- drop function if exists pgflow.start_flow;
 create or replace function pgflow.start_flow(
   flow_slug TEXT,
   input JSONB

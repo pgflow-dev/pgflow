@@ -1,4 +1,3 @@
--- drop function if exists pgflow.complete_task(uuid, text, int, jsonb);
 create or replace function pgflow.complete_task(
   run_id uuid,
   step_slug text,

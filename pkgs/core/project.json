@@ -4,9 +4,62 @@
   "sourceRoot": "pkgs/core/src",
   "projectType": "library",
   "tags": [],
+  "namedInputs": {
+    "schemas": ["{projectRoot}/schemas/**/*.sql"],
+    "migrations": ["{projectRoot}/supabase/migrations/**/*.sql"],
+    "atlasSetup": [
+      "{projectRoot}/atlas.hcl",
+      "{projectRoot}/Dockerfile.atlas",
+      "{projectRoot}/supabase/migrations/atlas.sum",
+      "{projectRoot}/scripts/atlas-verify-schemas-synced"
+    ],
+    "atlasVerificationCache": [
+      "{projectRoot}/.nx-inputs/verify-schemas-synced.txt"
+    ],
+    "migrationVerificationCache": [
+      "{projectRoot}/.nx-inputs/verify-migrations.txt"
+    ],
+    "databaseTypes": ["{projectRoot}/src/database-types.ts"]
+  },
   "targets": {
+    "verify-schemas-synced": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "schemas",
+        "migrations",
+        "atlasSetup",
+        "atlasVerificationCache"
+      ],
+      "outputs": ["{projectRoot}/.nx-inputs/verify-schemas-synced.txt"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          "mkdir -p .nx-inputs",
+          "scripts/atlas-verify-schemas-synced > .nx-inputs/verify-schemas-synced.txt 2>&1 || (cat .nx-inputs/verify-schemas-synced.txt && exit 1)"
+        ],
+        "parallel": false
+      },
+      "cache": true
+    },
+    "verify-migrations": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["verify-schemas-synced", "supabase:ensure-started"],
+      "inputs": ["migrationVerificationCache"],
+      "outputs": ["{projectRoot}/.nx-inputs/verify-migrations.txt"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          "mkdir -p .nx-inputs",
+          "supabase db reset > .nx-inputs/verify-migrations.txt 2>&1 || (cat .nx-inputs/verify-migrations.txt && exit 1)"
+        ],
+        "parallel": false
+      },
+      "cache": true
+    },
     "build": {
       "executor": "@nx/js:tsc",
+      "dependsOn": ["gen-types"],
+      "inputs": ["databaseTypes"],
       "options": {
         "outputPath": "pkgs/core/dist",
         "main": "pkgs/core/src/index.ts",
@@ -31,23 +84,29 @@
         "parallel": false
       }
     },
-    "lint": {
+    "lint:sqruff": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["sqruff --config=../../.sqruff lint --parsing-errors"],
-        "inputs": ["{projectRoot}/**/*.sql", "{workspaceRoot}/.sqruff"],
+        "commands": [
+          "sqruff --config=../../.sqruff lint --parsing-errors schemas/"
+        ],
+        "inputs": ["schemas", "sqruffConfig"],
         "parallel": false
       }
+    },
+    "lint": {
+      "executor": "nx:noop",
+      "dependsOn": ["lint:sqruff"]
     },
     "fix-sql": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
-          "sqruff --config=../../.sqruff fix --force --parsing-errors"
+          "sqruff --config=../../.sqruff fix --force --parsing-errors schemas/"
         ],
-        "inputs": ["{projectRoot}/**/*.sql", "{workspaceRoot}/.sqruff"],
+        "inputs": ["schemas", "sqruffConfig"],
         "parallel": false
       }
     },
@@ -95,6 +154,7 @@
     },
     "supabase:reset": {
       "executor": "nx:run-commands",
+      "dependsOn": ["supabase:ensure-started"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["supabase db reset"],
@@ -107,7 +167,7 @@
     },
     "test:pgtap": {
       "executor": "nx:run-commands",
-      "dependsOn": ["supabase:ensure-started"],
+      "dependsOn": ["verify-migrations", "supabase:ensure-started"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["scripts/run-test-with-colors"],
@@ -124,6 +184,7 @@
     },
     "test:pgtap:watch": {
       "executor": "nx:run-commands",
+      "dependsOn": ["verify-migrations", "supabase:ensure-started"],
       "options": {
         "cwd": "{projectRoot}",
         "command": "scripts/watch-test"
@@ -132,10 +193,21 @@
     },
     "gen-types": {
       "executor": "nx:run-commands",
+      "dependsOn": ["verify-migrations"],
+      "inputs": ["migrations"],
+      "outputs": ["{projectRoot}/src/database-types.ts"],
       "options": {
-        "command": "supabase gen types --local --schema pgflow --schema pgmq > src/database-types.ts",
-        "cwd": "{projectRoot}"
-      }
+        "commands": [
+          "echo 'Generating database types...'",
+          "supabase gen types --local --schema pgflow --schema pgmq > src/database-types.ts",
+          "echo 'Verifying generated types...'",
+          "grep -q 'pgflow' src/database-types.ts || (echo 'ERROR: Generated types file does not contain pgflow schema!' && exit 1)",
+          "[ -s src/database-types.ts ] || (echo 'ERROR: Generated types file is empty!' && exit 1)"
+        ],
+        "cwd": "{projectRoot}",
+        "parallel": false
+      },
+      "cache": true
     }
   }
 }

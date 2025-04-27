@@ -7,7 +7,7 @@ export class Queue<TPayload extends Json> {
   private logger: Logger;
 
   constructor(
-    private readonly sql: postgres.Sql, 
+    private readonly sql: postgres.Sql,
     readonly queueName: string,
     logger: Logger
   ) {
@@ -43,14 +43,18 @@ export class Queue<TPayload extends Json> {
   }
 
   async archive(msgId: number): Promise<void> {
-    this.logger.debug(`Archiving message ${msgId} from queue '${this.queueName}'`);
+    this.logger.debug(
+      `Archiving message ${msgId} from queue '${this.queueName}'`
+    );
     await this.sql`
       SELECT pgmq.archive(queue_name => ${this.queueName}, msg_id => ${msgId}::bigint);
     `;
   }
 
   async archiveBatch(msgIds: number[]): Promise<void> {
-    this.logger.debug(`Archiving ${msgIds.length} messages from queue '${this.queueName}'`);
+    this.logger.debug(
+      `Archiving ${msgIds.length} messages from queue '${this.queueName}'`
+    );
     await this.sql`
       SELECT pgmq.archive(queue_name => ${this.queueName}, msg_ids => ${msgIds}::bigint[]);
     `;
@@ -70,10 +74,12 @@ export class Queue<TPayload extends Json> {
     maxPollSeconds = 5,
     pollIntervalMs = 200
   ) {
-    this.logger.debug(`Reading messages from queue '${this.queueName}' with poll`);
+    this.logger.debug(
+      `Reading messages from queue '${this.queueName}' with poll`
+    );
     return await this.sql<PgmqMessageRecord<TPayload>[]>`
       SELECT *
-      FROM edge_worker.read_with_poll(
+      FROM pgflow.read_with_poll(
         queue_name => ${this.queueName},
         vt => ${visibilityTimeout},
         qty => ${batchSize},
@@ -96,7 +102,9 @@ export class Queue<TPayload extends Json> {
     msgId: number,
     vtOffsetSeconds: number
   ): Promise<PgmqMessageRecord<TPayload>> {
-    this.logger.debug(`Setting visibility timeout for message ${msgId} to ${vtOffsetSeconds} seconds`);
+    this.logger.debug(
+      `Setting visibility timeout for message ${msgId} to ${vtOffsetSeconds} seconds`
+    );
     const records = await this.sql<PgmqMessageRecord<TPayload>[]>`
       UPDATE ${this.sql('pgmq.q_' + this.queueName)}
       SET vt = (clock_timestamp() + make_interval(secs => ${vtOffsetSeconds}))
