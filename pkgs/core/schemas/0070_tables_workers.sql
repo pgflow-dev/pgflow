@@ -8,3 +8,5 @@ create table if not exists pgflow.workers (
   stopped_at timestamptz,
   last_heartbeat_at timestamptz not null default now()
 );
+
+create index if not exists idx_workers_queue_name on pgflow.workers (queue_name);

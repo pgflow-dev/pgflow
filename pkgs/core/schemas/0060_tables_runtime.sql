@@ -11,6 +11,9 @@ create table pgflow.runs (
   check (status in ('started', 'failed', 'completed'))
 );
 
+create index if not exists idx_runs_flow_slug on pgflow.runs (flow_slug);
+create index if not exists idx_runs_status on pgflow.runs (status);
+
 -- Step states table - tracks the state of individual steps within a run
 create table pgflow.step_states (
   flow_slug text not null references pgflow.flows (flow_slug),
@@ -25,6 +28,12 @@ create table pgflow.step_states (
   check (status in ('created', 'started', 'completed', 'failed')),
   check (status != 'completed' or remaining_tasks = 0)
 );
+
+create index if not exists idx_step_states_ready on pgflow.step_states (run_id, status, remaining_deps) where status
+= 'created'
+and remaining_deps = 0;
+create index if not exists idx_step_states_failed on pgflow.step_states (run_id, step_slug) where status = 'failed';
+create index if not exists idx_step_states_flow_slug on pgflow.step_states (flow_slug);
 
 -- Step tasks table - tracks units of work for step
 create table pgflow.step_tasks (
@@ -49,3 +58,9 @@ create table pgflow.step_tasks (
   constraint only_single_task_per_step check (task_index = 0),
   constraint attempts_count_nonnegative check (attempts_count >= 0)
 );
+
+create index if not exists idx_step_tasks_message_id on pgflow.step_tasks (message_id);
+create index if not exists idx_step_tasks_queued on pgflow.step_tasks (run_id, step_slug) where status = 'queued';
+create index if not exists idx_step_tasks_completed on pgflow.step_tasks (run_id, step_slug) where status = 'completed';
+create index if not exists idx_step_tasks_failed on pgflow.step_tasks (run_id, step_slug) where status = 'failed';
+create index if not exists idx_step_tasks_flow_run_step on pgflow.step_tasks (flow_slug, run_id, step_slug);
