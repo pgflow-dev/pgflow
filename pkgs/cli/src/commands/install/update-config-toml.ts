@@ -30,12 +30,15 @@ type SupabaseConfig = {
  * 4. Creates a backup of the original config.toml file before making changes
  *
  * @param options.supabasePath - Path to the supabase directory
+ * @param options.autoConfirm - Whether to automatically confirm changes
  * @returns Promise<boolean> - True if changes were made, false otherwise
  */
 export async function updateConfigToml({
   supabasePath,
+  autoConfirm = false
 }: {
   supabasePath: string;
+  autoConfirm?: boolean;
 }): Promise<boolean> {
   const configPath = path.join(supabasePath, 'config.toml');
   const backupPath = `${configPath}.backup`;
@@ -86,9 +89,15 @@ ${chalk.green('+ policy = "per_worker"')}`);
 
     note(changes.join('\n\n'), 'Required Configuration Changes');
 
-    const shouldContinue = await confirm({
-      message: `Update Supabase configuration? (a backup will be created)`,
-    });
+    let shouldContinue = autoConfirm;
+    
+    if (!autoConfirm) {
+      const confirmResult = await confirm({
+        message: `Update Supabase configuration? (a backup will be created)`,
+      });
+      
+      shouldContinue = confirmResult === true;
+    }
 
     if (!shouldContinue) {
       log.info('Configuration update skipped');

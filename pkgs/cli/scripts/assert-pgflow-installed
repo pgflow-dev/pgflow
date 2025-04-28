@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+# Function to print error and exit
+error() {
+  echo -e "${RED}ERROR: $1${NC}" >&2
+  exit 1
+}
+
+# Verify migrations directory and SQL files
+if [ ! -d "supabase/migrations" ] || [ -z "$(ls -A supabase/migrations/*.sql 2>/dev/null)" ]; then
+  error "No SQL migration files found in supabase/migrations/"
+fi
+
+# Verify environment variables in .env file
+if ! grep -q 'EDGE_WORKER_LOG_LEVEL' supabase/functions/.env; then
+  error "EDGE_WORKER_LOG_LEVEL not found in supabase/functions/.env"
+fi
+
+if ! grep -q 'EDGE_WORKER_DB_URL' supabase/functions/.env; then
+  error "EDGE_WORKER_DB_URL not found in supabase/functions/.env"
+fi
+
+# Verify per_worker policy in config.toml
+if ! grep -q 'policy = "per_worker"' supabase/config.toml; then
+  error "policy = \"per_worker\" not found in supabase/config.toml"
+fi
+
+# Verify db.pooler is enabled
+if ! grep -A1 'db.pooler' supabase/config.toml | grep -q 'enabled = true'; then
+  error "db.pooler enabled = true not found in supabase/config.toml"
+fi
+
+# All checks passed
+echo -e "${GREEN}All verification checks passed successfully!${NC}"
+exit 0

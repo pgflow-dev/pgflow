@@ -30,11 +30,35 @@
       }
     },
     "test": {
-      "executor": "@nx/vite:test",
-      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "executor": "nx:noop",
+      "dependsOn": ["test:e2e:install", "test:e2e:compile"]
+    },
+    "test:e2e:install": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
       "options": {
-        "passWithNoTests": true,
-        "reportsDirectory": "{workspaceRoot}/coverage/{projectRoot}"
+        "commands": [
+          "rm -rf supabase/",
+          "npx -y supabase@latest init --with-vscode-settings --with-intellij-settings",
+          "node dist/index.js install --yes",
+          "./scripts/assert-pgflow-installed"
+        ],
+        "cwd": "{projectRoot}",
+        "parallel": false
+      }
+    },
+    "test:e2e:compile": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["test:e2e:install", "build"],
+      "options": {
+        "commands": [
+          "rm -rf supabase/",
+          "npx -y supabase@latest init --with-vscode-settings --with-intellij-settings",
+          "node dist/index.js compile examples/analyze-website.ts --deno-json examples/deno.json --supabase-path supabase",
+          "./scripts/assert-flow-compiled"
+        ],
+        "cwd": "{projectRoot}",
+        "parallel": false
       }
     }
   }

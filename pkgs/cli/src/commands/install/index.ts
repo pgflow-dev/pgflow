@@ -1,35 +1,85 @@
 import { type Command } from 'commander';
-import { intro, isCancel, log, note } from '@clack/prompts';
+import { intro, log, note } from '@clack/prompts';
 import { copyMigrations } from './copy-migrations.js';
 import { updateConfigToml } from './update-config-toml.js';
-import { supabasePathPrompt } from './supabase-path-prompt.js';
+import { updateEnvFile } from './update-env-file.js';
+import path from 'path';
+import fs from 'fs';
 
 export default (program: Command) => {
   program
     .command('install')
     .description('Set up pgflow in your Supabase project')
-    .action(async () => {
+    .option('--supabase-path <path>', 'Path to the Supabase folder')
+    .option('-y, --yes', 'Automatically confirm all prompts', false)
+    .action(async (options) => {
       intro('pgflow - Postgres-native workflows for Supabase');
 
-      const supabasePath = await supabasePathPrompt();
+      // Handle Supabase path - either from option or try to detect it
+      let supabasePath: string;
 
-      if (isCancel(supabasePath)) {
-        log.error('Installation cancelled');
-        return;
+      if (options.supabasePath) {
+        supabasePath = path.resolve(process.cwd(), options.supabasePath);
+      } else {
+        // Try to detect the Supabase directory automatically
+        const possiblePaths = ['./supabase', '../supabase', '../../supabase'];
+        
+        let detectedPath = '';
+        for (const testPath of possiblePaths) {
+          if (
+            fs.existsSync(testPath) &&
+            fs.existsSync(path.join(testPath, 'config.toml'))
+          ) {
+            detectedPath = testPath;
+            break;
+          }
+        }
+
+        if (detectedPath) {
+          log.success(`Found Supabase project at: ${detectedPath}`);
+          supabasePath = path.resolve(process.cwd(), detectedPath);
+        } else {
+          log.error('Could not automatically detect Supabase directory');
+          log.info('Please provide the path using --supabase-path option');
+          process.exit(1);
+        }
+      }
+
+      // Validate Supabase path
+      if (!fs.existsSync(supabasePath)) {
+        log.error(`Directory not found: ${supabasePath}`);
+        process.exit(1);
+      }
+
+      if (!fs.existsSync(path.join(supabasePath, 'config.toml'))) {
+        log.error(`Not a valid Supabase project (missing config.toml) at ${supabasePath}`);
+        process.exit(1);
       }
 
       // First update config.toml, then copy migrations
-      const configUpdated = await updateConfigToml({ supabasePath });
-      const migrationsCopied = await copyMigrations({ supabasePath });
+      const configUpdated = await updateConfigToml({ 
+        supabasePath,
+        autoConfirm: options.yes
+      });
+      
+      const migrationsCopied = await copyMigrations({ 
+        supabasePath,
+        autoConfirm: options.yes
+      });
+      
+      const envFileCreated = await updateEnvFile({ 
+        supabasePath,
+        autoConfirm: options.yes
+      });
 
       // Show completion message
-      if (migrationsCopied || configUpdated) {
+      if (migrationsCopied || configUpdated || envFileCreated) {
         log.success('pgflow setup completed successfully');
 
         // Show next steps if changes were made
         const nextSteps = [];
 
-        if (configUpdated) {
+        if (configUpdated || envFileCreated) {
           nextSteps.push(
             '• Restart your Supabase instance for configuration changes to take effect'
           );
