@@ -3,35 +3,35 @@
   "packages": {
     "specifiers": {
       "jsr:@henrygd/queue@^1.0.7": "jsr:@henrygd/queue@1.0.7",
-      "jsr:@pgflow/edge-worker@0.1.18": "jsr:@pgflow/edge-worker@0.1.18",
-      "npm:@pgflow/core@0.1.18": "npm:@pgflow/core@0.1.18",
-      "npm:@pgflow/dsl@0.1.18": "npm:@pgflow/dsl@0.1.18",
+      "jsr:@pgflow/edge-worker@0.1.19": "jsr:@pgflow/edge-worker@0.1.19",
+      "npm:@pgflow/core@0.1.19": "npm:@pgflow/core@0.1.19",
+      "npm:@pgflow/dsl@0.1.19": "npm:@pgflow/dsl@0.1.19",
       "npm:postgres@3.4.5": "npm:postgres@3.4.5"
     },
     "jsr": {
       "@henrygd/queue@1.0.7": {
         "integrity": "98cade132744bb420957c5413393f76eb8ba7261826f026c8a89a562b8fa2961"
       },
-      "@pgflow/edge-worker@0.1.18": {
-        "integrity": "117967e1bc28deac9653a9ebe25e6a924e415134edca9335a2c96ee3ca9e9fec",
+      "@pgflow/edge-worker@0.1.19": {
+        "integrity": "e1a36259600d4503de58b66abd9318267d82833fbfc6c546e3dd4b30a98f3651",
         "dependencies": [
           "jsr:@henrygd/queue@^1.0.7",
-          "npm:@pgflow/core@0.1.18",
-          "npm:@pgflow/dsl@0.1.18",
+          "npm:@pgflow/core@0.1.19",
+          "npm:@pgflow/dsl@0.1.19",
           "npm:postgres@3.4.5"
         ]
       }
     },
     "npm": {
-      "@pgflow/core@0.1.18": {
-        "integrity": "sha512-kWcEV+XdGfYga14O3X6tBPRxcgy8Ghzv0z6nDBh3d/Z+X12qZ2ZktkiKDwas5oKpclD4iZpJgHsYLN0VXyc2Ng==",
+      "@pgflow/core@0.1.19": {
+        "integrity": "sha512-nqxIlnKY8Z6/6n6qUaMb9HMdMRc7QtxJvrvMu2kaQ/yr9s0dRFV/8yspmCrG2egfS+fjsoRmjYYNwdT5TWwscQ==",
         "dependencies": {
-          "@pgflow/dsl": "@pgflow/dsl@0.1.18",
+          "@pgflow/dsl": "@pgflow/dsl@0.1.19",
           "postgres": "postgres@3.4.5"
         }
       },
-      "@pgflow/dsl@0.1.18": {
-        "integrity": "sha512-pcXTam4yuzcyMlJPlgS2F4tmK6Mm2Rl5G8tFawL7kgXNjktTb69aWYdMYDR/XNWU6f45jH1bJNjkKdLKxv9t1Q==",
+      "@pgflow/dsl@0.1.19": {
+        "integrity": "sha512-Cznt81WQe0OU+A136U/n3n8GKEOoQsn8xEzmKOzQPm9a7so0lyRizJsCnJYzZE+TAu4/cqw4K/rJtwwRMr7qfQ==",
         "dependencies": {}
       },
       "postgres@3.4.5": {
@@ -43,8 +43,8 @@
   "remote": {},
   "workspace": {
     "dependencies": [
-      "jsr:@pgflow/edge-worker@0.1.18",
-      "npm:@pgflow/dsl@0.1.18"
+      "jsr:@pgflow/edge-worker@0.1.19",
+      "npm:@pgflow/dsl@0.1.19"
     ]
   }
 }
