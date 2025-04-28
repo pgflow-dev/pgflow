@@ -40,7 +40,7 @@
         "commands": [
           "rm -rf supabase/",
           "npx -y supabase@latest init --with-vscode-settings --with-intellij-settings",
-          "nx serve -- install --yes",
+          "node dist/index.js install --yes",
           "./scripts/assert-pgflow-installed"
         ],
         "cwd": "{projectRoot}",
@@ -54,8 +54,7 @@
         "commands": [
           "rm -rf supabase/",
           "npx -y supabase@latest init --with-vscode-settings --with-intellij-settings",
-          "nx serve -- install --yes",
-          "nx serve -- compile examples/analyze-website.ts --deno-json examples/deno.json --supabase-path supabase",
+          "node dist/index.js compile examples/analyze-website.ts --deno-json examples/deno.json --supabase-path supabase",
           "./scripts/assert-flow-compiled"
         ],
         "cwd": "{projectRoot}",
