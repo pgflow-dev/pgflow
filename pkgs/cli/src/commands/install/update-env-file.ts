@@ -125,8 +125,9 @@ export async function updateEnvFile({
     fs.writeFileSync(envFilePath, newContent);
     log.success('Environment variables updated successfully');
     return true;
-  } catch (error) {
-    log.error(`Failed to update environment variables: ${error.message}`);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    log.error(`Failed to update environment variables: ${errorMessage}`);
     return false;
   }
 }
