@@ -6,3 +6,10 @@ prepare-commit-msg:
         - meta
         - summary
         - error
+
+pre-commit:
+  commands:
+    'validate-json-files':
+      glob: '*.{json,jsonc}'
+      run: |
+        ./scripts/validate-json-files.sh
