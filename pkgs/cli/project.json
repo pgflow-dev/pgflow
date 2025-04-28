@@ -30,6 +30,10 @@
       }
     },
     "test": {
+      "executor": "nx:noop",
+      "dependsOn": ["test:vitest", "test:e2e"]
+    },
+    "test:vitest": {
       "executor": "@nx/vite:test",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
@@ -37,7 +41,7 @@
         "reportsDirectory": "{workspaceRoot}/coverage/{projectRoot}"
       }
     },
-    "manual-test": {
+    "test:e2e": {
       "executor": "nx:run-commands",
       "options": {
         "commands": [
