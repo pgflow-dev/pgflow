@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+# Function to print error and exit
+error() {
+  echo -e "${RED}ERROR: $1${NC}" >&2
+  exit 1
+}
+
+# Verify migrations directory exists
+if [ ! -d "supabase/migrations" ]; then
+  error "No migrations directory found in supabase/"
+fi
+
+# Verify there's at least one migration file
+if [ -z "$(ls -A supabase/migrations/*.sql 2>/dev/null)" ]; then
+  error "No SQL migration files found in supabase/migrations/"
+fi
+
+# Expected flow and steps from analyze-website.ts
+FLOW_NAME="analyze_website"
+STEPS=("website" "sentiment" "summary" "saveToDb")
+
+# Check for create_flow migration
+if ! grep -q "create_flow.*${FLOW_NAME}" supabase/migrations/*.sql; then
+  error "No migration found with create_flow for '${FLOW_NAME}'"
+fi
+
+# Check for each step in migrations
+for step in "${STEPS[@]}"; do
+  if ! grep -q "add_step.*${step}" supabase/migrations/*.sql; then
+    error "No migration found with add_step for step '${step}'"
+  fi
+done
+
+# All checks passed
+echo -e "${GREEN}All verification checks passed successfully!${NC}"
+exit 0

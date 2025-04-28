@@ -29,26 +29,33 @@
         "cwd": "{projectRoot}"
       }
     },
-    "__disabled__test": {
+    "test": {
       "executor": "nx:noop",
-      "dependsOn": ["test:vitest", "test:e2e"]
+      "dependsOn": ["test:e2e:install", "test:e2e:compile"]
     },
-    "__disabled__test:vitest": {
-      "executor": "@nx/vite:test",
-      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
-      "options": {
-        "passWithNoTests": true,
-        "reportsDirectory": "{workspaceRoot}/coverage/{projectRoot}"
-      }
-    },
-    "test:e2e": {
+    "test:e2e:install": {
       "executor": "nx:run-commands",
       "options": {
         "commands": [
           "rm -rf supabase/",
           "npx -y supabase@latest init --with-vscode-settings --with-intellij-settings",
           "nx serve -- install --yes",
-          "./scripts/test-pgflow-installed"
+          "./scripts/assert-pgflow-installed"
+        ],
+        "cwd": "{projectRoot}",
+        "parallel": false
+      }
+    },
+    "test:e2e:compile": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["test:e2e:install"],
+      "options": {
+        "commands": [
+          "rm -rf supabase/",
+          "npx -y supabase@latest init --with-vscode-settings --with-intellij-settings",
+          "nx serve -- install --yes",
+          "nx serve -- compile examples/analyze-website.ts --deno-json examples/deno.json --supabase-path supabase",
+          "./scripts/assert-flow-compiled"
         ],
         "cwd": "{projectRoot}",
         "parallel": false
