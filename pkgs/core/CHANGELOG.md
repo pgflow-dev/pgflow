@@ -1,5 +1,13 @@
 # @pgflow/core
 
+## 0.1.19
+
+### Patch Changes
+
+- a10b442: Add minimum set of indexes
+- efbd108: Convert migrations to declarative schemas and generate initial migration
+  - @pgflow/dsl@0.1.19
+
 ## 0.1.18
 
 ### Patch Changes

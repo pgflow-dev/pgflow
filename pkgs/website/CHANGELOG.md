@@ -1,5 +1,11 @@
 # @pgflow/website
 
+## 0.1.19
+
+### Patch Changes
+
+- efbd108: Convert migrations to declarative schemas and generate initial migration
+
 ## 0.1.18
 
 ### Patch Changes
