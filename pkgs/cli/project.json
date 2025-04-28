@@ -35,6 +35,7 @@
     },
     "test:e2e:install": {
       "executor": "nx:run-commands",
+      "dependsOn": ["build"]
       "options": {
         "commands": [
           "rm -rf supabase/",
@@ -48,7 +49,7 @@
     },
     "test:e2e:compile": {
       "executor": "nx:run-commands",
-      "dependsOn": ["test:e2e:install"],
+      "dependsOn": ["test:e2e:install", "build"],
       "options": {
         "commands": [
           "rm -rf supabase/",
