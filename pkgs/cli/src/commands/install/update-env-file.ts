@@ -12,7 +12,7 @@ import chalk from 'chalk';
  */
 export async function updateEnvFile({
   supabasePath,
-  autoConfirm = false
+  autoConfirm = false,
 }: {
   supabasePath: string;
   autoConfirm?: boolean;
@@ -94,12 +94,12 @@ export async function updateEnvFile({
 
   // Ask for confirmation if not auto-confirming
   let shouldContinue = autoConfirm;
-  
+
   if (!autoConfirm) {
     const confirmResult = await confirm({
       message: `Update environment variables?`,
     });
-    
+
     shouldContinue = confirmResult === true;
   }
 
@@ -121,7 +121,12 @@ export async function updateEnvFile({
   }
 
   // Write the file if changes were made
-  fs.writeFileSync(envFilePath, newContent);
-  log.success('Environment variables updated successfully');
-  return true;
+  try {
+    fs.writeFileSync(envFilePath, newContent);
+    log.success('Environment variables updated successfully');
+    return true;
+  } catch (error) {
+    log.error(`Failed to update environment variables: ${error.message}`);
+    return false;
+  }
 }
