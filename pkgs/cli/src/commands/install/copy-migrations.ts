@@ -73,8 +73,10 @@ const sourcePath = findMigrationsDirectory();
 
 export async function copyMigrations({
   supabasePath,
+  autoConfirm = false
 }: {
   supabasePath: string;
+  autoConfirm?: boolean;
 }): Promise<boolean> {
   const migrationsPath = path.join(supabasePath, 'migrations');
 
@@ -136,14 +138,20 @@ ${filesToCopy.map((file) => `${chalk.green('+')} ${file}`).join('\n')}`);
 ${skippedFiles.map((file) => `${chalk.yellow('•')} ${file}`).join('\n')}`);
   }
 
-  // Show summary and ask for confirmation
+  // Show summary and ask for confirmation if not auto-confirming
   note(summaryParts.join('\n\n'), 'pgflow Migrations');
 
-  const shouldContinue = await confirm({
-    message: `Install ${filesToCopy.length} new migration${
-      filesToCopy.length !== 1 ? 's' : ''
-    }?`,
-  });
+  let shouldContinue = autoConfirm;
+  
+  if (!autoConfirm) {
+    const confirmResult = await confirm({
+      message: `Install ${filesToCopy.length} new migration${
+        filesToCopy.length !== 1 ? 's' : ''
+      }?`,
+    });
+    
+    shouldContinue = confirmResult === true;
+  }
 
   if (!shouldContinue) {
     log.info('Migration installation skipped');

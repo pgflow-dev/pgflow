@@ -7,12 +7,15 @@ import chalk from 'chalk';
  * Updates the functions/.env file with required environment variables for pgflow
  *
  * @param options.supabasePath - Path to the supabase directory
+ * @param options.autoConfirm - Whether to automatically confirm changes
  * @returns Promise<boolean> - True if changes were made, false otherwise
  */
 export async function updateEnvFile({
   supabasePath,
+  autoConfirm = false
 }: {
   supabasePath: string;
+  autoConfirm?: boolean;
 }): Promise<boolean> {
   const functionsDir = path.join(supabasePath, 'functions');
   const envFilePath = path.join(functionsDir, '.env');
@@ -89,10 +92,16 @@ export async function updateEnvFile({
   // Show the diff preview
   note(diffPreview.join('\n'), 'Environment Variables');
 
-  // Ask for confirmation
-  const shouldContinue = await confirm({
-    message: `Update environment variables?`,
-  });
+  // Ask for confirmation if not auto-confirming
+  let shouldContinue = autoConfirm;
+  
+  if (!autoConfirm) {
+    const confirmResult = await confirm({
+      message: `Update environment variables?`,
+    });
+    
+    shouldContinue = confirmResult === true;
+  }
 
   if (!shouldContinue) {
     log.info('Environment variable update skipped');

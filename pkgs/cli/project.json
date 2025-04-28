@@ -47,7 +47,7 @@
         "commands": [
           "rm -rf supabase/",
           "npx -y supabase@latest init --with-vscode-settings --with-intellij-settings",
-          "nx serve -- install",
+          "nx serve -- install --yes",
           "./scripts/test-pgflow-installed"
         ],
         "cwd": "{projectRoot}",
