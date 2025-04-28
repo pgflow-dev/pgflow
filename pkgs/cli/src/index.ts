@@ -35,7 +35,7 @@ function getVersion(): string {
   }
 }
 
-const program = new Command();
+export const program = new Command();
 program
   .name('npx pgflow')
   .description('Command line interface to help you work with pgflow')

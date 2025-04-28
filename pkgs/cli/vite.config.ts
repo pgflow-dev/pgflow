@@ -12,7 +12,7 @@ export default defineConfig({
   test: {
     watch: false,
     globals: true,
-    environment: 'jsdom',
+    environment: 'node',
     include: [
       '__tests__/**/*.{test,spec,test-d,spec-d}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
     ],
@@ -21,5 +21,6 @@ export default defineConfig({
       reportsDirectory: './test-output/vitest/coverage',
       provider: 'v8',
     },
+    setupFiles: ['vitest.setup.ts'],
   },
 });

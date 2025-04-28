@@ -133,9 +133,24 @@ importers:
       '@types/node':
         specifier: ^22.14.1
         version: 22.14.1
+      execa:
+        specifier: ^8.0.1
+        version: 8.0.1
+      fs-monkey:
+        specifier: ^1.0.6
+        version: 1.0.6
+      memfs:
+        specifier: ^4.17.0
+        version: 4.17.0
       tsx:
         specifier: ^4.19.3
         version: 4.19.3
+      unionfs:
+        specifier: ^4.5.4
+        version: 4.5.4
+      vitest:
+        specifier: ^1.5.0
+        version: 1.6.0(@types/node@22.14.1)(@vitest/ui@1.6.0)(jsdom@22.1.0)
 
   pkgs/core:
     dependencies:
@@ -3387,6 +3402,37 @@ packages:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
+    dev: true
+
+  /@jsonjoy.com/base64@1.1.2(tslib@2.8.1):
+    resolution: {integrity: sha512-q6XAnWQDIMA3+FTiOYajoYqySkO+JSat0ytXGSuRdq9uXE7o92gzuQwQM14xaCRlBLGq3v5miDGC4vkVTn54xA==}
+    engines: {node: '>=10.0'}
+    peerDependencies:
+      tslib: '2'
+    dependencies:
+      tslib: 2.8.1
+    dev: true
+
+  /@jsonjoy.com/json-pack@1.2.0(tslib@2.8.1):
+    resolution: {integrity: sha512-io1zEbbYcElht3tdlqEOFxZ0dMTYrHz9iMf0gqn1pPjZFTCgM5R4R5IMA20Chb2UPYYsxjzs8CgZ7Nb5n2K2rA==}
+    engines: {node: '>=10.0'}
+    peerDependencies:
+      tslib: '2'
+    dependencies:
+      '@jsonjoy.com/base64': 1.1.2(tslib@2.8.1)
+      '@jsonjoy.com/util': 1.5.0(tslib@2.8.1)
+      hyperdyperid: 1.2.0
+      thingies: 1.21.0(tslib@2.8.1)
+      tslib: 2.8.1
+    dev: true
+
+  /@jsonjoy.com/util@1.5.0(tslib@2.8.1):
+    resolution: {integrity: sha512-ojoNsrIuPI9g6o8UxhraZQSyF2ByJanAY4cTFbc8Mf2AXEF4aQRGY1dJxyJpuyav8r9FGflEt/Ff3u5Nt6YMPA==}
+    engines: {node: '>=10.0'}
+    peerDependencies:
+      tslib: '2'
+    dependencies:
+      tslib: 2.8.1
     dev: true
 
   /@manypkg/find-root@1.1.0:
@@ -7582,6 +7628,10 @@ packages:
       universalify: 0.1.2
     dev: true
 
+  /fs-monkey@1.0.6:
+    resolution: {integrity: sha512-b1FMfwetIKymC0eioW7mTywihSQE4oLzQn1dB6rZB5fx/3NpNEdAWeCSMB+60/AeT0TCXsxzAlcYVEFCTAksWg==}
+    dev: true
+
   /fs.realpath@1.0.0:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
     dev: true
@@ -8184,6 +8234,11 @@ packages:
   /human-signals@5.0.0:
     resolution: {integrity: sha512-AXcZb6vzzrFAUE61HnN4mpLqd/cSIwNQjtNWR0euPm6y0iqx3G4gOXaIDdtdDwZmhwe82LA6+zinmW4UBWVePQ==}
     engines: {node: '>=16.17.0'}
+    dev: true
+
+  /hyperdyperid@1.2.0:
+    resolution: {integrity: sha512-Y93lCzHYgGWdrJ66yIktxiaGULYc6oGiABxhcO5AufBeOyoIdZF7bIfLaOrbM0iGIOXQQgxxRrFEnb+Y6w1n4A==}
+    engines: {node: '>=10.18'}
     dev: true
 
   /i18next@23.16.8:
@@ -9389,6 +9444,16 @@ packages:
     dependencies:
       '@types/mdast': 4.0.4
     dev: false
+
+  /memfs@4.17.0:
+    resolution: {integrity: sha512-4eirfZ7thblFmqFjywlTmuWVSvccHAJbn1r8qQLzmTO11qcqpohOjmY2mFce6x7x7WtskzRqApPD0hv+Oa74jg==}
+    engines: {node: '>= 4.0.0'}
+    dependencies:
+      '@jsonjoy.com/json-pack': 1.2.0(tslib@2.8.1)
+      '@jsonjoy.com/util': 1.5.0(tslib@2.8.1)
+      tree-dump: 1.0.2(tslib@2.8.1)
+      tslib: 2.8.1
+    dev: true
 
   /merge-stream@2.0.0:
     resolution: {integrity: sha512-abv/qOcuPfk3URPfDzmZU1LKmuw8kT+0nIHvKrKgFrwifol/doWcdA4ZqsWQ8ENrFKkd67Mfpo/LovbIUsbt3w==}
@@ -11768,6 +11833,15 @@ packages:
       b4a: 1.6.7
     dev: false
 
+  /thingies@1.21.0(tslib@2.8.1):
+    resolution: {integrity: sha512-hsqsJsFMsV+aD4s3CWKk85ep/3I9XzYV/IXaSouJMYIoDlgyi11cBhsqYe9/geRfB0YIikBQg6raRaM+nIMP9g==}
+    engines: {node: '>=10.18'}
+    peerDependencies:
+      tslib: ^2
+    dependencies:
+      tslib: 2.8.1
+    dev: true
+
   /through@2.3.8:
     resolution: {integrity: sha512-w89qg7PI8wAdvX60bMDP+bFoD5Dvhm9oLheFp5O4a2QF0cSBGsBX4qZmadPMvVqlLJBBci+WqGGOAPvcDeNSVg==}
     dev: true
@@ -11851,6 +11925,15 @@ packages:
     engines: {node: '>=14'}
     dependencies:
       punycode: 2.3.1
+    dev: true
+
+  /tree-dump@1.0.2(tslib@2.8.1):
+    resolution: {integrity: sha512-dpev9ABuLWdEubk+cIaI9cHwRNNDjkBBLXTwI4UCUFdQ5xXKqNXoK4FEciw/vxf+NQ7Cb7sGUyeUtORvHIdRXQ==}
+    engines: {node: '>=10.0'}
+    peerDependencies:
+      tslib: '2'
+    dependencies:
+      tslib: 2.8.1
     dev: true
 
   /trim-lines@3.0.1:
@@ -12091,6 +12174,12 @@ packages:
     engines: {node: '>= 0.8.0'}
     dependencies:
       qs: 6.13.1
+    dev: true
+
+  /unionfs@4.5.4:
+    resolution: {integrity: sha512-qI3RvJwwdFcWUdZz1dWgAyLSfGlY2fS2pstvwkZBUTnkxjcnIvzriBLtqJTKz9FtArAvJeiVCqHlxhOw8Syfyw==}
+    dependencies:
+      fs-monkey: 1.0.6
     dev: true
 
   /unist-util-find-after@5.0.0:
@@ -12355,6 +12444,28 @@ packages:
       - terser
     dev: true
 
+  /vite-node@1.6.0(@types/node@22.14.1):
+    resolution: {integrity: sha512-de6HJgzC+TFzOu0NTC4RAIsyf/DY/ibWDYQUcuEA84EMHhcefTUGkjFHKKEJhQN4A+6I0u++kr3l36ZF2d7XRw==}
+    engines: {node: ^18.0.0 || >=20.0.0}
+    hasBin: true
+    dependencies:
+      cac: 6.7.14
+      debug: 4.4.0
+      pathe: 1.1.2
+      picocolors: 1.1.1
+      vite: 5.4.11(@types/node@22.14.1)
+    transitivePeerDependencies:
+      - '@types/node'
+      - less
+      - lightningcss
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+    dev: true
+
   /vite-plugin-dts@3.8.3(@types/node@18.16.20)(typescript@5.6.3)(vite@5.4.11):
     resolution: {integrity: sha512-yRHiRosQw7MXdOhmcrVI+kRiB8YEShbSxnADNteK4eZGdEoyOkMHihvO5XOAVlOq8ng9sIqu8vVefDK1zcj3qw==}
     engines: {node: ^14.18.0 || >=16.0.0}
@@ -12429,6 +12540,45 @@ packages:
         optional: true
     dependencies:
       '@types/node': 18.16.20
+      esbuild: 0.21.5
+      postcss: 8.4.49
+      rollup: 4.30.0
+    optionalDependencies:
+      fsevents: 2.3.3
+    dev: true
+
+  /vite@5.4.11(@types/node@22.14.1):
+    resolution: {integrity: sha512-c7jFQRklXua0mTzneGW9QVyxFjUgwcihC4bXEtujIo2ouWCe1Ajt/amn2PCxYnhYfd5k09JX3SB7OYWFKYqj8Q==}
+    engines: {node: ^18.0.0 || >=20.0.0}
+    hasBin: true
+    peerDependencies:
+      '@types/node': ^18.0.0 || >=20.0.0
+      less: '*'
+      lightningcss: ^1.21.0
+      sass: '*'
+      sass-embedded: '*'
+      stylus: '*'
+      sugarss: '*'
+      terser: ^5.4.0
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
+      less:
+        optional: true
+      lightningcss:
+        optional: true
+      sass:
+        optional: true
+      sass-embedded:
+        optional: true
+      stylus:
+        optional: true
+      sugarss:
+        optional: true
+      terser:
+        optional: true
+    dependencies:
+      '@types/node': 22.14.1
       esbuild: 0.21.5
       postcss: 8.4.49
       rollup: 4.30.0
@@ -12542,6 +12692,65 @@ packages:
       tinypool: 0.8.4
       vite: 5.4.11(@types/node@18.16.20)
       vite-node: 1.6.0(@types/node@18.16.20)
+      why-is-node-running: 2.3.0
+    transitivePeerDependencies:
+      - less
+      - lightningcss
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+    dev: true
+
+  /vitest@1.6.0(@types/node@22.14.1)(@vitest/ui@1.6.0)(jsdom@22.1.0):
+    resolution: {integrity: sha512-H5r/dN06swuFnzNFhq/dnz37bPXnq8xB2xB5JOVk8K09rUtoeNN+LHWkoQ0A/i3hvbUKKcCei9KpbxqHMLhLLA==}
+    engines: {node: ^18.0.0 || >=20.0.0}
+    hasBin: true
+    peerDependencies:
+      '@edge-runtime/vm': '*'
+      '@types/node': ^18.0.0 || >=20.0.0
+      '@vitest/browser': 1.6.0
+      '@vitest/ui': 1.6.0
+      happy-dom: '*'
+      jsdom: '*'
+    peerDependenciesMeta:
+      '@edge-runtime/vm':
+        optional: true
+      '@types/node':
+        optional: true
+      '@vitest/browser':
+        optional: true
+      '@vitest/ui':
+        optional: true
+      happy-dom:
+        optional: true
+      jsdom:
+        optional: true
+    dependencies:
+      '@types/node': 22.14.1
+      '@vitest/expect': 1.6.0
+      '@vitest/runner': 1.6.0
+      '@vitest/snapshot': 1.6.0
+      '@vitest/spy': 1.6.0
+      '@vitest/ui': 1.6.0(vitest@1.6.0)
+      '@vitest/utils': 1.6.0
+      acorn-walk: 8.3.4
+      chai: 4.5.0
+      debug: 4.4.0
+      execa: 8.0.1
+      jsdom: 22.1.0
+      local-pkg: 0.5.1
+      magic-string: 0.30.17
+      pathe: 1.1.2
+      picocolors: 1.1.1
+      std-env: 3.8.0
+      strip-literal: 2.1.1
+      tinybench: 2.9.0
+      tinypool: 0.8.4
+      vite: 5.4.11(@types/node@22.14.1)
+      vite-node: 1.6.0(@types/node@22.14.1)
       why-is-node-running: 2.3.0
     transitivePeerDependencies:
       - less

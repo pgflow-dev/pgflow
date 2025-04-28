@@ -16,7 +16,12 @@
   "module": "./dist/index.js",
   "devDependencies": {
     "@types/node": "^22.14.1",
-    "tsx": "^4.19.3"
+    "execa": "^8.0.1",
+    "fs-monkey": "^1.0.6",
+    "memfs": "^4.17.0",
+    "tsx": "^4.19.3",
+    "unionfs": "^4.5.4",
+    "vitest": "^1.5.0"
   },
   "dependencies": {
     "@clack/prompts": "^0.10.1",
@@ -33,6 +38,7 @@
     "dist"
   ],
   "scripts": {
-    "postinstall": "chmod +x dist/index.js || true"
+    "postinstall": "chmod +x dist/index.js || true",
+    "test": "vitest run"
   }
 }
