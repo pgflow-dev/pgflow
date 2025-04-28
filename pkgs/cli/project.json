@@ -36,6 +36,19 @@
         "passWithNoTests": true,
         "reportsDirectory": "{workspaceRoot}/coverage/{projectRoot}"
       }
+    },
+    "manual-test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "rm -rf supabase/",
+          "npx -y supabase@latest init --with-vscode-settings --with-intellij-settings",
+          "nx serve -- install",
+          "./scripts/test-pgflow-installed"
+        ],
+        "cwd": "{projectRoot}",
+        "parallel": false
+      }
     }
   }
 }
