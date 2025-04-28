@@ -101,8 +101,13 @@ export async function copyMigrations({
   const filesToCopy: string[] = [];
   const skippedFiles: string[] = [];
 
-  // Determine which files need to be copied
+  // Determine which SQL files need to be copied
   for (const file of files) {
+    // Only process SQL files
+    if (!file.endsWith('.sql')) {
+      continue;
+    }
+
     const destination = path.join(migrationsPath, file);
 
     if (fs.existsSync(destination)) {
