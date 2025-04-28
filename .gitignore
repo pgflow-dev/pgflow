@@ -48,3 +48,4 @@ vitest.config.*.timestamp*
 tsconfig.vitest-temp.json
 deno-dist/
 .nx-inputs
+.vscode
