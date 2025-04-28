@@ -1,5 +1,14 @@
 # pgflow
 
+## 0.1.19
+
+### Patch Changes
+
+- db66f8e: Add installation improvements: auto-detect Supabase path, support non-interactive mode, update config.toml, migrate SQL files, and set required environment variables with validation scripts.
+- Updated dependencies [a10b442]
+- Updated dependencies [efbd108]
+  - @pgflow/core@0.1.19
+
 ## 0.1.18
 
 ### Patch Changes
