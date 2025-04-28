@@ -31,6 +31,12 @@ jobs:
           node-version: '20.18.1'
           cache: 'pnpm'
 
+      - name: Install sqruff
+        uses: quarylabs/install-sqruff-cli-action@main
+
+      - name: Setup Atlas
+        uses: ariga/setup-atlas@master
+
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
