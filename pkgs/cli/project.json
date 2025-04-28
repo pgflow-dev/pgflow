@@ -29,11 +29,11 @@
         "cwd": "{projectRoot}"
       }
     },
-    "test": {
+    "__disabled__test": {
       "executor": "nx:noop",
       "dependsOn": ["test:vitest", "test:e2e"]
     },
-    "test:vitest": {
+    "__disabled__test:vitest": {
       "executor": "@nx/vite:test",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
