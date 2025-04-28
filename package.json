@@ -6,9 +6,9 @@
     "build": "nx run-many --target=build --all",
     "version": "pnpm changeset version && ./scripts/update-jsr-json-version.sh",
     "publish:npm": "pnpm nx run-many -t build && pnpm publish --recursive --filter=!./pkgs/edge-worker",
-    "publish:jsr": "git status && cd ./pkgs/edge-worker && jsr publish --allow-slow-types",
+    "publish:jsr": "cd ./pkgs/edge-worker && jsr publish --allow-slow-types",
     "changeset:tag": "pnpm changeset tag && git push --follow-tags",
-    "release": "pnpm run publish:npm && pnpm run publish:jsr && pnpm run changeset:tag"
+    "release": "git status && pnpm run publish:npm && pnpm run publish:jsr && pnpm run changeset:tag"
   },
   "private": true,
   "devDependencies": {
