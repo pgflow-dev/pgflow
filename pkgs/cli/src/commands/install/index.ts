@@ -2,6 +2,7 @@ import { type Command } from 'commander';
 import { intro, isCancel, log, note } from '@clack/prompts';
 import { copyMigrations } from './copy-migrations.js';
 import { updateConfigToml } from './update-config-toml.js';
+import { updateEnvFile } from './update-env-file.js';
 import { supabasePathPrompt } from './supabase-path-prompt.js';
 
 export default (program: Command) => {
@@ -21,15 +22,16 @@ export default (program: Command) => {
       // First update config.toml, then copy migrations
       const configUpdated = await updateConfigToml({ supabasePath });
       const migrationsCopied = await copyMigrations({ supabasePath });
+      const envFileCreated = await updateEnvFile({ supabasePath });
 
       // Show completion message
-      if (migrationsCopied || configUpdated) {
+      if (migrationsCopied || configUpdated || envFileCreated) {
         log.success('pgflow setup completed successfully');
 
         // Show next steps if changes were made
         const nextSteps = [];
 
-        if (configUpdated) {
+        if (configUpdated || envFileCreated) {
           nextSteps.push(
             '• Restart your Supabase instance for configuration changes to take effect'
           );
