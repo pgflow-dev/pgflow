@@ -42,7 +42,7 @@ export default function Page() {
       }
       
       if (data && data.run_id) {
-        router.push(`/app/flows/${data.run_id}`);
+        router.push(`/websites/runs/${data.run_id}`);
       } else {
         setFormError('Failed to start flow analysis');
       }
