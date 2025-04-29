@@ -12,8 +12,8 @@ create table pgflow.runs (
   completed_at timestamptz,
   failed_at timestamptz,
   constraint completed_at_or_failed_at check (completed_at is null or failed_at is null),
-  constraint completed_at_is_after_started_at check (completed_at is null or started_at < completed_at),
-  constraint failed_at_is_after_started_at check (failed_at is null or started_at < failed_at),
+  constraint completed_at_is_after_started_at check (completed_at is null or completed_at >= started_at),
+  constraint failed_at_is_after_started_at check (failed_at is null or failed_at >= started_at),
   constraint status_is_valid check (status in ('started', 'failed', 'completed'))
 );
 
@@ -38,9 +38,9 @@ create table pgflow.step_states (
   constraint status_is_valid check (status in ('created', 'started', 'completed', 'failed')),
   constraint status_and_remaining_tasks_match check (status != 'completed' or remaining_tasks = 0),
   constraint completed_at_or_failed_at check (completed_at is null or failed_at is null),
-  constraint started_at_is_after_created_at check (started_at is null or created_at < started_at),
-  constraint completed_at_is_after_started_at check (completed_at is null or started_at < completed_at),
-  constraint failed_at_is_after_started_at check (failed_at is null or started_at < failed_at)
+  constraint started_at_is_after_created_at check (started_at is null or started_at >= created_at),
+  constraint completed_at_is_after_started_at check (completed_at is null or completed_at >= started_at),
+  constraint failed_at_is_after_started_at check (failed_at is null or failed_at >= started_at)
 );
 
 create index if not exists idx_step_states_ready on pgflow.step_states (run_id, status, remaining_deps) where status
@@ -75,8 +75,8 @@ create table pgflow.step_tasks (
   constraint only_single_task_per_step check (task_index = 0),
   constraint attempts_count_nonnegative check (attempts_count >= 0),
   constraint completed_at_or_failed_at check (completed_at is null or failed_at is null),
-  constraint completed_at_is_after_queued_at check (completed_at is null or queued_at < completed_at),
-  constraint failed_at_is_after_queued_at check (failed_at is null or queued_at < failed_at)
+  constraint completed_at_is_after_queued_at check (completed_at is null or completed_at >= queued_at),
+  constraint failed_at_is_after_queued_at check (failed_at is null or failed_at >= queued_at)
 );
 
 create index if not exists idx_step_tasks_message_id on pgflow.step_tasks (message_id);
