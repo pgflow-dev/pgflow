@@ -7,29 +7,420 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
+  pgflow: {
     Tables: {
-      [_ in never]: never
+      deps: {
+        Row: {
+          dep_slug: string
+          flow_slug: string
+          step_slug: string
+        }
+        Insert: {
+          dep_slug: string
+          flow_slug: string
+          step_slug: string
+        }
+        Update: {
+          dep_slug?: string
+          flow_slug?: string
+          step_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deps_flow_slug_dep_slug_fkey"
+            columns: ["flow_slug", "dep_slug"]
+            isOneToOne: false
+            referencedRelation: "steps"
+            referencedColumns: ["flow_slug", "step_slug"]
+          },
+          {
+            foreignKeyName: "deps_flow_slug_fkey"
+            columns: ["flow_slug"]
+            isOneToOne: false
+            referencedRelation: "flows"
+            referencedColumns: ["flow_slug"]
+          },
+          {
+            foreignKeyName: "deps_flow_slug_step_slug_fkey"
+            columns: ["flow_slug", "step_slug"]
+            isOneToOne: false
+            referencedRelation: "steps"
+            referencedColumns: ["flow_slug", "step_slug"]
+          },
+        ]
+      }
+      flows: {
+        Row: {
+          flow_slug: string
+          opt_base_delay: number
+          opt_max_attempts: number
+          opt_timeout: number
+        }
+        Insert: {
+          flow_slug: string
+          opt_base_delay?: number
+          opt_max_attempts?: number
+          opt_timeout?: number
+        }
+        Update: {
+          flow_slug?: string
+          opt_base_delay?: number
+          opt_max_attempts?: number
+          opt_timeout?: number
+        }
+        Relationships: []
+      }
+      runs: {
+        Row: {
+          flow_slug: string
+          input: Json
+          output: Json | null
+          remaining_steps: number
+          run_id: string
+          status: string
+        }
+        Insert: {
+          flow_slug: string
+          input: Json
+          output?: Json | null
+          remaining_steps?: number
+          run_id?: string
+          status?: string
+        }
+        Update: {
+          flow_slug?: string
+          input?: Json
+          output?: Json | null
+          remaining_steps?: number
+          run_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "runs_flow_slug_fkey"
+            columns: ["flow_slug"]
+            isOneToOne: false
+            referencedRelation: "flows"
+            referencedColumns: ["flow_slug"]
+          },
+        ]
+      }
+      step_states: {
+        Row: {
+          flow_slug: string
+          remaining_deps: number
+          remaining_tasks: number
+          run_id: string
+          status: string
+          step_slug: string
+        }
+        Insert: {
+          flow_slug: string
+          remaining_deps?: number
+          remaining_tasks?: number
+          run_id: string
+          status?: string
+          step_slug: string
+        }
+        Update: {
+          flow_slug?: string
+          remaining_deps?: number
+          remaining_tasks?: number
+          run_id?: string
+          status?: string
+          step_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "step_states_flow_slug_fkey"
+            columns: ["flow_slug"]
+            isOneToOne: false
+            referencedRelation: "flows"
+            referencedColumns: ["flow_slug"]
+          },
+          {
+            foreignKeyName: "step_states_flow_slug_step_slug_fkey"
+            columns: ["flow_slug", "step_slug"]
+            isOneToOne: false
+            referencedRelation: "steps"
+            referencedColumns: ["flow_slug", "step_slug"]
+          },
+          {
+            foreignKeyName: "step_states_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "runs"
+            referencedColumns: ["run_id"]
+          },
+        ]
+      }
+      step_tasks: {
+        Row: {
+          attempts_count: number
+          error_message: string | null
+          flow_slug: string
+          message_id: number | null
+          output: Json | null
+          run_id: string
+          status: string
+          step_slug: string
+          task_index: number
+        }
+        Insert: {
+          attempts_count?: number
+          error_message?: string | null
+          flow_slug: string
+          message_id?: number | null
+          output?: Json | null
+          run_id: string
+          status?: string
+          step_slug: string
+          task_index?: number
+        }
+        Update: {
+          attempts_count?: number
+          error_message?: string | null
+          flow_slug?: string
+          message_id?: number | null
+          output?: Json | null
+          run_id?: string
+          status?: string
+          step_slug?: string
+          task_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "step_tasks_flow_slug_fkey"
+            columns: ["flow_slug"]
+            isOneToOne: false
+            referencedRelation: "flows"
+            referencedColumns: ["flow_slug"]
+          },
+          {
+            foreignKeyName: "step_tasks_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "runs"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "step_tasks_run_id_step_slug_fkey"
+            columns: ["run_id", "step_slug"]
+            isOneToOne: false
+            referencedRelation: "step_states"
+            referencedColumns: ["run_id", "step_slug"]
+          },
+        ]
+      }
+      steps: {
+        Row: {
+          deps_count: number
+          flow_slug: string
+          opt_base_delay: number | null
+          opt_max_attempts: number | null
+          opt_timeout: number | null
+          step_slug: string
+          step_type: string
+        }
+        Insert: {
+          deps_count?: number
+          flow_slug: string
+          opt_base_delay?: number | null
+          opt_max_attempts?: number | null
+          opt_timeout?: number | null
+          step_slug: string
+          step_type?: string
+        }
+        Update: {
+          deps_count?: number
+          flow_slug?: string
+          opt_base_delay?: number | null
+          opt_max_attempts?: number | null
+          opt_timeout?: number | null
+          step_slug?: string
+          step_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "steps_flow_slug_fkey"
+            columns: ["flow_slug"]
+            isOneToOne: false
+            referencedRelation: "flows"
+            referencedColumns: ["flow_slug"]
+          },
+        ]
+      }
+      workers: {
+        Row: {
+          function_name: string
+          last_heartbeat_at: string
+          queue_name: string
+          started_at: string
+          stopped_at: string | null
+          worker_id: string
+        }
+        Insert: {
+          function_name: string
+          last_heartbeat_at?: string
+          queue_name: string
+          started_at?: string
+          stopped_at?: string | null
+          worker_id: string
+        }
+        Update: {
+          function_name?: string
+          last_heartbeat_at?: string
+          queue_name?: string
+          started_at?: string
+          stopped_at?: string | null
+          worker_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      graphql: {
-        Args: {
-          operationName?: string
-          query?: string
-          variables?: Json
-          extensions?: Json
+      add_step: {
+        Args:
+          | {
+              flow_slug: string
+              step_slug: string
+              deps_slugs: string[]
+              max_attempts?: number
+              base_delay?: number
+              timeout?: number
+            }
+          | {
+              flow_slug: string
+              step_slug: string
+              max_attempts?: number
+              base_delay?: number
+              timeout?: number
+            }
+        Returns: {
+          deps_count: number
+          flow_slug: string
+          opt_base_delay: number | null
+          opt_max_attempts: number | null
+          opt_timeout: number | null
+          step_slug: string
+          step_type: string
         }
-        Returns: Json
+      }
+      calculate_retry_delay: {
+        Args: { base_delay: number; attempts_count: number }
+        Returns: number
+      }
+      complete_task: {
+        Args: {
+          run_id: string
+          step_slug: string
+          task_index: number
+          output: Json
+        }
+        Returns: {
+          attempts_count: number
+          error_message: string | null
+          flow_slug: string
+          message_id: number | null
+          output: Json | null
+          run_id: string
+          status: string
+          step_slug: string
+          task_index: number
+        }[]
+      }
+      create_flow: {
+        Args: {
+          flow_slug: string
+          max_attempts?: number
+          base_delay?: number
+          timeout?: number
+        }
+        Returns: {
+          flow_slug: string
+          opt_base_delay: number
+          opt_max_attempts: number
+          opt_timeout: number
+        }
+      }
+      fail_task: {
+        Args: {
+          run_id: string
+          step_slug: string
+          task_index: number
+          error_message: string
+        }
+        Returns: {
+          attempts_count: number
+          error_message: string | null
+          flow_slug: string
+          message_id: number | null
+          output: Json | null
+          run_id: string
+          status: string
+          step_slug: string
+          task_index: number
+        }[]
+      }
+      is_valid_slug: {
+        Args: { slug: string }
+        Returns: boolean
+      }
+      maybe_complete_run: {
+        Args: { run_id: string }
+        Returns: undefined
+      }
+      poll_for_tasks: {
+        Args: {
+          queue_name: string
+          vt: number
+          qty: number
+          max_poll_seconds?: number
+          poll_interval_ms?: number
+        }
+        Returns: Database["pgflow"]["CompositeTypes"]["step_task_record"][]
+      }
+      read_with_poll: {
+        Args: {
+          queue_name: string
+          vt: number
+          qty: number
+          max_poll_seconds?: number
+          poll_interval_ms?: number
+          conditional?: Json
+        }
+        Returns: unknown[]
+      }
+      start_flow: {
+        Args: { flow_slug: string; input: Json }
+        Returns: {
+          flow_slug: string
+          input: Json
+          output: Json | null
+          remaining_steps: number
+          run_id: string
+          status: string
+        }[]
+      }
+      start_ready_steps: {
+        Args: { run_id: string }
+        Returns: undefined
       }
     }
     Enums: {
       [_ in never]: never
     }
     CompositeTypes: {
-      [_ in never]: never
+      step_task_record: {
+        flow_slug: string | null
+        run_id: string | null
+        step_slug: string | null
+        input: Json | null
+        msg_id: number | null
+      }
     }
   }
   public: {
@@ -66,7 +457,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      start_analyze_website_flow: {
+        Args: { url: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
@@ -183,7 +577,7 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
+  pgflow: {
     Enums: {},
   },
   public: {
