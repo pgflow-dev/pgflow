@@ -26,11 +26,11 @@ export default function FlowRunPage() {
 
         // Fetch the flow run data
         const { data, error } = await supabase
-          .from('pgflow.runs')
+          .schema('pgflow')
+          .from('runs')
           .select('*')
           .eq('run_id', runId)
-          .returns<RunRow>()
-          .single();
+          .single<RunRow>();
 
         if (error) {
           setError(`Error fetching run data: ${error.message}`);
