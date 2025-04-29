@@ -14,7 +14,7 @@ create table pgflow.runs (
   constraint completed_at_or_failed_at check (completed_at is null or failed_at is null),
   constraint completed_at_is_after_started_at check (completed_at is null or started_at < completed_at),
   constraint failed_at_is_after_started_at check (failed_at is null or started_at < failed_at),
-  constraint status_is_valid check (status in ('started', 'failed', 'completed')),
+  constraint status_is_valid check (status in ('started', 'failed', 'completed'))
 );
 
 create index if not exists idx_runs_flow_slug on pgflow.runs (flow_slug);
