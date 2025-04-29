@@ -5,21 +5,28 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { FormMessage, Message } from '@/components/form-message';
 
-import { Database } from '@/supabase/functions/database-types';
+import { Database, Json } from '@/supabase/functions/database-types';
 
 type RunRow = Database['pgflow']['Tables']['runs']['Row'];
-type Json = Database['Json'];
+type StepStateRow = Database['pgflow']['Tables']['step_states']['Row'];
+type StepTaskRow = Database['pgflow']['Tables']['step_tasks']['Row'];
 
-function RenderJson(json: Json) {
+// Define a type that reflects the actual structure returned from the query
+type ResultRow = RunRow & {
+  step_states: StepStateRow[];
+  step_tasks: StepTaskRow[];
+};
+
+function RenderJson({ json }: { json: Json }) {
   return (
-    <pre className="p-4 bg-muted rounded-md overrun-auto text-sm">
+    <pre className="p-4 bg-muted rounded-md overflow-auto text-sm">
       {JSON.stringify(json, null, 2)}
     </pre>
   );
 }
 
 export default function FlowRunPage() {
-  const [runData, setRunData] = useState<RunRow | null>(null);
+  const [runData, setRunData] = useState<ResultRow | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
@@ -40,11 +47,12 @@ export default function FlowRunPage() {
           .select(
             `
             *,
-            step_states!step_states_run_id_fkey(*)
+            step_states!step_states_run_id_fkey(*),
+            step_tasks!step_tasks_run_id_fkey(*)
           `,
           )
           .eq('run_id', runId)
-          .single<RunRow>();
+          .single<ResultRow>();
 
         if (error) {
           setError(`Error fetching run data: ${error.message}`);
@@ -155,91 +163,84 @@ export default function FlowRunPage() {
                   </div>
                 </dl>
               </div>
-              
-              <div>
-                <h3 className="text-lg font-medium mb-2">Steps Overview</h3>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {runData.step_states && runData.step_states.map((step, index) => (
-                    <div 
-                      key={index} 
-                      className={`px-3 py-1.5 rounded-md border flex items-center gap-2 ${
-                        step.status === 'completed' ? 'bg-green-500/10 border-green-500/30' : 
-                        step.status === 'started' ? 'bg-blue-500/10 border-blue-500/30' : 
-                        step.status === 'failed' ? 'bg-red-500/10 border-red-500/30' : 
-                        'bg-yellow-500/10 border-yellow-500/30'
-                      }`}
-                    >
-                      <span className={`inline-block w-2 h-2 rounded-full ${
-                        step.status === 'completed' ? 'bg-green-500' : 
-                        step.status === 'started' ? 'bg-blue-500' : 
-                        step.status === 'failed' ? 'bg-red-500' : 'bg-yellow-500'
-                      }`}></span>
-                      <span className="text-sm font-medium">{step.step_slug}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
 
               <div>
                 <h3 className="text-lg font-medium mb-2">Steps Status</h3>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-border">
-                    <thead className="bg-muted/50">
-                      <tr>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Step
-                        </th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Dependencies
-                        </th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Tasks
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-background divide-y divide-border">
-                      {runData.step_states &&
-                        runData.step_states.map((step, index) => (
-                          <tr
-                            key={index}
-                            className={
-                              index % 2 === 0 ? 'bg-background' : 'bg-muted/20'
-                            }
-                          >
-                            <td className="px-3 py-2 text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {runData.step_states &&
+                    runData.step_states.map((step, index) => {
+                      // Find the corresponding step task with output
+                      const stepTask = runData.step_tasks?.find(
+                        (task) =>
+                          task.step_slug === step.step_slug &&
+                          task.status === 'completed',
+                      );
+
+                      return (
+                        <div
+                          key={index}
+                          className={`p-4 rounded-lg border ${
+                            step.status === 'completed'
+                              ? 'bg-green-500/5 border-green-500/30'
+                              : step.status === 'started'
+                                ? 'bg-blue-500/5 border-blue-500/30'
+                                : step.status === 'failed'
+                                  ? 'bg-red-500/5 border-red-500/30'
+                                  : 'bg-yellow-500/5 border-yellow-500/30'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-base font-medium">
                               {step.step_slug}
-                            </td>
-                            <td className="px-3 py-2 text-sm">
-                              <span className="flex items-center">
-                                <span
-                                  className={`inline-block w-2 h-2 rounded-full mr-2 ${
-                                    step.status === 'completed'
-                                      ? 'bg-green-500'
-                                      : step.status === 'started'
-                                        ? 'bg-blue-500'
-                                        : step.status === 'failed'
-                                          ? 'bg-red-500'
-                                          : 'bg-yellow-500'
-                                  }`}
-                                ></span>
-                                <span className="capitalize">
-                                  {step.status}
-                                </span>
+                            </h4>
+                            <span className="flex items-center">
+                              <span
+                                className={`inline-block w-2 h-2 rounded-full mr-2 ${
+                                  step.status === 'completed'
+                                    ? 'bg-green-500'
+                                    : step.status === 'started'
+                                      ? 'bg-blue-500'
+                                      : step.status === 'failed'
+                                        ? 'bg-red-500'
+                                        : 'bg-yellow-500'
+                                }`}
+                              ></span>
+                              <span className="capitalize text-sm">
+                                {step.status}
                               </span>
-                            </td>
-                            <td className="px-3 py-2 text-sm">
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                            <div>
+                              <span className="text-foreground/60">
+                                Dependencies:
+                              </span>{' '}
                               {step.remaining_deps}
-                            </td>
-                            <td className="px-3 py-2 text-sm">
+                            </div>
+                            <div>
+                              <span className="text-foreground/60">Tasks:</span>{' '}
                               {step.remaining_tasks}
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
+                            </div>
+                          </div>
+
+                          {step.status === 'completed' && stepTask?.output && (
+                            <div className="mt-2">
+                              <details>
+                                <summary className="cursor-pointer text-sm text-foreground/70 hover:text-foreground">
+                                  View Output
+                                </summary>
+                                <div className="mt-2 p-2 bg-muted/50 rounded-md text-xs overflow-auto max-h-40">
+                                  <pre>
+                                    {JSON.stringify(stepTask.output, null, 2)}
+                                  </pre>
+                                </div>
+                              </details>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
 
@@ -265,7 +266,7 @@ export default function FlowRunPage() {
               <summary className="cursor-pointer text-sm text-muted-foreground">
                 View Raw Data
               </summary>
-              <pre className="mt-2 p-2 bg-muted rounded-md text-xs overrun-auto">
+              <pre className="mt-2 p-2 bg-muted rounded-md text-xs overflow-auto">
                 {JSON.stringify(runData, null, 2)}
               </pre>
             </details>
