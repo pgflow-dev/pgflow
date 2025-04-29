@@ -135,7 +135,8 @@
     "dependencies": [
       "jsr:@pgflow/edge-worker@0.1.20",
       "jsr:@supabase/supabase-js@^2.49.4",
-      "npm:@pgflow/dsl@0.1.20"
+      "npm:@pgflow/dsl@0.1.20",
+      "npm:groq-sdk@^0.20.1"
     ]
   }
 }
