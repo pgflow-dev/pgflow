@@ -48,7 +48,7 @@ select isnt(
 select
   pgflow.complete_task((select run_id from pgflow.runs limit 1), 'second', 0, '{"result": "second completed"}'::jsonb);
 select
-  pgflow.complete_task((select run_id from pgflow.runs limit 1), 'third', 0, '{"result": "third completed"}'::jsonb);
+  pgflow.complete_task((select run_id from pgflow.runs limit 1), 'last', 0, '{"result": "last completed"}'::jsonb);
 
 -- TEST: Run should have completed_at timestamp set
 select isnt(

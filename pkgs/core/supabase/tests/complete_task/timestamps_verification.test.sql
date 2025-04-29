@@ -58,16 +58,16 @@ select is(
 select
   pgflow.complete_task((select run_id from pgflow.runs limit 1), 'second', 0, '{"result": "second completed"}'::jsonb);
 select
-  pgflow.complete_task((select run_id from pgflow.runs limit 1), 'third', 0, '{"result": "third completed"}'::jsonb);
+  pgflow.complete_task((select run_id from pgflow.runs limit 1), 'last', 0, '{"result": "last completed"}'::jsonb);
 
--- TEST: Run should have completed_at timestamp set
+-- -- TEST: Run should have completed_at timestamp set
 select isnt(
   (select completed_at from pgflow.runs where run_id = (select run_id from pgflow.runs limit 1)),
   null,
   'Run should have completed_at timestamp set'
 );
 
--- TEST: Run should have failed_at as null
+-- -- TEST: Run should have failed_at as null
 select is(
   (select failed_at from pgflow.runs where run_id = (select run_id from pgflow.runs limit 1)),
   null,
