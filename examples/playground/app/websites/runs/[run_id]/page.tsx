@@ -37,7 +37,12 @@ export default function FlowRunPage() {
         const { data, error } = await supabase
           .schema('pgflow')
           .from('runs')
-          .select('*')
+          .select(
+            `
+            *,
+            step_states!step_states_run_id_fkey(*)
+          `,
+          )
           .eq('run_id', runId)
           .single<RunRow>();
 
@@ -149,6 +154,93 @@ export default function FlowRunPage() {
                     <dd>{runData.remaining_steps}</dd>
                   </div>
                 </dl>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-medium mb-2">Steps Overview</h3>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {runData.step_states && runData.step_states.map((step, index) => (
+                    <div 
+                      key={index} 
+                      className={`px-3 py-1.5 rounded-md border flex items-center gap-2 ${
+                        step.status === 'completed' ? 'bg-green-500/10 border-green-500/30' : 
+                        step.status === 'started' ? 'bg-blue-500/10 border-blue-500/30' : 
+                        step.status === 'failed' ? 'bg-red-500/10 border-red-500/30' : 
+                        'bg-yellow-500/10 border-yellow-500/30'
+                      }`}
+                    >
+                      <span className={`inline-block w-2 h-2 rounded-full ${
+                        step.status === 'completed' ? 'bg-green-500' : 
+                        step.status === 'started' ? 'bg-blue-500' : 
+                        step.status === 'failed' ? 'bg-red-500' : 'bg-yellow-500'
+                      }`}></span>
+                      <span className="text-sm font-medium">{step.step_slug}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-medium mb-2">Steps Status</h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-border">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Step
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Dependencies
+                        </th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Tasks
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-background divide-y divide-border">
+                      {runData.step_states &&
+                        runData.step_states.map((step, index) => (
+                          <tr
+                            key={index}
+                            className={
+                              index % 2 === 0 ? 'bg-background' : 'bg-muted/20'
+                            }
+                          >
+                            <td className="px-3 py-2 text-sm">
+                              {step.step_slug}
+                            </td>
+                            <td className="px-3 py-2 text-sm">
+                              <span className="flex items-center">
+                                <span
+                                  className={`inline-block w-2 h-2 rounded-full mr-2 ${
+                                    step.status === 'completed'
+                                      ? 'bg-green-500'
+                                      : step.status === 'started'
+                                        ? 'bg-blue-500'
+                                        : step.status === 'failed'
+                                          ? 'bg-red-500'
+                                          : 'bg-yellow-500'
+                                  }`}
+                                ></span>
+                                <span className="capitalize">
+                                  {step.status}
+                                </span>
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 text-sm">
+                              {step.remaining_deps}
+                            </td>
+                            <td className="px-3 py-2 text-sm">
+                              {step.remaining_tasks}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               <div>
