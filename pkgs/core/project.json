@@ -44,7 +44,7 @@
     "verify-migrations": {
       "executor": "nx:run-commands",
       "dependsOn": ["verify-schemas-synced", "supabase:ensure-started"],
-      "inputs": ["migrationVerificationCache"],
+      "inputs": ["migrations", "migrationVerificationCache"],
       "outputs": ["{projectRoot}/.nx-inputs/verify-migrations.txt"],
       "options": {
         "cwd": "{projectRoot}",
