@@ -176,6 +176,7 @@
     },
     "test:vitest": {
       "executor": "@nx/vite:test",
+      "dependsOn": ["build", "verify-gen-types"],
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "passWithNoTests": true,
@@ -205,6 +206,25 @@
           "[ -s src/database-types.ts ] || (echo 'ERROR: Generated types file is empty!' && exit 1)"
         ],
         "cwd": "{projectRoot}",
+        "parallel": false
+      },
+      "cache": true
+    },
+    "verify-gen-types": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["verify-migrations"],
+      "inputs": ["migrations", "databaseTypes"],
+      "outputs": ["{projectRoot}/.nx-inputs/verify-gen-types.txt"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          "mkdir -p .nx-inputs",
+          "echo 'Verifying database types are up-to-date...'",
+          "cp src/database-types.ts .nx-inputs/database-types.ts.backup",
+          "supabase gen types --local --schema pgflow --schema pgmq > .nx-inputs/database-types.ts.new",
+          "diff .nx-inputs/database-types.ts.backup .nx-inputs/database-types.ts.new > .nx-inputs/verify-gen-types.txt 2>&1 || (echo 'ERROR: Database types are out of date! Run \"nx gen-types core\" to update them.' && exit 1)",
+          "echo 'Database types are up-to-date' > .nx-inputs/verify-gen-types.txt"
+        ],
         "parallel": false
       },
       "cache": true
