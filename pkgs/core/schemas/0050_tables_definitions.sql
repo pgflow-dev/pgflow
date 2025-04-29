@@ -17,11 +17,13 @@ create table pgflow.steps (
   flow_slug text not null references pgflow.flows (flow_slug),
   step_slug text not null,
   step_type text not null default 'single',
+  step_index int not null default 0,
   deps_count int not null default 0 check (deps_count >= 0),
   opt_max_attempts int,
   opt_base_delay int,
   opt_timeout int,
   primary key (flow_slug, step_slug),
+  unique (flow_slug, step_index),  -- Ensure step_index is unique within a flow
   check (pgflow.is_valid_slug(step_slug)),
   check (step_type in ('single')),
   constraint opt_max_attempts_is_nonnegative check (opt_max_attempts is null or opt_max_attempts >= 0),
