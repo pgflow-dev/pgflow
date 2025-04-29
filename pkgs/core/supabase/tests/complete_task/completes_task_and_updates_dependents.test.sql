@@ -14,22 +14,30 @@ select pgflow.complete_task(
   '{"result": "first completed"}'::jsonb
 );
 
--- TEST: Task should be marked as completed with correct output
+-- TEST: Task should be marked as completed with correct output and timestamps
 select results_eq(
-  $$ SELECT status, output FROM pgflow.step_tasks
+  $$ SELECT status, output, 
+        completed_at IS NOT NULL AS has_completed_at,
+        failed_at IS NULL AS has_no_failed_at,
+        queued_at < completed_at AS completed_after_queued
+     FROM pgflow.step_tasks
      WHERE run_id = (SELECT run_id FROM pgflow.runs LIMIT 1)
      AND step_slug = 'first' AND task_index = 0 $$,
-  $$ VALUES ('completed', '{"result": "first completed"}'::jsonb) $$,
-  'Task should be marked as completed with correct output'
+  $$ VALUES ('completed', '{"result": "first completed"}'::jsonb, true, true, true) $$,
+  'Task should be marked as completed with correct output and timestamps'
 );
 
--- TEST: Step state should be marked as completed
+-- TEST: Step state should be marked as completed with proper timestamps
 select results_eq(
-  $$ SELECT status, remaining_tasks FROM pgflow.step_states
+  $$ SELECT status, remaining_tasks,
+        completed_at IS NOT NULL AS has_completed_at,
+        failed_at IS NULL AS has_no_failed_at,
+        started_at < completed_at AS completed_after_started
+     FROM pgflow.step_states
      WHERE run_id = (SELECT run_id FROM pgflow.runs LIMIT 1)
      AND step_slug = 'first' $$,
-  $$ VALUES ('completed', 0) $$,
-  'Step state should be marked as completed with no remaining tasks'
+  $$ VALUES ('completed', 0, true, true, true) $$,
+  'Step state should be marked as completed with no remaining tasks and proper timestamps'
 );
 
 -- TEST: Dependent step should have remaining_deps decremented

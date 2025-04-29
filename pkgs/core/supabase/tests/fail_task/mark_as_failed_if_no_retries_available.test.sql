@@ -10,11 +10,16 @@ select pgflow.start_flow('with_retry', '{"test": true}'::JSONB);
 -- max_attempts is 0, so failing once should mark the task as failed
 select pgflow_tests.poll_and_fail('with_retry');
 
--- TEST: The task should be queued
-select is(
-  (select status from pgflow.step_tasks where flow_slug = 'with_retry' and step_slug = 'first'),
-  'failed',
-  'The task should be failed'
+-- TEST: The task should be failed with proper timestamps
+select results_eq(
+  $$ SELECT status, 
+        failed_at IS NOT NULL AS has_failed_at,
+        completed_at IS NULL AS has_no_completed_at,
+        queued_at < failed_at AS failed_after_queued
+     FROM pgflow.step_tasks 
+     WHERE flow_slug = 'with_retry' AND step_slug = 'first' $$,
+  $$ VALUES ('failed', true, true, true) $$,
+  'The task should be failed with proper timestamps'
 );
 
 -- TEST: The task should have null error_message
@@ -31,18 +36,30 @@ select is(
   'There should be no messages in the queue'
 );
 
--- TEST: The step should be marked as failed
-select is(
-  (select status from pgflow.step_states where flow_slug = 'with_retry' and step_slug = 'first' limit 1),
-  'failed',
-  'The step should be marked as failed'
+-- TEST: The step should be marked as failed with proper timestamps
+select results_eq(
+  $$ SELECT status,
+        failed_at IS NOT NULL AS has_failed_at,
+        completed_at IS NULL AS has_no_completed_at,
+        started_at < failed_at AS failed_after_started
+     FROM pgflow.step_states 
+     WHERE flow_slug = 'with_retry' AND step_slug = 'first' 
+     LIMIT 1 $$,
+  $$ VALUES ('failed', true, true, true) $$,
+  'The step should be marked as failed with proper timestamps'
 );
 
--- TEST: The run should be marked as failed
-select is(
-  (select status from pgflow.runs where flow_slug = 'with_retry' limit 1),
-  'failed',
-  'The run should be marked as failed'
+-- TEST: The run should be marked as failed with proper timestamps
+select results_eq(
+  $$ SELECT status,
+        failed_at IS NOT NULL AS has_failed_at,
+        completed_at IS NULL AS has_no_completed_at,
+        started_at < failed_at AS failed_after_started
+     FROM pgflow.runs 
+     WHERE flow_slug = 'with_retry' 
+     LIMIT 1 $$,
+  $$ VALUES ('failed', true, true, true) $$,
+  'The run should be marked as failed with proper timestamps'
 );
 
 select finish();

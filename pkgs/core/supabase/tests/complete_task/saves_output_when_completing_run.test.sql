@@ -32,11 +32,15 @@ select pgflow.complete_task(
   '"disconnected successful"'::JSONB
 );
 
--- TEST: Make sure that run is completed
+-- TEST: Make sure that run is completed with proper timestamps
 select results_eq(
-  $$ SELECT status::text, remaining_steps::int FROM pgflow.runs LIMIT 1 $$,
-  $$ VALUES ('completed'::text, 0::int) $$,
-  'Run was completed'
+  $$ SELECT status::text, remaining_steps::int, 
+        completed_at IS NOT NULL AS has_completed_at,
+        failed_at IS NULL AS has_no_failed_at,
+        started_at < completed_at AS completed_after_started
+     FROM pgflow.runs LIMIT 1 $$,
+  $$ VALUES ('completed'::text, 0::int, true, true, true) $$,
+  'Run was completed with proper timestamps'
 );
 
 -- noqa: disable=all

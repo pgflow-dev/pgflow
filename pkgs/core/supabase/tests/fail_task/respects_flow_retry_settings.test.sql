@@ -22,26 +22,29 @@ select is(
 -- Fail the task second time
 select pgflow_tests.poll_and_fail('custom_retry');
 
--- TEST: The task should be queued (second retry)
-select is(
-  (
-    select status from pgflow.step_tasks
-    where
-      run_id = (select run_id from pgflow.runs where flow_slug = 'custom_retry')
-      and step_slug = 'test_step'
-  ),
-  'failed',
-  'Task should be failed after second failure (2nd attempt of 2)'
+-- TEST: The task should be failed after second failure with proper timestamps
+select results_eq(
+  $$ SELECT status,
+        failed_at IS NOT NULL AS has_failed_at,
+        completed_at IS NULL AS has_no_completed_at,
+        queued_at < failed_at AS failed_after_queued
+     FROM pgflow.step_tasks
+     WHERE run_id = (SELECT run_id FROM pgflow.runs WHERE flow_slug = 'custom_retry')
+     AND step_slug = 'test_step' $$,
+  $$ VALUES ('failed', true, true, true) $$,
+  'Task should be failed after second failure (2nd attempt of 2) with proper timestamps'
 );
 
--- TEST: The run should be failed
-select is(
-  (
-    select status from pgflow.runs
-    where flow_slug = 'custom_retry'
-  ),
-  'failed',
-  'Run should be failed after exceeding retry limit'
+-- TEST: The run should be failed with proper timestamps
+select results_eq(
+  $$ SELECT status,
+        failed_at IS NOT NULL AS has_failed_at,
+        completed_at IS NULL AS has_no_completed_at,
+        started_at < failed_at AS failed_after_started
+     FROM pgflow.runs
+     WHERE flow_slug = 'custom_retry' $$,
+  $$ VALUES ('failed', true, true, true) $$,
+  'Run should be failed after exceeding retry limit with proper timestamps'
 );
 
 select finish();

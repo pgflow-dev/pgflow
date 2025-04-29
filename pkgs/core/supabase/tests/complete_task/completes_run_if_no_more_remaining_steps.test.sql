@@ -51,11 +51,15 @@ select pgflow.complete_task(
   '"last was successful"'::JSONB
 );
 
--- TEST: Final remaining_steps should be 0 and status should be 'completed'
+-- TEST: Final remaining_steps should be 0, status should be 'completed', and completed_at should be set
 select results_eq(
-  $$ SELECT remaining_steps::int, status FROM pgflow.runs LIMIT 1 $$,
-  $$ VALUES (0::int, 'completed'::text) $$,
-  'Final remaining_steps should be 0 and status should be completed'
+  $$ SELECT remaining_steps::int, status, 
+        completed_at IS NOT NULL AS has_completed_at,
+        failed_at IS NULL AS has_no_failed_at,
+        started_at < completed_at AS completed_after_started
+     FROM pgflow.runs LIMIT 1 $$,
+  $$ VALUES (0::int, 'completed'::text, true, true, true) $$,
+  'Final remaining_steps should be 0, status should be completed, and timestamps should be set correctly'
 );
 
 select finish();
