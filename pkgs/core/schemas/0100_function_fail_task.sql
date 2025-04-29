@@ -44,6 +44,10 @@ fail_or_retry_task as (
       WHEN task.attempts_count < (SELECT opt_max_attempts FROM config) THEN 'queued'
       ELSE 'failed'
     END,
+    failed_at = CASE
+      WHEN task.attempts_count >= (SELECT opt_max_attempts FROM config) THEN now()
+      ELSE NULL
+    END,
     error_message = fail_task.error_message
   WHERE task.run_id = fail_task.run_id
     AND task.step_slug = fail_task.step_slug
@@ -57,7 +61,11 @@ maybe_fail_step AS (
     status = CASE
              WHEN (select fail_or_retry_task.status from fail_or_retry_task) = 'failed' THEN 'failed'
              ELSE pgflow.step_states.status
-             END
+             END,
+    failed_at = CASE
+                WHEN (select fail_or_retry_task.status from fail_or_retry_task) = 'failed' THEN now()
+                ELSE NULL
+                END
   FROM fail_or_retry_task
   WHERE pgflow.step_states.run_id = fail_task.run_id
     AND pgflow.step_states.step_slug = fail_task.step_slug
@@ -67,7 +75,11 @@ UPDATE pgflow.runs
 SET status = CASE
               WHEN (select status from maybe_fail_step) = 'failed' THEN 'failed'
               ELSE status
-              END
+              END,
+    failed_at = CASE
+                WHEN (select status from maybe_fail_step) = 'failed' THEN now()
+                ELSE NULL
+                END
 WHERE pgflow.runs.run_id = fail_task.run_id;
 
 -- For queued tasks: delay the message for retry with exponential backoff

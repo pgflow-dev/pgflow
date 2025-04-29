@@ -12,9 +12,15 @@ set search_path to ''
 volatile
 as $$
 WITH
+  next_index AS (
+    SELECT COALESCE(MAX(step_index) + 1, 0) as idx
+    FROM pgflow.steps
+    WHERE flow_slug = add_step.flow_slug
+  ),
   create_step AS (
-    INSERT INTO pgflow.steps (flow_slug, step_slug, deps_count, opt_max_attempts, opt_base_delay, opt_timeout)
-    VALUES (flow_slug, step_slug, COALESCE(array_length(deps_slugs, 1), 0), max_attempts, base_delay, timeout)
+    INSERT INTO pgflow.steps (flow_slug, step_slug, step_index, deps_count, opt_max_attempts, opt_base_delay, opt_timeout)
+    SELECT add_step.flow_slug, add_step.step_slug, idx, COALESCE(array_length(deps_slugs, 1), 0), max_attempts, base_delay, timeout
+    FROM next_index
     ON CONFLICT (flow_slug, step_slug)
     DO UPDATE SET step_slug = pgflow.steps.step_slug
     RETURNING *

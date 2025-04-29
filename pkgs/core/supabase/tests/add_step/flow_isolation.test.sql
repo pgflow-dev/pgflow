@@ -1,5 +1,5 @@
 begin;
-select plan(1);
+select plan(2);
 select pgflow_tests.reset_db();
 
 -- Setup
@@ -20,6 +20,21 @@ select set_eq(
        ('another_flow', 'first_step')
     $$,
   'Steps in second flow should be isolated from first flow'
+);
+
+-- Test step_index isolation between flows
+select set_eq(
+  $$
+      SELECT flow_slug, step_slug, step_index
+      FROM pgflow.steps
+      ORDER BY flow_slug, step_index
+    $$,
+  $$ VALUES
+       ('another_flow', 'first_step', 0),
+       ('another_flow', 'another_step', 1),
+       ('test_flow', 'first_step', 0)
+    $$,
+  'Step indexes should be isolated between flows'
 );
 
 select * from finish();

@@ -1,5 +1,5 @@
 begin;
-select plan(3);
+select plan(4);
 select pgflow_tests.reset_db();
 
 -- Setup
@@ -40,6 +40,23 @@ select set_eq(
        ('third_step', 'fourth_step')
     $$,
   'All dependencies should be correctly recorded'
+);
+
+-- Test step indexes are assigned in order of addition
+select results_eq(
+  $$
+      SELECT step_slug, step_index
+      FROM pgflow.steps
+      WHERE flow_slug = 'test_flow'
+      ORDER BY step_index
+    $$,
+  $$ VALUES
+       ('first_step', 0),
+       ('second_step', 1),
+       ('third_step', 2),
+       ('fourth_step', 3)
+    $$,
+  'Step indexes should be assigned in order of addition'
 );
 
 select * from finish();
