@@ -5,7 +5,7 @@
 -- It is required because it fixes a bug with high CPU usage and Supabase     --
 -- is still using version 1.4.4.                                              --
 --                                                                            --
--- It is slightly modified (removed headers which are not available in 1.4.1) --
+-- It is slightly modified (removed headers which are not available in 1.4.4) --
 --                                                                            --
 -- This will be removed once Supabase upgrades to 1.5.0 or higher.            --
 --------------------------------------------------------------------------------
