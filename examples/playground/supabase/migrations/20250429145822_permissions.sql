@@ -1,5 +1,8 @@
 -- Configure permissions to allow authenticated users to access pgflow tables and functions
 
+-- Grant usage on the pgflow schema to authenticated users
+grant usage on schema pgflow to authenticated;
+
 -- Enable RLS for pgflow tables
 alter table pgflow.flows enable row level security;
 alter table pgflow.steps enable row level security;
