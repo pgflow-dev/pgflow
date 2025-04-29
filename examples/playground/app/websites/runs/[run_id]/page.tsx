@@ -101,22 +101,90 @@ export default function FlowRunPage() {
       filter: `run_id=eq.${runId}`,
     };
 
-    const handleRunUpdate = (payload: any) => {
+    // Type definitions for the payload
+    type RealtimePayload<T> = {
+      schema: string;
+      table: string;
+      commit_timestamp: string;
+      eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+      new: T;
+      old: T;
+      errors: null | any;
+    };
+
+    const handleRunUpdate = (payload: RealtimePayload<RunRow>) => {
       console.log('Run updated:', payload);
-      // Refetch the entire data to get the latest state
-      fetchRunData();
+
+      // Update only the run data without refetching everything
+      setRunData((prevData) => {
+        if (!prevData) return null;
+
+        // Create a new object with the updated run data
+        return {
+          ...prevData,
+          ...payload.new,
+        };
+      });
     };
 
-    const handleStepStateUpdate = (payload: any) => {
+    const handleStepStateUpdate = (payload: RealtimePayload<StepStateRow>) => {
       console.log('Step state updated:', payload);
-      // Refetch the entire data to get the latest state
-      fetchRunData();
+
+      setRunData((prevData) => {
+        if (!prevData) return null;
+
+        // Find the index of the updated step state
+        const stepStateIndex = prevData.step_states.findIndex(
+          (step) => step.step_slug === payload.new.step_slug,
+        );
+
+        // Create a new array of step states with the updated one
+        const updatedStepStates = [...prevData.step_states];
+
+        if (stepStateIndex !== -1) {
+          // Update existing step state
+          updatedStepStates[stepStateIndex] = payload.new;
+        } else if (payload.eventType === 'INSERT') {
+          // Add new step state
+          updatedStepStates.push(payload.new);
+        }
+
+        // Return the updated data
+        return {
+          ...prevData,
+          step_states: updatedStepStates,
+        };
+      });
     };
 
-    const handleStepTaskUpdate = (payload: any) => {
+    const handleStepTaskUpdate = (payload: RealtimePayload<StepTaskRow>) => {
       console.log('Step task updated:', payload);
-      // Refetch the entire data to get the latest state
-      fetchRunData();
+
+      setRunData((prevData) => {
+        if (!prevData) return null;
+
+        // Find the index of the updated step task
+        const stepTaskIndex = prevData.step_tasks.findIndex(
+          (task) => task.id === payload.new.id,
+        );
+
+        // Create a new array of step tasks with the updated one
+        const updatedStepTasks = [...prevData.step_tasks];
+
+        if (stepTaskIndex !== -1) {
+          // Update existing step task
+          updatedStepTasks[stepTaskIndex] = payload.new;
+        } else if (payload.eventType === 'INSERT') {
+          // Add new step task
+          updatedStepTasks.push(payload.new);
+        }
+
+        // Return the updated data
+        return {
+          ...prevData,
+          step_tasks: updatedStepTasks,
+        };
+      });
     };
 
     const realtimeChannel = supabase
