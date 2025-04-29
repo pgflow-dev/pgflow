@@ -72,7 +72,7 @@ $$;
 -- Create "flows" table
 CREATE TABLE "pgflow"."flows" ("flow_slug" text NOT NULL, "opt_max_attempts" integer NOT NULL DEFAULT 3, "opt_base_delay" integer NOT NULL DEFAULT 1, "opt_timeout" integer NOT NULL DEFAULT 60, PRIMARY KEY ("flow_slug"), CONSTRAINT "opt_base_delay_is_nonnegative" CHECK (opt_base_delay >= 0), CONSTRAINT "opt_max_attempts_is_nonnegative" CHECK (opt_max_attempts >= 0), CONSTRAINT "opt_timeout_is_positive" CHECK (opt_timeout > 0), CONSTRAINT "slug_is_valid" CHECK (pgflow.is_valid_slug(flow_slug)));
 -- Create "steps" table
-CREATE TABLE "pgflow"."steps" ("flow_slug" text NOT NULL, "step_slug" text NOT NULL, "step_type" text NOT NULL DEFAULT 'single', "deps_count" integer NOT NULL DEFAULT 0, "opt_max_attempts" integer NULL, "opt_base_delay" integer NULL, "opt_timeout" integer NULL, PRIMARY KEY ("flow_slug", "step_slug"), CONSTRAINT "steps_flow_slug_fkey" FOREIGN KEY ("flow_slug") REFERENCES "pgflow"."flows" ("flow_slug") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "opt_base_delay_is_nonnegative" CHECK ((opt_base_delay IS NULL) OR (opt_base_delay >= 0)), CONSTRAINT "opt_max_attempts_is_nonnegative" CHECK ((opt_max_attempts IS NULL) OR (opt_max_attempts >= 0)), CONSTRAINT "opt_timeout_is_positive" CHECK ((opt_timeout IS NULL) OR (opt_timeout > 0)), CONSTRAINT "steps_deps_count_check" CHECK (deps_count >= 0), CONSTRAINT "steps_step_slug_check" CHECK (pgflow.is_valid_slug(step_slug)), CONSTRAINT "steps_step_type_check" CHECK (step_type = 'single'::text));
+CREATE TABLE "pgflow"."steps" ("flow_slug" text NOT NULL, "step_slug" text NOT NULL, "step_type" text NOT NULL DEFAULT 'single', "step_index" integer NOT NULL DEFAULT 0, "deps_count" integer NOT NULL DEFAULT 0, "opt_max_attempts" integer NULL, "opt_base_delay" integer NULL, "opt_timeout" integer NULL, PRIMARY KEY ("flow_slug", "step_slug"), CONSTRAINT "steps_flow_slug_step_index_key" UNIQUE ("flow_slug", "step_index"), CONSTRAINT "steps_flow_slug_fkey" FOREIGN KEY ("flow_slug") REFERENCES "pgflow"."flows" ("flow_slug") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "opt_base_delay_is_nonnegative" CHECK ((opt_base_delay IS NULL) OR (opt_base_delay >= 0)), CONSTRAINT "opt_max_attempts_is_nonnegative" CHECK ((opt_max_attempts IS NULL) OR (opt_max_attempts >= 0)), CONSTRAINT "opt_timeout_is_positive" CHECK ((opt_timeout IS NULL) OR (opt_timeout > 0)), CONSTRAINT "steps_deps_count_check" CHECK (deps_count >= 0), CONSTRAINT "steps_step_slug_check" CHECK (pgflow.is_valid_slug(step_slug)), CONSTRAINT "steps_step_type_check" CHECK (step_type = 'single'::text));
 -- Create "deps" table
 CREATE TABLE "pgflow"."deps" ("flow_slug" text NOT NULL, "dep_slug" text NOT NULL, "step_slug" text NOT NULL, PRIMARY KEY ("flow_slug", "dep_slug", "step_slug"), CONSTRAINT "deps_flow_slug_dep_slug_fkey" FOREIGN KEY ("flow_slug", "dep_slug") REFERENCES "pgflow"."steps" ("flow_slug", "step_slug") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "deps_flow_slug_fkey" FOREIGN KEY ("flow_slug") REFERENCES "pgflow"."flows" ("flow_slug") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "deps_flow_slug_step_slug_fkey" FOREIGN KEY ("flow_slug", "step_slug") REFERENCES "pgflow"."steps" ("flow_slug", "step_slug") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "deps_check" CHECK (dep_slug <> step_slug));
 -- Create index "idx_deps_by_flow_dep" to table: "deps"
@@ -197,9 +197,15 @@ $$;
 -- Create "add_step" function
 CREATE FUNCTION "pgflow"."add_step" ("flow_slug" text, "step_slug" text, "deps_slugs" text[], "max_attempts" integer DEFAULT NULL::integer, "base_delay" integer DEFAULT NULL::integer, "timeout" integer DEFAULT NULL::integer) RETURNS "pgflow"."steps" LANGUAGE sql SET "search_path" = '' AS $$
 WITH
+  next_index AS (
+    SELECT COALESCE(MAX(step_index) + 1, 0) as idx
+    FROM pgflow.steps
+    WHERE flow_slug = add_step.flow_slug
+  ),
   create_step AS (
-    INSERT INTO pgflow.steps (flow_slug, step_slug, deps_count, opt_max_attempts, opt_base_delay, opt_timeout)
-    VALUES (flow_slug, step_slug, COALESCE(array_length(deps_slugs, 1), 0), max_attempts, base_delay, timeout)
+    INSERT INTO pgflow.steps (flow_slug, step_slug, step_index, deps_count, opt_max_attempts, opt_base_delay, opt_timeout)
+    SELECT add_step.flow_slug, add_step.step_slug, idx, COALESCE(array_length(deps_slugs, 1), 0), max_attempts, base_delay, timeout
+    FROM next_index
     ON CONFLICT (flow_slug, step_slug)
     DO UPDATE SET step_slug = pgflow.steps.step_slug
     RETURNING *
