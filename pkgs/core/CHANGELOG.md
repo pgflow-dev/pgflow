@@ -1,5 +1,13 @@
 # @pgflow/core
 
+## 0.1.20
+
+### Patch Changes
+
+- 09e3210: Change name of initial migration :-(
+- 985176e: Add step_index to steps and various status timestamps to runtime tables
+  - @pgflow/dsl@0.1.20
+
 ## 0.1.19
 
 ### Patch Changes
