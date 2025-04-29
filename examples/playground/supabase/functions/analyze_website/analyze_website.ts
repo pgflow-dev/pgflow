@@ -1,4 +1,7 @@
 import { Flow } from '@pgflow/dsl';
+import { Database } from '../database-types.d.ts';
+
+type WebsiteRow = Database['public']['Tables']['websites']['Row'];
 
 type Input = {
   url: string;
