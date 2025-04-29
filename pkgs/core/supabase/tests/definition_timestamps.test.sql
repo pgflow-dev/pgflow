@@ -5,7 +5,7 @@ select pgflow_tests.reset_db();
 -- Create a flow and add steps
 select pgflow.create_flow('test_flow');
 select pgflow.add_step('test_flow', 'first');
-select pgflow.add_step('test_flow', 'second', deps => ARRAY['first']);
+select pgflow.add_step('test_flow', 'second', ARRAY['first']);
 
 -- TEST: Flow should have created_at timestamp set
 select isnt(
