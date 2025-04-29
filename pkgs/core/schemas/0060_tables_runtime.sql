@@ -11,7 +11,7 @@ create table pgflow.runs (
   started_at timestamptz not null default now(),
   completed_at timestamptz,
   failed_at timestamptz,
-  constraint completed_at_or_failed_at check (completed_at is null or failed_at is null),
+  constraint completed_at_or_failed_at check (not (completed_at is not null and failed_at is not null)),
   constraint completed_at_is_after_started_at check (completed_at is null or completed_at >= started_at),
   constraint failed_at_is_after_started_at check (failed_at is null or failed_at >= started_at),
   constraint status_is_valid check (status in ('started', 'failed', 'completed'))
@@ -37,7 +37,7 @@ create table pgflow.step_states (
   references pgflow.steps (flow_slug, step_slug),
   constraint status_is_valid check (status in ('created', 'started', 'completed', 'failed')),
   constraint status_and_remaining_tasks_match check (status != 'completed' or remaining_tasks = 0),
-  constraint completed_at_or_failed_at check (completed_at is null or failed_at is null),
+  constraint completed_at_or_failed_at check (not (completed_at is not null and failed_at is not null)),
   constraint started_at_is_after_created_at check (started_at is null or started_at >= created_at),
   constraint completed_at_is_after_started_at check (completed_at is null or completed_at >= started_at),
   constraint failed_at_is_after_started_at check (failed_at is null or failed_at >= started_at)
@@ -74,7 +74,7 @@ create table pgflow.step_tasks (
   ),
   constraint only_single_task_per_step check (task_index = 0),
   constraint attempts_count_nonnegative check (attempts_count >= 0),
-  constraint completed_at_or_failed_at check (completed_at is null or failed_at is null),
+  constraint completed_at_or_failed_at check (not (completed_at is not null and failed_at is not null)),
   constraint completed_at_is_after_queued_at check (completed_at is null or completed_at >= queued_at),
   constraint failed_at_is_after_queued_at check (failed_at is null or failed_at >= queued_at)
 );
