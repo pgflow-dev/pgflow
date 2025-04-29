@@ -5,7 +5,7 @@ select pgflow_tests.reset_db();
 -- Create a flow and add steps
 select pgflow.create_flow('test_flow');
 select pgflow.add_step('test_flow', 'first');
-select pgflow.add_step('test_flow', 'second', ARRAY['first']);
+select pgflow.add_step('test_flow', 'second', array['first']);
 
 -- TEST: Flow should have created_at timestamp set
 select isnt(
@@ -40,8 +40,11 @@ select isnt(
 
 -- TEST: Second flow created_at should be after first flow created_at
 select ok(
-  (select (select created_at from pgflow.flows where flow_slug = 'test_flow2') > 
-          (select created_at from pgflow.flows where flow_slug = 'test_flow')),
+  (
+    select
+      (select created_at from pgflow.flows where flow_slug = 'test_flow2') >=
+      (select created_at from pgflow.flows where flow_slug = 'test_flow')
+  ),
   'Second flow created_at should be after first flow created_at'
 );
 

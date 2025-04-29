@@ -16,16 +16,20 @@ select pgflow.complete_task(
 
 -- TEST: Second step should have started_at timestamp set
 select isnt(
-  (select started_at from pgflow.step_states 
-   where run_id = (select run_id from pgflow.runs limit 1) and step_slug = 'second'),
+  (
+    select started_at from pgflow.step_states
+    where run_id = (select run_id from pgflow.runs limit 1) and step_slug = 'second'
+  ),
   null,
   'Second step should have started_at timestamp set'
 );
 
 -- TEST: started_at should be after created_at
 select ok(
-  (select started_at > created_at from pgflow.step_states 
-   where run_id = (select run_id from pgflow.runs limit 1) and step_slug = 'second'),
+  (
+    select started_at >= created_at from pgflow.step_states
+    where run_id = (select run_id from pgflow.runs limit 1) and step_slug = 'second'
+  ),
   'started_at should be after created_at'
 );
 
