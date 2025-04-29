@@ -29,7 +29,7 @@ type ResultRow = RunRow & {
   step_tasks: StepTaskRow[];
 };
 
-function RenderJson({ json }: { json: Json }) {
+function RenderJson(json: Json) {
   return (
     <pre className="p-4 bg-muted rounded-md overflow-auto text-sm">
       {JSON.stringify(json, null, 2)}
@@ -247,8 +247,7 @@ export default function FlowRunPage() {
                 <h3 className="text-lg font-medium mb-2">Status</h3>
                 <div className="flex items-center">
                   <span
-                    className={`inline-block w-3 h-3 rounded-full mr-2 ${
-                      runData.status === 'completed'
+                    className={`inline-block w-3 h-3 rounded-full mr-2 ${runData.status === 'completed'
                         ? 'bg-green-500'
                         : runData.status === 'started'
                           ? 'bg-yellow-500 breathing'
@@ -257,7 +256,7 @@ export default function FlowRunPage() {
                             : runData.status === 'created'
                               ? 'bg-blue-500'
                               : 'bg-gray-500'
-                    }`}
+                      }`}
                   ></span>
                   <span className="capitalize">
                     {runData.status || 'unknown'}
@@ -300,8 +299,7 @@ export default function FlowRunPage() {
                       return (
                         <div
                           key={index}
-                          className={`p-4 rounded-lg border ${
-                            step.status === 'completed'
+                          className={`p-4 rounded-lg border ${step.status === 'completed'
                               ? 'bg-green-500/5 border-green-500/30'
                               : step.status === 'started'
                                 ? 'bg-yellow-500/5 border-yellow-500/30'
@@ -310,7 +308,7 @@ export default function FlowRunPage() {
                                   : step.status === 'created'
                                     ? 'bg-blue-500/5 border-blue-500/30'
                                     : 'bg-gray-500/5 border-gray-500/30'
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="text-base font-medium">
@@ -318,8 +316,7 @@ export default function FlowRunPage() {
                             </h4>
                             <span className="flex items-center">
                               <span
-                                className={`inline-block w-2 h-2 rounded-full mr-2 ${
-                                  step.status === 'completed'
+                                className={`inline-block w-2 h-2 rounded-full mr-2 ${step.status === 'completed'
                                     ? 'bg-green-500'
                                     : step.status === 'started'
                                       ? 'bg-yellow-500 breathing'
@@ -328,7 +325,7 @@ export default function FlowRunPage() {
                                         : step.status === 'created'
                                           ? 'bg-blue-500'
                                           : 'bg-gray-500'
-                                }`}
+                                  }`}
                               ></span>
                               <span className="capitalize text-sm">
                                 {step.status}
