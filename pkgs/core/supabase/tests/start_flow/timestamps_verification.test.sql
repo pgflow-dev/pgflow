@@ -27,12 +27,20 @@ select isnt(
   'Step states should have created_at timestamp set'
 );
 
--- TEST: Step states should have started_at, completed_at, and failed_at as null
-select results_eq(
-  $$ SELECT started_at, completed_at, failed_at from pgflow.step_states 
-     where run_id = (select run_id from pgflow.runs limit 1) limit 1 $$,
-  $$ VALUES (null::timestamptz, null::timestamptz, null::timestamptz) $$,
-  'Step states should have started_at, completed_at, and failed_at as null'
+-- TEST: Dependent Step states further down the line should have started_at, completed_at, and failed_at as null
+select is(
+  (
+    select count(*)::int
+    from pgflow.step_states
+    where
+      run_id = (select run_id from pgflow.runs limit 1)
+      and step_slug != 'first'
+      and completed_at is null
+      and failed_at is null
+      and started_at is null
+  ),
+  2,
+  'Dependent Step states should have started_at, completed_at, and failed_at as null'
 );
 
 select finish();
