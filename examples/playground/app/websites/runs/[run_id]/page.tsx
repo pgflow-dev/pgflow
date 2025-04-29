@@ -250,12 +250,13 @@ export default function FlowRunPage() {
                     className={`inline-block w-3 h-3 rounded-full mr-2 ${
                       runData.status === 'completed'
                         ? 'bg-green-500'
-                        : runData.status === 'started' ||
-                            runData.status === 'pending'
+                        : runData.status === 'started'
                           ? 'bg-yellow-500 breathing'
                           : runData.status === 'failed'
                             ? 'bg-red-500'
-                            : 'bg-yellow-500'
+                            : runData.status === 'created'
+                              ? 'bg-blue-500'
+                              : 'bg-gray-500'
                     }`}
                   ></span>
                   <span className="capitalize">
@@ -303,10 +304,12 @@ export default function FlowRunPage() {
                             step.status === 'completed'
                               ? 'bg-green-500/5 border-green-500/30'
                               : step.status === 'started'
-                                ? 'bg-blue-500/5 border-blue-500/30'
+                                ? 'bg-yellow-500/5 border-yellow-500/30'
                                 : step.status === 'failed'
                                   ? 'bg-red-500/5 border-red-500/30'
-                                  : 'bg-yellow-500/5 border-yellow-500/30'
+                                  : step.status === 'created'
+                                    ? 'bg-blue-500/5 border-blue-500/30'
+                                    : 'bg-gray-500/5 border-gray-500/30'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
@@ -318,12 +321,13 @@ export default function FlowRunPage() {
                                 className={`inline-block w-2 h-2 rounded-full mr-2 ${
                                   step.status === 'completed'
                                     ? 'bg-green-500'
-                                    : step.status === 'started' ||
-                                        step.status === 'pending'
+                                    : step.status === 'started'
                                       ? 'bg-yellow-500 breathing'
                                       : step.status === 'failed'
                                         ? 'bg-red-500'
-                                        : 'bg-yellow-500'
+                                        : step.status === 'created'
+                                          ? 'bg-blue-500'
+                                          : 'bg-gray-500'
                                 }`}
                               ></span>
                               <span className="capitalize text-sm">
