@@ -27,20 +27,22 @@ export default function Page() {
 
   async function startAnalyzeWebsiteFlow(formData: FormData) {
     const url = formData.get('url') as string;
-    
+
     if (!url) {
       setFormError('Please enter a URL');
       return;
     }
-    
+
     try {
-      const { data, error } = await supabase.rpc('start_analyze_website_flow', { url });
-      
+      const { data, error } = await supabase.rpc('start_analyze_website_flow', {
+        url,
+      });
+
       if (error) {
         setFormError(error.message);
         return;
       }
-      
+
       if (data && data.run_id) {
         router.push(`/websites/runs/${data.run_id}`);
       } else {
@@ -70,6 +72,7 @@ export default function Page() {
                 name="url"
                 id="url"
                 placeholder="https://example.com"
+                value="https://reddit.com/r/supabase"
                 required
               />
             </div>
@@ -98,7 +101,9 @@ export default function Page() {
                       <tr key={website.id} className="border-t">
                         <td className="p-3">{website.id}</td>
                         <td className="p-3">{website.url}</td>
-                        <td className="p-3">{new Date(website.created_at).toLocaleString()}</td>
+                        <td className="p-3">
+                          {new Date(website.created_at).toLocaleString()}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -108,10 +113,14 @@ export default function Page() {
           ) : (
             <p className="text-muted-foreground">No websites analyzed yet</p>
           )}
-          
+
           <details className="mt-4">
-            <summary className="cursor-pointer text-sm text-muted-foreground">View Raw Data</summary>
-            <pre className="mt-2 p-2 bg-muted rounded-md text-xs overflow-auto">{JSON.stringify(websites, null, 2)}</pre>
+            <summary className="cursor-pointer text-sm text-muted-foreground">
+              View Raw Data
+            </summary>
+            <pre className="mt-2 p-2 bg-muted rounded-md text-xs overflow-auto">
+              {JSON.stringify(websites, null, 2)}
+            </pre>
           </details>
         </div>
       </div>
