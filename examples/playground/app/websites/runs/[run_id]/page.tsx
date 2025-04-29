@@ -27,6 +27,7 @@ type StepTaskRow = Database['pgflow']['Tables']['step_tasks']['Row'];
 type ResultRow = RunRow & {
   step_states: StepStateRow[];
   step_tasks: StepTaskRow[];
+  status?: 'started' | 'completed' | 'failed';
 };
 
 function RenderJson(json: Json) {
@@ -259,7 +260,7 @@ export default function FlowRunPage() {
                       }`}
                   ></span>
                   <span className="capitalize">
-                    {runData.status || 'unknown'}
+                    {runData.status === 'started' ? 'running' : runData.status}
                   </span>
                 </div>
               </div>
@@ -328,7 +329,9 @@ export default function FlowRunPage() {
                                   }`}
                               ></span>
                               <span className="capitalize text-sm">
-                                {step.status}
+                                {step.status === 'created'
+                                  ? 'waiting'
+                                  : step.status}
                               </span>
                             </span>
                           </div>
