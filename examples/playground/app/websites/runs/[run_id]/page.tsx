@@ -7,6 +7,18 @@ import { FormMessage, Message } from '@/components/form-message';
 
 import { Database, Json } from '@/supabase/functions/database-types';
 
+// Add CSS for breathing animation
+const breathingAnimation = `
+@keyframes breathe {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
+}
+.breathing {
+  animation: breathe 2s infinite ease-in-out;
+}
+`;
+
 type RunRow = Database['pgflow']['Tables']['runs']['Row'];
 type StepStateRow = Database['pgflow']['Tables']['step_states']['Row'];
 type StepTaskRow = Database['pgflow']['Tables']['step_tasks']['Row'];
@@ -26,6 +38,18 @@ function RenderJson({ json }: { json: Json }) {
 }
 
 export default function FlowRunPage() {
+  // Add the breathing animation to the head
+  useEffect(() => {
+    // Add the style element to the head
+    const styleElement = document.createElement('style');
+    styleElement.innerHTML = breathingAnimation;
+    document.head.appendChild(styleElement);
+
+    // Clean up when component unmounts
+    return () => {
+      document.head.removeChild(styleElement);
+    };
+  }, []);
   const [runData, setRunData] = useState<ResultRow | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,22 +94,49 @@ export default function FlowRunPage() {
 
     fetchRunData();
 
-    // Optional: Set up a subscription to get real-time updates
-    // const subscription = supabase
-    //   .channel(`flow_run_${runId}`)
-    //   .on('postgres_changes', {
-    //     event: 'UPDATE',
-    //     schema: 'pgflow',
-    //     table: 'runs',
-    //     filter: `run_id=eq.${runId}`
-    //   }, (payload) => {
-    //     setRunData(payload.new);
-    //   })
-    //   .subscribe();
+    // Set up a subscription to get real-time updates
+    const eventSpec = {
+      schema: 'pgflow',
+      event: '*',
+      filter: `run_id=eq.${runId}`,
+    };
 
-    // return () => {
-    //   subscription.unsubscribe();
-    // };
+    const handleRunUpdate = (payload: any) => {
+      console.log('Run updated:', payload);
+      // Refetch the entire data to get the latest state
+      fetchRunData();
+    };
+
+    const handleStepStateUpdate = (payload: any) => {
+      console.log('Step state updated:', payload);
+      // Refetch the entire data to get the latest state
+      fetchRunData();
+    };
+
+    const handleStepTaskUpdate = (payload: any) => {
+      console.log('Step task updated:', payload);
+      // Refetch the entire data to get the latest state
+      fetchRunData();
+    };
+
+    const realtimeChannel = supabase
+      .channel(`flow_run_${runId}`)
+      .on('postgres_changes', { ...eventSpec, table: 'runs' }, handleRunUpdate)
+      .on(
+        'postgres_changes',
+        { ...eventSpec, table: 'step_states' },
+        handleStepStateUpdate,
+      )
+      .on(
+        'postgres_changes',
+        { ...eventSpec, table: 'step_tasks' },
+        handleStepTaskUpdate,
+      )
+      .subscribe();
+
+    return () => {
+      realtimeChannel.unsubscribe();
+    };
   }, [runId, supabase]);
 
   if (loading) {
@@ -131,8 +182,9 @@ export default function FlowRunPage() {
                     className={`inline-block w-3 h-3 rounded-full mr-2 ${
                       runData.status === 'completed'
                         ? 'bg-green-500'
-                        : runData.status === 'started'
-                          ? 'bg-blue-500'
+                        : runData.status === 'started' ||
+                            runData.status === 'pending'
+                          ? 'bg-yellow-500 breathing'
                           : runData.status === 'failed'
                             ? 'bg-red-500'
                             : 'bg-yellow-500'
@@ -198,8 +250,9 @@ export default function FlowRunPage() {
                                 className={`inline-block w-2 h-2 rounded-full mr-2 ${
                                   step.status === 'completed'
                                     ? 'bg-green-500'
-                                    : step.status === 'started'
-                                      ? 'bg-blue-500'
+                                    : step.status === 'started' ||
+                                        step.status === 'pending'
+                                      ? 'bg-yellow-500 breathing'
                                       : step.status === 'failed'
                                         ? 'bg-red-500'
                                         : 'bg-yellow-500'
@@ -266,7 +319,7 @@ export default function FlowRunPage() {
               <summary className="cursor-pointer text-sm text-muted-foreground">
                 View Raw Data
               </summary>
-              <pre className="mt-2 p-2 bg-muted rounded-md text-xs overflow-auto">
+              <pre className="mt-2 p-2 bg-muted rounded-md text-xs overflow-auto max-h-[500px]">
                 {JSON.stringify(runData, null, 2)}
               </pre>
             </details>
