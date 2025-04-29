@@ -1,6 +1,17 @@
 import { Flow } from '@pgflow/dsl';
 import { Database } from '../database-types.d.ts';
 
+// this function sleeps for ms number of milliseconds
+async function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// this function sleeps for a random number of milliseconds between min and max
+async function randomSleep(min: number, max: number) {
+  const ms = Math.floor(Math.random() * (max - min + 1) + min);
+  await sleep(ms);
+}
+
 type WebsiteRow = Database['public']['Tables']['websites']['Row'];
 
 type Input = {
@@ -37,6 +48,7 @@ export default new Flow<Input>({
  ***********************************************************************/
 
 async function scrapeWebsite(url: string) {
+  await randomSleep(100, 1000);
   return {
     content: `Lorem ipsum ${url.length}`,
   };
@@ -51,11 +63,13 @@ async function scrapeWebsite(url: string) {
 }
 
 const analyzeSentiment = async (_content: string) => {
+  await randomSleep(300, 2000);
   return {
     score: Math.random(),
   };
 };
 const summarizeWithAI = async (content: string) => {
+  await randomSleep(500, 3000);
   return {
     aiSummary: `Lorem ipsum ${content.length}`,
   };
@@ -74,6 +88,7 @@ const saveToDb = async (input: {
   sentiment: number;
   summary: string;
 }) => {
+  await randomSleep(100, 500);
   const { data } = await supabase
     .from('websites')
     .insert([
