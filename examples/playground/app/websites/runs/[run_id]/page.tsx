@@ -10,7 +10,7 @@ import { Database } from '@/supabase/functions/database-types';
 type RunRow = Database['pgflow']['Tables']['runs']['Row'];
 
 export default function FlowRunPage() {
-  const [runData, setRunData] = useState<any>(null);
+  const [runData, setRunData] = useState<RunRow | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
@@ -107,9 +107,9 @@ export default function FlowRunPage() {
                     className={`inline-block w-3 h-3 rounded-full mr-2 ${
                       runData.status === 'completed'
                         ? 'bg-green-500'
-                        : runData.status === 'running'
+                        : runData.status === 'started'
                           ? 'bg-blue-500'
-                          : runData.status === 'error'
+                          : runData.status === 'failed'
                             ? 'bg-red-500'
                             : 'bg-yellow-500'
                     }`}
@@ -124,35 +124,25 @@ export default function FlowRunPage() {
                 <h3 className="text-lg font-medium mb-2">Run Information</h3>
                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
                   <div>
-                    <dt className="text-sm text-foreground/60">Run Name</dt>
-                    <dd>{runData.run_name || 'analyze_website'}</dd>
+                    <dt className="text-sm text-foreground/60">Flow</dt>
+                    <dd>{runData.flow_slug}</dd>
                   </div>
                   <div>
-                    <dt className="text-sm text-foreground/60">Started At</dt>
-                    <dd>
-                      {runData.created_at
-                        ? new Date(runData.created_at).toLocaleString()
-                        : 'N/A'}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-foreground/60">Last Updated</dt>
-                    <dd>
-                      {runData.updated_at
-                        ? new Date(runData.updated_at).toLocaleString()
-                        : 'N/A'}
-                    </dd>
+                    <dt className="text-sm text-foreground/60">
+                      Remaining steps
+                    </dt>
+                    <dd>{runData.remaining_steps}</dd>
                   </div>
                 </dl>
               </div>
 
               <div>
                 <h3 className="text-lg font-medium mb-2">Results</h3>
-                {runData.result ? (
+                {runData.status === 'completed' ? (
                   <pre className="p-4 bg-muted rounded-md overrun-auto text-sm">
-                    {typeof runData.result === 'object'
-                      ? JSON.stringify(runData.result, null, 2)
-                      : runData.result}
+                    {typeof runData.output === 'object'
+                      ? JSON.stringify(runData.output, null, 2)
+                      : runData.output}
                   </pre>
                 ) : (
                   <p className="text-muted-foreground">
