@@ -8,6 +8,15 @@ import { FormMessage, Message } from '@/components/form-message';
 import { Database } from '@/supabase/functions/database-types';
 
 type RunRow = Database['pgflow']['Tables']['runs']['Row'];
+type Json = Database['Json'];
+
+function RenderJson(json: Json) {
+  return (
+    <pre className="p-4 bg-muted rounded-md overrun-auto text-sm">
+      {JSON.stringify(json, null, 2)}
+    </pre>
+  );
+}
 
 export default function FlowRunPage() {
   const [runData, setRunData] = useState<RunRow | null>(null);
@@ -96,7 +105,9 @@ export default function FlowRunPage() {
 
       <div className="grid grid-cols-1 gap-8">
         <div className="p-6 border rounded-lg shadow-sm">
-          <h2 className="text-2xl font-medium mb-4">Run ID: {runId}</h2>
+          <h2 className="text-2xl font-medium mb-4">
+            {runData.flow_slug}: {runId}
+          </h2>
 
           {runData ? (
             <div className="space-y-6">
@@ -124,10 +135,14 @@ export default function FlowRunPage() {
                 <h3 className="text-lg font-medium mb-2">Run Information</h3>
                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
                   <div>
-                    <dt className="text-sm text-foreground/60">Flow</dt>
-                    <dd>{runData.flow_slug}</dd>
+                    <dt className="text-sm text-foreground/60">Run input</dt>
+                    <dd>
+                      <RenderJson json={runData.input} />
+                    </dd>
                   </div>
                   <div>
+                    <dt className="text-sm text-foreground/60">Flow</dt>
+                    <dd>{runData.flow_slug}</dd>
                     <dt className="text-sm text-foreground/60">
                       Remaining steps
                     </dt>
@@ -137,16 +152,12 @@ export default function FlowRunPage() {
               </div>
 
               <div>
-                <h3 className="text-lg font-medium mb-2">Results</h3>
+                <h3 className="text-lg font-medium mb-2">Run Output</h3>
                 {runData.status === 'completed' ? (
-                  <pre className="p-4 bg-muted rounded-md overrun-auto text-sm">
-                    {typeof runData.output === 'object'
-                      ? JSON.stringify(runData.output, null, 2)
-                      : runData.output}
-                  </pre>
+                  <RenderJson json={runData.output} />
                 ) : (
                   <p className="text-muted-foreground">
-                    No results available yet
+                    Run is not completed yet - no output available
                   </p>
                 )}
               </div>
