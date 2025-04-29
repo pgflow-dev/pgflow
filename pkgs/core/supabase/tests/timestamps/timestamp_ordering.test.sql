@@ -20,7 +20,7 @@ select pgflow.complete_task(
 );
 
 -- Fail the failure_step
-select pgflow_tests.poll_and_fail_specific('timestamp_test', 'failure_step');
+select pgflow_tests.poll_and_fail('timestamp_test', 1, 1);
 
 -- TEST: For success_step, completed_at should be after created_at
 select ok(

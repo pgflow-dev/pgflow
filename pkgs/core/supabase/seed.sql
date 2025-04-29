@@ -58,7 +58,7 @@ create or replace function pgflow_tests.poll_and_fail(
   vt integer default 1,
   qty integer default 1
 ) returns setof pgflow.step_tasks as $$
-  -- Poll for a task and complete it in one step
+  -- Poll for a task and fail it in one step
   WITH task AS (
     SELECT * FROM pgflow.poll_for_tasks(flow_slug, vt, qty) LIMIT 1
   )
