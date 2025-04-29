@@ -22,7 +22,8 @@ export default function RunsListPage() {
         const { data, error } = await supabase
           .schema('pgflow')
           .from('runs')
-          .select('*');
+          .select('*')
+          .eq('flow_slug', 'analyze_website_v2');
 
         if (error) {
           setError(`Error fetching runs: ${error.message}`);
@@ -98,15 +99,14 @@ export default function RunsListPage() {
                 </div>
                 <div className="flex items-center">
                   <span
-                    className={`inline-block w-3 h-3 rounded-full mr-2 ${
-                      run.status === 'completed'
+                    className={`inline-block w-3 h-3 rounded-full mr-2 ${run.status === 'completed'
                         ? 'bg-green-500'
                         : run.status === 'running'
                           ? 'bg-blue-500'
                           : run.status === 'error'
                             ? 'bg-red-500'
                             : 'bg-yellow-500'
-                    }`}
+                      }`}
                   ></span>
                   <span className="capitalize text-sm">
                     {run.status || 'unknown'}

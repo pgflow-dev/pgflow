@@ -10,7 +10,7 @@ type Input = {
 };
 
 export default new Flow<Input>({
-  slug: 'analyze_website',
+  slug: 'analyze_website_v2',
 })
 
   // sdfsdfsdf
@@ -44,6 +44,6 @@ export default new Flow<Input>({
       await saveWebsite({
         websiteUrl: input.run.url,
         sentiment: input.sentiment.score,
-        summary: input.summary.aiSummary,
+        summary: input.summary.aiSummary || '',
       }),
   );

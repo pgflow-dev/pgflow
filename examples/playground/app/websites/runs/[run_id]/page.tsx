@@ -77,6 +77,7 @@ export default function FlowRunPage() {
           `,
           )
           .eq('run_id', runId)
+          .eq('flow_slug', 'analyze_website_v2')
           .single<ResultRow>();
 
         if (error) {
