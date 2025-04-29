@@ -1,18 +1,8 @@
 import { Flow } from '@pgflow/dsl';
-import { Database } from '../database-types.d.ts';
-
-// this function sleeps for ms number of milliseconds
-async function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-// this function sleeps for a random number of milliseconds between min and max
-async function randomSleep(min: number, max: number) {
-  const ms = Math.floor(Math.random() * (max - min + 1) + min);
-  await sleep(ms);
-}
-
-type WebsiteRow = Database['public']['Tables']['websites']['Row'];
+import scrapeWebsite from '../_tasks/scrapeWebsite.ts';
+import analyzeSentiment from '../_tasks/analyzeSentiment.ts';
+import summarizeWithAI from '../_tasks/summarizeWithAI.ts';
+import saveWebsite from '../_tasks/saveWebsite.ts';
 
 type Input = {
   url: string;
@@ -36,72 +26,9 @@ export default new Flow<Input>({
   .step(
     { slug: 'saveToDb', dependsOn: ['sentiment', 'summary'] },
     async (input) =>
-      await saveToDb({
+      await saveWebsite({
         websiteUrl: input.run.url,
         sentiment: input.sentiment.score,
         summary: input.summary.aiSummary,
       }),
   );
-
-/***********************************************************************
- ****** functions *******************************************************
- ***********************************************************************/
-
-async function scrapeWebsite(url: string) {
-  await randomSleep(100, 1000);
-  return {
-    content: `Lorem ipsum ${url.length}`,
-  };
-
-  // const response = await fetch(url);
-  //
-  // if (!response.ok) {
-  //   throw new Error(`Failed to fetch website: ${response.status}`);
-  // }
-  //
-  // return await response.text();
-}
-
-const analyzeSentiment = async (_content: string) => {
-  await randomSleep(300, 2000);
-  return {
-    score: Math.random(),
-  };
-};
-const summarizeWithAI = async (content: string) => {
-  await randomSleep(500, 3000);
-  return {
-    aiSummary: `Lorem ipsum ${content.length}`,
-  };
-};
-
-import { createClient } from '@supabase/supabase-js';
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const supabase = createClient<Database>(
-  SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY,
-);
-
-const saveToDb = async (input: {
-  websiteUrl: string;
-  sentiment: number;
-  summary: string;
-}) => {
-  await randomSleep(100, 500);
-  const { data } = await supabase
-    .from('websites')
-    .insert([
-      {
-        website_url: input.websiteUrl,
-        sentiment: input.sentiment,
-        summary: input.summary,
-      },
-    ])
-    .select('*')
-    .single()
-    .throwOnError();
-  console.log('results', data);
-
-  return { success: true, website: data };
-};
