@@ -8,7 +8,13 @@ create table pgflow.runs (
   input jsonb not null,
   output jsonb,
   remaining_steps int not null default 0 check (remaining_steps >= 0),
-  check (status in ('started', 'failed', 'completed'))
+  started_at timestamptz not null default now(),
+  completed_at timestamptz,
+  failed_at timestamptz,
+  constraint completed_at_or_failed_at check (completed_at is null or failed_at is null),
+  constraint completed_at_is_after_started_at check (completed_at is null or started_at < completed_at),
+  constraint failed_at_is_after_started_at check (failed_at is null or started_at < failed_at),
+  constraint status_is_valid check (status in ('started', 'failed', 'completed')),
 );
 
 create index if not exists idx_runs_flow_slug on pgflow.runs (flow_slug);
@@ -22,11 +28,19 @@ create table pgflow.step_states (
   status text not null default 'created',
   remaining_tasks int not null default 1 check (remaining_tasks >= 0),
   remaining_deps int not null default 0 check (remaining_deps >= 0),
+  created_at timestamptz not null default now(),
+  started_at timestamptz,
+  completed_at timestamptz,
+  failed_at timestamptz,
   primary key (run_id, step_slug),
   foreign key (flow_slug, step_slug)
   references pgflow.steps (flow_slug, step_slug),
-  check (status in ('created', 'started', 'completed', 'failed')),
-  check (status != 'completed' or remaining_tasks = 0)
+  constraint status_is_valid check (status in ('created', 'started', 'completed', 'failed')),
+  constraint status_and_remaining_tasks_match check (status != 'completed' or remaining_tasks = 0),
+  constraint completed_at_or_failed_at check (completed_at is null or failed_at is null),
+  constraint started_at_is_after_created_at check (started_at is null or created_at < started_at),
+  constraint completed_at_is_after_started_at check (completed_at is null or started_at < completed_at),
+  constraint failed_at_is_after_started_at check (failed_at is null or started_at < failed_at)
 );
 
 create index if not exists idx_step_states_ready on pgflow.step_states (run_id, status, remaining_deps) where status
@@ -46,6 +60,9 @@ create table pgflow.step_tasks (
   attempts_count int not null default 0,
   error_message text,
   output jsonb,
+  queued_at timestamptz not null default now(),
+  completed_at timestamptz,
+  failed_at timestamptz,
   constraint step_tasks_pkey primary key (run_id, step_slug, task_index),
   foreign key (run_id, step_slug)
   references pgflow.step_states (run_id, step_slug),
@@ -56,7 +73,10 @@ create table pgflow.step_tasks (
     output is null or status = 'completed'
   ),
   constraint only_single_task_per_step check (task_index = 0),
-  constraint attempts_count_nonnegative check (attempts_count >= 0)
+  constraint attempts_count_nonnegative check (attempts_count >= 0),
+  constraint completed_at_or_failed_at check (completed_at is null or failed_at is null),
+  constraint completed_at_is_after_queued_at check (completed_at is null or queued_at < completed_at),
+  constraint failed_at_is_after_queued_at check (failed_at is null or queued_at < failed_at)
 );
 
 create index if not exists idx_step_tasks_message_id on pgflow.step_tasks (message_id);

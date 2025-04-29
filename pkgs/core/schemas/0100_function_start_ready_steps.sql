@@ -15,7 +15,8 @@ WITH ready_steps AS (
 ),
 started_step_states AS (
   UPDATE pgflow.step_states
-  SET status = 'started'
+  SET status = 'started',
+      started_at = now()
   FROM ready_steps
   WHERE pgflow.step_states.run_id = start_ready_steps.run_id
     AND pgflow.step_states.step_slug = ready_steps.step_slug

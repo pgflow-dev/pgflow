@@ -26,6 +26,7 @@ task AS (
   UPDATE pgflow.step_tasks
   SET
     status = 'completed',
+    completed_at = now(),
     output = complete_task.output
   WHERE pgflow.step_tasks.run_id = complete_task.run_id
     AND pgflow.step_tasks.step_slug = complete_task.step_slug
@@ -38,6 +39,10 @@ step_state AS (
     status = CASE
     WHEN pgflow.step_states.remaining_tasks = 1 THEN 'completed'  -- Will be 0 after decrement
     ELSE 'started'
+    END,
+    completed_at = CASE
+    WHEN pgflow.step_states.remaining_tasks = 1 THEN now()  -- Will be 0 after decrement
+    ELSE NULL
     END,
     remaining_tasks = pgflow.step_states.remaining_tasks - 1
   FROM task

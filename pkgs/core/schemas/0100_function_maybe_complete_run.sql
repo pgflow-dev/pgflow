@@ -9,6 +9,7 @@ as $$
   UPDATE pgflow.runs
   SET
     status = 'completed',
+    completed_at = now(),
     output = (
       -- Get outputs from final steps (steps that are not dependencies for other steps)
       SELECT jsonb_object_agg(st.step_slug, st.output)
