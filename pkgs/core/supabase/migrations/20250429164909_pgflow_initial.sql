@@ -465,7 +465,7 @@ maybe_fail_step AS (
              END,
     failed_at = CASE
                 WHEN (select fail_or_retry_task.status from fail_or_retry_task) = 'failed' THEN now()
-                ELSE failed_at
+                ELSE NULL
                 END
   FROM fail_or_retry_task
   WHERE pgflow.step_states.run_id = fail_task.run_id
@@ -479,7 +479,7 @@ SET status = CASE
               END,
     failed_at = CASE
                 WHEN (select status from maybe_fail_step) = 'failed' THEN now()
-                ELSE failed_at
+                ELSE NULL
                 END
 WHERE pgflow.runs.run_id = fail_task.run_id;
 
