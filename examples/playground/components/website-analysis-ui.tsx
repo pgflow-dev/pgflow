@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { ResultRow, StepStateRow } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -76,8 +77,8 @@ export default function WebsiteAnalysisUI({
   };
 
   // Get analysis summary from output
-  const getAnalysisSummary = (): { summary: string; sentiment: string } => {
-    if (!runData?.output) return { summary: '', sentiment: 'neutral' };
+  const getAnalysisSummary = (): { summary: string; sentiment: string; tags: string[] } => {
+    if (!runData?.output) return { summary: '', sentiment: 'neutral', tags: [] };
 
     try {
       const output = runData.output;
@@ -85,7 +86,7 @@ export default function WebsiteAnalysisUI({
       if (typeof output === 'object' && output !== null) {
         // Check for the new structure with saveToDb
         if (output.saveToDb && typeof output.saveToDb === 'object') {
-          const { summary = '', sentiment = 0 } = output.saveToDb;
+          const { summary = '', sentiment = 0, tags = [] } = output.saveToDb;
 
           // Convert numerical sentiment to string category
           let sentimentCategory = 'neutral';
@@ -94,28 +95,34 @@ export default function WebsiteAnalysisUI({
             else if (sentiment < 0.3) sentimentCategory = 'negative';
           }
 
+          // Ensure tags is an array
+          const tagArray = Array.isArray(tags) ? tags : [];
+
           return {
             summary:
               typeof summary === 'string' ? summary : JSON.stringify(summary),
             sentiment: sentimentCategory,
+            tags: tagArray,
           };
         }
 
         // Fallback to old structure for backward compatibility
         const summary = output.summary || '';
         const sentiment = output.sentiment || 'neutral';
+        const tags = output.tags || [];
 
         return {
           summary:
             typeof summary === 'string' ? summary : JSON.stringify(summary),
           sentiment: typeof sentiment === 'string' ? sentiment : 'neutral',
+          tags: Array.isArray(tags) ? tags : [],
         };
       }
     } catch (e) {
       console.error('Error parsing output:', e);
     }
 
-    return { summary: '', sentiment: 'neutral' };
+    return { summary: '', sentiment: 'neutral', tags: [] };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,7 +136,7 @@ export default function WebsiteAnalysisUI({
     }
   };
 
-  const { summary, sentiment } = getAnalysisSummary();
+  const { summary, sentiment, tags } = getAnalysisSummary();
   const websiteUrl = getWebsiteUrl();
 
   if (loading) {
@@ -322,23 +329,42 @@ export default function WebsiteAnalysisUI({
               </div>
 
               <dl className="mt-6 space-y-6">
-                <div className="flex flex-col space-y-2">
-                  <dt className="text-sm font-medium text-muted-foreground">
-                    Sentiment
-                  </dt>
-                  <dd>
-                    <span
-                      className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
-                        sentiment === 'positive'
-                          ? 'bg-green-100 text-green-800'
-                          : sentiment === 'negative'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-blue-100 text-blue-800'
-                      }`}
-                    >
-                      {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
-                    </span>
-                  </dd>
+                <div className="flex flex-row gap-6">
+                  <div className="flex flex-col space-y-2 w-1/3">
+                    <dt className="text-sm font-medium text-muted-foreground">
+                      Sentiment
+                    </dt>
+                    <dd>
+                      <span
+                        className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
+                          sentiment === 'positive'
+                            ? 'bg-green-100 text-green-800'
+                            : sentiment === 'negative'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-blue-100 text-blue-800'
+                        }`}
+                      >
+                        {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
+                      </span>
+                    </dd>
+                  </div>
+                  
+                  <div className="flex flex-col space-y-2 w-2/3">
+                    <dt className="text-sm font-medium text-muted-foreground">
+                      Tags
+                    </dt>
+                    <dd className="flex flex-wrap gap-2">
+                      {tags.length > 0 ? (
+                        tags.map((tag, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-sm text-muted-foreground">No tags available</span>
+                      )}
+                    </dd>
+                  </div>
                 </div>
 
                 <div className="flex flex-col space-y-2">
