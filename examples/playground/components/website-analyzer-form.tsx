@@ -19,22 +19,23 @@ export default function WebsiteAnalyzerForm({
 
   async function handleAnalyzeWebsite(formData: FormData) {
     const url = formData.get('url') as string;
-    
+
     if (!url) {
       setFormError('Please enter a URL');
       return;
     }
-    
+
     // If user is not logged in, redirect to sign-in page
     if (!isLoggedIn) {
-      console.log('User not logged in, storing URL and redirecting to sign-in:', url);
+      console.log(
+        'User not logged in, storing URL and redirecting to sign-in:',
+        url,
+      );
       // Store the URL in localStorage to redirect back after login
       localStorage.setItem('pendingAnalysisUrl', url);
       router.push('/sign-in');
       return;
     }
-
-    const url = formData.get('url') as string;
 
     if (!url) {
       setFormError('Please enter a URL');
@@ -42,23 +43,30 @@ export default function WebsiteAnalyzerForm({
     }
 
     try {
+      console.log('Starting analysis for URL:', url);
       const { data, error } = await supabase.rpc('start_analyze_website_flow', {
         url,
       });
 
       if (error) {
+        console.error('Error starting analysis:', error);
         setFormError(error.message);
         return;
       }
 
       if (data && data.run_id) {
+        console.log(
+          'Analysis started, redirecting to:',
+          `/websites/runs/${data.run_id}`,
+        );
         router.push(`/websites/runs/${data.run_id}`);
       } else {
+        console.error('No run_id returned from analysis');
         setFormError('Failed to start flow analysis');
       }
     } catch (error) {
       setFormError('An error occurred while starting the analysis');
-      console.error(error);
+      console.error('Exception during analysis:', error);
     }
   }
 
