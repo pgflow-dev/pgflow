@@ -51,7 +51,7 @@ export default function DualPanelPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-6">Website Analysis Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-6">Website Analysis Demo</h1>
 
       <FlowRunProvider runId={runId}>
         <DualPanelContent />

@@ -145,7 +145,7 @@ export default function WebsiteAnalysisUI({
 
   return (
     <div className="p-6 border rounded-lg shadow-sm">
-      <h2 className="text-2xl font-medium mb-6">Website Analysis</h2>
+      <h2 className="text-2xl font-medium mb-6">User-facing UI</h2>
 
       <AnimatePresence>
         {/* Initial URL input form */}

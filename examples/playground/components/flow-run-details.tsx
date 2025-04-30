@@ -142,32 +142,61 @@ export default function FlowRunDetails({
 
   return (
     <div className="p-6 border rounded-lg shadow-sm">
-      <h2 className="text-2xl font-medium mb-4">
-        {runData?.flow_slug}: {runId}
-      </h2>
-
       {runData ? (
         <div className="space-y-6">
+          <h2 className="text-2xl font-medium mb-6">Under the hood</h2>
+          <hr />
           <div>
             <h3 className="text-lg font-medium mb-2">Status</h3>
-            <div className="flex items-center">
-              <span
-                className={`inline-block w-3 h-3 rounded-full mr-2 ${
-                  runData.status === 'completed'
-                    ? 'bg-green-500'
-                    : runData.status === 'started'
-                      ? 'bg-yellow-500 breathing'
-                      : runData.status === 'failed'
-                        ? 'bg-red-500'
-                        : runData.status === 'created'
-                          ? 'bg-blue-500'
-                          : 'bg-gray-500'
-                }`}
-              ></span>
-              <span className="capitalize">
-                {runData.status === 'started' ? 'running' : runData.status}
-              </span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <span
+                  className={`inline-block w-3 h-3 rounded-full mr-2 ${
+                    runData.status === 'completed'
+                      ? 'bg-green-500'
+                      : runData.status === 'started'
+                        ? 'bg-yellow-500 breathing'
+                        : runData.status === 'failed'
+                          ? 'bg-red-500'
+                          : runData.status === 'created'
+                            ? 'bg-blue-500'
+                            : 'bg-gray-500'
+                  }`}
+                ></span>
+                <span className="capitalize">
+                  {runData.status === 'started' ? 'running' : runData.status}
+                </span>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {runData.status === 'started' && runData.started_at && (
+                  <span>
+                    Running for {formatTimeDifference(runData.started_at, null)}
+                  </span>
+                )}
+                {runData.status === 'completed' && runData.completed_at && (
+                  <span>
+                    Completed{' '}
+                    {formatRelativeTime(runData.completed_at, currentTime)}
+                  </span>
+                )}
+                {runData.status === 'failed' && runData.failed_at && (
+                  <span>
+                    Failed {formatRelativeTime(runData.failed_at, currentTime)}
+                  </span>
+                )}
+                {runData.status === 'created' && runData.created_at && (
+                  <span>
+                    Created{' '}
+                    {formatRelativeTime(runData.created_at, currentTime)}
+                  </span>
+                )}
+              </div>
             </div>
+          </div>
+
+          <div className="mb-4">
+            <h4 className="font-medium mb-2">Run ID:</h4>
+            <pre className="capitalize">{runId}</pre>
           </div>
 
           <div>
