@@ -77,8 +77,13 @@ export default function WebsiteAnalysisUI({
   };
 
   // Get analysis summary from output
-  const getAnalysisSummary = (): { summary: string; sentiment: string; tags: string[] } => {
-    if (!runData?.output) return { summary: '', sentiment: 'neutral', tags: [] };
+  const getAnalysisSummary = (): {
+    summary: string;
+    sentiment: string;
+    tags: string[];
+  } => {
+    if (!runData?.output)
+      return { summary: '', sentiment: 'neutral', tags: [] };
 
     try {
       const output = runData.output;
@@ -202,7 +207,11 @@ export default function WebsiteAnalysisUI({
             className="space-y-8"
           >
             <div className="p-3 bg-muted rounded-md">
-              <p className="font-medium">{websiteUrl}</p>
+              <p className="font-medium truncate max-w-full" title={websiteUrl}>
+                {websiteUrl.length > 50
+                  ? `${websiteUrl.substring(0, 50)}...`
+                  : websiteUrl}
+              </p>
             </div>
 
             <div className="flex justify-between items-center mb-4">
@@ -324,7 +333,9 @@ export default function WebsiteAnalysisUI({
                   rel="noopener noreferrer"
                   className="ml-2 text-primary hover:underline"
                 >
-                  {websiteUrl}
+                  {websiteUrl.length > 50
+                    ? `${websiteUrl.substring(0, 50)}...`
+                    : websiteUrl}
                 </a>
               </div>
 
@@ -348,7 +359,7 @@ export default function WebsiteAnalysisUI({
                       </span>
                     </dd>
                   </div>
-                  
+
                   <div className="flex flex-col space-y-2 w-2/3">
                     <dt className="text-sm font-medium text-muted-foreground">
                       Tags
@@ -356,12 +367,18 @@ export default function WebsiteAnalysisUI({
                     <dd className="flex flex-wrap gap-2">
                       {tags.length > 0 ? (
                         tags.map((tag, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
+                          <Badge
+                            key={index}
+                            variant="secondary"
+                            className="text-xs"
+                          >
                             {tag}
                           </Badge>
                         ))
                       ) : (
-                        <span className="text-sm text-muted-foreground">No tags available</span>
+                        <span className="text-sm text-muted-foreground">
+                          No tags available
+                        </span>
                       )}
                     </dd>
                   </div>

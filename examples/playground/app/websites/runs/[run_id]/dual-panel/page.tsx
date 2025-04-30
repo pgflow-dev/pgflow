@@ -20,7 +20,7 @@ function DualPanelContent() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       {/* Left panel: User-friendly UI */}
-      <div className="lg:col-span-6 xl:col-span-4">
+      <div className="lg:col-span-6 xl:col-span-6">
         <WebsiteAnalysisUI
           runData={runData}
           loading={loading}
@@ -32,7 +32,7 @@ function DualPanelContent() {
       </div>
 
       {/* Right panel: Technical debug UI */}
-      <div className="lg:col-span-6 xl:col-span-8">
+      <div className="lg:col-span-6 xl:col-span-6">
         <FlowRunDetails
           runId={runData?.run_id || ''}
           runData={runData}
