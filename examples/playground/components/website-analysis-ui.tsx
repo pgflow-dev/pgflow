@@ -54,7 +54,7 @@ export default function WebsiteAnalysisUI({
   const showSteps = runData && (isRunning || isCompleted || isFailed);
   const showSummary = runData && isCompleted;
   const showAnalyzeAnother = runData && (isCompleted || isFailed);
-  
+
   // Auto-collapse steps when flow completes
   useEffect(() => {
     if (isCompleted) {
@@ -90,8 +90,8 @@ export default function WebsiteAnalysisUI({
           // Convert numerical sentiment to string category
           let sentimentCategory = 'neutral';
           if (typeof sentiment === 'number') {
-            if (sentiment > 0.2) sentimentCategory = 'positive';
-            else if (sentiment < -0.2) sentimentCategory = 'negative';
+            if (sentiment >= 0.7) sentimentCategory = 'positive';
+            else if (sentiment < 0.3) sentimentCategory = 'negative';
           }
 
           return {
