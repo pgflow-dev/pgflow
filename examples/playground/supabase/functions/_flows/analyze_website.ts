@@ -11,6 +11,9 @@ type Input = {
 
 export default new Flow<Input>({
   slug: 'analyze_website',
+  maxAttempts: 3,
+  timeout: 10,
+  baseDelay: 2,
 })
   .step(
     { slug: 'website' },
