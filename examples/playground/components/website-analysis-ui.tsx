@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ResultRow, StepStateRow } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface WebsiteAnalysisUIProps {
   runData: ResultRow | null;
@@ -24,6 +25,7 @@ export default function WebsiteAnalysisUI({
   analyzeError = null,
 }: WebsiteAnalysisUIProps) {
   const [url, setUrl] = useState('');
+  const [stepsExpanded, setStepsExpanded] = useState(true);
 
   // Get sorted step states
   const getSortedStepStates = (): StepStateRow[] => {
@@ -52,6 +54,13 @@ export default function WebsiteAnalysisUI({
   const showSteps = runData && (isRunning || isCompleted || isFailed);
   const showSummary = runData && isCompleted;
   const showAnalyzeAnother = runData && (isCompleted || isFailed);
+  
+  // Auto-collapse steps when flow completes
+  useEffect(() => {
+    if (isCompleted) {
+      setStepsExpanded(false);
+    }
+  }, [isCompleted]);
 
   // Get website URL from input
   const getWebsiteUrl = (): string => {
@@ -189,69 +198,101 @@ export default function WebsiteAnalysisUI({
               <p className="font-medium">{websiteUrl}</p>
             </div>
 
-            <div className="space-y-8">
-              {sortedSteps.map((step, index) => (
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">Process Steps</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setStepsExpanded(!stepsExpanded)}
+                className="flex items-center gap-1"
+              >
+                {stepsExpanded ? (
+                  <>
+                    <span className="text-sm">Collapse</span>
+                    <ChevronUp className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    <span className="text-sm">Expand</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </div>
+
+            <AnimatePresence>
+              {stepsExpanded && (
                 <motion.div
-                  key={step.step_slug}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className={`flex items-start space-x-4 ${
-                    isCompleted && step.status === 'completed'
-                      ? 'opacity-80'
-                      : step.status === 'created'
-                        ? 'opacity-50'
-                        : ''
-                  }`}
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-8 overflow-hidden"
                 >
-                  <div className="flex-shrink-0 mt-1">
-                    <div
-                      className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
-                        step.status === 'completed'
-                          ? 'bg-green-500 border-green-500 text-white'
-                          : step.status === 'started'
-                            ? 'border-yellow-500 text-yellow-500'
-                            : step.status === 'failed'
-                              ? 'border-red-500 text-red-500'
-                              : 'border-gray-300 text-gray-300'
+                  {sortedSteps.map((step, index) => (
+                    <motion.div
+                      key={step.step_slug}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className={`flex items-start space-x-4 ${
+                        isCompleted && step.status === 'completed'
+                          ? 'opacity-80'
+                          : step.status === 'created'
+                            ? 'opacity-50'
+                            : ''
                       }`}
                     >
-                      {step.status === 'completed' ? (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                      <div className="flex-shrink-0 mt-1">
+                        <div
+                          className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
+                            step.status === 'completed'
+                              ? 'bg-green-500 border-green-500 text-white'
+                              : step.status === 'started'
+                                ? 'border-yellow-500 text-yellow-500'
+                                : step.status === 'failed'
+                                  ? 'border-red-500 text-red-500'
+                                  : 'border-gray-300 text-gray-300'
+                          }`}
                         >
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                      ) : (
-                        <span>{index + 1}</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-medium capitalize">
-                      {step.step_slug.replace(/_/g, ' ')}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {step.status === 'completed'
-                        ? 'Completed'
-                        : step.status === 'started'
-                          ? 'In progress...'
-                          : step.status === 'failed'
-                            ? 'Failed'
-                            : 'Waiting...'}
-                    </p>
-                  </div>
+                          {step.status === 'completed' ? (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                          ) : (
+                            <span>{index + 1}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-medium capitalize">
+                          {step.step_slug.replace(/_/g, ' ')}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {step.status === 'completed'
+                            ? 'Completed'
+                            : step.status === 'started'
+                              ? 'In progress...'
+                              : step.status === 'failed'
+                                ? 'Failed'
+                                : 'Waiting...'}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))}
                 </motion.div>
-              ))}
-            </div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
 
