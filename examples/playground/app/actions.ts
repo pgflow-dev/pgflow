@@ -53,7 +53,8 @@ export const signInAction = async (formData: FormData) => {
     return encodedRedirect('error', '/sign-in', error.message);
   }
 
-  return redirect('/websites');
+  // Redirect to home page where AuthRedirectHandler will check for pendingAnalysisUrl
+  return redirect('/');
 };
 
 export const forgotPasswordAction = async (formData: FormData) => {

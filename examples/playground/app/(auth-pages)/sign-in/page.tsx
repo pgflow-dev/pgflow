@@ -1,12 +1,34 @@
+'use client';
+
 import { signInAction } from "@/app/actions";
 import { FormMessage, Message } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { createClient } from "@/utils/supabase/client";
 
-export default async function Login(props: { searchParams: Promise<Message> }) {
-  const searchParams = await props.searchParams;
+export default function Login({ searchParams }: { searchParams: Message }) {
+  const router = useRouter();
+
+  // After successful login, redirect to home page
+  // The AuthRedirectHandler on the home page will handle the pending analysis
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // If user is logged in and we're on the sign-in page, redirect to home
+      if (user && typeof window !== 'undefined' && window.location.pathname === '/sign-in') {
+        router.push('/');
+      }
+    };
+    
+    checkAuth();
+  }, [router]);
+
   return (
     <form className="flex-1 flex flex-col min-w-64">
       <h1 className="text-2xl font-medium">Sign in</h1>

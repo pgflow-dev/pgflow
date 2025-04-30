@@ -41,13 +41,14 @@ export const updateSession = async (request: NextRequest) => {
 
     // protected routes
     if ((request.nextUrl.pathname.startsWith("/protected") || 
-         request.nextUrl.pathname.startsWith("/websites")) && 
+         request.nextUrl.pathname.startsWith("/websites/runs")) && 
         user.error) {
       return NextResponse.redirect(new URL("/sign-in", request.url));
     }
 
-    if (request.nextUrl.pathname === "/" && !user.error) {
-      return NextResponse.redirect(new URL("/protected", request.url));
+    // Allow access to the websites page for logged-in users only
+    if (request.nextUrl.pathname === "/websites" && user.error) {
+      return NextResponse.redirect(new URL("/sign-in", request.url));
     }
 
     return response;
