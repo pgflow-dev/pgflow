@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { randomSleep } from '../utils.ts';
+// import { randomSleep } from '../utils.ts';
 import type { Database } from '../database-types.d.ts';
 
 let _supabase: SupabaseClient<Database> | undefined;
@@ -22,7 +22,7 @@ export default async (input: {
   summary: string;
   tags: string[];
 }) => {
-  await randomSleep(100, 500);
+  // await randomSleep(100, 500);
   const { data } = await getSupabase()
     .from('websites')
     .insert([
