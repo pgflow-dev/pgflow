@@ -10,9 +10,9 @@ function DualPanelContent() {
   const { runData, loading, error, currentTime, analyzeWebsite } = useFlowRun();
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       {/* Left panel: User-friendly UI */}
-      <div className="lg:col-span-1">
+      <div className="lg:col-span-5 xl:col-span-4">
         <WebsiteAnalysisUI
           runData={runData}
           loading={loading}
@@ -22,7 +22,7 @@ function DualPanelContent() {
       </div>
 
       {/* Right panel: Technical debug UI */}
-      <div className="lg:col-span-2">
+      <div className="lg:col-span-7 xl:col-span-8">
         <FlowRunDetails
           runId={runData?.run_id || ''}
           runData={runData}
@@ -41,7 +41,7 @@ export default function DualPanelPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-6">Website Analysis</h1>
+      <h1 className="text-3xl font-bold mb-6">Website Analysis Dashboard</h1>
       
       <FlowRunProvider runId={runId}>
         <DualPanelContent />

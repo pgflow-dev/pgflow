@@ -48,40 +48,42 @@ export default function WebsiteAnalysisUI({
   const isRunning = runData?.status === 'started';
   const showSteps = runData && (isRunning || isCompleted || isFailed);
   const showSummary = runData && isCompleted;
+  const showAnalyzeAnother = runData && (isCompleted || isFailed);
 
   // Get website URL from input
   const getWebsiteUrl = (): string => {
     if (!runData?.input) return '';
-    
+
     // Try to extract URL from input
     const input = runData.input?.json || runData.input;
     if (typeof input === 'object' && input !== null && 'url' in input) {
       return input.url as string;
     }
-    
+
     return '';
   };
 
   // Get analysis summary from output
   const getAnalysisSummary = (): { summary: string; sentiment: string } => {
     if (!runData?.output) return { summary: '', sentiment: 'neutral' };
-    
+
     try {
       const output = runData.output;
-      
+
       if (typeof output === 'object' && output !== null) {
         const summary = output.summary || '';
         const sentiment = output.sentiment || 'neutral';
-        
-        return { 
-          summary: typeof summary === 'string' ? summary : JSON.stringify(summary),
-          sentiment: typeof sentiment === 'string' ? sentiment : 'neutral'
+
+        return {
+          summary:
+            typeof summary === 'string' ? summary : JSON.stringify(summary),
+          sentiment: typeof sentiment === 'string' ? sentiment : 'neutral',
         };
       }
     } catch (e) {
       console.error('Error parsing output:', e);
     }
-    
+
     return { summary: '', sentiment: 'neutral' };
   };
 
@@ -150,7 +152,7 @@ export default function WebsiteAnalysisUI({
         )}
 
         {/* Step-by-step process */}
-        {showSteps && !showSummary && (
+        {showSteps && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -160,7 +162,7 @@ export default function WebsiteAnalysisUI({
             <div className="p-3 bg-muted rounded-md">
               <p className="font-medium">Analyzing: {websiteUrl}</p>
             </div>
-            
+
             <div className="space-y-8">
               {sortedSteps.map((step, index) => (
                 <motion.div
@@ -169,7 +171,11 @@ export default function WebsiteAnalysisUI({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                   className={`flex items-start space-x-4 ${
-                    step.status === 'created' ? 'opacity-50' : ''
+                    isCompleted && step.status === 'completed'
+                      ? 'opacity-80'
+                      : step.status === 'created'
+                        ? 'opacity-50'
+                        : ''
                   }`}
                 >
                   <div className="flex-shrink-0 mt-1">
@@ -178,10 +184,10 @@ export default function WebsiteAnalysisUI({
                         step.status === 'completed'
                           ? 'bg-green-500 border-green-500 text-white'
                           : step.status === 'started'
-                          ? 'border-yellow-500 text-yellow-500'
-                          : step.status === 'failed'
-                          ? 'border-red-500 text-red-500'
-                          : 'border-gray-300 text-gray-300'
+                            ? 'border-yellow-500 text-yellow-500'
+                            : step.status === 'failed'
+                              ? 'border-red-500 text-red-500'
+                              : 'border-gray-300 text-gray-300'
                       }`}
                     >
                       {step.status === 'completed' ? (
@@ -211,10 +217,10 @@ export default function WebsiteAnalysisUI({
                       {step.status === 'completed'
                         ? 'Completed'
                         : step.status === 'started'
-                        ? 'In progress...'
-                        : step.status === 'failed'
-                        ? 'Failed'
-                        : 'Waiting...'}
+                          ? 'In progress...'
+                          : step.status === 'failed'
+                            ? 'Failed'
+                            : 'Waiting...'}
                     </p>
                   </div>
                 </motion.div>
@@ -229,54 +235,77 @@ export default function WebsiteAnalysisUI({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="space-y-6"
+            className="mt-12 space-y-6"
           >
-            <div className="p-4 border rounded-md">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium">Analysis Results</h3>
+            <div className="border-t pt-8">
+              <div className="flex items-center mb-6">
+                <h3 className="text-xl font-medium">Analysis Results</h3>
                 <div
-                  className={`px-3 py-1 text-xs font-medium rounded-full ${
+                  className={`ml-4 px-3 py-1 text-xs font-medium rounded-full ${
                     sentiment === 'positive'
                       ? 'bg-green-100 text-green-800'
                       : sentiment === 'negative'
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-blue-100 text-blue-800'
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-blue-100 text-blue-800'
                   }`}
                 >
                   {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
                 </div>
               </div>
-              
-              <div className="mb-2">
-                <span className="text-sm font-medium text-muted-foreground">Website:</span>
-                <span className="ml-2">{websiteUrl}</span>
-              </div>
-              
-              <div className="mt-4">
-                <h4 className="text-sm font-medium mb-2">Summary</h4>
-                <p className="text-foreground/80 whitespace-pre-line">{summary}</p>
-              </div>
-            </div>
-            
-            <div className="mt-8">
-              <h3 className="text-lg font-medium mb-4">Analyze Another Website</h3>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Input
-                    id="url-new"
-                    type="url"
-                    placeholder="https://example.com"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    required
-                    className="w-full"
-                  />
+
+              <div className="p-6 border rounded-lg bg-card shadow-sm">
+                <div className="mb-4">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Website:
+                  </span>
+                  <a
+                    href={websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-2 text-primary hover:underline"
+                  >
+                    {websiteUrl}
+                  </a>
                 </div>
-                <Button type="submit" disabled={loading}>
-                  {loading ? 'Analyzing...' : 'Analyze Website'}
-                </Button>
-              </form>
+
+                <div className="mt-4">
+                  <h4 className="text-base font-medium mb-3">Summary</h4>
+                  <p className="text-foreground/90 whitespace-pre-line leading-relaxed">
+                    {summary}
+                  </p>
+                </div>
+              </div>
             </div>
+          </motion.div>
+        )}
+
+        {/* Analyze another website */}
+        {showAnalyzeAnother && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="mt-8 pt-6 border-t"
+          >
+            <h3 className="text-lg font-medium mb-4">
+              Analyze Another Website
+            </h3>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Input
+                  id="url-new"
+                  type="url"
+                  placeholder="https://example.com"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  required
+                  className="w-full"
+                />
+              </div>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Analyzing...' : 'Analyze Website'}
+              </Button>
+            </form>
           </motion.div>
         )}
       </AnimatePresence>
