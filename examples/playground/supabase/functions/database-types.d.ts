@@ -11,16 +11,19 @@ export type Database = {
     Tables: {
       deps: {
         Row: {
+          created_at: string
           dep_slug: string
           flow_slug: string
           step_slug: string
         }
         Insert: {
+          created_at?: string
           dep_slug: string
           flow_slug: string
           step_slug: string
         }
         Update: {
+          created_at?: string
           dep_slug?: string
           flow_slug?: string
           step_slug?: string
@@ -51,18 +54,21 @@ export type Database = {
       }
       flows: {
         Row: {
+          created_at: string
           flow_slug: string
           opt_base_delay: number
           opt_max_attempts: number
           opt_timeout: number
         }
         Insert: {
+          created_at?: string
           flow_slug: string
           opt_base_delay?: number
           opt_max_attempts?: number
           opt_timeout?: number
         }
         Update: {
+          created_at?: string
           flow_slug?: string
           opt_base_delay?: number
           opt_max_attempts?: number
@@ -72,27 +78,36 @@ export type Database = {
       }
       runs: {
         Row: {
+          completed_at: string | null
+          failed_at: string | null
           flow_slug: string
           input: Json
           output: Json | null
           remaining_steps: number
           run_id: string
+          started_at: string
           status: string
         }
         Insert: {
+          completed_at?: string | null
+          failed_at?: string | null
           flow_slug: string
           input: Json
           output?: Json | null
           remaining_steps?: number
           run_id?: string
+          started_at?: string
           status?: string
         }
         Update: {
+          completed_at?: string | null
+          failed_at?: string | null
           flow_slug?: string
           input?: Json
           output?: Json | null
           remaining_steps?: number
           run_id?: string
+          started_at?: string
           status?: string
         }
         Relationships: [
@@ -107,26 +122,38 @@ export type Database = {
       }
       step_states: {
         Row: {
+          completed_at: string | null
+          created_at: string
+          failed_at: string | null
           flow_slug: string
           remaining_deps: number
           remaining_tasks: number
           run_id: string
+          started_at: string | null
           status: string
           step_slug: string
         }
         Insert: {
+          completed_at?: string | null
+          created_at?: string
+          failed_at?: string | null
           flow_slug: string
           remaining_deps?: number
           remaining_tasks?: number
           run_id: string
+          started_at?: string | null
           status?: string
           step_slug: string
         }
         Update: {
+          completed_at?: string | null
+          created_at?: string
+          failed_at?: string | null
           flow_slug?: string
           remaining_deps?: number
           remaining_tasks?: number
           run_id?: string
+          started_at?: string | null
           status?: string
           step_slug?: string
         }
@@ -157,10 +184,13 @@ export type Database = {
       step_tasks: {
         Row: {
           attempts_count: number
+          completed_at: string | null
           error_message: string | null
+          failed_at: string | null
           flow_slug: string
           message_id: number | null
           output: Json | null
+          queued_at: string
           run_id: string
           status: string
           step_slug: string
@@ -168,10 +198,13 @@ export type Database = {
         }
         Insert: {
           attempts_count?: number
+          completed_at?: string | null
           error_message?: string | null
+          failed_at?: string | null
           flow_slug: string
           message_id?: number | null
           output?: Json | null
+          queued_at?: string
           run_id: string
           status?: string
           step_slug: string
@@ -179,10 +212,13 @@ export type Database = {
         }
         Update: {
           attempts_count?: number
+          completed_at?: string | null
           error_message?: string | null
+          failed_at?: string | null
           flow_slug?: string
           message_id?: number | null
           output?: Json | null
+          queued_at?: string
           run_id?: string
           status?: string
           step_slug?: string
@@ -214,29 +250,35 @@ export type Database = {
       }
       steps: {
         Row: {
+          created_at: string
           deps_count: number
           flow_slug: string
           opt_base_delay: number | null
           opt_max_attempts: number | null
           opt_timeout: number | null
+          step_index: number
           step_slug: string
           step_type: string
         }
         Insert: {
+          created_at?: string
           deps_count?: number
           flow_slug: string
           opt_base_delay?: number | null
           opt_max_attempts?: number | null
           opt_timeout?: number | null
+          step_index?: number
           step_slug: string
           step_type?: string
         }
         Update: {
+          created_at?: string
           deps_count?: number
           flow_slug?: string
           opt_base_delay?: number | null
           opt_max_attempts?: number | null
           opt_timeout?: number | null
+          step_index?: number
           step_slug?: string
           step_type?: string
         }
@@ -300,11 +342,13 @@ export type Database = {
               timeout?: number
             }
         Returns: {
+          created_at: string
           deps_count: number
           flow_slug: string
           opt_base_delay: number | null
           opt_max_attempts: number | null
           opt_timeout: number | null
+          step_index: number
           step_slug: string
           step_type: string
         }
@@ -322,10 +366,13 @@ export type Database = {
         }
         Returns: {
           attempts_count: number
+          completed_at: string | null
           error_message: string | null
+          failed_at: string | null
           flow_slug: string
           message_id: number | null
           output: Json | null
+          queued_at: string
           run_id: string
           status: string
           step_slug: string
@@ -340,6 +387,7 @@ export type Database = {
           timeout?: number
         }
         Returns: {
+          created_at: string
           flow_slug: string
           opt_base_delay: number
           opt_max_attempts: number
@@ -355,10 +403,13 @@ export type Database = {
         }
         Returns: {
           attempts_count: number
+          completed_at: string | null
           error_message: string | null
+          failed_at: string | null
           flow_slug: string
           message_id: number | null
           output: Json | null
+          queued_at: string
           run_id: string
           status: string
           step_slug: string
@@ -397,11 +448,14 @@ export type Database = {
       start_flow: {
         Args: { flow_slug: string; input: Json }
         Returns: {
+          completed_at: string | null
+          failed_at: string | null
           flow_slug: string
           input: Json
           output: Json | null
           remaining_steps: number
           run_id: string
+          started_at: string
           status: string
         }[]
       }
