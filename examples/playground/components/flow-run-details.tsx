@@ -1,15 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import {
-  fetchFlowRunData,
-  observeFlowRun,
-  ResultRow,
-  RunRow,
-  StepStateRow,
-  StepTaskRow,
-} from '@/lib/db';
-import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { useEffect } from 'react';
+import { ResultRow } from '@/lib/db';
 import {
   Collapsible,
   CollapsibleContent,
@@ -185,18 +177,14 @@ export default function FlowRunDetails({
                 <dt className="text-sm text-foreground/60">Run input</dt>
                 <dd className="max-h-40 overflow-hidden border border-gray-500/30 rounded-md">
                   <div className="overflow-auto max-h-40">
-                    <JSONHighlighter
-                      data={runData.input?.json || runData.input}
-                    />
+                    <JSONHighlighter data={runData.input} />
                   </div>
                 </dd>
               </div>
               <div>
                 <dt className="text-sm text-foreground/60">Flow</dt>
                 <dd>{runData.flow_slug}</dd>
-                <dt className="text-sm text-foreground/60">
-                  Remaining steps
-                </dt>
+                <dt className="text-sm text-foreground/60">Remaining steps</dt>
                 <dd>{runData.remaining_steps}</dd>
               </div>
             </dl>
@@ -257,15 +245,14 @@ export default function FlowRunDetails({
                             </h4>
                           </div>
                           <div className="flex items-center">
-                            {step.status === 'started' &&
-                              step.started_at && (
-                                <span className="text-xs text-muted-foreground mr-3">
-                                  {formatRelativeTime(
-                                    step.started_at,
-                                    currentTime,
-                                  )}
-                                </span>
-                              )}
+                            {step.status === 'started' && step.started_at && (
+                              <span className="text-xs text-muted-foreground mr-3">
+                                {formatRelativeTime(
+                                  step.started_at,
+                                  currentTime,
+                                )}
+                              </span>
+                            )}
                             {step.status === 'completed' &&
                               step.started_at &&
                               step.completed_at && (
@@ -308,18 +295,15 @@ export default function FlowRunDetails({
                           </div>
                         </CollapsibleTrigger>
                         <CollapsibleContent className="px-4 pb-4">
-                          {step.status === 'completed' &&
-                            stepTask?.output && (
-                              <div className="mt-2 overflow-auto">
-                                <div className="max-h-40 overflow-hidden border border-gray-500/30 rounded-md">
-                                  <div className="overflow-auto max-h-40">
-                                    <JSONHighlighter
-                                      data={stepTask.output}
-                                    />
-                                  </div>
+                          {step.status === 'completed' && stepTask?.output && (
+                            <div className="mt-2 overflow-auto">
+                              <div className="max-h-40 overflow-hidden border border-gray-500/30 rounded-md">
+                                <div className="overflow-auto max-h-40">
+                                  <JSONHighlighter data={stepTask.output} />
                                 </div>
                               </div>
-                            )}
+                            </div>
+                          )}
                         </CollapsibleContent>
                       </Collapsible>
                     );

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { ResultRow, StepStateRow } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { FormMessage } from '@/components/form-message';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface WebsiteAnalysisUIProps {
@@ -59,7 +58,7 @@ export default function WebsiteAnalysisUI({
     if (!runData?.input) return '';
 
     // Try to extract URL from input
-    const input = runData.input?.json || runData.input;
+    const input = runData.input;
     if (typeof input === 'object' && input !== null && 'url' in input) {
       return input.url as string;
     }
@@ -96,7 +95,7 @@ export default function WebsiteAnalysisUI({
     if (url.trim()) {
       // Call the onAnalyzeWebsite callback with the URL
       await onAnalyzeWebsite(url.trim());
-      
+
       // Clear the input field after submission
       setUrl('');
     }

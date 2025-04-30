@@ -1,4 +1,6 @@
-export default function JSONHighlighter({ data }: { data: object }) {
+import { Json } from '@/supabase/functions/database-types';
+
+export default function JSONHighlighter({ data }: { data: Json }) {
   const jsonString = JSON.stringify(data, null, 2)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
