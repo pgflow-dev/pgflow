@@ -6,6 +6,8 @@ import type { AnyFlow } from '@pgflow/dsl';
 export interface StepTaskPollerConfig {
   batchSize: number;
   queueName: string;
+  maxPollSeconds?: number;
+  pollIntervalMs?: number;
 }
 
 /**
@@ -32,13 +34,16 @@ export class StepTaskPoller<TFlow extends AnyFlow>
     }
 
     this.logger.debug(
-      `Polling for flow tasks with batch size ${this.config.batchSize}`
+      `Polling for flow tasks with batch size ${this.config.batchSize}, maxPollSeconds: ${this.config.maxPollSeconds}, pollIntervalMs: ${this.config.pollIntervalMs}`
     );
 
     try {
+      // Pass polling configuration to the adapter if they're provided
       const tasks = await this.adapter.pollForTasks(
         this.config.queueName,
-        this.config.batchSize
+        this.config.batchSize,
+        this.config.maxPollSeconds,
+        this.config.pollIntervalMs
       );
       this.logger.debug(`Retrieved ${tasks.length} flow tasks`);
       return tasks;

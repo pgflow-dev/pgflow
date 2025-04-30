@@ -186,6 +186,12 @@ export class EdgeWorker {
    *
    *   // batch size for polling messages
    *   batchSize: 10,
+   *
+   *   // in-worker polling interval
+   *   maxPollSeconds: 2,
+   *
+   *   // in-database polling interval
+   *   pollIntervalMs: 100,
    * });
    * ```
    */
@@ -204,6 +210,8 @@ export class EdgeWorker {
       maxConcurrent: config.maxConcurrent ?? 10,
       maxPgConnections: config.maxPgConnections ?? 4,
       batchSize: config.batchSize ?? 10,
+      maxPollSeconds: config.maxPollSeconds ?? 2,
+      pollIntervalMs: config.pollIntervalMs ?? 100,
       connectionString:
         config.connectionString || this.platform.getConnectionString(),
     };

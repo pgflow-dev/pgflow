@@ -33,7 +33,14 @@ export function startWorker<
     ...options,
   };
 
-  const worker = createFlowWorker(flow, mergedOptions, createFakeLogger);
+  const consoleLogger = {
+    debug: console.log,
+    info: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+
+  const worker = createFlowWorker(flow, mergedOptions, () => consoleLogger);
 
   worker.startOnlyOnce({
     edgeFunctionName: 'test_flow',
