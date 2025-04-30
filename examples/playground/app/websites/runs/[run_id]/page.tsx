@@ -1,11 +1,28 @@
 'use client';
 
-import { createClient } from '@/utils/supabase/client';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { FormMessage, Message } from '@/components/form-message';
+import { FormMessage } from '@/components/form-message';
+import {
+  fetchFlowRunData,
+  observeFlowRun,
+  ResultRow,
+  RunRow,
+  StepStateRow,
+  StepTaskRow,
+} from '@/lib/db';
+import { Json } from '@/supabase/functions/database-types';
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
-import { Database, Json } from '@/supabase/functions/database-types';
+// Define RealtimePayload type to handle different event types
+interface RealtimePayload<T extends Record<string, any>> {
+  new: T;
+  old: T | null;
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+  schema: string;
+  table: string;
+  commit_timestamp: string;
+}
 
 // Add CSS for breathing animation
 const breathingAnimation = `
@@ -18,17 +35,6 @@ const breathingAnimation = `
   animation: breathe 2s infinite ease-in-out;
 }
 `;
-
-type RunRow = Database['pgflow']['Tables']['runs']['Row'];
-type StepStateRow = Database['pgflow']['Tables']['step_states']['Row'];
-type StepTaskRow = Database['pgflow']['Tables']['step_tasks']['Row'];
-
-// Define a type that reflects the actual structure returned from the query
-type ResultRow = RunRow & {
-  step_states: StepStateRow[];
-  step_tasks: StepTaskRow[];
-  status?: 'started' | 'completed' | 'failed';
-};
 
 function RenderJson(json: Json) {
   return (
@@ -54,80 +60,28 @@ export default function FlowRunPage() {
   const [runData, setRunData] = useState<ResultRow | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
   const params = useParams();
   const runId = params.run_id as string;
 
   useEffect(() => {
-    const fetchRunData = async () => {
+    const loadData = async () => {
       if (!runId) return;
 
-      try {
-        setLoading(true);
+      setLoading(true);
+      const { data, error } = await fetchFlowRunData(runId);
 
-        // Fetch the flow run data
-        const { data, error } = await supabase
-          .schema('pgflow')
-          .from('runs')
-          .select(
-            `
-            *,
-            step_states!step_states_run_id_fkey(*),
-            step_tasks!step_tasks_run_id_fkey(*)
-          `,
-          )
-          .eq('run_id', runId)
-          .single<ResultRow>();
-
-        if (error) {
-          setError(`Error fetching run data: ${error.message}`);
-          return;
-        }
-
+      if (error) {
+        setError(error);
+      } else if (data) {
         setRunData(data);
-      } catch (err) {
-        console.error('Error fetching flow run:', err);
-        setError('An error occurred while fetching the flow run data');
-      } finally {
-        setLoading(false);
       }
+
+      setLoading(false);
     };
 
-    fetchRunData();
+    loadData();
 
-    // Set up a subscription to get real-time updates
-    const eventSpec = {
-      schema: 'pgflow',
-      event: '*',
-      filter: `run_id=eq.${runId}`,
-    };
-
-    // Type definitions for the payload
-    type RealtimePayload<T> = {
-      schema: string;
-      table: string;
-      commit_timestamp: string;
-      eventType: 'INSERT' | 'UPDATE' | 'DELETE';
-      new: T;
-      old: T;
-      errors: null | any;
-    };
-
-    const handleRunUpdate = (payload: RealtimePayload<RunRow>) => {
-      console.log('Run updated:', payload);
-
-      // Update only the run data without refetching everything
-      setRunData((prevData) => {
-        if (!prevData) return null;
-
-        // Create a new object with the updated run data
-        return {
-          ...prevData,
-          ...payload.new,
-        };
-      });
-    };
-
+    // Set up handlers for real-time updates
     const handleStepStateUpdate = (payload: RealtimePayload<StepStateRow>) => {
       console.log('Step state updated:', payload);
 
@@ -154,7 +108,7 @@ export default function FlowRunPage() {
         return {
           ...prevData,
           step_states: updatedStepStates,
-        };
+        } as ResultRow;
       });
     };
 
@@ -166,7 +120,7 @@ export default function FlowRunPage() {
 
         // Find the index of the updated step task
         const stepTaskIndex = prevData.step_tasks.findIndex(
-          (task) => task.id === payload.new.id,
+          (task) => task.step_slug === payload.new.step_slug,
         );
 
         // Create a new array of step tasks with the updated one
@@ -184,29 +138,35 @@ export default function FlowRunPage() {
         return {
           ...prevData,
           step_tasks: updatedStepTasks,
-        };
+        } as ResultRow;
       });
     };
 
-    const realtimeChannel = supabase
-      .channel(`flow_run_${runId}`)
-      .on('postgres_changes', { ...eventSpec, table: 'runs' }, handleRunUpdate)
-      .on(
-        'postgres_changes',
-        { ...eventSpec, table: 'step_states' },
-        handleStepStateUpdate,
-      )
-      .on(
-        'postgres_changes',
-        { ...eventSpec, table: 'step_tasks' },
-        handleStepTaskUpdate,
-      )
-      .subscribe();
+    // Set up a subscription to get real-time updates
+    const subscription = observeFlowRun({
+      runId,
+      onRunUpdate(payload: RealtimePayload<RunRow>) {
+        console.log('Run updated:', payload);
+
+        // Update only the run data without refetching everything
+        setRunData((prevData) => {
+          if (!prevData) return null;
+
+          // Create a new object with the updated run data
+          return {
+            ...prevData,
+            ...payload.new,
+          } as ResultRow;
+        });
+      },
+      onStepStateUpdate: handleStepStateUpdate,
+      onStepTaskUpdate: handleStepTaskUpdate,
+    });
 
     return () => {
-      realtimeChannel.unsubscribe();
+      subscription.unsubscribe();
     };
-  }, [runId, supabase]);
+  }, [runId]);
 
   if (loading) {
     return (
@@ -239,7 +199,7 @@ export default function FlowRunPage() {
       <div className="grid grid-cols-1 gap-8">
         <div className="p-6 border rounded-lg shadow-sm">
           <h2 className="text-2xl font-medium mb-4">
-            {runData.flow_slug}: {runId}
+            {runData?.flow_slug}: {runId}
           </h2>
 
           {runData ? (
@@ -248,7 +208,8 @@ export default function FlowRunPage() {
                 <h3 className="text-lg font-medium mb-2">Status</h3>
                 <div className="flex items-center">
                   <span
-                    className={`inline-block w-3 h-3 rounded-full mr-2 ${runData.status === 'completed'
+                    className={`inline-block w-3 h-3 rounded-full mr-2 ${
+                      runData.status === 'completed'
                         ? 'bg-green-500'
                         : runData.status === 'started'
                           ? 'bg-yellow-500 breathing'
@@ -257,7 +218,7 @@ export default function FlowRunPage() {
                             : runData.status === 'created'
                               ? 'bg-blue-500'
                               : 'bg-gray-500'
-                      }`}
+                    }`}
                   ></span>
                   <span className="capitalize">
                     {runData.status === 'started' ? 'running' : runData.status}
@@ -289,83 +250,101 @@ export default function FlowRunPage() {
                 <h3 className="text-lg font-medium mb-2">Steps Status</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {runData.step_states &&
-                    runData.step_states.map((step, index) => {
-                      // Find the corresponding step task with output
-                      const stepTask = runData.step_tasks?.find(
-                        (task) =>
-                          task.step_slug === step.step_slug &&
-                          task.status === 'completed',
-                      );
+                    [...runData.step_states]
+                      .sort((a, b) => {
+                        if (!a.step) console.error('step a is undefined', a);
+                        if (!b.step) console.error('step b is undefined', b);
+                        // Sort by step_index if available
+                        const aIndex = a.step?.step_index || 0;
+                        const bIndex = b.step?.step_index || 0;
+                        return aIndex - bIndex;
+                      })
+                      .map((step, index) => {
+                        // Find the corresponding step task with output
+                        const stepTask = runData.step_tasks?.find(
+                          (task) =>
+                            task.step_slug === step.step_slug &&
+                            task.status === 'completed',
+                        );
 
-                      return (
-                        <div
-                          key={index}
-                          className={`p-4 rounded-lg border ${step.status === 'completed'
-                              ? 'bg-green-500/5 border-green-500/30'
-                              : step.status === 'started'
-                                ? 'bg-yellow-500/5 border-yellow-500/30'
-                                : step.status === 'failed'
-                                  ? 'bg-red-500/5 border-red-500/30'
-                                  : step.status === 'created'
-                                    ? 'bg-blue-500/5 border-blue-500/30'
-                                    : 'bg-gray-500/5 border-gray-500/30'
+                        return (
+                          <div
+                            key={index}
+                            className={`p-4 rounded-lg border ${
+                              step.status === 'completed'
+                                ? 'bg-green-500/5 border-green-500/30'
+                                : step.status === 'started'
+                                  ? 'bg-yellow-500/5 border-yellow-500/30'
+                                  : step.status === 'failed'
+                                    ? 'bg-red-500/5 border-red-500/30'
+                                    : step.status === 'created'
+                                      ? 'bg-blue-500/5 border-blue-500/30'
+                                      : 'bg-gray-500/5 border-gray-500/30'
                             }`}
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-base font-medium">
-                              {step.step_slug}
-                            </h4>
-                            <span className="flex items-center">
-                              <span
-                                className={`inline-block w-2 h-2 rounded-full mr-2 ${step.status === 'completed'
-                                    ? 'bg-green-500'
-                                    : step.status === 'started'
-                                      ? 'bg-yellow-500 breathing'
-                                      : step.status === 'failed'
-                                        ? 'bg-red-500'
-                                        : step.status === 'created'
-                                          ? 'bg-blue-500'
-                                          : 'bg-gray-500'
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-base font-medium">
+                                {step.step_slug}
+                              </h4>
+                              <span className="flex items-center">
+                                <span
+                                  className={`inline-block w-2 h-2 rounded-full mr-2 ${
+                                    step.status === 'completed'
+                                      ? 'bg-green-500'
+                                      : step.status === 'started'
+                                        ? 'bg-yellow-500 breathing'
+                                        : step.status === 'failed'
+                                          ? 'bg-red-500'
+                                          : step.status === 'created'
+                                            ? 'bg-blue-500'
+                                            : 'bg-gray-500'
                                   }`}
-                              ></span>
-                              <span className="capitalize text-sm">
-                                {step.status === 'created'
-                                  ? 'waiting'
-                                  : step.status}
+                                ></span>
+                                <span className="capitalize text-sm">
+                                  {step.status === 'created'
+                                    ? 'waiting'
+                                    : step.status}
+                                </span>
                               </span>
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-                            <div>
-                              <span className="text-foreground/60">
-                                Dependencies:
-                              </span>{' '}
-                              {step.remaining_deps}
                             </div>
-                            <div>
-                              <span className="text-foreground/60">Tasks:</span>{' '}
-                              {step.remaining_tasks}
-                            </div>
-                          </div>
 
-                          {step.status === 'completed' && stepTask?.output && (
-                            <div className="mt-2">
-                              <details>
-                                <summary className="cursor-pointer text-sm text-foreground/70 hover:text-foreground">
-                                  View Output
-                                </summary>
-                                <div className="mt-2 p-2 bg-muted/50 rounded-md text-xs overflow-auto max-h-40">
-                                  <pre>
-                                    {JSON.stringify(stepTask.output, null, 2)}
-                                  </pre>
+                            <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                              <div>
+                                <span className="text-foreground/60">
+                                  Dependencies:
+                                </span>{' '}
+                                {step.remaining_deps}
+                              </div>
+                              <div>
+                                <span className="text-foreground/60">
+                                  Tasks:
+                                </span>{' '}
+                                {step.remaining_tasks}
+                              </div>
+                            </div>
+
+                            {step.status === 'completed' &&
+                              stepTask?.output && (
+                                <div className="mt-2">
+                                  <details>
+                                    <summary className="cursor-pointer text-sm text-foreground/70 hover:text-foreground">
+                                      View Output
+                                    </summary>
+                                    <div className="mt-2 p-2 bg-muted/50 rounded-md text-xs overflow-auto max-h-40">
+                                      <pre>
+                                        {JSON.stringify(
+                                          stepTask.output,
+                                          null,
+                                          2,
+                                        )}
+                                      </pre>
+                                    </div>
+                                  </details>
                                 </div>
-                              </details>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                              )}
+                          </div>
+                        );
+                      })}
                 </div>
               </div>
 
