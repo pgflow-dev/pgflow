@@ -19,9 +19,9 @@ export class PgflowSqlClient<TFlow extends AnyFlow>
   async pollForTasks(
     queueName: string,
     batchSize = 20,
-    visibilityTimeout = 2,
     maxPollSeconds = 5,
-    pollIntervalMs = 200
+    pollIntervalMs = 200,
+    visibilityTimeout = 2
   ): Promise<StepTaskRecord<TFlow>[]> {
     return await this.sql<StepTaskRecord<TFlow>[]>`
       SELECT *
