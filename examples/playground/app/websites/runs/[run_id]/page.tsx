@@ -14,16 +14,6 @@ import {
 import { Json } from '@/supabase/functions/database-types';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
-// Define RealtimePayload type to handle different event types
-interface RealtimePayload<T extends Record<string, any>> {
-  new: T;
-  old: T | null;
-  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
-  schema: string;
-  table: string;
-  commit_timestamp: string;
-}
-
 // Add CSS for breathing animation
 const breathingAnimation = `
 @keyframes breathe {
@@ -82,7 +72,7 @@ export default function FlowRunPage() {
     loadData();
 
     // Set up handlers for real-time updates
-    const handleStepStateUpdate = (payload: RealtimePayload<StepStateRow>) => {
+    const handleStepStateUpdate = (payload: RealtimePostgresChangesPayload<StepStateRow>) => {
       console.log('Step state updated:', payload);
 
       setRunData((prevData) => {
@@ -104,6 +94,21 @@ export default function FlowRunPage() {
           updatedStepStates.push(payload.new);
         }
 
+        // Create a mapping of step_slug to step_index to maintain order
+        const stepIndexMap = new Map<string, number>();
+        updatedStepStates.forEach(state => {
+          if (state.step && state.step_slug) {
+            stepIndexMap.set(state.step_slug, state.step?.step_index || 0);
+          }
+        });
+        
+        // Sort the updated step states using the mapping
+        updatedStepStates.sort((a, b) => {
+          const aIndex = stepIndexMap.get(a.step_slug) || 0;
+          const bIndex = stepIndexMap.get(b.step_slug) || 0;
+          return aIndex - bIndex;
+        });
+
         // Return the updated data
         return {
           ...prevData,
@@ -112,7 +117,7 @@ export default function FlowRunPage() {
       });
     };
 
-    const handleStepTaskUpdate = (payload: RealtimePayload<StepTaskRow>) => {
+    const handleStepTaskUpdate = (payload: RealtimePostgresChangesPayload<StepTaskRow>) => {
       console.log('Step task updated:', payload);
 
       setRunData((prevData) => {
@@ -134,6 +139,21 @@ export default function FlowRunPage() {
           updatedStepTasks.push(payload.new);
         }
 
+        // Create a mapping of step_slug to step_index from step_states to maintain order
+        const stepIndexMap = new Map<string, number>();
+        prevData.step_states.forEach(state => {
+          if (state.step && state.step_slug) {
+            stepIndexMap.set(state.step_slug, state.step?.step_index || 0);
+          }
+        });
+        
+        // Sort the updated step tasks using the mapping
+        updatedStepTasks.sort((a, b) => {
+          const aIndex = stepIndexMap.get(a.step_slug) || 0;
+          const bIndex = stepIndexMap.get(b.step_slug) || 0;
+          return aIndex - bIndex;
+        });
+
         // Return the updated data
         return {
           ...prevData,
@@ -145,7 +165,7 @@ export default function FlowRunPage() {
     // Set up a subscription to get real-time updates
     const subscription = observeFlowRun({
       runId,
-      onRunUpdate(payload: RealtimePayload<RunRow>) {
+      onRunUpdate(payload: RealtimePostgresChangesPayload<RunRow>) {
         console.log('Run updated:', payload);
 
         // Update only the run data without refetching everything
@@ -249,23 +269,29 @@ export default function FlowRunPage() {
               <div>
                 <h3 className="text-lg font-medium mb-2">Steps Status</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {runData.step_states &&
-                    [...runData.step_states]
-                      .sort((a, b) => {
-                        if (!a.step) console.error('step a is undefined', a);
-                        if (!b.step) console.error('step b is undefined', b);
-                        // Sort by step_index if available
-                        const aIndex = a.step?.step_index || 0;
-                        const bIndex = b.step?.step_index || 0;
-                        return aIndex - bIndex;
-                      })
-                      .map((step, index) => {
-                        // Find the corresponding step task with output
-                        const stepTask = runData.step_tasks?.find(
-                          (task) =>
-                            task.step_slug === step.step_slug &&
-                            task.status === 'completed',
-                        );
+                  {runData.step_states && (() => {
+                    // Create a mapping of step_slug to step_index
+                    const stepIndexMap = new Map<string, number>();
+                    runData.step_states.forEach(state => {
+                      if (state.step && state.step_slug) {
+                        stepIndexMap.set(state.step_slug, state.step?.step_index || 0);
+                      }
+                    });
+                    
+                    // Sort step_states using the mapping
+                    const sortedStepStates = [...runData.step_states].sort((a, b) => {
+                      const aIndex = stepIndexMap.get(a.step_slug) || 0;
+                      const bIndex = stepIndexMap.get(b.step_slug) || 0;
+                      return aIndex - bIndex;
+                    });
+                    
+                    return sortedStepStates.map((step, index) => {
+                      // Find the corresponding step task with output
+                      const stepTask = runData.step_tasks?.find(
+                        (task) =>
+                          task.step_slug === step.step_slug &&
+                          task.status === 'completed',
+                      );
 
                         return (
                           <div
@@ -344,7 +370,8 @@ export default function FlowRunPage() {
                               )}
                           </div>
                         );
-                      })}
+                      })
+                  })()}
                 </div>
               </div>
 
