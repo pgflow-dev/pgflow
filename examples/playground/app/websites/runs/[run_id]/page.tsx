@@ -11,13 +11,13 @@ import {
   StepStateRow,
   StepTaskRow,
 } from '@/lib/db';
-import { Json } from '@/supabase/functions/database-types';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import JSONHighlighter from '@/components/json-highlighter';
 
 // Add CSS for breathing animation
 const breathingAnimation = `
@@ -43,6 +43,10 @@ function formatTimeDifference(
 
   const diffMs = end.getTime() - start.getTime();
   const diffSec = Math.floor(diffMs / 1000);
+
+  if (diffSec < 1) {
+    return 'less than a second';
+  }
 
   if (diffSec < 60) {
     return `${diffSec} second${diffSec !== 1 ? 's' : ''}`;
@@ -95,14 +99,6 @@ function formatRelativeTime(
 
   const days = Math.floor(hours / 24);
   return `${days} day${days !== 1 ? 's' : ''} ago`;
-}
-
-function RenderJson(json: Json) {
-  return (
-    <pre className="p-4 bg-muted rounded-md overflow-auto text-sm">
-      {JSON.stringify(json, null, 2)}
-    </pre>
-  );
 }
 
 export default function FlowRunPage() {
@@ -346,8 +342,12 @@ export default function FlowRunPage() {
                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
                   <div>
                     <dt className="text-sm text-foreground/60">Run input</dt>
-                    <dd>
-                      <RenderJson json={runData.input} />
+                    <dd className="max-h-40 overflow-hidden border border-gray-500/30 rounded-md">
+                      <div className="overflow-auto max-h-40">
+                        <JSONHighlighter
+                          data={runData.input?.json || runData.input}
+                        />
+                      </div>
                     </dd>
                   </div>
                   <div>
@@ -470,14 +470,12 @@ export default function FlowRunPage() {
                               {step.status === 'completed' &&
                                 stepTask?.output && (
                                   <div className="mt-2 overflow-auto">
-                                    <div className="p-2 bg-muted/50 whitespace-break-spaces rounded-md text-xs overflow-auto max-h-40">
-                                      <pre className="whitespace-break-spaces">
-                                        {JSON.stringify(
-                                          stepTask.output,
-                                          null,
-                                          2,
-                                        )}
-                                      </pre>
+                                    <div className="max-h-40 overflow-hidden border border-gray-500/30 rounded-md">
+                                      <div className="overflow-auto max-h-40">
+                                        <JSONHighlighter
+                                          data={stepTask.output}
+                                        />
+                                      </div>
                                     </div>
                                   </div>
                                 )}
@@ -492,7 +490,11 @@ export default function FlowRunPage() {
               <div>
                 <h3 className="text-lg font-medium mb-2">Run Output</h3>
                 {runData.status === 'completed' ? (
-                  <RenderJson json={runData.output} />
+                  <div className="max-h-40 overflow-hidden border border-gray-500/30 rounded-md">
+                    <div className="overflow-auto max-h-40">
+                      <JSONHighlighter data={runData.output} />
+                    </div>
+                  </div>
                 ) : (
                   <p className="text-muted-foreground">
                     Run is not completed yet - no output available
