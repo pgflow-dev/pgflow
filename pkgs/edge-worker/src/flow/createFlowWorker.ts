@@ -44,6 +44,18 @@ export type FlowWorkerConfig = {
    * @default 10
    */
   batchSize?: number;
+
+  /**
+   * In-worker polling interval in seconds
+   * @default 2
+   */
+  maxPollSeconds?: number;
+
+  /**
+   * In-database polling interval in milliseconds
+   * @default 100
+   */
+  pollIntervalMs?: number;
 };
 
 /**
@@ -96,6 +108,8 @@ export function createFlowWorker<TFlow extends AnyFlow>(
   const pollerConfig: StepTaskPollerConfig = {
     batchSize: config.batchSize || 10,
     queueName: flow.slug,
+    maxPollSeconds: config.maxPollSeconds || 2,
+    pollIntervalMs: config.pollIntervalMs || 100,
   };
   const poller = new StepTaskPoller<TFlow>(
     pgflowAdapter,

@@ -30,6 +30,8 @@ Deno.test(
     const worker = startWorker(sql, MinimalFlow, {
       maxConcurrent: 1,
       batchSize: 10,
+      maxPollSeconds: 1,
+      pollIntervalMs: 200,
     });
 
     try {
@@ -114,8 +116,10 @@ Deno.test(
         'Run output should match expected value'
       );
     } finally {
+      console.log('Stopping worker');
       // Stop the worker
       await worker.stop();
+      console.log('Worker stopped');
     }
   })
 );

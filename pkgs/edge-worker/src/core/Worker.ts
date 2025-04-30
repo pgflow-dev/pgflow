@@ -9,6 +9,7 @@ export class Worker {
 
   private batchProcessor: IBatchProcessor;
   private sql: postgres.Sql;
+  private mainLoopPromise: Promise<void> | undefined;
 
   constructor(
     batchProcessor: IBatchProcessor,
@@ -22,13 +23,15 @@ export class Worker {
     this.logger = logger;
   }
 
-  async startOnlyOnce(workerBootstrap: WorkerBootstrap) {
+  startOnlyOnce(workerBootstrap: WorkerBootstrap) {
     if (this.lifecycle.isRunning) {
       this.logger.debug('Worker already running, ignoring start request');
       return;
     }
 
-    await this.start(workerBootstrap);
+    if (!this.mainLoopPromise) {
+      this.mainLoopPromise = this.start(workerBootstrap);
+    }
   }
 
   private async start(workerBootstrap: WorkerBootstrap) {
@@ -67,6 +70,16 @@ export class Worker {
     try {
       this.logger.info('-> Stopped accepting new messages');
       this.abortController.abort();
+
+      try {
+        this.logger.debug('-> Waiting for main loop to complete');
+        await this.mainLoopPromise;
+      } catch (error) {
+        this.logger.error(
+          `Error in main loop: ${error}. Continuing to stop worker`
+        );
+        throw error;
+      }
 
       this.logger.info('-> Waiting for pending tasks to complete...');
       await this.batchProcessor.awaitCompletion();
