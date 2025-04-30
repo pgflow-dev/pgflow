@@ -331,10 +331,10 @@ export default function WebsiteAnalysisUI({
                   href={websiteUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="ml-2 text-primary hover:underline"
+                  className="ml-2 text-primary hover:underline overflow-hidden"
                 >
-                  {websiteUrl.length > 50
-                    ? `${websiteUrl.substring(0, 50)}...`
+                  {websiteUrl.length > 30
+                    ? `${websiteUrl.substring(0, 30)}...`
                     : websiteUrl}
                 </a>
               </div>
