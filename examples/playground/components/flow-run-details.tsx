@@ -171,27 +171,26 @@ export default function FlowRunDetails({
           </div>
 
           <div>
-            <h3 className="text-lg font-medium mb-2">Run Information</h3>
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-              <div>
-                <dt className="text-sm text-foreground/60">Run input</dt>
-                <dd className="max-h-40 overflow-hidden border border-gray-500/30 rounded-md">
-                  <div className="overflow-auto max-h-40">
-                    <JSONHighlighter data={runData.input} />
-                  </div>
-                </dd>
+            <h3 className="text-lg font-medium mb-2">
+              Run Input
+              <span className="ml-2 text-sm text-muted-foreground">
+                JSON used to start the flow
+              </span>
+            </h3>
+            <div className="max-h-40 overflow-hidden border border-gray-500/30 rounded-md">
+              <div className="overflow-auto max-h-40">
+                <JSONHighlighter data={runData.input} />
               </div>
-              <div>
-                <dt className="text-sm text-foreground/60">Flow</dt>
-                <dd>{runData.flow_slug}</dd>
-                <dt className="text-sm text-foreground/60">Remaining steps</dt>
-                <dd>{runData.remaining_steps}</dd>
-              </div>
-            </dl>
+            </div>
           </div>
 
           <div>
-            <h3 className="text-lg font-medium mb-2">Steps Status</h3>
+            <h3 className="text-lg font-medium mb-2">
+              Steps Status
+              <span className="ml-2 text-sm text-muted-foreground">
+                Click steps to view details
+              </span>
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
               {runData.step_states &&
                 (() => {

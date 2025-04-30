@@ -7,12 +7,20 @@ import WebsiteAnalysisUI from '@/components/website-analysis-ui';
 
 // Component that uses the shared context
 function DualPanelContent() {
-  const { runData, loading, error, currentTime, analyzeWebsite, analyzeLoading, analyzeError } = useFlowRun();
+  const {
+    runData,
+    loading,
+    error,
+    currentTime,
+    analyzeWebsite,
+    analyzeLoading,
+    analyzeError,
+  } = useFlowRun();
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       {/* Left panel: User-friendly UI */}
-      <div className="lg:col-span-5 xl:col-span-4">
+      <div className="lg:col-span-6 xl:col-span-4">
         <WebsiteAnalysisUI
           runData={runData}
           loading={loading}
@@ -24,7 +32,7 @@ function DualPanelContent() {
       </div>
 
       {/* Right panel: Technical debug UI */}
-      <div className="lg:col-span-7 xl:col-span-8">
+      <div className="lg:col-span-6 xl:col-span-8">
         <FlowRunDetails
           runId={runData?.run_id || ''}
           runData={runData}
@@ -44,7 +52,7 @@ export default function DualPanelPage() {
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-3xl font-bold mb-6">Website Analysis Dashboard</h1>
-      
+
       <FlowRunProvider runId={runId}>
         <DualPanelContent />
       </FlowRunProvider>
