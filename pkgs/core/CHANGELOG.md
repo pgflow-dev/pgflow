@@ -1,5 +1,12 @@
 # @pgflow/core
 
+## 0.1.21
+
+### Patch Changes
+
+- ea1ce78: Make visibilityTimeout the last option to pollForTasks so it can be skipped
+  - @pgflow/dsl@0.1.21
+
 ## 0.1.20
 
 ### Patch Changes

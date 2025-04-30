@@ -1,5 +1,14 @@
 # @pgflow/edge-worker
 
+## 0.1.21
+
+### Patch Changes
+
+- ea1ce78: Make worker.stop() wait for the main loop promise
+- Updated dependencies [ea1ce78]
+  - @pgflow/core@0.1.21
+  - @pgflow/dsl@0.1.21
+
 ## 0.1.20
 
 ### Patch Changes
