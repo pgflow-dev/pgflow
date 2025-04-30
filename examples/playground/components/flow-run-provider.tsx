@@ -11,13 +11,16 @@ import {
   StepTaskRow,
 } from '@/lib/db';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { createClient } from '@/utils/supabase/client';
 
 interface FlowRunContextType {
   runData: ResultRow | null;
   loading: boolean;
   error: string | null;
   currentTime: Date;
-  analyzeWebsite: (url: string) => void;
+  analyzeWebsite: (url: string) => Promise<void>;
+  analyzeLoading: boolean;
+  analyzeError: string | null;
 }
 
 const FlowRunContext = createContext<FlowRunContextType>({
@@ -25,7 +28,9 @@ const FlowRunContext = createContext<FlowRunContextType>({
   loading: true,
   error: null,
   currentTime: new Date(),
-  analyzeWebsite: () => {},
+  analyzeWebsite: async () => {},
+  analyzeLoading: false,
+  analyzeError: null,
 });
 
 export const useFlowRun = () => useContext(FlowRunContext);
@@ -40,12 +45,49 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  const [analyzeLoading, setAnalyzeLoading] = useState<boolean>(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const router = useRouter();
+  const supabase = createClient();
 
   // Function to analyze a new website
-  const analyzeWebsite = (url: string) => {
-    // Redirect to the website analyzer with the URL
-    router.push(`/websites?url=${encodeURIComponent(url)}`);
+  const analyzeWebsite = async (url: string) => {
+    if (!url) {
+      setAnalyzeError('Please enter a URL');
+      return;
+    }
+
+    setAnalyzeLoading(true);
+    setAnalyzeError(null);
+
+    try {
+      console.log('Starting analysis for URL:', url);
+      const { data, error } = await supabase.rpc('start_analyze_website_flow', {
+        url,
+      });
+
+      if (error) {
+        console.error('Error starting analysis:', error);
+        setAnalyzeError(error.message);
+        return;
+      }
+
+      if (data && data.run_id) {
+        console.log(
+          'Analysis started, redirecting to:',
+          `/websites/runs/${data.run_id}/dual-panel`,
+        );
+        router.push(`/websites/runs/${data.run_id}/dual-panel`);
+      } else {
+        console.error('No run_id returned from analysis');
+        setAnalyzeError('Failed to start flow analysis');
+      }
+    } catch (error) {
+      setAnalyzeError('An error occurred while starting the analysis');
+      console.error('Exception during analysis:', error);
+    } finally {
+      setAnalyzeLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -199,6 +241,8 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     error,
     currentTime,
     analyzeWebsite,
+    analyzeLoading,
+    analyzeError,
   };
 
   return (

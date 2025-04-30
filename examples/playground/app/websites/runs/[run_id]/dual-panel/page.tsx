@@ -7,7 +7,7 @@ import WebsiteAnalysisUI from '@/components/website-analysis-ui';
 
 // Component that uses the shared context
 function DualPanelContent() {
-  const { runData, loading, error, currentTime, analyzeWebsite } = useFlowRun();
+  const { runData, loading, error, currentTime, analyzeWebsite, analyzeLoading, analyzeError } = useFlowRun();
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -18,6 +18,8 @@ function DualPanelContent() {
           loading={loading}
           error={error}
           onAnalyzeWebsite={analyzeWebsite}
+          analyzeLoading={analyzeLoading}
+          analyzeError={analyzeError}
         />
       </div>
 

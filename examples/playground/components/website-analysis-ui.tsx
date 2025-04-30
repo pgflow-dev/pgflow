@@ -11,7 +11,9 @@ interface WebsiteAnalysisUIProps {
   runData: ResultRow | null;
   loading: boolean;
   error: string | null;
-  onAnalyzeWebsite: (url: string) => void;
+  onAnalyzeWebsite: (url: string) => Promise<void>;
+  analyzeLoading?: boolean;
+  analyzeError?: string | null;
 }
 
 export default function WebsiteAnalysisUI({
@@ -19,6 +21,8 @@ export default function WebsiteAnalysisUI({
   loading,
   error,
   onAnalyzeWebsite,
+  analyzeLoading = false,
+  analyzeError = null,
 }: WebsiteAnalysisUIProps) {
   const [url, setUrl] = useState('');
 
@@ -87,10 +91,14 @@ export default function WebsiteAnalysisUI({
     return { summary: '', sentiment: 'neutral' };
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (url.trim()) {
-      onAnalyzeWebsite(url.trim());
+      // Call the onAnalyzeWebsite callback with the URL
+      await onAnalyzeWebsite(url.trim());
+      
+      // Clear the input field after submission
+      setUrl('');
     }
   };
 
@@ -300,11 +308,15 @@ export default function WebsiteAnalysisUI({
                   onChange={(e) => setUrl(e.target.value)}
                   required
                   className="w-full"
+                  disabled={analyzeLoading}
                 />
               </div>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Analyzing...' : 'Analyze Website'}
+              <Button type="submit" disabled={analyzeLoading}>
+                {analyzeLoading ? 'Starting Analysis...' : 'Analyze Website'}
               </Button>
+              {analyzeError && (
+                <div className="text-sm text-destructive">{analyzeError}</div>
+              )}
             </form>
           </motion.div>
         )}
