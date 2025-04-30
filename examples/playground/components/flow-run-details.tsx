@@ -151,8 +151,7 @@ export default function FlowRunDetails({
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <span
-                  className={`inline-block w-3 h-3 rounded-full mr-2 ${
-                    runData.status === 'completed'
+                  className={`inline-block w-3 h-3 rounded-full mr-2 ${runData.status === 'completed'
                       ? 'bg-green-500'
                       : runData.status === 'started'
                         ? 'bg-yellow-500 breathing'
@@ -161,7 +160,7 @@ export default function FlowRunDetails({
                           : runData.status === 'created'
                             ? 'bg-blue-500'
                             : 'bg-gray-500'
-                  }`}
+                    }`}
                 ></span>
                 <span className="capitalize">
                   {runData.status === 'started' ? 'running' : runData.status}
@@ -175,19 +174,20 @@ export default function FlowRunDetails({
                 )}
                 {runData.status === 'completed' && runData.completed_at && (
                   <span>
-                    Completed{' '}
-                    {formatRelativeTime(runData.completed_at, currentTime)}
+                    Took{' '}
+                    {formatTimeDifference(
+                      runData.started_at,
+                      runData.completed_at,
+                    )}
                   </span>
                 )}
                 {runData.status === 'failed' && runData.failed_at && (
                   <span>
-                    Failed {formatRelativeTime(runData.failed_at, currentTime)}
-                  </span>
-                )}
-                {runData.status === 'created' && runData.created_at && (
-                  <span>
-                    Created{' '}
-                    {formatRelativeTime(runData.created_at, currentTime)}
+                    Failed after
+                    {formatTimeDifference(
+                      runData.started_at,
+                      runData.failed_at,
+                    )}
                   </span>
                 )}
               </div>
@@ -254,8 +254,7 @@ export default function FlowRunDetails({
                     return (
                       <Collapsible
                         key={index}
-                        className={`mb-2 rounded-lg border ${
-                          step.status === 'completed'
+                        className={`mb-2 rounded-lg border ${step.status === 'completed'
                             ? 'bg-green-500/5 border-green-500/30'
                             : step.status === 'started'
                               ? 'bg-yellow-500/5 border-yellow-500/30'
@@ -264,7 +263,7 @@ export default function FlowRunDetails({
                                 : step.status === 'created'
                                   ? 'bg-blue-500/5 border-blue-500/30'
                                   : 'bg-gray-500/5 border-gray-500/30'
-                        }`}
+                          }`}
                       >
                         <CollapsibleTrigger className="flex items-center justify-between w-full p-4 text-left">
                           <div>
@@ -303,8 +302,7 @@ export default function FlowRunDetails({
                                 </span>
                               )}
                             <span
-                              className={`inline-block w-2 h-2 rounded-full mr-2 ${
-                                step.status === 'completed'
+                              className={`inline-block w-2 h-2 rounded-full mr-2 ${step.status === 'completed'
                                   ? 'bg-green-500'
                                   : step.status === 'started'
                                     ? 'bg-yellow-500 breathing'
@@ -313,7 +311,7 @@ export default function FlowRunDetails({
                                       : step.status === 'created'
                                         ? 'bg-blue-500'
                                         : 'bg-gray-500'
-                              }`}
+                                }`}
                             ></span>
                             <span className="capitalize text-sm">
                               {step.status === 'created'
