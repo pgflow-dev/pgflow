@@ -74,6 +74,25 @@ export default function WebsiteAnalysisUI({
       const output = runData.output;
 
       if (typeof output === 'object' && output !== null) {
+        // Check for the new structure with saveToDb
+        if (output.saveToDb && typeof output.saveToDb === 'object') {
+          const { summary = '', sentiment = 0 } = output.saveToDb;
+
+          // Convert numerical sentiment to string category
+          let sentimentCategory = 'neutral';
+          if (typeof sentiment === 'number') {
+            if (sentiment > 0.2) sentimentCategory = 'positive';
+            else if (sentiment < -0.2) sentimentCategory = 'negative';
+          }
+
+          return {
+            summary:
+              typeof summary === 'string' ? summary : JSON.stringify(summary),
+            sentiment: sentimentCategory,
+          };
+        }
+
+        // Fallback to old structure for backward compatibility
         const summary = output.summary || '';
         const sentiment = output.sentiment || 'neutral';
 
@@ -247,47 +266,49 @@ export default function WebsiteAnalysisUI({
             <div className="border-t pt-8">
               <h3 className="text-xl font-medium mb-6">Analysis Results</h3>
 
-              <div className="p-6 border rounded-lg bg-card shadow-sm">
-                <div className="mb-4">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Website:
-                  </span>
-                  <a
-                    href={websiteUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ml-2 text-primary hover:underline"
-                  >
-                    {websiteUrl}
-                  </a>
+              <div className="mb-4">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Website:
+                </span>
+                <a
+                  href={websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 text-primary hover:underline"
+                >
+                  {websiteUrl}
+                </a>
+              </div>
+
+              <dl className="mt-6 space-y-6">
+                <div className="flex flex-col space-y-2">
+                  <dt className="text-sm font-medium text-muted-foreground">
+                    Sentiment
+                  </dt>
+                  <dd>
+                    <span
+                      className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
+                        sentiment === 'positive'
+                          ? 'bg-green-100 text-green-800'
+                          : sentiment === 'negative'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-blue-100 text-blue-800'
+                      }`}
+                    >
+                      {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
+                    </span>
+                  </dd>
                 </div>
 
-                <dl className="mt-6 space-y-6">
-                  <div className="flex flex-col space-y-2">
-                    <dt className="text-sm font-medium text-muted-foreground">Sentiment</dt>
-                    <dd>
-                      <span
-                        className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
-                          sentiment === 'positive'
-                            ? 'bg-green-100 text-green-800'
-                            : sentiment === 'negative'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-blue-100 text-blue-800'
-                        }`}
-                      >
-                        {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
-                      </span>
-                    </dd>
-                  </div>
-                  
-                  <div className="flex flex-col space-y-2">
-                    <dt className="text-sm font-medium text-muted-foreground">Summary</dt>
-                    <dd className="text-foreground/90 whitespace-pre-line leading-relaxed">
-                      {summary}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
+                <div className="flex flex-col space-y-2">
+                  <dt className="text-sm font-medium text-muted-foreground">
+                    Summary
+                  </dt>
+                  <dd className="text-foreground/90 whitespace-pre-line leading-relaxed">
+                    {summary}
+                  </dd>
+                </div>
+              </dl>
             </div>
           </motion.div>
         )}

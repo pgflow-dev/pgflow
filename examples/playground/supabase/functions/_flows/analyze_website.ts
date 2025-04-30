@@ -25,10 +25,14 @@ export default new Flow<Input>({
   )
   .step(
     { slug: 'saveToDb', dependsOn: ['sentiment', 'summary'] },
-    async (input) =>
-      await saveWebsite({
+    async (input) => {
+      const websiteData = {
         websiteUrl: input.run.url,
         sentiment: input.sentiment.score,
         summary: input.summary.aiSummary,
-      }),
+      };
+      await saveWebsite(websiteData);
+
+      return websiteData;
+    },
   );
