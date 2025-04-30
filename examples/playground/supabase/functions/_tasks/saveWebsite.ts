@@ -1,14 +1,20 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { randomSleep } from '../utils.ts';
 import type { Database } from '../database-types.d.ts';
-type WebsiteRow = Database['public']['Tables']['websites']['Row'];
 
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const supabase = createClient<Database>(
-  SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY,
-);
+let _supabase: SupabaseClient<Database> | undefined;
+
+function getSupabase() {
+  if (!_supabase) {
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get(
+      'SUPABASE_SERVICE_ROLE_KEY',
+    )!;
+    _supabase = createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  }
+
+  return _supabase;
+}
 
 export default async (input: {
   websiteUrl: string;
@@ -16,7 +22,7 @@ export default async (input: {
   summary: string;
 }) => {
   await randomSleep(100, 500);
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from('websites')
     .insert([
       {

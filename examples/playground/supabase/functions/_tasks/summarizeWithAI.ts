@@ -1,8 +1,29 @@
-import { randomSleep } from '../utils.ts';
+import Groq from 'groq-sdk';
+
+let _groq: Groq | undefined;
+
+function getGroq() {
+  if (!_groq) {
+    _groq = new Groq({
+      apiKey: Deno.env.get('GROQ_API_KEY'),
+    });
+  }
+
+  return _groq;
+}
 
 export default async (content: string) => {
-  await randomSleep(500, 3000);
+  const chatCompletion = await getGroq().chat.completions.create({
+    messages: [
+      {
+        role: 'user',
+        content: `Please provide a concise summary of the following content:\n\n${content}`,
+      },
+    ],
+    model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+  });
+
   return {
-    aiSummary: `Lorem ipsum ${content.length}`,
+    aiSummary: chatCompletion.choices[0].message.content,
   };
 };
