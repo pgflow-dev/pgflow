@@ -84,7 +84,7 @@ export default function RunsListPage() {
           {runs.map((run) => (
             <Link
               key={run.run_id}
-              href={`/websites/runs/${run.run_id}`}
+                            href={`/websites/runs/${run.run_id}/dual-panel`}
               className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
             >
               <div className="flex items-center justify-between">
