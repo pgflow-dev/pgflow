@@ -13,6 +13,11 @@ import {
 } from '@/lib/db';
 import { Json } from '@/supabase/functions/database-types';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 // Add CSS for breathing animation
 const breathingAnimation = `
@@ -72,7 +77,9 @@ export default function FlowRunPage() {
     loadData();
 
     // Set up handlers for real-time updates
-    const handleStepStateUpdate = (payload: RealtimePostgresChangesPayload<StepStateRow>) => {
+    const handleStepStateUpdate = (
+      payload: RealtimePostgresChangesPayload<StepStateRow>,
+    ) => {
       console.log('Step state updated:', payload);
 
       setRunData((prevData) => {
@@ -96,12 +103,12 @@ export default function FlowRunPage() {
 
         // Create a mapping of step_slug to step_index to maintain order
         const stepIndexMap = new Map<string, number>();
-        updatedStepStates.forEach(state => {
+        updatedStepStates.forEach((state) => {
           if (state.step && state.step_slug) {
             stepIndexMap.set(state.step_slug, state.step?.step_index || 0);
           }
         });
-        
+
         // Sort the updated step states using the mapping
         updatedStepStates.sort((a, b) => {
           const aIndex = stepIndexMap.get(a.step_slug) || 0;
@@ -117,7 +124,9 @@ export default function FlowRunPage() {
       });
     };
 
-    const handleStepTaskUpdate = (payload: RealtimePostgresChangesPayload<StepTaskRow>) => {
+    const handleStepTaskUpdate = (
+      payload: RealtimePostgresChangesPayload<StepTaskRow>,
+    ) => {
       console.log('Step task updated:', payload);
 
       setRunData((prevData) => {
@@ -141,12 +150,12 @@ export default function FlowRunPage() {
 
         // Create a mapping of step_slug to step_index from step_states to maintain order
         const stepIndexMap = new Map<string, number>();
-        prevData.step_states.forEach(state => {
+        prevData.step_states.forEach((state) => {
           if (state.step && state.step_slug) {
             stepIndexMap.set(state.step_slug, state.step?.step_index || 0);
           }
         });
-        
+
         // Sort the updated step tasks using the mapping
         updatedStepTasks.sort((a, b) => {
           const aIndex = stepIndexMap.get(a.step_slug) || 0;
@@ -268,35 +277,41 @@ export default function FlowRunPage() {
 
               <div>
                 <h3 className="text-lg font-medium mb-2">Steps Status</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {runData.step_states && (() => {
-                    // Create a mapping of step_slug to step_index
-                    const stepIndexMap = new Map<string, number>();
-                    runData.step_states.forEach(state => {
-                      if (state.step && state.step_slug) {
-                        stepIndexMap.set(state.step_slug, state.step?.step_index || 0);
-                      }
-                    });
-                    
-                    // Sort step_states using the mapping
-                    const sortedStepStates = [...runData.step_states].sort((a, b) => {
-                      const aIndex = stepIndexMap.get(a.step_slug) || 0;
-                      const bIndex = stepIndexMap.get(b.step_slug) || 0;
-                      return aIndex - bIndex;
-                    });
-                    
-                    return sortedStepStates.map((step, index) => {
-                      // Find the corresponding step task with output
-                      const stepTask = runData.step_tasks?.find(
-                        (task) =>
-                          task.step_slug === step.step_slug &&
-                          task.status === 'completed',
+                <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+                  {runData.step_states &&
+                    (() => {
+                      // Create a mapping of step_slug to step_index
+                      const stepIndexMap = new Map<string, number>();
+                      runData.step_states.forEach((state) => {
+                        if (state.step && state.step_slug) {
+                          stepIndexMap.set(
+                            state.step_slug,
+                            state.step?.step_index || 0,
+                          );
+                        }
+                      });
+
+                      // Sort step_states using the mapping
+                      const sortedStepStates = [...runData.step_states].sort(
+                        (a, b) => {
+                          const aIndex = stepIndexMap.get(a.step_slug) || 0;
+                          const bIndex = stepIndexMap.get(b.step_slug) || 0;
+                          return aIndex - bIndex;
+                        },
                       );
 
+                      return sortedStepStates.map((step, index) => {
+                        // Find the corresponding step task with output
+                        const stepTask = runData.step_tasks?.find(
+                          (task) =>
+                            task.step_slug === step.step_slug &&
+                            task.status === 'completed',
+                        );
+
                         return (
-                          <div
+                          <Collapsible
                             key={index}
-                            className={`p-4 rounded-lg border ${
+                            className={`mb-2 rounded-lg border ${
                               step.status === 'completed'
                                 ? 'bg-green-500/5 border-green-500/30'
                                 : step.status === 'started'
@@ -308,7 +323,7 @@ export default function FlowRunPage() {
                                       : 'bg-gray-500/5 border-gray-500/30'
                             }`}
                           >
-                            <div className="flex items-center justify-between mb-2">
+                            <CollapsibleTrigger className="flex items-center justify-between w-full p-4 text-left">
                               <h4 className="text-base font-medium">
                                 {step.step_slug}
                               </h4>
@@ -332,32 +347,13 @@ export default function FlowRunPage() {
                                     : step.status}
                                 </span>
                               </span>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-                              <div>
-                                <span className="text-foreground/60">
-                                  Dependencies:
-                                </span>{' '}
-                                {step.remaining_deps}
-                              </div>
-                              <div>
-                                <span className="text-foreground/60">
-                                  Tasks:
-                                </span>{' '}
-                                {step.remaining_tasks}
-                              </div>
-                            </div>
-
-                            {step.status === 'completed' &&
-                              stepTask?.output && (
-                                <div className="mt-2">
-                                  <details>
-                                    <summary className="cursor-pointer text-sm text-foreground/70 hover:text-foreground">
-                                      View Output
-                                    </summary>
-                                    <div className="mt-2 p-2 bg-muted/50 rounded-md text-xs overflow-auto max-h-40">
-                                      <pre>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="px-4 pb-4">
+                              {step.status === 'completed' &&
+                                stepTask?.output && (
+                                  <div className="mt-2 overflow-auto">
+                                    <div className="p-2 bg-muted/50 whitespace-break-spaces rounded-md text-xs overflow-auto max-h-40">
+                                      <pre class="whitespace-break-spaces ">
                                         {JSON.stringify(
                                           stepTask.output,
                                           null,
@@ -365,13 +361,13 @@ export default function FlowRunPage() {
                                         )}
                                       </pre>
                                     </div>
-                                  </details>
-                                </div>
-                              )}
-                          </div>
+                                  </div>
+                                )}
+                            </CollapsibleContent>
+                          </Collapsible>
                         );
-                      })
-                  })()}
+                      });
+                    })()}
                 </div>
               </div>
 
