@@ -19,9 +19,8 @@ export default async function Home() {
           <div>
             <h2 className="text-2xl font-medium mb-4">How it works</h2>
             <p className="text-foreground/80">
-              Enter a URL in the form to analyze a website. Our tool will scan
-              the website and provide insights about its content, structure, and
-              performance.
+              Enter a URL in the form to analyze a website. Our tool will scrape
+              it then use AI to summarize it and extract sentiment.
             </p>
             {!isLoggedIn && (
               <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">

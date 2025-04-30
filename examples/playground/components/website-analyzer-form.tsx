@@ -85,12 +85,12 @@ export default function WebsiteAnalyzerForm({
             name="url"
             id="url"
             placeholder="https://example.com"
-            defaultValue="https://reddit.com/r/supabase"
+            defaultValue="https://example.com"
             required
           />
         </div>
         <SubmitButton>
-          {isLoggedIn ? 'Start Analysis' : 'Sign in & Analyze'}
+          {isLoggedIn ? '🚀 Start Analysis' : 'Sign in & Analyze'}
         </SubmitButton>
         {formError && <FormMessage message={{ error: formError }} />}
       </form>

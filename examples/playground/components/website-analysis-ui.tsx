@@ -167,7 +167,7 @@ export default function WebsiteAnalysisUI({
             className="space-y-8"
           >
             <div className="p-3 bg-muted rounded-md">
-              <p className="font-medium">Analyzing: {websiteUrl}</p>
+              <p className="font-medium">{websiteUrl}</p>
             </div>
 
             <div className="space-y-8">
@@ -245,20 +245,7 @@ export default function WebsiteAnalysisUI({
             className="mt-12 space-y-6"
           >
             <div className="border-t pt-8">
-              <div className="flex items-center mb-6">
-                <h3 className="text-xl font-medium">Analysis Results</h3>
-                <div
-                  className={`ml-4 px-3 py-1 text-xs font-medium rounded-full ${
-                    sentiment === 'positive'
-                      ? 'bg-green-100 text-green-800'
-                      : sentiment === 'negative'
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-blue-100 text-blue-800'
-                  }`}
-                >
-                  {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
-                </div>
-              </div>
+              <h3 className="text-xl font-medium mb-6">Analysis Results</h3>
 
               <div className="p-6 border rounded-lg bg-card shadow-sm">
                 <div className="mb-4">
@@ -275,12 +262,31 @@ export default function WebsiteAnalysisUI({
                   </a>
                 </div>
 
-                <div className="mt-4">
-                  <h4 className="text-base font-medium mb-3">Summary</h4>
-                  <p className="text-foreground/90 whitespace-pre-line leading-relaxed">
-                    {summary}
-                  </p>
-                </div>
+                <dl className="mt-6 space-y-6">
+                  <div className="flex flex-col space-y-2">
+                    <dt className="text-sm font-medium text-muted-foreground">Sentiment</dt>
+                    <dd>
+                      <span
+                        className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
+                          sentiment === 'positive'
+                            ? 'bg-green-100 text-green-800'
+                            : sentiment === 'negative'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-blue-100 text-blue-800'
+                        }`}
+                      >
+                        {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
+                      </span>
+                    </dd>
+                  </div>
+                  
+                  <div className="flex flex-col space-y-2">
+                    <dt className="text-sm font-medium text-muted-foreground">Summary</dt>
+                    <dd className="text-foreground/90 whitespace-pre-line leading-relaxed">
+                      {summary}
+                    </dd>
+                  </div>
+                </dl>
               </div>
             </div>
           </motion.div>
