@@ -23,7 +23,9 @@ export default async (content: string) => {
     model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
   });
 
+  const summary = chatCompletion.choices[0].message.content;
+
   return {
-    aiSummary: chatCompletion.choices[0].message.content,
+    aiSummary: summary ?? 'Summary not available, please try again.',
   };
 };

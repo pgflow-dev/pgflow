@@ -1,10 +1,11 @@
-CREATE TABLE public.websites (
-  id SERIAL PRIMARY KEY,
-  website_url TEXT NOT NULL,
-  sentiment FLOAT NOT NULL,
-  summary TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+create table public.websites (
+  id SERIAL primary key,
+  website_url TEXT not null,
+  sentiment FLOAT not null,
+  summary TEXT not null,
+  tags TEXT [] not null default '{}',
+  created_at TIMESTAMP WITH TIME ZONE default NOW() not null,
+  updated_at TIMESTAMP WITH TIME ZONE default NOW() not null
 );
 
-CREATE INDEX idx_websites_url ON public.websites(website_url);
+create index idx_websites_url on public.websites (website_url);

@@ -20,6 +20,7 @@ export default async (input: {
   websiteUrl: string;
   sentiment: number;
   summary: string;
+  tags: string[];
 }) => {
   await randomSleep(100, 500);
   const { data } = await getSupabase()
@@ -29,6 +30,7 @@ export default async (input: {
         website_url: input.websiteUrl,
         sentiment: input.sentiment,
         summary: input.summary,
+        tags: input.tags,
       },
     ])
     .select('*')
