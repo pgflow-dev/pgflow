@@ -31,6 +31,62 @@ const breathingAnimation = `
 }
 `;
 
+// Format time difference in a human-readable way
+function formatTimeDifference(startDate: string | null, endDate: string | null): string {
+  if (!startDate) return '';
+  
+  const start = new Date(startDate);
+  const end = endDate ? new Date(endDate) : new Date();
+  
+  const diffMs = end.getTime() - start.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  
+  if (diffSec < 60) {
+    return `${diffSec} second${diffSec !== 1 ? 's' : ''}`;
+  }
+  
+  const minutes = Math.floor(diffSec / 60);
+  const seconds = diffSec % 60;
+  
+  if (minutes < 60) {
+    return `${minutes} minute${minutes !== 1 ? 's' : ''} ${seconds} second${seconds !== 1 ? 's' : ''}`;
+  }
+  
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  
+  return `${hours} hour${hours !== 1 ? 's' : ''} ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}`;
+}
+
+// Format relative time (e.g., "3 seconds ago")
+function formatRelativeTime(date: string | null): string {
+  if (!date) return '';
+  
+  const now = new Date();
+  const then = new Date(date);
+  const diffMs = now.getTime() - then.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  
+  if (diffSec < 60) {
+    return `${diffSec} second${diffSec !== 1 ? 's' : ''} ago`;
+  }
+  
+  const minutes = Math.floor(diffSec / 60);
+  
+  if (minutes < 60) {
+    return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+  }
+  
+  const hours = Math.floor(minutes / 60);
+  
+  if (hours < 24) {
+    return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+  }
+  
+  const days = Math.floor(hours / 24);
+  return `${days} day${days !== 1 ? 's' : ''} ago`;
+}
+
 function RenderJson(json: Json) {
   return (
     <pre className="p-4 bg-muted rounded-md overflow-auto text-sm">
@@ -324,10 +380,27 @@ export default function FlowRunPage() {
                             }`}
                           >
                             <CollapsibleTrigger className="flex items-center justify-between w-full p-4 text-left">
-                              <h4 className="text-base font-medium">
-                                {step.step_slug}
-                              </h4>
-                              <span className="flex items-center">
+                              <div>
+                                <h4 className="text-base font-medium">
+                                  {step.step_slug}
+                                </h4>
+                              </div>
+                              <div className="flex items-center">
+                                {step.status === 'started' && step.started_at && (
+                                  <span className="text-xs text-muted-foreground mr-3">
+                                    Started {formatRelativeTime(step.started_at)}
+                                  </span>
+                                )}
+                                {step.status === 'completed' && step.started_at && step.completed_at && (
+                                  <span className="text-xs text-muted-foreground mr-3">
+                                    Took {formatTimeDifference(step.started_at, step.completed_at)}
+                                  </span>
+                                )}
+                                {step.status === 'failed' && step.started_at && step.failed_at && (
+                                  <span className="text-xs text-muted-foreground mr-3">
+                                    Failed after {formatTimeDifference(step.started_at, step.failed_at)}
+                                  </span>
+                                )}
                                 <span
                                   className={`inline-block w-2 h-2 rounded-full mr-2 ${
                                     step.status === 'completed'
@@ -346,7 +419,7 @@ export default function FlowRunPage() {
                                     ? 'waiting'
                                     : step.status}
                                 </span>
-                              </span>
+                              </div>
                             </CollapsibleTrigger>
                             <CollapsibleContent className="px-4 pb-4">
                               {step.status === 'completed' &&
