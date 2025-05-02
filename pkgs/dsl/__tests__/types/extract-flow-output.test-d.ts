@@ -3,12 +3,12 @@ import { describe, it, expectTypeOf } from 'vitest';
 
 describe('ExtractFlowOutput utility type', () => {
   it('should return an empty object for a flow without steps', () => {
-    const emptyFlow = new Flow({ slug: 'empty_flow' });
-
-    type FlowOutput = ExtractFlowOutput<typeof emptyFlow>;
+    // Use type only instead of creating an unused variable
+    type EmptyFlow = Flow<unknown>;
+    type FlowOutput = ExtractFlowOutput<EmptyFlow>;
 
     // For an empty flow, output is an empty object
-    expectTypeOf<FlowOutput>().toEqualTypeOf<{}>();
+    expectTypeOf<FlowOutput>().toEqualTypeOf<Record<string, never>>();
     expectTypeOf<keyof FlowOutput>().toEqualTypeOf<never>();
   });
 
