@@ -66,6 +66,22 @@ export type ExtractFlowInput<TFlow extends AnyFlow> = TFlow extends Flow<
   : never;
 
 /**
+ * Extracts the output type from a Flow
+ * @template TFlow - The Flow type to extract from
+ */
+export type ExtractFlowOutput<TFlow extends AnyFlow> = TFlow extends Flow<
+  infer _TI,
+  infer _TS,
+  infer _TD
+>
+  ? {
+      [K in keyof ExtractFlowLeafSteps<TFlow> as K extends string
+        ? K
+        : never]: StepOutput<TFlow, K & string>;
+    }
+  : never;
+
+/**
  * Extracts the steps type from a Flow
  * @template TFlow - The Flow type to extract from
  */
