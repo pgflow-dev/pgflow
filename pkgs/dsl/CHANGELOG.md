@@ -1,5 +1,11 @@
 # @pgflow/dsl
 
+## 0.1.22
+
+### Patch Changes
+
+- 8f6eb3d: Added ExtractFlowLeafSteps and ExtractFlowOutput utility types
+
 ## 0.1.21
 
 ## 0.1.20
