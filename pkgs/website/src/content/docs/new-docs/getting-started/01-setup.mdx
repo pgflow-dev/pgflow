@@ -1,0 +1,155 @@
+---
+title: Setup and Installation
+description: Install the pgflow toolchain and bootstrap the database layer in your Supabase project.
+topic: new-docs
+sidebar:
+  order: 2
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import { FileTree } from '@astrojs/starlight/components';
+import NotProductionReady from '../../../../components/NotProductionReady.astro';
+
+<NotProductionReady />
+
+# Setup and Installation
+
+In this section, you'll install the pgflow toolchain and bootstrap the database layer in your Supabase project.
+
+## Install the pgflow toolchain
+
+<Steps>
+
+1. ### Add `@pgflow/cli`
+
+    You can install the CLI globally or as a project dependency:
+
+    <Tabs>
+      <TabItem label="Project dependency">
+      ```bash frame="none"
+      npm install --save-dev @pgflow/cli
+      ```
+      </TabItem>
+      <TabItem label="Global installation">
+      ```bash frame="none"
+      npm install -g @pgflow/cli
+      ```
+      </TabItem>
+    </Tabs>
+
+    <Aside title="Project dependency recommended">
+    Installing as a project dependency is recommended for better version control and CI/CD compatibility.
+    </Aside>
+
+2. ### Verify the CLI banner
+
+    Verify the installation by running:
+
+    ```bash frame="none"
+    npx pgflow --help
+    # pgflow CLI v0.0.x
+    # 
+    # USAGE
+    #   pgflow <command> [options]
+    # 
+    # COMMANDS
+    #   install - Install pgflow into a Supabase project
+    #   compile - Compile a Flow into a SQL migration
+    #   ...
+    ```
+
+3. ### Optional: pin package versions for CI/CD
+
+    For production environments, consider pinning exact versions in your `package.json`:
+
+    ```json
+    {
+      "devDependencies": {
+        "@pgflow/cli": "0.0.x"
+      }
+    }
+    ```
+
+</Steps>
+
+## Bootstrap the database layer (pgflow **core**)
+
+<Steps>
+
+1. ### Run `pgflow install` inside your Supabase folder
+
+    Navigate to your Supabase project folder and run:
+
+    ```bash frame="none"
+    npx pgflow install
+    ```
+
+    This installs the pgflow core into your Supabase project.
+
+    <Aside title="Directory Conventions">
+    pgflow follows these directory conventions:
+
+    - **`supabase/functions/_flows/*`**: Flow definition files
+    - **`supabase/functions/_tasks/*`**: Reusable task handlers (one file per function)
+    - **`supabase/functions/worker_<flow_slug>_<worker_idx>`**: Worker functions
+
+    <FileTree>
+    - supabase
+      - functions
+        - _flows
+          - analyze_website.ts
+          - generate_report.ts
+        - _tasks
+          - fetch_url.ts
+          - analyze_text.ts
+        - worker_analyze_website_0
+          - index.ts
+        - worker_analyze_website_1
+          - index.ts
+        - worker_generate_report_0
+          - index.ts
+    </FileTree>
+
+    Following these conventions helps organize your codebase as it grows and makes it easier to maintain your workflows.
+    </Aside>
+
+2. ### What the installer does under the hood
+
+    The installer performs several key tasks:
+
+    - **Copies SQL migrations**: Adds the pgflow schema and functions to your migrations directory
+    - **Patches `config.toml`**: Configures the connection pooler for optimal performance
+    - **Creates/updates `functions/.env`**: Sets environment variables for Edge Functions
+
+    <FileTree>
+    - supabase
+      - config.toml
+      - migrations
+        - 20250429164909_pgflow_initial.sql
+      - functions
+        - .env
+    </FileTree>
+
+3. ### Apply the migrations with Supabase
+
+    Run the migration to create the pgflow schema and functions:
+
+    ```bash frame="none"
+    npx supabase migration up
+    ```
+
+4. ### Smoke-test the installation (ping the SQL functions)
+
+    Verify the installation by running a simple query:
+
+    ```bash frame="none"
+    npx supabase db query "SELECT * FROM pgflow.flows LIMIT 1;"
+    ```
+
+    If the command executes without errors, pgflow is successfully installed.
+
+</Steps>
+
+## Next Steps
+
+Now that you have pgflow installed and the database layer set up, you're ready to [create your first flow](/new-docs/getting-started/02-creating-flows/).

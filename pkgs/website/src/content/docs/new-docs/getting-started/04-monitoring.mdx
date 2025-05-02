@@ -1,0 +1,228 @@
+---
+title: Monitoring and Debugging
+description: Learn how to monitor and debug your workflows using pgflow's built-in tools.
+topic: new-docs
+sidebar:
+  order: 5
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import { FileTree } from '@astrojs/starlight/components';
+import NotProductionReady from '../../../../components/NotProductionReady.astro';
+
+<NotProductionReady />
+
+# Monitoring and Debugging
+
+In this section, you'll learn how to monitor and debug your workflows using pgflow's built-in tools.
+
+## Inspect run & step tables
+
+You can monitor your workflows by querying the pgflow tables. Create a file `supabase/functions/monitoring/analytics.ts` with these useful queries:
+
+```typescript
+import { createClient } from '@supabase/supabase-js';
+
+// Create Supabase client
+const supabase = createClient(
+  'http://localhost:54321',
+  'your-anon-key'
+);
+
+// Endpoint to serve monitoring dashboard
+Deno.serve(async (req) => {
+  const url = new URL(req.url);
+  const flowSlug = url.searchParams.get('flow') || 'analyze_website';
+  const days = parseInt(url.searchParams.get('days') || '1');
+
+  const [
+    runsResult,
+    tasksResult,
+    workersResult,
+    dependenciesResult
+  ] = await Promise.all([
+    // Recent runs
+    supabase.from('pgflow.runs')
+      .select('*')
+      .eq('flow_slug', flowSlug)
+      .gt('created_at', new Date(Date.now() - days * 86400000).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(20),
+
+    // Recent tasks
+    supabase.from('pgflow.step_tasks')
+      .select(`
+        *,
+        pgflow.step_states!inner(slug)
+      `)
+      .eq('pgflow.step_states.flow_slug', flowSlug)
+      .gt('created_at', new Date(Date.now() - days * 86400000).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(20),
+
+    // Active workers
+    supabase.rpc('pgflow.active_workers'),
+
+    // Step dependencies
+    supabase.from('pgflow.steps')
+      .select(`
+        slug as step,
+        pgflow.step_dependencies!inner(
+          pgflow.steps!inner(slug)
+        )
+      `)
+      .eq('flow_slug', flowSlug)
+  ]);
+
+  return new Response(
+    JSON.stringify({
+      runs: runsResult.data,
+      tasks: tasksResult.data,
+      workers: workersResult.data,
+      dependencies: dependenciesResult.data
+    }, null, 2),
+    {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    }
+  );
+});
+```
+
+<Aside title="Direct SQL Queries">
+You can also query the database directly:
+
+```sql
+-- List recent runs for a specific flow
+SELECT * FROM pgflow.runs
+WHERE flow_slug = 'analyze_website'
+ORDER BY created_at DESC LIMIT 10;
+
+-- Check step states for a specific run
+SELECT s.slug, s.status, s.created_at, s.updated_at
+FROM pgflow.step_states s
+WHERE run_id = '<your-run-id>'
+ORDER BY s.created_at;
+
+-- View pending tasks with their step names
+SELECT t.id, s.slug as step_name, t.status, t.attempts, t.created_at
+FROM pgflow.step_tasks t
+JOIN pgflow.step_states s ON t.step_state_id = s.id
+WHERE t.status = 'queued'
+ORDER BY t.created_at DESC;
+```
+</Aside>
+
+## Handling failures & retries
+
+pgflow's retry system follows these steps when a step fails:
+
+1. The task is marked as failed in `pgflow.step_tasks`
+2. A retry delay is calculated based on your retry options and attempt count
+3. A new task is scheduled with incremented `attempts` count if under the max attempts
+4. Exponential backoff applies between retry attempts
+
+### Flow-level vs Step-level retry configuration
+
+```typescript
+// Flow-level retry defaults (apply to all steps unless overridden)
+export const analyzeWebsite = flow({
+  slug: "analyze_website",
+  options: {
+    retry: {
+      attempts: 3,        // 3 retries by default
+      backoffCoefficient: 2,  // Exponential backoff
+      initialIntervalMs: 1000 // Start with 1s delay
+    },
+  },
+}, /* ... */);
+
+// Step-level retry override
+const fetchHtml = step({
+  slug: "fetch_html",
+  options: {
+    retry: {
+      attempts: 5,        // More retries for network operations
+      backoffCoefficient: 1.5, // Custom backoff
+      initialIntervalMs: 500  // Start with 0.5s delay
+    }
+  },
+}, fetchUrl);
+```
+
+You can monitor failures and retries:
+
+```sql
+-- View failed tasks with their step name
+SELECT t.id, s.slug as step, t.attempts, t.created_at, t.updated_at
+FROM pgflow.step_tasks t
+JOIN pgflow.step_states ss ON t.step_state_id = ss.id
+JOIN pgflow.steps s ON ss.step_id = s.id
+WHERE t.status = 'failed'
+ORDER BY t.updated_at DESC;
+
+-- Tasks that are currently being retried
+SELECT s.slug, t.attempts, t.max_attempts, t.retry_at
+FROM pgflow.step_tasks t
+JOIN pgflow.step_states ss ON t.step_state_id = ss.id
+JOIN pgflow.steps s ON ss.step_id = s.id
+WHERE t.status = 'queued' AND t.attempts > 0
+ORDER BY t.retry_at;
+```
+
+## Useful SQL queries for troubleshooting
+
+Here are some helpful queries for debugging common issues:
+
+```sql
+-- Find stalled runs (not completed but no active tasks)
+SELECT r.id, r.flow_slug, r.created_at, r.updated_at
+FROM pgflow.runs r
+LEFT JOIN pgflow.step_tasks t ON t.run_id = r.id AND t.status = 'queued'
+WHERE r.status = 'running' AND t.id IS NULL;
+
+-- Check worker health and activity
+SELECT * FROM pgflow.active_workers();
+SELECT * FROM pgflow.inactive_workers();
+
+-- View step dependency chains for a flow
+WITH RECURSIVE step_chain AS (
+  -- Root steps (no dependencies)
+  SELECT s.id, s.slug, 0 as level
+  FROM pgflow.steps s
+  LEFT JOIN pgflow.step_dependencies sd ON s.id = sd.step_id
+  WHERE s.flow_slug = 'analyze_website' AND sd.id IS NULL
+
+  UNION ALL
+
+  -- Add steps that depend on already included steps
+  SELECT s.id, s.slug, sc.level + 1
+  FROM pgflow.steps s
+  JOIN pgflow.step_dependencies sd ON s.id = sd.step_id
+  JOIN step_chain sc ON sd.dependency_id = sc.id
+)
+SELECT level, string_agg(slug, ', ') as steps
+FROM step_chain
+GROUP BY level
+ORDER BY level;
+
+-- Tasks that have taken longest to complete (performance bottlenecks)
+SELECT
+  s.slug,
+  EXTRACT(EPOCH FROM (t.completed_at - t.started_at)) as duration_seconds,
+  t.run_id
+FROM pgflow.step_tasks t
+JOIN pgflow.step_states ss ON t.step_state_id = ss.id
+JOIN pgflow.steps s ON ss.step_id = s.id
+WHERE t.status = 'completed'
+ORDER BY duration_seconds DESC
+LIMIT 10;
+```
+
+<Aside type="tip" title="Create a monitoring dashboard">
+Consider building a simple dashboard with these queries to get a visual overview of your workflows. You could use a BI tool like Metabase or Grafana, or build a custom dashboard with Supabase Edge Functions and a frontend framework.
+</Aside>
+
+## Next Steps
+
+Now that you've learned how to monitor and debug your workflows, let's explore [advanced patterns and next steps](/new-docs/getting-started/05-next-steps/).

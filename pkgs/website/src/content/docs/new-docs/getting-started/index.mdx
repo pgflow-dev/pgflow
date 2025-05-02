@@ -1,0 +1,122 @@
+---
+title: Getting Started with pgflow
+description: From zero to a running Postgres-native workflow inside Supabase. This end-to-end tutorial covers installation, flow creation, compilation, and task processing.
+topic: new-docs
+sidebar:
+  order: 1
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import { FileTree } from '@astrojs/starlight/components';
+import NotProductionReady from '../../../../components/NotProductionReady.astro';
+
+<NotProductionReady />
+
+# Getting Started with pgflow
+
+This friendly, end-to-end tutorial takes you from zero to a running Postgres-native workflow inside Supabase – powered by the four pgflow packages:
+
+- **@pgflow/core** – SQL engine & data model
+- **@pgflow/dsl** – Type-safe Flow definition API
+- **@pgflow/cli** – Dev-tooling & migrations helper
+- **@pgflow/edge-worker** – Serverless task runner for Supabase Edge Functions
+
+> This guide follows the **Tutorials** quadrant of the Diátaxis framework.
+> It shows one happy-path that proves everything works.
+> For recipes, deep dives or API lists, jump into the dedicated
+> _How-to_, _Explanation_ and _Reference_ sections of the docs site.
+
+## What You'll Learn
+
+This tutorial is divided into several parts:
+
+1. **Setup** - Installing pgflow and setting up your database
+2. **Creating Flows** - Authoring and compiling your first workflow
+3. **Running Workflows** - Executing workflows and processing tasks
+4. **Monitoring** - Monitoring, debugging, and troubleshooting
+5. **Next Steps** - Advanced patterns and further reading
+
+By the end of this tutorial, you'll have built a complete website analysis workflow that:
+
+1. Takes a URL as input
+2. Fetches the HTML content
+3. Performs parallel analysis of the content (readability score, SEO score, etc.)
+4. Combines the results
+5. Stores the analysis in your database
+
+## Why pgflow?
+
+### The problem it solves
+
+pgflow solves the challenge of running reliable, scalable, and type-safe workflows directly in your Postgres database.
+
+Traditional task processing systems often require separate infrastructure, complex setup, and lack deep integration with your data. pgflow leverages Postgres as both the workflow engine and data store, eliminating the need for additional services while providing strong type safety from definition to execution.
+
+### When you might reach for it
+
+pgflow is an excellent choice when:
+
+- You're already using Supabase and want to add workflow capabilities
+- You need reliable background processing with automatic retries
+- You want type-safe workflows from definition to execution
+- You prefer keeping business logic close to your data
+- You require parallel processing of tasks with dependency management
+- You're building features like data processing pipelines, web scraping, or scheduled report generation
+
+## Prerequisites
+
+<Aside type="caution" title="Prerequisites">
+Before starting, ensure you have the following:
+
+- Supabase CLI version **2.0.2** or higher (check with `supabase -v`)
+- Node.js version **18** or higher (check with `node -v`)
+- A local Supabase project set up and running
+- Deno version **1.39** or higher (check with `deno -V`)
+
+If you haven't installed these tools yet or need to upgrade, refer to their official installation guides:
+- [Supabase CLI installation guide](https://supabase.com/docs/guides/cli)
+- [Node.js installation](https://nodejs.org/)
+- [Deno installation](https://deno.land/manual/getting_started/installation)
+</Aside>
+
+### Software you'll need
+
+You need the following tools installed and configured:
+
+- **Supabase CLI & local stack**: For running the local Postgres instance and Edge Functions
+- **Node.js ≥ 18 and npm** (or pnpm / yarn): For running the pgflow tools
+- **Deno ≥ 1.39**: For executing the Edge Worker
+
+### A fresh Supabase project (or existing one)
+
+If you don't have a Supabase project set up yet, create one:
+
+```bash frame="none"
+npx supabase init
+# Project initialized in /path/to/project
+
+npx supabase start
+# Started supabase local development setup
+# API URL: http://localhost:54321
+# DB URL: postgresql://postgres:postgres@localhost:54322/postgres
+```
+
+### Terminal conventions used in this guide
+
+In this guide, commands and their output are shown together in code blocks. Command output is shown as comments:
+
+```bash
+npx supabase init
+# Project initialized in /path/to/project
+
+npx supabase start
+# Started supabase local development setup
+# API URL: http://localhost:54321
+# DB URL: postgresql://postgres:postgres@localhost:54322/postgres
+```
+
+All commands are run from your project root unless specified otherwise.
+
+## Ready to Begin?
+
+Now that you understand what pgflow is and have your prerequisites ready, let's move on to [setting up pgflow](/new-docs/getting-started/01-setup/).

@@ -1,0 +1,220 @@
+---
+title: Running Workflows and Processing Tasks
+description: Learn how to kick off workflow runs and process tasks with the Edge Worker.
+topic: new-docs
+sidebar:
+  order: 4
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import { FileTree } from '@astrojs/starlight/components';
+import NotProductionReady from '../../../../components/NotProductionReady.astro';
+
+<NotProductionReady />
+
+# Running Workflows and Processing Tasks
+
+In this section, you'll learn how to kick off workflow runs and process tasks with the Edge Worker.
+
+## Kick off a workflow run
+
+<Steps>
+
+1. ### From psql (manual SQL)
+
+    Start a flow run using SQL:
+
+    ```bash frame="none"
+    npx supabase db query "SELECT * FROM pgflow.start_flow('analyze_website', '{\"url\": \"https://example.com\"}'::jsonb);"
+    ```
+
+    This will create a run and queue tasks for the root steps of your flow.
+
+2. ### From TypeScript using `PgflowSqlClient`
+
+    You can start flows from TypeScript with full type safety. Create a new file `supabase/functions/start_analyzer.ts`:
+
+    ```typescript
+    import { createClient } from '@supabase/supabase-js';
+    import { PgflowSqlClient } from '@pgflow/core';
+    // Import your flow to leverage its type definitions
+    import { analyzeWebsite } from './_flows/analyze_website.ts';
+
+    // Extract the input type from the flow
+    type AnalyzeWebsiteInput = Parameters<typeof analyzeWebsite>[0];
+
+    // Create Supabase client
+    const supabase = createClient(
+      'http://localhost:54321',
+      'your-anon-key'
+    );
+
+    // Create pgflow client
+    const pgflow = new PgflowSqlClient({
+      client: supabase
+    });
+
+    // Define an endpoint to start flows
+    Deno.serve(async (req) => {
+      try {
+        const requestData = await req.json() as AnalyzeWebsiteInput;
+
+        // TypeScript ensures requestData matches the flow's input type
+        const { data, error } = await pgflow.startFlow({
+          flowSlug: 'analyze_website',
+          input: requestData
+        });
+
+        if (error) {
+          return new Response(JSON.stringify({ error }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        return new Response(JSON.stringify({
+          success: true,
+          runId: data.id,
+          message: `Flow started for URL: ${requestData.url}`
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    });
+    ```
+
+    <Aside type="tip" title="Type safety across files">
+    By importing your flow definition and extracting its input type with `Parameters<typeof analyzeWebsite>[0]`, you ensure that your API endpoints only accept valid input for your flows. If you change the flow's input type, TypeScript will immediately show errors in all places that need updating.
+    </Aside>
+
+3. ### What happens in the pgflow tables
+
+    When a flow starts:
+
+    1. A run is created in `pgflow.runs`
+    2. Step states are created in `pgflow.step_states`
+    3. Tasks for root steps are added to `pgflow.step_tasks` and queued
+    4. Messages are sent to the queue for processing
+
+    You can inspect these tables to monitor the workflow:
+
+    ```bash frame="none"
+    npx supabase db query "SELECT * FROM pgflow.runs ORDER BY created_at DESC LIMIT 5;"
+    ```
+
+</Steps>
+
+## Process tasks with the Edge Worker (pgflow **edge-worker**)
+
+<Steps>
+
+1. ### Install `@pgflow/edge-worker`
+
+    Create an Edge Function for the worker following the naming convention:
+
+    ```bash frame="none"
+    npx supabase functions new worker_analyze_website_1
+    ```
+
+    <Aside title="Worker Naming Convention">
+    Follow the pattern: `worker_<flow_slug>_<worker_idx>` where:
+    - `<flow_slug>` is the slug of your flow (e.g., `analyze_website`)
+    - `<worker_idx>` is a numeric index (start with 1)
+
+    This naming helps organize workers especially when you have multiple flows or multiple workers per flow for high throughput.
+    </Aside>
+
+2. ### Prepare Edge Function environment variables
+
+    The `pgflow install` command already set up the necessary environment variables in `supabase/functions/.env`.
+
+    Verify they exist:
+
+    ```bash frame="none"
+    cat supabase/functions/.env
+    ```
+
+    You should see something like:
+
+    ```
+    PGFLOW_DB_URL="postgresql://postgres:postgres@localhost:54322/postgres"
+    ```
+
+3. ### Create `supabase/functions/worker_analyze_website_1/index.ts`
+
+    Open the worker file and add the following content:
+
+    ```typescript
+    import { createFlowWorker } from "@pgflow/edge-worker";
+
+    // Import your flow (this helps with type safety)
+    import { analyzeWebsite } from "../_flows/analyze_website.ts";
+
+    // Start the flow worker
+    const worker = createFlowWorker({
+      flowSlug: "analyze_website",  // Must match your flow's slug
+      maxConcurrent: 5,             // Process up to 5 tasks simultaneously
+      maxPollSeconds: 300,          // Poll for up to 5 minutes
+      pollIntervalMs: 1000,         // Poll every second
+    });
+
+    worker.start();
+
+    // Inform Supabase that the worker is running
+    console.log("pgflow worker started successfully for analyze_website flow");
+    ```
+
+    <Aside type="tip" title="Connect workers to specific flows">
+    By specifying the `flowSlug` when creating a worker, you're dedicating this worker to processing tasks from one specific flow. This allows for:
+
+    - Separate scaling per flow (busy flows get more workers)
+    - Different resource allocations (memory, concurrency) per flow
+    - Independent deployment and updates
+    </Aside>
+
+4. ### Deploy locally (`supabase functions serve`)
+
+    Start the Edge Runtime:
+
+    ```bash frame="none"
+    npx supabase functions serve pgflow-worker
+    ```
+
+    This starts the Edge Function locally, but doesn't start the worker yet.
+
+5. ### Start the worker and observe task processing
+
+    In a new terminal, send a request to start the worker:
+
+    ```bash frame="none"
+    curl http://localhost:54321/functions/v1/pgflow-worker
+    ```
+
+    You should see logs indicating the worker has started and is processing tasks:
+
+    ```
+    [Info] worker_id=<uuid> [WorkerLifecycle] Worker started successfully
+    [Info] worker_id=<uuid> [FlowWorkerLifecycle] Processing flow tasks...
+    ```
+
+    If you started a flow run earlier, you'll see it being processed:
+
+    ```
+    [Info] worker_id=<uuid> [ExecutionController] Scheduling execution of task 1
+    [Info] worker_id=<uuid> [StepTaskExecutor] Completed step 'fetch_html'
+    [Info] worker_id=<uuid> [ExecutionController] Scheduling execution of task 2
+    [Info] worker_id=<uuid> [ExecutionController] Scheduling execution of task 3
+    ...
+    ```
+
+</Steps>
+
+## Next Steps
+
+Now that you've learned how to run workflows and process tasks, let's move on to [monitoring and debugging](/new-docs/getting-started/04-monitoring/).

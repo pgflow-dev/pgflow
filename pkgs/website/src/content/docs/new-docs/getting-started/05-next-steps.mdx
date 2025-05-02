@@ -1,0 +1,219 @@
+---
+title: Next Steps and Advanced Patterns
+description: Explore advanced patterns and learn where to go next in your pgflow journey.
+topic: new-docs
+sidebar:
+  order: 6
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import { FileTree } from '@astrojs/starlight/components';
+import NotProductionReady from '../../../../components/NotProductionReady.astro';
+
+<NotProductionReady />
+
+# Next Steps and Advanced Patterns
+
+Congratulations on completing the pgflow getting started guide! In this final section, we'll explore some advanced patterns and point you to resources for further learning.
+
+## Explore advanced patterns
+
+Now that you've built a basic workflow, try these advanced patterns:
+
+### Conditional workflows
+
+Use the flow's output to dynamically start different downstream flows:
+
+```typescript
+// In your Edge Function
+const { data } = await pgflow.startFlow({
+  flowSlug: 'analyze_website',
+  input: { url: 'https://example.com' }
+});
+
+// Check the result and conditionally start another flow
+if (data.seoScore < 50) {
+  await pgflow.startFlow({
+    flowSlug: 'seo_recommendations',
+    input: {
+      url: data.url,
+      currentScore: data.seoScore,
+      issues: data.seoIssues
+    }
+  });
+}
+```
+
+### Fan-out patterns
+
+Process items in parallel by starting multiple sub-flows:
+
+```typescript
+export const processUrlList = flow({
+  slug: "process_url_list",
+}, ({ input }) => {
+  // First step gets a list of URLs
+  const getUrls = step({
+    slug: "get_urls",
+  }, (input: { source: string }) => {
+    // Get URLs from database, API, etc.
+    return { urls: ["https://example.com", "https://example.org"] };
+  });
+
+  // Fan-out step processes each URL
+  const processUrls = step({
+    slug: "process_urls",
+    deps: [getUrls],
+  }, async (input) => {
+    // For each URL, start a separate analyzeWebsite flow
+    const results = await Promise.all(
+      input.urls.map(url =>
+        pgflow.startFlow({
+          flowSlug: 'analyze_website',
+          input: { url }
+        })
+      )
+    );
+
+    return { resultIds: results.map(r => r.data.id) };
+  });
+
+  return processUrls;
+});
+```
+
+### Error handling patterns
+
+Handle errors gracefully in your workflows by implementing custom error handling logic:
+
+```typescript
+const fetchWithErrorHandling = step({
+  slug: "fetch_with_error_handling",
+}, async (input: { url: string }) => {
+  try {
+    const response = await fetch(input.url);
+    
+    if (!response.ok) {
+      // Handle HTTP errors
+      return {
+        success: false,
+        error: `HTTP error: ${response.status}`,
+        statusCode: response.status
+      };
+    }
+    
+    const data = await response.json();
+    return {
+      success: true,
+      data,
+      statusCode: response.status
+    };
+  } catch (error) {
+    // Handle network or parsing errors
+    return {
+      success: false,
+      error: error.message,
+      isNetworkError: true
+    };
+  }
+});
+
+// Later steps can check the success flag
+const processResult = step({
+  slug: "process_result",
+  deps: [fetchWithErrorHandling],
+}, (input) => {
+  if (!input.success) {
+    // Handle the error case
+    console.error(`Error fetching data: ${input.error}`);
+    return {
+      status: "error",
+      message: `Failed to process: ${input.error}`
+    };
+  }
+  
+  // Process the successful result
+  return {
+    status: "success",
+    processedData: input.data
+  };
+});
+```
+
+## Where to go next in the docs
+
+Deepen your understanding of pgflow with these resources:
+
+<Aside type="tip">
+**Documentation Structure**
+
+Following the Diátaxis framework, our docs are organized into:
+
+- **Tutorials**: Step-by-step guides like this one
+- **How-to guides**: Practical recipes for common tasks
+- **Explanations**: Conceptual deep dives
+- **Reference**: Comprehensive API information
+</Aside>
+
+### How-to guides
+
+Practical recipes for common tasks:
+- Adding conditional logic
+- Implementing fan-out patterns for parallelization
+- Working with external APIs safely
+- Handling large datasets efficiently
+- Implementing error handling strategies
+- Monitoring and observability patterns
+
+### Explanations
+
+Conceptual deep dives:
+- Flow execution lifecycle
+- Task handling and retries architecture
+- Typesafe DSL design principles
+- Versioning and migrations strategies
+- Performance optimization techniques
+
+### API References
+
+Complete documentation:
+- DSL API reference
+- SQL function documentation
+- Edge Worker configuration options
+- CLI command reference
+
+## Community & support links
+
+Get help and stay updated:
+
+- [GitHub repository](https://github.com/pgflow-dev/pgflow)
+- Join the [Discord community](#) for real-time help
+- Follow on [Twitter](#) for updates
+
+The pgflow team is actively developing new features and improving existing ones. Here's what's coming soon:
+
+- Enhanced monitoring and debugging tools
+- Flow versioning and migration utilities
+- More integrations with popular services
+- Performance optimizations
+
+## Contributing / feedback
+
+We welcome contributions and feedback:
+
+- [Open an issue](https://github.com/pgflow-dev/pgflow/issues/new) for bugs or feature requests
+- [Submit a pull request](https://github.com/pgflow-dev/pgflow/pulls) with improvements
+- [Contribute to docs](https://github.com/pgflow-dev/pgflow/tree/main/pkgs/website)
+
+When contributing:
+- Follow the existing code style and conventions
+- Add tests for new functionality
+- Update documentation for any changes
+
+<Aside>
+**Feedback Welcome!**
+
+As pgflow is still in development, your feedback is invaluable. Let us know what works well and what could be improved to help shape the future of the project.
+</Aside>
+
+Thank you for trying pgflow! We hope it makes your workflow development easier, more reliable, and type-safe from definition to execution.

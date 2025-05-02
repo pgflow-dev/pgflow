@@ -1,0 +1,278 @@
+---
+title: Creating and Compiling Flows
+description: Learn how to author your first flow using the pgflow DSL and compile it into SQL.
+topic: new-docs
+sidebar:
+  order: 3
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import { FileTree } from '@astrojs/starlight/components';
+import NotProductionReady from '../../../../components/NotProductionReady.astro';
+
+<NotProductionReady />
+
+# Creating and Compiling Flows
+
+In this section, you'll learn how to author your first flow using the pgflow DSL and compile it into SQL.
+
+## Author your first Flow (pgflow **dsl**)
+
+<Steps>
+
+1. ### Create flow and task files
+
+    Create the necessary directories and files following the pgflow conventions:
+
+    ```bash frame="none"
+    # Create flow and task directories
+    mkdir -p supabase/functions/_flows
+    mkdir -p supabase/functions/_tasks
+
+    # Create the flow file
+    touch supabase/functions/_flows/analyze_website.ts
+
+    # Create a reusable task (optional)
+    touch supabase/functions/_tasks/fetch_url.ts
+    ```
+
+    First, let's create a reusable task handler for fetching URLs (in `_tasks/fetch_url.ts`):
+
+    ```typescript
+    // Task handlers can be reused across multiple flows
+    export async function fetchUrl(input: { url: string }) {
+      console.log(`Fetching URL: ${input.url}`);
+
+      const response = await fetch(input.url);
+      const html = await response.text();
+
+      return {
+        html,
+        statusCode: response.status,
+        headers: Object.fromEntries(response.headers.entries())
+      };
+    }
+    ```
+
+    Now, open the flow file (`_flows/analyze_website.ts`) and add the following content:
+
+    ```typescript
+    import { flow, step } from "@pgflow/dsl";
+    // Import the reusable task handler
+    import { fetchUrl } from "../_tasks/fetch_url.ts";
+
+    // Define input type for the flow - will drive autocompletion throughout
+    type AnalyzeWebsiteInput = {
+      url: string;
+      includeHeaders?: boolean;
+    };
+
+    // Define the flow for website analysis
+    export const analyzeWebsite = flow({
+      slug: "analyze_website",
+      options: {
+        retry: { attempts: 3 },
+      },
+    }, ({ input }) => {
+      // Flow is typed with AnalyzeWebsiteInput
+
+      // 1. Fetch the HTML content from the URL
+      // Use the imported task handler for this step
+      const fetchHtml = step({
+        slug: "fetch_html",
+        options: {
+          timeout: "30s"
+        },
+      }, fetchUrl); // Reuse the fetchUrl task handler
+
+      // 2. Analyze readability (parallel to SEO)
+      const analyzeReadability = step({
+        slug: "analyze_readability",
+        deps: [fetchHtml], // TypeScript autocompletes this!
+      }, (input) => {
+        // input.html is available from fetchHtml's output
+        console.log(`Analyzing readability of content from ${input.url}`);
+
+        // Calculate readability metrics (simplified for example)
+        const wordCount = input.html.split(/\s+/).length;
+        const readabilityScore = Math.min(100, wordCount > 1000 ? 70 : 85);
+
+        return {
+          readabilityScore,
+          readingTime: `${Math.max(1, Math.floor(wordCount / 200))} min`,
+          wordCount
+        };
+      });
+
+      // 3. Analyze SEO (parallel to readability)
+      const analyzeSeo = step({
+        slug: "analyze_seo",
+        deps: [fetchHtml], // TypeScript autocompletes this!
+      }, (input) => {
+        // input.html and input.url are available
+        console.log(`Analyzing SEO for ${input.url}`);
+
+        // Extract metadata (simplified for example)
+        const hasTitle = input.html.includes("<title>");
+        const hasDescription = input.html.includes('name="description"');
+        const seoScore = (hasTitle ? 50 : 0) + (hasDescription ? 42 : 0);
+
+        return {
+          seoScore,
+          metaTags: [
+            hasTitle ? "title" : null,
+            hasDescription ? "description" : null
+          ].filter(Boolean)
+        };
+      });
+
+      // 4. Combine results
+      const combineResults = step({
+        slug: "combine_results",
+        deps: [analyzeReadability, analyzeSeo], // Both dependencies make their outputs available
+      }, (input) => {
+        // TypeScript knows all the properties available from dependencies
+        const result = {
+          url: input.url,
+          readabilityScore: input.readabilityScore,
+          readingTime: input.readingTime,
+          wordCount: input.wordCount,
+          seoScore: input.seoScore,
+          metaTags: input.metaTags,
+        };
+
+        // Conditionally include headers if requested
+        if (input.includeHeaders && input.headers) {
+          return {
+            ...result,
+            headers: input.headers
+          };
+        }
+
+        return result;
+      });
+
+      // Return the flow output
+      return combineResults;
+    });
+    ```
+
+2. ### Anatomy of a Flow object
+
+    Let's break down the key components:
+
+    - **Flow options & slug**: The `slug` identifies your flow in the database, while `options` control behavior like retries.
+
+    - **Step definitions**: Each `step` defines a discrete unit of work with its own `slug` and `options`.
+
+    - **Dependency graph**: Steps connect through the `deps` array, creating a directed acyclic graph (DAG).
+
+    The flow executes from input to output, with parallel steps running concurrently when possible.
+
+3. ### Type inference in action (IDE experience)
+
+    pgflow uses TypeScript's type system to provide a seamless development experience.
+
+    <Aside type="tip" title="TypeScript magic in pgflow">
+    The TypeScript type system in pgflow provides powerful autocompletion and type checking:
+
+    - **Flow input types shape everything**: The type you provide for your flow input propagates through your entire workflow
+    - **Step slug autocompletion**: When listing dependencies in `deps: [...]`, your IDE will autocomplete valid step slugs
+    - **Output type awareness**: Each step's handler has fully typed inputs based on what its dependencies output
+
+    For example, in our flow above:
+
+    ```typescript
+    // combineResults has access to all upstream outputs
+    const combineResults = step({
+      slug: "combine_results",
+      deps: [analyzeReadability, analyzeSeo], // IDE autocompletes these!
+    }, (input) => {
+      // input is fully typed with all properties from fetchHtml,
+      // analyzeReadability, and analyzeSeo!
+      return {
+        url: input.url,             // from flow input
+        html: input.html,           // from fetchHtml
+        readabilityScore: input.readabilityScore, // from analyzeReadability
+        seoScore: input.seoScore,   // from analyzeSeo
+        // ...
+      };
+    });
+    ```
+
+    This type safety helps you avoid errors and makes it easier to refactor your workflows.
+    </Aside>
+
+    Try changing a property name in the `combineResults` step to see TypeScript catch the error.
+
+</Steps>
+
+## Compile the Flow into SQL (pgflow **cli**)
+
+<Steps>
+
+1. ### Point the compiler at the flow file and `deno.json`
+
+    Create a minimal `deno.json` file in the functions directory:
+
+    ```bash frame="none"
+    echo '{
+      "importMap": "./import_map.json",
+      "compilerOptions": {
+        "lib": ["deno.window"]
+      }
+    }' > supabase/functions/deno.json
+    ```
+
+    Create an import map:
+
+    ```bash frame="none"
+    echo '{
+      "imports": {
+        "@pgflow/dsl": "npm:@pgflow/dsl"
+      }
+    }' > supabase/functions/import_map.json
+    ```
+
+    Now compile the flow:
+
+    ```bash frame="none"
+    npx pgflow compile supabase/functions/_flows/analyze_website.ts
+    ```
+
+2. ### Inspect the generated migration file
+
+    The compiler creates a SQL migration file in the `supabase/migrations` directory. Examine it:
+
+    ```bash frame="none"
+    cat supabase/migrations/$(ls -t supabase/migrations | head -1)
+    ```
+
+    The migration contains SQL that:
+    - Creates the flow in the `pgflow.flows` table
+    - Defines all steps with their dependencies
+    - Sets options for retry behavior, timeouts, etc.
+
+3. ### Push the migration to the database
+
+    Apply the new migration:
+
+    ```bash frame="none"
+    npx supabase migration up
+    ```
+
+4. ### Confirm the new flow appears in `pgflow.flows`
+
+    Verify the flow was created:
+
+    ```bash frame="none"
+    npx supabase db query "SELECT * FROM pgflow.flows WHERE slug = 'analyze_website';"
+    ```
+
+    You should see your flow listed in the query results.
+
+</Steps>
+
+## Next Steps
+
+Now that you've created and compiled your first flow, you're ready to [run workflows and process tasks](/new-docs/getting-started/03-running-workflows/).

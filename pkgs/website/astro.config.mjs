@@ -105,8 +105,28 @@ export default defineConfig({
             id: 'new-docs',
             items: [
               {
-                label: 'docs',
-                link: '/new-docs/getting-started/',
+                label: 'Index',
+                link: '/new-docs/getting-started/index/',
+              },
+              {
+                label: 'Setup',
+                link: '/new-docs/getting-started/01-setup/',
+              },
+              {
+                label: 'Creating Flows',
+                link: '/new-docs/getting-started/02-creating-flows/',
+              },
+              {
+                label: 'Running Flows',
+                link: '/new-docs/getting-started/03-running-flows/',
+              },
+              {
+                label: 'Monitoring',
+                link: '/new-docs/getting-started/04-monitoring/',
+              },
+              {
+                label: 'Next Steps',
+                link: '/new-docs/getting-started/05-next-steps/',
               },
             ],
           },
