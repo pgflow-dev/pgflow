@@ -99,6 +99,18 @@ export default defineConfig({
             ],
           },
           {
+            label: 'New Docs',
+            icon: 'open-book',
+            link: '/new-docs/',
+            id: 'new-docs',
+            items: [
+              {
+                label: 'docs',
+                link: '/new-docs/getting-started/',
+              },
+            ],
+          },
+          {
             label: 'Found a bug?',
             icon: 'github',
             link: 'https://github.com/pgflow-dev/pgflow/issues/new',

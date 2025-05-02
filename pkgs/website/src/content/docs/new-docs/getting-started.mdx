@@ -1,0 +1,1041 @@
+---
+title: Getting Started with pgflow
+description: From zero to a running Postgres-native workflow inside Supabase. This end-to-end tutorial covers installation, flow creation, compilation, and task processing.
+topic: new-docs
+sidebar:
+  order: 1
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import { FileTree } from '@astrojs/starlight/components';
+import NotProductionReady from '../../../components/NotProductionReady.astro';
+
+<NotProductionReady />
+
+# Getting Started with pgflow
+
+This friendly, end-to-end tutorial takes you from zero to a running Postgres-native workflow inside Supabase – powered by the four pgflow packages:
+
+- **@pgflow/core** – SQL engine & data model
+- **@pgflow/dsl** – Type-safe Flow definition API
+- **@pgflow/cli** – Dev-tooling & migrations helper
+- **@pgflow/edge-worker** – Serverless task runner for Supabase Edge Functions
+
+> This guide follows the **Tutorials** quadrant of the Diátaxis framework.
+> It shows one happy-path that proves everything works.
+> For recipes, deep dives or API lists, jump into the dedicated
+> _How-to_, _Explanation_ and _Reference_ sections of the docs site.
+
+## 1. Why pgflow?
+
+### 1.1 The problem it solves
+
+pgflow solves the challenge of running reliable, scalable, and type-safe workflows directly in your Postgres database.
+
+Traditional task processing systems often require separate infrastructure, complex setup, and lack deep integration with your data. pgflow leverages Postgres as both the workflow engine and data store, eliminating the need for additional services while providing strong type safety from definition to execution.
+
+### 1.2 When you might reach for it
+
+pgflow is an excellent choice when:
+
+- You're already using Supabase and want to add workflow capabilities
+- You need reliable background processing with automatic retries
+- You want type-safe workflows from definition to execution
+- You prefer keeping business logic close to your data
+- You require parallel processing of tasks with dependency management
+- You're building features like data processing pipelines, web scraping, or scheduled report generation
+
+### 1.3 What you'll build in this guide
+
+
+In this tutorial, you'll build a website analysis workflow that:
+
+1. Takes a URL as input
+2. Fetches the HTML content
+3. Performs parallel analysis of the content (readability score, SEO score, etc.)
+4. Combines the results
+5. Stores the analysis in your database
+
+## 2. Prerequisites
+
+<Aside type="caution" title="Prerequisites">
+Before starting, ensure you have the following:
+
+- Supabase CLI version **2.0.2** or higher (check with `supabase -v`)
+- Node.js version **18** or higher (check with `node -v`)
+- A local Supabase project set up and running
+- Deno version **1.39** or higher (check with `deno -V`)
+
+If you haven't installed these tools yet or need to upgrade, refer to their official installation guides:
+- [Supabase CLI installation guide](https://supabase.com/docs/guides/cli)
+- [Node.js installation](https://nodejs.org/)
+- [Deno installation](https://deno.land/manual/getting_started/installation)
+</Aside>
+
+### 2.1 Software you'll need
+
+You need the following tools installed and configured:
+
+- **Supabase CLI & local stack**: For running the local Postgres instance and Edge Functions
+- **Node.js ≥ 18 and npm** (or pnpm / yarn): For running the pgflow tools
+- **Deno ≥ 1.39**: For executing the Edge Worker
+
+### 2.2 A fresh Supabase project (or existing one)
+
+If you don't have a Supabase project set up yet, create one:
+
+```bash frame="none"
+# Create a new Supabase project
+npx supabase init
+
+# Start the local Supabase stack
+npx supabase start
+```
+
+### 2.3 Terminal conventions used in this guide
+
+In this guide, we use the following conventions:
+
+- Lines starting with `$` indicate commands you should type (without the `$`)
+- Lines without `$` show command output
+- Commands are run from your project root unless specified otherwise
+
+## 3. Install the pgflow toolchain
+
+<Steps>
+
+1. ### Add `@pgflow/cli`
+
+    You can install the CLI globally or as a project dependency:
+
+    <Tabs>
+      <TabItem label="Project dependency">
+      ```bash frame="none"
+      npm install --save-dev @pgflow/cli
+      ```
+      </TabItem>
+      <TabItem label="Global installation">
+      ```bash frame="none"
+      npm install -g @pgflow/cli
+      ```
+      </TabItem>
+    </Tabs>
+
+    <Aside title="Project dependency recommended">
+    Installing as a project dependency is recommended for better version control and CI/CD compatibility.
+    </Aside>
+
+2. ### Verify the CLI banner
+
+    Verify the installation by running:
+
+    ```bash frame="none"
+    npx pgflow --help
+    ```
+
+    You should see the pgflow CLI banner and available commands.
+
+3. ### Optional: pin package versions for CI/CD
+
+    For production environments, consider pinning exact versions in your `package.json`:
+
+    ```json
+    {
+      "devDependencies": {
+        "@pgflow/cli": "0.0.x"
+      }
+    }
+    ```
+
+</Steps>
+
+## 4. Bootstrap the database layer (pgflow **core**)
+
+<Steps>
+
+1. ### Run `pgflow install` inside your Supabase folder
+
+    Navigate to your Supabase project folder and run:
+
+    ```bash frame="none"
+    npx pgflow install
+    ```
+
+    This installs the pgflow core into your Supabase project.
+
+    <Aside title="Directory Conventions">
+    pgflow follows these directory conventions:
+
+    - **`supabase/functions/_flows/*`**: Flow definition files
+    - **`supabase/functions/_tasks/*`**: Reusable task handlers (one file per function)
+    - **`supabase/functions/worker_<flow_slug>_<worker_idx>`**: Worker functions
+
+    <FileTree>
+    - supabase
+      - functions
+        - _flows
+          - analyze_website.ts
+          - generate_report.ts
+        - _tasks
+          - fetch_url.ts
+          - analyze_text.ts
+        - worker_analyze_website_1.ts
+        - worker_generate_report_1.ts
+    </FileTree>
+
+    Following these conventions helps organize your codebase as it grows and makes it easier to maintain your workflows.
+    </Aside>
+
+2. ### What the installer does under the hood
+
+    The installer performs several key tasks:
+
+    - **Copies SQL migrations**: Adds the pgflow schema and functions to your migrations directory
+    - **Patches `config.toml`**: Configures the connection pooler for optimal performance
+    - **Creates/updates `functions/.env`**: Sets environment variables for Edge Functions
+
+    <FileTree>
+    - supabase
+      - config.toml
+      - migrations
+        - 20250429164909_pgflow_initial.sql
+      - functions
+        - .env
+    </FileTree>
+
+3. ### Apply the migrations with Supabase
+
+    Run the migration to create the pgflow schema and functions:
+
+    ```bash frame="none"
+    npx supabase migration up
+    ```
+
+4. ### Smoke-test the installation (ping the SQL functions)
+
+    Verify the installation by running a simple query:
+
+    ```bash frame="none"
+    npx supabase db query "SELECT * FROM pgflow.flows LIMIT 1;"
+    ```
+
+    If the command executes without errors, pgflow is successfully installed.
+
+</Steps>
+
+## 5. Author your first Flow (pgflow **dsl**)
+
+<Steps>
+
+1. ### Create flow and task files
+
+    Create the necessary directories and files following the pgflow conventions:
+
+    ```bash frame="none"
+    # Create flow and task directories
+    mkdir -p supabase/functions/_flows
+    mkdir -p supabase/functions/_tasks
+
+    # Create the flow file
+    touch supabase/functions/_flows/analyze_website.ts
+
+    # Create a reusable task (optional)
+    touch supabase/functions/_tasks/fetch_url.ts
+    ```
+
+    First, let's create a reusable task handler for fetching URLs (in `_tasks/fetch_url.ts`):
+
+    ```typescript
+    // Task handlers can be reused across multiple flows
+    export async function fetchUrl(input: { url: string }) {
+      console.log(`Fetching URL: ${input.url}`);
+
+      const response = await fetch(input.url);
+      const html = await response.text();
+
+      return {
+        html,
+        statusCode: response.status,
+        headers: Object.fromEntries(response.headers.entries())
+      };
+    }
+    ```
+
+    Now, open the flow file (`_flows/analyze_website.ts`) and add the following content:
+
+    ```typescript
+    import { flow, step } from "@pgflow/dsl";
+    // Import the reusable task handler
+    import { fetchUrl } from "../_tasks/fetch_url.ts";
+
+    // Define input type for the flow - will drive autocompletion throughout
+    type AnalyzeWebsiteInput = {
+      url: string;
+      includeHeaders?: boolean;
+    };
+
+    // Define the flow for website analysis
+    export const analyzeWebsite = flow({
+      slug: "analyze_website",
+      options: {
+        retry: { attempts: 3 },
+      },
+    }, ({ input }) => {
+      // Flow is typed with AnalyzeWebsiteInput
+
+      // 1. Fetch the HTML content from the URL
+      // Use the imported task handler for this step
+      const fetchHtml = step({
+        slug: "fetch_html",
+        options: {
+          timeout: "30s"
+        },
+      }, fetchUrl); // Reuse the fetchUrl task handler
+
+      // 2. Analyze readability (parallel to SEO)
+      const analyzeReadability = step({
+        slug: "analyze_readability",
+        deps: [fetchHtml], // TypeScript autocompletes this!
+      }, (input) => {
+        // input.html is available from fetchHtml's output
+        console.log(`Analyzing readability of content from ${input.url}`);
+
+        // Calculate readability metrics (simplified for example)
+        const wordCount = input.html.split(/\s+/).length;
+        const readabilityScore = Math.min(100, wordCount > 1000 ? 70 : 85);
+
+        return {
+          readabilityScore,
+          readingTime: `${Math.max(1, Math.floor(wordCount / 200))} min`,
+          wordCount
+        };
+      });
+
+      // 3. Analyze SEO (parallel to readability)
+      const analyzeSeo = step({
+        slug: "analyze_seo",
+        deps: [fetchHtml], // TypeScript autocompletes this!
+      }, (input) => {
+        // input.html and input.url are available
+        console.log(`Analyzing SEO for ${input.url}`);
+
+        // Extract metadata (simplified for example)
+        const hasTitle = input.html.includes("<title>");
+        const hasDescription = input.html.includes('name="description"');
+        const seoScore = (hasTitle ? 50 : 0) + (hasDescription ? 42 : 0);
+
+        return {
+          seoScore,
+          metaTags: [
+            hasTitle ? "title" : null,
+            hasDescription ? "description" : null
+          ].filter(Boolean)
+        };
+      });
+
+      // 4. Combine results
+      const combineResults = step({
+        slug: "combine_results",
+        deps: [analyzeReadability, analyzeSeo], // Both dependencies make their outputs available
+      }, (input) => {
+        // TypeScript knows all the properties available from dependencies
+        const result = {
+          url: input.url,
+          readabilityScore: input.readabilityScore,
+          readingTime: input.readingTime,
+          wordCount: input.wordCount,
+          seoScore: input.seoScore,
+          metaTags: input.metaTags,
+        };
+
+        // Conditionally include headers if requested
+        if (input.includeHeaders && input.headers) {
+          return {
+            ...result,
+            headers: input.headers
+          };
+        }
+
+        return result;
+      });
+
+      // Return the flow output
+      return combineResults;
+    });
+    ```
+
+2. ### Anatomy of a Flow object
+
+    Let's break down the key components:
+
+    - **Flow options & slug**: The `slug` identifies your flow in the database, while `options` control behavior like retries.
+
+    - **Step definitions**: Each `step` defines a discrete unit of work with its own `slug` and `options`.
+
+    - **Dependency graph**: Steps connect through the `deps` array, creating a directed acyclic graph (DAG).
+
+    The flow executes from input to output, with parallel steps running concurrently when possible.
+
+3. ### Type inference in action (IDE experience)
+
+    pgflow uses TypeScript's type system to provide a seamless development experience.
+
+    <Aside type="tip" title="TypeScript magic in pgflow">
+    The TypeScript type system in pgflow provides powerful autocompletion and type checking:
+
+    - **Flow input types shape everything**: The type you provide for your flow input propagates through your entire workflow
+    - **Step slug autocompletion**: When listing dependencies in `deps: [...]`, your IDE will autocomplete valid step slugs
+    - **Output type awareness**: Each step's handler has fully typed inputs based on what its dependencies output
+
+    For example, in our flow above:
+
+    ```typescript
+    // combineResults has access to all upstream outputs
+    const combineResults = step({
+      slug: "combine_results",
+      deps: [analyzeReadability, analyzeSeo], // IDE autocompletes these!
+    }, (input) => {
+      // input is fully typed with all properties from fetchHtml,
+      // analyzeReadability, and analyzeSeo!
+      return {
+        url: input.url,             // from flow input
+        html: input.html,           // from fetchHtml
+        readabilityScore: input.readabilityScore, // from analyzeReadability
+        seoScore: input.seoScore,   // from analyzeSeo
+        // ...
+      };
+    });
+    ```
+
+    This type safety helps you avoid errors and makes it easier to refactor your workflows.
+    </Aside>
+
+    Try changing a property name in the `combineResults` step to see TypeScript catch the error.
+
+</Steps>
+
+## 6. Compile the Flow into SQL (pgflow **cli**)
+
+<Steps>
+
+1. ### Point the compiler at the flow file and `deno.json`
+
+    Create a minimal `deno.json` file in the functions directory:
+
+    ```bash frame="none"
+    echo '{
+      "importMap": "./import_map.json",
+      "compilerOptions": {
+        "lib": ["deno.window"]
+      }
+    }' > supabase/functions/deno.json
+    ```
+
+    Create an import map:
+
+    ```bash frame="none"
+    echo '{
+      "imports": {
+        "@pgflow/dsl": "npm:@pgflow/dsl"
+      }
+    }' > supabase/functions/import_map.json
+    ```
+
+    Now compile the flow:
+
+    ```bash frame="none"
+    npx pgflow compile supabase/functions/_flows/analyze_website.ts
+    ```
+
+2. ### Inspect the generated migration file
+
+    The compiler creates a SQL migration file in the `supabase/migrations` directory. Examine it:
+
+    ```bash frame="none"
+    cat supabase/migrations/$(ls -t supabase/migrations | head -1)
+    ```
+
+    The migration contains SQL that:
+    - Creates the flow in the `pgflow.flows` table
+    - Defines all steps with their dependencies
+    - Sets options for retry behavior, timeouts, etc.
+
+3. ### Push the migration to the database
+
+    Apply the new migration:
+
+    ```bash frame="none"
+    npx supabase migration up
+    ```
+
+4. ### Confirm the new flow appears in `pgflow.flows`
+
+    Verify the flow was created:
+
+    ```bash frame="none"
+    npx supabase db query "SELECT * FROM pgflow.flows WHERE slug = 'analyze_website';"
+    ```
+
+    You should see your flow listed in the query results.
+
+</Steps>
+
+## 7. Kick off a workflow run
+
+<Steps>
+
+1. ### From psql (manual SQL)
+
+    Start a flow run using SQL:
+
+    ```bash frame="none"
+    npx supabase db query "SELECT * FROM pgflow.start_flow('analyze_website', '{\"url\": \"https://example.com\"}'::jsonb);"
+    ```
+
+    This will create a run and queue tasks for the root steps of your flow.
+
+2. ### From TypeScript using `PgflowSqlClient`
+
+    You can start flows from TypeScript with full type safety. Create a new file `supabase/functions/start_analyzer.ts`:
+
+    ```typescript
+    import { createClient } from '@supabase/supabase-js';
+    import { PgflowSqlClient } from '@pgflow/core';
+    // Import your flow to leverage its type definitions
+    import { analyzeWebsite } from './_flows/analyze_website.ts';
+
+    // Extract the input type from the flow
+    type AnalyzeWebsiteInput = Parameters<typeof analyzeWebsite>[0];
+
+    // Create Supabase client
+    const supabase = createClient(
+      'http://localhost:54321',
+      'your-anon-key'
+    );
+
+    // Create pgflow client
+    const pgflow = new PgflowSqlClient({
+      client: supabase
+    });
+
+    // Define an endpoint to start flows
+    Deno.serve(async (req) => {
+      try {
+        const requestData = await req.json() as AnalyzeWebsiteInput;
+
+        // TypeScript ensures requestData matches the flow's input type
+        const { data, error } = await pgflow.startFlow({
+          flowSlug: 'analyze_website',
+          input: requestData
+        });
+
+        if (error) {
+          return new Response(JSON.stringify({ error }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        return new Response(JSON.stringify({
+          success: true,
+          runId: data.id,
+          message: `Flow started for URL: ${requestData.url}`
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    });
+    ```
+
+    <Aside type="tip" title="Type safety across files">
+    By importing your flow definition and extracting its input type with `Parameters<typeof analyzeWebsite>[0]`, you ensure that your API endpoints only accept valid input for your flows. If you change the flow's input type, TypeScript will immediately show errors in all places that need updating.
+    </Aside>
+
+3. ### What happens in the pgflow tables
+
+    When a flow starts:
+
+    1. A run is created in `pgflow.runs`
+    2. Step states are created in `pgflow.step_states`
+    3. Tasks for root steps are added to `pgflow.step_tasks` and queued
+    4. Messages are sent to the queue for processing
+
+    You can inspect these tables to monitor the workflow:
+
+    ```bash frame="none"
+    npx supabase db query "SELECT * FROM pgflow.runs ORDER BY created_at DESC LIMIT 5;"
+    ```
+
+</Steps>
+
+## 8. Process tasks with the Edge Worker (pgflow **edge-worker**)
+
+<Steps>
+
+1. ### Install `@pgflow/edge-worker`
+
+    Create an Edge Function for the worker following the naming convention:
+
+    ```bash frame="none"
+    npx supabase functions new worker_analyze_website_1
+    ```
+
+    <Aside title="Worker Naming Convention">
+    Follow the pattern: `worker_<flow_slug>_<worker_idx>` where:
+    - `<flow_slug>` is the slug of your flow (e.g., `analyze_website`)
+    - `<worker_idx>` is a numeric index (start with 1)
+
+    This naming helps organize workers especially when you have multiple flows or multiple workers per flow for high throughput.
+    </Aside>
+
+2. ### Prepare Edge Function environment variables
+
+    The `pgflow install` command already set up the necessary environment variables in `supabase/functions/.env`.
+
+    Verify they exist:
+
+    ```bash frame="none"
+    cat supabase/functions/.env
+    ```
+
+    You should see something like:
+
+    ```
+    PGFLOW_DB_URL="postgresql://postgres:postgres@localhost:54322/postgres"
+    ```
+
+3. ### Create `supabase/functions/worker_analyze_website_1/index.ts`
+
+    Open the worker file and add the following content:
+
+    ```typescript
+    import { createFlowWorker } from "@pgflow/edge-worker";
+
+    // Import your flow (this helps with type safety)
+    import { analyzeWebsite } from "../_flows/analyze_website.ts";
+
+    // Start the flow worker
+    const worker = createFlowWorker({
+      flowSlug: "analyze_website",  // Must match your flow's slug
+      maxConcurrent: 5,             // Process up to 5 tasks simultaneously
+      maxPollSeconds: 300,          // Poll for up to 5 minutes
+      pollIntervalMs: 1000,         // Poll every second
+    });
+
+    worker.start();
+
+    // Inform Supabase that the worker is running
+    console.log("pgflow worker started successfully for analyze_website flow");
+    ```
+
+    <Aside type="tip" title="Connect workers to specific flows">
+    By specifying the `flowSlug` when creating a worker, you're dedicating this worker to processing tasks from one specific flow. This allows for:
+
+    - Separate scaling per flow (busy flows get more workers)
+    - Different resource allocations (memory, concurrency) per flow
+    - Independent deployment and updates
+    </Aside>
+
+4. ### Deploy locally (`supabase functions serve`)
+
+    Start the Edge Runtime:
+
+    ```bash frame="none"
+    npx supabase functions serve pgflow-worker
+    ```
+
+    This starts the Edge Function locally, but doesn't start the worker yet.
+
+5. ### Start the worker and observe task processing
+
+    In a new terminal, send a request to start the worker:
+
+    ```bash frame="none"
+    curl http://localhost:54321/functions/v1/pgflow-worker
+    ```
+
+    You should see logs indicating the worker has started and is processing tasks:
+
+    ```
+    [Info] worker_id=<uuid> [WorkerLifecycle] Worker started successfully
+    [Info] worker_id=<uuid> [FlowWorkerLifecycle] Processing flow tasks...
+    ```
+
+    If you started a flow run earlier, you'll see it being processed:
+
+    ```
+    [Info] worker_id=<uuid> [ExecutionController] Scheduling execution of task 1
+    [Info] worker_id=<uuid> [StepTaskExecutor] Completed step 'fetch_html'
+    [Info] worker_id=<uuid> [ExecutionController] Scheduling execution of task 2
+    [Info] worker_id=<uuid> [ExecutionController] Scheduling execution of task 3
+    ...
+    ```
+
+</Steps>
+
+## 9. Monitor and debug
+
+<Steps>
+
+1. ### Inspect run & step tables
+
+    You can monitor your workflows by querying the pgflow tables. Create a file `supabase/functions/monitoring/analytics.ts` with these useful queries:
+
+    ```typescript
+    import { createClient } from '@supabase/supabase-js';
+
+    // Create Supabase client
+    const supabase = createClient(
+      'http://localhost:54321',
+      'your-anon-key'
+    );
+
+    // Endpoint to serve monitoring dashboard
+    Deno.serve(async (req) => {
+      const url = new URL(req.url);
+      const flowSlug = url.searchParams.get('flow') || 'analyze_website';
+      const days = parseInt(url.searchParams.get('days') || '1');
+
+      const [
+        runsResult,
+        tasksResult,
+        workersResult,
+        dependenciesResult
+      ] = await Promise.all([
+        // Recent runs
+        supabase.from('pgflow.runs')
+          .select('*')
+          .eq('flow_slug', flowSlug)
+          .gt('created_at', new Date(Date.now() - days * 86400000).toISOString())
+          .order('created_at', { ascending: false })
+          .limit(20),
+
+        // Recent tasks
+        supabase.from('pgflow.step_tasks')
+          .select(`
+            *,
+            pgflow.step_states!inner(slug)
+          `)
+          .eq('pgflow.step_states.flow_slug', flowSlug)
+          .gt('created_at', new Date(Date.now() - days * 86400000).toISOString())
+          .order('created_at', { ascending: false })
+          .limit(20),
+
+        // Active workers
+        supabase.rpc('pgflow.active_workers'),
+
+        // Step dependencies
+        supabase.from('pgflow.steps')
+          .select(`
+            slug as step,
+            pgflow.step_dependencies!inner(
+              pgflow.steps!inner(slug)
+            )
+          `)
+          .eq('flow_slug', flowSlug)
+      ]);
+
+      return new Response(
+        JSON.stringify({
+          runs: runsResult.data,
+          tasks: tasksResult.data,
+          workers: workersResult.data,
+          dependencies: dependenciesResult.data
+        }, null, 2),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    });
+    ```
+
+    <Aside title="Direct SQL Queries">
+    You can also query the database directly:
+
+    ```sql
+    -- List recent runs for a specific flow
+    SELECT * FROM pgflow.runs
+    WHERE flow_slug = 'analyze_website'
+    ORDER BY created_at DESC LIMIT 10;
+
+    -- Check step states for a specific run
+    SELECT s.slug, s.status, s.created_at, s.updated_at
+    FROM pgflow.step_states s
+    WHERE run_id = '<your-run-id>'
+    ORDER BY s.created_at;
+
+    -- View pending tasks with their step names
+    SELECT t.id, s.slug as step_name, t.status, t.attempts, t.created_at
+    FROM pgflow.step_tasks t
+    JOIN pgflow.step_states s ON t.step_state_id = s.id
+    WHERE t.status = 'queued'
+    ORDER BY t.created_at DESC;
+    ```
+    </Aside>
+
+2. ### Handling failures & retries
+
+    pgflow's retry system follows these steps when a step fails:
+
+    1. The task is marked as failed in `pgflow.step_tasks`
+    2. A retry delay is calculated based on your retry options and attempt count
+    3. A new task is scheduled with incremented `attempts` count if under the max attempts
+    4. Exponential backoff applies between retry attempts
+
+    #### Flow-level vs Step-level retry configuration
+
+    ```typescript
+    // Flow-level retry defaults (apply to all steps unless overridden)
+    export const analyzeWebsite = flow({
+      slug: "analyze_website",
+      options: {
+        retry: {
+          attempts: 3,        // 3 retries by default
+          backoffCoefficient: 2,  // Exponential backoff
+          initialIntervalMs: 1000 // Start with 1s delay
+        },
+      },
+    }, /* ... */);
+
+    // Step-level retry override
+    const fetchHtml = step({
+      slug: "fetch_html",
+      options: {
+        retry: {
+          attempts: 5,        // More retries for network operations
+          backoffCoefficient: 1.5, // Custom backoff
+          initialIntervalMs: 500  // Start with 0.5s delay
+        }
+      },
+    }, fetchUrl);
+    ```
+
+    You can monitor failures and retries:
+
+    ```sql
+    -- View failed tasks with their step name
+    SELECT t.id, s.slug as step, t.attempts, t.created_at, t.updated_at
+    FROM pgflow.step_tasks t
+    JOIN pgflow.step_states ss ON t.step_state_id = ss.id
+    JOIN pgflow.steps s ON ss.step_id = s.id
+    WHERE t.status = 'failed'
+    ORDER BY t.updated_at DESC;
+
+    -- Tasks that are currently being retried
+    SELECT s.slug, t.attempts, t.max_attempts, t.retry_at
+    FROM pgflow.step_tasks t
+    JOIN pgflow.step_states ss ON t.step_state_id = ss.id
+    JOIN pgflow.steps s ON ss.step_id = s.id
+    WHERE t.status = 'queued' AND t.attempts > 0
+    ORDER BY t.retry_at;
+    ```
+
+3. ### Useful SQL queries for troubleshooting
+
+    Here are some helpful queries for debugging common issues:
+
+    ```sql
+    -- Find stalled runs (not completed but no active tasks)
+    SELECT r.id, r.flow_slug, r.created_at, r.updated_at
+    FROM pgflow.runs r
+    LEFT JOIN pgflow.step_tasks t ON t.run_id = r.id AND t.status = 'queued'
+    WHERE r.status = 'running' AND t.id IS NULL;
+
+    -- Check worker health and activity
+    SELECT * FROM pgflow.active_workers();
+    SELECT * FROM pgflow.inactive_workers();
+
+    -- View step dependency chains for a flow
+    WITH RECURSIVE step_chain AS (
+      -- Root steps (no dependencies)
+      SELECT s.id, s.slug, 0 as level
+      FROM pgflow.steps s
+      LEFT JOIN pgflow.step_dependencies sd ON s.id = sd.step_id
+      WHERE s.flow_slug = 'analyze_website' AND sd.id IS NULL
+
+      UNION ALL
+
+      -- Add steps that depend on already included steps
+      SELECT s.id, s.slug, sc.level + 1
+      FROM pgflow.steps s
+      JOIN pgflow.step_dependencies sd ON s.id = sd.step_id
+      JOIN step_chain sc ON sd.dependency_id = sc.id
+    )
+    SELECT level, string_agg(slug, ', ') as steps
+    FROM step_chain
+    GROUP BY level
+    ORDER BY level;
+
+    -- Tasks that have taken longest to complete (performance bottlenecks)
+    SELECT
+      s.slug,
+      EXTRACT(EPOCH FROM (t.completed_at - t.started_at)) as duration_seconds,
+      t.run_id
+    FROM pgflow.step_tasks t
+    JOIN pgflow.step_states ss ON t.step_state_id = ss.id
+    JOIN pgflow.steps s ON ss.step_id = s.id
+    WHERE t.status = 'completed'
+    ORDER BY duration_seconds DESC
+    LIMIT 10;
+    ```
+
+    <Aside type="tip" title="Create a monitoring dashboard">
+    Consider building a simple dashboard with these queries to get a visual overview of your workflows. You could use a BI tool like Metabase or Grafana, or build a custom dashboard with Supabase Edge Functions and a frontend framework.
+    </Aside>
+
+</Steps>
+
+## 10. Next steps & further reading
+
+<Steps>
+
+1. ### Explore advanced patterns
+
+    Now that you've built a basic workflow, try these advanced patterns:
+
+    - **Conditional workflows**: Use the flow's output to dynamically start different downstream flows
+
+    ```typescript
+    // In your Edge Function
+    const { data } = await pgflow.startFlow({
+      flowSlug: 'analyze_website',
+      input: { url: 'https://example.com' }
+    });
+
+    // Check the result and conditionally start another flow
+    if (data.seoScore < 50) {
+      await pgflow.startFlow({
+        flowSlug: 'seo_recommendations',
+        input: {
+          url: data.url,
+          currentScore: data.seoScore,
+          issues: data.seoIssues
+        }
+      });
+    }
+    ```
+
+    - **Fan-out patterns**: Process items in parallel by starting multiple sub-flows
+
+    ```typescript
+    export const processUrlList = flow({
+      slug: "process_url_list",
+    }, ({ input }) => {
+      // First step gets a list of URLs
+      const getUrls = step({
+        slug: "get_urls",
+      }, (input: { source: string }) => {
+        // Get URLs from database, API, etc.
+        return { urls: ["https://example.com", "https://example.org"] };
+      });
+
+      // Fan-out step processes each URL
+      const processUrls = step({
+        slug: "process_urls",
+        deps: [getUrls],
+      }, async (input) => {
+        // For each URL, start a separate analyzeWebsite flow
+        const results = await Promise.all(
+          input.urls.map(url =>
+            pgflow.startFlow({
+              flowSlug: 'analyze_website',
+              input: { url }
+            })
+          )
+        );
+
+        return { resultIds: results.map(r => r.data.id) };
+      });
+
+      return processUrls;
+    });
+    ```
+
+    - **Error handling patterns**: Handle errors gracefully in your workflows
+
+2. ### Where to go next in the docs
+
+    Deepen your understanding of pgflow with these resources:
+
+    <Aside type="tip">
+    **Documentation Structure**
+
+    Following the Diátaxis framework, our docs are organized into:
+
+    - **Tutorials**: Step-by-step guides like this one
+    - **How-to guides**: Practical recipes for common tasks
+    - **Explanations**: Conceptual deep dives
+    - **Reference**: Comprehensive API information
+    </Aside>
+
+    #### How-to guides
+
+    Practical recipes for common tasks:
+    - Adding conditional logic
+    - Implementing fan-out patterns for parallelization
+    - Working with external APIs safely
+    - Handling large datasets efficiently
+    - Implementing error handling strategies
+    - Monitoring and observability patterns
+
+    #### Explanations
+
+    Conceptual deep dives:
+    - Flow execution lifecycle
+    - Task handling and retries architecture
+    - Typesafe DSL design principles
+    - Versioning and migrations strategies
+    - Performance optimization techniques
+
+    #### API References
+
+    Complete documentation:
+    - DSL API reference
+    - SQL function documentation
+    - Edge Worker configuration options
+    - CLI command reference
+
+3. ### Community & support links
+
+    Get help and stay updated:
+
+    - [GitHub repository](https://github.com/pgflow-dev/pgflow)
+    - Join the [Discord community](#) for real-time help
+    - Follow on [Twitter](#) for updates
+
+    The pgflow team is actively developing new features and improving existing ones. Here's what's coming soon:
+
+    - Enhanced monitoring and debugging tools
+    - Flow versioning and migration utilities
+    - More integrations with popular services
+    - Performance optimizations
+
+4. ### Contributing / feedback
+
+    We welcome contributions and feedback:
+
+    - [Open an issue](https://github.com/pgflow-dev/pgflow/issues/new) for bugs or feature requests
+    - [Submit a pull request](https://github.com/pgflow-dev/pgflow/pulls) with improvements
+    - [Contribute to docs](https://github.com/pgflow-dev/pgflow/tree/main/pkgs/website)
+
+    When contributing:
+    - Follow the existing code style and conventions
+    - Add tests for new functionality
+    - Update documentation for any changes
+
+    <Aside>
+    **Feedback Welcome!**
+
+    As pgflow is still in development, your feedback is invaluable. Let us know what works well and what could be improved to help shape the future of the project.
+    </Aside>
+
+</Steps>
+
+Thank you for trying pgflow! We hope it makes your workflow development easier, more reliable, and type-safe from definition to execution.
