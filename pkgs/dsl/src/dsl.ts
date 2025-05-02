@@ -100,6 +100,18 @@ type StepDepsOf<
   ? ExtractFlowDeps<TFlow>[TStepSlug][number] // The string slugs that TStepSlug depends on
   : never;
 
+/**
+ * Extracts only the leaf steps from a Flow (steps that are not dependencies of any other steps)
+ * @template TFlow - The Flow type to extract from
+ */
+export type ExtractFlowLeafSteps<TFlow extends AnyFlow> = {
+  [K in keyof ExtractFlowSteps<TFlow> as K extends string
+    ? K extends ExtractFlowDeps<TFlow>[keyof ExtractFlowDeps<TFlow>][number]
+      ? never
+      : K
+    : never]: ExtractFlowSteps<TFlow>[K];
+};
+
 // Utility type to extract the output type of a step handler from a Flow
 // Usage:
 //   StepOutput<typeof flow, 'step1'>
