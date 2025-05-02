@@ -28,6 +28,7 @@ const FlowRunContext = createContext<FlowRunContextType>({
   loading: true,
   error: null,
   currentTime: new Date(),
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   analyzeWebsite: async () => {},
   analyzeLoading: false,
   analyzeError: null,
