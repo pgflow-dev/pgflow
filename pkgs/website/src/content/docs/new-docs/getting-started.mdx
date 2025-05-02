@@ -85,20 +85,30 @@ You need the following tools installed and configured:
 If you don't have a Supabase project set up yet, create one:
 
 ```bash frame="none"
-# Create a new Supabase project
 npx supabase init
+# Project initialized in /path/to/project
 
-# Start the local Supabase stack
 npx supabase start
+# Started supabase local development setup
+# API URL: http://localhost:54321
+# DB URL: postgresql://postgres:postgres@localhost:54322/postgres
 ```
 
 ### 2.3 Terminal conventions used in this guide
 
-In this guide, we use the following conventions:
+In this guide, commands and their output are shown together in code blocks. Command output is shown as comments:
 
-- Lines starting with `$` indicate commands you should type (without the `$`)
-- Lines without `$` show command output
-- Commands are run from your project root unless specified otherwise
+```bash
+npx supabase init
+# Project initialized in /path/to/project
+
+npx supabase start
+# Started supabase local development setup
+# API URL: http://localhost:54321
+# DB URL: postgresql://postgres:postgres@localhost:54322/postgres
+```
+
+All commands are run from your project root unless specified otherwise.
 
 ## 3. Install the pgflow toolchain
 
@@ -131,9 +141,16 @@ In this guide, we use the following conventions:
 
     ```bash frame="none"
     npx pgflow --help
+    # pgflow CLI v0.0.x
+    # 
+    # USAGE
+    #   pgflow <command> [options]
+    # 
+    # COMMANDS
+    #   install - Install pgflow into a Supabase project
+    #   compile - Compile a Flow into a SQL migration
+    #   ...
     ```
-
-    You should see the pgflow CLI banner and available commands.
 
 3. ### Optional: pin package versions for CI/CD
 
