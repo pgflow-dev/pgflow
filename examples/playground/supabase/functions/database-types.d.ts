@@ -485,6 +485,7 @@ export type Database = {
           id: number
           sentiment: number
           summary: string
+          tags: string[]
           updated_at: string
           website_url: string
         }
@@ -493,6 +494,7 @@ export type Database = {
           id?: number
           sentiment: number
           summary: string
+          tags?: string[]
           updated_at?: string
           website_url: string
         }
@@ -501,6 +503,7 @@ export type Database = {
           id?: number
           sentiment?: number
           summary?: string
+          tags?: string[]
           updated_at?: string
           website_url?: string
         }
@@ -513,7 +516,17 @@ export type Database = {
     Functions: {
       start_analyze_website_flow: {
         Args: { url: string }
-        Returns: Json
+        Returns: {
+          completed_at: string | null
+          failed_at: string | null
+          flow_slug: string
+          input: Json
+          output: Json | null
+          remaining_steps: number
+          run_id: string
+          started_at: string
+          status: string
+        }
       }
     }
     Enums: {

@@ -10,7 +10,7 @@ import {
   StepStateRow,
   StepTaskRow,
 } from '@/lib/db';
-import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { RealtimePostgresUpdatePayload } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/client';
 
 interface FlowRunContextType {
@@ -110,7 +110,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
 
     // Set up handlers for real-time updates
     const handleStepStateUpdate = (
-      payload: RealtimePostgresChangesPayload<StepStateRow>,
+      payload: RealtimePostgresUpdatePayload<StepStateRow>,
     ) => {
       console.log('Step state updated:', payload);
 
@@ -124,14 +124,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
 
         // Create a new array of step states with the updated one
         const updatedStepStates = [...prevData.step_states];
-
-        if (stepStateIndex !== -1) {
-          // Update existing step state
-          updatedStepStates[stepStateIndex] = payload.new;
-        } else if (payload.eventType === 'INSERT') {
-          // Add new step state
-          updatedStepStates.push(payload.new);
-        }
+        updatedStepStates[stepStateIndex] = payload.new;
 
         // Create a mapping of step_slug to step_index to maintain order
         const stepIndexMap = new Map<string, number>();
@@ -157,7 +150,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     };
 
     const handleStepTaskUpdate = (
-      payload: RealtimePostgresChangesPayload<StepTaskRow>,
+      payload: RealtimePostgresUpdatePayload<StepTaskRow>,
     ) => {
       console.log('Step task updated:', payload);
 
@@ -171,14 +164,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
 
         // Create a new array of step tasks with the updated one
         const updatedStepTasks = [...prevData.step_tasks];
-
-        if (stepTaskIndex !== -1) {
-          // Update existing step task
-          updatedStepTasks[stepTaskIndex] = payload.new;
-        } else if (payload.eventType === 'INSERT') {
-          // Add new step task
-          updatedStepTasks.push(payload.new);
-        }
+        updatedStepTasks[stepTaskIndex] = payload.new;
 
         // Create a mapping of step_slug to step_index from step_states to maintain order
         const stepIndexMap = new Map<string, number>();
@@ -206,7 +192,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     // Set up a subscription to get real-time updates
     const subscription = observeFlowRun({
       runId,
-      onRunUpdate(payload: RealtimePostgresChangesPayload<RunRow>) {
+      onRunUpdate(payload: RealtimePostgresUpdatePayload<RunRow>) {
         console.log('Run updated:', payload);
 
         // Update only the run data without refetching everything

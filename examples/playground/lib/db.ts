@@ -1,7 +1,7 @@
 import { createClient } from '@/utils/supabase/client';
 import { Database } from '@/supabase/functions/database-types';
 import type {
-  RealtimePostgresChangesPayload,
+  RealtimePostgresUpdatePayload,
   RealtimePostgresChangesFilter,
   REALTIME_POSTGRES_CHANGES_LISTEN_EVENT,
 } from '@supabase/supabase-js';
@@ -22,20 +22,14 @@ export type ResultRow = RunRow & {
   status?: 'started' | 'completed' | 'failed';
 };
 
-// Define RealtimePayload type to handle different event types
-interface RealtimePayload<T extends Record<string, any>> {
-  new: T;
-  old: T | null;
-  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
-  schema: string;
-  table: string;
-  commit_timestamp: string;
-}
-
 export type ObserveFlowRunCallbacks = {
-  onRunUpdate: (payload: RealtimePayload<RunRow>) => void;
-  onStepStateUpdate: (payload: RealtimePayload<StepStateRow>) => void;
-  onStepTaskUpdate: (payload: RealtimePayload<StepTaskRow>) => void;
+  onRunUpdate: (payload: RealtimePostgresUpdatePayload<RunRow>) => void;
+  onStepStateUpdate: (
+    payload: RealtimePostgresUpdatePayload<StepStateRow>,
+  ) => void;
+  onStepTaskUpdate: (
+    payload: RealtimePostgresUpdatePayload<StepTaskRow>,
+  ) => void;
 };
 
 export async function fetchFlowRunData(runId: string): Promise<{
@@ -86,18 +80,18 @@ export function observeFlowRun({
 } & ObserveFlowRunCallbacks) {
   const supabase = createClient();
 
-  const eventSpec: RealtimePostgresChangesFilter<`${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.ALL}`> =
+  const eventSpec: RealtimePostgresChangesFilter<`${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.UPDATE}`> =
     {
       schema: 'pgflow',
-      event: '*',
+      event: 'UPDATE',
       filter: `run_id=eq.${runId}`,
     };
 
   const realtimeChannel = supabase
     .channel(`flow_run_${runId}`)
-    .on('postgres_changes' as any, { ...eventSpec, table: 'runs' }, onRunUpdate)
+    .on('postgres_changes', { ...eventSpec, table: 'runs' }, onRunUpdate)
     .on(
-      'postgres_changes' as any,
+      'postgres_changes',
       { ...eventSpec, table: 'step_states' },
       onStepStateUpdate,
     )
