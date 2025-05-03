@@ -12,9 +12,9 @@ function DualPanelContent() {
     // Initialize from localStorage if available (client-side only)
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('techDetailsPinned');
-      return saved === 'true';
+      return saved !== null ? saved === 'true' : true; // Default to true if not set
     }
-    return false;
+    return true; // Default to true
   });
   
   const {
