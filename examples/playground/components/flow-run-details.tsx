@@ -249,15 +249,34 @@ export default function FlowRunDetails({
                       <Collapsible
                         key={index}
                         className={`mb-1 rounded-lg border ${
-                          step.status === 'completed'
-                            ? 'bg-green-500/5 border-green-500/30'
-                            : step.status === 'started'
-                              ? 'bg-yellow-500/5 border-yellow-500/30'
-                              : step.status === 'failed'
-                                ? 'bg-red-500/5 border-red-500/30'
-                                : step.status === 'created'
-                                  ? 'bg-blue-500/5 border-blue-500/30'
-                                  : 'bg-gray-500/5 border-gray-500/30'
+                          (() => {
+                            // Find tasks for this step to check attempts count
+                            const stepTasks = runData.step_tasks?.filter(
+                              (task) => task.step_slug === step.step_slug
+                            ) || [];
+                            
+                            // Get the most recent task (usually the one with the highest attempts_count)
+                            const latestTask = stepTasks.sort((a, b) => 
+                              (b.attempts_count || 0) - (a.attempts_count || 0)
+                            )[0];
+                            
+                            // Check if this is a retry (attempts_count > 1)
+                            const isRetrying = latestTask && latestTask.attempts_count > 1 && step.status === 'started';
+                            
+                            if (step.status === 'completed') {
+                              return 'bg-green-500/5 border-green-500/30';
+                            } else if (isRetrying) {
+                              return 'bg-red-500/5 border-red-500/30 animate-pulse';
+                            } else if (step.status === 'started') {
+                              return 'bg-yellow-500/5 border-yellow-500/30';
+                            } else if (step.status === 'failed') {
+                              return 'bg-red-500/5 border-red-500/30';
+                            } else if (step.status === 'created') {
+                              return 'bg-blue-500/5 border-blue-500/30';
+                            } else {
+                              return 'bg-gray-500/5 border-gray-500/30';
+                            }
+                          })()
                         }`}
                       >
                         <CollapsibleTrigger className="flex items-center justify-between w-full p-2 text-left">
@@ -296,23 +315,61 @@ export default function FlowRunDetails({
                                   )}
                                 </span>
                               )}
-                            <span
-                              className={`inline-block w-2 h-2 rounded-full mr-1 ${
-                                step.status === 'completed'
-                                  ? 'bg-green-500'
-                                  : step.status === 'started'
-                                    ? 'bg-yellow-500 breathing'
-                                    : step.status === 'failed'
-                                      ? 'bg-red-500'
-                                      : step.status === 'created'
-                                        ? 'bg-blue-500'
-                                        : 'bg-gray-500'
-                              }`}
-                            ></span>
+                            {(() => {
+                              // Find tasks for this step to check attempts count
+                              const stepTasks = runData.step_tasks?.filter(
+                                (task) => task.step_slug === step.step_slug
+                              ) || [];
+                              
+                              // Get the most recent task (usually the one with the highest attempts_count)
+                              const latestTask = stepTasks.sort((a, b) => 
+                                (b.attempts_count || 0) - (a.attempts_count || 0)
+                              )[0];
+                              
+                              // Check if this is a retry (attempts_count > 1)
+                              const isRetrying = latestTask && latestTask.attempts_count > 1 && step.status === 'started';
+                              
+                              return (
+                                <span
+                                  className={`inline-block w-2 h-2 rounded-full mr-1 ${
+                                    step.status === 'completed'
+                                      ? 'bg-green-500'
+                                      : isRetrying
+                                        ? 'bg-red-500 breathing'
+                                        : step.status === 'started'
+                                          ? 'bg-yellow-500 breathing'
+                                          : step.status === 'failed'
+                                            ? 'bg-red-500'
+                                            : step.status === 'created'
+                                              ? 'bg-blue-500'
+                                              : 'bg-gray-500'
+                                  }`}
+                                ></span>
+                              );
+                            })()}
                             <span className="capitalize text-xs">
-                              {step.status === 'created'
-                                ? 'waiting'
-                                : step.status}
+                              {(() => {
+                                // Find tasks for this step to check attempts count
+                                const stepTasks = runData.step_tasks?.filter(
+                                  (task) => task.step_slug === step.step_slug
+                                ) || [];
+                                
+                                // Get the most recent task (usually the one with the highest attempts_count)
+                                const latestTask = stepTasks.sort((a, b) => 
+                                  (b.attempts_count || 0) - (a.attempts_count || 0)
+                                )[0];
+                                
+                                // Check if this is a retry (attempts_count > 1)
+                                const isRetrying = latestTask && latestTask.attempts_count > 1 && step.status === 'started';
+                                
+                                if (isRetrying) {
+                                  return `retrying (retry ${latestTask.attempts_count - 1})`;
+                                } else if (step.status === 'created') {
+                                  return 'waiting';
+                                } else {
+                                  return step.status;
+                                }
+                              })()}
                             </span>
                           </div>
                         </CollapsibleTrigger>

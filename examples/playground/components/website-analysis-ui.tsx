@@ -432,13 +432,32 @@ export default function WebsiteAnalysisUI({
                       <div className="flex-shrink-0 mt-1">
                         <div
                           className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
-                            step.status === 'completed'
-                              ? 'bg-green-500 border-green-500 text-white'
-                              : step.status === 'started'
-                                ? 'border-yellow-500 text-yellow-500'
-                                : step.status === 'failed'
-                                  ? 'border-red-500 text-red-500'
-                                  : 'border-gray-300 text-gray-300'
+                            (() => {
+                              // Find tasks for this step to check attempts count
+                              const stepTasks = runData.step_tasks?.filter(
+                                (task) => task.step_slug === step.step_slug
+                              ) || [];
+                              
+                              // Get the most recent task (usually the one with the highest attempts_count)
+                              const latestTask = stepTasks.sort((a, b) => 
+                                (b.attempts_count || 0) - (a.attempts_count || 0)
+                              )[0];
+                              
+                              // Check if this is a retry (attempts_count > 1)
+                              const isRetrying = latestTask && latestTask.attempts_count > 1 && step.status === 'started';
+                              
+                              if (step.status === 'completed') {
+                                return 'bg-green-500 border-green-500 text-white';
+                              } else if (isRetrying) {
+                                return 'border-red-500 text-red-500 animate-pulse';
+                              } else if (step.status === 'started') {
+                                return 'border-yellow-500 text-yellow-500';
+                              } else if (step.status === 'failed') {
+                                return 'border-red-500 text-red-500';
+                              } else {
+                                return 'border-gray-300 text-gray-300';
+                              }
+                            })()
                           }`}
                         >
                           {step.status === 'completed' ? (
@@ -465,13 +484,32 @@ export default function WebsiteAnalysisUI({
                           {step.step_slug.replace(/_/g, ' ')}
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                          {step.status === 'completed'
-                            ? 'Completed'
-                            : step.status === 'started'
-                              ? 'In progress...'
-                              : step.status === 'failed'
-                                ? 'Failed'
-                                : 'Waiting...'}
+                          {(() => {
+                            // Find tasks for this step to check attempts count
+                            const stepTasks = runData.step_tasks?.filter(
+                              (task) => task.step_slug === step.step_slug
+                            ) || [];
+                            
+                            // Get the most recent task (usually the one with the highest attempts_count)
+                            const latestTask = stepTasks.sort((a, b) => 
+                              (b.attempts_count || 0) - (a.attempts_count || 0)
+                            )[0];
+                            
+                            // Check if this is a retry (attempts_count > 1)
+                            const isRetrying = latestTask && latestTask.attempts_count > 1 && step.status === 'started';
+                            
+                            if (isRetrying) {
+                              return `Retrying (Retry ${latestTask.attempts_count - 1})...`;
+                            } else if (step.status === 'completed') {
+                              return 'Completed';
+                            } else if (step.status === 'started') {
+                              return 'In progress...';
+                            } else if (step.status === 'failed') {
+                              return 'Failed';
+                            } else {
+                              return 'Waiting...';
+                            }
+                          })()}
                         </p>
                         {step.status === 'failed' &&
                           (() => {
