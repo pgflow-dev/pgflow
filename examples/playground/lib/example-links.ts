@@ -24,9 +24,14 @@ export const exampleLinks: ExampleLink[] = [
     label: 'pgflow.dev',
     variant: 'success',
   },
+  // {
+  //   url: 'https://aws.amazon.com/',
+  //   label: '50% failure',
+  //   variant: 'failure',
+  // },
   {
     url: 'https://firebase.google.com/',
-    label: 'Demo Failure',
+    label: '100% failure',
     variant: 'failure',
   },
 ];
