@@ -204,7 +204,7 @@ export default function WebsiteAnalysisUI({
     <div className="p-6 border rounded-lg shadow-sm">
       {/* Top bar with analyze form when analysis is completed */}
       {(isCompleted || isFailed) && (
-        <div className="mb-6 pb-4 border-b">
+        <div className="mb-6">
           <h3 className="text-base font-medium mb-2">Analyze Website</h3>
           <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
             <Input
@@ -426,7 +426,7 @@ export default function WebsiteAnalysisUI({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className={`space-y-6 ${showSteps ? 'mt-8 pt-6 border-t' : ''}`}
+            className="space-y-6 mt-8"
           >
             <div className="mb-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
