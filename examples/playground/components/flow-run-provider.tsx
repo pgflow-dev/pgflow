@@ -10,7 +10,7 @@ import {
   StepStateRow,
   StepTaskRow,
 } from '@/lib/db';
-import { RealtimePostgresUpdatePayload } from '@supabase/supabase-js';
+import { RealtimePostgresUpdatePayload, RealtimePostgresInsertPayload } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/client';
 
 interface FlowRunContextType {
@@ -240,7 +240,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
         const currentTasks = prevTasksMap[stepSlug] || [];
         
         // Check if this task already exists
-        const taskIndex = currentTasks.findIndex(task => task.id === newTask.id);
+        const taskIndex = currentTasks.findIndex(task => task.step_slug === newTask.step_slug);
         
         let updatedTasks;
         if (taskIndex >= 0) {
@@ -260,7 +260,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     };
 
     const handleStepTaskInsert = (
-      payload: RealtimePostgresUpdatePayload<StepTaskRow>,
+      payload: RealtimePostgresInsertPayload<StepTaskRow>,
     ) => {
       console.log('Step task inserted:', payload);
 
