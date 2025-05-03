@@ -28,8 +28,8 @@ export default function WebsiteAnalysisUI({
   const [url, setUrl] = useState('');
   const [analysisExpanded, setAnalysisExpanded] = useState(true);
 
-  // Get sorted step states
-  const getSortedStepStates = (): StepStateRow[] => {
+  // Get ordered step states
+  const getOrderedStepStates = (): StepStateRow[] => {
     if (!runData?.step_states) return [];
 
     // Create a mapping of step_slug to step_index
@@ -48,7 +48,7 @@ export default function WebsiteAnalysisUI({
     });
   };
 
-  const sortedSteps = getSortedStepStates();
+  const sortedSteps = getOrderedStepStates();
   const isCompleted = runData?.status === 'completed';
   const isFailed = runData?.status === 'failed';
   const isRunning = runData?.status === 'started';
@@ -320,20 +320,21 @@ export default function WebsiteAnalysisUI({
                         : websiteUrl}
                     </p>
                   </div>
+                  {/* Steps are already sorted by the getOrderedStepStates function */}
                   {sortedSteps.map((step, index) => (
-                    <motion.div
-                      key={step.step_slug}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className={`flex items-start space-x-4 ${
-                        isCompleted && step.status === 'completed'
-                          ? 'opacity-80'
-                          : step.status === 'created'
-                            ? 'opacity-50'
-                            : ''
-                      }`}
-                    >
+                        <motion.div
+                          key={step.step_slug}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className={`flex items-start space-x-4 ${
+                            isCompleted && step.status === 'completed'
+                              ? 'opacity-80'
+                              : step.status === 'created'
+                                ? 'opacity-50'
+                                : ''
+                          }`}
+                        >
                       <div className="flex-shrink-0 mt-1">
                         <div
                           className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
