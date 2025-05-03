@@ -4,6 +4,7 @@ import type {
   RealtimePostgresUpdatePayload,
   RealtimePostgresChangesFilter,
   REALTIME_POSTGRES_CHANGES_LISTEN_EVENT,
+  RealtimePostgresInsertPayload,
 } from '@supabase/supabase-js';
 
 export type RunRow = Database['pgflow']['Tables']['runs']['Row'];
@@ -26,6 +27,9 @@ export type ObserveFlowRunCallbacks = {
   onRunUpdate: (payload: RealtimePostgresUpdatePayload<RunRow>) => void;
   onStepStateUpdate: (
     payload: RealtimePostgresUpdatePayload<StepStateRow>,
+  ) => void;
+  onStepTaskInsert: (
+    payload: RealtimePostgresInsertPayload<StepTaskRow>,
   ) => void;
   onStepTaskUpdate: (
     payload: RealtimePostgresUpdatePayload<StepTaskRow>,
@@ -74,6 +78,7 @@ export function observeFlowRun({
   runId,
   onRunUpdate,
   onStepStateUpdate,
+  onStepTaskInsert,
   onStepTaskUpdate,
 }: {
   runId: string;
@@ -86,7 +91,7 @@ export function observeFlowRun({
       event: 'UPDATE',
       filter: `run_id=eq.${runId}`,
     };
-    
+
   const insertEventSpec: RealtimePostgresChangesFilter<`${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.INSERT}`> =
     {
       schema: 'pgflow',
@@ -111,7 +116,7 @@ export function observeFlowRun({
     .on(
       'postgres_changes' as any,
       { ...insertEventSpec, table: 'step_tasks' },
-      onStepTaskUpdate,
+      onStepTaskInsert,
     )
     .subscribe();
 

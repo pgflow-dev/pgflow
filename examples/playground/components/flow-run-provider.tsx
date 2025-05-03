@@ -29,7 +29,7 @@ const FlowRunContext = createContext<FlowRunContextType>({
   error: null,
   currentTime: new Date(),
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  analyzeWebsite: async () => {},
+  analyzeWebsite: async () => { },
   analyzeLoading: false,
   analyzeError: null,
 });
@@ -156,15 +156,17 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       // Log appropriately for INSERT or UPDATE event
       const isInsert = !payload.old;
       console.log(`Step task ${isInsert ? 'created' : 'updated'}:`, payload);
-      
+
       // Log important details about the new task
-      if (payload.new.step_slug === 'summary' || 
-          payload.new.step_slug === 'sentiment' || 
-          payload.new.step_slug === 'tags') {
+      if (
+        payload.new.step_slug === 'summary' ||
+        payload.new.step_slug === 'sentiment' ||
+        payload.new.step_slug === 'tags'
+      ) {
         console.log(`Important task updated - ${payload.new.step_slug}:`, {
           status: payload.new.status,
           has_output: !!payload.new.output,
-          output: payload.new.output
+          output: payload.new.output,
         });
       }
 
@@ -176,8 +178,14 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
           (task) => task.id === payload.new.id,
         );
 
-        console.log(`Existing task index for ${payload.new.step_slug}:`, existingTaskIndex);
-        console.log('Current step_tasks:', prevData.step_tasks.map(t => t.step_slug));
+        console.log(
+          `Existing task index for ${payload.new.step_slug}:`,
+          existingTaskIndex,
+        );
+        console.log(
+          'Current step_tasks:',
+          prevData.step_tasks.map((t) => t.step_slug),
+        );
 
         if (existingTaskIndex >= 0) {
           // Update existing task
@@ -205,7 +213,62 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
           return aIndex - bIndex;
         });
 
-        console.log('Final step_tasks after update:', updatedStepTasks.map(t => t.step_slug));
+        console.log(
+          'Final step_tasks after update:',
+          updatedStepTasks.map((t) => t.step_slug),
+        );
+
+        // Return the updated data
+        return {
+          ...prevData,
+          step_tasks: updatedStepTasks,
+        } as ResultRow;
+      });
+    };
+
+    const handleStepTaskInsert = (
+      payload: RealtimePostgresUpdatePayload<StepTaskRow>,
+    ) => {
+      console.log('Step task inserted:', payload);
+
+      // Log important details about the new task
+      if (
+        payload.new.step_slug === 'summary' ||
+        payload.new.step_slug === 'sentiment' ||
+        payload.new.step_slug === 'tags'
+      ) {
+        console.log(`Important task inserted - ${payload.new.step_slug}:`, {
+          status: payload.new.status,
+          has_output: !!payload.new.output,
+        });
+      }
+
+      setRunData((prevData) => {
+        if (!prevData) return null;
+
+        // Add the new task to the existing tasks
+        const updatedStepTasks = [...prevData.step_tasks, payload.new];
+        console.log(`Added new task: ${payload.new.step_slug}`);
+
+        // Create a mapping of step_slug to step_index from step_states to maintain order
+        const stepIndexMap = new Map<string, number>();
+        prevData.step_states.forEach((state) => {
+          if (state.step && state.step_slug) {
+            stepIndexMap.set(state.step_slug, state.step?.step_index || 0);
+          }
+        });
+
+        // Sort the updated step tasks using the mapping
+        updatedStepTasks.sort((a, b) => {
+          const aIndex = stepIndexMap.get(a.step_slug) || 0;
+          const bIndex = stepIndexMap.get(b.step_slug) || 0;
+          return aIndex - bIndex;
+        });
+
+        console.log(
+          'Final step_tasks after insertion:',
+          updatedStepTasks.map((t) => t.step_slug),
+        );
 
         // Return the updated data
         return {
@@ -220,11 +283,13 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       runId,
       onRunUpdate(payload: RealtimePostgresUpdatePayload<RunRow>) {
         console.log('Run updated:', payload);
-        
+
         // When run is marked as completed, fetch all data again to ensure we have all step outputs
         if (payload.new.status === 'completed') {
-          console.log('Run completed - fetching full data to ensure we have all step outputs');
-          
+          console.log(
+            'Run completed - fetching full data to ensure we have all step outputs',
+          );
+
           // Fetch fresh data from API
           fetchFlowRunData(runId).then(({ data, error }) => {
             if (error) {
@@ -234,29 +299,30 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
               setRunData(data);
             }
           });
-          
+
           return;
         }
 
         // For other updates, update only the run data without refetching everything
         setRunData((prevData) => {
           if (!prevData) return null;
-          
+
           // Create a new object with the updated run data
           // Important: Keep step_tasks and step_states from prevData intact
           const updatedData = {
             ...prevData,
             ...payload.new,
             // Preserve the step_tasks and step_states - don't overwrite them!
-            step_tasks: prevData.step_tasks, 
+            step_tasks: prevData.step_tasks,
             step_states: prevData.step_states,
           } as ResultRow;
-          
+
           return updatedData;
         });
       },
       onStepStateUpdate: handleStepStateUpdate,
       onStepTaskUpdate: handleStepTaskUpdate,
+      onStepTaskInsert: handleStepTaskInsert,
     });
 
     // Set up a timer to update the current time every second
