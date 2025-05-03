@@ -122,10 +122,10 @@ export default function FlowRunDetails({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[40vh]">
+      <div className="flex items-center justify-center min-h-[30vh]">
         <div className="flex flex-col items-center">
-          <div className="h-12 w-12 rounded-full border-t-2 border-b-2 border-primary animate-spin mb-4"></div>
-          <p className="text-foreground/60">Loading run data...</p>
+          <div className="h-8 w-8 rounded-full border-t-2 border-b-2 border-primary animate-spin mb-2"></div>
+          <p className="text-xs text-foreground/60">Loading run data...</p>
         </div>
       </div>
     );
@@ -133,25 +133,26 @@ export default function FlowRunDetails({
 
   if (error) {
     return (
-      <div className="p-4 border border-destructive/20 bg-destructive/10 rounded-lg">
-        <h2 className="text-xl font-medium text-destructive mb-2">Error</h2>
-        <p className="text-destructive/80">{error}</p>
+      <div className="p-2 border border-destructive/20 bg-destructive/10 rounded-lg">
+        <h2 className="text-base font-medium text-destructive mb-1">Error</h2>
+        <p className="text-xs text-destructive/80">{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 border rounded-lg shadow-sm">
+    <div className="p-2 border rounded-lg shadow-sm">
       {runData ? (
-        <div className="space-y-6">
-          <h2 className="text-2xl font-medium mb-6">Under the hood</h2>
-          <hr />
+        <div className="space-y-3">
+          <h2 className="text-xl font-medium mb-1">Under the hood</h2>
+          <hr className="my-1" />
           <div>
-            <h3 className="text-lg font-medium mb-2">Status</h3>
+            <h3 className="text-base font-medium mb-1">Status</h3>
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <span
-                  className={`inline-block w-3 h-3 rounded-full mr-2 ${runData.status === 'completed'
+                  className={`inline-block w-2 h-2 rounded-full mr-1 ${
+                    runData.status === 'completed'
                       ? 'bg-green-500'
                       : runData.status === 'started'
                         ? 'bg-yellow-500 breathing'
@@ -160,13 +161,13 @@ export default function FlowRunDetails({
                           : runData.status === 'created'
                             ? 'bg-blue-500'
                             : 'bg-gray-500'
-                    }`}
+                  }`}
                 ></span>
-                <span className="capitalize">
+                <span className="capitalize text-sm">
                   {runData.status === 'started' ? 'running' : runData.status}
                 </span>
               </div>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-xs text-muted-foreground">
                 {runData.status === 'started' && runData.started_at && (
                   <span>
                     Running for {formatTimeDifference(runData.started_at, null)}
@@ -194,33 +195,33 @@ export default function FlowRunDetails({
             </div>
           </div>
 
-          <div className="mb-4">
-            <h4 className="font-medium mb-2">Run ID:</h4>
-            <pre className="capitalize">{runId}</pre>
+          <div className="mb-2">
+            <h4 className="text-sm font-medium mb-1">Run ID:</h4>
+            <pre className="capitalize text-xs">{runId}</pre>
           </div>
 
           <div>
-            <h3 className="text-lg font-medium mb-2">
+            <h3 className="text-base font-medium mb-1">
               Run Input
-              <span className="ml-2 text-sm text-muted-foreground">
+              <span className="ml-2 text-xs text-muted-foreground">
                 JSON used to start the flow
               </span>
             </h3>
-            <div className="max-h-40 overflow-hidden border border-gray-500/30 rounded-md">
-              <div className="overflow-auto max-h-40">
+            <div className="max-h-36 overflow-hidden border border-gray-500/30 rounded-md">
+              <div className="overflow-auto max-h-36">
                 <JSONHighlighter data={runData.input} />
               </div>
             </div>
           </div>
 
           <div>
-            <h3 className="text-lg font-medium mb-2">
+            <h3 className="text-base font-medium mb-1">
               Steps Status
-              <span className="ml-2 text-sm text-muted-foreground">
+              <span className="ml-2 text-xs text-muted-foreground">
                 Click steps to view details
               </span>
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-2">
               {runData.step_states &&
                 (() => {
                   // Create a mapping of step_slug to step_index
@@ -254,7 +255,8 @@ export default function FlowRunDetails({
                     return (
                       <Collapsible
                         key={index}
-                        className={`mb-2 rounded-lg border ${step.status === 'completed'
+                        className={`mb-1 rounded-lg border ${
+                          step.status === 'completed'
                             ? 'bg-green-500/5 border-green-500/30'
                             : step.status === 'started'
                               ? 'bg-yellow-500/5 border-yellow-500/30'
@@ -263,17 +265,17 @@ export default function FlowRunDetails({
                                 : step.status === 'created'
                                   ? 'bg-blue-500/5 border-blue-500/30'
                                   : 'bg-gray-500/5 border-gray-500/30'
-                          }`}
+                        }`}
                       >
-                        <CollapsibleTrigger className="flex items-center justify-between w-full p-4 text-left">
+                        <CollapsibleTrigger className="flex items-center justify-between w-full p-2 text-left">
                           <div>
-                            <h4 className="text-base font-medium">
+                            <h4 className="text-sm font-medium">
                               {step.step_slug}
                             </h4>
                           </div>
                           <div className="flex items-center">
                             {step.status === 'started' && step.started_at && (
-                              <span className="text-xs text-muted-foreground mr-3">
+                              <span className="text-xs text-muted-foreground mr-2">
                                 {formatRelativeTime(
                                   step.started_at,
                                   currentTime,
@@ -283,7 +285,7 @@ export default function FlowRunDetails({
                             {step.status === 'completed' &&
                               step.started_at &&
                               step.completed_at && (
-                                <span className="text-xs text-muted-foreground mr-3">
+                                <span className="text-xs text-muted-foreground mr-2">
                                   {formatTimeDifference(
                                     step.started_at,
                                     step.completed_at,
@@ -293,7 +295,7 @@ export default function FlowRunDetails({
                             {step.status === 'failed' &&
                               step.started_at &&
                               step.failed_at && (
-                                <span className="text-xs text-muted-foreground mr-3">
+                                <span className="text-xs text-muted-foreground mr-2">
                                   Failed after{' '}
                                   {formatTimeDifference(
                                     step.started_at,
@@ -302,7 +304,8 @@ export default function FlowRunDetails({
                                 </span>
                               )}
                             <span
-                              className={`inline-block w-2 h-2 rounded-full mr-2 ${step.status === 'completed'
+                              className={`inline-block w-2 h-2 rounded-full mr-1 ${
+                                step.status === 'completed'
                                   ? 'bg-green-500'
                                   : step.status === 'started'
                                     ? 'bg-yellow-500 breathing'
@@ -311,46 +314,47 @@ export default function FlowRunDetails({
                                       : step.status === 'created'
                                         ? 'bg-blue-500'
                                         : 'bg-gray-500'
-                                }`}
+                              }`}
                             ></span>
-                            <span className="capitalize text-sm">
+                            <span className="capitalize text-xs">
                               {step.status === 'created'
                                 ? 'waiting'
                                 : step.status}
                             </span>
                           </div>
                         </CollapsibleTrigger>
-                        <CollapsibleContent className="px-4 pb-4">
+                        <CollapsibleContent className="px-2 pb-2">
                           {step.status === 'completed' && stepTask?.output && (
-                            <div className="mt-2 overflow-auto">
-                              <div className="max-h-40 overflow-hidden border border-gray-500/30 rounded-md">
-                                <div className="overflow-auto max-h-40">
+                            <div className="mt-1 overflow-auto">
+                              <div className="max-h-32 overflow-hidden border border-gray-500/30 rounded-md">
+                                <div className="overflow-auto max-h-32">
                                   <JSONHighlighter data={stepTask.output} />
                                 </div>
                               </div>
                             </div>
                           )}
-                          {step.status === 'failed' && (() => {
-                            // Find the failed task for this step
-                            const failedTask = runData.step_tasks?.find(
-                              (task) =>
-                                task.step_slug === step.step_slug &&
-                                task.status === 'failed' &&
-                                task.error_message
-                            );
-                            
-                            return failedTask?.error_message ? (
-                              <div className="mt-2 overflow-auto">
-                                <div className="max-h-40 overflow-hidden border border-red-500/30 rounded-md">
-                                  <div className="overflow-auto max-h-40">
-                                    <pre className="bg-red-500/5 rounded-md p-4 text-sm text-white whitespace-pre-wrap">
-                                      {failedTask.error_message}
-                                    </pre>
+                          {step.status === 'failed' &&
+                            (() => {
+                              // Find the failed task for this step
+                              const failedTask = runData.step_tasks?.find(
+                                (task) =>
+                                  task.step_slug === step.step_slug &&
+                                  task.status === 'failed' &&
+                                  task.error_message,
+                              );
+
+                              return failedTask?.error_message ? (
+                                <div className="mt-1 overflow-auto">
+                                  <div className="max-h-32 overflow-hidden border border-red-500/30 rounded-md">
+                                    <div className="overflow-auto max-h-32">
+                                      <pre className="bg-red-500/5 rounded-md p-2 text-xs text-white whitespace-pre-wrap">
+                                        {failedTask.error_message}
+                                      </pre>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            ) : null;
-                          })()}
+                              ) : null;
+                            })()}
                         </CollapsibleContent>
                       </Collapsible>
                     );
@@ -360,15 +364,15 @@ export default function FlowRunDetails({
           </div>
 
           <div>
-            <h3 className="text-lg font-medium mb-2">Run Output</h3>
+            <h3 className="text-base font-medium mb-1">Run Output</h3>
             {runData.status === 'completed' ? (
-              <div className="max-h-40 overflow-hidden border border-gray-500/30 rounded-md">
-                <div className="overflow-auto max-h-40">
+              <div className="max-h-36 overflow-hidden border border-gray-500/30 rounded-md">
+                <div className="overflow-auto max-h-36">
                   <JSONHighlighter data={runData.output} />
                 </div>
               </div>
             ) : (
-              <p className="text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Run is not completed yet - no output available
               </p>
             )}
@@ -380,12 +384,12 @@ export default function FlowRunDetails({
         />
       )}
 
-      <div className="mt-8">
+      <div className="mt-4">
         <details>
-          <summary className="cursor-pointer text-sm text-muted-foreground">
+          <summary className="cursor-pointer text-xs text-muted-foreground">
             View Raw Data
           </summary>
-          <pre className="mt-2 p-2 bg-muted rounded-md text-xs overflow-auto max-h-[500px]">
+          <pre className="mt-1 p-2 bg-muted rounded-md text-xs overflow-auto max-h-[400px]">
             {JSON.stringify(runData, null, 2)}
           </pre>
         </details>
