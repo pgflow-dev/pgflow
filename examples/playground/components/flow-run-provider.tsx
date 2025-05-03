@@ -156,6 +156,17 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       // Log appropriately for INSERT or UPDATE event
       const isInsert = !payload.old;
       console.log(`Step task ${isInsert ? 'created' : 'updated'}:`, payload);
+      
+      // Log important details about the new task
+      if (payload.new.step_slug === 'summary' || 
+          payload.new.step_slug === 'sentiment' || 
+          payload.new.step_slug === 'tags') {
+        console.log(`Important task updated - ${payload.new.step_slug}:`, {
+          status: payload.new.status,
+          has_output: !!payload.new.output,
+          output: payload.new.output
+        });
+      }
 
       setRunData((prevData) => {
         if (!prevData) return null;
@@ -165,13 +176,18 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
           (task) => task.id === payload.new.id,
         );
 
+        console.log(`Existing task index for ${payload.new.step_slug}:`, existingTaskIndex);
+        console.log('Current step_tasks:', prevData.step_tasks.map(t => t.step_slug));
+
         if (existingTaskIndex >= 0) {
           // Update existing task
           updatedStepTasks = [...prevData.step_tasks];
           updatedStepTasks[existingTaskIndex] = payload.new;
+          console.log(`Updated task at index ${existingTaskIndex}`);
         } else {
           // Add new task
           updatedStepTasks = [...prevData.step_tasks, payload.new];
+          console.log(`Added new task: ${payload.new.step_slug}`);
         }
 
         // Create a mapping of step_slug to step_index from step_states to maintain order
@@ -188,6 +204,8 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
           const bIndex = stepIndexMap.get(b.step_slug) || 0;
           return aIndex - bIndex;
         });
+
+        console.log('Final step_tasks after update:', updatedStepTasks.map(t => t.step_slug));
 
         // Return the updated data
         return {
@@ -223,8 +241,6 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
         // For other updates, update only the run data without refetching everything
         setRunData((prevData) => {
           if (!prevData) return null;
-
-          console.log('Before update - prevData.step_tasks:', prevData.step_tasks);
           
           // Create a new object with the updated run data
           // Important: Keep step_tasks and step_states from prevData intact
@@ -235,8 +251,6 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
             step_tasks: prevData.step_tasks, 
             step_states: prevData.step_states,
           } as ResultRow;
-          
-          console.log('After update - updatedData.step_tasks:', updatedData.step_tasks);
           
           return updatedData;
         });

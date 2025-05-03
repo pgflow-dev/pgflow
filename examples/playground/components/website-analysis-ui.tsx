@@ -91,7 +91,7 @@ export default function WebsiteAnalysisUI({
   } => {
     console.log('=== Analysis Summary Called ===');
     console.log('isCompleted:', isCompleted);
-    console.log('Full runData:', runData);
+    console.log('runData.step_tasks:', runData?.step_tasks);
     
     if (!runData?.step_tasks || runData.step_tasks.length === 0) {
       console.log('No step tasks found in runData');
@@ -102,8 +102,7 @@ export default function WebsiteAnalysisUI({
     console.log('Available step tasks:', runData.step_tasks.map(task => ({
       step_slug: task.step_slug,
       status: task.status,
-      has_output: !!task.output,
-      output: task.output
+      has_output: !!task.output
     })));
 
     try {
@@ -115,7 +114,6 @@ export default function WebsiteAnalysisUI({
       // Extract summary
       let summary = '';
       if (summaryTask?.output) {
-        console.log('Found summary task output:', summaryTask.output);
         // Use the output directly as a JSON object
         const summaryOutput = summaryTask.output as any;
         // Look for aiSummary field based on flow definition
@@ -125,7 +123,6 @@ export default function WebsiteAnalysisUI({
       // Extract sentiment
       let sentiment = 'neutral';
       if (sentimentTask?.output) {
-        console.log('Found sentiment task output:', sentimentTask.output);
         // Use the output directly as a JSON object
         const sentimentOutput = sentimentTask.output as any;
         
@@ -139,7 +136,6 @@ export default function WebsiteAnalysisUI({
       // Extract tags
       let tags: string[] = [];
       if (tagsTask?.output) {
-        console.log('Found tags task output:', tagsTask.output);
         // Based on flow definition, tags task directly returns the keywords array
         const tagsOutput = tagsTask.output;
         
