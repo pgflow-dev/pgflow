@@ -226,39 +226,38 @@ export default function WebsiteAnalysisUI({
           )}
           
           {/* Example site links */}
-          <div className="mt-2 flex flex-wrap gap-x-2 text-xs text-muted-foreground">
-            <span>Examples: </span>
-            <button 
-              onClick={() => onAnalyzeWebsite('https://reddit.com/r/supabase')}
-              className="text-green-600 hover:bg-green-50 px-1.5 py-0.5 rounded hover:text-green-700"
-              disabled={analyzeLoading}
-            >
-              reddit.com/r/supabase
-            </button>
-            <span className="text-muted-foreground">—</span>
-            <button 
-              onClick={() => onAnalyzeWebsite('https://supabase.com/docs')}
-              className="text-green-600 hover:bg-green-50 px-1.5 py-0.5 rounded hover:text-green-700"
-              disabled={analyzeLoading}
-            >
-              supabase.com/docs
-            </button>
-            <span className="text-muted-foreground">—</span>
-            <button 
-              onClick={() => onAnalyzeWebsite('https://pgflow.dev')}
-              className="text-green-600 hover:bg-green-50 px-1.5 py-0.5 rounded hover:text-green-700"
-              disabled={analyzeLoading}
-            >
-              pgflow.dev
-            </button>
-            <span className="text-muted-foreground">—</span>
-            <button 
-              onClick={() => onAnalyzeWebsite('https://failure.com')}
-              className="text-red-600 hover:bg-red-50 px-1.5 py-0.5 rounded hover:text-red-700"
-              disabled={analyzeLoading}
-            >
-              Demo Failure
-            </button>
+          <div className="mt-2 flex items-center text-xs">
+            <span className="text-muted-foreground mr-2">Examples:</span>
+            <div className="flex flex-wrap gap-2">
+              <button 
+                onClick={() => onAnalyzeWebsite('https://reddit.com/r/supabase')}
+                className="text-green-600 hover:bg-green-50 px-2 py-1 rounded hover:text-green-700"
+                disabled={analyzeLoading}
+              >
+                reddit.com/r/supabase
+              </button>
+              <button 
+                onClick={() => onAnalyzeWebsite('https://supabase.com/docs')}
+                className="text-green-600 hover:bg-green-50 px-2 py-1 rounded hover:text-green-700"
+                disabled={analyzeLoading}
+              >
+                supabase.com/docs
+              </button>
+              <button 
+                onClick={() => onAnalyzeWebsite('https://pgflow.dev')}
+                className="text-green-600 hover:bg-green-50 px-2 py-1 rounded hover:text-green-700"
+                disabled={analyzeLoading}
+              >
+                pgflow.dev
+              </button>
+              <button 
+                onClick={() => onAnalyzeWebsite('https://failure.com')}
+                className="text-red-600 hover:bg-red-50 px-2 py-1 rounded hover:text-red-700"
+                disabled={analyzeLoading}
+              >
+                Demo Failure
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -292,43 +291,42 @@ export default function WebsiteAnalysisUI({
             </form>
             
             {/* Example site links */}
-            <div className="mt-2 flex flex-wrap gap-x-2 text-xs text-muted-foreground">
-              <span>Examples: </span>
-              <button 
-                type="button"
-                onClick={() => onAnalyzeWebsite('https://reddit.com/r/supabase')}
-                className="text-green-600 hover:bg-green-50 px-1.5 py-0.5 rounded hover:text-green-700"
-                disabled={loading}
-              >
-                reddit.com/r/supabase
-              </button>
-              <span className="text-muted-foreground">—</span>
-              <button 
-                type="button"
-                onClick={() => onAnalyzeWebsite('https://supabase.com/docs')}
-                className="text-green-600 hover:bg-green-50 px-1.5 py-0.5 rounded hover:text-green-700"
-                disabled={loading}
-              >
-                supabase.com/docs
-              </button>
-              <span className="text-muted-foreground">—</span>
-              <button 
-                type="button"
-                onClick={() => onAnalyzeWebsite('https://pgflow.dev')}
-                className="text-green-600 hover:bg-green-50 px-1.5 py-0.5 rounded hover:text-green-700"
-                disabled={loading}
-              >
-                pgflow.dev
-              </button>
-              <span className="text-muted-foreground">—</span>
-              <button 
-                type="button"
-                onClick={() => onAnalyzeWebsite('https://failure.com')}
-                className="text-red-600 hover:bg-red-50 px-1.5 py-0.5 rounded hover:text-red-700"
-                disabled={loading}
-              >
-                Demo Failure
-              </button>
+            <div className="mt-2 flex items-center text-xs">
+              <span className="text-muted-foreground mr-2">Examples:</span>
+              <div className="flex flex-wrap gap-2">
+                <button 
+                  type="button"
+                  onClick={() => onAnalyzeWebsite('https://reddit.com/r/supabase')}
+                  className="text-green-600 hover:bg-green-50 px-2 py-1 rounded hover:text-green-700"
+                  disabled={loading}
+                >
+                  reddit.com/r/supabase
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => onAnalyzeWebsite('https://supabase.com/docs')}
+                  className="text-green-600 hover:bg-green-50 px-2 py-1 rounded hover:text-green-700"
+                  disabled={loading}
+                >
+                  supabase.com/docs
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => onAnalyzeWebsite('https://pgflow.dev')}
+                  className="text-green-600 hover:bg-green-50 px-2 py-1 rounded hover:text-green-700"
+                  disabled={loading}
+                >
+                  pgflow.dev
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => onAnalyzeWebsite('https://failure.com')}
+                  className="text-red-600 hover:bg-red-50 px-2 py-1 rounded hover:text-red-700"
+                  disabled={loading}
+                >
+                  Demo Failure
+                </button>
+              </div>
             </div>
           </motion.div>
         )}
