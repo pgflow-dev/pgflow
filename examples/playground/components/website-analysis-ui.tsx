@@ -26,7 +26,7 @@ export default function WebsiteAnalysisUI({
   analyzeError = null,
 }: WebsiteAnalysisUIProps) {
   const [url, setUrl] = useState('');
-  const [stepsExpanded, setStepsExpanded] = useState(true);
+  const [analysisExpanded, setAnalysisExpanded] = useState(true);
 
   // Get sorted step states
   const getSortedStepStates = (): StepStateRow[] => {
@@ -53,20 +53,23 @@ export default function WebsiteAnalysisUI({
   const isFailed = runData?.status === 'failed';
   const isRunning = runData?.status === 'started';
   const showSteps = runData && (isRunning || isCompleted || isFailed);
-  
+
   // For summary, check if:
   // 1. We have runData
   // 2. Status is completed OR (the summary task is completed, even if run is still in progress)
-  const summaryTaskCompleted = runData?.step_tasks?.some(task => 
-    task.step_slug === 'summary' && task.status === 'completed' && task.output
+  const summaryTaskCompleted = runData?.step_tasks?.some(
+    (task) =>
+      task.step_slug === 'summary' &&
+      task.status === 'completed' &&
+      task.output,
   );
   const showSummary = runData && (isCompleted || summaryTaskCompleted);
   const showAnalyzeAnother = runData && (isCompleted || isFailed);
 
-  // Auto-collapse steps when summary is available but keep them accessible
+  // Auto-collapse analysis section when summary is available but keep it accessible
   useEffect(() => {
     if (showSummary) {
-      setStepsExpanded(false);
+      setAnalysisExpanded(false);
     }
   }, [showSummary]);
 
@@ -92,24 +95,33 @@ export default function WebsiteAnalysisUI({
     console.log('=== Analysis Summary Called ===');
     console.log('isCompleted:', isCompleted);
     console.log('runData.step_tasks:', runData?.step_tasks);
-    
+
     if (!runData?.step_tasks || runData.step_tasks.length === 0) {
       console.log('No step tasks found in runData');
       return { summary: '', sentiment: 'neutral', tags: [] };
     }
 
     // Debug: Log the available step tasks
-    console.log('Available step tasks:', runData.step_tasks.map(task => ({
-      step_slug: task.step_slug,
-      status: task.status,
-      has_output: !!task.output
-    })));
+    console.log(
+      'Available step tasks:',
+      runData.step_tasks.map((task) => ({
+        step_slug: task.step_slug,
+        status: task.status,
+        has_output: !!task.output,
+      })),
+    );
 
     try {
       // Find the step tasks by their step_slug exactly as defined in analyze_website.ts
-      const summaryTask = runData.step_tasks.find(task => task.step_slug === 'summary');
-      const sentimentTask = runData.step_tasks.find(task => task.step_slug === 'sentiment');
-      const tagsTask = runData.step_tasks.find(task => task.step_slug === 'tags');
+      const summaryTask = runData.step_tasks.find(
+        (task) => task.step_slug === 'summary',
+      );
+      const sentimentTask = runData.step_tasks.find(
+        (task) => task.step_slug === 'sentiment',
+      );
+      const tagsTask = runData.step_tasks.find(
+        (task) => task.step_slug === 'tags',
+      );
 
       // Extract summary
       let summary = '';
@@ -125,7 +137,7 @@ export default function WebsiteAnalysisUI({
       if (sentimentTask?.output) {
         // Use the output directly as a JSON object
         const sentimentOutput = sentimentTask.output as any;
-        
+
         // Handle numerical sentiment using 'score' field based on flow definition
         if (typeof sentimentOutput.score === 'number') {
           if (sentimentOutput.score >= 0.7) sentiment = 'positive';
@@ -138,7 +150,7 @@ export default function WebsiteAnalysisUI({
       if (tagsTask?.output) {
         // Based on flow definition, tags task directly returns the keywords array
         const tagsOutput = tagsTask.output;
-        
+
         // Use output directly as it should be an array of strings
         if (Array.isArray(tagsOutput)) {
           tags = tagsOutput;
@@ -188,8 +200,6 @@ export default function WebsiteAnalysisUI({
 
   return (
     <div className="p-6 border rounded-lg shadow-sm">
-      <h2 className="text-2xl font-medium mb-6">Website Analysis</h2>
-
       <AnimatePresence>
         {/* Initial URL input form - only show when no analysis is running or completed */}
         {!showSteps && !showSummary && (
@@ -228,23 +238,15 @@ export default function WebsiteAnalysisUI({
             transition={{ duration: 0.5 }}
             className="space-y-8"
           >
-            <div className="p-3 bg-muted rounded-md">
-              <p className="font-medium truncate max-w-full" title={websiteUrl}>
-                {websiteUrl.length > 50
-                  ? `${websiteUrl.substring(0, 50)}...`
-                  : websiteUrl}
-              </p>
-            </div>
-
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">Process Steps</h3>
+              <h3 className="text-lg font-medium">Analysis Progress</h3>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setStepsExpanded(!stepsExpanded)}
+                onClick={() => setAnalysisExpanded(!analysisExpanded)}
                 className="flex items-center gap-1"
               >
-                {stepsExpanded ? (
+                {analysisExpanded ? (
                   <>
                     <span className="text-sm">Collapse</span>
                     <ChevronUp className="h-4 w-4" />
@@ -259,7 +261,7 @@ export default function WebsiteAnalysisUI({
             </div>
 
             <AnimatePresence>
-              {stepsExpanded && (
+              {analysisExpanded && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
@@ -267,6 +269,16 @@ export default function WebsiteAnalysisUI({
                   transition={{ duration: 0.3 }}
                   className="space-y-8 overflow-hidden"
                 >
+                  <div className="p-3 bg-muted rounded-md">
+                    <p
+                      className="font-medium truncate max-w-full"
+                      title={websiteUrl}
+                    >
+                      {websiteUrl.length > 50
+                        ? `${websiteUrl.substring(0, 50)}...`
+                        : websiteUrl}
+                    </p>
+                  </div>
                   {sortedSteps.map((step, index) => (
                     <motion.div
                       key={step.step_slug}
@@ -325,27 +337,28 @@ export default function WebsiteAnalysisUI({
                                 ? 'Failed'
                                 : 'Waiting...'}
                         </p>
-                        {step.status === 'failed' && (() => {
-                          // Find the failed task for this step
-                          const failedTask = runData.step_tasks?.find(
-                            (task) =>
-                              task.step_slug === step.step_slug &&
-                              task.status === 'failed' &&
-                              task.error_message
-                          );
-                          
-                          return failedTask?.error_message ? (
-                            <div className="mt-2 overflow-auto">
-                              <div className="max-h-40 overflow-hidden border border-red-500/30 rounded-md">
-                                <div className="overflow-auto max-h-40">
-                                  <pre className="bg-red-500/5 rounded-md p-4 text-xs text-white whitespace-pre-wrap">
-                                    {failedTask.error_message}
-                                  </pre>
+                        {step.status === 'failed' &&
+                          (() => {
+                            // Find the failed task for this step
+                            const failedTask = runData.step_tasks?.find(
+                              (task) =>
+                                task.step_slug === step.step_slug &&
+                                task.status === 'failed' &&
+                                task.error_message,
+                            );
+
+                            return failedTask?.error_message ? (
+                              <div className="mt-2 overflow-auto">
+                                <div className="max-h-40 overflow-hidden border border-red-500/30 rounded-md">
+                                  <div className="overflow-auto max-h-40">
+                                    <pre className="bg-red-500/5 rounded-md p-4 text-xs text-white whitespace-pre-wrap">
+                                      {failedTask.error_message}
+                                    </pre>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ) : null;
-                        })()}
+                            ) : null;
+                          })()}
                       </div>
                     </motion.div>
                   ))}
