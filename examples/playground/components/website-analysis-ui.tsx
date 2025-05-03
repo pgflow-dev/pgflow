@@ -76,58 +76,59 @@ export default function WebsiteAnalysisUI({
     return '';
   };
 
-  // Get analysis summary from output
+  // Get analysis summary from step tasks
   const getAnalysisSummary = (): {
     summary: string;
     sentiment: string;
     tags: string[];
   } => {
-    if (!runData?.output)
+    if (!runData?.step_tasks || runData.step_tasks.length === 0) {
       return { summary: '', sentiment: 'neutral', tags: [] };
-
-    try {
-      const output = runData.output;
-
-      if (typeof output === 'object' && output !== null) {
-        // Check for the new structure with saveToDb
-        if (output.saveToDb && typeof output.saveToDb === 'object') {
-          const { summary = '', sentiment = 0, tags = [] } = output.saveToDb;
-
-          // Convert numerical sentiment to string category
-          let sentimentCategory = 'neutral';
-          if (typeof sentiment === 'number') {
-            if (sentiment >= 0.7) sentimentCategory = 'positive';
-            else if (sentiment < 0.3) sentimentCategory = 'negative';
-          }
-
-          // Ensure tags is an array
-          const tagArray = Array.isArray(tags) ? tags : [];
-
-          return {
-            summary:
-              typeof summary === 'string' ? summary : JSON.stringify(summary),
-            sentiment: sentimentCategory,
-            tags: tagArray,
-          };
-        }
-
-        // Fallback to old structure for backward compatibility
-        const summary = output.summary || '';
-        const sentiment = output.sentiment || 'neutral';
-        const tags = output.tags || [];
-
-        return {
-          summary:
-            typeof summary === 'string' ? summary : JSON.stringify(summary),
-          sentiment: typeof sentiment === 'string' ? sentiment : 'neutral',
-          tags: Array.isArray(tags) ? tags : [],
-        };
-      }
-    } catch (e) {
-      console.error('Error parsing output:', e);
     }
 
-    return { summary: '', sentiment: 'neutral', tags: [] };
+    try {
+      // Find the step tasks by their step_slug
+      const summaryTask = runData.step_tasks.find(task => task.step_slug === 'summary');
+      const sentimentTask = runData.step_tasks.find(task => task.step_slug === 'sentiment');
+      const tagsTask = runData.step_tasks.find(task => task.step_slug === 'tags');
+
+      // Extract summary
+      let summary = '';
+      if (summaryTask?.output && typeof summaryTask.output === 'object') {
+        const summaryOutput = summaryTask.output as any;
+        summary = typeof summaryOutput.summary === 'string' 
+          ? summaryOutput.summary 
+          : summaryOutput.text || '';
+      }
+
+      // Extract sentiment
+      let sentiment = 'neutral';
+      if (sentimentTask?.output && typeof sentimentTask.output === 'object') {
+        const sentimentOutput = sentimentTask.output as any;
+        
+        // Handle numerical sentiment
+        if (typeof sentimentOutput.sentiment === 'number') {
+          if (sentimentOutput.sentiment >= 0.7) sentiment = 'positive';
+          else if (sentimentOutput.sentiment < 0.3) sentiment = 'negative';
+        } 
+        // Handle string sentiment
+        else if (typeof sentimentOutput.sentiment === 'string') {
+          sentiment = sentimentOutput.sentiment.toLowerCase();
+        }
+      }
+
+      // Extract tags
+      let tags: string[] = [];
+      if (tagsTask?.output && typeof tagsTask.output === 'object') {
+        const tagsOutput = tagsTask.output as any;
+        tags = Array.isArray(tagsOutput.tags) ? tagsOutput.tags : [];
+      }
+
+      return { summary, sentiment, tags };
+    } catch (e) {
+      console.error('Error extracting data from step tasks:', e);
+      return { summary: '', sentiment: 'neutral', tags: [] };
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
