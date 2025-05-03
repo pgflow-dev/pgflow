@@ -66,12 +66,14 @@ export default function WebsiteAnalysisUI({
   const showSummary = runData && (isCompleted || summaryTaskCompleted);
   const showAnalyzeAnother = runData && (isCompleted || isFailed);
 
-  // Auto-collapse analysis section when summary is available but keep it accessible
+  // Keep analysis section expanded when running, collapse when completed
   useEffect(() => {
-    if (showSummary) {
+    if (isRunning) {
+      setAnalysisExpanded(true);
+    } else if (isCompleted || isFailed) {
       setAnalysisExpanded(false);
     }
-  }, [showSummary]);
+  }, [isRunning, isCompleted, isFailed, runData?.run_id]);
 
   // Get website URL from input
   const getWebsiteUrl = (): string => {
@@ -200,6 +202,31 @@ export default function WebsiteAnalysisUI({
 
   return (
     <div className="p-6 border rounded-lg shadow-sm">
+      {/* Top bar with analyze form when analysis is completed */}
+      {(isCompleted || isFailed) && (
+        <div className="mb-6 pb-4 border-b">
+          <h3 className="text-base font-medium mb-2">Analyze Website</h3>
+          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
+            <Input
+              id="url-new"
+              type="url"
+              placeholder="https://example.com"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              required
+              className="flex-1"
+              disabled={analyzeLoading}
+            />
+            <Button type="submit" disabled={analyzeLoading} size="sm">
+              {analyzeLoading ? 'Starting...' : 'Analyze'}
+            </Button>
+          </form>
+          {analyzeError && (
+            <div className="text-sm text-destructive mt-2">{analyzeError}</div>
+          )}
+        </div>
+      )}
+      
       <AnimatePresence>
         {/* Initial URL input form - only show when no analysis is running or completed */}
         {!showSteps && !showSummary && (
@@ -230,35 +257,33 @@ export default function WebsiteAnalysisUI({
           </motion.div>
         )}
 
-        {/* Step-by-step process - always show if steps exist */}
-        {showSteps && (
+        {/* Step-by-step process - only show full header when analysis is running */}
+        {showSteps && (isRunning || analysisExpanded) && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             className="space-y-8"
           >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">Analysis Progress</h3>
-              <Button
-                variant="ghost"
-                size="sm"
+            {/* Only show the full header when running */}
+            {isRunning && (
+              <div 
                 onClick={() => setAnalysisExpanded(!analysisExpanded)}
-                className="flex items-center gap-1"
+                className="flex justify-between items-center mb-4 cursor-pointer hover:bg-muted/50 p-2 rounded-md"
               >
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-medium">Analysis Progress</h3>
+                  <span className="inline-flex items-center text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">
+                    Running
+                  </span>
+                </div>
                 {analysisExpanded ? (
-                  <>
-                    <span className="text-sm">Collapse</span>
-                    <ChevronUp className="h-4 w-4" />
-                  </>
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
                 ) : (
-                  <>
-                    <span className="text-sm">Expand</span>
-                    <ChevronDown className="h-4 w-4" />
-                  </>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 )}
-              </Button>
-            </div>
+              </div>
+            )}
 
             <AnimatePresence>
               {analysisExpanded && (
@@ -269,6 +294,22 @@ export default function WebsiteAnalysisUI({
                   transition={{ duration: 0.3 }}
                   className="space-y-8 overflow-hidden"
                 >
+                  {/* X button with label at the top right corner to close details */}
+                  {!isRunning && (
+                    <div className="flex justify-end mb-2">
+                      <button
+                        onClick={() => setAnalysisExpanded(false)}
+                        className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-muted/70 text-muted-foreground hover:text-foreground transition-colors text-xs border border-muted"
+                        aria-label="Close details"
+                      >
+                        <span>close details</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                   <div className="p-3 bg-muted rounded-md">
                     <p
                       className="font-medium truncate max-w-full"
@@ -362,6 +403,17 @@ export default function WebsiteAnalysisUI({
                       </div>
                     </motion.div>
                   ))}
+                  
+                  {/* Duplicate collapse button at the bottom of expanded details */}
+                  {!isRunning && (
+                    <div 
+                      onClick={() => setAnalysisExpanded(false)}
+                      className="flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-muted/50 border border-muted-foreground/20 mt-4"
+                    >
+                      <span className="text-sm font-medium">Hide Details</span>
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -377,7 +429,31 @@ export default function WebsiteAnalysisUI({
             className={`space-y-6 ${showSteps ? 'mt-8 pt-6 border-t' : ''}`}
           >
             <div className="mb-4">
-              <h3 className="text-xl font-medium mb-4">Analysis Results</h3>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+                <h3 className="text-xl font-medium">Analysis Results</h3>
+                {!isRunning && (
+                  <div 
+                    onClick={() => setAnalysisExpanded(!analysisExpanded)}
+                    className="flex items-center gap-2 px-3 py-1 rounded-md cursor-pointer hover:bg-muted/50 border border-muted-foreground/20 mt-2 sm:mt-0 self-start"
+                  >
+                    <span className="text-sm font-medium">Details</span>
+                    <span className={`inline-flex items-center text-xs px-2 py-1 rounded-full ${
+                      runData?.status === 'completed' 
+                        ? 'bg-green-100 text-green-800' 
+                        : runData?.status === 'failed'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {runData?.status === 'completed' ? 'OK' : runData?.status}
+                    </span>
+                    {analysisExpanded ? (
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
+                )}
+              </div>
               <span className="text-sm font-medium text-muted-foreground">
                 Website:
               </span>
@@ -447,33 +523,6 @@ export default function WebsiteAnalysisUI({
                 </dd>
               </div>
             </dl>
-
-            {/* Analyze another website - at the bottom of the results */}
-            <div className={`mt-8 pt-6 ${!showSteps ? 'border-t' : ''}`}>
-              <h3 className="text-lg font-medium mb-4">
-                Analyze Another Website
-              </h3>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Input
-                    id="url-new"
-                    type="url"
-                    placeholder="https://example.com"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    required
-                    className="w-full"
-                    disabled={analyzeLoading}
-                  />
-                </div>
-                <Button type="submit" disabled={analyzeLoading}>
-                  {analyzeLoading ? 'Starting Analysis...' : 'Analyze Website'}
-                </Button>
-                {analyzeError && (
-                  <div className="text-sm text-destructive">{analyzeError}</div>
-                )}
-              </form>
-            </div>
           </motion.div>
         )}
       </AnimatePresence>
