@@ -50,8 +50,8 @@ export default function DualPanelPage() {
   const runId = params.run_id as string;
 
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-6">Website Analysis Demo</h1>
+    <div className="container mx-auto pt-0">
+      <h1 className="text-2xl font-bold mb-2">Website Analysis Demo</h1>
 
       <FlowRunProvider runId={runId}>
         <DualPanelContent />
