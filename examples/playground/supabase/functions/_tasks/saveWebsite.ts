@@ -22,7 +22,6 @@ export default async (input: {
   summary: string;
   tags: string[];
 }) => {
-  throw new Error('Intentional failure!');
   // await randomSleep(100, 500);
   const { data } = await getSupabase()
     .from('websites')

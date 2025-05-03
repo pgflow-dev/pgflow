@@ -63,12 +63,12 @@ export default function WebsiteAnalysisUI({
   const showSummary = runData && (isCompleted || summaryTaskCompleted);
   const showAnalyzeAnother = runData && (isCompleted || isFailed);
 
-  // Auto-collapse steps when flow completes
+  // Auto-collapse steps when summary is available but keep them accessible
   useEffect(() => {
-    if (isCompleted) {
+    if (showSummary) {
       setStepsExpanded(false);
     }
-  }, [isCompleted]);
+  }, [showSummary]);
 
   // Get website URL from input
   const getWebsiteUrl = (): string => {
@@ -188,11 +188,11 @@ export default function WebsiteAnalysisUI({
 
   return (
     <div className="p-6 border rounded-lg shadow-sm">
-      <h2 className="text-2xl font-medium mb-6">User-facing UI</h2>
+      <h2 className="text-2xl font-medium mb-6">Website Analysis</h2>
 
       <AnimatePresence>
-        {/* Initial URL input form */}
-        {!showSteps && (
+        {/* Initial URL input form - only show when no analysis is running or completed */}
+        {!showSteps && !showSummary && (
           <motion.div
             initial={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
@@ -220,7 +220,7 @@ export default function WebsiteAnalysisUI({
           </motion.div>
         )}
 
-        {/* Step-by-step process */}
+        {/* Step-by-step process - always show if steps exist */}
         {showSteps && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -361,116 +361,106 @@ export default function WebsiteAnalysisUI({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="mt-12 space-y-6"
+            className={`space-y-6 ${showSteps ? 'mt-8 pt-6 border-t' : ''}`}
           >
-            <div className="border-t pt-8">
-              <h3 className="text-xl font-medium mb-6">Analysis Results</h3>
+            <div className="mb-4">
+              <h3 className="text-xl font-medium mb-4">Analysis Results</h3>
+              <span className="text-sm font-medium text-muted-foreground">
+                Website:
+              </span>
+              <a
+                href={websiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-2 text-primary hover:underline overflow-hidden"
+              >
+                {websiteUrl.length > 30
+                  ? `${websiteUrl.substring(0, 30)}...`
+                  : websiteUrl}
+              </a>
+            </div>
 
-              <div className="mb-4">
-                <span className="text-sm font-medium text-muted-foreground">
-                  Website:
-                </span>
-                <a
-                  href={websiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ml-2 text-primary hover:underline overflow-hidden"
-                >
-                  {websiteUrl.length > 30
-                    ? `${websiteUrl.substring(0, 30)}...`
-                    : websiteUrl}
-                </a>
-              </div>
-
-              <dl className="mt-6 space-y-6">
-                <div className="flex flex-row gap-6">
-                  <div className="flex flex-col space-y-2 w-1/3">
-                    <dt className="text-sm font-medium text-muted-foreground">
-                      Sentiment
-                    </dt>
-                    <dd>
-                      <span
-                        className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
-                          sentiment === 'positive'
-                            ? 'bg-green-100 text-green-800'
-                            : sentiment === 'negative'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-blue-100 text-blue-800'
-                        }`}
-                      >
-                        {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
-                      </span>
-                    </dd>
-                  </div>
-
-                  <div className="flex flex-col space-y-2 w-2/3">
-                    <dt className="text-sm font-medium text-muted-foreground">
-                      Tags
-                    </dt>
-                    <dd className="flex flex-wrap gap-2">
-                      {tags.length > 0 ? (
-                        tags.map((tag, index) => (
-                          <Badge
-                            key={index}
-                            variant="secondary"
-                            className="text-xs"
-                          >
-                            {tag}
-                          </Badge>
-                        ))
-                      ) : (
-                        <span className="text-sm text-muted-foreground">
-                          No tags available
-                        </span>
-                      )}
-                    </dd>
-                  </div>
-                </div>
-
-                <div className="flex flex-col space-y-2">
+            <dl className="space-y-6">
+              <div className="flex flex-row gap-6">
+                <div className="flex flex-col space-y-2 w-1/3">
                   <dt className="text-sm font-medium text-muted-foreground">
-                    Summary
+                    Sentiment
                   </dt>
-                  <dd className="text-foreground/90 whitespace-pre-line leading-relaxed">
-                    {summary}
+                  <dd>
+                    <span
+                      className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
+                        sentiment === 'positive'
+                          ? 'bg-green-100 text-green-800'
+                          : sentiment === 'negative'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-blue-100 text-blue-800'
+                      }`}
+                    >
+                      {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
+                    </span>
                   </dd>
                 </div>
-              </dl>
-            </div>
-          </motion.div>
-        )}
 
-        {/* Analyze another website */}
-        {showAnalyzeAnother && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="mt-8 pt-6 border-t"
-          >
-            <h3 className="text-lg font-medium mb-4">
-              Analyze Another Website
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Input
-                  id="url-new"
-                  type="url"
-                  placeholder="https://example.com"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  required
-                  className="w-full"
-                  disabled={analyzeLoading}
-                />
+                <div className="flex flex-col space-y-2 w-2/3">
+                  <dt className="text-sm font-medium text-muted-foreground">
+                    Tags
+                  </dt>
+                  <dd className="flex flex-wrap gap-2">
+                    {tags.length > 0 ? (
+                      tags.map((tag, index) => (
+                        <Badge
+                          key={index}
+                          variant="secondary"
+                          className="text-xs"
+                        >
+                          {tag}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-sm text-muted-foreground">
+                        No tags available
+                      </span>
+                    )}
+                  </dd>
+                </div>
               </div>
-              <Button type="submit" disabled={analyzeLoading}>
-                {analyzeLoading ? 'Starting Analysis...' : 'Analyze Website'}
-              </Button>
-              {analyzeError && (
-                <div className="text-sm text-destructive">{analyzeError}</div>
-              )}
-            </form>
+
+              <div className="flex flex-col space-y-2">
+                <dt className="text-sm font-medium text-muted-foreground">
+                  Summary
+                </dt>
+                <dd className="text-foreground/90 whitespace-pre-line leading-relaxed">
+                  {summary}
+                </dd>
+              </div>
+            </dl>
+
+            {/* Analyze another website - at the bottom of the results */}
+            <div className={`mt-8 pt-6 ${!showSteps ? 'border-t' : ''}`}>
+              <h3 className="text-lg font-medium mb-4">
+                Analyze Another Website
+              </h3>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <Input
+                    id="url-new"
+                    type="url"
+                    placeholder="https://example.com"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    required
+                    className="w-full"
+                    disabled={analyzeLoading}
+                  />
+                </div>
+                <Button type="submit" disabled={analyzeLoading}>
+                  {analyzeLoading ? 'Starting Analysis...' : 'Analyze Website'}
+                </Button>
+                {analyzeError && (
+                  <div className="text-sm text-destructive">{analyzeError}</div>
+                )}
+              </form>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
