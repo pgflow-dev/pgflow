@@ -325,13 +325,19 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
               });
               setStepStates(stateMap);
 
-              // Group step tasks by step_slug
+              // Group step tasks by step_slug and add step_index from our cached stepOrderMap
               const tasksMap: Record<string, StepTaskRow[]> = {};
               data.step_tasks.forEach(task => {
+                // Add step_index to task using our cached stepOrderMap
+                const taskWithIndex = {
+                  ...task,
+                  step_index: stepOrderMap[task.step_slug] || 0
+                };
+                
                 if (!tasksMap[task.step_slug]) {
                   tasksMap[task.step_slug] = [];
                 }
-                tasksMap[task.step_slug].push(task);
+                tasksMap[task.step_slug].push(taskWithIndex);
               });
               setStepTasks(tasksMap);
             }
