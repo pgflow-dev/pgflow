@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { exampleLinks } from '@/lib/example-links';
 
 interface WebsiteAnalysisUIProps {
   runData: ResultRow | null;
@@ -237,36 +238,20 @@ export default function WebsiteAnalysisUI({
           <div className="mt-2 flex items-center text-xs">
             <span className="text-muted-foreground mr-2">Examples:</span>
             <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() =>
-                  onAnalyzeWebsite('https://reddit.com/r/supabase')
-                }
-                className="text-green-600 hover:bg-green-50 px-2 py-1 rounded hover:text-green-700"
-                disabled={analyzeLoading}
-              >
-                reddit.com/r/supabase
-              </button>
-              <button
-                onClick={() => onAnalyzeWebsite('https://supabase.com/docs')}
-                className="text-green-600 hover:bg-green-50 px-2 py-1 rounded hover:text-green-700"
-                disabled={analyzeLoading}
-              >
-                supabase.com/docs
-              </button>
-              <button
-                onClick={() => onAnalyzeWebsite('https://pgflow.dev')}
-                className="text-green-600 hover:bg-green-50 px-2 py-1 rounded hover:text-green-700"
-                disabled={analyzeLoading}
-              >
-                pgflow.dev
-              </button>
-              <button
-                onClick={() => onAnalyzeWebsite('https://firebase.google.com/')}
-                className="text-red-600 hover:bg-red-50 px-2 py-1 rounded hover:text-red-700"
-                disabled={analyzeLoading}
-              >
-                Demo Failure
-              </button>
+              {exampleLinks.map((link) => (
+                <button
+                  key={link.url}
+                  onClick={() => onAnalyzeWebsite(link.url)}
+                  className={`${
+                    link.variant === 'success'
+                      ? 'text-green-600 hover:bg-green-50 hover:text-green-700'
+                      : 'text-red-600 hover:bg-red-50 hover:text-red-700'
+                  } px-2 py-1 rounded`}
+                  disabled={analyzeLoading}
+                >
+                  {link.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -304,40 +289,21 @@ export default function WebsiteAnalysisUI({
             <div className="mt-2 flex items-center text-xs">
               <span className="text-muted-foreground mr-2">Examples:</span>
               <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    onAnalyzeWebsite('https://reddit.com/r/supabase')
-                  }
-                  className="text-green-600 hover:bg-green-50 px-2 py-1 rounded hover:text-green-700"
-                  disabled={loading}
-                >
-                  reddit.com/r/supabase
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onAnalyzeWebsite('https://supabase.com/docs')}
-                  className="text-green-600 hover:bg-green-50 px-2 py-1 rounded hover:text-green-700"
-                  disabled={loading}
-                >
-                  supabase.com/docs
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onAnalyzeWebsite('https://pgflow.dev')}
-                  className="text-green-600 hover:bg-green-50 px-2 py-1 rounded hover:text-green-700"
-                  disabled={loading}
-                >
-                  pgflow.dev
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onAnalyzeWebsite('https://failure.com')}
-                  className="text-red-600 hover:bg-red-50 px-2 py-1 rounded hover:text-red-700"
-                  disabled={loading}
-                >
-                  Demo Failure
-                </button>
+                {exampleLinks.map((link) => (
+                  <button
+                    key={link.url}
+                    type="button"
+                    onClick={() => onAnalyzeWebsite(link.url)}
+                    className={`${
+                      link.variant === 'success'
+                        ? 'text-green-600 hover:bg-green-50 hover:text-green-700'
+                        : 'text-red-600 hover:bg-red-50 hover:text-red-700'
+                    } px-2 py-1 rounded`}
+                    disabled={loading}
+                  >
+                    {link.label}
+                  </button>
+                ))}
               </div>
             </div>
           </motion.div>
