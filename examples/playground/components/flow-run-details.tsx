@@ -144,54 +144,47 @@ export default function FlowRunDetails({
     <div className="p-2 border rounded-lg shadow-sm">
       {runData ? (
         <div className="space-y-3">
-          <h2 className="text-xl font-medium mb-1">Under the hood</h2>
-          <hr className="my-1" />
-          <div>
-            <h3 className="text-base font-medium mb-1">Status</h3>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <span
-                  className={`inline-block w-2 h-2 rounded-full mr-1 ${
-                    runData.status === 'completed'
-                      ? 'bg-green-500'
-                      : runData.status === 'started'
-                        ? 'bg-yellow-500 breathing'
-                        : runData.status === 'failed'
-                          ? 'bg-red-500'
-                          : runData.status === 'created'
-                            ? 'bg-blue-500'
-                            : 'bg-gray-500'
-                  }`}
-                ></span>
-                <span className="capitalize text-sm">
-                  {runData.status === 'started' ? 'running' : runData.status}
+          <h3 className="text-base font-medium mb-1">Status</h3>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <span
+                className={`inline-block w-2 h-2 rounded-full mr-1 ${
+                  runData.status === 'completed'
+                    ? 'bg-green-500'
+                    : runData.status === 'started'
+                      ? 'bg-yellow-500 breathing'
+                      : runData.status === 'failed'
+                        ? 'bg-red-500'
+                        : runData.status === 'created'
+                          ? 'bg-blue-500'
+                          : 'bg-gray-500'
+                }`}
+              ></span>
+              <span className="capitalize text-sm">
+                {runData.status === 'started' ? 'running' : runData.status}
+              </span>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {runData.status === 'started' && runData.started_at && (
+                <span>
+                  Running for {formatTimeDifference(runData.started_at, null)}
                 </span>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {runData.status === 'started' && runData.started_at && (
-                  <span>
-                    Running for {formatTimeDifference(runData.started_at, null)}
-                  </span>
-                )}
-                {runData.status === 'completed' && runData.completed_at && (
-                  <span>
-                    Took{' '}
-                    {formatTimeDifference(
-                      runData.started_at,
-                      runData.completed_at,
-                    )}
-                  </span>
-                )}
-                {runData.status === 'failed' && runData.failed_at && (
-                  <span>
-                    Failed after
-                    {formatTimeDifference(
-                      runData.started_at,
-                      runData.failed_at,
-                    )}
-                  </span>
-                )}
-              </div>
+              )}
+              {runData.status === 'completed' && runData.completed_at && (
+                <span>
+                  Took{' '}
+                  {formatTimeDifference(
+                    runData.started_at,
+                    runData.completed_at,
+                  )}
+                </span>
+              )}
+              {runData.status === 'failed' && runData.failed_at && (
+                <span>
+                  Failed after
+                  {formatTimeDifference(runData.started_at, runData.failed_at)}
+                </span>
+              )}
             </div>
           </div>
 
