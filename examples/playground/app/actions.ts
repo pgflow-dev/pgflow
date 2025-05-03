@@ -9,7 +9,6 @@ export const signUpAction = async (formData: FormData) => {
   const email = formData.get('email')?.toString();
   const password = formData.get('password')?.toString();
   const supabase = await createClient();
-  const origin = (await headers()).get('origin');
 
   if (!email || !password) {
     return encodedRedirect(
@@ -19,24 +18,38 @@ export const signUpAction = async (formData: FormData) => {
     );
   }
 
-  const { error } = await supabase.auth.signUp({
+  // Sign up with auto-confirm enabled (skip email verification)
+  const { error: signUpError } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${origin}/auth/callback`,
+      // Disable email confirmation flow
+      emailRedirectTo: undefined,
+      // Auto-confirm the user
+      data: {
+        email_confirmed: true
+      }
     },
   });
 
-  if (error) {
-    console.error(error.code + ' ' + error.message);
-    return encodedRedirect('error', '/sign-up', error.message);
-  } else {
-    return encodedRedirect(
-      'success',
-      '/sign-up',
-      'Thanks for signing up! Please check your email for a verification link.',
-    );
+  if (signUpError) {
+    console.error(signUpError.code + ' ' + signUpError.message);
+    return encodedRedirect('error', '/sign-up', signUpError.message);
   }
+
+  // Automatically sign in the user after sign up
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (signInError) {
+    console.error(signInError.code + ' ' + signInError.message);
+    return encodedRedirect('error', '/sign-up', 'Sign up successful but could not automatically sign in.');
+  }
+
+  // Redirect to home page
+  return redirect('/');
 };
 
 export const signInAction = async (formData: FormData) => {
