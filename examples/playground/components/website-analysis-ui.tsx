@@ -66,11 +66,11 @@ export default function WebsiteAnalysisUI({
   const showSummary = runData && (isCompleted || summaryTaskCompleted);
   const showAnalyzeAnother = runData && (isCompleted || isFailed);
 
-  // Keep analysis section expanded when running, collapse when completed
+  // Keep analysis section expanded when running or failed, collapse only when completed successfully
   useEffect(() => {
-    if (isRunning) {
+    if (isRunning || isFailed) {
       setAnalysisExpanded(true);
-    } else if (isCompleted || isFailed) {
+    } else if (isCompleted) {
       setAnalysisExpanded(false);
     }
   }, [isRunning, isCompleted, isFailed, runData?.run_id]);
@@ -339,22 +339,42 @@ export default function WebsiteAnalysisUI({
             transition={{ duration: 0.5 }}
             className="space-y-8"
           >
-            {/* Only show the full header when running */}
-            {isRunning && (
+            {/* Show the header when running or failed */}
+            {(isRunning || isFailed) && (
               <div 
-                onClick={() => setAnalysisExpanded(!analysisExpanded)}
-                className="flex justify-between items-center mb-4 cursor-pointer hover:bg-muted/50 p-2 rounded-md"
+                onClick={() => {
+                  // Only allow toggling if not failed
+                  if (!isFailed) {
+                    setAnalysisExpanded(!analysisExpanded);
+                  }
+                }}
+                className={`flex justify-between items-center mb-4 p-2 rounded-md ${
+                  isFailed 
+                    ? 'border border-red-200 bg-red-50/30' 
+                    : 'cursor-pointer hover:bg-muted/50'
+                }`}
               >
                 <div className="flex items-center gap-2">
-                  <h3 className="text-base font-medium">Analysis Progress</h3>
-                  <span className="inline-flex items-center text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">
-                    Running
-                  </span>
+                  <h3 className="text-base font-medium">
+                    {isFailed ? 'Analysis Failed' : 'Analysis Progress'}
+                  </h3>
+                  {isRunning && (
+                    <span className="inline-flex items-center text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">
+                      Running
+                    </span>
+                  )}
+                  {isFailed && (
+                    <span className="inline-flex items-center text-xs px-2 py-1 rounded-full bg-red-100 text-red-800">
+                      Failed
+                    </span>
+                  )}
                 </div>
-                {analysisExpanded ? (
-                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                {!isFailed && (
+                  analysisExpanded ? (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )
                 )}
               </div>
             )}
@@ -369,7 +389,7 @@ export default function WebsiteAnalysisUI({
                   className="space-y-8 overflow-hidden"
                 >
                   {/* X button with label at the top right corner to close details */}
-                  {!isRunning && (
+                  {!isRunning && !isFailed && (
                     <div className="flex justify-end mb-2">
                       <button
                         onClick={() => setAnalysisExpanded(false)}
@@ -480,7 +500,7 @@ export default function WebsiteAnalysisUI({
                   ))}
                   
                   {/* Duplicate collapse button at the bottom of expanded details */}
-                  {!isRunning && (
+                  {!isRunning && !isFailed && (
                     <div 
                       onClick={() => setAnalysisExpanded(false)}
                       className="flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-muted/50 border border-muted-foreground/20 mt-4"

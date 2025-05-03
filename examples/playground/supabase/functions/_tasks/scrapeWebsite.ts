@@ -1,5 +1,5 @@
 export default async function scrapeWebsite(url: string) {
-  await simulateFailure();
+  await simulateFailure(url);
   const response = await fetch(url);
 
   if (!response.ok) {
@@ -57,7 +57,8 @@ function stripHtmlTags(html: string): string {
   return cleanedContent;
 }
 
-async function simulateFailure() {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-  throw new Error('Simulated failure to demonstrate error handling');
+async function simulateFailure(url: string) {
+  if (url == 'https://failure.com') {
+    throw new Error('Simulated failure to demonstrate error handling');
+  }
 }
