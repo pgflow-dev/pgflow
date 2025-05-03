@@ -47,6 +47,10 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
   const [stepStates, setStepStates] = useState<Record<string, StepStateRow>>({});
   const [stepTasks, setStepTasks] = useState<Record<string, StepTaskRow[]>>({});
   
+  // Create a persistent mapping of step_slug to step_index
+  // This is cached once when the data is loaded and never changes
+  const [stepOrderMap, setStepOrderMap] = useState<Record<string, number>>({});
+  
   // UI state
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,30 +65,28 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
   const runData = useMemo<ResultRow | null>(() => {
     if (!run) return null;
 
-    // Convert stepStates map to array and sort by step index
+    // Convert stepStates map to array 
     const stepStatesArray = Object.values(stepStates);
-    stepStatesArray.sort((a, b) => {
-      const aIndex = a.step?.step_index || 0;
-      const bIndex = b.step?.step_index || 0;
-      return aIndex - bIndex;
-    });
-
-    // Create a flat array of all step tasks and sort them
-    const stepTasksArray = Object.values(stepTasks).flat();
     
-    // Create a mapping of step_slug to step_index to maintain order
-    const stepIndexMap = new Map<string, number>();
-    stepStatesArray.forEach((state) => {
-      if (state.step && state.step_slug) {
-        stepIndexMap.set(state.step_slug, state.step?.step_index || 0);
-      }
+    // Sort stepStatesArray using our permanent stepOrderMap
+    stepStatesArray.sort((a, b) => {
+      const aIndex = stepOrderMap[a.step_slug] || 0;
+      const bIndex = stepOrderMap[b.step_slug] || 0;
+      return aIndex - bIndex;
     });
 
-    // Sort the step tasks using the mapping
+    // Create a flat array of all step tasks
+    const stepTasksArray = Object.values(stepTasks).flat().map(task => {
+      // Add step_index to each task for consistent sorting using our cached map
+      return {
+        ...task,
+        step_index: stepOrderMap[task.step_slug] || 0
+      };
+    });
+    
+    // Sort the step tasks using the step_index from our cached map
     stepTasksArray.sort((a, b) => {
-      const aIndex = stepIndexMap.get(a.step_slug) || 0;
-      const bIndex = stepIndexMap.get(b.step_slug) || 0;
-      return aIndex - bIndex;
+      return (stepOrderMap[a.step_slug] || 0) - (stepOrderMap[b.step_slug] || 0);
     });
 
     // Combine everything into ResultRow format
@@ -152,6 +154,16 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
           step_tasks: undefined,
         } as RunRow);
 
+        // Create and cache the step order map from step_states
+        // This is created once and never changes, ensuring consistent ordering
+        const orderMap: Record<string, number> = {};
+        data.step_states.forEach(state => {
+          if (state.step && state.step_slug) {
+            orderMap[state.step_slug] = state.step.step_index || 0;
+          }
+        });
+        setStepOrderMap(orderMap);
+
         // Convert step states array to a map keyed by step_slug
         const stateMap: Record<string, StepStateRow> = {};
         data.step_states.forEach(state => {
@@ -162,10 +174,16 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
         // Group step tasks by step_slug
         const tasksMap: Record<string, StepTaskRow[]> = {};
         data.step_tasks.forEach(task => {
+          // Add step_index to task for consistent ordering
+          const taskWithIndex = {
+            ...task,
+            step_index: orderMap[task.step_slug] || 0
+          };
+          
           if (!tasksMap[task.step_slug]) {
             tasksMap[task.step_slug] = [];
           }
-          tasksMap[task.step_slug].push(task);
+          tasksMap[task.step_slug].push(taskWithIndex);
         });
         setStepTasks(tasksMap);
       }
@@ -181,9 +199,13 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     ) => {
       console.log('Step state updated:', payload);
 
+      // When step state is updated, we don't need to preserve step_index anymore
+      // because we have our cached stepOrderMap
+      const updatedStepState = payload.new;
+
       setStepStates((prevStates) => ({
         ...prevStates,
-        [payload.new.step_slug]: payload.new,
+        [updatedStepState.step_slug]: updatedStepState,
       }));
     };
 
@@ -207,21 +229,27 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
         });
       }
 
+      // Add step_index to the task from our cached stepOrderMap
+      const newTask = { 
+        ...payload.new,
+        step_index: stepOrderMap[payload.new.step_slug] || 0
+      };
+
       setStepTasks((prevTasksMap) => {
-        const stepSlug = payload.new.step_slug;
+        const stepSlug = newTask.step_slug;
         const currentTasks = prevTasksMap[stepSlug] || [];
         
         // Check if this task already exists
-        const taskIndex = currentTasks.findIndex(task => task.id === payload.new.id);
+        const taskIndex = currentTasks.findIndex(task => task.id === newTask.id);
         
         let updatedTasks;
         if (taskIndex >= 0) {
           // Update existing task
           updatedTasks = [...currentTasks];
-          updatedTasks[taskIndex] = payload.new;
+          updatedTasks[taskIndex] = newTask;
         } else {
           // Add new task
-          updatedTasks = [...currentTasks, payload.new];
+          updatedTasks = [...currentTasks, newTask];
         }
         
         return {
@@ -248,13 +276,19 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
         });
       }
 
+      // Add step_index to the task from our cached stepOrderMap
+      const newTask = { 
+        ...payload.new,
+        step_index: stepOrderMap[payload.new.step_slug] || 0 
+      };
+
       setStepTasks((prevTasksMap) => {
-        const stepSlug = payload.new.step_slug;
+        const stepSlug = newTask.step_slug;
         const currentTasks = prevTasksMap[stepSlug] || [];
         
         return {
           ...prevTasksMap,
-          [stepSlug]: [...currentTasks, payload.new],
+          [stepSlug]: [...currentTasks, newTask],
         };
       });
     };

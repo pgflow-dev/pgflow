@@ -217,32 +217,24 @@ export default function FlowRunDetails({
             <div className="grid grid-cols-1 md:grid-cols-1 gap-2">
               {runData.step_states &&
                 (() => {
-                  // Create a mapping of step_slug to step_index
-                  const stepIndexMap = new Map<string, number>();
-                  runData.step_states.forEach((state) => {
-                    if (state.step && state.step_slug) {
-                      stepIndexMap.set(
-                        state.step_slug,
-                        state.step?.step_index || 0,
-                      );
-                    }
-                  });
-
-                  // Sort step_states using the mapping
+                  // Sort step_states directly by step.step_index
                   const sortedStepStates = [...runData.step_states].sort(
                     (a, b) => {
-                      const aIndex = stepIndexMap.get(a.step_slug) || 0;
-                      const bIndex = stepIndexMap.get(b.step_slug) || 0;
+                      const aIndex = a.step?.step_index || 0;
+                      const bIndex = b.step?.step_index || 0;
                       return aIndex - bIndex;
                     },
                   );
 
                   return sortedStepStates.map((step, index) => {
-                    // Find the corresponding step task with output
-                    const stepTask = runData.step_tasks?.find(
-                      (task) =>
-                        task.step_slug === step.step_slug &&
-                        task.status === 'completed',
+                    // Find the corresponding step tasks for this step
+                    const stepTasks = runData.step_tasks
+                      ?.filter((task) => task.step_slug === step.step_slug)
+                      .sort((a, b) => (a.step_index || 0) - (b.step_index || 0));
+                      
+                    // Get the completed task with output
+                    const stepTask = stepTasks?.find(
+                      (task) => task.status === 'completed',
                     );
 
                     return (
@@ -250,15 +242,12 @@ export default function FlowRunDetails({
                         key={index}
                         className={`mb-1 rounded-lg border ${
                           (() => {
-                            // Find tasks for this step to check attempts count
-                            const stepTasks = runData.step_tasks?.filter(
-                              (task) => task.step_slug === step.step_slug
-                            ) || [];
-                            
-                            // Get the most recent task (usually the one with the highest attempts_count)
-                            const latestTask = stepTasks.sort((a, b) => 
-                              (b.attempts_count || 0) - (a.attempts_count || 0)
-                            )[0];
+                            // Get the pre-sorted step tasks from above
+                            const latestTask = stepTasks && stepTasks.length > 0 
+                              ? stepTasks.sort((a, b) => 
+                                (b.attempts_count || 0) - (a.attempts_count || 0)
+                              )[0]
+                              : null;
                             
                             // Check if this is a retry (attempts_count > 1)
                             const isRetrying = latestTask && latestTask.attempts_count > 1 && step.status === 'started';
@@ -316,15 +305,12 @@ export default function FlowRunDetails({
                                 </span>
                               )}
                             {(() => {
-                              // Find tasks for this step to check attempts count
-                              const stepTasks = runData.step_tasks?.filter(
-                                (task) => task.step_slug === step.step_slug
-                              ) || [];
-                              
-                              // Get the most recent task (usually the one with the highest attempts_count)
-                              const latestTask = stepTasks.sort((a, b) => 
-                                (b.attempts_count || 0) - (a.attempts_count || 0)
-                              )[0];
+                              // Use the pre-sorted step tasks from above
+                              const latestTask = stepTasks && stepTasks.length > 0 
+                                ? stepTasks.sort((a, b) => 
+                                  (b.attempts_count || 0) - (a.attempts_count || 0)
+                                )[0]
+                                : null;
                               
                               // Check if this is a retry (attempts_count > 1)
                               const isRetrying = latestTask && latestTask.attempts_count > 1 && step.status === 'started';
@@ -349,15 +335,12 @@ export default function FlowRunDetails({
                             })()}
                             <span className="capitalize text-xs">
                               {(() => {
-                                // Find tasks for this step to check attempts count
-                                const stepTasks = runData.step_tasks?.filter(
-                                  (task) => task.step_slug === step.step_slug
-                                ) || [];
-                                
-                                // Get the most recent task (usually the one with the highest attempts_count)
-                                const latestTask = stepTasks.sort((a, b) => 
-                                  (b.attempts_count || 0) - (a.attempts_count || 0)
-                                )[0];
+                                // Use the pre-sorted step tasks from above
+                                const latestTask = stepTasks && stepTasks.length > 0 
+                                  ? stepTasks.sort((a, b) => 
+                                    (b.attempts_count || 0) - (a.attempts_count || 0)
+                                  )[0]
+                                  : null;
                                 
                                 // Check if this is a retry (attempts_count > 1)
                                 const isRetrying = latestTask && latestTask.attempts_count > 1 && step.status === 'started';

@@ -14,7 +14,9 @@ export type StepStateRow =
       step_index: number;
     };
   };
-export type StepTaskRow = Database['pgflow']['Tables']['step_tasks']['Row'];
+export type StepTaskRow = Database['pgflow']['Tables']['step_tasks']['Row'] & {
+  step_index?: number; // Adding optional step_index for sorting
+};
 
 // Define a type that reflects the actual structure returned from the query
 export type ResultRow = RunRow & {

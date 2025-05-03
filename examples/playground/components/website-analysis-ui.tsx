@@ -32,20 +32,22 @@ export default function WebsiteAnalysisUI({
   const getOrderedStepStates = (): StepStateRow[] => {
     if (!runData?.step_states) return [];
 
-    // Create a mapping of step_slug to step_index
-    const stepIndexMap = new Map<string, number>();
-    runData.step_states.forEach((state) => {
-      if (state.step && state.step_slug) {
-        stepIndexMap.set(state.step_slug, state.step?.step_index || 0);
-      }
-    });
-
-    // Sort step_states using the mapping
+    // Sort step_states directly by step.step_index
     return [...runData.step_states].sort((a, b) => {
-      const aIndex = stepIndexMap.get(a.step_slug) || 0;
-      const bIndex = stepIndexMap.get(b.step_slug) || 0;
+      const aIndex = a.step?.step_index || 0;
+      const bIndex = b.step?.step_index || 0;
       return aIndex - bIndex;
     });
+  };
+
+  // Get ordered step tasks for a specific step
+  const getOrderedStepTasks = (stepSlug: string): any[] => {
+    if (!runData?.step_tasks) return [];
+
+    // Filter tasks for the given step slug and sort by step_index
+    return runData.step_tasks
+      .filter((task) => task.step_slug === stepSlug)
+      .sort((a, b) => (a.step_index || 0) - (b.step_index || 0));
   };
 
   const sortedSteps = getOrderedStepStates();
@@ -114,16 +116,19 @@ export default function WebsiteAnalysisUI({
     );
 
     try {
-      // Find the step tasks by their step_slug exactly as defined in analyze_website.ts
-      const summaryTask = runData.step_tasks.find(
-        (task) => task.step_slug === 'summary',
+      // Find the step tasks by their step_slug but use our ordered tasks
+      const summaryTasks = getOrderedStepTasks('summary');
+      const sentimentTasks = getOrderedStepTasks('sentiment');
+      const tagsTasks = getOrderedStepTasks('tags');
+
+      // Get the completed tasks
+      const summaryTask = summaryTasks.find(
+        (task) => task.status === 'completed',
       );
-      const sentimentTask = runData.step_tasks.find(
-        (task) => task.step_slug === 'sentiment',
+      const sentimentTask = sentimentTasks.find(
+        (task) => task.status === 'completed',
       );
-      const tagsTask = runData.step_tasks.find(
-        (task) => task.step_slug === 'tags',
-      );
+      const tagsTask = tagsTasks.find((task) => task.status === 'completed');
 
       // Extract summary
       let summary = '';
@@ -448,18 +453,20 @@ export default function WebsiteAnalysisUI({
                       <div className="flex-shrink-0 mt-1">
                         <div
                           className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${(() => {
-                            // Find tasks for this step to check attempts count
-                            const stepTasks =
-                              runData.step_tasks?.filter(
-                                (task) => task.step_slug === step.step_slug,
-                              ) || [];
+                            // Use the getOrderedStepTasks function to get pre-ordered tasks
+                            const orderedStepTasks = getOrderedStepTasks(
+                              step.step_slug,
+                            );
 
                             // Get the most recent task (usually the one with the highest attempts_count)
-                            const latestTask = stepTasks.sort(
-                              (a, b) =>
-                                (b.attempts_count || 0) -
-                                (a.attempts_count || 0),
-                            )[0];
+                            const latestTask =
+                              orderedStepTasks.length > 0
+                                ? [...orderedStepTasks].sort(
+                                    (a, b) =>
+                                      (b.attempts_count || 0) -
+                                      (a.attempts_count || 0),
+                                  )[0]
+                                : null;
 
                             // Check if this is a retry (attempts_count > 1)
                             const isRetrying =
@@ -505,18 +512,20 @@ export default function WebsiteAnalysisUI({
                         </h3>
                         <p className="text-sm text-muted-foreground">
                           {(() => {
-                            // Find tasks for this step to check attempts count
-                            const stepTasks =
-                              runData.step_tasks?.filter(
-                                (task) => task.step_slug === step.step_slug,
-                              ) || [];
+                            // Use the getOrderedStepTasks function to get pre-ordered tasks
+                            const orderedStepTasks = getOrderedStepTasks(
+                              step.step_slug,
+                            );
 
                             // Get the most recent task (usually the one with the highest attempts_count)
-                            const latestTask = stepTasks.sort(
-                              (a, b) =>
-                                (b.attempts_count || 0) -
-                                (a.attempts_count || 0),
-                            )[0];
+                            const latestTask =
+                              orderedStepTasks.length > 0
+                                ? [...orderedStepTasks].sort(
+                                    (a, b) =>
+                                      (b.attempts_count || 0) -
+                                      (a.attempts_count || 0),
+                                  )[0]
+                                : null;
 
                             // Check if this is a retry (attempts_count > 1)
                             const isRetrying =
@@ -539,12 +548,13 @@ export default function WebsiteAnalysisUI({
                         </p>
                         {step.status === 'failed' &&
                           (() => {
-                            // Find the failed task for this step
-                            const failedTask = runData.step_tasks?.find(
+                            // Get the ordered tasks and find the failed one
+                            const orderedStepTasks = getOrderedStepTasks(
+                              step.step_slug,
+                            );
+                            const failedTask = orderedStepTasks.find(
                               (task) =>
-                                task.step_slug === step.step_slug &&
-                                task.status === 'failed' &&
-                                task.error_message,
+                                task.status === 'failed' && task.error_message,
                             );
 
                             return failedTask?.error_message ? (
