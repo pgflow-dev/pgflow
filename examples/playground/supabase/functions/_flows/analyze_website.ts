@@ -11,16 +11,16 @@ type Input = {
 
 export default new Flow<Input>({
   slug: 'analyze_website',
-  maxAttempts: 3,
-  timeout: 10,
-  baseDelay: 2,
+  maxAttempts: 1,
+  timeout: 3,
+  baseDelay: 1,
 })
   .step(
-    { slug: 'website' },
+    { slug: 'website', maxAttempts: 2 },
     async (input) => await scrapeWebsite(input.run.url),
   )
   .step(
-    { slug: 'sentiment', dependsOn: ['website'], timeout: 30, maxAttempts: 5 },
+    { slug: 'sentiment', dependsOn: ['website'] },
     async (input) => await analyzeSentiment(input.website.content),
   )
   .step(
