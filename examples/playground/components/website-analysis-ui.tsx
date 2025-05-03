@@ -53,7 +53,14 @@ export default function WebsiteAnalysisUI({
   const isFailed = runData?.status === 'failed';
   const isRunning = runData?.status === 'started';
   const showSteps = runData && (isRunning || isCompleted || isFailed);
-  const showSummary = runData && isCompleted;
+  
+  // For summary, check if:
+  // 1. We have runData
+  // 2. Status is completed OR (the summary task is completed, even if run is still in progress)
+  const summaryTaskCompleted = runData?.step_tasks?.some(task => 
+    task.step_slug === 'summary' && task.status === 'completed' && task.output
+  );
+  const showSummary = runData && (isCompleted || summaryTaskCompleted);
   const showAnalyzeAnother = runData && (isCompleted || isFailed);
 
   // Auto-collapse steps when flow completes
@@ -82,46 +89,64 @@ export default function WebsiteAnalysisUI({
     sentiment: string;
     tags: string[];
   } => {
+    console.log('=== Analysis Summary Called ===');
+    console.log('isCompleted:', isCompleted);
+    console.log('Full runData:', runData);
+    
     if (!runData?.step_tasks || runData.step_tasks.length === 0) {
+      console.log('No step tasks found in runData');
       return { summary: '', sentiment: 'neutral', tags: [] };
     }
 
+    // Debug: Log the available step tasks
+    console.log('Available step tasks:', runData.step_tasks.map(task => ({
+      step_slug: task.step_slug,
+      status: task.status,
+      has_output: !!task.output,
+      output: task.output
+    })));
+
     try {
-      // Find the step tasks by their step_slug
+      // Find the step tasks by their step_slug exactly as defined in analyze_website.ts
       const summaryTask = runData.step_tasks.find(task => task.step_slug === 'summary');
       const sentimentTask = runData.step_tasks.find(task => task.step_slug === 'sentiment');
       const tagsTask = runData.step_tasks.find(task => task.step_slug === 'tags');
 
       // Extract summary
       let summary = '';
-      if (summaryTask?.output && typeof summaryTask.output === 'object') {
+      if (summaryTask?.output) {
+        console.log('Found summary task output:', summaryTask.output);
+        // Use the output directly as a JSON object
         const summaryOutput = summaryTask.output as any;
-        summary = typeof summaryOutput.summary === 'string' 
-          ? summaryOutput.summary 
-          : summaryOutput.text || '';
+        // Look for aiSummary field based on flow definition
+        summary = summaryOutput.aiSummary || '';
       }
 
       // Extract sentiment
       let sentiment = 'neutral';
-      if (sentimentTask?.output && typeof sentimentTask.output === 'object') {
+      if (sentimentTask?.output) {
+        console.log('Found sentiment task output:', sentimentTask.output);
+        // Use the output directly as a JSON object
         const sentimentOutput = sentimentTask.output as any;
         
-        // Handle numerical sentiment
-        if (typeof sentimentOutput.sentiment === 'number') {
-          if (sentimentOutput.sentiment >= 0.7) sentiment = 'positive';
-          else if (sentimentOutput.sentiment < 0.3) sentiment = 'negative';
-        } 
-        // Handle string sentiment
-        else if (typeof sentimentOutput.sentiment === 'string') {
-          sentiment = sentimentOutput.sentiment.toLowerCase();
+        // Handle numerical sentiment using 'score' field based on flow definition
+        if (typeof sentimentOutput.score === 'number') {
+          if (sentimentOutput.score >= 0.7) sentiment = 'positive';
+          else if (sentimentOutput.score < 0.3) sentiment = 'negative';
         }
       }
 
       // Extract tags
       let tags: string[] = [];
-      if (tagsTask?.output && typeof tagsTask.output === 'object') {
-        const tagsOutput = tagsTask.output as any;
-        tags = Array.isArray(tagsOutput.tags) ? tagsOutput.tags : [];
+      if (tagsTask?.output) {
+        console.log('Found tags task output:', tagsTask.output);
+        // Based on flow definition, tags task directly returns the keywords array
+        const tagsOutput = tagsTask.output;
+        
+        // Use output directly as it should be an array of strings
+        if (Array.isArray(tagsOutput)) {
+          tags = tagsOutput;
+        }
       }
 
       return { summary, sentiment, tags };

@@ -80,24 +80,37 @@ export function observeFlowRun({
 } & ObserveFlowRunCallbacks) {
   const supabase = createClient();
 
-  const eventSpec: RealtimePostgresChangesFilter<`${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.UPDATE}`> =
+  const updateEventSpec: RealtimePostgresChangesFilter<`${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.UPDATE}`> =
     {
       schema: 'pgflow',
       event: 'UPDATE',
       filter: `run_id=eq.${runId}`,
     };
+    
+  const insertEventSpec: RealtimePostgresChangesFilter<`${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.INSERT}`> =
+    {
+      schema: 'pgflow',
+      event: 'INSERT',
+      filter: `run_id=eq.${runId}`,
+    };
 
   const realtimeChannel = supabase
     .channel(`flow_run_${runId}`)
-    .on('postgres_changes', { ...eventSpec, table: 'runs' }, onRunUpdate)
+    .on('postgres_changes', { ...updateEventSpec, table: 'runs' }, onRunUpdate)
     .on(
       'postgres_changes',
-      { ...eventSpec, table: 'step_states' },
+      { ...updateEventSpec, table: 'step_states' },
       onStepStateUpdate,
     )
     .on(
       'postgres_changes' as any,
-      { ...eventSpec, table: 'step_tasks' },
+      { ...updateEventSpec, table: 'step_tasks' },
+      onStepTaskUpdate,
+    )
+    // Also listen for INSERTs on step_tasks
+    .on(
+      'postgres_changes' as any,
+      { ...insertEventSpec, table: 'step_tasks' },
       onStepTaskUpdate,
     )
     .subscribe();

@@ -153,19 +153,26 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     const handleStepTaskUpdate = (
       payload: RealtimePostgresUpdatePayload<StepTaskRow>,
     ) => {
-      console.log('Step task updated:', payload);
+      // Log appropriately for INSERT or UPDATE event
+      const isInsert = !payload.old;
+      console.log(`Step task ${isInsert ? 'created' : 'updated'}:`, payload);
 
       setRunData((prevData) => {
         if (!prevData) return null;
 
-        // Find the index of the updated step task
-        const stepTaskIndex = prevData.step_tasks.findIndex(
-          (task) => task.step_slug === payload.new.step_slug,
+        let updatedStepTasks: StepTaskRow[];
+        const existingTaskIndex = prevData.step_tasks.findIndex(
+          (task) => task.id === payload.new.id,
         );
 
-        // Create a new array of step tasks with the updated one
-        const updatedStepTasks = [...prevData.step_tasks];
-        updatedStepTasks[stepTaskIndex] = payload.new;
+        if (existingTaskIndex >= 0) {
+          // Update existing task
+          updatedStepTasks = [...prevData.step_tasks];
+          updatedStepTasks[existingTaskIndex] = payload.new;
+        } else {
+          // Add new task
+          updatedStepTasks = [...prevData.step_tasks, payload.new];
+        }
 
         // Create a mapping of step_slug to step_index from step_states to maintain order
         const stepIndexMap = new Map<string, number>();
@@ -195,16 +202,43 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       runId,
       onRunUpdate(payload: RealtimePostgresUpdatePayload<RunRow>) {
         console.log('Run updated:', payload);
+        
+        // When run is marked as completed, fetch all data again to ensure we have all step outputs
+        if (payload.new.status === 'completed') {
+          console.log('Run completed - fetching full data to ensure we have all step outputs');
+          
+          // Fetch fresh data from API
+          fetchFlowRunData(runId).then(({ data, error }) => {
+            if (error) {
+              console.error('Error fetching complete run data:', error);
+            } else if (data) {
+              console.log('Fetched complete run data:', data);
+              setRunData(data);
+            }
+          });
+          
+          return;
+        }
 
-        // Update only the run data without refetching everything
+        // For other updates, update only the run data without refetching everything
         setRunData((prevData) => {
           if (!prevData) return null;
 
+          console.log('Before update - prevData.step_tasks:', prevData.step_tasks);
+          
           // Create a new object with the updated run data
-          return {
+          // Important: Keep step_tasks and step_states from prevData intact
+          const updatedData = {
             ...prevData,
             ...payload.new,
+            // Preserve the step_tasks and step_states - don't overwrite them!
+            step_tasks: prevData.step_tasks, 
+            step_states: prevData.step_states,
           } as ResultRow;
+          
+          console.log('After update - updatedData.step_tasks:', updatedData.step_tasks);
+          
+          return updatedData;
         });
       },
       onStepStateUpdate: handleStepStateUpdate,
