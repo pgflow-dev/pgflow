@@ -18,9 +18,9 @@ function DualPanelContent() {
   } = useFlowRun();
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div className="flex flex-col lg:flex-row">
       {/* Main panel: User-friendly UI */}
-      <div className="lg:col-span-7 xl:col-span-8">
+      <div className="lg:w-[65%] xl:w-[70%] lg:pr-6">
         <WebsiteAnalysisUI
           runData={runData}
           loading={loading}
@@ -31,18 +31,20 @@ function DualPanelContent() {
         />
       </div>
 
-      {/* Side panel: Technical details */}
-      <div className="lg:col-span-5 xl:col-span-4 opacity-80">
-        <h3 className="text-lg font-medium mb-2 text-muted-foreground">
-          Technical Details about Flow Run
-        </h3>
-        <FlowRunDetails
-          runId={runData?.run_id || ''}
-          runData={runData}
-          loading={loading}
-          error={error}
-          currentTime={currentTime}
-        />
+      {/* Side panel: Technical details - fixed position */}
+      <div className="lg:w-[35%] xl:w-[30%] opacity-80">
+        <div className="fixed top-16 bottom-4 right-4 lg:w-[calc(35%-2rem)] xl:w-[calc(30%-2rem)] overflow-hidden flex flex-col">
+          <h3 className="text-lg font-medium mb-2 text-muted-foreground">
+            Technical Details about Flow Run
+          </h3>
+          <FlowRunDetails
+            runId={runData?.run_id || ''}
+            runData={runData}
+            loading={loading}
+            error={error}
+            currentTime={currentTime}
+          />
+        </div>
       </div>
     </div>
   );

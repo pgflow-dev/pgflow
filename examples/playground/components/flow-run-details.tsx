@@ -141,7 +141,7 @@ export default function FlowRunDetails({
   }
 
   return (
-    <div className="p-2 border rounded-lg shadow-sm">
+    <div className="p-2 border rounded-lg shadow-sm flex-1 overflow-y-auto">
       {runData ? (
         <div className="space-y-3">
           <h3 className="text-base font-medium mb-1">Status</h3>
@@ -382,7 +382,7 @@ export default function FlowRunDetails({
           <summary className="cursor-pointer text-xs text-muted-foreground">
             View Raw Data
           </summary>
-          <pre className="mt-1 p-2 bg-muted rounded-md text-xs overflow-auto max-h-[400px]">
+          <pre className="mt-1 p-2 bg-muted rounded-md text-xs overflow-auto max-h-[300px]">
             {JSON.stringify(runData, null, 2)}
           </pre>
         </details>
