@@ -3,12 +3,16 @@ import { describe, it, expectTypeOf } from 'vitest';
 
 describe('ExtractFlowOutput utility type', () => {
   it('should return an empty object for a flow without steps', () => {
-    // Use type only instead of creating an unused variable
-    type EmptyFlow = Flow<unknown>;
-    type FlowOutput = ExtractFlowOutput<EmptyFlow>;
+    // Use type assertion to avoid unused variable warning
+    const emptyFlow = new Flow({ slug: 'empty_flow' });
+    // Use a type-only variable to avoid the unused variable warning
+    type EmptyFlowType = typeof emptyFlow;
+
+    type FlowOutput = ExtractFlowOutput<EmptyFlowType>;
 
     // For an empty flow, output is an empty object
-    expectTypeOf<FlowOutput>().toEqualTypeOf<Record<string, never>>();
+    // Using Record<never, never> instead of {} to avoid ESLint error
+    expectTypeOf<FlowOutput>().toEqualTypeOf<Record<never, never>>();
     expectTypeOf<keyof FlowOutput>().toEqualTypeOf<never>();
   });
 
@@ -19,11 +23,13 @@ describe('ExtractFlowOutput utility type', () => {
       result: input.run.input.toUpperCase(),
     }));
 
-    type FlowOutput = ExtractFlowOutput<typeof singleStepFlow>;
+    type SingleStepFlowType = typeof singleStepFlow;
+
+    type FlowOutput = ExtractFlowOutput<SingleStepFlowType>;
 
     // The only leaf step is "process", whose output type is StepOutput<typeof singleStepFlow, 'process'>
     expectTypeOf<FlowOutput>().toMatchTypeOf<{
-      process: StepOutput<typeof singleStepFlow, 'process'>;
+      process: StepOutput<SingleStepFlowType, 'process'>;
     }>();
 
     // The value for process in output should match its StepOutput type

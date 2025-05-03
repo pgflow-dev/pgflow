@@ -1,0 +1,41 @@
+{
+  "name": "playground",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "start-functions": "npx supabase@latest functions serve",
+    "start-workers": "for workerIndex in 0 1; do curl http://127.0.0.1:54321/functions/v1/analyze_website_worker_$workerIndex; done",
+    "gen-types": "npx supabase@latest gen types --local --schema public --schema pgflow > supabase/functions/database-types.d.ts"
+  },
+  "dependencies": {
+    "@radix-ui/react-checkbox": "^1.1.1",
+    "@radix-ui/react-collapsible": "^1.1.8",
+    "@radix-ui/react-dropdown-menu": "^2.1.1",
+    "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@supabase/ssr": "latest",
+    "@supabase/supabase-js": "latest",
+    "autoprefixer": "10.4.20",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.9.2",
+    "lucide-react": "^0.468.0",
+    "next": "latest",
+    "next-themes": "^0.4.3",
+    "prettier": "^3.3.3",
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "19.0.2",
+    "postcss": "8.4.49",
+    "tailwind-merge": "^2.5.2",
+    "tailwindcss": "3.4.17",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "5.7.2"
+  }
+}

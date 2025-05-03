@@ -1,0 +1,15 @@
+{
+  "name": "basic-flows",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"No tests, no worries\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "supabase": "^2.22.4"
+  }
+}
