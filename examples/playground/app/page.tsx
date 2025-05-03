@@ -2,6 +2,7 @@ import Hero from '@/components/hero';
 import WebsiteAnalyzerForm from '@/components/website-analyzer-form';
 import AuthRedirectHandler from '@/components/auth-redirect-handler';
 import { createClient } from '@/utils/supabase/server';
+import { exampleLinks } from '@/lib/example-links';
 
 export default async function Home() {
   const supabase = await createClient();
@@ -35,30 +36,19 @@ export default async function Home() {
                 Example Websites to Analyze
               </h3>
               <div className="flex flex-wrap gap-4">
-                <a
-                  href="/websites?url=https://reddit.com/r/supabase"
-                  className="inline-flex px-3 py-2 bg-green-100 text-green-800 hover:bg-green-200 rounded-md text-sm font-medium"
-                >
-                  reddit.com/r/supabase
-                </a>
-                <a
-                  href="/websites?url=https://supabase.com/docs"
-                  className="inline-flex px-3 py-2 bg-green-100 text-green-800 hover:bg-green-200 rounded-md text-sm font-medium"
-                >
-                  supabase.com/docs
-                </a>
-                <a
-                  href="/websites?url=https://pgflow.dev"
-                  className="inline-flex px-3 py-2 bg-green-100 text-green-800 hover:bg-green-200 rounded-md text-sm font-medium"
-                >
-                  pgflow.dev
-                </a>
-                <a
-                  href="/websites?url=https://firebase.google.com/"
-                  className="inline-flex px-3 py-2 bg-red-100 text-red-800 hover:bg-red-200 rounded-md text-sm font-medium"
-                >
-                  Demo Failure
-                </a>
+                {exampleLinks.map((link) => (
+                  <a
+                    key={link.url}
+                    href={`/websites?url=${link.url}`}
+                    className={`inline-flex px-3 py-2 ${
+                      link.variant === 'success'
+                        ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                        : 'bg-red-100 text-red-800 hover:bg-red-200'
+                    } rounded-md text-sm font-medium`}
+                  >
+                    {link.label}
+                  </a>
+                ))}
               </div>
             </div>
           </div>

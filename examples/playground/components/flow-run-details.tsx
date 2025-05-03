@@ -22,7 +22,7 @@ const breathingAnimation = `
 }
 `;
 
-// Format time difference in a human-readable way
+// Format time difference in a concise way (e.g., "5s", "3m 45s", "2h 15m")
 function formatTimeDifference(
   startDate: string | null,
   endDate: string | null,
@@ -36,27 +36,27 @@ function formatTimeDifference(
   const diffSec = Math.floor(diffMs / 1000);
 
   if (diffSec < 1) {
-    return 'less than a second';
+    return '< 1s';
   }
 
   if (diffSec < 60) {
-    return `${diffSec} second${diffSec !== 1 ? 's' : ''}`;
+    return `${diffSec}s`;
   }
 
   const minutes = Math.floor(diffSec / 60);
   const seconds = diffSec % 60;
 
   if (minutes < 60) {
-    return `${minutes} minute${minutes !== 1 ? 's' : ''} ${seconds} second${seconds !== 1 ? 's' : ''}`;
+    return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
   }
 
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
 
-  return `${hours} hour${hours !== 1 ? 's' : ''} ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}`;
+  return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
 }
 
-// Format relative time (e.g., "3 seconds ago")
+// Format relative time in a concise way (e.g., "3s ago", "5m ago")
 function formatRelativeTime(
   date: string | null,
   now: Date = new Date(),
@@ -69,27 +69,27 @@ function formatRelativeTime(
 
   // Handle case where time difference is negative (server/client time mismatch)
   if (diffSec < 1) {
-    return 'just now';
+    return '0s';
   }
 
   if (diffSec < 60) {
-    return `${diffSec} second${diffSec !== 1 ? 's' : ''} ago`;
+    return `${diffSec}s`;
   }
 
   const minutes = Math.floor(diffSec / 60);
 
   if (minutes < 60) {
-    return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+    return `${minutes}m`;
   }
 
   const hours = Math.floor(minutes / 60);
 
   if (hours < 24) {
-    return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    return `${hours}h`;
   }
 
   const days = Math.floor(hours / 24);
-  return `${days} day${days !== 1 ? 's' : ''} ago`;
+  return `${days}d`;
 }
 
 interface FlowRunDetailsProps {
@@ -164,14 +164,14 @@ export default function FlowRunDetails({
                 {runData.status === 'started' ? 'running' : runData.status}
               </span>
             </div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs">
               {runData.status === 'started' && runData.started_at && (
-                <span>
+                <span className="text-yellow-600/80">
                   Running for {formatTimeDifference(runData.started_at, null)}
                 </span>
               )}
               {runData.status === 'completed' && runData.completed_at && (
-                <span>
+                <span className="text-green-600/80">
                   Took{' '}
                   {formatTimeDifference(
                     runData.started_at,
@@ -180,8 +180,8 @@ export default function FlowRunDetails({
                 </span>
               )}
               {runData.status === 'failed' && runData.failed_at && (
-                <span>
-                  Failed after
+                <span className="text-red-600/80">
+                  Failed after{' '}
                   {formatTimeDifference(runData.started_at, runData.failed_at)}
                 </span>
               )}
@@ -230,8 +230,10 @@ export default function FlowRunDetails({
                     // Find the corresponding step tasks for this step
                     const stepTasks = runData.step_tasks
                       ?.filter((task) => task.step_slug === step.step_slug)
-                      .sort((a, b) => (a.step_index || 0) - (b.step_index || 0));
-                      
+                      .sort(
+                        (a, b) => (a.step_index || 0) - (b.step_index || 0),
+                      );
+
                     // Get the completed task with output
                     const stepTask = stepTasks?.find(
                       (task) => task.status === 'completed',
@@ -240,33 +242,37 @@ export default function FlowRunDetails({
                     return (
                       <Collapsible
                         key={index}
-                        className={`mb-1 rounded-lg border ${
-                          (() => {
-                            // Get the pre-sorted step tasks from above
-                            const latestTask = stepTasks && stepTasks.length > 0 
-                              ? stepTasks.sort((a, b) => 
-                                (b.attempts_count || 0) - (a.attempts_count || 0)
-                              )[0]
+                        className={`mb-1 rounded-lg border ${(() => {
+                          // Get the pre-sorted step tasks from above
+                          const latestTask =
+                            stepTasks && stepTasks.length > 0
+                              ? stepTasks.sort(
+                                  (a, b) =>
+                                    (b.attempts_count || 0) -
+                                    (a.attempts_count || 0),
+                                )[0]
                               : null;
-                            
-                            // Check if this is a retry (attempts_count > 1)
-                            const isRetrying = latestTask && latestTask.attempts_count > 1 && step.status === 'started';
-                            
-                            if (step.status === 'completed') {
-                              return 'bg-green-500/5 border-green-500/30';
-                            } else if (isRetrying) {
-                              return 'bg-red-500/5 border-red-500/30 animate-pulse';
-                            } else if (step.status === 'started') {
-                              return 'bg-yellow-500/5 border-yellow-500/30';
-                            } else if (step.status === 'failed') {
-                              return 'bg-red-500/5 border-red-500/30';
-                            } else if (step.status === 'created') {
-                              return 'bg-blue-500/5 border-blue-500/30';
-                            } else {
-                              return 'bg-gray-500/5 border-gray-500/30';
-                            }
-                          })()
-                        }`}
+
+                          // Check if this is a retry (attempts_count > 1)
+                          const isRetrying =
+                            latestTask &&
+                            latestTask.attempts_count > 1 &&
+                            step.status === 'started';
+
+                          if (step.status === 'completed') {
+                            return 'bg-green-500/5 border-green-500/30';
+                          } else if (isRetrying) {
+                            return 'bg-red-500/5 border-red-500/30 animate-pulse';
+                          } else if (step.status === 'started') {
+                            return 'bg-yellow-500/5 border-yellow-500/30';
+                          } else if (step.status === 'failed') {
+                            return 'bg-red-500/5 border-red-500/30';
+                          } else if (step.status === 'created') {
+                            return 'bg-blue-500/5 border-blue-500/30';
+                          } else {
+                            return 'bg-gray-500/5 border-gray-500/30';
+                          }
+                        })()}`}
                       >
                         <CollapsibleTrigger className="flex items-center justify-between w-full p-2 text-left">
                           <div>
@@ -276,7 +282,7 @@ export default function FlowRunDetails({
                           </div>
                           <div className="flex items-center">
                             {step.status === 'started' && step.started_at && (
-                              <span className="text-xs text-muted-foreground mr-2">
+                              <span className="text-xs text-yellow-600/80 mr-2">
                                 {formatRelativeTime(
                                   step.started_at,
                                   currentTime,
@@ -286,7 +292,7 @@ export default function FlowRunDetails({
                             {step.status === 'completed' &&
                               step.started_at &&
                               step.completed_at && (
-                                <span className="text-xs text-muted-foreground mr-2">
+                                <span className="text-xs text-green-600/80 mr-2">
                                   {formatTimeDifference(
                                     step.started_at,
                                     step.completed_at,
@@ -296,7 +302,7 @@ export default function FlowRunDetails({
                             {step.status === 'failed' &&
                               step.started_at &&
                               step.failed_at && (
-                                <span className="text-xs text-muted-foreground mr-2">
+                                <span className="text-xs text-red-600/80 mr-2">
                                   Failed after{' '}
                                   {formatTimeDifference(
                                     step.started_at,
@@ -306,15 +312,21 @@ export default function FlowRunDetails({
                               )}
                             {(() => {
                               // Use the pre-sorted step tasks from above
-                              const latestTask = stepTasks && stepTasks.length > 0 
-                                ? stepTasks.sort((a, b) => 
-                                  (b.attempts_count || 0) - (a.attempts_count || 0)
-                                )[0]
-                                : null;
-                              
+                              const latestTask =
+                                stepTasks && stepTasks.length > 0
+                                  ? stepTasks.sort(
+                                      (a, b) =>
+                                        (b.attempts_count || 0) -
+                                        (a.attempts_count || 0),
+                                    )[0]
+                                  : null;
+
                               // Check if this is a retry (attempts_count > 1)
-                              const isRetrying = latestTask && latestTask.attempts_count > 1 && step.status === 'started';
-                              
+                              const isRetrying =
+                                latestTask &&
+                                latestTask.attempts_count > 1 &&
+                                step.status === 'started';
+
                               return (
                                 <span
                                   className={`inline-block w-2 h-2 rounded-full mr-1 ${
@@ -336,15 +348,21 @@ export default function FlowRunDetails({
                             <span className="capitalize text-xs">
                               {(() => {
                                 // Use the pre-sorted step tasks from above
-                                const latestTask = stepTasks && stepTasks.length > 0 
-                                  ? stepTasks.sort((a, b) => 
-                                    (b.attempts_count || 0) - (a.attempts_count || 0)
-                                  )[0]
-                                  : null;
-                                
+                                const latestTask =
+                                  stepTasks && stepTasks.length > 0
+                                    ? stepTasks.sort(
+                                        (a, b) =>
+                                          (b.attempts_count || 0) -
+                                          (a.attempts_count || 0),
+                                      )[0]
+                                    : null;
+
                                 // Check if this is a retry (attempts_count > 1)
-                                const isRetrying = latestTask && latestTask.attempts_count > 1 && step.status === 'started';
-                                
+                                const isRetrying =
+                                  latestTask &&
+                                  latestTask.attempts_count > 1 &&
+                                  step.status === 'started';
+
                                 if (isRetrying) {
                                   return `retrying (retry ${latestTask.attempts_count - 1})`;
                                 } else if (step.status === 'created') {
