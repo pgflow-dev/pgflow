@@ -29,6 +29,36 @@ export default async function Home() {
                 </p>
               </div>
             )}
+            
+            <div className="mt-6">
+              <h3 className="text-lg font-medium mb-2">Example Websites to Analyze</h3>
+              <div className="flex flex-wrap gap-4">
+                <a
+                  href="/websites?url=https://reddit.com/r/supabase"
+                  className="inline-flex px-3 py-2 bg-green-100 text-green-800 hover:bg-green-200 rounded-md text-sm font-medium"
+                >
+                  reddit.com/r/supabase
+                </a>
+                <a
+                  href="/websites?url=https://supabase.com/docs"
+                  className="inline-flex px-3 py-2 bg-green-100 text-green-800 hover:bg-green-200 rounded-md text-sm font-medium"
+                >
+                  supabase.com/docs
+                </a>
+                <a
+                  href="/websites?url=https://pgflow.dev"
+                  className="inline-flex px-3 py-2 bg-green-100 text-green-800 hover:bg-green-200 rounded-md text-sm font-medium"
+                >
+                  pgflow.dev
+                </a>
+                <a
+                  href="/websites?url=https://failure.com"
+                  className="inline-flex px-3 py-2 bg-red-100 text-red-800 hover:bg-red-200 rounded-md text-sm font-medium"
+                >
+                  Demo Failure
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </main>

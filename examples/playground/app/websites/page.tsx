@@ -14,16 +14,57 @@ type WebsiteRow = Database['public']['Tables']['websites']['Row'];
 export default function Page() {
   const [websites, setWebsites] = useState<WebsiteRow[] | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [url, setUrl] = useState('https://reddit.com/r/supabase');
   const supabase = createClient();
   const router = useRouter();
 
+  // Process URL parameter when the component mounts
   useEffect(() => {
     const getData = async () => {
       const { data } = await supabase.from('websites').select();
       setWebsites(data);
     };
     getData();
+    
+    // Check for URL parameter and start analysis if present
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlParam = urlParams.get('url');
+      
+      if (urlParam) {
+        setUrl(urlParam);
+        console.log("Found URL parameter, starting analysis:", urlParam);
+        startAnalysis(urlParam);
+      }
+    }
   }, []);
+  
+  async function startAnalysis(url: string) {
+    if (!url) {
+      setFormError('Please enter a URL');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.rpc('start_analyze_website_flow', {
+        url,
+      });
+
+      if (error) {
+        setFormError(error.message);
+        return;
+      }
+
+      if (data && data.run_id) {
+        router.push(`/websites/runs/${data.run_id}`);
+      } else {
+        setFormError('Failed to start flow analysis');
+      }
+    } catch (error) {
+      setFormError('An error occurred while starting the analysis');
+      console.error(error);
+    }
+  }
 
   async function startAnalyzeWebsiteFlow(formData: FormData) {
     const url = formData.get('url') as string;
@@ -70,7 +111,8 @@ export default function Page() {
                 name="url"
                 id="url"
                 placeholder="https://example.com"
-                value="https://reddit.com/r/supabase"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
                 required
               />
             </div>
