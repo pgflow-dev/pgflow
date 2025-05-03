@@ -100,7 +100,7 @@ export default function Page() {
                     {websites.map((website) => (
                       <tr key={website.id} className="border-t">
                         <td className="p-3">{website.id}</td>
-                        <td className="p-3">{website.url}</td>
+                        <td className="p-3">{website.website_url}</td>
                         <td className="p-3">
                           {new Date(website.created_at).toLocaleString()}
                         </td>

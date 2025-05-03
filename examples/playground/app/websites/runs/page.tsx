@@ -84,16 +84,14 @@ export default function RunsListPage() {
           {runs.map((run) => (
             <Link
               key={run.run_id}
-                            href={`/websites/runs/${run.run_id}/dual-panel`}
+              href={`/websites/runs/${run.run_id}/dual-panel`}
               className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-medium">
-                    {run.run_name || 'analyze_website'}
-                  </h2>
+                  <h2 className="text-lg font-medium">{run.flow_slug}</h2>
                   <p className="text-sm text-muted-foreground">
-                    {new Date(run.created_at).toLocaleString()}
+                    {new Date(run.started_at).toLocaleString()}
                   </p>
                 </div>
                 <div className="flex items-center">
