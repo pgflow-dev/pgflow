@@ -206,7 +206,10 @@ export default function WebsiteAnalysisUI({
       {(isCompleted || isFailed) && (
         <div className="mb-6">
           <h3 className="text-base font-medium mb-2">Analyze Website</h3>
-          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col sm:flex-row gap-2"
+          >
             <Input
               id="url-new"
               type="url"
@@ -224,34 +227,36 @@ export default function WebsiteAnalysisUI({
           {analyzeError && (
             <div className="text-sm text-destructive mt-2">{analyzeError}</div>
           )}
-          
+
           {/* Example site links */}
           <div className="mt-2 flex items-center text-xs">
             <span className="text-muted-foreground mr-2">Examples:</span>
             <div className="flex flex-wrap gap-2">
-              <button 
-                onClick={() => onAnalyzeWebsite('https://reddit.com/r/supabase')}
+              <button
+                onClick={() =>
+                  onAnalyzeWebsite('https://reddit.com/r/supabase')
+                }
                 className="text-green-600 hover:bg-green-50 px-2 py-1 rounded hover:text-green-700"
                 disabled={analyzeLoading}
               >
                 reddit.com/r/supabase
               </button>
-              <button 
+              <button
                 onClick={() => onAnalyzeWebsite('https://supabase.com/docs')}
                 className="text-green-600 hover:bg-green-50 px-2 py-1 rounded hover:text-green-700"
                 disabled={analyzeLoading}
               >
                 supabase.com/docs
               </button>
-              <button 
+              <button
                 onClick={() => onAnalyzeWebsite('https://pgflow.dev')}
                 className="text-green-600 hover:bg-green-50 px-2 py-1 rounded hover:text-green-700"
                 disabled={analyzeLoading}
               >
                 pgflow.dev
               </button>
-              <button 
-                onClick={() => onAnalyzeWebsite('https://failure.com')}
+              <button
+                onClick={() => onAnalyzeWebsite('https://firebase.google.com/')}
                 className="text-red-600 hover:bg-red-50 px-2 py-1 rounded hover:text-red-700"
                 disabled={analyzeLoading}
               >
@@ -261,7 +266,7 @@ export default function WebsiteAnalysisUI({
           </div>
         </div>
       )}
-      
+
       <AnimatePresence>
         {/* Initial URL input form - only show when no analysis is running or completed */}
         {!showSteps && !showSummary && (
@@ -289,20 +294,22 @@ export default function WebsiteAnalysisUI({
                 {loading ? 'Analyzing...' : 'Analyze Website'}
               </Button>
             </form>
-            
+
             {/* Example site links */}
             <div className="mt-2 flex items-center text-xs">
               <span className="text-muted-foreground mr-2">Examples:</span>
               <div className="flex flex-wrap gap-2">
-                <button 
+                <button
                   type="button"
-                  onClick={() => onAnalyzeWebsite('https://reddit.com/r/supabase')}
+                  onClick={() =>
+                    onAnalyzeWebsite('https://reddit.com/r/supabase')
+                  }
                   className="text-green-600 hover:bg-green-50 px-2 py-1 rounded hover:text-green-700"
                   disabled={loading}
                 >
                   reddit.com/r/supabase
                 </button>
-                <button 
+                <button
                   type="button"
                   onClick={() => onAnalyzeWebsite('https://supabase.com/docs')}
                   className="text-green-600 hover:bg-green-50 px-2 py-1 rounded hover:text-green-700"
@@ -310,7 +317,7 @@ export default function WebsiteAnalysisUI({
                 >
                   supabase.com/docs
                 </button>
-                <button 
+                <button
                   type="button"
                   onClick={() => onAnalyzeWebsite('https://pgflow.dev')}
                   className="text-green-600 hover:bg-green-50 px-2 py-1 rounded hover:text-green-700"
@@ -318,7 +325,7 @@ export default function WebsiteAnalysisUI({
                 >
                   pgflow.dev
                 </button>
-                <button 
+                <button
                   type="button"
                   onClick={() => onAnalyzeWebsite('https://failure.com')}
                   className="text-red-600 hover:bg-red-50 px-2 py-1 rounded hover:text-red-700"
@@ -341,7 +348,7 @@ export default function WebsiteAnalysisUI({
           >
             {/* Show the header when running or failed */}
             {(isRunning || isFailed) && (
-              <div 
+              <div
                 onClick={() => {
                   // Only allow toggling if not failed
                   if (!isFailed) {
@@ -349,8 +356,8 @@ export default function WebsiteAnalysisUI({
                   }
                 }}
                 className={`flex justify-between items-center mb-4 p-2 rounded-md ${
-                  isFailed 
-                    ? 'border border-red-200 bg-red-50/30' 
+                  isFailed
+                    ? 'border border-red-200 bg-red-50/30'
                     : 'cursor-pointer hover:bg-muted/50'
                 }`}
               >
@@ -369,13 +376,12 @@ export default function WebsiteAnalysisUI({
                     </span>
                   )}
                 </div>
-                {!isFailed && (
-                  analysisExpanded ? (
+                {!isFailed &&
+                  (analysisExpanded ? (
                     <ChevronUp className="h-4 w-4 text-muted-foreground" />
                   ) : (
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  )
-                )}
+                  ))}
               </div>
             )}
 
@@ -397,7 +403,17 @@ export default function WebsiteAnalysisUI({
                         aria-label="Close details"
                       >
                         <span>close details</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
                           <line x1="18" y1="6" x2="6" y2="18"></line>
                           <line x1="6" y1="6" x2="18" y2="18"></line>
                         </svg>
@@ -416,49 +432,53 @@ export default function WebsiteAnalysisUI({
                   </div>
                   {/* Steps are already sorted by the getOrderedStepStates function */}
                   {sortedSteps.map((step, index) => (
-                        <motion.div
-                          key={step.step_slug}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          className={`flex items-start space-x-4 ${
-                            isCompleted && step.status === 'completed'
-                              ? 'opacity-80'
-                              : step.status === 'created'
-                                ? 'opacity-50'
-                                : ''
-                          }`}
-                        >
+                    <motion.div
+                      key={step.step_slug}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className={`flex items-start space-x-4 ${
+                        isCompleted && step.status === 'completed'
+                          ? 'opacity-80'
+                          : step.status === 'created'
+                            ? 'opacity-50'
+                            : ''
+                      }`}
+                    >
                       <div className="flex-shrink-0 mt-1">
                         <div
-                          className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
-                            (() => {
-                              // Find tasks for this step to check attempts count
-                              const stepTasks = runData.step_tasks?.filter(
-                                (task) => task.step_slug === step.step_slug
+                          className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${(() => {
+                            // Find tasks for this step to check attempts count
+                            const stepTasks =
+                              runData.step_tasks?.filter(
+                                (task) => task.step_slug === step.step_slug,
                               ) || [];
-                              
-                              // Get the most recent task (usually the one with the highest attempts_count)
-                              const latestTask = stepTasks.sort((a, b) => 
-                                (b.attempts_count || 0) - (a.attempts_count || 0)
-                              )[0];
-                              
-                              // Check if this is a retry (attempts_count > 1)
-                              const isRetrying = latestTask && latestTask.attempts_count > 1 && step.status === 'started';
-                              
-                              if (step.status === 'completed') {
-                                return 'bg-green-500 border-green-500 text-white';
-                              } else if (isRetrying) {
-                                return 'border-red-500 text-red-500 animate-pulse';
-                              } else if (step.status === 'started') {
-                                return 'border-yellow-500 text-yellow-500';
-                              } else if (step.status === 'failed') {
-                                return 'border-red-500 text-red-500';
-                              } else {
-                                return 'border-gray-300 text-gray-300';
-                              }
-                            })()
-                          }`}
+
+                            // Get the most recent task (usually the one with the highest attempts_count)
+                            const latestTask = stepTasks.sort(
+                              (a, b) =>
+                                (b.attempts_count || 0) -
+                                (a.attempts_count || 0),
+                            )[0];
+
+                            // Check if this is a retry (attempts_count > 1)
+                            const isRetrying =
+                              latestTask &&
+                              latestTask.attempts_count > 1 &&
+                              step.status === 'started';
+
+                            if (step.status === 'completed') {
+                              return 'bg-green-500 border-green-500 text-white';
+                            } else if (isRetrying) {
+                              return 'border-red-500 text-red-500 animate-pulse';
+                            } else if (step.status === 'started') {
+                              return 'border-yellow-500 text-yellow-500';
+                            } else if (step.status === 'failed') {
+                              return 'border-red-500 text-red-500';
+                            } else {
+                              return 'border-gray-300 text-gray-300';
+                            }
+                          })()}`}
                         >
                           {step.status === 'completed' ? (
                             <svg
@@ -486,18 +506,24 @@ export default function WebsiteAnalysisUI({
                         <p className="text-sm text-muted-foreground">
                           {(() => {
                             // Find tasks for this step to check attempts count
-                            const stepTasks = runData.step_tasks?.filter(
-                              (task) => task.step_slug === step.step_slug
-                            ) || [];
-                            
+                            const stepTasks =
+                              runData.step_tasks?.filter(
+                                (task) => task.step_slug === step.step_slug,
+                              ) || [];
+
                             // Get the most recent task (usually the one with the highest attempts_count)
-                            const latestTask = stepTasks.sort((a, b) => 
-                              (b.attempts_count || 0) - (a.attempts_count || 0)
+                            const latestTask = stepTasks.sort(
+                              (a, b) =>
+                                (b.attempts_count || 0) -
+                                (a.attempts_count || 0),
                             )[0];
-                            
+
                             // Check if this is a retry (attempts_count > 1)
-                            const isRetrying = latestTask && latestTask.attempts_count > 1 && step.status === 'started';
-                            
+                            const isRetrying =
+                              latestTask &&
+                              latestTask.attempts_count > 1 &&
+                              step.status === 'started';
+
                             if (isRetrying) {
                               return `Retrying (Retry ${latestTask.attempts_count - 1})...`;
                             } else if (step.status === 'completed') {
@@ -536,10 +562,10 @@ export default function WebsiteAnalysisUI({
                       </div>
                     </motion.div>
                   ))}
-                  
+
                   {/* Duplicate collapse button at the bottom of expanded details */}
                   {!isRunning && !isFailed && (
-                    <div 
+                    <div
                       onClick={() => setAnalysisExpanded(false)}
                       className="flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-muted/50 border border-muted-foreground/20 mt-4"
                     >
@@ -565,18 +591,20 @@ export default function WebsiteAnalysisUI({
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
                 <h3 className="text-xl font-medium">Analysis Results</h3>
                 {!isRunning && (
-                  <div 
+                  <div
                     onClick={() => setAnalysisExpanded(!analysisExpanded)}
                     className="flex items-center gap-2 px-3 py-1 rounded-md cursor-pointer hover:bg-muted/50 border border-muted-foreground/20 mt-2 sm:mt-0 self-start"
                   >
                     <span className="text-sm font-medium">Details</span>
-                    <span className={`inline-flex items-center text-xs px-2 py-1 rounded-full ${
-                      runData?.status === 'completed' 
-                        ? 'bg-green-100 text-green-800' 
-                        : runData?.status === 'failed'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-blue-100 text-blue-800'
-                    }`}>
+                    <span
+                      className={`inline-flex items-center text-xs px-2 py-1 rounded-full ${
+                        runData?.status === 'completed'
+                          ? 'bg-green-100 text-green-800'
+                          : runData?.status === 'failed'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-blue-100 text-blue-800'
+                      }`}
+                    >
                       {runData?.status === 'completed' ? 'OK' : runData?.status}
                     </span>
                     {analysisExpanded ? (

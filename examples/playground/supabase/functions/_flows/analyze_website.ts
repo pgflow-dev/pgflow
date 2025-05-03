@@ -4,6 +4,7 @@ import analyzeSentiment from '../_tasks/analyzeSentiment.ts';
 import summarizeWithAI from '../_tasks/summarizeWithAI.ts';
 import extractTags from '../_tasks/extractTags.ts';
 import saveWebsite from '../_tasks/saveWebsite.ts';
+import { simulateFailure } from '../utils.ts';
 
 type Input = {
   url: string;
@@ -19,10 +20,10 @@ export default new Flow<Input>({
     { slug: 'website' },
     async (input) => await scrapeWebsite(input.run.url),
   )
-  .step(
-    { slug: 'sentiment', dependsOn: ['website'] },
-    async (input) => await analyzeSentiment(input.website.content),
-  )
+  .step({ slug: 'sentiment', dependsOn: ['website'] }, async (input) => {
+    await simulateFailure(input.run.url);
+    return await analyzeSentiment(input.website.content);
+  })
   .step(
     { slug: 'summary', dependsOn: ['website'] },
     async (input) => await summarizeWithAI(input.website.content),

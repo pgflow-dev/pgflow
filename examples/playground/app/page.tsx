@@ -29,9 +29,11 @@ export default async function Home() {
                 </p>
               </div>
             )}
-            
+
             <div className="mt-6">
-              <h3 className="text-lg font-medium mb-2">Example Websites to Analyze</h3>
+              <h3 className="text-lg font-medium mb-2">
+                Example Websites to Analyze
+              </h3>
               <div className="flex flex-wrap gap-4">
                 <a
                   href="/websites?url=https://reddit.com/r/supabase"
@@ -52,7 +54,7 @@ export default async function Home() {
                   pgflow.dev
                 </a>
                 <a
-                  href="/websites?url=https://failure.com"
+                  href="/websites?url=https://firebase.google.com/"
                   className="inline-flex px-3 py-2 bg-red-100 text-red-800 hover:bg-red-200 rounded-md text-sm font-medium"
                 >
                   Demo Failure
