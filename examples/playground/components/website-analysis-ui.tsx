@@ -325,6 +325,27 @@ export default function WebsiteAnalysisUI({
                                 ? 'Failed'
                                 : 'Waiting...'}
                         </p>
+                        {step.status === 'failed' && (() => {
+                          // Find the failed task for this step
+                          const failedTask = runData.step_tasks?.find(
+                            (task) =>
+                              task.step_slug === step.step_slug &&
+                              task.status === 'failed' &&
+                              task.error_message
+                          );
+                          
+                          return failedTask?.error_message ? (
+                            <div className="mt-2 overflow-auto">
+                              <div className="max-h-40 overflow-hidden border border-red-500/30 rounded-md">
+                                <div className="overflow-auto max-h-40">
+                                  <pre className="bg-red-500/5 rounded-md p-4 text-xs text-white whitespace-pre-wrap">
+                                    {failedTask.error_message}
+                                  </pre>
+                                </div>
+                              </div>
+                            </div>
+                          ) : null;
+                        })()}
                       </div>
                     </motion.div>
                   ))}
