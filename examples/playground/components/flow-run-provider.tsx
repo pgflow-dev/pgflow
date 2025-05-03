@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   fetchFlowRunData,
@@ -42,14 +42,58 @@ interface FlowRunProviderProps {
 }
 
 export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
-  const [runData, setRunData] = useState<ResultRow | null>(null);
+  // Split the state into separate pieces
+  const [run, setRun] = useState<RunRow | null>(null);
+  const [stepStates, setStepStates] = useState<Record<string, StepStateRow>>({});
+  const [stepTasks, setStepTasks] = useState<Record<string, StepTaskRow[]>>({});
+  
+  // UI state
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [analyzeLoading, setAnalyzeLoading] = useState<boolean>(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  
   const router = useRouter();
   const supabase = createClient();
+
+  // Derive runData from the separate state pieces
+  const runData = useMemo<ResultRow | null>(() => {
+    if (!run) return null;
+
+    // Convert stepStates map to array and sort by step index
+    const stepStatesArray = Object.values(stepStates);
+    stepStatesArray.sort((a, b) => {
+      const aIndex = a.step?.step_index || 0;
+      const bIndex = b.step?.step_index || 0;
+      return aIndex - bIndex;
+    });
+
+    // Create a flat array of all step tasks and sort them
+    const stepTasksArray = Object.values(stepTasks).flat();
+    
+    // Create a mapping of step_slug to step_index to maintain order
+    const stepIndexMap = new Map<string, number>();
+    stepStatesArray.forEach((state) => {
+      if (state.step && state.step_slug) {
+        stepIndexMap.set(state.step_slug, state.step?.step_index || 0);
+      }
+    });
+
+    // Sort the step tasks using the mapping
+    stepTasksArray.sort((a, b) => {
+      const aIndex = stepIndexMap.get(a.step_slug) || 0;
+      const bIndex = stepIndexMap.get(b.step_slug) || 0;
+      return aIndex - bIndex;
+    });
+
+    // Combine everything into ResultRow format
+    return {
+      ...run,
+      step_states: stepStatesArray,
+      step_tasks: stepTasksArray,
+    } as ResultRow;
+  }, [run, stepStates, stepTasks]);
 
   // Function to analyze a new website
   const analyzeWebsite = async (url: string) => {
@@ -101,7 +145,29 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       if (error) {
         setError(error);
       } else if (data) {
-        setRunData(data);
+        // Initialize our separate state pieces from the fetched data
+        setRun({
+          ...data,
+          step_states: undefined,
+          step_tasks: undefined,
+        } as RunRow);
+
+        // Convert step states array to a map keyed by step_slug
+        const stateMap: Record<string, StepStateRow> = {};
+        data.step_states.forEach(state => {
+          stateMap[state.step_slug] = state;
+        });
+        setStepStates(stateMap);
+
+        // Group step tasks by step_slug
+        const tasksMap: Record<string, StepTaskRow[]> = {};
+        data.step_tasks.forEach(task => {
+          if (!tasksMap[task.step_slug]) {
+            tasksMap[task.step_slug] = [];
+          }
+          tasksMap[task.step_slug].push(task);
+        });
+        setStepTasks(tasksMap);
       }
 
       setLoading(false);
@@ -115,39 +181,10 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     ) => {
       console.log('Step state updated:', payload);
 
-      setRunData((prevData) => {
-        if (!prevData) return null;
-
-        // Find the index of the updated step state
-        const stepStateIndex = prevData.step_states.findIndex(
-          (step) => step.step_slug === payload.new.step_slug,
-        );
-
-        // Create a new array of step states with the updated one
-        const updatedStepStates = [...prevData.step_states];
-        updatedStepStates[stepStateIndex] = payload.new;
-
-        // Create a mapping of step_slug to step_index to maintain order
-        const stepIndexMap = new Map<string, number>();
-        updatedStepStates.forEach((state) => {
-          if (state.step && state.step_slug) {
-            stepIndexMap.set(state.step_slug, state.step?.step_index || 0);
-          }
-        });
-
-        // Sort the updated step states using the mapping
-        updatedStepStates.sort((a, b) => {
-          const aIndex = stepIndexMap.get(a.step_slug) || 0;
-          const bIndex = stepIndexMap.get(b.step_slug) || 0;
-          return aIndex - bIndex;
-        });
-
-        // Return the updated data
-        return {
-          ...prevData,
-          step_states: updatedStepStates,
-        } as ResultRow;
-      });
+      setStepStates((prevStates) => ({
+        ...prevStates,
+        [payload.new.step_slug]: payload.new,
+      }));
     };
 
     const handleStepTaskUpdate = (
@@ -170,59 +207,27 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
         });
       }
 
-      setRunData((prevData) => {
-        if (!prevData) return null;
-
-        let updatedStepTasks: StepTaskRow[];
-        const existingTaskIndex = prevData.step_tasks.findIndex(
-          (task) => task.id === payload.new.id,
-        );
-
-        console.log(
-          `Existing task index for ${payload.new.step_slug}:`,
-          existingTaskIndex,
-        );
-        console.log(
-          'Current step_tasks:',
-          prevData.step_tasks.map((t) => t.step_slug),
-        );
-
-        if (existingTaskIndex >= 0) {
+      setStepTasks((prevTasksMap) => {
+        const stepSlug = payload.new.step_slug;
+        const currentTasks = prevTasksMap[stepSlug] || [];
+        
+        // Check if this task already exists
+        const taskIndex = currentTasks.findIndex(task => task.id === payload.new.id);
+        
+        let updatedTasks;
+        if (taskIndex >= 0) {
           // Update existing task
-          updatedStepTasks = [...prevData.step_tasks];
-          updatedStepTasks[existingTaskIndex] = payload.new;
-          console.log(`Updated task at index ${existingTaskIndex}`);
+          updatedTasks = [...currentTasks];
+          updatedTasks[taskIndex] = payload.new;
         } else {
           // Add new task
-          updatedStepTasks = [...prevData.step_tasks, payload.new];
-          console.log(`Added new task: ${payload.new.step_slug}`);
+          updatedTasks = [...currentTasks, payload.new];
         }
-
-        // Create a mapping of step_slug to step_index from step_states to maintain order
-        const stepIndexMap = new Map<string, number>();
-        prevData.step_states.forEach((state) => {
-          if (state.step && state.step_slug) {
-            stepIndexMap.set(state.step_slug, state.step?.step_index || 0);
-          }
-        });
-
-        // Sort the updated step tasks using the mapping
-        updatedStepTasks.sort((a, b) => {
-          const aIndex = stepIndexMap.get(a.step_slug) || 0;
-          const bIndex = stepIndexMap.get(b.step_slug) || 0;
-          return aIndex - bIndex;
-        });
-
-        console.log(
-          'Final step_tasks after update:',
-          updatedStepTasks.map((t) => t.step_slug),
-        );
-
-        // Return the updated data
+        
         return {
-          ...prevData,
-          step_tasks: updatedStepTasks,
-        } as ResultRow;
+          ...prevTasksMap,
+          [stepSlug]: updatedTasks,
+        };
       });
     };
 
@@ -243,38 +248,14 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
         });
       }
 
-      setRunData((prevData) => {
-        if (!prevData) return null;
-
-        // Add the new task to the existing tasks
-        const updatedStepTasks = [...prevData.step_tasks, payload.new];
-        console.log(`Added new task: ${payload.new.step_slug}`);
-
-        // Create a mapping of step_slug to step_index from step_states to maintain order
-        const stepIndexMap = new Map<string, number>();
-        prevData.step_states.forEach((state) => {
-          if (state.step && state.step_slug) {
-            stepIndexMap.set(state.step_slug, state.step?.step_index || 0);
-          }
-        });
-
-        // Sort the updated step tasks using the mapping
-        updatedStepTasks.sort((a, b) => {
-          const aIndex = stepIndexMap.get(a.step_slug) || 0;
-          const bIndex = stepIndexMap.get(b.step_slug) || 0;
-          return aIndex - bIndex;
-        });
-
-        console.log(
-          'Final step_tasks after insertion:',
-          updatedStepTasks.map((t) => t.step_slug),
-        );
-
-        // Return the updated data
+      setStepTasks((prevTasksMap) => {
+        const stepSlug = payload.new.step_slug;
+        const currentTasks = prevTasksMap[stepSlug] || [];
+        
         return {
-          ...prevData,
-          step_tasks: updatedStepTasks,
-        } as ResultRow;
+          ...prevTasksMap,
+          [stepSlug]: [...currentTasks, payload.new],
+        };
       });
     };
 
@@ -296,29 +277,37 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
               console.error('Error fetching complete run data:', error);
             } else if (data) {
               console.log('Fetched complete run data:', data);
-              setRunData(data);
+              // Update all state pieces with fresh data
+              setRun({
+                ...data,
+                step_states: undefined,
+                step_tasks: undefined,
+              } as RunRow);
+
+              // Convert step states array to a map
+              const stateMap: Record<string, StepStateRow> = {};
+              data.step_states.forEach(state => {
+                stateMap[state.step_slug] = state;
+              });
+              setStepStates(stateMap);
+
+              // Group step tasks by step_slug
+              const tasksMap: Record<string, StepTaskRow[]> = {};
+              data.step_tasks.forEach(task => {
+                if (!tasksMap[task.step_slug]) {
+                  tasksMap[task.step_slug] = [];
+                }
+                tasksMap[task.step_slug].push(task);
+              });
+              setStepTasks(tasksMap);
             }
           });
 
           return;
         }
 
-        // For other updates, update only the run data without refetching everything
-        setRunData((prevData) => {
-          if (!prevData) return null;
-
-          // Create a new object with the updated run data
-          // Important: Keep step_tasks and step_states from prevData intact
-          const updatedData = {
-            ...prevData,
-            ...payload.new,
-            // Preserve the step_tasks and step_states - don't overwrite them!
-            step_tasks: prevData.step_tasks,
-            step_states: prevData.step_states,
-          } as ResultRow;
-
-          return updatedData;
-        });
+        // For other updates, update only the run data
+        setRun(payload.new);
       },
       onStepStateUpdate: handleStepStateUpdate,
       onStepTaskUpdate: handleStepTaskUpdate,
