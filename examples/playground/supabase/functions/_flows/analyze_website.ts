@@ -8,6 +8,7 @@ import { simulateFailure } from '../utils.ts';
 
 type Input = {
   url: string;
+  user_id: string;
 };
 
 export default new Flow<Input>({
@@ -36,7 +37,8 @@ export default new Flow<Input>({
     { slug: 'saveToDb', dependsOn: ['sentiment', 'summary', 'tags'] },
     async (input) => {
       const websiteData = {
-        websiteUrl: input.run.url,
+        user_id: input.run.user_id,
+        website_url: input.run.url,
         sentiment: input.sentiment.score,
         summary: input.summary.aiSummary,
         tags: input.tags,

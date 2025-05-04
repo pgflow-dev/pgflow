@@ -487,6 +487,7 @@ export type Database = {
           summary: string
           tags: string[]
           updated_at: string
+          user_id: string
           website_url: string
         }
         Insert: {
@@ -496,6 +497,7 @@ export type Database = {
           summary: string
           tags?: string[]
           updated_at?: string
+          user_id: string
           website_url: string
         }
         Update: {
@@ -505,6 +507,7 @@ export type Database = {
           summary?: string
           tags?: string[]
           updated_at?: string
+          user_id?: string
           website_url?: string
         }
         Relationships: []
