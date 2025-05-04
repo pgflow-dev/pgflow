@@ -47,3 +47,37 @@ The application design follows several established UX principles:
   - _Example: Parent-child task relationships and execution order visually mirror the flow definition_
 - **Diagnostic-First Design**: Unlike traditional "black box" systems, pgflow embraces transparency as a core design principle, similar to the "Observability-Driven Development" approach
   - _Example: Error states expose detailed context, parameters, and execution history for rapid debugging_
+
+### Laws of good UX:
+
+#### **Nielsen's 10 Heuristics:**
+
+1. **Visibility of system status**: The system should always keep users informed about what's happening.
+2. **Match between system and the real world**: The system should speak the user's language, with words, phrases, and concepts familiar to the user.
+3. **User control and freedom**: Users often choose system functions by mistake and will need a clearly marked "emergency exit" to leave the unwanted state.
+4. **Consistency and standards**: Users should not have to wonder whether different words, situations, or actions mean the same thing.
+5. **Error prevention**: Even better than good error messages is a careful design that prevents a problem from occurring in the first place.
+6. **Recognition rather than recall**: Minimize the user's memory load by making objects, actions, and options visible.
+7. **Flexibility and efficiency of use**: Accelerators—unseen by the novice user—often often used by expert users such that the system can cater to both inexperienced and experienced users.
+8. **Aesthetic and minimalistic design**: Dialogues should not contain information that is irrelevant or rarely needed.
+9. **Help users recognize, diagnose, and recover from errors**: Error messages should be expressed in plain language, precisely indicate the problem, and constructively suggest a solution.
+10. **Help and documentation**: Even though it is better if the system can be used without documentation, it may be necessary to provide help and documentation.
+
+#### **Ben Shneiderman's Eight Golden Rules:**
+
+1. **Strive for consistency**: Consistent sequences of actions should be required to perform tasks.
+2. **Enable frequent users to use shortcuts**: As users' experience levels change, they should be able to use the system more efficiently.
+3. **Offer informative feedback**: The system should give users feedback about what is happening.
+4. **Design dialogues to yield closure**: Sequences of actions should be organized into groups with a beginning, middle, and end.
+5. **Error prevention**: Even better than good error messages is a careful design that prevents a problem from occurring.
+6. **Permit easy reversal of actions**: This feature alleviates anxiety since users know that errors can be undone.
+7. **Keep users informed about what is going on**: Users want to be informed about what is happening through adequate and continuous feedback within a reasonable time.
+8. **Internal locus of control**: Users should feel that they are in control of the system, not that the system is controlling them.
+
+#### **Don Norman's Principles of User-Centered Design:**
+
+1. **Visibility of system status**: The system should always keep users informed about what's happening through adequate and continuous feedback within a reasonable time.
+2. **Match between system and the real world**: The system should speak the user's language, with words, phrases, and concepts familiar to the user.
+3. **User control and freedom**: Users often choose system functions by mistake and will need a clearly marked "emergency exit" to leave the unwanted state.
+4. **Consistency and standards**: Users should not have to wonder whether different words, situations, or actions mean the same thing.
+5. **Error prevention**: Even better than good error messages is a careful design that prevents a problem from occurring in the first place.
