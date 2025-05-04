@@ -12,6 +12,7 @@ import { FormMessage } from '@/components/form-message';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
+import FlowDagVisualization from '@/components/flow-dag-visualization';
 
 // Format time difference in a concise way (e.g., "5s", "3m 45s", "2h 15m")
 function formatTimeDifference(
@@ -269,8 +270,13 @@ export default function FlowRunDetails({
               </div>
             </div>
           )}
+          
+          {/* Flow Visualization */}
+          <div className="mb-6">
+            <FlowDagVisualization runData={runData} />
+          </div>
 
-          {/* Tabs for Analysis Results / Technical Details */}
+          {/* Tabs for Process Steps / Analysis Results / Technical Details */}
           <Tabs 
             defaultValue="steps" 
             className="w-full"
