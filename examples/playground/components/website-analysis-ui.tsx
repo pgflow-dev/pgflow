@@ -211,7 +211,12 @@ export default function WebsiteAnalysisUI({
       {/* Top bar with analyze form when analysis is completed */}
       {(isCompleted || isFailed) && (
         <div className="mb-6">
-          <h3 className="text-base font-medium mb-2">Analyze Website</h3>
+          <h3 className="text-base font-medium mb-2">
+            Analyze Website
+            <span className="ml-2 text-xs text-muted-foreground">
+              Triggers a multi-step workflow using <strong>pgflow</strong>
+            </span>
+          </h3>
           <form
             onSubmit={handleSubmit}
             className="flex flex-col sm:flex-row gap-2"
@@ -538,17 +543,6 @@ export default function WebsiteAnalysisUI({
                       </div>
                     </motion.div>
                   ))}
-
-                  {/* Duplicate collapse button at the bottom of expanded details */}
-                  {!isRunning && !isFailed && (
-                    <div
-                      onClick={() => setAnalysisExpanded(false)}
-                      className="flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-muted/50 border border-muted-foreground/20 mt-4"
-                    >
-                      <span className="text-sm font-medium">Hide Details</span>
-                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -566,30 +560,6 @@ export default function WebsiteAnalysisUI({
             <div className="mb-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
                 <h3 className="text-xl font-medium">Analysis Results</h3>
-                {!isRunning && (
-                  <div
-                    onClick={() => setAnalysisExpanded(!analysisExpanded)}
-                    className="flex items-center gap-2 px-3 py-1 rounded-md cursor-pointer hover:bg-muted/50 border border-muted-foreground/20 mt-2 sm:mt-0 self-start"
-                  >
-                    <span className="text-sm font-medium">Details</span>
-                    <span
-                      className={`inline-flex items-center text-xs px-2 py-1 rounded-full ${
-                        runData?.status === 'completed'
-                          ? 'bg-green-100 text-green-800'
-                          : runData?.status === 'failed'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-blue-100 text-blue-800'
-                      }`}
-                    >
-                      {runData?.status === 'completed' ? 'OK' : runData?.status}
-                    </span>
-                    {analysisExpanded ? (
-                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </div>
-                )}
               </div>
               <span className="text-sm font-medium text-muted-foreground">
                 Website:

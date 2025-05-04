@@ -63,7 +63,28 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/********** CUSTOM OVERRIDES **********/
+
+@keyframes breathe {
+  0% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.4;
+  }
+}
+
+.breathing {
+  animation: breathe 2s infinite ease-in-out;
 }

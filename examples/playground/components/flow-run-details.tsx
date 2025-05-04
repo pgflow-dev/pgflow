@@ -10,18 +10,6 @@ import {
 import JSONHighlighter from '@/components/json-highlighter';
 import { FormMessage } from '@/components/form-message';
 
-// Add CSS for breathing animation
-const breathingAnimation = `
-@keyframes breathe {
-  0% { opacity: 0.4; }
-  50% { opacity: 1; }
-  100% { opacity: 0.4; }
-}
-.breathing {
-  animation: breathe 2s infinite ease-in-out;
-}
-`;
-
 // Format time difference in a concise way (e.g., "5s", "3m 45s", "2h 15m")
 function formatTimeDifference(
   startDate: string | null,
@@ -107,19 +95,6 @@ export default function FlowRunDetails({
   error,
   currentTime,
 }: FlowRunDetailsProps) {
-  // Add the breathing animation to the head
-  useEffect(() => {
-    // Add the style element to the head
-    const styleElement = document.createElement('style');
-    styleElement.innerHTML = breathingAnimation;
-    document.head.appendChild(styleElement);
-
-    // Clean up when component unmounts
-    return () => {
-      document.head.removeChild(styleElement);
-    };
-  }, []);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[30vh]">
