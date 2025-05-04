@@ -4,6 +4,8 @@
     "specifiers": {
       "jsr:@henrygd/queue@^1.0.7": "jsr:@henrygd/queue@1.0.7",
       "jsr:@pgflow/edge-worker@0.1.22": "jsr:@pgflow/edge-worker@0.1.22",
+      "jsr:@std/assert@1": "jsr:@std/assert@1.0.10",
+      "jsr:@std/internal@^1.0.5": "jsr:@std/internal@1.0.5",
       "jsr:@supabase/supabase-js@^2.49.4": "jsr:@supabase/supabase-js@2.49.4",
       "npm:@pgflow/core@0.1.22": "npm:@pgflow/core@0.1.22",
       "npm:@pgflow/dsl@0.1.22": "npm:@pgflow/dsl@0.1.22",
@@ -30,6 +32,15 @@
           "npm:@pgflow/dsl@0.1.22",
           "npm:postgres@3.4.5"
         ]
+      },
+      "@std/assert@1.0.10": {
+        "integrity": "59b5cbac5bd55459a19045d95cc7c2ff787b4f8527c0dd195078ff6f9481fbb3",
+        "dependencies": [
+          "jsr:@std/internal@^1.0.5"
+        ]
+      },
+      "@std/internal@1.0.5": {
+        "integrity": "54a546004f769c1ac9e025abd15a76b6671ddc9687e2313b67376125650dc7ba"
       },
       "@supabase/supabase-js@2.49.4": {
         "integrity": "4b785f9cd4a62feb7b3f84606bb923a4ea51e3e000eafff0972bc779240b7592",

@@ -122,9 +122,9 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       if (data && data.run_id) {
         console.log(
           'Analysis started, redirecting to:',
-          `/websites/runs/${data.run_id}/dual-panel`,
+          `/websites/runs/${data.run_id}`,
         );
-        router.push(`/websites/runs/${data.run_id}/dual-panel`);
+        router.push(`/websites/runs/${data.run_id}`);
       } else {
         console.error('No run_id returned from analysis');
         setAnalyzeError('Failed to start flow analysis');
