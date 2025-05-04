@@ -29,8 +29,8 @@ function RunPageContent() {
 
   return (
     <div className="flex flex-col lg:flex-row">
-      {/* Main panel: User-friendly UI */}
-      <div className="lg:w-[65%] xl:w-[70%] lg:pr-6">
+      {/* Debug panel: Technical details - first on mobile, right side on desktop */}
+      <div className="w-full lg:w-[35%] xl:w-[30%] order-first lg:order-last mb-4 lg:mb-0">
         <WebsiteAnalysisUI
           runData={runData}
           loading={loading}
@@ -41,10 +41,10 @@ function RunPageContent() {
         />
       </div>
 
-      {/* Side panel: Technical details - fixed position */}
-      <div className="lg:w-[35%] xl:w-[30%]">
+      {/* Main panel: User-friendly UI - second on mobile, left side on desktop */}
+      <div className="w-full lg:w-[65%] xl:w-[70%] lg:pr-6 order-last lg:order-first">
         <div 
-          className={`fixed top-16 bottom-4 right-4 lg:w-[calc(35%-2rem)] xl:w-[calc(30%-2rem)] overflow-hidden flex flex-col transition-all duration-300 group border hover:shadow-lg
+          className={`lg:fixed relative top-0 lg:top-16 bottom-0 lg:bottom-4 left-0 lg:left-auto right-0 lg:right-4 w-full lg:w-[calc(35%-2rem)] xl:w-[calc(30%-2rem)] overflow-hidden flex flex-col transition-all duration-300 group border hover:shadow-lg
             ${isPinned 
               ? "opacity-100 border-solid border-foreground/30" 
               : "opacity-50 hover:opacity-100 cursor-pointer border-dashed border-foreground/20 hover:border-solid"
