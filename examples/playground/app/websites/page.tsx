@@ -5,9 +5,9 @@ import { useEffect, useState } from 'react';
 import type { Database } from '@/supabase/functions/database-types';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { FormMessage, Message } from '@/components/form-message';
+import { FormMessage } from '@/components/form-message';
 import { SubmitButton } from '@/components/submit-button';
-import { useRouter } from 'next/navigation';
+import { useStartFlowRun } from '@/lib/use-flow-run';
 
 type WebsiteRow = Database['public']['Tables']['websites']['Row'];
 
@@ -16,7 +16,7 @@ export default function Page() {
   const [formError, setFormError] = useState<string | null>(null);
   const [url, setUrl] = useState('https://reddit.com/r/supabase');
   const supabase = createClient();
-  const router = useRouter();
+  const { analyzeWebsite, analyzeLoading, analyzeError } = useStartFlowRun();
 
   // Process URL parameter when the component mounts
   useEffect(() => {
@@ -46,23 +46,14 @@ export default function Page() {
     }
 
     try {
-      const { data, error } = await supabase.rpc('start_analyze_website_flow', {
-        url,
-      });
-
-      if (error) {
-        setFormError(error.message);
-        return;
-      }
-
-      if (data && data.run_id) {
-        router.push(`/websites/runs/${data.run_id}`);
-      } else {
-        setFormError('Failed to start flow analysis');
-      }
+      await analyzeWebsite(url);
     } catch (error) {
-      setFormError('An error occurred while starting the analysis');
-      console.error(error);
+      if (error instanceof Error) {
+        setFormError(error.message);
+      } else {
+        setFormError('An error occurred while starting the analysis');
+      }
+      console.error('Error starting analysis:', error);
     }
   }
 
@@ -75,25 +66,19 @@ export default function Page() {
     }
 
     try {
-      const { data, error } = await supabase.rpc('start_analyze_website_flow', {
-        url,
-      });
-
-      if (error) {
-        setFormError(error.message);
-        return;
-      }
-
-      if (data && data.run_id) {
-        router.push(`/websites/runs/${data.run_id}`);
-      } else {
-        setFormError('Failed to start flow analysis');
-      }
+      await analyzeWebsite(url);
     } catch (error) {
-      setFormError('An error occurred while starting the analysis');
-      console.error(error);
+      if (error instanceof Error) {
+        setFormError(error.message);
+      } else {
+        setFormError('An error occurred while starting the analysis');
+      }
+      console.error('Error starting analysis:', error);
     }
   }
+
+  // Use analyzeError from the hook if available
+  const displayError = formError || analyzeError;
 
   return (
     <div className="container mx-auto py-8">
@@ -116,10 +101,10 @@ export default function Page() {
                 required
               />
             </div>
-            <SubmitButton formAction={startAnalyzeWebsiteFlow}>
-              Start Analysis
+            <SubmitButton formAction={startAnalyzeWebsiteFlow} disabled={analyzeLoading}>
+              {analyzeLoading ? 'Starting Analysis...' : 'Start Analysis'}
             </SubmitButton>
-            {formError && <FormMessage message={{ error: formError }} />}
+            {displayError && <FormMessage message={{ error: displayError }} />}
           </form>
         </div>
 

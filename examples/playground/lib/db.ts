@@ -45,6 +45,8 @@ export async function fetchFlowRunData(runId: string): Promise<{
   const supabase = createClient();
 
   try {
+    console.log('Fetching flow run data from database for runId:', runId);
+    
     // Fetch the flow run data
     const { data, error } = await supabase
       .schema('pgflow')
@@ -63,12 +65,20 @@ export async function fetchFlowRunData(runId: string): Promise<{
       .single<ResultRow>();
 
     if (error) {
+      console.error('Supabase returned an error:', error);
       return { data: null, error: `Error fetching run data: ${error.message}` };
     }
 
+    console.log('Successfully fetched flow run data:', {
+      runId: data?.run_id,
+      status: data?.status,
+      stepStatesCount: data?.step_states?.length || 0,
+      stepTasksCount: data?.step_tasks?.length || 0,
+    });
+
     return { data, error: null };
   } catch (err) {
-    console.error('Error fetching flow run:', err);
+    console.error('Exception while fetching flow run:', err);
     return {
       data: null,
       error: 'An error occurred while fetching the flow run data',

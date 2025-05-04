@@ -99,11 +99,29 @@ export default function WebsiteAnalysisUI({
   } => {
     console.log('=== Analysis Summary Called ===');
     console.log('isCompleted:', isCompleted);
-    console.log('runData.step_tasks:', runData?.step_tasks);
+    console.log('runData:', runData);
+    console.log('runData?.step_tasks:', runData?.step_tasks);
 
-    if (!runData?.step_tasks || runData.step_tasks.length === 0) {
+    // Initialize with default values
+    const defaultResult = { 
+      summary: '', 
+      sentiment: 'neutral', 
+      tags: [] 
+    };
+    
+    // Return default values if no data is available
+    if (!runData) {
+      console.log('No runData available');
+      return defaultResult;
+    }
+    
+    // Ensure step_tasks exists and has items
+    if (!runData.step_tasks || !Array.isArray(runData.step_tasks) || runData.step_tasks.length === 0) {
       console.log('No step tasks found in runData');
-      return { summary: '', sentiment: 'neutral', tags: [] };
+      // Create empty arrays if they don't exist to prevent errors
+      runData.step_tasks = runData.step_tasks || [];
+      runData.step_states = runData.step_states || [];
+      return defaultResult;
     }
 
     // Debug: Log the available step tasks
@@ -186,18 +204,36 @@ export default function WebsiteAnalysisUI({
   const { summary, sentiment, tags } = getAnalysisSummary();
   const websiteUrl = getWebsiteUrl();
 
-  if (loading) {
+  // Debug logs
+  console.log('WebsiteAnalysisUI props:', {
+    hasRunData: !!runData,
+    loading,
+    error,
+    analyzeLoading,
+    analyzeError,
+  });
+  
+  if (runData) {
+    console.log('WebsiteAnalysisUI runData:', {
+      runId: runData.run_id,
+      status: runData.status,
+      stepStateCount: runData.step_states?.length,
+      stepTaskCount: runData.step_tasks?.length,
+    });
+  }
+  
+  if (loading && !runData) {
     return (
       <div className="flex items-center justify-center min-h-[40vh]">
         <div className="flex flex-col items-center">
           <div className="h-12 w-12 rounded-full border-t-2 border-b-2 border-primary animate-spin mb-4"></div>
-          <p className="text-foreground/60">Loading...</p>
+          <p className="text-foreground/60">Loading run data...</p>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (error && !runData) {
     return (
       <div className="p-4 border border-destructive/20 bg-destructive/10 rounded-lg">
         <h2 className="text-xl font-medium text-destructive mb-2">Error</h2>
@@ -205,6 +241,9 @@ export default function WebsiteAnalysisUI({
       </div>
     );
   }
+  
+  // If we have runData but loading is still true, we'll still render the content
+  // with perhaps a loading indicator somewhere
 
   return (
     <div className="p-6 border rounded-lg shadow-sm">

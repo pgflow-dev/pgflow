@@ -4,7 +4,10 @@ import { useParams } from 'next/navigation';
 import { FlowRunProvider, useFlowRun } from '@/components/flow-run-provider';
 import FlowRunDetails from '@/components/flow-run-details';
 import WebsiteAnalysisUI from '@/components/website-analysis-ui';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fetchFlowRunData } from '@/lib/db';
+import { queryClient } from '@/lib/query-client';
+import { subscribeToFlowRun } from '@/lib/flow-run-websocket';
 
 // Component that uses the shared context
 function RunPageContent() {
@@ -26,6 +29,13 @@ function RunPageContent() {
     analyzeLoading,
     analyzeError,
   } = useFlowRun();
+
+  console.log('RunPageContent state:', { 
+    hasRunData: !!runData, 
+    loading, 
+    error,
+    runId: runData?.run_id
+  });
 
   return (
     <div className="flex flex-col lg:flex-row">
@@ -155,6 +165,53 @@ function RunPageContent() {
 export default function RunPage() {
   const params = useParams();
   const runId = params.run_id as string;
+  
+  // Initialize data directly in the page component
+  useEffect(() => {
+    if (!runId) return;
+    
+    console.log('RunPage: Initializing data for runId:', runId);
+    
+    // Create a skeleton record while we're loading
+    queryClient.setQueryData(['flowRun', runId], {
+      run_id: runId,
+      status: 'started',
+      flow_slug: 'analyze_website',
+      step_states: [],
+      step_tasks: [],
+    });
+    
+    // Set up websocket subscription directly
+    const unsubscribe = subscribeToFlowRun(runId);
+    
+    // Fetch initial data
+    const loadData = async () => {
+      try {
+        console.log('RunPage: Fetching initial data');
+        const { data, error } = await fetchFlowRunData(runId);
+        
+        if (data && !error) {
+          console.log('RunPage: Successfully fetched initial data', {
+            status: data.status,
+            stepStatesCount: data.step_states?.length,
+            stepTasksCount: data.step_tasks?.length,
+          });
+          
+          // Update the cache
+          queryClient.setQueryData(['flowRun', runId], data);
+        }
+      } catch (e) {
+        console.error('RunPage: Error loading initial data:', e);
+      }
+    };
+    
+    loadData();
+    
+    // Clean up on unmount
+    return () => {
+      unsubscribe();
+    };
+  }, [runId]);
 
   return (
     <FlowRunProvider runId={runId}>

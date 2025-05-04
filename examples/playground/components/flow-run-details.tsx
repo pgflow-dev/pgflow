@@ -95,7 +95,23 @@ export default function FlowRunDetails({
   error,
   currentTime,
 }: FlowRunDetailsProps) {
-  if (loading) {
+  // Debug logs for flow run details
+  console.log('FlowRunDetails props:', {
+    runId,
+    hasRunData: !!runData,
+    loading,
+    error,
+  });
+  
+  if (runData) {
+    console.log('FlowRunDetails runData:', {
+      status: runData.status,
+      stepStatesCount: runData.step_states?.length,
+      stepTasksCount: runData.step_tasks?.length,
+    });
+  }
+  
+  if (loading && !runData) {
     return (
       <div className="flex items-center justify-center min-h-[30vh]">
         <div className="flex flex-col items-center">
@@ -106,7 +122,7 @@ export default function FlowRunDetails({
     );
   }
 
-  if (error) {
+  if (error && !runData) {
     return (
       <div className="p-2 border border-destructive/20 bg-destructive/10 rounded-lg">
         <h2 className="text-base font-medium text-destructive mb-1">Error</h2>
@@ -114,6 +130,8 @@ export default function FlowRunDetails({
       </div>
     );
   }
+  
+  // If we're still loading but have data, continue rendering
 
   return (
     <div className="p-2 border rounded-lg shadow-sm flex-1 overflow-y-auto">

@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { FormMessage } from '@/components/form-message';
 import { SubmitButton } from '@/components/submit-button';
-import { createClient } from '@/utils/supabase/client';
+import { useStartFlowRun } from '@/lib/use-flow-run';
 
 export default function WebsiteAnalyzerForm({
   isLoggedIn,
@@ -15,7 +15,7 @@ export default function WebsiteAnalyzerForm({
 }) {
   const [formError, setFormError] = useState<string | null>(null);
   const router = useRouter();
-  const supabase = createClient();
+  const { analyzeWebsite, analyzeLoading, analyzeError } = useStartFlowRun();
 
   async function handleAnalyzeWebsite(formData: FormData) {
     const url = formData.get('url') as string;
@@ -37,38 +37,20 @@ export default function WebsiteAnalyzerForm({
       return;
     }
 
-    if (!url) {
-      setFormError('Please enter a URL');
-      return;
-    }
-
     try {
-      console.log('Starting analysis for URL:', url);
-      const { data, error } = await supabase.rpc('start_analyze_website_flow', {
-        url,
-      });
-
-      if (error) {
-        console.error('Error starting analysis:', error);
-        setFormError(error.message);
-        return;
-      }
-
-      if (data && data.run_id) {
-        console.log(
-          'Analysis started, redirecting to:',
-          `/websites/runs/${data.run_id}`,
-        );
-        router.push(`/websites/runs/${data.run_id}`);
-      } else {
-        console.error('No run_id returned from analysis');
-        setFormError('Failed to start flow analysis');
-      }
+      await analyzeWebsite(url);
     } catch (error) {
-      setFormError('An error occurred while starting the analysis');
+      if (error instanceof Error) {
+        setFormError(error.message);
+      } else {
+        setFormError('An error occurred while starting the analysis');
+      }
       console.error('Exception during analysis:', error);
     }
   }
+
+  // Use analyzeError from the hook if available
+  const displayError = formError || analyzeError;
 
   return (
     <div className="flex flex-col w-full p-4 gap-4 border rounded-lg shadow-sm">
@@ -89,10 +71,13 @@ export default function WebsiteAnalyzerForm({
             required
           />
         </div>
-        <SubmitButton>
-          {isLoggedIn ? '🚀 Start Analysis' : 'Sign in & Analyze'}
+        <SubmitButton disabled={analyzeLoading}>
+          {isLoggedIn ? 
+            (analyzeLoading ? 'Starting Analysis...' : '🚀 Start Analysis') : 
+            'Sign in & Analyze'
+          }
         </SubmitButton>
-        {formError && <FormMessage message={{ error: formError }} />}
+        {displayError && <FormMessage message={{ error: displayError }} />}
       </form>
     </div>
   );
