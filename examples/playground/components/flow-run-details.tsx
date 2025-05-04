@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ResultRow } from '@/lib/db';
 import {
   Collapsible,
@@ -9,6 +9,9 @@ import {
 } from '@/components/ui/collapsible';
 import JSONHighlighter from '@/components/json-highlighter';
 import { FormMessage } from '@/components/form-message';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
 
 // Format time difference in a concise way (e.g., "5s", "3m 45s", "2h 15m")
 function formatTimeDifference(
@@ -86,6 +89,8 @@ interface FlowRunDetailsProps {
   loading: boolean;
   error: string | null;
   currentTime: Date;
+  className?: string;
+  showTechnicalDetails?: boolean;
 }
 
 export default function FlowRunDetails({
@@ -94,10 +99,84 @@ export default function FlowRunDetails({
   loading,
   error,
   currentTime,
+  className = '',
+  showTechnicalDetails = false,
 }: FlowRunDetailsProps) {
+  const [showDetails, setShowDetails] = useState(showTechnicalDetails);
+  const [activeTab, setActiveTab] = useState<string>('steps');
+
+  // Extract useful info
+  const isRunning = runData?.status === 'started';
+  const isCompleted = runData?.status === 'completed';
+  const isFailed = runData?.status === 'failed';
+  
+  // Function to get summary data
+  const getAnalysisSummary = () => {
+    if (!runData?.step_tasks || runData.step_tasks.length === 0) {
+      return { summary: '', sentiment: 'neutral', tags: [] };
+    }
+
+    try {
+      // Find completed tasks
+      const summaryTask = runData.step_tasks.find(
+        (task) => task.step_slug === 'summary' && task.status === 'completed'
+      );
+      const sentimentTask = runData.step_tasks.find(
+        (task) => task.step_slug === 'sentiment' && task.status === 'completed'
+      );
+      const tagsTask = runData.step_tasks.find(
+        (task) => task.step_slug === 'tags' && task.status === 'completed'
+      );
+
+      // Extract summary
+      let summary = '';
+      if (summaryTask?.output) {
+        const summaryOutput = summaryTask.output as any;
+        summary = summaryOutput.aiSummary || '';
+      }
+
+      // Extract sentiment
+      let sentiment = 'neutral';
+      if (sentimentTask?.output) {
+        const sentimentOutput = sentimentTask.output as any;
+        if (typeof sentimentOutput.score === 'number') {
+          if (sentimentOutput.score >= 0.7) sentiment = 'positive';
+          else if (sentimentOutput.score < 0.3) sentiment = 'negative';
+        }
+      }
+
+      // Extract tags
+      let tags: string[] = [];
+      if (tagsTask?.output) {
+        const tagsOutput = tagsTask.output;
+        if (Array.isArray(tagsOutput)) {
+          tags = tagsOutput;
+        }
+      }
+
+      return { summary, sentiment, tags };
+    } catch (e) {
+      console.error('Error extracting data from step tasks:', e);
+      return { summary: '', sentiment: 'neutral', tags: [] };
+    }
+  };
+
+  // Extract website URL from input
+  const getWebsiteUrl = (): string => {
+    if (!runData?.input) return '';
+    const input = runData.input;
+    if (typeof input === 'object' && input !== null && 'url' in input) {
+      return input.url as string;
+    }
+    return '';
+  };
+
+  const { summary, sentiment, tags } = getAnalysisSummary();
+  const websiteUrl = getWebsiteUrl();
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[30vh]">
+      <div className={`flex items-center justify-center min-h-[30vh] ${className}`}>
         <div className="flex flex-col items-center">
           <div className="h-8 w-8 rounded-full border-t-2 border-b-2 border-primary animate-spin mb-2"></div>
           <p className="text-xs text-foreground/60">Loading run data...</p>
@@ -108,88 +187,104 @@ export default function FlowRunDetails({
 
   if (error) {
     return (
-      <div className="p-2 border border-destructive/20 bg-destructive/10 rounded-lg">
-        <h2 className="text-base font-medium text-destructive mb-1">Error</h2>
-        <p className="text-xs text-destructive/80">{error}</p>
+      <div className={`p-4 border border-destructive/20 bg-destructive/10 rounded-lg ${className}`}>
+        <h2 className="text-lg font-medium text-destructive mb-2">Error</h2>
+        <p className="text-destructive/80">{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="p-2 border rounded-lg shadow-sm flex-1 overflow-y-auto">
+    <div className={`p-4 border rounded-lg shadow-sm ${className}`}>
       {runData ? (
-        <div className="space-y-3">
-          <h3 className="text-base font-medium mb-1">Status</h3>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <span
-                className={`inline-block w-2 h-2 rounded-full mr-1 ${
+        <div className="space-y-6">
+          {/* Unified Status Header */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-2 md:space-y-0">
+            <div className="flex items-center space-x-2">
+              <div 
+                className={`h-4 w-4 rounded-full ${
                   runData.status === 'completed'
                     ? 'bg-green-500'
                     : runData.status === 'started'
-                      ? 'bg-yellow-500 breathing'
+                      ? 'bg-yellow-500 animate-pulse'
                       : runData.status === 'failed'
                         ? 'bg-red-500'
                         : runData.status === 'created'
                           ? 'bg-blue-500'
                           : 'bg-gray-500'
                 }`}
-              ></span>
-              <span className="capitalize text-sm">
-                {runData.status === 'started' ? 'running' : runData.status}
-              </span>
-            </div>
-            <div className="text-xs">
-              {runData.status === 'started' && runData.started_at && (
-                <span className="text-yellow-600/80">
+              ></div>
+              <h3 className="text-lg font-medium capitalize">
+                {runData.status === 'started' ? 'Running' : runData.status}
+              </h3>
+              {isRunning && runData.started_at && (
+                <span className="text-sm text-yellow-600/80 ml-2">
                   Running for {formatTimeDifference(runData.started_at, null)}
                 </span>
               )}
-              {runData.status === 'completed' && runData.completed_at && (
-                <span className="text-green-600/80">
-                  Took{' '}
-                  {formatTimeDifference(
-                    runData.started_at,
-                    runData.completed_at,
-                  )}
+              {isCompleted && runData.completed_at && (
+                <span className="text-sm text-green-600/80 ml-2">
+                  Completed in {formatTimeDifference(runData.started_at, runData.completed_at)}
                 </span>
               )}
-              {runData.status === 'failed' && runData.failed_at && (
-                <span className="text-red-600/80">
-                  Failed after{' '}
-                  {formatTimeDifference(runData.started_at, runData.failed_at)}
+              {isFailed && runData.failed_at && (
+                <span className="text-sm text-red-600/80 ml-2">
+                  Failed after {formatTimeDifference(runData.started_at, runData.failed_at)}
                 </span>
               )}
             </div>
+            
+            {/* Technical Details Toggle */}
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              className="flex items-center space-x-1 text-xs px-3 py-1.5 rounded-md hover:bg-muted border"
+            >
+              {showDetails ? (
+                <>
+                  <EyeOff size={14} />
+                  <span>Hide Technical Details</span>
+                </>
+              ) : (
+                <>
+                  <Eye size={14} />
+                  <span>Show Technical Details</span>
+                </>
+              )}
+            </button>
           </div>
 
-          <div className="mb-2">
-            <h4 className="text-sm font-medium mb-1">Run ID:</h4>
-            <pre className="capitalize text-xs">{runId}</pre>
-          </div>
-
-          <div>
-            <h3 className="text-base font-medium mb-1">
-              Run Input
-              <span className="ml-2 text-xs text-muted-foreground">
-                JSON used to start the flow
-              </span>
-            </h3>
-            <div className="max-h-36 overflow-hidden border border-gray-500/30 rounded-md">
-              <div className="overflow-auto max-h-36">
-                <JSONHighlighter data={runData.input} />
+          {/* Website URL Display */}
+          {websiteUrl && (
+            <div className="p-3 bg-muted rounded-md">
+              <div className="flex items-center">
+                <span className="text-sm font-medium mr-2">Website:</span>
+                <a 
+                  href={websiteUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:text-primary/80 truncate"
+                >
+                  {websiteUrl}
+                </a>
               </div>
             </div>
-          </div>
+          )}
 
-          <div>
-            <h3 className="text-base font-medium mb-1">
-              Steps Status
-              <span className="ml-2 text-xs text-muted-foreground">
-                Click steps to view details
-              </span>
-            </h3>
-            <div>
+          {/* Tabs for Analysis Results / Technical Details */}
+          <Tabs 
+            defaultValue="steps" 
+            className="w-full"
+            value={activeTab}
+            onValueChange={setActiveTab}
+          >
+            <TabsList className="mb-4 grid grid-cols-3">
+              <TabsTrigger value="steps">Process Steps</TabsTrigger>
+              <TabsTrigger value="results" disabled={!isCompleted}>Results</TabsTrigger>
+              <TabsTrigger value="technical" className={showDetails ? '' : 'hidden'}>Technical Data</TabsTrigger>
+            </TabsList>
+            
+            {/* Process Steps Tab */}
+            <TabsContent value="steps" className="space-y-4">
               {runData.step_states &&
                 (() => {
                   // Sort step_states directly by step.step_index
@@ -202,7 +297,6 @@ export default function FlowRunDetails({
                   );
 
                   // Group parallel steps based on flow definition
-                  // We're specifically looking for summary, sentiment, and tags steps that run in parallel
                   const parallelStepSlugs = ['summary', 'sentiment', 'tags'];
                   const parallelSteps = sortedStepStates.filter((step) =>
                     parallelStepSlugs.includes(step.step_slug),
@@ -268,10 +362,41 @@ export default function FlowRunDetails({
                         key={index}
                         className={`rounded-lg border ${statusStyle}`}
                       >
-                        <CollapsibleTrigger className="flex items-center justify-between w-full p-2 text-left">
-                          <div>
-                            <h4 className="text-sm font-medium">
-                              {step.step_slug}
+                        <CollapsibleTrigger className="flex items-center justify-between w-full p-3 text-left">
+                          <div className="flex items-center">
+                            <div
+                              className={`flex items-center justify-center w-8 h-8 rounded-full border-2 mr-3 ${
+                                step.status === 'completed'
+                                  ? 'bg-green-500 border-green-500 text-white'
+                                  : isRetrying
+                                    ? 'border-red-500 text-red-500 animate-pulse'
+                                    : step.status === 'started'
+                                      ? 'border-yellow-500 text-yellow-500'
+                                      : step.status === 'failed'
+                                        ? 'border-red-500 text-red-500'
+                                        : 'border-gray-300 text-gray-300'
+                              }`}
+                            >
+                              {step.status === 'completed' ? (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                              ) : (
+                                <span>{index + 1}</span>
+                              )}
+                            </div>
+                            <h4 className="text-base font-medium capitalize">
+                              {step.step_slug.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').toLowerCase()}
                             </h4>
                           </div>
                           <div className="flex items-center">
@@ -310,40 +435,76 @@ export default function FlowRunDetails({
                               </>
                             )}
 
-                            <span
-                              className={`inline-block w-2 h-2 rounded-full ${!isParallel ? 'mr-1' : ''} ${
-                                step.status === 'completed'
-                                  ? 'bg-green-500'
-                                  : isRetrying
-                                    ? 'bg-red-500 breathing'
-                                    : step.status === 'started'
-                                      ? 'bg-yellow-500 breathing'
-                                      : step.status === 'failed'
-                                        ? 'bg-red-500'
-                                        : step.status === 'created'
-                                          ? 'bg-blue-500'
-                                          : 'bg-gray-500'
-                              }`}
-                            ></span>
-                            {!isParallel && (
-                              <span className="capitalize text-xs">
-                                {isRetrying
-                                  ? `retrying (retry ${latestTask.attempts_count - 1})`
-                                  : step.status === 'created'
-                                    ? 'waiting'
+                            <span className="capitalize text-xs px-2 py-0.5 rounded-full mr-2 bg-muted">
+                              {isRetrying
+                                ? `Retry ${latestTask.attempts_count - 1}`
+                                : step.status === 'created'
+                                  ? 'Waiting'
+                                  : step.status === 'started'
+                                    ? 'Running'
                                     : step.status}
-                              </span>
-                            )}
+                            </span>
+                            {step.status === 'completed' ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
                           </div>
                         </CollapsibleTrigger>
-                        <CollapsibleContent className="px-2 pb-2 w-full bg-background/70 backdrop-blur-sm border-t border-foreground/10">
+                        <CollapsibleContent className="px-3 pb-3 w-full bg-background/70 backdrop-blur-sm border-t border-foreground/10">
                           {step.status === 'completed' && stepTask?.output && (
-                            <div className="mt-1 overflow-auto">
-                              <div className="max-h-32 overflow-hidden border border-gray-500/30 rounded-md">
-                                <div className="overflow-auto max-h-32">
-                                  <JSONHighlighter data={stepTask.output} />
+                            <div className="mt-2 space-y-2">
+                              {/* Step output summary */}
+                              {step.step_slug === 'summary' && (
+                                <div className="p-3 bg-muted/50 rounded-md">
+                                  <h5 className="font-medium mb-1">Summary</h5>
+                                  <p className="text-sm whitespace-pre-line">{(stepTask.output as any).aiSummary || 'No summary available'}</p>
                                 </div>
-                              </div>
+                              )}
+                              
+                              {step.step_slug === 'sentiment' && (
+                                <div className="p-3 bg-muted/50 rounded-md">
+                                  <h5 className="font-medium mb-1">Sentiment Analysis</h5>
+                                  <div className="flex items-center">
+                                    <span
+                                      className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
+                                        sentiment === 'positive'
+                                          ? 'bg-green-100 text-green-800'
+                                          : sentiment === 'negative'
+                                            ? 'bg-red-100 text-red-800'
+                                            : 'bg-blue-100 text-blue-800'
+                                      }`}
+                                    >
+                                      {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
+                                    </span>
+                                    {showDetails && (
+                                      <span className="ml-2 text-sm">Score: {(stepTask.output as any).score?.toFixed(2) || 'N/A'}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {step.step_slug === 'tags' && (
+                                <div className="p-3 bg-muted/50 rounded-md">
+                                  <h5 className="font-medium mb-1">Tags</h5>
+                                  <div className="flex flex-wrap gap-2 mt-1">
+                                    {Array.isArray(stepTask.output) && stepTask.output.length > 0 ? (
+                                      stepTask.output.map((tag, idx) => (
+                                        <Badge key={idx} variant="secondary" className="text-xs">{tag}</Badge>
+                                      ))
+                                    ) : (
+                                      <span className="text-sm text-muted-foreground">No tags available</span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Technical details for all steps */}
+                              {showDetails && (
+                                <div className="mt-2 overflow-auto">
+                                  <div className="overflow-hidden border border-gray-500/30 rounded-md">
+                                    <div className="overflow-auto">
+                                      <JSONHighlighter data={stepTask.output} />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
                           {step.status === 'failed' &&
@@ -357,10 +518,10 @@ export default function FlowRunDetails({
                               );
 
                               return failedTask?.error_message ? (
-                                <div className="mt-1 overflow-auto">
-                                  <div className="max-h-32 overflow-hidden border border-red-500/30 rounded-md">
-                                    <div className="overflow-auto max-h-32">
-                                      <pre className="bg-red-500/5 rounded-md p-2 text-xs text-white whitespace-pre-wrap">
+                                <div className="mt-2 overflow-auto">
+                                  <div className="overflow-hidden border border-red-500/30 rounded-md">
+                                    <div className="overflow-auto">
+                                      <pre className="bg-red-500/5 rounded-md p-3 text-sm text-white whitespace-pre-wrap">
                                         {failedTask.error_message}
                                       </pre>
                                     </div>
@@ -387,20 +548,20 @@ export default function FlowRunDetails({
                   );
 
                   return (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {/* Website step (first step) */}
                       {websiteStep && (
-                        <div className="grid grid-cols-1 gap-2 mb-6">
+                        <div className="grid grid-cols-1 gap-3">
                           {renderStep(websiteStep, 0)}
                         </div>
                       )}
 
                       {/* Parallel steps with note */}
                       {parallelSteps.length > 0 && (
-                        <div className="mb-0">
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-xs text-muted-foreground italic">
-                              Following steps run in parallel
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm text-muted-foreground italic">
+                              Parallel Processing Steps
                             </span>
                             <span className="text-xs flex items-center">
                               <svg
@@ -417,38 +578,27 @@ export default function FlowRunDetails({
                               >
                                 <path d="M12 22v-6M9 8V2M15 8V2M6 8a3 3 0 0 1 3 3v1M18 8a3 3 0 0 0-3 3v1M12 19a3 3 0 0 1-3-3v-1M12 19a3 3 0 0 0 3-3v-1"></path>
                               </svg>
-                              Parallel Processing
+                              Running in parallel
                             </span>
                           </div>
-                          <div className="grid grid-cols-3 gap-2 relative step-container">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             {parallelSteps.map((step, index) =>
                               renderStep(step, index, true),
                             )}
                           </div>
-                          <style jsx>{`
-                            .step-container {
-                              margin-bottom: 2rem;
-                            }
-                            .step-container > :global(*) {
-                              height: 41px; /* Match the height of regular steps (label + padding) */
-                            }
-                            .step-container > :global(*[data-state="open"]) {
-                              height: auto;
-                            }
-                          `}</style>
                         </div>
                       )}
 
                       {/* SaveToDb step (last step) */}
                       {saveToDbStep && (
-                        <div className="grid grid-cols-1 gap-2">
+                        <div className="grid grid-cols-1 gap-3">
                           {renderStep(saveToDbStep, 1)}
                         </div>
                       )}
 
                       {/* Any other regular steps */}
                       {otherRegularSteps.length > 0 && (
-                        <div className="grid grid-cols-1 gap-2 mt-3">
+                        <div className="grid grid-cols-1 gap-3 mt-3">
                           {otherRegularSteps.map((step, index) =>
                             renderStep(step, index + 2),
                           )}
@@ -457,40 +607,132 @@ export default function FlowRunDetails({
                     </div>
                   );
                 })()}
-            </div>
-          </div>
+            </TabsContent>
+            
+            {/* Analysis Results Tab */}
+            <TabsContent value="results" className="space-y-6">
+              {isCompleted && (
+                <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+                    <h3 className="text-xl font-medium">Analysis Results</h3>
+                  </div>
+                  
+                  <dl className="space-y-6">
+                    <div className="flex flex-row gap-6">
+                      <div className="flex flex-col space-y-2 w-1/3">
+                        <dt className="text-sm font-medium text-muted-foreground">
+                          Sentiment
+                        </dt>
+                        <dd>
+                          <span
+                            className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
+                              sentiment === 'positive'
+                                ? 'bg-green-100 text-green-800'
+                                : sentiment === 'negative'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-blue-100 text-blue-800'
+                            }`}
+                          >
+                            {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
+                          </span>
+                        </dd>
+                      </div>
 
-          <div>
-            <h3 className="text-base font-medium mb-1">Run Output</h3>
-            {runData.status === 'completed' ? (
-              <div className="max-h-36 overflow-hidden border border-gray-500/30 rounded-md">
-                <div className="overflow-auto max-h-36">
-                  <JSONHighlighter data={runData.output} />
+                      <div className="flex flex-col space-y-2 w-2/3">
+                        <dt className="text-sm font-medium text-muted-foreground">
+                          Tags
+                        </dt>
+                        <dd className="flex flex-wrap gap-2">
+                          {tags.length > 0 ? (
+                            tags.map((tag, index) => (
+                              <Badge
+                                key={index}
+                                variant="secondary"
+                                className="text-xs"
+                              >
+                                {tag}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-sm text-muted-foreground">
+                              No tags available
+                            </span>
+                          )}
+                        </dd>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col space-y-2">
+                      <dt className="text-sm font-medium text-muted-foreground">
+                        Summary
+                      </dt>
+                      <dd className="text-foreground/90 whitespace-pre-line leading-relaxed">
+                        {summary}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              )}
+            </TabsContent>
+            
+            {/* Technical Data Tab */}
+            <TabsContent value="technical" className="space-y-6">
+              {/* Run ID */}
+              <div className="mb-2">
+                <h4 className="text-sm font-medium mb-1">Run ID:</h4>
+                <pre className="capitalize text-xs bg-muted p-2 rounded-md">{runId}</pre>
+              </div>
+              
+              {/* Run Input */}
+              <div>
+                <h4 className="text-sm font-medium mb-1">
+                  Run Input
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    JSON used to start the flow
+                  </span>
+                </h4>
+                <div className="overflow-hidden border border-gray-500/30 rounded-md">
+                  <div className="overflow-auto">
+                    <JSONHighlighter data={runData.input} />
+                  </div>
                 </div>
               </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Run is not completed yet - no output available
-              </p>
-            )}
-          </div>
+              
+              {/* Run Output */}
+              <div>
+                <h4 className="text-sm font-medium mb-1">Run Output</h4>
+                {runData.status === 'completed' ? (
+                  <div className="overflow-hidden border border-gray-500/30 rounded-md">
+                    <div className="overflow-auto">
+                      <JSONHighlighter data={runData.output} />
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Run is not completed yet - no output available
+                  </p>
+                )}
+              </div>
+              
+              {/* Raw Data */}
+              <div>
+                <details>
+                  <summary className="cursor-pointer text-xs text-muted-foreground mb-1">
+                    View Raw Run Data
+                  </summary>
+                  <pre className="p-2 bg-muted rounded-md text-xs overflow-auto max-h-[300px]">
+                    {JSON.stringify(runData, null, 2)}
+                  </pre>
+                </details>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       ) : (
         <FormMessage
           message={{ message: 'No run data found for this run ID' }}
         />
       )}
-
-      <div className="mt-4">
-        <details>
-          <summary className="cursor-pointer text-xs text-muted-foreground">
-            View Raw Data
-          </summary>
-          <pre className="mt-1 p-2 bg-muted rounded-md text-xs overflow-auto max-h-[300px]">
-            {JSON.stringify(runData, null, 2)}
-          </pre>
-        </details>
-      </div>
     </div>
   );
 }
