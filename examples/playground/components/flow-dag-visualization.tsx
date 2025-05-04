@@ -28,11 +28,10 @@ export default function FlowDagVisualization({
   }
 
   return (
-    <div className={`${className} border rounded-lg overflow-hidden`}>
-      <div className="flex items-center justify-between p-3 border-b bg-muted/30">
-        <div className="flex items-center space-x-3">
-          <h3 className="text-sm font-medium">Flow Execution Diagram</h3>
-          <div className="flex items-center space-x-3 text-xs text-muted-foreground">
+    <div className={`${className} border rounded-lg overflow-hidden h-full`}>
+      <div className="flex items-center justify-between p-2 border-b bg-muted/30">
+        <div className="text-xs text-muted-foreground">
+          <div className="flex items-center space-x-2">
             <div className="flex items-center">
               <div className="h-2 w-2 bg-green-500 rounded-full mr-1"></div>
               <span>Completed</span>
@@ -52,21 +51,21 @@ export default function FlowDagVisualization({
           </div>
         </div>
         <button
-          className="text-xs px-2 py-1 rounded hover:bg-muted border"
+          className="text-xs px-2 py-0.5 rounded hover:bg-muted border"
           onClick={() => setShowGraph(!showGraph)}
         >
-          {showGraph ? 'Hide Diagram' : 'Show Diagram'}
+          {showGraph ? 'Hide' : 'Show'}
         </button>
       </div>
       
       {showGraph && ClientDiagram && (
-        <div className="h-[350px] bg-background">
+        <div className="h-[calc(100%-30px)] bg-background">
           <ClientDiagram runData={runData} />
         </div>
       )}
       
       {showGraph && !ClientDiagram && (
-        <div className="h-[350px] flex items-center justify-center bg-background">
+        <div className="h-[calc(100%-30px)] flex items-center justify-center bg-background">
           <div className="flex flex-col items-center">
             <div className="h-8 w-8 rounded-full border-t-2 border-b-2 border-primary animate-spin mb-2"></div>
             <p className="text-xs text-foreground/60">Loading diagram...</p>

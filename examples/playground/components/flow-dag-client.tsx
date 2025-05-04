@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { ResultRow } from '@/lib/db';
 import { 
   ReactFlow, 
@@ -9,14 +9,64 @@ import {
   Background, 
   Controls,
   useNodesState, 
-  useEdgesState, 
-  ConnectionLineType 
+  useEdgesState,
+  ConnectionLineType,
+  ReactFlowProvider
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import dagre from 'dagre';
 
 interface FlowDagClientProps {
   runData: ResultRow;
 }
+
+// Dagre layout helper function
+const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'TB') => {
+  // Create new graph
+  const dagreGraph = new dagre.graphlib.Graph();
+  dagreGraph.setDefaultEdgeLabel(() => ({}));
+
+  // Set graph direction and node separation
+  dagreGraph.setGraph({ 
+    rankdir: direction, 
+    nodesep: 80, 
+    ranksep: 80, 
+    marginx: 20, 
+    marginy: 20 
+  });
+
+  // Add nodes to graph
+  nodes.forEach((node) => {
+    dagreGraph.setNode(node.id, { 
+      width: node.style?.width as number || 160, 
+      height: 40 
+    });
+  });
+
+  // Add edges to graph
+  edges.forEach((edge) => {
+    dagreGraph.setEdge(edge.source, edge.target);
+  });
+
+  // Calculate layout
+  dagre.layout(dagreGraph);
+
+  // Apply layout to nodes
+  const layoutedNodes = nodes.map((node) => {
+    const nodeWithPosition = dagreGraph.node(node.id);
+    
+    // Position node at calculated position
+    return {
+      ...node,
+      position: {
+        x: nodeWithPosition.x - (node.style?.width as number || 160) / 2,
+        y: nodeWithPosition.y - 20,
+      },
+    };
+  });
+
+  return { nodes: layoutedNodes, edges };
+};
 
 // Get status color for nodes - matching the existing UI
 const getStatusColor = (status: string | undefined, isRetrying: boolean = false) => {
@@ -60,11 +110,11 @@ const CustomNode = ({ data }: any) => {
   );
 };
 
-export default function FlowDagClient({ runData }: FlowDagClientProps) {
+function FlowComponent({ runData }: FlowDagClientProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-  // Create graph nodes and edges from runData
+  // Create graph nodes and edges from runData with auto-layout
   useEffect(() => {
     if (!runData || !runData.step_states) {
       setNodes([]);
@@ -73,8 +123,8 @@ export default function FlowDagClient({ runData }: FlowDagClientProps) {
     }
 
     // Create a flow definition graph
-    const flowNodes: Node[] = [];
-    const flowEdges: Edge[] = [];
+    const initialNodes: Node[] = [];
+    const initialEdges: Edge[] = [];
 
     // Sort step_states by step.step_index
     const sortedStepStates = [...runData.step_states].sort((a, b) => {
@@ -84,7 +134,7 @@ export default function FlowDagClient({ runData }: FlowDagClientProps) {
     });
 
     // Create nodes from step states
-    sortedStepStates.forEach((stepState, index) => {
+    sortedStepStates.forEach((stepState) => {
       const stepSlug = stepState.step_slug;
       const stepStatus = stepState.status;
       
@@ -102,39 +152,15 @@ export default function FlowDagClient({ runData }: FlowDagClientProps) {
       const isRetrying = latestTask && latestTask.attempts_count > 1 && stepState.status === 'started';
       const statusColor = getStatusColor(stepStatus, isRetrying);
 
-      // Position nodes in a vertical column for side layout
-      const xPos = 80;
-      let yPos = 0;
-      
-      // Position based on step index or known steps
-      if (stepSlug === 'website') {
-        yPos = 50;
-      } else if (['summary', 'sentiment', 'tags'].includes(stepSlug)) {
-        // Parallel steps at same vertical level
-        const parallelSteps = ['summary', 'sentiment', 'tags'];
-        yPos = 150;
-        // Offset parallel nodes horizontally
-        const position = parallelSteps.indexOf(stepSlug);
-        if (position !== -1) {
-          // Offset horizontally - first one centered, others to the sides
-          if (position === 0) xPos = xPos - 100;
-          else if (position === 2) xPos = xPos + 100;
-        }
-      } else if (stepSlug === 'saveToDb') {
-        yPos = 250;
-      } else {
-        // Default positioning for unknown steps
-        yPos = 50 + index * 80;
-      }
-
-      // Create node - simplified styling with matching colors from UI
-      flowNodes.push({
+      // Create node - position will be set by auto-layout
+      initialNodes.push({
         id: stepSlug,
         data: {
           label: stepSlug.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').toLowerCase(),
           status: isRetrying ? 'retrying' : stepStatus,
         },
-        position: { x: xPos, y: yPos },
+        // Initial position - will be replaced by auto-layout
+        position: { x: 0, y: 0 },
         style: {
           background: '#1e293b', // Dark background
           color: '#f8fafc',
@@ -156,7 +182,7 @@ export default function FlowDagClient({ runData }: FlowDagClientProps) {
           const isRunning = stepState.status === 'started';
           const statusColor = getStatusColor(stepState.status);
           
-          flowEdges.push({
+          initialEdges.push({
             id: `${dependencyStepSlug}-${stepState.step_slug}`,
             source: dependencyStepSlug,
             target: stepState.step_slug,
@@ -171,9 +197,18 @@ export default function FlowDagClient({ runData }: FlowDagClientProps) {
       }
     });
 
+    // Apply auto-layout using dagre
+    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
+      initialNodes,
+      initialEdges,
+      'LR' // Left to right layout for side panel
+    );
+
     // Set the nodes and edges
-    setNodes(flowNodes);
-    setEdges(flowEdges);
+    setNodes(layoutedNodes);
+    setEdges(layoutedEdges);
+    
+    
   }, [runData, setNodes, setEdges]);
 
   // Define nodeTypes object with our custom node
@@ -197,5 +232,14 @@ export default function FlowDagClient({ runData }: FlowDagClientProps) {
       <Controls position="bottom-right" showInteractive={false} />
       <Background color="#333" gap={16} size={1} variant="dots" />
     </ReactFlow>
+  );
+}
+
+// Export the component wrapped in ReactFlowProvider
+export default function FlowDagClient({ runData }: FlowDagClientProps) {
+  return (
+    <ReactFlowProvider>
+      <FlowComponent runData={runData} />
+    </ReactFlowProvider>
   );
 }

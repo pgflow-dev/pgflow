@@ -288,7 +288,7 @@ export default function FlowRunDetails({
             <TabsContent value="steps" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Flow DAG visualization - takes 1/3 of the width */}
-                <div className="h-[500px] border rounded-lg overflow-hidden bg-muted/30">
+                <div className="h-[500px]">
                   <FlowDagVisualization runData={runData} />
                 </div>
                 
