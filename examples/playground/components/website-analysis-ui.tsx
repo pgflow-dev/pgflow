@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { exampleLinks } from '@/lib/example-links';
+import WorkflowDag from '@/components/workflow-dag';
 
 interface WebsiteAnalysisUIProps {
   runData: ResultRow | null;
@@ -217,6 +218,12 @@ export default function WebsiteAnalysisUI({
               Triggers a multi-step workflow using <strong>pgflow</strong>
             </span>
           </h3>
+          <div className="mb-3">
+            <WorkflowDag 
+              className="bg-muted/30 rounded-md p-2" 
+              stepStates={runData?.step_states || []}
+            />
+          </div>
           <form
             onSubmit={handleSubmit}
             className="flex flex-col sm:flex-row gap-2"
@@ -270,6 +277,13 @@ export default function WebsiteAnalysisUI({
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
           >
+            <div className="mb-4">
+              <h4 className="text-sm font-medium mb-2">Workflow Structure</h4>
+              <WorkflowDag 
+                className="bg-muted/30 rounded-md p-2 mb-4" 
+                stepStates={runData?.step_states || []}
+              />
+            </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="url" className="block text-sm font-medium mb-1">

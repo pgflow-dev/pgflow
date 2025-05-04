@@ -12,6 +12,7 @@ import { FormMessage } from '@/components/form-message';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
+import WorkflowDag from '@/components/workflow-dag';
 
 // Format time difference in a concise way (e.g., "5s", "3m 45s", "2h 15m")
 function formatTimeDifference(
@@ -269,6 +270,15 @@ export default function FlowRunDetails({
               </div>
             </div>
           )}
+
+          {/* Workflow DAG Diagram */}
+          <div className="mb-6 p-3 bg-muted/30 border border-muted rounded-md">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-medium">Workflow Structure</h4>
+              <span className="text-xs text-muted-foreground">Data Pipeline Diagram</span>
+            </div>
+            <WorkflowDag stepStates={runData?.step_states || []} />
+          </div>
 
           {/* Tabs for Analysis Results / Technical Details */}
           <Tabs 
