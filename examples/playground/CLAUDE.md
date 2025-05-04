@@ -9,11 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build/Run Commands
 
-- `npm run dev` - Start development server
 - `npm run build` - Build the application
-- `npm run start` - Start production server
-- `npm run start-functions` - Start Supabase Edge Functions
-- `npm run start-worker` - Trigger the analyze_website function
 - `npm run gen-types` - Generate TypeScript types from Supabase schema
 
 ## Code Style Guidelines
