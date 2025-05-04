@@ -43,8 +43,8 @@ export default new Flow<Input>({
         summary: input.summary.aiSummary,
         tags: input.tags,
       };
-      await saveWebsite(websiteData);
+      const { website } = await saveWebsite(websiteData);
 
-      return websiteData;
+      return website;
     },
   );
