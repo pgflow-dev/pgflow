@@ -271,11 +271,6 @@ export default function FlowRunDetails({
             </div>
           )}
           
-          {/* Flow Visualization */}
-          <div className="mb-6">
-            <FlowDagVisualization runData={runData} />
-          </div>
-
           {/* Tabs for Process Steps / Analysis Results / Technical Details */}
           <Tabs 
             defaultValue="steps" 
@@ -291,8 +286,16 @@ export default function FlowRunDetails({
             
             {/* Process Steps Tab */}
             <TabsContent value="steps" className="space-y-4">
-              {runData.step_states &&
-                (() => {
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Flow DAG visualization - takes 1/3 of the width */}
+                <div className="h-[500px] border rounded-lg overflow-hidden bg-muted/30">
+                  <FlowDagVisualization runData={runData} />
+                </div>
+                
+                {/* Step details - takes 2/3 of the width */}
+                <div className="md:col-span-2">
+                  {runData.step_states &&
+                    (() => {
                   // Sort step_states directly by step.step_index
                   const sortedStepStates = [...runData.step_states].sort(
                     (a, b) => {
@@ -613,6 +616,8 @@ export default function FlowRunDetails({
                     </div>
                   );
                 })()}
+                </div>
+              </div>
             </TabsContent>
             
             {/* Analysis Results Tab */}
