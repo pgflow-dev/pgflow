@@ -1,5 +1,6 @@
 import { signUpAction } from "@/app/actions";
 import { FormMessage, Message } from "@/components/form-message";
+import { GithubButton } from "@/components/github-button";
 import { SubmitButton } from "@/components/submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,6 +42,12 @@ export default async function Signup(props: {
           <SubmitButton formAction={signUpAction} pendingText="Signing up...">
             Sign up
           </SubmitButton>
+          <div className="relative flex py-4 items-center">
+            <div className="flex-grow border-t border-muted"></div>
+            <span className="flex-shrink mx-4 text-muted-foreground text-sm">Or</span>
+            <div className="flex-grow border-t border-muted"></div>
+          </div>
+          <GithubButton />
           <FormMessage message={searchParams} />
         </div>
       </form>

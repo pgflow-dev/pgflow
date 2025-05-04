@@ -81,7 +81,23 @@ If you wish to just develop locally and not deploy to Vercel, [follow the steps 
 
    Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` can be found in [your Supabase project's API settings](https://app.supabase.com/project/_/settings/api)
 
-5. You can now run the Next.js local development server:
+5. Set up GitHub OAuth provider:
+
+   - Go to [GitHub Developer Settings](https://github.com/settings/developers)
+   - Click "New OAuth App"
+   - Fill in the form:
+     - Application name: (Your app name)
+     - Homepage URL: `http://localhost:3000`
+     - Authorization callback URL: `http://localhost:3000/auth/callback`
+   - Click "Register application"
+   - Copy the Client ID
+   - Generate a new Client Secret and copy it
+   - In your Supabase dashboard, go to Authentication > Providers
+   - Find GitHub and enable it
+   - Enter your GitHub Client ID and Client Secret
+   - Save changes
+
+6. You can now run the Next.js local development server:
 
    ```bash
    npm run dev
@@ -89,7 +105,7 @@ If you wish to just develop locally and not deploy to Vercel, [follow the steps 
 
    The starter kit should now be running on [localhost:3000](http://localhost:3000/).
 
-6. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
+7. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
 
 > Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
 
