@@ -4,8 +4,6 @@
     "specifiers": {
       "jsr:@henrygd/queue@^1.0.7": "jsr:@henrygd/queue@1.0.7",
       "jsr:@pgflow/edge-worker@0.1.22": "jsr:@pgflow/edge-worker@0.1.22",
-      "jsr:@std/assert@1": "jsr:@std/assert@1.0.10",
-      "jsr:@std/internal@^1.0.5": "jsr:@std/internal@1.0.5",
       "jsr:@supabase/supabase-js@^2.49.4": "jsr:@supabase/supabase-js@2.49.4",
       "npm:@pgflow/core@0.1.22": "npm:@pgflow/core@0.1.22",
       "npm:@pgflow/dsl@0.1.22": "npm:@pgflow/dsl@0.1.22",
@@ -32,15 +30,6 @@
           "npm:@pgflow/dsl@0.1.22",
           "npm:postgres@3.4.5"
         ]
-      },
-      "@std/assert@1.0.10": {
-        "integrity": "59b5cbac5bd55459a19045d95cc7c2ff787b4f8527c0dd195078ff6f9481fbb3",
-        "dependencies": [
-          "jsr:@std/internal@^1.0.5"
-        ]
-      },
-      "@std/internal@1.0.5": {
-        "integrity": "54a546004f769c1ac9e025abd15a76b6671ddc9687e2313b67376125650dc7ba"
       },
       "@supabase/supabase-js@2.49.4": {
         "integrity": "4b785f9cd4a62feb7b3f84606bb923a4ea51e3e000eafff0972bc779240b7592",
@@ -119,6 +108,12 @@
       "@types/node@18.16.19": {
         "integrity": "sha512-IXl7o+R9iti9eBW4Wg2hx1xQDig183jj7YLn8F7udNceyfkbn1ZxmzZXuak20gR40D7pIkIY1kYGx5VIGbaHKA==",
         "dependencies": {}
+      },
+      "@types/node@18.19.87": {
+        "integrity": "sha512-OIAAu6ypnVZHmsHCeJ+7CCSub38QNBS9uceMQeg7K5Ur0Jr+wG9wEOEvvMbhp09pxD5czIUy/jND7s7Tb6Nw7A==",
+        "dependencies": {
+          "undici-types": "undici-types@5.26.5"
+        }
       },
       "@types/phoenix@1.6.6": {
         "integrity": "sha512-PIzZZlEppgrpoT2QgbnDU+MMzuR6BbCjllj0bM70lWoejMeNJAxCchxnv7J3XFkI8MpygtRpzXrIlmWUBclP5A==",
@@ -289,7 +284,7 @@
       "groq-sdk@0.20.1": {
         "integrity": "sha512-I/U7mHDcanKHR/P0oKSSS0M6oHR69G1QgtMplqmF3gSejJ5ihV7l+/0OqbNoqOzYoQKG4XH7O4zCqMoTKCztQQ==",
         "dependencies": {
-          "@types/node": "@types/node@18.16.19",
+          "@types/node": "@types/node@18.19.87",
           "@types/node-fetch": "@types/node-fetch@2.6.12",
           "abort-controller": "abort-controller@3.0.0",
           "agentkeepalive": "agentkeepalive@4.6.0",
@@ -409,6 +404,10 @@
         "dependencies": {
           "@mixmark-io/domino": "@mixmark-io/domino@2.2.0"
         }
+      },
+      "undici-types@5.26.5": {
+        "integrity": "sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==",
+        "dependencies": {}
       },
       "web-streams-polyfill@4.0.0-beta.3": {
         "integrity": "sha512-QW95TCTaHmsYfHDybGMwO5IJIM93I/6vTRk+daHTWFPhwh+C8Cg7j7XyKrwrj8Ib6vYXe0ocYNrmzY4xAAN6ug==",

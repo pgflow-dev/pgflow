@@ -29,22 +29,10 @@ function RunPageContent() {
 
   return (
     <div className="flex flex-col lg:flex-row">
-      {/* Main panel: User-friendly UI */}
-      <div className="lg:w-[65%] xl:w-[70%] lg:pr-6">
-        <WebsiteAnalysisUI
-          runData={runData}
-          loading={loading}
-          error={error}
-          onAnalyzeWebsite={analyzeWebsite}
-          analyzeLoading={analyzeLoading}
-          analyzeError={analyzeError}
-        />
-      </div>
-
-      {/* Side panel: Technical details - fixed position */}
-      <div className="lg:w-[35%] xl:w-[30%]">
+      {/* Debug panel: Technical details - first on mobile, right side on desktop */}
+      <div className="w-full lg:w-[35%] xl:w-[30%] order-first lg:order-last mb-6 lg:mb-0">
         <div 
-          className={`fixed top-16 bottom-4 right-4 lg:w-[calc(35%-2rem)] xl:w-[calc(30%-2rem)] overflow-hidden flex flex-col transition-all duration-300 group border hover:shadow-lg
+          className={`relative lg:fixed lg:top-16 lg:bottom-4 lg:right-4 w-full lg:w-[calc(35%-2rem)] xl:w-[calc(30%-2rem)] overflow-hidden flex flex-col transition-all duration-300 group border hover:shadow-lg
             ${isPinned 
               ? "opacity-100 border-solid border-foreground/30" 
               : "opacity-50 hover:opacity-100 cursor-pointer border-dashed border-foreground/20 hover:border-solid"
@@ -147,6 +135,18 @@ function RunPageContent() {
             currentTime={currentTime}
           />
         </div>
+      </div>
+
+      {/* Main panel: User-friendly UI - second on mobile, left side on desktop */}
+      <div className="w-full lg:w-[65%] xl:w-[70%] lg:pr-6 order-last lg:order-first">
+        <WebsiteAnalysisUI
+          runData={runData}
+          loading={loading}
+          error={error}
+          onAnalyzeWebsite={analyzeWebsite}
+          analyzeLoading={analyzeLoading}
+          analyzeError={analyzeError}
+        />
       </div>
     </div>
   );

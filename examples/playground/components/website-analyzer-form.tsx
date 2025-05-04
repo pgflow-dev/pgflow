@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { FormMessage } from '@/components/form-message';
@@ -14,6 +14,7 @@ export default function WebsiteAnalyzerForm({
   isLoggedIn: boolean;
 }) {
   const [formError, setFormError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const supabase = createClient();
 
@@ -44,26 +45,29 @@ export default function WebsiteAnalyzerForm({
 
     try {
       console.log('Starting analysis for URL:', url);
-      const { data, error } = await supabase.rpc('start_analyze_website_flow', {
-        url,
+      // Start the transition to show loading state
+      startTransition(async () => {
+        const { data, error } = await supabase.rpc('start_analyze_website_flow', {
+          url,
+        });
+
+        if (error) {
+          console.error('Error starting analysis:', error);
+          setFormError(error.message);
+          return;
+        }
+
+        if (data && data.run_id) {
+          console.log(
+            'Analysis started, redirecting to:',
+            `/websites/runs/${data.run_id}`,
+          );
+          router.push(`/websites/runs/${data.run_id}`);
+        } else {
+          console.error('No run_id returned from analysis');
+          setFormError('Failed to start flow analysis');
+        }
       });
-
-      if (error) {
-        console.error('Error starting analysis:', error);
-        setFormError(error.message);
-        return;
-      }
-
-      if (data && data.run_id) {
-        console.log(
-          'Analysis started, redirecting to:',
-          `/websites/runs/${data.run_id}`,
-        );
-        router.push(`/websites/runs/${data.run_id}`);
-      } else {
-        console.error('No run_id returned from analysis');
-        setFormError('Failed to start flow analysis');
-      }
     } catch (error) {
       setFormError('An error occurred while starting the analysis');
       console.error('Exception during analysis:', error);
@@ -87,9 +91,10 @@ export default function WebsiteAnalyzerForm({
             placeholder="https://example.com"
             defaultValue="https://example.com"
             required
+            disabled={isPending}
           />
         </div>
-        <SubmitButton>
+        <SubmitButton disabled={isPending} pendingText="🔄 Starting analysis...">
           {isLoggedIn ? '🚀 Start Analysis' : 'Sign in & Analyze'}
         </SubmitButton>
         {formError && <FormMessage message={{ error: formError }} />}

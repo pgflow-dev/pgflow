@@ -1,11 +1,11 @@
 'use client';
 
 import { createClient } from '@/utils/supabase/client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import type { Database } from '@/supabase/functions/database-types';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { FormMessage, Message } from '@/components/form-message';
+import { FormMessage } from '@/components/form-message';
 import { SubmitButton } from '@/components/submit-button';
 import { useRouter } from 'next/navigation';
 
@@ -15,6 +15,7 @@ export default function Page() {
   const [websites, setWebsites] = useState<WebsiteRow[] | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [url, setUrl] = useState('https://reddit.com/r/supabase');
+  const [isPending, startTransition] = useTransition();
   const supabase = createClient();
   const router = useRouter();
 
@@ -34,32 +35,38 @@ export default function Page() {
       if (urlParam) {
         setUrl(urlParam);
         console.log("Found URL parameter, starting analysis:", urlParam);
-        startAnalysis(urlParam);
+        
+        // Use a tiny delay to ensure we're already in the client-side
+        // This helps prevent the page from fully rendering before redirecting
+        setTimeout(() => {
+          startAnalysis(urlParam);
+        }, 10);
       }
     }
   }, []);
   
   async function startAnalysis(url: string) {
-    if (!url) {
-      setFormError('Please enter a URL');
+    if (!url || isPending) {
       return;
     }
 
     try {
-      const { data, error } = await supabase.rpc('start_analyze_website_flow', {
-        url,
+      startTransition(async () => {
+        const { data, error } = await supabase.rpc('start_analyze_website_flow', {
+          url,
+        });
+
+        if (error) {
+          setFormError(error.message);
+          return;
+        }
+
+        if (data && data.run_id) {
+          router.push(`/websites/runs/${data.run_id}`);
+        } else {
+          setFormError('Failed to start flow analysis');
+        }
       });
-
-      if (error) {
-        setFormError(error.message);
-        return;
-      }
-
-      if (data && data.run_id) {
-        router.push(`/websites/runs/${data.run_id}`);
-      } else {
-        setFormError('Failed to start flow analysis');
-      }
     } catch (error) {
       setFormError('An error occurred while starting the analysis');
       console.error(error);
@@ -69,26 +76,28 @@ export default function Page() {
   async function startAnalyzeWebsiteFlow(formData: FormData) {
     const url = formData.get('url') as string;
 
-    if (!url) {
+    if (!url || isPending) {
       setFormError('Please enter a URL');
       return;
     }
 
     try {
-      const { data, error } = await supabase.rpc('start_analyze_website_flow', {
-        url,
+      startTransition(async () => {
+        const { data, error } = await supabase.rpc('start_analyze_website_flow', {
+          url,
+        });
+
+        if (error) {
+          setFormError(error.message);
+          return;
+        }
+
+        if (data && data.run_id) {
+          router.push(`/websites/runs/${data.run_id}`);
+        } else {
+          setFormError('Failed to start flow analysis');
+        }
       });
-
-      if (error) {
-        setFormError(error.message);
-        return;
-      }
-
-      if (data && data.run_id) {
-        router.push(`/websites/runs/${data.run_id}`);
-      } else {
-        setFormError('Failed to start flow analysis');
-      }
     } catch (error) {
       setFormError('An error occurred while starting the analysis');
       console.error(error);
@@ -114,9 +123,14 @@ export default function Page() {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 required
+                disabled={isPending}
               />
             </div>
-            <SubmitButton formAction={startAnalyzeWebsiteFlow}>
+            <SubmitButton 
+              formAction={startAnalyzeWebsiteFlow} 
+              disabled={isPending}
+              pendingText="🔄 Starting analysis..."
+            >
               Start Analysis
             </SubmitButton>
             {formError && <FormMessage message={{ error: formError }} />}
