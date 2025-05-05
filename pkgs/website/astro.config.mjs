@@ -4,7 +4,7 @@ import starlight from '@astrojs/starlight';
 import starlightLinksValidator from 'starlight-links-validator';
 import starlightSidebarTopics from 'starlight-sidebar-topics';
 import robotsTxt from 'astro-robots-txt';
-import starlightLlmsTxt from 'starlight-llms-txt';
+// import starlightLlmsTxt from 'starlight-llms-txt';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import react from '@astrojs/react';
@@ -40,6 +40,7 @@ export default defineConfig({
       '/edge-worker/how-to/deploy-to-supabasecom/',
   },
   integrations: [
+    react(),
     starlight({
       favicon: '/favicons/favicon.ico',
       head: [
@@ -67,8 +68,8 @@ export default defineConfig({
         },
       ],
       plugins: [
-        starlightLlmsTxt(),
-        starlightLinksValidator(),
+        // starlightLlmsTxt({ exclude: ['/'] }),
+        starlightLinksValidator({ exclude: ['http://localhost*'] }),
         starlightSidebarTopics([
           {
             label: 'pgflow',
@@ -157,6 +158,5 @@ export default defineConfig({
         },
       ],
     }),
-    react(),
   ],
 });
