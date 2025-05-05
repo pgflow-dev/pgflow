@@ -242,7 +242,6 @@ Before starting, make sure you have:
     import summarizeWithAI from '../_tasks/summarizeWithAI.ts';
     import extractTags from '../_tasks/extractTags.ts';
     import saveWebsite from '../_tasks/saveWebsite.ts';
-    import { simulateFailure } from '../utils.ts';
 
     type Input = {
       url: string;
@@ -263,8 +262,6 @@ Before starting, make sure you have:
         async (input) => await summarizeWithAI(input.website.content),
       )
       .step({ slug: 'tags', dependsOn: ['website'] }, async (input) => {
-        await simulateFailure(input.run.url);
-
         const { keywords } = await extractTags(input.website.content);
         return keywords;
       })
@@ -286,7 +283,7 @@ Before starting, make sure you have:
     - Explicit dependencies between steps
     - Built-in retry and error handling
     - Parallel execution of independent steps
-    
+
     :::important[JSON Serialization Requirement]
     All step inputs and outputs MUST be JSON-serializable, as pgflow stores these values in JSONB database columns.
     This means you should use only plain objects, arrays, and primitive types (strings, numbers, booleans, null).
@@ -323,10 +320,6 @@ Our workflow includes several important features:
 - **Step configuration**:
   - `slug`: Unique identifier for each step
   - `dependsOn`: Array of step slugs that must complete before this step runs
-
-- **Error simulation**:
-  - The tags step includes error simulation to demonstrate retry behavior
-  - In a production environment, this helps handle transient failures
 
 <Aside>
 Next, we'll [compile this flow definition to SQL](/getting-started/compile-to-sql/) to make it available in your database.

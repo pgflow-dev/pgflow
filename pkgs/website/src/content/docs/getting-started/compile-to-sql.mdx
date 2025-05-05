@@ -60,18 +60,15 @@ Before continuing, make sure you have:
     ```
 
     The migration file contains SQL commands that:
-    
+
     1. Create the flow definition
     2. Add each step with its configuration
     3. Define dependencies between steps
 
-    Here's a simplified view of what the SQL looks like:
+    The generated SQL looks like this:
 
     ```sql
-    -- Create the flow
     SELECT pgflow.create_flow('analyze_website', max_attempts => 3, base_delay => 1, timeout => 4);
-
-    -- Add steps and define their dependencies
     SELECT pgflow.add_step('analyze_website', 'website');
     SELECT pgflow.add_step('analyze_website', 'summary', ARRAY['website']);
     SELECT pgflow.add_step('analyze_website', 'tags', ARRAY['website']);
@@ -173,7 +170,7 @@ The separation of tasks from flows helps with versioning:
 ```typescript
 // Both flow versions can use the same task implementations
 // analyze_website_v1.ts and analyze_website_v2.ts
-import { scrapeWebsite } from '../_tasks/scrapeWebsite.ts';
+import scrapeWebsite from '../_tasks/scrapeWebsite.ts';
 ```
 
 :::note[Flow Versioning Tips]

@@ -26,13 +26,13 @@ Before starting, make sure you have:
 Create a new Edge Function that will process tasks for your workflow:
 
 ```bash frame="none"
-mkdir -p supabase/functions/analyze_website_worker
+npx supabase functions new analyze_website_worker
 ```
 
-Create an `index.ts` file in the new function directory:
+Replace contents of `index.ts` file with the following:
 
 ```typescript title="supabase/functions/analyze_website_worker/index.ts"
-import { EdgeWorker } from "jsr:@pgflow/edge-worker@0.0.4";
+import { EdgeWorker } from "jsr:@pgflow/edge-worker";
 import AnalyzeWebsite from '../_flows/analyze_website.ts';
 
 // Pass the flow definition to the Edge Worker
