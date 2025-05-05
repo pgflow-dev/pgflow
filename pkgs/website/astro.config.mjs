@@ -105,6 +105,10 @@ export default defineConfig({
                 autogenerate: { directory: 'getting-started/' } 
               },
               {
+                label: 'Explanations',
+                autogenerate: { directory: 'explanations/' }
+              },
+              {
                 label: 'How To',
                 autogenerate: { directory: 'how-to/' }
               },
