@@ -7,7 +7,13 @@ import { hasEnvVars } from '@/utils/supabase/check-env-vars';
 import { Geist } from 'next/font/google';
 import { ThemeProvider } from 'next-themes';
 import Link from 'next/link';
-import { BookOpen, Github, AlertCircle, Twitter, MessagesSquare } from 'lucide-react';
+import {
+  BookOpen,
+  Github,
+  AlertCircle,
+  Twitter,
+  MessagesSquare,
+} from 'lucide-react';
 import './globals.css';
 
 const defaultUrl = process.env.VERCEL_URL
@@ -45,29 +51,56 @@ export default function RootLayout({
                 <nav className="w-full flex justify-center border-b border-b-foreground/10 h-14">
                   <div className="w-full max-w-5xl flex justify-between items-center p-1 px-5 text-sm">
                     <div className="flex gap-5 items-center">
-                      <Link href={'/'} className="font-semibold">{metadata.title}</Link>
+                      <Link href={'/'} className="font-semibold">
+                        {metadata.title}
+                      </Link>
                       <div className="hidden sm:flex items-center gap-4 text-xs">
                         <div className="flex items-center gap-4">
-                          <a href="https://pgflow.dev" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                          <a
+                            href="https://pgflow.dev"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                          >
                             <BookOpen className="h-3 w-3" />
                             Docs
                           </a>
-                          <a href="https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                          <a
+                            href="https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                          >
                             <Github className="h-3 w-3" />
                             Source
                           </a>
-                          <a href="https://github.com/pgflow-dev/pgflow/issues/new" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                          <a
+                            href="https://github.com/pgflow-dev/pgflow/issues/new"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                          >
                             <AlertCircle className="h-3 w-3" />
                             Report Bug
                           </a>
                         </div>
                         <div className="h-3 w-[1px] bg-border"></div>
                         <div className="flex items-center gap-4">
-                          <a href="https://x.com/pgflow_dev" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                          <a
+                            href="https://x.com/pgflow_dev"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                          >
                             <Twitter className="h-3 w-3" />
                             Twitter
                           </a>
-                          <a href="https://discord.gg/NpffdEyb" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                          <a
+                            href="https://discord.gg/NpffdEyb"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                          >
                             <MessagesSquare className="h-3 w-3" />
                             Discord
                           </a>
@@ -97,7 +130,7 @@ export default function RootLayout({
                     </a>{' '}
                     and{' '}
                     <a
-                      href="https://pgflow.dev/?utm_source=pgflow-playground"
+                      href="https://pgflow.dev/?utm_source=pgflow-demo"
                       target="_blank"
                       className="font-bold hover:underline"
                       rel="noreferrer"
