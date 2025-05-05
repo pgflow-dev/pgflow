@@ -3,8 +3,12 @@ title: pgflow
 description: Postgres-First Workflow Orchestration—All in SQL
 template: splash
 hero:
-  title: Build AI Agent Workflows on Supabase
-  tagline: pgflow adds deterministic, parallel orchestration on top of Supabase Background Jobs - no extra servers needed
+  # title: Effortless Supabase Workflows for AI & Background Jobs
+  title: Automate AI Workflows Natively on Supabase
+  # title: AI Agents & Workflow Automation for Supabase
+  # title: Supabase Workflows for AI Agents & Background Jobs
+  # title: Build AI Agent Workflows on Supabase
+  tagline: Run deterministic AI workflows and background jobs directly in Supabase, no extra servers required.
   image:
     dark: ../../assets/pgflow-logo-dark.svg
     light: ../../assets/pgflow-logo-light.svg
@@ -30,26 +34,26 @@ pgflow is a workflow orchestration system with its core state management in your
 
 <CardGrid>
   <Card title="SQL Core" icon="star">
-    Pure SQL implementation that handles workflow definitions, state transitions, and ACID-compliant processing directly in your Postgres database.
+    Manage workflow state and transitions natively in Postgres with full ACID compliance
   </Card>
   <Card title="TypeScript DSL" icon="seti:typescript">
-    Type-safe API for defining workflows that automatically infers input/output types between steps, providing compile-time safety.
+    Type-safe workflows with automatic inference and end-to-end compile-time safety.
   </Card>
   <Card title="Edge Worker" icon="rocket">
-    Self-restarting worker that processes tasks with built-in retries and error handling, designed for Supabase Edge Functions.
+    Auto-respawning, continuously running worker for ultra-fast, reliable task execution.
   </Card>
   <Card title="CLI Tools" icon="seti:powershell">
-    One-command setup with `npx pgflow install` that handles migrations, configuration, and deployment.
+    One-command setup: quickly deploy PGFlow with automatic DB migrations.
   </Card>
 </CardGrid>
 
 ## Type-safe DAG workflows in TypeScript
 
-Define complex workflows with parallel execution and dependencies using a simple, type-safe API:
+Define parallel, type-safe DAG workflows effortlessly.
 
 ```typescript
 // Define a workflow with parallel steps
-new Flow<{ url: string, user_id: string }>({
+new Flow<{ url: string; user_id: string }>({
   slug: 'analyze_website',
   maxAttempts: 3,
   timeout: 4,
@@ -57,30 +61,25 @@ new Flow<{ url: string, user_id: string }>({
 })
   .step(
     { slug: 'website' },
-    async (input) => await scrapeWebsite(input.run.url),
+    async (input) => await scrapeWebsite(input.run.url)
   )
   .step(
     { slug: 'summary', dependsOn: ['website'] },
-    async (input) => await summarizeWithAI(input.website.content),
+    async (input) => await summarizeWithAI(input.website.content)
   )
   .step(
     { slug: 'tags', dependsOn: ['website'] },
-    async (input) => {
-      const { keywords } = await extractTags(input.website.content);
-      return keywords;
-    }
+    async (input) => await extractTags(input.website.content)
   )
   .step(
     { slug: 'saveToDb', dependsOn: ['summary', 'tags'] },
-    async (input) => {
-      const websiteData = {
+    async (input) =>
+      await saveWebsite({
         user_id: input.run.user_id,
         website_url: input.run.url,
         summary: input.summary,
         tags: input.tags,
-      };
-      return await saveWebsite(websiteData);
-    }
+      })
   );
 ```
 
@@ -92,7 +91,7 @@ new Flow<{ url: string, user_id: string }>({
   </Card>
 
   <Card title="Reliable task processing" icon="rocket">
-    Built on [PGMQ](https://github.com/tembo-io/pgmq) for at-least-once delivery with automatic retries, timeouts, and dead-letter handling.
+    Automatic retries, timeouts, at-least-once delivery and dead-letter handling built directly into your database.
   </Card>
 
   <Card title="Supabase-native" icon="puzzle">
@@ -108,10 +107,10 @@ new Flow<{ url: string, user_id: string }>({
 
 Create and run workflows with a straightforward process:
 
-1. **Define your workflow** in TypeScript with the Flow DSL, specifying handlers and dependencies
-2. **Generate SQL migrations** from your workflow definition
-3. **Create a dedicated worker** as a Supabase Edge Function for your flow
-4. **Start workflows** from your application code, SQL triggers, or APIs
+1. **Define workflows using TypeScript DSL**
+1. **Compile them to SQL migrations**
+1. **Deploy as Supabase Edge Functions**
+1. **Trigger workflows from your app or SQL**
 
 The execution system handles the rest—scheduling steps when dependencies complete, retrying failed tasks, and aggregating results automatically.
 
