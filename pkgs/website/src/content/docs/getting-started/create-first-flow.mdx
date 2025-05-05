@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-import { Aside, Steps, Tabs } from "@astrojs/starlight/components";
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { FileTree } from '@astrojs/starlight/components';
 import NotProductionReady from '@/components/NotProductionReady.astro';
 
@@ -44,20 +44,20 @@ Before starting, make sure you have:
     ```
 
     This organizes our code into two key parts:
-    
+
     - `_tasks/` - Contains small, focused functions that each perform a single unit of work with clear inputs and outputs
     - `_flows/` - Contains definitions that compose these tasks into directed acyclic graphs (DAGs), defining data dependencies between tasks
-    
+
     Tasks are modular, reusable functions designed for a specific purpose, while flows define the execution order, parallelism, and data transformations between tasks. The flow orchestrates how data moves through the computational graph.
-    
+
     :::note[Task Design Best Practice]
     Design your task functions to be as agnostic as possible about where their inputs come from. A well-designed task should:
-    
+
     - Accept simple, focused parameters (like a URL or content string)
     - Perform one specific job well
     - Return clear results without assuming how they'll be used
     - Have no knowledge about other tasks or the overall flow
-    
+
     **DO:**
     ```typescript
     // Good: Task accepts direct content parameter
@@ -65,14 +65,14 @@ Before starting, make sure you have:
       // Process the content directly
       return { summary: "Processed summary..." };
     }
-    
+
     // In your flow:
     .step(
       { slug: 'summary', dependsOn: ['website'] },
       async (input) => await summarizeContent(input.website.content)
     )
     ```
-    
+
     **DON'T:**
     ```typescript
     // Bad: Task expects specific step structure
@@ -80,14 +80,14 @@ Before starting, make sure you have:
       // Tightly coupled to previous step name and structure
       return { summary: "Processed summary..." };
     }
-    
+
     // In your flow:
     .step(
       { slug: 'summary', dependsOn: ['website'] },
       async (input) => await summarizeWebsite(input) // Passing entire input object
     )
     ```
-    
+
     This makes tasks reusable across different flows and easier to test in isolation.
     :::
 
@@ -109,26 +109,20 @@ Before starting, make sure you have:
     First, let's create the implementation for each task. These functions will be called by our flow steps.
 
     <Tabs>
-      <Fragment slot="tab.scrapeWebsite">scrapeWebsite.ts</Fragment>
-      <Fragment slot="tab.summarizeWithAI">summarizeWithAI.ts</Fragment>
-      <Fragment slot="tab.extractTags">extractTags.ts</Fragment>
-      <Fragment slot="tab.saveWebsite">saveWebsite.ts</Fragment>
-      <Fragment slot="tab.utils">utils.ts</Fragment>
-
-      <Fragment slot="panel.scrapeWebsite">
+      <TabItem label="scrapeWebsite.ts">
       ```typescript title="supabase/functions/_tasks/scrapeWebsite.ts"
       /**
        * Fetches website content from a URL
-       * 
+       *
        * For a real implementation, see the demo app:
        * https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions/_tasks/scrapeWebsite.ts
        */
       export default async function scrapeWebsite(url: string) {
         console.log(`Fetching content from: ${url}`);
-        
+
         // In a real implementation, this would fetch and process actual website content
         // This simplified version returns mock data based on the URL
-        
+
         return {
           content: `Sample content from ${url}. This is a placeholder for real website content.
           The website discusses various topics including technology, data processing, and workflows.
@@ -136,25 +130,25 @@ Before starting, make sure you have:
         };
       }
       ```
-      </Fragment>
+      </TabItem>
 
-      <Fragment slot="panel.summarizeWithAI">
+      <TabItem label="summarizeWithAI.ts">
       ```typescript title="supabase/functions/_tasks/summarizeWithAI.ts"
       /**
        * Summarizes text content using AI
-       * 
+       *
        * For a real implementation using Groq/OpenAI, see the demo app:
        * https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions/_tasks/summarizeWithAI.ts
        */
       export default async function summarizeWithAI(content: string) {
         console.log(`Summarizing ${content.length} chars of content`);
-        
+
         // Simple function that generates a summary based on content length
         // In a real implementation, this would use an AI service API
-        
+
         const length = content.length;
         let summary = "";
-        
+
         if (length < 100) {
           summary = "Very short content about a website.";
         } else if (length < 500) {
@@ -162,47 +156,47 @@ Before starting, make sure you have:
         } else {
           summary = "Comprehensive website covering multiple aspects of technology, data processing workflows, and system architecture. The content explores efficient data handling methodologies and implementation patterns.";
         }
-        
+
         return summary;
       }
       ```
-      </Fragment>
+      </TabItem>
 
-      <Fragment slot="panel.extractTags">
+      <TabItem label="extractTags.ts">
       ```typescript title="supabase/functions/_tasks/extractTags.ts"
       /**
        * Extracts relevant tags from content
-       * 
+       *
        * For a real implementation using AI services, see the demo app:
        * https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions/_tasks/extractTags.ts
        */
       export default async function extractTags(content: string) {
         console.log(`Extracting tags from ${content.length} chars of content`);
-        
+
         // Simple mock implementation that returns tags based on content
         // In a real implementation, this would use AI to analyze the content
-        
+
         // Create a set of default tags
         const defaultTags = ["technology", "data", "workflow"];
-        
+
         // Add additional tags based on content
         const additionalTags = [];
         if (content.includes("processing")) additionalTags.push("processing");
         if (content.includes("API") || content.includes("api")) additionalTags.push("api");
         if (content.includes("database") || content.includes("SQL")) additionalTags.push("database");
-        
+
         return {
           keywords: [...defaultTags, ...additionalTags]
         };
       }
       ```
-      </Fragment>
+      </TabItem>
 
-      <Fragment slot="panel.saveWebsite">
+      <TabItem label="saveWebsite.ts">
       ```typescript title="supabase/functions/_tasks/saveWebsite.ts"
       /**
        * Saves website data to the database
-       * 
+       *
        * For a real implementation using Supabase, see the demo app:
        * https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions/_tasks/saveWebsite.ts
        */
@@ -213,15 +207,15 @@ Before starting, make sure you have:
         tags: string[];
       }) {
         console.log("Saving website data:", websiteData);
-        
+
         // In a real implementation, this would save to a database
         // This simplified version just logs and returns mock data
-        
+
         // Generate a mock ID based on URL
         const id = `website_${Date.now()}`;
-        
-        return { 
-          success: true, 
+
+        return {
+          success: true,
           website: {
             id,
             ...websiteData,
@@ -230,37 +224,11 @@ Before starting, make sure you have:
         };
       }
       ```
-      </Fragment>
-
-      <Fragment slot="panel.utils">
-      ```typescript title="supabase/functions/utils.ts"
-      /**
-       * Utility functions for the workflow
-       */
-      
-      // Sleep for a specified number of milliseconds
-      export async function sleep(ms: number) {
-        return new Promise((resolve) => setTimeout(resolve, ms));
-      }
-      
-      // Test URL that will trigger the failure simulation
-      const FAILURE_URL = 'https://test-failure.example.com';
-      
-      /**
-       * Simulates a failure for testing error handling
-       * Only fails if the URL matches the test failure URL
-       */
-      export async function simulateFailure(url: string): Promise<void> {
-        if (url === FAILURE_URL) {
-          throw new Error('Simulated failure to demonstrate error handling');
-        }
-      }
-      ```
-      </Fragment>
+      </TabItem>
     </Tabs>
 
     <Aside>
-    Note: The tasks use services like Groq for AI processing and Supabase for database access. 
+    Note: The tasks use services like Groq for AI processing and Supabase for database access.
     In a real implementation, you'll need to set up appropriate environment variables.
     </Aside>
 
@@ -328,13 +296,7 @@ Before starting, make sure you have:
 
 The analyze_website flow has this structure:
 
-```mermaid
-graph TD
-  A[website] --> B[summary]
-  A --> C[tags]
-  B --> D[saveToDb]
-  C --> D
-```
+<img src="/analyze_website.svg" width="50%" height="50%"/>
 
 This demonstrates the core concepts of pgflow:
 
