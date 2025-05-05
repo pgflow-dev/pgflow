@@ -5,13 +5,29 @@ sidebar:
   order: 2
 ---
 
-import { Aside, Steps } from "@astrojs/starlight/components";
+import { Aside, Steps, Tabs, CardGrid, Card, Icon, LinkButton } from "@astrojs/starlight/components";
 import { FileTree } from '@astrojs/starlight/components';
-import NotProductionReady from '@/components/NotProductionReady.astro';
-
-Let's set up pgflow in your Supabase project. This setup needs to be done only once per project.
+import NotProductionReady from '../../../../components/NotProductionReady.astro';
 
 <NotProductionReady />
+
+# Transform Your Supabase Project with pgflow
+
+<CardGrid stagger>
+  <Card title="One-Command Setup" icon="rocket">
+    Install and configure pgflow with a single command - no complex setup required
+  </Card>
+  <Card title="Automatic Detection" icon="setting">
+    The installer automatically detects your Supabase environment
+  </Card>
+  <Card title="Everything Included" icon="puzzle">
+    Database schema, SQL functions, and connection pooling all set up for you
+  </Card>
+</CardGrid>
+
+<Aside type="tip" title="Ready to Dive In?">
+  Time to complete: ~5 minutes
+</Aside>
 
 <Aside type="caution" title="Prerequisites">
 - Supabase CLI version **2.0.2** or higher (check with `supabase -v`)
@@ -21,86 +37,101 @@ Let's set up pgflow in your Supabase project. This setup needs to be done only o
 If you haven't installed the CLI yet or need to upgrade, see Supabase's [installation guide](https://supabase.com/docs/guides/cli).
 </Aside>
 
+## Let's Get Started!
+
+Setting up pgflow is a breeze! Follow these simple steps to transform your Supabase project into a powerful workflow engine.
+
 <Steps>
 
-1. ### Run the installer
+1. ### Run the Magic Installer
 
-    pgflow includes a convenient installer that sets up everything you need. Run it with npx:
+    <Tabs>
+      <Fragment slot="tab.auto">Automatic Installation</Fragment>
+      <Fragment slot="tab.manual">Manual Path</Fragment>
 
-    ```bash frame="none"
-    npx pgflow@latest install
-    ```
+      <Fragment slot="panel.auto">
+        Run this single command and watch the magic happen:
 
-    The installer will:
-    - Detect your Supabase project automatically
-    - Update your `config.toml` to enable connection pooling
-    - Copy the required migrations to your migrations folder
-    - Create a functions environment file if needed
+        ```bash frame="terminal" title="Terminal"
+        npx pgflow@latest install
+        ```
 
-    <Aside>
-    If your Supabase directory isn't detected automatically, specify it manually:
-    
-    ```bash frame="none"
-    npx pgflow@latest install --supabase-path=./path/to/supabase
-    ```
-    </Aside>
+        The installer will:
+        - ✨ Detect your Supabase project automatically
+        - 🔄 Update your `config.toml` to enable connection pooling
+        - 📊 Copy all required SQL migrations
+        - 🔧 Configure environment variables
+      </Fragment>
 
-2. ### Apply configuration changes
+      <Fragment slot="panel.manual">
+        If your Supabase directory isn't in a standard location, just point to it:
 
-    Restart your Supabase instance to apply the configuration changes:
+        ```bash frame="terminal" title="Terminal"
+        npx pgflow@latest install --supabase-path=./path/to/supabase
+        ```
+        
+        You'll get the same magical setup, just with a custom path!
+      </Fragment>
+    </Tabs>
 
-    ```bash frame="none"
+2. ### Apply Configuration Changes
+
+    Restart your Supabase instance to activate the new configuration:
+
+    ```bash frame="terminal" title="Terminal"
     npx supabase stop
     npx supabase start
     ```
 
-3. ### Apply migrations
+    <Aside type="note">
+      This restart loads the connection pooling settings that pgflow needs for reliable operation.
+    </Aside>
 
-    If you haven't already, apply the migrations to create the pgflow schema and tables:
+3. ### Apply Migrations
 
-    ```bash frame="none"
+    Deploy the database schema with this simple command:
+
+    ```bash frame="terminal" title="Terminal"
     npx supabase db push
     ```
 
-    This will create the following database objects:
-    - `pgflow` schema with tables for workflows and execution state
-    - SQL functions for workflow operations
-    - Required extensions if not already present
-
-4. ### Verify installation
-
-    Let's make sure everything was installed correctly by checking if the `pgflow` schema exists.
-    
-    You can verify this using the **Supabase Studio**:
-    
-    1. Open Supabase Studio in your browser (typically at http://localhost:54323)
-    2. Navigate to the **SQL Editor**
-    3. Run the following query:
-    
-    ```sql
-    SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'pgflow';
-    ```
-    
-    You should see:
-    ```
-    schema_name
-    ------------
-    pgflow
-    ```
+    <FileTree>
+      <FileTree.Folder name="migrations" defaultOpen>
+        <FileTree.File name="[timestamp]_pgflow_initial.sql" />
+      </FileTree.Folder>
+    </FileTree>
 
 </Steps>
 
-### What was installed?
+## What You Just Installed
 
-The installer set up:
+<CardGrid>
+  <Card title="PostgreSQL Schema" icon="database">
+    Tables for workflow definitions (`flows`, `steps`, `deps`) and runtime state (`runs`, `step_states`, `step_tasks`)
+  </Card>
+  
+  <Card title="SQL Functions" icon="function">
+    Core functions like `create_flow`, `add_step`, `start_flow`, and more that power your workflows
+  </Card>
+  
+  <Card title="Connection Pooling" icon="random">
+    Optimized database connection settings for reliable Edge Worker operations
+  </Card>
+  
+  <Card title="Environment Setup" icon="setting">
+    Pre-configured environment variables for seamless integration
+  </Card>
+</CardGrid>
 
-1. **Database schema** - Tables for workflow definitions and runtime state
-2. **SQL functions** - Core functions to create, start, and manage workflows
-3. **Connection pooling** - Required for Edge Worker operation
-4. **Environment variables** - Database connection for Edge Functions
+## Ready for the Next Step?
 
-Your Supabase project now has everything needed to create and run workflows with pgflow!
+You've successfully installed pgflow! 🎉 Your Supabase project is now equipped with a powerful workflow engine.
 
-### Next steps
+<LinkButton href="/getting-started/create-first-flow/" variant="primary">
+  <Icon name="rocket" size="1.5rem" />
+  Create Your First Workflow
+</LinkButton>
 
-Now that pgflow is installed, let's [create your first workflow](/pgflow/getting-started/create-first-flow/).
+<Aside type="tip">
+  Not seeing what you expected? Check the Supabase logs with `npx supabase logs` for any installation issues.
+</Aside>

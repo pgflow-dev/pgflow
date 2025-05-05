@@ -164,25 +164,6 @@ Before starting, make sure you have:
 
     This will execute the generated SQL migration and create your flow definition in the database.
 
-5. ### Verify flow creation
-
-    Let's verify the flow was created correctly using Supabase Studio:
-    
-    1. Open Supabase Studio in your browser (typically at http://localhost:54323)
-    2. Navigate to the **SQL Editor**
-    3. Run the following query:
-
-    ```sql
-    SELECT * FROM pgflow.flows WHERE flow_slug = 'analyze_website';
-    ```
-
-    You should see your flow in the output:
-
-    ```
-    flow_id | flow_slug       | created_at | updated_at | max_attempts | base_delay | timeout
-    --------+-----------------+------------+------------+--------------+------------+--------
-    UUID    | analyze_website | TIMESTAMP  | TIMESTAMP  | 3            | 5          | 60
-    ```
 
 </Steps>
 
