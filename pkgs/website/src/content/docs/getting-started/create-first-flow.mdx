@@ -7,117 +7,74 @@ sidebar:
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { FileTree } from '@astrojs/starlight/components';
-import NotProductionReady from '@/components/NotProductionReady.astro';
 
-Now that pgflow is installed, let's create a simple hello world workflow, that demonstrates the core concepts.
+Now that pgflow is installed, let's create a simple greeting workflow that demonstrates the core concepts.
 
 <Aside type="caution" title="Prerequisites">
-Before starting, make sure you have:
 - Completed the [pgflow installation](/getting-started/install-pgflow/)
-- A basic understanding of TypeScript
+- Basic understanding of TypeScript
 </Aside>
 
-Our greeting workflow will:
+## Creating a Simple Greeting Flow
+
+Our workflow will:
 1. Take a person's first and last name as input
-2. Format the full name
+2. Format a full name
 3. Create a personalized greeting
 
-<Steps>
+### 1. Set up your project structure
 
-1. ### Set up your project structure
+First, create a directory for your flow:
 
-    First, let's create a project structure for our workflow:
-
-    ```bash frame="none"
-    mkdir -p supabase/functions/_flows
-    ```
-
-    This will hold our flow definition file:
-
-    <FileTree>
-    - supabase
-      - functions
-        - _flows
-          - greet_user.ts
-    </FileTree>
-
-2. ### Create the flow definition
-
-    Let's create a simple flow that takes a first name and last name, combines them, and creates a greeting:
-
-    ```typescript title="supabase/functions/_flows/greet_user.ts"
-    import { Flow } from '@pgflow/dsl';
-
-    type Input = {
-      first_name: string;
-      last_name: string;
-    };
-
-    export default new Flow<Input>({
-      slug: 'greet_user',
-    })
-      .step(
-        { slug: 'full_name' },
-        (input) => `${input.run.first_name} ${input.run.last_name}`
-      )
-      .step(
-        { slug: 'greeting', dependsOn: ['full_name'] },
-        (input) => `Hello, ${input.full_name}!`
-      );
-    ```
-
-    :::note[JSON Serialization Requirement]
-    All step inputs and outputs MUST be JSON-serializable, as pgflow stores these values in JSONB database columns.
-    This means you should use only plain objects, arrays, and primitive types (strings, numbers, booleans, null).
-    Convert non-serializable types like Date objects to strings (`new Date().toISOString()`).
-    For more details, see [Understanding the Flow DSL](/explanations/flow-dsl/#json-serialization-requirements).
-    :::
-
-</Steps>
-
-### Understanding the Flow Structure
-
-The `greet_user` flow has this simple structure:
-
-1. **Input**: The flow takes a first name and last name as input.
-2. **Step 1 (full_name)**: Combines the first and last name to create a full name.
-3. **Step 2 (greeting)**: Takes the formatted name and creates a greeting.
-
-For example, if you run this flow with:
-```json
-{
-  "first_name": "Alice",
-  "last_name": "Smith"
-}
+```bash frame="none"
+mkdir -p supabase/functions/_flows
 ```
 
-It will:
-1. First step: Format the name to `"Alice Smith"`
-2. Second step: Create the greeting `"Hello, Alice Smith!"`
-3. Final output: `{ "greeting": "Hello, Alice Smith!" }`
+<FileTree>
+- supabase
+  - functions
+    - _flows
+      - greet_user.ts
+</FileTree>
 
-### Important Flow Features
+### 2. Create the flow definition
 
-Our workflow includes several important features:
+Create a file called `supabase/functions/_flows/greet_user.ts` with this content:
 
-- **Flow-level options**:
-  - `slug`: A unique identifier for the flow
-  - `maxAttempts`: Maximum number of retry attempts (3)
-  - `timeout`: How long a step can run before timing out (4 seconds)
-  - `baseDelay`: Initial delay between retries (1 second)
+```typescript title="supabase/functions/_flows/greet_user.ts"
+import { Flow } from '@pgflow/dsl';
 
-- **Step configuration**:
-  - `slug`: Unique identifier for each step
-  - `dependsOn`: Array of step slugs that must complete before this step runs
+type Input = {
+  first_name: string;
+  last_name: string;
+};
 
-:::tip[See More Complex Examples]
-This tutorial creates a simple example to introduce the key concepts. For more comprehensive examples:
-- Try the [live demo app here](https://pgflow-demo.netlify.app/)
-- See the [full source code on GitHub](https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions)
-- Check out the [Organize Flows Codebase](/how-to/organize-flows-codebase/) guide for more complex organization patterns
+export default new Flow<Input>({
+  slug: 'greet_user',
+})
+  .step(
+    { slug: 'full_name' },
+    (input) => `${input.run.first_name} ${input.run.last_name}`
+  )
+  .step(
+    { slug: 'greeting', dependsOn: ['full_name'] },
+    (input) => `Hello, ${input.full_name}!`
+  );
+```
+
+### How this flow works
+
+1. **Input**: The flow receives `first_name` and `last_name` parameters
+2. **first_name step**: Combines the names using `input.run` to access the flow input
+3. **greeting step**: Takes the result of the first step (via `input.full_name`) and creates a greeting
+
+When run with `{"first_name": "Alice", "last_name": "Smith"}`, this produces `{ "greeting": "Hello, Alice Smith!" }`.
+
+:::note[Key Concepts]
+- **input.run**: Contains the original flow input, accessible in every step
+- **step slugs**: Unique identifiers for each step
+- **dependsOn**: Specifies which steps must complete before a step can run
+- **JSON serialization**: All inputs and outputs must be JSON-serializable
 :::
 
-
-<Aside>
-Next, we'll [compile this flow definition to SQL](/getting-started/compile-to-sql/) to make it available in your database.
-</Aside>
+For more in-depth explanation of the Flow DSL, see [Understanding the Flow DSL](/explanations/flow-dsl/).
