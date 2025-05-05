@@ -1,5 +1,12 @@
 # pgflow
 
+## 0.1.23
+
+### Patch Changes
+
+- 57aece4: Sort out outputs and flow filename extraction
+  - @pgflow/core@0.1.23
+
 ## 0.1.22
 
 ### Patch Changes
