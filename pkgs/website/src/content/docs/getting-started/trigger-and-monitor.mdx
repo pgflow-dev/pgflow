@@ -35,51 +35,10 @@ Before starting, make sure you have:
 
     ```typescript title="supabase/functions/analyze_website_worker/index.ts"
     import { EdgeWorker } from "jsr:@pgflow/edge-worker@0.0.4";
-    
-    // The queue name should match your flow slug
-    EdgeWorker.start(async (payload) => {
-      console.log("Processing task:", {
-        step: payload.meta.step_slug,
-        task_index: payload.meta.task_index,
-        run_id: payload.meta.run_id,
-      });
-    
-      // Log the input data
-      console.log("Input data:", payload.input);
-    
-      switch (payload.meta.step_slug) {
-        case 'scrape_website':
-          console.log(`Fetching website: ${payload.input.run.url}`);
-          return {
-            content: `<html><body>This is content from ${payload.input.run.url}</body></html>`,
-            status: 200,
-          };
-    
-        case 'analyze_sentiment':
-          console.log(`Analyzing sentiment for: ${payload.input.run.url}`);
-          return {
-            score: 0.75,
-            label: 'positive',
-          };
-    
-        case 'generate_summary':
-          console.log(`Generating summary for: ${payload.input.run.url}`);
-          return "This is a website about important topics.";
-    
-        case 'save_results':
-          console.log(`Saving results for: ${payload.input.run.url}`);
-          console.log(`Sentiment: ${payload.input.analyze_sentiment.label} (${payload.input.analyze_sentiment.score})`);
-          console.log(`Summary: ${payload.input.generate_summary}`);
-          return { status: "success" };
-    
-        default:
-          throw new Error(`Unknown step: ${payload.meta.step_slug}`);
-      }
-    }, {
-      queueName: 'analyze_website', // Must match your flow slug
-      maxConcurrent: 10,
-      retryLimit: 3,
-    });
+    import AnalyzeWebsite from '../_flows/analyze_website.ts';
+
+    // Pass the flow definition to the Edge Worker
+    EdgeWorker.start(AnalyzeWebsite);
     ```
 
     <Aside>
@@ -118,7 +77,7 @@ Before starting, make sure you have:
 4. ### Trigger your first flow
 
     Now let's start a flow run! Using Supabase Studio:
-    
+
     1. Open Supabase Studio in your browser (typically at http://localhost:54323)
     2. Navigate to the **SQL Editor**
     3. Execute this SQL to start your workflow:
@@ -148,13 +107,13 @@ Before starting, make sure you have:
     Your worker should start processing tasks immediately. You should see log output in the Edge Runtime terminal as each step executes.
 
     You can monitor the run status using Supabase Studio:
-    
+
     1. In the SQL Editor, run this query:
 
     ```sql
-    SELECT * FROM pgflow.runs 
-    WHERE flow_slug = 'analyze_website' 
-    ORDER BY created_at DESC 
+    SELECT * FROM pgflow.runs
+    WHERE flow_slug = 'analyze_website'
+    ORDER BY created_at DESC
     LIMIT 1;
     ```
 
@@ -169,12 +128,12 @@ Before starting, make sure you have:
 6. ### View step states
 
     To see the status of individual steps:
-    
+
     1. In the SQL Editor, run this query (replace the run_id with yours):
 
     ```sql
-    SELECT step_slug, status, attempts, output 
-    FROM pgflow.step_states 
+    SELECT step_slug, status, attempts, output
+    FROM pgflow.step_states
     WHERE run_id = '11111111-2222-3333-4444-555555555555';
     ```
 
