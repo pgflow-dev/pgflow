@@ -5,6 +5,8 @@ import starlightLinksValidator from 'starlight-links-validator';
 import starlightSidebarTopics from 'starlight-sidebar-topics';
 import robotsTxt from 'astro-robots-txt';
 import starlightLlmsTxt from 'starlight-llms-txt';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
 const GITHUB_REPO_URL = 'https://github.com/pgflow-dev/pgflow';
 const PLAUSIBLE_PROXY = {
@@ -14,6 +16,7 @@ const PLAUSIBLE_PROXY = {
     '/assets/script.hash.outbound-links.pageview-props.tagged-events.js',
 };
 const DOMAIN_NAME = 'www.pgflow.dev';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // https://astro.build/config
 export default defineConfig({
@@ -22,6 +25,13 @@ export default defineConfig({
   build: {
     // prevents problems with trailing slash redirects (SEO issue)
     format: 'directory',
+  },
+  vite: {
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
+    },
   },
   redirects: {
     '/edge-worker/how-to/run-on-hosted-supabase':

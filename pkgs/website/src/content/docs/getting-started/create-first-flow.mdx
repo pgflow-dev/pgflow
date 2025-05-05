@@ -7,7 +7,7 @@ sidebar:
 
 import { Aside, Steps, Tabs } from "@astrojs/starlight/components";
 import { FileTree } from '@astrojs/starlight/components';
-import NotProductionReady from '../../../../components/NotProductionReady.astro';
+import NotProductionReady from '@/components/NotProductionReady.astro';
 
 Now that pgflow is installed, let's create a simple workflow that demonstrates the core concepts.
 
@@ -20,7 +20,7 @@ We'll create a **website analysis workflow** that:
 
 <Aside type="caution" title="Prerequisites">
 Before starting, make sure you have:
-- Completed the [pgflow installation](/pgflow/getting-started/install-pgflow/)
+- Completed the [pgflow installation](/getting-started/install-pgflow/)
 - A basic understanding of TypeScript
 - A code editor like VS Code
 </Aside>
@@ -166,10 +166,14 @@ Before starting, make sure you have:
 
 5. ### Verify flow creation
 
-    Let's verify the flow was created correctly:
+    Let's verify the flow was created correctly using Supabase Studio:
+    
+    1. Open Supabase Studio in your browser (typically at http://localhost:54323)
+    2. Navigate to the **SQL Editor**
+    3. Run the following query:
 
-    ```bash frame="none"
-    npx supabase db query "SELECT * FROM pgflow.flows WHERE flow_slug = 'analyze_website'"
+    ```sql
+    SELECT * FROM pgflow.flows WHERE flow_slug = 'analyze_website';
     ```
 
     You should see your flow in the output:
@@ -183,7 +187,7 @@ Before starting, make sure you have:
 </Steps>
 
 <Aside>
-Now your workflow is defined in the database and ready to be executed. The next step is to [set up a worker and trigger the flow](/pgflow/getting-started/trigger-and-monitor/).
+Now your workflow is defined in the database and ready to be executed. The next step is to [set up a worker and trigger the flow](/getting-started/trigger-and-monitor/).
 </Aside>
 
 ### Understanding the Flow Structure

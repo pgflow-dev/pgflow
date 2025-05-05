@@ -220,8 +220,8 @@ importers:
         specifier: ^0.4.1
         version: 0.4.1(@astrojs/starlight@0.34.2)(astro@5.7.10)
       starlight-sidebar-topics:
-        specifier: ^0.3.0
-        version: 0.3.0(@astrojs/starlight@0.34.2)
+        specifier: ^0.6.0
+        version: 0.6.0(@astrojs/starlight@0.34.2)
       typescript:
         specifier: ^5.6.3
         version: 5.6.3
@@ -11709,13 +11709,14 @@ packages:
       - supports-color
     dev: false
 
-  /starlight-sidebar-topics@0.3.0(@astrojs/starlight@0.34.2):
-    resolution: {integrity: sha512-B7ma+xtRNBHtxEYi5yGYtAnJZviAoj1PXNh5CjuoEqKIBVB7uRAjWsWuPLzv/OrY81jHRjaZc3ilw5mNzks7kg==}
+  /starlight-sidebar-topics@0.6.0(@astrojs/starlight@0.34.2):
+    resolution: {integrity: sha512-ysmOR7zaHYKtk18/mpW4MbEMDioR/ZBsisu9bdQrq0v9BlHWpW7gAdWlqFWO9zdv1P7l0Mo1WKd0wJ0UtqOVEQ==}
     engines: {node: '>=18'}
     peerDependencies:
-      '@astrojs/starlight': '>=0.30.0'
+      '@astrojs/starlight': '>=0.32.0'
     dependencies:
       '@astrojs/starlight': 0.34.2(astro@5.7.10)
+      picomatch: 4.0.2
     dev: false
 
   /std-env@3.8.0:

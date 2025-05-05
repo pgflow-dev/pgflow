@@ -7,7 +7,7 @@ sidebar:
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 import { FileTree } from '@astrojs/starlight/components';
-import NotProductionReady from '../../../../components/NotProductionReady.astro';
+import NotProductionReady from '@/components/NotProductionReady.astro';
 
 Let's set up pgflow in your Supabase project. This setup needs to be done only once per project.
 
@@ -69,12 +69,18 @@ If you haven't installed the CLI yet or need to upgrade, see Supabase's [install
 
 4. ### Verify installation
 
-    Let's make sure everything was installed correctly:
-
-    ```bash frame="none"
-    npx supabase db query "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'pgflow'"
+    Let's make sure everything was installed correctly by checking if the `pgflow` schema exists.
+    
+    You can verify this using the **Supabase Studio**:
+    
+    1. Open Supabase Studio in your browser (typically at http://localhost:54323)
+    2. Navigate to the **SQL Editor**
+    3. Run the following query:
+    
+    ```sql
+    SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'pgflow';
     ```
-
+    
     You should see:
     ```
     schema_name

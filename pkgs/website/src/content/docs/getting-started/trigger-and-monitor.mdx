@@ -7,7 +7,7 @@ sidebar:
 
 import { Aside, Steps, Tabs } from "@astrojs/starlight/components";
 import { FileTree } from '@astrojs/starlight/components';
-import NotProductionReady from '../../../../components/NotProductionReady.astro';
+import NotProductionReady from '@/components/NotProductionReady.astro';
 
 Now that you've defined and compiled your workflow, it's time to execute it!
 
@@ -17,7 +17,7 @@ In this guide, we'll set up an Edge Worker to process your workflow tasks, trigg
 
 <Aside type="caution" title="Prerequisites">
 Before starting, make sure you have:
-- Completed the [Create your first flow](/pgflow/getting-started/create-first-flow/) guide
+- Completed the [Create your first flow](/getting-started/create-first-flow/) guide
 - Verified that the flow is present in your database
 - Completed the [Edge Worker installation](/edge-worker/getting-started/install-edge-worker/)
 </Aside>
@@ -118,15 +118,17 @@ Before starting, make sure you have:
 
 4. ### Trigger your first flow
 
-    Now let's start a flow run! Execute this SQL to start your workflow:
+    Now let's start a flow run! Using Supabase Studio:
+    
+    1. Open Supabase Studio in your browser (typically at http://localhost:54323)
+    2. Navigate to the **SQL Editor**
+    3. Execute this SQL to start your workflow:
 
-    ```bash frame="none"
-    npx supabase db query "
-      SELECT * FROM pgflow.start_flow(
-        flow_slug => 'analyze_website',
-        input => '{\"url\": \"https://example.com\"}'::jsonb
-      )
-    "
+    ```sql
+    SELECT * FROM pgflow.start_flow(
+      flow_slug => 'analyze_website',
+      input => '{"url": "https://example.com"}'::jsonb
+    );
     ```
 
     This will:
@@ -146,15 +148,15 @@ Before starting, make sure you have:
 
     Your worker should start processing tasks immediately. You should see log output in the Edge Runtime terminal as each step executes.
 
-    You can monitor the run status with this query:
+    You can monitor the run status using Supabase Studio:
+    
+    1. In the SQL Editor, run this query:
 
-    ```bash frame="none"
-    npx supabase db query "
-      SELECT * FROM pgflow.runs 
-      WHERE flow_slug = 'analyze_website' 
-      ORDER BY created_at DESC 
-      LIMIT 1
-    "
+    ```sql
+    SELECT * FROM pgflow.runs 
+    WHERE flow_slug = 'analyze_website' 
+    ORDER BY created_at DESC 
+    LIMIT 1;
     ```
 
     As steps complete, you'll see the `remaining_steps` count decrease. When it reaches 0, the run will be marked as `completed`:
@@ -167,17 +169,15 @@ Before starting, make sure you have:
 
 6. ### View step states
 
-    To see the status of individual steps, run:
+    To see the status of individual steps:
+    
+    1. In the SQL Editor, run this query (replace the run_id with yours):
 
-    ```bash frame="none"
-    npx supabase db query "
-      SELECT step_slug, status, attempts, output 
-      FROM pgflow.step_states 
-      WHERE run_id = '11111111-2222-3333-4444-555555555555'
-    "
+    ```sql
+    SELECT step_slug, status, attempts, output 
+    FROM pgflow.step_states 
+    WHERE run_id = '11111111-2222-3333-4444-555555555555';
     ```
-
-    Replace the run_id with the one you received from starting the flow.
 
     This will show the status and output of each step:
 
