@@ -34,9 +34,59 @@ import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 npx pgflow@latest install
 ```
 
-<div class="quickstart-caption">Sets up PGFlow in your Supabase project. <a href="/getting-started/install-pgflow/">View full setup guide →</a></div>
+<div class="quickstart-caption">Sets up pgflow in your Supabase project. <a href="/getting-started/install-pgflow/">View full setup guide →</a></div>
 
 </div>
+
+## Why pgflow Exists
+
+Supabase is great - until you need reliable, observable background workflows. Then you're stuck hacking together half-solutions or outsourcing core logic to third-party platforms.
+
+### Pain You've Probably Felt:
+
+<CardGrid>
+  <Card title="Duct-taping Solutions" icon="warning">
+    Wiring together pg_cron, pg_net, and Edge Functions by hand. No retries, no concurrency control, no observability. When something fails, you don't know—and you can't replay it.
+  </Card>
+  
+  <Card title="Background Jobs Without Safety" icon="warning">
+    Edge Functions are fire-and-forget. No retries, no persistent state, and no insight into what's running. Critical flows like document processing or LLM calls can silently fail.
+  </Card>
+  
+  <Card title="External Orchestrators Don't Fit" icon="warning">
+    Tools like Inngest or Trigger.dev live outside your database. Failures and state live in someone else's dashboard. You lose visibility and debug across multiple systems.
+  </Card>
+  
+  <Card title="Zero Visibility" icon="warning">
+    With duct-taped logic, there's no way to inspect or debug failures. You're guessing, re-running jobs manually, and hoping it works this time.
+  </Card>
+</CardGrid>
+
+### How pgflow Helps:
+
+<CardGrid>
+  <Card title="Postgres-Native Orchestration" icon="approve-check">
+    pgflow handles state transitions, dependencies, and execution control directly in your Supabase Postgres database. No external services required.
+  </Card>
+  
+  <Card title="Durable Queue-Based Workers" icon="approve-check">
+    Jobs are pulled from a Postgres-backed queue and executed in stateless Edge Functions. Built-in support for retries, backoff strategies, and concurrency limits.
+  </Card>
+  
+  <Card title="Declarative Definitions" icon="approve-check">
+    You specify flow logic once. pgflow enforces retries, timeouts, and step dependencies without custom plumbing.
+  </Card>
+  
+  <Card title="No Infra, No Lock-In" icon="approve-check">
+    Everything runs inside your Supabase setup. No external runtimes or vendor dashboards.
+  </Card>
+</CardGrid>
+
+### What You Can Build with pgflow:
+
+- **AI Workflows:** Chain LLM calls, scrape sites, and process documents with reliable recovery from API failures
+- **Background Jobs:** Handle emails, file processing, and scheduled tasks with full visibility
+- **Data Pipelines:** Extract, transform, and load data across systems without losing track of progress
 
 ## A complete workflow engine built on Postgres
 
@@ -53,7 +103,7 @@ pgflow is a workflow orchestration system with its core state management in your
     Auto-respawning, continuously running worker for ultra-fast, reliable task execution.
   </Card>
   <Card title="CLI Tools" icon="seti:powershell">
-    One-command setup: quickly deploy PGFlow with automatic DB migrations.
+    One-command setup: quickly deploy pgflow with automatic DB migrations.
   </Card>
 </CardGrid>
 
