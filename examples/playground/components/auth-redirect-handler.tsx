@@ -59,7 +59,7 @@ export default function AuthRedirectHandler() {
     };
 
     checkPendingAnalysis();
-  }, [router, supabase, isChecking]);
+  }, [router, supabase]);
 
   return null; // This component doesn't render anything
 }
