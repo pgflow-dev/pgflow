@@ -22,7 +22,7 @@ export type StepTaskRow = Database['pgflow']['Tables']['step_tasks']['Row'] & {
 export type ResultRow = RunRow & {
   step_states: StepStateRow[];
   step_tasks: StepTaskRow[];
-  status?: 'started' | 'completed' | 'failed';
+  status?: 'started' | 'completed' | 'failed' | 'error' | 'cancelled';
 };
 
 export type ObserveFlowRunCallbacks = {

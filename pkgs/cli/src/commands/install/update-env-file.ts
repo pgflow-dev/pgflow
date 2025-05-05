@@ -17,12 +17,13 @@ export async function updateEnvFile({
   supabasePath: string;
   autoConfirm?: boolean;
 }): Promise<boolean> {
+  // Check environment variables
+  
   const functionsDir = path.join(supabasePath, 'functions');
   const envFilePath = path.join(functionsDir, '.env');
 
   // Create functions directory if it doesn't exist
   if (!fs.existsSync(functionsDir)) {
-    log.step('Creating functions directory...');
     fs.mkdirSync(functionsDir, { recursive: true });
   }
 
@@ -40,7 +41,6 @@ export async function updateEnvFile({
   if (fs.existsSync(envFilePath)) {
     currentContent = fs.readFileSync(envFilePath, 'utf8');
   } else {
-    log.step('Creating new .env file...');
     isNewFile = true;
   }
 
@@ -62,9 +62,11 @@ export async function updateEnvFile({
 
   // If no changes needed, return early
   if (missingVars.length === 0) {
-    log.info('Environment variables are already set');
+    log.success('Environment variables are already set');
     return false;
   }
+
+  log.info(`Found ${missingVars.length} variable${missingVars.length !== 1 ? 's' : ''} to add`);
 
   // Build diff preview
   const diffPreview: Array<string> = [];
@@ -104,9 +106,11 @@ export async function updateEnvFile({
   }
 
   if (!shouldContinue) {
-    log.info('Environment variable update skipped');
+    log.warn('Environment variable update skipped');
     return false;
   }
+
+  // Update environment variables
 
   // Apply changes if confirmed
   for (const { key, value } of missingVars) {
@@ -117,7 +121,6 @@ export async function updateEnvFile({
 
     // Add the new variable
     newContent += `${key}="${value}"\n`;
-    log.step(`Adding ${key} environment variable`);
   }
 
   // Write the file if changes were made

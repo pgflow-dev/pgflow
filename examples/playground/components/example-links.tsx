@@ -4,11 +4,13 @@ import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { exampleLinks } from '@/lib/example-links';
+import { useLoadingState } from './loading-state-provider';
 
 export default function ExampleLinks({ isLoggedIn }: { isLoggedIn: boolean }) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const supabase = createClient();
+  const { setLoading } = useLoadingState();
 
   // Function to handle example link clicks
   const handleExampleClick = (e: React.MouseEvent<HTMLAnchorElement>, url: string) => {
@@ -29,6 +31,9 @@ export default function ExampleLinks({ isLoggedIn }: { isLoggedIn: boolean }) {
 
     console.log('Starting analysis for example URL:', url);
     
+    // Set global loading state to true
+    setLoading(true);
+    
     startTransition(async () => {
       try {
         const { data, error } = await supabase.rpc('start_analyze_website_flow', {
@@ -37,6 +42,7 @@ export default function ExampleLinks({ isLoggedIn }: { isLoggedIn: boolean }) {
 
         if (error) {
           console.error('Error starting analysis:', error);
+          setLoading(false);
           return;
         }
 
@@ -48,9 +54,11 @@ export default function ExampleLinks({ isLoggedIn }: { isLoggedIn: boolean }) {
           router.push(`/websites/runs/${data.run_id}`);
         } else {
           console.error('No run_id returned from analysis');
+          setLoading(false);
         }
       } catch (error) {
         console.error('Exception during analysis:', error);
+        setLoading(false);
       }
     });
   };

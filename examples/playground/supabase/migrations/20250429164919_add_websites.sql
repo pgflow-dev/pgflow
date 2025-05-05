@@ -2,7 +2,6 @@ create table public.websites (
   id SERIAL primary key,
   user_id UUID not null references auth.users (id),
   website_url TEXT not null,
-  sentiment FLOAT not null,
   summary TEXT not null,
   tags TEXT [] not null default '{}',
   created_at TIMESTAMP WITH TIME ZONE default NOW() not null,

@@ -130,9 +130,9 @@ export default function FlowRunDetails({
                       ? 'bg-yellow-500 breathing'
                       : runData.status === 'failed'
                         ? 'bg-red-500'
-                        : runData.status === 'created'
-                          ? 'bg-blue-500'
-                          : 'bg-gray-500'
+                        : runData.status === 'error' || runData.status === 'cancelled'
+                          ? 'bg-red-500'
+                          : 'bg-blue-500'
                 }`}
               ></span>
               <span className="capitalize text-sm">
@@ -202,8 +202,8 @@ export default function FlowRunDetails({
                   );
 
                   // Group parallel steps based on flow definition
-                  // We're specifically looking for summary, sentiment, and tags steps that run in parallel
-                  const parallelStepSlugs = ['summary', 'sentiment', 'tags'];
+                  // We're specifically looking for summary and tags steps that run in parallel
+                  const parallelStepSlugs = ['summary', 'tags'];
                   const parallelSteps = sortedStepStates.filter((step) =>
                     parallelStepSlugs.includes(step.step_slug),
                   );
@@ -217,7 +217,7 @@ export default function FlowRunDetails({
                   const renderStep = (
                     step: any,
                     index: number,
-                    isParallel: boolean = false,
+                    isParallel = false,
                   ) => {
                     // Find the corresponding step tasks for this step
                     const stepTasks = runData.step_tasks
@@ -320,18 +320,20 @@ export default function FlowRunDetails({
                                       ? 'bg-yellow-500 breathing'
                                       : step.status === 'failed'
                                         ? 'bg-red-500'
-                                        : step.status === 'created'
-                                          ? 'bg-blue-500'
-                                          : 'bg-gray-500'
+                                        : step.status === 'error' || step.status === 'cancelled'
+                                          ? 'bg-red-500'
+                                          : 'bg-blue-500'
                               }`}
                             ></span>
                             {!isParallel && (
                               <span className="capitalize text-xs">
                                 {isRetrying
                                   ? `retrying (retry ${latestTask.attempts_count - 1})`
-                                  : step.status === 'created'
-                                    ? 'waiting'
-                                    : step.status}
+                                  : step.status === 'error' || step.status === 'cancelled'
+                                    ? step.status
+                                    : step.status === 'started'
+                                      ? 'running'
+                                      : step.status}
                               </span>
                             )}
                           </div>
@@ -420,7 +422,7 @@ export default function FlowRunDetails({
                               Parallel Processing
                             </span>
                           </div>
-                          <div className="grid grid-cols-3 gap-2 relative step-container">
+                          <div className="grid grid-cols-2 gap-2 relative step-container">
                             {parallelSteps.map((step, index) =>
                               renderStep(step, index, true),
                             )}
@@ -432,7 +434,7 @@ export default function FlowRunDetails({
                             .step-container > :global(*) {
                               height: 41px; /* Match the height of regular steps (label + padding) */
                             }
-                            .step-container > :global(*[data-state="open"]) {
+                            .step-container > :global(*[data-state='open']) {
                               height: auto;
                             }
                           `}</style>
@@ -460,12 +462,14 @@ export default function FlowRunDetails({
             </div>
           </div>
 
-          <div>
+          <div className="w-full">
             <h3 className="text-base font-medium mb-1">Run Output</h3>
             {runData.status === 'completed' ? (
-              <div className="max-h-36 overflow-hidden border border-gray-500/30 rounded-md">
-                <div className="overflow-auto max-h-36">
-                  <JSONHighlighter data={runData.output} />
+              <div className="border border-gray-500/30 rounded-md">
+                <div className="overflow-auto max-h-[calc(100vh-400px)] w-full">
+                  <div className="w-full overflow-x-auto">
+                    <JSONHighlighter data={runData.output} />
+                  </div>
                 </div>
               </div>
             ) : (

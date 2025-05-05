@@ -78,6 +78,8 @@ export async function copyMigrations({
   supabasePath: string;
   autoConfirm?: boolean;
 }): Promise<boolean> {
+  // Check migrations
+  
   const migrationsPath = path.join(supabasePath, 'migrations');
 
   if (!fs.existsSync(migrationsPath)) {
@@ -87,7 +89,7 @@ export async function copyMigrations({
   // Check if pgflow migrations directory exists
   if (!sourcePath || !fs.existsSync(sourcePath)) {
     log.error(`Could not find migrations directory`);
-    log.info(
+    log.warn(
       'This might happen if @pgflow/core is not properly installed or built.'
     );
     log.info(
@@ -121,9 +123,11 @@ export async function copyMigrations({
 
   // If no files to copy, show message and return false (no changes made)
   if (filesToCopy.length === 0) {
-    log.info('All pgflow migrations are already in place');
+    log.success('All pgflow migrations are already in place');
     return false;
   }
+  
+  log.info(`Found ${filesToCopy.length} migration${filesToCopy.length !== 1 ? 's' : ''} to install`);
 
   // Prepare summary message with colored output
   const summaryParts = [];
@@ -154,11 +158,11 @@ ${skippedFiles.map((file) => `${chalk.yellow('•')} ${file}`).join('\n')}`);
   }
 
   if (!shouldContinue) {
-    log.info('Migration installation skipped');
+    log.warn('Migration installation skipped');
     return false;
   }
 
-  log.step(`Installing pgflow migrations...`);
+  // Install migrations
 
   // Copy the files
   for (const file of filesToCopy) {
@@ -166,14 +170,11 @@ ${skippedFiles.map((file) => `${chalk.yellow('•')} ${file}`).join('\n')}`);
     const destination = path.join(migrationsPath, file);
 
     fs.copyFileSync(source, destination);
-    log.step(`Added ${file}`);
   }
 
-  log.success(
-    `Installed ${filesToCopy.length} migration${
-      filesToCopy.length !== 1 ? 's' : ''
-    } to your Supabase project`
-  );
+  log.success(`Installed ${filesToCopy.length} migration${
+    filesToCopy.length !== 1 ? 's' : ''
+  } to your Supabase project`);
 
   return true; // Return true to indicate migrations were copied
 }

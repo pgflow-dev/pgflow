@@ -56,7 +56,7 @@ import chalk from 'chalk';
 // Tokyo Night inspired colors
 // const p = chalk.hex('#7aa2f7'); // blue-violet
 const g = chalk.hex('#9ece6a'); // vibrant green
-const f = chalk.hex('#bb9af7'); // light purple/pink
+// const f = chalk.hex('#bb9af7'); // light purple/pink
 const l = chalk.hex('#2ac3de'); // bright teal/cyan
 // const o = chalk.hex('#ff9e64'); // orange
 // const w = chalk.hex('#f7768e'); // magenta/pink
@@ -67,8 +67,6 @@ const banner = [
   `  ${g('| |_) | (_|')} ${l('|  _| | (_) \\ V  V /')}   `,
   `  ${g('| .__/ \\__,')} ${l('|_| |_|\\___/ \\_/\\_/')}    `,
   `  ${g('|_|    |___/')}`,
-  ``,
-  `  ${f('Postgres-native Workflow Engine')}`,
 ].join('\n');
 
 console.log(banner);

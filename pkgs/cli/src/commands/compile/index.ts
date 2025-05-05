@@ -1,6 +1,6 @@
 import { type Command } from 'commander';
 import chalk from 'chalk';
-import { intro, log, spinner, note } from '@clack/prompts';
+import { intro, log, note } from '@clack/prompts';
 import path from 'path';
 import fs from 'fs';
 import { spawn } from 'child_process';
@@ -30,6 +30,19 @@ function formatCommand(command: string, args: string[]): string {
   });
 
   return `$ ${cmd}\n${formattedArgs.join('\n')}`;
+}
+
+/**
+ * Creates a task log entry with a command and its output
+ */
+function createTaskLog(command: string, args: string[], output: string): string {
+  return [
+    chalk.bold("Command:"),
+    formatCommand(command, args),
+    "",
+    chalk.bold("Output:"),
+    output.trim() ? output.trim() : "(no output)",
+  ].join("\n");
 }
 
 export default (program: Command) => {
@@ -95,7 +108,7 @@ export default (program: Command) => {
         const migrationsDir = path.resolve(supabasePath, 'migrations');
         if (!fs.existsSync(migrationsDir)) {
           fs.mkdirSync(migrationsDir, { recursive: true });
-          log.info(`Created migrations directory: ${migrationsDir}`);
+          log.success(`Created migrations directory: ${migrationsDir}`);
         }
 
         // Generate timestamp for migration file in format YYYYMMDDHHMMSS
@@ -109,42 +122,51 @@ export default (program: Command) => {
           String(now.getSeconds()).padStart(2, '0'),
         ].join('');
 
-        // Extract the base filename without extension from the flow path
-        const flowBasename = path.basename(
-          resolvedFlowPath,
-          path.extname(resolvedFlowPath)
-        );
-
-        // Create migration filename in the format: <timestamp>_create_<flow_file_basename>_flow.sql
-        const migrationFileName = `${timestamp}_create_${flowBasename}_flow.sql`;
-        const migrationFilePath = path.join(migrationsDir, migrationFileName);
-
         // Run the compilation
-        const s = spinner();
-        s.start(`Compiling flow: ${path.basename(resolvedFlowPath)}`);
-
+        log.info(`Compiling flow: ${path.basename(resolvedFlowPath)}`);
         const compiledSql = await runDenoCompilation(
           internalCompileScript,
           resolvedFlowPath,
           resolvedDenoJsonPath
         );
+        
+        // Extract flow name from the first line of the SQL output using regex
+        // Looking for pattern: SELECT pgflow.create_flow('flow_name', ...);
+        const flowNameMatch = compiledSql.match(/SELECT\s+pgflow\.create_flow\s*\(\s*'([^']+)'/i);
+        
+        // Use extracted flow name or fallback to the file basename if extraction fails
+        let flowName;
+        if (flowNameMatch && flowNameMatch[1]) {
+          flowName = flowNameMatch[1];
+          log.info(`Extracted flow name: ${flowName}`);
+        } else {
+          // Fallback to file basename if regex doesn't match
+          flowName = path.basename(resolvedFlowPath, path.extname(resolvedFlowPath));
+          log.warn(`Could not extract flow name from SQL, using file basename: ${flowName}`);
+        }
+
+        // Create migration filename in the format: <timestamp>_create_<flow_name>_flow.sql
+        const migrationFileName = `${timestamp}_create_${flowName}_flow.sql`;
+        const migrationFilePath = path.join(migrationsDir, migrationFileName);
 
         // Write the SQL to a migration file
         fs.writeFileSync(migrationFilePath, compiledSql);
-
-        s.stop(`Successfully compiled flow to SQL`);
         // Show the migration file path relative to the current directory
         const relativeFilePath = path.relative(
           process.cwd(),
           migrationFilePath
         );
         log.success(`Migration file created: ${relativeFilePath}`);
+        
       } catch (error) {
         log.error(
           `Compilation failed: ${
             error instanceof Error ? error.message : String(error)
           }`
         );
+        
+        note('For troubleshooting help, visit: https://pgflow.dev/getting-started/compile-to-sql/');
+        
         process.exit(1);
       }
     });
@@ -180,7 +202,7 @@ async function runDenoCompilation(
     args.push(scriptPath, flowPath);
 
     // Log the command for debugging with colored output
-    note(formatCommand('deno', args), 'Compile in Deno');
+    log.info('Running Deno compiler');
 
     const deno = spawn('deno', args);
 
@@ -196,6 +218,9 @@ async function runDenoCompilation(
     });
 
     deno.on('close', (code) => {
+      // Always display the task log with command and output
+      note(createTaskLog('deno', args, stdout));
+      
       if (code === 0) {
         if (stdout.trim().length === 0) {
           reject(new Error('Compilation produced no output'));

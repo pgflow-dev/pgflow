@@ -21,7 +21,6 @@ function getSupabase(): SupabaseClient<Database> {
 export default async (websiteData: {
   user_id: string;
   website_url: string;
-  sentiment: number;
   summary: string;
   tags: string[];
 }) => {
