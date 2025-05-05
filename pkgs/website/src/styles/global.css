@@ -89,9 +89,14 @@ svg .secondary {
 
 /* QUICKSTART SECTION */
 .quickstart-section {
-  margin: 28px auto 28px;
+  margin: 8px auto 28px;
   text-align: center;
   max-width: 500px;
+  transition: transform 0.3s ease-in-out;
+}
+
+.quickstart-section:hover {
+  transform: scale(1.05);
 }
 
 .quickstart-section pre {
@@ -119,12 +124,12 @@ svg .secondary {
   .quickstart-section {
     max-width: 90%;
   }
-  
+
   .quickstart-section pre {
     padding: 12px;
     font-size: 1.1rem;
   }
-  
+
   .quickstart-section code {
     font-size: 1.1rem !important;
   }
@@ -135,11 +140,11 @@ svg .secondary {
     padding: 10px;
     font-size: 0.9rem;
   }
-  
+
   .quickstart-section code {
     font-size: 0.9rem !important;
   }
-  
+
   .quickstart-caption {
     font-size: 11px;
   }
