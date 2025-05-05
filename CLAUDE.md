@@ -40,6 +40,8 @@ See [CODEBASE.md](./CODEBASE.md) for:
 - Key conventions (slug naming, DAG constraints, JSON serialization)
 - Flow lifecycle overview
 
+For documentation structure guidelines based on the Diátaxis framework, see [DIATAXIS.md](./DIATAXIS.md).
+
 When working with this codebase, all changes should align with the principles in CODEBASE.md.
 
 > [!WARNING]
