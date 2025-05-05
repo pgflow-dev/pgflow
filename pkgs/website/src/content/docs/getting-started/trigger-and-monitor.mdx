@@ -26,22 +26,22 @@ Before starting, make sure you have:
 Create a new Edge Function that will process tasks for your workflow:
 
 ```bash frame="none"
-mkdir -p supabase/functions/analyze_website_worker
+npx supabase functions new greet_user_worker
 ```
 
-Create an `index.ts` file in the new function directory:
+Replace contents of `index.ts` file with the following:
 
-```typescript title="supabase/functions/analyze_website_worker/index.ts"
-import { EdgeWorker } from "jsr:@pgflow/edge-worker@0.0.4";
-import AnalyzeWebsite from '../_flows/analyze_website.ts';
+```typescript title="supabase/functions/greet_user_worker/index.ts"
+import { EdgeWorker } from "jsr:@pgflow/edge-worker";
+import GreetUser from '../_flows/greet_user.ts';
 
 // Pass the flow definition to the Edge Worker
-EdgeWorker.start(AnalyzeWebsite);
+EdgeWorker.start(GreetUser);
 ```
 
 <Aside>
 The Edge Worker will:
-1. Poll for tasks on the `analyze_website` queue
+1. Poll for tasks on the `greet_user` queue
 2. Process tasks based on the step slug
 3. Return the appropriate result for each step
 4. Handle retries if any step fails
@@ -52,11 +52,11 @@ The Edge Worker will:
 Disable JWT verification for now by editing `supabase/config.toml`:
 
 ```diff lang="toml"
-  [functions.analyze_website_worker]
+  [functions.greet_user_worker]
   enabled = true
 - verify_jwt = true
 + verify_jwt = false
-  import_map = "./functions/analyze_website_worker/deno.json"
+  import_map = "./functions/greet_user_worker/deno.json"
 ```
 
 ## 2. Start the Edge Runtime
@@ -74,13 +74,13 @@ This will start the Edge Runtime server but not yet start your worker.
 In a new terminal, send an HTTP request to start your worker:
 
 ```bash frame="none"
-curl http://localhost:54321/functions/v1/analyze_website_worker
+curl http://localhost:54321/functions/v1/greet_user_worker
 ```
 
 You should see output in your Edge Runtime terminal indicating the worker has started:
 
 ```
-[Info] worker_id=<uuid> [WorkerLifecycle] Ensuring queue 'analyze_website' exists...
+[Info] worker_id=<uuid> [WorkerLifecycle] Ensuring queue 'greet_user' exists...
 [Info] worker_id=<uuid> [WorkerLifecycle] Active and listening for tasks...
 ```
 
@@ -98,8 +98,8 @@ Now let's start a flow run! Using Supabase Studio:
 
 ```sql
 SELECT * FROM pgflow.start_flow(
-  flow_slug => 'analyze_website',
-  input => '{"url": "https://example.com"}'::jsonb
+  flow_slug => 'greet_user',
+  input => '{"first_name": "Alice", "last_name": "Smith"}'::jsonb
 );
 ```
 
@@ -111,9 +111,9 @@ This will:
 The output should look like:
 
 ```
-run_id                               | flow_slug       | status  | input                         | output | remaining_steps
---------------------------------------+-----------------+---------+-------------------------------+--------+-----------------
-11111111-2222-3333-4444-555555555555 | analyze_website | started | {"url": "https://example.com"} | null   | 4
+run_id                               | flow_slug    | status  | input                                        | output | remaining_steps
+--------------------------------------+--------------+---------+----------------------------------------------+--------+-----------------
+11111111-2222-3333-4444-555555555555 | greet_user   | started | {"first_name": "Alice", "last_name": "Smith"} | null   | 2
 ```
 
 ## 5. Monitor execution
@@ -126,7 +126,7 @@ You can monitor the run status using Supabase Studio:
 
 ```sql
 SELECT * FROM pgflow.runs
-WHERE flow_slug = 'analyze_website'
+WHERE flow_slug = 'greet_user'
 ORDER BY created_at DESC
 LIMIT 1;
 ```
@@ -134,9 +134,9 @@ LIMIT 1;
 As steps complete, you'll see the `remaining_steps` count decrease. When it reaches 0, the run will be marked as `completed`:
 
 ```
-run_id                               | flow_slug       | status    | input                         | output                                                  | remaining_steps
---------------------------------------+-----------------+-----------+-------------------------------+---------------------------------------------------------+-----------------
-11111111-2222-3333-4444-555555555555 | analyze_website | completed | {"url": "https://example.com"} | {"save_results": {"status": "success"}}                 | 0
+run_id                               | flow_slug    | status    | input                                        | output                    | remaining_steps
+--------------------------------------+--------------+-----------+----------------------------------------------+---------------------------+-----------------
+11111111-2222-3333-4444-555555555555 | greet_user   | completed | {"first_name": "Alice", "last_name": "Smith"} | {"greeting": "Hello, Alice Smith!"} | 0
 ```
 
 ## 6. View step states
@@ -154,12 +154,10 @@ WHERE run_id = '11111111-2222-3333-4444-555555555555';
 This will show the status and output of each step:
 
 ```
-step_slug        | status    | attempts | output
------------------+-----------+----------+----------------------------------------------------------
-website          | completed | 1        | {"content": "<html><body>This is content...</body></html>", "status": 200}
-tags             | completed | 1        | ["technology", "data", "workflow"]
-summary          | completed | 1        | "This is a website about important topics."
-saveToDb         | completed | 1        | {"id": "1111-11111....", "summary": "....."}
+step_slug    | status    | attempts | output
+-------------+-----------+----------+---------------------------
+full_name    | completed | 1        | "Alice Smith"
+greeting     | completed | 1        | "Hello, Alice Smith!"
 ```
 
 <Aside type="tip" title="Flow Visualization">
@@ -212,8 +210,8 @@ This completes the pgflow getting started guide. You now have all the basics nee
 
 ## Next steps
 
-- Explore more complex workflows with conditional branches
-- Implement real business logic in your step handlers
+- Explore the [Organize Flows Codebase](/how-to/organize-flows-codebase/) guide for more complex organization patterns
+- Implement real business logic in your workflows
 - Deploy your workflows to production
 - Set up monitoring and alerting
 - Build a UI to visualize and manage your workflows

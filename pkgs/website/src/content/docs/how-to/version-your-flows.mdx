@@ -1,0 +1,65 @@
+---
+title: Version your flows
+description: Learn how to safely update your flows without breaking existing runs
+---
+
+## Current Compilation Limitations
+
+**Important:** The current version of pgflow's compiler has several limitations:
+
+1. Always creates a **new migration file** for any changes
+2. Does not provide automatic update functionality for existing flows
+3. Cannot safely change step dependencies or flow structure
+
+For any changes to an existing flow, you must:
+- Manually handle migration files
+- For non-breaking changes, manually update using SQL commands
+
+:::danger[Prohibited Changes]
+DO NOT attempt to change these aspects of an existing flow:
+- Step slugs
+- Dependencies between steps
+- Adding or removing steps
+- Altering the flow's input type structure
+
+These changes will break in-progress runs and cause data compatibility issues.
+:::
+
+## Understanding Safe vs. Breaking Changes
+
+Before making changes to your flows, understand which modifications are safe:
+
+| Safe Changes | Breaking Changes |
+| ------------ | --------------- |
+| Modifying step implementation | Adding/removing steps |
+| Adjusting retry parameters | Changing step dependencies |
+| Updating timeout values | Modifying input/output types |
+| Bug fixes within steps | Changing step slug names |
+
+## Version Management Strategy
+
+pgflow uses the flow's `slug` as its identifier, so to create a new version:
+
+1. **Create a new flow definition file** with a versioned slug (e.g., `greet_user_v2.ts`)
+2. **Manually manage migration files**:
+   - Keep previous migration files for existing runs
+   - Create new migrations for the new flow version
+
+```typescript
+// greet_user_v2.ts
+export default new Flow<Input>({
+  slug: 'greet_user_v2',  // Note the versioned slug
+  // ...configuration
+})
+```
+
+## Updating Non-Breaking Configuration Options
+
+For non-breaking changes like adjusting retry settings or timeouts, you must manually update the database with SQL commands.
+
+We've created a detailed guide on [how to update flow options](/how-to/update-flow-options/) that covers:
+- All available configuration options
+- SQL commands for updating flows and steps
+- Best practices for maintaining compatibility
+
+For any non-breaking changes to existing flows, refer to this guide rather than recompiling.

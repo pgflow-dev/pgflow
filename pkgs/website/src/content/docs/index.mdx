@@ -9,7 +9,7 @@ hero:
   # title: AI Agents & Workflow Automation for Supabase
   # title: Supabase Workflows for AI Agents & Background Jobs
   # title: Build AI Agent Workflows on Supabase
-  tagline: No extra servers. Just Supabase-native AI workflows and jobs that don’t fail silently.
+  tagline: No extra servers. Just Supabase-native AI workflows and jobs that don't fail silently.
   image:
     dark: ../../assets/pgflow-logo-dark.svg
     light: ../../assets/pgflow-logo-light.svg
@@ -22,9 +22,7 @@ hero:
       link: https://pgflow-demo.netlify.app/
       icon: rocket
       variant: minimal
-next:
-  link: /getting-started/install-pgflow/
-  label: Install pgflow
+editUrl: false
 ---
 
 import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
@@ -120,12 +118,8 @@ pgflow is a workflow orchestration system with its core state management in your
 Define parallel, type-safe DAG workflows effortlessly.
 
 ```typescript
-// Define a workflow with parallel steps
-new Flow<{ url: string; user_id: string }>({
+new Flow<{ url: string }>({
   slug: 'analyze_website',
-  maxAttempts: 3,
-  timeout: 4,
-  baseDelay: 1,
 })
   .step(
     { slug: 'website' },
@@ -141,12 +135,12 @@ new Flow<{ url: string; user_id: string }>({
   )
   .step(
     { slug: 'saveToDb', dependsOn: ['summary', 'tags'] },
-    async (input) =>
+    async ({ run, summary, tags }) =>
       await saveWebsite({
-        user_id: input.run.user_id,
-        website_url: input.run.url,
-        summary: input.summary,
-        tags: input.tags,
+        user_id: run.user_id,
+        website_url: run.url,
+        summary,
+        tags,
       })
   );
 ```

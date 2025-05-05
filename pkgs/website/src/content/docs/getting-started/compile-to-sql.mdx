@@ -10,7 +10,7 @@ import NotProductionReady from '@/components/NotProductionReady.astro';
 
 Now that we've defined our flow, we need to register it in the database. pgflow provides a CLI tool that compiles your TypeScript flow definition into SQL migrations that can be applied to your Supabase database.
 
-<NotProductionReady />
+<NotProductionReady/>
 
 ## What is compilation?
 
@@ -27,163 +27,66 @@ This is an essential step because pgflow's runtime executes flows based on their
 Before continuing, make sure you have:
 - Completed the [flow definition](/getting-started/create-first-flow/) from the previous step
 - The Supabase CLI installed and configured
+- Deno version 1.45.x or higher
 </Aside>
 
-<Steps>
-1. ### Compile the flow to SQL
+### 1. Compile the flow to SQL
 
-    Run the pgflow compile command, pointing to your flow definition file:
+Run the pgflow compile command, pointing to your flow definition file:
 
-    ```bash frame="none"
-    npx pgflow@latest compile supabase/functions/_flows/analyze_website.ts
-    ```
-
-    This will:
-    - Parse your TypeScript flow definition
-    - Extract the flow structure, step dependencies, and configuration
-    - Generate SQL commands to register the flow in the database
-    - Create a timestamped migration file in your Supabase migrations folder
-
-    You should see output like this:
-
-    ```
-    ✓ Successfully compiled flow to SQL
-    ✓ Migration file created: supabase/migrations/20250505120000_create_analyze_website_flow.sql
-    ```
-
-2. ### Examine the generated SQL
-
-    Let's look at what got generated. Open the migration file in your editor:
-
-    ```bash frame="none"
-    cat supabase/migrations/20250505120000_create_analyze_website_flow.sql
-    ```
-
-    The migration file contains SQL commands that:
-    
-    1. Create the flow definition
-    2. Add each step with its configuration
-    3. Define dependencies between steps
-
-    Here's a simplified view of what the SQL looks like:
-
-    ```sql
-    -- Create the flow
-    SELECT pgflow.create_flow('analyze_website', max_attempts => 3, base_delay => 1, timeout => 4);
-
-    -- Add steps and define their dependencies
-    SELECT pgflow.add_step('analyze_website', 'website');
-    SELECT pgflow.add_step('analyze_website', 'summary', ARRAY['website']);
-    SELECT pgflow.add_step('analyze_website', 'tags', ARRAY['website']);
-    SELECT pgflow.add_step('analyze_website', 'saveToDb', ARRAY['summary', 'tags']);
-    ```
-
-    This SQL representation is what the pgflow runtime system uses to execute your workflow.
-
-3. ### Apply the migration
-
-    Now that we have the SQL migration, we need to apply it to our database:
-
-    ```bash frame="none"
-    npx supabase migrations up
-    ```
-
-    This will execute the SQL migration and register your flow definition in the database.
-
-    If successful, you should see output like:
-
-    ```
-    Applying migration 20250505120000_create_analyze_website_flow.sql...done
-    ```
-
-</Steps>
-
-## Managing flow changes and versioning
-
-:::caution[Current Compilation Limitations]
-**Important:** The current version of pgflow's compiler:
-
-1. Always creates a **new migration file** for any changes
-2. Does not provide automatic update functionality for existing flows
-3. Cannot safely change step dependencies or flow structure
-
-For any changes to an existing flow, you must:
-- Manually handle migration files
-- **NEVER** change dependencies, step slugs, or flow structure in existing flows
-- For non-breaking changes, manually update using SQL commands
-:::
-
-:::danger[Prohibited Changes]
-DO NOT attempt to change these aspects of an existing flow:
-- Step slugs
-- Dependencies between steps
-- Adding or removing steps
-- Altering the flow's input type structure
-
-These changes will break in-progress runs and cause data compatibility issues.
-:::
-
-### Version management strategy
-
-pgflow uses the flow's `slug` as its identifier, so to create a new version:
-
-1. **Create a new flow definition file** with a versioned slug (e.g., `analyze_website_v2.ts`)
-2. **Manually manage migration files**:
-   - Keep previous migration files for existing runs
-   - Create new migrations for the new flow version
-
-```typescript
-// analyze_website_v2.ts
-export default new Flow<Input>({
-  slug: 'analyze_website_v2',  // Note the versioned slug
-  // ...configuration
-})
+```bash frame="none"
+npx pgflow@latest compile supabase/functions/_flows/greet_user.ts
 ```
 
-### Safe vs. breaking changes
+This will:
+- Parse your TypeScript flow definition
+- Extract the flow structure, step dependencies, and configuration
+- Generate SQL commands to register the flow in the database
+- Create a timestamped migration file in your Supabase migrations folder
 
-| Safe Changes | Breaking Changes |
-| ------------ | --------------- |
-| Modifying step implementation | Adding/removing steps |
-| Adjusting retry parameters | Changing step dependencies |
-| Updating timeout values | Modifying input/output types |
-| Bug fixes within steps | Changing step slug names |
+You should see output like this:
 
-### Updating non-breaking configuration options
-
-For non-breaking changes like adjusting retry settings or timeouts, you must manually update the database with SQL commands.
-
-:::tip[How To Guide]
-We've created a detailed guide on [how to update flow options](/how-to/update-flow-options/) that covers:
-- All available configuration options
-- SQL commands for updating flows and steps
-- Best practices for maintaining compatibility
-
-For any non-breaking changes to existing flows, refer to this guide rather than recompiling.
-:::
-
-### Task reusability
-
-The separation of tasks from flows helps with versioning:
-
-- Tasks can be reused across multiple flow versions
-- Implementation details can evolve independently of flow structure
-- New flow versions can reuse existing task implementations
-
-```typescript
-// Both flow versions can use the same task implementations
-// analyze_website_v1.ts and analyze_website_v2.ts
-import { scrapeWebsite } from '../_tasks/scrapeWebsite.ts';
+```
+✓ Successfully compiled flow to SQL
+✓ Migration file created: supabase/migrations/20250505120000_create_greet_user_flow.sql
 ```
 
-:::note[Flow Versioning Tips]
-- For non-breaking configuration changes: Update database directly with SQL
-- For breaking changes: Always create a new flow with a versioned slug
-- Consider a versioning scheme (v1, v2, etc.) for your flow slugs
-- Always test migrations thoroughly before applying in production
-- Plan how to migrate in-progress runs when deploying new versions
-:::
+### 2. Examine the generated SQL
 
-<Aside>
-Now that your flow is registered in the database, the next step is to [set up a worker and trigger the flow](/getting-started/trigger-and-monitor/).
-</Aside>
+Let's look at what got generated. Open the migration file in your editor:
+
+```bash frame="none"
+cat supabase/migrations/20250505120000_create_greet_user_flow.sql
+```
+
+The migration file contains SQL commands that:
+
+1. Create the flow definition
+2. Add each step with its configuration
+3. Define dependencies between steps
+
+The generated SQL looks like this:
+
+```sql
+SELECT pgflow.create_flow('greet_user');
+SELECT pgflow.add_step('greet_user', 'full_name');
+SELECT pgflow.add_step('greet_user', 'greeting', ARRAY['full_name']);
+```
+
+This SQL representation is what the pgflow runtime system uses to execute your workflow.
+
+### 3. Apply the migration
+
+Now that we have the SQL migration, we need to apply it to our database:
+
+```bash frame="none"
+npx supabase migrations up
+```
+
+This will execute the SQL migration and register your flow definition in the database.
+
+If successful, you should see output like:
+
+```
+Applying migration 20250505120000_create_greet_user_flow.sql...done
+```
