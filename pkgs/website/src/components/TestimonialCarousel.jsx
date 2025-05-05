@@ -44,7 +44,7 @@ const testimonials = [
 ];
 
 export default function TestimonialCarousel() {
-  const { scrollRef, next, prev, activePageIndex, pages } = useSnapCarousel();
+  const { scrollRef, next, prev, activePageIndex, pages, goTo } = useSnapCarousel();
   const autoScrollTimerRef = useRef(null);
 
   useEffect(() => {
@@ -74,7 +74,13 @@ export default function TestimonialCarousel() {
               next();
             }, 10000);
           }
-          prev();
+          
+          // If at the first slide, go to the last slide
+          if (activePageIndex === 0) {
+            goTo(pages.length - 1); // Go to the last slide
+          } else {
+            prev();
+          }
         }}
         aria-label="Previous testimonial"
         style={{
@@ -165,7 +171,13 @@ export default function TestimonialCarousel() {
               next();
             }, 10000);
           }
-          next();
+          
+          // If at the last slide, go to the first slide
+          if (activePageIndex === pages.length - 1) {
+            goTo(0); // Go to the first slide (index 0)
+          } else {
+            next();
+          }
         }}
         aria-label="Next testimonial"
         style={{
@@ -188,18 +200,6 @@ export default function TestimonialCarousel() {
         →
       </button>
       
-      {/* Current position indicator */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          margin: '0.5rem 0 0',
-          fontSize: '0.85rem',
-          color: 'var(--sl-color-gray-3)',
-        }}
-      >
-        {activePageIndex + 1} / {pages.length}
-      </div>
     </div>
   );
 }
