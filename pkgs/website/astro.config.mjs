@@ -69,6 +69,26 @@ export default defineConfig({
         starlightLinksValidator(),
         starlightSidebarTopics([
           {
+            label: 'pgflow',
+            icon: 'open-book',
+            link: '/getting-started/install-pgflow/',
+            id: 'pgflow',
+            items: [
+              {
+                label: 'Getting Started',
+                autogenerate: { directory: 'getting-started/' },
+              },
+              {
+                label: 'Explanations',
+                autogenerate: { directory: 'explanations/' },
+              },
+              {
+                label: 'How To',
+                autogenerate: { directory: 'how-to/' },
+              },
+            ],
+          },
+          {
             label: 'Edge Worker',
             icon: 'open-book',
             link: '/edge-worker/how-it-works/',
@@ -91,26 +111,6 @@ export default defineConfig({
                 label: 'Project Status',
                 badge: { text: 'important', variant: 'caution' },
                 link: '/edge-worker/project-status/',
-              },
-            ],
-          },
-          {
-            label: 'pgflow',
-            icon: 'open-book',
-            link: '/getting-started/install-pgflow/',
-            id: 'pgflow',
-            items: [
-              {
-                label: 'Getting Started',
-                autogenerate: { directory: 'getting-started/' },
-              },
-              {
-                label: 'Explanations',
-                autogenerate: { directory: 'explanations/' },
-              },
-              {
-                label: 'How To',
-                autogenerate: { directory: 'how-to/' },
               },
             ],
           },
