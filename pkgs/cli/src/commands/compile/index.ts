@@ -122,24 +122,32 @@ export default (program: Command) => {
           String(now.getSeconds()).padStart(2, '0'),
         ].join('');
 
-        // Extract the base filename without extension from the flow path
-        const flowBasename = path.basename(
-          resolvedFlowPath,
-          path.extname(resolvedFlowPath)
-        );
-
-        // Create migration filename in the format: <timestamp>_create_<flow_file_basename>_flow.sql
-        const migrationFileName = `${timestamp}_create_${flowBasename}_flow.sql`;
-        const migrationFilePath = path.join(migrationsDir, migrationFileName);
-
         // Run the compilation
         log.info(`Compiling flow: ${path.basename(resolvedFlowPath)}`);
-
         const compiledSql = await runDenoCompilation(
           internalCompileScript,
           resolvedFlowPath,
           resolvedDenoJsonPath
         );
+        
+        // Extract flow name from the first line of the SQL output using regex
+        // Looking for pattern: SELECT pgflow.create_flow('flow_name', ...);
+        const flowNameMatch = compiledSql.match(/SELECT\s+pgflow\.create_flow\s*\(\s*'([^']+)'/i);
+        
+        // Use extracted flow name or fallback to the file basename if extraction fails
+        let flowName;
+        if (flowNameMatch && flowNameMatch[1]) {
+          flowName = flowNameMatch[1];
+          log.info(`Extracted flow name: ${flowName}`);
+        } else {
+          // Fallback to file basename if regex doesn't match
+          flowName = path.basename(resolvedFlowPath, path.extname(resolvedFlowPath));
+          log.warn(`Could not extract flow name from SQL, using file basename: ${flowName}`);
+        }
+
+        // Create migration filename in the format: <timestamp>_create_<flow_name>_flow.sql
+        const migrationFileName = `${timestamp}_create_${flowName}_flow.sql`;
+        const migrationFilePath = path.join(migrationsDir, migrationFileName);
 
         // Write the SQL to a migration file
         fs.writeFileSync(migrationFilePath, compiledSql);
