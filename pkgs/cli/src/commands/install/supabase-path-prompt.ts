@@ -23,12 +23,18 @@ export async function supabasePathPrompt() {
 
   const promptMessage = 'Where is your Supabase project located?';
 
-  return await text({
+  const supabasePath = await text({
     message: promptMessage,
     placeholder: detectedPath || 'supabase/',
     initialValue: detectedPath,
     validate,
   });
+
+  if (!supabasePath) {
+    throw new Error('User cancelled');
+  }
+
+  return supabasePath;
 }
 
 function validate(inputPath: string) {
