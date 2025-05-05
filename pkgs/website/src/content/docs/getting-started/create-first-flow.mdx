@@ -1,6 +1,6 @@
 ---
 title: Create your first flow
-description: Learn how to define, compile, and deploy a simple workflow using pgflow's TypeScript DSL
+description: Learn how to define a workflow using pgflow's TypeScript DSL
 sidebar:
   order: 2
 ---
@@ -322,31 +322,6 @@ Before starting, make sure you have:
     - Parallel execution of independent steps
     </Aside>
 
-4. ### Compile the flow to SQL
-
-    Next, compile your flow definition to SQL using the pgflow CLI:
-
-    ```bash frame="none"
-    npx pgflow@latest compile supabase/functions/_flows/analyze_website.ts
-    ```
-
-    This generates a migration file with the SQL needed to register your flow in the database:
-
-    ```
-    ✓ Successfully compiled flow to SQL
-    ✓ Migration file created: supabase/migrations/20250505120000_create_analyze_website_flow.sql
-    ```
-
-5. ### Apply the migration
-
-    Apply the migration to register your flow in the database:
-
-    ```bash frame="none"
-    npx supabase db push
-    ```
-
-    This will execute the SQL migration and make your flow available for execution.
-
 </Steps>
 
 ### Understanding the Flow Structure
@@ -387,5 +362,5 @@ Our workflow includes several important features:
   - In a production environment, this helps handle transient failures
 
 <Aside>
-Now your workflow is defined in the database and ready to be executed. The next step is to [set up a worker and trigger the flow](/getting-started/trigger-and-monitor/).
+Next, we'll [compile this flow definition to SQL](/getting-started/compile-to-sql/) to make it available in your database.
 </Aside>
