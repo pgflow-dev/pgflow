@@ -139,12 +139,19 @@ export default (program: Command) => {
           migrationFilePath
         );
         log.success(`Migration file created: ${relativeFilePath}`);
+        
+        // Show documentation link
+        note('For more information about compiling flows, visit: https://pgflow.dev/getting-started/compile-to-sql/', 'Documentation');
       } catch (error) {
         log.error(
           `Compilation failed: ${
             error instanceof Error ? error.message : String(error)
           }`
         );
+        
+        // Add documentation link for error case too
+        note('For troubleshooting help, visit: https://pgflow.dev/getting-started/compile-to-sql/', 'Documentation');
+        
         process.exit(1);
       }
     });

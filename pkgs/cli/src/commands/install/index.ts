@@ -86,8 +86,13 @@ export default (program: Command) => {
         }
 
         if (migrationsCopied) {
-          nextSteps.push('• Apply the migrations with: supabase db push');
+          nextSteps.push('• Apply the migrations with: supabase migrations up');
         }
+        
+        // Add documentation link
+        nextSteps.push(
+          '• For more information, visit: https://pgflow.dev/getting-started/install-pgflow/'
+        );
 
         if (nextSteps.length > 0) {
           note(nextSteps.join('\n'), 'Next steps');
@@ -96,6 +101,9 @@ export default (program: Command) => {
         log.success(
           'pgflow is already properly configured - no changes needed'
         );
+        
+        // Still show documentation link even if no changes were made
+        note('For more information about pgflow, visit: https://pgflow.dev/getting-started/install-pgflow/', 'Documentation');
       }
     });
 };

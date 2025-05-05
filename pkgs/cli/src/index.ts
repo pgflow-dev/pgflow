@@ -67,8 +67,6 @@ const banner = [
   `  ${g('| |_) | (_|')} ${l('|  _| | (_) \\ V  V /')}   `,
   `  ${g('| .__/ \\__,')} ${l('|_| |_|\\___/ \\_/\\_/')}    `,
   `  ${g('|_|    |___/')}`,
-  ``,
-  `  ${f('Postgres-native Workflow Engine')}`,
 ].join('\n');
 
 console.log(banner);
