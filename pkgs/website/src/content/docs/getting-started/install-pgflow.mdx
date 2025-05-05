@@ -39,7 +39,7 @@ If you haven't installed the CLI yet or need to upgrade, see Supabase's [install
 
     <Aside>
     If your Supabase directory isn't detected automatically, specify it manually:
-    
+
     ```bash frame="none"
     npx pgflow@latest install --supabase-path=./path/to/supabase
     ```
@@ -59,34 +59,13 @@ If you haven't installed the CLI yet or need to upgrade, see Supabase's [install
     If you haven't already, apply the migrations to create the pgflow schema and tables:
 
     ```bash frame="none"
-    npx supabase db push
+    npx supabase migrations up
     ```
 
     This will create the following database objects:
     - `pgflow` schema with tables for workflows and execution state
     - SQL functions for workflow operations
     - Required extensions if not already present
-
-4. ### Verify installation
-
-    Let's make sure everything was installed correctly by checking if the `pgflow` schema exists.
-    
-    You can verify this using the **Supabase Studio**:
-    
-    1. Open Supabase Studio in your browser (typically at http://localhost:54323)
-    2. Navigate to the **SQL Editor**
-    3. Run the following query:
-    
-    ```sql
-    SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'pgflow';
-    ```
-    
-    You should see:
-    ```
-    schema_name
-    ------------
-    pgflow
-    ```
 
 </Steps>
 
