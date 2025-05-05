@@ -59,14 +59,14 @@ export default function WebsiteAnalysisUI({
 
   // For summary, check if:
   // 1. We have runData
-  // 2. Status is completed OR (the summary task is completed, even if run is still in progress)
+  // 2. Status is completed (only show when the entire flow is completed)
   const summaryTaskCompleted = runData?.step_tasks?.some(
     (task) =>
       task.step_slug === 'summary' &&
       task.status === 'completed' &&
       task.output,
   );
-  const showSummary = runData && (isCompleted || summaryTaskCompleted);
+  const showSummary = runData && isCompleted;
   const showAnalyzeAnother = runData && (isCompleted || isFailed);
 
   // Keep analysis section expanded when running or failed, collapse only when completed successfully
@@ -98,6 +98,7 @@ export default function WebsiteAnalysisUI({
   } => {
     console.log('=== Analysis Summary Called ===');
     console.log('isCompleted:', isCompleted);
+    console.log('showSummary:', showSummary);
     console.log('runData.step_tasks:', runData?.step_tasks);
 
     if (!runData?.step_tasks || runData.step_tasks.length === 0) {
