@@ -97,15 +97,13 @@ export default defineConfig({
           {
             label: 'pgflow',
             icon: 'open-book',
-            link: '/getting-started/what-is-pgflow/',
+            link: '/',
             id: 'pgflow',
             items: [
               { 
                 label: 'Getting Started',
                 autogenerate: { directory: 'getting-started/' } 
               },
-              { label: 'What is pgflow?', link: '/pgflow/what-is-pgflow/' },
-              { label: 'New landing', link: '/pgflow/new-landing/' },
             ],
           },
           {
