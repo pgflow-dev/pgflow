@@ -109,7 +109,7 @@ export default function TestimonialCarousel() {
           display: 'flex',
           overflow: 'auto',
           scrollSnapType: 'x mandatory',
-          padding: '1rem 0',
+          padding: '0.5rem 0',
           margin: 0,
           listStyle: 'none',
           scrollbarWidth: 'none',
@@ -123,9 +123,9 @@ export default function TestimonialCarousel() {
               width: '100%',
               flexShrink: 0,
               scrollSnapAlign: 'start',
-              padding: '1rem',
+              padding: '0.5rem',
               textAlign: 'left',
-              minHeight: '100px',
+              minHeight: '90px',
             }}
           >
             <div
@@ -150,7 +150,7 @@ export default function TestimonialCarousel() {
               style={{
                 fontSize: '1.35rem',
                 fontStyle: 'italic',
-                margin: '0 0 1rem 0',
+                margin: '0 0 0.5rem 0',
                 lineHeight: 1.6,
               }}
             >
