@@ -130,9 +130,9 @@ export default function FlowRunDetails({
                       ? 'bg-yellow-500 breathing'
                       : runData.status === 'failed'
                         ? 'bg-red-500'
-                        : runData.status === 'created'
-                          ? 'bg-blue-500'
-                          : 'bg-gray-500'
+                        : runData.status === 'error' || runData.status === 'cancelled'
+                          ? 'bg-red-500'
+                          : 'bg-blue-500'
                 }`}
               ></span>
               <span className="capitalize text-sm">
@@ -320,18 +320,20 @@ export default function FlowRunDetails({
                                       ? 'bg-yellow-500 breathing'
                                       : step.status === 'failed'
                                         ? 'bg-red-500'
-                                        : step.status === 'created'
-                                          ? 'bg-blue-500'
-                                          : 'bg-gray-500'
+                                        : step.status === 'error' || step.status === 'cancelled'
+                                          ? 'bg-red-500'
+                                          : 'bg-blue-500'
                               }`}
                             ></span>
                             {!isParallel && (
                               <span className="capitalize text-xs">
                                 {isRetrying
                                   ? `retrying (retry ${latestTask.attempts_count - 1})`
-                                  : step.status === 'created'
-                                    ? 'waiting'
-                                    : step.status}
+                                  : step.status === 'error' || step.status === 'cancelled'
+                                    ? step.status
+                                    : step.status === 'started'
+                                      ? 'running'
+                                      : step.status}
                               </span>
                             )}
                           </div>
