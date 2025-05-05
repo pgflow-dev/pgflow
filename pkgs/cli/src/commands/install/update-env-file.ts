@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { log, note, confirm } from '@clack/prompts';
+import { log, note, confirm, spinner } from '@clack/prompts';
 import chalk from 'chalk';
 
 /**
@@ -17,12 +17,15 @@ export async function updateEnvFile({
   supabasePath: string;
   autoConfirm?: boolean;
 }): Promise<boolean> {
+  // Start a spinner for checking environment variables
+  const envSpinner = spinner();
+  envSpinner.start('Checking environment variables...');
+  
   const functionsDir = path.join(supabasePath, 'functions');
   const envFilePath = path.join(functionsDir, '.env');
 
   // Create functions directory if it doesn't exist
   if (!fs.existsSync(functionsDir)) {
-    log.step('Creating functions directory...');
     fs.mkdirSync(functionsDir, { recursive: true });
   }
 
@@ -40,7 +43,6 @@ export async function updateEnvFile({
   if (fs.existsSync(envFilePath)) {
     currentContent = fs.readFileSync(envFilePath, 'utf8');
   } else {
-    log.step('Creating new .env file...');
     isNewFile = true;
   }
 
@@ -62,9 +64,12 @@ export async function updateEnvFile({
 
   // If no changes needed, return early
   if (missingVars.length === 0) {
+    envSpinner.stop('Environment variables already set');
     log.info('Environment variables are already set');
     return false;
   }
+
+  envSpinner.stop(`Found ${missingVars.length} variable${missingVars.length !== 1 ? 's' : ''} to add`);
 
   // Build diff preview
   const diffPreview: Array<string> = [];
@@ -108,6 +113,10 @@ export async function updateEnvFile({
     return false;
   }
 
+  // Start a spinner for updating the env file
+  const updateSpinner = spinner();
+  updateSpinner.start('Updating environment variables...');
+
   // Apply changes if confirmed
   for (const { key, value } of missingVars) {
     // Add a newline at the end if the file doesn't end with one and isn't empty
@@ -117,16 +126,17 @@ export async function updateEnvFile({
 
     // Add the new variable
     newContent += `${key}="${value}"\n`;
-    log.step(`Adding ${key} environment variable`);
   }
 
   // Write the file if changes were made
   try {
     fs.writeFileSync(envFilePath, newContent);
+    updateSpinner.stop('Environment variables updated');
     log.success('Environment variables updated successfully');
     return true;
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    updateSpinner.stop('Failed to update environment variables');
     log.error(`Failed to update environment variables: ${errorMessage}`);
     return false;
   }

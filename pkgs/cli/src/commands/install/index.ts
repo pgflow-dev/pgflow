@@ -1,5 +1,5 @@
 import { type Command } from 'commander';
-import { intro, log, note } from '@clack/prompts';
+import { intro, log, note, group, cancel } from '@clack/prompts';
 import { copyMigrations } from './copy-migrations.js';
 import { updateConfigToml } from './update-config-toml.js';
 import { updateEnvFile } from './update-env-file.js';
@@ -56,36 +56,58 @@ export default (program: Command) => {
         process.exit(1);
       }
 
-      // First update config.toml, then copy migrations
-      const configUpdated = await updateConfigToml({ 
-        supabasePath,
-        autoConfirm: options.yes
-      });
-      
-      const migrationsCopied = await copyMigrations({ 
-        supabasePath,
-        autoConfirm: options.yes
-      });
-      
-      const envFileCreated = await updateEnvFile({ 
-        supabasePath,
-        autoConfirm: options.yes
-      });
+      // Use the group feature to organize installation steps
+      const results = await group(
+        {
+          // Step 1: Update config.toml
+          configUpdate: async () => {
+            return await updateConfigToml({
+              supabasePath,
+              autoConfirm: options.yes
+            });
+          },
+          
+          // Step 2: Copy migrations
+          migrations: async () => {
+            return await copyMigrations({
+              supabasePath, 
+              autoConfirm: options.yes
+            });
+          },
+          
+          // Step 3: Update environment variables
+          envFile: async () => {
+            return await updateEnvFile({
+              supabasePath,
+              autoConfirm: options.yes
+            });
+          }
+        },
+        {
+          // Handle cancellation
+          onCancel: () => {
+            cancel('Installation cancelled');
+            process.exit(1);
+          }
+        }
+      );
 
+      const { configUpdate, migrations, envFile } = results;
+      
       // Show completion message
-      if (migrationsCopied || configUpdated || envFileCreated) {
+      if (migrations || configUpdate || envFile) {
         log.success('pgflow setup completed successfully');
 
         // Show next steps if changes were made
         const nextSteps = [];
 
-        if (configUpdated || envFileCreated) {
+        if (configUpdate || envFile) {
           nextSteps.push(
             '• Restart your Supabase instance for configuration changes to take effect'
           );
         }
 
-        if (migrationsCopied) {
+        if (migrations) {
           nextSteps.push('• Apply the migrations with: supabase migrations up');
         }
         

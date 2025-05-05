@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { log, confirm, note } from '@clack/prompts';
+import { log, confirm, note, spinner } from '@clack/prompts';
 import * as TOML from 'toml-patch';
 import chalk from 'chalk';
 
@@ -40,11 +40,16 @@ export async function updateConfigToml({
   supabasePath: string;
   autoConfirm?: boolean;
 }): Promise<boolean> {
+  // Start a spinner for checking configuration
+  const configSpinner = spinner();
+  configSpinner.start('Checking Supabase configuration...');
+  
   const configPath = path.join(supabasePath, 'config.toml');
   const backupPath = `${configPath}.backup`;
 
   try {
     if (!fs.existsSync(configPath)) {
+      configSpinner.stop('Configuration error');
       throw new Error(`config.toml not found at ${configPath}`);
     }
 
@@ -63,10 +68,13 @@ export async function updateConfigToml({
       currentSettings.edgeRuntimePolicy !== 'per_worker';
 
     if (!needsChanges) {
+      configSpinner.stop('Configuration already set');
       log.info(`Supabase configuration is already set up for pgflow`);
       return false;
     }
 
+    configSpinner.stop('Configuration changes needed');
+    
     const changes = [];
 
     if (currentSettings.poolerEnabled !== true) {
@@ -104,9 +112,12 @@ ${chalk.green('+ policy = "per_worker"')}`);
       return false;
     }
 
+    // Start a spinner for the update process
+    const updateSpinner = spinner();
+    updateSpinner.start('Updating Supabase configuration...');
+
+    // Create backup
     fs.copyFileSync(configPath, backupPath);
-    log.step(`Created backup of config.toml`);
-    log.step(`Updating Supabase configuration...`);
 
     const updatedConfig = { ...config };
 
@@ -150,7 +161,8 @@ ${chalk.green('+ policy = "per_worker"')}`);
       );
 
     fs.writeFileSync(configPath, updatedContent);
-
+    
+    updateSpinner.stop('Configuration updated');
     log.success(`Supabase configuration updated successfully`);
     return true;
   } catch (error) {
