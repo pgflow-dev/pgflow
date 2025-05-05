@@ -9,23 +9,21 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { FileTree } from '@astrojs/starlight/components';
 import NotProductionReady from '@/components/NotProductionReady.astro';
 
-Now that pgflow is installed, let's create a website analysis workflow that demonstrates the core concepts.
+Now that pgflow is installed, let's create a simple greeting workflow that demonstrates the core concepts.
 
 <NotProductionReady />
 
-:::tip[See Complete Demo App]
-This tutorial creates a simplified version of our demo app. You can:
+:::tip[See More Complex Examples]
+This tutorial creates a simple example to introduce the key concepts. For more comprehensive examples:
 - Try the [live demo app here](https://pgflow-demo.netlify.app/)
 - See the [full source code on GitHub](https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions)
-
-The demo shows the complete workflow with Supabase integration and AI features.
-It also includes `user_id` input parameter to store user that triggered the workflow.
+- Check out the [Organize Flows Codebase](/how-to/organize-flows-codebase/) guide for more complex organization patterns
 :::
 
-Our website analysis workflow will:
-1. Scrape a website's content
-2. Generate a summary and extract tags in parallel using AI
-3. Save results to the database
+Our greeting workflow will:
+1. Take a person's first and last name as input
+2. Format the full name
+3. Create a personalized greeting
 
 <Aside type="caution" title="Prerequisites">
 Before starting, make sure you have:
@@ -40,240 +38,41 @@ Before starting, make sure you have:
     First, let's create a project structure for our workflow:
 
     ```bash frame="none"
-    mkdir -p supabase/functions/_flows supabase/functions/_tasks
+    mkdir -p supabase/functions/_flows
     ```
 
-    This organizes our code into two key parts:
-
-    - `_tasks/` - Contains small, focused functions that each perform a single unit of work with clear inputs and outputs
-    - `_flows/` - Contains definitions that compose these tasks into directed acyclic graphs (DAGs), defining data dependencies between tasks
-
-    Tasks are modular, reusable functions designed for a specific purpose, while flows define the execution order, parallelism, and data transformations between tasks. The flow orchestrates how data moves through the computational graph.
-
-    :::note[Task Design Best Practice]
-    Design your task functions to be as agnostic as possible about where their inputs come from. A well-designed task should:
-
-    - Accept simple, focused parameters (like a URL or content string)
-    - Perform one specific job well
-    - Return clear results without assuming how they'll be used
-    - Have no knowledge about other tasks or the overall flow
-
-    **DO:**
-    ```typescript
-    // Good: Task accepts direct content parameter
-    async function summarizeContent(content: string) {
-      // Process the content directly
-      return { summary: "Processed summary..." };
-    }
-
-    // In your flow:
-    .step(
-      { slug: 'summary', dependsOn: ['website'] },
-      async (input) => await summarizeContent(input.website.content)
-    )
-    ```
-
-    **DON'T:**
-    ```typescript
-    // Bad: Task expects specific step structure
-    async function summarizeWebsite(input: { website: { content: string } }) {
-      // Tightly coupled to previous step name and structure
-      return { summary: "Processed summary..." };
-    }
-
-    // In your flow:
-    .step(
-      { slug: 'summary', dependsOn: ['website'] },
-      async (input) => await summarizeWebsite(input) // Passing entire input object
-    )
-    ```
-
-    This makes tasks reusable across different flows and easier to test in isolation.
-    :::
+    This will hold our flow definition file:
 
     <FileTree>
     - supabase
       - functions
         - _flows
-          - analyze_website.ts
-        - _tasks
-          - scrapeWebsite.ts
-          - summarizeWithAI.ts
-          - extractTags.ts
-          - saveWebsite.ts
-        - utils.ts
+          - greet_user.ts
     </FileTree>
 
-2. ### Create task implementations
+2. ### Create the flow definition
 
-    First, let's create the implementation for each task. These functions will be called by our flow steps.
+    Let's create a simple flow that takes a first name and last name, combines them, and creates a greeting:
 
-    <Tabs>
-      <TabItem label="scrapeWebsite.ts">
-      ```typescript title="supabase/functions/_tasks/scrapeWebsite.ts"
-      /**
-       * Fetches website content from a URL
-       *
-       * For a real implementation, see the demo app:
-       * https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions/_tasks/scrapeWebsite.ts
-       */
-      export default async function scrapeWebsite(url: string) {
-        console.log(`Fetching content from: ${url}`);
-
-        // In a real implementation, this would fetch and process actual website content
-        // This simplified version returns mock data based on the URL
-
-        return {
-          content: `Sample content from ${url}. This is a placeholder for real website content.
-          The website discusses various topics including technology, data processing, and workflows.
-          In a production app, this would be actual content scraped from the URL.`
-        };
-      }
-      ```
-      </TabItem>
-
-      <TabItem label="summarizeWithAI.ts">
-      ```typescript title="supabase/functions/_tasks/summarizeWithAI.ts"
-      /**
-       * Summarizes text content using AI
-       *
-       * For a real implementation using Groq/OpenAI, see the demo app:
-       * https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions/_tasks/summarizeWithAI.ts
-       */
-      export default async function summarizeWithAI(content: string) {
-        console.log(`Summarizing ${content.length} chars of content`);
-
-        // Simple function that generates a summary based on content length
-        // In a real implementation, this would use an AI service API
-
-        const length = content.length;
-        let summary = "";
-
-        if (length < 100) {
-          summary = "Very short content about a website.";
-        } else if (length < 500) {
-          summary = "Website discussing technology and data workflows. The site includes information about processing data efficiently.";
-        } else {
-          summary = "Comprehensive website covering multiple aspects of technology, data processing workflows, and system architecture. The content explores efficient data handling methodologies and implementation patterns.";
-        }
-
-        return summary;
-      }
-      ```
-      </TabItem>
-
-      <TabItem label="extractTags.ts">
-      ```typescript title="supabase/functions/_tasks/extractTags.ts"
-      /**
-       * Extracts relevant tags from content
-       *
-       * For a real implementation using AI services, see the demo app:
-       * https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions/_tasks/extractTags.ts
-       */
-      export default async function extractTags(content: string) {
-        console.log(`Extracting tags from ${content.length} chars of content`);
-
-        // Simple mock implementation that returns tags based on content
-        // In a real implementation, this would use AI to analyze the content
-
-        // Create a set of default tags
-        const defaultTags = ["technology", "data", "workflow"];
-
-        // Add additional tags based on content
-        const additionalTags = [];
-        if (content.includes("processing")) additionalTags.push("processing");
-        if (content.includes("API") || content.includes("api")) additionalTags.push("api");
-        if (content.includes("database") || content.includes("SQL")) additionalTags.push("database");
-
-        return {
-          keywords: [...defaultTags, ...additionalTags]
-        };
-      }
-      ```
-      </TabItem>
-
-      <TabItem label="saveWebsite.ts">
-      ```typescript title="supabase/functions/_tasks/saveWebsite.ts"
-      /**
-       * Saves website data to the database
-       *
-       * For a real implementation using Supabase, see the demo app:
-       * https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions/_tasks/saveWebsite.ts
-       */
-      export default async function saveWebsite(websiteData: {
-        website_url: string;
-        summary: string;
-        tags: string[];
-      }) {
-        console.log("Saving website data:", websiteData);
-
-        // In a real implementation, this would save to a database
-        // This simplified version just logs and returns mock data
-
-        // Generate a mock ID based on URL
-        const id = `website_${Date.now()}`;
-
-        return {
-          success: true,
-          website: {
-            id,
-            ...websiteData,
-            created_at: new Date().toISOString()
-          }
-        };
-      }
-      ```
-      </TabItem>
-    </Tabs>
-
-    <Aside>
-    Note: The tasks use services like Groq for AI processing and Supabase for database access.
-    In a real implementation, you'll need to set up appropriate environment variables.
-    </Aside>
-
-3. ### Define the website analysis flow
-
-    Now, let's create the main flow definition that ties everything together:
-
-    ```typescript title="supabase/functions/_flows/analyze_website.ts"
+    ```typescript title="supabase/functions/_flows/greet_user.ts"
     import { Flow } from '@pgflow/dsl';
-    import scrapeWebsite from '../_tasks/scrapeWebsite.ts';
-    import summarizeWithAI from '../_tasks/summarizeWithAI.ts';
-    import extractTags from '../_tasks/extractTags.ts';
-    import saveWebsite from '../_tasks/saveWebsite.ts';
 
     type Input = {
-      url: string;
+      first_name: string;
+      last_name: string;
     };
 
     export default new Flow<Input>({
-      slug: 'analyze_website',
-      maxAttempts: 3,
-      timeout: 4,
-      baseDelay: 1,
+      slug: 'greet_user',
     })
       .step(
-        { slug: 'website' },
-        async (input) => await scrapeWebsite(input.run.url),
+        { slug: 'format_name' },
+        (input) => `${input.run.first_name} ${input.run.last_name}`
       )
       .step(
-        { slug: 'summary', dependsOn: ['website'] },
-        async (input) => await summarizeWithAI(input.website.content),
-      )
-      .step({ slug: 'tags', dependsOn: ['website'] }, async (input) => {
-        const { keywords } = await extractTags(input.website.content);
-        return keywords;
-      })
-      .step({ slug: 'saveToDb', dependsOn: ['summary', 'tags'] }, async (input) => {
-        const websiteData = {
-          website_url: input.run.url,
-          summary: input.summary,
-          tags: input.tags,
-        };
-        const { website } = await saveWebsite(websiteData);
-
-        return website;
-      });
+        { slug: 'greet', dependsOn: ['format_name'] },
+        (input) => `Hello, ${input.format_name}!`
+      );
     ```
 
     <Aside>
@@ -281,7 +80,6 @@ Before starting, make sure you have:
     - Strongly typed input and output between steps
     - Explicit dependencies between steps
     - Built-in retry and error handling
-    - Parallel execution of independent steps
 
     :::important[JSON Serialization Requirement]
     All step inputs and outputs MUST be JSON-serializable, as pgflow stores these values in JSONB database columns.
@@ -295,16 +93,24 @@ Before starting, make sure you have:
 
 ### Understanding the Flow Structure
 
-The analyze_website flow has this structure:
+The `greet_user` flow has this simple structure:
 
-<img src="/analyze_website.svg" width="50%" height="50%"/>
+1. **Input**: The flow takes a first name and last name as input.
+2. **Step 1 (format_name)**: Combines the first and last name to create a full name.
+3. **Step 2 (greet)**: Takes the formatted name and creates a greeting.
 
-This demonstrates the core concepts of pgflow:
+For example, if you run this flow with:
+```json
+{
+  "first_name": "Alice",
+  "last_name": "Smith"
+}
+```
 
-1. **Parallel processing**: After the website is scraped, both the summary and tag extraction happen in parallel
-2. **Data dependencies**: The saveToDb step only runs after both summary and tags are complete
-3. **Error handling**: Each step automatically includes retry logic (controlled by maxAttempts and baseDelay)
-4. **Type safety**: Data is passed between steps in a type-safe manner
+It will:
+1. First step: Format the name to `"Alice Smith"`
+2. Second step: Create the greeting `"Hello, Alice Smith!"`
+3. Final output: `{ "greeting": "Hello, Alice Smith!" }`
 
 ### Important Flow Features
 

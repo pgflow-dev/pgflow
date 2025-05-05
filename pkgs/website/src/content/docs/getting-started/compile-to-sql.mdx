@@ -35,7 +35,7 @@ Before continuing, make sure you have:
     Run the pgflow compile command, pointing to your flow definition file:
 
     ```bash frame="none"
-    npx pgflow@latest compile supabase/functions/_flows/analyze_website.ts
+    npx pgflow@latest compile supabase/functions/_flows/greet_user.ts
     ```
 
     This will:
@@ -48,7 +48,7 @@ Before continuing, make sure you have:
 
     ```
     ✓ Successfully compiled flow to SQL
-    ✓ Migration file created: supabase/migrations/20250505120000_create_analyze_website_flow.sql
+    ✓ Migration file created: supabase/migrations/20250505120000_create_greet_user_flow.sql
     ```
 
 2. ### Examine the generated SQL
@@ -56,7 +56,7 @@ Before continuing, make sure you have:
     Let's look at what got generated. Open the migration file in your editor:
 
     ```bash frame="none"
-    cat supabase/migrations/20250505120000_create_analyze_website_flow.sql
+    cat supabase/migrations/20250505120000_create_greet_user_flow.sql
     ```
 
     The migration file contains SQL commands that:
@@ -68,11 +68,9 @@ Before continuing, make sure you have:
     The generated SQL looks like this:
 
     ```sql
-    SELECT pgflow.create_flow('analyze_website', max_attempts => 3, base_delay => 1, timeout => 4);
-    SELECT pgflow.add_step('analyze_website', 'website');
-    SELECT pgflow.add_step('analyze_website', 'summary', ARRAY['website']);
-    SELECT pgflow.add_step('analyze_website', 'tags', ARRAY['website']);
-    SELECT pgflow.add_step('analyze_website', 'saveToDb', ARRAY['summary', 'tags']);
+    SELECT pgflow.create_flow('greet_user');
+    SELECT pgflow.add_step('greet_user', 'format_name');
+    SELECT pgflow.add_step('greet_user', 'greet', ARRAY['format_name']);
     ```
 
     This SQL representation is what the pgflow runtime system uses to execute your workflow.
@@ -90,7 +88,7 @@ Before continuing, make sure you have:
     If successful, you should see output like:
 
     ```
-    Applying migration 20250505120000_create_analyze_website_flow.sql...done
+    Applying migration 20250505120000_create_greet_user_flow.sql...done
     ```
 
 </Steps>
@@ -124,15 +122,15 @@ These changes will break in-progress runs and cause data compatibility issues.
 
 pgflow uses the flow's `slug` as its identifier, so to create a new version:
 
-1. **Create a new flow definition file** with a versioned slug (e.g., `analyze_website_v2.ts`)
+1. **Create a new flow definition file** with a versioned slug (e.g., `greet_user_v2.ts`)
 2. **Manually manage migration files**:
    - Keep previous migration files for existing runs
    - Create new migrations for the new flow version
 
 ```typescript
-// analyze_website_v2.ts
+// greet_user_v2.ts
 export default new Flow<Input>({
-  slug: 'analyze_website_v2',  // Note the versioned slug
+  slug: 'greet_user_v2',  // Note the versioned slug
   // ...configuration
 })
 ```
@@ -157,28 +155,6 @@ We've created a detailed guide on [how to update flow options](/how-to/update-fl
 - Best practices for maintaining compatibility
 
 For any non-breaking changes to existing flows, refer to this guide rather than recompiling.
-:::
-
-### Task reusability
-
-The separation of tasks from flows helps with versioning:
-
-- Tasks can be reused across multiple flow versions
-- Implementation details can evolve independently of flow structure
-- New flow versions can reuse existing task implementations
-
-```typescript
-// Both flow versions can use the same task implementations
-// analyze_website_v1.ts and analyze_website_v2.ts
-import scrapeWebsite from '../_tasks/scrapeWebsite.ts';
-```
-
-:::note[Flow Versioning Tips]
-- For non-breaking configuration changes: Update database directly with SQL
-- For breaking changes: Always create a new flow with a versioned slug
-- Consider a versioning scheme (v1, v2, etc.) for your flow slugs
-- Always test migrations thoroughly before applying in production
-- Plan how to migrate in-progress runs when deploying new versions
 :::
 
 <Aside>
