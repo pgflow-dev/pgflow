@@ -110,7 +110,7 @@ export default function FlowRunDetails({
   const isRunning = runData?.status === 'started';
   const isCompleted = runData?.status === 'completed';
   const isFailed = runData?.status === 'failed';
-  
+
   // Function to get summary data
   const getAnalysisSummary = () => {
     if (!runData?.step_tasks || runData.step_tasks.length === 0) {
@@ -202,9 +202,8 @@ export default function FlowRunDetails({
           {/* Unified Status Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-2 md:space-y-0">
             <div className="flex items-center space-x-2">
-              <div 
-                className={`h-4 w-4 rounded-full ${
-                  runData.status === 'completed'
+              <div
+                className={`h-4 w-4 rounded-full ${runData.status === 'completed'
                     ? 'bg-green-500'
                     : runData.status === 'started'
                       ? 'bg-yellow-500 animate-pulse'
@@ -213,7 +212,7 @@ export default function FlowRunDetails({
                         : runData.status === 'created'
                           ? 'bg-blue-500'
                           : 'bg-gray-500'
-                }`}
+                  }`}
               ></div>
               <h3 className="text-lg font-medium capitalize">
                 {runData.status === 'started' ? 'Running' : runData.status}
@@ -234,7 +233,7 @@ export default function FlowRunDetails({
                 </span>
               )}
             </div>
-            
+
             {/* Technical Details Toggle */}
             <button
               onClick={() => setShowDetails(!showDetails)}
@@ -259,9 +258,9 @@ export default function FlowRunDetails({
             <div className="p-3 bg-muted rounded-md">
               <div className="flex items-center">
                 <span className="text-sm font-medium mr-2">Website:</span>
-                <a 
-                  href={websiteUrl} 
-                  target="_blank" 
+                <a
+                  href={websiteUrl}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:text-primary/80 truncate"
                 >
@@ -277,12 +276,12 @@ export default function FlowRunDetails({
               <h4 className="text-sm font-medium">Workflow Structure</h4>
               <span className="text-xs text-muted-foreground">Data Pipeline Diagram</span>
             </div>
-            <WorkflowDag stepStates={runData?.step_states || []} />
+            <WorkflowDag stepStates={runData?.step_states || []} stepTasks={runData?.step_tasks || []} />
           </div>
 
           {/* Tabs for Analysis Results / Technical Details */}
-          <Tabs 
-            defaultValue="steps" 
+          <Tabs
+            defaultValue="steps"
             className="w-full"
             value={activeTab}
             onValueChange={setActiveTab}
@@ -292,7 +291,7 @@ export default function FlowRunDetails({
               <TabsTrigger value="results" disabled={!isCompleted}>Results</TabsTrigger>
               <TabsTrigger value="technical" className={showDetails ? '' : 'hidden'}>Technical Data</TabsTrigger>
             </TabsList>
-            
+
             {/* Process Steps Tab */}
             <TabsContent value="steps" className="space-y-4">
               {runData.step_states &&
@@ -339,9 +338,9 @@ export default function FlowRunDetails({
                     const latestTask =
                       stepTasks && stepTasks.length > 0
                         ? stepTasks.sort(
-                            (a, b) =>
-                              (b.attempts_count || 0) - (a.attempts_count || 0),
-                          )[0]
+                          (a, b) =>
+                            (b.attempts_count || 0) - (a.attempts_count || 0),
+                        )[0]
                         : null;
 
                     // Check if this is a retry (attempts_count > 1)
@@ -375,8 +374,7 @@ export default function FlowRunDetails({
                         <CollapsibleTrigger className="flex items-center justify-between w-full p-3 text-left">
                           <div className="flex items-center">
                             <div
-                              className={`flex items-center justify-center w-8 h-8 rounded-full border-2 mr-3 ${
-                                step.status === 'completed'
+                              className={`flex items-center justify-center w-8 h-8 rounded-full border-2 mr-3 ${step.status === 'completed'
                                   ? 'bg-green-500 border-green-500 text-white'
                                   : isRetrying
                                     ? 'border-red-500 text-red-500 animate-pulse'
@@ -385,7 +383,7 @@ export default function FlowRunDetails({
                                       : step.status === 'failed'
                                         ? 'border-red-500 text-red-500'
                                         : 'border-gray-300 text-gray-300'
-                              }`}
+                                }`}
                             >
                               {step.status === 'completed' ? (
                                 <svg
@@ -467,19 +465,18 @@ export default function FlowRunDetails({
                                   <p className="text-sm whitespace-pre-line">{(stepTask.output as any).aiSummary || 'No summary available'}</p>
                                 </div>
                               )}
-                              
+
                               {step.step_slug === 'sentiment' && (
                                 <div className="p-3 bg-muted/50 rounded-md">
                                   <h5 className="font-medium mb-1">Sentiment Analysis</h5>
                                   <div className="flex items-center">
                                     <span
-                                      className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
-                                        sentiment === 'positive'
+                                      className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${sentiment === 'positive'
                                           ? 'bg-green-100 text-green-800'
                                           : sentiment === 'negative'
                                             ? 'bg-red-100 text-red-800'
                                             : 'bg-blue-100 text-blue-800'
-                                      }`}
+                                        }`}
                                     >
                                       {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
                                     </span>
@@ -489,7 +486,7 @@ export default function FlowRunDetails({
                                   </div>
                                 </div>
                               )}
-                              
+
                               {step.step_slug === 'tags' && (
                                 <div className="p-3 bg-muted/50 rounded-md">
                                   <h5 className="font-medium mb-1">Tags</h5>
@@ -504,7 +501,7 @@ export default function FlowRunDetails({
                                   </div>
                                 </div>
                               )}
-                              
+
                               {/* Technical details for all steps */}
                               {showDetails && (
                                 <div className="mt-2 overflow-auto">
@@ -618,7 +615,7 @@ export default function FlowRunDetails({
                   );
                 })()}
             </TabsContent>
-            
+
             {/* Analysis Results Tab */}
             <TabsContent value="results" className="space-y-6">
               {isCompleted && (
@@ -626,7 +623,7 @@ export default function FlowRunDetails({
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
                     <h3 className="text-xl font-medium">Analysis Results</h3>
                   </div>
-                  
+
                   <dl className="space-y-6">
                     <div className="flex flex-row gap-6">
                       <div className="flex flex-col space-y-2 w-1/3">
@@ -635,13 +632,12 @@ export default function FlowRunDetails({
                         </dt>
                         <dd>
                           <span
-                            className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
-                              sentiment === 'positive'
+                            className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${sentiment === 'positive'
                                 ? 'bg-green-100 text-green-800'
                                 : sentiment === 'negative'
                                   ? 'bg-red-100 text-red-800'
                                   : 'bg-blue-100 text-blue-800'
-                            }`}
+                              }`}
                           >
                             {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
                           </span>
@@ -684,7 +680,7 @@ export default function FlowRunDetails({
                 </div>
               )}
             </TabsContent>
-            
+
             {/* Technical Data Tab */}
             <TabsContent value="technical" className="space-y-6">
               {/* Run ID */}
@@ -692,7 +688,7 @@ export default function FlowRunDetails({
                 <h4 className="text-sm font-medium mb-1">Run ID:</h4>
                 <pre className="capitalize text-xs bg-muted p-2 rounded-md">{runId}</pre>
               </div>
-              
+
               {/* Run Input */}
               <div>
                 <h4 className="text-sm font-medium mb-1">
@@ -707,7 +703,7 @@ export default function FlowRunDetails({
                   </div>
                 </div>
               </div>
-              
+
               {/* Run Output */}
               <div>
                 <h4 className="text-sm font-medium mb-1">Run Output</h4>
@@ -723,7 +719,7 @@ export default function FlowRunDetails({
                   </p>
                 )}
               </div>
-              
+
               {/* Raw Data */}
               <div>
                 <details>
