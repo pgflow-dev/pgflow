@@ -13,6 +13,14 @@ Now that pgflow is installed, let's create a website analysis workflow that demo
 
 <NotProductionReady />
 
+:::tip[See Complete Demo App]
+This tutorial creates a simplified version of our demo app. You can:
+- Try the [live demo app here](https://pgflow-demo.netlify.app/)
+- See the [full source code on GitHub](https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions)
+
+The demo shows the complete workflow with Supabase integration and AI features.
+:::
+
 Our website analysis workflow will:
 1. Scrape a website's content
 2. Generate a summary and extract tags in parallel using AI
@@ -37,10 +45,10 @@ Before starting, make sure you have:
 
     This organizes our code into two key parts:
     
-    - `_tasks/` - Contains reusable building blocks that do one specific job (like fetching a website or analyzing text)
-    - `_flows/` - Contains definitions that connect these tasks together, controlling how data moves between them
+    - `_tasks/` - Contains small, focused functions that each perform a single unit of work with clear inputs and outputs
+    - `_flows/` - Contains definitions that compose these tasks into directed acyclic graphs (DAGs), defining data dependencies between tasks
     
-    Think of tasks as specialized workers (each with one skill) and flows as managers that coordinate which worker does what, when they should start, and how their work gets combined.
+    Tasks are modular, reusable functions designed for a specific purpose, while flows define the execution order, parallelism, and data transformations between tasks. The flow orchestrates how data moves through the computational graph.
     
     :::note[Task Design Best Practice]
     Design your task functions to be as agnostic as possible about where their inputs come from. A well-designed task should:
@@ -109,223 +117,142 @@ Before starting, make sure you have:
 
       <Fragment slot="panel.scrapeWebsite">
       ```typescript title="supabase/functions/_tasks/scrapeWebsite.ts"
-      export default async function scrapeWebsite(url: string) {
-        const response = await fetch(url);
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch website: ${response.status}`);
-        }
-
-        const rawContent = await response.text();
-
-        // Extract text content from HTML
-        const textContent = stripHtmlTags(rawContent);
-
-        return {
-          content: textContent,
-        };
-      }
-
       /**
-       * Strips HTML tags from content and extracts text
-       * Focuses on content within the body tag and removes scripts, styles, etc.
+       * Fetches website content from a URL
+       * 
+       * For a real implementation, see the demo app:
+       * https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions/_tasks/scrapeWebsite.ts
        */
-      function stripHtmlTags(html: string): string {
-        // Extract body content if possible
-        const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-        const bodyContent = bodyMatch ? bodyMatch[1] : html;
-
-        // Remove script and style tags and their contents
-        let cleanedContent = bodyContent
-          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-          .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
-
-        // Remove HTML tags but preserve line breaks
-        cleanedContent = cleanedContent
-          .replace(/<br\s*\/?>/gi, '\n')
-          .replace(/<\/p>/gi, '\n\n')
-          .replace(/<\/div>/gi, '\n')
-          .replace(/<\/h[1-6]>/gi, '\n\n')
-          .replace(/<\/li>/gi, '\n')
-          .replace(/<[^>]*>/g, '');
-
-        // Decode HTML entities
-        cleanedContent = cleanedContent
-          .replace(/&nbsp;/g, ' ')
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'");
-
-        // Remove excessive whitespace
-        cleanedContent = cleanedContent
-          .replace(/\n\s*\n\s*\n/g, '\n\n')
-          .replace(/\s+/g, ' ')
-          .trim();
-
-        return cleanedContent;
+      export default async function scrapeWebsite(url: string) {
+        console.log(`Fetching content from: ${url}`);
+        
+        // In a real implementation, this would fetch and process actual website content
+        // This simplified version returns mock data based on the URL
+        
+        return {
+          content: `Sample content from ${url}. This is a placeholder for real website content.
+          The website discusses various topics including technology, data processing, and workflows.
+          In a production app, this would be actual content scraped from the URL.`
+        };
       }
       ```
       </Fragment>
 
       <Fragment slot="panel.summarizeWithAI">
       ```typescript title="supabase/functions/_tasks/summarizeWithAI.ts"
-      import Groq from 'groq-sdk';
-
-      let _groq: Groq | undefined;
-
-      function getGroq() {
-        if (!_groq) {
-          _groq = new Groq({
-            apiKey: Deno.env.get('GROQ_API_KEY'),
-          });
+      /**
+       * Summarizes text content using AI
+       * 
+       * For a real implementation using Groq/OpenAI, see the demo app:
+       * https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions/_tasks/summarizeWithAI.ts
+       */
+      export default async function summarizeWithAI(content: string) {
+        console.log(`Summarizing ${content.length} chars of content`);
+        
+        // Simple function that generates a summary based on content length
+        // In a real implementation, this would use an AI service API
+        
+        const length = content.length;
+        let summary = "";
+        
+        if (length < 100) {
+          summary = "Very short content about a website.";
+        } else if (length < 500) {
+          summary = "Website discussing technology and data workflows. The site includes information about processing data efficiently.";
+        } else {
+          summary = "Comprehensive website covering multiple aspects of technology, data processing workflows, and system architecture. The content explores efficient data handling methodologies and implementation patterns.";
         }
-
-        return _groq;
+        
+        return summary;
       }
-
-      export default async (content: string) => {
-        const chatCompletion = await getGroq().chat.completions.create({
-          messages: [
-            {
-              role: 'user',
-              content: `Please provide a concise summary of the following content:\n\n${content}`,
-            },
-          ],
-          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-        });
-
-        return (
-          chatCompletion.choices[0].message.content ??
-          'Summary not available, please try again.'
-        );
-      };
       ```
       </Fragment>
 
       <Fragment slot="panel.extractTags">
       ```typescript title="supabase/functions/_tasks/extractTags.ts"
-      import Groq from 'groq-sdk';
-
-      let _groq: Groq | undefined;
-
-      function getGroq() {
-        if (!_groq) {
-          _groq = new Groq({
-            apiKey: Deno.env.get('GROQ_API_KEY'),
-          });
-        }
-
-        return _groq;
-      }
-
-      export default async (content: string) => {
-        const chatCompletion = await getGroq().chat.completions.create({
-          messages: [
-            {
-              role: 'system',
-              content: 'You extract relevant keywords and tags from website content.',
-            },
-            {
-              role: 'user',
-              content: `Extract the most important keywords and tags from the following website content.
-      Return a JSON object with a single "keywords" field containing an array of strings.
-      Focus on the most relevant and descriptive terms that represent the main topics and themes.
-      Limit to 5-10 keywords maximum.
-      
-      Website content:
-      ${content}`,
-            },
-          ],
-          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-          response_format: {
-            type: 'json_object',
-          },
-        });
-
-        // Parse the JSON response directly
-        const responseJson = JSON.parse(
-          chatCompletion.choices[0].message.content || '{}',
-        );
-        let keywords: string[] = []; // Default to empty array
-
-        if (Array.isArray(responseJson.keywords)) {
-          keywords = responseJson.keywords;
-        }
-
+      /**
+       * Extracts relevant tags from content
+       * 
+       * For a real implementation using AI services, see the demo app:
+       * https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions/_tasks/extractTags.ts
+       */
+      export default async function extractTags(content: string) {
+        console.log(`Extracting tags from ${content.length} chars of content`);
+        
+        // Simple mock implementation that returns tags based on content
+        // In a real implementation, this would use AI to analyze the content
+        
+        // Create a set of default tags
+        const defaultTags = ["technology", "data", "workflow"];
+        
+        // Add additional tags based on content
+        const additionalTags = [];
+        if (content.includes("processing")) additionalTags.push("processing");
+        if (content.includes("API") || content.includes("api")) additionalTags.push("api");
+        if (content.includes("database") || content.includes("SQL")) additionalTags.push("database");
+        
         return {
-          keywords: keywords,
+          keywords: [...defaultTags, ...additionalTags]
         };
-      };
+      }
       ```
       </Fragment>
 
       <Fragment slot="panel.saveWebsite">
       ```typescript title="supabase/functions/_tasks/saveWebsite.ts"
-      import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-      import type { Database } from '../database-types.d.ts';
-
-      let _supabase: SupabaseClient<Database> | undefined;
-
-      function getSupabase(): SupabaseClient<Database> {
-        if (!_supabase) {
-          const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-          const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get(
-            'SUPABASE_SERVICE_ROLE_KEY',
-          )!;
-          _supabase = createClient<Database, 'public'>(
-            SUPABASE_URL,
-            SUPABASE_SERVICE_ROLE_KEY,
-          );
-        }
-
-        return _supabase;
-      }
-
-      export default async (websiteData: {
+      /**
+       * Saves website data to the database
+       * 
+       * For a real implementation using Supabase, see the demo app:
+       * https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions/_tasks/saveWebsite.ts
+       */
+      export default async function saveWebsite(websiteData: {
         user_id: string;
         website_url: string;
         summary: string;
         tags: string[];
-      }) => {
-        const { data } = await getSupabase()
-          .schema('public')
-          .from('websites')
-          .insert([websiteData])
-          .select('*')
-          .single()
-          .throwOnError();
-        console.log('results', data);
-
-        return { success: true, website: data };
-      };
+      }) {
+        console.log("Saving website data:", websiteData);
+        
+        // In a real implementation, this would save to a database
+        // This simplified version just logs and returns mock data
+        
+        // Generate a mock ID based on URL
+        const id = `website_${Date.now()}`;
+        
+        return { 
+          success: true, 
+          website: {
+            id,
+            ...websiteData,
+            created_at: new Date().toISOString()
+          }
+        };
+      }
       ```
       </Fragment>
 
       <Fragment slot="panel.utils">
       ```typescript title="supabase/functions/utils.ts"
-      // this function sleeps for ms number of milliseconds
+      /**
+       * Utility functions for the workflow
+       */
+      
+      // Sleep for a specified number of milliseconds
       export async function sleep(ms: number) {
         return new Promise((resolve) => setTimeout(resolve, ms));
       }
-
-      // this function sleeps for a random number of milliseconds between min and max
-      export async function randomSleep(min: number, max: number) {
-        const ms = Math.floor(Math.random() * (max - min + 1) + min);
-        await sleep(ms);
-      }
-
-      const FAILURE_URL = 'https://firebase.google.com/';
-
+      
+      // Test URL that will trigger the failure simulation
+      const FAILURE_URL = 'https://test-failure.example.com';
+      
       /**
-       * Simulates a random failure with a 50% probability
-       * Optionally checks for a specific value that always fails
+       * Simulates a failure for testing error handling
+       * Only fails if the URL matches the test failure URL
        */
       export async function simulateFailure(url: string): Promise<void> {
-        // Only fail if the URL matches our test failure URL
         if (url === FAILURE_URL) {
-          throw new Error('Simulated random failure to demonstrate error handling');
+          throw new Error('Simulated failure to demonstrate error handling');
         }
       }
       ```
