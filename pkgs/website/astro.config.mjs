@@ -7,6 +7,7 @@ import robotsTxt from 'astro-robots-txt';
 import starlightLlmsTxt from 'starlight-llms-txt';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import react from '@astrojs/react';
 
 const GITHUB_REPO_URL = 'https://github.com/pgflow-dev/pgflow';
 const DISCORD_INVITE_URL = 'https://discord.gg/NpffdEyb';
@@ -156,5 +157,6 @@ export default defineConfig({
         },
       ],
     }),
+    react(),
   ],
 });

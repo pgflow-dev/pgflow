@@ -119,6 +119,30 @@ svg .secondary {
   text-decoration: underline;
 }
 
+/* TESTIMONIAL SECTION */
+.testimonial-section {
+  margin: 2rem 0;
+  background: var(--sl-color-gray-1);
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.testimonial-section h3 {
+  margin-top: 0;
+  color: var(--sl-color-accent);
+}
+
+.testimonial-carousel-wrapper {
+  max-width: 700px;
+  margin: 1.5rem auto 0;
+}
+
+/* Hide scrollbar for carousel */
+.testimonial-carousel-wrapper ul::-webkit-scrollbar {
+  display: none;
+}
+
 /* Responsive styles for quickstart section */
 @media (max-width: 768px) {
   .quickstart-section {
@@ -132,6 +156,10 @@ svg .secondary {
 
   .quickstart-section code {
     font-size: 1.1rem !important;
+  }
+  
+  .testimonial-item blockquote {
+    font-size: 1rem;
   }
 }
 
@@ -147,5 +175,13 @@ svg .secondary {
 
   .quickstart-caption {
     font-size: 11px;
+  }
+  
+  .testimonial-item blockquote {
+    font-size: 0.9rem;
+  }
+  
+  .testimonial-item cite {
+    font-size: 0.8rem;
   }
 }
