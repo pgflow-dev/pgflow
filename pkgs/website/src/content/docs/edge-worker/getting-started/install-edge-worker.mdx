@@ -17,87 +17,50 @@ This setup needs to be done only once per project.
 <Aside type="caution" title="Prerequisites">
 - Supabase CLI version **2.0.2** or higher (check with `supabase -v`)
 - A local Supabase project set up
+- Node.js and npm installed
 
 If you haven't installed the CLI yet or need to upgrade, see Supabase's [installation guide](https://supabase.com/docs/guides/cli).
 </Aside>
 
 <Steps>
 
-1. ### Install migration
+1. ### Install Edge Worker
 
-    Run this command to download the migration file to your project (replace `supabase/migrations` with your migrations folder):
-
-    ```bash frame="none"
-    wget -P supabase/migrations \
-        https://raw.githubusercontent.com/pgflow-dev/pgflow/refs/tags/edge-worker-0.0.4/pkgs/edge-worker/migrations/000_edge_worker_initial.sql
-    ```
-
-    Then apply the migration:
+    You can install Edge Worker using the pgflow installer (recommended) or [manually](/how-to/manual-installation/) if you want more control over the process.
+    
+    Run the pgflow installer with npx:
 
     ```bash frame="none"
-    npx supabase migration up
+    npx pgflow@latest install
     ```
 
-1. ### Prepare connection string
+    The installer will:
+    - Detect your Supabase project automatically
+    - Update your `config.toml` to enable connection pooling
+    - Copy the required migrations to your migrations folder (including all Edge Worker tables)
+    - Create a functions environment file if needed
 
-    Your worker needs to connect to your Supabase project's database.
+    <Aside>
+    If your Supabase directory isn't detected automatically, specify it manually:
 
-    Edge Worker looks for the connection string in the `EDGE_WORKER_DB_URL` environment variable.
+    ```bash frame="none"
+    npx pgflow@latest install --supabase-path=./path/to/supabase
+    ```
+    </Aside>
 
-    For local development, put this in `supabase/functions/.env`:
+    Then apply the migrations:
 
-    ```shell frame="none"
-    EDGE_WORKER_DB_URL="postgresql://postgres.pooler-dev:postgres@pooler:6543/postgres"
+    ```bash frame="none"
+    npx supabase migrations up
     ```
 
-    :::caution[Special Characters in Passwords]
-    If your database password contains special characters (`@`, `&`, `:`, etc.), you must URL-encode them to avoid authentication errors. See our [DB Connection URLs](/edge-worker/how-to/prepare-db-string/) guide for detailed instructions.
+    :::note
+    The pgflow installer sets up both pgflow and Edge Worker schemas and tables, since pgflow builds on top of Edge Worker's functionality.
     :::
-
-1. ### Setup Connection Pool
-
-    Modify the `db.pooler` section in your `supabase/config.toml` file
-    to enable pooler and make sure that `db.pool_mode` is set to `"transaction"`.
-
-    ```diff lang="toml" {8}
-      [db.pooler]
-    - enabled = false
-    + enabled = true
-      # Port to use for the local connection pooler.
-      port = 54329
-      # Specifies when a server connection can be reused by other clients.
-      # Configure one of the supported pooler modes: `transaction`, `session`.
-      pool_mode = "transaction"
-      # How many server connections to allow per user/database pair.
-      default_pool_size = 20
-      # Maximum number of client connections allowed.
-      max_client_conn = 100
-    ```
-
-		:::note[Transaction Mode]
-		Edge Worker requires **transaction mode** connection because of Edge
-		Function early termination. This will change in the future.
-		:::
-
-1. ### Setup Edge Runtime policy
-
-    We need to change the Edge Runtime policy to `per_worker` to enable
-    Background Tasks (see more in [Testing background tasks locally](https://supabase.com/docs/guides/functions/background-tasks#testing-background-tasks-locally)).
-
-   ```diff lang="toml"
-     [edge_runtime]
-     enabled = true
-     # Configure one of the supported request policies: `oneshot`, `per_worker`.
-     # Use `oneshot` for hot reload, or `per_worker` for load testing.
-   - policy = "oneshot"
-   + policy = "per_worker"
-     # Port to attach the Chrome inspector for debugging edge functions.
-     inspector_port = 8083
-   ```
 
 1. ### Restart Supabase
 
-    To apply the changes, restart Supabase:
+    To ensure all the configuration changes are applied, restart Supabase:
 
     ```bash frame="none"
     npx supabase stop
@@ -105,5 +68,14 @@ If you haven't installed the CLI yet or need to upgrade, see Supabase's [install
     ```
 
 </Steps>
+
+### What was installed?
+
+The pgflow installer set up everything needed for Edge Worker:
+
+1. **Database schemas** - Required tables for worker management and message queuing
+2. **Connection pooling** - Configured in transaction mode for proper worker operation
+3. **Environment variables** - Database connection for Edge Functions
+4. **Edge runtime policy** - Set to per_worker mode for background tasks
 
 That's it! You're ready to create your first worker and start processing messages 🥳

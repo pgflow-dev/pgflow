@@ -97,20 +97,20 @@ export default defineConfig({
           {
             label: 'pgflow',
             icon: 'open-book',
-            link: '/',
+            link: '/getting-started/install-pgflow/',
             id: 'pgflow',
             items: [
-              { 
+              {
                 label: 'Getting Started',
-                autogenerate: { directory: 'getting-started/' } 
+                autogenerate: { directory: 'getting-started/' },
               },
               {
                 label: 'Explanations',
-                autogenerate: { directory: 'explanations/' }
+                autogenerate: { directory: 'explanations/' },
               },
               {
                 label: 'How To',
-                autogenerate: { directory: 'how-to/' }
+                autogenerate: { directory: 'how-to/' },
               },
             ],
           },
@@ -135,7 +135,11 @@ export default defineConfig({
       },
       social: [
         { icon: 'github', label: 'GitHub', href: GITHUB_REPO_URL },
-        { icon: 'twitter', label: 'X/Twitter', href: 'https://x.com/pgflow_dev' },
+        {
+          icon: 'twitter',
+          label: 'X/Twitter',
+          href: 'https://x.com/pgflow_dev',
+        },
       ],
       components: {
         Hero: './src/components/ConditionalHero.astro',
