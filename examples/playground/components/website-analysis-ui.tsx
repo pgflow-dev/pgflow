@@ -132,7 +132,7 @@ export default function WebsiteAnalysisUI({
         // Use the output directly as a JSON object
         const summaryOutput = summaryTask.output as any;
         // Look for aiSummary field based on flow definition
-        summary = summaryOutput.aiSummary || '';
+        summary = summaryOutput || '';
       }
 
       // Extract tags
@@ -229,11 +229,10 @@ export default function WebsiteAnalysisUI({
                 <button
                   key={link.url}
                   onClick={() => onAnalyzeWebsite(link.url)}
-                  className={`${
-                    link.variant === 'success'
+                  className={`${link.variant === 'success'
                       ? 'text-green-600 hover:bg-green-50 hover:text-green-700'
                       : 'text-red-600 hover:bg-red-50 hover:text-red-700'
-                  } px-2 py-1 rounded`}
+                    } px-2 py-1 rounded`}
                   disabled={analyzeLoading}
                 >
                   {link.label}
@@ -281,11 +280,10 @@ export default function WebsiteAnalysisUI({
                     key={link.url}
                     type="button"
                     onClick={() => onAnalyzeWebsite(link.url)}
-                    className={`${
-                      link.variant === 'success'
+                    className={`${link.variant === 'success'
                         ? 'text-green-600 hover:bg-green-50 hover:text-green-700'
                         : 'text-red-600 hover:bg-red-50 hover:text-red-700'
-                    } px-2 py-1 rounded`}
+                      } px-2 py-1 rounded`}
                     disabled={loading}
                   >
                     {link.label}
@@ -313,11 +311,10 @@ export default function WebsiteAnalysisUI({
                     setAnalysisExpanded(!analysisExpanded);
                   }
                 }}
-                className={`flex justify-between items-center mb-4 p-2 rounded-md ${
-                  isFailed
+                className={`flex justify-between items-center mb-4 p-2 rounded-md ${isFailed
                     ? 'border border-red-200 bg-red-50/30'
                     : 'cursor-pointer hover:bg-muted/50'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-2">
                   <h3 className="text-base font-medium">
@@ -395,13 +392,12 @@ export default function WebsiteAnalysisUI({
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className={`flex items-start space-x-4 ${
-                        isCompleted && step.status === 'completed'
+                      className={`flex items-start space-x-4 ${isCompleted && step.status === 'completed'
                           ? 'opacity-80'
                           : step.status === 'created'
                             ? 'opacity-50'
                             : ''
-                      }`}
+                        }`}
                     >
                       <div className="flex-shrink-0 mt-1">
                         <div
@@ -415,10 +411,10 @@ export default function WebsiteAnalysisUI({
                             const latestTask =
                               orderedStepTasks.length > 0
                                 ? [...orderedStepTasks].sort(
-                                    (a, b) =>
-                                      (b.attempts_count || 0) -
-                                      (a.attempts_count || 0),
-                                  )[0]
+                                  (a, b) =>
+                                    (b.attempts_count || 0) -
+                                    (a.attempts_count || 0),
+                                )[0]
                                 : null;
 
                             // Check if this is a retry (attempts_count > 1)
@@ -474,10 +470,10 @@ export default function WebsiteAnalysisUI({
                             const latestTask =
                               orderedStepTasks.length > 0
                                 ? [...orderedStepTasks].sort(
-                                    (a, b) =>
-                                      (b.attempts_count || 0) -
-                                      (a.attempts_count || 0),
-                                  )[0]
+                                  (a, b) =>
+                                    (b.attempts_count || 0) -
+                                    (a.attempts_count || 0),
+                                )[0]
                                 : null;
 
                             // Check if this is a retry (attempts_count > 1)

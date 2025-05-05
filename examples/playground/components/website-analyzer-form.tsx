@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { FormMessage } from '@/components/form-message';
 import { SubmitButton } from '@/components/submit-button';
 import { createClient } from '@/utils/supabase/client';
+import { useLoadingState } from './loading-state-provider';
 
 export default function WebsiteAnalyzerForm({
   isLoggedIn,
@@ -17,6 +18,7 @@ export default function WebsiteAnalyzerForm({
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const supabase = createClient();
+  const { setLoading } = useLoadingState();
 
   async function handleAnalyzeWebsite(formData: FormData) {
     const url = formData.get('url') as string;
@@ -45,6 +47,9 @@ export default function WebsiteAnalyzerForm({
 
     try {
       console.log('Starting analysis for URL:', url);
+      // Set global loading state to true
+      setLoading(true);
+      
       // Start the transition to show loading state
       startTransition(async () => {
         const { data, error } = await supabase.rpc('start_analyze_website_flow', {
@@ -54,6 +59,7 @@ export default function WebsiteAnalyzerForm({
         if (error) {
           console.error('Error starting analysis:', error);
           setFormError(error.message);
+          setLoading(false);
           return;
         }
 
@@ -66,11 +72,13 @@ export default function WebsiteAnalyzerForm({
         } else {
           console.error('No run_id returned from analysis');
           setFormError('Failed to start flow analysis');
+          setLoading(false);
         }
       });
     } catch (error) {
       setFormError('An error occurred while starting the analysis');
       console.error('Exception during analysis:', error);
+      setLoading(false);
     }
   }
 

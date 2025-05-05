@@ -15,6 +15,7 @@ import {
   RealtimePostgresInsertPayload,
 } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/client';
+import { useLoadingState } from './loading-state-provider';
 
 interface FlowRunContextType {
   runData: ResultRow | null;
@@ -65,6 +66,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
 
   const router = useRouter();
   const supabase = createClient();
+  const { setLoading: setGlobalLoading } = useLoadingState();
 
   // Derive runData from the separate state pieces
   const runData = useMemo<ResultRow | null>(() => {
@@ -115,6 +117,9 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
 
     setAnalyzeLoading(true);
     setAnalyzeError(null);
+    
+    // Set global loading state to true
+    setGlobalLoading(true);
 
     try {
       console.log('Starting analysis for URL:', url);
@@ -125,6 +130,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       if (error) {
         console.error('Error starting analysis:', error);
         setAnalyzeError(error.message);
+        setGlobalLoading(false);
         return;
       }
 
@@ -137,10 +143,12 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       } else {
         console.error('No run_id returned from analysis');
         setAnalyzeError('Failed to start flow analysis');
+        setGlobalLoading(false);
       }
     } catch (error) {
       setAnalyzeError('An error occurred while starting the analysis');
       console.error('Exception during analysis:', error);
+      setGlobalLoading(false);
     } finally {
       setAnalyzeLoading(false);
     }
@@ -151,10 +159,16 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       if (!runId) return;
 
       setLoading(true);
+      // Set global loading state to true when initially loading run data
+      // It will be set to false when we detect a completed/failed state
+      setGlobalLoading(true);
+      
       const { data, error } = await fetchFlowRunData(runId);
 
       if (error) {
         setError(error);
+        // Turn off loading state if we have an error
+        setGlobalLoading(false);
       } else if (data) {
         // Initialize our separate state pieces from the fetched data
         setRun({
@@ -162,6 +176,12 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
           step_states: undefined,
           step_tasks: undefined,
         } as RunRow);
+
+        // If the run is already completed, turn off the global loading state
+        if (data.status === 'completed' || data.status === 'failed' || 
+            data.status === 'error' || data.status === 'cancelled') {
+          setGlobalLoading(false);
+        }
 
         // Create and cache the step order map from step_states
         // This is created once and never changes, ensuring consistent ordering
@@ -314,6 +334,9 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
             'Run completed - fetching full data to ensure we have all step outputs',
           );
 
+          // Set global loading state to false when the run completes
+          setGlobalLoading(false);
+
           // Fetch fresh data from API
           fetchFlowRunData(runId).then(({ data, error }) => {
             if (error) {
@@ -357,6 +380,11 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
 
         // For other updates, update only the run data
         setRun(payload.new);
+        
+        // Turn off loading if the run fails
+        if (payload.new.status === 'failed' || payload.new.status === 'error' || payload.new.status === 'cancelled') {
+          setGlobalLoading(false);
+        }
       },
       onStepStateUpdate: handleStepStateUpdate,
       onStepTaskUpdate: handleStepTaskUpdate,
