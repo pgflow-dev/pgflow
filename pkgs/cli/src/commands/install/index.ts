@@ -18,7 +18,7 @@ export default (program: Command) => {
       const results = await group(
         {
           // Step 1: Determine Supabase path
-          supabasePath: supabasePathPrompt,
+          supabasePath: () => supabasePathPrompt({ supabasePath: options.supabasePath }),
 
           // Step 2: Update config.toml
           configUpdate: async ({ results: { supabasePath } }) => {

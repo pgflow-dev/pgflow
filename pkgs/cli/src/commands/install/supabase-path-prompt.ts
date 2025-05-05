@@ -2,7 +2,18 @@ import fs from 'fs';
 import path from 'path';
 import { text, log } from '@clack/prompts';
 
-export async function supabasePathPrompt() {
+export async function supabasePathPrompt(options?: { supabasePath?: string }) {
+  // If supabasePath is provided as an option and it's valid, use it directly without prompting
+  if (options?.supabasePath) {
+    const validationError = validate(options.supabasePath);
+    if (validationError === undefined) {
+      log.info(`Using Supabase project at: ${options.supabasePath}`);
+      return options.supabasePath;
+    }
+    // If validation failed, log the error and continue to prompt
+    log.warn(validationError);
+  }
+  
   // Try to detect the Supabase directory automatically
   const possiblePaths = ['./supabase', '../supabase', '../../supabase'];
 
@@ -17,6 +28,7 @@ export async function supabasePathPrompt() {
     }
   }
 
+  // Always prompt for detected paths - don't skip
   if (detectedPath) {
     log.info(`Found Supabase project at: ${detectedPath}`);
   }
@@ -26,7 +38,7 @@ export async function supabasePathPrompt() {
   const supabasePath = await text({
     message: promptMessage,
     placeholder: detectedPath || 'supabase/',
-    initialValue: detectedPath,
+    initialValue: options?.supabasePath || detectedPath,
     validate,
   });
 
