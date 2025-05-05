@@ -9,7 +9,7 @@ hero:
   # title: AI Agents & Workflow Automation for Supabase
   # title: Supabase Workflows for AI Agents & Background Jobs
   # title: Build AI Agent Workflows on Supabase
-  tagline: No extra servers. Just Supabase-native AI workflows and jobs that don’t fail silently.
+  tagline: No extra servers. Just Supabase-native AI workflows and jobs that don't fail silently.
   image:
     dark: ../../assets/pgflow-logo-dark.svg
     light: ../../assets/pgflow-logo-light.svg
@@ -120,20 +120,31 @@ pgflow is a workflow orchestration system with its core state management in your
 Define parallel, type-safe DAG workflows effortlessly.
 
 ```typescript
-new Flow<{ first_name: string; last_name; string }>({
-  slug: 'greet_user',
+new Flow<{ url: string }>({
+  slug: 'analyze_website',
 })
   .step(
-    { slug: 'full_name' },
-    (input) => `${input.run.first_name} ${input.run.last_name}`
+    { slug: 'website' },
+    async (input) => await scrapeWebsite(input.run.url)
   )
   .step(
-    { slug: 'greeting', dependsOn: ['full_name'] },
-    (input) => `Hello, ${input.full_name}!`
+    { slug: 'summary', dependsOn: ['website'] },
+    async (input) => await summarizeWithAI(input.website.content)
+  )
+  .step(
+    { slug: 'tags', dependsOn: ['website'] },
+    async (input) => await extractTags(input.website.content)
+  )
+  .step(
+    { slug: 'saveToDb', dependsOn: ['summary', 'tags'] },
+    async ({ run, summary, tags }) =>
+      await saveWebsite({
+        user_id: run.user_id,
+        website_url: run.url,
+        summary,
+        tags,
+      })
   );
-
-// when you run this flow with { first_name: 'Alice', last_name: 'Smith' },
-// it will return { greeting: 'Hello, Alice Smith!' } (the last step)
 ```
 
 ## End-to-end workflow orchestration
