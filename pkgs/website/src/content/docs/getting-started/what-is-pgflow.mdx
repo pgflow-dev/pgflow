@@ -1,0 +1,84 @@
+---
+title: What is pgflow?
+description: Learn about pgflow - a Postgres-native workflow engine for defining, managing, and executing DAG-based workflows within your Supabase project
+topic: pgflow
+sidebar:
+  order: 1
+---
+
+import { Aside } from "@astrojs/starlight/components";
+import NotProductionReady from '../../../../components/NotProductionReady.astro';
+
+<NotProductionReady />
+
+**pgflow** is a Postgres-native workflow engine for defining, managing, and executing DAG-based workflows directly in your Supabase database.
+
+## Core Concepts
+
+At its core, pgflow is built on three key components:
+
+1. **SQL Core Engine** - The heart of pgflow, providing the data model, state machine, and transactional functions that ensure reliable workflow execution
+
+2. **TypeScript DSL** - A developer-friendly domain-specific language for defining workflows with full type safety and IDE autocomplete
+
+3. **Edge Worker** - A task executor that runs on Supabase Edge Functions, processing workflow steps as they become ready
+
+![](https://mermaid.ink/img/pako:eNpVUcFqwzAM_RWhc0MXtvWQKaXQMbZD2GG3YQxZtVMTN44xtrMspd9eJWmXFYQs6el9PTHYNjNDQR5YC4pMZ6DYuN2jLmrZm0NDXMDztQJi9n0NLfbOaDnIh2R0oazY1M6K6hIrUbN67kFyEt1xYj-uWVi0YpukfPeEu6QKI7qOOlTjYJ1TtO0sWnS_FmQtfZAjzZZkTz0F4nNw0I3MnJIdQoAGxhMBnXc3qFFVIPm0_3oNK_fPQdgWEiXiHYA-OfEH7j24hjFYuFRorTc0LIQX-nWBnRd6JGnPnmf8I-QHx_Uf-dLVyq4Xt4JLwchI-Lm5uTmx8vS9Hfp8K29H6-9H-wcXd5Kz?type=png)
+
+## Who is pgflow for?
+
+pgflow is designed for developers and teams who:
+
+- Use **Supabase** as their backend platform
+- Need to process **complex, multi-step workflows**
+- Want **visibility and reliability** in background processing
+- Prefer **type-safe** development
+- Love the idea of keeping everything in **Postgres**
+
+## What can you build with pgflow?
+
+pgflow excels at orchestrating multi-step processing workflows such as:
+
+- **Data processing pipelines**: Extract, transform, and load data
+- **Content processing workflows**: Scrape websites, analyze content, generate summaries
+- **AI workflows**: Chain multiple AI prompts and combine results
+- **User onboarding flows**: Process sign-ups, verify users, set up accounts
+- **E-commerce operations**: Order processing, inventory updates, notifications
+
+## Key Features
+
+- **Declarative Workflows**: Define flows and steps in a type-safe TypeScript DSL
+- **Dependency Management**: Explicit step dependencies with proper typing
+- **Postgres-Native**: Everything runs in your database with strong consistency guarantees
+- **Transactional Guarantees**: All state transitions are ACID-compliant
+- **At-least-once Delivery**: Messages never get lost thanks to PGMQ integration
+- **Error Handling**: Built-in retries with exponential backoff
+- **Observability**: Track flow progress via database queries
+
+<Aside type="caution" title="Alpha Status">
+  pgflow is currently in alpha status. While the core functionality works,
+  the API may change as we gather feedback and improve the system.
+  
+  Use in production at your own risk, and consider pinning to specific versions 
+  to avoid breaking changes.
+</Aside>
+
+## How does it work?
+
+pgflow represents workflows as a **Directed Acyclic Graph (DAG)** of steps:
+
+1. Each workflow consists of **steps** connected by **dependencies**
+2. Steps without dependencies are **root steps** that start automatically
+3. Steps with dependencies only start once all dependencies complete
+4. When all steps complete, the workflow run is marked as completed
+5. Edge Worker executes the steps by polling for available tasks
+
+![Example Flow](https://raw.githubusercontent.com/pgflow-dev/pgflow/main/pkgs/core/assets/example-flow.svg)
+
+## What's next?
+
+Now that you understand what pgflow is, let's continue with the getting started guide:
+
+1. [Install pgflow](/pgflow/getting-started/install-pgflow/) - Set up pgflow in your Supabase project
+2. [Create your first flow](/pgflow/getting-started/create-first-flow/) - Define and compile a workflow
+3. [Trigger and monitor](/pgflow/getting-started/trigger-and-monitor/) - Start a flow and watch it execute

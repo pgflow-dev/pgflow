@@ -87,13 +87,13 @@ export default defineConfig({
           {
             label: 'pgflow',
             icon: 'open-book',
-            link: '/pgflow/what-is-pgflow/',
+            link: '/getting-started/what-is-pgflow/',
             id: 'pgflow',
-            badge: {
-              text: 'soon!',
-              variant: 'note',
-            },
             items: [
+              { 
+                label: 'Getting Started',
+                autogenerate: { directory: 'getting-started/' } 
+              },
               { label: 'What is pgflow?', link: '/pgflow/what-is-pgflow/' },
               { label: 'New landing', link: '/pgflow/new-landing/' },
             ],
@@ -117,11 +117,10 @@ export default defineConfig({
       editLink: {
         baseUrl: `${GITHUB_REPO_URL}/edit/main/pkgs/website/`,
       },
-      social: {
-        github: GITHUB_REPO_URL,
-        'x.com': 'https://x.com/pgflow_dev',
-        mastodon: 'https://mastodon.social/@pgflow',
-      },
+      social: [
+        { icon: 'github', label: 'GitHub', href: GITHUB_REPO_URL },
+        { icon: 'twitter', label: 'X/Twitter', href: 'https://x.com/pgflow_dev' },
+      ],
       components: {
         Hero: './src/components/ConditionalHero.astro',
       },
