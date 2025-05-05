@@ -20,12 +20,11 @@ export default async (content: string) => {
         content: `Please provide a concise summary of the following content:\n\n${content}`,
       },
     ],
-    model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
   });
 
-  const summary = chatCompletion.choices[0].message.content;
-
-  return {
-    aiSummary: summary ?? 'Summary not available, please try again.',
-  };
+  return (
+    chatCompletion.choices[0].message.content ??
+    'Summary not available, please try again.'
+  );
 };

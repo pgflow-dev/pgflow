@@ -34,7 +34,7 @@ export default new Flow<Input>({
     const websiteData = {
       user_id: input.run.user_id,
       website_url: input.run.url,
-      summary: input.summary.aiSummary,
+      summary: input.summary,
       tags: input.tags,
     };
     const { website } = await saveWebsite(websiteData);
