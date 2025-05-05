@@ -286,6 +286,13 @@ Before starting, make sure you have:
     - Explicit dependencies between steps
     - Built-in retry and error handling
     - Parallel execution of independent steps
+    
+    :::important[JSON Serialization Requirement]
+    All step inputs and outputs MUST be JSON-serializable, as pgflow stores these values in JSONB database columns.
+    This means you should use only plain objects, arrays, and primitive types (strings, numbers, booleans, null).
+    Convert non-serializable types like Date objects to strings (`new Date().toISOString()`).
+    For more details, see [Understanding the Flow DSL](/explanations/flow-dsl/#json-serialization-requirements).
+    :::
     </Aside>
 
 </Steps>

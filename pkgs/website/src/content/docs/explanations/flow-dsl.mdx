@@ -180,6 +180,53 @@ A well-designed task function should:
 - Be testable in isolation
 :::
 
+### JSON Serialization Requirements
+
+All step inputs and outputs MUST be serializable to JSON since pgflow stores these values in JSONB database columns:
+
+```typescript
+// GOOD: Fully serializable objects
+.step(
+  { slug: 'processData' },
+  async (input) => {
+    return {
+      count: 42,
+      items: ["apple", "banana"],
+      metadata: { 
+        processed: true,
+        timestamp: new Date().toISOString() // Convert Date to string
+      }
+    };
+  }
+)
+
+// BAD: Non-serializable objects will cause runtime errors
+.step(
+  { slug: 'badExample' },
+  async (input) => {
+    return {
+      date: new Date(), // Date objects don't serialize properly
+      regex: /test/,    // RegExp objects don't serialize
+      circular: {},     // Objects with circular references will fail
+      function: () => {} // Functions can't be serialized
+    };
+  }
+)
+```
+
+#### Guidelines for JSON-Compatible Data
+
+- **Use primitive types**: strings, numbers, booleans, null
+- **Use plain objects** and arrays
+- **Convert non-serializable types** before returning:
+  - Convert dates to ISO strings: `new Date().toISOString()`
+  - Convert complex objects to their string/object representation
+  - Extract needed properties from class instances
+- **Avoid**: class instances, functions, symbols, undefined, circular references, and other non-serializable types
+- **Validate for circularities**: If you're working with complex object graphs, ensure no circular references exist
+
+Following these guidelines ensures your flow data can be properly stored and retrieved from the database.
+
 ## How Steps Connect and Execute
 
 Steps are connected through explicit dependencies:
