@@ -48,10 +48,10 @@ export default function TestimonialCarousel() {
   const autoScrollTimerRef = useRef(null);
 
   useEffect(() => {
-    // Auto-scroll every 10 seconds
+    // Auto-scroll every 6 seconds
     autoScrollTimerRef.current = setInterval(() => {
       next();
-    }, 10000);
+    }, 6000);
 
     // Cleanup on unmount
     return () => {
@@ -60,11 +60,10 @@ export default function TestimonialCarousel() {
       }
     };
   }, [next]);
-
   return (
     <div className="testimonial-carousel-wrapper" style={{ position: 'relative' }}>
       {/* Previous button */}
-      <button
+      <button className="testimonial-nav-arrows"
         onClick={() => {
           if (autoScrollTimerRef.current) {
             clearInterval(autoScrollTimerRef.current);
@@ -72,7 +71,7 @@ export default function TestimonialCarousel() {
             // Restart auto-scroll after manual navigation
             autoScrollTimerRef.current = setInterval(() => {
               next();
-            }, 10000);
+            }, 6000);
           }
           
           // If at the first slide, go to the last slide
@@ -161,7 +160,7 @@ export default function TestimonialCarousel() {
       </ul>
       
       {/* Next button */}
-      <button
+      <button className="testimonial-nav-arrows"
         onClick={() => {
           if (autoScrollTimerRef.current) {
             clearInterval(autoScrollTimerRef.current);
@@ -169,7 +168,7 @@ export default function TestimonialCarousel() {
             // Restart auto-scroll after manual navigation
             autoScrollTimerRef.current = setInterval(() => {
               next();
-            }, 10000);
+            }, 6000);
           }
           
           // If at the last slide, go to the first slide

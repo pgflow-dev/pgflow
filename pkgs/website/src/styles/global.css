@@ -161,6 +161,11 @@ svg .secondary {
   .testimonial-item blockquote {
     font-size: 1rem;
   }
+  
+  /* Hide carousel navigation arrows on mobile */
+  .testimonial-nav-arrows {
+    display: none;
+  }
 }
 
 @media (max-width: 480px) {
@@ -184,4 +189,5 @@ svg .secondary {
   .testimonial-item cite {
     font-size: 0.8rem;
   }
+  
 }
