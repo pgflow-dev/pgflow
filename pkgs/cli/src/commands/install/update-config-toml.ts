@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { log, confirm, note, spinner } from '@clack/prompts';
+import { log, confirm, note } from '@clack/prompts';
 import * as TOML from 'toml-patch';
 import chalk from 'chalk';
 
@@ -35,21 +35,19 @@ type SupabaseConfig = {
  */
 export async function updateConfigToml({
   supabasePath,
-  autoConfirm = false
+  autoConfirm = false,
 }: {
   supabasePath: string;
   autoConfirm?: boolean;
 }): Promise<boolean> {
-  // Start a spinner for checking configuration
-  const configSpinner = spinner();
-  configSpinner.start('Checking Supabase configuration...');
-  
+  // Check Supabase configuration
+
   const configPath = path.join(supabasePath, 'config.toml');
   const backupPath = `${configPath}.backup`;
 
   try {
     if (!fs.existsSync(configPath)) {
-      configSpinner.stop('Configuration error');
+      log.error(`config.toml not found at ${configPath}`);
       throw new Error(`config.toml not found at ${configPath}`);
     }
 
@@ -68,13 +66,10 @@ export async function updateConfigToml({
       currentSettings.edgeRuntimePolicy !== 'per_worker';
 
     if (!needsChanges) {
-      configSpinner.stop('Configuration already set');
-      log.info(`Supabase configuration is already set up for pgflow`);
+      log.success('Supabase configuration is already set up for pgflow');
       return false;
     }
 
-    configSpinner.stop('Configuration changes needed');
-    
     const changes = [];
 
     if (currentSettings.poolerEnabled !== true) {
@@ -98,23 +93,21 @@ ${chalk.green('+ policy = "per_worker"')}`);
     note(changes.join('\n\n'), 'Required Configuration Changes');
 
     let shouldContinue = autoConfirm;
-    
+
     if (!autoConfirm) {
       const confirmResult = await confirm({
         message: `Update Supabase configuration? (a backup will be created)`,
       });
-      
+
       shouldContinue = confirmResult === true;
     }
 
     if (!shouldContinue) {
-      log.info('Configuration update skipped');
+      log.warn('Configuration update skipped');
       return false;
     }
 
-    // Start a spinner for the update process
-    const updateSpinner = spinner();
-    updateSpinner.start('Updating Supabase configuration...');
+    // Update Supabase configuration
 
     // Create backup
     fs.copyFileSync(configPath, backupPath);
@@ -161,9 +154,8 @@ ${chalk.green('+ policy = "per_worker"')}`);
       );
 
     fs.writeFileSync(configPath, updatedContent);
-    
-    updateSpinner.stop('Configuration updated');
-    log.success(`Supabase configuration updated successfully`);
+
+    log.success('Supabase configuration updated successfully');
     return true;
   } catch (error) {
     log.error(

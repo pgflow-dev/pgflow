@@ -18,7 +18,7 @@ export async function supabasePathPrompt() {
   }
 
   if (detectedPath) {
-    log.success(`Found Supabase project at: ${detectedPath}`);
+    log.info(`Found Supabase project at: ${detectedPath}`);
   }
 
   const promptMessage = 'Where is your Supabase project located?';

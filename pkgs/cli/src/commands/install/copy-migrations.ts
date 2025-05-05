@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
-import { log, confirm, note, spinner } from '@clack/prompts';
+import { log, confirm, note } from '@clack/prompts';
 import chalk from 'chalk';
 
 // Get the directory name in ES modules
@@ -78,9 +78,7 @@ export async function copyMigrations({
   supabasePath: string;
   autoConfirm?: boolean;
 }): Promise<boolean> {
-  // Start a spinner for checking migrations
-  const migrationSpinner = spinner();
-  migrationSpinner.start('Checking migrations...');
+  // Check migrations
   
   const migrationsPath = path.join(supabasePath, 'migrations');
 
@@ -90,9 +88,8 @@ export async function copyMigrations({
 
   // Check if pgflow migrations directory exists
   if (!sourcePath || !fs.existsSync(sourcePath)) {
-    migrationSpinner.stop('Error finding migrations');
     log.error(`Could not find migrations directory`);
-    log.info(
+    log.warn(
       'This might happen if @pgflow/core is not properly installed or built.'
     );
     log.info(
@@ -126,13 +123,11 @@ export async function copyMigrations({
 
   // If no files to copy, show message and return false (no changes made)
   if (filesToCopy.length === 0) {
-    migrationSpinner.stop('All migrations are up to date');
-    log.info('All pgflow migrations are already in place');
+    log.success('All pgflow migrations are already in place');
     return false;
   }
-
-  // Update spinner with found migrations
-  migrationSpinner.stop(`Found ${filesToCopy.length} migration${filesToCopy.length !== 1 ? 's' : ''} to install`);
+  
+  log.info(`Found ${filesToCopy.length} migration${filesToCopy.length !== 1 ? 's' : ''} to install`);
 
   // Prepare summary message with colored output
   const summaryParts = [];
@@ -163,13 +158,11 @@ ${skippedFiles.map((file) => `${chalk.yellow('•')} ${file}`).join('\n')}`);
   }
 
   if (!shouldContinue) {
-    log.info('Migration installation skipped');
+    log.warn('Migration installation skipped');
     return false;
   }
 
-  // Start a new spinner for the installation process
-  const installSpinner = spinner();
-  installSpinner.start('Installing migrations...');
+  // Install migrations
 
   // Copy the files
   for (const file of filesToCopy) {
@@ -179,12 +172,9 @@ ${skippedFiles.map((file) => `${chalk.yellow('•')} ${file}`).join('\n')}`);
     fs.copyFileSync(source, destination);
   }
 
-  installSpinner.stop('Migrations installed');
-  log.success(
-    `Installed ${filesToCopy.length} migration${
-      filesToCopy.length !== 1 ? 's' : ''
-    } to your Supabase project`
-  );
+  log.success(`Installed ${filesToCopy.length} migration${
+    filesToCopy.length !== 1 ? 's' : ''
+  } to your Supabase project`);
 
   return true; // Return true to indicate migrations were copied
 }
