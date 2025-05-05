@@ -151,25 +151,16 @@ export default new Flow<Input>({
 
 ### Updating non-breaking configuration options
 
-For non-breaking changes like adjusting retry settings or timeouts, you must manually update the database:
+For non-breaking changes like adjusting retry settings or timeouts, you must manually update the database with SQL commands.
 
-```sql
--- Updating flow-level options
-UPDATE pgflow.flows 
-SET opt_max_attempts = 5, opt_timeout = 10, opt_base_delay = 2
-WHERE flow_slug = 'analyze_website';
+:::tip[How To Guide]
+We've created a detailed guide on [how to update flow options](/how-to/update-flow-options/) that covers:
+- All available configuration options
+- SQL commands for updating flows and steps
+- Best practices for maintaining compatibility
 
--- Updating step-level options
-UPDATE pgflow.steps
-SET opt_max_attempts = 3, opt_timeout = 30
-WHERE flow_slug = 'analyze_website' AND step_slug = 'website';
-```
-
-Available options that can be safely updated:
-- `opt_max_attempts`: Maximum retry attempts
-- `opt_base_delay`: Base delay between retries (seconds)
-- `opt_timeout`: Maximum execution time (seconds)
-- `opt_jitter`: Random jitter for retry timing
+For any non-breaking changes to existing flows, refer to this guide rather than recompiling.
+:::
 
 ### Task reusability
 
