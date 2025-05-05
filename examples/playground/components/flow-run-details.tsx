@@ -460,12 +460,14 @@ export default function FlowRunDetails({
             </div>
           </div>
 
-          <div>
+          <div className="w-full">
             <h3 className="text-base font-medium mb-1">Run Output</h3>
             {runData.status === 'completed' ? (
-              <div className="max-h-36 overflow-hidden border border-gray-500/30 rounded-md">
-                <div className="overflow-auto max-h-36">
-                  <JSONHighlighter data={runData.output} />
+              <div className="border border-gray-500/30 rounded-md">
+                <div className="overflow-auto max-h-[calc(100vh-400px)] w-full">
+                  <div className="w-full overflow-x-auto">
+                    <JSONHighlighter data={runData.output} />
+                  </div>
                 </div>
               </div>
             ) : (
