@@ -22,7 +22,7 @@ This tutorial creates a simple example to introduce the key concepts. For more c
 
 Our greeting workflow will:
 1. Take a person's first and last name as input
-2. Format the full name
+2. Format the full name 
 3. Create a personalized greeting
 
 <Aside type="caution" title="Prerequisites">
@@ -66,12 +66,12 @@ Before starting, make sure you have:
       slug: 'greet_user',
     })
       .step(
-        { slug: 'format_name' },
+        { slug: 'full_name' },
         (input) => `${input.run.first_name} ${input.run.last_name}`
       )
       .step(
-        { slug: 'greet', dependsOn: ['format_name'] },
-        (input) => `Hello, ${input.format_name}!`
+        { slug: 'greeting', dependsOn: ['full_name'] },
+        (input) => `Hello, ${input.full_name}!`
       );
     ```
 
@@ -96,8 +96,8 @@ Before starting, make sure you have:
 The `greet_user` flow has this simple structure:
 
 1. **Input**: The flow takes a first name and last name as input.
-2. **Step 1 (format_name)**: Combines the first and last name to create a full name.
-3. **Step 2 (greet)**: Takes the formatted name and creates a greeting.
+2. **Step 1 (full_name)**: Combines the first and last name to create a full name.
+3. **Step 2 (greeting)**: Takes the formatted name and creates a greeting.
 
 For example, if you run this flow with:
 ```json
