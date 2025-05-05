@@ -94,7 +94,6 @@ export default function WebsiteAnalysisUI({
   // Get analysis summary from step tasks
   const getAnalysisSummary = (): {
     summary: string;
-    sentiment: string;
     tags: string[];
   } => {
     console.log('=== Analysis Summary Called ===');
@@ -103,7 +102,7 @@ export default function WebsiteAnalysisUI({
 
     if (!runData?.step_tasks || runData.step_tasks.length === 0) {
       console.log('No step tasks found in runData');
-      return { summary: '', sentiment: 'neutral', tags: [] };
+      return { summary: '', tags: [] };
     }
 
     // Debug: Log the available step tasks
@@ -119,14 +118,10 @@ export default function WebsiteAnalysisUI({
     try {
       // Find the step tasks by their step_slug but use our ordered tasks
       const summaryTasks = getOrderedStepTasks('summary');
-      const sentimentTasks = getOrderedStepTasks('sentiment');
       const tagsTasks = getOrderedStepTasks('tags');
 
       // Get the completed tasks
       const summaryTask = summaryTasks.find(
-        (task) => task.status === 'completed',
-      );
-      const sentimentTask = sentimentTasks.find(
         (task) => task.status === 'completed',
       );
       const tagsTask = tagsTasks.find((task) => task.status === 'completed');
@@ -138,19 +133,6 @@ export default function WebsiteAnalysisUI({
         const summaryOutput = summaryTask.output as any;
         // Look for aiSummary field based on flow definition
         summary = summaryOutput.aiSummary || '';
-      }
-
-      // Extract sentiment
-      let sentiment = 'neutral';
-      if (sentimentTask?.output) {
-        // Use the output directly as a JSON object
-        const sentimentOutput = sentimentTask.output as any;
-
-        // Handle numerical sentiment using 'score' field based on flow definition
-        if (typeof sentimentOutput.score === 'number') {
-          if (sentimentOutput.score >= 0.7) sentiment = 'positive';
-          else if (sentimentOutput.score < 0.3) sentiment = 'negative';
-        }
       }
 
       // Extract tags
@@ -165,10 +147,10 @@ export default function WebsiteAnalysisUI({
         }
       }
 
-      return { summary, sentiment, tags };
+      return { summary, tags };
     } catch (e) {
       console.error('Error extracting data from step tasks:', e);
-      return { summary: '', sentiment: 'neutral', tags: [] };
+      return { summary: '', tags: [] };
     }
   };
 
@@ -183,7 +165,7 @@ export default function WebsiteAnalysisUI({
     }
   };
 
-  const { summary, sentiment, tags } = getAnalysisSummary();
+  const { summary, tags } = getAnalysisSummary();
   const websiteUrl = getWebsiteUrl();
 
   if (loading) {
@@ -578,25 +560,6 @@ export default function WebsiteAnalysisUI({
 
             <dl className="space-y-6">
               <div className="flex flex-row gap-6">
-                <div className="flex flex-col space-y-2 w-1/3">
-                  <dt className="text-sm font-medium text-muted-foreground">
-                    Sentiment
-                  </dt>
-                  <dd>
-                    <span
-                      className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
-                        sentiment === 'positive'
-                          ? 'bg-green-100 text-green-800'
-                          : sentiment === 'negative'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-blue-100 text-blue-800'
-                      }`}
-                    >
-                      {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
-                    </span>
-                  </dd>
-                </div>
-
                 <div className="flex flex-col space-y-2 w-2/3">
                   <dt className="text-sm font-medium text-muted-foreground">
                     Tags

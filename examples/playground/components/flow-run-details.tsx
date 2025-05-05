@@ -202,8 +202,8 @@ export default function FlowRunDetails({
                   );
 
                   // Group parallel steps based on flow definition
-                  // We're specifically looking for summary, sentiment, and tags steps that run in parallel
-                  const parallelStepSlugs = ['summary', 'sentiment', 'tags'];
+                  // We're specifically looking for summary and tags steps that run in parallel
+                  const parallelStepSlugs = ['summary', 'tags'];
                   const parallelSteps = sortedStepStates.filter((step) =>
                     parallelStepSlugs.includes(step.step_slug),
                   );
@@ -420,7 +420,7 @@ export default function FlowRunDetails({
                               Parallel Processing
                             </span>
                           </div>
-                          <div className="grid grid-cols-3 gap-2 relative step-container">
+                          <div className="grid grid-cols-2 gap-2 relative step-container">
                             {parallelSteps.map((step, index) =>
                               renderStep(step, index, true),
                             )}
@@ -432,7 +432,7 @@ export default function FlowRunDetails({
                             .step-container > :global(*) {
                               height: 41px; /* Match the height of regular steps (label + padding) */
                             }
-                            .step-container > :global(*[data-state="open"]) {
+                            .step-container > :global(*[data-state='open']) {
                               height: auto;
                             }
                           `}</style>
