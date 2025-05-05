@@ -9,27 +9,18 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { FileTree } from '@astrojs/starlight/components';
 import NotProductionReady from '@/components/NotProductionReady.astro';
 
-Now that pgflow is installed, let's create a simple greeting workflow that demonstrates the core concepts.
-
-<NotProductionReady />
-
-:::tip[See More Complex Examples]
-This tutorial creates a simple example to introduce the key concepts. For more comprehensive examples:
-- Try the [live demo app here](https://pgflow-demo.netlify.app/)
-- See the [full source code on GitHub](https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions)
-- Check out the [Organize Flows Codebase](/how-to/organize-flows-codebase/) guide for more complex organization patterns
-:::
-
-Our greeting workflow will:
-1. Take a person's first and last name as input
-2. Format the full name 
-3. Create a personalized greeting
+Now that pgflow is installed, let's create a simple hello world workflow, that demonstrates the core concepts.
 
 <Aside type="caution" title="Prerequisites">
 Before starting, make sure you have:
 - Completed the [pgflow installation](/getting-started/install-pgflow/)
 - A basic understanding of TypeScript
 </Aside>
+
+Our greeting workflow will:
+1. Take a person's first and last name as input
+2. Format the full name
+3. Create a personalized greeting
 
 <Steps>
 
@@ -125,6 +116,14 @@ Our workflow includes several important features:
 - **Step configuration**:
   - `slug`: Unique identifier for each step
   - `dependsOn`: Array of step slugs that must complete before this step runs
+
+:::tip[See More Complex Examples]
+This tutorial creates a simple example to introduce the key concepts. For more comprehensive examples:
+- Try the [live demo app here](https://pgflow-demo.netlify.app/)
+- See the [full source code on GitHub](https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions)
+- Check out the [Organize Flows Codebase](/how-to/organize-flows-codebase/) guide for more complex organization patterns
+:::
+
 
 <Aside>
 Next, we'll [compile this flow definition to SQL](/getting-started/compile-to-sql/) to make it available in your database.
