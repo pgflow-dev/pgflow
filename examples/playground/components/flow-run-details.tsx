@@ -217,7 +217,7 @@ export default function FlowRunDetails({
                   const renderStep = (
                     step: any,
                     index: number,
-                    isParallel: boolean = false,
+                    isParallel = false,
                   ) => {
                     // Find the corresponding step tasks for this step
                     const stepTasks = runData.step_tasks

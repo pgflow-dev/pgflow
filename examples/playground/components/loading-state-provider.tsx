@@ -10,7 +10,7 @@ interface LoadingState {
 
 const LoadingStateContext = createContext<LoadingState>({
   isLoading: false,
-  setLoading: () => {},
+  setLoading: () => { /* Default implementation */ },
 });
 
 export const useLoadingState = () => useContext(LoadingStateContext);
