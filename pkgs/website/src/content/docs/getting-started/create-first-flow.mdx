@@ -19,6 +19,7 @@ This tutorial creates a simplified version of our demo app. You can:
 - See the [full source code on GitHub](https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions)
 
 The demo shows the complete workflow with Supabase integration and AI features.
+It also includes `user_id` input parameter to store user that triggered the workflow.
 :::
 
 Our website analysis workflow will:
@@ -201,7 +202,6 @@ Before starting, make sure you have:
        * https://github.com/pgflow-dev/pgflow/tree/main/examples/playground/supabase/functions/_tasks/saveWebsite.ts
        */
       export default async function saveWebsite(websiteData: {
-        user_id: string;
         website_url: string;
         summary: string;
         tags: string[];
@@ -246,7 +246,6 @@ Before starting, make sure you have:
 
     type Input = {
       url: string;
-      user_id: string;
     };
 
     export default new Flow<Input>({
@@ -271,7 +270,6 @@ Before starting, make sure you have:
       })
       .step({ slug: 'saveToDb', dependsOn: ['summary', 'tags'] }, async (input) => {
         const websiteData = {
-          user_id: input.run.user_id,
           website_url: input.run.url,
           summary: input.summary,
           tags: input.tags,

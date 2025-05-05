@@ -21,134 +21,146 @@ Before starting, make sure you have:
 - Completed the [Edge Worker installation](/edge-worker/getting-started/install-edge-worker/)
 </Aside>
 
-<Steps>
+## 1. Create a worker function
 
-1. ### Create a worker function
+Create a new Edge Function that will process tasks for your workflow:
 
-    Create a new Edge Function that will process tasks for your workflow:
+```bash frame="none"
+mkdir -p supabase/functions/analyze_website_worker
+```
 
-    ```bash frame="none"
-    mkdir -p supabase/functions/analyze_website_worker
-    ```
+Create an `index.ts` file in the new function directory:
 
-    Create an `index.ts` file in the new function directory:
+```typescript title="supabase/functions/analyze_website_worker/index.ts"
+import { EdgeWorker } from "jsr:@pgflow/edge-worker@0.0.4";
+import AnalyzeWebsite from '../_flows/analyze_website.ts';
 
-    ```typescript title="supabase/functions/analyze_website_worker/index.ts"
-    import { EdgeWorker } from "jsr:@pgflow/edge-worker@0.0.4";
-    import AnalyzeWebsite from '../_flows/analyze_website.ts';
+// Pass the flow definition to the Edge Worker
+EdgeWorker.start(AnalyzeWebsite);
+```
 
-    // Pass the flow definition to the Edge Worker
-    EdgeWorker.start(AnalyzeWebsite);
-    ```
+<Aside>
+The Edge Worker will:
+1. Poll for tasks on the `analyze_website` queue
+2. Process tasks based on the step slug
+3. Return the appropriate result for each step
+4. Handle retries if any step fails
+</Aside>
 
-    <Aside>
-    The Edge Worker will:
-    1. Poll for tasks on the `analyze_website` queue
-    2. Process tasks based on the step slug
-    3. Return the appropriate result for each step
-    4. Handle retries if any step fails
-    </Aside>
+### Disable JWT verification
 
-2. ### Start the Edge Runtime
+Disable JWT verification for now by editing `supabase/config.toml`:
 
-    Start the Edge Runtime to make your worker function available:
+```diff lang="toml"
+  [functions.analyze_website_worker]
+  enabled = true
+- verify_jwt = true
++ verify_jwt = false
+  import_map = "./functions/analyze_website_worker/deno.json"
+```
 
-    ```bash frame="none"
-    npx supabase functions serve
-    ```
+## 2. Start the Edge Runtime
 
-    This will start the Edge Runtime server but not yet start your worker.
+Start the Edge Runtime to make your worker function available:
 
-3. ### Start your worker
+```bash frame="none"
+npx supabase functions serve
+```
 
-    In a new terminal, send an HTTP request to start your worker:
+This will start the Edge Runtime server but not yet start your worker.
 
-    ```bash frame="none"
-    curl http://localhost:54321/functions/v1/analyze_website_worker
-    ```
+## 3.  Start your worker
 
-    You should see output in your Edge Runtime terminal indicating the worker has started:
+In a new terminal, send an HTTP request to start your worker:
 
-    ```
-    [Info] worker_id=<uuid> [WorkerLifecycle] Ensuring queue 'analyze_website' exists...
-    [Info] worker_id=<uuid> [WorkerLifecycle] Active and listening for tasks...
-    ```
+```bash frame="none"
+curl http://localhost:54321/functions/v1/analyze_website_worker
+```
 
-4. ### Trigger your first flow
+You should see output in your Edge Runtime terminal indicating the worker has started:
 
-    Now let's start a flow run! Using Supabase Studio:
+```
+[Info] worker_id=<uuid> [WorkerLifecycle] Ensuring queue 'analyze_website' exists...
+[Info] worker_id=<uuid> [WorkerLifecycle] Active and listening for tasks...
+```
 
-    1. Open Supabase Studio in your browser (typically at http://localhost:54323)
-    2. Navigate to the **SQL Editor**
-    3. Execute this SQL to start your workflow:
+:::caution
+If you have troubles starting the worker, make sure you disabled JWT verification in the previous step.
+:::
 
-    ```sql
-    SELECT * FROM pgflow.start_flow(
-      flow_slug => 'analyze_website',
-      input => '{"url": "https://example.com"}'::jsonb
-    );
-    ```
+## 4. Trigger your first flow
 
-    This will:
-    1. Create a new run for your workflow
-    2. Start the root steps
-    3. Return information about the new run
+Now let's start a flow run! Using Supabase Studio:
 
-    The output should look like:
+1. Open Supabase Studio in your browser (typically at http://localhost:54323)
+2. Navigate to the **SQL Editor**
+3. Execute this SQL to start your workflow:
 
-    ```
-    run_id                               | flow_slug       | status  | input                         | output | remaining_steps
-    --------------------------------------+-----------------+---------+-------------------------------+--------+-----------------
-    11111111-2222-3333-4444-555555555555 | analyze_website | started | {"url": "https://example.com"} | null   | 4
-    ```
+```sql
+SELECT * FROM pgflow.start_flow(
+  flow_slug => 'analyze_website',
+  input => '{"url": "https://example.com"}'::jsonb
+);
+```
 
-5. ### Monitor execution
+This will:
+1. Create a new run for your workflow
+2. Start the root steps
+3. Return information about the new run
 
-    Your worker should start processing tasks immediately. You should see log output in the Edge Runtime terminal as each step executes.
+The output should look like:
 
-    You can monitor the run status using Supabase Studio:
+```
+run_id                               | flow_slug       | status  | input                         | output | remaining_steps
+--------------------------------------+-----------------+---------+-------------------------------+--------+-----------------
+11111111-2222-3333-4444-555555555555 | analyze_website | started | {"url": "https://example.com"} | null   | 4
+```
 
-    1. In the SQL Editor, run this query:
+## 5. Monitor execution
 
-    ```sql
-    SELECT * FROM pgflow.runs
-    WHERE flow_slug = 'analyze_website'
-    ORDER BY created_at DESC
-    LIMIT 1;
-    ```
+Your worker should start processing tasks immediately. You should see log output in the Edge Runtime terminal as each step executes.
 
-    As steps complete, you'll see the `remaining_steps` count decrease. When it reaches 0, the run will be marked as `completed`:
+You can monitor the run status using Supabase Studio:
 
-    ```
-    run_id                               | flow_slug       | status    | input                         | output                                                  | remaining_steps
-    --------------------------------------+-----------------+-----------+-------------------------------+---------------------------------------------------------+-----------------
-    11111111-2222-3333-4444-555555555555 | analyze_website | completed | {"url": "https://example.com"} | {"save_results": {"status": "success"}}                 | 0
-    ```
+1. In the SQL Editor, run this query:
 
-6. ### View step states
+```sql
+SELECT * FROM pgflow.runs
+WHERE flow_slug = 'analyze_website'
+ORDER BY created_at DESC
+LIMIT 1;
+```
 
-    To see the status of individual steps:
+As steps complete, you'll see the `remaining_steps` count decrease. When it reaches 0, the run will be marked as `completed`:
 
-    1. In the SQL Editor, run this query (replace the run_id with yours):
+```
+run_id                               | flow_slug       | status    | input                         | output                                                  | remaining_steps
+--------------------------------------+-----------------+-----------+-------------------------------+---------------------------------------------------------+-----------------
+11111111-2222-3333-4444-555555555555 | analyze_website | completed | {"url": "https://example.com"} | {"save_results": {"status": "success"}}                 | 0
+```
 
-    ```sql
-    SELECT step_slug, status, attempts, output
-    FROM pgflow.step_states
-    WHERE run_id = '11111111-2222-3333-4444-555555555555';
-    ```
+## 6. View step states
 
-    This will show the status and output of each step:
+To see the status of individual steps:
 
-    ```
-    step_slug         | status    | attempts | output
-    ------------------+-----------+----------+----------------------------------------------------------
-    scrape_website    | completed | 1        | {"content": "<html><body>This is content...</body></html>", "status": 200}
-    analyze_sentiment | completed | 1        | {"label": "positive", "score": 0.75}
-    generate_summary  | completed | 1        | "This is a website about important topics."
-    save_results      | completed | 1        | {"status": "success"}
-    ```
+1. In the SQL Editor, run this query (replace the run_id with yours):
 
-</Steps>
+```sql
+SELECT step_slug, status, attempts, output
+FROM pgflow.step_states
+WHERE run_id = '11111111-2222-3333-4444-555555555555';
+```
+
+This will show the status and output of each step:
+
+```
+step_slug        | status    | attempts | output
+-----------------+-----------+----------+----------------------------------------------------------
+website          | completed | 1        | {"content": "<html><body>This is content...</body></html>", "status": 200}
+tags             | completed | 1        | ["technology", "data", "workflow"]
+summary          | completed | 1        | "This is a website about important topics."
+saveToDb         | completed | 1        | {"id": "1111-11111....", "summary": "....."}
+```
 
 <Aside type="tip" title="Flow Visualization">
 In a real application, you'd likely want to create a dashboard to visualize your flows and their execution status.
