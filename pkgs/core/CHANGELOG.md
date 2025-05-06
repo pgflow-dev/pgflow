@@ -1,5 +1,13 @@
 # @pgflow/core
 
+## 0.2.1
+
+### Patch Changes
+
+- d553c07: Fix critical migration error that prevented installing if PGMQ was installed previously
+- Updated dependencies [3f3174e]
+  - @pgflow/dsl@0.2.1
+
 ## 0.2.0
 
 ### Patch Changes
