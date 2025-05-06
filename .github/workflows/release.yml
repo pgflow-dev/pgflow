@@ -18,23 +18,26 @@ jobs:
       id-token: write # The OIDC ID token is used for authentication with JSR.
       pull-requests: write # Required for creating version PRs
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
           version: '8.14.1'
 
-      - uses: actions/setup-node@v4
+      - name: Install Node
+        uses: actions/setup-node@v4
         with:
           node-version: '20.18.1'
           cache: 'pnpm'
 
-      - name: Setup Atlas
+      - name: Install Atlas
         uses: ariga/setup-atlas@master
 
-      - name: Install Dependencies
+      - name: Install NPM Dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Create Release Pull Request

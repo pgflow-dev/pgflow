@@ -17,11 +17,13 @@ jobs:
   main:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
           version: '8.14.1'
 
@@ -29,15 +31,17 @@ jobs:
       # Run this command as early as possible, before dependencies are installed
       # Learn more at https://nx.dev/ci/reference/nx-cloud-cli#npx-nxcloud-startcirun
       # Uncomment this line to enable task distribution
-      - run: pnpm dlx nx-cloud start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
+      - name: Nx - start cloud run
+        run: pnpm dlx nx-cloud start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
 
       # Cache node_modules
-      - uses: actions/setup-node@v4
+      - name: Install Node
+        uses: actions/setup-node@v4
         with:
           node-version: '20.18.1'
           cache: 'pnpm'
 
-      - name: Setup Deno
+      - name: Install Deno
         uses: denoland/setup-deno@v2
         with:
           deno-version: '1.45.2'
@@ -45,10 +49,10 @@ jobs:
       - name: Install sqruff
         uses: quarylabs/install-sqruff-cli-action@main
 
-      - name: Setup Atlas
+      - name: Install Atlas
         uses: ariga/setup-atlas@master
 
-      - name: Install Dependencies
+      - name: Install NPM Dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Nx - capture commits SHAs
