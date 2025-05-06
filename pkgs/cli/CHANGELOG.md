@@ -1,5 +1,15 @@
 # pgflow
 
+## 0.2.0
+
+### Minor Changes
+
+- 68f166b: Improve outro messaging
+
+### Patch Changes
+
+- @pgflow/core@0.2.0
+
 ## 0.1.23
 
 ### Patch Changes
