@@ -1,4 +1,4 @@
-# pgflow
+<p align="center"><a href="https://pgflow.dev" target="_blank" rel="noopener noreferrer"><img src="logo.png?raw=true" alt="pgflow logo"></a></p>
 
 ### Where complex becomes clockwork.
 
@@ -8,14 +8,14 @@
 
 ## Overview
 
-pgflow is a workflow orchestration system that runs directly in your Postgres database—ideal for building reliable AI workflows, background jobs, and data pipelines on Supabase without external services.
+pgflow is a workflow orchestration system that runs directly in your Postgres database - ideal for building reliable AI workflows, background jobs, and data pipelines on Supabase without external services.
 
 The system combines:
 
-- **SQL Core** - Workflow state management natively in Postgres with ACID compliance
-- **TypeScript DSL** - Type-safe workflow definitions with automatic inference
-- **Edge Worker** - Auto-respawning task processor that handles retries and concurrency
-- **CLI Tools** - One-command setup with automatic schema migrations
+- **[SQL Core](./pkgs/core/)** - Workflow state management natively in Postgres with ACID compliance
+- **[TypeScript DSL](./pkgs/dsl/)** - Type-safe workflow definitions with automatic inference
+- **[Edge Worker](./pkgs/edge-worker/)** - Auto-respawning task processor that handles retries and concurrency
+- **[CLI Tools](./pkgs/cli/)** - One-command setup with automatic schema migrations
 
 ## Documentation
 
@@ -40,35 +40,6 @@ When you need more than just isolated background jobs, but don't want the comple
 - **Background Jobs** - Process emails, files, and scheduled tasks with full visibility
 - **Data Pipelines** - Extract, transform, and load data with built-in dependency handling
 
-## Type-safe DAG workflow example
-
-```typescript
-new Flow<{ url: string }>({
-  slug: 'analyze_website',
-})
-  .step(
-    { slug: 'website' },
-    async (input) => await scrapeWebsite(input.run.url)
-  )
-  .step(
-    { slug: 'summary', dependsOn: ['website'] },
-    async (input) => await summarizeWithAI(input.website.content)
-  )
-  .step(
-    { slug: 'tags', dependsOn: ['website'] },
-    async (input) => await extractTags(input.website.content)
-  )
-  .step(
-    { slug: 'saveToDb', dependsOn: ['summary', 'tags'] },
-    async ({ run, summary, tags }) =>
-      await saveWebsite({
-        url: run.url,
-        summary,
-        tags,
-      })
-  );
-```
-
 ## How pgflow works
 
 1. **Define workflows using TypeScript DSL**
@@ -76,7 +47,7 @@ new Flow<{ url: string }>({
 3. **Deploy as Supabase Edge Functions**
 4. **Trigger workflows from your app or SQL**
 
-The execution system handles the rest—scheduling steps when dependencies complete, retrying failed tasks, and aggregating results automatically.
+The execution system handles the rest - scheduling steps when dependencies complete, retrying failed tasks, and aggregating results automatically.
 
 ## Packages
 
