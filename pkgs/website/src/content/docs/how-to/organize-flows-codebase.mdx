@@ -205,7 +205,7 @@ Let's look at how a real-world workflow might be organized:
 And the flow definition that ties everything together:
 
 ```typescript title="supabase/functions/_flows/analyze_website.ts"
-import { Flow } from '@pgflow/dsl';
+import { Flow } from 'npm:@pgflow/dsl';
 import scrapeWebsite from '../_tasks/scrapeWebsite.ts';
 import summarizeWithAI from '../_tasks/summarizeWithAI.ts';
 import extractTags from '../_tasks/extractTags.ts';
