@@ -18,34 +18,18 @@ The Flow DSL is built on several key principles:
 3. **Separation of Concerns** - Task logic separate from flow orchestration
 4. **Fluent Interface** - Chainable method calls that return new Flow instances
 
-### Fluent API Design
-
-The pgflow DSL uses a fluent interface where each `.step()` call returns a new Flow instance:
+The pgflow DSL uses a fluent interface:
 
 ```typescript
-// Each .step() returns a new Flow instance
-const flow1 = new Flow<Input>({ slug: 'my_flow' });
-const flow2 = flow1.step({ slug: 'step1' }, async (input) => { /* ... */ });
-const flow3 = flow2.step({ slug: 'step2' }, async (input) => { /* ... */ });
-
-// In practice, you'll typically use method chaining
+// Method chaining for flow definition
 new Flow<Input>({ slug: 'my_flow' })
   .step({ slug: 'step1' }, async (input) => { /* ... */ })
   .step({ slug: 'step2' }, async (input) => { /* ... */ });
 ```
 
-Important characteristics of this fluent design:
-
-- **Immutable Flow Objects** - Each `.step()` call creates a new Flow instance without modifying the original
-- **Required Method Chaining** - Steps must be added by chaining `.step()` calls
-- **Declarative Definition** - The entire flow is defined in a single declarative expression
-- **No Side Effects** - Adding steps doesn't modify any internal state of existing Flow instances
-
-This approach ensures that flow definitions are predictable, testable, and immune to side effects.
+Each `.step()` call creates a new Flow instance without modifying the original, ensuring flow definitions are predictable, testable, and immune to side effects. The entire flow is defined in a single declarative expression with no side effects.
 
 ## Understanding Step Inputs and Data Flow
-
-### The `input` Object: A Unified View of Data
 
 In pgflow, **every step receives a unified `input` object** with two critical parts:
 
@@ -53,99 +37,76 @@ In pgflow, **every step receives a unified `input` object** with two critical pa
 2. **`input.{stepName}`** - Outputs from any dependency steps
 
 :::important[The input.run Field]
-Every step in your flow, regardless of its position or dependencies, has access to the complete flow input via `input.run`. This is a fundamental design feature that ensures:
-
-- All steps can access original flow parameters
-- Global context is available throughout the flow
-- Steps can make decisions based on the initial input
-- Data doesn't need to be passed through intermediate steps
+Every step has access to the complete flow input via `input.run`, ensuring:
+- Original flow parameters are accessible throughout the flow
+- Data doesn't need to be manually forwarded through intermediate steps
+- Steps can combine original input with processed data
 :::
 
-Consider this simple example:
+Consider this example:
 
 ```typescript
-new Flow<{ url: string, userId: string }>({  // Define flow input type
+new Flow<{ url: string, userId: string }>({
   slug: 'analyze_website',
 })
   .step(
     { slug: 'scrape' },
     async (input) => {
-      console.log(`Scraping URL ${input.run.url} for user ${input.run.userId}`);
+      // Access to input.run.url and input.run.userId
       return await scrapeWebsite(input.run.url);
     }
   )
   .step(
     { slug: 'analyze', dependsOn: ['scrape'] },
     async (input) => {
-      console.log(`Analyzing content for user ${input.run.userId}`);  // Still has access to userId
+      // Still has access to input.run.userId
+      // Now also has access to input.scrape
       return await analyzeContent(input.scrape.content);
     }
   );
 ```
 
-### How Data Flows Through Steps
-
-Here's the data flow sequence:
-
+When this flow runs:
 1. The flow receives an input object (e.g., `{ url: "example.com", userId: "123" }`)
-2. The `scrape` step:
-   - Receives the complete flow input as `input.run` (containing both url and userId)
-   - Calls `scrapeWebsite()` with the URL
-   - Returns an object (with a `content` property)
-3. The `analyze` step:
-   - Receives the same complete flow input as `input.run` (identical to what scrape received)
-   - ALSO receives the `scrape` step's output as `input.scrape`
-   - Can use both the original input AND the previous step's output
-   - Calls `analyzeContent()` with the content
-   - Returns the analysis results
+2. Each step receives both the original input via `input.run` and the outputs of any dependency steps
+3. Steps can combine original parameters with processed data from previous steps
 
-This unified input structure means:
-- Original flow parameters are never lost, no matter how deep in the flow
-- Steps don't need to manually forward parameters to downstream steps
-- Dependent steps can combine original input with processed data
+## The Type System
 
-## The Type System and `input.run`
-
-One of pgflow's most powerful features is its type system, which ensures type safety across the entire workflow, especially with the critical `input.run` field:
+One of pgflow's most powerful features is its type system, which ensures type safety across the entire workflow:
 
 ```typescript
 // Define input type for the flow
 type WebsiteInput = { url: string, userId: string };
 
-// Create a flow with that input type and chain steps
+// Create a flow with that input type
 new Flow<WebsiteInput>({
   slug: 'analyze_website',
 })
-  // TypeScript knows the shape of input.run
   .step(
     { slug: 'scrape' },
     async (input) => {
       // input.run is typed as WebsiteInput
-      // input.run.url and input.run.userId are available
       return { content: "..." };
     }
   )
-  // TypeScript knows the shape of dependency outputs
   .step(
     { slug: 'analyze', dependsOn: ['scrape'] },
     async (input) => {
       // input.scrape is typed based on the scrape step's return type
-      // input.scrape.content is available
       return { analysis: "..." };
     }
   );
 ```
 
 The type system automatically:
-- Ensures the flow receives the correct input type
-- Makes the flow input type available as `input.run` in **every** step
-- Tracks the output type of each step
-- Makes those output types available to dependent steps via `input.[stepName]`
-- Provides IDE autocompletion for all available properties
-- Catches type errors at compile time
+- Enforces the correct input type for the flow
+- Makes the flow input available as `input.run` in every step
+- Tracks each step's output type and makes it available to dependent steps
+- Provides IDE autocompletion and catches type errors at compile time
 
-:::tip[Type System in Action]
-Note how TypeScript provides full autocompletion for both `input.run` properties and dependency outputs. This allows you to confidently access any available data without runtime errors.
+:::tip[Type Safety]
+TypeScript provides full autocompletion for both `input.run` properties and dependency outputs, allowing you to confidently access data without runtime errors.
 :::
 
 ## Task Implementation Best Practices
@@ -155,7 +116,6 @@ The Flow DSL encourages a functional programming approach to tasks:
 ```typescript
 // RECOMMENDED: Pure function with clear inputs and outputs
 async function analyzeContent(content: string) {
-  // Process the content
   return { sentiment: 0.8, topics: ["technology", "data"] };
 }
 
@@ -170,14 +130,9 @@ This approach:
 - Makes tasks reusable across different flows
 - Keeps task logic separate from flow orchestration
 - Simplifies testing of individual tasks
-- Allows tasks to evolve independently of the flow structure
 
 :::note[Best Practice]
-A well-designed task function should:
-- Accept specific, focused parameters
-- Return a well-defined output structure
-- Have no knowledge of the flow or other steps
-- Be testable in isolation
+A well-designed task function should accept specific parameters, return a well-defined output structure, and be testable in isolation.
 :::
 
 ### JSON Serialization Requirements
@@ -200,15 +155,14 @@ All step inputs and outputs MUST be serializable to JSON since pgflow stores the
   }
 )
 
-// BAD: Non-serializable objects will cause runtime errors
+// BAD: Non-serializable types will cause runtime errors
 .step(
   { slug: 'badExample' },
   async (input) => {
     return {
-      date: new Date(), // Date objects don't serialize properly
-      regex: /test/,    // RegExp objects don't serialize
-      circular: {},     // Objects with circular references will fail
-      function: () => {} // Functions can't be serialized
+      date: new Date(),     // Use toISOString() instead
+      regex: /test/,        // Not serializable
+      function: () => {}    // Functions can't be serialized
     };
   }
 )
@@ -216,16 +170,9 @@ All step inputs and outputs MUST be serializable to JSON since pgflow stores the
 
 #### Guidelines for JSON-Compatible Data
 
-- **Use primitive types**: strings, numbers, booleans, null
-- **Use plain objects** and arrays
-- **Convert non-serializable types** before returning:
-  - Convert dates to ISO strings: `new Date().toISOString()`
-  - Convert complex objects to their string/object representation
-  - Extract needed properties from class instances
-- **Avoid**: class instances, functions, symbols, undefined, circular references, and other non-serializable types
-- **Validate for circularities**: If you're working with complex object graphs, ensure no circular references exist
-
-Following these guidelines ensures your flow data can be properly stored and retrieved from the database.
+- **Use**: primitive types (strings, numbers, booleans, null), plain objects, and arrays
+- **Convert** dates to ISO strings: `new Date().toISOString()`
+- **Avoid**: class instances, functions, symbols, undefined, and circular references
 
 ## How Steps Connect and Execute
 
@@ -240,69 +187,66 @@ Steps are connected through explicit dependencies:
 
 When a flow runs:
 
-1. pgflow identifies steps with no dependencies ("root steps") and runs them first
-2. As steps complete, any dependent steps whose dependencies are all satisfied become eligible to run
+1. pgflow runs steps with no dependencies ("root steps") first
+2. As steps complete, dependent steps whose dependencies are satisfied become eligible to run
 3. Steps with the same dependencies can run in parallel
 4. The flow completes when all steps have completed or failed
 
-This execution model:
-- Maximizes parallelism when possible
-- Ensures proper ordering of dependent operations
-- Handles retries and failures automatically
+This execution model maximizes parallelism when possible, ensures proper ordering of operations, and handles retries and failures automatically.
 
-## The Flow Definition vs. Execution
+## Flow Definition vs. Execution
 
-It's important to understand the distinction between flow definition and execution:
+The flow lifecycle has distinct phases:
 
-1. **Definition** (TypeScript): The flow structure defined using the DSL
-2. **Compilation**: Conversion of the TypeScript flow to SQL
-3. **Registration**: Storage of the flow structure in the database
-4. **Execution**: The runtime system that processes tasks based on the database definition
+1. **Definition** (TypeScript): Flow structure defined using the DSL
+2. **Compilation**: Conversion from TypeScript to SQL
+3. **Registration**: Storage of flow structure in the database
+4. **Execution**: Runtime processing of tasks based on the database definition
 
-The TypeScript DSL is used only for definition and compilation - it's not involved in the actual execution of workflows. This separation allows:
-- Versioning and tracking of flow definitions
-- Consistent execution regardless of client language
-- Persistence of workflow state in the database
+The TypeScript DSL is used only for definition and compilation, not for execution. This separation allows for versioning of flow definitions and persistence of workflow state in the database.
 
-## Example: Data Transformation Flow with `input.run`
+## Example: Multi-Step Data Flow
 
-Let's see a more comprehensive example showing how `input.run` enables data to flow efficiently through steps:
+Here's a practical example showing how data flows efficiently through steps:
 
 ```typescript
 // Flow with multiple input parameters
-new Flow<{ userId: string, includeDetails: boolean, reportType: 'basic' | 'advanced' }>({
+type Input = { 
+  userId: string, 
+  includeDetails: boolean, 
+  reportType: 'basic' | 'advanced' 
+};
+
+new Flow<Input>({
   slug: 'user_report',
 })
   // Step 1: Fetch user data
   .step(
     { slug: 'user' },
     async (input) => {
-      // Uses input.run.userId directly
       return await fetchUser(input.run.userId);
     }
   )
-  // Steps 2 & 3: Process user data in parallel, both using input.run parameters
+  // Steps 2 & 3: Process user data in parallel
   .step(
     { slug: 'activity', dependsOn: ['user'] },
     async (input) => {
-      // Can access both input.run and input.user
-      const activityTimespan = input.run.reportType === 'advanced' ? '1y' : '30d';
-      return await getUserActivity(input.user.id, activityTimespan);
+      // Uses input.run.reportType to determine timespan
+      const timespan = input.run.reportType === 'advanced' ? '1y' : '30d';
+      return await getUserActivity(input.user.id, timespan);
     }
   )
   .step(
     { slug: 'preferences', dependsOn: ['user'] },
     async (input) => {
-      // Uses input.run.includeDetails to determine level of detail
-      const includePrivate = input.run.includeDetails;
-      return await getUserPreferences(input.user.id, includePrivate);
+      // Uses input.run.includeDetails parameter
+      return await getUserPreferences(input.user.id, input.run.includeDetails);
     }
   )
-  // Step 4: Combine results, still having access to original input parameters
+  // Step 4: Combine results
   .step(
     { slug: 'report', dependsOn: ['activity', 'preferences'] },
     async (input) => {
-      // Can still access ALL original parameters alongside ALL previous step outputs
       return {
         user: input.user,
         activity: input.activity,
@@ -314,33 +258,20 @@ new Flow<{ userId: string, includeDetails: boolean, reportType: 'basic' | 'advan
   );
 ```
 
-This example demonstrates the power of the `input.run` field:
-
-1. **Initial parameters are available everywhere** - Every step can access `userId`, `includeDetails`, and `reportType`
-2. **Conditional processing based on input** - Steps can adapt behavior based on original parameters:
-   - `activity` step chooses timespan based on report type 
-   - `preferences` step determines detail level from includeDetails flag
-3. **No need to manually forward parameters** - The `user` step doesn't need to include the original parameters in its return value
-4. **Complete context in final step** - The `report` step can access everything: original inputs and all processed data
-5. **Type safety throughout** - TypeScript ensures all accesses are valid
+This example demonstrates:
+1. **Original parameters available throughout** - Every step can access the input parameters
+2. **Conditional processing** - Steps adapt behavior based on original parameters
+3. **No manual parameter forwarding needed** - The `user` step doesn't need to include original parameters
+4. **Type safety throughout** - TypeScript ensures all data accesses are valid
 
 ## Summary
 
 The pgflow DSL provides a powerful, type-safe way to define complex workflows:
 
-- It provides the original flow input via `input.run` to every step in the workflow
-- It uses TypeScript's type system to ensure data flows correctly between steps
-- It encourages a functional approach with clear inputs and outputs
-- It separates task implementation from flow orchestration
-- It allows for parallel execution of independent steps
-- It automatically manages dependencies between steps
+- Every step receives the original flow input via `input.run`
+- TypeScript's type system ensures data flows correctly between steps
+- The functional approach keeps task implementation separate from flow orchestration
+- Parallel execution of independent steps is managed automatically
+- Dependencies between steps are handled transparently
 
-### Key Takeaways About `input.run`
-
-- **Universal Availability**: Every step receives `input.run` containing the complete flow input
-- **Parameter Persistence**: Original parameters are available throughout the entire workflow
-- **No Manual Forwarding**: No need to pass input parameters through intermediate steps
-- **Type Safety**: TypeScript ensures all accesses to `input.run` are type-checked
-- **Simplified Code**: Steps can focus on their specific tasks rather than parameter management
-
-By understanding these principles, especially the role of `input.run`, you can design efficient, maintainable workflows that take full advantage of pgflow's capabilities.
+The `input.run` design enables original parameters to be available throughout the workflow without manual forwarding, allowing steps to focus on their specific tasks while maintaining type safety. With these principles, you can design efficient, maintainable workflows that take full advantage of pgflow's capabilities.
