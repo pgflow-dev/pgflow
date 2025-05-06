@@ -19,7 +19,7 @@ To check the status of your workflow runs, query the `pgflow.runs` table:
 ```sql
 SELECT * FROM pgflow.runs
 WHERE flow_slug = 'your_flow_slug'
-ORDER BY created_at DESC
+ORDER BY started_at DESC
 LIMIT 10;
 ```
 
@@ -29,13 +29,12 @@ This shows the most recent runs with their status, inputs, outputs, and remainin
 run_id        | flow_slug    | status    | input                | output                   | remaining_steps
 --------------+--------------+-----------+----------------------+--------------------------+-----------------
 <run_id UUID> | your_flow    | completed | {"param": "value"}   | {"result": "Success!"}   | 0
-<run_id UUID> | your_flow    | running   | {"param": "value2"}  | null                     | 3
+<run_id UUID> | your_flow    | started   | {"param": "value2"}  | null                     | 3
 <run_id UUID> | your_flow    | failed    | {"param": "value3"}  | null                     | 5
 ```
 
 Run statuses include:
-- `started`: The run has been created but may not have started executing steps
-- `running`: The run is actively executing steps
+- `started`: The run has been created and is executing steps
 - `completed`: All steps have completed successfully
 - `failed`: One or more steps have failed after max retries
 
@@ -44,44 +43,51 @@ Run statuses include:
 To check the status of individual steps within a run:
 
 ```sql
-SELECT step_slug, status, attempts, output
-FROM pgflow.step_states
-WHERE run_id = 'your-run-id-here';
+SELECT step_slug, status, remaining_deps, remaining_tasks, output
+FROM pgflow.step_states ss
+LEFT JOIN pgflow.step_tasks st ON ss.run_id = st.run_id AND ss.step_slug = st.step_slug AND st.status = 'completed'
+WHERE ss.run_id = 'your-run-id-here';
 ```
 
-This shows the status of each step with its output and retry attempts:
+This shows the status of each step with its output:
 
 ```
-step_slug    | status    | attempts | output
--------------+-----------+----------+---------------------------
-process_data | completed | 1        | {"processed": true}
-send_email   | completed | 3        | "Email sent successfully"
-final_step   | pending   | 0        | null
+step_slug    | status    | remaining_deps | remaining_tasks | output
+-------------+-----------+----------------+----------------+---------------------------
+process_data | completed | 0              | 0              | {"processed": true}
+send_email   | completed | 0              | 0              | "Email sent successfully"
+final_step   | created   | 2              | 1              | null
 ```
 
 Step statuses include:
-- `pending`: The step is waiting for dependencies to complete
-- `scheduled`: A task has been created for this step but not yet processed
-- `running`: The step is currently being executed
+- `created`: The step has been created but may be waiting for dependencies
+- `started`: The step has started execution (all dependencies are complete)
 - `completed`: The step has completed successfully
 - `failed`: The step has failed after max retries
 
 ## Monitor active tasks
 
-To see all tasks that are currently scheduled for execution:
+To see all tasks that are currently queued for execution:
 
 ```sql
-SELECT * FROM pgflow.step_tasks
-WHERE status = 'scheduled'
-ORDER BY priority DESC, scheduled_at ASC;
+SELECT 
+  run_id, 
+  step_slug, 
+  status, 
+  attempts_count, 
+  message_id, 
+  queued_at 
+FROM pgflow.step_tasks
+WHERE status = 'queued'
+ORDER BY queued_at ASC;
 ```
 
 This shows tasks that workers should pick up next:
 
 ```
-task_id       | run_id        | step_slug     | status     | attempts | scheduled_at        | completed_at
---------------+--------------+--------------+------------+----------+---------------------+------------------
-<task_id>     | <run_id>     | process_data | scheduled  | 1        | 2023-05-01 12:00:00 | null
+run_id        | step_slug     | status  | attempts_count | message_id | queued_at
+--------------+--------------+---------+---------------+------------+---------------------
+<run_id>      | process_data | queued  | 1              | 123456     | 2023-05-01 12:00:00
 ```
 
 ## Get execution timeline for a run
@@ -95,7 +101,8 @@ SELECT
   created_at,
   started_at,
   completed_at,
-  EXTRACT(EPOCH FROM (completed_at - started_at)) AS duration_seconds
+  failed_at,
+  EXTRACT(EPOCH FROM (COALESCE(completed_at, failed_at) - started_at)) AS duration_seconds
 FROM pgflow.step_states
 WHERE run_id = 'your-run-id-here'
 ORDER BY created_at ASC;
@@ -107,14 +114,17 @@ When a step fails, you can check for error details:
 
 ```sql
 SELECT
-  step_slug,
-  attempts,
-  error,
-  scheduled_at,
-  completed_at
-FROM pgflow.step_states
-WHERE run_id = 'your-run-id-here'
-AND status = 'failed';
+  ss.step_slug,
+  st.attempts_count,
+  st.error_message,
+  st.queued_at,
+  st.failed_at
+FROM pgflow.step_states ss
+JOIN pgflow.step_tasks st ON 
+  ss.run_id = st.run_id AND 
+  ss.step_slug = st.step_slug
+WHERE ss.run_id = 'your-run-id-here'
+AND ss.status = 'failed';
 ```
 
 <Aside type="tip" title="Flow Visualization">
@@ -135,12 +145,14 @@ To understand the structure of your workflow and the dependencies between steps:
 
 ```sql
 SELECT
-  ss.step_slug,
-  array_agg(d.depends_on_step_slug) as dependencies
-FROM pgflow.step_states ss
-LEFT JOIN pgflow.step_dependencies d ON ss.run_id = d.run_id AND ss.step_slug = d.step_slug
-WHERE ss.run_id = 'your-run-id-here'
-GROUP BY ss.step_slug;
+  steps.step_slug,
+  array_agg(deps.dep_slug) as dependencies
+FROM pgflow.steps steps
+LEFT JOIN pgflow.deps deps ON 
+  steps.flow_slug = deps.flow_slug AND 
+  steps.step_slug = deps.step_slug
+WHERE steps.flow_slug = 'your_flow_slug'
+GROUP BY steps.step_slug;
 ```
 
 ## Next steps
