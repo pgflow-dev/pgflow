@@ -78,7 +78,7 @@ export default defineConfig({
             id: 'pgflow',
             items: [
               {
-                label: 'Getting Started',
+                label: 'START HERE',
                 autogenerate: { directory: 'getting-started/' },
               },
               {
