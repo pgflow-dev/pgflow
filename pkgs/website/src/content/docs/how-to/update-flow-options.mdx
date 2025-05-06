@@ -8,119 +8,52 @@ sidebar:
 import { Aside } from "@astrojs/starlight/components";
 import NotProductionReady from '@/components/NotProductionReady.astro';
 
-# Updating Flow Options
+Flow definitions in pgflow are fundamentally immutable in structure. For structural changes like adding steps or changing dependencies, create a new flow version instead (see [Version Your Flows](/how-to/version-your-flows/)). This guide focuses only on runtime configuration options you can safely update.
 
-This guide explains how to safely update configuration options for existing flows without breaking compatibility or disrupting in-progress runs.
+## Updatable Options
 
-## Understanding safe vs. breaking changes
+You can safely modify these runtime options without creating a new flow version:
 
-First, it's important to understand which changes are safe to make to an existing flow:
+| Option | Description | Default | Scope |
+| ------ | ----------- | ------- | ----- |
+| `opt_max_attempts` | Max retry attempts | 1 | Flow & Steps |
+| `opt_base_delay` | Base retry delay (seconds) | 1 | Flow only |
+| `opt_timeout` | Max execution time (seconds) | 30 | Flow & Steps |
 
-| Safe Changes | Breaking Changes |
-| ------------ | --------------- |
-| Updating `maxAttempts` | Adding/removing steps |
-| Updating `timeout` values | Changing step dependencies |
-| Updating `baseDelay` values | Modifying input/output types |
-| | Changing step slug names |
+## Configuration System
 
-:::danger[Prohibited Changes]
-DO NOT attempt to change these aspects of an existing flow:
-- Step slugs
-- Dependencies between steps
-- Adding or removing steps
-- Altering the flow's input type structure
+pgflow uses a two-level configuration approach:
+- **Flow-level options**: Set defaults for all steps in the flow
+- **Step-level options**: Override flow defaults for specific steps
 
-These changes will break in-progress runs and cause data compatibility issues.
-:::
+## Updating Options Manually
 
-## Current compiler limitations
+Since the compiler doesn't support updating existing flows, you must manually update options in the database:
 
-The current pgflow compiler:
-- Always creates a new migration file for any changes
-- Does not support updating existing flows
-- Cannot safely modify the structure of a flow
-
-For non-breaking configuration changes, you must **manually update the database** using SQL statements.
-
-## Updating configuration options
-
-pgflow uses a two-level configuration system:
-
-1. **Flow-level options** - Set defaults for the entire flow
-2. **Step-level options** - Can override flow-level defaults for specific steps
-
-### Available configuration options
-
-| Option | Description | System Default | Applied to |
-| ------ | ----------- | ------- | --- |
-| `opt_max_attempts` | Maximum number of retry attempts | 1 | Flow and Steps |
-| `opt_base_delay` | Base delay between retries (seconds) | 1 | Flow only |
-| `opt_timeout` | Maximum execution time (seconds) | 30 | Flow and Steps |
-
-### Option inheritance
-
-- Flow-level options set the **default for all steps** in that flow
-- Step-level options **override** the flow-level defaults when specified
-- If a step doesn't have a specific option set, it inherits from the flow
-
-### Updating flow-level options
-
-To update options that apply to the entire flow:
-
+### Flow Level (Affects All Steps)
 ```sql
 UPDATE pgflow.flows
-SET
-  opt_max_attempts = 5,  -- All steps will use this by default
-  opt_timeout = 10,      -- All steps will use this by default
-  opt_base_delay = 2     -- Flow-level option for retry delay
+SET opt_max_attempts = 5, opt_timeout = 10, opt_base_delay = 2
 WHERE flow_slug = 'your_flow_slug';
 ```
 
-### Updating step-level options
-
-To override options for a specific step:
-
+### Step Level (Overrides Flow Defaults)
 ```sql
 UPDATE pgflow.steps
-SET
-  opt_max_attempts = 3,  -- Overrides the flow's max_attempts for this step only
-  opt_timeout = 30       -- Overrides the flow's timeout for this step only
-WHERE
-  flow_slug = 'your_flow_slug'
-  AND step_slug = 'your_step_slug';
+SET opt_max_attempts = 3, opt_timeout = 30
+WHERE flow_slug = 'your_flow_slug' AND step_slug = 'your_step_slug';
 ```
 
-## Example: Increasing retries for a specific step
-
-Let's say you have a flow that includes an API call that occasionally fails. You might want to increase the retry count specifically for that step:
-
+## Example: Increasing Retries for API Calls
 ```sql
--- First, check the current settings
-SELECT step_slug, opt_max_attempts
-FROM pgflow.steps
-WHERE flow_slug = 'analyze_website';
+-- Check current settings
+SELECT step_slug, opt_max_attempts FROM pgflow.steps WHERE flow_slug = 'analyze_website';
 
--- Then update the API call step to have more retries
-UPDATE pgflow.steps
-SET opt_max_attempts = 5
-WHERE
-  flow_slug = 'analyze_website'
-  AND step_slug = 'website';
+-- Update API call step to retry more
+UPDATE pgflow.steps SET opt_max_attempts = 5
+WHERE flow_slug = 'analyze_website' AND step_slug = 'website';
 ```
-
-## When to create a new flow version
-
-If you need to make breaking changes:
-
-1. Create a new flow with a different slug (e.g., `analyze_website_v2`)
-2. Compile the new flow to generate a new migration
-3. Apply the migration to add the new flow version
-4. Update your application to use the new flow version for new runs
-
-:::note
-For major changes in flow structure, always create a new flow version rather than trying to update an existing one. The task separation in pgflow makes it easy to reuse task implementations across different flow versions.
-:::
 
 <Aside type="caution">
-After updating flow options directly in the database, make sure to keep your flow definition code in sync with the database changes to avoid confusion.
+After updating options in the database, remember to update your flow definition code to keep them in sync.
 </Aside>
