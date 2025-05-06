@@ -58,8 +58,11 @@ jobs:
         uses: nrwl/nx-set-shas@v4
 
       # Run only cacheable targets with affected
+      # Skip non-cacheable build targets: playground:build, edge-worker:build, targets with DB dependencies
       - name: Run cacheable affected targets
-        run: pnpm exec nx affected -t lint typecheck build
+        run: |
+          pnpm exec nx affected -t lint typecheck
+          pnpm exec nx affected -t build --exclude=playground,edge-worker,core:gen-types,core:verify-migrations
 
   # Second job handles database-dependent tests
   db-tests:
@@ -94,6 +97,10 @@ jobs:
       - name: Nx - capture commits SHAs
         uses: nrwl/nx-set-shas@v4
 
-      # Run only tests that depend on database
-      - name: Run database-dependent tests
+      # Run build tasks that require database access first
+      - name: Run DB-dependent builds
+        run: pnpm exec nx affected -t build --projects=playground,edge-worker,core
+
+      # Run all tests (now that builds are complete)
+      - name: Run all tests
         run: pnpm exec nx affected -t test
