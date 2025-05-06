@@ -1,5 +1,5 @@
 import { type Command } from 'commander';
-import { intro, log, note, group, cancel, outro } from '@clack/prompts';
+import { intro, group, cancel, outro } from '@clack/prompts';
 import chalk from 'chalk';
 import { copyMigrations } from './copy-migrations.js';
 import { updateConfigToml } from './update-config-toml.js';
@@ -75,34 +75,45 @@ export default (program: Command) => {
 
       // Show completion message
       const outroMessages = [];
-      
+
       // Always start with a bolded acknowledgement
       if (migrations || configUpdate || envFile) {
         outroMessages.push(chalk.bold('pgflow setup completed successfully!'));
       } else {
-        outroMessages.push(chalk.bold('pgflow is already properly configured - no changes needed!'));
+        outroMessages.push(
+          chalk.bold(
+            'pgflow is already properly configured - no changes needed!'
+          )
+        );
       }
-      
+
       // Add a newline after the acknowledgement
       outroMessages.push('');
-      
+
       // Add specific next steps if changes were made
       if (configUpdate || envFile) {
-        outroMessages.push(`- Restart your Supabase instance for configuration changes to take effect`);
+        outroMessages.push(
+          `- Restart your Supabase instance for configuration changes to take effect`
+        );
       }
 
       if (migrations) {
-        outroMessages.push(`- Apply the migrations with: ${chalk.cyan('supabase migrations up')}`);
+        outroMessages.push(
+          `- Apply the migrations with: ${chalk.cyan('supabase migrations up')}`
+        );
       }
-      
+
       // Always add documentation link with consistent formatting
-      if (outroMessages.length > 2) {  // If we have specific steps, add another newline
+      if (outroMessages.length > 2) {
+        // If we have specific steps, add another newline
         outroMessages.push('');
       }
-      
+
       outroMessages.push(
         chalk.bold('Continue the setup:'),
-        chalk.blue.underline('https://pgflow.dev/getting-started/compile-to-sql/')
+        chalk.blue.underline(
+          'https://pgflow.dev/getting-started/compile-to-sql/'
+        )
       );
 
       // Single outro for all paths
