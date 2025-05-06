@@ -110,11 +110,6 @@ export default defineConfig({
                 label: 'FAQ - Common Questions',
                 link: '/edge-worker/faq/',
               },
-              {
-                label: 'Project Status',
-                badge: { text: 'important', variant: 'caution' },
-                link: '/edge-worker/project-status/',
-              },
             ],
           },
           {
