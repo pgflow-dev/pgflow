@@ -45,7 +45,7 @@ Every step has access to the complete flow input via `input.run`, ensuring:
 
 Consider this example:
 
-```typescript
+```typescript "input.run.url" "input.run.userId" "input.scrape.content"
 new Flow<{ url: string, userId: string }>({
   slug: 'analyze_website',
 })
@@ -75,7 +75,7 @@ When this flow runs:
 
 One of pgflow's most powerful features is its type system, which ensures type safety across the entire workflow:
 
-```typescript
+```typescript {12,18}
 // Define input type for the flow
 type WebsiteInput = { url: string, userId: string };
 
@@ -139,7 +139,7 @@ A well-designed task function should accept specific parameters, return a well-d
 
 All step inputs and outputs MUST be serializable to JSON since pgflow stores these values in JSONB database columns:
 
-```typescript
+```typescript {2-14} ins="new Date().toISOString()" del="new Date()" del="/test/" del="() => {}"
 // GOOD: Fully serializable objects
 .step(
   { slug: 'processData' },
@@ -178,7 +178,7 @@ All step inputs and outputs MUST be serializable to JSON since pgflow stores the
 
 Steps are connected through explicit dependencies:
 
-```typescript
+```typescript "dependsOn: ['website']"
 .step(
   { slug: 'summary', dependsOn: ['website'] },
   // Function implementation...
@@ -209,7 +209,7 @@ The TypeScript DSL is used only for definition and compilation, not for executio
 
 Here's a practical example showing how data flows efficiently through steps:
 
-```typescript
+```typescript "input.run.userId" "input.run.reportType" "input.run.includeDetails" "input.run.reportType" {21,30,38}
 // Flow with multiple input parameters
 type Input = { 
   userId: string, 
