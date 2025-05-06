@@ -141,7 +141,7 @@ In the SQL Editor, run this query:
 ```sql
 SELECT * FROM pgflow.runs
 WHERE flow_slug = 'greet_user'
-ORDER BY created_at DESC
+ORDER BY started_at DESC
 LIMIT 1;
 ```
 

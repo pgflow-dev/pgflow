@@ -43,9 +43,15 @@ Run statuses include:
 To check the status of individual steps within a run:
 
 ```sql
-SELECT step_slug, status, remaining_deps, remaining_tasks, output
+
+SELECT ss.step_slug, ss.status, ss.remaining_deps, ss.remaining_tasks, st.output
 FROM pgflow.step_states ss
-LEFT JOIN pgflow.step_tasks st ON ss.run_id = st.run_id AND ss.step_slug = st.step_slug AND st.status = 'completed'
+LEFT JOIN
+    pgflow.step_tasks st
+    ON
+        ss.run_id = st.run_id
+        AND ss.step_slug = st.step_slug
+        AND st.status = 'completed'
 WHERE ss.run_id = 'your-run-id-here';
 ```
 
@@ -70,13 +76,13 @@ Step statuses include:
 To see all tasks that are currently queued for execution:
 
 ```sql
-SELECT 
-  run_id, 
-  step_slug, 
-  status, 
-  attempts_count, 
-  message_id, 
-  queued_at 
+SELECT
+  run_id,
+  step_slug,
+  status,
+  attempts_count,
+  message_id,
+  queued_at
 FROM pgflow.step_tasks
 WHERE status = 'queued'
 ORDER BY queued_at ASC;
@@ -120,8 +126,8 @@ SELECT
   st.queued_at,
   st.failed_at
 FROM pgflow.step_states ss
-JOIN pgflow.step_tasks st ON 
-  ss.run_id = st.run_id AND 
+JOIN pgflow.step_tasks st ON
+  ss.run_id = st.run_id AND
   ss.step_slug = st.step_slug
 WHERE ss.run_id = 'your-run-id-here'
 AND ss.status = 'failed';
@@ -148,8 +154,8 @@ SELECT
   steps.step_slug,
   array_agg(deps.dep_slug) as dependencies
 FROM pgflow.steps steps
-LEFT JOIN pgflow.deps deps ON 
-  steps.flow_slug = deps.flow_slug AND 
+LEFT JOIN pgflow.deps deps ON
+  steps.flow_slug = deps.flow_slug AND
   steps.step_slug = deps.step_slug
 WHERE steps.flow_slug = 'your_flow_slug'
 GROUP BY steps.step_slug;
