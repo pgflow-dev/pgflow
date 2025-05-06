@@ -15,7 +15,7 @@
         "assets": ["pkgs/dsl/*.md"],
         "rootDir": "pkgs/dsl/src"
       },
-      "outputs": ["pkgs/dsl/dist"],
+      "outputs": ["{workspaceRoot}/pkgs/dsl/dist"],
       "cache": true
     },
     "test": {

@@ -21,7 +21,7 @@
           }
         ]
       },
-      "outputs": ["{projectRoot}/dist"],
+      "outputs": ["{workspaceRoot}/pkgs/cli/dist"],
       "cache": true
     },
     "serve": {

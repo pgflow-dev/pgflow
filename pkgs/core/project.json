@@ -74,7 +74,7 @@
         ],
         "rootDir": "pkgs/core/src"
       },
-      "outputs": ["pkgs/core/dist"],
+      "outputs": ["{workspaceRoot}/pkgs/core/dist"],
       "cache": true
     },
     "lint:sqruff": {
