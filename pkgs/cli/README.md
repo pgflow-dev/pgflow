@@ -1,6 +1,7 @@
 # cli
 
-This library was generated with [Nx](https://nx.dev).
+> [!NOTE]
+> This project and all its components are licensed under [Apache 2.0](./LICENSE) license.
 
 ## Building
 

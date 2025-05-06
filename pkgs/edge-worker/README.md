@@ -10,8 +10,7 @@
 A task queue worker for Supabase Edge Functions that extends background tasks with useful features.
 
 > [!NOTE]
-> This project is licensed under [AGPL v3](./LICENSE.md) license and is part of **pgflow** stack.
-> See [LICENSING_OVERVIEW.md](../../LICENSING_OVERVIEW.md) in root of this monorepo for more details.
+> This project and all its components are licensed under [Apache 2.0](./LICENSE) license.
 
 ## What is Edge Worker?
 
@@ -39,8 +38,6 @@ Edge Worker is specifically designed to handle Edge Function limitations:
 - Auto-spawns new instances for continuous operation
 - Monitors worker health with database heartbeats
 
-
 ## Documentation
 
 For detailed documentation and getting started guide, visit [pgflow.dev](https://pgflow.dev).
-
