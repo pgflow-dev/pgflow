@@ -14,7 +14,8 @@ permissions:
   contents: read
 
 jobs:
-  main:
+  # First job handles all cacheable tasks (lint, typecheck, builds)
+  cacheable:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -29,8 +30,6 @@ jobs:
 
       # This enables task distribution via Nx Cloud
       # Run this command as early as possible, before dependencies are installed
-      # Learn more at https://nx.dev/ci/reference/nx-cloud-cli#npx-nxcloud-startcirun
-      # Uncomment this line to enable task distribution
       - name: Nx - start cloud run
         run: pnpm dlx nx-cloud start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
 
@@ -58,21 +57,43 @@ jobs:
       - name: Nx - capture commits SHAs
         uses: nrwl/nx-set-shas@v4
 
-      # # Clear Nx cache before running affected commands
-      # - name: Clear Nx cache
-      #   run: pnpm exec nx reset
-      #
-      # # Ensure core migrations run and types are generated
-      # - name: Ensure Supabase is reset with latest migrations
-      #   run: |
-      #     cd pkgs/core
-      #     pnpm supabase stop --no-backup || true
-      #     pnpm supabase start
-      #     pnpm supabase db reset || true
-      #     pnpm supabase gen types --local --schema pgflow --schema pgmq > src/database-types.ts
+      # Run only cacheable targets with affected
+      - name: Run cacheable affected targets
+        run: pnpm exec nx affected -t lint typecheck build
 
-      # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
-      # - run: pnpm exec nx-cloud record -- echo Hello World
-      # Nx Affected runs only tasks affected by the changes in this PR/commit. Learn more: https://nx.dev/ci/features/affected
-      - name: Nx - run affected targets
-        run: pnpm exec nx affected -t lint typecheck test build
+  # Second job handles database-dependent tests
+  db-tests:
+    runs-on: ubuntu-latest
+    needs: cacheable
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '8.14.1'
+
+      # Cache node_modules
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.18.1'
+          cache: 'pnpm'
+
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: '1.45.2'
+
+      - name: Install NPM Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Nx - capture commits SHAs
+        uses: nrwl/nx-set-shas@v4
+
+      # Run only tests that depend on database
+      - name: Run database-dependent tests
+        run: pnpm exec nx affected -t test

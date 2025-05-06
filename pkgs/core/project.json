@@ -75,7 +75,7 @@
         "rootDir": "pkgs/core/src"
       },
       "outputs": ["{workspaceRoot}/pkgs/core/dist"],
-      "cache": false
+      "cache": true
     },
     "lint:sqruff": {
       "executor": "nx:run-commands",
@@ -166,7 +166,7 @@
     "test": {
       "executor": "nx:noop",
       "dependsOn": ["test:pgtap", "test:vitest"],
-      "cache": false
+      "cache": true
     },
     "test:pgtap": {
       "executor": "nx:run-commands",
@@ -176,7 +176,7 @@
         "commands": ["scripts/run-test-with-colors"],
         "parallel": false
       },
-      "cache": false
+      "cache": true
     },
     "test:vitest": {
       "executor": "@nx/vite:test",
@@ -186,7 +186,7 @@
         "passWithNoTests": true,
         "reportsDirectory": "{workspaceRoot}/coverage/{projectRoot}"
       },
-      "cache": false
+      "cache": true
     },
     "test:pgtap:watch": {
       "executor": "nx:run-commands",
@@ -213,7 +213,7 @@
         "cwd": "{projectRoot}",
         "parallel": false
       },
-      "cache": false
+      "cache": true
     },
     "verify-gen-types": {
       "executor": "nx:run-commands",
@@ -232,7 +232,7 @@
         ],
         "parallel": false
       },
-      "cache": false
+      "cache": true
     }
   }
 }
