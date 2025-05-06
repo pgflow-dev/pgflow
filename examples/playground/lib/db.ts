@@ -86,6 +86,8 @@ export function observeFlowRun({
   runId: string;
 } & ObserveFlowRunCallbacks) {
   const supabase = createClient();
+  
+  console.log(`Setting up realtime subscription for flow run ${runId}`);
 
   const updateEventSpec: RealtimePostgresChangesFilter<`${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.UPDATE}`> =
     {
@@ -101,29 +103,58 @@ export function observeFlowRun({
       filter: `run_id=eq.${runId}`,
     };
 
+  const channelName = `flow_run_${runId}`;
+  console.log(`Creating realtime channel: ${channelName}`);
+  
   const realtimeChannel = supabase
-    .channel(`flow_run_${runId}`)
-    .on('postgres_changes', { ...updateEventSpec, table: 'runs' }, onRunUpdate)
+    .channel(channelName)
+    .on('postgres_changes', { ...updateEventSpec, table: 'runs' }, (payload) => {
+      console.log(`[${channelName}] Received 'runs' UPDATE event:`, payload);
+      onRunUpdate(payload);
+    })
     .on(
       'postgres_changes',
       { ...updateEventSpec, table: 'step_states' },
-      onStepStateUpdate,
+      (payload) => {
+        console.log(`[${channelName}] Received 'step_states' UPDATE event:`, payload);
+        onStepStateUpdate(payload);
+      }
     )
     .on(
       'postgres_changes' as any,
       { ...updateEventSpec, table: 'step_tasks' },
-      onStepTaskUpdate,
+      (payload) => {
+        console.log(`[${channelName}] Received 'step_tasks' UPDATE event:`, payload);
+        onStepTaskUpdate(payload);
+      }
     )
     // Also listen for INSERTs on step_tasks
     .on(
       'postgres_changes' as any,
       { ...insertEventSpec, table: 'step_tasks' },
-      onStepTaskInsert,
-    )
-    .subscribe();
+      (payload) => {
+        console.log(`[${channelName}] Received 'step_tasks' INSERT event:`, payload);
+        onStepTaskInsert(payload);
+      }
+    );
+    
+  // Add subscription status callbacks
+  realtimeChannel
+    .on('connected', () => {
+      console.log(`[${channelName}] Connected to realtime channel`);
+    })
+    .on('channel_error', (error) => {
+      console.error(`[${channelName}] Channel error:`, error);
+    });
+  
+  // Subscribe to the channel
+  const subscription = realtimeChannel.subscribe((status) => {
+    console.log(`[${channelName}] Subscription status:`, status);
+  });
 
   return {
     unsubscribe: () => {
+      console.log(`Unsubscribing from realtime channel: ${channelName}`);
       realtimeChannel.unsubscribe();
     },
   };
