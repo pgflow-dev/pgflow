@@ -15,7 +15,8 @@
         "tsConfig": "pkgs/example-flows/tsconfig.lib.json",
         "assets": ["pkgs/example-flows/*.md"],
         "rootDir": "pkgs/example-flows/src"
-      }
+      },
+      "cache": true
     }
   }
 }

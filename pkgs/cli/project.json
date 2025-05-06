@@ -20,18 +20,22 @@
             "output": "deno"
           }
         ]
-      }
+      },
+      "outputs": ["{projectRoot}/dist"],
+      "cache": true
     },
     "serve": {
       "executor": "nx:run-commands",
       "options": {
         "command": "tsx src/index.ts",
         "cwd": "{projectRoot}"
-      }
+      },
+      "cache": false
     },
     "test": {
       "executor": "nx:noop",
-      "dependsOn": ["test:e2e:install", "test:e2e:compile"]
+      "dependsOn": ["test:e2e:install", "test:e2e:compile"],
+      "cache": true
     },
     "test:e2e:install": {
       "executor": "nx:run-commands",
@@ -45,7 +49,8 @@
         ],
         "cwd": "{projectRoot}",
         "parallel": false
-      }
+      },
+      "cache": true
     },
     "test:e2e:compile": {
       "executor": "nx:run-commands",
@@ -59,7 +64,8 @@
         ],
         "cwd": "{projectRoot}",
         "parallel": false
-      }
+      },
+      "cache": true
     }
   }
 }

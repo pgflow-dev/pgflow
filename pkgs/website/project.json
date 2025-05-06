@@ -12,21 +12,24 @@
         "cwd": "pkgs/website",
         "command": "astro build",
         "outputPath": "pkgs/website/dist"
-      }
+      },
+      "cache": true
     },
     "dev": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/website",
         "command": "astro dev"
-      }
+      },
+      "cache": false
     },
     "preview": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/website",
         "command": "astro preview"
-      }
+      },
+      "cache": false
     }
   }
 }

@@ -73,16 +73,9 @@
           }
         ],
         "rootDir": "pkgs/core/src"
-      }
-    },
-    "jsr:publish": {
-      "executor": "nx:run-commands",
-      "outputs": ["{workspaceRoot}/pkgs/core/"],
-      "options": {
-        "cwd": "pkgs/core",
-        "commands": ["jsr publish"],
-        "parallel": false
-      }
+      },
+      "outputs": ["pkgs/core/dist"],
+      "cache": true
     },
     "lint:sqruff": {
       "executor": "nx:run-commands",
@@ -93,11 +86,13 @@
         ],
         "inputs": ["schemas", "sqruffConfig"],
         "parallel": false
-      }
+      },
+      "cache": true
     },
     "lint": {
       "executor": "nx:noop",
-      "dependsOn": ["lint:sqruff"]
+      "dependsOn": ["lint:sqruff"],
+      "cache": true
     },
     "fix-sql": {
       "executor": "nx:run-commands",
@@ -108,7 +103,8 @@
         ],
         "inputs": ["schemas", "sqruffConfig"],
         "parallel": false
-      }
+      },
+      "cache": false
     },
     "supabase:ensure-started": {
       "executor": "nx:run-commands",
@@ -118,7 +114,8 @@
           "supabase status || (echo \"Starting Supabase...\" && supabase start)"
         ],
         "parallel": false
-      }
+      },
+      "cache": false
     },
     "supabase:start": {
       "executor": "nx:run-commands",
@@ -126,7 +123,8 @@
         "cwd": "{projectRoot}",
         "commands": ["supabase start"],
         "parallel": false
-      }
+      },
+      "cache": false
     },
     "supabase:stop": {
       "executor": "nx:run-commands",
@@ -134,7 +132,8 @@
         "cwd": "{projectRoot}",
         "commands": ["supabase stop --no-backup"],
         "parallel": false
-      }
+      },
+      "cache": false
     },
     "supabase:status": {
       "executor": "nx:run-commands",
@@ -142,7 +141,8 @@
         "cwd": "{projectRoot}",
         "commands": ["supabase status"],
         "parallel": false
-      }
+      },
+      "cache": false
     },
     "supabase:restart": {
       "executor": "nx:run-commands",
@@ -150,7 +150,8 @@
         "cwd": "{projectRoot}",
         "commands": ["supabase stop --no-backup", "supabase start"],
         "parallel": false
-      }
+      },
+      "cache": false
     },
     "supabase:reset": {
       "executor": "nx:run-commands",
@@ -159,11 +160,13 @@
         "cwd": "{projectRoot}",
         "commands": ["supabase db reset"],
         "parallel": false
-      }
+      },
+      "cache": false
     },
     "test": {
       "executor": "nx:noop",
-      "dependsOn": ["test:pgtap", "test:vitest"]
+      "dependsOn": ["test:pgtap", "test:vitest"],
+      "cache": true
     },
     "test:pgtap": {
       "executor": "nx:run-commands",
@@ -172,7 +175,8 @@
         "cwd": "{projectRoot}",
         "commands": ["scripts/run-test-with-colors"],
         "parallel": false
-      }
+      },
+      "cache": true
     },
     "test:vitest": {
       "executor": "@nx/vite:test",
@@ -181,7 +185,8 @@
       "options": {
         "passWithNoTests": true,
         "reportsDirectory": "{workspaceRoot}/coverage/{projectRoot}"
-      }
+      },
+      "cache": true
     },
     "test:pgtap:watch": {
       "executor": "nx:run-commands",

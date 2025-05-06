@@ -14,16 +14,9 @@
         "tsConfig": "pkgs/dsl/tsconfig.lib.json",
         "assets": ["pkgs/dsl/*.md"],
         "rootDir": "pkgs/dsl/src"
-      }
-    },
-    "jsr:publish": {
-      "executor": "nx:run-commands",
-      "outputs": ["{workspaceRoot}/pkgs/dsl/"],
-      "options": {
-        "cwd": "pkgs/dsl",
-        "commands": ["jsr publish"],
-        "parallel": false
-      }
+      },
+      "outputs": ["pkgs/dsl/dist"],
+      "cache": true
     },
     "test": {
       "executor": "@nx/vite:test",
@@ -31,7 +24,8 @@
       "options": {
         "passWithNoTests": true,
         "reportsDirectory": "{workspaceRoot}/coverage/{projectRoot}"
-      }
+      },
+      "cache": true
     }
   }
 }

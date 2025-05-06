@@ -6,7 +6,8 @@
   "targets": {
     "build": {
       "executor": "nx:noop",
-      "dependsOn": []
+      "dependsOn": [],
+      "cache": false
     },
     "_build_disabled": {
       "executor": "@nx/js:tsc",
@@ -26,14 +27,16 @@
         "denoConfig": "pkgs/edge-worker/deno.test.json",
         "allowNone": false,
         "check": "local"
-      }
+      },
+      "cache": true
     },
     "lint": {
       "executor": "@axhxrx/nx-deno:lint",
       "options": {
         "denoConfig": "pkgs/edge-worker/deno.test.json",
         "ignore": "pkgs/edge-worker/supabase/functions/_src/"
-      }
+      },
+      "cache": true
     },
     "supabase:start": {
       "executor": "nx:run-commands",
@@ -41,7 +44,8 @@
         "cwd": "pkgs/edge-worker",
         "commands": ["supabase start"],
         "parallel": false
-      }
+      },
+      "cache": false
     },
     "supabase:stop": {
       "executor": "nx:run-commands",
@@ -49,7 +53,8 @@
         "cwd": "pkgs/edge-worker",
         "commands": ["supabase stop --no-backup"],
         "parallel": false
-      }
+      },
+      "cache": false
     },
     "supabase:status": {
       "executor": "nx:run-commands",
@@ -57,7 +62,8 @@
         "cwd": "pkgs/edge-worker",
         "commands": ["supabase status"],
         "parallel": false
-      }
+      },
+      "cache": false
     },
     "supabase:restart": {
       "executor": "nx:run-commands",
@@ -65,7 +71,8 @@
         "cwd": "pkgs/edge-worker",
         "commands": ["supabase stop --no-backup", "supabase start"],
         "parallel": false
-      }
+      },
+      "cache": false
     },
     "supabase:reset": {
       "dependsOn": ["supabase:prepare"],
@@ -80,7 +87,8 @@
           "supabase db reset"
         ],
         "parallel": false
-      }
+      },
+      "cache": false
     },
     "supabase:functions-serve": {
       "dependsOn": ["supabase:start"],
@@ -91,7 +99,8 @@
           "supabase functions serve --env-file supabase/functions/.env"
         ],
         "parallel": false
-      }
+      },
+      "cache": false
     },
     "db:ensure": {
       "executor": "nx:run-commands",
@@ -100,29 +109,44 @@
         "cwd": "pkgs/edge-worker",
         "commands": ["deno task --config deno.test.json db:ensure"],
         "parallel": false
-      }
+      },
+      "cache": false
     },
     "test:unit": {
       "dependsOn": ["db:ensure"],
       "executor": "nx:run-commands",
+      "inputs": [
+        "{workspaceRoot}/pkgs/edge-worker/tests/unit/**/*",
+        "{workspaceRoot}/pkgs/edge-worker/src/**/*",
+        "{workspaceRoot}/pkgs/edge-worker/deno.test.json"
+      ],
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
           "deno test --config deno.test.json --allow-all --env=supabase/functions/.env tests/unit/"
         ],
         "parallel": false
-      }
+      },
+      "outputs": ["{workspaceRoot}/coverage/pkgs/edge-worker/unit"],
+      "cache": true
     },
     "test:integration": {
-      "dependsOn": ["db:ensure"],
+      "dependsOn": ["db:ensure", "^build"],
       "executor": "nx:run-commands",
+      "inputs": [
+        "{workspaceRoot}/pkgs/edge-worker/tests/integration/**/*",
+        "{workspaceRoot}/pkgs/edge-worker/src/**/*",
+        "{workspaceRoot}/pkgs/edge-worker/deno.test.json"
+      ],
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
           "deno test --config deno.test.json --allow-all --env=supabase/functions/.env tests/integration/"
         ],
         "parallel": false
-      }
+      },
+      "outputs": ["{workspaceRoot}/coverage/pkgs/edge-worker/integration"],
+      "cache": true
     },
     "test:e2e": {
       "executor": "nx:run-commands",
@@ -132,10 +156,12 @@
           "deno test --config deno.test.json --allow-all --env=supabase/functions/.env tests/e2e/"
         ],
         "parallel": false
-      }
+      },
+      "cache": false
     },
     "test": {
-      "dependsOn": ["test:unit", "test:integration"]
+      "dependsOn": ["test:unit", "test:integration"],
+      "cache": true
     }
   },
   "tags": []
