@@ -1,9 +1,9 @@
 -- Add new schema named "pgflow"
 CREATE SCHEMA "pgflow";
 -- Add new schema named "pgmq"
-CREATE SCHEMA "pgmq";
+CREATE SCHEMA IF NOT EXISTS "pgmq";
 -- Create extension "pgmq"
-CREATE EXTENSION "pgmq" WITH SCHEMA "pgmq" VERSION "1.4.4";
+CREATE EXTENSION IF NOT EXISTS "pgmq" WITH SCHEMA "pgmq" VERSION "1.4.4";
 -- Create "read_with_poll" function
 CREATE FUNCTION "pgflow"."read_with_poll" ("queue_name" text, "vt" integer, "qty" integer, "max_poll_seconds" integer DEFAULT 5, "poll_interval_ms" integer DEFAULT 100, "conditional" jsonb DEFAULT '{}') RETURNS SETOF pgmq.message_record LANGUAGE plpgsql AS $$
 DECLARE
