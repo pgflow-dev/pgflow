@@ -1,5 +1,6 @@
 import { type Command } from 'commander';
-import { intro, log, note, group, cancel } from '@clack/prompts';
+import { intro, log, note, group, cancel, outro } from '@clack/prompts';
+import chalk from 'chalk';
 import { copyMigrations } from './copy-migrations.js';
 import { updateConfigToml } from './update-config-toml.js';
 import { updateEnvFile } from './update-env-file.js';
@@ -18,7 +19,8 @@ export default (program: Command) => {
       const results = await group(
         {
           // Step 1: Determine Supabase path
-          supabasePath: () => supabasePathPrompt({ supabasePath: options.supabasePath }),
+          supabasePath: () =>
+            supabasePathPrompt({ supabasePath: options.supabasePath }),
 
           // Step 2: Update config.toml
           configUpdate: async ({ results: { supabasePath } }) => {
@@ -72,40 +74,38 @@ export default (program: Command) => {
       }
 
       // Show completion message
+      const outroMessages = [];
+      
+      // Always start with a bolded acknowledgement
       if (migrations || configUpdate || envFile) {
-        log.success('pgflow setup completed successfully');
-
-        // Show next steps if changes were made
-        const nextSteps = [];
-
-        if (configUpdate || envFile) {
-          nextSteps.push(
-            '• Restart your Supabase instance for configuration changes to take effect'
-          );
-        }
-
-        if (migrations) {
-          nextSteps.push('• Apply the migrations with: supabase migrations up');
-        }
-
-        // Add documentation link
-        nextSteps.push(
-          '• For more information, visit: https://pgflow.dev/getting-started/install-pgflow/'
-        );
-
-        if (nextSteps.length > 0) {
-          note(nextSteps.join('\n'), 'Next steps');
-        }
+        outroMessages.push(chalk.bold('pgflow setup completed successfully!'));
       } else {
-        log.success(
-          'pgflow is already properly configured - no changes needed'
-        );
-
-        // Still show documentation link even if no changes were made
-        note(
-          'For more information about pgflow, visit: https://pgflow.dev/getting-started/install-pgflow/',
-          'Documentation'
-        );
+        outroMessages.push(chalk.bold('pgflow is already properly configured - no changes needed!'));
       }
+      
+      // Add a newline after the acknowledgement
+      outroMessages.push('');
+      
+      // Add specific next steps if changes were made
+      if (configUpdate || envFile) {
+        outroMessages.push(`- Restart your Supabase instance for configuration changes to take effect`);
+      }
+
+      if (migrations) {
+        outroMessages.push(`- Apply the migrations with: ${chalk.cyan('supabase migrations up')}`);
+      }
+      
+      // Always add documentation link with consistent formatting
+      if (outroMessages.length > 2) {  // If we have specific steps, add another newline
+        outroMessages.push('');
+      }
+      
+      outroMessages.push(
+        chalk.bold('Continue the setup:'),
+        chalk.blue.underline('https://pgflow.dev/getting-started/compile-to-sql/')
+      );
+
+      // Single outro for all paths
+      outro(outroMessages.join('\n'));
     });
 };

@@ -1,6 +1,6 @@
 import { type Command } from 'commander';
 import chalk from 'chalk';
-import { intro, log, note } from '@clack/prompts';
+import { intro, log, note, outro } from '@clack/prompts';
 import path from 'path';
 import fs from 'fs';
 import { spawn } from 'child_process';
@@ -35,14 +35,18 @@ function formatCommand(command: string, args: string[]): string {
 /**
  * Creates a task log entry with a command and its output
  */
-function createTaskLog(command: string, args: string[], output: string): string {
+function createTaskLog(
+  command: string,
+  args: string[],
+  output: string
+): string {
   return [
-    chalk.bold("Command:"),
+    chalk.bold('Command:'),
     formatCommand(command, args),
-    "",
-    chalk.bold("Output:"),
-    output.trim() ? output.trim() : "(no output)",
-  ].join("\n");
+    '',
+    chalk.bold('Output:'),
+    output.trim() ? output.trim() : '(no output)',
+  ].join('\n');
 }
 
 export default (program: Command) => {
@@ -129,11 +133,13 @@ export default (program: Command) => {
           resolvedFlowPath,
           resolvedDenoJsonPath
         );
-        
+
         // Extract flow name from the first line of the SQL output using regex
         // Looking for pattern: SELECT pgflow.create_flow('flow_name', ...);
-        const flowNameMatch = compiledSql.match(/SELECT\s+pgflow\.create_flow\s*\(\s*'([^']+)'/i);
-        
+        const flowNameMatch = compiledSql.match(
+          /SELECT\s+pgflow\.create_flow\s*\(\s*'([^']+)'/i
+        );
+
         // Use extracted flow name or fallback to the file basename if extraction fails
         let flowName;
         if (flowNameMatch && flowNameMatch[1]) {
@@ -141,8 +147,13 @@ export default (program: Command) => {
           log.info(`Extracted flow name: ${flowName}`);
         } else {
           // Fallback to file basename if regex doesn't match
-          flowName = path.basename(resolvedFlowPath, path.extname(resolvedFlowPath));
-          log.warn(`Could not extract flow name from SQL, using file basename: ${flowName}`);
+          flowName = path.basename(
+            resolvedFlowPath,
+            path.extname(resolvedFlowPath)
+          );
+          log.warn(
+            `Could not extract flow name from SQL, using file basename: ${flowName}`
+          );
         }
 
         // Create migration filename in the format: <timestamp>_create_<flow_name>_flow.sql
@@ -157,16 +168,34 @@ export default (program: Command) => {
           migrationFilePath
         );
         log.success(`Migration file created: ${relativeFilePath}`);
-        
+
+        // Display next steps with outro
+        outro(
+          [
+            chalk.bold('Flow compilation completed successfully!'),
+            '',
+            `- Run ${chalk.cyan('supabase migration up')} to apply the migration`,
+            '',
+            chalk.bold('Continue the setup:'),
+            chalk.blue.underline('https://pgflow.dev/getting-started/run-flow/')
+          ].join('\n')
+        );
       } catch (error) {
         log.error(
           `Compilation failed: ${
             error instanceof Error ? error.message : String(error)
           }`
         );
-        
-        note('For troubleshooting help, visit: https://pgflow.dev/getting-started/compile-to-sql/');
-        
+
+        outro(
+          [
+            chalk.bold('Compilation failed!'),
+            '',
+            chalk.bold('For troubleshooting help:'),
+            chalk.blue.underline('https://pgflow.dev/getting-started/compile-to-sql/')
+          ].join('\n')
+        );
+
         process.exit(1);
       }
     });
@@ -220,7 +249,7 @@ async function runDenoCompilation(
     deno.on('close', (code) => {
       // Always display the task log with command and output
       note(createTaskLog('deno', args, stdout));
-      
+
       if (code === 0) {
         if (stdout.trim().length === 0) {
           reject(new Error('Compilation produced no output'));
