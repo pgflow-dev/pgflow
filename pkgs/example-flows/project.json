@@ -8,14 +8,15 @@
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",
-      "outputs": ["{options.outputPath}"],
+      "outputs": ["{workspaceRoot}/pkgs/example-flows/dist"],
       "options": {
         "outputPath": "pkgs/example-flows/dist",
         "main": "pkgs/example-flows/src/index.ts",
         "tsConfig": "pkgs/example-flows/tsconfig.lib.json",
         "assets": ["pkgs/example-flows/*.md"],
         "rootDir": "pkgs/example-flows/src"
-      }
+      },
+      "cache": true
     }
   }
 }
