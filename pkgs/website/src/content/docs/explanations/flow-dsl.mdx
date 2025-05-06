@@ -109,30 +109,12 @@ The type system automatically:
 TypeScript provides full autocompletion for both `input.run` properties and dependency outputs, allowing you to confidently access data without runtime errors.
 :::
 
-## Task Implementation Best Practices
+## Task Implementation
 
-The Flow DSL encourages a functional programming approach to tasks:
-
-```typescript
-// RECOMMENDED: Pure function with clear inputs and outputs
-async function analyzeContent(content: string) {
-  return { sentiment: 0.8, topics: ["technology", "data"] };
-}
-
-// In the flow:
-.step(
-  { slug: 'analyze', dependsOn: ['scrape'] },
-  async (input) => await analyzeContent(input.scrape.content)
-);
-```
-
-This approach:
-- Makes tasks reusable across different flows
-- Keeps task logic separate from flow orchestration
-- Simplifies testing of individual tasks
+The Flow DSL encourages a functional programming approach to tasks that are reusable across different flows.
 
 :::note[Best Practice]
-A well-designed task function should accept specific parameters, return a well-defined output structure, and be testable in isolation.
+For detailed guidance on creating reusable task functions, see the [Create Reusable Tasks](/how-to/create-reusable-tasks/) guide. Following these practices helps ensure your tasks are modular, testable, and maintainable.
 :::
 
 ### JSON Serialization Requirements

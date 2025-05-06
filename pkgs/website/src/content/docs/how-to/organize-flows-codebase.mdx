@@ -39,46 +39,13 @@ This organization separates your codebase into two key parts:
 
 Tasks are modular, reusable functions designed for a specific purpose, while flows define the execution order, parallelism, and data transformations between tasks. The flow orchestrates how data moves through the computational graph.
 
-## Task Design Best Practices
+## Task Design
 
-Design your task functions to be as agnostic as possible about where their inputs come from. A well-designed task should:
+When organizing your codebase, task design is critical to ensure reusability and maintainability.
 
-- Accept simple, focused parameters (like a URL or content string)
-- Perform one specific job well
-- Return clear results without assuming how they'll be used
-- Have no knowledge about other tasks or the overall flow
-
-**DO:**
-```typescript
-// Good: Task accepts direct content parameter
-async function summarizeContent(content: string) {
-  // Process the content directly
-  return { summary: "Processed summary..." };
-}
-
-// In your flow:
-.step(
-  { slug: 'summary', dependsOn: ['website'] },
-  async (input) => await summarizeContent(input.website.content)
-)
-```
-
-**DON'T:**
-```typescript
-// Bad: Task expects specific step structure
-async function summarizeWebsite(input: { website: { content: string } }) {
-  // Tightly coupled to previous step name and structure
-  return { summary: "Processed summary..." };
-}
-
-// In your flow:
-.step(
-  { slug: 'summary', dependsOn: ['website'] },
-  async (input) => await summarizeWebsite(input) // Passing entire input object
-)
-```
-
-This makes tasks reusable across different flows and easier to test in isolation.
+:::note[Best Practice]
+For detailed guidance on creating reusable task functions, see the [Create Reusable Tasks](/how-to/create-reusable-tasks/) guide. Following these practices helps ensure your tasks can be easily shared across flows and tested in isolation.
+:::
 
 ## Example: Website Analysis Flow Implementation
 
@@ -258,41 +225,3 @@ Organizing your code this way provides several benefits:
 <Aside>
 **Note about JSON Serialization**: All step inputs and outputs MUST be JSON-serializable, as pgflow stores these values in JSONB database columns. This means you should use only plain objects, arrays, and primitive types (strings, numbers, booleans, null). Convert non-serializable types like Date objects to strings (`new Date().toISOString()`).
 </Aside>
-
-## Tips for Large-Scale Projects
-
-For larger projects with many flows and tasks:
-
-1. **Group by domain**: Consider organizing tasks by domain or functionality
-2. **Shared utilities**: Create a `_utils` directory for shared helper functions
-3. **Typed interfaces**: Define clear interfaces for task inputs and outputs
-4. **Documentation**: Document the purpose and requirements of each task
-5. **Versioning strategy**: Develop a strategy for versioning flows and tasks
-6. **Testing**: Create unit tests for each task to validate functionality
-
-<FileTree>
-- supabase
-  - functions
-    - _flows
-      - user
-        - register_user.ts
-        - update_profile.ts
-      - content
-        - publish_article.ts
-        - analyze_website.ts
-    - _tasks
-      - user
-        - validateUserData.ts
-        - createUserRecord.ts
-      - content
-        - scrapeWebsite.ts
-        - summarizeWithAI.ts
-      - shared
-        - sendEmail.ts
-        - logActivity.ts
-    - _utils
-      - database.ts
-      - validation.ts
-</FileTree>
-
-With this approach, you can build a maintainable, scalable pgflow codebase that grows with your application needs.
