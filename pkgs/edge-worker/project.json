@@ -128,7 +128,7 @@
         "parallel": false
       },
       "outputs": ["{workspaceRoot}/coverage/pkgs/edge-worker/unit"],
-      "cache": true
+      "cache": false
     },
     "test:integration": {
       "dependsOn": ["db:ensure", "^build"],
@@ -146,7 +146,7 @@
         "parallel": false
       },
       "outputs": ["{workspaceRoot}/coverage/pkgs/edge-worker/integration"],
-      "cache": true
+      "cache": false
     },
     "test:e2e": {
       "executor": "nx:run-commands",
@@ -161,7 +161,7 @@
     },
     "test": {
       "dependsOn": ["test:unit", "test:integration"],
-      "cache": true
+      "cache": false
     }
   },
   "tags": []
