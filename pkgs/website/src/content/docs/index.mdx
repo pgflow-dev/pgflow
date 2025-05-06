@@ -50,25 +50,29 @@ Supabase is great - until you need reliable, observable background workflows. Th
 
 ### Pain You've Probably Felt:
 
+These are the frustrations you’ve likely encountered while trying to piece together workflows with scattered tools and limited support.
+
 <CardGrid>
-  <Card title="Duct-taping Solutions" icon="warning">
-    Wiring together pg_cron, pg_net, and Edge Functions by hand. No retries, no concurrency control, no observability. When something fails, you don't know—and you can't replay it.
+  <Card title="Death by Glue Code" icon="warning">
+    Supabase gives you primitives - pg_cron, pg_net, queues - but no orchestration. You end up hand-coding state machines: tracking task progress, wiring retries, handling failures, and cleaning up. Each workflow becomes a tangle of bespoke logic waiting to break.
   </Card>
 
-  <Card title="Background Jobs Without Safety" icon="warning">
-    Edge Functions are fire-and-forget. No retries, no persistent state, and no insight into what's running. Critical flows like document processing or LLM calls can silently fail.
+  <Card title="You Can’t Trust It" icon="warning">
+    When execution is scattered across queues and handlers, there’s no clear spec, no structured tracking, and no way to reason about progress. Failures are invisible. You ship blind, and debug with grep.
   </Card>
 
-  <Card title="External Orchestrators Don't Fit" icon="warning">
+  <Card title="No Type Safety Between Steps" icon="warning">
+    Without type safety, you must manually ensure that each step’s outputs align with the next step’s inputs. It’s easy to miss mismatches, leading to runtime errors and fragile workflows.
+  </Card>
+
+  <Card title="Your State, Their Dashboard" icon="warning">
     Tools like Inngest or Trigger.dev live outside your database. Failures and state live in someone else's dashboard. You lose visibility and debug across multiple systems.
-  </Card>
-
-  <Card title="Zero Visibility" icon="warning">
-    With duct-taped logic, there's no way to inspect or debug failures. You're guessing, re-running jobs manually, and hoping it works this time.
   </Card>
 </CardGrid>
 
 ### How pgflow Helps:
+
+Solve workflow pain points with Postgres-native orchestration, minimal overhead, and built-in reliability.
 
 <CardGrid>
   <Card title="Postgres-Native Orchestration" icon="approve-check">
@@ -182,7 +186,7 @@ The execution system handles the rest—scheduling steps when dependencies compl
   <LinkCard
     title="Check Demo app"
     href="https://pgflow-demo.netlify.app/"
-    description="Try out the app that will use flow from this tutorial"
+    description="Try out the app that uses pgflow under the hood"
   />
   <LinkCard
     title="Install pgflow"
