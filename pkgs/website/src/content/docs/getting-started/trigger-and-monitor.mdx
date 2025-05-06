@@ -1,12 +1,11 @@
 ---
-title: Trigger and monitor flows
+title: Run your Flow
 description: Learn how to start a pgflow worker, trigger your workflow, and monitor execution progress
 sidebar:
   order: 3
 ---
 
-import { Aside, Steps, Tabs } from "@astrojs/starlight/components";
-import { FileTree } from '@astrojs/starlight/components';
+import { Aside, Steps, Tabs, CardGrid, LinkCard, FileTree } from "@astrojs/starlight/components";
 import NotProductionReady from '@/components/NotProductionReady.astro';
 
 Now that you've defined and compiled your workflow, it's time to execute it!
@@ -68,6 +67,14 @@ npx supabase functions serve
 ```
 
 This will start the Edge Runtime server but not yet start your worker.
+You should see similar output in your terminal:
+
+```
+Setting up Edge Functions runtime...
+Serving functions on http://127.0.0.1:54321/functions/v1/<function-name>
+Using supabase-edge-runtime-1.67.4 (compatible with Deno v1.45.2)
+serving the request with supabase/functions/greet_user_worker
+```
 
 ## 3.  Start your worker
 
@@ -80,8 +87,9 @@ curl http://localhost:54321/functions/v1/greet_user_worker
 You should see output in your Edge Runtime terminal indicating the worker has started:
 
 ```
-[Info] worker_id=<uuid> [WorkerLifecycle] Ensuring queue 'greet_user' exists...
-[Info] worker_id=<uuid> [WorkerLifecycle] Active and listening for tasks...
+[Info] [INFO] worker_id=unknown module=DenoAdapter DenoAdapter logger instance created and working.
+
+[Info] [INFO] worker_id=unknown module=DenoAdapter HTTP Request: null
 ```
 
 :::caution
@@ -111,18 +119,24 @@ This will:
 The output should look like:
 
 ```
-run_id                               | flow_slug    | status  | input                                        | output | remaining_steps
---------------------------------------+--------------+---------+----------------------------------------------+--------+-----------------
-11111111-2222-3333-4444-555555555555 | greet_user   | started | {"first_name": "Alice", "last_name": "Smith"} | null   | 2
+run_id        | flow_slug    | status  | input                                         | output | remaining_steps
+--------------+--------------+---------+-----------------------------------------------+--------+-----------------
+<run_id UUID> | greet_user   | started | {"first_name": "Alice", "last_name": "Smith"} | null   | 2
 ```
 
 ## 5. Monitor execution
 
-Your worker should start processing tasks immediately. You should see log output in the Edge Runtime terminal as each step executes.
+Your worker should start processing tasks immediately. You should see log output in the Edge Runtime terminal as each step executes:
 
-You can monitor the run status using Supabase Studio:
+```
+[Info] [INFO] worker_id=<long UUID> module=ExecutionController Scheduling execution of task 1
 
-1. In the SQL Editor, run this query:
+[Info] [INFO] worker_id=<long UUID> module=ExecutionController Scheduling execution of task 2
+```
+
+You can check the run status using Supabase Studio:
+
+In the SQL Editor, run this query:
 
 ```sql
 SELECT * FROM pgflow.runs
@@ -134,42 +148,13 @@ LIMIT 1;
 As steps complete, you'll see the `remaining_steps` count decrease. When it reaches 0, the run will be marked as `completed`:
 
 ```
-run_id                               | flow_slug    | status    | input                                        | output                    | remaining_steps
---------------------------------------+--------------+-----------+----------------------------------------------+---------------------------+-----------------
-11111111-2222-3333-4444-555555555555 | greet_user   | completed | {"first_name": "Alice", "last_name": "Smith"} | {"greeting": "Hello, Alice Smith!"} | 0
+run_id        | flow_slug    | status    | input                                         | output                              | remaining_steps
+--------------+--------------+-----------+-----------------------------------------------+-------------------------------------+-----------------
+<run_id UUID> | greet_user   | completed | {"first_name": "Alice", "last_name": "Smith"} | {"greeting": "Hello, Alice Smith!"} | 0
 ```
 
-## 6. View step states
-
-To see the status of individual steps:
-
-1. In the SQL Editor, run this query (replace the run_id with yours):
-
-```sql
-SELECT step_slug, status, attempts, output
-FROM pgflow.step_states
-WHERE run_id = '11111111-2222-3333-4444-555555555555';
-```
-
-This will show the status and output of each step:
-
-```
-step_slug    | status    | attempts | output
--------------+-----------+----------+---------------------------
-full_name    | completed | 1        | "Alice Smith"
-greeting     | completed | 1        | "Hello, Alice Smith!"
-```
-
-<Aside type="tip" title="Flow Visualization">
-In a real application, you'd likely want to create a dashboard to visualize your flows and their execution status.
-
-pgflow stores all the information needed to build rich visualizations of your workflow execution, including:
-- Step dependencies
-- Execution times
-- Retry attempts
-- Inputs and outputs
-
-This data is available through SQL queries to the pgflow schema tables.
+<Aside type="tip">
+For more detailed monitoring options, see the <a href="/how-to/monitor-flow-execution/">Monitor flow execution</a> guide in the How-to section.
 </Aside>
 
 ## What's happening behind the scenes?
@@ -210,8 +195,10 @@ This completes the pgflow getting started guide. You now have all the basics nee
 
 ## Next steps
 
-- Explore the [Organize Flows Codebase](/how-to/organize-flows-codebase/) guide for more complex organization patterns
-- Implement real business logic in your workflows
-- Deploy your workflows to production
-- Set up monitoring and alerting
-- Build a UI to visualize and manage your workflows
+<CardGrid>
+  <LinkCard title="Monitor flow execution" href="/how-to/monitor-flow-execution/" description="Learn how to monitor and observe your pgflow workflow execution in detail"/>
+  <LinkCard title="Organize Flows code" href="/how-to/organize-flows-code/" description="Learn how to structure your pgflow code for maintainability and reusability"/>
+  <LinkCard title="Change existing Flow options" href="/how-to/update-flow-options/" description="Learn how to safely update configuration options for existing flows"/>
+  <LinkCard title="Version your Flows" href="/how-to/version-your-flows/" description="Learn how to safely update your flows without breaking existing runs"/>
+  <LinkCard title="Understand Flow DSL" href="/explanations/flow-dsl/" description="How pgflow's TypeScript DSL works to create type-safe, data-driven workflows"/>
+</CardGrid>

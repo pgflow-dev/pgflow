@@ -29,11 +29,11 @@ Before starting, please read the [Install Edge Worker](/edge-worker/getting-star
     First, create a new Edge Function using the Supabase CLI. Then, replace its content with this code:
 
     ```typescript
-    import { EdgeWorker } from "jsr:@pgflow/edge-worker@0.0.4";
-    
+    import { EdgeWorker } from "jsr:@pgflow/edge-worker";
+
     EdgeWorker.start(async (payload: { url: string }) => {
       const response = await fetch(payload.url);
-    
+
       console.log("Scraped website!", {
         url: payload.url,
         status: response.status,
@@ -53,7 +53,7 @@ Before starting, please read the [Install Edge Worker](/edge-worker/getting-star
     your worker yet.
 
     :::note[Restarting Edge Runtime]
-    You must stop and start the Edge Runtime every time you make changes 
+    You must stop and start the Edge Runtime every time you make changes
     to your workers because of the `per_worker` policy.
     :::
 

@@ -45,7 +45,7 @@ mkdir -p supabase/functions/_flows
 Create a file called `supabase/functions/_flows/greet_user.ts` with this content:
 
 ```typescript title="supabase/functions/_flows/greet_user.ts"
-import { Flow } from '@pgflow/dsl';
+import { Flow } from 'npm:@pgflow/dsl';
 
 type Input = {
   first_name: string;
