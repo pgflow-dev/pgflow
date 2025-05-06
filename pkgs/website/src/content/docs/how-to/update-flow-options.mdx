@@ -20,6 +20,14 @@ You can safely modify these runtime options without creating a new flow version:
 | `opt_base_delay` | Base retry delay (seconds) | 1 | Flow only |
 | `opt_timeout` | Max execution time (seconds) | 60 | Flow & Steps |
 
+<Aside title="About opt_timeout" type="caution">
+Currently, `opt_timeout` is only used to set the visibility timeout of messages in the queue. You should set this value to be higher than the maximum time a job can possibly run. If processing takes longer than the timeout, the message will become visible again and may be processed by another worker, leading to duplicate processing.
+
+In the future, the Edge Worker will use abort signals to terminate jobs past their timeout, but currently, it does not do this.
+
+For more details on visibility timeouts, see the [Edge Worker Configuration](/edge-worker/getting-started/configuration/#visibilitytimeout) documentation.
+</Aside>
+
 ## Configuration System
 
 pgflow uses a two-level configuration approach:
