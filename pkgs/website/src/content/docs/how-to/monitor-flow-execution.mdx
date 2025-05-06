@@ -1,0 +1,152 @@
+---
+title: Monitor flow execution
+description: Learn how to monitor and observe pgflow workflow execution using SQL queries
+sidebar:
+  order: 1
+---
+
+import { Aside, Steps, Tabs, CardGrid, LinkCard, FileTree } from "@astrojs/starlight/components";
+import NotProductionReady from '@/components/NotProductionReady.astro';
+
+<NotProductionReady />
+
+This guide explains how to monitor your pgflow workflows during and after execution using SQL queries.
+
+## View workflow run status
+
+To check the status of your workflow runs, query the `pgflow.runs` table:
+
+```sql
+SELECT * FROM pgflow.runs
+WHERE flow_slug = 'your_flow_slug'
+ORDER BY created_at DESC
+LIMIT 10;
+```
+
+This shows the most recent runs with their status, inputs, outputs, and remaining steps:
+
+```
+run_id        | flow_slug    | status    | input                | output                   | remaining_steps
+--------------+--------------+-----------+----------------------+--------------------------+-----------------
+<run_id UUID> | your_flow    | completed | {"param": "value"}   | {"result": "Success!"}   | 0
+<run_id UUID> | your_flow    | running   | {"param": "value2"}  | null                     | 3
+<run_id UUID> | your_flow    | failed    | {"param": "value3"}  | null                     | 5
+```
+
+Run statuses include:
+- `started`: The run has been created but may not have started executing steps
+- `running`: The run is actively executing steps
+- `completed`: All steps have completed successfully
+- `failed`: One or more steps have failed after max retries
+
+## View step details for a specific run
+
+To check the status of individual steps within a run:
+
+```sql
+SELECT step_slug, status, attempts, output
+FROM pgflow.step_states
+WHERE run_id = 'your-run-id-here';
+```
+
+This shows the status of each step with its output and retry attempts:
+
+```
+step_slug    | status    | attempts | output
+-------------+-----------+----------+---------------------------
+process_data | completed | 1        | {"processed": true}
+send_email   | completed | 3        | "Email sent successfully"
+final_step   | pending   | 0        | null
+```
+
+Step statuses include:
+- `pending`: The step is waiting for dependencies to complete
+- `scheduled`: A task has been created for this step but not yet processed
+- `running`: The step is currently being executed
+- `completed`: The step has completed successfully
+- `failed`: The step has failed after max retries
+
+## Monitor active tasks
+
+To see all tasks that are currently scheduled for execution:
+
+```sql
+SELECT * FROM pgflow.step_tasks
+WHERE status = 'scheduled'
+ORDER BY priority DESC, scheduled_at ASC;
+```
+
+This shows tasks that workers should pick up next:
+
+```
+task_id       | run_id        | step_slug     | status     | attempts | scheduled_at        | completed_at
+--------------+--------------+--------------+------------+----------+---------------------+------------------
+<task_id>     | <run_id>     | process_data | scheduled  | 1        | 2023-05-01 12:00:00 | null
+```
+
+## Get execution timeline for a run
+
+To see how long each step took to execute:
+
+```sql
+SELECT
+  step_slug,
+  status,
+  created_at,
+  started_at,
+  completed_at,
+  EXTRACT(EPOCH FROM (completed_at - started_at)) AS duration_seconds
+FROM pgflow.step_states
+WHERE run_id = 'your-run-id-here'
+ORDER BY created_at ASC;
+```
+
+## Troubleshoot failed steps
+
+When a step fails, you can check for error details:
+
+```sql
+SELECT
+  step_slug,
+  attempts,
+  error,
+  scheduled_at,
+  completed_at
+FROM pgflow.step_states
+WHERE run_id = 'your-run-id-here'
+AND status = 'failed';
+```
+
+<Aside type="tip" title="Flow Visualization">
+In a real application, you'd likely want to create a dashboard to visualize your flows and their execution status.
+
+pgflow stores all the information needed to build rich visualizations of your workflow execution, including:
+- Step dependencies
+- Execution times
+- Retry attempts
+- Inputs and outputs
+
+This data is available through SQL queries to the pgflow schema tables.
+</Aside>
+
+## View step dependencies
+
+To understand the structure of your workflow and the dependencies between steps:
+
+```sql
+SELECT
+  ss.step_slug,
+  array_agg(d.depends_on_step_slug) as dependencies
+FROM pgflow.step_states ss
+LEFT JOIN pgflow.step_dependencies d ON ss.run_id = d.run_id AND ss.step_slug = d.step_slug
+WHERE ss.run_id = 'your-run-id-here'
+GROUP BY ss.step_slug;
+```
+
+## Next steps
+
+<CardGrid>
+  <LinkCard title="Organize Flows code" href="/how-to/organize-flows-code/" description="Learn how to structure your pgflow code for maintainability and reusability"/>
+  <LinkCard title="Change existing Flow options" href="/how-to/update-flow-options/" description="Learn how to safely update configuration options for existing flows"/>
+  <LinkCard title="Version your Flows" href="/how-to/version-your-flows/" description="Learn how to safely update your flows without breaking existing runs"/>
+</CardGrid>

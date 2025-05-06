@@ -1,5 +1,5 @@
 ---
-title: Trigger and monitor flows
+title: Run your Flow
 description: Learn how to start a pgflow worker, trigger your workflow, and monitor execution progress
 sidebar:
   order: 3
@@ -134,7 +134,7 @@ Your worker should start processing tasks immediately. You should see log output
 [Info] [INFO] worker_id=<long UUID> module=ExecutionController Scheduling execution of task 2
 ```
 
-You can monitor the run status using Supabase Studio:
+You can check the run status using Supabase Studio:
 
 In the SQL Editor, run this query:
 
@@ -153,37 +153,8 @@ run_id        | flow_slug    | status    | input                                
 <run_id UUID> | greet_user   | completed | {"first_name": "Alice", "last_name": "Smith"} | {"greeting": "Hello, Alice Smith!"} | 0
 ```
 
-## 6. View step states
-
-To see the status of individual steps:
-
-1. In the SQL Editor, run this query (replace the run_id with yours):
-
-```sql
-SELECT step_slug, status, attempts, output
-FROM pgflow.step_states
-WHERE run_id = '11111111-2222-3333-4444-555555555555';
-```
-
-This will show the status and output of each step:
-
-```
-step_slug    | status    | attempts | output
--------------+-----------+----------+---------------------------
-full_name    | completed | 1        | "Alice Smith"
-greeting     | completed | 1        | "Hello, Alice Smith!"
-```
-
-<Aside type="tip" title="Flow Visualization">
-In a real application, you'd likely want to create a dashboard to visualize your flows and their execution status.
-
-pgflow stores all the information needed to build rich visualizations of your workflow execution, including:
-- Step dependencies
-- Execution times
-- Retry attempts
-- Inputs and outputs
-
-This data is available through SQL queries to the pgflow schema tables.
+<Aside type="tip">
+For more detailed monitoring options, see the <a href="/how-to/monitor-flow-execution/">Monitor flow execution</a> guide in the How-to section.
 </Aside>
 
 ## What's happening behind the scenes?
@@ -225,6 +196,7 @@ This completes the pgflow getting started guide. You now have all the basics nee
 ## Next steps
 
 <CardGrid>
+  <LinkCard title="Monitor flow execution" href="/how-to/monitor-flow-execution/" description="Learn how to monitor and observe your pgflow workflow execution in detail"/>
   <LinkCard title="Organize Flows code" href="/how-to/organize-flows-code/" description="Learn how to structure your pgflow code for maintainability and reusability"/>
   <LinkCard title="Change existing Flow options" href="/how-to/update-flow-options/" description="Learn how to safely update configuration options for existing flows"/>
   <LinkCard title="Version your Flows" href="/how-to/version-your-flows/" description="Learn how to safely update your flows without breaking existing runs"/>
