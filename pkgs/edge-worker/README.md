@@ -1,43 +1,74 @@
-<div align="center">
-  <h1>Edge Worker</h1>
-  <a href="https://pgflow.dev">
-    <h3>📚 Documentation @ pgflow.dev</h3>
-  </a>
-  
-  <h4>⚠️ <strong>ADVANCED PROOF of CONCEPT - NOT PRODUCTION READY</strong> ⚠️</h4>
-</div>
+# @pgflow/edge-worker
 
-A task queue worker for Supabase Edge Functions that extends background tasks with useful features.
+A reliable task queue worker for Supabase Edge Functions that enhances Background Tasks with powerful features.
 
 > [!NOTE]
 > This project and all its components are licensed under [Apache 2.0](./LICENSE) license.
 
-## What is Edge Worker?
+## Overview
 
-Edge Worker processes messages from a queue and executes user-defined functions with their payloads. It builds upon [Supabase Background Tasks](https://supabase.com/docs/guides/functions/background-tasks) to add reliability features like retries, concurrency control and monitoring.
+Edge Worker processes messages from a PostgreSQL queue and executes handler functions in Supabase Edge Functions, with built-in reliability features:
 
-## Key Features
+- ⚡ **Reliable Processing** - Automatic retries with configurable delays
+- 🔄 **Concurrency Control** - Process multiple tasks in parallel with limits
+- 🔁 **Auto Restarts** - Handles Edge Function CPU/memory limits gracefully
+- 📈 **Horizontal Scaling** - Deploy multiple instances for the same queue
 
-- ⚡ **Reliable Processing**: Retries with configurable delays
-- 🔄 **Concurrency Control**: Limit parallel task execution
-- 📊 **Observability**: Built-in heartbeats and logging
-- 📈 **Horizontal Scaling**: Deploy multiple edge functions for the same queue
-- 🛡️ **Edge-Native**: Designed for Edge Functions' CPU/clock limits
+## Installation
 
-## How It Works
+```typescript
+// Import directly from JSR in your Edge Function
+import { EdgeWorker } from 'jsr:@pgflow/edge-worker';
+```
 
-[![Architecture Diagram](https://mermaid.ink/img/pako:eNplkcFugzAMhl8lyrl9AQ47VLBxqdSqlZAGHEziASokyEkmTaXvvoR0o1VziGL_n_9Y9pULLZEnvFItwdSxc1op5o9xTUxU_OQmaMAgy2SL7N0pYXutTMUjGU5WlItYaLog1VFAJSv14paCXdweyw8f-2MZLnZ06LBelXxXRk_DztAM-Gp9KA-kpRP-W7bdvs3Ga4aNaAy0OC_WdzD4B4IQVsLMvvkIZMUiA4mu_8ZHYjW5MxNp4dUnKC9zUHJA-h9R_VQTG-sQyDYINlTs-IaPSCP00q_gGvCK2w5HP53EPyXQJczp5jlwVp9-lOCJJYcbTtq13V_gJgkW0x78lEeefMFgfHYC9an1GqPsraZ9XPiy99svlAqmtA?type=png)](https://mermaid.live/edit#pako:eNplkcFugzAMhl8lyrl9AQ47VLBxqdSqlZAGHEziASokyEkmTaXvvoR0o1VziGL_n_9Y9pULLZEnvFItwdSxc1op5o9xTUxU_OQmaMAgy2SL7N0pYXutTMUjGU5WlItYaLog1VFAJSv14paCXdweyw8f-2MZLnZ06LBelXxXRk_DztAM-Gp9KA-kpRP-W7bdvs3Ga4aNaAy0OC_WdzD4B4IQVsLMvvkIZMUiA4mu_8ZHYjW5MxNp4dUnKC9zUHJA-h9R_VQTG-sQyDYINlTs-IaPSCP00q_gGvCK2w5HP53EPyXQJczp5jlwVp9-lOCJJYcbTtq13V_gJgkW0x78lEeefMFgfHYC9an1GqPsraZ9XPiy99svlAqmtA)
+> [!WARNING]
+> Always import from JSR.io using the `jsr:` prefix. Never install from npm.
 
-## Edge Function Optimization
+For database setup, see [pgflow installation docs](https://pgflow.dev/getting-started/install-pgflow/).
 
-Edge Worker is specifically designed to handle Edge Function limitations:
+## Basic Usage
 
-- Stops polling near CPU/clock limits
-- Gracefully aborts pending tasks
-- Uses PGMQ's visibility timeout to prevent message loss
-- Auto-spawns new instances for continuous operation
-- Monitors worker health with database heartbeats
+### Simple message processor
+
+You can use Edge Worker as a simple single-handler message processor.
+Just pass it a handler function to `.start()`:
+
+```typescript
+import { EdgeWorker } from 'jsr:@pgflow/edge-worker';
+
+// Start a worker that processes messages from the 'tasks' queue
+EdgeWorker.start(async (payload) => {
+  console.log('Processing message:', payload);
+
+  // Your processing logic here...
+  const result = await processPayload(payload);
+
+  return result; // Optional
+});
+```
+
+### Flow step processor
+
+You can also use Edge Worker as a processor for Flow steps.
+This will change how it polls and acknowledges messages.
+Just pass it a Flow definition to `.start()`:
+
+```typescript
+import { EdgeWorker } from 'jsr:@pgflow/edge-worker';
+import AnalyzeWebsite from '../_flows/analyze_website.ts';
+
+// Start a worker that processes messages from the 'analyze_website' queue
+EdgeWorker.start(AnalyzeWebsite);
+```
 
 ## Documentation
 
-For detailed documentation and getting started guide, visit [pgflow.dev](https://pgflow.dev).
+For complete documentation, visit:
+
+- [pgflow Getting Started](https://pgflow.dev/getting-started/)
+- [Edge Worker Documentation (old one)](https://pgflow.dev/edge-worker/getting-started/install-edge-worker/)
+- [JSR Package](https://jsr.io/@pgflow/edge-worker)
+
+## Building
+
+Run `nx build edge-worker` to build the library.
