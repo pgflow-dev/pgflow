@@ -1,7 +1,7 @@
 {
   "imports": {
-    "@pgflow/dsl": "npm:@pgflow/dsl@0.1.22",
-    "@pgflow/edge-worker": "jsr:@pgflow/edge-worker@0.1.22",
+    "@pgflow/dsl": "npm:@pgflow/dsl@0.2.1",
+    "@pgflow/edge-worker": "jsr:@pgflow/edge-worker@0.2.1",
     "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.49.4",
     "groq-sdk": "npm:groq-sdk@^0.20.1",
     "sanitize-html": "npm:sanitize-html@^2.16.0",
