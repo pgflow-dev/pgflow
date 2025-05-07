@@ -2,23 +2,30 @@
 
 ## Assumptions
 
-- we do not care at all about Row Level Security or Policies and rely on users managing them themselves
-- we allow everyone to observe a flow run if he knows its UUID
-- we allow everyone to start any flow if they know its slug
-- we are only concerned about run and step-state level changes, so we do not track particular retries in step tasks
-- but we are interested about the output of the step_tasks, because the output of a single step task associated with step state is understood to be this step state's output
+- We do not care at all about Row Level Security or Policies and rely on users managing them themselves
+- We allow everyone to observe a flow run if they know its UUID
+- We allow everyone to start any flow if they know its slug
+- We are only concerned about run and step-state level changes, so we do not track particular retries in step tasks
+- But we are interested about the output of the step_tasks, because the output of a single step task associated with step state is understood to be this step state's output
 
 ## Construct a client using Supabase client
 
 ```ts
-import { createPgflowClient } from '@pgflow/sdk';
+import { createClient } from '@supabase/supabase-js';
+import { Client, PostgresChangesAdapter } from '@pgflow/client';
+import { v4 as uuidv4 } from 'uuid';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
 
-const pgflow = createPgflowClient(supabase);
+const pgflow = new Client(supabase);
+// under the hood it initializes the PostgresChanges adapter, that uses
+// postgres_changes realtime subscriptions to track flow runs and step changes
+// const adapter = new PostgresChangesAdapter(supabase);
+// this is so in future we can augment Client to support also the "broadcast from database" approach
+// which uses a dedicated realtime subscription and dedicated db-side events
 ```
 
 ## Start a flow run
@@ -26,50 +33,32 @@ const pgflow = createPgflowClient(supabase);
 ```ts
 import type AnalyzeWebsite from '../_flows/analyze_website';
 
-const flowRun = pgflow.startFlow<typeof AnalyzeWebsite>('analyze_website', {
-  url: 'https://supabase.com',
-});
+// Start the flow, optionally passing a pre-generated UUID
+const flowRun = await pgflow.startFlow<typeof AnalyzeWebsite>(
+  'analyze_website',
+  { url: 'https://supabase.com' }
+);
 ```
 
 > [!NOTE]
 > The second argument (run input) should be statically typed based on the flow DSL type provided.
 
-This `startFlow` call should:
+When calling `pgflow.startFlow`, pgflow client does the following:
 
-- call `supabase.rpc('pgflow.start_flow', { flow_slug, input })`
-- establish a realtime broadcast connection on the 'pgflow/runs/<run_id>' channel
-  take run id from the return values of supabase.rpc call above
-- setup event listeners on realtime channel that will update the locally stored state of the flow run,
-  but the updates should be "buffered" so if the updates happen before the fetch below finishes, we need to apply them after it finishes, not before
-- fetch the flow run data initially and store it, something like:
+1. fetches the steps for given `flow_slug`,
+   using `supabase.from('pgflow').select('steps').eq('flow_slug', flow_slug)`
+   and stores them locally
+1. Generates a new run UUID locally
+1. Set up subscriptions before the flow starts using this uuid
+   - Eliminate race conditions with event delivery
+   - Avoid the need for event buffering
 
-  ```ts
-  const { data, error } = await supabase
-    .schema('pgflow')
-    .from('runs')
-    .select(
-      `
-      *,
-      flows:pgflow.flows!runs_flow_slug_fkey (
-        *,
-        steps:pgflow.steps (
-          *
-        )
-      )
-      step_states!step_states_run_id_fkey(
-        *,
-      ),
-      step_tasks!step_tasks_run_id_fkey(*)
-    `
-    )
-    .eq('run_id', runId)
-    .single<RowTypeAugmentedWithFlowType>();
-  ```
+The client implementation will:
 
-  - [x] Decide what shape of data we want to store in the client
-    - Private state with public getters for common properties
-    - Steps accessible via type-safe method
-    - Consistently use snake_case for property names to match Supabase convention
+1. Generate a UUID if not provided
+1. Fetch just the flow definition metadata (steps for now only)
+1. Set up realtime subscriptions using the provided UUID
+1. Start the flow with our predetermined UUID
 
 ## Inspect current state of flow run (synchronously)
 
@@ -84,76 +73,104 @@ flowRun.input; // => { url: 'https://supabase.com' }
 flowRun.flow_slug; // => 'analyze_website'
 ```
 
-- [x] Decide if we want to scope the columns/values in some object and leave top-level values for methods
-    - Using direct getters with snake_case names to match Supabase convention
-
 ## Event Subscription Model
 
-PgFlow uses a clean separation for event subscriptions:
-- Run-level events go only to flowRun subscribers
-- Step-level events go only to that specific step's subscribers
+PgFlow uses a clear separation of event types:
 
-### Subscribe to flow run updates
+- **Run events**: Only emitted on flow run status changes ('completed', 'failed')
+- **Step events**: Only emitted on step status changes ('started', 'completed', 'failed')
+
+### Subscribe to flow run events
 
 ```ts
-// Subscribe to run-level status changes only
-const unsubscribe = flowRun.subscribe((event) => {
+// Subscribe to all run events
+const unsubscribe = flowRun.on((event) => {
   console.log('Run event:', event);
 });
 
-// Received event:
+// Subscribe to specific run events
+const completedUnsubscribe = flowRun.on('completed', (event) => {
+  console.log('Flow completed:', event);
+  console.log('Flow output:', event.output);
+});
+
+const failedUnsubscribe = flowRun.on('failed', (event) => {
+  console.log('Flow failed:', event);
+  console.log('Error message:', event.error_message);
+});
+
+// Sample event data:
 // {
 //   run_id: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
 //   flow_slug: 'analyze_website',
-//   status: 'started',
+//   status: 'completed',
 //   started_at: '2023-01-10T12:30:00Z',
-//   completed_at: null,
+//   completed_at: '2023-01-10T12:31:05Z',
 //   failed_at: null,
 //   input: { url: 'https://supabase.com' },
-//   output: null,
-//   remaining_steps: 1
+//   output: { ... },
+//   remaining_steps: 0
 // }
 ```
 
-### Subscribe to step updates
+### Subscribe to step events
 
 ```ts
-// Subscribe to a specific step's events
+// Get a reference to a specific step
 const websiteStep = flowRun.step('website');
-const unsubscribeStep = websiteStep.subscribe((event) => {
+
+// Subscribe to all events for this step
+const stepUnsubscribe = websiteStep.on((event) => {
   console.log(`Step ${event.step_slug} event:`, event);
 });
 
-// Received event:
+// Subscribe to specific step events
+websiteStep.on('started', (event) => {
+  console.log(`Step ${event.step_slug} has started`);
+});
+
+websiteStep.on('completed', (event) => {
+  console.log(`Step ${event.step_slug} completed with output:`, event.output);
+});
+
+websiteStep.on('failed', (event) => {
+  console.log(
+    `Step ${event.step_slug} failed with error:`,
+    event.error_message
+  );
+});
+
+// Sample step event data:
 // {
 //   run_id: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
 //   flow_slug: 'analyze_website',
 //   step_slug: 'website',
-//   status: 'started',
-//   remaining_tasks: 1,
+//   status: 'completed',
+//   remaining_tasks: 0,
 //   remaining_deps: 0,
 //   created_at: '2023-01-10T12:30:01Z',
 //   started_at: '2023-01-10T12:30:02Z',
-//   completed_at: null,
+//   completed_at: '2023-01-10T12:30:45Z',
 //   failed_at: null,
-//   output: null,
+//   output: { url: 'https://supabase.com', title: 'Supabase' },
 //   error_message: null
 // }
 ```
 
 > [!NOTE]
 > If you want to track multiple steps, you need to subscribe to each step individually:
+>
 > ```ts
 > // Subscribe to multiple steps individually
 > const steps = ['website', 'sentiment', 'summary'];
-> const unsubscribes = steps.map(slug => 
->   flowRun.step(slug).subscribe(event => console.log(`Step ${slug} event:`, event))
+> const unsubscribes = steps.map((slug) =>
+>   flowRun
+>     .step(slug)
+>     .on('completed', (event) =>
+>       console.log(`Step ${slug} completed:`, event.output)
+>     )
 > );
 > ```
-
-- [x] Make sure if using the output of step tasks as the output for a step state is a good simplification to make
-    - This simplification makes sense since each step has only one task (constraint in database schema)
-    - Mapping step_tasks output to step_states makes the API simpler for consumers
 
 ## Async waiting for status/output
 
@@ -175,12 +192,16 @@ With timeout and cancellation support:
 
 ```ts
 // Wait with a timeout (throws TimeoutError if not completed within 30 seconds)
-const completedRun = await flowRun.waitForStatus('completed', { timeoutMs: 30000 });
+const completedRun = await flowRun.waitForStatus('completed', {
+  timeoutMs: 30000,
+});
 const output = completedRun.output;
 
 // Allow cancellation with AbortController
 const controller = new AbortController();
-const promise = flowRun.waitForStatus('completed', { signal: controller.signal });
+const promise = flowRun.waitForStatus('completed', {
+  signal: controller.signal,
+});
 // Later if needed:
 controller.abort('User cancelled operation');
 ```
@@ -192,7 +213,7 @@ The waitForStatus method will:
 3. Throw an error if the promise is rejected (timeout or cancellation)
 4. Return immediately if the status is already reached
 
-### Error Handling
+## Error Handling
 
 When a step or flow fails, we properly handle and surface errors:
 
@@ -220,10 +241,22 @@ if (step.status === 'failed') {
 }
 ```
 
-- [x] Decide if we want to have flow-run-level methods for waiting for steps and run, or we want to introduce a way to "get a step" which will expose the same api for waiting and outputs.
-    - We'll use the step() method to get a step object that exposes the same API as the flow run
+## Resource Management
 
-### Step API
+The client automatically cleans up resources for terminal states, but you can also manually manage resources:
+
+```ts
+// Manually clean up a specific run's subscriptions
+flowRun.dispose();
+
+// Or from the client for any run ID
+pgflow.dispose(runId);
+
+// Clean up all subscriptions for all runs
+pgflow.disposeAll();
+```
+
+## Step API
 
 Each step is accessed through the step() method and has a similar API to the flow run:
 
@@ -235,8 +268,14 @@ websiteStep.status; // => 'completed'
 websiteStep.output; // => { url: 'https://example.com', title: 'Example Website' }
 
 // Subscribe to step events
-websiteStep.subscribe('status', (event) => {
-  console.log(`Step ${event.step_slug} is now ${event.status}`);
+websiteStep.on('started', (event) => {
+  console.log(`Step ${event.step_slug} is now started`);
+});
+websiteStep.on('completed', (event) => {
+  console.log(`Step ${event.step_slug} is now completed`);
+});
+websiteStep.on('failed', (event) => {
+  console.log(`Step ${event.step_slug} is now failed`);
 });
 
 // Wait for step status
@@ -244,6 +283,7 @@ const completedStep = await websiteStep.waitForStatus('completed');
 ```
 
 This approach allows:
+
 1. Type-safe access to steps based on the flow definition
 2. Consistent API between flow runs and steps
 3. Ability to dynamically iterate through steps if needed
@@ -264,21 +304,24 @@ const websiteOutput = websiteStep.output; // TypeScript automatically infers Ste
 // Type-safe flow output - automatically inferred from the DSL
 const flowOutput = flowRun.output; // TypeScript automatically infers ExtractFlowOutput<typeof AnalyzeWebsite>
 
-// Type-safe event payloads in subscriptions (using type narrowing)
-flowRun.subscribe('status', (event) => {
-  if ('step_slug' in event) {
-    // TypeScript knows this is a StepEvent
-    const stepOutput = event.output; // Correctly typed based on step_slug
-  } else {
-    // TypeScript knows this is a RunEvent
-    const runOutput = event.output; // Correctly typed as flow output
-  }
+// Type-safe event subscriptions
+// flowRun only emits events related to the run changes, not the steps
+flowRun.on('completed', (event) => {
+  // TypeScript knows this is a RunCompletedEvent
+  const runOutput = event.output; // Correctly typed as ExtractFlowOutput<typeof AnalyzeWebsite>
+});
+
+// Step events are also properly typed
+websiteStep.on('completed', (event) => {
+  // TypeScript knows this is a StepCompletedEvent for the 'website' step
+  const stepOutput = event.output; // Correctly typed as StepOutput<typeof AnalyzeWebsite, 'website'>
 });
 ```
 
 This type safety is implemented by leveraging the DSL's utility types:
+
 - `ExtractFlowInput<TFlow>` for input validation when starting flows
-- `ExtractFlowSteps<TFlow>` for validating step slugs 
+- `ExtractFlowSteps<TFlow>` for validating step slugs
 - `StepOutput<TFlow, TStepSlug>` for step output typing
 - `ExtractFlowOutput<TFlow>` for flow output typing
 
