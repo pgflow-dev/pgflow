@@ -172,9 +172,35 @@ export async function copyMigrations({
     }
   }
 
-  // If no files to copy, show message and return false (no changes made)
+  // If no files to copy, show message with details and return false (no changes made)
   if (filesToCopy.length === 0) {
+    // Show success message
     log.success('All pgflow migrations are already in place');
+    
+    // Show details of already installed migrations
+    if (skippedFiles.length > 0) {
+      const detailedMsg = [
+        'Already installed migrations:',
+        ...skippedFiles.map(file => {
+          // Find the matching existing file to show how it was installed
+          const matchingFile = existingFiles.find(existingFile => 
+            existingFile.includes(file)
+          );
+          
+          if (matchingFile === file) {
+            // Installed with old direct method
+            return `  ${chalk.dim('•')} ${chalk.bold(file)}`;
+          } else {
+            // Installed with new timestamped method
+            const timestampPart = matchingFile?.substring(0, matchingFile.indexOf(file) - 1) || '';
+            return `  ${chalk.dim('•')} ${chalk.dim(timestampPart + '_')}${chalk.bold(file)}`;
+          }
+        })
+      ].join('\n');
+      
+      note(detailedMsg, 'Existing pgflow Migrations');
+    }
+    
     return false;
   }
 
