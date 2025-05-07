@@ -334,12 +334,16 @@ This sequence ensures that:
 
 For Supabase, the adapter:
 
-1. Uses postgres_changes realtime subscriptions
-2. Listens for changes to runs and step_states tables
-3. Enriches completed steps with their output
-4. Maintains a status precedence system to handle out-of-order events
-5. Implements NanoEvents for routing events to the client
-6. Handles WebSocket disconnections by performing a full state refresh on reconnect:
+1. Uses postgres_changes realtime subscriptions with a multiplex approach:
+   - For MVP: Creates just one realtime channel per run (not per step)
+   - Single channel listens to both runs and step_states tables with filter: `eq('run_id', run_id)`
+   - Demultiplexes events client-side based on table and step_slug
+   - Significantly reduces resource usage vs creating separate channels per step
+   - Avoids hitting Supabase's channel limits even with large flows
+2. Enriches completed steps with their output
+3. Maintains a status precedence system to handle out-of-order events
+4. Implements NanoEvents for routing events to the client
+5. Handles WebSocket disconnections by performing a full state refresh on reconnect:
    - Listens for the realtime connection 'open' event
    - Fetches current run and step state data on reconnect
    - Updates client state to reflect the latest server state
