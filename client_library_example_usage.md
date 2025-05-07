@@ -156,6 +156,19 @@ const websiteStepOutput = await websiteStep.waitForStatus('completed').output;
 websiteStep.output; // <website step output json>, same as websiteStepOutput
 ```
 
+It might also be useful to support timeouts and cancellation for these waiting operations:
+
+```ts
+// Wait with a timeout (throws TimeoutError if not completed within 30 seconds)
+const output = await flowRun.waitForStatus('completed', { timeoutMs: 30000 }).output;
+
+// Allow cancellation with AbortController
+const controller = new AbortController();
+const promise = flowRun.waitForStatus('completed', { signal: controller.signal });
+// Later if needed:
+controller.abort('User cancelled operation');
+```
+
 - [ ] Decide if we want to have flow-run-level methods for waiting for steps and run, or we want to introduce a way to "get a step" which will expose the same api for waiting and outputs. The latter would allow for example to iterate over an array of steps dynamically etc.
 
 ### Subscribing to step-events
