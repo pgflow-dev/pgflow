@@ -211,7 +211,7 @@ export class FlowRun<TFlow> {
     callback: (event: FlowRunEvents<TFlow>[E]) => void
   ): Unsubscribe;
 
-  // Get a reference to a specific step
+  // Get a reference to a specific step (step instances are cached by slug)
   step<TStepSlug extends keyof ExtractFlowSteps<TFlow> & string>(
     stepSlug: TStepSlug
   ): FlowStep<TFlow, TStepSlug>;
@@ -267,6 +267,7 @@ Both `FlowRun` and `FlowStep` classes use private state with public getters:
 export class FlowRun<TFlow> {
   #state: FlowRunState<TFlow>;
   #events = createNanoEvents<FlowRunEvents<TFlow>>();
+  // Cache step instances by slug to avoid duplicate objects and event emitters
   #steps: Map<string, FlowStep<TFlow, any>> = new Map();
   #client: Client;
 
@@ -455,6 +456,16 @@ Using private class fields with public getters provides:
 - Encapsulation of internal state
 - Type-safe access to properties
 - Prevents consumers from directly modifying state
+
+### 1. Step Instance Caching
+
+To prevent duplicate objects and event emitters for the same step:
+
+- FlowRun internally caches FlowStep instances by slug
+- Repeated calls to `flowRun.step('same-slug')` return the same instance
+- Avoids overhead of creating multiple NanoEvents emitters
+- Ensures consistent event handling for steps
+- Prevents memory leaks from abandoned step instances
 
 ### 1. Status Precedence
 
