@@ -416,7 +416,7 @@ Using NanoEvents provides several benefits:
 - Returns unbind function directly
 - Type-safe events
 
-### 2. Client-Generated UUID
+### 1. Client-Generated UUID
 
 By letting the client generate the run_id, we can:
 
@@ -424,7 +424,7 @@ By letting the client generate the run_id, we can:
 - Eliminate race conditions with event delivery
 - Create a more reliable subscription model
 
-### 3. Automatic Resource Cleanup
+### 1. Automatic Resource Cleanup
 
 To prevent resource leaks, we implement automatic cleanup:
 
@@ -433,7 +433,7 @@ To prevent resource leaks, we implement automatic cleanup:
 - Close Supabase channels and remove internal references
 - Users can still manually call dispose() for early cleanup
 
-### 4. Complete Initial State Snapshot
+### 1. Complete Initial State Snapshot
 
 Our approach to state management involves:
 
@@ -447,7 +447,7 @@ This hybrid approach gives us the benefits of both worlds:
 - Complete initial state without missing fast-completing steps
 - Real-time updates for changes that happen after initialization
 
-### 5. Encapsulated State with Getters
+### 1. Encapsulated State with Getters
 
 Using private class fields with public getters provides:
 
@@ -456,7 +456,7 @@ Using private class fields with public getters provides:
 - Type-safe access to properties
 - Prevents consumers from directly modifying state
 
-### 6. Status Precedence
+### 1. Status Precedence
 
 To handle out-of-order events, we implement a status precedence system:
 
@@ -491,25 +491,25 @@ This architecture provides:
    - NanoEvents for simple event subscription with `.on()`
    - Intuitive FlowRun and FlowStep classes
 
-2. **Efficient Event Management**:
+1. **Efficient Event Management**:
 
    - Uses NanoEvents for lightweight, memory-efficient event handling
    - Returns clean unbind functions for easy subscription management
    - Type-safe events for better developer experience
 
-3. **Race Condition Prevention**:
+1. **Race Condition Prevention**:
 
    - Client-generated UUID for pre-subscription
    - Set up subscriptions before starting the flow
    - Remove need for event buffering logic
 
-4. **Optimized Data Loading**:
+1. **Optimized Data Loading**:
 
    - Fetch only flow metadata initially
    - Rely on realtime events for state updates
    - Single-query approach for critical data
 
-5. **Type Safety**:
+1. **Type Safety**:
    - Full type inference from DSL to client
    - Type-safe step access with FlowRun.step()
    - Type-safe event subscriptions
