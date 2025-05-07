@@ -1,15 +1,10 @@
 ---
 title: pgflow
-description: Postgres-First Workflow Orchestration—All in SQL
+description: Postgres-First Workflow Orchestration - All in SQL
 template: splash
 hero:
-  title: Run AI Workflows and Background Jobs directly in Supabase
-  # title: Effortless Supabase Workflows for AI & Background Jobs
-  # title: Automate AI Workflows Natively on Supabase
-  # title: AI Agents & Workflow Automation for Supabase
-  # title: Supabase Workflows for AI Agents & Background Jobs
-  # title: Build AI Agent Workflows on Supabase
-  tagline: No extra servers. Just Supabase-native AI workflows and jobs that don't fail silently.
+  title: Run reliable AI Workflows and Background Jobs directly in Supabase
+  tagline: With pgflow, you can seamlessly run workflows directly in Supabase, ensuring reliability and visibility without adding extra infrastructure.
   image:
     dark: ../../assets/pgflow-logo-dark.svg
     light: ../../assets/pgflow-logo-light.svg
@@ -40,7 +35,7 @@ npx pgflow@latest install
 
 ## Why pgflow Exists
 
-Supabase is great - until you need reliable, observable background workflows. Then you're stuck hacking together partial solutions or outsourcing core logic to third-party platforms.
+While Supabase provides the essential building blocks, pgflow brings enhanced orchestration for advanced workflow management.
 
 #### Developers Instantly Got It
 
@@ -48,53 +43,59 @@ Supabase is great - until you need reliable, observable background workflows. Th
 
 <TestimonialCarousel client:load />
 
-### Pain You've Probably Felt:
+### Have you run into any of these situations?
 
-These are the frustrations you’ve likely encountered while trying to piece together workflows with scattered tools and limited support.
+As apps grow, a little extra coordination can save a lot of engineering time. pgflow steps in right there:
 
 <CardGrid>
-  <Card title="Death by Glue Code" icon="warning">
-    Supabase gives you primitives - pg_cron, pg_net, queues - but no orchestration. You end up hand-coding state machines: tracking task progress, wiring retries, handling failures, and cleaning up. Each workflow becomes a tangle of bespoke logic waiting to break.
+
+  <Card title="Bringing the Pieces Together">
+    Queues and Edge Functions shine on their own.
+    pgflow wraps them in one orchestration interface, so you write features-not glue code.
   </Card>
 
-  <Card title="You Can’t Trust It" icon="warning">
-    When execution is scattered across queues and handlers, there's no clear spec, no structured tracking, and no way to reason about progress. Failures are invisible. You ship blind, and debug with grep.
+  <Card title="Wanting a Bird’s-Eye View">
+    When your workflows span several functions or use multiple cron schedules, it's handy to follow progress from a single place.
+    pgflow's approach prioritizes at-a-glance visibility for runs, step states, retries and outputs.
   </Card>
 
-  <Card title="No Type Safety Between Steps" icon="warning">
-    Without type safety, you must manually ensure that each step’s outputs align with the next step’s inputs. It’s easy to miss mismatches, leading to runtime errors and fragile workflows.
+  <Card title="Extra Type Confidence">
+    Define workflows in TypeScript and get a compile-time safety for the data flow between steps.
   </Card>
 
-  <Card title="Your State, Their Dashboard" icon="warning">
-    Tools like Inngest or Trigger.dev live outside your database. Failures and state live in someone else's dashboard. You lose visibility and debug across multiple systems.
+  <Card title="Keeping Everything Inside Supabase">
+    All state, retries, and dependencies stay in the Postgres database you already trust-no extra services required.
   </Card>
+
 </CardGrid>
 
 ### How pgflow Helps:
 
-Solve workflow pain points with Postgres-native orchestration, minimal overhead, and built-in reliability.
+pgflow works in harmony with Supabase's tools, simplifying orchestration and enabling a more cohesive workflow.
+
+Eliminate manual orchestration with Postgres‑native workflows, zero extra servers, and built‑in reliability
 
 <CardGrid>
   <Card title="Postgres-Native Orchestration" icon="approve-check">
-    pgflow handles state transitions, dependencies, and execution control directly in your Supabase Postgres database. No external services required.
+    pgflow handles state transitions, dependencies, and execution control directly inside in your Supabase Postgres database. Everything is self-contained.
   </Card>
 
   <Card title="Durable Queue-Based Workers" icon="approve-check">
-    Jobs are pulled from a Postgres-backed queue and executed in stateless Edge Functions. Built-in support for retries, backoff strategies, and concurrency limits.
+    Edge Functions pull tasks from a Postgres queue with automatic retries, back‑offs, and concurrency limits. 
   </Card>
 
-  <Card title="Simple Flow Definitions" icon="approve-check">
+  <Card title="Simple, Typed Flow Definitions" icon="approve-check">
     You specify flow logic once. pgflow enforces retries, timeouts, and step dependencies without custom plumbing.
   </Card>
 
-  <Card title="No Infra, No Lock-In" icon="approve-check">
-    Everything runs inside your Supabase setup. No external runtimes or vendor dashboards.
+  <Card title="Zero Extra Infra, Zero Lock-In" icon="approve-check">
+    Everything stays in your Supabase project. No extra runtimes, no vendor dashboards.
   </Card>
 </CardGrid>
 
 ### What You Can Build with pgflow:
 
-- **AI Workflows:** Chain LLMs, scrape data, reason across tools, and recover from failures — all natively in Supabase.
+- **AI Workflows:** Chain LLMs, scrape data, reason across tools, and recover from failures - all natively in Supabase.
 - **Background Jobs:** Handle emails, file processing, and scheduled tasks with full visibility
 - **Data Pipelines:** Extract, transform, and load data across systems without losing track of progress
 
@@ -153,7 +154,7 @@ new Flow<{ url: string }>({
 
 <CardGrid>
   <Card title="Single source of truth" icon="open-book">
-    All workflow definitions, state, and execution history stored in your Postgres database—simplifying monitoring and debugging.
+    All workflow definitions, state, and execution history stored in your Postgres database-simplifying monitoring and debugging.
   </Card>
 
   <Card title="Reliable task processing" icon="rocket">
@@ -178,7 +179,7 @@ Create and run workflows with a straightforward process:
 1. **Deploy as Supabase Edge Functions**
 1. **Trigger workflows from your app or SQL**
 
-The execution system handles the rest—scheduling steps when dependencies complete, retrying failed tasks, and aggregating results automatically.
+The execution system handles the rest-scheduling steps when dependencies complete, retrying failed tasks, and aggregating results automatically.
 
 ## Ready to get started?
 
