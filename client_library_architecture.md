@@ -179,11 +179,6 @@ export class Client {
     runId?: string
   ): Promise<FlowRun<TFlow>>;
 
-  async observeRun<TFlow extends AnyFlow>(
-    flowSlug: string,
-    runId: string
-  ): Promise<FlowRun<TFlow>>;
-
   dispose(runId: string): void;
 
   disposeAll(): void;
