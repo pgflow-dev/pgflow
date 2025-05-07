@@ -26,19 +26,41 @@ The library consists of four main components:
 ```typescript
 // Flow run event types
 export type FlowRunEvents<TFlow> = {
-  'completed': { run_id: string, output: ExtractFlowOutput<TFlow>, status: 'completed' };
-  'failed': { run_id: string, error_message: string, status: 'failed' };
+  completed: {
+    run_id: string;
+    output: ExtractFlowOutput<TFlow>;
+    status: 'completed';
+  };
+  failed: { run_id: string; error_message: string; status: 'failed' };
   // General event type that includes all events
-  '*': { run_id: string, status: string, [key: string]: any };
+  '*': { run_id: string; status: string; [key: string]: any };
 };
 
 // Step event types
-export type StepEvents<TFlow, TStepSlug extends keyof ExtractFlowSteps<TFlow> & string> = {
-  'started': { run_id: string, step_slug: TStepSlug, status: 'started' };
-  'completed': { run_id: string, step_slug: TStepSlug, output: StepOutput<TFlow, TStepSlug>, status: 'completed' };
-  'failed': { run_id: string, step_slug: TStepSlug, error_message: string, status: 'failed' };
+export type StepEvents<
+  TFlow,
+  TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
+> = {
+  started: { run_id: string; step_slug: TStepSlug; status: 'started' };
+  completed: {
+    run_id: string;
+    step_slug: TStepSlug;
+    output: StepOutput<TFlow, TStepSlug>;
+    status: 'completed';
+  };
+  failed: {
+    run_id: string;
+    step_slug: TStepSlug;
+    error_message: string;
+    status: 'failed';
+  };
   // General event type that includes all events
-  '*': { run_id: string, step_slug: TStepSlug, status: string, [key: string]: any };
+  '*': {
+    run_id: string;
+    step_slug: TStepSlug;
+    status: string;
+    [key: string]: any;
+  };
 };
 
 // Function returned by event subscriptions to remove the listener
@@ -74,12 +96,12 @@ export interface ITaskProcessor {
     pollIntervalMs?: number,
     visibilityTimeout?: number
   ): Promise<StepTaskRecord[]>;
-  
+
   /**
    * Mark a task as completed with output
    */
   completeTask(stepTask: StepTaskKey, output?: Json): Promise<void>;
-  
+
   /**
    * Mark a task as failed with error
    */
@@ -92,22 +114,22 @@ export interface IFlowRealtime {
    * Fetch flow definition metadata
    */
   fetchFlowDefinition(flow_slug: string): Promise<void>;
-  
+
   /**
    * Register a callback for run events
    */
   onRunEvent(callback: (run: RunRow) => void): void;
-  
+
   /**
    * Register a callback for step events
    */
   onStepEvent(callback: (step: StepStateRow) => void): void;
-  
+
   /**
    * Subscribe to run state changes
    */
   subscribeToRun(run_id: string): () => void;
-  
+
   /**
    * Subscribe to step state changes
    */
@@ -115,11 +137,13 @@ export interface IFlowRealtime {
 }
 
 // Composite interfaces for different use cases
-export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow> 
-  extends IFlowStarter, ITaskProcessor {}
+export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow>
+  extends IFlowStarter,
+    ITaskProcessor {}
 
 export interface IFlowClient<TFlow extends AnyFlow = AnyFlow>
-  extends IFlowStarter, IFlowRealtime {}
+  extends IFlowStarter,
+    IFlowRealtime {}
 ```
 
 This segregation allows each component to depend only on the interfaces it needs:
@@ -133,6 +157,7 @@ This segregation allows each component to depend only on the interfaces it needs
 The interfaces should be distributed across packages as follows:
 
 - **IFlowStarter** and **ITaskProcessor** interfaces belong in **pkgs/core/src/types.ts**
+
   - These are fundamental interfaces used by core components
   - PgflowSqlClient already exists in core and implements these
   - EdgeWorker depends on core, so this maintains the dependency structure
@@ -147,15 +172,20 @@ The interfaces should be distributed across packages as follows:
 ```typescript
 export class Client {
   constructor(supabaseClient: SupabaseClient);
-  
+
   async startFlow<TFlow extends AnyFlow>(
     flowSlug: string,
     input: ExtractFlowInput<TFlow>,
     runId?: string
   ): Promise<FlowRun<TFlow>>;
-  
+
+  async observeRun<TFlow extends AnyFlow>(
+    flowSlug: string,
+    runId: string
+  ): Promise<FlowRun<TFlow>>;
+
   dispose(runId: string): void;
-  
+
   disposeAll(): void;
 }
 ```
@@ -174,24 +204,24 @@ export class FlowRun<TFlow> {
   get output(): ExtractFlowOutput<TFlow> | null;
   get error(): Error | null;
   get remaining_steps(): number;
-  
+
   // Event subscription with NanoEvents
   on<E extends keyof FlowRunEvents<TFlow>>(
-    event: E, 
+    event: E,
     callback: (event: FlowRunEvents<TFlow>[E]) => void
   ): Unsubscribe;
-  
+
   // Get a reference to a specific step
   step<TStepSlug extends keyof ExtractFlowSteps<TFlow> & string>(
     stepSlug: TStepSlug
   ): FlowStep<TFlow, TStepSlug>;
-  
+
   // Wait for a specific status
   async waitForStatus(
-    targetStatus: 'completed' | 'failed', 
-    options?: { timeoutMs?: number, signal?: AbortSignal }
+    targetStatus: 'completed' | 'failed',
+    options?: { timeoutMs?: number; signal?: AbortSignal }
   ): Promise<this>;
-  
+
   // Clean up resources
   dispose(): void;
 }
@@ -200,26 +230,29 @@ export class FlowRun<TFlow> {
 ### FlowStep API
 
 ```typescript
-export class FlowStep<TFlow, TStepSlug extends keyof ExtractFlowSteps<TFlow> & string> {
+export class FlowStep<
+  TFlow,
+  TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
+> {
   // Public getters
   get step_slug(): TStepSlug;
-  get status(): 'pending' | 'started' | 'completed' | 'failed';
+  get status(): 'created' | 'started' | 'completed' | 'failed';
   get started_at(): Date | null;
   get completed_at(): Date | null;
   get failed_at(): Date | null;
   get output(): StepOutput<TFlow, TStepSlug> | null;
   get error(): Error | null;
-  
+
   // Event subscription with NanoEvents
   on<E extends keyof StepEvents<TFlow, TStepSlug>>(
     event: E,
     callback: (event: StepEvents<TFlow, TStepSlug>[E]) => void
   ): Unsubscribe;
-  
+
   // Wait for a specific status
   async waitForStatus(
     targetStatus: 'started' | 'completed' | 'failed',
-    options?: { timeoutMs?: number, signal?: AbortSignal }
+    options?: { timeoutMs?: number; signal?: AbortSignal }
   ): Promise<this>;
 }
 ```
@@ -236,15 +269,20 @@ export class FlowRun<TFlow> {
   #events = createNanoEvents<FlowRunEvents<TFlow>>();
   #steps: Map<string, FlowStep<TFlow, any>> = new Map();
   #client: Client;
-  
+
   // Public getters expose state properties
-  get run_id(): string { return this.#state.run_id; }
-  get status(): 'queued' | 'started' | 'completed' | 'failed' { return this.#state.status; }
+  get run_id(): string {
+    return this.#state.run_id;
+  }
+  get status(): 'queued' | 'started' | 'completed' | 'failed' {
+    return this.#state.status;
+  }
   // ...other getters
 }
 ```
 
 This approach provides:
+
 - Encapsulation of internal state
 - Type-safe access to properties
 - Prevents direct state mutations from outside
@@ -259,7 +297,7 @@ The library uses NanoEvents for event management:
 
 // Subscribe to events
 on<E extends keyof FlowRunEvents<TFlow>>(
-  event: E, 
+  event: E,
   callback: (event: FlowRunEvents<TFlow>[E]) => void
 ): Unsubscribe {
   return this.#events.on(event, callback);
@@ -278,15 +316,16 @@ this.#events.emit('completed', {
 The `startFlow` method follows a carefully designed sequence to prevent race conditions:
 
 1. Generate a client-side UUID if not provided
-2. Fetch flow definition to know available steps 
+2. Fetch flow definition to know available steps
 3. Create FlowRun instance with initial state
 4. Store the run in the client's internal map
 5. Set up subscriptions for run and step events
 6. Start the flow with the predetermined run_id using `pgflow.start_flow_with_states`
-7. Update the run and step states with the complete initial state snapshot 
+7. Update the run and step states with the complete initial state snapshot
 8. Return the FlowRun instance
 
 This sequence ensures that:
+
 - Subscriptions are active before any events are emitted from the server
 - The client has a complete initial state snapshot before any realtime events arrive
 - Fast-completing steps are not missed due to network latency between subscription setup and the first event
@@ -300,6 +339,13 @@ For Supabase, the adapter:
 3. Enriches completed steps with their output
 4. Maintains a status precedence system to handle out-of-order events
 5. Implements NanoEvents for routing events to the client
+6. Handles WebSocket disconnections by performing a full state refresh on reconnect:
+   - Listens for the realtime connection 'open' event
+   - Fetches current run and step state data on reconnect
+   - Updates client state to reflect the latest server state
+   - Prevents state drift between client and server
+
+This simple reconnection approach also enables observing existing flow runs by ID without having to be present when they started.
 
 ## Required SQL Updates
 
@@ -317,10 +363,17 @@ $$ LANGUAGE plpgsql;
 ```
 
 We also need a new function `pgflow.start_flow_with_states` that:
+
 - Internally calls the existing `start_flow` function
 - Fetches the full set of step states for the run
 - Returns both the run and step states in a single response
 - Provides clients with a complete initial state snapshot
+
+Additionally, we need a function to fetch the current state of a run and its steps:
+
+- Used for refreshing state after WebSocket reconnections
+- Used for observing existing runs by ID
+- Can be reused by `start_flow_with_states` internally to eliminate duplication
 
 ## Package Dependencies
 
@@ -347,6 +400,7 @@ Using NanoEvents provides several benefits:
 ### 2. Client-Generated UUID
 
 By letting the client generate the run_id, we can:
+
 - Set up subscriptions before starting the flow
 - Eliminate race conditions with event delivery
 - Create a more reliable subscription model
@@ -354,18 +408,21 @@ By letting the client generate the run_id, we can:
 ### 3. Complete Initial State Snapshot
 
 Our approach to state management involves:
+
 - Fetching flow definition and metadata first
 - Getting a complete initial state snapshot via `start_flow_with_states`
 - Using this snapshot to initialize client-side state
 - Then relying on realtime events for subsequent state updates
 
 This hybrid approach gives us the benefits of both worlds:
+
 - Complete initial state without missing fast-completing steps
 - Real-time updates for changes that happen after initialization
 
 ### 4. Encapsulated State with Getters
 
 Using private class fields with public getters provides:
+
 - Clean API for accessing state properties
 - Encapsulation of internal state
 - Type-safe access to properties
@@ -398,21 +455,25 @@ shouldUpdateStatus(currentStatus: string, newStatus: string): boolean {
 This architecture provides:
 
 1. **Clean API Design**:
+
    - Private state with public getters for encapsulation
    - NanoEvents for simple event subscription with `.on()`
    - Intuitive FlowRun and FlowStep classes
 
 2. **Efficient Event Management**:
+
    - Uses NanoEvents for lightweight, memory-efficient event handling
    - Returns clean unbind functions for easy subscription management
    - Type-safe events for better developer experience
 
 3. **Race Condition Prevention**:
+
    - Client-generated UUID for pre-subscription
    - Set up subscriptions before starting the flow
    - Remove need for event buffering logic
 
 4. **Optimized Data Loading**:
+
    - Fetch only flow metadata initially
    - Rely on realtime events for state updates
    - Single-query approach for critical data
