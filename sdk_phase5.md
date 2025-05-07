@@ -15,11 +15,15 @@ Phase 5 builds upon the complete functional implementation from previous phases 
    - Create tests for each component (Client, FlowRun, FlowStep, Adapter)
    - Implement mock objects and test fixtures
    - Add edge case and error handling tests
+   - Test status precedence with out-of-order events
+   - Verify payload fields match exactly between SQL and TypeScript types
 
 2. **Integration Tests:**
    - Create tests for component interactions
    - Implement end-to-end flow execution tests
    - Add real-time event handling tests
+   - Test reconnection scenarios using get_run_with_states
+   - Verify both client-supplied and server-generated run_id paths work correctly
 
 3. **Testing Utilities:**
    - Create mock adapter for testing

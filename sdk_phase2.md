@@ -21,9 +21,11 @@ Phase 2 builds upon the foundation established in Phase 1 by implementing the re
    - Handle channel events and callback distribution
 
 3. **Event Processing:**
+   - Create and test a `parseEventName` helper for consistent event parsing
    - Parse and route incoming events
    - Implement event filtering and validation
    - Handle reconnection scenarios
+   - Design for possible future throughput challenges (prepare for channel sharding if needed)
 
 ## Connection Management
 
@@ -55,5 +57,8 @@ Phase 2 builds upon the foundation established in Phase 1 by implementing the re
 2. Robust event subscription and management system
 3. Connection lifecycle management
 4. Documentation for adapter usage
+5. Tests to ensure incoming payloads match TypeScript event type definitions (field names and casing must match exactly)
+6. Helper utilities for event parsing with test coverage
+7. Initial validation that the adapter works with existing edge-worker code
 
 This phase provides the critical real-time communication layer that enables the client to receive and process events from the database, setting the stage for the client-side state management implemented in Phase 3.

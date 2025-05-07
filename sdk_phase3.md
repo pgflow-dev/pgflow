@@ -52,6 +52,7 @@ Phase 3 builds upon the real-time communication layer from Phase 2 to implement 
 
 1. **Initial State:**
    - Create initialization from complete state snapshot
+   - Convert array of step_states to Map<step_slug, state> for efficient lookup
    - Implement type conversion and validation
    - Add state initialization error handling
 
