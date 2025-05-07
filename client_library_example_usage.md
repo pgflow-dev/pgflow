@@ -66,22 +66,25 @@ This `startFlow` call should:
     .single<RowTypeAugmentedWithFlowType>();
   ```
 
-  - [ ] Decide what shape of data we want to store in the client
+  - [x] Decide what shape of data we want to store in the client
+    - Private state with public getters for common properties
+    - Steps accessible via type-safe method
 
 ## Inspect current state of flow run (synchronously)
 
 ```ts
-flowRun.run_id; // => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+flowRun.runId; // => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
 flowRun.status; // => 'started'
-flowRun.remaining_steps; // => 1
-flowRun.started_at; // => timestamp
-flowRun.completed_at; // => null
-flowRun.failed_at; // => null
+flowRun.remainingSteps; // => 1
+flowRun.startedAt; // => timestamp
+flowRun.completedAt; // => null
+flowRun.failedAt; // => null
 flowRun.input; // => { url: 'https://supabase.com' }
-flowRun.flow_slug; // => 'analyze_website'
+flowRun.flowSlug; // => 'analyze_website'
 ```
 
-- [ ] Decide if we want to scope the columns/values in some object and leave top-level values for methods
+- [x] Decide if we want to scope the columns/values in some object and leave top-level values for methods
+    - Using direct getters with camelCase names for common properties
 
 ## Subscribe to flow run updates
 
