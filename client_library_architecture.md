@@ -343,6 +343,9 @@ For Supabase, the adapter:
 2. Enriches completed steps with their output
 3. Maintains a status precedence system to handle out-of-order events
 4. Implements NanoEvents for routing events to the client
+   - Only tracks and emits events based on the step_states table status
+   - Ignores step_tasks retries for status tracking (step is only considered failed when step_state is marked as failed)
+   - Uses step_tasks outputs to enrich completed steps
 5. Handles WebSocket disconnections by performing a full state refresh on reconnect:
    - Tracks current subscription ID to manage connection lifecycle
    - Unsubscribes from previous subscription before creating a new one
@@ -445,16 +448,15 @@ private statusPrecedence: Record<string, number> = {
   'started': 2,
   'completed': 3,
   'failed': 4,
-  'cancelled': 5
 };
 
 // Prevent invalid state transitions and out-of-order events
 shouldUpdateStatus(currentStatus: string, newStatus: string): boolean {
   const currentPrecedence = this.statusPrecedence[currentStatus] || 0;
   const newPrecedence = this.statusPrecedence[newStatus] || 0;
-  
+
   // Only allow higher or equal precedence to replace current status
-  // Explicitly rejects lower precedence updates that might arrive out of order 
+  // Explicitly rejects lower precedence updates that might arrive out of order
   // due to Postgres logical replication (e.g., 'completed' before 'started')
   return newPrecedence >= currentPrecedence;
 }
