@@ -58,7 +58,12 @@ The client implementation will:
 1. Generate a UUID if not provided
 1. Fetch just the flow definition metadata (steps for now only)
 1. Set up realtime subscriptions using the provided UUID
-1. Start the flow with our predetermined UUID
+1. Start the flow with our predetermined UUID using a new `pgflow.start_flow_with_states` function that:
+   - Calls the existing `pgflow.start_flow` function internally
+   - Additionally fetches the initial step states in the same transaction
+   - Returns both the run and step states in a single response
+   - Provides a complete initial state snapshot to prevent missing fast-completing steps
+1. Initialize the client state with this complete snapshot before any events arrive
 
 ## Inspect current state of flow run (synchronously)
 
