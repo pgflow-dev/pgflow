@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -e
+
+# Script to test pgflow CLI install functionality
+# This simulates the test:e2e:install target from project.json
+
+cd "$(dirname "$0")/.."
+ROOT_DIR=$(pwd)
+
+echo "🧪 Testing pgflow install functionality"
+
+# Clean up any existing supabase directory
+echo "🧹 Cleaning up old test directory"
+rm -rf supabase/
+
+# Initialize a fresh Supabase project
+echo "🏗️ Creating new Supabase project"
+npx -y supabase@latest init --with-vscode-settings --with-intellij-settings
+
+# Install pgflow with our CLI
+echo "📦 Installing pgflow with CLI"
+node dist/index.js install --supabase-path supabase/ --yes
+
+# Verify installation succeeded
+echo "✅ Verifying pgflow installation"
+"$ROOT_DIR/scripts/assert-pgflow-installed"
+
+# Show success message
+echo "✨ Installation test complete"
+
+# Optional: Test for duplicates by running install again
+if [ "$1" == "--test-duplicates" ]; then
+  echo "🔄 Testing duplicate installation prevention"
+  node dist/index.js install --supabase-path supabase/ --yes
+fi
