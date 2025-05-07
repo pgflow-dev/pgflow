@@ -139,13 +139,13 @@ The library consists of three main components:
 
 1. **Client**: Entry point for creating flow runs and observing state
 2. **Adapter**: Backend communication abstraction
-3. **State Management**: Flow run and step state handling
+3. **State Management**: Flow run and step state handling with NanoEvents
 
 ## Component Architecture
 
 ### Client
 
-The main entry point for applications to start and observe flows:
+The main entry point for applications to start and observe flows, using NanoEvents for event management:
 
 ```typescript
 import type { 
@@ -157,6 +157,16 @@ import type {
 import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
 import { Adapter } from './adapter';
 import { v4 as uuidv4 } from 'uuid';
+import { createNanoEvents } from 'nanoevents';
+
+// Define event types for type-safety
+interface RunEvents {
+  [runId: string]: (run: RunRow) => void;
+}
+
+interface StepEvents {
+  [runId: string]: (step: StepStateRow) => void;
+}
 
 /**
  * Client implementation for JavaScript environments
@@ -166,9 +176,9 @@ export class Client<TFlow extends AnyFlow>
   implements IFlowStarter, IFlowObserver<TFlow> 
 {
   private adapter: Adapter;
-  private runSubscriptions: Map<string, Array<(run: RunRow) => void>> = new Map();
-  private stepSubscriptions: Map<string, Array<(step: StepStateRow) => void>> = new Map();
-  private disposeFunctions: Map<string, () => void> = new Map();
+  private runEmitter = createNanoEvents<RunEvents>();
+  private stepEmitter = createNanoEvents<StepEvents>();
+  private disposeFunctions: Map<string, Array<() => void>> = new Map();
   
   constructor(adapter: Adapter) {
     this.adapter = adapter;
@@ -176,8 +186,9 @@ export class Client<TFlow extends AnyFlow>
     // Set up event handling from adapter
     this.adapter.onRunEvent((run) => {
       const runId = run.id;
-      const callbacks = this.runSubscriptions.get(runId) || [];
-      callbacks.forEach(callback => callback(run));
+      
+      // Emit event to all subscribers for this run
+      this.runEmitter.emit(runId, run);
       
       // Auto-cleanup for terminal states
       if (['completed', 'failed', 'cancelled'].includes(run.status)) {
@@ -187,8 +198,9 @@ export class Client<TFlow extends AnyFlow>
     
     this.adapter.onStepEvent((step) => {
       const runId = step.run_id;
-      const callbacks = this.stepSubscriptions.get(runId) || [];
-      callbacks.forEach(callback => callback(step));
+      
+      // Emit event to all subscribers for this run's steps
+      this.stepEmitter.emit(runId, step);
     });
   }
   
@@ -200,7 +212,8 @@ export class Client<TFlow extends AnyFlow>
     // Generate UUID if not provided
     const runId = run_id || uuidv4();
     
-    // 1. Set up subscriptions FIRST to catch all events
+    // 1. Set up empty subscriptions FIRST to ensure adapter is ready
+    // The dummy subscriptions will be automatically cleaned up if no real subscribers arrive
     this.subscribeToRunEvents(runId, () => {});
     this.subscribeToStepEvents(runId, () => {});
     
@@ -215,28 +228,25 @@ export class Client<TFlow extends AnyFlow>
     run_id: string,
     callback: (run: RunRow) => void
   ): () => void {
-    // Initialize handlers array if needed
-    if (!this.runSubscriptions.has(run_id)) {
-      this.runSubscriptions.set(run_id, []);
-      
+    // First subscriber? Set up adapter subscription
+    const isFirst = !this.hasRunSubscribers(run_id);
+    
+    // Add event subscription using NanoEvents
+    const unbind = this.runEmitter.on(run_id, callback);
+    
+    if (isFirst) {
       // Set up subscription in adapter if this is first subscriber
-      const unsubscribe = this.adapter.subscribeToRun(run_id);
-      this.addDisposeFunction(run_id, unsubscribe);
+      const adapterUnbind = this.adapter.subscribeToRun(run_id);
+      this.addDisposeFunction(run_id, adapterUnbind);
     }
     
-    // Add callback to subscribers
-    const callbacks = this.runSubscriptions.get(run_id)!;
-    callbacks.push(callback);
-    
-    // Return unsubscribe function for this specific callback
+    // Return combined unsubscribe function
     return () => {
-      const index = callbacks.indexOf(callback);
-      if (index !== -1) {
-        callbacks.splice(index, 1);
-      }
+      // Remove this specific callback
+      unbind();
       
-      // If no more callbacks, clean up subscription
-      if (callbacks.length === 0) {
+      // If no more subscribers, clean up adapter subscription
+      if (!this.hasRunSubscribers(run_id) && !this.hasStepSubscribers(run_id)) {
         this.dispose(run_id);
       }
     };
@@ -246,47 +256,62 @@ export class Client<TFlow extends AnyFlow>
     run_id: string,
     callback: (step: StepStateRow) => void
   ): () => void {
-    // Initialize handlers array if needed
-    if (!this.stepSubscriptions.has(run_id)) {
-      this.stepSubscriptions.set(run_id, []);
-      
+    // First subscriber? Set up adapter subscription
+    const isFirst = !this.hasStepSubscribers(run_id);
+    
+    // Add event subscription using NanoEvents
+    const unbind = this.stepEmitter.on(run_id, callback);
+    
+    if (isFirst) {
       // Set up subscription in adapter if this is first subscriber
-      const unsubscribe = this.adapter.subscribeToSteps(run_id);
-      this.addDisposeFunction(run_id, unsubscribe);
+      const adapterUnbind = this.adapter.subscribeToSteps(run_id);
+      this.addDisposeFunction(run_id, adapterUnbind);
     }
     
-    // Add callback to subscribers
-    const callbacks = this.stepSubscriptions.get(run_id)!;
-    callbacks.push(callback);
-    
-    // Return unsubscribe function for this specific callback
+    // Return combined unsubscribe function
     return () => {
-      const index = callbacks.indexOf(callback);
-      if (index !== -1) {
-        callbacks.splice(index, 1);
-      }
+      // Remove this specific callback
+      unbind();
       
-      // If no more callbacks, clean up subscription
-      if (callbacks.length === 0) {
+      // If no more subscribers, clean up adapter subscription
+      if (!this.hasRunSubscribers(run_id) && !this.hasStepSubscribers(run_id)) {
         this.dispose(run_id);
       }
     };
   }
   
+  private hasRunSubscribers(run_id: string): boolean {
+    return this.runEmitter.events[run_id]?.length > 0;
+  }
+  
+  private hasStepSubscribers(run_id: string): boolean {
+    return this.stepEmitter.events[run_id]?.length > 0;
+  }
+  
   private addDisposeFunction(run_id: string, fn: () => void): void {
-    const disposeFns = this.disposeFunctions.get(run_id) || [];
-    disposeFns.push(fn);
-    this.disposeFunctions.set(run_id, disposeFns);
+    if (!this.disposeFunctions.has(run_id)) {
+      this.disposeFunctions.set(run_id, []);
+    }
+    this.disposeFunctions.get(run_id)!.push(fn);
   }
   
   dispose(run_id: string): void {
-    // Execute all dispose functions
+    // Execute all dispose functions for this run
     const disposeFns = this.disposeFunctions.get(run_id) || [];
     disposeFns.forEach(fn => fn());
     
-    // Clear subscriptions and dispose functions
-    this.runSubscriptions.delete(run_id);
-    this.stepSubscriptions.delete(run_id);
+    // Remove event subscriptions using NanoEvents
+    // NanoEvents doesn't have a built-in "removeAllListeners" so we create empty maps
+    // The TypeScript definition may complain, but this is the official way to remove all listeners
+    if (this.runEmitter.events[run_id]) {
+      this.runEmitter.events[run_id] = [];
+    }
+    
+    if (this.stepEmitter.events[run_id]) {
+      this.stepEmitter.events[run_id] = [];
+    }
+    
+    // Clear dispose functions
     this.disposeFunctions.delete(run_id);
   }
   
@@ -350,14 +375,20 @@ export interface Adapter {
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
 import type { RunRow, StepStateRow } from '@pgflow/core';
+import { createNanoEvents } from 'nanoevents';
+
+// Define event types for the adapter
+interface AdapterEvents {
+  runEvent: (run: RunRow) => void;
+  stepEvent: (step: StepStateRow) => void;
+}
 
 /**
  * Adapter for Supabase using PostgresChanges for realtime updates
  */
 export class SupabaseAdapter implements Adapter {
   private client: SupabaseClient;
-  private runEventListener: ((run: RunRow) => void) | null = null;
-  private stepEventListener: ((step: StepStateRow) => void) | null = null;
+  private emitter = createNanoEvents<AdapterEvents>();
   private flowDefinitions: Map<string, any> = new Map();
   private statusPrecedence: Record<string, number> = {
     'created': 0,
@@ -417,11 +448,13 @@ export class SupabaseAdapter implements Adapter {
   }
   
   onRunEvent(callback: (run: RunRow) => void): void {
-    this.runEventListener = callback;
+    // Use NanoEvents to register the callback
+    this.emitter.on('runEvent', callback);
   }
   
   onStepEvent(callback: (step: StepStateRow) => void): void {
-    this.stepEventListener = callback;
+    // Use NanoEvents to register the callback
+    this.emitter.on('stepEvent', callback);
   }
   
   subscribeToRun(run_id: string): () => void {
@@ -435,9 +468,9 @@ export class SupabaseAdapter implements Adapter {
         filter: `id=eq.${run_id}`
       }, (payload) => {
         const currentRun = payload.new as RunRow;
-        if (this.runEventListener) {
-          this.runEventListener(currentRun);
-        }
+        
+        // Emit event to all listeners
+        this.emitter.emit('runEvent', currentRun);
       })
       .subscribe();
     
@@ -447,7 +480,7 @@ export class SupabaseAdapter implements Adapter {
   }
   
   subscribeToSteps(run_id: string): () => void {
-    // Set up a channel that listens for both step_states and step_tasks changes
+    // Set up a channel that listens for step_states changes
     const channel = this.client
       .channel(`steps-${run_id}`)
       // Listen for step_states changes
@@ -463,14 +496,10 @@ export class SupabaseAdapter implements Adapter {
         if (step.status === 'completed') {
           // Fetch output from step_tasks
           const enrichedStep = await this.enrichStepWithOutput(step);
-          if (this.stepEventListener) {
-            this.stepEventListener(enrichedStep);
-          }
+          this.emitter.emit('stepEvent', enrichedStep);
         } else {
           // For non-completed steps, just emit the event
-          if (this.stepEventListener) {
-            this.stepEventListener(step);
-          }
+          this.emitter.emit('stepEvent', step);
         }
       })
       .subscribe();
@@ -732,6 +761,19 @@ function FlowRunner() {
 }
 ```
 
+## Package Dependencies
+
+To implement this architecture, add NanoEvents to the dependencies:
+
+```json
+{
+  "dependencies": {
+    "nanoevents": "^7.0.1",
+    "uuid": "^9.0.0"
+  }
+}
+```
+
 ## Updates to Core Package
 
 1. Export the new interfaces from `@pgflow/core`:
@@ -799,7 +841,28 @@ The edge worker will continue to use `IPgflowClient`, which now extends both `IF
 
 ## Key Features and Optimizations
 
-### 1. Client-Generated UUID
+### 1. NanoEvents for Event Management
+
+Using NanoEvents provides several benefits:
+
+```typescript
+// Creating an emitter with typed events
+const emitter = createNanoEvents<RunEvents>();
+
+// Subscribing (returns unbind function)
+const unbind = emitter.on(runId, callback);
+
+// Unsubscribing is straightforward
+unbind();
+```
+
+Benefits:
+- Tiny footprint (only 108 bytes)
+- Simple API with just `on` and `emit`
+- Returns unbind function directly
+- Type-safe events
+
+### 2. Client-Generated UUID
 
 By letting the client generate the run_id, we can:
 - Set up subscriptions before starting the flow
@@ -808,17 +871,16 @@ By letting the client generate the run_id, we can:
 
 ```typescript
 // Generate UUID client-side
-const newRunId = uuidv4();
+const runId = uuidv4();
 
 // Set up subscriptions for this ID immediately
-pgflow.subscribeToRunEvents(newRunId, callback);
-pgflow.subscribeToStepEvents(newRunId, callback);
+const unbind = pgflow.subscribeToRunEvents(runId, callback);
 
 // Start flow with our predetermined ID
-const run = await pgflow.startFlow(flow, input, newRunId);
+const run = await pgflow.startFlow(flow, input, runId);
 ```
 
-### 2. Flow Definition First Approach
+### 3. Flow Definition First Approach
 
 Instead of fetching the entire run state (including step_states and step_tasks), we only fetch:
 - Flow definition and metadata
@@ -829,7 +891,7 @@ Then we rely on realtime events to populate run and step states as they happen. 
 - Reduces initial data transfer
 - Still provides all the necessary type information
 
-### 3. Status Precedence
+### 4. Status Precedence
 
 To handle out-of-order events:
 
@@ -850,17 +912,6 @@ shouldUpdateStatus(currentStatus: string, newStatus: string): boolean {
 }
 ```
 
-### 4. Resource Management
-
-Auto-cleanup prevents memory leaks:
-
-```typescript
-// Auto-cleanup for terminal states
-if (['completed', 'failed', 'cancelled'].includes(run.status)) {
-  this.dispose(runId);
-}
-```
-
 ## Summary
 
 This architecture provides:
@@ -870,17 +921,22 @@ This architecture provides:
    - `IFlowObserver` - For observing flow runs and steps (client)
    - `ITaskExecutor` - For executing tasks (SQL client, edge worker)
 
-2. **Race Condition Prevention**:
+2. **Efficient Event Management**:
+   - Uses NanoEvents for lightweight, memory-efficient event handling
+   - Returns clean unbind functions for easy subscription management
+   - Type-safe events for better developer experience
+
+3. **Race Condition Prevention**:
    - Client-generated UUID for pre-subscription
    - Set up all subscriptions before starting the flow
    - Remove need for event buffering logic
 
-3. **Optimized Data Loading**:
+4. **Optimized Data Loading**:
    - Fetch only flow metadata initially
    - Rely on realtime events for state updates
    - Single-query approach for critical data
 
-4. **Backward Compatibility**:
+5. **Backward Compatibility**:
    - `IPgflowClient` extends both `IFlowStarter` and `ITaskExecutor`
    - Optional run_id parameter maintains compatibility with existing code
 
