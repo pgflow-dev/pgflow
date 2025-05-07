@@ -211,7 +211,7 @@ export class FlowRun<TFlow> {
     stepSlug: TStepSlug
   ): FlowStep<TFlow, TStepSlug>;
 
-  // Wait for a specific status
+  // Wait for a specific status with a default timeout (5 minutes)
   async waitForStatus(
     targetStatus: 'completed' | 'failed',
     options?: { timeoutMs?: number; signal?: AbortSignal }
@@ -244,7 +244,7 @@ export class FlowStep<
     callback: (event: StepEvents<TFlow, TStepSlug>[E]) => void
   ): Unsubscribe;
 
-  // Wait for a specific status
+  // Wait for a specific status with a default timeout (5 minutes)
   async waitForStatus(
     targetStatus: 'started' | 'completed' | 'failed',
     options?: { timeoutMs?: number; signal?: AbortSignal }
@@ -461,6 +461,18 @@ To prevent duplicate objects and event emitters for the same step:
 - Avoids overhead of creating multiple NanoEvents emitters
 - Ensures consistent event handling for steps
 - Prevents memory leaks from abandoned step instances
+
+### 1. Wait Timeouts
+
+To prevent promises hanging indefinitely on network issues:
+
+- All `waitForStatus` methods have a default timeout (5 minutes)
+- Timeout can be overridden via the options parameter
+- Global timeout can be configured via environment variable
+- Properly handles AbortSignal cancellations to distinguish from real errors
+- Swallows AbortError but rethrows other types of errors
+- Prevents resource leaks from forgotten promises
+- Ensures predictable error handling for network issues
 
 ### 1. Status Precedence
 
