@@ -69,101 +69,102 @@ This `startFlow` call should:
   - [x] Decide what shape of data we want to store in the client
     - Private state with public getters for common properties
     - Steps accessible via type-safe method
+    - Consistently use snake_case for property names to match Supabase convention
 
 ## Inspect current state of flow run (synchronously)
 
 ```ts
-flowRun.runId; // => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+flowRun.run_id; // => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
 flowRun.status; // => 'started'
-flowRun.remainingSteps; // => 1
-flowRun.startedAt; // => timestamp
-flowRun.completedAt; // => null
-flowRun.failedAt; // => null
+flowRun.remaining_steps; // => 1
+flowRun.started_at; // => timestamp
+flowRun.completed_at; // => null
+flowRun.failed_at; // => null
 flowRun.input; // => { url: 'https://supabase.com' }
-flowRun.flowSlug; // => 'analyze_website'
+flowRun.flow_slug; // => 'analyze_website'
 ```
 
 - [x] Decide if we want to scope the columns/values in some object and leave top-level values for methods
-    - Using direct getters with camelCase names for common properties
+    - Using direct getters with snake_case names to match Supabase convention
 
 ## Subscribe to flow run updates
 
 ```ts
-const unsubscribe = flowRun.subscribe('run:*', (event) => {
+const unsubscribe = flowRun.subscribe('status', (event) => {
   console.log(event);
 });
 
 // {
-//   type: 'run:started',
 //   run_id: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
 //   flow_slug: 'analyze_website',
 //   status: 'started',
-//   started_at: 1673360200,
+//   started_at: '2023-01-10T12:30:00Z',
 //   completed_at: null,
 //   failed_at: null,
 //   input: { url: 'https://supabase.com' },
-//   flow_slug: 'analyze_website',
-//   remaining_steps: 1,
+//   output: null,
+//   remaining_steps: 1
 // }
 ```
 
 ## Subscribe to step updates
 
 ```ts
-const unsubscribe = flowRun.subscribe('step:*', (event) => {
+// Option 1: Subscribe to all step events at flow level
+const unsubscribeAllSteps = flowRun.subscribe('status', (event) => {
+  if ('step_slug' in event) {
+    console.log(`Step ${event.step_slug} is now ${event.status}`);
+  }
+});
+
+// Option 2: Subscribe to a specific step
+const websiteStep = flowRun.step('website');
+const unsubscribeStep = websiteStep.subscribe('status', (event) => {
   console.log(event);
 });
 
 // {
-//   type: 'step:started',
 //   run_id: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
 //   flow_slug: 'analyze_website',
 //   step_slug: 'website',
 //   status: 'started',
 //   remaining_tasks: 1,
 //   remaining_deps: 0,
-//   created_at: 1673360200,
-//   started_at: null,
+//   created_at: '2023-01-10T12:30:01Z',
+//   started_at: '2023-01-10T12:30:02Z',
 //   completed_at: null,
 //   failed_at: null,
-//   output: null, // this will be pulled from step_task with task_index = 0
-//   error_message: null, // this will be pulled from step_task with task_index = 0
+//   output: null,
+//   error_message: null
 // }
 ```
 
-- [ ] Make sure if using the output of step tasks as the output for a step state is a good simplification to make
+- [x] Make sure if using the output of step tasks as the output for a step state is a good simplification to make
+    - This simplification makes sense since each step has only one task (constraint in database schema)
+    - Mapping step_tasks output to step_states makes the API simpler for consumers
 
 ## Async waiting for status/output
 
-I am not sure how to model the API for the async waiting for particular status/output.
-Loose thoughts:
-
-- we never wait for failure, it should be try/catched? or should we wait?
-- i imagine we want to wait for step becoming `started`, so waiting should not only be for `completed`
-- most of the time the wait is just an easy way of saying "this step is now completed and this are its outputs" or "this step just started"
-
-Ideas for flow waits:
+For waiting on status changes, we'll use a simple promise-based approach:
 
 ```ts
-// can maybe make waitForStatus() to return a promise that resolves to the new state of the run?
+// Wait for flow run to complete
 flowRun.output; // null
-const flowOutput = await flowRun.waitForStatus('completed').output;
-flowRun.output; // <whole run output json>, same as flowOutput
+const completedRun = await flowRun.waitForStatus('completed');
+completedRun.output; // <whole run output json>
+
+// Wait for specific step to complete
+const websiteStep = flowRun.step('website');
+const completedStep = await websiteStep.waitForStatus('completed');
+completedStep.output; // <website step output json>
 ```
 
-Ideas for step waits:
-
-```ts
-const websiteStep = flowRun.steps.website; // or flowRun.step('website');
-const websiteStepOutput = await websiteStep.waitForStatus('completed').output;
-websiteStep.output; // <website step output json>, same as websiteStepOutput
-```
-
-It might also be useful to support timeouts and cancellation for these waiting operations:
+With timeout and cancellation support:
 
 ```ts
 // Wait with a timeout (throws TimeoutError if not completed within 30 seconds)
-const output = await flowRun.waitForStatus('completed', { timeoutMs: 30000 }).output;
+const completedRun = await flowRun.waitForStatus('completed', { timeoutMs: 30000 });
+const output = completedRun.output;
 
 // Allow cancellation with AbortController
 const controller = new AbortController();
@@ -172,18 +173,73 @@ const promise = flowRun.waitForStatus('completed', { signal: controller.signal }
 controller.abort('User cancelled operation');
 ```
 
-- [ ] Decide if we want to have flow-run-level methods for waiting for steps and run, or we want to introduce a way to "get a step" which will expose the same api for waiting and outputs. The latter would allow for example to iterate over an array of steps dynamically etc.
+The waitForStatus method will:
 
-### Subscribing to step-events
+1. Return a Promise that resolves to 'this' (the flowRun or step instance)
+2. Allow waiting for any status ('started', 'completed', 'failed')
+3. Throw an error if the promise is rejected (timeout or cancellation)
+4. Return immediately if the status is already reached
 
-Maybe it would be a good idea to have a `.subscribe()` method on the value returned by `flowRun.steps.website` (or `.step('website')) - this will make both steps and runs have same api to access output, wait for statuses and subscribe to events, and maybe even simplify the implementation
+- [x] Decide if we want to have flow-run-level methods for waiting for steps and run, or we want to introduce a way to "get a step" which will expose the same api for waiting and outputs.
+    - We'll use the step() method to get a step object that exposes the same API as the flow run
+
+### Step API
+
+Each step is accessed through the step() method and has a similar API to the flow run:
+
+```ts
+const websiteStep = flowRun.step('website');
+
+// Get step state
+websiteStep.status; // => 'completed'
+websiteStep.output; // => { url: 'https://example.com', title: 'Example Website' }
+
+// Subscribe to step events
+websiteStep.subscribe('status', (event) => {
+  console.log(`Step ${event.step_slug} is now ${event.status}`);
+});
+
+// Wait for step status
+const completedStep = await websiteStep.waitForStatus('completed');
+```
+
+This approach allows:
+1. Type-safe access to steps based on the flow definition
+2. Consistent API between flow runs and steps
+3. Ability to dynamically iterate through steps if needed
+4. Clean separation of concerns between runs and steps
 
 ## Type safety
 
-Given the flow was started with `typeof AnalyzeWebsite` as type argument, we should
-statically type:
+With the flow started with `typeof AnalyzeWebsite` as type argument, we'll provide full type safety:
 
-- available step slugs in `.step(<here>)`
-- for given `.step('website')`, we should provide type annotations for its `.output` based on `StepOutput` utility type from DSL
-- for whole flow run, we should provide type annotations for `.output` based on `ExtractFlowOutput` utility type from DSL
-- in event handlers for `.subscribe()` we should provide type annotations for the event payload based on flow DSL type provided
+```ts
+// Type-safe step access - only valid step slugs are allowed
+const websiteStep = flowRun.step('website'); // OK
+const invalidStep = flowRun.step('invalid-step'); // TypeScript Error
+
+// Type-safe step output - automatically inferred from the DSL
+const websiteOutput = websiteStep.output; // TypeScript automatically infers StepOutput<typeof AnalyzeWebsite, 'website'>
+
+// Type-safe flow output - automatically inferred from the DSL
+const flowOutput = flowRun.output; // TypeScript automatically infers ExtractFlowOutput<typeof AnalyzeWebsite>
+
+// Type-safe event payloads in subscriptions (using type narrowing)
+flowRun.subscribe('status', (event) => {
+  if ('step_slug' in event) {
+    // TypeScript knows this is a StepEvent
+    const stepOutput = event.output; // Correctly typed based on step_slug
+  } else {
+    // TypeScript knows this is a RunEvent
+    const runOutput = event.output; // Correctly typed as flow output
+  }
+});
+```
+
+This type safety is implemented by leveraging the DSL's utility types:
+- `ExtractFlowInput<TFlow>` for input validation when starting flows
+- `ExtractFlowSteps<TFlow>` for validating step slugs 
+- `StepOutput<TFlow, TStepSlug>` for step output typing
+- `ExtractFlowOutput<TFlow>` for flow output typing
+
+The library provides this full type safety from the DSL all the way through to the client API, with no need for manual type annotations.
