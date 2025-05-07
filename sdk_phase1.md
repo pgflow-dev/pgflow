@@ -13,11 +13,11 @@ Phase 1 establishes the foundation for our SDK by implementing the required SQL 
 Add broadcast events to existing PostgreSQL functions:
 
 1. **Create new SQL functions:**
-   - `pgflow.start_flow_with_states(p_flow_slug TEXT, p_input JSONB, p_run_id UUID DEFAULT NULL)` - Return complete initial state snapshot as TABLE(run, steps[])
-   - `pgflow.get_run_with_states(p_run_id UUID)` - Fetch current state for reconnection
+   - `pgflow.start_flow_with_states(flow_slug TEXT, input JSONB, run_id UUID DEFAULT NULL)` - Return complete initial state snapshot as TABLE(run, steps[])
+   - `pgflow.get_run_with_states(run_id UUID)` - Fetch current state for reconnection
 
 2. **Modify existing functions to emit broadcast events:**
-   - `start_flow.sql` - Add optional `p_run_id` parameter and `run:started` event with complete payload (including remaining_steps)
+   - `start_flow.sql` - Add optional `run_id` parameter and `run:started` event with complete payload (including remaining_steps)
    - `start_ready_steps.sql` - Add `<step_slug>:started` event with complete payload (including remaining_tasks, remaining_deps)
    - `complete_task.sql` - Add `<step_slug>:completed` event with complete payload
    - `fail_task.sql` - Add `<step_slug>:failed` and potentially `run:failed` events with complete payload
