@@ -331,3 +331,27 @@ This type safety is implemented by leveraging the DSL's utility types:
 - `ExtractFlowOutput<TFlow>` for flow output typing
 
 The library provides this full type safety from the DSL all the way through to the client API, with no need for manual type annotations.
+
+## Future Enhancements (Nice to have)
+
+### Type-safe Flow Map
+
+To simplify working with multiple flows and reduce the need for repetitive generic type parameters, we could provide a helper to pre-bake all your flow types:
+
+```ts
+// Define your flow map once
+type MyFlows = {
+  'analyze_website': typeof AnalyzeWebsite;
+  'user_onboarding': typeof UserOnboarding;
+  // Add all your flows here
+};
+
+// Create a pre-typed client
+const pgflow = createPgflowClient<MyFlows>();
+
+// Now you can use it without type parameters
+const flow1 = pgflow.startFlow('analyze_website', input); // Types inferred automatically
+const flow2 = pgflow.startFlow('user_onboarding', input); // Types inferred automatically
+```
+
+This approach would eliminate the need to specify the flow type for every operation, improve autocompletion for flow slugs, and provide a single source of truth for flow type definitions.
