@@ -344,6 +344,8 @@ For Supabase, the adapter:
 3. Maintains a status precedence system to handle out-of-order events
 4. Implements NanoEvents for routing events to the client
 5. Handles WebSocket disconnections by performing a full state refresh on reconnect:
+   - Tracks current subscription ID to manage connection lifecycle
+   - Unsubscribes from previous subscription before creating a new one
    - Listens for the realtime connection 'open' event
    - Fetches current run and step state data on reconnect
    - Updates client state to reflect the latest server state
