@@ -1,14 +1,14 @@
-# PgFlow Client Library Architecture
+# PgFlow Client Library Architecture (Updated)
 
-This document outlines the internal architecture and design approach for the PgFlow client SDK.
+This document outlines the internal architecture and design approach for the PgFlow client SDK with the Broadcast communication approach.
 
 ## Design Goals
 
 - **Type Safety**: Full TypeScript type inference using DSL types
 - **Framework Agnostic**: Core library with no framework dependencies
-- **Flexibility**: Ability to adapt to different backend communication strategies
 - **Testability**: Easy to mock for testing
 - **Performance**: Optimize for fast state updates and minimal overhead
+- **Simplicity**: Direct real-time Broadcast communication
 
 ## Core Components
 
@@ -17,7 +17,7 @@ The library consists of four main components:
 1. **Client**: Main entry point for creating flow runs
 2. **FlowRun**: State management for a single flow run
 3. **FlowStep**: State management for a single step in a flow
-4. **Adapter**: Backend communication abstraction
+4. **SupabaseBroadcastAdapter**: Handles real-time communication with the database
 
 ## Core Interfaces & Types
 
@@ -26,12 +26,25 @@ The library consists of four main components:
 ```typescript
 // Flow run event types
 export type FlowRunEvents<TFlow> = {
+  started: {
+    run_id: string;
+    flow_slug: string;
+    input: ExtractFlowInput<TFlow>;
+    status: 'started';
+    started_at: string;
+  };
   completed: {
     run_id: string;
     output: ExtractFlowOutput<TFlow>;
     status: 'completed';
+    completed_at: string;
   };
-  failed: { run_id: string; error_message: string; status: 'failed' };
+  failed: { 
+    run_id: string; 
+    error_message: string; 
+    status: 'failed';
+    failed_at: string;
+  };
   // General event type that includes all events
   '*': { run_id: string; status: string; [key: string]: any };
 };
@@ -41,18 +54,25 @@ export type StepEvents<
   TFlow,
   TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
 > = {
-  started: { run_id: string; step_slug: TStepSlug; status: 'started' };
+  started: { 
+    run_id: string; 
+    step_slug: TStepSlug; 
+    status: 'started';
+    started_at: string;
+  };
   completed: {
     run_id: string;
     step_slug: TStepSlug;
     output: StepOutput<TFlow, TStepSlug>;
     status: 'completed';
+    completed_at: string;
   };
   failed: {
     run_id: string;
     step_slug: TStepSlug;
     error_message: string;
     status: 'failed';
+    failed_at: string;
   };
   // General event type that includes all events
   '*': {
@@ -69,7 +89,7 @@ export type Unsubscribe = () => void;
 
 ### Interface Segregation
 
-Following the Interface Segregation Principle, we split the adapter functionality into three focused interfaces:
+Following the Interface Segregation Principle, we maintain three focused interfaces:
 
 ```typescript
 // For starting flows (used by everything)
@@ -78,7 +98,7 @@ export interface IFlowStarter {
    * Start a flow with optional run_id
    */
   startFlow<TFlow extends AnyFlow>(
-    flow: TFlow,
+    flow_slug: string,
     input: ExtractFlowInput<TFlow>,
     run_id?: string
   ): Promise<RunRow>;
@@ -113,27 +133,27 @@ export interface IFlowRealtime {
   /**
    * Fetch flow definition metadata
    */
-  fetchFlowDefinition(flow_slug: string): Promise<void>;
+  fetchFlowDefinition(flow_slug: string): Promise<FlowDefinition>;
 
   /**
    * Register a callback for run events
    */
-  onRunEvent(callback: (run: RunRow) => void): void;
+  onRunEvent(callback: (event: BroadcastRunEvent) => void): void;
 
   /**
    * Register a callback for step events
    */
-  onStepEvent(callback: (step: StepStateRow) => void): void;
+  onStepEvent(callback: (event: BroadcastStepEvent) => void): void;
 
   /**
-   * Subscribe to run state changes
+   * Subscribe to a flow run's events
    */
   subscribeToRun(run_id: string): () => void;
 
   /**
-   * Subscribe to step state changes
+   * Fetch current state of a run and its steps
    */
-  subscribeToSteps(run_id: string): () => void;
+  getRunWithStates(run_id: string): Promise<{ run: RunRow; steps: StepStateRow[] }>;
 }
 
 // Composite interfaces for different use cases
@@ -150,14 +170,13 @@ This segregation allows each component to depend only on the interfaces it needs
 
 - **Client** implements `IFlowClient` (which combines `IFlowStarter` and `IFlowRealtime`)
 - **PgflowSqlClient** implements `IPgflowClient` (which combines `IFlowStarter` and `ITaskProcessor`)
-- Individual adapters can implement the specific interfaces they support
+- **SupabaseBroadcastAdapter** implements `IFlowRealtime`
 
 ### Interface Location
 
 The interfaces should be distributed across packages as follows:
 
 - **IFlowStarter** and **ITaskProcessor** interfaces belong in **pkgs/core/src/types.ts**
-
   - These are fundamental interfaces used by core components
   - PgflowSqlClient already exists in core and implements these
   - EdgeWorker depends on core, so this maintains the dependency structure
@@ -315,7 +334,7 @@ The `startFlow` method follows a carefully designed sequence to prevent race con
 2. Fetch flow definition to know available steps
 3. Create FlowRun instance with initial state
 4. Store the run in the client's internal map
-5. Set up subscriptions for run and step events
+5. Set up subscriptions for run and step events using Broadcast
 6. Start the flow with the predetermined run_id using `pgflow.start_flow_with_states`
 7. Update the run and step states with the complete initial state snapshot
 8. Return the FlowRun instance
@@ -326,69 +345,117 @@ This sequence ensures that:
 - The client has a complete initial state snapshot before any realtime events arrive
 - Fast-completing steps are not missed due to network latency between subscription setup and the first event
 
-### Adapter Implementation
+### Broadcast Adapter Implementation
 
-For Supabase, the adapter:
+The SupabaseBroadcastAdapter implements the IFlowRealtime interface:
 
-1. Uses postgres_changes realtime subscriptions with a multiplex approach:
-   - For MVP: Creates just one realtime channel per run (not per step)
-   - Single channel listens to both runs and step_states tables with filter: `eq('run_id', run_id)`
-   - Demultiplexes events client-side based on table and step_slug
-   - Significantly reduces resource usage
-   - Avoids hitting Supabase's channel limits even with large flows
-2. Maintains a status precedence system to handle out-of-order events
-3. Implements NanoEvents for routing events to the client
-   - Tracks and emits events based on the step_states table
-   - All step outputs and status information come directly from step_states
-4. Handles WebSocket disconnections by performing a full state refresh on reconnect:
-   - Tracks current subscription ID to manage connection lifecycle
-   - Unsubscribes from previous subscription before creating a new one
-   - Listens for the realtime connection 'open' event
-   - Fetches current run and step state data on reconnect
-   - Updates client state to reflect the latest server state
-   - Prevents state drift between client and server
+```typescript
+export class SupabaseBroadcastAdapter implements IFlowRealtime {
+  #supabase: SupabaseClient;
+  #channels: Map<string, RealtimeChannel> = new Map();
+  #runCallbacks: Set<(event: BroadcastRunEvent) => void> = new Set();
+  #stepCallbacks: Set<(event: BroadcastStepEvent) => void> = new Set();
+  
+  constructor(supabase: SupabaseClient) {
+    this.#supabase = supabase;
+  }
+  
+  async fetchFlowDefinition(flow_slug: string): Promise<FlowDefinition> {
+    // Implementation to fetch flow metadata from database
+  }
+  
+  onRunEvent(callback: (event: BroadcastRunEvent) => void): void {
+    this.#runCallbacks.add(callback);
+  }
+  
+  onStepEvent(callback: (event: BroadcastStepEvent) => void): void {
+    this.#stepCallbacks.add(callback);
+  }
+  
+  subscribeToRun(run_id: string): () => void {
+    const channelName = `pgflow:run:${run_id}`;
+    const channel = this.#supabase.channel(channelName);
+    
+    // Subscribe to run events (e.g., run:started, run:completed, run:failed)
+    channel.on('broadcast', { event: 'run:*' }, (payload) => {
+      this.#runCallbacks.forEach(cb => cb(payload.payload));
+    });
+    
+    // Subscribe to step events (e.g., step_slug:started, step_slug:completed, step_slug:failed)
+    channel.on('broadcast', { event: '*:*' }, (payload) => {
+      const eventParts = payload.event.split(':');
+      if (eventParts.length === 2 && eventParts[0] !== 'run') {
+        this.#stepCallbacks.forEach(cb => cb(payload.payload));
+      }
+    });
+    
+    channel.subscribe();
+    this.#channels.set(run_id, channel);
+    
+    return () => this.#unsubscribe(run_id);
+  }
+  
+  async getRunWithStates(run_id: string): Promise<{ run: RunRow; steps: StepStateRow[] }> {
+    // Implementation to fetch current state
+    const { data, error } = await this.#supabase.rpc('pgflow.get_run_with_states', {
+      p_run_id: run_id
+    });
+    
+    if (error) throw error;
+    return data;
+  }
+  
+  #unsubscribe(run_id: string): void {
+    const channel = this.#channels.get(run_id);
+    if (channel) {
+      channel.unsubscribe();
+      this.#channels.delete(run_id);
+    }
+  }
+}
+```
 
-This simple reconnection approach also enables observing existing flow runs by ID without having to be present when they started.
+Key aspects of this implementation:
+
+1. **Single Channel Subscription**:
+   - Creates one realtime broadcast channel per run with format `pgflow:run:<run_id>`
+   - Listens for all events related to the run and its steps on this channel
+
+2. **Event Naming Convention**:
+   - Run events: `run:started`, `run:completed`, `run:failed`
+   - Step events: `<step_slug>:started`, `<step_slug>:completed`, `<step_slug>:failed`
+
+3. **Efficient Event Handling**:
+   - Uses a single broadcast channel for all events related to a run
+   - Filters events client-side based on the event name pattern
+   - Distributes events to appropriate callbacks
+
+4. **Reconnection Handling**:
+   - Tracks current subscription status
+   - Provides method to fetch full state on reconnect
+   - Handles WebSocket disconnections gracefully
 
 ## Required SQL Updates
 
-The `pgflow.start_flow` function needs to be updated to accept an optional run_id parameter:
+See `client_library_sql_modifications.md` for detailed SQL function updates implementing the broadcast events.
 
-```sql
-CREATE OR REPLACE FUNCTION pgflow.start_flow(
-  p_flow_slug TEXT,
-  p_input JSONB,
-  p_run_id UUID DEFAULT NULL
-) RETURNS SETOF pgflow.runs AS $$
-  -- Function implementation
-  -- Uses COALESCE(p_run_id, gen_random_uuid()) to prioritize client-provided UUID
-$$ LANGUAGE plpgsql;
-```
+Key additions include:
 
-We also need a new function `pgflow.start_flow_with_states` that:
+1. **Updated `pgflow.start_flow` function**:
+   - Accept an optional run_id parameter
+   - Send broadcast event for run:started
 
-- Internally calls the existing `start_flow` function
-- Fetches the full set of step states for the run
-- Returns both the run and step states in a single response
-- Provides clients with a complete initial state snapshot
+2. **New `pgflow.start_flow_with_states` function**:
+   - Returns both run and step states in a single response
+   - Provides complete initial state snapshot
 
-Additionally, we need a function to fetch the current state of a run and its steps:
+3. **New `pgflow.get_run_with_states` function**:
+   - Fetches current state of a run and all its steps
+   - Used for refreshing state after reconnections
 
-- Used for refreshing state after WebSocket reconnections
-- Used for observing existing runs by ID
-- Can be reused by `start_flow_with_states` internally to eliminate duplication
-
-The `pgflow.complete_task` function needs to be updated to:
-
-- Store task output directly in the step_states output column when a step completes
-- This simplifies client architecture by providing all required data in step_states
-- Enables future fanout support without client changes (when multiple tasks per step)
-
-A new index on step_states is needed for efficient queries:
-
-- Create `idx_step_states_run_only (run_id)` index
-- This prevents sequential scans when filtering states by run_id
-- Important for efficient client refreshes and queries on runs with many steps
+4. **Broadcast events in core functions**:
+   - Added to `start_flow.sql`, `start_ready_steps.sql`, `complete_task.sql`, etc.
+   - Consistently structured payloads for client consumption
 
 ## Package Dependencies
 
@@ -412,7 +479,7 @@ Using NanoEvents provides several benefits:
 - Returns unbind function directly
 - Type-safe events
 
-### 1. Client-Generated UUID
+### 2. Client-Generated UUID
 
 By letting the client generate the run_id, we can:
 
@@ -420,7 +487,7 @@ By letting the client generate the run_id, we can:
 - Eliminate race conditions with event delivery
 - Create a more reliable subscription model
 
-### 1. Automatic Resource Cleanup
+### 3. Automatic Resource Cleanup
 
 To prevent resource leaks, we implement automatic cleanup:
 
@@ -429,54 +496,23 @@ To prevent resource leaks, we implement automatic cleanup:
 - Close Supabase channels and remove internal references
 - Users can still manually call dispose() for early cleanup
 
-### 1. Complete Initial State Snapshot
+### 4. Complete Initial State Snapshot
 
 Our approach to state management involves:
 
 - Fetching flow definition and metadata first
 - Getting a complete initial state snapshot via `start_flow_with_states`
 - Using this snapshot to initialize client-side state
-- Then relying on realtime events for subsequent state updates
+- Then relying on real-time events for subsequent state updates
 
 This hybrid approach gives us the benefits of both worlds:
 
 - Complete initial state without missing fast-completing steps
 - Real-time updates for changes that happen after initialization
 
-### 1. Encapsulated State with Getters
+### 5. Status Precedence
 
-Using private class fields with public getters provides:
-
-- Clean API for accessing state properties
-- Encapsulation of internal state
-- Type-safe access to properties
-- Prevents consumers from directly modifying state
-
-### 1. Step Instance Caching
-
-To prevent duplicate objects and event emitters for the same step:
-
-- FlowRun internally caches FlowStep instances by slug
-- Repeated calls to `flowRun.step('same-slug')` return the same instance
-- Avoids overhead of creating multiple NanoEvents emitters
-- Ensures consistent event handling for steps
-- Prevents memory leaks from abandoned step instances
-
-### 1. Wait Timeouts
-
-To prevent promises hanging indefinitely on network issues:
-
-- All `waitForStatus` methods have a default timeout (5 minutes)
-- Timeout can be overridden via the options parameter
-- Global timeout can be configured via environment variable
-- Properly handles AbortSignal cancellations to distinguish from real errors
-- Swallows AbortError but rethrows other types of errors
-- Prevents resource leaks from forgotten promises
-- Ensures predictable error handling for network issues
-
-### 1. Status Precedence
-
-To handle out-of-order events, we implement a status precedence system:
+To handle out-of-order events, we maintain a status precedence system:
 
 ```typescript
 private statusPrecedence: Record<string, number> = {
@@ -493,8 +529,6 @@ shouldUpdateStatus(currentStatus: string, newStatus: string): boolean {
   const newPrecedence = this.statusPrecedence[newStatus] || 0;
 
   // Only allow higher or equal precedence to replace current status
-  // Explicitly rejects lower precedence updates that might arrive out of order
-  // due to Postgres logical replication (e.g., 'completed' before 'started')
   return newPrecedence >= currentPrecedence;
 }
 ```
@@ -504,30 +538,21 @@ shouldUpdateStatus(currentStatus: string, newStatus: string): boolean {
 This architecture provides:
 
 1. **Clean API Design**:
-
    - Private state with public getters for encapsulation
    - NanoEvents for simple event subscription with `.on()`
    - Intuitive FlowRun and FlowStep classes
 
-1. **Efficient Event Management**:
+2. **Efficient Event Management**:
+   - Single broadcast channel per flow run
+   - Direct database-to-client event delivery
+   - Type-safe event handling
 
-   - Uses NanoEvents for lightweight, memory-efficient event handling
-   - Returns clean unbind functions for easy subscription management
-   - Type-safe events for better developer experience
-
-1. **Race Condition Prevention**:
-
+3. **Race Condition Prevention**:
    - Client-generated UUID for pre-subscription
    - Set up subscriptions before starting the flow
-   - Remove need for event buffering logic
+   - Complete initial state snapshot
 
-1. **Optimized Data Loading**:
-
-   - Fetch only flow metadata initially
-   - Rely on realtime events for state updates
-   - Single-query approach for critical data
-
-1. **Type Safety**:
-   - Full type inference from DSL to client
-   - Type-safe step access with FlowRun.step()
-   - Type-safe event subscriptions
+4. **Simple Implementation**:
+   - No complex table-based subscriptions
+   - Clear event naming convention
+   - Direct mapping of database events to client-side state
