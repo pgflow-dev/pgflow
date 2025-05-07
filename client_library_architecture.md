@@ -388,6 +388,12 @@ The `pgflow.complete_task` function needs to be updated to:
 - This simplifies client architecture by providing all required data in step_states
 - Enables future fanout support without client changes (when multiple tasks per step)
 
+A new index on step_states is needed for efficient queries:
+
+- Create `idx_step_states_run_only (run_id)` index
+- This prevents sequential scans when filtering states by run_id
+- Important for efficient client refreshes and queries on runs with many steps
+
 ## Package Dependencies
 
 ```json
