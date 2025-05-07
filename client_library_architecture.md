@@ -45,24 +45,51 @@ export type StepEvents<TFlow, TStepSlug extends keyof ExtractFlowSteps<TFlow> & 
 export type Unsubscribe = () => void;
 ```
 
-### Adapter Interface
+### Interface Segregation
+
+Following the Interface Segregation Principle, we split the adapter functionality into three focused interfaces:
 
 ```typescript
-/**
- * Adapter interface for backend communication
- */
-export interface Adapter {
+// For starting flows (used by everything)
+export interface IFlowStarter {
   /**
    * Start a flow with optional run_id
    */
   startFlow<TFlow extends AnyFlow>(
-    flowSlug: string,
+    flow: TFlow,
     input: ExtractFlowInput<TFlow>,
     run_id?: string
   ): Promise<RunRow>;
+}
+
+// For task processing (used by PgflowSqlClient and edge-worker)
+export interface ITaskProcessor {
+  /**
+   * Poll for available tasks to process
+   */
+  pollForTasks(
+    queueName: string,
+    batchSize?: number,
+    maxPollSeconds?: number,
+    pollIntervalMs?: number,
+    visibilityTimeout?: number
+  ): Promise<StepTaskRecord[]>;
   
   /**
-   * Fetch flow definition (metadata only)
+   * Mark a task as completed with output
+   */
+  completeTask(stepTask: StepTaskKey, output?: Json): Promise<void>;
+  
+  /**
+   * Mark a task as failed with error
+   */
+  failTask(stepTask: StepTaskKey, error: unknown): Promise<void>;
+}
+
+// For realtime updates (used by client library)
+export interface IFlowRealtime {
+  /**
+   * Fetch flow definition metadata
    */
   fetchFlowDefinition(flow_slug: string): Promise<void>;
   
@@ -86,7 +113,34 @@ export interface Adapter {
    */
   subscribeToSteps(run_id: string): () => void;
 }
+
+// Composite interfaces for different use cases
+export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow> 
+  extends IFlowStarter, ITaskProcessor {}
+
+export interface IFlowClient<TFlow extends AnyFlow = AnyFlow>
+  extends IFlowStarter, IFlowRealtime {}
 ```
+
+This segregation allows each component to depend only on the interfaces it needs:
+
+- **Client** implements `IFlowClient` (which combines `IFlowStarter` and `IFlowRealtime`)
+- **PgflowSqlClient** implements `IPgflowClient` (which combines `IFlowStarter` and `ITaskProcessor`)
+- Individual adapters can implement the specific interfaces they support
+
+### Interface Location
+
+The interfaces should be distributed across packages as follows:
+
+- **IFlowStarter** and **ITaskProcessor** interfaces belong in **pkgs/core/src/types.ts**
+  - These are fundamental interfaces used by core components
+  - PgflowSqlClient already exists in core and implements these
+  - EdgeWorker depends on core, so this maintains the dependency structure
+
+- **IFlowRealtime** and **IFlowClient** interfaces belong in the **new client package**
+  - These are specific to the client-side real-time functionality
+  - IFlowClient will import and extend IFlowStarter from core
+  - Keeps client concerns separate from engine concerns
 
 ### Client API
 
