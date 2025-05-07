@@ -75,7 +75,7 @@ function getTimestampFromFilename(filename: string): string {
 }
 
 // Helper function to generate a new timestamp that's higher than the reference timestamp
-function generateNewTimestamp(referenceTimestamp: string, increment: number = 10): string {
+function generateNewTimestamp(referenceTimestamp: string, increment = 10): string {
   // Parse the reference timestamp
   // Format: YYYYMMDDhhmmss (e.g., 20250429164909)
   if (!referenceTimestamp || referenceTimestamp.length !== 14) {
