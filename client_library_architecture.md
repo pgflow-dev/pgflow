@@ -10,326 +10,409 @@ This document outlines the internal architecture and implementation approach for
 - **Testability**: Easy to mock for testing
 - **Performance**: Optimize for fast state updates and minimal overhead
 
-## Core Interfaces
-
-We'll introduce three distinct interfaces that separate concerns clearly:
-
-### 1. IFlowStarter
-
-```typescript
-import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
-import type { RunRow } from '@pgflow/core';
-
-/**
- * Interface for starting workflow flows
- */
-export interface IFlowStarter {
-  /**
-   * Starts a flow with the given input
-   * 
-   * @param flow - The flow definition
-   * @param input - Input data for the flow
-   * @param run_id - Optional UUID for the run. If provided, this exact ID will be used
-   * @returns Promise with the flow run record
-   */
-  startFlow<TFlow extends AnyFlow>(
-    flow: TFlow,
-    input: ExtractFlowInput<TFlow>,
-    run_id?: string
-  ): Promise<RunRow>;
-}
-```
-
-### 2. IFlowObserver
-
-```typescript
-import type { AnyFlow } from '@pgflow/dsl';
-import type { RunRow, StepStateRow } from '@pgflow/core';
-
-/**
- * Interface for observing flow run and step state changes
- */
-export interface IFlowObserver<TFlow extends AnyFlow = AnyFlow> {
-  /**
-   * Subscribe to flow run events
-   * 
-   * @param run_id - The run ID to observe
-   * @param callback - Function to call when the run state changes
-   * @returns Unsubscribe function
-   */
-  subscribeToRunEvents(
-    run_id: string,
-    callback: (run: RunRow) => void
-  ): () => void;
-  
-  /**
-   * Subscribe to step state events
-   * 
-   * @param run_id - The run ID to observe
-   * @param callback - Function to call when any step state changes
-   * @returns Unsubscribe function
-   */
-  subscribeToStepEvents(
-    run_id: string,
-    callback: (step: StepStateRow) => void
-  ): () => void;
-  
-  /**
-   * Clean up all subscriptions for a run
-   * 
-   * @param run_id - The run ID to clean up
-   */
-  dispose(run_id: string): void;
-  
-  /**
-   * Clean up all subscriptions for all runs
-   */
-  disposeAll(): void;
-}
-```
-
-### 3. ITaskExecutor
-
-```typescript
-import type { AnyFlow } from '@pgflow/dsl';
-import type { StepTaskKey, StepTaskRecord, Json } from '@pgflow/core';
-
-/**
- * Interface for executing flow tasks
- */
-export interface ITaskExecutor<TFlow extends AnyFlow = AnyFlow> {
-  /**
-   * Fetches tasks from pgflow
-   * 
-   * @param queueName - Name of the queue to poll
-   * @param batchSize - Number of tasks to fetch
-   * @param maxPollSeconds - Maximum time to poll for tasks
-   * @param pollIntervalMs - Poll interval in milliseconds
-   * @param visibilityTimeout - Visibility timeout for tasks
-   */
-  pollForTasks(
-    queueName: string,
-    batchSize?: number,
-    maxPollSeconds?: number,
-    pollIntervalMs?: number,
-    visibilityTimeout?: number
-  ): Promise<StepTaskRecord<TFlow>[]>;
-
-  /**
-   * Marks a task as completed
-   * 
-   * @param stepTask - Step task key containing run_id and step_slug
-   * @param output - Output payload for the task
-   */
-  completeTask(stepTask: StepTaskKey, output?: Json): Promise<void>;
-
-  /**
-   * Marks a task as failed
-   * 
-   * @param stepTask - Step task key containing run_id and step_slug
-   * @param error - Error to fail task with
-   */
-  failTask(stepTask: StepTaskKey, error: unknown): Promise<void>;
-}
-```
-
 ## Core Components
 
 The library consists of three main components:
 
-1. **Client**: Entry point for creating flow runs and observing state
-2. **Adapter**: Backend communication abstraction
-3. **State Management**: Flow run and step state handling with NanoEvents
+1. **Client**: Main entry point for creating flow runs
+2. **FlowRun**: State management for a single flow run
+3. **FlowStep**: State management for a single step in a flow
+4. **Adapter**: Backend communication abstraction
 
 ## Component Architecture
 
-### Client
+### Client Class
 
-The main entry point for applications to start and observe flows, using NanoEvents for event management:
+The main entry point for applications to start and observe flows:
 
 ```typescript
-import type { 
-  IFlowStarter, 
-  IFlowObserver, 
-  RunRow, 
-  StepStateRow 
-} from './types';
-import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
-import { Adapter } from './adapter';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { Client, PostgresChangesAdapter } from '@pgflow/client';
 import { v4 as uuidv4 } from 'uuid';
-import { createNanoEvents } from 'nanoevents';
-
-// Define event types for type-safety
-interface RunEvents {
-  [runId: string]: (run: RunRow) => void;
-}
-
-interface StepEvents {
-  [runId: string]: (step: StepStateRow) => void;
-}
+import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
 
 /**
  * Client implementation for JavaScript environments
  * Supports both starting flows and observing their state
  */
-export class Client<TFlow extends AnyFlow> 
-  implements IFlowStarter, IFlowObserver<TFlow> 
-{
+export class Client {
   private adapter: Adapter;
-  private runEmitter = createNanoEvents<RunEvents>();
-  private stepEmitter = createNanoEvents<StepEvents>();
-  private disposeFunctions: Map<string, Array<() => void>> = new Map();
+  private runs: Map<string, FlowRun<any>> = new Map();
   
-  constructor(adapter: Adapter) {
-    this.adapter = adapter;
+  constructor(supabaseClient: SupabaseClient) {
+    // Always use PostgresChangesAdapter with the provided Supabase client
+    this.adapter = new PostgresChangesAdapter(supabaseClient);
     
-    // Set up event handling from adapter
-    this.adapter.onRunEvent((run) => {
-      const runId = run.id;
-      
-      // Emit event to all subscribers for this run
-      this.runEmitter.emit(runId, run);
-      
-      // Auto-cleanup for terminal states
-      if (['completed', 'failed', 'cancelled'].includes(run.status)) {
-        this.dispose(runId);
+    // Set up event routing from adapter
+    this.adapter.onRunEvent((runEvent) => {
+      const run = this.runs.get(runEvent.run_id);
+      if (run) {
+        run._updateState(runEvent);
       }
     });
     
-    this.adapter.onStepEvent((step) => {
-      const runId = step.run_id;
-      
-      // Emit event to all subscribers for this run's steps
-      this.stepEmitter.emit(runId, step);
+    this.adapter.onStepEvent((stepEvent) => {
+      const run = this.runs.get(stepEvent.run_id);
+      if (run) {
+        run._routeStepEvent(stepEvent);
+      }
     });
   }
   
-  async startFlow(
-    flow: TFlow,
+  async startFlow<TFlow extends AnyFlow>(
+    flowSlug: string,
     input: ExtractFlowInput<TFlow>,
-    run_id?: string
-  ): Promise<RunRow> {
+    runId?: string
+  ): Promise<FlowRun<TFlow>> {
     // Generate UUID if not provided
-    const runId = run_id || uuidv4();
+    const generatedRunId = runId || uuidv4();
     
-    // 1. Set up empty subscriptions FIRST to ensure adapter is ready
-    // The dummy subscriptions will be automatically cleaned up if no real subscribers arrive
-    this.subscribeToRunEvents(runId, () => {});
-    this.subscribeToStepEvents(runId, () => {});
+    // 1. Fetch flow definition to know available steps
+    await this.adapter.fetchFlowDefinition(flowSlug);
     
-    // 2. Fetch flow definition to know available steps
-    await this.adapter.fetchFlowDefinition(flow.slug);
+    // 2. Create FlowRun instance with initial state
+    const flowRun = new FlowRun<TFlow>({
+      run_id: generatedRunId,
+      flow_slug: flowSlug,
+      status: 'queued',
+      input,
+      started_at: null,
+      completed_at: null,
+      output: null,
+      error: null,
+      remaining_steps: 0
+    }, this);
     
-    // 3. Start the flow with our predetermined run_id
-    return this.adapter.startFlow(flow, input, runId);
+    // 3. Store the run instance
+    this.runs.set(generatedRunId, flowRun);
+    
+    // 4. Set up subscriptions
+    this.adapter.subscribeToRun(generatedRunId);
+    this.adapter.subscribeToSteps(generatedRunId);
+    
+    // 5. Start the flow with our predetermined run_id
+    const run = await this.adapter.startFlow(flowSlug, input, generatedRunId);
+    
+    // 6. Update the run with initial data
+    flowRun._updateState(run);
+    
+    return flowRun;
   }
   
-  subscribeToRunEvents(
-    run_id: string,
-    callback: (run: RunRow) => void
-  ): () => void {
-    // First subscriber? Set up adapter subscription
-    const isFirst = !this.hasRunSubscribers(run_id);
-    
-    // Add event subscription using NanoEvents
-    const unbind = this.runEmitter.on(run_id, callback);
-    
-    if (isFirst) {
-      // Set up subscription in adapter if this is first subscriber
-      const adapterUnbind = this.adapter.subscribeToRun(run_id);
-      this.addDisposeFunction(run_id, adapterUnbind);
+  dispose(runId: string): void {
+    const run = this.runs.get(runId);
+    if (run) {
+      run._dispose();
+      this.runs.delete(runId);
     }
-    
-    // Return combined unsubscribe function
-    return () => {
-      // Remove this specific callback
-      unbind();
-      
-      // If no more subscribers, clean up adapter subscription
-      if (!this.hasRunSubscribers(run_id) && !this.hasStepSubscribers(run_id)) {
-        this.dispose(run_id);
-      }
-    };
-  }
-  
-  subscribeToStepEvents(
-    run_id: string,
-    callback: (step: StepStateRow) => void
-  ): () => void {
-    // First subscriber? Set up adapter subscription
-    const isFirst = !this.hasStepSubscribers(run_id);
-    
-    // Add event subscription using NanoEvents
-    const unbind = this.stepEmitter.on(run_id, callback);
-    
-    if (isFirst) {
-      // Set up subscription in adapter if this is first subscriber
-      const adapterUnbind = this.adapter.subscribeToSteps(run_id);
-      this.addDisposeFunction(run_id, adapterUnbind);
-    }
-    
-    // Return combined unsubscribe function
-    return () => {
-      // Remove this specific callback
-      unbind();
-      
-      // If no more subscribers, clean up adapter subscription
-      if (!this.hasRunSubscribers(run_id) && !this.hasStepSubscribers(run_id)) {
-        this.dispose(run_id);
-      }
-    };
-  }
-  
-  private hasRunSubscribers(run_id: string): boolean {
-    return this.runEmitter.events[run_id]?.length > 0;
-  }
-  
-  private hasStepSubscribers(run_id: string): boolean {
-    return this.stepEmitter.events[run_id]?.length > 0;
-  }
-  
-  private addDisposeFunction(run_id: string, fn: () => void): void {
-    if (!this.disposeFunctions.has(run_id)) {
-      this.disposeFunctions.set(run_id, []);
-    }
-    this.disposeFunctions.get(run_id)!.push(fn);
-  }
-  
-  dispose(run_id: string): void {
-    // Execute all dispose functions for this run
-    const disposeFns = this.disposeFunctions.get(run_id) || [];
-    disposeFns.forEach(fn => fn());
-    
-    // Remove event subscriptions using NanoEvents
-    // NanoEvents doesn't have a built-in "removeAllListeners" so we create empty maps
-    // The TypeScript definition may complain, but this is the official way to remove all listeners
-    if (this.runEmitter.events[run_id]) {
-      this.runEmitter.events[run_id] = [];
-    }
-    
-    if (this.stepEmitter.events[run_id]) {
-      this.stepEmitter.events[run_id] = [];
-    }
-    
-    // Clear dispose functions
-    this.disposeFunctions.delete(run_id);
   }
   
   disposeAll(): void {
-    // Get all run IDs and dispose each one
-    const runIds = Array.from(this.disposeFunctions.keys());
-    runIds.forEach(id => this.dispose(id));
+    for (const runId of this.runs.keys()) {
+      this.dispose(runId);
+    }
+  }
+}
+```
+
+### FlowRun Class
+
+The flow run class is responsible for managing a single flow run and its events:
+
+```typescript
+import { createNanoEvents } from 'nanoevents';
+import type { AnyFlow, ExtractFlowInput, ExtractFlowOutput, ExtractFlowSteps, StepOutput } from '@pgflow/dsl';
+
+// Event types
+export type FlowRunEvents<TFlow> = {
+  'completed': { run_id: string, output: ExtractFlowOutput<TFlow>, status: 'completed' };
+  'failed': { run_id: string, error_message: string, status: 'failed' };
+  // General event type that includes all events
+  '*': { run_id: string, status: string, [key: string]: any };
+};
+
+export type Unsubscribe = () => void;
+
+export class FlowRun<TFlow> {
+  #state: FlowRunState<TFlow>;
+  #events = createNanoEvents<FlowRunEvents<TFlow>>();
+  #steps: Map<string, FlowStep<TFlow, any>> = new Map();
+  #client: Client;
+  
+  constructor(initialState: FlowRunState<TFlow>, client: Client) {
+    this.#state = initialState;
+    this.#client = client;
+  }
+  
+  // Public getters for state properties
+  get run_id(): string { return this.#state.run_id; }
+  get flow_slug(): string { return this.#state.flow_slug; }
+  get status(): 'queued' | 'started' | 'completed' | 'failed' { return this.#state.status; }
+  get started_at(): Date | null { return this.#state.started_at; }
+  get completed_at(): Date | null { return this.#state.completed_at; }
+  get input(): ExtractFlowInput<TFlow> { return this.#state.input; }
+  get output(): ExtractFlowOutput<TFlow> | null { return this.#state.output; }
+  get error(): Error | null { return this.#state.error; }
+  get remaining_steps(): number { return this.#state.remaining_steps; }
+  
+  // Event subscription with NanoEvents
+  on<E extends keyof FlowRunEvents<TFlow>>(
+    event: E, 
+    callback: (event: FlowRunEvents<TFlow>[E]) => void
+  ): Unsubscribe {
+    return this.#events.on(event, callback);
+  }
+  
+  // Get a reference to a specific step
+  step<TStepSlug extends keyof ExtractFlowSteps<TFlow> & string>(
+    stepSlug: TStepSlug
+  ): FlowStep<TFlow, TStepSlug> {
+    let step = this.#steps.get(stepSlug as string);
+    
+    if (!step) {
+      step = new FlowStep<TFlow, TStepSlug>(this.#state.run_id, stepSlug);
+      this.#steps.set(stepSlug as string, step);
+    }
+    
+    return step as FlowStep<TFlow, TStepSlug>;
+  }
+  
+  // Wait for a specific status
+  async waitForStatus(
+    targetStatus: 'completed' | 'failed', 
+    options?: { timeoutMs?: number, signal?: AbortSignal }
+  ): Promise<this> {
+    // If already in target status, return immediately
+    if (this.status === targetStatus) {
+      return this;
+    }
+    
+    return new Promise((resolve, reject) => {
+      // Set up timeout if specified
+      let timeoutId: NodeJS.Timeout | undefined;
+      if (options?.timeoutMs) {
+        timeoutId = setTimeout(() => {
+          unsubscribe();
+          reject(new Error(`Timeout waiting for flow to reach status '${targetStatus}'`));
+        }, options.timeoutMs);
+      }
+      
+      // Handle abort signal
+      if (options?.signal) {
+        options.signal.addEventListener('abort', () => {
+          if (timeoutId) clearTimeout(timeoutId);
+          unsubscribe();
+          reject(new Error(options.signal?.reason || 'Operation aborted'));
+        }, { once: true });
+      }
+      
+      // Subscribe to status change event
+      const unsubscribe = this.on(targetStatus, () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        unsubscribe();
+        resolve(this);
+      });
+    });
+  }
+  
+  // Clean up resources
+  dispose(): void {
+    this._dispose();
+    this.#client.dispose(this.run_id);
+  }
+  
+  // Internal methods
+  _updateState(newState: Partial<FlowRunState<TFlow>>): void {
+    const oldStatus = this.#state.status;
+    this.#state = { ...this.#state, ...newState };
+    
+    // Emit events on status changes
+    if (newState.status && newState.status !== oldStatus) {
+      // Emit general event
+      this.#events.emit('*', { ...this.#state });
+      
+      // Emit specific status event if applicable
+      if (newState.status === 'completed') {
+        this.#events.emit('completed', {
+          run_id: this.run_id,
+          output: this.#state.output!,
+          status: 'completed'
+        });
+      } else if (newState.status === 'failed') {
+        this.#events.emit('failed', {
+          run_id: this.run_id,
+          error_message: this.#state.error?.message || 'Unknown error',
+          status: 'failed'
+        });
+      }
+      
+      // Auto-cleanup for terminal states
+      if (['completed', 'failed'].includes(newState.status)) {
+        // Wait a bit before cleaning up to allow event handlers to complete
+        setTimeout(() => this.dispose(), 1000);
+      }
+    }
+  }
+  
+  _routeStepEvent(stepEvent: StepStateRow): void {
+    const stepSlug = stepEvent.step_slug;
+    const step = this.#steps.get(stepSlug);
+    
+    if (step) {
+      step._updateState(stepEvent);
+    }
+  }
+  
+  _dispose(): void {
+    // Clean up step resources
+    for (const step of this.#steps.values()) {
+      step._dispose();
+    }
+    this.#steps.clear();
+  }
+}
+```
+
+### FlowStep Class
+
+The step class manages state and events for a single step:
+
+```typescript
+import { createNanoEvents } from 'nanoevents';
+import type { AnyFlow, ExtractFlowSteps, StepOutput } from '@pgflow/dsl';
+
+// Step event types
+export type StepEvents<TFlow, TStepSlug extends keyof ExtractFlowSteps<TFlow> & string> = {
+  'started': { run_id: string, step_slug: TStepSlug, status: 'started' };
+  'completed': { run_id: string, step_slug: TStepSlug, output: StepOutput<TFlow, TStepSlug>, status: 'completed' };
+  'failed': { run_id: string, step_slug: TStepSlug, error_message: string, status: 'failed' };
+  // General event type that includes all events
+  '*': { run_id: string, step_slug: TStepSlug, status: string, [key: string]: any };
+};
+
+export class FlowStep<TFlow, TStepSlug extends keyof ExtractFlowSteps<TFlow> & string> {
+  #state: StepState<TFlow, TStepSlug>;
+  #events = createNanoEvents<StepEvents<TFlow, TStepSlug>>();
+  
+  constructor(runId: string, stepSlug: TStepSlug) {
+    this.#state = {
+      run_id: runId,
+      step_slug: stepSlug,
+      status: 'pending',
+      started_at: null,
+      completed_at: null,
+      failed_at: null,
+      output: null,
+      error: null,
+      remaining_tasks: 0,
+      remaining_deps: 0
+    };
+  }
+  
+  // Public getters
+  get step_slug(): TStepSlug { return this.#state.step_slug; }
+  get status(): 'pending' | 'started' | 'completed' | 'failed' { return this.#state.status; }
+  get started_at(): Date | null { return this.#state.started_at; }
+  get completed_at(): Date | null { return this.#state.completed_at; }
+  get failed_at(): Date | null { return this.#state.failed_at; }
+  get output(): StepOutput<TFlow, TStepSlug> | null { return this.#state.output; }
+  get error(): Error | null { return this.#state.error; }
+  
+  // Event subscription with NanoEvents
+  on<E extends keyof StepEvents<TFlow, TStepSlug>>(
+    event: E,
+    callback: (event: StepEvents<TFlow, TStepSlug>[E]) => void
+  ): Unsubscribe {
+    return this.#events.on(event, callback);
+  }
+  
+  // Wait for a specific status
+  async waitForStatus(
+    targetStatus: 'started' | 'completed' | 'failed',
+    options?: { timeoutMs?: number, signal?: AbortSignal }
+  ): Promise<this> {
+    // If already in target status, return immediately
+    if (this.status === targetStatus) {
+      return this;
+    }
+    
+    return new Promise((resolve, reject) => {
+      // Set up timeout if specified
+      let timeoutId: NodeJS.Timeout | undefined;
+      if (options?.timeoutMs) {
+        timeoutId = setTimeout(() => {
+          unsubscribe();
+          reject(new Error(`Timeout waiting for step to reach status '${targetStatus}'`));
+        }, options.timeoutMs);
+      }
+      
+      // Handle abort signal
+      if (options?.signal) {
+        options.signal.addEventListener('abort', () => {
+          if (timeoutId) clearTimeout(timeoutId);
+          unsubscribe();
+          reject(new Error(options.signal?.reason || 'Operation aborted'));
+        }, { once: true });
+      }
+      
+      // Subscribe to status change event
+      const unsubscribe = this.on(targetStatus, () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        unsubscribe();
+        resolve(this);
+      });
+    });
+  }
+  
+  // Internal methods
+  _updateState(newState: Partial<StepState<TFlow, TStepSlug>>): void {
+    const oldStatus = this.#state.status;
+    this.#state = { ...this.#state, ...newState };
+    
+    // Emit events on status changes
+    if (newState.status && newState.status !== oldStatus) {
+      // Emit general event
+      this.#events.emit('*', { ...this.#state });
+      
+      // Emit specific status event if applicable
+      if (newState.status === 'started') {
+        this.#events.emit('started', {
+          run_id: this.#state.run_id,
+          step_slug: this.#state.step_slug,
+          status: 'started'
+        });
+      } else if (newState.status === 'completed') {
+        this.#events.emit('completed', {
+          run_id: this.#state.run_id,
+          step_slug: this.#state.step_slug,
+          output: this.#state.output!,
+          status: 'completed'
+        });
+      } else if (newState.status === 'failed') {
+        this.#events.emit('failed', {
+          run_id: this.#state.run_id,
+          step_slug: this.#state.step_slug,
+          error_message: this.#state.error?.message || 'Unknown error',
+          status: 'failed'
+        });
+      }
+    }
+  }
+  
+  _dispose(): void {
+    // NanoEvents doesn't require explicit cleanup
   }
 }
 ```
 
 ### Adapter System
 
-We'll implement a generic adapter interface and a Supabase implementation:
+The adapter interface and implementation for Supabase:
 
 ```typescript
 import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
 import type { RunRow, StepStateRow } from '@pgflow/core';
+import { createNanoEvents } from 'nanoevents';
 
 /**
  * Adapter interface for clients
@@ -339,7 +422,7 @@ export interface Adapter {
    * Start a flow with optional run_id
    */
   startFlow<TFlow extends AnyFlow>(
-    flow: TFlow,
+    flowSlug: string,
     input: ExtractFlowInput<TFlow>,
     run_id?: string
   ): Promise<RunRow>;
@@ -369,13 +452,6 @@ export interface Adapter {
    */
   subscribeToSteps(run_id: string): () => void;
 }
-```
-
-```typescript
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
-import type { RunRow, StepStateRow } from '@pgflow/core';
-import { createNanoEvents } from 'nanoevents';
 
 // Define event types for the adapter
 interface AdapterEvents {
@@ -386,16 +462,17 @@ interface AdapterEvents {
 /**
  * Adapter for Supabase using PostgresChanges for realtime updates
  */
-export class SupabaseAdapter implements Adapter {
+export class PostgresChangesAdapter implements Adapter {
   private client: SupabaseClient;
   private emitter = createNanoEvents<AdapterEvents>();
   private flowDefinitions: Map<string, any> = new Map();
   private statusPrecedence: Record<string, number> = {
     'created': 0,
-    'running': 1,
-    'completed': 2,
-    'failed': 3,
-    'cancelled': 4
+    'queued': 1,
+    'started': 2,
+    'completed': 3,
+    'failed': 4,
+    'cancelled': 5
   };
   
   constructor(client: SupabaseClient) {
@@ -403,13 +480,13 @@ export class SupabaseAdapter implements Adapter {
   }
   
   async startFlow<TFlow extends AnyFlow>(
-    flow: TFlow,
+    flowSlug: string,
     input: ExtractFlowInput<TFlow>,
     run_id?: string
   ): Promise<RunRow> {
     // Call the Supabase RPC function with optional run_id
     const { data, error } = await this.client.rpc('pgflow_start_flow', {
-      p_flow_slug: flow.slug,
+      p_flow_slug: flowSlug,
       p_input: input,
       p_run_id: run_id  // Pass the client-generated UUID if provided
     });
@@ -421,7 +498,7 @@ export class SupabaseAdapter implements Adapter {
       return data[0];
     }
     
-    throw new Error(`Failed to start flow ${flow.slug}`);
+    throw new Error(`Failed to start flow ${flowSlug}`);
   }
   
   async fetchFlowDefinition(flow_slug: string): Promise<void> {
@@ -539,105 +616,6 @@ export class SupabaseAdapter implements Adapter {
 }
 ```
 
-### Updates to PgflowSqlClient
-
-The existing `PgflowSqlClient` will be updated to implement both `IFlowStarter` and `ITaskExecutor` interfaces:
-
-```typescript
-import type { 
-  IFlowStarter, 
-  ITaskExecutor, 
-  StepTaskRecord, 
-  StepTaskKey, 
-  RunRow, 
-  Json 
-} from './types.js';
-import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
-
-/**
- * Implementation that uses direct SQL calls to pgflow functions
- */
-export class PgflowSqlClient<TFlow extends AnyFlow>
-  implements IFlowStarter, ITaskExecutor<TFlow>
-{
-  // Implementation remains the same, just update the interface and add run_id
-  constructor(private readonly sql: postgres.Sql) {}
-
-  async pollForTasks(
-    queueName: string,
-    batchSize = 20,
-    maxPollSeconds = 5,
-    pollIntervalMs = 200,
-    visibilityTimeout = 2
-  ): Promise<StepTaskRecord<TFlow>[]> {
-    // Implementation remains the same
-    return await this.sql<StepTaskRecord<TFlow>[]>`
-      SELECT *
-      FROM pgflow.poll_for_tasks(
-        queue_name => ${queueName},
-        vt => ${visibilityTimeout},
-        qty => ${batchSize},
-        max_poll_seconds => ${maxPollSeconds},
-        poll_interval_ms => ${pollIntervalMs}
-      );
-    `;
-  }
-
-  async completeTask(stepTask: StepTaskKey, output?: Json): Promise<void> {
-    // Implementation remains the same
-    await this.sql`
-      SELECT pgflow.complete_task(
-        run_id => ${stepTask.run_id}::uuid,
-        step_slug => ${stepTask.step_slug}::text,
-        task_index => ${0}::int,
-        output => ${this.sql.json(output || null)}::jsonb
-      );
-    `;
-  }
-
-  async failTask(stepTask: StepTaskKey, error: unknown): Promise<void> {
-    // Implementation remains the same
-    const errorString =
-      typeof error === 'string'
-        ? error
-        : error instanceof Error
-        ? error.message
-        : JSON.stringify(error);
-
-    await this.sql`
-      SELECT pgflow.fail_task(
-        run_id => ${stepTask.run_id}::uuid,
-        step_slug => ${stepTask.step_slug}::text,
-        task_index => ${0}::int,
-        error_message => ${errorString}::text
-      );
-    `;
-  }
-
-  async startFlow(
-    flow: TFlow,
-    input: ExtractFlowInput<TFlow>,
-    run_id?: string
-  ): Promise<RunRow> {
-    // Update to use client-provided run_id if available
-    const results = await this.sql<RunRow[]>`
-      SELECT * FROM pgflow.start_flow(
-        ${flow.slug}::text, 
-        ${this.sql.json(input)}::jsonb, 
-        ${run_id ? `${run_id}::uuid` : 'NULL'}
-      );
-    `;
-
-    if (results.length === 0) {
-      throw new Error(`Failed to start flow ${flow.slug}`);
-    }
-
-    const [flowRun] = results;
-    return flowRun;
-  }
-}
-```
-
 ## Required SQL Updates
 
 The `pgflow.start_flow` function needs to be updated to accept an optional run_id parameter:
@@ -679,88 +657,6 @@ END;
 $$ LANGUAGE plpgsql;
 ```
 
-## Integration with React (Example)
-
-```tsx
-import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import { Client, SupabaseAdapter } from '@pgflow/client';
-import { myFlow } from './flows';
-import type { RunRow, StepStateRow } from '@pgflow/core';
-import { v4 as uuidv4 } from 'uuid';
-
-// Create Supabase client
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!
-);
-
-// Create PgFlow client with Supabase adapter
-const adapter = new SupabaseAdapter(supabase);
-const pgflow = new Client(adapter);
-
-function FlowRunner() {
-  const [runId, setRunId] = useState<string | null>(null);
-  const [runState, setRunState] = useState<RunRow | null>(null);
-  const [stepStates, setStepStates] = useState<Record<string, StepStateRow>>({});
-  
-  // Start the flow
-  const startFlow = async () => {
-    try {
-      // Generate a UUID client-side
-      const newRunId = uuidv4();
-      
-      // Set up subscriptions immediately
-      const unsubscribeRun = pgflow.subscribeToRunEvents(newRunId, (run) => {
-        setRunState(run);
-      });
-      
-      const unsubscribeSteps = pgflow.subscribeToStepEvents(newRunId, (step) => {
-        setStepStates(prev => ({
-          ...prev,
-          [step.step_slug]: step
-        }));
-      });
-      
-      // Start the flow with our predetermined run_id
-      const run = await pgflow.startFlow(myFlow, { 
-        url: 'https://example.com' 
-      }, newRunId);
-      
-      setRunId(run.id);
-    } catch (error) {
-      console.error('Failed to start flow:', error);
-    }
-  };
-  
-  return (
-    <div>
-      <h1>PgFlow Example</h1>
-      {!runId ? (
-        <button onClick={startFlow}>Start Flow</button>
-      ) : (
-        <div>
-          <h2>Run: {runId}</h2>
-          <p>Status: {runState?.status}</p>
-          
-          <h3>Steps</h3>
-          <ul>
-            {Object.values(stepStates).map(step => (
-              <li key={step.step_slug}>
-                {step.step_slug}: {step.status}
-                {step.status === 'failed' && (
-                  <p className="error">{step.error_message}</p>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-}
-```
-
 ## Package Dependencies
 
 To implement this architecture, add NanoEvents to the dependencies:
@@ -774,89 +670,12 @@ To implement this architecture, add NanoEvents to the dependencies:
 }
 ```
 
-## Updates to Core Package
-
-1. Export the new interfaces from `@pgflow/core`:
-
-```typescript
-// pkgs/core/src/types.ts
-// Add to existing exports
-
-import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
-
-/**
- * Interface for starting workflow flows
- */
-export interface IFlowStarter {
-  startFlow<TFlow extends AnyFlow>(
-    flow: TFlow,
-    input: ExtractFlowInput<TFlow>,
-    run_id?: string
-  ): Promise<RunRow>;
-}
-
-/**
- * Interface for observing flow run and step state changes
- */
-export interface IFlowObserver<TFlow extends AnyFlow = AnyFlow> {
-  subscribeToRunEvents(
-    run_id: string,
-    callback: (run: RunRow) => void
-  ): () => void;
-  
-  subscribeToStepEvents(
-    run_id: string,
-    callback: (step: StepStateRow) => void
-  ): () => void;
-  
-  dispose(run_id: string): void;
-  
-  disposeAll(): void;
-}
-
-/**
- * Interface for executing flow tasks
- */
-export interface ITaskExecutor<TFlow extends AnyFlow = AnyFlow> {
-  pollForTasks(
-    queueName: string,
-    batchSize?: number,
-    maxPollSeconds?: number,
-    pollIntervalMs?: number,
-    visibilityTimeout?: number
-  ): Promise<StepTaskRecord<TFlow>[]>;
-
-  completeTask(stepTask: StepTaskKey, output?: Json): Promise<void>;
-
-  failTask(stepTask: StepTaskKey, error: unknown): Promise<void>;
-}
-
-// Update the existing interface
-export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow> extends IFlowStarter, ITaskExecutor<TFlow> {}
-```
-
-## Edge Worker Integration
-
-The edge worker will continue to use `IPgflowClient`, which now extends both `IFlowStarter` and `ITaskExecutor`. This provides backward compatibility while allowing new code to depend on the more specific interfaces.
-
 ## Key Features and Optimizations
 
 ### 1. NanoEvents for Event Management
 
 Using NanoEvents provides several benefits:
 
-```typescript
-// Creating an emitter with typed events
-const emitter = createNanoEvents<RunEvents>();
-
-// Subscribing (returns unbind function)
-const unbind = emitter.on(runId, callback);
-
-// Unsubscribing is straightforward
-unbind();
-```
-
-Benefits:
 - Tiny footprint (only 108 bytes)
 - Simple API with just `on` and `emit`
 - Returns unbind function directly
@@ -869,39 +688,34 @@ By letting the client generate the run_id, we can:
 - Eliminate race conditions with event delivery
 - Create a more reliable subscription model
 
-```typescript
-// Generate UUID client-side
-const runId = uuidv4();
-
-// Set up subscriptions for this ID immediately
-const unbind = pgflow.subscribeToRunEvents(runId, callback);
-
-// Start flow with our predetermined ID
-const run = await pgflow.startFlow(flow, input, runId);
-```
-
 ### 3. Flow Definition First Approach
 
 Instead of fetching the entire run state (including step_states and step_tasks), we only fetch:
 - Flow definition and metadata
 - Steps that belong to the flow
 
-Then we rely on realtime events to populate run and step states as they happen. This approach:
-- Requires fewer queries
-- Reduces initial data transfer
-- Still provides all the necessary type information
+Then we rely on realtime events to populate run and step states as they happen.
 
-### 4. Status Precedence
+### 4. Encapsulated State with Getters
 
-To handle out-of-order events:
+Using private class fields with public getters provides:
+- Clean API for accessing state properties
+- Encapsulation of internal state
+- Type-safe access to properties
+- Prevents consumers from directly modifying state
+
+### 5. Status Precedence
+
+To handle out-of-order events, we implement a status precedence system:
 
 ```typescript
 private statusPrecedence: Record<string, number> = {
   'created': 0,
-  'running': 1,
-  'completed': 2,
-  'failed': 3,
-  'cancelled': 4
+  'queued': 1,
+  'started': 2,
+  'completed': 3,
+  'failed': 4,
+  'cancelled': 5
 };
 
 // Prevent invalid state transitions
@@ -916,10 +730,10 @@ shouldUpdateStatus(currentStatus: string, newStatus: string): boolean {
 
 This architecture provides:
 
-1. **Clear Interface Separation**:
-   - `IFlowStarter` - For starting flows (SQL client, client)
-   - `IFlowObserver` - For observing flow runs and steps (client)
-   - `ITaskExecutor` - For executing tasks (SQL client, edge worker)
+1. **Clean API Design**:
+   - Private state with public getters for encapsulation
+   - NanoEvents for simple event subscription with `.on()`
+   - Intuitive FlowRun and FlowStep classes
 
 2. **Efficient Event Management**:
    - Uses NanoEvents for lightweight, memory-efficient event handling
@@ -936,8 +750,7 @@ This architecture provides:
    - Rely on realtime events for state updates
    - Single-query approach for critical data
 
-5. **Backward Compatibility**:
-   - `IPgflowClient` extends both `IFlowStarter` and `ITaskExecutor`
-   - Optional run_id parameter maintains compatibility with existing code
-
-This design creates a more robust, efficient client library while maintaining compatibility with existing code and allowing for future extensions.
+5. **Type Safety**:
+   - Full type inference from DSL to client
+   - Type-safe step access with FlowRun.step()
+   - Type-safe event subscriptions
