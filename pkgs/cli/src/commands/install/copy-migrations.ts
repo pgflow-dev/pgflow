@@ -68,6 +68,41 @@ function findMigrationsDirectory() {
   return null;
 }
 
+// Helper function to get the timestamp part from a migration filename
+function getTimestampFromFilename(filename: string): string {
+  const match = filename.match(/^(\d+)_/);
+  return match ? match[1] : '';
+}
+
+// Helper function to generate a new timestamp that's higher than the reference timestamp
+function generateNewTimestamp(referenceTimestamp: string, increment: number = 10): string {
+  // Parse the reference timestamp
+  // Format: YYYYMMDDhhmmss (e.g., 20250429164909)
+  if (!referenceTimestamp || referenceTimestamp.length !== 14) {
+    // If invalid, use current time
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    return `${year}${month}${day}${hours}${minutes}${seconds}`;
+  }
+
+  // Convert to number, increment, and convert back to string
+  const timestampNum = parseInt(referenceTimestamp, 10) + increment;
+  
+  // Ensure we don't exceed current time
+  const now = new Date();
+  const currentTimestampStr = 
+    `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+  const currentTimestamp = parseInt(currentTimestampStr, 10);
+  
+  // Use numeric comparison for determining the min value
+  return String(Math.min(timestampNum, currentTimestamp)).padStart(14, '0');
+}
+
 // Find the migrations directory
 const sourcePath = findMigrationsDirectory();
 
@@ -78,8 +113,6 @@ export async function copyMigrations({
   supabasePath: string;
   autoConfirm?: boolean;
 }): Promise<boolean> {
-  // Check migrations
-  
   const migrationsPath = path.join(supabasePath, 'migrations');
 
   if (!fs.existsSync(migrationsPath)) {
@@ -101,23 +134,41 @@ export async function copyMigrations({
     return false;
   }
 
-  const files = fs.readdirSync(sourcePath);
-  const filesToCopy: string[] = [];
+  // Get all existing migrations in user's directory
+  const existingFiles = fs.existsSync(migrationsPath) ? fs.readdirSync(migrationsPath) : [];
+  
+  // Find the latest migration timestamp in user's directory
+  let latestTimestamp = '00000000000000';
+  for (const file of existingFiles) {
+    if (file.endsWith('.sql')) {
+      const timestamp = getTimestampFromFilename(file);
+      if (timestamp && parseInt(timestamp, 10) > parseInt(latestTimestamp, 10)) {
+        latestTimestamp = timestamp;
+      }
+    }
+  }
+
+  // Get all source migrations
+  const sourceFiles = fs.readdirSync(sourcePath).filter(file => file.endsWith('.sql'));
+  
+  const filesToCopy: Array<{ source: string; destination: string }> = [];
   const skippedFiles: string[] = [];
 
-  // Determine which SQL files need to be copied
-  for (const file of files) {
-    // Only process SQL files
-    if (!file.endsWith('.sql')) {
-      continue;
-    }
+  // Check which migrations need to be installed
+  for (const sourceFile of sourceFiles) {
+    // Check if this migration is already installed (by checking if the original filename
+    // appears in any existing migration filename)
+    const isAlreadyInstalled = existingFiles.some(existingFile => 
+      existingFile.includes(sourceFile)
+    );
 
-    const destination = path.join(migrationsPath, file);
-
-    if (fs.existsSync(destination)) {
-      skippedFiles.push(file);
+    if (isAlreadyInstalled) {
+      skippedFiles.push(sourceFile);
     } else {
-      filesToCopy.push(file);
+      filesToCopy.push({
+        source: sourceFile,
+        destination: sourceFile // Will be updated later with new timestamp
+      });
     }
   }
 
@@ -126,6 +177,15 @@ export async function copyMigrations({
     log.success('All pgflow migrations are already in place');
     return false;
   }
+
+  // Generate new timestamps for migrations to install
+  let baseTimestamp = latestTimestamp;
+  filesToCopy.forEach((file, index) => {
+    // Generate timestamp with increasing values to maintain order
+    baseTimestamp = generateNewTimestamp(baseTimestamp, 10);
+    // Create new filename with format: newTimestamp_originalFilename
+    file.destination = `${baseTimestamp}_${file.source}`;
+  });
   
   log.info(`Found ${filesToCopy.length} migration${filesToCopy.length !== 1 ? 's' : ''} to install`);
 
@@ -133,13 +193,18 @@ export async function copyMigrations({
   const summaryParts = [];
 
   if (filesToCopy.length > 0) {
-    summaryParts.push(`${chalk.green('New migrations to install:')}
-${filesToCopy.map((file) => `${chalk.green('+')} ${file}`).join('\n')}`);
+    summaryParts.push(`${chalk.green('New migrations to install:')}\n${filesToCopy.map((file) => {
+      // Extract the timestamp part from the new filename
+      const newTimestamp = file.destination.substring(0, 14);
+      // Format: dim timestamp + bright original name
+      return `${chalk.green('+')} ${file.source} → ${chalk.dim(newTimestamp + '_')}${chalk.bold(file.source)}`;
+    }).join('\n')}`);
   }
 
   if (skippedFiles.length > 0) {
-    summaryParts.push(`${chalk.yellow('Already installed:')}
-${skippedFiles.map((file) => `${chalk.yellow('•')} ${file}`).join('\n')}`);
+    summaryParts.push(`${chalk.yellow('Already installed:')}\n${skippedFiles.map((file) => 
+      `${chalk.yellow('•')} ${file}`
+    ).join('\n')}`);
   }
 
   // Show summary and ask for confirmation if not auto-confirming
@@ -162,19 +227,24 @@ ${skippedFiles.map((file) => `${chalk.yellow('•')} ${file}`).join('\n')}`);
     return false;
   }
 
-  // Install migrations
-
-  // Copy the files
+  // Install migrations with new filenames
   for (const file of filesToCopy) {
-    const source = path.join(sourcePath, file);
-    const destination = path.join(migrationsPath, file);
+    const sourcePath1 = path.join(sourcePath, file.source);
+    const destinationPath = path.join(migrationsPath, file.destination);
 
-    fs.copyFileSync(source, destination);
+    fs.copyFileSync(sourcePath1, destinationPath);
   }
 
-  log.success(`Installed ${filesToCopy.length} migration${
-    filesToCopy.length !== 1 ? 's' : ''
-  } to your Supabase project`);
+  // Show detailed success message with styled filenames
+  const detailedSuccessMsg = [
+    `Installed ${filesToCopy.length} migration${filesToCopy.length !== 1 ? 's' : ''} to your Supabase project:`,
+    ...filesToCopy.map(file => {
+      const newTimestamp = file.destination.substring(0, 14);
+      return `  ${chalk.dim(newTimestamp + '_')}${chalk.bold(file.source)}`;
+    })
+  ].join('\n');
+  
+  log.success(detailedSuccessMsg);
 
   return true; // Return true to indicate migrations were copied
 }
