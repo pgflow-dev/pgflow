@@ -42,9 +42,9 @@ Phase 4 builds upon the state management components from Phase 3 to implement th
 ## Resource Cleanup
 
 1. **Automatic Cleanup:**
-   - Detect terminal states for automatic disposal
-   - Check for remaining event listeners
-   - Implement reference counting mechanism
+   - Dispose resources ONLY when BOTH conditions are met: (1) no remaining event listeners AND (2) terminal status reached ('completed' or 'failed')
+   - Implement reference counting mechanism using WeakMap or internal tracking counters
+   - Add lifecycle hooks for proper cleanup scheduling
 
 2. **Manual Cleanup:**
    - Add specific run disposal method
