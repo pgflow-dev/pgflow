@@ -27,12 +27,15 @@ The main entry point for the library. Creates flow runs and provides access to f
 ```typescript
 class PgflowClient {
   #adapter: PgflowAdapter;
-  
+
   constructor(supabase: SupabaseClient, options?: PgflowClientOptions) {
     // Create appropriate adapter based on options
   }
-  
-  async startFlow<TFlow>(flowSlug: string, input: ExtractFlowInput<TFlow>): Promise<FlowRun<TFlow>> {
+
+  async startFlow<TFlow>(
+    flowSlug: string,
+    input: ExtractFlowInput<TFlow>
+  ): Promise<FlowRun<TFlow>> {
     // Use adapter to start flow, fetch initial state, and create FlowRun
   }
 }
@@ -76,13 +79,16 @@ type FlowEvent = RunEvent | StepEvent;
 interface PgflowAdapter {
   // Start a new flow
   startFlow<TFlow>(flowSlug: string, input: any): Promise<string>; // Returns run_id
-  
+
   // Fetch full state of a run
   fetchRunState<TFlow>(runId: string): Promise<FlowRunState<TFlow>>;
-  
+
   // Subscribe to real-time updates
-  subscribeToRun(runId: string, onUpdate: (event: FlowEvent) => void): Promise<() => void>;
-  
+  subscribeToRun(
+    runId: string,
+    onUpdate: (event: FlowEvent) => void
+  ): Promise<() => void>;
+
   // Cleanup subscriptions
   unsubscribe(): void;
 }
@@ -98,23 +104,26 @@ interface PgflowAdapter {
 class SupabaseStandardAdapter implements PgflowAdapter {
   #supabase: SupabaseClient;
   #channel: RealtimeChannel | null = null;
-  
+
   constructor(supabase: SupabaseClient) {
     this.#supabase = supabase;
   }
-  
+
   async startFlow<TFlow>(flowSlug: string, input: any): Promise<string> {
     // Implementation using supabase.rpc('pgflow.start_flow')
   }
-  
+
   async fetchRunState<TFlow>(runId: string): Promise<FlowRunState<TFlow>> {
     // Implementation using supabase select with joins
   }
-  
-  async subscribeToRun(runId: string, onUpdate: (event: any) => void): Promise<() => void> {
+
+  async subscribeToRun(
+    runId: string,
+    onUpdate: (event: any) => void
+  ): Promise<() => void> {
     // Implementation using postgres_changes
   }
-  
+
   unsubscribe(): void {
     // Channel cleanup
   }
@@ -133,41 +142,64 @@ class FlowRun<TFlow> {
   #eventEmitter: EventEmitter;
   #adapter: PgflowAdapter;
   #unsubscribeCallback: (() => void) | null = null;
-  
+
   constructor(initialState: FlowRunState<TFlow>, adapter: PgflowAdapter) {
     this.#state = initialState;
     this.#adapter = adapter;
     this.#eventEmitter = new EventEmitter();
-    
+
     // Subscribe to updates
   }
-  
+
   // Getters for state properties
-  get id(): string { return this.#state.run_id; }
-  get status(): 'started' | 'completed' | 'failed' { return this.#state.status; }
-  get remainingSteps(): number { return this.#state.remaining_steps; }
-  get startedAt(): string { return this.#state.started_at; }
-  get completedAt(): string | null { return this.#state.completed_at; }
-  get failedAt(): string | null { return this.#state.failed_at; }
-  get input(): ExtractFlowInput<TFlow> { return this.#state.input; }
-  get output(): ExtractFlowOutput<TFlow> | null { return this.#state.output; }
-  get flowSlug(): string { return this.#state.flow_slug; }
-  
+  get runId(): string {
+    return this.#state.run_id;
+  }
+  get status(): 'started' | 'completed' | 'failed' {
+    return this.#state.status;
+  }
+  get remainingSteps(): number {
+    return this.#state.remaining_steps;
+  }
+  get startedAt(): string {
+    return this.#state.started_at;
+  }
+  get completedAt(): string | null {
+    return this.#state.completed_at;
+  }
+  get failedAt(): string | null {
+    return this.#state.failed_at;
+  }
+  get input(): ExtractFlowInput<TFlow> {
+    return this.#state.input;
+  }
+  get output(): ExtractFlowOutput<TFlow> | null {
+    return this.#state.output;
+  }
+  get flowSlug(): string {
+    return this.#state.flow_slug;
+  }
+
   // Step access
-  step<K extends keyof ExtractFlowSteps<TFlow> & string>(slug: K): FlowStep<TFlow, K> {
+  step<K extends keyof ExtractFlowSteps<TFlow> & string>(
+    slug: K
+  ): FlowStep<TFlow, K> {
     // Return cached or new step instance
   }
-  
+
   // Event subscription
   subscribe(event: string, callback: Function): () => void {
     // Register event listener
   }
-  
+
   // Wait for status
-  waitForStatus(status: 'started' | 'completed' | 'failed', options?: WaitOptions): Promise<this> {
+  waitForStatus(
+    status: 'started' | 'completed' | 'failed',
+    options?: WaitOptions
+  ): Promise<this> {
     // Return promise that resolves when status is reached
   }
-  
+
   // Cleanup
   unsubscribe(): void {
     // Cleanup subscriptions
@@ -183,27 +215,29 @@ Represents a single step within a flow run, with its own state and events.
 class FlowStep<TFlow, K extends keyof ExtractFlowSteps<TFlow> & string> {
   #parent: FlowRun<TFlow>;
   #slug: K;
-  
+
   constructor(parent: FlowRun<TFlow>, slug: K) {
     this.#parent = parent;
     this.#slug = slug;
   }
-  
+
   // Getters that access parent state
-  get slug(): K { return this.#slug; }
-  get status(): 'created' | 'started' | 'completed' | 'failed' { 
+  get slug(): K {
+    return this.#slug;
+  }
+  get status(): 'created' | 'started' | 'completed' | 'failed' {
     return this.#parent.#state.steps[this.#slug].status;
   }
-  get output(): StepOutput<TFlow, K> | null { 
+  get output(): StepOutput<TFlow, K> | null {
     return this.#parent.#state.steps[this.#slug].output;
   }
   // Other getters...
-  
+
   // Methods with same API as FlowRun
   subscribe(event: string, callback: Function): () => void {
     // Forward to parent with step-specific filtering
   }
-  
+
   waitForStatus(status: string, options?: WaitOptions): Promise<this> {
     // Implementation
   }
@@ -239,7 +273,7 @@ interface FlowRunState<TFlow> {
   started_at: string;
   completed_at: string | null;
   failed_at: string | null;
-  
+
   // Steps data (indexed by slug for easy access)
   steps: Record<string, StepState>;
 }
@@ -260,7 +294,7 @@ async subscribeToRun(runId: string, onUpdate: (event: FlowEvent) => void): Promi
     event: 'UPDATE',
     filter: `run_id=eq.${runId}`
   };
-  
+
   const insertEventSpec = {
     schema: 'pgflow',
     event: 'INSERT',
@@ -271,8 +305,8 @@ async subscribeToRun(runId: string, onUpdate: (event: FlowEvent) => void): Promi
   this.#channel = this.#supabase
     .channel(`flow_run_${runId}`)
     // Runs table UPDATE events
-    .on('postgres_changes', 
-        { ...updateEventSpec, table: 'runs' }, 
+    .on('postgres_changes',
+        { ...updateEventSpec, table: 'runs' },
         (payload) => {
           // Convert to internal RunEvent format
           const runEvent: RunEvent = {
@@ -288,10 +322,10 @@ async subscribeToRun(runId: string, onUpdate: (event: FlowEvent) => void): Promi
           };
           onUpdate(runEvent);
         })
-    
+
     // Step states UPDATE events
-    .on('postgres_changes', 
-        { ...updateEventSpec, table: 'step_states' }, 
+    .on('postgres_changes',
+        { ...updateEventSpec, table: 'step_states' },
         (payload) => {
           // Convert to internal StepEvent format
           const stepEvent: StepEvent = {
@@ -310,10 +344,10 @@ async subscribeToRun(runId: string, onUpdate: (event: FlowEvent) => void): Promi
           };
           onUpdate(stepEvent);
         })
-    
+
     // Step tasks UPDATE events - to get output and error_message
-    .on('postgres_changes', 
-        { ...updateEventSpec, table: 'step_tasks' }, 
+    .on('postgres_changes',
+        { ...updateEventSpec, table: 'step_tasks' },
         (payload) => {
           // We're primarily interested in output and error_message
           if (payload.new.status === 'completed' || payload.new.status === 'failed') {
@@ -335,16 +369,16 @@ async subscribeToRun(runId: string, onUpdate: (event: FlowEvent) => void): Promi
             onUpdate(stepTaskEvent);
           }
         })
-    
+
     // Step tasks INSERT events
-    .on('postgres_changes', 
-        { ...insertEventSpec, table: 'step_tasks' }, 
+    .on('postgres_changes',
+        { ...insertEventSpec, table: 'step_tasks' },
         (payload) => {
           // Similar handling as the UPDATE event for step_tasks
           // This is needed for newly created tasks
         })
     .subscribe();
-    
+
   return () => this.unsubscribe();
 }
 ```
@@ -360,7 +394,7 @@ Once the adapter transforms the external events, the FlowRun processes them:
   if ('step_slug' in event) {
     // This is a StepEvent
     this.#updateStepState(event);
-    
+
     // Notify step subscribers if this step exists
     const step = this.#steps.get(event.step_slug);
     if (step) {
@@ -370,42 +404,84 @@ Once the adapter transforms the external events, the FlowRun processes them:
     // This is a RunEvent
     this.#updateRunState(event);
   }
-  
+
   // Notify run-level subscribers
   this.#eventEmitter.emit('status', event);
-  
+
   // Check if any waitForStatus promises should be resolved
   this.#checkWaitConditions();
 }
 ```
 
 This approach:
+
 1. Listens for specific database events (UPDATE and INSERT) on relevant tables
 2. Transforms them to a standardized internal event format
 3. Updates FlowRun state and notifies subscribers accordingly
 
-## Open Questions
+## Open Questions - MVP Approach
 
-1. **Error Handling**: How should we handle errors from backend operations? Should we retry automatically?
+For our MVP, we'll take a thin, simple approach to these questions:
 
-2. **Disconnection Handling**: What should happen if the realtime connection is lost? Automatic reconnection?
+1. **Error Handling**:
 
-3. **State Persistence**: Should we provide utilities to serialize/deserialize state for client-side persistence?
+   - Use a simple approach of throwing errors directly for async operations
+   - Let consumers use try/catch patterns they're already familiar with
+   - For event-based errors, emit error events that can be subscribed to
+   - No automatic retries in the MVP - leave this to consumers
 
-4. **Reconciliation Strategy**: If there's a conflict between local state and server updates, which should win?
+2. **Disconnection Handling**:
 
-5. **Batching Updates**: Should we batch multiple updates that happen in quick succession?
+   - Rely on Supabase's built-in reconnection capabilities
+   - Provide a connection status event that consumers can subscribe to
+   - No additional reconnection logic in our library
 
-6. **Authentication**: How do we handle authentication expiration/renewal during long-running flows?
+3. **State Persistence**:
+
+   - MVP will not include state persistence utilities
+   - State exists only in memory during the session
+   - Consumers can access state via getters and implement their own persistence
+
+4. **Reconciliation Strategy**:
+
+   - Server is always the source of truth - client state is just a cache
+   - Always apply server updates, overwriting local state
+   - No conflict resolution needed with this approach
+
+5. **Batching Updates**:
+
+   - No batching in MVP - apply updates as they arrive
+   - Optimizing update frequency can be considered for future versions
+
+6. **Authentication**:
+   - Authentication is handled by the Supabase client, not our library
+   - Rely on Supabase's token refresh mechanism
+   - Surface authentication errors to consumers
+
+This approach keeps our client library thin and focused while giving consumers the flexibility to implement more complex behaviors if needed.
+
+## Simplifications for MVP
+
+To keep the MVP focused but powerful, we will:
+
+1. **Skip Optimized Adapter**: Focus only on the standard adapter using postgres_changes
+2. **Minimal Event Model**: Keep the event model simple while ensuring all necessary status updates
+3. **Simple Wait Conditions**: Basic promise-based waiting with timeout support
+4. **Direct Error Handling**: Use throws/try-catch instead of complex error objects
+
+While simplifying, we will maintain these essential features:
+
+- **Full DSL Type Integration**: Complete type safety with DSL from day one
+- **Rich Step Access API**: Ability to access steps and their outputs in a type-safe way
+- **Efficient State Management**: Properly normalized internal state representation
 
 ## Implementation Phases
 
-1. **Phase 1**: Standard adapter with basic flow run tracking
-2. **Phase 2**: Optimized adapter using direct functions
-3. **Phase 3**: React/Vue/Svelte bindings as separate packages
+1. **Phase 1 (MVP)**: Standard adapter with full type integration and core features
+2. **Future Phases**: Consider optimized adapters, framework bindings, and advanced features based on user feedback
 
 ## Testing Strategy
 
-1. **Unit Tests**: Test state management with mock events
-2. **Integration Tests**: Test against a real Supabase instance
-3. **Mock Adapter**: Create a mock adapter for testing client applications
+1. **Type Tests**: Ensure type safety with TypeScript's type checking
+2. **Unit Tests**: Test core state management and event handling logic
+3. **Manual Testing**: Test against Supabase with real flows during initial development
