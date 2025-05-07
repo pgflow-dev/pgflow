@@ -36,7 +36,14 @@ class PgflowClient {
     flowSlug: string,
     input: ExtractFlowInput<TFlow>
   ): Promise<FlowRun<TFlow>> {
-    // Use adapter to start flow, fetch initial state, and create FlowRun
+    // 1. Start the flow via adapter (which handles the array return)
+    const runId = await this.#adapter.startFlow<TFlow>(flowSlug, input);
+    
+    // 2. Fetch initial state - do this BEFORE subscribing to avoid event buffering
+    const initialState = await this.#adapter.fetchRunState<TFlow>(runId);
+    
+    // 3. Create the FlowRun instance which will set up its own subscriptions
+    return new FlowRun<TFlow>(initialState, this.#adapter);
   }
 }
 ```
@@ -110,7 +117,22 @@ class SupabaseStandardAdapter implements PgflowAdapter {
   }
 
   async startFlow<TFlow>(flowSlug: string, input: any): Promise<string> {
-    // Implementation using supabase.rpc('pgflow.start_flow')
+    // Call the RPC function that returns SETOF pgflow.runs
+    const { data, error } = await this.#supabase
+      .rpc('pgflow.start_flow', { 
+        flow_slug: flowSlug, 
+        input 
+      });
+      
+    if (error) throw error;
+    
+    // Handle SETOF return - data will be an array
+    if (!data || data.length === 0) {
+      throw new Error('Flow start did not return a run');
+    }
+    
+    // Extract the run_id from the first item
+    return data[0].run_id;
   }
 
   async fetchRunState<TFlow>(runId: string): Promise<FlowRunState<TFlow>> {
@@ -148,7 +170,11 @@ class FlowRun<TFlow> {
     this.#adapter = adapter;
     this.#eventEmitter = new EventEmitter();
 
-    // Subscribe to updates
+    // First fetch state, then subscribe to updates (avoids race conditions)
+    this.#setupSubscription();
+    
+    // Set up auto-cleanup for terminal states
+    this.#setupAutoCleanup();
   }
 
   // Getters for state properties
@@ -200,9 +226,31 @@ class FlowRun<TFlow> {
     // Return promise that resolves when status is reached
   }
 
-  // Cleanup
+  // Lifecycle management methods
+  dispose(): void {
+    // Cleanup subscriptions, event listeners, and cached step instances
+    this.unsubscribe();
+    this.#steps.clear();
+    this.#eventEmitter.removeAllListeners();
+  }
+  
   unsubscribe(): void {
-    // Cleanup subscriptions
+    // Cleanup just the realtime subscriptions
+    if (this.#unsubscribeCallback) {
+      this.#unsubscribeCallback();
+      this.#unsubscribeCallback = null;
+    }
+  }
+  
+  // Auto-cleanup will be triggered when run reaches terminal state
+  #setupAutoCleanup(): void {
+    this.subscribe((event) => {
+      // Auto-dispose when run reaches a terminal state
+      if (event.status === 'completed' || event.status === 'failed') {
+        // Delay dispose slightly to allow any pending waitForStatus promises to resolve
+        setTimeout(() => this.dispose(), 100);
+      }
+    });
   }
 }
 ```
@@ -428,6 +476,40 @@ This creates a clean separation of concerns where:
 - `flowStep.subscribe()` only receives events for that specific step
 - Users must explicitly subscribe to each step they want to track
 
+### Handling Out-of-Order Events
+
+Since network conditions could cause postgres_changes events to arrive out of order, the state management includes basic safeguards:
+
+```typescript
+// Example: Prevent invalid state transitions using status precedence
+private updateStepState(event: StepEvent): void {
+  const currentState = this.#state.steps[event.step_slug];
+  
+  // Define clear status precedence
+  const statusPrecedence = { 
+    'created': 0, 
+    'started': 1, 
+    'completed': 2, 
+    'failed': 2 
+  };
+  
+  // Only apply updates that move forward or stay at same level in the state machine
+  // This prevents "going backwards" if events arrive out of order
+  if (statusPrecedence[event.status] < statusPrecedence[currentState.status]) {
+    // Ignore events that would downgrade the status
+    return;
+  }
+  
+  // Apply the update if it's valid
+  this.#state.steps[event.step_slug] = {
+    ...currentState,
+    ...event
+  };
+}
+```
+
+This approach ensures state consistency even if events arrive in an unexpected order.
+
 ## Open Questions - MVP Approach
 
 For our MVP, we'll take a thin, simple approach to these questions:
@@ -477,12 +559,15 @@ To keep the MVP focused but powerful, we will:
 2. **Minimal Event Model**: Keep the event model simple while ensuring all necessary status updates
 3. **Simple Wait Conditions**: Basic promise-based waiting with timeout support
 4. **Direct Error Handling**: Use throws/try-catch instead of complex error objects
+5. **Step Task Output Mapping**: Have the adapter merge step_tasks output into step events for simplicity
+6. **Single-Task Support**: Initially design for the current one-task-per-step model, while structuring the code to allow future extension to multi-task steps
 
 While simplifying, we will maintain these essential features:
 
 - **Full DSL Type Integration**: Complete type safety with DSL from day one
 - **Rich Step Access API**: Ability to access steps and their outputs in a type-safe way
-- **Efficient State Management**: Properly normalized internal state representation
+- **Efficient State Management**: Properly normalized internal state representation 
+- **Memory Management**: Auto-cleanup of resources when runs reach terminal states
 
 ## Error Handling Plan
 
