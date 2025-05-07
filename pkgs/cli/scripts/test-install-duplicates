@@ -15,7 +15,7 @@ rm -rf supabase/
 
 # Initialize a fresh Supabase project
 echo "🏗️ Creating new Supabase project"
-npx -y supabase@latest init --with-vscode-settings --with-intellij-settings
+npx -y supabase@latest init --force --with-vscode-settings --with-intellij-settings
 
 # First installation with pgflow CLI
 echo "📦 First pgflow installation"
