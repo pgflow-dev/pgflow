@@ -222,7 +222,7 @@ export class FlowRun<TFlow> {
     options?: { timeoutMs?: number; signal?: AbortSignal }
   ): Promise<this>;
 
-  // Clean up resources
+  // Clean up resources (called automatically when run reaches terminal state with no listeners)
   dispose(): void;
 }
 ```
@@ -424,7 +424,16 @@ By letting the client generate the run_id, we can:
 - Eliminate race conditions with event delivery
 - Create a more reliable subscription model
 
-### 3. Complete Initial State Snapshot
+### 3. Automatic Resource Cleanup
+
+To prevent resource leaks, we implement automatic cleanup:
+
+- Automatically dispose resources when a run reaches terminal state ('completed' or 'failed')
+- Check if no event listeners remain before disposal
+- Close Supabase channels and remove internal references
+- Users can still manually call dispose() for early cleanup
+
+### 4. Complete Initial State Snapshot
 
 Our approach to state management involves:
 
@@ -438,7 +447,7 @@ This hybrid approach gives us the benefits of both worlds:
 - Complete initial state without missing fast-completing steps
 - Real-time updates for changes that happen after initialization
 
-### 4. Encapsulated State with Getters
+### 5. Encapsulated State with Getters
 
 Using private class fields with public getters provides:
 
@@ -447,7 +456,7 @@ Using private class fields with public getters provides:
 - Type-safe access to properties
 - Prevents consumers from directly modifying state
 
-### 5. Status Precedence
+### 6. Status Precedence
 
 To handle out-of-order events, we implement a status precedence system:
 
