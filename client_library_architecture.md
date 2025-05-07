@@ -448,10 +448,14 @@ private statusPrecedence: Record<string, number> = {
   'cancelled': 5
 };
 
-// Prevent invalid state transitions
+// Prevent invalid state transitions and out-of-order events
 shouldUpdateStatus(currentStatus: string, newStatus: string): boolean {
   const currentPrecedence = this.statusPrecedence[currentStatus] || 0;
   const newPrecedence = this.statusPrecedence[newStatus] || 0;
+  
+  // Only allow higher or equal precedence to replace current status
+  // Explicitly rejects lower precedence updates that might arrive out of order 
+  // due to Postgres logical replication (e.g., 'completed' before 'started')
   return newPrecedence >= currentPrecedence;
 }
 ```
