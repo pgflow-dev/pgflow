@@ -282,11 +282,14 @@ The `startFlow` method follows a carefully designed sequence to prevent race con
 3. Create FlowRun instance with initial state
 4. Store the run in the client's internal map
 5. Set up subscriptions for run and step events
-6. Start the flow with the predetermined run_id
-7. Update the run with initial data from response
+6. Start the flow with the predetermined run_id using `pgflow.start_flow_with_states`
+7. Update the run and step states with the complete initial state snapshot 
 8. Return the FlowRun instance
 
-This sequence ensures that subscriptions are active before any events are emitted from the server.
+This sequence ensures that:
+- Subscriptions are active before any events are emitted from the server
+- The client has a complete initial state snapshot before any realtime events arrive
+- Fast-completing steps are not missed due to network latency between subscription setup and the first event
 
 ### Adapter Implementation
 
@@ -312,6 +315,12 @@ CREATE OR REPLACE FUNCTION pgflow.start_flow(
   -- Uses COALESCE(p_run_id, gen_random_uuid()) to prioritize client-provided UUID
 $$ LANGUAGE plpgsql;
 ```
+
+We also need a new function `pgflow.start_flow_with_states` that:
+- Internally calls the existing `start_flow` function
+- Fetches the full set of step states for the run
+- Returns both the run and step states in a single response
+- Provides clients with a complete initial state snapshot
 
 ## Package Dependencies
 
@@ -342,13 +351,17 @@ By letting the client generate the run_id, we can:
 - Eliminate race conditions with event delivery
 - Create a more reliable subscription model
 
-### 3. Flow Definition First Approach
+### 3. Complete Initial State Snapshot
 
-Instead of fetching the entire run state (including step_states and step_tasks), we only fetch:
-- Flow definition and metadata
-- Steps that belong to the flow
+Our approach to state management involves:
+- Fetching flow definition and metadata first
+- Getting a complete initial state snapshot via `start_flow_with_states`
+- Using this snapshot to initialize client-side state
+- Then relying on realtime events for subsequent state updates
 
-Then we rely on realtime events to populate run and step states as they happen.
+This hybrid approach gives us the benefits of both worlds:
+- Complete initial state without missing fast-completing steps
+- Real-time updates for changes that happen after initialization
 
 ### 4. Encapsulated State with Getters
 
