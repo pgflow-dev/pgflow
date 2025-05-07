@@ -40,7 +40,8 @@ Phase 3 builds upon the real-time communication layer from Phase 2 to implement 
 
 2. **Event System:**
    - Implement type-safe step event subscription
-   - Create step-specific event handling
+   - Create step-specific event handling including proper error management
+   - Handle error propagation from events to step.error property
    - Add parent flow communication
 
 3. **Status Waiting:**

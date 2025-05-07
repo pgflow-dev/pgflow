@@ -16,7 +16,8 @@ Phase 5 builds upon the complete functional implementation from previous phases 
    - Implement mock objects and test fixtures
    - Add edge case and error handling tests
    - Test status precedence with out-of-order events
-   - Verify payload fields match exactly between SQL and TypeScript types
+   - Verify payload fields match exactly between SQL and TypeScript types, with special attention to error_message handling
+   - Test error_message propagation from failed steps to client
 
 2. **Integration Tests:**
    - Create tests for component interactions
