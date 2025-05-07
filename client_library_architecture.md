@@ -338,15 +338,13 @@ For Supabase, the adapter:
    - For MVP: Creates just one realtime channel per run (not per step)
    - Single channel listens to both runs and step_states tables with filter: `eq('run_id', run_id)`
    - Demultiplexes events client-side based on table and step_slug
-   - Significantly reduces resource usage vs creating separate channels per step
+   - Significantly reduces resource usage
    - Avoids hitting Supabase's channel limits even with large flows
-2. Enriches completed steps with their output
-3. Maintains a status precedence system to handle out-of-order events
-4. Implements NanoEvents for routing events to the client
-   - Only tracks and emits events based on the step_states table status
-   - Ignores step_tasks retries for status tracking (step is only considered failed when step_state is marked as failed)
-   - Uses step_tasks outputs to enrich completed steps
-5. Handles WebSocket disconnections by performing a full state refresh on reconnect:
+2. Maintains a status precedence system to handle out-of-order events
+3. Implements NanoEvents for routing events to the client
+   - Tracks and emits events based on the step_states table
+   - All step outputs and status information come directly from step_states
+4. Handles WebSocket disconnections by performing a full state refresh on reconnect:
    - Tracks current subscription ID to manage connection lifecycle
    - Unsubscribes from previous subscription before creating a new one
    - Listens for the realtime connection 'open' event
@@ -383,6 +381,12 @@ Additionally, we need a function to fetch the current state of a run and its ste
 - Used for refreshing state after WebSocket reconnections
 - Used for observing existing runs by ID
 - Can be reused by `start_flow_with_states` internally to eliminate duplication
+
+The `pgflow.complete_task` function needs to be updated to:
+
+- Store task output directly in the step_states output column when a step completes
+- This simplifies client architecture by providing all required data in step_states
+- Enables future fanout support without client changes (when multiple tasks per step)
 
 ## Package Dependencies
 
