@@ -395,18 +395,19 @@ Once the adapter transforms the external events, the FlowRun processes them:
     // This is a StepEvent
     this.#updateStepState(event);
 
-    // Notify step subscribers if this step exists
+    // Notify ONLY the corresponding step's subscribers
     const step = this.#steps.get(event.step_slug);
     if (step) {
-      step.notifySubscribers('status', event);
+      step.notifySubscribers(event);
     }
+    
+    // NOTE: We do NOT emit step events to flow-level subscribers
+    // flowRun.subscribe() only receives run events, not step events
   } else {
-    // This is a RunEvent
+    // This is a RunEvent - update state and notify flow-level subscribers
     this.#updateRunState(event);
+    this.#eventEmitter.emit(event);
   }
-
-  // Notify run-level subscribers
-  this.#eventEmitter.emit('status', event);
 
   // Check if any waitForStatus promises should be resolved
   this.#checkWaitConditions();
@@ -417,7 +418,15 @@ This approach:
 
 1. Listens for specific database events (UPDATE and INSERT) on relevant tables
 2. Transforms them to a standardized internal event format
-3. Updates FlowRun state and notifies subscribers accordingly
+3. Updates FlowRun state 
+4. Routes events to the appropriate subscribers:
+   - Run events → only flowRun subscribers
+   - Step events → only the specific step's subscribers
+
+This creates a clean separation of concerns where:
+- `flowRun.subscribe()` only receives run-level events
+- `flowStep.subscribe()` only receives events for that specific step
+- Users must explicitly subscribe to each step they want to track
 
 ## Open Questions - MVP Approach
 
@@ -474,6 +483,25 @@ While simplifying, we will maintain these essential features:
 - **Full DSL Type Integration**: Complete type safety with DSL from day one
 - **Rich Step Access API**: Ability to access steps and their outputs in a type-safe way
 - **Efficient State Management**: Properly normalized internal state representation
+
+## Error Handling Plan
+
+Based on our review of the core PostgreSQL schema and flow execution logic, we need robust error handling:
+
+1. **Run & Step Failure Detection**:
+   - Track the 'failed' status in both run and step states
+   - When a step fails, emit appropriate events to subscribers
+   - Maintain step_tasks error_message in our step events
+
+2. **waitForStatus Behavior**:
+   - If waiting for 'completed' but status becomes 'failed', the promise should reject
+   - Include the error_message in the rejection reason
+   - Example: `await flowRun.waitForStatus('completed')` should reject if the flow fails
+
+3. **Step Task Error Handling**:
+   - Extract error_message from step_tasks and include it in step events
+   - Make error_message available through the step.error_message getter
+   - Ensure step_tasks events properly update the corresponding step_state
 
 ## Implementation Phases
 
