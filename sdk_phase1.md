@@ -12,18 +12,23 @@ Phase 1 establishes the foundation for our SDK by implementing the required SQL 
 
 Add broadcast events to existing PostgreSQL functions:
 
-1. **Create new SQL functions:**
+1. **Schema modifications:**
+   - Add `error_message TEXT` column to `pgflow.step_states` table to store error information at the step level
+   - Ensure the step error message is included in appropriate events
+
+2. **Create new SQL functions:**
    - `pgflow.start_flow_with_states(flow_slug TEXT, input JSONB, run_id UUID DEFAULT NULL)` - Return complete initial state snapshot as TABLE(run, steps[])
    - `pgflow.get_run_with_states(run_id UUID)` - Fetch current state for reconnection
 
-2. **Modify existing functions to emit broadcast events:**
+3. **Modify existing functions to emit broadcast events:**
    - `start_flow.sql` - Add optional `run_id` parameter and `run:started` event with complete payload (including remaining_steps)
    - `start_ready_steps.sql` - Add `<step_slug>:started` event with complete payload (including remaining_tasks, remaining_deps)
    - `complete_task.sql` - Add `<step_slug>:completed` event with complete payload
-   - `fail_task.sql` - Add `<step_slug>:failed` and potentially `run:failed` events with complete payload
+   - `fail_task.sql` - Update to copy error_message to step_states table and add `<step_slug>:failed` event with complete payload including error_message
    - `maybe_complete_run.sql` - Add `run:completed` event with complete payload
+   - For `run:failed` events, include the error_message from the failing step_state
 
-3. **Add supporting index:**
+4. **Add supporting index:**
    - Create index on step_states(run_id) for efficient queries
 
 ## TypeScript Interface Hierarchy
@@ -48,11 +53,12 @@ Add broadcast events to existing PostgreSQL functions:
 
 ## Deliverables
 
-1. SQL functions with broadcast capability
-2. Core TypeScript interfaces and types
-3. Initial package structure and configuration
-4. Refactor existing `PgflowSqlClient` to implement the new small interfaces (`IFlowStarter` and `ITaskProcessor`) while maintaining backward compatibility
-5. Keep existing `IPgflowClient` as an alias interface for backward compatibility to avoid breaking edge-worker code
-6. Complete event payload definitions that match SQL broadcast fields exactly, ensuring field names and casing match between SQL and TypeScript
+1. Schema modifications to support the client API (adding error_message to step_states)
+2. SQL functions with broadcast capability
+3. Core TypeScript interfaces and types
+4. Initial package structure and configuration
+5. Refactor existing `PgflowSqlClient` to implement the new small interfaces (`IFlowStarter` and `ITaskProcessor`) while maintaining backward compatibility
+6. Keep existing `IPgflowClient` as an alias interface for backward compatibility to avoid breaking edge-worker code
+7. Complete event payload definitions that match SQL broadcast fields exactly, ensuring field names and casing match between SQL and TypeScript
 
 This phase establishes the foundational components that all subsequent SDK functionality will build upon.
