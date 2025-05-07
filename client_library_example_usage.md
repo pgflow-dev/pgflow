@@ -87,13 +87,21 @@ flowRun.flow_slug; // => 'analyze_website'
 - [x] Decide if we want to scope the columns/values in some object and leave top-level values for methods
     - Using direct getters with snake_case names to match Supabase convention
 
-## Subscribe to flow run updates
+## Event Subscription Model
+
+PgFlow uses a clean separation for event subscriptions:
+- Run-level events go only to flowRun subscribers
+- Step-level events go only to that specific step's subscribers
+
+### Subscribe to flow run updates
 
 ```ts
-const unsubscribe = flowRun.subscribe('status', (event) => {
-  console.log(event);
+// Subscribe to run-level status changes only
+const unsubscribe = flowRun.subscribe((event) => {
+  console.log('Run event:', event);
 });
 
+// Received event:
 // {
 //   run_id: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
 //   flow_slug: 'analyze_website',
@@ -107,22 +115,16 @@ const unsubscribe = flowRun.subscribe('status', (event) => {
 // }
 ```
 
-## Subscribe to step updates
+### Subscribe to step updates
 
 ```ts
-// Option 1: Subscribe to all step events at flow level
-const unsubscribeAllSteps = flowRun.subscribe('status', (event) => {
-  if ('step_slug' in event) {
-    console.log(`Step ${event.step_slug} is now ${event.status}`);
-  }
-});
-
-// Option 2: Subscribe to a specific step
+// Subscribe to a specific step's events
 const websiteStep = flowRun.step('website');
-const unsubscribeStep = websiteStep.subscribe('status', (event) => {
-  console.log(event);
+const unsubscribeStep = websiteStep.subscribe((event) => {
+  console.log(`Step ${event.step_slug} event:`, event);
 });
 
+// Received event:
 // {
 //   run_id: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
 //   flow_slug: 'analyze_website',
@@ -138,6 +140,16 @@ const unsubscribeStep = websiteStep.subscribe('status', (event) => {
 //   error_message: null
 // }
 ```
+
+> [!NOTE]
+> If you want to track multiple steps, you need to subscribe to each step individually:
+> ```ts
+> // Subscribe to multiple steps individually
+> const steps = ['website', 'sentiment', 'summary'];
+> const unsubscribes = steps.map(slug => 
+>   flowRun.step(slug).subscribe(event => console.log(`Step ${slug} event:`, event))
+> );
+> ```
 
 - [x] Make sure if using the output of step tasks as the output for a step state is a good simplification to make
     - This simplification makes sense since each step has only one task (constraint in database schema)
@@ -179,6 +191,34 @@ The waitForStatus method will:
 2. Allow waiting for any status ('started', 'completed', 'failed')
 3. Throw an error if the promise is rejected (timeout or cancellation)
 4. Return immediately if the status is already reached
+
+### Error Handling
+
+When a step or flow fails, we properly handle and surface errors:
+
+```ts
+// Error handling with try/catch
+try {
+  // If the flow fails while waiting, this will throw
+  const result = await flowRun.waitForStatus('completed');
+  console.log('Flow completed successfully:', result.output);
+} catch (error) {
+  console.error('Flow failed:', error.message);
+  // Access error details if available
+  console.error('Error details:', error.error_message);
+}
+
+// Access error information directly
+if (flowRun.status === 'failed') {
+  console.error('Flow failed');
+}
+
+// Access step error information
+const step = flowRun.step('website');
+if (step.status === 'failed') {
+  console.error(`Step ${step.step_slug} failed:`, step.error_message);
+}
+```
 
 - [x] Decide if we want to have flow-run-level methods for waiting for steps and run, or we want to introduce a way to "get a step" which will expose the same api for waiting and outputs.
     - We'll use the step() method to get a step object that exposes the same API as the flow run
