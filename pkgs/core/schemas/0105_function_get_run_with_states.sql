@@ -1,19 +1,19 @@
-CREATE OR REPLACE FUNCTION pgflow.get_run_with_states(
-  p_run_id UUID
-) RETURNS TABLE(
+create or replace function pgflow.get_run_with_states(
+  _run_id UUID
+) returns table (
   run PGFLOW.RUNS,
-  steps PGFLOW.STEP_STATES[]
-) AS $$
+  steps PGFLOW.STEP_STATES []
+) as $$
 BEGIN
   RETURN QUERY
-  SELECT 
+  SELECT
     r.*,
     ARRAY(
-      SELECT s FROM pgflow.step_states s 
-      WHERE s.run_id = p_run_id
+      SELECT s FROM pgflow.step_states s
+      WHERE s.run_id = get_run_with_states.run_id
       ORDER BY s.step_slug
     ) as steps
   FROM pgflow.runs r
-  WHERE r.run_id = p_run_id;
+  WHERE r.run_id = get_run_with_states.run_id;
 END;
-$$ LANGUAGE plpgsql;
+$$ language plpgsql;
