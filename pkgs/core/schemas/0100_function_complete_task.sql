@@ -9,6 +9,8 @@ language plpgsql
 volatile
 set search_path to ''
 as $$
+declare
+  v_step_state pgflow.step_states%ROWTYPE;
 begin
 
 WITH run_lock AS (
@@ -79,6 +81,27 @@ SET remaining_steps = pgflow.runs.remaining_steps - 1
 FROM step_state
 WHERE pgflow.runs.run_id = complete_task.run_id
   AND step_state.status = 'completed';
+
+-- Get the updated step state for broadcasting
+SELECT * INTO v_step_state FROM pgflow.step_states
+WHERE run_id = complete_task.run_id AND step_slug = complete_task.step_slug;
+
+-- Send broadcast event for step completed if the step is completed
+IF v_step_state.status = 'completed' THEN
+  PERFORM realtime.send(
+    jsonb_build_object(
+      'event_type', 'step:completed',
+      'run_id', complete_task.run_id,
+      'step_slug', complete_task.step_slug,
+      'status', 'completed',
+      'output', complete_task.output,
+      'completed_at', v_step_state.completed_at
+    ),
+    concat('step:', complete_task.step_slug, ':completed'),
+    concat('pgflow:run:', complete_task.run_id),
+    false
+  );
+END IF;
 
 PERFORM pgmq.archive(
   queue_name => (SELECT run.flow_slug FROM pgflow.runs AS run WHERE run.run_id = complete_task.run_id),

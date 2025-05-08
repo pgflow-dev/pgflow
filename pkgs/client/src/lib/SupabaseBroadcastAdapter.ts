@@ -108,14 +108,10 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
       this.#emitter.emit('runEvent', eventData);
     });
     
-    // Subscribe to step events - match pattern like "step_slug:started"
-    channel.on('broadcast', { event: '*:*' }, (payload) => {
-      const eventParts = payload.event.split(':');
-      // Only process if not a run event and has valid format
-      if (eventParts.length === 2 && eventParts[0] !== 'run') {
-        const eventData = payload.payload as BroadcastStepEvent;
-        this.#emitter.emit('stepEvent', eventData);
-      }
+    // Subscribe to step events - match pattern like "step:*"
+    channel.on('broadcast', { event: 'step:*' }, (payload) => {
+      const eventData = payload.payload as BroadcastStepEvent;
+      this.#emitter.emit('stepEvent', eventData);
     });
     
     channel.subscribe();
