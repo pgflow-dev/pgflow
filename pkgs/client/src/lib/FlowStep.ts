@@ -1,5 +1,5 @@
 import { createNanoEvents } from 'nanoevents';
-import type { AnyFlow, ExtractFlowSteps, StepOutput } from '@pgflow/dsl';
+import type { ExtractFlowSteps, StepOutput } from '@pgflow/dsl';
 import type { FlowStepState, StepEvents, Unsubscribe } from './types';
 
 /**

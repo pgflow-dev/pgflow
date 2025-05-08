@@ -35,7 +35,10 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
    * Handle broadcast messages from Supabase
    * @param payload - The message payload
    */
-  #handleBroadcastMessage(payload: any): void {
+  #handleBroadcastMessage(payload: { 
+    event: string; 
+    payload: BroadcastRunEvent | BroadcastStepEvent;
+  }): void {
     const event = payload.event as string;
     const eventData = payload.payload;
 
@@ -59,14 +62,14 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
     run_id: string,
     channelName: string,
     channel: RealtimeChannel,
-    error: any
+    error: Error | unknown
   ): Promise<void> {
     console.error(`Channel ${channelName} error:`, error);
     
     // Schedule reconnection attempt
     setTimeout(async () => {
       if (this.#channels.has(run_id)) {
-        await this.#reconnectChannel(run_id, channelName, channel);
+        await this.#reconnectChannel(run_id, channelName);
       }
     }, this.#reconnectionTimeoutMs);
   }
@@ -104,12 +107,10 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
    * Reconnect to a channel and refresh state
    * @param run_id - The run ID
    * @param channelName - The channel name
-   * @param _oldChannel - The previous RealtimeChannel instance (unused)
    */
   async #reconnectChannel(
     run_id: string,
-    channelName: string,
-    _oldChannel: RealtimeChannel
+    channelName: string
   ): Promise<void> {
     console.log(`Attempting to reconnect to ${channelName}`);
     

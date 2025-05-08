@@ -1,6 +1,6 @@
 import { createNanoEvents } from 'nanoevents';
-import type { AnyFlow, ExtractFlowInput, ExtractFlowOutput, ExtractFlowSteps } from '@pgflow/dsl';
-import type { FlowRunState, FlowRunEvents, FlowStepState, Unsubscribe } from './types';
+import type { ExtractFlowInput, ExtractFlowOutput, ExtractFlowSteps } from '@pgflow/dsl';
+import type { FlowRunState, FlowRunEvents, Unsubscribe } from './types';
 import { FlowStep } from './FlowStep';
 
 /**
@@ -9,7 +9,7 @@ import { FlowStep } from './FlowStep';
 export class FlowRun<TFlow> {
   #state: FlowRunState<TFlow>;
   #events = createNanoEvents<FlowRunEvents<TFlow>>();
-  #steps = new Map<string, FlowStep<TFlow, any>>();
+  #steps = new Map<string, FlowStep<TFlow, keyof ExtractFlowSteps<TFlow> & string>>();
   #statusPrecedence: Record<string, number> = {
     'queued': 0,
     'started': 1,
