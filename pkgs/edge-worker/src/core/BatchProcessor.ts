@@ -1,6 +1,6 @@
-import type { ExecutionController } from './ExecutionController.js';
-import type { IMessage, IPoller } from './types.js';
-import type { Logger } from '../platform/types.js';
+import type { ExecutionController } from './ExecutionController.ts';
+import type { IMessage, IPoller } from './types.ts';
+import type { Logger } from '../platform/types.ts';
 
 export class BatchProcessor<TMessage extends IMessage> {
   private logger: Logger;

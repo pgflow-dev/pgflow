@@ -1,15 +1,15 @@
-import type { Json } from './core/types.js';
+import type { Json } from './core/types.ts';
 import {
   createQueueWorker,
   type QueueWorkerConfig,
-} from './queue/createQueueWorker.js';
+} from './queue/createQueueWorker.ts';
 import {
   createFlowWorker,
   type FlowWorkerConfig,
-} from './flow/createFlowWorker.js';
-import { createAdapter } from './platform/createAdapter.js';
-import type { PlatformAdapter } from './platform/types.js';
-import type { MessageHandlerFn } from './queue/types.js';
+} from './flow/createFlowWorker.ts';
+import { createAdapter } from './platform/createAdapter.ts';
+import type { PlatformAdapter } from './platform/types.ts';
+import type { MessageHandlerFn } from './queue/types.ts';
 import type { AnyFlow } from '@pgflow/dsl';
 
 /**
@@ -41,7 +41,7 @@ export type EdgeWorkerConfig =
  *
  * // Flow worker example
  * import { EdgeWorker } from '@pgflow/edge-worker';
- * import { MyFlow } from './flows.js';
+ * import { MyFlow } from './flows.ts';
  *
  * EdgeWorker.start(MyFlow, {
  *   maxConcurrent: 5

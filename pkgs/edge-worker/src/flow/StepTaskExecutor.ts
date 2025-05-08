@@ -1,7 +1,7 @@
 import type { AnyFlow } from '@pgflow/dsl';
-import type { StepTaskRecord, IPgflowClient } from './types.js';
-import type { IExecutor } from '../core/types.js';
-import type { Logger } from '../platform/types.js';
+import type { StepTaskRecord, IPgflowClient } from './types.ts';
+import type { IExecutor } from '../core/types.ts';
+import type { Logger } from '../platform/types.ts';
 
 class AbortError extends Error {
   constructor() {

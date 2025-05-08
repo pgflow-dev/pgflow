@@ -1,6 +1,6 @@
-import type { StepTaskRecord, IPgflowClient } from './types.js';
-import type { IPoller } from '../core/types.js';
-import type { Logger } from '../platform/types.js';
+import type { StepTaskRecord, IPgflowClient } from './types.ts';
+import type { IPoller } from '../core/types.ts';
+import type { Logger } from '../platform/types.ts';
 import type { AnyFlow } from '@pgflow/dsl';
 
 export interface StepTaskPollerConfig {

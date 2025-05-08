@@ -1,18 +1,18 @@
 // Export existing queue-based worker
-export { createQueueWorker } from './queue/createQueueWorker.js';
-export { EdgeWorker } from './EdgeWorker.js';
+export { createQueueWorker } from './queue/createQueueWorker.ts';
+export { EdgeWorker } from './EdgeWorker.ts';
 
 // Export new flow-based worker
-export { createFlowWorker } from './flow/createFlowWorker.js';
-export { FlowWorkerLifecycle } from './flow/FlowWorkerLifecycle.js';
+export { createFlowWorker } from './flow/createFlowWorker.ts';
+export { FlowWorkerLifecycle } from './flow/FlowWorkerLifecycle.ts';
 
 // Export platform adapters
-export * from './platform/index.js';
+export * from './platform/index.ts';
 
 // Export types
-export type { StepTaskRecord } from './flow/types.js';
-export type { FlowWorkerConfig } from './flow/createFlowWorker.js';
-export type { StepTaskPollerConfig } from './flow/StepTaskPoller.js';
+export type { StepTaskRecord } from './flow/types.ts';
+export type { FlowWorkerConfig } from './flow/createFlowWorker.ts';
+export type { StepTaskPollerConfig } from './flow/StepTaskPoller.ts';
 
 // Re-export types from the base system
 export type {
@@ -22,4 +22,4 @@ export type {
   IMessage,
   ILifecycle,
   IBatchProcessor,
-} from './core/types.js';
+} from './core/types.ts';

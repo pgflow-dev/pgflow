@@ -1,14 +1,14 @@
-import type { CreateWorkerFn, Logger, PlatformAdapter } from './types.js';
-import type { Worker } from '../core/Worker.js';
-import { createLoggingFactory } from './logging.js';
+import type { CreateWorkerFn, Logger, PlatformAdapter } from './types.ts';
+import type { Worker } from '../core/Worker.ts';
+import { createLoggingFactory } from './logging.ts';
 
 /**
  * Adapter for Deno runtime environment.
  * IMPORTANT: This class assumes it is running within a Deno environment
  * with access to the `Deno` and `EdgeRuntime` global objects.
  *
- * NOTE: This code uses Deno specific APIs and is not meant to be executed in Node.js environments.
- * The TypeScript compilation in Node.js is only used for type checking and distribution.
+ * NOTE: This code uses Deno specific APIs and is not meant to be executed in Node.ts environments.
+ * The TypeScript compilation in Node.ts is only used for type checking and distribution.
  */
 export class DenoAdapter implements PlatformAdapter {
   private edgeFunctionName: string | null = null;

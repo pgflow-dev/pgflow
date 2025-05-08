@@ -1,5 +1,5 @@
-import type { PlatformAdapter } from './types.js';
-import { DenoAdapter } from './DenoAdapter.js';
+import type { PlatformAdapter } from './types.ts';
+import { DenoAdapter } from './DenoAdapter.ts';
 
 /**
  * Creates the appropriate platform adapter based on the runtime environment

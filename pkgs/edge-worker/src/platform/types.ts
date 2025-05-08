@@ -1,4 +1,4 @@
-import type { Worker } from '../core/Worker.js';
+import type { Worker } from '../core/Worker.ts';
 /**
  * Basic logger interface used throughout the application
  */

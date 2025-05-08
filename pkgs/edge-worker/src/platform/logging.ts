@@ -1,4 +1,4 @@
-import type { Logger } from './types.js';
+import type { Logger } from './types.ts';
 
 /**
  * Creates a logging factory with dynamic workerId support

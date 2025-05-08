@@ -1,6 +1,6 @@
 import type postgres from 'postgres';
-import type { IBatchProcessor, ILifecycle, WorkerBootstrap } from './types.js';
-import type { Logger } from '../platform/types.js';
+import type { IBatchProcessor, ILifecycle, WorkerBootstrap } from './types.ts';
+import type { Logger } from '../platform/types.ts';
 
 export class Worker {
   private lifecycle: ILifecycle;

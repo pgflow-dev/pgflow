@@ -1,7 +1,7 @@
 import type postgres from 'postgres';
-import type { PgmqMessageRecord } from './types.js';
-import type { Json } from '../core/types.js';
-import type { Logger } from '../platform/types.js';
+import type { PgmqMessageRecord } from './types.ts';
+import type { Json } from '../core/types.ts';
+import type { Logger } from '../platform/types.ts';
 
 export class Queue<TPayload extends Json> {
   private logger: Logger;

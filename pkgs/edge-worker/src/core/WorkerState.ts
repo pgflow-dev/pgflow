@@ -1,4 +1,4 @@
-import type { Logger } from '../platform/types.js';
+import type { Logger } from '../platform/types.ts';
 
 export enum States {
   /** The worker has been created but has not yet started. */

@@ -1,4 +1,4 @@
-import type { Json, IMessage } from '../core/types.js';
+import type { Json, IMessage } from '../core/types.ts';
 
 /**
  * Fields are nullable because types in postgres does not allow NOT NULL,

@@ -1,4 +1,4 @@
-import type { CreateLoggerFn, Logger } from '../src/platform/types.js';
+import type { CreateLoggerFn, Logger } from '../src/platform/types.ts';
 
 const noop = () => {};
 
