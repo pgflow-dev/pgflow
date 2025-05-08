@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
-import type { IFlowClient, FlowRunState } from './types';
+import type { IFlowClient, FlowRunState, BroadcastRunEvent, BroadcastStepEvent, Unsubscribe } from './types';
 import { SupabaseBroadcastAdapter } from './SupabaseBroadcastAdapter';
 import { FlowRun } from './FlowRun';
 
@@ -11,7 +11,7 @@ import { FlowRun } from './FlowRun';
 export class PgflowClient implements IFlowClient {
   #supabase: SupabaseClient;
   #realtimeAdapter: SupabaseBroadcastAdapter;
-  #runs = new Map<string, FlowRun<any>>();
+  #runs = new Map<string, FlowRun<AnyFlow>>();
 
   /**
    * Creates a new PgflowClient instance
@@ -158,7 +158,7 @@ export class PgflowClient implements IFlowClient {
    * Register a callback for run events
    * @returns Function to unsubscribe from the event
    */
-  onRunEvent(callback: Parameters<typeof this.#realtimeAdapter.onRunEvent>[0]): Unsubscribe {
+  onRunEvent(callback: (event: BroadcastRunEvent) => void): Unsubscribe {
     return this.#realtimeAdapter.onRunEvent(callback);
   }
 
@@ -166,7 +166,7 @@ export class PgflowClient implements IFlowClient {
    * Register a callback for step events
    * @returns Function to unsubscribe from the event
    */
-  onStepEvent(callback: Parameters<typeof this.#realtimeAdapter.onStepEvent>[0]): Unsubscribe {
+  onStepEvent(callback: (event: BroadcastStepEvent) => void): Unsubscribe {
     return this.#realtimeAdapter.onStepEvent(callback);
   }
 
