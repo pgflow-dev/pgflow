@@ -1,6 +1,9 @@
 ---
 title: How it works?
 description: Discover how Edge Worker enhances Supabase Background Tasks with retries, concurrency control, and automatic scaling while ensuring zero message loss.
+banner:
+  content: |
+    This guide is for the queue-only version of Edge Worker. Main docs are <a href="/getting-started/">here</a>
 ---
 
 import { Aside } from "@astrojs/starlight/components";
@@ -9,7 +12,7 @@ import { Aside } from "@astrojs/starlight/components";
 
 [![](https://mermaid.ink/img/pako:eNplkcFugzAMhl8lyrl9AQ47VLBxqdSqlZAGHEziASokyEkmTaXvvoR0o1VziGL_n_9Y9pULLZEnvFItwdSxc1op5o9xTUxU_OQmaMAgy2SL7N0pYXutTMUjGU5WlItYaLog1VFAJSv14paCXdweyw8f-2MZLnZ06LBelXxXRk_DztAM-Gp9KA-kpRP-W7bdvs3Ga4aNaAy0OC_WdzD4B4IQVsLMvvkIZMUiA4mu_8ZHYjW5MxNp4dUnKC9zUHJA-h9R_VQTG-sQyDYINlTs-IaPSCP00q_gGvCK2w5HP53EPyXQJczp5jlwVp9-lOCJJYcbTtq13V_gJgkW0x78lEeefMFgfHYC9an1GqPsraZ9XPiy99svlAqmtA?type=png)](https://mermaid.live/edit#pako:eNplkcFugzAMhl8lyrl9AQ47VLBxqdSqlZAGHEziASokyEkmTaXvvoR0o1VziGL_n_9Y9pULLZEnvFItwdSxc1op5o9xTUxU_OQmaMAgy2SL7N0pYXutTMUjGU5WlItYaLog1VFAJSv14paCXdweyw8f-2MZLnZ06LBelXxXRk_DztAM-Gp9KA-kpRP-W7bdvs3Ga4aNaAy0OC_WdzD4B4IQVsLMvvkIZMUiA4mu_8ZHYjW5MxNp4dUnKC9zUHJA-h9R_VQTG-sQyDYINlTs-IaPSCP00q_gGvCK2w5HP53EPyXQJczp5jlwVp9-lOCJJYcbTtq13V_gJgkW0x78lEeefMFgfHYC9an1GqPsraZ9XPiy99svlAqmtA)
 
-### Features 
+### Features
 
 Under the hood, it wraps [Supabase Background Tasks](https://supabase.com/docs/guides/functions/background-tasks) and adds a lot of useful features:
 

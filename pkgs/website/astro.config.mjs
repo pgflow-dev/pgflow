@@ -37,7 +37,12 @@ export default defineConfig({
   },
   redirects: {
     '/edge-worker/how-to/run-on-hosted-supabase':
-      '/edge-worker/how-to/deploy-to-supabasecom/',
+      '/how-to/deploy-to-supabasecom/',
+    '/edge-worker/faq/': '/faq/',
+    '/edge-worker/how-to/': '/faq/',
+    '/edge-worker/how-to/deploy-to-supabasecom/':
+      '/how-to/deploy-to-supabasecom/',
+    '/edge-worker/how-to/prepare-db-string/': '/how-to/prepare-db-string/',
   },
   integrations: [
     react(),
@@ -82,6 +87,10 @@ export default defineConfig({
                 autogenerate: { directory: 'getting-started/' },
               },
               {
+                label: 'FAQ - Common Questions',
+                link: '/faq/',
+              },
+              {
                 label: 'How To',
                 autogenerate: { directory: 'how-to/' },
               },
@@ -103,12 +112,17 @@ export default defineConfig({
                 autogenerate: { directory: 'edge-worker/getting-started/' },
               },
               {
-                label: 'How to?',
-                autogenerate: { directory: 'edge-worker/how-to/' },
-              },
-              {
-                label: 'FAQ - Common Questions',
-                link: '/edge-worker/faq/',
+                label: 'How To',
+                items: [
+                  {
+                    label: 'Deploy to Supabase.com',
+                    link: '/how-to/deploy-to-supabasecom/',
+                  },
+                  {
+                    label: 'Prepare DB Connection String',
+                    link: '/how-to/prepare-db-string/',
+                  },
+                ],
               },
             ],
           },

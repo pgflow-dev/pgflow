@@ -3,6 +3,9 @@ title: Install Edge Worker
 description: Quick setup guide for EdgeWorker on Supabase Background Tasks. Configure connection pooling, migrations, and environment in 5 simple steps.
 sidebar:
   order: 1
+banner:
+  content: |
+    This guide is for the queue-only version of Edge Worker. Main docs are <a href="/getting-started/">here</a>
 ---
 
 import { Aside, Steps } from "@astrojs/starlight/components";
@@ -27,7 +30,7 @@ If you haven't installed the CLI yet or need to upgrade, see Supabase's [install
 1. ### Install Edge Worker
 
     You can install Edge Worker using the pgflow installer (recommended) or [manually](/how-to/manual-installation/) if you want more control over the process.
-    
+
     Run the pgflow installer with npx:
 
     ```bash frame="none"
