@@ -9,6 +9,8 @@ language plpgsql
 volatile
 set search_path to ''
 as $$
+DECLARE
+  v_run_failed boolean;
 begin
 
 WITH run_lock AS (
@@ -76,7 +78,7 @@ maybe_fail_step AS (
 ),
 -- Send broadcast event for step failed if necessary
 broadcast_step_failed AS (
-  SELECT 
+  SELECT
     realtime.send(
       jsonb_build_object(
         'event_type', 'step:failed',
@@ -112,7 +114,7 @@ IF v_run_failed THEN
     v_flow_slug text;
   BEGIN
     SELECT flow_slug INTO v_flow_slug FROM pgflow.runs WHERE run_id = fail_task.run_id;
-    
+
     PERFORM realtime.send(
       jsonb_build_object(
         'event_type', 'run:failed',
