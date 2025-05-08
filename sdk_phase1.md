@@ -1,4 +1,6 @@
-# SDK Phase 1: Core Interfaces and Database Modifications
+# THIS PHASE IS DONE! NO NEED TO DO ANYTHING
+
+## SDK Phase 1: Core Interfaces and Database Modifications
 
 Phase 1 establishes the foundation for our SDK by implementing the required SQL functionality and core TypeScript interfaces. This phase focuses on the database communication layer that everything else will build upon.
 
@@ -6,21 +8,24 @@ Phase 1 establishes the foundation for our SDK by implementing the required SQL 
 
 1. Implement SQL broadcast functions required for real-time communication
 2. Define core interface hierarchy in TypeScript
-3. Implement SQL client connector 
+3. Implement SQL client connector
 
 ## SQL Modifications
 
 Add broadcast events to existing PostgreSQL functions:
 
 1. **Schema modifications:**
+
    - Add `error_message TEXT` column to `pgflow.step_states` table to store error information at the step level
    - Ensure the step error message is included in appropriate events
 
 2. **Create new SQL functions:**
+
    - `pgflow.start_flow_with_states(flow_slug TEXT, input JSONB, run_id UUID DEFAULT NULL)` - Return complete initial state snapshot as TABLE(run, steps[])
    - `pgflow.get_run_with_states(run_id UUID)` - Fetch current state for reconnection
 
 3. **Modify existing functions to emit broadcast events:**
+
    - `start_flow.sql` - Add optional `run_id` parameter and `run:started` event with complete payload (including remaining_steps)
    - `start_ready_steps.sql` - Add `<step_slug>:started` event with complete payload (including remaining_tasks, remaining_deps)
    - `complete_task.sql` - Add `<step_slug>:completed` event with complete payload
@@ -34,6 +39,7 @@ Add broadcast events to existing PostgreSQL functions:
 ## TypeScript Interface Hierarchy
 
 1. **Interface Segregation:**
+
    - `IFlowStarter` (core) - For starting flows with `startFlow<TFlow>(flow_slug, input, run_id?: string)`
    - `ITaskProcessor` (core) - For task processing operations
    - `IFlowRealtime` (sdk) - For real-time updates
