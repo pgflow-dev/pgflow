@@ -20,6 +20,7 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
   #supabase: SupabaseClient;
   #channels: Map<string, RealtimeChannel> = new Map();
   #emitter = createNanoEvents<AdapterEvents>();
+  #reconnectionTimeoutMs = 2000;
 
   /**
    * Creates a new instance of SupabaseBroadcastAdapter
@@ -28,6 +29,101 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
    */
   constructor(supabase: SupabaseClient) {
     this.#supabase = supabase;
+  }
+  
+  /**
+   * Handle broadcast messages from Supabase
+   * @param payload - The message payload
+   */
+  #handleBroadcastMessage(payload: any): void {
+    const event = payload.event as string;
+    const eventData = payload.payload;
+
+    if (event.startsWith('run:')) {
+      // Handle run events
+      this.#emitter.emit('runEvent', eventData as BroadcastRunEvent);
+    } else if (event.startsWith('step:')) {
+      // Handle step events
+      this.#emitter.emit('stepEvent', eventData as BroadcastStepEvent);
+    }
+  }
+  
+  /**
+   * Handle channel errors and reconnection
+   * @param run_id - The run ID
+   * @param channelName - The channel name
+   * @param channel - The RealtimeChannel instance
+   * @param error - The error object
+   */
+  async #handleChannelError(
+    run_id: string,
+    channelName: string,
+    channel: RealtimeChannel,
+    error: any
+  ): Promise<void> {
+    console.error(`Channel ${channelName} error:`, error);
+    
+    // Schedule reconnection attempt
+    setTimeout(async () => {
+      if (this.#channels.has(run_id)) {
+        await this.#reconnectChannel(run_id, channelName, channel);
+      }
+    }, this.#reconnectionTimeoutMs);
+  }
+  
+  /**
+   * Reconnect to a channel and refresh state
+   * @param run_id - The run ID
+   * @param channelName - The channel name
+   * @param channel - The RealtimeChannel instance
+   */
+  async #reconnectChannel(
+    run_id: string,
+    channelName: string,
+    channel: RealtimeChannel
+  ): Promise<void> {
+    console.log(`Attempting to reconnect to ${channelName}`);
+    
+    try {
+      // Fetch current state to avoid missing events during disconnection
+      const currentState = await this.getRunWithStates(run_id);
+      
+      // Update state based on current data
+      this.#refreshStateFromSnapshot(run_id, currentState);
+      
+      // Resubscribe to the channel
+      channel.subscribe();
+    } catch (e) {
+      console.error(`Failed to reconnect to ${channelName}:`, e);
+    }
+  }
+  
+  /**
+   * Refresh client state from a state snapshot
+   * @param run_id - The run ID
+   * @param state - The state snapshot
+   */
+  #refreshStateFromSnapshot(
+    run_id: string,
+    state: { run: RunRow; steps: StepStateRow[] } | null
+  ): void {
+    if (!state || !state.run) return;
+    
+    // Emit run event
+    this.#emitter.emit('runEvent', {
+      event_type: `run:${state.run.status}`,
+      ...state.run
+    } as unknown as BroadcastRunEvent);
+    
+    // Emit events for each step state
+    if (state.steps && Array.isArray(state.steps)) {
+      for (const step of state.steps) {
+        this.#emitter.emit('stepEvent', {
+          event_type: `step:${step.status}`,
+          ...step
+        } as unknown as BroadcastStepEvent);
+      }
+    }
   }
 
   /**
@@ -73,7 +169,15 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
    * @returns Function to unsubscribe from the event
    */
   onRunEvent(callback: (event: BroadcastRunEvent) => void): Unsubscribe {
-    return this.#emitter.on('runEvent', callback);
+    // Add a guard to prevent errors if called after emitter is deleted
+    const unsubscribe = this.#emitter.on('runEvent', callback);
+    return () => {
+      try {
+        unsubscribe();
+      } catch (e) {
+        console.warn('Could not unsubscribe from run event - emitter may have been disposed', e);
+      }
+    };
   }
 
   /**
@@ -83,7 +187,15 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
    * @returns Function to unsubscribe from the event
    */
   onStepEvent(callback: (event: BroadcastStepEvent) => void): Unsubscribe {
-    return this.#emitter.on('stepEvent', callback);
+    // Add a guard to prevent errors if called after emitter is deleted
+    const unsubscribe = this.#emitter.on('stepEvent', callback);
+    return () => {
+      try {
+        unsubscribe();
+      } catch (e) {
+        console.warn('Could not unsubscribe from step event - emitter may have been disposed', e);
+      }
+    };
   }
 
   /**
@@ -97,27 +209,41 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
 
     // If already subscribed, return the existing unsubscribe function
     if (this.#channels.has(run_id)) {
-      return () => this.#unsubscribe(run_id);
+      return () => this.unsubscribe(run_id);
     }
 
     const channel = this.#supabase.channel(channelName);
 
-    // Subscribe to run events
-    channel.on('broadcast', { event: 'run:*' }, (payload) => {
-      const eventData = payload.payload as BroadcastRunEvent;
-      this.#emitter.emit('runEvent', eventData);
+    // Use a single listener without event filtering and do the filtering in code
+    // This is because Supabase Realtime doesn't support wildcards in event filters
+    channel.on('broadcast', { event: '*' }, this.#handleBroadcastMessage.bind(this));
+
+    // Handle channel lifecycle events
+    channel.on('subscribed', () => {
+      console.log(`Subscribed to channel ${channelName}`);
     });
 
-    // Subscribe to step events - match pattern like "step:*"
-    channel.on('broadcast', { event: 'step:*' }, (payload) => {
-      const eventData = payload.payload as BroadcastStepEvent;
-      this.#emitter.emit('stepEvent', eventData);
+    channel.on('closed', () => {
+      console.log(`Channel ${channelName} closed`);
     });
+
+    channel.on('error', (error) => 
+      this.#handleChannelError(run_id, channelName, channel, error)
+    );
 
     channel.subscribe();
     this.#channels.set(run_id, channel);
 
-    return () => this.#unsubscribe(run_id);
+    return () => this.unsubscribe(run_id);
+  }
+  
+  /**
+   * Unsubscribes from a run's events
+   * 
+   * @param run_id - Run ID to unsubscribe from
+   */
+  unsubscribe(run_id: string): void {
+    this.#unsubscribe(run_id);
   }
 
   /**
