@@ -26,7 +26,7 @@ export type FlowRunEvents<TFlow> = {
     failed_at: string;
   };
   // General event type that includes all events
-  '*': { run_id: string; status: string; [key: string]: any };
+  '*': { run_id: string; status: string; [key: string]: unknown };
 };
 
 /**
@@ -61,7 +61,7 @@ export type StepEvents<
     run_id: string;
     step_slug: TStepSlug;
     status: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 };
 
@@ -177,7 +177,8 @@ export type FlowStepState<TFlow, TStepSlug extends keyof ExtractFlowSteps<TFlow>
 /**
  * Interface for realtime updates (used by client library)
  */
-export interface IFlowRealtime {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export interface IFlowRealtime<TFlow = unknown> {
   /**
    * Fetch flow definition metadata (looks up flows and steps tables)
    */
@@ -214,4 +215,4 @@ export interface IFlowRealtime {
  */
 export interface IFlowClient<TFlow extends AnyFlow = AnyFlow>
   extends IFlowStarter,
-    IFlowRealtime {}
+    IFlowRealtime<TFlow> {}
