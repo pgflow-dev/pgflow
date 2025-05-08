@@ -1,0 +1,17 @@
+{
+  "name": "@pgflow/client",
+  "version": "0.0.1",
+  "dependencies": {},
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "private": true,
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.esm.js",
+      "default": "./dist/index.cjs.js"
+    }
+  },
+  "types": "./dist/index.d.ts"
+}
