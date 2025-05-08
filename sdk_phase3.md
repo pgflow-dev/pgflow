@@ -1,4 +1,4 @@
-# SDK Phase 3: Client-Side State Management
+# SDK Phase 3: PgflowClient-Side State Management
 
 Phase 3 builds upon the real-time communication layer from Phase 2 to implement client-side state management through the FlowRun and FlowStep classes. This phase focuses on creating a robust, type-safe representation of flow state that updates in real-time.
 
@@ -69,4 +69,4 @@ Phase 3 builds upon the real-time communication layer from Phase 2 to implement 
 3. Type-safe event subscription mechanisms
 4. Status waiting functionality with timeout/cancellation support
 
-This phase provides the core client-side state management functionality, setting the stage for the main Client class implementation in Phase 4.
+This phase provides the core client-side state management functionality, setting the stage for the main PgflowClient class implementation in Phase 4.
