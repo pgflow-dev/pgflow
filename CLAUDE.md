@@ -61,7 +61,7 @@ When suggesting changes or improvements, bias heavily toward solutions that can 
 ## Code Style Guidelines
 
 - **TypeScript**: Use strict mode with proper type annotations
-- **Database**: PgFlow uses PostgreSQL for workflow orchestration
+- **Database**: pgflow uses PostgreSQL for workflow orchestration
 - **Imports**: Use package paths where defined (e.g., `@pgflow/core`, `@pgflow/dsl`)
 - **Formatting**: Follow existing code style with proper indentation
 - **Testing**: Write tests for both PostgreSQL functions (PgTAP) and TypeScript (Vitest)
@@ -89,12 +89,12 @@ Remember, that functions have significant overhead in Postgres - instead of fact
 ## Packages
 
 - **core** - PostgreSQL-native workflow engine for defining, managing, and tracking DAG-based workflows
-- **cli** - Command-line interface for managing PgFlow deployments
-- **client** - TypeScript Client for interacting with PgFlow and observing workflow progress
+- **cli** - Command-line interface for managing pgflow deployments
+- **client** - TypeScript Client for interacting with pgflow and observing workflow progress
 - **dsl** - TypeScript DSL for workflow definition with automatic type inference
 - **edge-worker** - Task queue worker for Supabase Edge Functions with reliability features
 - **example-flows** - Example workflow definitions using the DSL
-- **website** - Documentation site for PgFlow
+- **website** - Documentation site for pgflow
 
 ## Architecture & Key Conventions
 
