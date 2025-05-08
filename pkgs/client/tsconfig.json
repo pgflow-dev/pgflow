@@ -4,6 +4,12 @@
   "include": [],
   "references": [
     {
+      "path": "../dsl"
+    },
+    {
+      "path": "../core"
+    },
+    {
       "path": "./tsconfig.lib.json"
     },
     {
