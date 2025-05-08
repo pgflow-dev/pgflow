@@ -115,6 +115,8 @@ export type BroadcastStepStartedEvent = {
   step_slug: string;
   status: 'started';
   started_at: string;
+  remaining_tasks: number;
+  remaining_deps: number;
 };
 
 export type BroadcastStepCompletedEvent = {
@@ -186,13 +188,15 @@ export interface IFlowRealtime {
 
   /**
    * Register a callback for run events
+   * @returns Function to unsubscribe from the event
    */
-  onRunEvent(callback: (event: BroadcastRunEvent) => void): void;
+  onRunEvent(callback: (event: BroadcastRunEvent) => void): Unsubscribe;
 
   /**
    * Register a callback for step events
+   * @returns Function to unsubscribe from the event
    */
-  onStepEvent(callback: (event: BroadcastStepEvent) => void): void;
+  onStepEvent(callback: (event: BroadcastStepEvent) => void): Unsubscribe;
 
   /**
    * Subscribe to a flow run's events
