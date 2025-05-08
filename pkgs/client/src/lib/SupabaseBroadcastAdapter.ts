@@ -44,7 +44,7 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
       .schema('pgflow')
       .from('flows')
       .select('*')
-      .eq('slug', flow_slug)
+      .eq('flow_slug', flow_slug)
       .single();
 
     if (flowError) throw flowError;
@@ -130,10 +130,9 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
     steps: StepStateRow[];
   }> {
     // Call the RPC function (will need to be created in SQL)
-    const { data, error } = await this.#supabase.rpc(
-      'pgflow.get_run_with_states',
-      { run_id }
-    );
+    const { data, error } = await this.#supabase
+      .schema('pgflow')
+      .rpc('get_run_with_states', { run_id });
 
     if (error) throw error;
     return data;

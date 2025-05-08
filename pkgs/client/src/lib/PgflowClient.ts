@@ -15,7 +15,7 @@ export class PgflowClient implements IFlowClient {
 
   /**
    * Creates a new PgflowClient instance
-   * 
+   *
    * @param supabaseClient - Supabase client instance
    */
   constructor(supabaseClient: SupabaseClient) {
@@ -42,7 +42,7 @@ export class PgflowClient implements IFlowClient {
 
   /**
    * Start a flow with optional run_id
-   * 
+   *
    * @param flow_slug - Flow slug to start
    * @param input - Input data for the flow
    * @param run_id - Optional run ID (will be generated if not provided)
@@ -55,9 +55,6 @@ export class PgflowClient implements IFlowClient {
   ): Promise<FlowRun<TFlow>> {
     // Generate a run_id if not provided
     const id = run_id || uuidv4();
-
-    // Fetch flow definition to understand available steps
-    const { flow } = await this.#realtimeAdapter.fetchFlowDefinition(flow_slug);
 
     // Create initial state for the flow run
     const initialState: FlowRunState<TFlow> = {
@@ -84,7 +81,7 @@ export class PgflowClient implements IFlowClient {
     this.#realtimeAdapter.subscribeToRun(id);
 
     // Start the flow with the predetermined run_id
-    const { data, error } = await this.#supabase.rpc('pgflow.start_flow_with_states', {
+    const { data, error } = await this.#supabase.schema('pgflow').rpc('start_flow_with_states', {
       flow_slug: flow_slug,
       input: input as Record<string, unknown>,
       run_id: id
@@ -122,7 +119,7 @@ export class PgflowClient implements IFlowClient {
 
   /**
    * Dispose a specific flow run
-   * 
+   *
    * @param runId - Run ID to dispose
    */
   dispose(runId: string): void {
@@ -143,7 +140,7 @@ export class PgflowClient implements IFlowClient {
   }
 
   // Delegate IFlowRealtime methods to the adapter
-  
+
   /**
    * Fetch flow definition metadata
    */
