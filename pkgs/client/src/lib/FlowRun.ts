@@ -286,7 +286,7 @@ export class FlowRun<TFlow> {
    */
   updateStepState<TStepSlug extends keyof ExtractFlowSteps<TFlow> & string>(
     stepSlug: TStepSlug, 
-    event: FlowStepState<TFlow, TStepSlug>
+    event: StepEvents<TFlow, TStepSlug>['*']
   ): boolean {
     const step = this.step(stepSlug);
     return step.updateState(event);
@@ -320,11 +320,16 @@ export class FlowRun<TFlow> {
    * @returns true if the status should be updated, false otherwise
    */
   #shouldUpdateStatus(currentStatus: string, newStatus: string): boolean {
+    // Don't allow changes to terminal states
+    if (currentStatus === 'completed' || currentStatus === 'failed') {
+      return false; // Terminal states should never change
+    }
+    
     const currentPrecedence = this.#statusPrecedence[currentStatus] || 0;
     const newPrecedence = this.#statusPrecedence[newStatus] || 0;
 
-    // Only allow transitions to higher or equal precedence status
-    return newPrecedence >= currentPrecedence;
+    // Only allow transitions to higher precedence non-terminal status
+    return newPrecedence > currentPrecedence;
   }
 
   /**
@@ -337,6 +342,9 @@ export class FlowRun<TFlow> {
 
     // Clear the map to allow garbage collection of steps
     this.#steps.clear();
+    
+    // Clear all event listeners
+    this.#events.events = {};
     
     // Mark as disposed
     this.#disposed = true;

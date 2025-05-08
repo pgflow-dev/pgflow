@@ -1,19 +1,12 @@
 create or replace function pgflow.get_run_with_states(
   run_id UUID
-) returns table (
-  run PGFLOW.RUNS,
-  steps PGFLOW.STEP_STATES []
-) as $$
-BEGIN
-  RETURN QUERY
-  SELECT
-    r.*,
-    ARRAY(
-      SELECT s FROM pgflow.step_states s
-      WHERE s.run_id = get_run_with_states.run_id
-      ORDER BY s.step_slug
-    ) as steps
+) returns jsonb as $$
+  SELECT jsonb_build_object(
+    'run', to_jsonb(r),
+    'steps', COALESCE(jsonb_agg(to_jsonb(s)) FILTER (WHERE s.run_id IS NOT NULL), '[]'::jsonb)
+  )
   FROM pgflow.runs r
-  WHERE r.run_id = get_run_with_states.run_id;
-END;
-$$ language plpgsql;
+  LEFT JOIN pgflow.step_states s ON s.run_id = r.run_id
+  WHERE r.run_id = get_run_with_states.run_id
+  GROUP BY r.run_id;
+$$ language sql;
