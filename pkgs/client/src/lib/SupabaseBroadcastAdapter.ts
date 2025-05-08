@@ -70,20 +70,20 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
    * Registers a callback for run events
    * 
    * @param callback - Function to call when run events are received
-   * @returns Function to unsubscribe
+   * @returns Function to unsubscribe from the event
    */
-  onRunEvent(callback: (event: BroadcastRunEvent) => void): void {
-    this.#emitter.on('runEvent', callback);
+  onRunEvent(callback: (event: BroadcastRunEvent) => void): Unsubscribe {
+    return this.#emitter.on('runEvent', callback);
   }
   
   /**
    * Registers a callback for step events
    * 
    * @param callback - Function to call when step events are received
-   * @returns Function to unsubscribe
+   * @returns Function to unsubscribe from the event
    */
-  onStepEvent(callback: (event: BroadcastStepEvent) => void): void {
-    this.#emitter.on('stepEvent', callback);
+  onStepEvent(callback: (event: BroadcastStepEvent) => void): Unsubscribe {
+    return this.#emitter.on('stepEvent', callback);
   }
   
   /**

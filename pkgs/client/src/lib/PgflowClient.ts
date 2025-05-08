@@ -153,16 +153,18 @@ export class PgflowClient implements IFlowClient {
 
   /**
    * Register a callback for run events
+   * @returns Function to unsubscribe from the event
    */
-  onRunEvent(callback: Parameters<typeof this.#realtimeAdapter.onRunEvent>[0]): void {
-    this.#realtimeAdapter.onRunEvent(callback);
+  onRunEvent(callback: Parameters<typeof this.#realtimeAdapter.onRunEvent>[0]): Unsubscribe {
+    return this.#realtimeAdapter.onRunEvent(callback);
   }
 
   /**
    * Register a callback for step events
+   * @returns Function to unsubscribe from the event
    */
-  onStepEvent(callback: Parameters<typeof this.#realtimeAdapter.onStepEvent>[0]): void {
-    this.#realtimeAdapter.onStepEvent(callback);
+  onStepEvent(callback: Parameters<typeof this.#realtimeAdapter.onStepEvent>[0]): Unsubscribe {
+    return this.#realtimeAdapter.onStepEvent(callback);
   }
 
   /**
