@@ -71,7 +71,11 @@ function findMigrationsDirectory() {
 // Helper function to get the timestamp part from a migration filename
 function getTimestampFromFilename(filename: string): string {
   const match = filename.match(/^(\d+)_/);
-  return match ? match[1] : '';
+  // Return the timestamp only if it exists and has the correct length (14 digits)
+  if (match && match[1] && match[1].length === 14 && /^\d{14}$/.test(match[1])) {
+    return match[1];
+  }
+  return '';
 }
 
 // Helper function to format a Date object into a migration timestamp string (YYYYMMDDhhmmss)
@@ -189,11 +193,14 @@ export async function copyMigrations({
   for (const file of existingFiles) {
     if (file.endsWith('.sql')) {
       const timestamp = getTimestampFromFilename(file);
-      if (
-        timestamp &&
-        parseInt(timestamp, 10) > parseInt(latestTimestamp, 10)
-      ) {
-        latestTimestamp = timestamp;
+      // Only consider timestamps that have been validated by getTimestampFromFilename
+      // to have the correct length and format
+      if (timestamp && timestamp.length === 14) {
+        const parsedDate = parseTimestampToDate(timestamp);
+        // If we have a valid date and this timestamp is newer, update latestTimestamp
+        if (parsedDate && parseInt(timestamp, 10) > parseInt(latestTimestamp, 10)) {
+          latestTimestamp = timestamp;
+        }
       }
     }
   }
