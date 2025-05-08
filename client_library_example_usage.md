@@ -12,7 +12,7 @@
 
 ```ts
 import { createClient } from '@supabase/supabase-js';
-import { Client, PostgresChangesAdapter } from '@pgflow/client';
+import { PgflowClient } from '@pgflow/client';
 import { v4 as uuidv4 } from 'uuid';
 
 const supabase = createClient(
@@ -20,12 +20,7 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
-const pgflow = new Client(supabase);
-// under the hood it initializes the PostgresChanges adapter, that uses
-// postgres_changes realtime subscriptions to track flow runs and step changes
-// const adapter = new PostgresChangesAdapter(supabase);
-// this is so in future we can augment Client to support also the "broadcast from database" approach
-// which uses a dedicated realtime subscription and dedicated db-side events
+const pgflow = new PgflowClient(supabase);
 ```
 
 ## Start a flow run
@@ -341,8 +336,8 @@ To simplify working with multiple flows and reduce the need for repetitive gener
 ```ts
 // Define your flow map once
 type MyFlows = {
-  'analyze_website': typeof AnalyzeWebsite;
-  'user_onboarding': typeof UserOnboarding;
+  analyze_website: typeof AnalyzeWebsite;
+  user_onboarding: typeof UserOnboarding;
   // Add all your flows here
 };
 

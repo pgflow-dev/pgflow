@@ -12,7 +12,7 @@ Phase 5 builds upon the complete functional implementation from previous phases 
 ## Testing Implementation
 
 1. **Unit Tests:**
-   - Create tests for each component (Client, FlowRun, FlowStep, Adapter)
+   - Create tests for each component (PgflowClient, FlowRun, FlowStep, Adapter)
    - Implement mock objects and test fixtures
    - Add edge case and error handling tests
    - Test status precedence with out-of-order events
