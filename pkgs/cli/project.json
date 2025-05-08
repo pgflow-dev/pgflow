@@ -31,17 +31,22 @@
     },
     "test": {
       "executor": "nx:noop",
-      "dependsOn": ["test:e2e:install", "test:e2e:compile"]
+      "dependsOn": [
+        "test:e2e:install",
+        "test:e2e:install:duplicates",
+        "test:e2e:compile"
+      ],
+      "options": {
+        "parallel": false
+      }
     },
     "test:e2e:install": {
       "executor": "nx:run-commands",
       "dependsOn": ["build"],
       "options": {
         "commands": [
-          "rm -rf supabase/",
-          "npx -y supabase@latest init --with-vscode-settings --with-intellij-settings",
-          "node dist/index.js install --supabase-path supabase/ --yes",
-          "./scripts/assert-pgflow-installed"
+          "./scripts/test-install",
+          "./scripts/test-install-duplicates"
         ],
         "cwd": "{projectRoot}",
         "parallel": false

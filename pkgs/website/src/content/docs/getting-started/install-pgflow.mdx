@@ -35,8 +35,9 @@ npx pgflow@latest install
 The installer will:
 - Detect your Supabase project automatically or allow you to specify it manually
 - Update your `config.toml` to enable connection pooling
-- Copy the required migrations to your migrations folder
+- Copy the required migrations to your migrations folder (with timestamps that ensure they run after your existing migrations)
 - Create a functions environment file if needed
+- Prevent duplicate migrations if you run the installer multiple times
 
 ### 2. Apply configuration changes
 
@@ -63,5 +64,15 @@ The installer set up:
 2. **SQL functions** - Core functions to create, start, and manage workflows
 3. **Connection pooling** - Required for Edge Worker operation
 4. **Environment variables** - Database connection for Edge Functions
+5. **Smart migrations** - Migration files are copied with timestamps that ensure they run after your existing migrations and won't be duplicated if you upgrade pgflow later
+
+<Aside type="note" title="About migrations">
+When installing or upgrading pgflow, migrations are copied with special timestamp prefixes that ensure they:
+- Run after your existing project migrations
+- Won't conflict with your own migrations
+- Won't be duplicated if you run the installer multiple times
+
+For example, a pgflow migration like `20250429164909_pgflow_initial.sql` might be installed as `20250430000010_20250429164909_pgflow_initial.sql` to preserve order and prevent conflicts.
+</Aside>
 
 Your Supabase project now has everything needed to create and run workflows with pgflow!
