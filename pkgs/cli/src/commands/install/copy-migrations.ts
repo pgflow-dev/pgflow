@@ -78,7 +78,7 @@ function getTimestampFromFilename(filename: string): string {
 function generateNewTimestamp(referenceTimestamp: string, increment = 10): string {
   // Parse the reference timestamp
   // Format: YYYYMMDDhhmmss (e.g., 20250429164909)
-  if (!referenceTimestamp || referenceTimestamp.length !== 14) {
+  if (!referenceTimestamp || referenceTimestamp.length !== 14 || !/^\d{14}$/.test(referenceTimestamp)) {
     // If invalid, use current time
     const now = new Date();
     const year = now.getFullYear();
