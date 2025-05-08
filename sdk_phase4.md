@@ -1,15 +1,15 @@
-# SDK Phase 4: Client Class and Resource Management
+# SDK Phase 4: PgflowClient Class and Resource Management
 
-Phase 4 builds upon the state management components from Phase 3 to implement the main Client class, which serves as the primary entry point for the SDK. This phase focuses on flow creation, resource management, and lifecycle handling.
+Phase 4 builds upon the state management components from Phase 3 to implement the main PgflowClient class, which serves as the primary entry point for the SDK. This phase focuses on flow creation, resource management, and lifecycle handling.
 
 ## Objectives
 
-1. Implement the main Client class
+1. Implement the main PgflowClient class
 2. Create robust resource management and cleanup
 3. Add automatic reference tracking and disposal
 4. Implement flow creation with pre-subscription pattern
 
-## Client Implementation
+## PgflowClient Implementation
 
 1. **Core Functionality:**
    - Implement IFlowClient interface
@@ -58,7 +58,7 @@ Phase 4 builds upon the state management components from Phase 3 to implement th
 
 ## Deliverables
 
-1. Complete Client class implementation
+1. Complete PgflowClient class implementation
 2. Robust resource management and cleanup
 3. Race condition prevention with pre-subscription
 4. Type-safe flow creation and management
