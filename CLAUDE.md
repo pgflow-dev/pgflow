@@ -65,10 +65,14 @@ When suggesting changes or improvements, bias heavily toward solutions that can 
 - **Imports**: Use package paths where defined (e.g., `@pgflow/core`, `@pgflow/dsl`)
 - **Formatting**: Follow existing code style with proper indentation
 - **Testing**: Write tests for both PostgreSQL functions (PgTAP) and TypeScript (Vitest)
+  - Place TypeScript tests in the `__tests__` directory at the root of the package
+  - Separate runtime tests from type tests in the `__tests__/runtime` and `__tests__/types` directories
+  - Never create `.test.ts` or `.spec.ts` files in `src/` directories
 - **Naming**: Use camelCase for variables/functions, PascalCase for classes/types
 - **Error Handling**: Use proper error types and handle errors appropriately
 - **File Structure**: Monorepo structure with packages in pkgs/ directory
 - **Documentation Style**: Use impersonal, factual language. Avoid "we" and "our" when describing technical concepts, flows, or processes. Only use "you" when directly instructing the reader. Focus on what the system does, not who is doing it.
+- Put all the source codes in `src/` and not nested in `src/lib/`, create subdirectories for distinct sub-packages
 
 ## Declarative SQL vs procedural SQL
 
