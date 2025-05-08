@@ -39,6 +39,7 @@
     "nx": "20.3.0",
     "prettier": "^2.6.2",
     "rollup": "^4.14.0",
+    "swc-loader": "0.1.15",
     "tslib": "^2.3.0",
     "typescript": "~5.6.2",
     "typescript-eslint": "^8.13.0",
