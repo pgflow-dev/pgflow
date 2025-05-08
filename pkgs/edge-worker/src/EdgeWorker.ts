@@ -134,7 +134,7 @@ export class EdgeWorker {
    *
    *   // how long a job is invisible after reading
    *   // if not successful, will reappear after this time
-   *   visibilityTimeout: 3,
+   *   visibilityTimeout: 10,
    * });
    * ```
    */
@@ -157,7 +157,7 @@ export class EdgeWorker {
       pollIntervalMs: config.pollIntervalMs ?? 200,
       retryDelay: config.retryDelay ?? 5,
       retryLimit: config.retryLimit ?? 5,
-      visibilityTimeout: config.visibilityTimeout ?? 3,
+      visibilityTimeout: config.visibilityTimeout ?? 10,
       connectionString:
         config.connectionString || this.platform.getConnectionString(),
     };

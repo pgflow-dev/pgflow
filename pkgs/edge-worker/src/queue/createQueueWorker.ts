@@ -66,7 +66,7 @@ export type QueueWorkerConfig = {
   /**
    * How long a job is invisible after reading in seconds.
    * If not successful, will reappear after this time.
-   * @default 3
+   * @default 10
    */
   visibilityTimeout?: number;
 
@@ -145,7 +145,7 @@ export function createQueueWorker<TPayload extends Json>(
       batchSize: config.batchSize || config.maxConcurrent || 10,
       maxPollSeconds: config.maxPollSeconds || 5,
       pollIntervalMs: config.pollIntervalMs || 200,
-      visibilityTimeout: config.visibilityTimeout || 3,
+      visibilityTimeout: config.visibilityTimeout || 10,
     },
     createLogger('ReadWithPollPoller')
   );
