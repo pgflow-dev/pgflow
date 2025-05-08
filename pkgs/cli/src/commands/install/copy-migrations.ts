@@ -74,39 +74,78 @@ function getTimestampFromFilename(filename: string): string {
   return match ? match[1] : '';
 }
 
+// Helper function to format a Date object into a migration timestamp string (YYYYMMDDhhmmss)
+function formatDateToTimestamp(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${year}${month}${day}${hours}${minutes}${seconds}`;
+}
+
+// Helper function to parse a timestamp string into a Date object
+function parseTimestampToDate(timestamp: string): Date | null {
+  // Validate format: YYYYMMDDhhmmss
+  if (!timestamp || timestamp.length !== 14 || !/^\d{14}$/.test(timestamp)) {
+    return null;
+  }
+
+  const year = parseInt(timestamp.substring(0, 4), 10);
+  const month = parseInt(timestamp.substring(4, 6), 10) - 1; // months are 0-indexed in JS Date
+  const day = parseInt(timestamp.substring(6, 8), 10);
+  const hours = parseInt(timestamp.substring(8, 10), 10);
+  const minutes = parseInt(timestamp.substring(10, 12), 10);
+  const seconds = parseInt(timestamp.substring(12, 14), 10);
+
+  // Create date and validate (invalid dates like Feb 31 will be auto-corrected by JS Date)
+  const date = new Date(year, month, day, hours, minutes, seconds);
+  
+  // Additional validation to ensure the parsed date matches the input
+  // This catches edge cases like month=13 that JS Date would autocorrect
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month ||
+    date.getDate() !== day ||
+    date.getHours() !== hours ||
+    date.getMinutes() !== minutes ||
+    date.getSeconds() !== seconds
+  ) {
+    return null;
+  }
+
+  return date;
+}
+
 // Helper function to generate a new timestamp that's higher than the reference timestamp
 function generateNewTimestamp(
   referenceTimestamp: string,
   increment = 1
 ): string {
-  // Parse the reference timestamp
-  // Format: YYYYMMDDhhmmss (e.g., 20250429164909)
-  if (
-    !referenceTimestamp ||
-    referenceTimestamp.length !== 14 ||
-    !/^\d{14}$/.test(referenceTimestamp)
-  ) {
-    // If invalid, use current time
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    return `${year}${month}${day}${hours}${minutes}${seconds}`;
+  // First try to parse the reference timestamp to a Date
+  const parsedDate = parseTimestampToDate(referenceTimestamp);
+  
+  // If we couldn't parse it, use current time
+  if (!parsedDate) {
+    return formatDateToTimestamp(new Date());
   }
-
-  // Convert to number and ensure it's at least incremented by 1
-  const refTimestampNum = parseInt(referenceTimestamp, 10);
-  let newTimestampNum = refTimestampNum + increment;
-
-  // Always ensure our timestamp is at least 1 more than the reference
-  // If the reference is already >= current time, we'll simply increment it by 1
-  return String(Math.max(newTimestampNum, refTimestampNum + 1)).padStart(
-    14,
-    '0'
-  );
+  
+  // Add the specified number of seconds (default: 1)
+  parsedDate.setSeconds(parsedDate.getSeconds() + increment);
+  
+  // Get current time for comparison
+  const now = new Date();
+  
+  // Return either the incremented timestamp or current time, whichever is later
+  // This ensures we never go backwards in time
+  if (parsedDate > now) {
+    return formatDateToTimestamp(parsedDate);
+  } else {
+    // If we're already at or past current time, add increment to now
+    now.setSeconds(now.getSeconds() + increment);
+    return formatDateToTimestamp(now);
+  }
 }
 
 // Find the migrations directory
