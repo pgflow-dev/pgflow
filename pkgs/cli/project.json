@@ -31,24 +31,21 @@
     },
     "test": {
       "executor": "nx:noop",
-      "dependsOn": ["test:e2e:install", "test:e2e:install:duplicates", "test:e2e:compile"]
+      "dependsOn": [
+        "test:e2e:install",
+        "test:e2e:install:duplicates",
+        "test:e2e:compile"
+      ],
+      "options": {
+        "parallel": false
+      }
     },
     "test:e2e:install": {
       "executor": "nx:run-commands",
       "dependsOn": ["build"],
       "options": {
         "commands": [
-          "./scripts/test-install"
-        ],
-        "cwd": "{projectRoot}",
-        "parallel": false
-      }
-    },
-    "test:e2e:install:duplicates": {
-      "executor": "nx:run-commands",
-      "dependsOn": ["build"],
-      "options": {
-        "commands": [
+          "./scripts/test-install",
           "./scripts/test-install-duplicates"
         ],
         "cwd": "{projectRoot}",
