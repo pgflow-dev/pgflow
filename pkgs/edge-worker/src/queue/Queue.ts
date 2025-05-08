@@ -70,7 +70,7 @@ export class Queue<TPayload extends Json> {
 
   async readWithPoll(
     batchSize = 20,
-    visibilityTimeout = 2,
+    visibilityTimeout = 10,
     maxPollSeconds = 5,
     pollIntervalMs = 200
   ) {

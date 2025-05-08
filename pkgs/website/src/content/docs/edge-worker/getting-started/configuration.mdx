@@ -55,7 +55,7 @@ EdgeWorker.start(handler, {
 
   // how long a job is invisible after reading
   // if not successful, will reappear after this time
-  visibilityTimeout: 3,
+  visibilityTimeout: 10,
 });
 ```
 
@@ -82,7 +82,7 @@ EdgeWorker.start(handler, {
 
 ### `visibilityTimeout`
 **Type:** `number`
-**Default:** `3`
+**Default:** `10`
 
 The duration (in seconds) that a message remains invisible to other consumers while being processed.
 
