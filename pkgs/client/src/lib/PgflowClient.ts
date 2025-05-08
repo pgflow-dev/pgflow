@@ -98,7 +98,7 @@ export class PgflowClient implements IFlowClient {
       run.updateState({
         ...data.run,
         status: data.run.status,
-        run_id: data.run.id,
+        run_id: data.run.run_id, // Correctly use run_id instead of id
       });
     }
 
@@ -125,7 +125,13 @@ export class PgflowClient implements IFlowClient {
   dispose(runId: string): void {
     const run = this.#runs.get(runId);
     if (run) {
+      // First unsubscribe from the realtime adapter
+      this.#realtimeAdapter.unsubscribe(runId);
+      
+      // Then dispose the run
       run.dispose();
+      
+      // Finally remove from the runs map
       this.#runs.delete(runId);
     }
   }
