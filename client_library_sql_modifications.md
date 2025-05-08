@@ -1,4 +1,4 @@
-# PgFlow Client Library SQL Modifications
+# PgFlow PgflowClient Library SQL Modifications
 
 This document outlines the SQL modifications needed to implement the broadcast events system for PgFlow's client library.
 

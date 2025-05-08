@@ -1,4 +1,4 @@
-# PgFlow Client Library Architecture (Updated)
+# PgFlow PgflowClient Library Architecture (Updated)
 
 This document outlines the internal architecture and design approach for the PgFlow client SDK with the Broadcast communication approach.
 
@@ -14,7 +14,7 @@ This document outlines the internal architecture and design approach for the PgF
 
 The library consists of four main components:
 
-1. **Client**: Main entry point for creating flow runs
+1. **PgflowClient**: Main entry point for creating flow runs
 2. **FlowRun**: State management for a single flow run
 3. **FlowStep**: State management for a single step in a flow
 4. **SupabaseBroadcastAdapter**: Handles real-time communication with the database
@@ -168,7 +168,7 @@ export interface IFlowClient<TFlow extends AnyFlow = AnyFlow>
 
 This segregation allows each component to depend only on the interfaces it needs:
 
-- **Client** implements `IFlowClient` (which combines `IFlowStarter` and `IFlowRealtime`)
+- **PgflowClient** implements `IFlowClient` (which combines `IFlowStarter` and `IFlowRealtime`)
 - **PgflowSqlClient** implements `IPgflowClient` (which combines `IFlowStarter` and `ITaskProcessor`)
 - **SupabaseBroadcastAdapter** implements `IFlowRealtime`
 
@@ -186,10 +186,10 @@ The interfaces should be distributed across packages as follows:
   - IFlowClient will import and extend IFlowStarter from core
   - Keeps client concerns separate from engine concerns
 
-### Client API
+### PgflowClient API
 
 ```typescript
-export class Client {
+export class PgflowClient {
   constructor(supabaseClient: SupabaseClient);
 
   async startFlow<TFlow extends AnyFlow>(
@@ -283,7 +283,7 @@ export class FlowRun<TFlow> {
   #events = createNanoEvents<FlowRunEvents<TFlow>>();
   // Cache step instances by slug to avoid duplicate objects and event emitters
   #steps: Map<string, FlowStep<TFlow, any>> = new Map();
-  #client: Client;
+  #client: PgflowClient;
 
   // Public getters expose state properties
   get run_id(): string {
@@ -479,7 +479,7 @@ Using NanoEvents provides several benefits:
 - Returns unbind function directly
 - Type-safe events
 
-### 2. Client-Generated UUID
+### 2. PgflowClient-Generated UUID
 
 By letting the client generate the run_id, we can:
 
@@ -548,7 +548,7 @@ This architecture provides:
    - Type-safe event handling
 
 3. **Race Condition Prevention**:
-   - Client-generated UUID for pre-subscription
+   - PgflowClient-generated UUID for pre-subscription
    - Set up subscriptions before starting the flow
    - Complete initial state snapshot
 
