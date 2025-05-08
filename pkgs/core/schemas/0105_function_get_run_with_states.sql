@@ -1,5 +1,5 @@
 create or replace function pgflow.get_run_with_states(
-  _run_id UUID
+  run_id UUID
 ) returns table (
   run PGFLOW.RUNS,
   steps PGFLOW.STEP_STATES []
