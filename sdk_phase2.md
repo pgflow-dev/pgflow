@@ -11,17 +11,18 @@ Phase 2 builds upon the foundation established in Phase 1 by implementing the re
 ## SupabaseBroadcastAdapter Implementation
 
 1. **Core Functionality:**
+
    - Implement the IFlowRealtime interface
    - Create methods for fetching flow definitions and run states
    - Set up event subscription and callback management
 
 2. **Subscription Management:**
+
    - Implement channel creation and subscription
    - Create channel tracking and cleanup mechanisms
    - Handle channel events and callback distribution
 
 3. **Event Processing:**
-   - Create and test a `parseEventName` helper for consistent event parsing
    - Parse and route incoming events
    - Implement event filtering and validation
    - Handle reconnection scenarios
@@ -30,6 +31,7 @@ Phase 2 builds upon the foundation established in Phase 1 by implementing the re
 ## Connection Management
 
 1. **Channel Lifecycle:**
+
    - Implement channel creation and initialization
    - Create subscription tracking and management
    - Handle channel teardown and resource cleanup
@@ -42,6 +44,7 @@ Phase 2 builds upon the foundation established in Phase 1 by implementing the re
 ## Event Callback System
 
 1. **Callback Registration:**
+
    - Implement callback registration and storage
    - Create callback removal functionality
    - Add safeguards for callback invocation

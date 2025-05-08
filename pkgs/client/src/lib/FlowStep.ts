@@ -222,10 +222,15 @@ export class FlowStep<
    * @returns true if the status should be updated, false otherwise
    */
   #shouldUpdateStatus(currentStatus: string, newStatus: string): boolean {
+    // Don't allow changes to terminal states
+    if (currentStatus === 'completed' || currentStatus === 'failed') {
+      return false; // Terminal states should never change
+    }
+    
     const currentPrecedence = this.#statusPrecedence[currentStatus] || 0;
     const newPrecedence = this.#statusPrecedence[newStatus] || 0;
 
-    // Only allow transitions to higher or equal precedence status
-    return newPrecedence >= currentPrecedence;
+    // Only allow transitions to higher precedence non-terminal status
+    return newPrecedence > currentPrecedence;
   }
 }

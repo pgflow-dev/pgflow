@@ -72,15 +72,44 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
   }
   
   /**
+   * Creates and configures a channel for a run
+   * @param run_id - The run ID
+   * @param channelName - The channel name
+   * @returns The configured RealtimeChannel
+   */
+  #createAndConfigureChannel(run_id: string, channelName: string): RealtimeChannel {
+    const channel = this.#supabase.channel(channelName);
+    
+    // Use a single listener without event filtering and do the filtering in code
+    // This is because Supabase Realtime doesn't support wildcards in event filters
+    channel.on('broadcast', { event: '*' }, this.#handleBroadcastMessage.bind(this));
+    
+    // Handle channel lifecycle events
+    channel.on('subscribed', () => {
+      console.log(`Subscribed to channel ${channelName}`);
+    });
+    
+    channel.on('closed', () => {
+      console.log(`Channel ${channelName} closed`);
+    });
+    
+    channel.on('error', (error) => 
+      this.#handleChannelError(run_id, channelName, channel, error)
+    );
+    
+    return channel;
+  }
+  
+  /**
    * Reconnect to a channel and refresh state
    * @param run_id - The run ID
    * @param channelName - The channel name
-   * @param channel - The RealtimeChannel instance
+   * @param _oldChannel - The previous RealtimeChannel instance (unused)
    */
   async #reconnectChannel(
     run_id: string,
     channelName: string,
-    channel: RealtimeChannel
+    _oldChannel: RealtimeChannel
   ): Promise<void> {
     console.log(`Attempting to reconnect to ${channelName}`);
     
@@ -91,8 +120,12 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
       // Update state based on current data
       this.#refreshStateFromSnapshot(run_id, currentState);
       
-      // Resubscribe to the channel
-      channel.subscribe();
+      // Create a new channel as the old one can't be reused
+      const newChannel = this.#createAndConfigureChannel(run_id, channelName);
+      
+      // Subscribe and update the channels map
+      newChannel.subscribe();
+      this.#channels.set(run_id, newChannel);
     } catch (e) {
       console.error(`Failed to reconnect to ${channelName}:`, e);
     }
@@ -212,25 +245,10 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
       return () => this.unsubscribe(run_id);
     }
 
-    const channel = this.#supabase.channel(channelName);
+    // Create and configure the channel
+    const channel = this.#createAndConfigureChannel(run_id, channelName);
 
-    // Use a single listener without event filtering and do the filtering in code
-    // This is because Supabase Realtime doesn't support wildcards in event filters
-    channel.on('broadcast', { event: '*' }, this.#handleBroadcastMessage.bind(this));
-
-    // Handle channel lifecycle events
-    channel.on('subscribed', () => {
-      console.log(`Subscribed to channel ${channelName}`);
-    });
-
-    channel.on('closed', () => {
-      console.log(`Channel ${channelName} closed`);
-    });
-
-    channel.on('error', (error) => 
-      this.#handleChannelError(run_id, channelName, channel, error)
-    );
-
+    // Subscribe and store the channel
     channel.subscribe();
     this.#channels.set(run_id, channel);
 
@@ -255,13 +273,15 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
     run: RunRow;
     steps: StepStateRow[];
   }> {
-    // Call the RPC function (will need to be created in SQL)
+    // Call the RPC function which returns a JSONB object
     const { data, error } = await this.#supabase
       .schema('pgflow')
       .rpc('get_run_with_states', { run_id });
 
     if (error) throw error;
-    return data;
+    if (!data) throw new Error(`No data returned for run ${run_id}`);
+    
+    return data as { run: RunRow; steps: StepStateRow[] };
   }
 
   /**
@@ -272,8 +292,14 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
   #unsubscribe(run_id: string): void {
     const channel = this.#channels.get(run_id);
     if (channel) {
+      // Close the channel
       channel.unsubscribe();
       this.#channels.delete(run_id);
+      
+      // We don't need to explicitly remove event listeners from the emitter
+      // as they will be garbage collected when no longer referenced.
+      // The event listeners are bound to specific callbacks provided by the client,
+      // which will retain references if they're still in use.
     }
   }
 }
