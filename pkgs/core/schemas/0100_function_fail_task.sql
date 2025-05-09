@@ -113,7 +113,7 @@ IF v_run_failed THEN
   DECLARE
     v_flow_slug text;
   BEGIN
-    SELECT flow_slug INTO v_flow_slug FROM pgflow.runs WHERE run_id = fail_task.run_id;
+    SELECT flow_slug INTO v_flow_slug FROM pgflow.runs WHERE pgflow.runs.run_id = fail_task.run_id;
 
     PERFORM realtime.send(
       jsonb_build_object(
