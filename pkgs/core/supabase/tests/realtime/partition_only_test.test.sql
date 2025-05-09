@@ -1,19 +1,6 @@
 begin;
 select plan(3);
 
--- Create a helper table to directly monitor the messages table
-create table if not exists pgflow_tests.monitored_messages (
-  id serial primary key,
-  payload jsonb,
-  event text,
-  topic text,
-  private boolean,
-  captured_at timestamptz default now()
-);
-
--- Clear any existing data
-truncate pgflow_tests.monitored_messages;
-
 -- 1. CREATE THE PARTITION FOR TODAY (THIS IS THE KEY PART)
 do $$
   DECLARE
@@ -71,25 +58,21 @@ do $$
   DECLARE
     message_count integer;
   BEGIN
-    -- Copy data from realtime.messages to our monitoring table
-    INSERT INTO pgflow_tests.monitored_messages (payload, event, topic, private)
-    SELECT payload, event, topic, private 
+    SELECT COUNT(*) INTO message_count
     FROM realtime.messages
     WHERE payload->>'event_type' = 'direct_test';
-    
-    GET DIAGNOSTICS message_count = ROW_COUNT;
-    RAISE NOTICE 'Copied % messages from realtime.messages', message_count;
+
+    RAISE NOTICE 'Found % direct_test messages in realtime.messages', message_count;
   END;
 $$;
 
 -- 4. CHECK IF AN EVENT WAS FOUND
 select ok(
-  (select count(*) > 0 from pgflow_tests.monitored_messages where payload ->> 'event_type' = 'direct_test'),
+  (select count(*) > 0 from realtime.messages where payload ->> 'event_type' = 'direct_test'),
   'Should be able to directly access messages in realtime.messages table'
 );
 
 -- 5. RESET AND TEST PGFLOW FUNCTIONS (without triggers)
-truncate pgflow_tests.monitored_messages;
 select pgflow_tests.reset_db();
 select pgflow.create_flow('direct_test');
 select pgflow.add_step('direct_test', 'test_step');
@@ -105,20 +88,17 @@ do $$
   DECLARE
     message_count integer;
   BEGIN
-    -- Copy data from realtime.messages to our monitoring table
-    INSERT INTO pgflow_tests.monitored_messages (payload, event, topic, private)
-    SELECT payload, event, topic, private 
+    SELECT COUNT(*) INTO message_count
     FROM realtime.messages
     WHERE payload->>'event_type' = 'run:started';
-    
-    GET DIAGNOSTICS message_count = ROW_COUNT;
-    RAISE NOTICE 'Copied % run:started messages from realtime.messages', message_count;
+
+    RAISE NOTICE 'Found % run:started messages in realtime.messages', message_count;
   END;
 $$;
 
 -- 7. CHECK IF RUN:STARTED EVENT WAS FOUND
 select ok(
-  (select count(*) > 0 from pgflow_tests.monitored_messages where payload ->> 'event_type' = 'run:started'),
+  (select count(*) > 0 from realtime.messages where payload ->> 'event_type' = 'run:started'),
   'Should be able to directly access run:started event in realtime.messages'
 );
 
@@ -130,29 +110,28 @@ do $$
   DECLARE
     message_count integer;
   BEGIN
-    -- Copy data from realtime.messages to our monitoring table
-    INSERT INTO pgflow_tests.monitored_messages (payload, event, topic, private)
-    SELECT payload, event, topic, private 
+    SELECT COUNT(*) INTO message_count
     FROM realtime.messages
     WHERE payload->>'event_type' = 'run:completed';
-    
-    GET DIAGNOSTICS message_count = ROW_COUNT;
-    RAISE NOTICE 'Copied % run:completed messages from realtime.messages', message_count;
+
+    RAISE NOTICE 'Found % run:completed messages in realtime.messages', message_count;
   END;
 $$;
 
--- Check what we've captured
+-- Check all events we've found
 do $$
   DECLARE
     r record;
     total_count integer;
   BEGIN
-    SELECT COUNT(*) INTO total_count FROM pgflow_tests.monitored_messages;
-    RAISE NOTICE 'Total monitored messages: %', total_count;
+    SELECT COUNT(*) INTO total_count FROM realtime.messages
+    WHERE payload->>'event_type' IN ('direct_test', 'run:started', 'run:completed');
+    RAISE NOTICE 'Total test-related messages: %', total_count;
 
     RAISE NOTICE 'Event types found:';
     FOR r IN SELECT DISTINCT payload->>'event_type' as event_type, COUNT(*)
-              FROM pgflow_tests.monitored_messages
+              FROM realtime.messages
+              WHERE payload->>'event_type' IN ('direct_test', 'run:started', 'run:completed')
               GROUP BY payload->>'event_type'
     LOOP
       RAISE NOTICE '- %: % event(s)', r.event_type, r.count;
@@ -162,7 +141,7 @@ $$;
 
 -- Final verification
 select ok(
-  (select count(*) > 0 from pgflow_tests.monitored_messages where payload ->> 'event_type' = 'run:completed'),
+  (select count(*) > 0 from realtime.messages where payload ->> 'event_type' = 'run:completed'),
   'Should be able to directly access run:completed event in realtime.messages'
 );
 
