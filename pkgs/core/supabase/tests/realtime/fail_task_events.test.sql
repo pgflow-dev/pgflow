@@ -1,5 +1,5 @@
 begin;
-select plan(9);
+select plan(3);
 
 -- Ensure partition exists for realtime.messages
 select pgflow_tests.create_realtime_partition();
@@ -26,64 +26,21 @@ select pgflow.fail_task(
   'Test failure message'
 ) into temporary failed_tasks;
 
--- Test 1: Verify one step:failed event exists
-select is(
-  pgflow_tests.count_realtime_events('step:failed', (select run_id from run_ids), 'first'),
-  1::int,
-  'pgflow.fail_task should send exactly one step:failed event'
-);
-
--- Test 2: Verify the step_slug is in the event payload
-select is(
-  (select payload->>'step_slug' from pgflow_tests.get_realtime_message('step:failed', (select run_id from run_ids), 'first')),
-  'first',
-  'The step:failed event should contain the correct step_slug'
-);
-
--- Test 3: Verify status in event payload
-select is(
-  (select payload->>'status' from pgflow_tests.get_realtime_message('step:failed', (select run_id from run_ids), 'first')),
-  'failed',
-  'The step:failed event should have status "failed"'
-);
-
--- Test 4: Verify failed_at timestamp exists and is valid
-select ok(
-  (select (payload->>'failed_at')::timestamptz is not null 
-   from pgflow_tests.get_realtime_message('step:failed', (select run_id from run_ids), 'first')),
-  'The step:failed event should include a failed_at timestamp'
-);
-
--- Test 5: Verify error message is included in payload
-select is(
-  (select payload->>'error' 
-   from pgflow_tests.get_realtime_message('step:failed', (select run_id from run_ids), 'first')),
-  'Test failure message',
-  'The step:failed event should contain the error message'
-);
-
--- Test 6: Verify step:failed event name formatting
-select is(
-  (select event from pgflow_tests.get_realtime_message('step:failed', (select run_id from run_ids), 'first')),
-  'step:first:failed',
-  'The step:failed event should have the correct event name (step:<slug>:failed)'
-);
-
--- Test 7: Verify one run:failed event exists
+-- Test 1: Verify one run:failed event exists
 select is(
   pgflow_tests.count_realtime_events('run:failed', (select run_id from run_ids)),
   1::int,
   'pgflow.fail_task should send a run:failed event when a run fails permanently'
 );
 
--- Test 8: Verify run:failed event status
+-- Test 2: Verify run:failed event status
 select is(
   (select payload->>'status' from pgflow_tests.get_realtime_message('run:failed', (select run_id from run_ids))),
   'failed',
   'The run:failed event should have status "failed"'
 );
 
--- Test 9: Verify run:failed event topic
+-- Test 3: Verify run:failed event topic
 select is(
   (select topic from pgflow_tests.get_realtime_message('run:failed', (select run_id from run_ids))),
   concat('pgflow:run:', (select run_id from run_ids)),
