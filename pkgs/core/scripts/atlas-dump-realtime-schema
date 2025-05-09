@@ -2,16 +2,16 @@
 
 echo > atlas/schema.sql
 
-echo "create schema if not exists realtime;" >> atlas/schema.sql
-echo "set search_path to realtime, public, pg_catalog;" >> atlas/schema.sql
-atlas schema inspect -u "postgres://postgres:postgres@localhost:50422/postgres?sslmode=disable&search_path=realtime" --format "{{ sql . }}" >> atlas/schema.sql
+# echo "create schema if not exists realtime;" >> atlas/schema.sql
+# echo "set search_path to realtime, public, pg_catalog;" >> atlas/schema.sql
+atlas schema inspect --schema realtime -u "postgres://postgres:postgres@localhost:50422/postgres?sslmode=disable" --format "{{ sql . }}" >> atlas/schema.sql
 
-echo "---------------------- PGMQ -----------------------" >> atlas/schema.sql
-echo "create schema if not exists pgmq;" >> atlas/schema.sql
-echo "set search_path to pgmq, public, pg_catalog;" >> atlas/schema.sql
-atlas schema inspect -u "postgres://postgres:postgres@localhost:50422/postgres?sslmode=disable&search_path=pgmq" --format "{{ sql . }}" >> atlas/schema.sql
+# echo "---------------------- PGMQ -----------------------" >> atlas/schema.sql
+# echo "create schema if not exists pgmq;" >> atlas/schema.sql
+# echo "set search_path to pgmq, public, pg_catalog;" >> atlas/schema.sql
+atlas schema inspect --schema pgmq -u "postgres://postgres:postgres@localhost:50422/postgres?sslmode=disable" --format "{{ sql . }}" >> atlas/schema.sql
 
-echo "---------------------- PGFLOW -----------------------" >> atlas/schema.sql
-echo "create schema if not exists pgflow;" >> atlas/schema.sql
-echo "set search_path to pgflow, public, pg_catalog;" >> atlas/schema.sql
-atlas schema inspect -u "postgres://postgres:postgres@localhost:50422/postgres?sslmode=disable&search_path=pgflow" --format "{{ sql . }}" >> atlas/schema.sql
+# echo "---------------------- PGFLOW -----------------------" >> atlas/schema.sql
+# echo "create schema if not exists pgflow;" >> atlas/schema.sql
+# echo "set search_path to pgflow, public, pg_catalog;" >> atlas/schema.sql
+# atlas schema inspect --schema pgflow -u "postgres://postgres:postgres@localhost:50422/postgres?sslmode=disable" --format "{{ sql . }}" >> atlas/schema.sql
