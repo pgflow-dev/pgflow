@@ -2,6 +2,7 @@
 
 # Run atlas schema diff and capture output
 output=$(atlas schema diff \
+  --config file://atlas/atlas.hcl \
   --env local \
   --from file://supabase/migrations \
   --to file://schemas/)

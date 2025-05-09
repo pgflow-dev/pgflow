@@ -13,8 +13,9 @@ env "local" {
 
 docker "postgres" "dev" {
   image = "jumski/postgres-15-pgmq:latest"
-  baseline = file("atlas/realtime_schema.sql")
+  baseline = file("realtime_schema.sql")
   build {
-    context = "atlas/"
+    dockerfile = "atlas/Dockerfile"
+    context = "."
   }
 }
