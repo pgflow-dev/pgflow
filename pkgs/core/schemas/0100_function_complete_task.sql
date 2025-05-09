@@ -84,7 +84,7 @@ WHERE pgflow.runs.run_id = complete_task.run_id
 
 -- Get the updated step state for broadcasting
 SELECT * INTO v_step_state FROM pgflow.step_states
-WHERE run_id = complete_task.run_id AND step_slug = complete_task.step_slug;
+WHERE pgflow.step_states.run_id = complete_task.run_id AND pgflow.step_states.step_slug = complete_task.step_slug;
 
 -- Send broadcast event for step completed if the step is completed
 IF v_step_state.status = 'completed' THEN
