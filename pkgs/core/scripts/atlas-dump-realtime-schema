@@ -1,0 +1,3 @@
+#!/bin/bash
+
+atlas schema inspect -u "postgres://postgres:postgres@localhost:50422/postgres?sslmode=disable&search_path=realtime" --format "{{ sql . }}" > realtime_schema.sql
