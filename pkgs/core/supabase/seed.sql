@@ -762,5 +762,29 @@ BEGIN
   RETURN event_count;
 END;
 $$ language plpgsql ;
-> > > > > > >
-9694f28 (feat: add comprehensive documentation and helper functions for realtime notification testing)
+
+/**
+ * Retrieves the full realtime message record matching specified criteria.
+ *
+ * This helper function returns the complete message record including topic and event
+ * fields, which is useful for comprehensive testing of realtime notifications.
+ * Written in declarative SQL style.
+ *
+ * @param event_type The type of event to find (e.g., 'run:started')
+ * @param run_id The run ID associated with the event
+ * @param step_slug Optional: The step slug to filter by (for step events)
+ * @return The full message record including id, inserted_at, event, topic, and payload
+ */
+create or replace function pgflow_tests.get_realtime_message (
+event_type text,
+run_id uuid,
+step_slug text default null
+) returns realtime.messages as $$
+  SELECT * FROM realtime.messages
+  WHERE payload->>'event_type' = event_type
+    AND payload->>'run_id' = run_id::text
+    AND (step_slug IS NULL OR payload->>'step_slug' = step_slug)
+  ORDER BY inserted_at DESC
+  LIMIT 1;
+$$ language sql ;
+> > > > > > > c431e6c (feat: add comprehensive helper functions and tests for realtime event verification)
