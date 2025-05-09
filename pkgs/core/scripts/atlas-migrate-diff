@@ -1,5 +1,7 @@
 #!/bin/bash
 
+./scripts/atlas-dump-realtime-schema
+
 # Check if migration name is provided
 if [ $# -eq 0 ]; then
   echo "Error: Migration name argument is required"
