@@ -18,4 +18,4 @@ fi
 migration_name="pgflow_$1"
 
 echo "Creating migration: $migration_name"
-atlas migrate diff "$migration_name" --env local
+atlas migrate diff --config file://atlas/atlas.hcl --env local "$migration_name"
