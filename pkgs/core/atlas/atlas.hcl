@@ -12,7 +12,10 @@ env "local" {
 }
 
 docker "postgres" "dev" {
-  image = "postgres:15"
+  # image = "postgres:15"
+  # custom image is built and pushed to speed up schema verification,
+  # otherwise it takes around 30s
+  image = "jumski/postgres-15-pgmq:latest"
   baseline = file("realtime_schema.sql")
   build {
     dockerfile = "atlas/Dockerfile"
