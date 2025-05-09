@@ -4,6 +4,8 @@ create schema if not exists pgflow_tests;
 --------- reset_db - clears all tables and drops all queues --------------------
 --------------------------------------------------------------------------------
 create or replace function pgflow_tests.reset_db() returns void as $$
+BEGIN
+  -- Delete pgflow data
   DELETE FROM pgflow.step_tasks;
   DELETE FROM pgflow.step_states;
   DELETE FROM pgflow.runs;
@@ -11,8 +13,18 @@ create or replace function pgflow_tests.reset_db() returns void as $$
   DELETE FROM pgflow.steps;
   DELETE FROM pgflow.flows;
 
-  SELECT pgmq.drop_queue(queue_name) FROM pgmq.list_queues();
-$$ language sql;
+  -- Also clear the realtime.messages table if it exists
+  BEGIN
+    DELETE FROM realtime.messages;
+  EXCEPTION WHEN undefined_table THEN
+    -- Ignore if table doesn't exist (useful in tests that run before migrations)
+    NULL;
+  END;
+
+  -- Drop pgmq queues
+  PERFORM pgmq.drop_queue(queue_name) FROM pgmq.list_queues();
+END;
+$$ language plpgsql;
 
 --------------------------------------------------------------------------------
 --------- setup_flow - creates a predefined flow and adds steps to it ----------
