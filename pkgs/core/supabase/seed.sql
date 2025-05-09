@@ -681,3 +681,86 @@ BEGIN
   RETURN was_created;
 END;
 $$ language plpgsql ;
+
+--------------------------------------------------------------------------------
+------- find_realtime_event - finds a specific realtime event for testing ------
+--------------------------------------------------------------------------------
+/**
+ * Finds a realtime event matching the specified criteria and returns its full payload.
+ *
+ * This is a test helper function that searches the realtime.messages table for
+ * events matching the provided criteria. It's designed to be used in test assertions
+ * to verify that specific realtime events were sent with the correct data.
+ *
+ * @param event_type The type of event to find (e.g., 'run:started', 'step:completed')
+ * @param run_id The run ID associated with the event
+ * @param step_slug Optional: The step slug to filter by (for step-related events)
+ * @return The full jsonb payload of the matching event, or NULL if not found
+ */
+create or replace function pgflow_tests.find_realtime_event (
+event_type text,
+run_id uuid,
+step_slug text default null
+) returns jsonb as $$
+DECLARE
+  event_payload jsonb;
+BEGIN
+  IF step_slug IS NULL THEN
+    -- For run-level events (run:started, run:completed, run:failed)
+    SELECT payload INTO event_payload
+    FROM realtime.messages
+    WHERE payload->>'event_type' = event_type
+      AND payload->>'run_id' = run_id::text
+    ORDER BY inserted_at DESC
+    LIMIT 1;
+  ELSE
+    -- For step-level events (step:started, step:completed, step:failed)
+    SELECT payload INTO event_payload
+    FROM realtime.messages
+    WHERE payload->>'event_type' = event_type
+      AND payload->>'run_id' = run_id::text
+      AND payload->>'step_slug' = step_slug
+    ORDER BY inserted_at DESC
+    LIMIT 1;
+  END IF;
+
+  RETURN event_payload;
+END;
+$$ language plpgsql ;
+
+/**
+ * Counts realtime events matching the specified criteria.
+ *
+ * @param event_type The type of event to count (e.g., 'run:started', 'step:completed')
+ * @param run_id The run ID associated with the event
+ * @param step_slug Optional: The step slug to filter by (for step-related events)
+ * @return The count of matching events
+ */
+create or replace function pgflow_tests.count_realtime_events (
+event_type text,
+run_id uuid,
+step_slug text default null
+) returns integer as $$
+DECLARE
+  event_count integer;
+BEGIN
+  IF step_slug IS NULL THEN
+    -- For run-level events
+    SELECT COUNT(*)::int INTO event_count
+    FROM realtime.messages
+    WHERE payload->>'event_type' = event_type
+      AND payload->>'run_id' = run_id::text;
+  ELSE
+    -- For step-level events
+    SELECT COUNT(*)::int INTO event_count
+    FROM realtime.messages
+    WHERE payload->>'event_type' = event_type
+      AND payload->>'run_id' = run_id::text
+      AND payload->>'step_slug' = step_slug;
+  END IF;
+
+  RETURN event_count;
+END;
+$$ language plpgsql ;
+> > > > > > >
+9694f28 (feat: add comprehensive documentation and helper functions for realtime notification testing)
