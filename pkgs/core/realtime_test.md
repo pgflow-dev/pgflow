@@ -170,109 +170,129 @@ Create a test file: `supabase/tests/realtime/full_flow_events.test.sql`
 
 ## Helper Functions for Event Verification
 
-To facilitate testing and make assertions more readable, I've added two helper functions to `supabase/seed.sql`:
+To facilitate testing and make assertions more readable, I've added three helper functions to `supabase/seed.sql`:
 
-### 1. `pgflow_tests.find_realtime_event(event_type, run_id, step_slug)`
+### 1. `pgflow_tests.get_realtime_message(event_type, run_id, step_slug)` (PREFERRED)
 
-This function retrieves the payload of a realtime event matching the given criteria:
+This function retrieves the complete message record including topic, event, and payload fields. It uses declarative SQL style and should be the preferred helper for testing realtime notifications:
+
+```sql
+-- Get the full message record for a run:started event
+SELECT * FROM pgflow_tests.get_realtime_message('run:started', run_id)
+```
+
+This returns the complete message record with these fields:
+- `id`: The message ID
+- `inserted_at`: When the message was created
+- `event`: The event name (e.g., 'run:started' or 'step:first:completed')
+- `topic`: The topic (e.g., 'pgflow:run:<run_id>')
+- `payload`: The full event payload (as jsonb)
+
+### 2. `pgflow_tests.find_realtime_event(event_type, run_id, step_slug)`
+
+This function retrieves just the payload of a realtime event matching the given criteria:
 
 ```sql
 -- Find a specific event and return its full payload
-SELECT pgflow_tests.find_realtime_event('run:started', v_run_id) as event_payload;
+SELECT pgflow_tests.find_realtime_event('run:started', run_id) as event_payload;
 
 -- Find a step-specific event by providing the step_slug
-SELECT pgflow_tests.find_realtime_event('step:completed', v_run_id, 'first') as event_payload;
+SELECT pgflow_tests.find_realtime_event('step:completed', run_id, 'first') as event_payload;
 ```
 
-### 2. `pgflow_tests.count_realtime_events(event_type, run_id, step_slug)`
+### 3. `pgflow_tests.count_realtime_events(event_type, run_id, step_slug)`
 
 This function counts the number of realtime events matching the given criteria:
 
 ```sql
 -- Count all run:started events for a specific run
-SELECT pgflow_tests.count_realtime_events('run:started', v_run_id);
+SELECT pgflow_tests.count_realtime_events('run:started', run_id);
 
 -- Count step:completed events for a specific step
-SELECT pgflow_tests.count_realtime_events('step:completed', v_run_id, 'first');
+SELECT pgflow_tests.count_realtime_events('step:completed', run_id, 'first');
 ```
 
 ## Using the Helper Functions in Tests
 
-Here's how to use these helper functions with pgTAP assertions:
+Here's how to use these helper functions with pgTAP assertions in the declarative style:
 
 ### Message Count Verification
 
 ```sql
+-- Store run_id in a temporary table (common pattern in pgTAP tests)
+with flow as (
+  select * from pgflow.start_flow('sequential', '{}'::jsonb)
+)
+select run_id into temporary run_ids from flow;
+
 -- Verify exact count of specific event type
-SELECT is(
-  pgflow_tests.count_realtime_events('run:started', v_run_id),
-  1,
+select is(
+  pgflow_tests.count_realtime_events((select run_id from run_ids), 'run:started'),
+  1::int,
   'Should send exactly one run:started event'
 );
 ```
 
 ### Message Content Verification
 
+The preferred approach with the `get_realtime_message` helper:
+
 ```sql
--- Store the event payload in a variable for multiple assertions
-DO $$
-DECLARE
-  run_started_payload jsonb;
-BEGIN
-  SELECT pgflow_tests.find_realtime_event('run:started', v_run_id) INTO run_started_payload;
+-- Verify payload fields directly
+select is(
+  (select payload->>'flow_slug' from pgflow_tests.get_realtime_message('run:started', (select run_id from run_ids))),
+  'sequential',
+  'The run:started event should contain the correct flow_slug'
+);
 
-  -- Test multiple aspects of the payload
-  PERFORM is(
-    run_started_payload->>'flow_slug',
-    'sequential',
-    'The run:started event should contain the correct flow_slug'
-  );
+select is(
+  (select payload->>'status' from pgflow_tests.get_realtime_message('run:started', (select run_id from run_ids))),
+  'started',
+  'The run:started event should have status "started"'
+);
 
-  PERFORM is(
-    run_started_payload->>'status',
-    'started',
-    'The run:started event should have status "started"'
-  );
+select ok(
+  (select (payload->>'started_at')::timestamptz is not null
+   from pgflow_tests.get_realtime_message('run:started', (select run_id from run_ids))),
+  'The run:started event should include a started_at timestamp'
+);
 
-  PERFORM ok(
-    (run_started_payload->>'started_at')::timestamptz IS NOT NULL,
-    'The run:started event should include a started_at timestamp'
-  );
-
-  -- For nullable fields, check if they exist
-  PERFORM ok(
-    run_started_payload ? 'input',
-    'The run:started event should include the input field'
-  );
-
-  -- For numeric fields, ensure they are numbers
-  PERFORM ok(
-    (run_started_payload->>'remaining_steps')::int > 0,
-    'The run:started event should include the remaining_steps count'
-  );
-END; $$;
+-- For input data verification
+select is(
+  (select payload->'input'->>'test_data'
+   from pgflow_tests.get_realtime_message('run:started', (select run_id from run_ids))),
+  'value',
+  'The run:started event should contain the correct input data'
+);
 ```
 
-### Event Channel Verification
+### Event Channel and Topic Verification
 
 ```sql
--- Get the full message record to check event & topic
-SELECT is(
-  (SELECT event FROM realtime.messages
-   WHERE payload->>'event_type' = 'step:completed'
-   AND payload->>'run_id' = v_run_id::text
-   AND payload->>'step_slug' = 'first'),
+-- Check event name format
+select is(
+  (select event from pgflow_tests.get_realtime_message('step:completed', (select run_id from run_ids), 'first')),
   'step:first:completed',
   'The step:completed event should have the correct event name'
 );
 
-SELECT is(
-  (SELECT topic FROM realtime.messages
-   WHERE payload->>'event_type' = 'step:completed'
-   AND payload->>'run_id' = v_run_id::text
-   AND payload->>'step_slug' = 'first'),
-  concat('pgflow:run:', v_run_id),
+-- Check topic format
+select is(
+  (select topic from pgflow_tests.get_realtime_message('step:completed', (select run_id from run_ids), 'first')),
+  concat('pgflow:run:', (select run_id from run_ids)),
   'The step:completed event should have the correct topic'
+);
+```
+
+### Multiple Column Verification
+
+```sql
+-- Using results_eq to check multiple fields at once
+select results_eq(
+  $$ select payload->>'flow_slug', payload->>'status'
+     from pgflow_tests.get_realtime_message('run:started', (select run_id from run_ids)) $$,
+  $$ values ('sequential', 'started') $$,
+  'The run:started event should have correct flow slug and status'
 );
 ```
 
@@ -280,15 +300,15 @@ SELECT is(
 
 ```sql
 -- Verify that an event doesn't exist
-SELECT is(
-  pgflow_tests.count_realtime_events('run:failed', v_run_id),
-  0,
+select is(
+  pgflow_tests.count_realtime_events('run:failed', (select run_id from run_ids)),
+  0::int,
   'Should NOT send a run:failed event for successful flows'
 );
 
 -- Verify that an event exists
-SELECT ok(
-  pgflow_tests.find_realtime_event('step:completed', v_run_id, 'first') IS NOT NULL,
+select ok(
+  (select id is not null from pgflow_tests.get_realtime_message('step:completed', (select run_id from run_ids), 'first')),
   'Should send a step:completed event for the first step'
 );
 ```
@@ -302,6 +322,48 @@ SELECT ok(
    - Proper event and topic formatting
    - Timestamps are present and in the expected order
 3. End with the combined flow test that verifies all events together in a complete workflow execution
+
+## SQL Style Requirements
+
+All tests in this project must follow the declarative SQL style, avoiding procedural code whenever possible:
+
+1. Use declarative SQL instead of procedural PL/pgSQL:
+   - Never use `DO` blocks or `language plpgsql` in test files
+   - Avoid loops in favor of set-based operations
+   - Use SQL statements that address multiple rows at once
+
+2. Follow the pgTAP test structure with a simple pattern:
+   ```sql
+   begin;
+   select plan(n);  -- where n is the number of assertions
+
+   -- Test setup (no variables or procedural code)
+   select pgflow_tests.reset_db();
+   select pgflow_tests.create_realtime_partition();
+   select pgflow_tests.setup_flow('flow_name');
+
+   -- Run the function being tested
+   with flow as (
+     select * from pgflow.start_flow('flow_name', '{}'::jsonb)
+   )
+   select run_id into temporary table_run_id from flow;
+
+   -- Assertions using declarative queries
+   select is(
+     (select count(*) from realtime.messages
+      where payload->>'event_type' = 'run:started'
+      and payload->>'run_id' = (select run_id::text from table_run_id)),
+     1::bigint,
+     'Should send exactly one run:started event'
+   );
+
+   select finish();
+   rollback;
+   ```
+
+3. Use set-returning functions and join against them rather than calling functions for each row
+4. Use temporary tables to store intermediate results for later assertions
+5. Keep tests focused on a single behavior with clear, descriptive assertion messages
 
 ## Not In Scope
 
