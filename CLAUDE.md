@@ -74,7 +74,9 @@ When suggesting changes or improvements, bias heavily toward solutions that can 
 - **Documentation Style**: Use impersonal, factual language. Avoid "we" and "our" when describing technical concepts, flows, or processes. Only use "you" when directly instructing the reader. Focus on what the system does, not who is doing it.
 - Put all the source codes in `src/` and not nested in `src/lib/`, create subdirectories for distinct sub-packages
 
-## Declarative SQL vs procedural SQL
+## SQL Style Guidelines
+
+### Declarative SQL vs procedural SQL
 
 **YOU MUST ALWAYS PRIORITIZE DECLARATIVE STYLE** and prioritize Batching operations.
 
@@ -89,6 +91,15 @@ It is important to have your DB procedures run in batched ways and use declarati
 If you're constructing dynamic SQL, you should only ever use `%I` and `%L` when using `FORMAT` or similar; you should never see `%s` (with the very rare exception of where you're merging in another SQL fragment that you've previously formatted using %I and %L).
 
 Remember, that functions have significant overhead in Postgres - instead of factoring into lots of tiny functions, think about how to make your code more expressive so there's no need.
+
+### Fully qualified column names and arguments
+
+When creating or updating SQL code, always fully quality the column names and function arguments.
+
+For example, instead of writing `SELECT * FROM table`, write `SELECT table.* FROM table`.
+
+Or, when referencing `run_id` argument to `pgflow.start_flow(run_id UUID)` function,
+write it as `start_flow.run_id` instead of `run_id`.
 
 ## Packages
 
