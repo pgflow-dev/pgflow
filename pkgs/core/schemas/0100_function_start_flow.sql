@@ -1,7 +1,7 @@
 create or replace function pgflow.start_flow(
   flow_slug TEXT,
   input JSONB,
-  run_id UUID DEFAULT NULL
+  run_id UUID default null
 )
 returns setof PGFLOW.RUNS
 language plpgsql
@@ -32,7 +32,7 @@ WITH
     INSERT INTO pgflow.step_states (flow_slug, run_id, step_slug, remaining_deps)
     SELECT
       fs.flow_slug,
-      (SELECT run_id FROM created_run),
+      (SELECT created_run.run_id FROM created_run),
       fs.step_slug,
       fs.deps_count
     FROM flow_steps fs
@@ -57,7 +57,7 @@ PERFORM realtime.send(
 
 PERFORM pgflow.start_ready_steps(v_created_run.run_id);
 
-RETURN QUERY SELECT * FROM pgflow.runs where run_id = v_created_run.run_id;
+RETURN QUERY SELECT * FROM pgflow.runs where pgflow.runs.run_id = v_created_run.run_id;
 
 end;
 $$;
