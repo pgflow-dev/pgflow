@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Check if migration name is provided
+if [ -z "$1" ]; then
+  echo "Error: Migration name argument is required"
+  echo "Usage: $0 <migration_name>"
+  exit 1
+fi
+
+MIGRATION_NAME="$1"
+
+git checkout -f supabase/migrations/atlas.sum
+rm -f supabase/migrations/*"$MIGRATION_NAME"*
+./scripts/atlas-migrate-diff "$MIGRATION_NAME"
+pnpm nx run core:supabase:reset
