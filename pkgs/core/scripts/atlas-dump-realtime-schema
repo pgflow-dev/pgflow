@@ -1,3 +1,3 @@
 #!/bin/bash
 
-atlas schema inspect -u "postgres://postgres:postgres@localhost:50422/postgres?sslmode=disable&search_path=realtime" --format "{{ sql . }}" > docker/realtime_schema.sql
+atlas schema inspect -u "postgres://postgres:postgres@localhost:50422/postgres?sslmode=disable&search_path=realtime" --format "{{ sql . }}" > atlas/realtime_schema.sql
