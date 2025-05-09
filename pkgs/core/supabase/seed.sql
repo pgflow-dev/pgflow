@@ -455,3 +455,156 @@ BEGIN
   );
 END;
 $$ language plpgsql;
+| | | | | | | parent of f1da3ee (chore: remove deprecated test SQL files and associated mock realtime functions): pkgs / core / supabase / seed.sql
+
+--------------------------------------------------------------------------------
+------- mock_realtime - mocks realtime.send for testing purposes --------------
+--------------------------------------------------------------------------------
+
+-- Create a table to store mock calls
+CREATE TABLE IF NOT EXISTS pgflow_tests.realtime_calls (
+id SERIAL PRIMARY KEY,
+payload JSONB,
+event TEXT,
+topic TEXT,
+private BOOLEAN,
+created_at TIMESTAMPTZ DEFAULT NOW ()
+) ;
+
+-- Function to capture realtime events
+CREATE OR REPLACE FUNCTION pgflow_tests.capture_realtime_event (
+payload JSONB,
+event TEXT,
+topic TEXT,
+private BOOLEAN DEFAULT FALSE
+) RETURNS VOID AS $$
+BEGIN
+  -- Store the realtime event details
+  INSERT INTO pgflow_tests.realtime_calls(payload, event, topic, private)
+  VALUES (payload, event, topic, private);
+END;
+$$ LANGUAGE plpgsql ;
+
+-- Function to set up realtime event monitoring
+CREATE OR REPLACE FUNCTION pgflow_tests.mock_realtime () RETURNS VOID AS $$
+BEGIN
+  -- First, ensure the table is empty
+  TRUNCATE pgflow_tests.realtime_calls;
+
+  -- We will manually call the capture function in our tests
+  -- since we can't replace the actual realtime.send function
+END;
+$$ LANGUAGE plpgsql ;
+
+-- Helper function to check if a realtime event was sent
+CREATE OR REPLACE FUNCTION pgflow_tests.assert_realtime_event_sent (
+event_type TEXT,
+description TEXT
+) RETURNS TEXT AS $$
+DECLARE
+  count_value INTEGER;
+BEGIN
+  SELECT COUNT(*)
+  INTO count_value
+  FROM pgflow_tests.realtime_calls
+  WHERE payload->>'event_type' = event_type;
+
+  RETURN is(
+    count_value >= 1,
+    TRUE,
+    description
+  );
+END;
+$$ LANGUAGE plpgsql ;
+
+-- Helper function to check if a realtime event was sent with specific step_slug
+CREATE OR REPLACE FUNCTION pgflow_tests.assert_step_event_sent (
+event_type TEXT,
+step_slug TEXT,
+description TEXT
+) RETURNS TEXT AS $$
+DECLARE
+  count_value INTEGER;
+BEGIN
+  SELECT COUNT(*)
+  INTO count_value
+  FROM pgflow_tests.realtime_calls
+  WHERE payload->>'event_type' = event_type
+    AND payload->>'step_slug' = step_slug;
+
+  RETURN is(
+    count_value >= 1,
+    TRUE,
+    description
+  );
+END;
+$$ LANGUAGE plpgsql ;
+
+-- Helper function to check if a run event was sent with specific flow_slug
+CREATE OR REPLACE FUNCTION pgflow_tests.assert_run_event_sent (
+event_type TEXT,
+flow_slug TEXT,
+description TEXT
+) RETURNS TEXT AS $$
+DECLARE
+  count_value INTEGER;
+BEGIN
+  SELECT COUNT(*)
+  INTO count_value
+  FROM pgflow_tests.realtime_calls
+  WHERE payload->>'event_type' = event_type
+    AND payload->>'flow_slug' = flow_slug;
+
+  RETURN is(
+    count_value >= 1,
+    TRUE,
+    description
+  );
+END;
+$$ LANGUAGE plpgsql ;
+
+-- Helper function to check if an event was sent for a specific run_id
+CREATE OR REPLACE FUNCTION pgflow_tests.assert_run_id_event_sent (
+event_type TEXT,
+run_id UUID,
+description TEXT
+) RETURNS TEXT AS $$
+DECLARE
+  count_value INTEGER;
+BEGIN
+  SELECT COUNT(*)
+  INTO count_value
+  FROM pgflow_tests.realtime_calls
+  WHERE payload->>'event_type' = event_type
+    AND payload->>'run_id' = run_id::TEXT;
+
+  RETURN is(
+    count_value >= 1,
+    TRUE,
+    description
+  );
+END;
+$$ LANGUAGE plpgsql ;
+
+-- Helper function to check the topic pattern for an event
+CREATE OR REPLACE FUNCTION pgflow_tests.assert_event_topic_pattern (
+event_type TEXT,
+topic_pattern TEXT,
+description TEXT
+) RETURNS TEXT AS $$
+DECLARE
+  topic_value TEXT;
+BEGIN
+  SELECT topic
+  INTO topic_value
+  FROM pgflow_tests.realtime_calls
+  WHERE payload->>'event_type' = event_type
+  LIMIT 1;
+
+  RETURN alike(
+    topic_value,
+    topic_pattern,
+    description
+  );
+END;
+$$ LANGUAGE plpgsql ;
