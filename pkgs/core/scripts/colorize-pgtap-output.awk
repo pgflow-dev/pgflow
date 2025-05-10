@@ -8,7 +8,7 @@ BEGIN {
     RESET="\033[0m";
 }
 
-/Dubious|Failed|error|exit 1|Result: FAIL/ {
+/Dubious|Failed|ERROR|exit 1|Result: FAIL/ {
     print RED $0 RESET;
     next;
 }
