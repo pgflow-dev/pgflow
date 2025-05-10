@@ -220,7 +220,8 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       setLoading(false);
     };
 
-    loadData();
+    // First establish the realtime subscription and then load data
+    // This ensures we don't miss any updates that might occur during page transition
 
     // Set up handlers for real-time updates
     const handleStepStateUpdate = (
@@ -322,7 +323,8 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       });
     };
 
-    // Set up a subscription to get real-time updates
+    // First set up the subscription to get real-time updates BEFORE loading initial data
+    // This ensures we don't miss any updates that occur during initial data loading
     const subscription = observeFlowRun({
       runId,
       onRunUpdate(payload: RealtimePostgresUpdatePayload<RunRow>) {
@@ -390,6 +392,9 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       onStepTaskUpdate: handleStepTaskUpdate,
       onStepTaskInsert: handleStepTaskInsert,
     });
+
+    // Now load the initial data after the subscription is in place
+    loadData();
 
     // Set up a timer to update the current time every second
     const timer = setInterval(() => {
