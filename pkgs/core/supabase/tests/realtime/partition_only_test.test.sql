@@ -2,40 +2,8 @@ begin;
 select plan(3);
 
 -- 1. CREATE THE PARTITION FOR TODAY (THIS IS THE KEY PART)
-do $$
-  DECLARE
-    today_date date := current_date;
-    next_date date := current_date + interval '1 day';
-    partition_name text := 'messages_' || to_char(today_date, 'YYYY_MM_DD');
-    partition_exists boolean;
-  BEGIN
-    -- Check if partition already exists
-    SELECT EXISTS (
-      SELECT 1 FROM pg_class c
-      JOIN pg_namespace n ON c.relnamespace = n.oid
-      WHERE n.nspname = 'realtime'
-      AND c.relname = partition_name
-    ) INTO partition_exists;
-
-    IF partition_exists THEN
-      RAISE NOTICE 'Partition % already exists', partition_name;
-    ELSE
-      BEGIN
-        -- Create the partition
-        EXECUTE format(
-          'CREATE TABLE realtime.%I PARTITION OF realtime.messages
-           FOR VALUES FROM (%L) TO (%L)',
-          partition_name,
-          today_date,
-          next_date
-        );
-        RAISE NOTICE 'Successfully created partition %', partition_name;
-      EXCEPTION WHEN OTHERS THEN
-        RAISE NOTICE 'Error creating partition: %', SQLERRM;
-      END;
-    END IF;
-  END;
-$$;
+-- Use the helper function to create the partition if it doesn't exist
+SELECT pgflow_tests.create_realtime_partition();
 
 -- 2. TRY TO QUERY THE MESSAGES TABLE DIRECTLY (no triggers)
 do $$
