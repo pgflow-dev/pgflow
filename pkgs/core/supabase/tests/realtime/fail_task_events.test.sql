@@ -1,5 +1,5 @@
 begin;
-select plan(3);
+select plan(5);
 
 -- Ensure partition exists for realtime.messages
 select pgflow_tests.create_realtime_partition();
@@ -45,6 +45,20 @@ select is(
   (select topic from pgflow_tests.get_realtime_message('run:failed', (select run_id from run_ids))),
   concat('pgflow:run:', (select run_id from run_ids)),
   'The run:failed event should have the correct topic (pgflow:run:<run_id>)'
+);
+
+-- Test 4: Verify no step:completed events were sent for the failed step
+select is(
+  pgflow_tests.count_realtime_events('step:completed', (select run_id from run_ids), 'first'),
+  0::int,
+  'pgflow.fail_task should NOT send any step:completed events for the failed step'
+);
+
+-- Test 5: Verify no run:completed events were sent
+select is(
+  pgflow_tests.count_realtime_events('run:completed', (select run_id from run_ids)),
+  0::int,
+  'pgflow.fail_task should NOT send any run:completed events when a run fails'
 );
 
 -- Clean up

@@ -1,5 +1,5 @@
 begin;
-select plan(7);
+select plan(9);
 
 -- Ensure partition exists for realtime.messages
 select pgflow_tests.create_realtime_partition();
@@ -48,14 +48,14 @@ select is(
 
 -- Test 4: Verify completed_at timestamp exists and is valid
 select ok(
-  (select (payload->>'completed_at')::timestamptz is not null 
+  (select (payload->>'completed_at')::timestamptz is not null
    from pgflow_tests.get_realtime_message('step:completed', (select run_id from run_ids), 'first')),
   'The step:completed event should include a completed_at timestamp'
 );
 
 -- Test 5: Verify output data is included in payload
 select is(
-  (select payload->'output'->>'result' 
+  (select payload->'output'->>'result'
    from pgflow_tests.get_realtime_message('step:completed', (select run_id from run_ids), 'first')),
   'success',
   'The step:completed event should contain the correct output data'
@@ -73,6 +73,20 @@ select is(
   (select topic from pgflow_tests.get_realtime_message('step:completed', (select run_id from run_ids), 'first')),
   concat('pgflow:run:', (select run_id from run_ids)),
   'The step:completed event should have the correct topic (pgflow:run:<run_id>)'
+);
+
+-- Test 8: Verify no step:failed events were sent for the completed step
+select is(
+  pgflow_tests.count_realtime_events('step:failed', (select run_id from run_ids), 'first'),
+  0::int,
+  'pgflow.complete_task should NOT send any step:failed events'
+);
+
+-- Test 9: Verify no run:completed event was sent (since there are more steps to complete)
+select is(
+  pgflow_tests.count_realtime_events('run:completed', (select run_id from run_ids)),
+  0::int,
+  'pgflow.complete_task should NOT send run:completed event when steps remain incomplete'
 );
 
 -- Clean up
