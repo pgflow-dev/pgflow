@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## ⚠️ MVP STATUS AND DEVELOPMENT PHILOSOPHY ⚠️
 
-**IMPORTANT**: PgFlow is currently a Minimum Viable Product (MVP) in very early stages of development. When working on this codebase:
+**IMPORTANT**: pgflow is currently a Minimum Viable Product (MVP) in very early stages of development. When working on this codebase:
 
 - **PRIORITIZE CUTTING SCOPE**: Focus on core functionality only - be ruthless about dropping nice-to-have features
 - **SIMPLIFY AGGRESSIVELY**: Choose the simplest implementation that works, not the most elegant or complete
@@ -28,26 +28,59 @@ When suggesting changes or improvements, bias heavily toward solutions that can 
 ## Code Style Guidelines
 
 - **TypeScript**: Use strict mode with proper type annotations
-- **Database**: PgFlow uses PostgreSQL for workflow orchestration
+- **Database**: pgflow uses PostgreSQL for workflow orchestration
 - **Imports**: Use package paths where defined (e.g., `@pgflow/core`, `@pgflow/dsl`)
 - **Formatting**: Follow existing code style with proper indentation
 - **Testing**: Write tests for both PostgreSQL functions (PgTAP) and TypeScript (Vitest)
+  - Place TypeScript tests in the `__tests__` directory at the root of the package
+  - Separate runtime tests from type tests in the `__tests__/runtime` and `__tests__/types` directories
+  - Never create `.test.ts` or `.spec.ts` files in `src/` directories
 - **Naming**: Use camelCase for variables/functions, PascalCase for classes/types
-- **Error Handling**: Use proper error types and handle errors appropriately 
+- **Error Handling**: Use proper error types and handle errors appropriately
 - **File Structure**: Monorepo structure with packages in pkgs/ directory
+  - Put all the source codes in `src/` and not nested in `src/lib/`, create subdirectories for distinct sub-packages
+
+## SQL Style Guidelines
+
+### Declarative SQL vs procedural SQL
+
+**YOU MUST ALWAYS PRIORITIZE DECLARATIVE STYLE** and prioritize Batching operations.
+
+Avoid plpgsql as much as you can.
+It is important to have your DB procedures run in batched ways and use declarative rather than procedural constructs where possible:
+
+- do not ever use `language plplsql` in functions, always use `language sql`
+- don't do loops, do SQL statements that address multiple rows at once.
+- don't write trigger functions that fire for a single row, use `FOR EACH STATEMENT` instead.
+- don't call functions for each row in a result set, a condition, a join, or whatever; instead use functions that return `SETOF` and join against these.
+
+If you're constructing dynamic SQL, you should only ever use `%I` and `%L` when using `FORMAT` or similar; you should never see `%s` (with the very rare exception of where you're merging in another SQL fragment that you've previously formatted using %I and %L).
+
+Remember, that functions have significant overhead in Postgres - instead of factoring into lots of tiny functions, think about how to make your code more expressive so there's no need.
+
+### Fully qualified column names and arguments
+
+When creating or updating SQL code, always fully quality the column names and function arguments.
+
+For example, instead of writing `SELECT * FROM table`, write `SELECT table.* FROM table`.
+
+Or, when referencing `run_id` argument to `pgflow.start_flow(run_id UUID)` function,
+write it as `start_flow.run_id` instead of `run_id`.
 
 ## Packages
 
 - **core** - PostgreSQL-native workflow engine for defining, managing, and tracking DAG-based workflows
+- **cli** - Command-line interface for managing pgflow deployments
+- **client** - TypeScript Client for interacting with pgflow and observing workflow progress
 - **dsl** - TypeScript DSL for workflow definition with automatic type inference
 - **edge-worker** - Task queue worker for Supabase Edge Functions with reliability features
-- **cli** - Command-line interface for managing PgFlow deployments
 - **example-flows** - Example workflow definitions using the DSL
-- **website** - Documentation site for PgFlow
+- **website** - Documentation site for pgflow
 
 ## Architecture & Key Conventions
 
 See [CODEBASE.md](./CODEBASE.md) for:
+
 - High-level architecture (3-layer model: DSL, SQL Core, Edge Worker)
 - Design philosophy (Postgres-first, opinionated, robust yet simple)
 - Key conventions (slug naming, DAG constraints, JSON serialization)

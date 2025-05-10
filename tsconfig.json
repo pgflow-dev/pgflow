@@ -17,6 +17,9 @@
     },
     {
       "path": "./pkgs/cli"
+    },
+    {
+      "path": "./pkgs/client"
     }
   ]
 }
