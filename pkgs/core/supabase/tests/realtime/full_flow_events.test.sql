@@ -116,11 +116,12 @@ select is(
   'Should NOT send a run:failed event for successful flows'
 );
 
--- Test 8: Verify step:failed event does not exist
+-- Test 8: Verify step:failed events don't exist for any step
 select is(
-  (select count(*) from realtime.messages 
-   where payload->>'run_id' = (select run_id::text from run_ids)
-   and payload->>'event_type' = 'step:failed'),
+  (select sum(count) from (
+    select pgflow_tests.count_realtime_events('step:failed', (select run_id from run_ids), step_slug) as count
+    from (values ('connected_root'), ('disconnected_root'), ('left'), ('right')) as steps(step_slug)
+  ) counts),
   0::bigint,
   'Should NOT send any step:failed events for successful flows'
 );
