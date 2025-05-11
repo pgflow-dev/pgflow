@@ -1,0 +1,97 @@
+---
+title: pgflow vs DBOS
+description: How pgflow compares to DBOS for Postgres-based workflow orchestration
+sidebar:
+  order: 2
+---
+
+## Features
+
+| Feature | pgflow | DBOS |
+|---------|--------|------|
+| **Core Philosophy** | 🔍 Database as orchestrator | 🔍 Application code with durability |
+| **SQL Transactions** | Any SQL client in steps | Via `@DBOS.transaction()` decorator |
+| **Workflow Definition** | TypeScript DSL with explicit dependencies | Function annotations with regular code flow |
+| **Supabase Integration** | Native | ⚠️ Possible but not optimized |
+| **Infrastructure Requirements** | Zero additional (just Supabase) | Basic recovery on single server, optional Conductor for distributed |
+| **Type Safety** | Complete end-to-end | Via standard TypeScript |
+| **Retry & Recovery** | Automatic per step | Automatic per workflow |
+| **Learning Curve** | New DSL to learn | New decorator pattern to learn |
+| **Production Readiness** | ⚠️ MVP/Early stage | Production-ready |
+
+Both systems provide reliable database operations with proper transaction handling and exactly-once semantics - the key difference is who controls the workflow: the database (pgflow) or your code (DBOS).
+
+## When to Choose
+
+### pgflow
+- **Building on Supabase** - Native integration with zero additional infrastructure 
+- **Working with data pipelines & ETL** - Automatic parallel processing based on data dependencies
+- **Building graph-like workflows** - Multiple steps with complex dependency relationships
+- **Need explicit data flow** - Step dependencies are clearly visible in the workflow definition
+- **Want database-centric architecture** - Your entire workflow logic and state lives in PostgreSQL
+
+### DBOS
+- **Enhancing existing applications** - Add durability to your code with minimal changes
+- **Using standard coding patterns** - Keep working with familiar TypeScript control flow
+- **Need production-ready solution** - Benefit from a battle-tested implementation
+- **Working across environments** - Need to run in diverse PostgreSQL setups (not just Supabase)
+- **Want incremental adoption** - Add workflow capabilities to specific parts of your application
+
+## Code Examples
+
+### pgflow
+
+pgflow puts **PostgreSQL at the center** of your workflow orchestration. Workflows are defined in TypeScript but **compiled to SQL migrations** with all orchestration logic running **directly in the database**. The database decides when tasks are ready to execute based on explicit dependencies.
+
+```typescript
+// In pgflow, the database orchestrates the workflow
+new Flow<{ url: string }>({
+  slug: 'analyze_website',
+})
+  .step(
+    { slug: 'extract' },
+    async (input) => /* extract data */
+  )
+  .step(
+    { slug: 'transform', dependsOn: ['extract'] },
+    async (input) => /* transform using extract results */
+  );
+```
+
+### DBOS
+
+DBOS puts **your application code first** and uses PostgreSQL as a checkpoint system. Your regular application code is enhanced with annotations/decorators, letting you use standard **imperative** control flow (conditionals, loops). The library checkpoints function state in PostgreSQL for recovery.
+
+```typescript
+// In DBOS, your code drives the workflow
+class DataPipeline {
+  @DBOS.step()
+  static async extract(url: string) { /* extract data */ }
+
+  // Direct database operations using transaction decorator
+  @DBOS.transaction()
+  static async saveToDatabase(data: any) {
+    // Uses DBOS.knexClient, DBOS.drizzleClient, etc.
+    await DBOS.knexClient('data_table').insert(data);
+  }
+
+  @DBOS.workflow()
+  static async analyzeWebsite(url: string) {
+    const data = await DataPipeline.extract(url);
+    await DataPipeline.saveToDatabase(data);
+  }
+}
+```
+
+## Similarities
+
+Both systems provide reliable database operations in workflows:
+
+- Both can use SQL clients/ORMs and properly manage transactions
+- Both track which database operations completed successfully
+- Both can retry failed operations according to configured policies
+- Both provide exactly-once semantics for successful transactions
+
+The difference is architectural:
+- pgflow: PostgreSQL orchestrates when steps run based on dependencies
+- DBOS: Application code controls workflow sequence, with PostgreSQL tracking state

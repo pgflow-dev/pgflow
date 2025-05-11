@@ -1,6 +1,6 @@
 # @pgflow/dsl
 
-The TypeScript Domain Specific Language (DSL) for defining type-safe workflow definitions in PgFlow.
+The TypeScript Domain Specific Language (DSL) for defining type-safe workflow definitions in pgflow.
 
 > [!NOTE]
 > This project and all its components are licensed under [Apache 2.0](./LICENSE) license.
@@ -62,7 +62,7 @@ export const AnalyzeWebsite = new Flow<Input>({
 
 ### Understanding Data Flow
 
-In PgFlow, each step receives an `input` object that contains:
+In pgflow, each step receives an `input` object that contains:
 
 1. **`input.run`** - The original flow input (available to all steps)
 2. **`input.{stepName}`** - Outputs from dependency steps
@@ -96,7 +96,7 @@ const sqlStatements = compileFlow(MyFlow);
 console.log(sqlStatements.join('\n'));
 ```
 
-Alternatively, use the PgFlow CLI to compile flows directly to migration files:
+Alternatively, use the pgflow CLI to compile flows directly to migration files:
 
 ```bash
 npx pgflow compile path/to/flow.ts

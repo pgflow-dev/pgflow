@@ -1,0 +1,125 @@
+---
+title: pgflow vs Inngest
+description: How pgflow compares to Inngest for workflow orchestration
+sidebar:
+  order: 4
+---
+
+## Features
+
+| Feature | pgflow | Inngest |
+|---------|--------|---------|
+| **Core Philosophy** | 🔍 Database as orchestrator | 🔍 Durable execution engine |
+| **Infrastructure** | Zero additional (just Supabase) | Hosted service or self-hosted |
+| **Workflow Definition** | TypeScript DSL with explicit dependencies | Step-based functions with checkpoints |
+| **Supabase Integration** | Native | ⚠️ Possible but not optimized |
+| **Type Safety** | Complete end-to-end | Via standard TypeScript |
+| **Retry & Recovery** | Automatic per step | Automatic per step |
+| **Execution Model** | Database-driven DAG | Linear step-by-step with state persistence |
+| **Step State** | Input/output data stored in database | Input/output memoized in execution service |
+| **Wait/Sleep** | Not directly supported (use pgcron) | Built-in sleep and waitForEvent capabilities |
+| **Production Readiness** | ⚠️ MVP/Early stage | Production-ready |
+| **Dashboard** | None (SQL queries for visibility) | Comprehensive web dashboard |
+| **Concurrency Control** | Simple per-flow limits | Advanced throttling and concurrency controls |
+| **Event System** | No built-in event system | Rich event-driven architecture |
+
+Both systems provide reliable task execution with proper retries and error handling. The key difference is who controls the workflow orchestration: the database (pgflow) or a durable execution engine (Inngest).
+
+## When to Choose
+
+### pgflow
+- **Supabase-native solution** - You need workflow orchestration directly within your Supabase stack
+- **Transparent state storage** - You want workflow state directly visible and queryable in your database
+- **Parallel data processing** - Your workflows involve processing data with multiple parallel paths
+- **Database-centric ecosystem** - Your system already centers around PostgreSQL operations
+- **Explicit data dependencies** - Your processes have clear input/output relationships between steps
+- **Migration-based deployments** - You prefer deploying workflow changes via database migrations
+- **Minimal infrastructure** - You want to avoid adding services beyond your Supabase project
+
+### Inngest
+- **Event-driven systems** - You're building applications centered around events and reactions
+- **Temporal workflows** - You need sequences that wait for time or external events before continuing
+- **Sequential steps** - Your processes follow linear paths with checkpointing
+- **UI visibility need** - You need a dedicated dashboard for monitoring workflow executions
+- **Multi-environment deployment** - You need to run the same workflows across different platforms
+- **Sleep/wait mechanics** - Your workflows pause for specific time periods or external triggers
+- **Throttling requirements** - You need sophisticated rate limiting for external API calls
+
+## Code Examples
+
+### pgflow
+
+pgflow puts **PostgreSQL at the center** of your workflow orchestration. Workflows are defined in TypeScript but **compiled to SQL migrations** with all orchestration logic running **directly in the database**. The database decides when tasks are ready to execute based on explicit dependencies.
+
+```typescript
+// In pgflow, the database orchestrates the workflow
+new Flow<{ url: string }>({
+  slug: 'analyze_website',
+})
+  .step(
+    { slug: 'extract' },
+    async (input) => /* extract data */
+  )
+  .step(
+    { slug: 'transform', dependsOn: ['extract'] },
+    async (input) => /* transform using extract results */
+  );
+```
+
+### Inngest
+
+Inngest uses a **durable execution engine** to orchestrate workflows. Functions are defined as a series of steps, where each step is a checkpoint that can be retried independently. The execution engine tracks state and resumes execution from the last successful step.
+
+```typescript
+// In Inngest, steps define checkpoints within a function
+import { Inngest } from "inngest";
+
+const inngest = new Inngest({ id: "my-app" });
+
+export default inngest.createFunction(
+  { id: "analyze-website" },
+  { event: "app/website.analyze" },
+  async ({ event, step }) => {
+    // Each step is retried independently
+    const extracted = await step.run("extract", async () => {
+      return await extractData(event.data.url);
+    });
+
+    // State is automatically passed between steps
+    const transformed = await step.run("transform", async () => {
+      return await transformData(extracted);
+    });
+
+    // Return the final result
+    return { data: transformed };
+  }
+);
+```
+
+## Similarities
+
+Both systems provide reliable execution of workflow tasks:
+
+- Both handle retries and error recovery
+- Both track execution state and progress
+- Both provide type safety
+- Both can process steps asynchronously
+- Both store the state of workflow executions
+
+The difference is architectural:
+- pgflow: PostgreSQL orchestrates when steps run based on dependencies
+- Inngest: Execution engine orchestrates steps sequentially with state memoization
+
+## Integration with Supabase
+
+### pgflow
+- **Native integration** - Built specifically for Supabase ecosystem
+- **Zero infrastructure** - Uses Supabase Edge Functions and PostgreSQL
+- **Simple setup** - Single command (`npx pgflow install`) sets up all required components
+- **Direct database access** - All workflow state directly accessible in your Supabase database
+
+### Inngest
+- **Possible integration** - Can work with Supabase but not specifically designed for it
+- **Additional infrastructure** - Requires either hosted service or self-hosted instance
+- **Event bridging** - Requires connecting Supabase events to Inngest's event system
+- **Separate state storage** - Workflow state stored outside your Supabase database

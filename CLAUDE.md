@@ -2,9 +2,22 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⚠️ PROJECT NAMING CONVENTION ⚠️
+
+**IMPORTANT**: The name of the project should only ever be used as lowercase: **pgflow**
+
+Never use:
+
+- pgFlow
+- PgFlow
+- Pgflow
+- PGFlow
+
+The only exception is in class names, where "Pgflow" can be used (PascalCase).
+
 ## ⚠️ MVP STATUS AND DEVELOPMENT PHILOSOPHY ⚠️
 
-**IMPORTANT**: PgFlow is currently a Minimum Viable Product (MVP) in very early stages of development. When working on this codebase:
+**IMPORTANT**: pgflow is currently a Minimum Viable Product (MVP) in very early stages of development. When working on this codebase:
 
 - **PRIORITIZE CUTTING SCOPE**: Focus on core functionality only - be ruthless about dropping nice-to-have features
 - **SIMPLIFY AGGRESSIVELY**: Choose the simplest implementation that works, not the most elegant or complete
@@ -33,7 +46,7 @@ When suggesting changes or improvements, bias heavily toward solutions that can 
 - **Formatting**: Follow existing code style with proper indentation
 - **Testing**: Write tests for both PostgreSQL functions (PgTAP) and TypeScript (Vitest)
 - **Naming**: Use camelCase for variables/functions, PascalCase for classes/types
-- **Error Handling**: Use proper error types and handle errors appropriately 
+- **Error Handling**: Use proper error types and handle errors appropriately
 - **File Structure**: Monorepo structure with packages in pkgs/ directory
 
 ## Packages
@@ -48,6 +61,7 @@ When suggesting changes or improvements, bias heavily toward solutions that can 
 ## Architecture & Key Conventions
 
 See [CODEBASE.md](./CODEBASE.md) for:
+
 - High-level architecture (3-layer model: DSL, SQL Core, Edge Worker)
 - Design philosophy (Postgres-first, opinionated, robust yet simple)
 - Key conventions (slug naming, DAG constraints, JSON serialization)
@@ -56,6 +70,14 @@ See [CODEBASE.md](./CODEBASE.md) for:
 For documentation structure guidelines based on the Diátaxis framework, see [DIATAXIS.md](./DIATAXIS.md).
 
 When working with this codebase, all changes should align with the principles in CODEBASE.md.
+
+## MCP Tools for Web Reading/Crawling
+
+For reading and crawling web content, Claude Code has access to an MCP server that provides enhanced web capabilities:
+
+- **MCP Server**: c4ai-sse at http://localhost:11235/mcp/sse
+- **Usage**: When you need to read web content or crawl websites, use the MCP tools instead of the standard WebFetch
+- **Benefits**: The MCP tools provide more robust capabilities for web content extraction and processing
 
 > [!WARNING]
 > QUOTE ALL THE FILE PATHS THAT CONTAIN SPECIAL CHARACTERS LIKE '[run_id]'

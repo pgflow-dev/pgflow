@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Output Philosophy
 
-When designing CLI commands for PgFlow, follow these principles:
+When designing CLI commands for pgflow, follow these principles:
 
 1. **Minimize Output**: Only show information that is directly valuable to the user.
 

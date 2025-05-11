@@ -36,6 +36,7 @@ export default defineConfig({
     },
   },
   redirects: {
+    // Existing redirects
     '/edge-worker/how-to/run-on-hosted-supabase':
       '/how-to/deploy-to-supabasecom/',
     '/edge-worker/faq/': '/faq/',
@@ -43,6 +44,13 @@ export default defineConfig({
     '/edge-worker/how-to/deploy-to-supabasecom/':
       '/how-to/deploy-to-supabasecom/',
     '/edge-worker/how-to/prepare-db-string/': '/how-to/prepare-db-string/',
+
+    // New redirects for reorganization
+    '/explanations/': '/concepts/',
+    '/explanations/flow-dsl/': '/concepts/flow-dsl/',
+    '/explanations/comparison-to-dbos/': '/comparisons/dbos/',
+    '/explanations/comparison-to-inngest/': '/comparisons/inngest/',
+    '/explanations/comparison-to-trigger-dev/': '/comparisons/trigger/',
   },
   integrations: [
     react(),
@@ -87,16 +95,20 @@ export default defineConfig({
                 autogenerate: { directory: 'getting-started/' },
               },
               {
+                label: 'CONCEPTS',
+                autogenerate: { directory: 'concepts/', collapsed: true },
+              },
+              {
+                label: 'COMPARISONS',
+                autogenerate: { directory: 'comparisons/', collapsed: true },
+              },
+              {
+                label: 'HOW TO',
+                autogenerate: { directory: 'how-to/', collapsed: true },
+              },
+              {
                 label: 'FAQ - Common Questions',
                 link: '/faq/',
-              },
-              {
-                label: 'How To',
-                autogenerate: { directory: 'how-to/' },
-              },
-              {
-                label: 'Explanations',
-                autogenerate: { directory: 'explanations/' },
               },
             ],
           },

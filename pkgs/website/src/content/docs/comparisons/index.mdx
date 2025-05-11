@@ -1,0 +1,43 @@
+---
+title: Comparing pgflow to Other Systems
+description: How pgflow compares to other workflow orchestration systems
+sidebar:
+  order: 1
+---
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+This section compares pgflow to other workflow orchestration systems, helping you understand the architectural differences, trade-offs, and when to choose each approach.
+
+## Comparison Guides
+
+<CardGrid>
+  <LinkCard
+    title="pgflow vs DBOS"
+    description="How pgflow compares to DBOS for Postgres-based workflow orchestration"
+    href="/comparisons/dbos/"
+  />
+
+  <LinkCard
+    title="pgflow vs Trigger.dev"
+    description="How pgflow compares to Trigger.dev for workflow orchestration"
+    href="/comparisons/trigger/"
+  />
+
+  <LinkCard
+    title="pgflow vs Inngest"
+    description="How pgflow compares to Inngest for workflow orchestration"
+    href="/comparisons/inngest/"
+  />
+</CardGrid>
+
+## Key Differences
+
+When comparing pgflow to other workflow systems, these are the most important architectural differences:
+
+1. **Database-Centric Orchestration** - pgflow puts PostgreSQL at the center, using it not just for storage but for orchestration logic
+1. **Supabase Integration** - Built specifically for the Supabase ecosystem with zero additional infrastructure
+1. **Explicit Data Dependencies** - Flow steps connect through explicit data dependencies rather than procedural control flow
+1. **PostgreSQL State Storage** - All workflow state remains directly queryable in your Supabase database
+
+These guides help you decide which tool is best for your specific use case based on your requirements, preferences, and existing infrastructure.

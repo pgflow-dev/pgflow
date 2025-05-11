@@ -7,15 +7,15 @@ The [Diátaxis framework](https://diataxis.fr/) provides a systematic approach t
 3. **Explanations** - Understanding-oriented content
 4. **References** - Information-oriented content
 
-## Applying Diátaxis to PgFlow Documentation
+## Applying Diátaxis to pgflow Documentation
 
-PgFlow's documentation can be naturally structured following Diátaxis principles while preserving its unique character and development philosophy.
+pgflow's documentation can be naturally structured following Diátaxis principles while preserving its unique character and development philosophy.
 
 ### Tutorials (Learning-oriented)
 
 Tutorials help new users get started through hands-on experience:
 
-- **Getting Started with PgFlow**
+- **Getting Started with pgflow**
   - First-time setup with Supabase
   - Creating your first workflow with the TypeScript DSL
   - Deploying Edge Workers
@@ -37,7 +37,7 @@ Tutorials should be:
 
 How-to guides address specific tasks for users who know what they need to accomplish:
 
-- **Working with PgFlow**
+- **Working with pgflow**
   - How to deploy to Supabase.com
   - How to implement custom retry logic
   - How to configure worker concurrency
@@ -57,7 +57,7 @@ How-to guides should be:
 
 ### Explanations (Understanding-oriented)
 
-Explanations provide background and context to help users understand PgFlow's concepts:
+Explanations provide background and context to help users understand pgflow's concepts:
 
 - **Core Concepts**
   - The three-layer architecture (DSL, SQL Core, Edge Worker)
@@ -73,7 +73,7 @@ Explanations provide background and context to help users understand PgFlow's co
 
 Explanations should be:
 - Clear about the "why" behind design decisions
-- Connected to PgFlow's design philosophy
+- Connected to pgflow's design philosophy
 - Focused on concepts rather than specific code
 - Providing deeper understanding beyond task completion
 
@@ -115,9 +115,9 @@ Following are some suggestions for organizing the documentation within the exist
    - Generated from code comments where appropriate
    - Reference-style content that's comprehensive and accurate
 
-## Key Principles for PgFlow Documentation
+## Key Principles for pgflow Documentation
 
-While applying Diátaxis, PgFlow documentation should maintain:
+While applying Diátaxis, pgflow documentation should maintain:
 
 1. **Postgres-first mindset** - All explanations should emphasize the database-centric nature
 2. **Three-layer clarity** - Clear separation of DSL, SQL Core, and Edge Worker concepts
