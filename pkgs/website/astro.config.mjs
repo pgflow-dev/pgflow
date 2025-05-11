@@ -96,15 +96,15 @@ export default defineConfig({
               },
               {
                 label: 'CONCEPTS',
-                autogenerate: { directory: 'concepts/' },
+                autogenerate: { directory: 'concepts/', collapsed: true },
               },
               {
                 label: 'COMPARISONS',
-                autogenerate: { directory: 'comparisons/' },
+                autogenerate: { directory: 'comparisons/', collapsed: true },
               },
               {
                 label: 'HOW TO',
-                autogenerate: { directory: 'how-to/' },
+                autogenerate: { directory: 'how-to/', collapsed: true },
               },
               {
                 label: 'FAQ - Common Questions',

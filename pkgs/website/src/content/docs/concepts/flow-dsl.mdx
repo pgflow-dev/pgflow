@@ -2,7 +2,7 @@
 title: Understanding the Flow DSL
 description: How pgflow's TypeScript DSL works to create type-safe, data-driven workflows
 sidebar:
-  order: 2
+  order: 3
 ---
 
 import { Aside } from "@astrojs/starlight/components";
@@ -129,7 +129,7 @@ All step inputs and outputs MUST be serializable to JSON since pgflow stores the
     return {
       count: 42,
       items: ["apple", "banana"],
-      metadata: { 
+      metadata: {
         processed: true,
         timestamp: new Date().toISOString() // Convert Date to string
       }
@@ -193,10 +193,10 @@ Here's a practical example showing how data flows efficiently through steps:
 
 ```typescript "input.run.userId" "input.run.reportType" "input.run.includeDetails" "input.run.reportType" {21,30,38}
 // Flow with multiple input parameters
-type Input = { 
-  userId: string, 
-  includeDetails: boolean, 
-  reportType: 'basic' | 'advanced' 
+type Input = {
+  userId: string,
+  includeDetails: boolean,
+  reportType: 'basic' | 'advanced'
 };
 
 new Flow<Input>({
