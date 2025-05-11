@@ -5,7 +5,17 @@ sidebar:
   order: 2
 ---
 
-pgflow is a Postgres-native workflow engine with three simple layers:
+pgflow is a Postgres-native workflow engine that uses your database to orchestrate complex processing tasks.
+
+## How Tasks Flow Through The System
+
+At its core, pgflow works through a simple cycle:
+1. **SQL Core** decides which tasks are ready and puts them in a queue
+2. **Edge Workers** poll the queue and execute the assigned tasks
+3. Workers report back success or failure by calling SQL functions
+4. SQL Core updates the workflow state and may queue new tasks for dependent steps
+
+This queue-based approach ensures reliable execution while keeping the database as the single source of truth. pgflow is built with three simple layers that work together to make this possible.
 
 ## The Three Layers
 
