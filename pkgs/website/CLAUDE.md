@@ -386,3 +386,7 @@ When moving or renaming documentation pages, always set up redirects to maintain
    - Test redirects after deployment
    - Use consistent URL formatting with trailing slashes
    - Keep redirects in place indefinitely to avoid breaking external links
+
+## MDX Headings
+
+⚠️ **IMPORTANT**: Never add top-level headings (# Heading) in MDX files for documentation. The title from the frontmatter will automatically be inserted as a top-level heading by Starlight. Start your content directly or with second-level headings (## Heading) instead.
