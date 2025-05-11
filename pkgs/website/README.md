@@ -5,56 +5,98 @@ This is documentation website for **pgflow** stack, hosted at [pgflow.dev](https
 > [!NOTE]
 > This project and all its components are licensed under [Apache 2.0](./LICENSE) license.
 
-[![Built with Starlight](https://astro.badg.es/v2/built-with-starlight/tiny.svg)](https://starlight.astro.build)
+> [!TIP]
+> For technical information about the Astro setup, see [ASTRO_README.md](./ASTRO_README.md).
 
-```
-npm create astro@latest -- --template starlight
-```
+## Documentation Structure
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/starlight/tree/main/examples/basics)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/starlight/tree/main/examples/basics)
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/withastro/starlight&create_from_path=examples/basics)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fwithastro%2Fstarlight%2Ftree%2Fmain%2Fexamples%2Fbasics&project-name=my-starlight-docs&repository-name=my-starlight-docs)
+PgFlow's documentation follows the [Diátaxis framework](https://diataxis.fr/), which organizes technical documentation into four distinct types, each serving a specific user need:
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+1. **Tutorials** - Learning-oriented content: _"How do I get started with PgFlow?"_
+2. **How-to Guides** - Problem-oriented content: _"How do I deploy my flow to production?"_
+3. **Explanations** - Understanding-oriented content: _"How does PgFlow's retry mechanism work?"_
+4. **References** - Information-oriented content: _"What options are available for flow configuration?"_
 
-## 🚀 Project Structure
+When adding new documentation, consider which question the content answers:
+- If it helps someone **learn by doing** → It's a Tutorial
+- If it helps someone **solve a specific problem** → It's a How-to Guide
+- If it helps someone **understand a concept** → It's an Explanation
+- If it provides **precise technical information** → It's a Reference
 
-Inside of your Astro + Starlight project, you'll see the following folders and files:
+## Documentation Sections
 
-```
-.
-├── public/
-├── src/
-│   ├── assets/
-│   ├── content/
-│   │   ├── docs/
-│   │   └── config.ts
-│   └── env.d.ts
-├── astro.config.mjs
-├── package.json
-└── tsconfig.json
-```
+Our documentation is organized into the following sections that align with the Diátaxis framework:
 
-Starlight looks for `.md` or `.mdx` files in the `src/content/docs/` directory. Each file is exposed as a route based on its file name.
+### 🟢 `START HERE` (Tutorials – Learning-oriented)
 
-Images can be added to `src/assets/` and embedded in Markdown with a relative link.
+> Guides new users through accomplishing their first successful outcome.
 
-Static assets, like favicons, can be placed in the `public/` directory.
+This section includes step-by-step tutorials like:
+- Getting Started
+- Install pgflow
+- Create your first flow
+- Compile flow to SQL
+- Run your Flow
 
-## 🧞 Commands
+### 🔵 `CONCEPTS` (Conceptual – Mental models)
 
-All commands are run from the root of the project, from a terminal:
+> Explains the underlying ideas and paradigms of pgflow.
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+This section helps users build mental models about:
+- Overview (What is pgflow?)
+- Understanding the Flow DSL
+- Flow vs Task thinking
+- Data dependencies and DAGs
 
-## 👀 Want to learn more?
+### 🟠 `HOW IT WORKS` (Explanation – System internals)
 
-Check out [Starlight’s docs](https://starlight.astro.build/), read [the Astro documentation](https://docs.astro.build), or jump into the [Astro Discord server](https://astro.build/chat).
+> Explains how pgflow functions under the hood, its architecture, and execution model.
+
+This section covers technical explanations like:
+- Architecture Overview
+- Step Execution Lifecycle
+- SQL Compilation & Migration
+- Supabase Edge Integration
+- Retry & Concurrency Model
+
+### 🔵 `COMPARISONS` (Conceptual – Evaluative understanding)
+
+> Helps users conceptually compare pgflow to alternatives. Supports decision-making.
+
+This section compares pgflow to other workflow engines:
+- Comparison to DBOS
+- Comparison to Trigger.dev
+- Comparison to Inngest
+
+### 🟢 `HOW TO` (Tutorials – Procedural guides)
+
+> Step-by-step instructions for specific tasks or configurations.
+
+This section provides guides for common tasks:
+- Monitor flow execution
+- Organize Flows code
+- Create Reusable Tasks
+- Update Flow Options
+- Version your flows
+- Deploy to Supabase.com
+
+### 🔴 `REFERENCE` (Reference – Precise information)
+
+> Canonical reference material with no explanation—just facts and specs.
+
+This section includes technical references:
+- SQL Schema (internal tables, views, triggers)
+- Flow Definition API (DSL reference)
+- Environment Variables & Config Options
+
+## Key Documentation Principles
+
+When contributing to PgFlow documentation, keep these principles in mind:
+
+1. **Postgres-first mindset** - All explanations should emphasize the database-centric nature
+2. **Three-layer clarity** - Clear separation of DSL, SQL Core, and Edge Worker concepts
+3. **Progressive disclosure** - Start with simple concepts before introducing advanced topics
+4. **Code examples** - Demonstrate real-world usage aligned with design philosophy
+5. **Cross-reference related content** - Link between tutorials, how-tos, explanations, and references
+
+For more detailed information about our documentation approach, see [DIATAXIS.md](../../DIATAXIS.md).
