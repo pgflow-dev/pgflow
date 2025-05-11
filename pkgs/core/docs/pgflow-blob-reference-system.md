@@ -1,8 +1,8 @@
-# PgFlow Blob Reference System
+# pgflow Blob Reference System
 
 ## Overview
 
-PgFlow needs an efficient way to handle large data outputs from workflow steps. The Blob Reference System provides a solution by separating large data payloads from workflow control information while maintaining a seamless developer experience.
+pgflow needs an efficient way to handle large data outputs from workflow steps. The Blob Reference System provides a solution by separating large data payloads from workflow control information while maintaining a seamless developer experience.
 
 ## How It Works
 
@@ -67,7 +67,7 @@ In this example:
 
 ### Queue Efficiency
 
-A critical optimization in PgFlow is that the task queue only stores minimal task identification information:
+A critical optimization in pgflow is that the task queue only stores minimal task identification information:
 
 - flow_slug
 - run_id
@@ -176,4 +176,4 @@ The developer never needs to:
 
 ## Conclusion
 
-The Blob Reference System in PgFlow provides an elegant solution for handling large data in workflows. By splitting task data into regular inputs and blob references, the system maintains efficient database usage and queue performance while providing a seamless experience for workflow developers. The design ensures that large data is handled appropriately without requiring developers to write special code for blob resolution or storage.
+The Blob Reference System in pgflow provides an elegant solution for handling large data in workflows. By splitting task data into regular inputs and blob references, the system maintains efficient database usage and queue performance while providing a seamless experience for workflow developers. The design ensures that large data is handled appropriately without requiring developers to write special code for blob resolution or storage.

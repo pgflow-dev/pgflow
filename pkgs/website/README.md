@@ -10,11 +10,11 @@ This is documentation website for **pgflow** stack, hosted at [pgflow.dev](https
 
 ## Documentation Structure
 
-PgFlow's documentation follows the [Diátaxis framework](https://diataxis.fr/), which organizes technical documentation into four distinct types, each serving a specific user need:
+pgflow's documentation follows the [Diátaxis framework](https://diataxis.fr/), which organizes technical documentation into four distinct types, each serving a specific user need:
 
-1. **Tutorials** - Learning-oriented content: _"How do I get started with PgFlow?"_
+1. **Tutorials** - Learning-oriented content: _"How do I get started with pgflow?"_
 2. **How-to Guides** - Problem-oriented content: _"How do I deploy my flow to production?"_
-3. **Explanations** - Understanding-oriented content: _"How does PgFlow's retry mechanism work?"_
+3. **Explanations** - Understanding-oriented content: _"How does pgflow's retry mechanism work?"_
 4. **References** - Information-oriented content: _"What options are available for flow configuration?"_
 
 When adding new documentation, consider which question the content answers:
@@ -91,7 +91,7 @@ This section includes technical references:
 
 ## Key Documentation Principles
 
-When contributing to PgFlow documentation, keep these principles in mind:
+When contributing to pgflow documentation, keep these principles in mind:
 
 1. **Postgres-first mindset** - All explanations should emphasize the database-centric nature
 2. **Three-layer clarity** - Clear separation of DSL, SQL Core, and Edge Worker concepts
