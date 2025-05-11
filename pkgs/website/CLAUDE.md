@@ -121,6 +121,12 @@ Follow these consistent style patterns:
    - Use numbered lists for sequential steps
    - Separate distinct topics with clear headings
 
+4. **URL Formatting**:
+   - **ALWAYS use trailing slashes** in URLs (`/getting-started/install-pgflow/` NOT `/getting-started/install-pgflow`)
+   - This is enforced by the site's configuration (`trailingSlash: 'always'` in astro.config.mjs)
+   - Use absolute paths starting with `/` for internal links
+   - Include the full URL with https:// for external links
+
 ### Common Components Usage
 
 #### Admonitions (Aside)
@@ -346,3 +352,37 @@ When creating or editing documentation content, consider which question the cont
 - Files are in Markdown/MDX format
 - The website is deployed to pgflow.dev
 - For technical Astro setup details, see ASTRO_README.md
+
+### Managing Page Redirects
+
+When moving or renaming documentation pages, always set up redirects to maintain historical links and prevent broken links:
+
+1. **Verify Page History Before Moving**:
+   - Before moving/renaming a page, check if it already exists in the main branch:
+     ```bash
+     git diff main -- path/to/file.mdx
+     ```
+   - If the file exists in main but is being moved in your branch, add a redirect
+   - New pages (not in main branch) don't need redirects
+
+2. **Add Redirects to Configuration**:
+   - Add entries to the `redirects` object in `astro.config.mjs`
+   - Always include trailing slashes in both source and destination paths
+   - Example:
+   ```javascript
+   redirects: {
+     '/old-path/page-name/': '/new-path/page-name/',
+     '/edge-worker/how-to/run-on-hosted-supabase/': '/how-to/deploy-to-supabasecom/',
+   },
+   ```
+
+3. **When to Add Redirects**:
+   - When moving a page to a different section
+   - When renaming a page or section
+   - When consolidating multiple pages
+   - When restructuring documentation hierarchy
+
+4. **Redirect Best Practices**:
+   - Test redirects after deployment
+   - Use consistent URL formatting with trailing slashes
+   - Keep redirects in place indefinitely to avoid breaking external links
