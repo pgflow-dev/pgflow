@@ -1,0 +1,130 @@
+---
+title: Comparison to Trigger.dev
+description: How pgflow compares to Trigger.dev for workflow orchestration
+sidebar:
+  order: 3
+---
+
+## Features
+
+| Feature | pgflow | Trigger.dev |
+|---------|--------|-------------|
+| **Core Philosophy** | 🔍 Database as orchestrator | 🔍 Background job execution and orchestration |
+| **Infrastructure** | Zero additional (just Supabase) | Hosted service with dashboard or self-hosted |
+| **Workflow Definition** | TypeScript DSL with explicit dependencies | TypeScript functions with tasks and subtasks |
+| **Supabase Integration** | Native | ⚠️ Possible but not native |
+| **Type Safety** | Complete end-to-end | Via standard TypeScript |
+| **Retry & Recovery** | Automatic per step | Configurable per task |
+| **Lifecycle Hooks** | No explicit hooks | Rich hooks (init, cleanup, onSuccess, onFailure) |
+| **Learning Curve** | New DSL to learn | Function-based API with lifecycle hooks |
+| **Production Readiness** | ⚠️ MVP/Early stage | Production-ready |
+| **Dashboard** | None (SQL queries for visibility) | Comprehensive web dashboard |
+| **Execution Model** | Database-driven DAG | Task/subtask hierarchy |
+| **Concurrency Control** | Simple per-flow limits | Advanced queues and limits |
+| **Scheduler** | Built into Supabase (pg_cron) | Built-in cron scheduler |
+
+Both systems provide reliable task execution with proper retries and error handling. The key difference is who controls the workflow orchestration: the database (pgflow) or the task execution platform (Trigger.dev).
+
+## When to Choose
+
+### pgflow
+- **Committed to Supabase** - Want a workflow solution that lives entirely inside your Supabase project
+- **DAG-based workflows** - Need to express complex data dependencies as a directed acyclic graph
+- **SQL visibility** - Prefer direct database access to monitor workflow state via SQL queries
+- **Lightweight deployment** - Need minimal infrastructure with no additional services to maintain
+- **PostgreSQL transactions** - Want to leverage database transactions throughout workflows
+- **Edge Function execution** - Want to run workflow steps as Supabase Edge Functions
+- **Explicit data flow** - Prefer declarative data dependencies over imperative control flow
+
+### Trigger.dev
+- **User-friendly dashboard** - Need comprehensive UI for monitoring and managing workflow runs
+- **Task relationships** - Prefer parent-child task relationships over explicit dependency graphs
+- **Advanced concurrency** - Need sophisticated queuing with per-tenant concurrency controls
+- **Rich lifecycle hooks** - Want init, cleanup, onSuccess, and onFailure lifecycle hooks
+- **Delay capabilities** - Need to schedule tasks for future execution with precise timing
+- **Framework integration** - Desire tight integration with Next.js and other frameworks
+- **Immediate production use** - Need a mature, battle-tested solution ready for production
+
+## Code Examples
+
+### pgflow
+
+pgflow puts **PostgreSQL at the center** of your workflow orchestration. Workflows are defined in TypeScript but **compiled to SQL migrations** with all orchestration logic running **directly in the database**. The database decides when tasks are ready to execute based on explicit dependencies.
+
+```typescript
+// In pgflow, the database orchestrates the workflow
+new Flow<{ url: string }>({
+  slug: 'analyze_website',
+})
+  .step(
+    { slug: 'extract' },
+    async (input) => /* extract data */
+  )
+  .step(
+    { slug: 'transform', dependsOn: ['extract'] },
+    async (input) => /* transform using extract results */
+  );
+```
+
+### Trigger.dev
+
+Trigger.dev provides a task-based system where you define individual tasks with explicit handlers and lifecycle hooks. Tasks can be triggered manually or from other tasks.
+
+```typescript
+// In Trigger.dev, you define tasks with handlers and hooks
+import { task } from "@trigger.dev/sdk/v3";
+
+export const extractData = task({
+  id: "extract-data",
+  // Optional initialization hook
+  init: async (payload) => {
+    return { client: createApiClient() };
+  },
+  run: async (payload: { url: string }, { init }) => {
+    // Use resources from init
+    return await init.client.fetch(payload.url);
+  }
+});
+
+// Parent task that coordinates workflow
+export const analyzeWebsite = task({
+  id: "analyze-website",
+  run: async (payload: { url: string }) => {
+    // Extract data and wait for result
+    const data = await extractData.triggerAndWait({
+      url: payload.url
+    }).unwrap();
+
+    // Process data and return result
+    return processData(data);
+  }
+});
+```
+
+## Similarities
+
+Both systems provide reliable execution of workflow tasks:
+
+- Both can properly handle retries and error recovery
+- Both track execution state and progress
+- Both provide typing and type safety
+- Both support parallel execution of independent tasks
+- Both allow the scheduling/triggering of workflow execution
+
+The difference is architectural:
+- pgflow: PostgreSQL orchestrates when steps run based on dependencies
+- Trigger.dev: Platform manages task execution with flexible triggering options
+
+## Integration with Supabase
+
+### pgflow
+- **Native integration** - Built specifically for Supabase ecosystem
+- **Zero infrastructure** - Uses Supabase Edge Functions and PostgreSQL
+- **Simple setup** - Single command (`npx pgflow install`) sets up all required components
+- **Direct database access** - All workflow state directly accessible in your Supabase database
+
+### Trigger.dev
+- **Possible integration** - Can work with Supabase but not specifically designed for it
+- **Additional infrastructure** - Requires either hosted service or self-hosted instance
+- **Connection** - Requires connecting Supabase to Trigger.dev infrastructure
+- **Separate dashboard** - Uses its own dashboard for monitoring and management
