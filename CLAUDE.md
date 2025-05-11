@@ -57,6 +57,14 @@ For documentation structure guidelines based on the Diátaxis framework, see [DI
 
 When working with this codebase, all changes should align with the principles in CODEBASE.md.
 
+## MCP Tools for Web Reading/Crawling
+
+For reading and crawling web content, Claude Code has access to an MCP server that provides enhanced web capabilities:
+
+- **MCP Server**: c4ai-sse at http://localhost:11235/mcp/sse
+- **Usage**: When you need to read web content or crawl websites, use the MCP tools instead of the standard WebFetch
+- **Benefits**: The MCP tools provide more robust capabilities for web content extraction and processing
+
 > [!WARNING]
 > QUOTE ALL THE FILE PATHS THAT CONTAIN SPECIAL CHARACTERS LIKE '[run_id]'
 > BECAUSE BRACKETS HAVE SPECIAL MEANING IN BASH!
