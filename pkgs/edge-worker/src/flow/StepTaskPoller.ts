@@ -46,7 +46,13 @@ export class StepTaskPoller<TFlow extends AnyFlow>
         this.config.pollIntervalMs
       );
       this.logger.debug(`Retrieved ${tasks.length} flow tasks`);
-      return tasks;
+
+      // This cast is safe because:
+      // 1. The database will only return steps that exist in the flow definition
+      // 2. At runtime, step_slug is just a string regardless of TypeScript's type narrowing
+      // 3. The real type safety comes from the flow definition system, not this type check
+      // 4. Even without the cast, runtime protection would require explicit validation
+      return tasks as unknown as StepTaskRecord<TFlow>[];
     } catch (err: unknown) {
       this.logger.error(`Error polling for flow tasks: ${err}`);
       return [];
