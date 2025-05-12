@@ -2,8 +2,8 @@ begin;
 select plan(4);
 select pgflow_tests.reset_db();
 
--- Load the prune_old_records function
-\i _shared/prune_old_records.sql.raw
+-- Load the prune_data_older_than function
+\i _shared/prune_data_older_than.sql.raw
 
 -- Create test flows
 select pgflow.create_flow('old_failed_flow', max_attempts => 0);
@@ -42,7 +42,7 @@ select is(
 );
 
 -- Prune old records with 30-day retention
-select pgflow.prune_old_records(30);
+select pgflow.prune_data_older_than(30);
 
 -- TEST: Only the old failed flow should be pruned
 select is(

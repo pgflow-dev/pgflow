@@ -1,5 +1,5 @@
 ---
-title: Prune Old Records
+title: prune Old Data
 description: How to maintain your pgflow database by cleaning up old records
 sidebar:
   order: 70
@@ -7,7 +7,7 @@ sidebar:
 
 import { Aside, Steps, Code } from "@astrojs/starlight/components";
 import NotProductionReady from '@/components/NotProductionReady.astro';
-import pruningFunctionCode from '../../../../../core/supabase/tests/_shared/prune_old_records.sql.raw?raw';
+import pruningFunctionCode from '../../../../../core/supabase/tests/_shared/prune_data_older_than.sql.raw?raw';
 
 As your workflows accumulate, pgflow tables gather historical data. While valuable for auditing, keeping this data indefinitely can impact performance and storage costs.
 
@@ -27,16 +27,16 @@ Important: Only records older than the specified retention period are pruned. Ac
 pgflow includes a pruning function that accepts an integer parameter for days of data to keep:
 
 ```sql
-pgflow.prune_old_records(retention_days INTEGER)
+pgflow.prune_data_older_than(retention_days INTEGER)
 ```
 
 Examples:
 ```sql
 -- Keep 30 days of data
-SELECT pgflow.prune_old_records(30);
+SELECT pgflow.prune_data_older_than(30);
 
 -- Keep only 7 days of data
-SELECT pgflow.prune_old_records(7);
+SELECT pgflow.prune_data_older_than(7);
 ```
 
 <Aside type="note">
@@ -60,7 +60,7 @@ For Postgres databases with [pg_cron](https://github.com/citusdata/pg_cron):
     SELECT cron.schedule(
       'pgflow-prune-weekly',
       '0 2 * * 0', -- cron expression: minute hour day month weekday
-      'SELECT pgflow.prune_old_records(28)'
+      'SELECT pgflow.prune_data_older_than(28)'
     );
     ```
 
@@ -82,7 +82,7 @@ If pg_cron isn't available:
 
     ```sql
     -- Keep 90 days of records
-    SELECT pgflow.prune_old_records(90);
+    SELECT pgflow.prune_data_older_than(90);
     ```
 </Steps>
 

@@ -2,8 +2,8 @@ begin;
 select plan(4);
 select pgflow_tests.reset_db();
 
--- Load the prune_old_records function
-\i _shared/prune_old_records.sql.raw
+-- Load the prune_data_older_than function
+\i _shared/prune_data_older_than.sql.raw
 
 -- Create test flows with sequential structure to ensure message archiving
 select pgflow_tests.setup_flow('sequential');
@@ -47,7 +47,7 @@ set archived_at = now() - INTERVAL '5 days'
 where msg_id = (select max(msg_id) from pgmq.a_sequential);
 
 -- Prune with 30-day retention
-select pgflow.prune_old_records(30);
+select pgflow.prune_data_older_than(30);
 
 -- TEST: Only the old archived message should be pruned
 select is(

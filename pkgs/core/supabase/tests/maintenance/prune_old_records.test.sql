@@ -2,8 +2,8 @@ begin;
 select plan(10);
 select pgflow_tests.reset_db();
 
--- Load the prune_old_records function
-\i _shared/prune_old_records.sql.raw
+-- Load the prune_data_older_than function
+\i _shared/prune_data_older_than.sql.raw
 
 -- Create a test flow with one step
 -- Set max_attempts to 0 so the task fails immediately
@@ -74,7 +74,7 @@ select is(
 );
 
 -- PRUNE OLD RECORDS with 7-day retention - this should only prune the old worker
-select pgflow.prune_old_records(7);
+select pgflow.prune_data_older_than(7);
 
 -- TEST: Run pruning with a 7-day retention - only old worker should be pruned
 select is(
@@ -89,7 +89,7 @@ update pgflow.workers
 set last_heartbeat_at = now() - interval '31 days';
 
 -- Execute pruning function
-select pgflow.prune_old_records(30);
+select pgflow.prune_data_older_than(30);
 
 -- TEST: worker record should be pruned
 select is(
@@ -216,7 +216,7 @@ set
 where flow_slug = 'flow_that_failed_recently';
 
 -- Prune old records
-select pgflow.prune_old_records(30);
+select pgflow.prune_data_older_than(30);
 
 -- TEST: verify which flows were pruned and which remain
 select is(

@@ -3,7 +3,7 @@
  *
  * @param retention_days - Number of days of recent records to keep (defaults to 28 days)
  */
-create or replace function pgflow.prune_old_records(
+create or replace function pgflow.prune_data_older_than(
   retention_days INTEGER
 ) returns void language plpgsql as $$
 DECLARE

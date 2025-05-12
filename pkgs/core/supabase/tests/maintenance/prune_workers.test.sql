@@ -2,8 +2,8 @@ begin;
 select plan(4);
 select pgflow_tests.reset_db();
 
--- Load the prune_old_records function
-\i _shared/prune_old_records.sql.raw
+-- Load the prune_data_older_than function
+\i _shared/prune_data_older_than.sql.raw
 
 -- Create workers with different timestamps
 insert into pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
@@ -26,7 +26,7 @@ select is(
 );
 
 -- TEST: Run pruning with a 7-day retention - only old worker should be pruned
-select pgflow.prune_old_records(7);
+select pgflow.prune_data_older_than(7);
 
 select is(
   (select count(*) from pgflow.workers),
