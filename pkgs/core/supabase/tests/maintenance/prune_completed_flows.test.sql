@@ -3,8 +3,7 @@ select plan(4);
 select pgflow_tests.reset_db();
 
 -- Load the prune_old_records function
-\i _shared/prune_old_records.sql
-\i _shared/prune_test_helper.sql
+\i _shared/prune_old_records.sql.raw
 
 -- Create test flows
 select pgflow.create_flow('old_completed_flow', max_attempts => 0);

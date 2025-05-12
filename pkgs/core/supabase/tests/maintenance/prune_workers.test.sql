@@ -3,16 +3,20 @@ select plan(4);
 select pgflow_tests.reset_db();
 
 -- Load the prune_old_records function
-\i _shared/prune_old_records.sql
-\i _shared/prune_test_helper.sql
+\i _shared/prune_old_records.sql.raw
 
 -- Create workers with different timestamps
 insert into pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
 values
-  ('11111111-1111-1111-1111-111111111111', 'old_worker', 'test_function', now() - interval '8 days'),
-  ('22222222-2222-2222-2222-222222222222', 'recent_worker', 'test_function', now()),
-  ('33333333-3333-3333-3333-333333333333', 'edge_case_worker', 'test_function', now() - interval '7 days' + interval '1 minute'),
-  ('44444444-4444-4444-4444-444444444444', 'exact_cutoff_worker', 'test_function', now() - interval '7 days');
+('11111111-1111-1111-1111-111111111111', 'old_worker', 'test_function', now() - interval '8 days'),
+('22222222-2222-2222-2222-222222222222', 'recent_worker', 'test_function', now()),
+(
+  '33333333-3333-3333-3333-333333333333',
+  'edge_case_worker',
+  'test_function',
+  now() - interval '7 days' + interval '1 minute'
+),
+('44444444-4444-4444-4444-444444444444', 'exact_cutoff_worker', 'test_function', now() - interval '7 days');
 
 -- Verify the setup: we should have 4 workers
 select is(

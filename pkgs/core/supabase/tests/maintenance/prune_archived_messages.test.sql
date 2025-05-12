@@ -3,8 +3,7 @@ select plan(4);
 select pgflow_tests.reset_db();
 
 -- Load the prune_old_records function
-\i _shared/prune_old_records.sql
-\i _shared/prune_test_helper.sql
+\i _shared/prune_old_records.sql.raw
 
 -- Create test flows with sequential structure to ensure message archiving
 select pgflow_tests.setup_flow('sequential');
@@ -39,12 +38,12 @@ select is(
 -- Set different timestamps for the archived messages
 -- Make one message old (31 days)
 update pgmq.a_sequential
-set archived_at = now() - interval '31 days'
+set archived_at = now() - INTERVAL '31 days'
 where msg_id = (select min(msg_id) from pgmq.a_sequential);
 
 -- Leave the other message recent (5 days)
 update pgmq.a_sequential
-set archived_at = now() - interval '5 days'
+set archived_at = now() - INTERVAL '5 days'
 where msg_id = (select max(msg_id) from pgmq.a_sequential);
 
 -- Prune with 30-day retention
@@ -59,8 +58,10 @@ select is(
 
 -- TEST: Check that the remaining message is the recent one
 select is(
-  (select (extract(day from now() - archived_at) < 10)::boolean
-   from pgmq.a_sequential),
+  (
+    select (extract(day from now() - archived_at) < 10)::BOOLEAN
+    from pgmq.a_sequential
+  ),
   true,
   'The remaining message should be the recent one'
 );

@@ -3,7 +3,7 @@ select plan(10);
 select pgflow_tests.reset_db();
 
 -- Load the prune_old_records function
-\i _shared/prune_old_records.sql
+\i _shared/prune_old_records.sql.raw
 
 -- Create a test flow with one step
 -- Set max_attempts to 0 so the task fails immediately
@@ -45,7 +45,7 @@ select pgflow_tests.poll_and_complete('flow_that_completed_recently');
 select pgflow.start_flow('flow_that_failed_recently', '{}'::jsonb);
 select pgflow_tests.poll_and_fail('flow_that_failed_recently');
 
--- Start a flow that will remain "running" 
+-- Start a flow that will remain "running"
 select pgflow.start_flow('flow_that_is_still_running', '{}'::jsonb);
 
 -- Verify the setup: we should have 6 runs, 6 step_states, 6 step_tasks, and 2 workers
@@ -88,7 +88,7 @@ select is(
 update pgflow.workers
 set last_heartbeat_at = now() - interval '31 days';
 
--- Execute pruning function 
+-- Execute pruning function
 select pgflow.prune_old_records(30);
 
 -- TEST: worker record should be pruned

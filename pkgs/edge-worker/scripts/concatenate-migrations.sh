@@ -16,7 +16,7 @@ for f in $(find ../core/supabase/migrations -name '*.sql' | sort); do
 done
 
 # And copy the pgflow_tests
-echo "-- From file: seed.sql" >> "$target_file"
-cat "../core/supabase/seed.sql" >> "$target_file"
+echo "-- From file: test_helpers.sql" >> "$target_file"
+cat "../core/supabase/test_helpers.sql" >> "$target_file"
 echo "" >> "$target_file"
 echo "" >> "$target_file"
