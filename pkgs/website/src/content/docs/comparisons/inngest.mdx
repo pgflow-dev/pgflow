@@ -12,13 +12,13 @@ sidebar:
 | **Core Philosophy** | 🔍 Database as orchestrator | 🔍 Durable execution engine |
 | **Infrastructure** | Zero additional (just Supabase) | Hosted service or self-hosted |
 | **Workflow Definition** | TypeScript DSL with explicit dependencies | Step-based functions with checkpoints |
-| **Supabase Integration** | Native | ⚠️ Possible but not optimized |
+| **Supabase Integration** | Built-in | Requires manual configuration |
 | **Type Safety** | Complete end-to-end | Via standard TypeScript |
 | **Retry & Recovery** | Automatic per step | Automatic per step |
 | **Execution Model** | Database-driven DAG | Linear step-by-step with state persistence |
 | **Step State** | Input/output data stored in database | Input/output memoized in execution service |
 | **Wait/Sleep** | Not directly supported (use pgcron) | Built-in sleep and waitForEvent capabilities |
-| **Production Readiness** | ⚠️ MVP/Early stage | Production-ready |
+| **Production Readiness** | pgflow is in active development | Production-ready |
 | **Dashboard** | None (SQL queries for visibility) | Comprehensive web dashboard |
 | **Concurrency Control** | Simple per-flow limits | Advanced throttling and concurrency controls |
 | **Event System** | No built-in event system | Rich event-driven architecture |

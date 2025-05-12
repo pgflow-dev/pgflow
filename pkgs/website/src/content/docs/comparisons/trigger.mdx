@@ -12,12 +12,12 @@ sidebar:
 | **Core Philosophy** | 🔍 Database as orchestrator | 🔍 Background job execution and orchestration |
 | **Infrastructure** | Zero additional (just Supabase) | Hosted service with dashboard or self-hosted |
 | **Workflow Definition** | TypeScript DSL with explicit dependencies | TypeScript functions with tasks and subtasks |
-| **Supabase Integration** | Native | ⚠️ Possible but not native |
+| **Supabase Integration** | Built-in | Requires manual configuration |
 | **Type Safety** | Complete end-to-end | Via standard TypeScript |
 | **Retry & Recovery** | Automatic per step | Configurable per task |
 | **Lifecycle Hooks** | No explicit hooks | Rich hooks (init, cleanup, onSuccess, onFailure) |
 | **Learning Curve** | New DSL to learn | Function-based API with lifecycle hooks |
-| **Production Readiness** | ⚠️ MVP/Early stage | Production-ready |
+| **Production Readiness** | pgflow is in active development | Production-ready |
 | **Dashboard** | None (SQL queries for visibility) | Comprehensive web dashboard |
 | **Execution Model** | Database-driven DAG | Task/subtask hierarchy |
 | **Concurrency Control** | Simple per-flow limits | Advanced queues and limits |
