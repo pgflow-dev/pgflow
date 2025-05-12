@@ -12,19 +12,21 @@ sidebar:
 | **Core Philosophy** | 🔍 Database as orchestrator | 🔍 Application code with durability |
 | **SQL Transactions** | Any SQL client in steps | Via `@DBOS.transaction()` decorator |
 | **Workflow Definition** | TypeScript DSL with explicit dependencies | Function annotations with regular code flow |
-| **Supabase Integration** | Built-in | Requires manual configuration |
+| **Supabase Integration** | Built-in | Limited compatibility with Supabase Edge Functions¹ |
 | **Infrastructure Requirements** | Zero additional (just Supabase) | DBOS operates as a lightweight library without additional infrastructure |
 | **Type Safety** | Complete end-to-end | Via standard TypeScript |
 | **Retry & Recovery** | Automatic per step | DBOS supports step retries (configurable) and workflow-level recovery |
 | **Learning Curve** | New DSL to learn | New decorator pattern to learn |
 | **Production Readiness** | pgflow is in active development | Production-ready |
 
+<small>*¹ The DBOS documentation doesn't explicitly mention Deno compatibility. Analysis of the dbos-transact-ts package shows it relies on Node.js-specific APIs (primarily through the pg package) that would be challenging to run in Deno/Edge Functions environments.*</small>
+
 Both systems provide reliable database operations with proper transaction handling and exactly-once semantics - the key difference is who controls the workflow: the database (pgflow) or your code (DBOS).
 
 ## When to Choose
 
 ### pgflow
-- **Building on Supabase** - Native integration with zero additional infrastructure 
+- **Building on Supabase** - Built-in integration with zero additional infrastructure, fully compatible with Edge Functions
 - **Working with data pipelines & ETL** - Automatic parallel processing based on data dependencies
 - **Building graph-like workflows** - Multiple steps with complex dependency relationships
 - **Need explicit data flow** - Step dependencies are clearly visible in the workflow definition
@@ -34,8 +36,9 @@ Both systems provide reliable database operations with proper transaction handli
 - **Enhancing existing applications** - Add durability to your code with minimal changes
 - **Using standard coding patterns** - Keep working with familiar TypeScript control flow
 - **Need production-ready solution** - Benefit from a battle-tested implementation
-- **Working across environments** - Need to run in diverse PostgreSQL setups (not just Supabase)
+- **Working across Node.js environments** - Run in diverse PostgreSQL setups (Note: limited compatibility with Deno/Edge Functions)
 - **Want incremental adoption** - Add workflow capabilities to specific parts of your application
+- **Building Node.js applications** - Ideal for Node.js applications with standard Node.js PostgreSQL clients
 
 ## Code Examples
 
