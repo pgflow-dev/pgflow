@@ -1,6 +1,6 @@
 create or replace function pgflow.get_run_with_states(
   run_id UUID
-) returns jsonb as $$
+) returns JSONB as $$
   SELECT jsonb_build_object(
     'run', to_jsonb(r),
     'steps', COALESCE(jsonb_agg(to_jsonb(s)) FILTER (WHERE s.run_id IS NOT NULL), '[]'::jsonb)
