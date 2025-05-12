@@ -95,7 +95,7 @@
     },
     "db:ensure": {
       "executor": "nx:run-commands",
-      "dependsOn": ["^verify-migrations"],
+      "dependsOn": ["^verify-migrations", "^dump-realtime-schema"],
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": ["./scripts/ensure-db"],
