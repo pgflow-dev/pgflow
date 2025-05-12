@@ -9,30 +9,50 @@ import { Aside, Steps, Code } from "@astrojs/starlight/components";
 import NotProductionReady from '@/components/NotProductionReady.astro';
 import pruningFunctionCode from '../../../../../core/supabase/tests/_shared/prune_old_records.sql.raw?raw';
 
-<NotProductionReady />
-
-## Pruning Old Records
-
-As your application runs more and more workflows, your pgflow tables will accumulate historical data. While this data is valuable for auditing and debugging, keeping it indefinitely can lead to performance degradation and increased storage costs. This guide explains how to implement a maintenance routine to prune old records from your pgflow tables.
+As your workflows accumulate, pgflow tables gather historical data. While valuable for auditing, keeping this data indefinitely can impact performance and storage costs.
 
 <Aside type="note" title="What gets pruned">
-The pruning function removes completed and failed records from the following tables:
+The pruning function removes completed and failed records from:
 - `pgflow.workers` - Inactive worker records
 - `pgflow.step_tasks` - Completed or failed task records
 - `pgflow.step_states` - Completed or failed step state records
 - `pgflow.runs` - Completed or failed workflow run records
+- `pgmq.a_{flow_slug}` - Archived messages from PGMQ tables
+
+Important: Only records older than the specified retention period are pruned. Active or running records are never removed regardless of age.
+</Aside>
+
+## Understanding the Pruning Function
+
+pgflow includes a pruning function that accepts an integer parameter for days of data to keep:
+
+```sql
+pgflow.prune_old_records(retention_days INTEGER)
+```
+
+Examples:
+```sql
+-- Keep 30 days of data
+SELECT pgflow.prune_old_records(30);
+
+-- Keep only 7 days of data
+SELECT pgflow.prune_old_records(7);
+```
+
+<Aside type="note">
+This function is not yet included in the default pgflow migrations as I'm still evaluating how users will implement data retention. However, it has been thoroughly unit tested to work correctly. You'll need to manually add it to your project as shown below.
 </Aside>
 
 ## Implementation Options
 
 ### Option 1: Using pg_cron (Recommended)
 
-For Postgres databases that support the [pg_cron](https://github.com/citusdata/pg_cron) extension, you can schedule automatic pruning:
+For Postgres databases with [pg_cron](https://github.com/citusdata/pg_cron):
 
 <Steps>
 1. Install the pruning function by adding the SQL below to a migration file
 
-2. Create a scheduled job using pg_cron
+2. Schedule automated pruning
 
     ```sql
     -- Schedule weekly pruning (every Sunday at 2 AM)
@@ -40,40 +60,38 @@ For Postgres databases that support the [pg_cron](https://github.com/citusdata/p
     SELECT cron.schedule(
       'pgflow-prune-weekly',
       '0 2 * * 0', -- cron expression: minute hour day month weekday
-      'SELECT * FROM pgflow.prune_old_records(28)'
+      'SELECT pgflow.prune_old_records(28)'
     );
     ```
 
 3. Verify the scheduled job
 
     ```sql
-    -- Check that the job is scheduled
     SELECT * FROM cron.job;
     ```
 </Steps>
 
 ### Option 2: Manual Execution
 
-If you don't have pg_cron available, you can:
+If pg_cron isn't available:
 
 <Steps>
 1. Install the pruning function by adding the SQL below to a migration file
 
-2. Run the function manually or from your application code when needed:
+2. Run manually when needed:
 
     ```sql
     -- Keep 90 days of records
-    SELECT * FROM pgflow.prune_old_records(90);
-    -- Returns the count of deleted records from each table
+    SELECT pgflow.prune_old_records(90);
     ```
 </Steps>
 
 ## The Pruning Function
 
-Add this SQL function to a migration file in your project:
+Add this SQL function to a migration file:
 
 <Code lang="sql" code={pruningFunctionCode} />
 
 <Aside type="tip" title="Performance Impact">
-For very large pgflow tables, consider running the pruning function during off-peak hours as it performs DELETE operations that could impact database performance.
+For large pgflow tables, run pruning during off-peak hours as it performs DELETE operations that could impact database performance.
 </Aside>
