@@ -24,6 +24,7 @@
   "targets": {
     "verify-schemas-synced": {
       "executor": "nx:run-commands",
+      "dependsOn": ["supabase:ensure-started"],
       "inputs": [
         "schemas",
         "migrations",
