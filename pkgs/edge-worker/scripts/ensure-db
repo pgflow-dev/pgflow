@@ -1,0 +1,28 @@
+#!/bin/bash
+set -e
+
+# Clean up any existing containers
+echo "Shutting down existing database containers..."
+docker compose -f tests/db/compose.yaml down --volumes --remove-orphans
+
+# Clean migrations
+echo "Cleaning migrations..."
+rm -f tests/db/migrations/*.sql || true
+
+# Copy migrations
+echo "Copying migrations..."
+./scripts/concatenate-migrations.sh
+
+# Start fresh containers
+echo "Starting database..."
+docker compose -f tests/db/compose.yaml up --detach
+
+# Wait for database to be ready
+echo "Waiting for database to be available..."
+./scripts/wait-for-localhost 5432
+
+# Additional pause to ensure database is fully initialized
+echo "Waiting for database initialization..."
+sleep 5
+
+echo "Database is ready!"
