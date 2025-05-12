@@ -98,7 +98,7 @@
       "dependsOn": ["^verify-migrations"],
       "options": {
         "cwd": "pkgs/edge-worker",
-        "commands": ["deno task --config deno.test.json db:ensure"],
+        "commands": ["./scripts/ensure-db"],
         "parallel": false
       }
     },
