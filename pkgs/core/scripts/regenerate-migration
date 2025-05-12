@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # Check if migration name is provided
 if [ -z "$1" ]; then

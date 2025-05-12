@@ -1,21 +1,26 @@
 #!/bin/bash
+set -e
 
-# Run atlas schema diff and capture output
-output=$(atlas schema diff \
-  --config file://atlas/atlas.hcl \
-  --env local \
-  --from file://supabase/migrations \
-  --to file://schemas/)
+# First, ensure the baseline schema file is updated
+./scripts/atlas-dump-realtime-schema
+
+# Use a simple fixed temporary name
+temp_migration="temp_verify_schemas"
+
+# Run atlas migrate diff and capture output
+output=$(atlas migrate diff --config file://atlas/atlas.hcl --env local "$temp_migration" 2>&1)
 
 # Print the output
 echo "$output"
 
-# Check if the output contains the "Schemas are synced" message
-if [[ "$output" == *"Schemas are synced"* ]]; then
-  # Schemas are synced, exit with success code
-  exit 0
-else
-  # Schemas are not synced, exit with error code
+# Check if migration file was created (indicates changes exist)
+if ls supabase/migrations/*_"$temp_migration".sql 1> /dev/null 2>&1; then
+  # Remove temporary migration file
+  rm supabase/migrations/*_"$temp_migration".sql
   echo "Error: Schemas are not synced. Please update migrations or schemas."
   exit 1
+else
+  # No migration created means schemas are synced
+  echo "Schemas are synced"
+  exit 0
 fi
