@@ -22,6 +22,17 @@
     "databaseTypes": ["{projectRoot}/src/database-types.ts"]
   },
   "targets": {
+    "dump-realtime-schema": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["supabase:ensure-started"],
+      "outputs": ["{projectRoot}/atlas/.supabase-baseline-schema.sql"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["scripts/atlas-dump-realtime-schema"],
+        "parallel": false
+      },
+      "cache": true
+    },
     "verify-schemas-synced": {
       "executor": "nx:run-commands",
       "dependsOn": ["supabase:ensure-started"],
