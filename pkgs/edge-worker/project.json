@@ -32,7 +32,7 @@
       "executor": "@axhxrx/nx-deno:lint",
       "options": {
         "denoConfig": "pkgs/edge-worker/deno.test.json",
-        "ignore": "pkgs/edge-worker/supabase/functions/_src/"
+        "ignore": "pkgs/edge-worker/supabase/functions/_dist/"
       }
     },
     "supabase:start": {
