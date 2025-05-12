@@ -26,7 +26,7 @@ select is(
 );
 
 -- TEST: Run pruning with a 7-day retention - only old worker should be pruned
-select pgflow.prune_data_older_than(7);
+select pgflow.prune_data_older_than(make_interval(days => 7));
 
 select is(
   (select count(*) from pgflow.workers),

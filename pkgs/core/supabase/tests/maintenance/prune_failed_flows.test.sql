@@ -42,7 +42,7 @@ select is(
 );
 
 -- Prune old records with 30-day retention
-select pgflow.prune_data_older_than(30);
+select pgflow.prune_data_older_than(make_interval(days => 30));
 
 -- TEST: Only the old failed flow should be pruned
 select is(
