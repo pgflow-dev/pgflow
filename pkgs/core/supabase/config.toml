@@ -9,7 +9,7 @@ major_version = 15
 [db.seed]
 enabled = true
 sql_paths = [
-  "test_helpers.sql",
+  "seed.sql",
 ]
 
 [api]
