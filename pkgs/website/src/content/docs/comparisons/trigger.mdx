@@ -7,21 +7,21 @@ sidebar:
 
 ## Features
 
-| Feature | pgflow | Trigger.dev |
-|---------|--------|-------------|
-| **Core Philosophy** | 🔍 Database as orchestrator | 🔍 Background job execution and orchestration |
-| **Infrastructure** | Zero additional (just Supabase) | Hosted service with dashboard or self-hosted |
+| Technical Criteria | pgflow | Trigger.dev |
+|-----------------|--------|-------------|
+| **Architecture Model** | Database-centric orchestration | Background job execution and orchestration |
+| **Infrastructure Requirements** | Zero additional (just Supabase) | Hosted service with dashboard or self-hosted |
 | **Workflow Definition** | TypeScript DSL with explicit dependencies | TypeScript functions with tasks and subtasks |
 | **Supabase Integration** | Built-in | Requires manual configuration |
-| **Type Safety** | Complete end-to-end | Via standard TypeScript |
-| **Retry & Recovery** | Automatic per step | Configurable per task |
-| **Lifecycle Hooks** | No explicit hooks | Rich hooks (init, cleanup, onSuccess, onFailure) |
-| **Learning Curve** | New DSL to learn | Function-based API with lifecycle hooks |
-| **Production Readiness** | pgflow is in active development | Production-ready |
-| **Dashboard** | None (SQL queries for visibility) | Comprehensive web dashboard |
-| **Execution Model** | Database-driven DAG | Task/subtask hierarchy |
-| **Concurrency Control** | Simple per-flow limits | Advanced queues and limits |
-| **Scheduler** | Built into Supabase (pg_cron) | Built-in cron scheduler |
+| **Type System** | End-to-end type safety | Standard TypeScript typing |
+| **Failure Handling** | Automatic per-step retries | Configurable per-task retries |
+| **Event Handling** | No explicit hooks | Rich hooks (init, cleanup, onSuccess, onFailure) |
+| **Developer Experience** | DSL-based API | Function-based API with lifecycle hooks |
+| **Maturity Level** | Active development | Production-ready |
+| **Monitoring Tools** | SQL queries for visibility | Comprehensive web dashboard |
+| **Execution Structure** | Database-driven DAG | Task/subtask hierarchy |
+| **Concurrency Management** | Simple per-flow limits | Advanced queues and limits |
+| **Scheduling Capabilities** | Built into Supabase (pg_cron) | Built-in cron scheduler |
 
 Both systems provide reliable task execution with proper retries and error handling. The key difference is who controls the workflow orchestration: the database (pgflow) or the task execution platform (Trigger.dev).
 

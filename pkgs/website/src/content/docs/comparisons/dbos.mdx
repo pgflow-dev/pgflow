@@ -7,17 +7,17 @@ sidebar:
 
 ## Features
 
-| Feature | pgflow | DBOS |
-|---------|--------|------|
-| **Core Philosophy** | 🔍 Database as orchestrator | 🔍 Application code with durability |
-| **SQL Transactions** | Any SQL client in steps | Via `@DBOS.transaction()` decorator |
+| Technical Criteria | pgflow | DBOS |
+|-----------------|--------|------|
+| **Architecture Model** | Database-centric orchestration | Application code with durability |
+| **Transaction Handling** | Any SQL client in steps | Via `@DBOS.transaction()` decorator |
 | **Workflow Definition** | TypeScript DSL with explicit dependencies | Function annotations with regular code flow |
 | **Supabase Integration** | Built-in | Limited compatibility with Supabase Edge Functions¹ |
-| **Infrastructure Requirements** | Zero additional (just Supabase) | DBOS operates as a lightweight library without additional infrastructure |
-| **Type Safety** | Complete end-to-end | Via standard TypeScript |
-| **Retry & Recovery** | Automatic per step | DBOS supports step retries (configurable) and workflow-level recovery |
-| **Learning Curve** | New DSL to learn | New decorator pattern to learn |
-| **Production Readiness** | pgflow is in active development | Production-ready |
+| **Infrastructure Requirements** | Zero additional (just Supabase) | Lightweight library without additional infrastructure |
+| **Type System** | End-to-end type safety | Standard TypeScript typing |
+| **Failure Handling** | Automatic per-step retries | Configurable step retries and workflow-level recovery |
+| **Developer Experience** | DSL-based API | Decorator-based API |
+| **Maturity Level** | Active development | Production-ready |
 
 <small>*¹ The DBOS documentation doesn't explicitly mention Deno compatibility. Analysis of the dbos-transact-ts package shows it relies on Node.js-specific APIs (primarily through the pg package) that would be challenging to run in Deno/Edge Functions environments.*</small>
 

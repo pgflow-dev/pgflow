@@ -7,20 +7,20 @@ sidebar:
 
 ## Features
 
-| Feature | pgflow | Inngest |
-|---------|--------|---------|
-| **Core Philosophy** | 🔍 Database as orchestrator | 🔍 Durable execution engine |
-| **Infrastructure** | Zero additional (just Supabase) | Hosted service or self-hosted |
+| Technical Criteria | pgflow | Inngest |
+|-----------------|--------|---------|
+| **Architecture Model** | Database-centric orchestration | Durable execution engine |
+| **Infrastructure Requirements** | Zero additional (just Supabase) | Hosted service or self-hosted |
 | **Workflow Definition** | TypeScript DSL with explicit dependencies | Step-based functions with checkpoints |
 | **Supabase Integration** | Built-in | Requires manual configuration |
-| **Type Safety** | Complete end-to-end | Via standard TypeScript |
-| **Retry & Recovery** | Automatic per step | Automatic per step |
-| **Execution Model** | Database-driven DAG | Linear step-by-step with state persistence |
-| **Step State** | Input/output data stored in database | Input/output memoized in execution service |
-| **Wait/Sleep** | Not directly supported (use pgcron) | Built-in sleep and waitForEvent capabilities |
-| **Production Readiness** | pgflow is in active development | Production-ready |
-| **Dashboard** | None (SQL queries for visibility) | Comprehensive web dashboard |
-| **Concurrency Control** | Simple per-flow limits | Advanced throttling and concurrency controls |
+| **Type System** | End-to-end type safety | Standard TypeScript typing |
+| **Failure Handling** | Automatic per-step retries | Automatic per-step retries |
+| **Execution Structure** | Database-driven DAG | Linear step-by-step with state persistence |
+| **State Management** | Input/output data stored in database | Input/output memoized in execution service |
+| **Time-based Operations** | Via Supabase pg_cron | Built-in sleep and waitForEvent capabilities |
+| **Maturity Level** | Active development | Production-ready |
+| **Monitoring Tools** | SQL queries for visibility | Comprehensive web dashboard |
+| **Concurrency Management** | Simple per-flow limits | Advanced throttling and concurrency controls |
 | **Event System** | No built-in event system | Rich event-driven architecture |
 
 Both systems provide reliable task execution with proper retries and error handling. The key difference is who controls the workflow orchestration: the database (pgflow) or a durable execution engine (Inngest).
