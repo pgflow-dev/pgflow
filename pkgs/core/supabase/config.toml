@@ -8,6 +8,9 @@ major_version = 15
 # disable unused features
 [db.seed]
 enabled = true
+sql_paths = [
+  "test_helpers.sql",
+]
 
 [api]
 port = 50421  # Add custom port for Kong

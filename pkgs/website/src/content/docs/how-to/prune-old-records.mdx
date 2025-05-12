@@ -1,0 +1,89 @@
+---
+title: Prune Old Data
+description: How to maintain your pgflow database by cleaning up old records
+sidebar:
+  order: 70
+---
+
+import { Aside, Steps, Code } from "@astrojs/starlight/components";
+import NotProductionReady from '@/components/NotProductionReady.astro';
+import pruningFunctionCode from '../../../../../core/supabase/tests/_shared/prune_data_older_than.sql.raw?raw';
+
+As your workflows accumulate, pgflow tables gather historical data. While valuable for auditing, keeping this data indefinitely can impact performance and storage costs.
+
+<Aside type="note" title="What gets pruned">
+The pruning function removes completed and failed records from:
+- `pgflow.workers` - Inactive worker records
+- `pgflow.step_tasks` - Completed or failed task records
+- `pgflow.step_states` - Completed or failed step state records
+- `pgflow.runs` - Completed or failed workflow run records
+- `pgmq.a_{flow_slug}` - Archived messages from PGMQ tables
+
+Important: Only records older than the specified retention period are pruned. Active or running records are never removed regardless of age.
+</Aside>
+
+## Using the Pruning Function
+
+pgflow includes a pruning function that accepts an INTERVAL parameter specifying how much data to keep:
+
+```sql
+pgflow.prune_data_older_than(retention_interval INTERVAL)
+```
+
+Examples:
+```sql
+-- Keep 30 days of data using make_interval
+SELECT pgflow.prune_data_older_than(make_interval(days => 30));
+
+-- Keep 7 days of data
+SELECT pgflow.prune_data_older_than(make_interval(days => 7));
+
+-- Keep 3 months of data using interval literals
+SELECT pgflow.prune_data_older_than(INTERVAL '3 months');
+
+-- Keep 2 weeks
+SELECT pgflow.prune_data_older_than(INTERVAL '2 weeks');
+```
+
+<Aside type="caution">
+This function is not yet included in the default pgflow migrations since pgflow is still in early development and I'm learning how users interact with it. It has been thoroughly unit tested, but you'll need to manually add it to your project as shown in the <a href="#the-pruning-function">Pruning Function</a> section below.
+</Aside>
+
+## Running periodically
+
+You can use pg_cron to schedule automated pruning.
+
+<Aside type="tip" title="Performance Impact">
+Make sure to adjust intervals and time of pruning based on size of your tables and queues!
+</Aside>
+
+### 1. Install the pruning function
+
+Create a new migration and paste [contents of the pruning function](#the-pruning-function),
+then run `supabase migrations up`.
+
+### 2. Setup pg_cron schedule
+
+Run it in Supabase Studio or include in a migration file:
+
+```sql
+-- Schedule weekly pruning (every Sunday at 2 AM)
+-- This keeps 28 days of data (adjust as needed)
+SELECT cron.schedule(
+  'pgflow-prune-weekly',
+  '0 2 * * 0', -- cron expression: minute hour day month weekday
+  $$SELECT pgflow.prune_data_older_than(make_interval(days => 28))$$
+);
+```
+
+##### Verify the scheduled job
+
+```sql
+SELECT * FROM cron.job;
+```
+
+## The Pruning Function
+
+Add this SQL function to a migration file:
+
+<Code lang="sql" code={pruningFunctionCode} />
