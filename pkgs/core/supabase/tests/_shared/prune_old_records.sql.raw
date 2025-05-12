@@ -4,7 +4,7 @@
  * @param retention_days - Number of days of recent records to keep (defaults to 28 days)
  */
 create or replace function pgflow.prune_old_records(
-  retention_days INTEGER default 28
+  retention_days INTEGER
 ) returns void language plpgsql as $$
 DECLARE
   cutoff_timestamp TIMESTAMPTZ := now() - (retention_days * INTERVAL '1 day');
@@ -15,35 +15,35 @@ BEGIN
   -- Delete old worker records
   DELETE FROM pgflow.workers
   WHERE last_heartbeat_at < cutoff_timestamp;
-  
+
   -- Delete old step_tasks records
   DELETE FROM pgflow.step_tasks
   WHERE (
     (completed_at IS NOT NULL AND completed_at < cutoff_timestamp) OR
     (failed_at IS NOT NULL AND failed_at < cutoff_timestamp)
   );
-  
+
   -- Delete old step_states records
   DELETE FROM pgflow.step_states
   WHERE (
     (completed_at IS NOT NULL AND completed_at < cutoff_timestamp) OR
     (failed_at IS NOT NULL AND failed_at < cutoff_timestamp)
   );
-  
+
   -- Delete old runs records
   DELETE FROM pgflow.runs
   WHERE (
     (completed_at IS NOT NULL AND completed_at < cutoff_timestamp) OR
     (failed_at IS NOT NULL AND failed_at < cutoff_timestamp)
   );
-  
+
   -- Prune archived messages from PGMQ archive tables (pgmq.a_{flow_slug})
   -- For each flow, delete old archived messages
   FOR flow_record IN SELECT DISTINCT flow_slug FROM pgflow.flows
   LOOP
     -- Build the archive table name
     archive_table := pgmq.format_table_name(flow_record.flow_slug, 'a');
-    
+
     -- Check if the archive table exists
     IF EXISTS (
       SELECT 1 FROM information_schema.tables
@@ -54,7 +54,7 @@ BEGIN
         DELETE FROM pgmq.%I
         WHERE archived_at < $1
       ', archive_table);
-      
+
       EXECUTE dynamic_sql USING cutoff_timestamp;
     END IF;
   END LOOP;
