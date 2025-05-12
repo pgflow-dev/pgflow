@@ -1,5 +1,5 @@
 ---
-title: prune Old Data
+title: Prune Old Data
 description: How to maintain your pgflow database by cleaning up old records
 sidebar:
   order: 70
@@ -22,76 +22,68 @@ The pruning function removes completed and failed records from:
 Important: Only records older than the specified retention period are pruned. Active or running records are never removed regardless of age.
 </Aside>
 
-## Understanding the Pruning Function
+## Using the Pruning Function
 
-pgflow includes a pruning function that accepts an integer parameter for days of data to keep:
+pgflow includes a pruning function that accepts an INTERVAL parameter specifying how much data to keep:
 
 ```sql
-pgflow.prune_data_older_than(retention_days INTEGER)
+pgflow.prune_data_older_than(retention_interval INTERVAL)
 ```
 
 Examples:
 ```sql
--- Keep 30 days of data
-SELECT pgflow.prune_data_older_than(30);
+-- Keep 30 days of data using make_interval
+SELECT pgflow.prune_data_older_than(make_interval(days => 30));
 
--- Keep only 7 days of data
-SELECT pgflow.prune_data_older_than(7);
+-- Keep 7 days of data
+SELECT pgflow.prune_data_older_than(make_interval(days => 7));
+
+-- Keep 3 months of data using interval literals
+SELECT pgflow.prune_data_older_than(INTERVAL '3 months');
+
+-- Keep 2 weeks
+SELECT pgflow.prune_data_older_than(INTERVAL '2 weeks');
 ```
 
-<Aside type="note">
-This function is not yet included in the default pgflow migrations as I'm still evaluating how users will implement data retention. However, it has been thoroughly unit tested to work correctly. You'll need to manually add it to your project as shown below.
+<Aside type="caution">
+This function is not yet included in the default pgflow migrations since pgflow is still in early development and I'm learning how users interact with it. It has been thoroughly unit tested, but you'll need to manually add it to your project as shown in the <a href="#the-pruning-function">Pruning Function</a> section below.
 </Aside>
 
-## Implementation Options
+## Running periodically
 
-### Option 1: Using pg_cron (Recommended)
+You can use pg_cron to schedule automated pruning.
 
-For Postgres databases with [pg_cron](https://github.com/citusdata/pg_cron):
+<Aside type="tip" title="Performance Impact">
+Make sure to adjust intervals and time of pruning based on size of your tables and queues!
+</Aside>
 
-<Steps>
-1. Install the pruning function by adding the SQL below to a migration file
+### 1. Install the pruning function
 
-2. Schedule automated pruning
+Create a new migration and paste [contents of the pruning function](#the-pruning-function),
+then run `supabase migrations up`.
 
-    ```sql
-    -- Schedule weekly pruning (every Sunday at 2 AM)
-    -- This keeps 28 days of data (adjust as needed)
-    SELECT cron.schedule(
-      'pgflow-prune-weekly',
-      '0 2 * * 0', -- cron expression: minute hour day month weekday
-      'SELECT pgflow.prune_data_older_than(28)'
-    );
-    ```
+### 2. Setup pg_cron schedule
 
-3. Verify the scheduled job
+Run it in Supabase Studio or include in a migration file:
 
-    ```sql
-    SELECT * FROM cron.job;
-    ```
-</Steps>
+```sql
+-- Schedule weekly pruning (every Sunday at 2 AM)
+-- This keeps 28 days of data (adjust as needed)
+SELECT cron.schedule(
+  'pgflow-prune-weekly',
+  '0 2 * * 0', -- cron expression: minute hour day month weekday
+  $$SELECT pgflow.prune_data_older_than(make_interval(days => 28))$$
+);
+```
 
-### Option 2: Manual Execution
+##### Verify the scheduled job
 
-If pg_cron isn't available:
-
-<Steps>
-1. Install the pruning function by adding the SQL below to a migration file
-
-2. Run manually when needed:
-
-    ```sql
-    -- Keep 90 days of records
-    SELECT pgflow.prune_data_older_than(90);
-    ```
-</Steps>
+```sql
+SELECT * FROM cron.job;
+```
 
 ## The Pruning Function
 
 Add this SQL function to a migration file:
 
 <Code lang="sql" code={pruningFunctionCode} />
-
-<Aside type="tip" title="Performance Impact">
-For large pgflow tables, run pruning during off-peak hours as it performs DELETE operations that could impact database performance.
-</Aside>

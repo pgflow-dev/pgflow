@@ -74,7 +74,7 @@ select is(
 );
 
 -- PRUNE OLD RECORDS with 7-day retention - this should only prune the old worker
-select pgflow.prune_data_older_than(7);
+select pgflow.prune_data_older_than(make_interval(days => 7));
 
 -- TEST: Run pruning with a 7-day retention - only old worker should be pruned
 select is(
@@ -89,7 +89,7 @@ update pgflow.workers
 set last_heartbeat_at = now() - interval '31 days';
 
 -- Execute pruning function
-select pgflow.prune_data_older_than(30);
+select pgflow.prune_data_older_than(make_interval(days => 30));
 
 -- TEST: worker record should be pruned
 select is(
@@ -216,7 +216,7 @@ set
 where flow_slug = 'flow_that_failed_recently';
 
 -- Prune old records
-select pgflow.prune_data_older_than(30);
+select pgflow.prune_data_older_than(make_interval(days => 30));
 
 -- TEST: verify which flows were pruned and which remain
 select is(

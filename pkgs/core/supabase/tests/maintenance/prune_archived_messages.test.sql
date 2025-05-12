@@ -47,7 +47,7 @@ set archived_at = now() - INTERVAL '5 days'
 where msg_id = (select max(msg_id) from pgmq.a_sequential);
 
 -- Prune with 30-day retention
-select pgflow.prune_data_older_than(30);
+select pgflow.prune_data_older_than(make_interval(days => 30));
 
 -- TEST: Only the old archived message should be pruned
 select is(

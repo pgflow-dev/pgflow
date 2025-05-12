@@ -1,13 +1,13 @@
 /**
  * Prunes old records from pgflow tables and PGMQ archive tables.
  *
- * @param retention_days - Number of days of recent records to keep (defaults to 28 days)
+ * @param retention_interval - Interval of recent records to keep (e.g., interval '28 days', interval '3 months')
  */
 create or replace function pgflow.prune_data_older_than(
-  retention_days INTEGER
+  retention_interval INTERVAL
 ) returns void language plpgsql as $$
 DECLARE
-  cutoff_timestamp TIMESTAMPTZ := now() - (retention_days * INTERVAL '1 day');
+  cutoff_timestamp TIMESTAMPTZ := now() - retention_interval;
   flow_record RECORD;
   archive_table TEXT;
   dynamic_sql TEXT;
