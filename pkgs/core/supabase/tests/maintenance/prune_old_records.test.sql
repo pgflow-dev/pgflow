@@ -24,7 +24,9 @@ select pgflow.add_step('flow_that_failed_recently', 'step');
 
 -- Create a worker to test pruning
 insert into pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
-values ('11111111-1111-1111-1111-111111111111', 'test_queue', 'test_function', now());
+values ('11111111-1111-1111-1111-111111111111', 'old_worker', 'test_function', now() - interval '8 days'),
+('22222222-1111-1111-1111-111111111111', 'recent_worker', 'test_function', now());
+
 
 -- Start and complete two flows
 select pgflow.start_flow('flow_that_completes', '{}'::jsonb);
@@ -61,8 +63,8 @@ select is(
 
 select is(
   (select count(*) from pgflow.workers),
-  1::bigint,
-  'Should have 1 worker'
+  2::bigint,
+  'Should have 2 worker'
 );
 
 -- PRUNE OLD RECORDS
@@ -73,7 +75,7 @@ select pgflow.prune_old_records(7);
 select is(
   (select count(*) from pgflow.workers),
   1::bigint,
-  'No workers should be pruned with 7-day retention'
+  'Only old worker should be pruned and one worker should be left'
 );
 
 select is(
@@ -142,7 +144,7 @@ where flow_slug = 'flow_that_completes';
 update pgflow.step_tasks
 set
   queued_at = now() - interval '30 days',
-  completed_at = now() - interval '29 days',
+  completed_at = now() - interval '30 days',
   status = 'completed'
 where flow_slug = 'flow_that_completed_recently';
 
@@ -150,7 +152,7 @@ update pgflow.step_states
 set
   created_at = now() - interval '31 days',
   started_at = now() - interval '30 days',
-  completed_at = now() - interval '29 days',
+  completed_at = now() - interval '30 days',
   status = 'completed',
   remaining_tasks = 0
 where flow_slug = 'flow_that_completed_recently';
@@ -158,7 +160,7 @@ where flow_slug = 'flow_that_completed_recently';
 update pgflow.runs
 set
   started_at = now() - interval '31 days',
-  completed_at = now() - interval '29 days',
+  completed_at = now() - interval '30 days',
   status = 'completed',
   remaining_steps = 0
 where flow_slug = 'flow_that_completed_recently';
@@ -191,20 +193,20 @@ where flow_slug = 'flow_that_fails';
 update pgflow.step_tasks
 set
   queued_at = now() - interval '30 days',
-  failed_at = now() - interval '29 days'
+  failed_at = now() - interval '30 days'
 where flow_slug = 'flow_that_failed_recently';
 
 update pgflow.step_states
 set
   created_at = now() - interval '31 days',
   started_at = now() - interval '30 days',
-  failed_at = now() - interval '29 days'
+  failed_at = now() - interval '30 days'
 where flow_slug = 'flow_that_failed_recently';
 
 update pgflow.runs
 set
   started_at = now() - interval '31 days',
-  failed_at = now() - interval '29 days'
+  failed_at = now() - interval '30 days'
 where flow_slug = 'flow_that_failed_recently';
 
 -- prune old records

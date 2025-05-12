@@ -1,0 +1,157 @@
+---
+title: Prune Old Records
+description: How to maintain your pgflow database by cleaning up old records
+sidebar:
+  order: 70
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+import NotProductionReady from '@/components/NotProductionReady.astro';
+
+<NotProductionReady />
+
+## Pruning Old Records
+
+As your application runs more and more workflows, your pgflow tables will accumulate historical data. While this data is valuable for auditing and debugging, keeping it indefinitely can lead to performance degradation and increased storage costs. This guide explains how to implement a maintenance routine to prune old records from your pgflow tables.
+
+<Aside type="note" title="What gets pruned">
+The pruning function removes completed and failed records from the following tables:
+- `pgflow.workers` - Inactive worker records
+- `pgflow.step_tasks` - Completed or failed task records
+- `pgflow.step_states` - Completed or failed step state records
+- `pgflow.runs` - Completed or failed workflow run records
+</Aside>
+
+## Implementation Options
+
+### Option 1: Using pg_cron (Recommended)
+
+For Postgres databases that support the [pg_cron](https://github.com/citusdata/pg_cron) extension, you can schedule automatic pruning:
+
+<Steps>
+1. Install the pruning function by adding the SQL below to a migration file
+
+2. Create a scheduled job using pg_cron
+
+    ```sql
+    -- Schedule weekly pruning (every Sunday at 2 AM)
+    -- This keeps 28 days of data (adjust as needed)
+    SELECT cron.schedule(
+      'pgflow-prune-weekly',
+      '0 2 * * 0', -- cron expression: minute hour day month weekday
+      'SELECT * FROM pgflow.prune_old_records(28)'
+    );
+    ```
+
+3. Verify the scheduled job
+
+    ```sql
+    -- Check that the job is scheduled
+    SELECT * FROM cron.job;
+    ```
+</Steps>
+
+### Option 2: Manual Execution
+
+If you don't have pg_cron available, you can:
+
+<Steps>
+1. Install the pruning function by adding the SQL below to a migration file
+
+2. Run the function manually or from your application code when needed:
+
+    ```sql
+    -- Keep 90 days of records
+    SELECT * FROM pgflow.prune_old_records(90);
+    -- Returns the count of deleted records from each table
+    ```
+</Steps>
+
+## The Pruning Function
+
+Add this SQL function to a migration file in your project:
+
+```sql
+-- PgFlow Maintenance - Record Pruning
+-- This file contains a function to clean up old records from pgflow tables.
+-- Recommended usage: Schedule this function using pg_cron to run weekly.
+-- Example: SELECT pgflow.prune_old_records(28); -- keep 28 days of data
+
+/**
+ * Prunes old records from pgflow tables.
+ *
+ * @param retention_days - Number of days of recent records to keep (defaults to 28 days)
+ * @return RECORD - Count of deleted records from each table
+ */
+create or replace function pgflow.prune_old_records(
+  retention_days INTEGER default 28
+) returns table (
+  workers_deleted BIGINT,
+  step_tasks_deleted BIGINT,
+  step_states_deleted BIGINT,
+  runs_deleted BIGINT
+) language plpgsql as $$
+DECLARE
+  cutoff_timestamp TIMESTAMPTZ := now() - (retention_days * INTERVAL '1 day');
+BEGIN
+  -- Using a single CTE that performs all deletions and returns counts
+  WITH
+  workers_deleted_cte AS (
+    DELETE FROM pgflow.workers
+    WHERE last_heartbeat_at < cutoff_timestamp
+    RETURNING *
+  ),
+  step_tasks_deleted_cte AS (
+    DELETE FROM pgflow.step_tasks
+    WHERE (
+      (completed_at IS NOT NULL AND completed_at < cutoff_timestamp) OR
+      (failed_at IS NOT NULL AND failed_at < cutoff_timestamp)
+    )
+    RETURNING *
+  ),
+  step_states_deleted_cte AS (
+    DELETE FROM pgflow.step_states
+    WHERE (
+      (completed_at IS NOT NULL AND completed_at < cutoff_timestamp) OR
+      (failed_at IS NOT NULL AND failed_at < cutoff_timestamp)
+    )
+    RETURNING *
+  ),
+  runs_deleted_cte AS (
+    DELETE FROM pgflow.runs
+    WHERE (
+      (completed_at IS NOT NULL AND completed_at < cutoff_timestamp) OR
+      (failed_at IS NOT NULL AND failed_at < cutoff_timestamp)
+    )
+    RETURNING *
+  ),
+  -- Count results
+  counts AS (
+    SELECT
+      (SELECT COUNT(*) FROM workers_deleted_cte) AS workers_count,
+      (SELECT COUNT(*) FROM step_tasks_deleted_cte) AS step_tasks_count,
+      (SELECT COUNT(*) FROM step_states_deleted_cte) AS step_states_count,
+      (SELECT COUNT(*) FROM runs_deleted_cte) AS runs_count
+  )
+  -- Get the counts to use in our return values
+  SELECT
+    workers_count,
+    step_tasks_count,
+    step_states_count,
+    runs_count
+  INTO
+    workers_deleted,
+    step_tasks_deleted,
+    step_states_deleted,
+    runs_deleted
+  FROM counts;
+
+  -- Return the values directly
+  RETURN QUERY VALUES (workers_deleted, step_tasks_deleted, step_states_deleted, runs_deleted);
+END
+$$;
+```
+
+<Aside type="tip" title="Performance Impact">
+For very large pgflow tables, consider running the pruning function during off-peak hours as it performs DELETE operations that could impact database performance.
+</Aside>

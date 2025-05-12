@@ -1,8 +1,3 @@
--- PgFlow Maintenance - Record Pruning
--- This file contains a function to clean up old records from pgflow tables.
--- Recommended usage: Schedule this function using pg_cron to run weekly.
--- Example: SELECT pgflow.prune_old_records(28); -- keep 28 days of data
-
 /**
  * Prunes old records from pgflow tables.
  *
