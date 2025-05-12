@@ -467,38 +467,37 @@ BEGIN
   );
 END;
 $$ language plpgsql;
-| | | | | | | parent of f1da3ee (chore: remove deprecated test SQL files and associated mock realtime functions): pkgs / core / supabase / seed.sql
 
 --------------------------------------------------------------------------------
 ------- mock_realtime - mocks realtime.send for testing purposes --------------
 --------------------------------------------------------------------------------
 
 -- Create a table to store mock calls
-CREATE TABLE IF NOT EXISTS pgflow_tests.realtime_calls (
-id SERIAL PRIMARY KEY,
-payload JSONB,
-event TEXT,
-topic TEXT,
-private BOOLEAN,
-created_at TIMESTAMPTZ DEFAULT NOW ()
-) ;
+create table if not exists pgflow_tests.realtime_calls (
+  id serial primary key,
+  payload jsonb,
+  event text,
+  topic text,
+  private boolean,
+  created_at timestamptz default NOW()
+);
 
 -- Function to capture realtime events
-CREATE OR REPLACE FUNCTION pgflow_tests.capture_realtime_event (
-payload JSONB,
-event TEXT,
-topic TEXT,
-private BOOLEAN DEFAULT FALSE
-) RETURNS VOID AS $$
+create or replace function pgflow_tests.capture_realtime_event(
+  payload jsonb,
+  event text,
+  topic text,
+  private boolean default false
+) returns void as $$
 BEGIN
   -- Store the realtime event details
   INSERT INTO pgflow_tests.realtime_calls(payload, event, topic, private)
   VALUES (payload, event, topic, private);
 END;
-$$ LANGUAGE plpgsql ;
+$$ language plpgsql;
 
 -- Function to set up realtime event monitoring
-CREATE OR REPLACE FUNCTION pgflow_tests.mock_realtime () RETURNS VOID AS $$
+create or replace function pgflow_tests.mock_realtime() returns void as $$
 BEGIN
   -- First, ensure the table is empty
   TRUNCATE pgflow_tests.realtime_calls;
@@ -506,13 +505,13 @@ BEGIN
   -- We will manually call the capture function in our tests
   -- since we can't replace the actual realtime.send function
 END;
-$$ LANGUAGE plpgsql ;
+$$ language plpgsql;
 
 -- Helper function to check if a realtime event was sent
-CREATE OR REPLACE FUNCTION pgflow_tests.assert_realtime_event_sent (
-event_type TEXT,
-description TEXT
-) RETURNS TEXT AS $$
+create or replace function pgflow_tests.assert_realtime_event_sent(
+  event_type text,
+  description text
+) returns text as $$
 DECLARE
   count_value INTEGER;
 BEGIN
@@ -527,14 +526,14 @@ BEGIN
     description
   );
 END;
-$$ LANGUAGE plpgsql ;
+$$ language plpgsql;
 
 -- Helper function to check if a realtime event was sent with specific step_slug
-CREATE OR REPLACE FUNCTION pgflow_tests.assert_step_event_sent (
-event_type TEXT,
-step_slug TEXT,
-description TEXT
-) RETURNS TEXT AS $$
+create or replace function pgflow_tests.assert_step_event_sent(
+  event_type text,
+  step_slug text,
+  description text
+) returns text as $$
 DECLARE
   count_value INTEGER;
 BEGIN
@@ -550,14 +549,14 @@ BEGIN
     description
   );
 END;
-$$ LANGUAGE plpgsql ;
+$$ language plpgsql;
 
 -- Helper function to check if a run event was sent with specific flow_slug
-CREATE OR REPLACE FUNCTION pgflow_tests.assert_run_event_sent (
-event_type TEXT,
-flow_slug TEXT,
-description TEXT
-) RETURNS TEXT AS $$
+create or replace function pgflow_tests.assert_run_event_sent(
+  event_type text,
+  flow_slug text,
+  description text
+) returns text as $$
 DECLARE
   count_value INTEGER;
 BEGIN
@@ -573,14 +572,14 @@ BEGIN
     description
   );
 END;
-$$ LANGUAGE plpgsql ;
+$$ language plpgsql;
 
 -- Helper function to check if an event was sent for a specific run_id
-CREATE OR REPLACE FUNCTION pgflow_tests.assert_run_id_event_sent (
-event_type TEXT,
-run_id UUID,
-description TEXT
-) RETURNS TEXT AS $$
+create or replace function pgflow_tests.assert_run_id_event_sent(
+  event_type text,
+  run_id uuid,
+  description text
+) returns text as $$
 DECLARE
   count_value INTEGER;
 BEGIN
@@ -596,14 +595,14 @@ BEGIN
     description
   );
 END;
-$$ LANGUAGE plpgsql ;
+$$ language plpgsql;
 
 -- Helper function to check the topic pattern for an event
-CREATE OR REPLACE FUNCTION pgflow_tests.assert_event_topic_pattern (
-event_type TEXT,
-topic_pattern TEXT,
-description TEXT
-) RETURNS TEXT AS $$
+create or replace function pgflow_tests.assert_event_topic_pattern(
+  event_type text,
+  topic_pattern text,
+  description text
+) returns text as $$
 DECLARE
   topic_value TEXT;
 BEGIN
@@ -619,7 +618,7 @@ BEGIN
     description
   );
 END;
-$$ LANGUAGE plpgsql ;
+$$ language plpgsql;
 
 --------------------------------------------------------------------------------
 ------- create_realtime_partition - creates partition for realtime.messages ----
@@ -638,8 +637,8 @@ $$ LANGUAGE plpgsql ;
  * @param target_date The date to create the partition for. Defaults to current_date.
  * @return boolean TRUE if a partition was created, FALSE if it already existed
  */
-create or replace function pgflow_tests.create_realtime_partition (
-target_date date default current_date
+create or replace function pgflow_tests.create_realtime_partition(
+  target_date date default CURRENT_DATE
 ) returns boolean as $$
 DECLARE
   next_date date := target_date + interval '1 day';
@@ -680,7 +679,7 @@ BEGIN
 
   RETURN was_created;
 END;
-$$ language plpgsql ;
+$$ language plpgsql;
 
 --------------------------------------------------------------------------------
 ------- find_realtime_event - finds a specific realtime event for testing ------
@@ -697,10 +696,10 @@ $$ language plpgsql ;
  * @param step_slug Optional: The step slug to filter by (for step-related events)
  * @return The full jsonb payload of the matching event, or NULL if not found
  */
-create or replace function pgflow_tests.find_realtime_event (
-event_type text,
-run_id uuid,
-step_slug text default null
+create or replace function pgflow_tests.find_realtime_event(
+  event_type text,
+  run_id uuid,
+  step_slug text default null
 ) returns jsonb as $$
 DECLARE
   event_payload jsonb;
@@ -726,7 +725,7 @@ BEGIN
 
   RETURN event_payload;
 END;
-$$ language plpgsql ;
+$$ language plpgsql;
 
 /**
  * Counts realtime events matching the specified criteria.
@@ -736,10 +735,10 @@ $$ language plpgsql ;
  * @param step_slug Optional: The step slug to filter by (for step-related events)
  * @return The count of matching events
  */
-create or replace function pgflow_tests.count_realtime_events (
-event_type text,
-run_id uuid,
-step_slug text default null
+create or replace function pgflow_tests.count_realtime_events(
+  event_type text,
+  run_id uuid,
+  step_slug text default null
 ) returns integer as $$
 DECLARE
   event_count integer;
@@ -761,7 +760,7 @@ BEGIN
 
   RETURN event_count;
 END;
-$$ language plpgsql ;
+$$ language plpgsql;
 
 /**
  * Retrieves the full realtime message record matching specified criteria.
@@ -775,10 +774,10 @@ $$ language plpgsql ;
  * @param step_slug Optional: The step slug to filter by (for step events)
  * @return The full message record including id, inserted_at, event, topic, and payload
  */
-create or replace function pgflow_tests.get_realtime_message (
-event_type text,
-run_id uuid,
-step_slug text default null
+create or replace function pgflow_tests.get_realtime_message(
+  event_type text,
+  run_id uuid,
+  step_slug text default null
 ) returns realtime.messages as $$
   SELECT * FROM realtime.messages
   WHERE payload->>'event_type' = event_type
@@ -786,5 +785,4 @@ step_slug text default null
     AND (step_slug IS NULL OR payload->>'step_slug' = step_slug)
   ORDER BY inserted_at DESC
   LIMIT 1;
-$$ language sql ;
-> > > > > > > c431e6c (feat: add comprehensive helper functions and tests for realtime event verification)
+$$ language sql;
