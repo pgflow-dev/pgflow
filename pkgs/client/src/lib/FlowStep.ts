@@ -1,6 +1,13 @@
 import { createNanoEvents } from 'nanoevents';
 import type { AnyFlow, ExtractFlowSteps, StepOutput } from '@pgflow/dsl';
-import type { FlowStepState, StepEvents, StepEventData, Unsubscribe, FlowStepBase } from './types';
+import { FlowStepStatus } from './types';
+import type { 
+  FlowStepState, 
+  StepEvents, 
+  Unsubscribe, 
+  FlowStepBase,
+  StepEvent
+} from './types';
 
 /**
  * Represents a single step in a flow run
@@ -8,14 +15,14 @@ import type { FlowStepState, StepEvents, StepEventData, Unsubscribe, FlowStepBas
 export class FlowStep<
   TFlow extends AnyFlow,
   TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
-> implements FlowStepBase {
+> implements FlowStepBase<StepEvent<TFlow, TStepSlug>> {
   #state: FlowStepState<TFlow, TStepSlug>;
   #events = createNanoEvents<StepEvents<TFlow, TStepSlug>>();
-  #statusPrecedence: Record<string, number> = {
-    'created': 0,
-    'started': 1,
-    'completed': 2,
-    'failed': 3,
+  #statusPrecedence: Record<FlowStepStatus, number> = {
+    [FlowStepStatus.Created]: 0,
+    [FlowStepStatus.Started]: 1,
+    [FlowStepStatus.Completed]: 2,
+    [FlowStepStatus.Failed]: 3,
   };
 
   /**
@@ -37,7 +44,7 @@ export class FlowStep<
   /**
    * Get the current status
    */
-  get status(): 'created' | 'started' | 'completed' | 'failed' {
+  get status(): FlowStepStatus {
     return this.#state.status;
   }
 
@@ -105,7 +112,7 @@ export class FlowStep<
    * @returns Promise that resolves with the step instance when the status is reached
    */
   waitForStatus(
-    targetStatus: 'started' | 'completed' | 'failed',
+    targetStatus: FlowStepStatus.Started | FlowStepStatus.Completed | FlowStepStatus.Failed,
     options?: { timeoutMs?: number; signal?: AbortSignal }
   ): Promise<this> {
     const timeoutMs = options?.timeoutMs ?? 5 * 60 * 1000; // Default 5 minutes
@@ -161,58 +168,58 @@ export class FlowStep<
    * @param event - Event data to update the state with
    * @returns true if the state was updated, false otherwise
    */
-  updateState(event: any): boolean {
-    // Use type guard to validate the step slug shape
-    if (!event || typeof event !== 'object' || event.step_slug !== this.#state.step_slug) {
+  updateState(event: StepEvent<TFlow, TStepSlug>): boolean {
+    // Validate event is for this step
+    if (event.step_slug !== this.#state.step_slug) {
       return false;
     }
     
-    // Use the properly typed event for the rest of the function
-    const typedEvent = event as StepEventData<TFlow, TStepSlug>['*'];
-
     // Check if the event status has higher precedence than current status
-    if (!this.#shouldUpdateStatus(this.#state.status, typedEvent.status)) {
+    if (!this.#shouldUpdateStatus(this.#state.status, event.status)) {
       return false;
     }
 
-    // Update state based on event type
-    switch (typedEvent.status) {
-      case 'started':
+    // Update state based on event type using narrowing type guards
+    switch (event.status) {
+      case FlowStepStatus.Started:
         this.#state = {
           ...this.#state,
-          status: 'started',
-          started_at: typeof typedEvent.started_at === 'string' ? new Date(typedEvent.started_at) : new Date(),
+          status: FlowStepStatus.Started,
+          started_at: typeof event.started_at === 'string' ? new Date(event.started_at) : new Date(),
         };
-        this.#events.emit('started', typedEvent as StepEventData<TFlow, TStepSlug>['started']);
+        this.#events.emit('started', event);
         break;
 
-      case 'completed':
+      case FlowStepStatus.Completed:
         this.#state = {
           ...this.#state,
-          status: 'completed',
-          completed_at: typeof typedEvent.completed_at === 'string' ? new Date(typedEvent.completed_at) : new Date(),
-          output: typedEvent.output as StepOutput<TFlow, TStepSlug>,
+          status: FlowStepStatus.Completed,
+          completed_at: typeof event.completed_at === 'string' ? new Date(event.completed_at) : new Date(),
+          output: event.output as StepOutput<TFlow, TStepSlug>,
         };
-        this.#events.emit('completed', typedEvent as StepEventData<TFlow, TStepSlug>['completed']);
+        this.#events.emit('completed', event);
         break;
 
-      case 'failed':
+      case FlowStepStatus.Failed:
         this.#state = {
           ...this.#state,
-          status: 'failed',
-          failed_at: typeof typedEvent.failed_at === 'string' ? new Date(typedEvent.failed_at) : new Date(),
-          error_message: typeof typedEvent.error_message === 'string' ? typedEvent.error_message : 'Unknown error',
-          error: new Error(typeof typedEvent.error_message === 'string' ? typedEvent.error_message : 'Unknown error'),
+          status: FlowStepStatus.Failed,
+          failed_at: typeof event.failed_at === 'string' ? new Date(event.failed_at) : new Date(),
+          error_message: typeof event.error_message === 'string' ? event.error_message : 'Unknown error',
+          error: new Error(typeof event.error_message === 'string' ? event.error_message : 'Unknown error'),
         };
-        this.#events.emit('failed', typedEvent as StepEventData<TFlow, TStepSlug>['failed']);
+        this.#events.emit('failed', event);
         break;
 
       default:
+        // Exhaustiveness check - should never happen with proper types
+        // @ts-expect-error Intentional exhaustiveness check
+        const _exhaustivenessCheck: never = event;
         return false;
     }
 
     // Also emit to the catch-all listener
-    this.#events.emit('*', typedEvent);
+    this.#events.emit('*', event);
     
     return true;
   }
@@ -224,14 +231,14 @@ export class FlowStep<
    * @param newStatus - New status
    * @returns true if the status should be updated, false otherwise
    */
-  #shouldUpdateStatus(currentStatus: string, newStatus: string): boolean {
+  #shouldUpdateStatus(currentStatus: FlowStepStatus, newStatus: FlowStepStatus): boolean {
     // Don't allow changes to terminal states
-    if (currentStatus === 'completed' || currentStatus === 'failed') {
+    if (currentStatus === FlowStepStatus.Completed || currentStatus === FlowStepStatus.Failed) {
       return false; // Terminal states should never change
     }
     
-    const currentPrecedence = this.#statusPrecedence[currentStatus] || 0;
-    const newPrecedence = this.#statusPrecedence[newStatus] || 0;
+    const currentPrecedence = this.#statusPrecedence[currentStatus];
+    const newPrecedence = this.#statusPrecedence[newStatus];
 
     // Only allow transitions to higher precedence non-terminal status
     return newPrecedence > currentPrecedence;
