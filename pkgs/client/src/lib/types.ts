@@ -5,7 +5,7 @@ import type { FlowRun } from './FlowRun';
 /**
  * Flow run event types
  */
-export type FlowRunEvents<TFlow> = {
+export type FlowRunEvents<TFlow extends AnyFlow> = {
   started: {
     run_id: string;
     flow_slug: string;
@@ -34,7 +34,7 @@ export type FlowRunEvents<TFlow> = {
  * Step event types
  */
 export type StepEvents<
-  TFlow,
+  TFlow extends AnyFlow,
   TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
 > = {
   started: { 
@@ -146,7 +146,7 @@ export type BroadcastStepEvent =
 /**
  * Flow run state
  */
-export type FlowRunState<TFlow> = {
+export type FlowRunState<TFlow extends AnyFlow> = {
   run_id: string;
   flow_slug: string;
   status: 'queued' | 'started' | 'completed' | 'failed';
@@ -163,7 +163,7 @@ export type FlowRunState<TFlow> = {
 /**
  * Flow step state
  */
-export type FlowStepState<TFlow, TStepSlug extends keyof ExtractFlowSteps<TFlow> & string> = {
+export type FlowStepState<TFlow extends AnyFlow, TStepSlug extends keyof ExtractFlowSteps<TFlow> & string> = {
   run_id: string;
   step_slug: TStepSlug;
   status: 'created' | 'started' | 'completed' | 'failed';

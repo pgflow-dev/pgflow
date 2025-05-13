@@ -5,6 +5,7 @@ import type {
   IFlowRealtime,
   BroadcastRunEvent,
   BroadcastStepEvent,
+  Unsubscribe,
 } from './types';
 
 // Define the events interface for the adapter
@@ -62,7 +63,7 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
     run_id: string,
     channelName: string,
     channel: RealtimeChannel,
-    error: Error | unknown
+    error: unknown
   ): Promise<void> {
     console.error(`Channel ${channelName} error:`, error);
     
@@ -88,16 +89,16 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
     channel.on('broadcast', { event: '*' }, this.#handleBroadcastMessage.bind(this));
     
     // Handle channel lifecycle events
-    channel.on('subscribed', () => {
+    channel.on('system', { event: 'subscribed' }, () => {
       console.log(`Subscribed to channel ${channelName}`);
     });
     
-    channel.on('closed', () => {
+    channel.on('system', { event: 'closed' }, () => {
       console.log(`Channel ${channelName} closed`);
     });
     
-    channel.on('error', (error) => 
-      this.#handleChannelError(run_id, channelName, channel, error)
+    channel.on('system', { event: 'error' }, (payload) => 
+      this.#handleChannelError(run_id, channelName, channel, payload.error)
     );
     
     return channel;

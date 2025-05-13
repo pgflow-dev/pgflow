@@ -2,10 +2,10 @@
   "name": "@pgflow/client",
   "version": "0.0.1",
   "dependencies": {
-    "nanoevents": "^7.0.1",
-    "uuid": "^9.0.0",
     "@pgflow/core": "workspace:*",
-    "@pgflow/dsl": "workspace:*"
+    "@pgflow/dsl": "workspace:*",
+    "nanoevents": "^7.0.1",
+    "uuid": "^9.0.0"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -18,5 +18,12 @@
       "default": "./dist/index.cjs.js"
     }
   },
-  "types": "./dist/index.d.ts"
+  "types": "./dist/index.d.ts",
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.49.4",
+    "@types/uuid": "^10.0.0"
+  },
+  "peerDependencies": {
+    "@supabase/supabase-js": "^2.49.4"
+  }
 }

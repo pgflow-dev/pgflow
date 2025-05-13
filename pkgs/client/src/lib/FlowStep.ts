@@ -1,12 +1,12 @@
 import { createNanoEvents } from 'nanoevents';
-import type { ExtractFlowSteps, StepOutput } from '@pgflow/dsl';
+import type { AnyFlow, ExtractFlowSteps, StepOutput } from '@pgflow/dsl';
 import type { FlowStepState, StepEvents, Unsubscribe } from './types';
 
 /**
  * Represents a single step in a flow run
  */
 export class FlowStep<
-  TFlow,
+  TFlow extends AnyFlow,
   TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
 > {
   #state: FlowStepState<TFlow, TStepSlug>;

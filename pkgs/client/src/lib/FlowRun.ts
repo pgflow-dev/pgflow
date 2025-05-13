@@ -1,12 +1,12 @@
 import { createNanoEvents } from 'nanoevents';
-import type { ExtractFlowInput, ExtractFlowOutput, ExtractFlowSteps } from '@pgflow/dsl';
-import type { FlowRunState, FlowRunEvents, Unsubscribe } from './types';
+import type { AnyFlow, ExtractFlowInput, ExtractFlowOutput, ExtractFlowSteps } from '@pgflow/dsl';
+import type { FlowRunState, FlowRunEvents, Unsubscribe, StepEvents } from './types';
 import { FlowStep } from './FlowStep';
 
 /**
  * Represents a single execution of a flow
  */
-export class FlowRun<TFlow> {
+export class FlowRun<TFlow extends AnyFlow> {
   #state: FlowRunState<TFlow>;
   #events = createNanoEvents<FlowRunEvents<TFlow>>();
   #steps = new Map<string, FlowStep<TFlow, keyof ExtractFlowSteps<TFlow> & string>>();
@@ -234,7 +234,7 @@ export class FlowRun<TFlow> {
           ...this.#state,
           status: 'started',
           started_at: event.started_at ? new Date(event.started_at) : new Date(),
-          remaining_steps: 'remaining_steps' in event ? event.remaining_steps : this.#state.remaining_steps,
+          remaining_steps: 'remaining_steps' in event ? Number(event.remaining_steps) : this.#state.remaining_steps,
         };
         this.#events.emit('started', event as FlowRunEvents<TFlow>['started']);
         break;
