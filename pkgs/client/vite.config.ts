@@ -1,6 +1,5 @@
-import { defineConfig } from 'vite';
-
-export default defineConfig({
+/// <reference types='vitest' />
+const config = {
   root: __dirname,
   cacheDir: '../../node_modules/.vite/pkgs/client',
   plugins: [],
@@ -19,4 +18,6 @@ export default defineConfig({
       provider: 'v8',
     },
   },
-});
+};
+
+export default config;

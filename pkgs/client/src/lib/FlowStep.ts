@@ -1,6 +1,6 @@
 import { createNanoEvents } from 'nanoevents';
 import type { AnyFlow, ExtractFlowSteps, StepOutput } from '@pgflow/dsl';
-import type { FlowStepState, StepEvents, Unsubscribe } from './types';
+import type { FlowStepState, StepEvents, StepEventData, Unsubscribe, FlowStepBase } from './types';
 
 /**
  * Represents a single step in a flow run
@@ -8,7 +8,7 @@ import type { FlowStepState, StepEvents, Unsubscribe } from './types';
 export class FlowStep<
   TFlow extends AnyFlow,
   TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
-> {
+> implements FlowStepBase {
   #state: FlowStepState<TFlow, TStepSlug>;
   #events = createNanoEvents<StepEvents<TFlow, TStepSlug>>();
   #statusPrecedence: Record<string, number> = {
@@ -92,7 +92,7 @@ export class FlowStep<
    */
   on<E extends keyof StepEvents<TFlow, TStepSlug>>(
     event: E,
-    callback: (event: StepEvents<TFlow, TStepSlug>[E]) => void
+    callback: StepEvents<TFlow, TStepSlug>[E]
   ): Unsubscribe {
     return this.#events.on(event, callback);
   }
@@ -161,47 +161,50 @@ export class FlowStep<
    * @param event - Event data to update the state with
    * @returns true if the state was updated, false otherwise
    */
-  updateState(event: StepEvents<TFlow, TStepSlug>['*']): boolean {
-    // Ensure this event is for this step
-    if (event.step_slug !== this.#state.step_slug) {
+  updateState(event: any): boolean {
+    // Use type guard to validate the step slug shape
+    if (!event || typeof event !== 'object' || event.step_slug !== this.#state.step_slug) {
       return false;
     }
+    
+    // Use the properly typed event for the rest of the function
+    const typedEvent = event as StepEventData<TFlow, TStepSlug>['*'];
 
     // Check if the event status has higher precedence than current status
-    if (!this.#shouldUpdateStatus(this.#state.status, event.status)) {
+    if (!this.#shouldUpdateStatus(this.#state.status, typedEvent.status)) {
       return false;
     }
 
     // Update state based on event type
-    switch (event.status) {
+    switch (typedEvent.status) {
       case 'started':
         this.#state = {
           ...this.#state,
           status: 'started',
-          started_at: event.started_at ? new Date(event.started_at) : new Date(),
+          started_at: typeof typedEvent.started_at === 'string' ? new Date(typedEvent.started_at) : new Date(),
         };
-        this.#events.emit('started', event as StepEvents<TFlow, TStepSlug>['started']);
+        this.#events.emit('started', typedEvent as StepEventData<TFlow, TStepSlug>['started']);
         break;
 
       case 'completed':
         this.#state = {
           ...this.#state,
           status: 'completed',
-          completed_at: event.completed_at ? new Date(event.completed_at) : new Date(),
-          output: event.output as StepOutput<TFlow, TStepSlug>,
+          completed_at: typeof typedEvent.completed_at === 'string' ? new Date(typedEvent.completed_at) : new Date(),
+          output: typedEvent.output as StepOutput<TFlow, TStepSlug>,
         };
-        this.#events.emit('completed', event as StepEvents<TFlow, TStepSlug>['completed']);
+        this.#events.emit('completed', typedEvent as StepEventData<TFlow, TStepSlug>['completed']);
         break;
 
       case 'failed':
         this.#state = {
           ...this.#state,
           status: 'failed',
-          failed_at: event.failed_at ? new Date(event.failed_at) : new Date(),
-          error_message: event.error_message || 'Unknown error',
-          error: new Error(event.error_message || 'Unknown error'),
+          failed_at: typeof typedEvent.failed_at === 'string' ? new Date(typedEvent.failed_at) : new Date(),
+          error_message: typeof typedEvent.error_message === 'string' ? typedEvent.error_message : 'Unknown error',
+          error: new Error(typeof typedEvent.error_message === 'string' ? typedEvent.error_message : 'Unknown error'),
         };
-        this.#events.emit('failed', event as StepEvents<TFlow, TStepSlug>['failed']);
+        this.#events.emit('failed', typedEvent as StepEventData<TFlow, TStepSlug>['failed']);
         break;
 
       default:
@@ -209,7 +212,7 @@ export class FlowStep<
     }
 
     // Also emit to the catch-all listener
-    this.#events.emit('*', event);
+    this.#events.emit('*', typedEvent);
     
     return true;
   }
