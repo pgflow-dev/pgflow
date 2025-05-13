@@ -1,7 +1,16 @@
 import { v4 as uuidv4 } from 'uuid';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
-import type { IFlowClient, FlowRunState, BroadcastRunEvent, BroadcastStepEvent, Unsubscribe, FlowRunBase } from './types';
+import type { RunRow, StepStateRow } from '@pgflow/core';
+import { FlowRunStatus, FlowStepStatus } from './types';
+import type { 
+  IFlowClient, 
+  FlowRunState, 
+  BroadcastRunEvent, 
+  BroadcastStepEvent, 
+  Unsubscribe, 
+  FlowRunBase
+} from './types';
 import { SupabaseBroadcastAdapter } from './SupabaseBroadcastAdapter';
 import { FlowRun } from './FlowRun';
 
@@ -11,7 +20,9 @@ import { FlowRun } from './FlowRun';
 export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClient<TFlow> {
   #supabase: SupabaseClient;
   #realtimeAdapter: SupabaseBroadcastAdapter;
-  #runs = new Map<string, FlowRunBase>();
+  // Use the widest event type - keeps the compiler happy but
+  // still provides the structural API we need (updateState/step/...)
+  #runs = new Map<string, FlowRunBase<unknown>>();
 
   /**
    * Creates a new PgflowClient instance
@@ -22,10 +33,11 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
     this.#supabase = supabaseClient;
     this.#realtimeAdapter = new SupabaseBroadcastAdapter(supabaseClient);
 
-    // Set up global event listeners
+    // Set up global event listeners - properly typed
     this.#realtimeAdapter.onRunEvent((event) => {
       const run = this.#runs.get(event.run_id);
       if (run) {
+        // The FlowRunBase<unknown> interface accepts any event type
         run.updateState(event);
       }
     });
@@ -33,9 +45,11 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
     this.#realtimeAdapter.onStepEvent((event) => {
       const run = this.#runs.get(event.run_id);
       if (run) {
-        // The step might not exist yet, but FlowRun.step() will create it if needed
+        // The step might not exist yet, but we should check if the run can handle this step
         const stepSlug = event.step_slug;
-        run.step(stepSlug).updateState(event);
+        if (run.hasStep(stepSlug)) {
+          run.step(stepSlug).updateState(event);
+        }
       }
     });
   }
@@ -60,7 +74,7 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
     const initialState: FlowRunState<TSpecificFlow> = {
       run_id: id,
       flow_slug,
-      status: 'queued',
+      status: FlowRunStatus.Queued,
       input: input as ExtractFlowInput<TSpecificFlow>,
       output: null,
       error: null,
@@ -182,5 +196,115 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
    */
   async getRunWithStates(run_id: string) {
     return this.#realtimeAdapter.getRunWithStates(run_id);
+  }
+  
+  /**
+   * Get a flow run by ID
+   * 
+   * @param run_id - ID of the run to get
+   * @returns Promise that resolves with the FlowRun instance or null if not found
+   */
+  async getRun<TSpecificFlow extends TFlow = TFlow>(run_id: string): Promise<FlowRun<TSpecificFlow> | null> {
+    // Check if we already have this run cached
+    const existingRun = this.#runs.get(run_id);
+    if (existingRun) {
+      return existingRun as FlowRun<TSpecificFlow>;
+    }
+    
+    try {
+      // Fetch the run state from the database
+      const { run, steps } = await this.getRunWithStates(run_id);
+      
+      if (!run) {
+        return null;
+      }
+      
+      // Create initial state for the flow run
+      // Use type assertion since RunRow doesn't include error_message field
+      const runData = run as unknown as (RunRow & { error_message?: string });
+      
+      const initialState: FlowRunState<TSpecificFlow> = {
+        run_id: runData.run_id,
+        flow_slug: runData.flow_slug,
+        status: runData.status as FlowRunStatus,
+        input: runData.input as ExtractFlowInput<TSpecificFlow>,
+        output: runData.output as any,
+        error: runData.error_message ? new Error(runData.error_message) : null,
+        error_message: runData.error_message || null,
+        started_at: runData.started_at ? new Date(runData.started_at) : null,
+        completed_at: runData.completed_at ? new Date(runData.completed_at) : null,
+        failed_at: runData.failed_at ? new Date(runData.failed_at) : null,
+        remaining_steps: runData.remaining_steps || 0,
+      };
+      
+      // Create the flow run instance
+      const flowRun = new FlowRun<TSpecificFlow>(initialState);
+      
+      // Store the run
+      this.#runs.set(run_id, flowRun);
+      
+      // Set up subscription for run and step events
+      this.#realtimeAdapter.subscribeToRun(run_id);
+      
+      // Initialize steps
+      if (steps && Array.isArray(steps)) {
+        for (const stepState of steps) {
+          // Convert database step state to appropriate event type
+          const stepEvent = this.#convertStepStateToEvent(stepState, run_id);
+          if (stepEvent) {
+            // Type assertion is safe here because FlowStepBase<unknown> accepts any event type
+            flowRun.step(stepState.step_slug).updateState(stepEvent as any);
+          }
+        }
+      }
+      
+      return flowRun;
+    } catch (error) {
+      console.error('Error getting run:', error);
+      return null;
+    }
+  }
+  
+  /**
+   * Convert database step state to an appropriate step event
+   * This ensures we're creating valid events matching the required shape
+   */
+  #convertStepStateToEvent(
+    stepState: StepStateRow, 
+    run_id: string
+  ): object | null {
+    const baseEvent = {
+      run_id,
+      step_slug: stepState.step_slug,
+    };
+    
+    switch (stepState.status) {
+      case 'started':
+        return {
+          ...baseEvent,
+          status: FlowStepStatus.Started,
+          started_at: stepState.started_at || new Date().toISOString(),
+        };
+        
+      case 'completed':
+        return {
+          ...baseEvent,
+          status: FlowStepStatus.Completed,
+          completed_at: stepState.completed_at || new Date().toISOString(),
+          // StepStateRow doesn't include output in its type, but it's typically present in the data
+          output: (stepState as any).output || null,
+        };
+        
+      case 'failed':
+        return {
+          ...baseEvent,
+          status: FlowStepStatus.Failed,
+          failed_at: stepState.failed_at || new Date().toISOString(),
+          error_message: stepState.error_message || "Unknown error",
+        };
+        
+      default:
+        return null;
+    }
   }
 }
