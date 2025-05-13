@@ -1,17 +1,17 @@
 import { v4 as uuidv4 } from 'uuid';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
-import type { IFlowClient, FlowRunState, BroadcastRunEvent, BroadcastStepEvent, Unsubscribe } from './types';
+import type { IFlowClient, FlowRunState, BroadcastRunEvent, BroadcastStepEvent, Unsubscribe, FlowRunBase } from './types';
 import { SupabaseBroadcastAdapter } from './SupabaseBroadcastAdapter';
 import { FlowRun } from './FlowRun';
 
 /**
  * Client for interacting with pgflow
  */
-export class PgflowClient implements IFlowClient {
+export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClient<TFlow> {
   #supabase: SupabaseClient;
   #realtimeAdapter: SupabaseBroadcastAdapter;
-  #runs = new Map<string, FlowRun<AnyFlow>>();
+  #runs = new Map<string, FlowRunBase>();
 
   /**
    * Creates a new PgflowClient instance
@@ -48,20 +48,20 @@ export class PgflowClient implements IFlowClient {
    * @param run_id - Optional run ID (will be generated if not provided)
    * @returns Promise that resolves with the FlowRun instance
    */
-  async startFlow<TFlow extends AnyFlow>(
+  async startFlow<TSpecificFlow extends TFlow>(
     flow_slug: string,
-    input: ExtractFlowInput<TFlow>,
+    input: ExtractFlowInput<TSpecificFlow>,
     run_id?: string
-  ): Promise<FlowRun<TFlow>> {
+  ): Promise<FlowRun<TSpecificFlow>> {
     // Generate a run_id if not provided
     const id = run_id || uuidv4();
 
     // Create initial state for the flow run
-    const initialState: FlowRunState<TFlow> = {
+    const initialState: FlowRunState<TSpecificFlow> = {
       run_id: id,
       flow_slug,
       status: 'queued',
-      input: input as ExtractFlowInput<TFlow>,
+      input: input as ExtractFlowInput<TSpecificFlow>,
       output: null,
       error: null,
       error_message: null,
@@ -72,7 +72,7 @@ export class PgflowClient implements IFlowClient {
     };
 
     // Create the flow run instance
-    const run = new FlowRun<TFlow>(initialState);
+    const run = new FlowRun<TSpecificFlow>(initialState);
 
     // Store the run
     this.#runs.set(id, run);

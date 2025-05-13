@@ -1,7 +1,9 @@
-import { client } from './client';
+// This is a stub test to be replaced with real tests
+// Import a real export to prevent TypeScript errors
+import { PgflowClient } from './PgflowClient';
 
-describe('client', () => {
-  it('should work', () => {
-    expect(client()).toEqual('client');
+describe('PgflowClient', () => {
+  it('should be defined', () => {
+    expect(PgflowClient).toBeDefined();
   });
 });

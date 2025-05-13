@@ -1,15 +1,15 @@
 import { createNanoEvents } from 'nanoevents';
 import type { AnyFlow, ExtractFlowInput, ExtractFlowOutput, ExtractFlowSteps } from '@pgflow/dsl';
-import type { FlowRunState, FlowRunEvents, Unsubscribe, StepEvents } from './types';
+import type { FlowRunState, FlowRunEvents, FlowRunEventData, Unsubscribe, StepEventData, FlowRunBase, FlowStepBase } from './types';
 import { FlowStep } from './FlowStep';
 
 /**
  * Represents a single execution of a flow
  */
-export class FlowRun<TFlow extends AnyFlow> {
+export class FlowRun<TFlow extends AnyFlow> implements FlowRunBase {
   #state: FlowRunState<TFlow>;
   #events = createNanoEvents<FlowRunEvents<TFlow>>();
-  #steps = new Map<string, FlowStep<TFlow, keyof ExtractFlowSteps<TFlow> & string>>();
+  #steps = new Map<string, FlowStepBase>();
   #statusPrecedence: Record<string, number> = {
     'queued': 0,
     'started': 1,
@@ -113,7 +113,7 @@ export class FlowRun<TFlow extends AnyFlow> {
    */
   on<E extends keyof FlowRunEvents<TFlow>>(
     event: E,
-    callback: (event: FlowRunEvents<TFlow>[E]) => void
+    callback: FlowRunEvents<TFlow>[E]
   ): Unsubscribe {
     return this.#events.on(event, callback);
   }
@@ -130,7 +130,8 @@ export class FlowRun<TFlow extends AnyFlow> {
     // Look up if we already have this step cached
     const existingStep = this.#steps.get(stepSlug as string);
     if (existingStep) {
-      return existingStep as FlowStep<TFlow, TStepSlug>;
+      // Safe to cast since we only store steps with matching slugs
+      return existingStep as unknown as FlowStep<TFlow, TStepSlug>;
     }
 
     // Create a new step instance with default state
@@ -147,7 +148,7 @@ export class FlowRun<TFlow extends AnyFlow> {
     });
 
     // Cache the step
-    this.#steps.set(stepSlug as string, step);
+    this.#steps.set(stepSlug as string, step as FlowStepBase);
     
     return step;
   }
@@ -216,38 +217,41 @@ export class FlowRun<TFlow extends AnyFlow> {
    * @param event - Event data to update the state with
    * @returns true if the state was updated, false otherwise
    */
-  updateState(event: FlowRunEvents<TFlow>['*']): boolean {
-    // Ensure this event is for this run
-    if (event.run_id !== this.#state.run_id) {
+  updateState(event: any): boolean {
+    // Type guard to validate the event shape
+    if (!event || typeof event !== 'object' || event.run_id !== this.#state.run_id) {
       return false;
     }
+    
+    // Use properly typed event for the rest of the function
+    const typedEvent = event as FlowRunEventData<TFlow>['*'];
 
     // Check if the event status has higher precedence than current status
-    if (!this.#shouldUpdateStatus(this.#state.status, event.status)) {
+    if (!this.#shouldUpdateStatus(this.#state.status, typedEvent.status)) {
       return false;
     }
 
     // Update state based on event type
-    switch (event.status) {
+    switch (typedEvent.status) {
       case 'started':
         this.#state = {
           ...this.#state,
           status: 'started',
-          started_at: event.started_at ? new Date(event.started_at) : new Date(),
-          remaining_steps: 'remaining_steps' in event ? Number(event.remaining_steps) : this.#state.remaining_steps,
+          started_at: typeof typedEvent.started_at === 'string' ? new Date(typedEvent.started_at) : new Date(),
+          remaining_steps: 'remaining_steps' in typedEvent ? Number(typedEvent.remaining_steps) : this.#state.remaining_steps,
         };
-        this.#events.emit('started', event as FlowRunEvents<TFlow>['started']);
+        this.#events.emit('started', typedEvent as FlowRunEventData<TFlow>['started']);
         break;
 
       case 'completed':
         this.#state = {
           ...this.#state,
           status: 'completed',
-          completed_at: event.completed_at ? new Date(event.completed_at) : new Date(),
-          output: event.output as ExtractFlowOutput<TFlow>,
+          completed_at: typeof typedEvent.completed_at === 'string' ? new Date(typedEvent.completed_at) : new Date(),
+          output: typedEvent.output as ExtractFlowOutput<TFlow>,
           remaining_steps: 0,
         };
-        this.#events.emit('completed', event as FlowRunEvents<TFlow>['completed']);
+        this.#events.emit('completed', typedEvent as FlowRunEventData<TFlow>['completed']);
         
         // Check for auto-dispose
         this.#checkAutoDispose();
@@ -257,11 +261,11 @@ export class FlowRun<TFlow extends AnyFlow> {
         this.#state = {
           ...this.#state,
           status: 'failed',
-          failed_at: event.failed_at ? new Date(event.failed_at) : new Date(),
-          error_message: event.error_message || 'Unknown error',
-          error: new Error(event.error_message || 'Unknown error'),
+          failed_at: typeof typedEvent.failed_at === 'string' ? new Date(typedEvent.failed_at) : new Date(),
+          error_message: typeof typedEvent.error_message === 'string' ? typedEvent.error_message : 'Unknown error',
+          error: new Error(typeof typedEvent.error_message === 'string' ? typedEvent.error_message : 'Unknown error'),
         };
-        this.#events.emit('failed', event as FlowRunEvents<TFlow>['failed']);
+        this.#events.emit('failed', typedEvent as FlowRunEventData<TFlow>['failed']);
         
         // Check for auto-dispose
         this.#checkAutoDispose();
@@ -272,7 +276,7 @@ export class FlowRun<TFlow extends AnyFlow> {
     }
 
     // Also emit to the catch-all listener
-    this.#events.emit('*', event);
+    this.#events.emit('*', typedEvent);
     
     return true;
   }
@@ -286,7 +290,7 @@ export class FlowRun<TFlow extends AnyFlow> {
    */
   updateStepState<TStepSlug extends keyof ExtractFlowSteps<TFlow> & string>(
     stepSlug: TStepSlug, 
-    event: StepEvents<TFlow, TStepSlug>['*']
+    event: StepEventData<TFlow, TStepSlug>['*']
   ): boolean {
     const step = this.step(stepSlug);
     return step.updateState(event);
