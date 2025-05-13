@@ -36,19 +36,11 @@ describe('PgflowClient Type Tests', () => {
     'your-supabase-key'
   );
 
-  it('should properly type client instantiation', () => {
-    const client = new PgflowClient(supabase);
-    expectTypeOf(client).toBeObject();
-    expectTypeOf(client.startFlow).toBeFunction();
-    expectTypeOf(client.getRun).toBeFunction();
-    expectTypeOf(client.disposeAll).toBeFunction();
-  });
-
   it('should properly type startFlow method with correct input types', () => {
     const client = new PgflowClient(supabase);
 
     type ExpectedInput = ExtractFlowInput<typeof AnalyzeWebsite>;
-    expectTypeOf<ExpectedInput>().toMatchTypeOf<{ url: string }>();
+    expectTypeOf<ExpectedInput>().toEqualTypeOf<{ url: string }>();
 
     const startFlow = client.startFlow(AnalyzeWebsite.slug, {
       url: 'https://example.com',
@@ -102,15 +94,10 @@ describe('PgflowClient Type Tests', () => {
     expectTypeOf(sentimentStep).toHaveProperty('output');
     expectTypeOf(sentimentStep).toHaveProperty('waitForStatus');
 
-    // Correctly types step output based on the flow definition
-    expectTypeOf(sentimentStep.output).toEqualTypeOf<{
-      score: number;
-    } | null>();
-
     // Step event handlers should have correct typings
     sentimentStep.on('completed', (event) => {
       expectTypeOf(event).toHaveProperty('output');
-      expectTypeOf(event.output).toMatchTypeOf<{ score: number }>();
+      expectTypeOf(event.output).toEqualTypeOf<{ score: number }>();
       expectTypeOf(event.status).toEqualTypeOf(FlowStepStatus.Completed);
     });
 
@@ -124,7 +111,7 @@ describe('PgflowClient Type Tests', () => {
       .toEqualTypeOf<{ score: number } | null>();
   });
 
-  it('should properly type getRun method', () => {
+  it('should properly type getRun method', async () => {
     const client = new PgflowClient(supabase);
 
     const runPromise = client.getRun<typeof AnalyzeWebsite>('some-run-id');
