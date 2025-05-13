@@ -71,7 +71,7 @@
     "build": {
       "executor": "@nx/js:tsc",
       "dependsOn": ["gen-types"],
-      "inputs": ["databaseTypes"],
+      "inputs": ["default", "databaseTypes"],
       "options": {
         "outputPath": "pkgs/core/dist",
         "main": "pkgs/core/src/index.ts",
@@ -107,9 +107,13 @@
         "parallel": false
       }
     },
+    "lint:eslint": {
+      "executor": "@nx/eslint:lint",
+      "inputs": ["default"]
+    },
     "lint": {
       "executor": "nx:noop",
-      "dependsOn": ["lint:sqruff"]
+      "dependsOn": ["lint:sqruff", "lint:eslint"]
     },
     "fix-sql": {
       "executor": "nx:run-commands",
@@ -189,6 +193,7 @@
     "test:vitest": {
       "executor": "@nx/vite:test",
       "dependsOn": ["build", "verify-gen-types"],
+      "inputs": ["default", "databaseTypes"],
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "passWithNoTests": true,
