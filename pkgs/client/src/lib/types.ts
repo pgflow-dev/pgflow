@@ -1,5 +1,6 @@
 import type { AnyFlow, ExtractFlowInput, ExtractFlowOutput, ExtractFlowSteps, StepOutput } from '@pgflow/dsl';
-import type { IFlowStarter, Json, RunRow, StepStateRow, FlowRow, StepRow } from '@pgflow/core';
+import type { Json, RunRow, StepStateRow, FlowRow, StepRow } from '@pgflow/core';
+import type { FlowRun } from './FlowRun';
 
 /**
  * Flow run event types
@@ -213,6 +214,18 @@ export interface IFlowRealtime<TFlow = unknown> {
 /**
  * Composite interface for client
  */
-export interface IFlowClient<TFlow extends AnyFlow = AnyFlow>
-  extends IFlowStarter,
-    IFlowRealtime<TFlow> {}
+export interface IFlowClient<TFlow extends AnyFlow = AnyFlow> extends IFlowRealtime<TFlow> {
+  /**
+   * Start a flow with optional run_id
+   * 
+   * @param flow_slug - Flow slug to start
+   * @param input - Input data for the flow
+   * @param run_id - Optional run ID (will be generated if not provided)
+   * @returns Promise that resolves with the FlowRun instance
+   */
+  startFlow<TFlow extends AnyFlow>(
+    flow_slug: string,
+    input: ExtractFlowInput<TFlow>,
+    run_id?: string
+  ): Promise<FlowRun<TFlow>>;
+}

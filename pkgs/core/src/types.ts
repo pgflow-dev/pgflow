@@ -38,10 +38,12 @@ export type StepTaskRecord<TFlow extends AnyFlow> = {
  */
 export type StepTaskKey = Pick<StepTaskRecord<any>, 'run_id' | 'step_slug'>;
 
+
+
 /**
- * Interface for starting flows
+ * SQL Client interface for interacting with pgflow
  */
-export interface IFlowStarter {
+export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow> {
   /**
    * Start a flow with optional run_id
    */
@@ -50,12 +52,7 @@ export interface IFlowStarter {
     input: ExtractFlowInput<TFlow>,
     run_id?: string
   ): Promise<RunRow>;
-}
 
-/**
- * Interface for task processing (used by PgflowSqlClient and edge-worker)
- */
-export interface ITaskProcessor {
   /**
    * Poll for available tasks to process
    */
@@ -77,13 +74,6 @@ export interface ITaskProcessor {
    */
   failTask(stepTask: StepTaskKey, error: unknown): Promise<void>;
 }
-
-/**
- * Composite interface for backward compatibility
- */
-export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow>
-  extends IFlowStarter,
-    ITaskProcessor {}
 
 /**
  * Record representing a flow from pgflow.flows
