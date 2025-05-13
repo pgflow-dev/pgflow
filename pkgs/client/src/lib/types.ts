@@ -3,9 +3,9 @@ import type { Json, RunRow, StepStateRow, FlowRow, StepRow } from '@pgflow/core'
 import type { FlowRun } from './FlowRun';
 
 /**
- * Flow run event types
+ * Flow run event data types
  */
-export type FlowRunEvents<TFlow extends AnyFlow> = {
+export type FlowRunEventData<TFlow extends AnyFlow> = {
   started: {
     run_id: string;
     flow_slug: string;
@@ -31,9 +31,16 @@ export type FlowRunEvents<TFlow extends AnyFlow> = {
 };
 
 /**
- * Step event types
+ * Flow run event types matching nanoevents expectations
  */
-export type StepEvents<
+export type FlowRunEvents<TFlow extends AnyFlow> = {
+  [K in keyof FlowRunEventData<TFlow>]: (event: FlowRunEventData<TFlow>[K]) => void;
+};
+
+/**
+ * Step event data types
+ */
+export type StepEventData<
   TFlow extends AnyFlow,
   TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
 > = {
@@ -64,6 +71,17 @@ export type StepEvents<
     status: string;
     [key: string]: unknown;
   };
+};
+
+/**
+ * Step event types matching nanoevents expectations
+ */
+export type StepEvents<
+  TFlow extends AnyFlow,
+  TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
+> = {
+  [K in keyof StepEventData<TFlow, TStepSlug>]: 
+    (event: StepEventData<TFlow, TStepSlug>[K]) => void;
 };
 
 /**
@@ -212,6 +230,23 @@ export interface IFlowRealtime<TFlow = unknown> {
 }
 
 /**
+ * Non-generic base interface for flow runs - what the client needs
+ */
+export interface FlowRunBase {
+  readonly run_id: string;
+  updateState(event: any): boolean; // Using any here to solve invariance
+  step(stepSlug: string): FlowStepBase;
+  dispose(): void;
+}
+
+/**
+ * Non-generic base interface for flow steps - what the client needs
+ */
+export interface FlowStepBase {
+  updateState(event: any): boolean; // Using any here to solve invariance
+}
+
+/**
  * Composite interface for client
  */
 export interface IFlowClient<TFlow extends AnyFlow = AnyFlow> extends IFlowRealtime<TFlow> {
@@ -223,9 +258,9 @@ export interface IFlowClient<TFlow extends AnyFlow = AnyFlow> extends IFlowRealt
    * @param run_id - Optional run ID (will be generated if not provided)
    * @returns Promise that resolves with the FlowRun instance
    */
-  startFlow<TFlow extends AnyFlow>(
+  startFlow<TSpecificFlow extends TFlow>(
     flow_slug: string,
-    input: ExtractFlowInput<TFlow>,
+    input: ExtractFlowInput<TSpecificFlow>,
     run_id?: string
-  ): Promise<FlowRun<TFlow>>;
+  ): Promise<FlowRun<TSpecificFlow>>;
 }
