@@ -1,7 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
-import { AnalyzeWebsite } from '@pgflow/dsl/src/example-flow.js';
 import { PgflowClient } from '../src/lib/PgflowClient';
 import { FlowRunStatus, FlowStepStatus } from '../src/lib/types';
+import { Flow } from '@pgflow/dsl';
+
+const TestFlow = new Flow<number>({ slug: 'test_flow' })
+  .step({ slug: 'root' }, async (input) => ({
+    a_string: 'hello',
+    an_array: [1, 2, 3],
+    input,
+  }))
+  .step({ slug: 'node', dependsOn: ['root'] }, async (input) => ({
+    a_number: 23,
+    an_array: ['1', '2', '3'],
+    input,
+  }))
+  .step({ slug: 'leaf', dependsOn: ['root'] }, async (input) => ({
+    a_number: 23,
+    an_array: ['1', '2', '3'],
+    input,
+  }));
 
 // Create example client
 const supabaseUrl = 'https://example.supabase.co';
@@ -18,21 +35,14 @@ async function startFlowAndWait() {
   console.log('Starting flow...');
 
   // Start the flow with specific input - TypeScript will enforce correct input shape
-  const run = await client.startFlow(AnalyzeWebsite.slug, {
-    url: 'https://example.com',
-  });
-
-  console.log(`Flow started with ID: ${run.run_id}`);
-
-  // Access run properties with proper typing
-  console.log(`Current status: ${run.status}`);
-  console.log(`Input: ${JSON.stringify(run.input)}`);
+  const run = await client.startFlow<typeof TestFlow>(TestFlow.slug, 23);
 
   // Wait for the run to reach a terminal state
   console.log('Waiting for flow to complete...');
   const completed = await run.waitForStatus(FlowRunStatus.Completed, {
     timeoutMs: 30000,
   });
+  // completed.step('root').output
   // Output is fully typed according to flow definition
   console.log(`Flow completed!`);
   console.log(`Output: ${JSON.stringify(completed.output)}`);
@@ -45,37 +55,34 @@ async function startFlowAndWait() {
  */
 async function monitorSteps() {
   // Start the flow - use Flow type directly rather than typeof
-  const run = await client.startFlow(
-    AnalyzeWebsite.slug,
-    {
-      url: 'https://example.com/blog',
-    }
-  );
+  const run = await client.startFlow<typeof TestFlow>(TestFlow.slug, 23);
 
   console.log(`Monitoring steps for flow: ${run.run_id}`);
 
   // Access a specific step - step slug is typed
-  const sentimentStep = run.step('sentiment');
+  const rootStep = run.step('root');
 
   // Register event handlers with proper typing
-  sentimentStep.on('started', (event) => {
+  rootStep.on('started', (event) => {
     console.log(`Sentiment analysis started at: ${event.started_at}`);
   });
 
-  sentimentStep.on('completed', (event) => {
+  rootStep.on('completed', (event) => {
     // Output is typed according to step definition
     // Need to cast the output to the expected type
-    console.log(`Sentiment score: ${(event.output as { score: number }).score}`);
+    console.log(
+      `Sentiment score: ${(event.output as { score: number }).score}`
+    );
   });
 
   // Wait for the step to complete
-  await sentimentStep.waitForStatus(FlowStepStatus.Completed, {
+  await rootStep.waitForStatus(FlowStepStatus.Completed, {
     timeoutMs: 20000,
   });
 
   // Get step state
-  console.log(`Step status: ${sentimentStep.status}`);
-  console.log(`Step output: ${JSON.stringify(sentimentStep.output)}`);
+  console.log(`Step status: ${rootStep.status}`);
+  console.log(`Step output: ${JSON.stringify(rootStep.output)}`);
 
   return run;
 }

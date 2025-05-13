@@ -6,7 +6,12 @@ import {
   type AnyFlow,
   type ExtractFlowInput,
   type ExtractFlowOutput,
+  type ExtractFlowSteps,
+  type StepInput,
+  type StepOutput,
+  type Simplify
 } from '@pgflow/dsl';
+import { describe, it, expectTypeOf } from 'vitest';
 
 // Create a sample flow for testing
 const AnalyzeWebsite = new Flow<{ url: string }>({
@@ -27,7 +32,6 @@ const AnalyzeWebsite = new Flow<{ url: string }>({
   .step({ slug: 'saveToDb', dependsOn: ['sentiment', 'summary'] }, (input) => ({
     status: 'success',
   }));
-import { describe, it, expectTypeOf } from 'vitest';
 
 describe('PgflowClient Type Tests', () => {
   // Mock Supabase client
@@ -39,24 +43,40 @@ describe('PgflowClient Type Tests', () => {
   it('should properly type startFlow method with correct input types', () => {
     const client = new PgflowClient(supabase);
 
-    type ExpectedInput = ExtractFlowInput<typeof AnalyzeWebsite>;
-    expectTypeOf<ExpectedInput>().toEqualTypeOf<{ url: string }>();
+    // Extract the input type from the flow
+    type FlowInput = ExtractFlowInput<typeof AnalyzeWebsite>;
+    expectTypeOf<FlowInput>().toEqualTypeOf<{ url: string }>();
+    
+    // Create a simplified input that matches the flow's expected input
+    type SimpleInput = Simplify<FlowInput>;
+    expectTypeOf<SimpleInput>().toEqualTypeOf<{ url: string }>();
 
-    const startFlow = client.startFlow(AnalyzeWebsite.slug, {
-      url: 'https://example.com',
-    });
+    // Test with correct input typing
+    const startFlow = client.startFlow<typeof AnalyzeWebsite>(
+      AnalyzeWebsite.slug, 
+      {
+        url: 'https://example.com',
+      }
+    );
 
-    // Correctly enforces input type
+    // Correctly enforces input type with compile-time error for invalid inputs
     client.startFlow<typeof AnalyzeWebsite>(AnalyzeWebsite.slug, {
       // @ts-expect-error - should enforce correct input shape
       wrongProp: 'value',
     });
+    
+    // Ensures required properties are provided
+    // @ts-expect-error - should require url property
+    client.startFlow<typeof AnalyzeWebsite>(AnalyzeWebsite.slug, {});
 
     // Return type should be Promise<FlowRun<typeof AnalyzeWebsite>>
     expectTypeOf(startFlow).resolves.toHaveProperty('run_id');
     expectTypeOf(startFlow).resolves.toHaveProperty('status');
     expectTypeOf(startFlow).resolves.toHaveProperty('input');
     expectTypeOf(startFlow).resolves.toHaveProperty('waitForStatus');
+    
+    // Verify the input type is properly preserved
+    expectTypeOf(startFlow).resolves.toHaveProperty('input').toEqualTypeOf<FlowInput>();
   });
 
   it('should properly type waitForStatus method', async () => {
@@ -75,11 +95,18 @@ describe('PgflowClient Type Tests', () => {
     // Wait should return the run with proper typing
     expectTypeOf(waitResult).resolves.toHaveProperty('output');
 
-    // Output should match flow's output type
-    type ExpectedOutput = ExtractFlowOutput<typeof AnalyzeWebsite>;
+    // Output should match flow's output type using the utility type
+    type FlowOutput = ExtractFlowOutput<typeof AnalyzeWebsite>;
+    
+    // We can also verify that the output structure matches what we expect
+    expectTypeOf<FlowOutput>().toMatchTypeOf<{
+      saveToDb: { status: string };
+    }>();
+    
+    // And check that run.output has the right type
     expectTypeOf(waitResult)
       .resolves.toHaveProperty('output')
-      .toEqualTypeOf<ExpectedOutput | null>();
+      .toEqualTypeOf<FlowOutput | null>();
   });
 
   it('should properly type step method and step operations', async () => {
@@ -89,15 +116,23 @@ describe('PgflowClient Type Tests', () => {
     });
 
     // Step access with correct slug
-    const sentimentStep = run.step('sentiment');
+    type StepSlugs = keyof ExtractFlowSteps<typeof AnalyzeWebsite> & string;
+    const sentimentStepSlug: StepSlugs = 'sentiment';
+    const sentimentStep = run.step(sentimentStepSlug);
+    
     expectTypeOf(sentimentStep).toHaveProperty('status');
     expectTypeOf(sentimentStep).toHaveProperty('output');
     expectTypeOf(sentimentStep).toHaveProperty('waitForStatus');
 
+    // Check step output type matches the DSL definition
+    type SentimentOutput = StepOutput<typeof AnalyzeWebsite, 'sentiment'>;
+    expectTypeOf<SentimentOutput>().toEqualTypeOf<{ score: number }>();
+    expectTypeOf(sentimentStep.output).toEqualTypeOf<SentimentOutput | null>();
+
     // Step event handlers should have correct typings
     sentimentStep.on('completed', (event) => {
       expectTypeOf(event).toHaveProperty('output');
-      expectTypeOf(event.output).toEqualTypeOf<{ score: number }>();
+      expectTypeOf(event.output).toEqualTypeOf<SentimentOutput>();
       expectTypeOf(event.status).toEqualTypeOf(FlowStepStatus.Completed);
     });
 
@@ -108,25 +143,53 @@ describe('PgflowClient Type Tests', () => {
     expectTypeOf(stepWaitResult).resolves.toHaveProperty('output');
     expectTypeOf(stepWaitResult)
       .resolves.toHaveProperty('output')
-      .toEqualTypeOf<{ score: number } | null>();
+      .toEqualTypeOf<SentimentOutput | null>();
+      
+    // Check input type for a step
+    type SentimentInput = StepInput<typeof AnalyzeWebsite, 'sentiment'>;
+    expectTypeOf<SentimentInput>().toMatchTypeOf<{
+      run: { url: string };
+      website: { content: string };
+    }>();
   });
 
   it('should properly type getRun method', async () => {
     const client = new PgflowClient(supabase);
 
+    // Get a run with specific flow type
     const runPromise = client.getRun<typeof AnalyzeWebsite>('some-run-id');
 
+    // Extract the flow steps to check step method typing
+    type FlowSteps = ExtractFlowSteps<typeof AnalyzeWebsite>;
+    type StepSlugs = keyof FlowSteps & string;
+    
+    // Verify step slugs match our flow definition
+    type ExpectedSlugs = 'website' | 'sentiment' | 'summary' | 'saveToDb';
+    expectTypeOf<StepSlugs>().toEqualTypeOf<ExpectedSlugs>();
+    
     // getRun should return a promise that resolves to FlowRun or null
     expectTypeOf(runPromise).resolves.toEqualTypeOf<ReturnType<
       typeof client.startFlow<typeof AnalyzeWebsite>
     > | null>();
 
+    // Check the core structure of the run
     expectTypeOf(runPromise).resolves.toMatchTypeOf<{
       run_id: string;
-      step: (stepSlug: string) => any;
+      step: (stepSlug: StepSlugs) => any;
       waitForStatus: Function;
       status: FlowRunStatus;
+      input: ExtractFlowInput<typeof AnalyzeWebsite>;
+      output: ExtractFlowOutput<typeof AnalyzeWebsite> | null;
     } | null>();
+    
+    // Check step return type for a specific step
+    runPromise.then(run => {
+      if (run) {
+        const step = run.step('sentiment');
+        type SentimentOutput = StepOutput<typeof AnalyzeWebsite, 'sentiment'>;
+        expectTypeOf(step.output).toEqualTypeOf<SentimentOutput | null>();
+      }
+    });
   });
 
   it('should properly type event subscription', async () => {
@@ -147,8 +210,14 @@ describe('PgflowClient Type Tests', () => {
       expectTypeOf(event.status).toEqualTypeOf(FlowRunStatus.Completed);
 
       // Output should match flow's output type
-      type ExpectedOutput = ExtractFlowOutput<typeof AnalyzeWebsite>;
-      expectTypeOf(event.output).toEqualTypeOf<ExpectedOutput>();
+      type FlowOutput = ExtractFlowOutput<typeof AnalyzeWebsite>;
+      
+      // Verify completed event has the expected output structure
+      expectTypeOf<FlowOutput>().toHaveProperty('saveToDb');
+      expectTypeOf<FlowOutput['saveToDb']>().toEqualTypeOf<{ status: string }>();
+      
+      // Check the event output has the correct type
+      expectTypeOf(event.output).toEqualTypeOf<FlowOutput>();
     });
 
     run.on('failed', (event) => {
@@ -159,6 +228,7 @@ describe('PgflowClient Type Tests', () => {
   });
 
   it('should allow using FlowRun with generic flow type', () => {
+    // Create a generic function that can work with any flow
     function processAnyFlow<TFlow extends AnyFlow>(
       client: PgflowClient,
       flowSlug: string,
@@ -166,14 +236,32 @@ describe('PgflowClient Type Tests', () => {
     ) {
       const runPromise = client.startFlow<TFlow>(flowSlug, input);
 
+      // Ensure we have the common properties
       expectTypeOf(runPromise).resolves.toHaveProperty('run_id');
       expectTypeOf(runPromise).resolves.toHaveProperty('waitForStatus');
+      
+      // Verify the run has a step method that works with flow's step slugs
+      type FlowSteps = ExtractFlowSteps<TFlow>;
+      type StepSlugs = keyof FlowSteps & string;
+      
+      // Ensure the step method accepts a valid step slug
+      runPromise.then(run => {
+        // This would be checked at compile time
+        const step = <S extends StepSlugs>(slug: S) => run.step(slug);
+        return step;
+      });
 
       return runPromise;
     }
 
-    // Using with a specific flow
+    // Using with our specific test flow
     const client = new PgflowClient(supabase);
+    
+    // Extract the expected input type directly from the flow
+    type WebsiteInput = ExtractFlowInput<typeof AnalyzeWebsite>;
+    expectTypeOf<WebsiteInput>().toEqualTypeOf<{ url: string }>();
+    
+    // Start with properly typed input
     const run = processAnyFlow<typeof AnalyzeWebsite>(
       client,
       AnalyzeWebsite.slug,
@@ -181,8 +269,14 @@ describe('PgflowClient Type Tests', () => {
     );
 
     // Should maintain the generic flow type
+    type WebsiteOutput = ExtractFlowOutput<typeof AnalyzeWebsite>;
     expectTypeOf(run)
       .resolves.toHaveProperty('output')
-      .toEqualTypeOf<ExtractFlowOutput<typeof AnalyzeWebsite> | null>();
+      .toEqualTypeOf<WebsiteOutput | null>();
+      
+    // Verify the structure of the expected output  
+    expectTypeOf<WebsiteOutput>().toMatchTypeOf<{
+      saveToDb: { status: string };
+    }>();
   });
 });
