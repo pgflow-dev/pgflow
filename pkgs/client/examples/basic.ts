@@ -68,11 +68,7 @@ async function monitorSteps() {
   });
 
   rootStep.on('completed', (event) => {
-    // Output is typed according to step definition
-    // Need to cast the output to the expected type
-    console.log(
-      `Sentiment score: ${(event.output as { score: number }).score}`
-    );
+    event.output;
   });
 
   // Wait for the step to complete
@@ -88,46 +84,11 @@ async function monitorSteps() {
 }
 
 /**
- * Example 3: Get a previous run
- */
-async function getRun(runId: string) {
-  console.log(`Looking up run: ${runId}`);
-
-  // Fetch an existing run
-  const run = await client.getRun(runId);
-
-  if (!run) {
-    console.log(`Run not found: ${runId}`);
-    return null;
-  }
-
-  console.log(`Found run: ${run.run_id}`);
-  console.log(`Status: ${run.status}`);
-
-  // Check all steps
-  console.log('Steps:');
-  for (const stepSlug of ['website', 'sentiment', 'summary', 'saveToDb']) {
-    const step = run.step(stepSlug);
-    console.log(`  ${stepSlug}: ${step.status}`);
-
-    if (step.status === FlowStepStatus.Completed) {
-      console.log(`    Output: ${JSON.stringify(step.output)}`);
-    } else if (step.status === FlowStepStatus.Failed) {
-      console.log(`    Error: ${step.error_message}`);
-    }
-  }
-
-  return run;
-}
-
-/**
  * Example 4: Using event listeners and run lifecycle
  */
 async function subscribeToRunEvents() {
   // Start the flow
-  const run = await client.startFlow(AnalyzeWebsite.slug, {
-    url: 'https://example.com/subscribe',
-  });
+  const run = await client.startFlow<typeof TestFlow>('test_flow', 23);
 
   console.log(`Subscribed to run: ${run.run_id}`);
 
