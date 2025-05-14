@@ -65,8 +65,6 @@ Because updates happen **inside the same transaction** that handles the queue me
 
 ## 3. The execution cycle
 
-<img src="/diagrams/execution-cycle.svg" alt="Execution cycle between Worker and SQL Core: poll, process, complete, with transaction guarantees" width="90%" />
-
 1. **Worker calls** `poll_for_tasks(queue, vt, qty)`
    • Locks & returns up-to-`qty` ready tasks
    • Builds an *input object* that merges `run.input` with outputs of completed deps
