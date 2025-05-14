@@ -27,22 +27,7 @@ pgflow follows four core design principles:
 
 ## 1. Three thin layers
 
-```mermaid
-graph TD
-    subgraph "Build-time"
-      DSL[TypeScript DSL<br/>🧑‍💻 developer writes flows]
-      DSL -->|`npx pgflow compile`| SQL[SQL migration]
-    end
-    subgraph "Run-time (inside Postgres)"
-      CORE["SQL Core<br/>tables + functions"]
-    end
-    subgraph "Run-time (outside Postgres)"
-      WORKER["Any Worker/Script<br/>(Edge Worker, cron, server etc.)"]
-    end
-    SQL --> CORE
-    WORKER -->|1. poll_for_tasks| CORE
-    WORKER <-->|2. complete_task / fail_task| CORE
-```
+{/* DIAGRAM PLACEHOLDER: Three layers architecture */}
 
 Layer cheat-sheet:
 
@@ -80,6 +65,8 @@ Because updates happen **inside the same transaction** that handles the queue me
 
 ## 3. The execution cycle
 
+{/* DIAGRAM PLACEHOLDER: Execution cycle */}
+
 1. **Worker calls** `poll_for_tasks(queue, vt, qty)`
    • Locks & returns up-to-`qty` ready tasks
    • Builds an *input object* that merges `run.input` with outputs of completed deps
@@ -99,8 +86,7 @@ Retry settings are configurable at both flow and step levels, with sensible defa
 
 That's it—**two SQL calls** advance the entire graph.
 
-### Looks just like "queue-of-queues"
-
+:::note[Looks just like "queue-of-queues"]
 If you ever wrote code that:
 
 ```pseudo
@@ -109,8 +95,10 @@ process(job)
 enqueue(next_job)
 ```
 
-…then you already understand pgflow.
-The SQL Core simply *wraps* that pattern so you stop rewriting it.
+...then you already understand pgflow.
+
+The SQL Core simply **wraps** that pattern so you stop rewriting it.
+:::
 
 ---
 
@@ -118,7 +106,7 @@ The SQL Core simply *wraps* that pattern so you stop rewriting it.
 
 ### Flow definition
 
-```typescript title="supabase/functions/_flows/greet_user.ts"
+```typescript title="supabase/functions/_flows/greet_user.ts" "\"full_name\"" "input.full_name"
 import { Flow } from "npm:@pgflow/dsl";
 
 type Input = { first: string; last: string };
@@ -126,11 +114,11 @@ type Input = { first: string; last: string };
 export default new Flow<Input>({ slug: "greet_user" })
   .step(
     { slug: "full_name" },
-    (input) => `${input.run.first} ${input.run.last}`           // ⇐ return type inferred
+    (input) => `${input.run.first} ${input.run.last}` // return type inferred
   )
   .step(
     { slug: "greeting", dependsOn: ["full_name"] },
-    (input) => `Hello, ${input.full_name}!`                     // ⇐ safe access, full IntelliSense
+    (input) => `Hello, ${input.full_name}!` // safe access, full IntelliSense
   );
 ```
 
