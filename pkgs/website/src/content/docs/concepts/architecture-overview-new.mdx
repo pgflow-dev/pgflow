@@ -1,6 +1,6 @@
 ---
 title: How pgflow Works (Architecture Primer)
-description: A gentle, 10-minute introduction to pgflow’s layered architecture, state model, and execution cycle
+description: A gentle, 10-minute introduction to pgflow's layered architecture, state model, and execution cycle
 sidebar:
   order: 2
 ---
@@ -73,7 +73,8 @@ pgflow uses two categories of tables:
 - `runs` - One row per workflow execution
 - `step_states` - Tracks each step's **status / deps / tasks**
 - `step_tasks` - One row per retryable *task* (fan-outs come later)
-Because updates happen **inside the same transaction** that handles the queue message, pgflow gets ACID guarantees “for free”.
+
+Because updates happen **inside the same transaction** that handles the queue message, pgflow gets ACID guarantees "for free".
 
 ---
 
@@ -96,9 +97,9 @@ Retry settings are configurable at both flow and step levels, with sensible defa
 - Each retry uses exponential backoff (base_delay * 2^attempts) to avoid overload
 - When retries are exhausted, the step and flow are marked as failed
 
-That’s it—**two SQL calls** advance the entire graph.
+That's it—**two SQL calls** advance the entire graph.
 
-### Looks just like “queue-of-queues”
+### Looks just like "queue-of-queues"
 
 If you ever wrote code that:
 
@@ -152,7 +153,7 @@ Every other type is **inferred**:
 
 - Return type of `full_name` ➜ becomes `input.full_name` type
 - The compiler prevents you from referencing `input.summary` if it does not exist
-- Refactors propagate instantly—change one handler’s return type, dependent steps turn red in your IDE
+- Refactors propagate instantly—change one handler's return type, dependent steps turn red in your IDE
 
 <Aside type="note">
 This eliminates a whole class of runtime bugs: accessing data that will never be produced.
@@ -170,7 +171,7 @@ When a step executes, its input combines the flow input with outputs from depend
 
 ---
 
-## 6. Why “poll + complete” is liberating
+## 6. Why "poll + complete" is liberating
 
 Because *all* orchestration lives in the database:
 
@@ -191,7 +192,7 @@ The Edge Worker adds powerful reliability features:
 1. **Three simple layers** keep concerns separate.
 2. **All state** is in Postgres tables—easy to query, backup, and reason about.
 3. **Two SQL functions** (`poll_for_tasks`, `complete_task` / `fail_task`) advance the graph transactionally.
-4. The model feels like “a job queue that enqueues the next job”, but pgflow does the wiring.
+4. The model feels like "a job queue that enqueues the next job", but pgflow does the wiring.
 5. **Type inference** guarantees that every step only consumes data that actually exists.
 
 You now have the core mental model needed for the rest of the docs—no more than ten minutes well spent 🚀
