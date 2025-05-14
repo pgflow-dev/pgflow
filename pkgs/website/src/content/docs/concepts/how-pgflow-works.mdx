@@ -1,5 +1,5 @@
 ---
-title: How pgflow Works (Architecture Primer)
+title: How pgflow Works
 description: A gentle, 10-minute introduction to pgflow's layered architecture, state model, and execution cycle
 sidebar:
   order: 2
@@ -66,7 +66,7 @@ pgflow uses two categories of tables:
 
 **Definition tables:**
 - `flows` - Workflow identities and global options
-- `steps` - DAG nodes with option overrides 
+- `steps` - DAG nodes with option overrides
 - `deps` - DAG edges between steps
 
 **Runtime tables:**
