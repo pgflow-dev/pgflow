@@ -9,13 +9,19 @@ import { Aside } from "@astrojs/starlight/components";
 
 pgflow is deliberately simple inside:
 a few SQL tables, couple of SQL functions, and thin helpers around them.
-Yet those pieces compose into a full workflow engine.
+Yet those pieces compose into a full workflow engine with **Postgres as the single source of truth**.
 
 This page walks you through the **mental model** in three short hops:
 
 1. The three layers (DSL → SQL Core → Worker)
 2. The life-cycle of a task (`poll_for_tasks → complete_task | fail_task`)
 3. Why type safety and queues matter
+
+pgflow follows four core design principles:
+- **Postgres-first**: All state and orchestration logic in your database
+- **Opinionated over configurable**: Simple, sensible defaults that work for most cases
+- **Robust yet simple**: Reliability without complexity
+- **Compile-time safety**: Catch flow definition errors before runtime
 
 ---
 
@@ -49,20 +55,24 @@ Layer cheat-sheet:
 <Aside type="tip" title="Swap the Worker if you like">
 Edge Worker is just a convenience wrapper.
 Any process that can *call* `poll_for_tasks` and later *call* `complete_task` (or `fail_task`) will work.
+This modular design lets you use pgflow with any runtime environment that can connect to Postgres.
 </Aside>
 
 ---
 
 ## 2. All state lives in SQL 📊
 
-Key runtime tables (simplified):
+pgflow uses two categories of tables:
 
-| Table | Purpose |
-|-------|---------|
-| `runs` | One row per workflow execution |
-| `step_states` | Tracks each step’s **status / deps / tasks** |
-| `step_tasks` | One row per retryable *task* (fan-outs come later) |
+**Definition tables:**
+- `flows` - Workflow identities and global options
+- `steps` - DAG nodes with option overrides 
+- `deps` - DAG edges between steps
 
+**Runtime tables:**
+- `runs` - One row per workflow execution
+- `step_states` - Tracks each step's **status / deps / tasks**
+- `step_tasks` - One row per retryable *task* (fan-outs come later)
 Because updates happen **inside the same transaction** that handles the queue message, pgflow gets ACID guarantees “for free”.
 
 ---
@@ -79,6 +89,12 @@ Because updates happen **inside the same transaction** that handles the queue me
    - stores output / error
    - moves step & run state forward
    - enqueues next steps if deps are met
+   - handles errors with configurable retry logic and exponential backoff
+
+Retry settings are configurable at both flow and step levels, with sensible defaults:
+- When a task fails, it's automatically retried if attempts remain
+- Each retry uses exponential backoff (base_delay * 2^attempts) to avoid overload
+- When retries are exhausted, the step and flow are marked as failed
 
 That’s it—**two SQL calls** advance the entire graph.
 
@@ -142,6 +158,16 @@ Every other type is **inferred**:
 This eliminates a whole class of runtime bugs: accessing data that will never be produced.
 </Aside>
 
+When a step executes, its input combines the flow input with outputs from dependencies:
+
+```json
+// If 'greeting' depends on 'full_name', its input looks like:
+{
+  "run": { "first": "Jane", "last": "Doe" },
+  "full_name": "Jane Doe"
+}
+```
+
 ---
 
 ## 6. Why “poll + complete” is liberating
@@ -151,6 +177,12 @@ Because *all* orchestration lives in the database:
 - Workers are **stateless** – they can crash or scale horizontally
 - You can mix & match: one flow processed by Edge Functions, another by a Rust service
 - Observability is trivial—`SELECT * FROM pgflow.runs` is your dashboard
+
+The Edge Worker adds powerful reliability features:
+- **Automatic retries** with exponential backoff for transient failures
+- **Concurrency control** for processing multiple tasks in parallel
+- **Auto-restarts** to handle Edge Function CPU/memory limits
+- **Horizontal scaling** with multiple worker instances
 
 ---
 
