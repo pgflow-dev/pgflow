@@ -17,7 +17,7 @@ const config = {
     ],
     reporters: ['default'],
     coverage: {
-      reportsDirectory: './test-output/vitest/coverage',
+      reportsDirectory: '../../coverage/pkgs/client',
       provider: 'v8',
     },
   },

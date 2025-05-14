@@ -4,6 +4,29 @@
   "sourceRoot": "pkgs/client/src",
   "projectType": "library",
   "tags": [],
-  "// targets": "to see all targets run: nx show project client --web",
-  "targets": {}
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "outputPath": "pkgs/client/dist",
+        "main": "pkgs/client/src/index.ts",
+        "tsConfig": "pkgs/client/tsconfig.lib.json",
+        "assets": ["pkgs/client/*.md"],
+        "rootDir": "pkgs/client/src"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "inputs": ["default"]
+    },
+    "test": {
+      "executor": "@nx/vite:test",
+      "inputs": ["default"],
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "passWithNoTests": true,
+        "reportsDirectory": "{workspaceRoot}/coverage/{projectRoot}"
+      }
+    }
+  }
 }
