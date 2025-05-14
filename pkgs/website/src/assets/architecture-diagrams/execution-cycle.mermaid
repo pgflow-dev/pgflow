@@ -1,0 +1,21 @@
+sequenceDiagram
+    participant W as Worker
+    participant DB as SQL Core (in Postgres)
+    
+    W->>+DB: poll_for_tasks(queue, vt, qty)
+    DB-->>-W: task, input (from dependencies)
+    Note over W: Run handler function
+    
+    alt Success
+        W->>+DB: complete_task(run_id, step, index, output)
+    else Error
+        W->>+DB: fail_task(run_id, step, index, error)
+    end
+    
+    Note over DB: In same transaction:
+    Note over DB: - Store output/error
+    Note over DB: - Update step state
+    Note over DB: - Enqueue next steps
+    Note over DB: - Handle retries
+    
+    DB-->>-W: Acknowledgement

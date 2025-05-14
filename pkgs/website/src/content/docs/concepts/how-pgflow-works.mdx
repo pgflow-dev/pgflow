@@ -27,7 +27,7 @@ pgflow follows four core design principles:
 
 ## 1. Three thin layers
 
-{/* DIAGRAM PLACEHOLDER: Three layers architecture */}
+<img src="/diagrams/three-layers.svg" alt="Three layers of pgflow architecture: TypeScript DSL, SQL Core, and Worker" width="90%" />
 
 Layer cheat-sheet:
 
@@ -65,7 +65,7 @@ Because updates happen **inside the same transaction** that handles the queue me
 
 ## 3. The execution cycle
 
-{/* DIAGRAM PLACEHOLDER: Execution cycle */}
+<img src="/diagrams/execution-cycle.svg" alt="Execution cycle between Worker and SQL Core: poll, process, complete, with transaction guarantees" width="90%" />
 
 1. **Worker calls** `poll_for_tasks(queue, vt, qty)`
    • Locks & returns up-to-`qty` ready tasks
