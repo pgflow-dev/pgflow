@@ -174,6 +174,11 @@ export class FlowStep<
       return false;
     }
     
+    // Validate event is for this run
+    if (event.run_id !== this.#state.run_id) {
+      return false;
+    }
+    
     // Check if the event status has higher precedence than current status
     if (!this.#shouldUpdateStatus(this.#state.status, event.status)) {
       return false;
