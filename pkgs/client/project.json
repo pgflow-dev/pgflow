@@ -20,12 +20,10 @@
       "inputs": ["default"]
     },
     "test": {
-      "executor": "@nx/vite:test",
-      "inputs": ["default"],
-      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "executor": "nx:run-commands",
       "options": {
-        "passWithNoTests": true,
-        "reportsDirectory": "{workspaceRoot}/coverage/{projectRoot}"
+        "command": "vitest run",
+        "cwd": "pkgs/client"
       }
     }
   }
