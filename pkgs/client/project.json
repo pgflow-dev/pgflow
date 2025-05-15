@@ -1,0 +1,30 @@
+{
+  "name": "client",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "pkgs/client/src",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "outputPath": "pkgs/client/dist",
+        "main": "pkgs/client/src/index.ts",
+        "tsConfig": "pkgs/client/tsconfig.lib.json",
+        "assets": ["pkgs/client/*.md"],
+        "rootDir": "pkgs/client/src"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "inputs": ["default"]
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest run",
+        "cwd": "pkgs/client"
+      }
+    }
+  }
+}

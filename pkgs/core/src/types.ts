@@ -3,6 +3,7 @@ import type {
   StepInput,
   Simplify,
   AnyFlow,
+  ExtractFlowInput,
 } from '@pgflow/dsl';
 import type { Database } from './database-types.js';
 
@@ -37,17 +38,23 @@ export type StepTaskRecord<TFlow extends AnyFlow> = {
  */
 export type StepTaskKey = Pick<StepTaskRecord<any>, 'run_id' | 'step_slug'>;
 
+
+
 /**
- * Interface for interacting with pgflow database functions
+ * SQL Client interface for interacting with pgflow
  */
 export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow> {
   /**
-   * Fetches tasks from pgflow
-   * @param queueName - Name
-   * @param batchSize - Number of tasks to fetch
-   * @param visibilityTimeout - Visibility timeout for tasks
-   * @param maxPollSeconds - Maximum time to poll for tasks
-   * @param pollIntervalMs - Poll interval in milliseconds
+   * Start a flow with optional run_id
+   */
+  startFlow<TFlow extends AnyFlow>(
+    flow_slug: string,
+    input: ExtractFlowInput<TFlow>,
+    run_id?: string
+  ): Promise<RunRow>;
+
+  /**
+   * Poll for available tasks to process
    */
   pollForTasks(
     queueName: string,
@@ -55,19 +62,15 @@ export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow> {
     visibilityTimeout?: number,
     maxPollSeconds?: number,
     pollIntervalMs?: number
-  ): Promise<StepTaskRecord<TFlow>[]>;
+  ): Promise<StepTaskRecord<AnyFlow>[]>;
 
   /**
-   * Marks a task as completed
-   * @param stepTask - Step task key containing run_id and step_slug
-   * @param output - Output payload for the task
+   * Mark a task as completed with output
    */
   completeTask(stepTask: StepTaskKey, output?: Json): Promise<void>;
 
   /**
-   * Marks a task as failed
-   * @param stepTask - Step task key containing run_id and step_slug
-   * @param error - Error to fail task with
+   * Mark a task as failed with error
    */
   failTask(stepTask: StepTaskKey, error: unknown): Promise<void>;
 }
