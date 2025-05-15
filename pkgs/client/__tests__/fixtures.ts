@@ -1,13 +1,33 @@
 import { vi } from 'vitest';
 import { FlowRunStatus, FlowStepStatus } from '../src/lib/types';
-import type { RunRow, StepStateRow } from '@pgflow/core';
+import type { 
+  RunRow, 
+  StepStateRow, 
+  StepRow, 
+  FlowRow 
+} from '@pgflow/core';
+import type {
+  BroadcastRunEvent,
+  BroadcastStepEvent,
+  BroadcastRunStartedEvent,
+  BroadcastRunCompletedEvent,
+  BroadcastRunFailedEvent,
+  BroadcastStepStartedEvent,
+  BroadcastStepCompletedEvent,
+  BroadcastStepFailedEvent,
+} from '../src/lib/types';
 
-// Test data
+// Test data constants
 export const RUN_ID = '123e4567-e89b-12d3-a456-426614174000';
 export const FLOW_SLUG = 'test-flow';
 export const STEP_SLUG = 'test-step';
+export const ANOTHER_STEP_SLUG = 'another-step';
 
-// Flow run snapshots for different states
+// ===== DATABASE SNAPSHOTS =====
+
+/**
+ * Complete run with multiple steps in started state
+ */
 export const startedRunSnapshot: RunRow = {
   run_id: RUN_ID,
   flow_slug: FLOW_SLUG,
@@ -18,9 +38,12 @@ export const startedRunSnapshot: RunRow = {
   started_at: new Date().toISOString(),
   completed_at: null,
   failed_at: null,
-  remaining_steps: 1,
+  remaining_steps: 2,
 };
 
+/**
+ * Completed run snapshot with output
+ */
 export const completedRunSnapshot: RunRow = {
   ...startedRunSnapshot,
   status: 'completed',
@@ -29,14 +52,44 @@ export const completedRunSnapshot: RunRow = {
   remaining_steps: 0,
 };
 
+/**
+ * Failed run snapshot with error message
+ */
 export const failedRunSnapshot: RunRow = {
   ...startedRunSnapshot,
   status: 'failed',
   error_message: 'Something went wrong',
   failed_at: new Date().toISOString(),
+  remaining_steps: 1, // One step was never completed
 };
 
-// Step state samples for different states
+/**
+ * Extended step states collection for tests requiring multiple steps
+ */
+export const stepStatesSample: StepStateRow[] = [
+  {
+    run_id: RUN_ID,
+    step_slug: STEP_SLUG,
+    status: 'started',
+    started_at: new Date().toISOString(),
+    completed_at: null,
+    failed_at: null,
+    error_message: null,
+  },
+  {
+    run_id: RUN_ID,
+    step_slug: ANOTHER_STEP_SLUG,
+    status: 'created',
+    started_at: null,
+    completed_at: null,
+    failed_at: null,
+    error_message: null,
+  }
+];
+
+/**
+ * Started step state sample
+ */
 export const startedStepState: StepStateRow = {
   run_id: RUN_ID,
   step_slug: STEP_SLUG,
@@ -47,6 +100,9 @@ export const startedStepState: StepStateRow = {
   error_message: null,
 };
 
+/**
+ * Completed step state sample
+ */
 export const completedStepState: StepStateRow = {
   ...startedStepState,
   status: 'completed',
@@ -54,6 +110,9 @@ export const completedStepState: StepStateRow = {
   output: { step_result: 'success' },
 };
 
+/**
+ * Failed step state sample
+ */
 export const failedStepState: StepStateRow = {
   ...startedStepState,
   status: 'failed',
@@ -61,18 +120,58 @@ export const failedStepState: StepStateRow = {
   error_message: 'Step failed',
 };
 
-// Broadcast events
-export const broadcastRunStarted = {
+/**
+ * Sample flow definition
+ */
+export const sampleFlowDefinition: FlowRow = {
+  flow_slug: FLOW_SLUG,
+  version: '1.0.0',
+  definition: { steps: [STEP_SLUG, ANOTHER_STEP_SLUG] },
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
+
+/**
+ * Sample steps definition
+ */
+export const sampleStepsDefinition: StepRow[] = [
+  {
+    flow_slug: FLOW_SLUG,
+    step_slug: STEP_SLUG,
+    step_index: 0,
+    dependencies: [],
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    flow_slug: FLOW_SLUG,
+    step_slug: ANOTHER_STEP_SLUG,
+    step_index: 1,
+    dependencies: [STEP_SLUG],
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }
+];
+
+// ===== BROADCAST EVENTS =====
+
+/**
+ * Run started broadcast event
+ */
+export const broadcastRunStarted: BroadcastRunStartedEvent = {
   event_type: 'run:started',
   run_id: RUN_ID,
   flow_slug: FLOW_SLUG,
   status: FlowRunStatus.Started,
   input: { foo: 'bar' },
   started_at: new Date().toISOString(),
-  remaining_steps: 1,
+  remaining_steps: 2,
 };
 
-export const broadcastRunCompleted = {
+/**
+ * Run completed broadcast event
+ */
+export const broadcastRunCompleted: BroadcastRunCompletedEvent = {
   event_type: 'run:completed',
   run_id: RUN_ID,
   flow_slug: FLOW_SLUG,
@@ -81,7 +180,10 @@ export const broadcastRunCompleted = {
   completed_at: new Date().toISOString(),
 };
 
-export const broadcastRunFailed = {
+/**
+ * Run failed broadcast event
+ */
+export const broadcastRunFailed: BroadcastRunFailedEvent = {
   event_type: 'run:failed',
   run_id: RUN_ID,
   flow_slug: FLOW_SLUG,
@@ -90,7 +192,10 @@ export const broadcastRunFailed = {
   failed_at: new Date().toISOString(),
 };
 
-export const broadcastStepStarted = {
+/**
+ * Step started broadcast event
+ */
+export const broadcastStepStarted: BroadcastStepStartedEvent = {
   event_type: 'step:started',
   run_id: RUN_ID,
   step_slug: STEP_SLUG,
@@ -100,7 +205,10 @@ export const broadcastStepStarted = {
   remaining_deps: 0,
 };
 
-export const broadcastStepCompleted = {
+/**
+ * Step completed broadcast event
+ */
+export const broadcastStepCompleted: BroadcastStepCompletedEvent = {
   event_type: 'step:completed',
   run_id: RUN_ID,
   step_slug: STEP_SLUG,
@@ -109,7 +217,10 @@ export const broadcastStepCompleted = {
   completed_at: new Date().toISOString(),
 };
 
-export const broadcastStepFailed = {
+/**
+ * Step failed broadcast event
+ */
+export const broadcastStepFailed: BroadcastStepFailedEvent = {
   event_type: 'step:failed',
   run_id: RUN_ID,
   step_slug: STEP_SLUG,
@@ -118,16 +229,63 @@ export const broadcastStepFailed = {
   failed_at: new Date().toISOString(),
 };
 
-// Helper function to emit events & advance timers
-export function advanceAndFlush(ms: number): void {
+/**
+ * Collection of all events in sequence for a happy path
+ */
+export const happyPathEventSequence = [
+  broadcastRunStarted,
+  broadcastStepStarted,
+  broadcastStepCompleted,
+  {
+    ...broadcastStepStarted,
+    step_slug: ANOTHER_STEP_SLUG,
+  } as BroadcastStepStartedEvent,
+  {
+    ...broadcastStepCompleted,
+    step_slug: ANOTHER_STEP_SLUG,
+  } as BroadcastStepCompletedEvent,
+  broadcastRunCompleted,
+];
+
+/**
+ * Collection of events for a failure path
+ */
+export const failurePathEventSequence = [
+  broadcastRunStarted,
+  broadcastStepStarted,
+  broadcastStepFailed,
+  broadcastRunFailed,
+];
+
+// ===== TEST UTILITIES =====
+
+/**
+ * Helper function to emit events & advance timers, ensuring all microtasks are processed
+ * 
+ * @param ms - Milliseconds to advance
+ * @returns Promise that resolves when all microtasks are processed
+ */
+export async function advanceAndFlush(ms: number): Promise<void> {
+  // First advance by the specified time
   vi.advanceTimersByTime(ms);
-  // Flush any pending microtasks
-  return new Promise((resolve) => {
-    setImmediate(resolve);
-  });
+  
+  // Run any pending timers
+  vi.runAllTimers();
+  
+  // Flush all microtasks (Promises, etc.)
+  vi.runAllTicks();
+  
+  // Return a resolved promise to ensure async context is properly handled
+  return Promise.resolve();
 }
 
-// Helper to emit broadcast events
+/**
+ * Helper to emit broadcast events to a channel directly
+ * 
+ * @param channelMock - Channel mock to emit on
+ * @param eventType - Type of event to emit
+ * @param payload - Event payload
+ */
 export function emit(
   channelMock: any, 
   eventType: string, 
@@ -137,4 +295,95 @@ export function emit(
   if (handler) {
     handler({ event: eventType, payload });
   }
+}
+
+/**
+ * Create a complete run snapshot with steps for a given status
+ * 
+ * @param status - Run status
+ * @param stepStatuses - Map of step slug to status
+ * @returns Object with run and steps state
+ */
+export function createRunSnapshot(
+  status: 'started' | 'completed' | 'failed', 
+  stepStatuses: Record<string, 'created' | 'started' | 'completed' | 'failed'> = {}
+): { run: RunRow; steps: StepStateRow[] } {
+  // Base run based on status
+  let run: RunRow;
+  switch (status) {
+    case 'started':
+      run = { ...startedRunSnapshot };
+      break;
+    case 'completed':
+      run = { ...completedRunSnapshot };
+      break;
+    case 'failed':
+      run = { ...failedRunSnapshot };
+      break;
+  }
+
+  // Create step states based on provided map
+  const steps: StepStateRow[] = Object.entries(stepStatuses).map(([slug, status]) => {
+    const baseStep = {
+      run_id: RUN_ID,
+      step_slug: slug,
+      status,
+      started_at: null,
+      completed_at: null,
+      failed_at: null,
+      error_message: null,
+    };
+
+    switch (status) {
+      case 'started':
+        return {
+          ...baseStep,
+          started_at: new Date().toISOString(),
+        };
+      case 'completed':
+        return {
+          ...baseStep,
+          started_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+          output: { step_result: `${slug} completed` },
+        };
+      case 'failed':
+        return {
+          ...baseStep,
+          started_at: new Date().toISOString(),
+          failed_at: new Date().toISOString(),
+          error_message: `${slug} failed`,
+        };
+      default:
+        return baseStep;
+    }
+  });
+
+  return { run, steps };
+}
+
+/**
+ * Create a function that, when called, will emit all events in a sequence with specified delay between them
+ * 
+ * @param channelMock - Channel mock to emit events on
+ * @param events - Array of events to emit in sequence
+ * @param delayMs - Milliseconds of delay between events
+ * @returns Function that starts the emission sequence
+ */
+export function createEventSequenceEmitter(
+  channelMock: any,
+  events: (BroadcastRunEvent | BroadcastStepEvent)[],
+  delayMs = 100
+): () => void {
+  return () => {
+    let timeoutId: NodeJS.Timeout;
+    
+    // Set up delayed emissions
+    events.forEach((event, index) => {
+      timeoutId = setTimeout(() => {
+        const eventType = event.event_type;
+        emit(channelMock, eventType, event);
+      }, index * delayMs);
+    });
+  };
 }
