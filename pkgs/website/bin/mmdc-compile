@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Check if an argument was provided
+if [ $# -eq 0 ]; then
+  echo "Usage: $0 <path-to-mermaid-file>"
+  exit 1
+fi
+
+# Get the input file path
+input_file="$1"
+
+# Check if the input file exists
+if [ ! -f "$input_file" ]; then
+  echo "Error: File '$input_file' not found"
+  exit 1
+fi
+
+# Extract the basename without extension
+basename=$(basename "$input_file" .mermaid)
+
+# Create output directory if it doesn't exist
+mkdir -p public/diagrams
+
+# Output file path
+output_file="public/diagrams/${basename}.svg"
+
+# Compile the mermaid file to SVG
+mmdc --theme dark --output "$output_file" --backgroundColor '#121a19' < "$input_file"
+
+echo "Compiled $input_file to $output_file"
