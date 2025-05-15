@@ -50,13 +50,13 @@ When suggesting changes or improvements, bias heavily toward solutions that can 
 
 ## Build/Test Commands
 
-- `nx build <package>` - Build a specific package
-- `nx test <package>` - Run tests for a specific package
-- `nx test:pgtap <package>` - Run PostgreSQL tap tests
-- `nx test:pgtap:watch <package>` - Run PostgreSQL tap tests in watch mode
-- `nx test:vitest <package>` - Run vitest unit tests
-- `nx lint <package>` - Run linting
-- `nx fix-sql <package>` - Fix SQL formatting issues
+- `pnpm nx build <package>` - Build a specific package
+- `pnpm nx test <package>` - Run tests for a specific package
+- `pnpm nx test:pgtap <package>` - Run PostgreSQL tap tests
+- `pnpm nx test:pgtap:watch <package>` - Run PostgreSQL tap tests in watch mode
+- `pnpm nx test:vitest <package>` - Run vitest unit tests
+- `pnpm nx lint <package>` - Run linting
+- `pnpm nx fix-sql <package>` - Fix SQL formatting issues
 
 ## Code Style Guidelines
 
