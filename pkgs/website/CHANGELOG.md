@@ -1,5 +1,11 @@
 # @pgflow/website
 
+## 0.2.3
+
+### Patch Changes
+
+- b0cd6bc: Update visibilityTimeout default value to 10s for queue-based worker
+
 ## 0.2.2
 
 ## 0.2.1

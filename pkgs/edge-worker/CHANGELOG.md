@@ -1,5 +1,13 @@
 # @pgflow/edge-worker
 
+## 0.2.3
+
+### Patch Changes
+
+- b0cd6bc: Update visibilityTimeout default value to 10s for queue-based worker
+  - @pgflow/core@0.2.3
+  - @pgflow/dsl@0.2.3
+
 ## 0.2.2
 
 ### Patch Changes
