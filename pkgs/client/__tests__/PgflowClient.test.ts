@@ -253,4 +253,50 @@ describe('PgflowClient', () => {
     expect(disposeSpy).toHaveBeenCalledWith('1');
     expect(disposeSpy).toHaveBeenCalledWith('2');
   });
+
+  test('handles step events for steps that have not been previously accessed', async () => {
+    const { client, mocks } = mockSupabase();
+    
+    // Mock the RPC call
+    mocks.rpc.mockReturnValueOnce({
+      data: {
+        run: startedRunSnapshot,
+        steps: [],
+      },
+      error: null,
+    });
+    
+    const pgflowClient = new PgflowClient(client);
+    
+    // Start a flow
+    const run = await pgflowClient.startFlow(FLOW_SLUG, { foo: 'bar' });
+    
+    // Spy on the run.step method
+    const stepSpy = vi.spyOn(run, 'step');
+    
+    // Get handler from the mock channel
+    const broadcastHandler = mocks.channel.handlers.get('*');
+    expect(broadcastHandler).toBeDefined();
+    
+    if (broadcastHandler) {
+      // Event for step that has never been accessed before
+      const neverAccessedStepEvent = {
+        ...broadcastStepStarted,
+        step_slug: 'never-accessed-step'
+      };
+      
+      // Trigger broadcast event
+      broadcastHandler({ 
+        event: 'step:started', 
+        payload: neverAccessedStepEvent 
+      });
+      
+      // Verify the step was created on demand
+      expect(stepSpy).toHaveBeenCalledWith('never-accessed-step');
+      
+      // Verify step was materialized and has correct state
+      const step = run.step('never-accessed-step');
+      expect(step.status).toBe(FlowStepStatus.Started);
+    }
+  });
 });

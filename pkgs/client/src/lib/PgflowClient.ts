@@ -45,11 +45,10 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
     this.#realtimeAdapter.onStepEvent((event) => {
       const run = this.#runs.get(event.run_id);
       if (run) {
-        // The step might not exist yet, but we should check if the run can handle this step
+        // Always materialize the step before updating to avoid event loss
+        // This ensures we cache all steps even if they were never explicitly requested
         const stepSlug = event.step_slug;
-        if (run.hasStep(stepSlug)) {
-          run.step(stepSlug).updateState(event);
-        }
+        run.step(stepSlug).updateState(event);
       }
     });
   }
