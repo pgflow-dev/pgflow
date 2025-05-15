@@ -112,7 +112,7 @@ export default (program: Command) => {
       outroMessages.push(
         chalk.bold('Continue the setup:'),
         chalk.blue.underline(
-          'https://pgflow.dev/getting-started/compile-to-sql/'
+          'https://pgflow.dev/getting-started/create-first-flow/'
         )
       );
 
