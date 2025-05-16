@@ -12,18 +12,25 @@ Unlike traditional approaches that require separate job queues and processing in
 
 ## Prerequisites
 
-Before we dive in, make sure you have:
+:::caution[Required setup]
+Before you begin, make sure you have:
+- A local Supabase project with pgflow installed
+- If you haven't set up pgflow yet, follow the [install pgflow guide](/getting-started/install-pgflow/) first
+- If you need to create a Supabase project, see the [getting started guide](/getting-started/) first
+:::
 
-- pgflow 0.2.3 CLI & DSL (`npx pgflow@0.2.3 ...`)
-- Supabase CLI ≥ 2 (`npx supabase@latest ...`)
-- Node 18+ and Deno 1.45+
-- A local Supabase project (link-placeholder to getting-started guide)
-- These environment variables configured:
-  ```
-  OPENAI_API_KEY=sk-...
-  SUPABASE_URL=...
-  SUPABASE_SERVICE_ROLE_KEY=...
-  ```
+You'll also need:
+- Your OpenAI API key for the AI analysis features
+
+Add your OpenAI API key to `supabase/functions/.env` alongside your existing Edge Worker environment variables:
+```
+# Existing Edge Worker vars...
+EDGE_WORKER_DB_URL=...
+EDGE_WORKER_LOG_LEVEL=...
+
+# Add your OpenAI API key
+OPENAI_API_KEY=sk-...
+```
 
 ---
 
