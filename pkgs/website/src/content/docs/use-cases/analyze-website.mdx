@@ -36,9 +36,24 @@ OPENAI_API_KEY=sk-...
 
 ## Step 1 - Create the destination table
 
-First, let's create a place to store our website analysis results. We'll need a simple table that can hold the URL we processed, the AI-generated summary, and extracted keyword tags.
+First, we need to create a migration file to set up the database table where we'll store our website analysis results.
+
+### Create a new migration
+
+Create a new migration file in your Supabase project:
+
+```bash
+npx supabase migration new add_websites
+```
+
+This will create a new file in the `supabase/migrations` directory with a timestamp prefix, like `20240516123456_add_websites.sql`.
+
+### Add the table definition
+
+Open the newly created migration file and add this SQL:
 
 ```sql
+-- Create the websites table to store analysis results
 create table public.websites (
   id           bigserial primary key,
   user_id      uuid,
@@ -47,9 +62,22 @@ create table public.websites (
   tags         text[],
   created_at   timestamptz default now()
 );
+
+-- Add index to speed up common queries
+create index idx_websites_user_id on public.websites (user_id);
 ```
 
-This table provides everything we need: a unique ID, the user who initiated the analysis, the website URL, fields for our AI-generated content, and a timestamp for when the record was created. The `summary` and `tags` columns will be populated by our workflow later.
+This table provides everything we need: a unique ID, the user who initiated the analysis, the website URL, fields for our AI-generated content, and a timestamp for when the record was created.
+
+### Apply the migration
+
+Run the migration to create the table in your local database:
+
+```bash
+npx supabase migration up --local
+```
+
+You should see confirmation that the migration was applied successfully. You can verify the table was created by checking the Supabase Dashboard's Table Editor or running `select * from public.websites;` in the SQL Editor.
 
 ---
 
