@@ -342,7 +342,39 @@ Under the hood, the compiler generates a sequence of `pgflow.create_flow` and `p
 
 ---
 
-## Step 5 - Run the stack and test the flow
+## Step 5 - Create a worker function
+
+For your flow to run, you need to create an Edge Function worker:
+
+```bash
+# Create a worker for your flow
+npx supabase functions new analyze_website_worker
+```
+
+Replace the contents of the generated index.ts with:
+
+```typescript title="supabase/functions/analyze_website_worker/index.ts"
+import { EdgeWorker } from "jsr:@pgflow/edge-worker";
+import AnalyzeWebsite from '../_flows/analyze_website.ts';
+
+// Pass the flow definition to the Edge Worker
+EdgeWorker.start(AnalyzeWebsite);
+```
+
+Disable JWT verification in `supabase/config.toml`:
+
+```diff title="supabase/config.toml"
+  [functions.analyze_website_worker]
+  enabled = true
+- verify_jwt = true
++ verify_jwt = false
+```
+
+:::note
+This is a simplified setup for local development. For more details on worker setup and configuration, see the [Run Flow guide](/getting-started/run-flow/).
+:::
+
+## Step 6 - Run the stack and test the flow
 
 Now it's time to see our creation in action. We'll need three terminal windows to run the full system:
 
@@ -353,10 +385,8 @@ npx supabase@latest start
 # Terminal 2 - serve Edge Functions (this loads the tasks)
 npx supabase@latest functions serve
 
-# Terminal 3 - spawn two workers that poll the 'analyze_website' queue
-for i in 0 1; do
-  curl http://127.0.0.1:54321/functions/v1/analyze_website_worker_$i &
-done
+# Terminal 3 - start the worker
+curl http://127.0.0.1:54321/functions/v1/analyze_website_worker
 ```
 
 With everything running, let's trigger our flow from the Supabase SQL editor (or `psql`):
