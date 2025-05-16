@@ -175,22 +175,22 @@ import { z } from "jsr:@zod/zod";
 import { zodTextFormat } from "jsr:@openai/openai@4.33.0/helpers/zod";
 
 const openai = new OpenAI();
-const TagsSchema = z.object({ keywords: z.array(z.string()).max(10) });
+const TagsSchema = z.object({ tags: z.array(z.string()).max(10) });
 
 export default async function extractTags(content: string) {
-  console.log("[extractTags] extracting keywords");
+  console.log("[extractTags] extracting tags");
 
   const response = await openai.responses.parse({
     model: "gpt-4o",
     input: [
       { role: "system",
-        content: "Return 5-10 descriptive keywords." },
+        content: "Return 5-10 descriptive tags." },
       { role: "user", content },
     ],
-    text: { format: zodTextFormat(TagsSchema, "keywords") },
+    text: { format: zodTextFormat(TagsSchema, "tags") },
   });
 
-  return response.output_parsed.keywords;
+  return response.output_parsed.tags;
 }
 ```
 </details>
