@@ -125,7 +125,7 @@ export default async function scrapeWebsite(url: string) {
 ```
 
 :::caution[Production HTML Processing]
-The HTML sanitization here (using regex) is intentionally simplified for the tutorial. For production use, consider using a proper HTML-to-text library like [html-to-text](https://github.com/html-to-text/node-html-to-text) or [Turndown](https://github.com/mixmark-io/turndown) for more robust HTML-to-markdown conversion.
+The regex-based HTML sanitization is simplified for clarity. For production, use a dedicated library like [html-to-text](https://github.com/html-to-text/node-html-to-text) to properly handle complex pages, nested elements, and encoding issues.
 :::
 </details>
 
@@ -133,10 +133,19 @@ The HTML sanitization here (using regex) is intentionally simplified for the tut
 
 These two functions use OpenAI's API to analyze the webpage content in different ways. They both use Zod schemas to validate the AI responses and ensure proper typing.
 
+:::tip[OpenAI Structured Outputs]
+These functions use OpenAI's [Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs) feature with [Zod schemas](https://zod.dev/) to:
+- Ensure LLM responses are properly structured and typed
+- Validate output against a defined schema 
+- Save parsing/validation code by leveraging `zodTextFormat`
+
+This approach creates robust, type-safe interactions with AI services that will surface validation errors rather than fail silently with incorrect data structures. Explore Zod's [documentation](https://zod.dev/?id=introduction) to create more complex validation schemas.
+:::
+
 <details>
   <summary><strong>summarizeWithAI.ts</strong> - Generate an AI summary</summary>
 
-This function asks GPT-4o to generate a concise summary of the webpage content, returning a single paragraph of text.
+This function asks GPT-4o to generate a concise summary of the webpage content, returning a single paragraph of text. It uses OpenAI's Structured Output feature with Zod to ensure the response has the expected structure.
 
 ```ts
 import OpenAI from "openai";
@@ -144,7 +153,7 @@ import { z } from "zod";
 import { zodTextFormat } from "openai/helpers/zod";
 
 const openai = new OpenAI();
-const Shape = z.object({ summary: z.string() });
+const SummarySchema = z.object({ summary: z.string() });
 
 export default async function summarizeWithAI(content: string) {
   console.log("[summarizeWithAI] len", content.length);
@@ -155,7 +164,7 @@ export default async function summarizeWithAI(content: string) {
       { role: "system", content: "Return a short paragraph summary." },
       { role: "user", content },
     ],
-    text: { format: zodTextFormat(Shape, "summary") },
+    text: { format: zodTextFormat(SummarySchema, "summary") },
   });
 
   return rsp.output_parsed.summary;
@@ -166,7 +175,7 @@ export default async function summarizeWithAI(content: string) {
 <details>
   <summary><strong>extractTags.ts</strong> - Extract keyword tags</summary>
 
-This function analyzes the content to extract 5-10 relevant keyword tags that describe the webpage's topics or themes.
+This function analyzes the content to extract 5-10 relevant keyword tags that describe the webpage's topics or themes. The Zod schema enforces that the response is an array of strings with a maximum of 10 items.
 
 ```ts
 import OpenAI from "openai";
@@ -174,7 +183,7 @@ import { z } from "zod";
 import { zodTextFormat } from "openai/helpers/zod";
 
 const openai = new OpenAI();
-const Tags = z.object({ keywords: z.array(z.string()).max(10) });
+const TagsSchema = z.object({ keywords: z.array(z.string()).max(10) });
 
 export default async function extractTags(content: string) {
   console.log("[extractTags] run");
@@ -186,7 +195,7 @@ export default async function extractTags(content: string) {
         content: "Return 5-10 descriptive keywords." },
       { role: "user", content },
     ],
-    text: { format: zodTextFormat(Tags, "tags") },
+    text: { format: zodTextFormat(TagsSchema, "tags") },
   });
 
   return rsp.output_parsed.keywords;
