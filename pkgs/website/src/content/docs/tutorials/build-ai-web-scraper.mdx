@@ -1,17 +1,17 @@
 ---
-title: Scraping a website with pgflow and AI
-description: Build a 4-step workflow that scrapes a webpage, analyses it with OpenAI, and stores the results
+title: Build an AI-Powered Web Scraper
+description: Create a 4-step workflow that scrapes webpages, analyzes content with OpenAI, and stores results in Postgres
 ---
 
 import { Steps } from '@astrojs/starlight/components';
 
 **Read:** 15 min | **Implement:** 30 min
 
-4-step ETL: scrape → 2×AI → Postgres
+Build an AI-powered scraper: fetch → parallel AI analysis → store
 
-## What we will build
+## What you'll build
 
-You'll build a 4-step workflow that scrapes a page, analyses it with OpenAI, and stores the results.
+You'll create an AI-powered web scraper that intelligently analyzes web content using OpenAI, then stores structured data in your database.
 
 1. Fetches a web page content
 2. Processes it with **two parallel AI operations** (summary and keyword extraction)
@@ -23,9 +23,9 @@ See prerequisites below before you start.
 
 Diagram of the 4-step [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph)
 
-:::tip[Why pgflow?]
-pgflow stores workflow DAGs, retry logic, and execution history directly in Postgres.
-This means simpler infrastructure and built-in observability.
+:::tip[Why pgflow for AI scraping?]
+pgflow handles the complexity of AI workflows: automatic retries for API failures, parallel processing for multiple AI calls, and full observability of your scraping pipeline.
+Everything runs in your database with built-in reliability.
 See [How pgflow Works](/concepts/how-pgflow-works/) for details.
 :::
 
