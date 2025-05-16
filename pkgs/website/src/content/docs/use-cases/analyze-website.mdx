@@ -67,18 +67,15 @@ Open the newly created migration file and add this SQL:
 -- Create the websites table to store analysis results
 create table public.websites (
   id           bigserial primary key,
-  user_id      uuid,
   website_url  text not null,
   summary      text,
   tags         text[],
   created_at   timestamptz default now()
 );
 
--- Add optional index for user-based queries
-create index idx_websites_user_id on public.websites (user_id);
 ```
 
-This table provides everything needed: a unique ID, the user who initiated the analysis, the website URL, fields for AI-generated content, and a timestamp for when the record was created.
+This table provides everything needed: a unique ID, the website URL, fields for AI-generated content, and a timestamp for when the record was created.
 
 ### Apply the migration
 
@@ -221,7 +218,7 @@ const supabase = createClient(
 );
 
 export default async function saveWebsite(row: {
-  user_id: string; website_url: string; summary: string; tags: string[];
+  website_url: string; summary: string; tags: string[];
 }) {
   console.log("[saveWebsite] inserting row");
   await supabase.from("websites").insert(row).throwOnError();
@@ -257,7 +254,7 @@ import summarizeWithAI from "../_tasks/summarizeWithAI.ts";
 import extractTags     from "../_tasks/extractTags.ts";
 import saveWebsite     from "../_tasks/saveWebsite.ts";
 
-type Input = { url: string; user_id: string };
+type Input = { url: string };
 
 export default new Flow<Input>({ slug: "analyze_website", maxAttempts: 3 })
   .step({ slug: "website" },
@@ -271,7 +268,7 @@ export default new Flow<Input>({ slug: "analyze_website", maxAttempts: 3 })
 
   .step({ slug: "saveToDb", dependsOn: ["summary", "tags"] },
     ({ run, summary, tags }) =>
-      saveWebsite({ user_id: run.user_id, website_url: run.url, summary, tags }));
+      saveWebsite({ website_url: run.url, summary, tags }));
 ```
 
 <details open="false">
@@ -417,10 +414,9 @@ curl http://127.0.0.1:54321/functions/v1/analyze_website_worker
 With everything running, let's trigger our flow from the Supabase SQL editor (or `psql`):
 
 ```sql
--- Use uuid_generate_v4() to generate a random UUID for user_id in real applications
 select * from pgflow.start_flow(
   flow_slug => 'analyze_website',
-  input     => '{"url":"https://supabase.com","user_id":"00000000-0000-0000-0000-000000000000"}'
+  input     => '{"url":"https://supabase.com"}'
 );
 ```
 
