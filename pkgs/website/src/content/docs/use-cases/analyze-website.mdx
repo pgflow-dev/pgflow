@@ -6,6 +6,10 @@ Ever wanted to automatically scrape a website, analyze its content with AI, and 
 
 You'll create a 4-step workflow that fetches a web page, **processes it with two parallel AI operations** (summary and keyword extraction), and writes everything into your Postgres database. By the end, you'll see both real-time console logs from each step and a neatly stored row in `public.websites`.
 
+![Analyze Website Workflow](/analyze_website.svg)
+
+The diagram above illustrates our workflow. Notice how the AI operations run in parallel after the website content is fetched, significantly reducing the total execution time.
+
 :::tip[Why pgflow?]
 Unlike traditional approaches that require separate job queues and processing infrastructure, pgflow stores the entire workflow DAG, retry logic, and execution history directly inside Postgres. This means simpler infrastructure, stronger consistency guarantees, and built-in observability.
 :::
@@ -223,7 +227,17 @@ Let's break down this flow definition:
 3. Two **parallel steps** (`summary` and `tags`) both depend on the website content
 4. A final step waits for both AI operations to complete, then saves everything to the database
 
-Notice how pgflow automatically identifies the parallel execution opportunity. Since both `summary` and `tags` steps only depend on `website` (and not on each other), pgflow will run them simultaneously when possible, cutting the total execution time.
+### The power of parallel execution
+
+One of pgflow's key advantages is its ability to automatically identify and execute parallel steps. In our workflow:
+
+- Both AI operations depend only on the website content, not on each other
+- pgflow recognizes this and runs them simultaneously
+- This cuts the total execution time nearly in half compared to running them sequentially
+- If one AI call fails (e.g., due to rate limiting), only that step retries - the other continues unaffected
+- Each step can have its own retry configuration based on its specific needs
+
+This parallel execution is especially valuable for IO-bound operations like API calls, where concurrent execution dramatically improves throughput.
 
 ---
 
