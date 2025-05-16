@@ -33,10 +33,10 @@ Unlike traditional solutions that require separate databases and job queues, pgf
 2. Get an OpenAI API key from the [OpenAI Platform](https://platform.openai.com/api-keys) and add it to your environment:
 
 ```diff
-# supabase/functions/.env
+  # supabase/functions/.env
   EDGE_WORKER_DB_URL=postgres://...
   EDGE_WORKER_LOG_LEVEL=info
-+  OPENAI_API_KEY=sk-...
++ OPENAI_API_KEY=sk-...
 ```
 :::
 
@@ -360,22 +360,6 @@ Disable JWT verification in `supabase/config.toml`:
 This JWT verification is disabled for local development only. In production, you would typically keep JWT verification enabled and start the Edge Worker with a token. For more details on Edge Worker setup and configuration, see the [Run Flow guide](/getting-started/run-flow/).
 :::
 
-If needed, add an import map in your `deno.json` file:
-
-```json
-// This is NO LONGER NEEDED with JSR imports!
-// Shown for reference only if using npm packages
-{
-  "imports": {
-    "npm:openai": "npm:openai@4.33.0"
-  }
-}
-```
-
-:::tip[Using JSR packages]
-The examples now use Deno's JSR registry with `jsr:` imports, which means you don't need import maps at all. JSR packages work automatically in Edge Functions without any extra configuration.
-:::
-
 ---
 
 ## Step 6 — Run & test
@@ -384,17 +368,17 @@ Now it's time to see our creation in action. We'll need to run three commands:
 
 <Steps>
 1. Start Supabase and local services:
-   ```bash
+   ```bash frame="none"
    npx supabase start
    ```
 
 2. Serve the Edge Functions:
-   ```bash
+   ```bash frame="none"
    npx supabase functions serve
    ```
 
 3. Start the Edge Worker:
-   ```bash
+   ```bash frame="none"
    curl http://127.0.0.1:54321/functions/v1/analyze_website_worker
    ```
    You should get `ok` in the response; keep this terminal open.
@@ -402,7 +386,7 @@ Now it's time to see our creation in action. We'll need to run three commands:
 
 With everything running, let's trigger our flow from the Supabase SQL editor (or `psql`):
 
-```sql title="Run this in Supabase SQL Editor"
+```sql frame="terminal" title="Run this in Supabase SQL Editor"
 select * from pgflow.start_flow(
   flow_slug => 'analyze_website',
   input     => '{"url":"https://supabase.com"}'
