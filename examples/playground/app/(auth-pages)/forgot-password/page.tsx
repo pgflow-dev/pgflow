@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { SmtpMessage } from "../smtp-message";
 
+export const dynamic = 'force-static';
+
 export default async function ForgotPassword(props: {
   searchParams: Promise<Message>;
 }) {

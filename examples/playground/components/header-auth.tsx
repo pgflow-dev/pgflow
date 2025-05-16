@@ -1,17 +1,25 @@
+'use client'
+
 import { signOutAction } from "@/app/actions";
 import { hasEnvVars } from "@/utils/supabase/check-env-vars";
 import Link from "next/link";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { createClient } from "@/utils/supabase/server";
-import { SpinnerWrapper } from "./spinner-wrapper"; 
+import { createClient } from "@/utils/supabase/client";
+import { SpinnerWrapper } from "./spinner-wrapper";
+import { useEffect, useState } from "react";
 
-export default async function AuthButton() {
-  const supabase = await createClient();
+export default function AuthButton() {
+  const [user, setUser] = useState<any | null>(null);
+  const [checking, setChecking] = useState(true);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user ?? null);
+      setChecking(false);
+    });
+  }, []);
 
   if (!hasEnvVars) {
     return (
@@ -49,6 +57,11 @@ export default async function AuthButton() {
       </>
     );
   }
+  
+  if (checking) {
+    return <SpinnerWrapper />;
+  }
+  
   return user ? (
     <div className="flex items-center gap-4">
       <SpinnerWrapper />
