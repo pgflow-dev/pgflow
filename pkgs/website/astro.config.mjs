@@ -107,8 +107,8 @@ export default defineConfig({
                 autogenerate: { directory: 'how-to/', collapsed: true },
               },
               {
-                label: 'USE CASES',
-                autogenerate: { directory: 'use-cases/', collapsed: true },
+                label: 'TUTORIALS',
+                autogenerate: { directory: 'tutorials/', collapsed: true },
               },
               {
                 label: 'FAQ - Common Questions',
