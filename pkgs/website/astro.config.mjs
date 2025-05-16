@@ -95,16 +95,34 @@ export default defineConfig({
                 autogenerate: { directory: 'getting-started/' },
               },
               {
-                label: 'CONCEPTS',
-                autogenerate: { directory: 'concepts/', collapsed: true },
-              },
-              {
-                label: 'COMPARISONS',
-                autogenerate: { directory: 'comparisons/', collapsed: true },
+                label: 'TUTORIALS',
+                badge: 'NEW!',
+                collapsed: true,
+                items: [
+                  {
+                    label: 'AI Web Scraper',
+                    badge: 'NEW!',
+                    autogenerate: {
+                      directory: 'tutorials/ai-web-scraper/',
+                      collapsed: true,
+                    },
+                  },
+                ],
               },
               {
                 label: 'HOW TO',
-                autogenerate: { directory: 'how-to/', collapsed: true },
+                collapsed: true,
+                autogenerate: { directory: 'how-to/' },
+              },
+              {
+                label: 'CONCEPTS',
+                collapsed: true,
+                autogenerate: { directory: 'concepts/' },
+              },
+              {
+                label: 'COMPARISONS',
+                collapsed: true,
+                autogenerate: { directory: 'comparisons/' },
               },
               {
                 label: 'FAQ - Common Questions',

@@ -15,6 +15,26 @@ Never use:
 
 The only exception is in class names, where "Pgflow" can be used (PascalCase).
 
+## ⚠️ CHARACTER USAGE GUIDELINES ⚠️
+
+**IMPORTANT**: Never use the following characters in documentation or code comments. Always use the alternatives listed below:
+
+- **Em-dash (—)**: Use hyphen (-) instead
+- **Curly quotes ("" '')**: Use straight quotes ("" '') instead
+- **Right single quote/curly apostrophe (')**: Use straight apostrophe (') instead
+- **Ellipsis character (…)**: Use three periods (...) instead
+- **Non-breaking space**: Use regular space instead
+
+This ensures compatibility across different editors and environments.
+
+### Quick Fix Command
+
+To replace all these characters in a file, use this script:
+
+```bash
+./scripts/replace-special-chars.sh <file_path>
+```
+
 ## ⚠️ MVP STATUS AND DEVELOPMENT PHILOSOPHY ⚠️
 
 **IMPORTANT**: pgflow is currently a Minimum Viable Product (MVP) in very early stages of development. When working on this codebase:
@@ -48,6 +68,7 @@ When suggesting changes or improvements, bias heavily toward solutions that can 
 - **Naming**: Use camelCase for variables/functions, PascalCase for classes/types
 - **Error Handling**: Use proper error types and handle errors appropriately
 - **File Structure**: Monorepo structure with packages in pkgs/ directory
+- **Documentation Style**: Use impersonal, factual language. Avoid "we" and "our" when describing technical concepts, flows, or processes. Only use "you" when directly instructing the reader. Focus on what the system does, not who is doing it.
 
 ## Packages
 

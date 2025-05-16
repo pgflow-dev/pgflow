@@ -81,7 +81,7 @@ serving the request with supabase/functions/greet_user_worker
 In a new terminal, send an HTTP request to start your worker:
 
 ```bash frame="none"
-curl http://localhost:54321/functions/v1/greet_user_worker
+curl -X POST http://localhost:54321/functions/v1/greet_user_worker
 ```
 
 You should see output in your Edge Runtime terminal indicating the worker has started:
@@ -195,10 +195,30 @@ This completes the pgflow getting started guide. You now have all the basics nee
 
 ## Next steps
 
+### Tutorials
+
+Put your pgflow knowledge into practice with hands-on tutorials:
+
+<CardGrid>
+  <LinkCard title="Build an AI Web Scraper" href="/tutorials/ai-web-scraper/" description="Create a workflow that scrapes webpages, analyzes content with OpenAI, and stores results in Postgres"/>
+</CardGrid>
+
+### How-to Guides
+
+Learn essential pgflow techniques:
+
 <CardGrid>
   <LinkCard title="Monitor flow execution" href="/how-to/monitor-flow-execution/" description="Learn how to monitor and observe your pgflow workflow execution in detail"/>
   <LinkCard title="Organize Flows code" href="/how-to/organize-flows-code/" description="Learn how to structure your pgflow code for maintainability and reusability"/>
-  <LinkCard title="Change existing Flow options" href="/how-to/update-flow-options/" description="Learn how to safely update configuration options for existing flows"/>
+  <LinkCard title="Create reusable tasks" href="/how-to/create-reusable-tasks/" description="Build modular tasks that can be shared across multiple workflows"/>
   <LinkCard title="Version your Flows" href="/how-to/version-your-flows/" description="Learn how to safely update your flows without breaking existing runs"/>
+</CardGrid>
+
+### Concepts
+
+Deepen your understanding of pgflow:
+
+<CardGrid>
+  <LinkCard title="How pgflow works" href="/concepts/how-pgflow-works/" description="Understand the core architecture and execution model of pgflow"/>
   <LinkCard title="Understand Flow DSL" href="/concepts/flow-dsl/" description="How pgflow's TypeScript DSL works to create type-safe, data-driven workflows"/>
 </CardGrid>
