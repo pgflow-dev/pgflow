@@ -147,7 +147,13 @@ import OpenAI from "jsr:@openai/openai@4.33.0";
 import { z } from "jsr:@zod/zod";
 import { zodTextFormat } from "jsr:@openai/openai@4.33.0/helpers/zod";
 
-const openai = new OpenAI();
+// Check for OpenAI API key
+const apiKey = Deno.env.get("OPENAI_API_KEY");
+if (!apiKey) {
+  throw new Error("Missing required environment variable: OPENAI_API_KEY");
+}
+
+const openai = new OpenAI({ apiKey });
 const SummarySchema = z.object({ summary: z.string() });
 
 export default async function summarize(content: string) {
@@ -178,7 +184,13 @@ import OpenAI from "jsr:@openai/openai@4.33.0";
 import { z } from "jsr:@zod/zod";
 import { zodTextFormat } from "jsr:@openai/openai@4.33.0/helpers/zod";
 
-const openai = new OpenAI();
+// Check for OpenAI API key
+const apiKey = Deno.env.get("OPENAI_API_KEY");
+if (!apiKey) {
+  throw new Error("Missing required environment variable: OPENAI_API_KEY");
+}
+
+const openai = new OpenAI({ apiKey });
 const TagsSchema = z.object({ tags: z.array(z.string()).max(10) });
 
 export default async function extractTags(content: string) {
@@ -211,10 +223,15 @@ This function connects to Supabase using environment variables and inserts the w
 ```typescript
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  Deno.env.get("SUPABASE_URL")!,
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-);
+// Check for required environment variables
+const supabaseUrl = Deno.env.get("SUPABASE_URL");
+const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error("Missing required environment variables: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function saveWebsite(row: {
   website_url: string; summary: string; tags: string[];
@@ -438,19 +455,13 @@ You've built an ETL pipeline with these features:
 ### Setup Issues
 | Symptom | Fix |
 |---------|-----|
-| `Error: SASL_SIGNATURE_MISMATCH` | Check if DB password is URL-encoded ([Prepare DB Connection URL](/getting-started/install-pgflow/#prepare-db-connection-url)) |
-| `Missing OPENAI_API_KEY` | Export env var in `supabase/.env` and restart `functions serve` |
+| `Error: SASL_SIGNATURE_MISMATCH` | Check if DB password is URL-encoded ([Prepare DB String](/how-to/prepare-db-string/)) |
+| `Missing OPENAI_API_KEY` | Make sure you added env var in `supabase/.env` |
 
 ### Compile-time Issues
 | Symptom | Fix |
 |---------|-----|
-| Workers not running | Ensure you've run the compilation step and applied migrations correctly ([Compile Guide](/getting-started/compile-to-sql/)) |
-
-### Runtime Issues
-| Symptom | Fix |
-|---------|-----|
-| Row not created | Check `SUPABASE_SERVICE_ROLE_KEY` – needs *service-role* level |
-| `TypeError: fetch failed` | Check internet connection – Docker containers need network access to reach OpenAI API |
+| Compilation fails due to dependencies | Read available flags for compile by running `npx pgflow@latest compile --help` and use them if you use import maps
 
 ### OpenAI-specific Issues
 | Symptom | Fix |
