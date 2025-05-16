@@ -2,6 +2,10 @@
 title: Scraping a website with pgflow and AI
 ---
 
+import { Steps } from '@astrojs/starlight/components';
+
+**Read:** ~15 min / **Build:** ~30 min
+
 ## What we will build
 
 A resilient workflow that combines web scraping with OpenAI's powerful text analysis capabilities. You'll create a workflow with 4 tasks (exposed as 4 pgflow steps) that:
@@ -12,9 +16,9 @@ A resilient workflow that combines web scraping with OpenAI's powerful text anal
 
 ![Analyze Website Workflow](/analyze_website.svg "Analyze website workflow DAG")
 
-The diagram illustrates this workflow. Notice how the AI operations run in parallel after the website content is fetched, significantly reducing the total execution time.
+The diagram illustrates this workflow.
 
-Ever wanted to automatically scrape a website, analyze its content with AI, and store the results in your database? In this tutorial, you'll build exactly that. By the end, you'll see real-time console logs and a neatly stored row in `public.websites`.
+This tutorial will guide you through building a website scraper that analyzes content with AI and stores results in your database.
 
 :::tip[Why pgflow?]
 Unlike traditional solutions that require separate databases and job queues, pgflow stores the entire workflow DAG, retry logic, and execution history directly inside Postgres. While pgflow does require an Edge Worker to process tasks, it's included in the package. This architecture means simpler infrastructure, stronger consistency guarantees, and built-in observability.
@@ -22,31 +26,18 @@ Unlike traditional solutions that require separate databases and job queues, pgf
 
 ## Prerequisites
 
-:::caution[Required setup]
-Before you begin, make sure you have:
-- A local Supabase project with pgflow installed
-- Deno 1.45.2 or newer
-- If you haven't set up pgflow yet, follow the [install pgflow guide](/getting-started/install-pgflow/) first
-- If you need to create a Supabase project, see the [getting started guide](/getting-started/) first
+:::caution[Before you begin]
 
-Note: When using Edge Functions, Supabase automatically provides `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` environment variables to your functions.
-:::
+1. Follow the [install pgflow guide](/getting-started/install-pgflow/) which covers all required steps, versions, and setup instructions.
 
-:::caution[Required OpenAI API Key]
-The AI analysis steps in this workflow **require a valid OpenAI API key**. Make sure to:
-
-1. Sign up for an API key at https://platform.openai.com if you don't have one
-2. Add your key to `supabase/functions/.env` alongside existing Edge Worker variables:
+2. Get an OpenAI API key from the [OpenAI Platform](https://platform.openai.com/api-keys) and add it to your environment:
 
 ```diff
 # supabase/functions/.env
   EDGE_WORKER_DB_URL=postgres://...
   EDGE_WORKER_LOG_LEVEL=info
-+ # OpenAI API key for AI analysis steps
-+ OPENAI_API_KEY=sk-...
++  OPENAI_API_KEY=sk-...
 ```
-
-Without this key, the AI analysis steps will fail with authentication errors. For more information about the required environment variables, see the [Getting Started guide](/getting-started/install-pgflow/#set-up-environment-variables).
 :::
 
 ---
@@ -63,8 +54,6 @@ Create a new migration file in your Supabase project:
 npx supabase migration new add_websites
 ```
 
-This will create a new file in the `supabase/migrations` directory with a timestamp prefix, like `20240516123456_add_websites.sql`.
-
 ### Add the table definition
 
 Open the newly created migration file and add this SQL:
@@ -78,7 +67,6 @@ create table public.websites (
   tags         text[],
   created_at   timestamptz default now()
 );
-
 ```
 
 This table provides everything needed: a unique ID, the website URL, fields for AI-generated content, and a timestamp for when the record was created.
@@ -89,9 +77,10 @@ Run the migration to create the table in your local database:
 
 ```bash
 npx supabase migrations up --local
-```
 
-You should see confirmation that the migration was applied successfully. You can verify the table was created by checking the Supabase Dashboard's Table Editor or running `select * from public.websites;` in the SQL Editor.
+# Verify the table was created with:
+select * from public.websites;
+```
 
 ---
 
@@ -101,7 +90,7 @@ One of pgflow's most powerful features is how it breaks complex workflows into s
 
 Create these four task functions in `supabase/functions/_tasks`:
 - `scrapeWebsite.ts` - Fetches webpage content
-- `summarizeWithAI.ts` - Generates AI summary
+- `summarize.ts` - Generates AI summary
 - `extractTags.ts` - Extracts keyword tags
 - `saveWebsite.ts` - Saves to database
 
@@ -133,7 +122,7 @@ export default async function scrapeWebsite(url: string) {
 ```
 
 :::caution[Production HTML Processing]
-The regex-based HTML sanitization is simplified for clarity. For production, use a dedicated library like [html-to-text](https://www.npmjs.com/package/html-to-text) (`npm install html-to-text`) to properly handle complex pages, nested elements, and encoding issues.
+In production, use html-to-text for full HTML parsing.
 :::
 </details>
 
@@ -149,12 +138,12 @@ These functions use OpenAI's newer [Responses API](https://platform.openai.com/d
 :::
 
 <details>
-  <summary><strong>summarizeWithAI.ts</strong> - Generate an AI summary</summary>
+  <summary><strong>summarize.ts</strong> - Generate an AI summary</summary>
 
 Generates a concise summary paragraph from the webpage content:
 
 ```ts
-# supabase/functions/_tasks/summarizeWithAI.ts
+# supabase/functions/_tasks/summarize.ts
 import OpenAI from "jsr:@openai/openai@4.33.0";
 import { z } from "jsr:@zod/zod";
 import { zodTextFormat } from "jsr:@openai/openai@4.33.0/helpers/zod";
@@ -162,8 +151,8 @@ import { zodTextFormat } from "jsr:@openai/openai@4.33.0/helpers/zod";
 const openai = new OpenAI();
 const SummarySchema = z.object({ summary: z.string() });
 
-export default async function summarizeWithAI(content: string) {
-  console.log("[summarizeWithAI] len", content.length);
+export default async function summarize(content: string) {
+  console.log("[summarize] processing content");
 
   const rsp = await openai.responses.parse({
     model: "gpt-4o",
@@ -194,7 +183,7 @@ const openai = new OpenAI();
 const TagsSchema = z.object({ keywords: z.array(z.string()).max(10) });
 
 export default async function extractTags(content: string) {
-  console.log("[extractTags] run");
+  console.log("[extractTags] extracting keywords");
 
   const rsp = await openai.responses.parse({
     model: "gpt-4o",
@@ -271,7 +260,7 @@ Now comes the magic - connecting these tasks together using pgflow's TypeScript 
 ```ts title="_flows/analyze_website.ts"
 import { Flow } from "@pgflow/dsl";
 import scrapeWebsite   from "../_tasks/scrapeWebsite.ts";
-import summarizeWithAI from "../_tasks/summarizeWithAI.ts";
+import summarize from "../_tasks/summarize.ts";
 import extractTags     from "../_tasks/extractTags.ts";
 import saveWebsite     from "../_tasks/saveWebsite.ts";
 
@@ -282,7 +271,7 @@ export default new Flow<Input>({ slug: "analyze_website", maxAttempts: 3 })
     ({ run })      => scrapeWebsite(run.url))
 
   .step({ slug: "summary", dependsOn: ["website"] },
-    ({ website })  => summarizeWithAI(website.content))
+    ({ website })  => summarize(website.content))
 
   .step({ slug: "tags",    dependsOn: ["website"] },
     ({ website })  => extractTags(website.content))
@@ -292,9 +281,11 @@ export default new Flow<Input>({ slug: "analyze_website", maxAttempts: 3 })
       saveWebsite({ website_url: run.url, summary, tags }));
 ```
 
-:::note
-See [naming steps guide](/how-to/naming-steps/) for best practices on step naming patterns.
-:::
+The flow dependencies at a glance:
+- `website` is the root step (no dependencies)
+- `summary` depends on `website`
+- `tags` depends on `website`
+- `saveToDb` depends on both `summary` and `tags`
 
 Breaking down this flow definition:
 
@@ -331,8 +322,8 @@ npx supabase migrations up --local
 
 This creates a migration file (like `supabase/migrations/pgflow_2024...sql`) containing all the SQL needed to register your flow in the pgflow system.
 
-:::tip Behind the curtain
-Under the hood, the compiler generates a sequence of `pgflow.create_flow` and `pgflow.add_step` function calls that define the workflow structure in your Postgres database. You never need to write this SQL by hand!
+:::danger[Adding or removing steps]
+When adding or removing steps, you must create a new flow. See [versioning your flows](/how-to/version-your-flows/) for details. This limitation is temporary.
 :::
 
 ---
@@ -389,22 +380,29 @@ The examples now use Deno's JSR registry with `jsr:` imports, which means you do
 
 ## Step 6 — Run & test
 
-Now it's time to see our creation in action. We'll need three terminal windows to run the full system:
+Now it's time to see our creation in action. We'll need to run three commands:
 
-```bash
-# Terminal 1 - start Postgres + Kong + realtime
-npx supabase start
+<Steps>
+1. Start Supabase and local services:
+   ```bash
+   npx supabase start
+   ```
 
-# Terminal 2 - serve Edge Functions (this loads the tasks)
-npx supabase functions serve
+2. Serve the Edge Functions:
+   ```bash
+   npx supabase functions serve
+   ```
 
-# Terminal 3 - start the Edge Worker (this terminal stays open showing logs)
-curl http://127.0.0.1:54321/functions/v1/analyze_website_worker
-```
+3. Start the Edge Worker:
+   ```bash
+   curl http://127.0.0.1:54321/functions/v1/analyze_website_worker
+   ```
+   You should get `ok` in the response; keep this terminal open.
+</Steps>
 
 With everything running, let's trigger our flow from the Supabase SQL editor (or `psql`):
 
-```sql
+```sql title="Run this in Supabase SQL Editor"
 select * from pgflow.start_flow(
   flow_slug => 'analyze_website',
   input     => '{"url":"https://supabase.com"}'
@@ -421,9 +419,10 @@ In Terminal 2 (functions serve), you'll see the progress logs:
 
 ```
 [scrapeWebsite] fetching https://supabase.com
-[summary] len 15432
-[extractTags] run
+[summarize] processing content
+[extractTags] extracting keywords
 [saveWebsite] inserting row
+[saveWebsite] inserted with id: 1
 ```
 
 And in your database, you'll find your new record:
@@ -452,15 +451,6 @@ Congratulations! You've built a sophisticated ETL pipeline with powerful feature
 
 And you've done all this with under 200 lines of code, without any additional infrastructure beyond your Postgres database!
 
-This workflow is just the beginning. Here are some ways you could extend it:
-
-- Build a simple React front-end that lets users paste URLs and view the analysis results
-- Schedule nightly re-crawls of important websites using a CRON trigger
-- Expand the workflow to detect content changes and notify users
-- Add additional AI analysis steps like sentiment analysis or entity extraction
-
-We'd love to see what you build with pgflow! ⭐ Star [pgflow on GitHub](https://github.com/pgflow-dev/pgflow) and share your creations with our community.
-
 ---
 
 ## Troubleshooting
@@ -471,7 +461,9 @@ We'd love to see what you build with pgflow! ⭐ Star [pgflow on GitHub](https:/
 | Symptom | Fix |
 |---------|-----|
 | `Missing OPENAI_API_KEY` | Export the env var in `supabase/.env` and restart `functions serve`. Check console for error: `Error: Request failed with status code 401 (Unauthorized)` |
-| Row not created | Check `SUPABASE_SERVICE_ROLE_KEY` – needs *service-role* level. |
 | Workers not running | Ensure you've run the compilation step and applied migrations correctly. |
+| Row not created | Check `SUPABASE_SERVICE_ROLE_KEY` – needs *service-role* level. |
 | `TypeError: fetch failed` | Check your internet connection. Docker containers need network access to reach OpenAI API. |
 </details>
+
+For deeper debugging help, see the [Monitor flow execution](/how-to/monitor-flow-execution/) guide.
