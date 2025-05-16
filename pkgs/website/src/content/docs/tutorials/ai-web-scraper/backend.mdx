@@ -1,50 +1,22 @@
 ---
-title: Build an AI-Powered Web Scraper
-description: Create a 4-step workflow that scrapes webpages, analyzes content with OpenAI, and stores results in Postgres
+title: "Part 1: Backend Implementation"
+description: Build the core AI web scraper workflow with database setup, task functions, and pgflow orchestration
+sidebar:
+  order: 2
 ---
 
 import { Steps } from '@astrojs/starlight/components';
 
-**Read:** 15 min | **Implement:** 30 min
+**Read:** 10 min | **Implement:** 20 min
 
-Build an AI-powered scraper: fetch → parallel AI analysis → store
+In this first part, you'll build the backend workflow that powers your AI web scraper. This includes setting up the database, creating task functions, and orchestrating everything with pgflow.
 
-## What you'll build
-
-You'll create an AI-powered web scraper that intelligently analyzes web content using OpenAI, then stores structured data in your database.
-
-1. Fetches a web page content
-2. Processes it with **two parallel AI operations** (summary and keyword extraction)
-3. Writes everything into your Postgres database
-
-See prerequisites below before you start.
-
-<img src="/analyze_website.svg" alt="Analyze Website Workflow" title="Analyze website workflow DAG" style={{ width: '50%' }} />
-
-Diagram of the 4-step [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph)
-
-:::tip[Why pgflow for AI scraping?]
-pgflow handles the complexity of AI workflows: automatic retries for API failures, parallel processing for multiple AI calls, and full observability of your scraping pipeline.
-All orchestration stays in your Supabase project - no external queues or infrastructure needed.
-See [How pgflow Works](/concepts/how-pgflow-works/) for details.
-:::
-
-## Prerequisites
-
-:::caution[Before you begin]
-
-1. Follow the [install pgflow guide](/getting-started/install-pgflow/) which covers all required steps, versions, and setup instructions. The install command will automatically add the Edge Worker environment variables to your `.env` file.
-
-2. Get an OpenAI API key from the [OpenAI Platform](https://platform.openai.com/api-keys) and add it to your environment:
-   ```diff
-     # supabase/functions/.env
-     EDGE_WORKER_DB_URL=postgres://...
-     EDGE_WORKER_LOG_LEVEL=info
-   + OPENAI_API_KEY=sk-...
-   ```
-:::
-
----
+The complete implementation consists of:
+1. Database table for storing results
+2. Four specialized task functions
+3. pgflow workflow definition
+4. Edge Worker setup
+5. Testing the complete flow
 
 ## Step 1 - Create `websites` table
 

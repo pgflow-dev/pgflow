@@ -1,0 +1,76 @@
+---
+title: AI Web Scraper Tutorial
+description: Create a workflow that scrapes webpages, analyzes content with OpenAI, and stores results in Postgres
+sidebar:
+  order: 1
+---
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+**Total time:** 45 min | **Difficulty:** Intermediate
+
+Build an AI-powered scraper: fetch → parallel AI analysis → store
+
+## What you'll build
+
+In this tutorial series, you'll create an intelligent web scraper that:
+- Fetches content from any webpage
+- Uses OpenAI to extract meaningful insights
+- Processes data with parallel AI operations
+- Stores structured results in your database
+
+<img src="/analyze_website.svg" alt="AI Web Scraper Workflow" title="AI-powered web scraper workflow DAG" style={{ width: '50%' }} />
+
+## Architecture overview
+
+This tutorial is the first in a series. In this part, you'll build the backend workflow - a pgflow DAG that orchestrates web scraping and AI analysis. Future tutorials will cover building a frontend UI and production deployment.
+
+:::tip[Why pgflow for AI scraping?]
+pgflow handles the complexity of AI workflows: automatic retries for API failures, parallel processing for multiple AI calls, and full observability of your scraping pipeline.
+All orchestration stays in your Supabase project - no external queues or infrastructure needed.
+See [How pgflow Works](/concepts/how-pgflow-works/) for details.
+:::
+
+## Prerequisites
+
+:::caution[Before you begin]
+
+1. Follow the [install pgflow guide](/getting-started/install-pgflow/) which covers all required steps, versions, and setup instructions. The install command will automatically add the Edge Worker environment variables to your `.env` file.
+
+2. Get an OpenAI API key from the [OpenAI Platform](https://platform.openai.com/api-keys) and add it to your environment:
+   ```diff
+     # supabase/functions/.env
+     EDGE_WORKER_DB_URL=postgres://...
+     EDGE_WORKER_LOG_LEVEL=info
+   + OPENAI_API_KEY=sk-...
+   ```
+
+3. Basic familiarity with:
+   - TypeScript
+   - SQL and PostgreSQL
+   - Supabase Edge Functions
+:::
+
+## Get started
+
+This tutorial focuses on building the backend implementation - the core workflow that powers your AI web scraper.
+
+<LinkCard
+  title="Start Building: Backend Implementation →"
+  description="Build the database schema, AI tasks, and workflow orchestration"
+  href="/tutorials/ai-web-scraper/backend/"
+/>
+
+## What you'll learn
+
+In this tutorial, you'll gain hands-on experience with:
+
+- **pgflow fundamentals** - Creating flows, defining steps, managing dependencies
+- **AI integration** - Working with OpenAI's API for content analysis
+- **Parallel processing** - Running multiple AI operations concurrently
+- **Error handling** - Automatic retries and failure recovery
+- **Testing workflows** - Running and debugging your pgflow implementation
+
+## Discord
+
+Got questions or feedback? pgflow is just getting started - [join the Discord community](https://discord.com/invite/NpffdEyb) to discuss pgflow.
