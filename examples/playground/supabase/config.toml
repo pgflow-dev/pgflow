@@ -105,9 +105,9 @@ file_size_limit = "50MiB"
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "http://127.0.0.1:3000"
+site_url = "http://localhost:3000"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://127.0.0.1:3000"]
+additional_redirect_urls = ["http://127.0.0.1:3000", "https://127.0.0.1:3000", "http://localhost:3000", "https://localhost:3000"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # If disabled, the refresh token will never expire.
@@ -240,6 +240,7 @@ max_frequency = "5s"
 enabled = true
 client_id = "env(GITHUB_OAUTH_CLIENT_ID)"
 secret = "env(GITHUB_OAUTH_CLIENT_SECRET)"
+# Using the default callback URL for Supabase GitHub OAuth
 redirect_uri = "http://localhost:54321/auth/v1/callback"
 
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,

@@ -15,10 +15,22 @@ export default function AuthButton() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
+    
+    // Initial auth check
+    supabase.auth.getUser().then(({ data, error }) => {
+      console.log('Auth check - user:', data.user);
+      console.log('Auth check - error:', error);
       setUser(data.user ?? null);
       setChecking(false);
     });
+    
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('Auth state changed:', _event, session?.user);
+      setUser(session?.user ?? null);
+    });
+    
+    return () => subscription.unsubscribe();
   }, []);
 
   if (!hasEnvVars) {
