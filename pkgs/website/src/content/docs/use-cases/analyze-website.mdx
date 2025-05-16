@@ -5,7 +5,7 @@ title: Scraping a website with pgflow and AI
 You'll build a 4-step workflow that fetches a web page, **runs two OpenAI calls in parallel** (summary + keywords) and writes the results into Postgres.
 In the end you'll see: console logs for every step **and** a row in `public.websites`.
 
-:::tip Why pgflow?
+:::tip[Why pgflow?]
 The whole DAG, its retries and history live inside Postgres – no extra queue infra.
 :::
 
@@ -24,7 +24,7 @@ The whole DAG, its retries and history live inside Postgres – no extra queue i
 
 ---
 
-## Step 1 — Create the destination table
+## Step 1 - Create the destination table
 
 Objective: have somewhere to save the results.
 
@@ -43,7 +43,7 @@ create table public.websites (
 
 ---
 
-## Step 2 — Scaffold the task functions
+## Step 2 - Scaffold the task functions
 
 We need four tiny files in `supabase/functions/_tasks`.
 
@@ -135,7 +135,7 @@ export default async function saveWebsite(row: {
 
 ---
 
-## Step 3 — Describe the flow
+## Step 3 - Describe the flow
 
 ```ts title="_flows/analyze_website.ts"
 import { Flow } from "@pgflow/dsl";
@@ -165,7 +165,7 @@ Because **summary** and **tags** only depend on `website`, pgflow executes them 
 
 ---
 
-## Step 4 — Compile & migrate
+## Step 4 - Compile & migrate
 
 ```bash
 # turn the TypeScript DAG into SQL
@@ -183,7 +183,7 @@ The compiler emits `pgflow.create_flow` + four `pgflow.add_step` calls – nothi
 
 ---
 
-## Step 5 — Run the stack and kick off a test job
+## Step 5 - Run the stack and kick off a test job
 
 ```bash
 # Terminal 1 - start Postgres + Kong + realtime
