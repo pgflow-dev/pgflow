@@ -292,45 +292,9 @@ export default new Flow<Input>({ slug: "analyze_website", maxAttempts: 3 })
       saveWebsite({ website_url: run.url, summary, tags }));
 ```
 
-<details open="false">
-  <summary>💡 **Design pattern: How to name your steps effectively**</summary>
-
-  Step naming is an important design decision that affects workflow readability. After analyzing multiple projects, these patterns have proven effective:
-
-  **Recommended approach: Hybrid naming**
-
-  - Use **nouns** for steps that produce data other steps depend on
-  - Use **verb-noun** combinations for terminal actions or utility steps
-
-  ```ts
-  // Data-producing steps use nouns
-  .step({ slug: "website" }, ...)
-  .step({ slug: "summary", dependsOn: ["website"] }, ...)
-
-  // Terminal action step uses verb-noun
-  .step({ slug: "saveToDb", dependsOn: ["summary"] }, ...)
-  ```
-
-  **Why this works well:**
-
-  1. When accessing data from dependent steps, nouns create more intuitive property access:
-     ```ts
-     // Clean and reads naturally
-     ({ website }) => summarizeWithAI(website.content)
-     ```
-
-  2. Terminal steps that don't produce dependencies benefit from action-oriented naming that clearly describes what they're doing
-
-  **For naming style, use camelCase:**
-  ```ts
-  .step({ slug: "websiteContent" }, ...)   // Correct
-  .step({ slug: "website_content" }, ...)  // Avoid
-  ```
-
-  Step slugs are used as identifiers in TypeScript and must match exactly when referenced in dependency arrays. Following JavaScript conventions with camelCase helps maintain consistency.
-
-  While this example uses the hybrid pattern, the most important thing is consistency within your project. Document the chosen convention and apply it throughout the codebase.
-</details>
+:::note
+See [naming steps guide](/how-to/naming-steps/) for best practices on step naming patterns.
+:::
 
 Breaking down this flow definition:
 
