@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useStartAnalysis } from '@/lib/hooks/use-start-analysis';
 import {
   fetchFlowRunData,
   observeFlowRun,
@@ -61,12 +62,13 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
-  const [analyzeLoading, setAnalyzeLoading] = useState<boolean>(false);
-  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
 
   const router = useRouter();
   const supabase = createClient();
   const { setLoading: setGlobalLoading } = useLoadingState();
+  
+  // Use the shared hook for starting analysis
+  const { start: analyzeWebsite, isPending: analyzeLoading, error: analyzeError } = useStartAnalysis();
 
   // Derive runData from the separate state pieces
   const runData = useMemo<ResultRow | null>(() => {
@@ -108,51 +110,6 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     } as ResultRow;
   }, [run, stepStates, stepTasks]);
 
-  // Function to analyze a new website
-  const analyzeWebsite = async (url: string) => {
-    if (!url) {
-      setAnalyzeError('Please enter a URL');
-      return;
-    }
-
-    setAnalyzeLoading(true);
-    setAnalyzeError(null);
-    
-    // Set global loading state to true
-    setGlobalLoading(true);
-
-    try {
-      console.log('Starting analysis for URL:', url);
-      const { data, error } = await supabase.rpc('start_analyze_website_flow', {
-        url,
-      });
-
-      if (error) {
-        console.error('Error starting analysis:', error);
-        setAnalyzeError(error.message);
-        setGlobalLoading(false);
-        return;
-      }
-
-      if (data && data.run_id) {
-        console.log(
-          'Analysis started, redirecting to:',
-          `/websites/runs/${data.run_id}`,
-        );
-        router.push(`/websites/runs/${data.run_id}`);
-      } else {
-        console.error('No run_id returned from analysis');
-        setAnalyzeError('Failed to start flow analysis');
-        setGlobalLoading(false);
-      }
-    } catch (error) {
-      setAnalyzeError('An error occurred while starting the analysis');
-      console.error('Exception during analysis:', error);
-      setGlobalLoading(false);
-    } finally {
-      setAnalyzeLoading(false);
-    }
-  };
 
 
   useEffect(() => {
