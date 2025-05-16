@@ -323,7 +323,9 @@ npx supabase migrations up --local
 This creates a migration file (like `supabase/migrations/pgflow_2024...sql`) containing all the SQL needed to register your flow in the pgflow system.
 
 :::danger[Adding or removing steps]
-When adding or removing steps, you must create a new flow with unique `slug`. See [versioning your flows](/how-to/version-your-flows/) for details. This limitation is temporary.
+When adding or removing steps, you must create a new flow with unique `slug`. See [versioning your flows](/how-to/version-your-flows/) for details.
+
+Currently the process is manual, but the improvements for development environment are coming.
 :::
 
 ---
