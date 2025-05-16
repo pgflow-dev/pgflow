@@ -8,7 +8,7 @@ You'll create a 4-step workflow that fetches a web page, **processes it with two
 
 ![Analyze Website Workflow](/analyze_website.svg)
 
-The diagram above illustrates our workflow. Notice how the AI operations run in parallel after the website content is fetched, significantly reducing the total execution time.
+The diagram illustrates this workflow. Notice how the AI operations run in parallel after the website content is fetched, significantly reducing the total execution time.
 
 :::tip[Why pgflow?]
 Unlike traditional approaches that require separate job queues and processing infrastructure, pgflow stores the entire workflow DAG, retry logic, and execution history directly inside Postgres. This means simpler infrastructure, stronger consistency guarantees, and built-in observability.
@@ -40,7 +40,7 @@ OPENAI_API_KEY=sk-...
 
 ## Step 1 - Create the destination table
 
-First, we need to create a migration file to set up the database table where we'll store our website analysis results.
+First, create a migration file to set up the database table where the website analysis results will be stored.
 
 ### Create a new migration
 
@@ -71,7 +71,7 @@ create table public.websites (
 create index idx_websites_user_id on public.websites (user_id);
 ```
 
-This table provides everything we need: a unique ID, the user who initiated the analysis, the website URL, fields for our AI-generated content, and a timestamp for when the record was created.
+This table provides everything needed: a unique ID, the user who initiated the analysis, the website URL, fields for AI-generated content, and a timestamp for when the record was created.
 
 ### Apply the migration
 
@@ -89,9 +89,9 @@ You should see confirmation that the migration was applied successfully. You can
 
 One of pgflow's most powerful features is how it breaks complex workflows into smaller, independently retriable steps. Let's create four specialized task functions, each handling one discrete part of our process.
 
-We'll place these in `supabase/functions/_tasks` so they're available to our Edge Function workers.
+These go in `supabase/functions/_tasks` so they're available to the Edge Function workers.
 
-Our first task is the **web scraper** that fetches and cleans HTML content:
+The first task is a **web scraper** that fetches and cleans HTML content:
 
 ```ts title="scrapeWebsite.ts"
 export default async function scrapeWebsite(url: string) {
@@ -108,7 +108,7 @@ export default async function scrapeWebsite(url: string) {
 }
 ```
 
-Next, we'll create two AI processing tasks that both use OpenAI. The first generates a concise summary:
+Next come two AI processing tasks that both use OpenAI. The first generates a concise summary:
 
 ```ts title="summarizeWithAI.ts"
 import OpenAI from "openai";
@@ -134,7 +134,7 @@ export default async function summarizeWithAI(content: string) {
 }
 ```
 
-The second AI task extracts relevant keywords from the content:
+The second AI task extracts relevant keywords:
 
 ```ts title="extractTags.ts"
 import OpenAI from "openai";
@@ -161,7 +161,7 @@ export default async function extractTags(content: string) {
 }
 ```
 
-Finally, we need a task to save our results to the database:
+Finally, a task to save the results to the database:
 
 ```ts title="saveWebsite.ts"
 import { createClient } from "@supabase/supabase-js";
@@ -194,7 +194,7 @@ export default async function saveWebsite(row: {
 
 ## Step 3 - Connect everything with a flow definition
 
-Now comes the magic - we'll define how these tasks fit together using pgflow's TypeScript DSL. This creates a directed acyclic graph (DAG) that explicitly shows the data dependencies between steps.
+Now comes the magic - connecting these tasks together using pgflow's TypeScript DSL. This creates a directed acyclic graph (DAG) that explicitly shows the data dependencies between steps.
 
 ```ts title="_flows/analyze_website.ts"
 import { Flow } from "@pgflow/dsl";
@@ -220,10 +220,50 @@ export default new Flow<Input>({ slug: "analyze_website", maxAttempts: 3 })
       saveWebsite({ user_id: run.user_id, website_url: run.url, summary, tags }));
 ```
 
-Let's break down this flow definition:
+<details>
+  <summary>💡 **Design pattern: How to name your steps effectively**</summary>
 
-1. We first define our flow's input type, requiring a URL and user ID
-2. We create a **root step** that scrapes the website, taking input from the flow's parameters
+  Step naming is an important design decision that affects workflow readability. After analyzing multiple projects, these patterns have proven effective:
+
+  **Recommended approach: Hybrid naming**
+  
+  - Use **nouns** for steps that produce data other steps depend on
+  - Use **verb-noun** combinations for terminal actions or utility steps
+  
+  ```ts
+  // Data-producing steps use nouns
+  .step({ slug: "website" }, ...)
+  .step({ slug: "summary", dependsOn: ["website"] }, ...)
+  
+  // Terminal action step uses verb-noun
+  .step({ slug: "saveToDb", dependsOn: ["summary"] }, ...)
+  ```
+
+  **Why this works well:**
+  
+  1. When accessing data from dependent steps, nouns create more intuitive property access:
+     ```ts
+     // Clean and reads naturally
+     ({ website }) => summarizeWithAI(website.content) 
+     ```
+     
+  2. Terminal steps that don't produce dependencies benefit from action-oriented naming that clearly describes what they're doing
+
+  **For naming style, use camelCase:**
+  ```ts
+  .step({ slug: "websiteContent" }, ...)   // Correct 
+  .step({ slug: "website_content" }, ...)  // Avoid
+  ```
+
+  Step slugs are used as identifiers in TypeScript and must match exactly when referenced in dependency arrays. Following JavaScript conventions with camelCase helps maintain consistency.
+  
+  While this example uses the hybrid pattern, the most important thing is consistency within your project. Document the chosen convention and apply it throughout the codebase.
+</details>
+
+Breaking down this flow definition:
+
+1. First comes the flow's input type definition, requiring a URL and user ID
+2. A **root step** scrapes the website, taking input from the flow's parameters
 3. Two **parallel steps** (`summary` and `tags`) both depend on the website content
 4. A final step waits for both AI operations to complete, then saves everything to the database
 
