@@ -23,18 +23,22 @@ Before you begin, make sure you have:
 - If you need to create a Supabase project, see the [getting started guide](/getting-started/) first
 :::
 
-You'll also need:
-- Your OpenAI API key for the AI analysis features
+:::caution[Required OpenAI API Key]
+The AI analysis steps in this workflow **require a valid OpenAI API key**. Make sure to:
 
-Add your OpenAI API key to `supabase/functions/.env` alongside your existing Edge Worker environment variables:
-```
-# Existing Edge Worker vars...
-EDGE_WORKER_DB_URL=...
-EDGE_WORKER_LOG_LEVEL=...
+1. Sign up for an API key at https://platform.openai.com if you don't have one
+2. Add your key to `supabase/functions/.env` alongside existing Edge Worker variables:
 
-# Add your OpenAI API key
-OPENAI_API_KEY=sk-...
+```diff
+# supabase/functions/.env
+  EDGE_WORKER_DB_URL=postgres://...
+  EDGE_WORKER_LOG_LEVEL=info
++ # OpenAI API key for AI analysis steps
++ OPENAI_API_KEY=sk-...
 ```
+
+Without this key, the AI analysis steps will fail with authentication errors.
+:::
 
 ---
 
