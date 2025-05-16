@@ -107,6 +107,10 @@ export default defineConfig({
                 autogenerate: { directory: 'how-to/', collapsed: true },
               },
               {
+                label: 'USE CASES',
+                autogenerate: { directory: 'use-cases/', collapsed: true },
+              },
+              {
                 label: 'FAQ - Common Questions',
                 link: '/faq/',
               },

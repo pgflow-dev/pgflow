@@ -1,0 +1,257 @@
+---
+title: Scraping a website with pgflow and AI
+---
+
+You’ll build a 4-step workflow that fetches a web page, **runs two OpenAI calls in parallel** (summary + keywords) and writes the results into Postgres.
+In the end you’ll see: console logs for every step **and** a row in `public.websites`.
+
+:::tip Why pgflow?
+The whole DAG, its retries and history live inside Postgres – no extra queue infra.
+:::
+
+## Prerequisites
+
+- pgflow 0.2.3 CLI & DSL (`npx pgflow@0.2.3 …`)
+- Supabase CLI ≥ 2 (`npx supabase@latest …`)
+- Node 18+, Deno 1.45+
+- A local Supabase project (link-placeholder to getting-started guide)
+- Env vars
+  ```
+  OPENAI_API_KEY=sk-...
+  SUPABASE_URL=…
+  SUPABASE_SERVICE_ROLE_KEY=…
+  ```
+
+---
+
+## Step 1 — Create the destination table
+
+Objective: have somewhere to save the results.
+
+```sql
+create table public.websites (
+  id           bigserial primary key,
+  user_id      uuid,
+  website_url  text not null,
+  summary      text,
+  tags         text[],
+  created_at   timestamptz default now()
+);
+```
+
+`summary` and `tags` will be filled by the flow.
+
+---
+
+## Step 2 — Scaffold the task functions
+
+We need four tiny files in `supabase/functions/_tasks`.
+
+```ts title="scrapeWebsite.ts"
+export default async function scrapeWebsite(url: string) {
+  console.log("[scrapeWebsite] fetching", url);
+
+  const res  = await fetch(url);
+  if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+
+  const html = await res.text();
+  const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+
+  return { content: text.slice(0, 25_000) };   // keep token count sane
+}
+```
+
+The AI helpers share the same OpenAI client:
+
+```ts title="summarizeWithAI.ts"
+import OpenAI from "openai";
+import { z } from "zod";
+import { zodTextFormat } from "openai/helpers/zod";
+
+const openai = new OpenAI();
+const Shape  = z.object({ summary: z.string() });
+
+export default async function summarizeWithAI(content: string) {
+  console.log("[summarizeWithAI] len", content.length);
+
+  const rsp = await openai.responses.parse({
+    model: "gpt-4o-2024-08-06",
+    input: [
+      { role: "system", content: "Return a short paragraph summary." },
+      { role: "user",   content },
+    ],
+    text: { format: zodTextFormat(Shape, "summary") },
+  });
+
+  return rsp.output_parsed.summary;
+}
+```
+
+```ts title="extractTags.ts"
+import OpenAI from "openai";
+import { z } from "zod";
+import { zodTextFormat } from "openai/helpers/zod";
+
+const openai = new OpenAI();
+const Tags   = z.object({ keywords: z.array(z.string()).max(10) });
+
+export default async function extractTags(content: string) {
+  console.log("[extractTags] run");
+
+  const rsp = await openai.responses.parse({
+    model: "gpt-4o-2024-08-06",
+    input: [
+      { role: "system",
+        content: "Return 5-10 descriptive keywords." },
+      { role: "user", content },
+    ],
+    text: { format: zodTextFormat(Tags, "tags") },
+  });
+
+  return rsp.output_parsed.keywords;
+}
+```
+
+```ts title="saveWebsite.ts"
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+);
+
+export default async function saveWebsite(row: {
+  user_id: string; website_url: string; summary: string; tags: string[];
+}) {
+  console.log("[saveWebsite] inserting row");
+  await supabase.from("websites").insert(row).throwOnError();
+}
+```
+
+<details><summary>Why separate files?</summary>
+Clear boundaries let pgflow retry only the failed chunk (e.g. OpenAI rate-limits) without re-scraping the page.
+</details>
+
+---
+
+## Step 3 — Describe the flow
+
+```ts title="_flows/analyze_website.ts"
+import { Flow } from "@pgflow/dsl";
+import scrapeWebsite   from "../_tasks/scrapeWebsite.ts";
+import summarizeWithAI from "../_tasks/summarizeWithAI.ts";
+import extractTags     from "../_tasks/extractTags.ts";
+import saveWebsite     from "../_tasks/saveWebsite.ts";
+
+type Input = { url: string; user_id: string };
+
+export default new Flow<Input>({ slug: "analyze_website", maxAttempts: 3 })
+  .step({ slug: "website" },
+    ({ run })      => scrapeWebsite(run.url))
+
+  .step({ slug: "summary", dependsOn: ["website"] },
+    ({ website })  => summarizeWithAI(website.content))
+
+  .step({ slug: "tags",    dependsOn: ["website"] },
+    ({ website })  => extractTags(website.content))
+
+  .step({ slug: "saveToDb", dependsOn: ["summary", "tags"] },
+    ({ run, summary, tags }) =>
+      saveWebsite({ user_id: run.user_id, website_url: run.url, summary, tags }));
+```
+
+Because **summary** and **tags** only depend on `website`, pgflow executes them in parallel – shaving seconds off every run.
+
+---
+
+## Step 4 — Compile & migrate
+
+```bash
+# turn the TypeScript DAG into SQL
+npx pgflow@0.2.3 compile supabase/functions/_flows/analyze_website.ts
+
+# apply the generated migration to local Postgres
+npx supabase@latest migrations up --local
+```
+
+A migration file like `pgflow_2024…sql` registers the flow and its four steps.
+
+:::tip Behind the curtain
+The compiler emits `pgflow.create_flow` + four `pgflow.add_step` calls – nothing to hand-write.
+:::
+
+---
+
+## Step 5 — Run the stack and kick off a test job
+
+```bash
+# Terminal 1 – start Postgres + Kong + realtime
+npx supabase@latest start
+
+# Terminal 2 – serve Edge Functions (this loads the tasks)
+npx supabase@latest functions serve
+
+# Terminal 3 – spawn two workers that poll the 'analyze_website' queue
+for i in 0 1; do
+  curl http://127.0.0.1:54321/functions/v1/analyze_website_worker_$i &
+done
+```
+
+Trigger a run in the SQL editor (or `psql`):
+
+```sql
+select * from pgflow.start_flow(
+  flow_slug => 'analyze_website',
+  input     => '{"url":"https://supabase.com","user_id":"00000000-0000"}'
+);
+```
+
+### What you should see
+
+1. **`functions serve` output**
+
+```
+[scrapeWebsite] fetching https://supabase.com
+[summary] len 15432
+[extractTags] run
+[saveWebsite] inserting row
+```
+
+2. **The saved record**
+
+```sql
+select website_url, tags, left(summary,60)||'…' as summary
+from websites order by id desc limit 1;
+```
+
+| website_url           | tags                                   | summary                              |
+|-----------------------|----------------------------------------|--------------------------------------|
+| https://supabase.com  | {postgres,serverless,open-source,…}    | Supabase is an open-source Firebase  |
+
+<details><summary>Troubleshooting</summary>
+
+| Symptom | Fix |
+|---------|-----|
+| `Missing OPENAI_API_KEY` | export the env var in `supabase/.env` and restart `functions serve`. |
+| Row not created | Check `SUPABASE_SERVICE_ROLE_KEY` – needs *service-role* level. |
+</details>
+
+---
+
+## Result
+
+You now have a resilient pipeline that:
+
+- retries each OpenAI call independently,
+- runs IO-heavy steps in parallel,
+- leaves a full audit trail in Postgres.
+
+Total code: <200 LoC.
+
+---
+
+## Next Steps
+
+- Wire a simple front-end to call `pgflow.start_flow` (placeholder link).
+- Schedule nightly re-crawls with a CRON trigger.
+- ⭐ Star [pgflow on GitHub](https://github.com/pgflow-dev/pgflow) and tell us what you build!
