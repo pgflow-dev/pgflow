@@ -116,7 +116,7 @@ export default function FlowRunDetails({
   }
 
   return (
-    <div className="p-2 border rounded-lg shadow-sm flex-1 overflow-y-auto">
+    <div className="p-2 rounded-lg flex-1 overflow-y-auto border border-muted/30">
       {runData ? (
         <div className="space-y-3">
           <h3 className="text-base font-medium mb-1">Status</h3>

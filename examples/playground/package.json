@@ -5,9 +5,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "start-functions": "npx supabase@latest functions serve",
+    "start-supabase": "./scripts/supabase start",
+    "stop-supabase": "./scripts/supabase stop",
+    "restart-supabase": "npm run stop-supabase && npm run start-supabase",
+    "start-functions": "./scripts/supabase functions serve",
     "start-workers": "for workerIndex in 0 1; do curl -X POST http://127.0.0.1:54321/functions/v1/analyze_website_worker_$workerIndex; done",
-    "gen-types": "npx supabase@latest gen types --local --schema public --schema pgflow > supabase/functions/database-types.d.ts"
+    "gen-types": "./scripts/supabase gen types --local --schema public --schema pgflow > supabase/functions/database-types.d.ts"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.1.1",

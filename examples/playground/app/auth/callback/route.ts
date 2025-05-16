@@ -10,9 +10,15 @@ export async function GET(request: Request) {
   const origin = requestUrl.origin;
   const redirectTo = requestUrl.searchParams.get('redirect_to')?.toString();
 
+  console.log('Auth callback - code:', code);
+  console.log('Auth callback - origin:', origin);
+  console.log('Auth callback - redirectTo:', redirectTo);
+
   if (code) {
     const supabase = await createClient();
-    await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    console.log('Exchange code result - data:', data);
+    console.log('Exchange code result - error:', error);
   }
 
   if (redirectTo) {

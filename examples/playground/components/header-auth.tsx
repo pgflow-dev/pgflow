@@ -1,17 +1,37 @@
+'use client'
+
 import { signOutAction } from "@/app/actions";
 import { hasEnvVars } from "@/utils/supabase/check-env-vars";
 import Link from "next/link";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { createClient } from "@/utils/supabase/server";
-import { SpinnerWrapper } from "./spinner-wrapper"; 
+import { createClient } from "@/utils/supabase/client";
+import { SpinnerWrapper } from "./spinner-wrapper";
+import { useEffect, useState } from "react";
 
-export default async function AuthButton() {
-  const supabase = await createClient();
+export default function AuthButton() {
+  const [user, setUser] = useState<any | null>(null);
+  const [checking, setChecking] = useState(true);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  useEffect(() => {
+    const supabase = createClient();
+    
+    // Initial auth check
+    supabase.auth.getUser().then(({ data, error }) => {
+      console.log('Auth check - user:', data.user);
+      console.log('Auth check - error:', error);
+      setUser(data.user ?? null);
+      setChecking(false);
+    });
+    
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('Auth state changed:', _event, session?.user);
+      setUser(session?.user ?? null);
+    });
+    
+    return () => subscription.unsubscribe();
+  }, []);
 
   if (!hasEnvVars) {
     return (
@@ -49,6 +69,11 @@ export default async function AuthButton() {
       </>
     );
   }
+  
+  if (checking) {
+    return <SpinnerWrapper />;
+  }
+  
   return user ? (
     <div className="flex items-center gap-4">
       <SpinnerWrapper />

@@ -32,10 +32,10 @@ function RunPageContent() {
       {/* Debug panel: Technical details - first on mobile, right side on desktop */}
       <div className="w-full lg:w-[35%] xl:w-[30%] order-first lg:order-last mb-6 lg:mb-0">
         <div 
-          className={`relative lg:fixed lg:top-16 lg:bottom-4 lg:right-4 w-full lg:w-[calc(35%-2rem)] xl:w-[calc(30%-2rem)] overflow-hidden flex flex-col transition-all duration-300 group border hover:shadow-lg
+          className={`relative lg:fixed lg:top-16 lg:bottom-20 lg:right-4 w-full lg:w-[calc(35%-2rem)] xl:w-[calc(30%-2rem)] overflow-hidden flex flex-col transition-all duration-300 group rounded-lg hover:shadow-sm z-10
             ${isPinned 
-              ? "opacity-100 border-solid border-foreground/30" 
-              : "opacity-50 hover:opacity-100 cursor-pointer border-dashed border-foreground/20 hover:border-solid"
+              ? "opacity-100 border border-solid border-muted/30" 
+              : "opacity-50 hover:opacity-100 cursor-pointer border border-dashed border-muted/20 hover:border-solid"
             }`}
         >
           {/* Pin button for keeping sidebar visible - moved to right side */}

@@ -1,16 +1,23 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useTransition } from 'react';
+import { useTransition, useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { exampleLinks } from '@/lib/example-links';
 import { useLoadingState } from './loading-state-provider';
 
-export default function ExampleLinks({ isLoggedIn }: { isLoggedIn: boolean }) {
+export default function ExampleLinks() {
   const [isPending, startTransition] = useTransition();
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const router = useRouter();
   const supabase = createClient();
   const { setLoading } = useLoadingState();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setIsLoggedIn(!!data.user);
+    });
+  }, []);
 
   // Function to handle example link clicks
   const handleExampleClick = (e: React.MouseEvent<HTMLAnchorElement>, url: string) => {

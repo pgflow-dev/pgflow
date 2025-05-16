@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { FormMessage } from '@/components/form-message';
 import { SubmitButton } from '@/components/submit-button';
 import { useRouter } from 'next/navigation';
+import { SkeletonTable } from '@/components/skeleton-table';
 
 type WebsiteRow = Database['public']['Tables']['websites']['Row'];
 
@@ -139,7 +140,9 @@ export default function Page() {
 
         <div>
           <h2 className="text-2xl font-medium mb-4">Your Websites</h2>
-          {websites && websites.length > 0 ? (
+          {websites === null ? (
+            <SkeletonTable />
+          ) : websites.length > 0 ? (
             <div className="border rounded-lg shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full">

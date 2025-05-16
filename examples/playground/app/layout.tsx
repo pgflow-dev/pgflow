@@ -48,7 +48,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <LoadingStateProvider>
-              <main className="min-h-screen flex flex-col items-center">
+              <main className="min-h-screen flex flex-col items-center relative">
                 <div className="flex-1 w-full flex flex-col items-center">
                   <nav className="w-full flex justify-center border-b border-b-foreground/10 h-14">
                     <div className="w-full max-w-5xl flex justify-between items-center p-1 px-5 text-sm">
@@ -115,11 +115,11 @@ export default function RootLayout({
                       </div>
                     </div>
                   </nav>
-                  <div className="flex flex-col max-w-5xl p-3 pt-0 w-full">
+                  <div className="flex flex-col max-w-5xl p-3 pt-0 w-full flex-1 pb-20">
                     {children}
                   </div>
 
-                  <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-16">
+                  <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-4 fixed bottom-0 bg-background/95 backdrop-blur-sm z-50">
                     <p>
                       Powered by{' '}
                       <a

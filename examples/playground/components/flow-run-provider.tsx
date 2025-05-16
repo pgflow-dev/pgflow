@@ -154,73 +154,14 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     }
   };
 
+
   useEffect(() => {
-    const loadData = async () => {
-      if (!runId) return;
-
-      setLoading(true);
-      // Set global loading state to true when initially loading run data
-      // It will be set to false when we detect a completed/failed state
-      setGlobalLoading(true);
-      
-      const { data, error } = await fetchFlowRunData(runId);
-
-      if (error) {
-        setError(error);
-        // Turn off loading state if we have an error
-        setGlobalLoading(false);
-      } else if (data) {
-        // Initialize our separate state pieces from the fetched data
-        setRun({
-          ...data,
-          step_states: undefined,
-          step_tasks: undefined,
-        } as RunRow);
-
-        // If the run is already completed, turn off the global loading state
-        if (data.status === 'completed' || data.status === 'failed' || 
-            data.status === 'error' || data.status === 'cancelled') {
-          setGlobalLoading(false);
-        }
-
-        // Create and cache the step order map from step_states
-        // This is created once and never changes, ensuring consistent ordering
-        const orderMap: Record<string, number> = {};
-        data.step_states.forEach((state) => {
-          if (state.step && state.step_slug) {
-            orderMap[state.step_slug] = state.step.step_index || 0;
-          }
-        });
-        setStepOrderMap(orderMap);
-
-        // Convert step states array to a map keyed by step_slug
-        const stateMap: Record<string, StepStateRow> = {};
-        data.step_states.forEach((state) => {
-          stateMap[state.step_slug] = state;
-        });
-        setStepStates(stateMap);
-
-        // Group step tasks by step_slug
-        const tasksMap: Record<string, StepTaskRow[]> = {};
-        data.step_tasks.forEach((task) => {
-          // Add step_index to task for consistent ordering
-          const taskWithIndex = {
-            ...task,
-            step_index: orderMap[task.step_slug] || 0,
-          };
-
-          if (!tasksMap[task.step_slug]) {
-            tasksMap[task.step_slug] = [];
-          }
-          tasksMap[task.step_slug].push(taskWithIndex);
-        });
-        setStepTasks(tasksMap);
-      }
-
-      setLoading(false);
-    };
-
-    loadData();
+    if (!runId) return;
+    
+    setLoading(true);
+    // Set global loading state to true when initially loading run data
+    // It will be set to false when we detect a completed/failed state
+    setGlobalLoading(true);
 
     // Set up handlers for real-time updates
     const handleStepStateUpdate = (
@@ -395,6 +336,67 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
+
+    // Load data after subscription is set up to avoid race conditions
+    const loadData = async () => {      
+      const { data, error } = await fetchFlowRunData(runId);
+
+      if (error) {
+        setError(error);
+        setGlobalLoading(false);
+      } else if (data) {
+        // Initialize our separate state pieces from the fetched data
+        setRun({
+          ...data,
+          step_states: undefined,
+          step_tasks: undefined,
+        } as RunRow);
+
+        // If the run is already completed, turn off the global loading state
+        if (data.status === 'completed' || data.status === 'failed' || 
+            data.status === 'error' || data.status === 'cancelled') {
+          setGlobalLoading(false);
+        }
+
+        // Create and cache the step order map from step_states
+        // This is created once and never changes, ensuring consistent ordering
+        const orderMap: Record<string, number> = {};
+        data.step_states.forEach((state) => {
+          if (state.step && state.step_slug) {
+            orderMap[state.step_slug] = state.step.step_index || 0;
+          }
+        });
+        setStepOrderMap(orderMap);
+
+        // Convert step states array to a map keyed by step_slug
+        const stateMap: Record<string, StepStateRow> = {};
+        data.step_states.forEach((state) => {
+          stateMap[state.step_slug] = state;
+        });
+        setStepStates(stateMap);
+
+        // Group step tasks by step_slug
+        const tasksMap: Record<string, StepTaskRow[]> = {};
+        data.step_tasks.forEach((task) => {
+          // Add step_index to task for consistent ordering
+          const taskWithIndex = {
+            ...task,
+            step_index: orderMap[task.step_slug] || 0,
+          };
+
+          if (!tasksMap[task.step_slug]) {
+            tasksMap[task.step_slug] = [];
+          }
+          tasksMap[task.step_slug].push(taskWithIndex);
+        });
+        setStepTasks(tasksMap);
+      }
+
+      setLoading(false);
+    };
+
+    // Load data after subscription is ready
+    loadData();
 
     return () => {
       subscription.unsubscribe();
