@@ -15,6 +15,17 @@ Never use:
 
 The only exception is in class names, where "Pgflow" can be used (PascalCase).
 
+## ⚠️ CHARACTER USAGE GUIDELINES ⚠️
+
+**IMPORTANT**: Never use the following characters in documentation or code comments. Always use the alternatives listed below:
+
+- **Em-dash (—)**: Use hyphen (-) instead
+- **Curly quotes ("" '')**: Use straight quotes ("" '') instead
+- **Ellipsis character (…)**: Use three periods (...) instead
+- **Non-breaking space**: Use regular space instead
+
+This ensures compatibility across different editors and environments.
+
 ## ⚠️ MVP STATUS AND DEVELOPMENT PHILOSOPHY ⚠️
 
 **IMPORTANT**: pgflow is currently a Minimum Viable Product (MVP) in very early stages of development. When working on this codebase:
