@@ -81,7 +81,7 @@ serving the request with supabase/functions/greet_user_worker
 In a new terminal, send an HTTP request to start your worker:
 
 ```bash frame="none"
-curl http://localhost:54321/functions/v1/greet_user_worker
+curl -X POST http://localhost:54321/functions/v1/greet_user_worker
 ```
 
 You should see output in your Edge Runtime terminal indicating the worker has started:

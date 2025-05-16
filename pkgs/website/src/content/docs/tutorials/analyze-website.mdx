@@ -365,7 +365,7 @@ Run three commands to test the flow:
 
 3. Start the Edge Worker:
    ```bash frame="none"
-   curl http://127.0.0.1:54321/functions/v1/analyze_website_worker
+   curl -X POST http://127.0.0.1:54321/functions/v1/analyze_website_worker
    ```
    You should get `ok` in the response; keep this terminal open.
 </Steps>
