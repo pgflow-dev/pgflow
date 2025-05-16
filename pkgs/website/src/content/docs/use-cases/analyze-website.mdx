@@ -72,9 +72,6 @@ First, create a migration file to set up the database table where the website an
 
    ```bash
    npx supabase migrations up --local
-
-   # Verify the table was created:
-   \dt public.websites
    ```
 </Steps>
 
@@ -236,17 +233,6 @@ export default async function saveWebsite(row: {
 :::note
 This function requires the service role key (not the anon key) because it directly inserts data without RLS policies. Both the URL and service role key are automatically available in the Edge Function environment. See [Supabase API Keys](https://supabase.com/docs/guides/api/api-keys) for more details.
 :::
-</details>
-
-<details>
-  <summary>Why separate files instead of one big module?</summary>
-
-  Breaking the workflow into discrete functions provides important benefits:
-
-  1. **Selective retries** - If the OpenAI API rate-limits us, pgflow can retry just the failed AI call without re-scraping the website
-  2. **Parallelization** - As you'll see later, the summary and tag extraction can run concurrently
-  3. **Clearer error handling** - When something fails, you know exactly which step had the problem
-  4. **Better testability** - Each function can be tested in isolation
 </details>
 
 ---
