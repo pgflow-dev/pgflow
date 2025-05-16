@@ -91,13 +91,25 @@ You should see confirmation that the migration was applied successfully. You can
 
 ## Step 2 - Create modular task functions
 
-One of pgflow's most powerful features is how it breaks complex workflows into smaller, independently retriable steps. Let's create four specialized task functions, each handling one discrete part of our process.
+One of pgflow's most powerful features is how it breaks complex workflows into smaller, independently retriable steps. Let's create four specialized task functions:
 
-These go in `supabase/functions/_tasks` so they're available to the Edge Function workers.
+| Function | Purpose |
+|---------|---------|
+| `scrapeWebsite.ts` | Fetch and extract plain text from a URL |
+| `summarizeWithAI.ts` | Generate a concise text summary using OpenAI |
+| `extractTags.ts` | Extract keyword tags using OpenAI |
+| `saveWebsite.ts` | Store results in the database |
 
-The first task is a **web scraper** that fetches and cleans HTML content:
+Create these files in your `supabase/functions/_tasks` directory.
 
-```ts title="scrapeWebsite.ts"
+### Web Scraper Function
+
+This function fetches a webpage, strips out HTML tags, and returns clean text for the AI to analyze. The 25,000 character limit prevents oversized API calls to OpenAI.
+
+<details open>
+  <summary><strong>scrapeWebsite.ts</strong> - Fetch and clean webpage content</summary>
+
+```ts
 export default async function scrapeWebsite(url: string) {
   console.log("[scrapeWebsite] fetching", url);
 
@@ -112,9 +124,21 @@ export default async function scrapeWebsite(url: string) {
 }
 ```
 
-Next come two AI processing tasks that both use OpenAI. The first generates a concise summary:
+:::caution[Production HTML Processing]
+The HTML sanitization here (using regex) is intentionally simplified for the tutorial. For production use, consider using a proper HTML-to-text library like [html-to-text](https://github.com/html-to-text/node-html-to-text) or [Turndown](https://github.com/mixmark-io/turndown) for more robust HTML-to-markdown conversion.
+:::
+</details>
 
-```ts title="summarizeWithAI.ts"
+### AI Analysis Functions
+
+These two functions use OpenAI's API to analyze the webpage content in different ways. They both use Zod schemas to validate the AI responses and ensure proper typing.
+
+<details>
+  <summary><strong>summarizeWithAI.ts</strong> - Generate an AI summary</summary>
+
+This function asks GPT-4o to generate a concise summary of the webpage content, returning a single paragraph of text.
+
+```ts
 import OpenAI from "openai";
 import { z } from "zod";
 import { zodTextFormat } from "openai/helpers/zod";
@@ -137,10 +161,14 @@ export default async function summarizeWithAI(content: string) {
   return rsp.output_parsed.summary;
 }
 ```
+</details>
 
-The second AI task extracts relevant keywords:
+<details>
+  <summary><strong>extractTags.ts</strong> - Extract keyword tags</summary>
 
-```ts title="extractTags.ts"
+This function analyzes the content to extract 5-10 relevant keyword tags that describe the webpage's topics or themes.
+
+```ts
 import OpenAI from "openai";
 import { z } from "zod";
 import { zodTextFormat } from "openai/helpers/zod";
@@ -164,10 +192,18 @@ export default async function extractTags(content: string) {
   return rsp.output_parsed.keywords;
 }
 ```
+</details>
 
-Finally, a task to save the results to the database:
+### Database Function
 
-```ts title="saveWebsite.ts"
+The final task persists all the analysis results to the database table created in Step 1.
+
+<details>
+  <summary><strong>saveWebsite.ts</strong> - Store results in the database</summary>
+
+This function connects to Supabase using environment variables and inserts the website data, AI summary, and tags into the database.
+
+```ts
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -182,11 +218,12 @@ export default async function saveWebsite(row: {
   await supabase.from("websites").insert(row).throwOnError();
 }
 ```
+</details>
 
 <details>
   <summary>Why separate files instead of one big module?</summary>
 
-  Breaking our workflow into these discrete functions gives us important benefits:
+  Breaking the workflow into discrete functions provides important benefits:
 
   1. **Selective retries** - If the OpenAI API rate-limits us, pgflow can retry just the failed AI call without re-scraping the website
   2. **Parallelization** - As you'll see later, the summary and tag extraction can run concurrently
