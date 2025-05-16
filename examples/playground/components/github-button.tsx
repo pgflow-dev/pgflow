@@ -30,6 +30,8 @@ export function GithubButton({ className = '', onLoadingChange, disabled, text =
 
       if (error) {
         console.error('GitHub OAuth error:', error);
+        setIsLoadingLocal(false);
+        onLoadingChange?.(false);
         return;
       }
 
@@ -39,6 +41,8 @@ export function GithubButton({ className = '', onLoadingChange, disabled, text =
       }
     } catch (error) {
       console.error('GitHub sign-in error:', error);
+      setIsLoadingLocal(false);
+      onLoadingChange?.(false);
     }
   };
 

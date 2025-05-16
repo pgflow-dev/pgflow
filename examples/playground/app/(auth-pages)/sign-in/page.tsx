@@ -56,7 +56,10 @@ export default function Login({
   }, [router, searchParams]);
 
   return (
-    <form className="flex flex-col min-w-64 max-w-64 mx-auto" onSubmit={() => setIsLoading(true)}>
+    <form className="flex flex-col min-w-64 max-w-64 mx-auto" onSubmit={(e) => {
+      e.preventDefault();
+      setIsLoading(true);
+    }}>
       <h1 className="text-2xl font-medium">Sign in</h1>
       <p className="text-sm text-foreground">
         Don't have an account?{' '}
