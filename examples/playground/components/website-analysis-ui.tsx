@@ -190,7 +190,7 @@ export default function WebsiteAnalysisUI({
   }
 
   return (
-    <div className="p-6 border rounded-lg shadow-sm">
+    <div className="p-6 mt-4 bg-muted/30 rounded-lg">
       {/* Top bar with analyze form when analysis is completed */}
       {(isCompleted || isFailed) && (
         <div className="mb-6">
