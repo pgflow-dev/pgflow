@@ -1,24 +1,22 @@
 'use client';
 
 import { createClient } from '@/utils/supabase/client';
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState } from 'react';
+import { useStartAnalysis } from '@/lib/hooks/use-start-analysis';
 import type { Database } from '@/supabase/functions/database-types';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { FormMessage } from '@/components/form-message';
 import { SubmitButton } from '@/components/submit-button';
-import { useRouter } from 'next/navigation';
 import { SkeletonTable } from '@/components/skeleton-table';
 
 type WebsiteRow = Database['public']['Tables']['websites']['Row'];
 
 export default function Page() {
   const [websites, setWebsites] = useState<WebsiteRow[] | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
   const [url, setUrl] = useState('https://reddit.com/r/supabase');
-  const [isPending, startTransition] = useTransition();
+  const { start: startAnalysis, isPending, error: formError } = useStartAnalysis();
   const supabase = createClient();
-  const router = useRouter();
 
   // Process URL parameter when the component mounts
   useEffect(() => {
@@ -44,64 +42,12 @@ export default function Page() {
         }, 10);
       }
     }
-  }, []);
+  }, [startAnalysis]);
   
-  async function startAnalysis(url: string) {
-    if (!url || isPending) {
-      return;
-    }
-
-    try {
-      startTransition(async () => {
-        const { data, error } = await supabase.rpc('start_analyze_website_flow', {
-          url,
-        });
-
-        if (error) {
-          setFormError(error.message);
-          return;
-        }
-
-        if (data && data.run_id) {
-          router.push(`/websites/runs/${data.run_id}`);
-        } else {
-          setFormError('Failed to start flow analysis');
-        }
-      });
-    } catch (error) {
-      setFormError('An error occurred while starting the analysis');
-      console.error(error);
-    }
-  }
-
   async function startAnalyzeWebsiteFlow(formData: FormData) {
     const url = formData.get('url') as string;
-
-    if (!url || isPending) {
-      setFormError('Please enter a URL');
-      return;
-    }
-
-    try {
-      startTransition(async () => {
-        const { data, error } = await supabase.rpc('start_analyze_website_flow', {
-          url,
-        });
-
-        if (error) {
-          setFormError(error.message);
-          return;
-        }
-
-        if (data && data.run_id) {
-          router.push(`/websites/runs/${data.run_id}`);
-        } else {
-          setFormError('Failed to start flow analysis');
-        }
-      });
-    } catch (error) {
-      setFormError('An error occurred while starting the analysis');
-      console.error(error);
+    if (url) {
+      startAnalysis(url);
     }
   }
 

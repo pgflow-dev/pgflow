@@ -5,6 +5,8 @@ sidebar:
   order: 50
 ---
 
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
 ## Current Compilation Limitations
 
 **Important:** The current version of pgflow's compiler has several limitations:
@@ -65,3 +67,22 @@ We've created a detailed guide on [how to update flow options](/how-to/update-fl
 - Best practices for maintaining compatibility
 
 For any non-breaking changes to existing flows, refer to this guide rather than recompiling.
+
+## Development Workarounds
+
+During development, if you need to make breaking changes to a flow, you can [delete the flow and its data](/how-to/delete-flow-and-data/) entirely and start fresh. This approach deletes all flow data and should never be used in production.
+
+## See Also
+
+<CardGrid>
+  <LinkCard
+    title="Delete flow and its data"
+    description="Remove a flow completely during development"
+    href="/how-to/delete-flow-and-data/"
+  />
+  <LinkCard
+    title="Update flow options"
+    description="Non-breaking configuration changes"
+    href="/how-to/update-flow-options/"
+  />
+</CardGrid>

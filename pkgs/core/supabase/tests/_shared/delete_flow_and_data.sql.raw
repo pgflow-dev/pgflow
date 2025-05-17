@@ -1,0 +1,24 @@
+/**
+ * Deletes a flow and all its associated data.
+ * WARNING: This is destructive and should only be used during development.
+ *
+ * @param flow_slug - The slug of the flow to delete
+ */
+create or replace function pgflow.delete_flow_and_data(
+  flow_slug TEXT
+) returns void language plpgsql as $$
+BEGIN
+  -- Drop queue and archive table
+  PERFORM pgmq.drop_queue(delete_flow_and_data.flow_slug);
+  
+  -- Delete all associated data in the correct order
+  DELETE FROM pgflow.step_tasks WHERE step_tasks.flow_slug = delete_flow_and_data.flow_slug;
+  DELETE FROM pgflow.step_states WHERE step_states.flow_slug = delete_flow_and_data.flow_slug;
+  DELETE FROM pgflow.runs WHERE runs.flow_slug = delete_flow_and_data.flow_slug;
+  DELETE FROM pgflow.deps WHERE deps.flow_slug = delete_flow_and_data.flow_slug;
+  DELETE FROM pgflow.steps WHERE steps.flow_slug = delete_flow_and_data.flow_slug;
+  DELETE FROM pgflow.flows WHERE flows.flow_slug = delete_flow_and_data.flow_slug;
+  
+  RAISE NOTICE 'Flow % and all associated data has been deleted', delete_flow_and_data.flow_slug;
+END
+$$;
