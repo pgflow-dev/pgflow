@@ -1,6 +1,8 @@
 'use client';
 
 import { useStartAnalysis } from '@/lib/hooks/use-start-analysis';
+import { useEffect, useState } from 'react';
+import { createClient } from '@/utils/supabase/client';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { FormMessage } from '@/components/form-message';
@@ -9,7 +11,15 @@ import { useLoadingState } from './loading-state-provider';
 
 export default function WebsiteAnalyzerForm() {
   const { start: startAnalysis, isPending, error: formError } = useStartAnalysis();
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const supabase = createClient();
   const { setLoading } = useLoadingState();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setIsLoggedIn(!!data.user);
+    });
+  }, []);
 
   async function handleAnalyzeWebsite(formData: FormData) {
     const url = formData.get('url') as string;
@@ -49,6 +59,14 @@ export default function WebsiteAnalyzerForm() {
         </SubmitButton>
         {formError && <FormMessage message={{ error: formError }} />}
       </form>
+      {isLoggedIn === false && (
+        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+          <p className="text-yellow-800">
+            You'll need to sign in to analyze websites. When you click the
+            button, you'll be redirected to the sign-in page.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
