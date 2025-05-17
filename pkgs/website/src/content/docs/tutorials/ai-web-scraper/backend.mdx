@@ -10,7 +10,7 @@ import JoinCommunity from '@/components/JoinCommunity.astro';
 
 Let's build the backend workflow that powers your AI web scraper.
 
-:::tip[New to pgflow?]
+:::note[New to pgflow?]
 If you haven't installed pgflow yet, check the [installation guide](/getting-started/install-pgflow/) first.
 :::
 
@@ -275,13 +275,13 @@ Changing steps requires a new flow with unique `slug`. This is a current limitat
 
 ## Step 5 - Setup Edge Worker
 
-Create an [Edge Worker](/edge-worker/getting-started/create-first-worker/) to run your flow:
+Create a worker function that will process steps from your flow:
 
 ```bash
 npx supabase functions new analyze_website_worker
 ```
 
-Replace the generated `index.ts`:
+Replace the generated `index.ts` with the following code:
 
 ```typescript title="supabase/functions/analyze_website_worker/index.ts"
 import { EdgeWorker } from "jsr:@pgflow/edge-worker";
@@ -290,11 +290,7 @@ import AnalyzeWebsite from '../_flows/analyze_website.ts';
 EdgeWorker.start(AnalyzeWebsite);  // That's it! 🤯
 ```
 
-:::note[Worker magic]
-EdgeWorker handles polling, retries, and failures automatically. Your code just defines the flow shape!
-:::
-
-Update `supabase/config.toml`:
+and update your `supabase/config.toml`:
 
 ```diff title="supabase/config.toml"
   [functions.analyze_website_worker]
@@ -305,6 +301,12 @@ Update `supabase/config.toml`:
 
 :::caution
 Only disable JWT for local development.
+:::
+
+:::note[Worker magic]
+EdgeWorker handles polling, retries, and failures automatically. Your code just defines the flow shape!
+
+See more in [Run your flow](/getting-started/run-flow/) documentation page
 :::
 
 ---
@@ -355,10 +357,14 @@ Check your database:
 select website_url, tags, summary from websites;
 ```
 
-:::tip[Debug like a pro]
-Check flow status anytime: `SELECT * FROM pgflow.runs WHERE flow_slug = 'analyze_website'`
+:::tip[Monitor with simple SQL queries]
+Check flow status anytime:
 
-All state lives in Postgres - no external tools needed!
+```sql
+SELECT * FROM pgflow.runs WHERE flow_slug = 'analyze_website'
+```
+
+See more in [Monitor flow execution](/how-to/monitor-flow-execution/) documentation page
 :::
 
 ---
