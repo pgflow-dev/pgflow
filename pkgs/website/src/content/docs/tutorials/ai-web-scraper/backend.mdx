@@ -8,16 +8,17 @@ sidebar:
 import { Steps } from '@astrojs/starlight/components';
 import JoinCommunity from '@/components/JoinCommunity.astro';
 
-**Read:** 10 min | **Implement:** 20 min
-
 In this first part, you'll build the backend workflow that powers your AI web scraper. This includes setting up the database, creating task functions, and orchestrating everything with pgflow.
 
 The complete implementation consists of:
+
+<Steps>
 1. Database table for storing results
 2. Four specialized task functions
 3. pgflow workflow definition
 4. Edge Worker setup
 5. Testing the complete flow
+</Steps>
 
 ## Step 1 - Create `websites` table
 
