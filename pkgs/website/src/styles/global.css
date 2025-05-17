@@ -191,3 +191,18 @@ svg .secondary {
   }
   
 }
+
+/* Responsive SVG images */
+.responsive-svg {
+  width: 50%;
+  height: auto;
+  display: block;
+  margin: 1rem auto;
+}
+
+@media (max-width: 768px) {
+  .responsive-svg {
+    width: 100%;
+    max-width: 100%;
+  }
+}
