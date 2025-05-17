@@ -90,3 +90,26 @@ If successful, you should see output like:
 ```
 Applying migration 20250505120000_create_greet_user_flow.sql...done
 ```
+
+:::note[Flow definitions are immutable]
+Once a flow is registered in the database, its structure cannot be modified. To change a flow, you can either [delete it](/how-to/delete-flow-and-data/) (development only) or use [versioning](/how-to/version-your-flows/).
+
+<details>
+<summary>Why immutability matters</summary>
+
+<br/>
+
+**What does immutability mean?**
+
+Once a flow is registered, you cannot modify its structure - no adding/removing steps, changing dependencies, or renaming steps.
+
+**Why this protects production:**
+
+- Running workflows continue safely through deployments
+- Historical runs remain intact with their original structure  
+- Flows behave consistently from start to finish
+- Complete audit trails are preserved
+
+This ensures your production workflows are stable, predictable, and never break mid-execution.
+</details>
+:::

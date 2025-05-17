@@ -59,8 +59,7 @@ Make sure to adjust intervals and time of pruning based on size of your tables a
 
 ### 1. Install the pruning function
 
-Create a new migration and paste [contents of the pruning function](#the-pruning-function),
-then run `supabase migrations up`.
+To install this function, run the [pruning function SQL](#the-pruning-function) directly in your database using psql or Supabase Studio.
 
 ### 2. Setup pg_cron schedule
 
@@ -84,6 +83,6 @@ SELECT * FROM cron.job;
 
 ## The Pruning Function
 
-Add this SQL function to a migration file:
+Run this SQL to install the pruning function:
 
 <Code lang="sql" code={pruningFunctionCode} />
