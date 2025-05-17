@@ -1,0 +1,62 @@
+---
+title: Delete Flow and its Data
+description: Completely remove a flow and all its data during development
+sidebar:
+  order: 55
+---
+
+During development, you may want to completely remove a flow and all its associated data to start fresh. This operation is destructive and should **never be used in production**.
+
+:::danger[Data Loss Warning]
+This permanently deletes all flow data including:
+- All run history
+- All queued and archived messages
+- All task outputs
+- All flow definitions
+:::
+
+## When to Use This
+
+This approach is useful when:
+- You need to make breaking changes during development
+- You want to clean up test data
+- You're iterating on flow structure and need a fresh start
+
+For production environments, always use [versioned flows](/how-to/version-your-flows/) instead (e.g., `my_flow_v1`, `my_flow_v2`) to safely deploy new versions while maintaining complete flow history.
+
+## Complete Flow Removal
+
+To completely remove a flow and all its data, replace `'your_flow_slug'` with your actual flow slug and execute this query:
+
+```sql
+DO $$
+DECLARE
+  -- Replace with your flow slug
+  flow_slug_to_delete TEXT := 'your_flow_slug';
+BEGIN
+  -- Drops queue and archive table
+  PERFORM pgmq.drop_queue(flow_slug_to_delete);
+  
+  DELETE FROM pgflow.step_tasks WHERE flow_slug = flow_slug_to_delete;
+  DELETE FROM pgflow.step_states WHERE flow_slug = flow_slug_to_delete;
+  DELETE FROM pgflow.runs WHERE flow_slug = flow_slug_to_delete;
+  DELETE FROM pgflow.deps WHERE flow_slug = flow_slug_to_delete;
+  DELETE FROM pgflow.steps WHERE flow_slug = flow_slug_to_delete;
+  DELETE FROM pgflow.flows WHERE slug = flow_slug_to_delete;
+  
+  RAISE NOTICE 'Flow % and all associated data has been deleted', flow_slug_to_delete;
+END $$;
+```
+
+## After Dropping
+
+Once you've dropped the flow:
+
+1. You can compile and deploy a fresh version without conflicts
+2. The flow slug becomes available for reuse
+3. All historical data is permanently lost
+
+## See Also
+
+- [Version your flows](/how-to/version-your-flows/) - Safe flow updates for production
+- [Update flow options](/how-to/update-flow-options/) - Non-breaking configuration changes

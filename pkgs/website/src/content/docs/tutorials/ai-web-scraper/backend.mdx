@@ -10,6 +10,10 @@ import JoinCommunity from '@/components/JoinCommunity.astro';
 
 Let's build the backend workflow that powers your AI web scraper.
 
+:::tip[New to pgflow?]
+If you haven't installed pgflow yet, check the [installation guide](/getting-started/install-pgflow/) first.
+:::
+
 What we'll create:
 
 <Steps>
@@ -63,7 +67,7 @@ Build four focused functions that each do one thing well:
 | `extractTags.ts` | AI tags |
 | `saveWebsite.ts` | Saves to database |
 
-Put these in `supabase/functions/_tasks`:
+Put these in `supabase/functions/_tasks` (see [organizing flows code](/how-to/organize-flows-code/) for project structure):
 
 ### Web Scraping
 
@@ -210,7 +214,7 @@ Uses service role key for direct database access. Both URL and key are auto-avai
 
 ## Step 3 - Define flow
 
-Connect tasks into a workflow (`supabase/functions/_flows/analyze_website.ts`):
+Connect tasks into a workflow using pgflow's [TypeScript DSL](/concepts/flow-dsl/) (`supabase/functions/_flows/analyze_website.ts`):
 
 ```typescript title="supabase/functions/_flows/analyze_website.ts"
 import { Flow } from "@pgflow/dsl";
@@ -236,14 +240,12 @@ export default new Flow<Input>({ slug: "analyze_website", maxAttempts: 3 })
       saveWebsite({ website_url: run.url, summary, tags }));
 ```
 
-:::tip[Runs in parallel]
-Summary and tags execute simultaneously since both only need website content. Cuts time in half!
-:::
-
 Flow structure:
 - `website` → fetches the URL (root step)
 - `summary` & `tags` → run in parallel (both need website content)  
 - `saveToDb` → waits for both, then saves everything
+
+Summary and tags execute simultaneously since both only need website content - cutting execution time in half. All state transitions happen transactionally in the database, ensuring your flow never ends up in an inconsistent state even if tasks fail or workers crash.
 
 :::note
 `maxAttempts: 3` means each step retries up to 3 times on failure.
@@ -253,7 +255,7 @@ Flow structure:
 
 ## Step 4 - Compile & migrate
 
-Turn your TypeScript flow into SQL:
+Turn your TypeScript flow into SQL using pgflow's [compiler](/getting-started/compile-to-sql/):
 
 ```bash
 # TypeScript → SQL
@@ -263,19 +265,17 @@ npx pgflow@latest compile supabase/functions/_flows/analyze_website.ts
 npx supabase migrations up --local
 ```
 
-:::tip[Pure SQL execution]
-The compiler converts your flow into native PostgreSQL functions. No runtime overhead - just SQL executing inside your database!
-:::
+The DSL compiler extracts your flow's shape (steps, dependencies) and generates SQL that inserts it into the database. **The database's flow definition determines what runs and when.** The TypeScript DSL also wires up step handlers so the Edge Worker knows which function to invoke for each step. Learn more about [how pgflow works](/concepts/how-pgflow-works/).
 
 :::danger[Adding or removing steps]
-Changing steps requires a new flow with unique `slug`. See [versioning](/how-to/version-your-flows/).
+Changing steps requires a new flow with unique `slug`. This is a current limitation, but workarounds for local development are planned to make iteration easier. See [versioning](/how-to/version-your-flows/). For development, you can [delete a flow and its data](/how-to/delete-flow-and-data/) to start fresh.
 :::
 
 ---
 
 ## Step 5 - Setup Edge Worker
 
-Create an Edge Worker to run your flow:
+Create an [Edge Worker](/edge-worker/getting-started/create-first-worker/) to run your flow:
 
 ```bash
 npx supabase functions new analyze_website_worker
