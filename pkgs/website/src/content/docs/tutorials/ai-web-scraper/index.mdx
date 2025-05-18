@@ -19,13 +19,14 @@ Build an AI-powered scraper: fetch → analyze → store
 
 ## What you'll build
 
-You'll create a web scraper that:
+You'll create a practical AI web scraper workflow that:
 
 <Steps>
-1. Fetches webpage content
-2. Analyzes it with OpenAI
-3. Runs parallel AI operations  
-4. Saves results to your database
+1. Grabs content from any webpage with built-in error handling
+2. Uses GPT-4o to generate summaries and extract relevant tags
+3. Runs multiple AI operations in parallel (cutting processing time in half)
+4. Stores everything neatly in your Postgres database
+5. Auto-retries when things go wrong (because APIs sometimes fail)
 </Steps>
 
 <img src="/analyze_website.svg" alt="AI Web Scraper Workflow" title="AI-powered web scraper workflow DAG" className="responsive-svg" />
@@ -57,11 +58,11 @@ Everything runs in your Supabase project - no external infrastructure needed.
 ## What you'll learn
 
 <Steps>
-1. Create database tables for storing scraping results
-2. Build modular task functions for web scraping
-3. Integrate OpenAI with structured outputs for AI analysis
-4. Design parallel DAG workflows for concurrent processing
-5. Execute flows using Supabase Edge Functions
+1. Building task functions that fetch and process web content
+2. Structuring OpenAI responses with type-safe schema validation
+3. Defining a DAG flow with parallel steps using the TypeScript DSL
+4. Compiling your flow to SQL and applying migrations
+5. Running it all with the Edge Worker in Supabase
 </Steps>
 
 ## Get started

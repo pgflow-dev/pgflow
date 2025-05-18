@@ -106,7 +106,7 @@ In production, use [html-to-text](https://www.npmjs.com/package/html-to-text) fo
 Two OpenAI functions that return structured, type-safe data:
 
 :::tip[Structured Outputs]
-Using OpenAI's [Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs) for reliable, validated responses.
+We're using OpenAI's newer Responses API (`openai.responses.parse`) rather than traditional Chat Completions. This provides [Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs) for reliable, validated responses. Note that `openai.responses.parse` will throw an exception if the model output doesn't match your Zod schema.
 :::
 
 <details>
