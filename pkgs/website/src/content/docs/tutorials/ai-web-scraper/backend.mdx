@@ -10,8 +10,8 @@ import JoinCommunity from '@/components/JoinCommunity.astro';
 
 Let's build the backend workflow that powers your AI web scraper.
 
-:::note[New to pgflow?]
-If you haven't installed pgflow yet, check the [installation guide](/getting-started/install-pgflow/) first.
+:::note[Before You Start]
+Make sure you've checked the [tutorial introduction](/tutorials/ai-web-scraper/) first for all prerequisites, required tools, and version information.
 :::
 
 What we'll create:
@@ -263,14 +263,18 @@ Summary and tags execute simultaneously since both only need website content - c
 
 Turn your TypeScript flow into SQL using pgflow's [compiler](/getting-started/compile-to-sql/):
 
-```bash
-# TypeScript → SQL
-npx pgflow@latest compile supabase/functions/_flows/analyze_website.ts
-# Generates supabase/migrations/<timestamp>_analyze_website.sql
+<Steps>
+1. Compile TypeScript to SQL:
+   ```bash
+   npx pgflow@latest compile supabase/functions/_flows/analyze_website.ts
+   # Generates supabase/migrations/<timestamp>_analyze_website.sql
+   ```
 
-# Apply to database
-npx supabase migrations up --local
-```
+2. Apply migration to database:
+   ```bash
+   npx supabase migrations up --local
+   ```
+</Steps>
 
 The DSL compiler extracts your flow's shape (steps, dependencies) and generates SQL that inserts it into the database. **The database's flow definition determines what runs and when.** The TypeScript DSL also wires up step handlers so the Edge Worker knows which function to invoke for each step. Learn more about [how pgflow works](/concepts/how-pgflow-works/).
 
@@ -282,33 +286,28 @@ Changing steps requires a new flow with unique `slug`. This is a core design dec
 
 ## Step 5 - Setup Edge Worker
 
-Create a worker function that will process steps from your flow:
+<Steps>
+1. Create a worker function that will process steps from your flow:
+   ```bash
+   npx supabase functions new analyze_website_worker
+   ```
 
-```bash
-npx supabase functions new analyze_website_worker
-```
+2. Replace the generated `index.ts` with the following code:
+   ```typescript title="supabase/functions/analyze_website_worker/index.ts"
+   import { EdgeWorker } from "jsr:@pgflow/edge-worker";
+   import AnalyzeWebsite from '../_flows/analyze_website.ts';
+   
+   EdgeWorker.start(AnalyzeWebsite);  // That's it! 🤯
+   ```
 
-Replace the generated `index.ts` with the following code:
-
-```typescript title="supabase/functions/analyze_website_worker/index.ts"
-import { EdgeWorker } from "jsr:@pgflow/edge-worker";
-import AnalyzeWebsite from '../_flows/analyze_website.ts';
-
-EdgeWorker.start(AnalyzeWebsite);  // That's it! 🤯
-```
-
-and update your `supabase/config.toml`:
-
-```diff title="supabase/config.toml"
-  [functions.analyze_website_worker]
-  enabled = true
-- verify_jwt = true
-+ verify_jwt = false
-```
-
-:::caution
-Only disable JWT for local development.
-:::
+3. Update your `supabase/config.toml`:
+   ```diff title="supabase/config.toml"
+     [functions.analyze_website_worker]
+     enabled = true
+   - verify_jwt = true
+   + verify_jwt = false
+   ```
+</Steps>
 
 :::note[Worker magic]
 EdgeWorker handles polling, retries, and failures automatically. Your code just defines the flow shape!
