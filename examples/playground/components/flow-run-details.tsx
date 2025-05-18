@@ -358,7 +358,7 @@ export default function FlowRunDetails({
                             {!isParallel && (
                               <span className="capitalize text-xs">
                                 {isRetrying
-                                  ? `retrying (retry ${latestTask.attempts_count - 1})`
+                                  ? `retrying (attempt ${latestTask.attempts_count}/${latestTask.attempts_count})`
                                   : step.status === 'error' || step.status === 'cancelled'
                                     ? step.status
                                     : step.status === 'started'

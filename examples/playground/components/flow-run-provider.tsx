@@ -139,8 +139,80 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       }));
     };
 
-    // No longer used - we only listen for INSERT events now
-    // This makes the application more efficient
+    const handleStepTaskUpdate = (
+      payload: RealtimePostgresUpdatePayload<StepTaskRow>,
+    ) => {
+      logger.log('Step task updated:', payload);
+
+      // Log important details about the updated task
+      if (
+        payload.new.step_slug === 'summary' ||
+        payload.new.step_slug === 'tags'
+      ) {
+        logger.log(`Important task updated - ${payload.new.step_slug}:`, {
+          status: payload.new.status,
+          has_output: !!payload.new.output,
+          attempts_count: payload.new.attempts_count,
+        });
+      }
+
+      // Check if this is a retry (attempts_count > 1)
+      const isRetry = payload.new.attempts_count && payload.new.attempts_count > 1;
+      if (isRetry) {
+        logger.log(`Task is being retried - attempt ${payload.new.attempts_count}`, payload.new);
+      }
+
+      // Add step_index to the task from our cached stepOrderMap
+      const newTask = {
+        ...payload.new,
+        step_index: stepOrderMap[payload.new.step_slug] || 0,
+      };
+
+      setStepTasks((prevTasksMap) => {
+        const stepSlug = newTask.step_slug;
+        const currentTasks = prevTasksMap[stepSlug] || [];
+
+        // First, try to find a task with the same ID
+        let taskIndex = currentTasks.findIndex(
+          (task) => task.step_task_id === newTask.step_task_id
+        );
+        
+        // If we have a retry (attempts_count > 1), find any previous attempt with the same step_slug
+        // but fewer attempts to replace it with the latest attempt
+        if (taskIndex === -1 && isRetry) {
+          // Look for a previous attempt with the same task slug but lower attempts_count
+          taskIndex = currentTasks.findIndex(
+            (task) => 
+              task.step_slug === newTask.step_slug && 
+              (!task.attempts_count || (task.attempts_count < newTask.attempts_count))
+          );
+          
+          if (taskIndex !== -1) {
+            logger.log('Found previous attempt to update with newer attempt', {
+              oldAttempt: currentTasks[taskIndex].attempts_count, 
+              newAttempt: newTask.attempts_count
+            });
+          }
+        }
+
+        if (taskIndex >= 0) {
+          // Update existing task
+          const updatedTasks = [...currentTasks];
+          updatedTasks[taskIndex] = newTask;
+          return {
+            ...prevTasksMap,
+            [stepSlug]: updatedTasks,
+          };
+        } else {
+          // Task not found - add it (shouldn't happen with proper INSERT/UPDATE separation)
+          logger.warn('Received UPDATE for non-existent task - adding it', newTask);
+          return {
+            ...prevTasksMap,
+            [stepSlug]: [...currentTasks, newTask],
+          };
+        }
+      });
+    };
 
     const handleStepTaskInsert = (
       payload: RealtimePostgresInsertPayload<StepTaskRow>,
@@ -155,7 +227,14 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
         logger.log(`Important task inserted - ${payload.new.step_slug}:`, {
           status: payload.new.status,
           has_output: !!payload.new.output,
+          attempts_count: payload.new.attempts_count,
         });
+      }
+
+      // Check if this is a retry (attempts_count > 1)
+      const isRetry = payload.new.attempts_count && payload.new.attempts_count > 1;
+      if (isRetry) {
+        logger.log(`New task is a retry - attempt ${payload.new.attempts_count}`, payload.new);
       }
 
       // Add step_index to the task from our cached stepOrderMap
@@ -221,6 +300,15 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
                   ...task,
                   step_index: stepOrderMap[task.step_slug] || 0,
                 };
+                
+                // Log if this task has been retried (attempts_count > 1)
+                if (task.attempts_count && task.attempts_count > 1) {
+                  logger.log(`Complete run data: Found retry for task - attempt ${task.attempts_count}`, {
+                    step_slug: task.step_slug,
+                    step_task_id: task.step_task_id,
+                    status: task.status
+                  });
+                }
 
                 if (!tasksMap[task.step_slug]) {
                   tasksMap[task.step_slug] = [];
@@ -251,7 +339,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
         }
       },
       onStepStateUpdate: handleStepStateUpdate,
-      // No longer listening to UPDATE events, only INSERTs
+      onStepTaskUpdate: handleStepTaskUpdate,
       onStepTaskInsert: handleStepTaskInsert,
     });
 
@@ -309,6 +397,15 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
             ...task,
             step_index: orderMap[task.step_slug] || 0,
           };
+
+          // Log if this task has been retried (attempts_count > 1)
+          if (task.attempts_count && task.attempts_count > 1) {
+            logger.log(`Initial load: Found retry for task - attempt ${task.attempts_count}`, {
+              step_slug: task.step_slug,
+              step_task_id: task.step_task_id,
+              status: task.status
+            });
+          }
 
           if (!tasksMap[task.step_slug]) {
             tasksMap[task.step_slug] = [];

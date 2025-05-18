@@ -293,7 +293,7 @@ export default function MotionComponents({
                             step.status === 'started';
 
                           if (isRetrying) {
-                            return `Retrying (Retry ${latestTask.attempts_count - 1})...`;
+                            return `Retrying (Attempt ${latestTask.attempts_count}/${latestTask.attempts_count})...`;
                           } else if (step.status === 'completed') {
                             return 'Completed';
                           } else if (step.status === 'started') {

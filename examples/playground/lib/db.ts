@@ -110,8 +110,12 @@ export function observeFlowRun({
       { ...updateEventSpec, table: 'step_states' },
       onStepStateUpdate,
     )
-    // Only listen for INSERTs on step_tasks as that's more efficient
-    // and sufficient for our needs (tasks are immutable once created)
+    // Listen for both INSERTs and UPDATEs on step_tasks to track progress including retries (attempts_count)
+    .on(
+      'postgres_changes' as any,
+      { ...updateEventSpec, table: 'step_tasks' },
+      onStepTaskUpdate,
+    )
     .on(
       'postgres_changes' as any,
       { ...insertEventSpec, table: 'step_tasks' },
