@@ -1,10 +1,21 @@
 'use client';
 
+import React, { Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+// Fix #1: Create ONE lazy component outside render
+// Use a regular import instead of lazy loading to ensure component stability
+import AnalysisResult from './analysis-result';
+
+// Define analysis data type
+interface AnalysisData {
+  summary: string;
+  tags: string[];
+  dataReady: boolean;
+}
 
 interface MotionComponentsProps {
   websiteUrl: string;
@@ -24,8 +35,7 @@ interface MotionComponentsProps {
   isRunning: boolean;
   isCompleted: boolean;
   isFailed: boolean;
-  summary: string;
-  tags: string[];
+  analysisData: AnalysisData;
 }
 
 export default function MotionComponents({
@@ -46,8 +56,7 @@ export default function MotionComponents({
   isRunning,
   isCompleted,
   isFailed,
-  summary,
-  tags
+  analysisData
 }: MotionComponentsProps) {
   return (
     <AnimatePresence>
@@ -197,214 +206,132 @@ export default function MotionComponents({
                       : websiteUrl}
                   </p>
                 </div>
-                {/* Steps are already sorted by the getOrderedStepStates function */}
-                {getOrderedStepStates.map((step, index) => (
-                  <motion.div
-                    key={step.step_slug}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className={`flex items-start space-x-4 ${
-                      isCompleted && step.status === 'completed'
-                        ? 'opacity-80'
-                        : step.status === 'created'
-                          ? 'opacity-50'
-                          : ''
-                    }`}
-                  >
-                    <div className="flex-shrink-0 mt-1">
-                      <div
-                        className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${(() => {
-                          // Use the getOrderedStepTasks function to get pre-ordered tasks
-                          const orderedStepTasks = getOrderedStepTasks(
-                            step.step_slug,
-                          );
-
-                          // Get the most recent task (usually the one with the highest attempts_count)
-                          const latestTask =
-                            orderedStepTasks.length > 0
-                              ? [...orderedStepTasks].sort(
-                                  (a, b) =>
-                                    (b.attempts_count || 0) -
-                                    (a.attempts_count || 0),
-                                )[0]
-                              : null;
-
-                          // Check if this is a retry (attempts_count > 1)
-                          const isRetrying =
-                            latestTask &&
-                            latestTask.attempts_count > 1 &&
-                            step.status === 'started';
-
-                          if (step.status === 'completed') {
-                            return 'bg-green-500 border-green-500 text-white';
-                          } else if (isRetrying) {
-                            return 'border-red-500 text-red-500 animate-pulse';
-                          } else if (step.status === 'started') {
-                            return 'border-yellow-500 text-yellow-500';
-                          } else if (step.status === 'failed') {
-                            return 'border-red-500 text-red-500';
-                          } else {
-                            return 'border-gray-300 text-gray-300';
-                          }
-                        })()}`}
+                {/* Use a stable list with a layoutId for each element to prevent flickering */}
+                <div className="space-y-6">
+                  {/* Optional polish: Turn off exit animations for step rows */}
+                  <AnimatePresence initial={false} exitBeforeEnter={false}>
+                    {getOrderedStepStates.map((step, index) => {
+                      // Pre-compute all the conditional values outside of the JSX to ensure stability
+                      // Fix #2: Use stable key based only on step_slug (without index)
+                      const stepKey = step.step_slug;
+                      const stepSlug = step.step_slug;
+                      const stepDisplayName = step.step_slug.replace(/_/g, ' ');
+                      const stepNumber = index + 1;
+                    
+                    // Determine status classes once
+                    const statusClass = step.status === 'completed' 
+                      ? 'bg-green-500 border-green-500 text-white'
+                      : step.status === 'failed'
+                        ? 'border-red-500 text-red-500'
+                        : step.status === 'started'
+                          ? 'border-yellow-500 text-yellow-500'
+                          : 'border-gray-300 text-gray-300';
+                          
+                    // Determine the status display text once
+                    const statusText = step.status === 'completed' ? 'Completed' :
+                                      step.status === 'failed' ? 'Failed' :
+                                      step.status === 'started' ? 'In progress' :
+                                      'Waiting';
+                                      
+                    // Determine opacity class once
+                    const opacityClass = isCompleted && step.status === 'completed'
+                      ? 'opacity-80'
+                      : step.status === 'created'
+                        ? 'opacity-50'
+                        : '';
+                    
+                    // Determine if we have a failed task with an error message
+                    const orderedStepTasks = getOrderedStepTasks(stepSlug);
+                    const failedTask = orderedStepTasks.find(
+                      (task) => task.status === 'failed' && task.error_message
+                    );
+                    const errorMessage = failedTask?.error_message || null;
+                    
+                    return (
+                      <motion.div
+                        key={stepKey}
+                        // Use layoutId for framer-motion to maintain continuity
+                        layoutId={stepKey}
+                        // Use simpler animation to reduce jitter
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        // Use a consistent transition for all steps
+                        transition={{ duration: 0.3 }}
+                        className={`flex items-start space-x-4 ${opacityClass}`}
                       >
-                        {step.status === 'completed' ? (
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
+                        <div className="flex-shrink-0 mt-1">
+                          <div
+                            className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${statusClass}`}
                           >
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                          </svg>
-                        ) : (
-                          <span>{index + 1}</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-medium capitalize">
-                        {step.step_slug.replace(/_/g, ' ')}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        {(() => {
-                          // Use the getOrderedStepTasks function to get pre-ordered tasks
-                          const orderedStepTasks = getOrderedStepTasks(
-                            step.step_slug,
-                          );
-
-                          // Get the most recent task (usually the one with the highest attempts_count)
-                          const latestTask =
-                            orderedStepTasks.length > 0
-                              ? [...orderedStepTasks].sort(
-                                  (a, b) =>
-                                    (b.attempts_count || 0) -
-                                    (a.attempts_count || 0),
-                                )[0]
-                              : null;
-
-                          // Check if this is a retry (attempts_count > 1)
-                          const isRetrying =
-                            latestTask &&
-                            latestTask.attempts_count > 1 &&
-                            step.status === 'started';
-
-                          if (isRetrying) {
-                            return `Retrying (Attempt ${latestTask.attempts_count}/${latestTask.attempts_count})...`;
-                          } else if (step.status === 'completed') {
-                            return 'Completed';
-                          } else if (step.status === 'started') {
-                            return 'In progress...';
-                          } else if (step.status === 'failed') {
-                            return 'Failed';
-                          } else {
-                            return 'Waiting...';
-                          }
-                        })()}
-                      </p>
-                      {step.status === 'failed' &&
-                        (() => {
-                          // Get the ordered tasks and find the failed one
-                          const orderedStepTasks = getOrderedStepTasks(
-                            step.step_slug,
-                          );
-                          const failedTask = orderedStepTasks.find(
-                            (task) =>
-                              task.status === 'failed' && task.error_message,
-                          );
-
-                          return failedTask?.error_message ? (
+                            {step.status === 'completed' ? (
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                              </svg>
+                            ) : (
+                              <span>{stepNumber}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-medium capitalize">
+                            {stepDisplayName}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            {statusText}
+                          </p>
+                          {errorMessage && (
                             <div className="mt-2 overflow-auto">
                               <div className="max-h-40 overflow-hidden border border-red-500/30 rounded-md">
                                 <div className="overflow-auto max-h-40">
                                   <pre className="bg-red-500/5 rounded-md p-4 text-xs text-white whitespace-pre-wrap">
-                                    {failedTask.error_message}
+                                    {errorMessage}
                                   </pre>
                                 </div>
                               </div>
                             </div>
-                          ) : null;
-                        })()}
-                    </div>
-                  </motion.div>
-                ))}
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                  </AnimatePresence>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
         </motion.div>
       )}
 
-      {/* Summary view */}
-      {showSummary && (
-        <motion.div
-          key="summary-view"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="space-y-6 mt-8"
-        >
-          <div className="mb-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-              <h3 className="text-xl font-medium">Analysis Results</h3>
-            </div>
-            <span className="text-sm font-medium text-muted-foreground">
-              Website:
-            </span>
-            <a
-              href={websiteUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ml-2 text-primary hover:underline overflow-hidden"
-            >
-              {websiteUrl.length > 30
-                ? `${websiteUrl.substring(0, 30)}...`
-                : websiteUrl}
-            </a>
-          </div>
-
-          <dl className="space-y-6">
-            <div className="flex flex-row gap-6">
-              <div className="flex flex-col space-y-2 w-2/3">
-                <dt className="text-sm font-medium text-muted-foreground">
-                  Tags
-                </dt>
-                <dd className="flex flex-wrap gap-2">
-                  {tags.length > 0 ? (
-                    tags.map((tag, index) => (
-                      <Badge
-                        key={index}
-                        variant="secondary"
-                        className="text-xs"
-                      >
-                        {tag}
-                      </Badge>
-                    ))
-                  ) : (
-                    <span className="text-sm text-muted-foreground">
-                      No tags available
-                    </span>
-                  )}
-                </dd>
-              </div>
-            </div>
-
-            <div className="flex flex-col space-y-2">
-              <dt className="text-sm font-medium text-muted-foreground">
-                Summary
-              </dt>
-              <dd className="text-foreground/90 whitespace-pre-line leading-relaxed">
-                {summary}
-              </dd>
-            </div>
-          </dl>
-        </motion.div>
-      )}
+      {/* Summary view - simplified with stable component */}
+      <AnimatePresence>
+        {showSummary && (
+          <motion.div
+            key="summary-view"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-6 mt-8"
+          >
+            {/* Fix #1: Direct component usage with no suspense or lazy loading */}
+            <AnalysisResult 
+              summary={analysisData.summary} 
+              tags={analysisData.tags} 
+              websiteUrl={websiteUrl} 
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AnimatePresence>
   );
 }

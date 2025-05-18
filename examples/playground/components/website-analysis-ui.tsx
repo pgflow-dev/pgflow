@@ -21,6 +21,13 @@ interface WebsiteAnalysisUIProps {
   analyzeError?: string | null;
 }
 
+// Define analysis data type
+interface AnalysisData {
+  summary: string;
+  tags: string[];
+  dataReady: boolean;
+}
+
 export default function WebsiteAnalysisUI({
   runData,
   loading,
@@ -51,53 +58,67 @@ export default function WebsiteAnalysisUI({
     // Create a map of step_slug to sorted tasks
     const taskMap: Record<string, any[]> = {};
     
-    // Group tasks by step_slug
+    // Group tasks by step_slug and create a composite key for stable identification
     runData.step_tasks.forEach(task => {
-      if (!taskMap[task.step_slug]) {
-        taskMap[task.step_slug] = [];
+      // Create a stable key for this task based on the composite primary key fields
+      const stepSlug = task.step_slug;
+      
+      if (!taskMap[stepSlug]) {
+        taskMap[stepSlug] = [];
       }
-      taskMap[task.step_slug].push(task);
+      
+      // Add task to the appropriate group
+      taskMap[stepSlug].push(task);
     });
     
-    // Sort each group of tasks
+    // Create a stable sorting function that will produce consistent results
+    // instead of relying on Array.sort() which can be unstable
     for (const [slug, tasks] of Object.entries(taskMap)) {
-      tasks.sort((a, b) => (a.step_index || 0) - (b.step_index || 0));
+      // First create a stable sort by task_index (which should never change)
+      // Use a stable sort implementation to avoid UI jumpiness
+      const stableSortedTasks = [...tasks].sort((a, b) => {
+        // Primary sort by task_index
+        const indexDiff = (a.task_index || 0) - (b.task_index || 0);
+        if (indexDiff !== 0) return indexDiff;
+        
+        // Secondary sort by attempts_count (descending)
+        const attemptsDiff = (b.attempts_count || 0) - (a.attempts_count || 0);
+        if (attemptsDiff !== 0) return attemptsDiff;
+        
+        // Tertiary sort by status to ensure consistent ordering
+        // completed tasks first, then started, then created, then failed
+        const getStatusPriority = (status: string) => {
+          switch (status) {
+            case 'completed': return 0;
+            case 'started': return 1;
+            case 'created': return 2;
+            case 'failed': return 3;
+            default: return 4;
+          }
+        };
+        return getStatusPriority(a.status) - getStatusPriority(b.status);
+      });
+      
+      // Replace the tasks array with the stably sorted one
+      taskMap[slug] = stableSortedTasks;
     }
     
     return taskMap;
   }, [runData?.step_tasks]);
   
-  // Get ordered step tasks for a specific step
-  const getOrderedStepTasks = (stepSlug: string): any[] => {
-    return tasksByStepSlug[stepSlug] || [];
-  };
+  // Get ordered step tasks for a specific step - memoize this too for stability
+  const getOrderedStepTasks = useMemo(() => {
+    // Return a function that uses the memoized tasksByStepSlug
+    return (stepSlug: string): any[] => {
+      return tasksByStepSlug[stepSlug] || [];
+    };
+  }, [tasksByStepSlug]);
 
-  // No need to re-execute the memoized function here
+  // Basic run state
   const isCompleted = runData?.status === 'completed';
   const isFailed = runData?.status === 'failed';
   const isRunning = runData?.status === 'started';
   const showSteps = runData && (isRunning || isCompleted || isFailed);
-
-  // For summary, check if:
-  // 1. We have runData
-  // 2. Status is completed (only show when the entire flow is completed)
-  const summaryTaskCompleted = runData?.step_tasks?.some(
-    (task) =>
-      task.step_slug === 'summary' &&
-      task.status === 'completed' &&
-      task.output,
-  );
-  const showSummary = runData && isCompleted;
-  const showAnalyzeAnother = runData && (isCompleted || isFailed);
-
-  // Keep analysis section expanded when running or failed, collapse only when completed successfully
-  useEffect(() => {
-    if (isRunning || isFailed) {
-      setAnalysisExpanded(true);
-    } else if (isCompleted) {
-      setAnalysisExpanded(false);
-    }
-  }, [isRunning, isCompleted, isFailed, runData?.run_id]);
 
   // Get website URL from input
   const getWebsiteUrl = (): string => {
@@ -113,99 +134,147 @@ export default function WebsiteAnalysisUI({
   };
 
   // Get analysis summary from step tasks - memoized to avoid recalculation on each render
-  const getAnalysisSummary = useMemo(() => {
+  const analysisData: AnalysisData = useMemo(() => {
     logger.log('=== Analysis Summary Called ===');
     logger.log('isCompleted:', isCompleted);
-    logger.log('showSummary:', showSummary);
-    logger.log('runData.step_tasks:', runData?.step_tasks);
 
+    // Return empty state if no data is available
     if (!runData?.step_tasks || runData.step_tasks.length === 0) {
       logger.log('No step tasks found in runData');
-      return { summary: '', tags: [] };
+      return { summary: '', tags: [], dataReady: false };
     }
-
-    // Debug: Log the available step tasks
-    logger.log(
-      'Available step tasks:',
-      runData.step_tasks.map((task) => ({
-        step_slug: task.step_slug,
-        status: task.status,
-        has_output: !!task.output,
-      })),
+    
+    // Check if both tags and summary tasks are completed
+    const tagTask = runData.step_tasks.find(
+      task => task.step_slug === 'tags' && task.status === 'completed'
     );
+    const summaryTask = runData.step_tasks.find(
+      task => task.step_slug === 'summary' && task.status === 'completed'
+    );
+    
+    // Only consider data ready when both are available
+    const dataReady = !!tagTask && !!summaryTask;
 
     try {
-      // Find the step tasks by their step_slug but use our ordered tasks
+      // Find the step tasks by their step_slug using our ordered function
       const summaryTasks = getOrderedStepTasks('summary');
       const tagsTasks = getOrderedStepTasks('tags');
 
-      // Get the completed tasks
-      const summaryTask = summaryTasks.find(
-        (task) => task.status === 'completed',
-      );
-      const tagsTask = tagsTasks.find((task) => task.status === 'completed');
+      // Get the completed tasks - take the first completed one in order
+      const summaryTask = summaryTasks.find(task => task.status === 'completed');
+      const tagsTask = tagsTasks.find(task => task.status === 'completed');
 
-      // Extract summary - with more debugging and fallback handling
+      // Extract summary
       let summary = '';
       if (summaryTask?.output) {
-        // Log the actual output to help debugging
-        logger.log('Summary task output type:', typeof summaryTask.output, summaryTask.output);
+        logger.log('Found completed summary task');
         
         try {
-          // First try to parse if it's a string (sometimes serialized twice)
+          // Handle different data formats consistently
           if (typeof summaryTask.output === 'string') {
+            // If it's already a string, use it directly
             summary = summaryTask.output;
-          } else {
-            // Use the output directly as a JSON object
-            summary = summaryTask.output as string || '';
+          } else if (summaryTask.output && typeof summaryTask.output === 'object') {
+            // If it's an object, try to find a summary property or stringify it
+            const anyOutput = summaryTask.output as any;
+            if (typeof anyOutput.summary === 'string') {
+              summary = anyOutput.summary;
+            } else if (typeof anyOutput.text === 'string') {
+              summary = anyOutput.text;
+            } else {
+              // Last resort: convert object to string
+              summary = JSON.stringify(summaryTask.output);
+            }
           }
         } catch (e) {
           logger.error('Error parsing summary output:', e);
-          summary = 'Error parsing summary';
+          summary = 'Error parsing summary data';
         }
       }
 
-      // Extract tags - with more debugging and fallback handling
+      // Extract tags with improved consistency
       let tags: string[] = [];
       if (tagsTask?.output) {
-        // Log the actual output to help debugging
-        logger.log('Tags task output type:', typeof tagsTask.output, tagsTask.output);
+        logger.log('Found completed tags task');
         
         try {
-          // Check for different possible formats
+          // Special handling for tag arrays to ensure consistent format
           if (Array.isArray(tagsTask.output)) {
-            // Direct array output
-            tags = tagsTask.output;
+            // Direct array output - filter to ensure all elements are strings
+            tags = tagsTask.output
+              .filter(tag => typeof tag === 'string')
+              .map(tag => tag.trim())
+              .filter(tag => tag.length > 0);
           } else if (typeof tagsTask.output === 'string') {
-            // Try to parse if it's a JSON string
+            // Try to parse JSON first
             try {
               const parsedOutput = JSON.parse(tagsTask.output);
               if (Array.isArray(parsedOutput)) {
-                tags = parsedOutput;
+                tags = parsedOutput
+                  .filter(tag => typeof tag === 'string')
+                  .map(tag => tag.trim())
+                  .filter(tag => tag.length > 0);
+              } else {
+                // If not an array, fall back to comma splitting
+                tags = tagsTask.output
+                  .split(',')
+                  .map(t => t.trim())
+                  .filter(tag => tag.length > 0);
               }
             } catch {
-              // If not valid JSON, split by commas as fallback
-              tags = tagsTask.output.split(',').map(t => t.trim());
+              // If parsing fails, just split by commas
+              tags = tagsTask.output
+                .split(',')
+                .map(t => t.trim())
+                .filter(tag => tag.length > 0);
             }
           } else if (tagsTask.output && typeof tagsTask.output === 'object') {
-            // If it's an object with a tags property
+            // Handle object with tags property
             const anyOutput = tagsTask.output as any;
             if (Array.isArray(anyOutput.tags)) {
-              tags = anyOutput.tags;
+              tags = anyOutput.tags
+                .filter(tag => typeof tag === 'string')
+                .map(tag => tag.trim())
+                .filter(tag => tag.length > 0);
             }
           }
+          
+          // Remove duplicates from tags
+          tags = [...new Set(tags)];
+          
+          // Sort tags alphabetically for consistent display
+          tags.sort((a, b) => a.localeCompare(b));
         } catch (e) {
           logger.error('Error parsing tags output:', e);
           tags = [];
         }
       }
 
-      return { summary, tags };
+      // Return consistent object with sanitized data
+      return { 
+        summary: summary.trim(), 
+        tags: tags,
+        dataReady: dataReady
+      };
     } catch (e) {
       logger.error('Error extracting data from step tasks:', e);
-      return { summary: '', tags: [] };
+      return { summary: '', tags: [], dataReady: false };
     }
-  }, [runData?.step_tasks, isCompleted, showSummary, getOrderedStepTasks]);
+  }, [runData?.step_tasks, isCompleted, getOrderedStepTasks]);
+
+  // ONLY show summary when both tags and summary tasks are ready
+  // This is critical to preventing flickering
+  const showSummary = runData && isCompleted && analysisData.dataReady;
+  const showAnalyzeAnother = runData && (isCompleted || isFailed);
+
+  // Keep analysis section expanded when running or failed, collapse only when completed successfully
+  useEffect(() => {
+    if (isRunning || isFailed) {
+      setAnalysisExpanded(true);
+    } else if (isCompleted) {
+      setAnalysisExpanded(false);
+    }
+  }, [isRunning, isCompleted, isFailed, runData?.run_id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -218,8 +287,6 @@ export default function WebsiteAnalysisUI({
     }
   };
 
-  // Destructure values from memoized result
-  const { summary, tags } = getAnalysisSummary;
   const websiteUrl = getWebsiteUrl();
 
   if (loading) {
@@ -320,8 +387,7 @@ export default function WebsiteAnalysisUI({
           isRunning={isRunning}
           isCompleted={isCompleted}
           isFailed={isFailed}
-          summary={summary}
-          tags={tags}
+          analysisData={analysisData}
         />
       </Suspense>
     </div>

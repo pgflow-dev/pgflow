@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, useMemo, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useStartAnalysis } from '@/lib/hooks/use-start-analysis';
 import {
@@ -58,6 +59,10 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
   // Create a persistent mapping of step_slug to step_index
   // This is cached once when the data is loaded and never changes
   const [stepOrderMap, setStepOrderMap] = useState<Record<string, number>>({});
+  
+  // Cache for tracking summary and tags tasks to handle them together
+  // This is the key for batching related tasks
+  const pendingTwinTasksRef = useRef<Map<string, StepTaskRow>>(new Map());
 
   // UI state
   const [loading, setLoading] = useState<boolean>(true);
@@ -73,7 +78,121 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
   // Use the shared hook for starting analysis
   const { start: analyzeWebsite, isPending: analyzeLoading, error: analyzeError } = useStartAnalysis();
 
+  // Function to handle the twin tasks (summary and tags) together
+  // This is key to solving the flicker issue by ensuring we batch updates
+  const handleTwinTasks = (payload: StepTaskRow) => {
+    logger.log(`Processing twin task ${payload.step_slug} with status ${payload.status}`);
+    
+    // Only proceed if this is a completed summary or tags task
+    if (payload.status !== 'completed' || 
+        (payload.step_slug !== 'summary' && payload.step_slug !== 'tags')) {
+      return false; // Not a task we need to handle here
+    }
+    
+    // Store this task in our pending map
+    pendingTwinTasksRef.current.set(payload.step_slug, payload);
+    
+    // Get the other task (if summary, then check for tags and vice versa)
+    const otherSlug = payload.step_slug === 'summary' ? 'tags' : 'summary';
+    const otherTask = pendingTwinTasksRef.current.get(otherSlug);
+    
+    // Check if both tasks are now complete
+    if (otherTask?.status === 'completed') {
+      logger.log('Both summary and tags tasks are complete - updating state in a single batch');
+      
+      // Instead of fetching new data, work with what we have in our cache
+      // Create an array with both tasks to ensure they're processed together
+      const payloads = [payload, otherTask];
+      
+      // Use React's flushSync to force a single synchronous render
+      flushSync(() => {
+        // Apply all updates in one atomic operation
+        setStepTasks(prevTasksMap => {
+          // Create a copy of the current tasks map
+          const newTasksMap = { ...prevTasksMap };
+          
+          // Process both tasks in a deterministic order
+          payloads.forEach(task => {
+            const stepSlug = task.step_slug;
+            const existingTasks = newTasksMap[stepSlug] || [];
+            
+            // Find if this task already exists in our state
+            const taskIndex = existingTasks.findIndex(
+              t => t.run_id === task.run_id && t.step_slug === task.step_slug && 
+                   (t.task_index || 0) === (task.task_index || 0)
+            );
+            
+            // Add step_index from our map
+            const enhancedTask = {
+              ...task,
+              step_index: stepOrderMap[task.step_slug] || 0,
+            };
+            
+            // Update or add the task
+            if (taskIndex >= 0) {
+              // Replace existing task
+              const updatedTasks = [...existingTasks];
+              updatedTasks[taskIndex] = enhancedTask;
+              newTasksMap[stepSlug] = updatedTasks;
+            } else {
+              // Add new task
+              newTasksMap[stepSlug] = [...existingTasks, enhancedTask];
+            }
+          });
+          
+          // Apply order constraint to ensure tags comes before summary in the result array
+          const taskOrder = { tags: 0, summary: 1 };
+          
+          // Create a special flat array for summary and tags for correct ordering
+          let summarizedTasks: StepTaskRow[] = [];
+          Object.entries(newTasksMap).forEach(([slug, tasks]) => {
+            // Only modify the order of summary and tags tasks
+            if (slug === 'summary' || slug === 'tags') {
+              summarizedTasks = [...summarizedTasks, ...tasks];
+            }
+          });
+          
+          // Sort the summary and tags to enforce consistent order
+          summarizedTasks.sort((a, b) => {
+            return (taskOrder[a.step_slug] ?? 99) - (taskOrder[b.step_slug] ?? 99);
+          });
+          
+          // Group them back into the map
+          const orderedTaskMap: Record<string, StepTaskRow[]> = { ...newTasksMap };
+          
+          // Replace summary and tags entries with sorted versions
+          summarizedTasks.forEach(task => {
+            const slug = task.step_slug;
+            if (!orderedTaskMap[slug]) {
+              orderedTaskMap[slug] = [];
+            }
+            
+            // Check if we need to add this task or if it's already there
+            const existsAt = orderedTaskMap[slug].findIndex(
+              t => t.run_id === task.run_id && t.step_slug === task.step_slug && 
+                   (t.task_index || 0) === (task.task_index || 0)
+            );
+            
+            if (existsAt === -1) {
+              orderedTaskMap[slug].push(task);
+            }
+          });
+          
+          // Return the new deterministically ordered map
+          return orderedTaskMap;
+        });
+      });
+      
+      // Clear the pending tasks
+      pendingTwinTasksRef.current.clear();
+      return true; // We've handled these tasks
+    }
+    
+    return false; // Not yet ready to batch update
+  };
+
   // Derive runData from the separate state pieces
+  // This is critical to ensure UI stability - always maintain consistent ordering
   const runData = useMemo<ResultRow | null>(() => {
     if (!run) return null;
 
@@ -87,23 +206,63 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       return aIndex - bIndex;
     });
 
-    // Create a flat array of all step tasks
-    const stepTasksArray = Object.values(stepTasks)
-      .flat()
-      .map((task) => {
-        // Add step_index to each task for consistent sorting using our cached map
-        return {
+    // Define a fixed and consistent order for summary and tags tasks
+    // This is critical: tags MUST come before summary in all arrays
+    const taskOrder = { tags: 0, summary: 1 };
+
+    // First, separate summary and tags tasks from others for special handling
+    let summaryTagsTasks: StepTaskRow[] = [];
+    let otherTasks: StepTaskRow[] = [];
+    
+    // Process all task groups
+    Object.entries(stepTasks).forEach(([slug, tasks]) => {
+      tasks.forEach(task => {
+        // Add step_index to each task for consistent sorting
+        const enhancedTask = {
           ...task,
           step_index: stepOrderMap[task.step_slug] || 0,
         };
+        
+        if (slug === 'summary' || slug === 'tags') {
+          // Special handling for summary and tags
+          summaryTagsTasks.push(enhancedTask);
+        } else {
+          // Normal handling for other tasks
+          otherTasks.push(enhancedTask);
+        }
       });
-
-    // Sort the step tasks using the step_index from our cached map
-    stepTasksArray.sort((a, b) => {
-      return (
-        (stepOrderMap[a.step_slug] || 0) - (stepOrderMap[b.step_slug] || 0)
-      );
     });
+    
+    // Sort summary and tags tasks by their fixed order first
+    summaryTagsTasks.sort((a, b) => {
+      // First by their mandated order (tags always before summary)
+      const orderDiff = (taskOrder[a.step_slug] ?? 99) - (taskOrder[b.step_slug] ?? 99);
+      if (orderDiff !== 0) return orderDiff;
+      
+      // Then by task_index if needed
+      const indexDiff = (a.task_index || 0) - (b.task_index || 0);
+      if (indexDiff !== 0) return indexDiff;
+      
+      // Finally by attempts_count (descending) for retry stability
+      return (b.attempts_count || 0) - (a.attempts_count || 0);
+    });
+    
+    // Sort other tasks separately
+    otherTasks.sort((a, b) => {
+      // First by step_index
+      const stepDiff = (a.step_index || 0) - (b.step_index || 0);
+      if (stepDiff !== 0) return stepDiff;
+      
+      // Then by task_index
+      const indexDiff = (a.task_index || 0) - (b.task_index || 0);
+      if (indexDiff !== 0) return indexDiff;
+      
+      // Finally by attempts_count (descending) for retry stability
+      return (b.attempts_count || 0) - (a.attempts_count || 0);
+    });
+    
+    // Combine tasks: critical - put summary and tags FIRST to ensure they're rendered first
+    const stepTasksArray = [...summaryTagsTasks, ...otherTasks];
 
     // Combine everything into ResultRow format
     return {
@@ -111,7 +270,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       step_states: stepStatesArray,
       step_tasks: stepTasksArray,
     } as ResultRow;
-  }, [run, stepStates, stepTasks]);
+  }, [run, stepStates, stepTasks, stepOrderMap]);
 
 
 
@@ -145,11 +304,19 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     ) => {
       logger.log('Step task updated:', payload);
 
-      // Log important details about the updated task
-      if (
-        payload.new.step_slug === 'summary' ||
-        payload.new.step_slug === 'tags'
-      ) {
+      // Special handling for summary and tags tasks to prevent flickering and reordering
+      // Try to handle as a twin task first (this is key for fixing the flicker)
+      if (handleTwinTasks(payload.new)) {
+        logger.log(`Task ${payload.new.step_slug} handled by twin tasks mechanism`);
+        return; // Successfully handled by the twin task logic
+      }
+      
+      // Standard handling for other tasks or when only one of summary/tags is complete
+      const isSummaryOrTags = 
+        payload.new.step_slug === 'summary' || 
+        payload.new.step_slug === 'tags';
+      
+      if (isSummaryOrTags) {
         logger.log(`Important task updated - ${payload.new.step_slug}:`, {
           status: payload.new.status,
           has_output: !!payload.new.output,
@@ -157,6 +324,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
         });
       }
 
+      // Standard handling for regular tasks or non-completed summary/tags
       // Check if this is a retry (attempts_count > 1)
       const isRetry = payload.new.attempts_count && payload.new.attempts_count > 1;
       if (isRetry) {
@@ -206,6 +374,17 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
           // Update existing task
           const updatedTasks = [...currentTasks];
           updatedTasks[taskIndex] = newTask;
+          
+          // Always resort the tasks after an update to maintain consistent order
+          updatedTasks.sort((a, b) => {
+            // Primary sort by task_index
+            const indexDiff = (a.task_index || 0) - (b.task_index || 0);
+            if (indexDiff !== 0) return indexDiff;
+            
+            // Secondary sort by attempts_count (descending)
+            return (b.attempts_count || 0) - (a.attempts_count || 0);
+          });
+          
           return {
             ...prevTasksMap,
             [stepSlug]: updatedTasks,
@@ -213,9 +392,20 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
         } else {
           // Task not found - add it (shouldn't happen with proper INSERT/UPDATE separation)
           logger.warn('Received UPDATE for non-existent task - adding it', newTask);
+          
+          // Add and sort to maintain consistent order
+          const updatedTasks = [...currentTasks, newTask].sort((a, b) => {
+            // Primary sort by task_index
+            const indexDiff = (a.task_index || 0) - (b.task_index || 0);
+            if (indexDiff !== 0) return indexDiff;
+            
+            // Secondary sort by attempts_count (descending)
+            return (b.attempts_count || 0) - (a.attempts_count || 0);
+          });
+          
           return {
             ...prevTasksMap,
-            [stepSlug]: [...currentTasks, newTask],
+            [stepSlug]: updatedTasks,
           };
         }
       });
@@ -226,11 +416,19 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     ) => {
       logger.log('Step task inserted:', payload);
 
-      // Log important details about the new task
-      if (
-        payload.new.step_slug === 'summary' ||
-        payload.new.step_slug === 'tags'
-      ) {
+      // Special handling for summary and tags tasks to prevent flickering and reordering
+      // Try to handle as a twin task first (this is key for fixing the flicker)
+      if (handleTwinTasks(payload.new)) {
+        logger.log(`Task ${payload.new.step_slug} handled by twin tasks mechanism`);
+        return; // Successfully handled by the twin task logic
+      }
+      
+      // Standard handling for other tasks or when only one of summary/tags is complete
+      const isSummaryOrTags = 
+        payload.new.step_slug === 'summary' || 
+        payload.new.step_slug === 'tags';
+      
+      if (isSummaryOrTags) {
         logger.log(`Important task inserted - ${payload.new.step_slug}:`, {
           status: payload.new.status,
           has_output: !!payload.new.output,
@@ -238,6 +436,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
         });
       }
 
+      // Standard handler for normal tasks or non-completed summary/tags tasks
       // Check if this is a retry (attempts_count > 1)
       const isRetry = payload.new.attempts_count && payload.new.attempts_count > 1;
       if (isRetry) {
