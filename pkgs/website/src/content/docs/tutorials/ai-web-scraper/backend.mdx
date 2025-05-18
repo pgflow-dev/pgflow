@@ -222,29 +222,31 @@ Connect tasks into a workflow using pgflow's [TypeScript DSL](/concepts/flow-dsl
 
 ```typescript title="supabase/functions/_flows/analyze_website.ts"
 import { Flow } from "@pgflow/dsl";
-import scrapeWebsite   from "../_tasks/scrapeWebsite.ts";
+import scrapeWebsite from "../_tasks/scrapeWebsite.ts";
 import summarize from "../_tasks/summarize.ts";
-import extractTags     from "../_tasks/extractTags.ts";
-import saveWebsite     from "../_tasks/saveWebsite.ts";
+import extractTags from "../_tasks/extractTags.ts";
+import saveWebsite from "../_tasks/saveWebsite.ts";
 
 type Input = { url: string };
 
 export default new Flow<Input>({ slug: "analyze_website", maxAttempts: 3 })
   .step({ slug: "website" },
-    ({ run })      => scrapeWebsite(run.url))
+    ({ run }) => scrapeWebsite(run.url))
 
   .step({ slug: "summary", dependsOn: ["website"] },
-    ({ website })  => summarize(website.content))  // 👈 Type inferred automatically!
+    ({ website }) => summarize(website.content))  // 👈 Type inferred automatically!
 
-  .step({ slug: "tags",    dependsOn: ["website"] },
-    ({ website })  => extractTags(website.content))
+  .step({ slug: "tags", dependsOn: ["website"] },
+    ({ website }) => extractTags(website.content))
 
   .step({ slug: "saveToDb", dependsOn: ["summary", "tags"] },
-    ({ run, summary, tags }) =>
-      saveWebsite({ website_url: run.url, summary, tags }));
+    ({ run, summary, tags }) => saveWebsite({ website_url: run.url, summary, tags }));
 ```
 
 Flow structure:
+
+<img src="/analyze_website.svg" alt="AI Web Scraper Workflow" title="AI-powered web scraper workflow DAG" className="responsive-svg" width="70%" />
+
 - `website` → fetches the URL (root step)
 - `summary` & `tags` → run in parallel (both need website content)  
 - `saveToDb` → waits for both, then saves everything
