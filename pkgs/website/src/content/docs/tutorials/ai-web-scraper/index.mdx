@@ -70,6 +70,8 @@ Everything runs in your Supabase project - no external infrastructure needed.
      EDGE_WORKER_LOG_LEVEL=info
    + OPENAI_API_KEY=sk-...
    ```
+   
+   **Important:** Place this `.env` file in the `supabase/functions` directory, not in your project root. Edge Functions specifically look for environment variables in this location.
 :::
 
 ### Versions Used in This Tutorial
