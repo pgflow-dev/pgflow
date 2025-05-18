@@ -320,20 +320,15 @@ See more in [Run your flow](/getting-started/run-flow/) documentation page
 
 ## Step 6 - Run & test
 
-Start everything:
+Start the services (make sure `supabase start` is already running):
 
 <Steps>
-1. Start Supabase:
-   ```bash frame="none"
-   npx supabase start
-   ```
-
-2. Serve Edge Functions:
+1. Serve Edge Functions (keep this terminal open):
    ```bash frame="none"
    npx supabase functions serve
    ```
 
-3. Start the worker (keep this terminal open):
+2. In a new terminal, start the worker:
    ```bash frame="none"
    curl -X POST http://127.0.0.1:54321/functions/v1/analyze_website_worker
    ```
@@ -341,16 +336,15 @@ Start everything:
    :::note[Why curl?]
    First request boots the worker - subsequent requests have no effect. It polls for tasks on its own.
    :::
+
+3. Trigger the flow in SQL Editor:
+   ```sql
+   select * from pgflow.start_flow(
+     flow_slug => 'analyze_website',
+     input     => '{"url":"https://supabase.com"}'
+   );
+   ```
 </Steps>
-
-Trigger the flow in SQL Editor:
-
-```sql
-select * from pgflow.start_flow(
-  flow_slug => 'analyze_website',
-  input     => '{"url":"https://supabase.com"}'
-);
-```
 
 ### What happens
 
