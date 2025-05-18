@@ -266,6 +266,7 @@ Turn your TypeScript flow into SQL using pgflow's [compiler](/getting-started/co
 ```bash
 # TypeScript → SQL
 npx pgflow@latest compile supabase/functions/_flows/analyze_website.ts
+# Generates supabase/migrations/<timestamp>_analyze_website.sql
 
 # Apply to database
 npx supabase migrations up --local
@@ -336,6 +337,10 @@ Start everything:
    ```bash frame="none"
    curl -X POST http://127.0.0.1:54321/functions/v1/analyze_website_worker
    ```
+   
+   :::note[Why curl?]
+   First request boots the worker - subsequent requests have no effect. It polls for tasks on its own.
+   :::
 </Steps>
 
 Trigger the flow in SQL Editor:
