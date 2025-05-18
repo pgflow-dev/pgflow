@@ -310,11 +310,6 @@ Changing steps requires a new flow with unique `slug`. This is a core design dec
    ```
 </Steps>
 
-:::note[Worker magic]
-EdgeWorker handles polling, retries, and failures automatically. Your code just defines the flow shape!
-
-See more in [Run your flow](/getting-started/run-flow/) documentation page
-:::
 
 ---
 
@@ -334,13 +329,10 @@ Start the services (make sure `supabase start` is already running):
    ```
 
    :::note[How the worker runs]
-   The Edge Function ecosystem works like this:
-
-   - `supabase functions serve` - Runs a server that hosts your Edge Functions
-   - First curl request - Boots the worker, which stays alive and continuously polls the database for tasks
-   - Subsequent curl requests - Have no effect (worker is already running)
-
-   In production environments, workers are typically triggered by cron schedules rather than manual curl commands.
+   - First curl request boots the worker, which then continuously polls for tasks
+   - Subsequent requests have no effect (worker is already running)
+   - If you stop and restart `functions serve`, you'll need to curl again
+   - In production, workers are triggered by cron schedules, not curl
    :::
 
 3. Trigger the flow in SQL Editor:
