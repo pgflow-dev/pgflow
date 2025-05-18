@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useStartAnalysis } from '@/lib/hooks/use-start-analysis';
 import {
   fetchFlowRunData,
+  fetchOptimizedFlowRunData,
   observeFlowRun,
   ResultRow,
   RunRow,
@@ -172,19 +173,25 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
         const stepSlug = newTask.step_slug;
         const currentTasks = prevTasksMap[stepSlug] || [];
 
-        // First, try to find a task with the same ID
+        // First, try to find a task with the same run_id, step_slug, and task_index
+        // These fields together uniquely identify a task in the composite primary key
+        // Default task_index to 0 if not available
         let taskIndex = currentTasks.findIndex(
-          (task) => task.step_task_id === newTask.step_task_id
+          (task) => 
+            task.run_id === newTask.run_id && 
+            task.step_slug === newTask.step_slug && 
+            (task.task_index || 0) === (newTask.task_index || 0)
         );
         
-        // If we have a retry (attempts_count > 1), find any previous attempt with the same step_slug
-        // but fewer attempts to replace it with the latest attempt
+        // If task not found by exact match, check if it's a retry with matching run_id, step_slug, task_index
+        // but different attempts_count - in this case, it's essentially the same task at a different stage
         if (taskIndex === -1 && isRetry) {
-          // Look for a previous attempt with the same task slug but lower attempts_count
+          // For retries, find the task with the same identifiers but potentially different attempts_count
           taskIndex = currentTasks.findIndex(
             (task) => 
+              task.run_id === newTask.run_id &&
               task.step_slug === newTask.step_slug && 
-              (!task.attempts_count || (task.attempts_count < newTask.attempts_count))
+              (task.task_index || 0) === (newTask.task_index || 0)
           );
           
           if (taskIndex !== -1) {
@@ -326,8 +333,55 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
           return;
         }
 
-        // For other updates, update only the run data
-        setRun(payload.new);
+        // For status changes but not completion, fetch fresh data with optimized query
+        // This ensures we have the latest task states but without the full output blobs
+        if (payload.old && payload.new.status !== payload.old.status) {
+          logger.log('Run status changed, fetching optimized data');
+          fetchOptimizedFlowRunData(runId).then(({ data, error }) => {
+            if (error) {
+              logger.error('Error fetching optimized run data during status update:', error);
+              // Fall back to just updating the run data directly
+              setRun(payload.new);
+            } else if (data) {
+              logger.log('Updated with optimized run data after status change');
+              // Update the run data directly from the payload as it's faster
+              setRun({
+                ...data,
+                step_states: undefined,
+                step_tasks: undefined,
+              } as RunRow);
+              
+              // Then update step states and tasks from the optimized data
+              if (data.step_states?.length) {
+                // Convert step states array to a map
+                const stateMap: Record<string, StepStateRow> = {};
+                data.step_states.forEach((state) => {
+                  stateMap[state.step_slug] = state;
+                });
+                setStepStates(stateMap);
+              }
+              
+              if (data.step_tasks?.length) {
+                // Group step tasks by step_slug
+                const tasksMap: Record<string, StepTaskRow[]> = {};
+                data.step_tasks.forEach((task) => {
+                  const taskWithIndex = {
+                    ...task,
+                    step_index: stepOrderMap[task.step_slug] || 0,
+                  };
+                  if (!tasksMap[task.step_slug]) {
+                    tasksMap[task.step_slug] = [];
+                  }
+                  tasksMap[task.step_slug].push(taskWithIndex);
+                });
+                setStepTasks(tasksMap);
+              }
+            }
+          });
+        } else {
+          // For minor updates, just update the run status directly
+          setRun(payload.new);
+        }
         
         // Turn off loading if the run fails
         if (payload.new.status === 'failed' || payload.new.status === 'error' || payload.new.status === 'cancelled') {
@@ -348,6 +402,8 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
 
     // Load data after subscription is set up to avoid race conditions
     const loadData = async () => {      
+      // For initial load, use full data query to get complete information
+      logger.log('Initial load: Fetching full data');
       const { data, error } = await fetchFlowRunData(runId);
 
       if (error) {

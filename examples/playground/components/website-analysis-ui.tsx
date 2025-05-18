@@ -145,24 +145,58 @@ export default function WebsiteAnalysisUI({
       );
       const tagsTask = tagsTasks.find((task) => task.status === 'completed');
 
-      // Extract summary
+      // Extract summary - with more debugging and fallback handling
       let summary = '';
       if (summaryTask?.output) {
-        // Use the output directly as a JSON object
-        const summaryOutput = summaryTask.output as any;
-        // Look for aiSummary field based on flow definition
-        summary = summaryOutput || '';
+        // Log the actual output to help debugging
+        logger.log('Summary task output type:', typeof summaryTask.output, summaryTask.output);
+        
+        try {
+          // First try to parse if it's a string (sometimes serialized twice)
+          if (typeof summaryTask.output === 'string') {
+            summary = summaryTask.output;
+          } else {
+            // Use the output directly as a JSON object
+            summary = summaryTask.output as string || '';
+          }
+        } catch (e) {
+          logger.error('Error parsing summary output:', e);
+          summary = 'Error parsing summary';
+        }
       }
 
-      // Extract tags
+      // Extract tags - with more debugging and fallback handling
       let tags: string[] = [];
       if (tagsTask?.output) {
-        // Based on flow definition, tags task directly returns the keywords array
-        const tagsOutput = tagsTask.output;
-
-        // Use output directly as it should be an array of strings
-        if (Array.isArray(tagsOutput)) {
-          tags = tagsOutput;
+        // Log the actual output to help debugging
+        logger.log('Tags task output type:', typeof tagsTask.output, tagsTask.output);
+        
+        try {
+          // Check for different possible formats
+          if (Array.isArray(tagsTask.output)) {
+            // Direct array output
+            tags = tagsTask.output;
+          } else if (typeof tagsTask.output === 'string') {
+            // Try to parse if it's a JSON string
+            try {
+              const parsedOutput = JSON.parse(tagsTask.output);
+              if (Array.isArray(parsedOutput)) {
+                tags = parsedOutput;
+              }
+            } catch {
+              // If not valid JSON, split by commas as fallback
+              tags = tagsTask.output.split(',').map(t => t.trim());
+            }
+          } else if (tagsTask.output && typeof tagsTask.output === 'object') {
+            // If it's an object with a tags property
+            const anyOutput = tagsTask.output as any;
+            if (Array.isArray(anyOutput.tags)) {
+              tags = anyOutput.tags;
+            }
+          }
+        } catch (e) {
+          logger.error('Error parsing tags output:', e);
+          tags = [];
         }
       }
 

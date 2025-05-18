@@ -54,6 +54,7 @@ export default function MotionComponents({
       {/* Initial URL input form - only show when no analysis is running or completed */}
       {!showSteps && !showSummary && (
         <motion.div
+          key="initial-form"
           initial={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
           transition={{ duration: 0.3 }}
@@ -105,6 +106,7 @@ export default function MotionComponents({
       {/* Step-by-step process - only show full header when analysis is running */}
       {showSteps && (isRunning || analysisExpanded) && (
         <motion.div
+          key="steps-progress"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -152,6 +154,7 @@ export default function MotionComponents({
           <AnimatePresence>
             {analysisExpanded && (
               <motion.div
+                key="step-details"
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
@@ -340,6 +343,7 @@ export default function MotionComponents({
       {/* Summary view */}
       {showSummary && (
         <motion.div
+          key="summary-view"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}

@@ -39,6 +39,38 @@ export type ObserveFlowRunCallbacks = {
   ) => void;
 };
 
+// Helper function for common query elements to use in both full and optimized queries
+function buildRunQuery(supabase: any, runId: string, isOptimized = false) {
+  // Basic run data is always needed
+  const runFields = isOptimized 
+    ? 'run_id, flow_slug, started_at, completed_at, failed_at, status, remaining_steps'
+    : '*'; // Full run data including input, output blobs
+  
+  // Step states always need full data (relatively small)
+  const stepStateFields = '*';
+  
+  // Step tasks - include output for summary and tags steps, even in optimized queries
+  const stepTaskFields = isOptimized
+    ? 'run_id, step_slug, task_index, flow_slug, attempts_count, status, error_message, queued_at, completed_at, failed_at, message_id, output'
+    : '*'; // Full task data including output blobs
+  
+  return supabase
+    .schema('pgflow')
+    .from('runs')
+    .select(
+      `
+      ${runFields},
+      step_states!step_states_run_id_fkey(
+        ${stepStateFields},
+        step:steps!inner(step_index)
+      ),
+      step_tasks!step_tasks_run_id_fkey(${stepTaskFields})
+    `,
+    )
+    .eq('run_id', runId);
+}
+
+// Full data fetch - used on initial load and completion
 export async function fetchFlowRunData(runId: string): Promise<{
   data: ResultRow | null;
   error: string | null;
@@ -46,21 +78,8 @@ export async function fetchFlowRunData(runId: string): Promise<{
   const supabase = createClient();
 
   try {
-    // Fetch the flow run data
-    const { data, error } = await supabase
-      .schema('pgflow')
-      .from('runs')
-      .select(
-        `
-        *,
-        step_states!step_states_run_id_fkey(
-          *,
-          step:steps!inner(step_index)
-        ),
-        step_tasks!step_tasks_run_id_fkey(*)
-      `,
-      )
-      .eq('run_id', runId)
+    // Full data fetch including all input and output blobs
+    const { data, error } = await buildRunQuery(supabase, runId, false)
       .single<ResultRow>();
 
     if (error) {
@@ -73,6 +92,33 @@ export async function fetchFlowRunData(runId: string): Promise<{
     return {
       data: null,
       error: 'An error occurred while fetching the flow run data',
+    };
+  }
+}
+
+// Optimized fetch - used for realtime updates, omits large output and input blobs
+export async function fetchOptimizedFlowRunData(runId: string): Promise<{
+  data: ResultRow | null;
+  error: string | null;
+}> {
+  const supabase = createClient();
+
+  try {
+    // Optimized query omitting large input/output blobs
+    const { data, error } = await buildRunQuery(supabase, runId, true)
+      .single<ResultRow>();
+
+    if (error) {
+      return { data: null, error: `Error fetching optimized run data: ${error.message}` };
+    }
+
+    logger.log('Fetched optimized run data without full output blobs');
+    return { data, error: null };
+  } catch (err) {
+    logger.error('Error fetching optimized flow run:', err);
+    return {
+      data: null,
+      error: 'An error occurred while fetching the optimized flow run data',
     };
   }
 }

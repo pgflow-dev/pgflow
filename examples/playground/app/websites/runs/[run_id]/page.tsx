@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { getFlowRunData } from '@/lib/services/get-flow-run';
+import { getOptimizedFlowRunData } from '@/lib/services/get-flow-run';
 import RunPageClientContent from '@/components/run-page-content';
 
 // Loading component
@@ -29,8 +29,9 @@ export default async function RunPage({ params }: { params: { run_id: string } }
   // Get the run ID from the URL params
   const runId = params.run_id;
   
-  // Initial server-side data fetch - only used for SEO and initial load
-  const { data, error } = await getFlowRunData(runId);
+  // Initial server-side data fetch - using optimized query for faster initial load
+  // The client component will fetch full data on completion
+  const { data, error } = await getOptimizedFlowRunData(runId);
   
   // If there's an error, display it
   if (error) {

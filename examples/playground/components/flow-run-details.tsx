@@ -50,6 +50,13 @@ function formatTimeDifference(
 function LazyJSONOutput({ data }: { data: any }) {
   const [isOpen, setIsOpen] = useState(false);
   
+  // Safety check for undefined or null data
+  if (data === undefined || data === null) {
+    return (
+      <div className="text-xs text-muted-foreground p-2">No data available</div>
+    );
+  }
+  
   // Calculate the approximate size of the JSON data
   const jsonSize = JSON.stringify(data).length;
   const fileSizeKB = Math.round(jsonSize / 1024);
@@ -369,7 +376,7 @@ export default function FlowRunDetails({
                           </div>
                         </CollapsibleTrigger>
                         <CollapsibleContent className="px-2 pb-2 w-full bg-background/70 backdrop-blur-sm border-t border-foreground/10">
-                          {step.status === 'completed' && stepTask?.output && (
+                          {step.status === 'completed' && stepTask && (
                             <div className="mt-1 overflow-auto">
                               <div className="max-h-32 overflow-hidden border border-gray-500/30 rounded-md">
                                 <div className="overflow-auto max-h-32">
@@ -511,9 +518,11 @@ export default function FlowRunDetails({
         />
       )}
 
-      <div className="mt-4">
-        <LazyJSONOutput data={runData} />
-      </div>
+      {runData && (
+        <div className="mt-4">
+          <LazyJSONOutput data={runData} />
+        </div>
+      )}
     </div>
   );
 }
