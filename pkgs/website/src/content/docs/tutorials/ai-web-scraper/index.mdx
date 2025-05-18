@@ -44,9 +44,11 @@ Everything runs in your Supabase project - no external infrastructure needed.
 
 :::caution[Before you begin]
 
-1. [Install pgflow](/getting-started/install-pgflow/) - it automatically sets up Edge Worker environment variables
+1. Have a Supabase project initialized locally - see [Supabase Local Development Guide](https://supabase.com/docs/guides/local-development)
 
-2. Add your [OpenAI API key](https://platform.openai.com/api-keys) to `supabase/functions/.env`:
+2. [Install pgflow](/getting-started/install-pgflow/) - it automatically sets up Edge Worker environment variables
+
+3. Add your [OpenAI API key](https://platform.openai.com/api-keys) to `supabase/functions/.env`:
    ```diff
      # supabase/functions/.env
      EDGE_WORKER_DB_URL=postgres://...
