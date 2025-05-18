@@ -1,14 +1,16 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, Suspense, lazy, useMemo } from 'react';
 import { ResultRow } from '@/lib/db';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import JSONHighlighter from '@/components/json-highlighter';
 import { FormMessage } from '@/components/form-message';
+
+// Dynamic import for JSONHighlighter
+const JSONHighlighter = lazy(() => import('@/components/json-highlighter'));
 
 // Format time difference in a concise way (e.g., "5s", "3m 45s", "2h 15m")
 function formatTimeDifference(
@@ -44,15 +46,40 @@ function formatTimeDifference(
   return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
 }
 
+// Lazy-loaded JSON output component with file size estimation
+function LazyJSONOutput({ data }: { data: any }) {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  // Calculate the approximate size of the JSON data
+  const jsonSize = JSON.stringify(data).length;
+  const fileSizeKB = Math.round(jsonSize / 1024);
+  
+  return (
+    <details className="w-full rounded-md" onToggle={(e) => setIsOpen(e.currentTarget.open)}>
+      <summary className="cursor-pointer p-2 text-sm bg-muted/50 hover:bg-muted rounded-md flex justify-between">
+        <span>Show raw JSON</span>
+        <span className="text-xs text-muted-foreground">~{fileSizeKB} KB</span>
+      </summary>
+      {isOpen && (
+        <Suspense fallback={<div className="py-4 text-center text-xs">Loading JSON viewer...</div>}>
+          <div className="pt-2">
+            <JSONHighlighter data={data} />
+          </div>
+        </Suspense>
+      )}
+    </details>
+  );
+}
+
 // Format relative time in a concise way (e.g., "3s ago", "5m ago")
 function formatRelativeTime(
   date: string | null,
-  now: Date = new Date(),
+  // No longer need to pass a Date, use Date.now() directly
 ): string {
   if (!date) return '';
 
   const then = new Date(date);
-  const diffMs = now.getTime() - then.getTime();
+  const diffMs = Date.now() - then.getTime();
   const diffSec = Math.floor(diffMs / 1000);
 
   // Handle case where time difference is negative (server/client time mismatch)
@@ -85,7 +112,7 @@ interface FlowRunDetailsProps {
   runData: ResultRow | null;
   loading: boolean;
   error: string | null;
-  currentTime: Date;
+  // currentTime removed, we'll use Date.now() directly
 }
 
 export default function FlowRunDetails({
@@ -93,7 +120,6 @@ export default function FlowRunDetails({
   runData,
   loading,
   error,
-  currentTime,
 }: FlowRunDetailsProps) {
   if (loading) {
     return (
@@ -281,8 +307,7 @@ export default function FlowRunDetails({
                                   step.started_at && (
                                     <span className="text-xs text-yellow-600/80 mr-2">
                                       {formatRelativeTime(
-                                        step.started_at,
-                                        currentTime,
+                                        step.started_at
                                       )}
                                     </span>
                                   )}
@@ -343,7 +368,7 @@ export default function FlowRunDetails({
                             <div className="mt-1 overflow-auto">
                               <div className="max-h-32 overflow-hidden border border-gray-500/30 rounded-md">
                                 <div className="overflow-auto max-h-32">
-                                  <JSONHighlighter data={stepTask.output} />
+                                  <LazyJSONOutput data={stepTask.output} />
                                 </div>
                               </div>
                             </div>
@@ -465,12 +490,8 @@ export default function FlowRunDetails({
           <div className="w-full">
             <h3 className="text-base font-medium mb-1">Run Output</h3>
             {runData.status === 'completed' ? (
-              <div className="border border-gray-500/30 rounded-md">
-                <div className="overflow-auto max-h-[calc(100vh-400px)] w-full">
-                  <div className="w-full overflow-x-auto">
-                    <JSONHighlighter data={runData.output} />
-                  </div>
-                </div>
+              <div className="border border-gray-500/30 rounded-md p-2">
+                <LazyJSONOutput data={runData.output} />
               </div>
             ) : (
               <p className="text-xs text-muted-foreground">
@@ -486,14 +507,7 @@ export default function FlowRunDetails({
       )}
 
       <div className="mt-4">
-        <details>
-          <summary className="cursor-pointer text-xs text-muted-foreground">
-            View Raw Data
-          </summary>
-          <pre className="mt-1 p-2 bg-muted rounded-md text-xs overflow-auto max-h-[300px]">
-            {JSON.stringify(runData, null, 2)}
-          </pre>
-        </details>
+        <LazyJSONOutput data={runData} />
       </div>
     </div>
   );

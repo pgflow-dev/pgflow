@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ResultRow, StepStateRow } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { exampleLinks } from '@/lib/example-links';
+import { logger } from '@/utils/utils';
 
 interface WebsiteAnalysisUIProps {
   runData: ResultRow | null;
@@ -29,8 +30,8 @@ export default function WebsiteAnalysisUI({
   const [url, setUrl] = useState('');
   const [analysisExpanded, setAnalysisExpanded] = useState(true);
 
-  // Get ordered step states
-  const getOrderedStepStates = (): StepStateRow[] => {
+  // Get ordered step states - memoized to avoid expensive sorting on every render
+  const getOrderedStepStates = useMemo(() => {
     if (!runData?.step_states) return [];
 
     // Sort step_states directly by step.step_index
@@ -39,19 +40,37 @@ export default function WebsiteAnalysisUI({
       const bIndex = b.step?.step_index || 0;
       return aIndex - bIndex;
     });
-  };
+  }, [runData?.step_states]);
 
+  // Memoize all step tasks grouped by slug to avoid expensive filtering/sorting on each render
+  const tasksByStepSlug = useMemo(() => {
+    if (!runData?.step_tasks) return {};
+    
+    // Create a map of step_slug to sorted tasks
+    const taskMap: Record<string, any[]> = {};
+    
+    // Group tasks by step_slug
+    runData.step_tasks.forEach(task => {
+      if (!taskMap[task.step_slug]) {
+        taskMap[task.step_slug] = [];
+      }
+      taskMap[task.step_slug].push(task);
+    });
+    
+    // Sort each group of tasks
+    for (const [slug, tasks] of Object.entries(taskMap)) {
+      tasks.sort((a, b) => (a.step_index || 0) - (b.step_index || 0));
+    }
+    
+    return taskMap;
+  }, [runData?.step_tasks]);
+  
   // Get ordered step tasks for a specific step
   const getOrderedStepTasks = (stepSlug: string): any[] => {
-    if (!runData?.step_tasks) return [];
-
-    // Filter tasks for the given step slug and sort by step_index
-    return runData.step_tasks
-      .filter((task) => task.step_slug === stepSlug)
-      .sort((a, b) => (a.step_index || 0) - (b.step_index || 0));
+    return tasksByStepSlug[stepSlug] || [];
   };
 
-  const sortedSteps = getOrderedStepStates();
+  // No need to re-execute the memoized function here
   const isCompleted = runData?.status === 'completed';
   const isFailed = runData?.status === 'failed';
   const isRunning = runData?.status === 'started';
@@ -91,23 +110,20 @@ export default function WebsiteAnalysisUI({
     return '';
   };
 
-  // Get analysis summary from step tasks
-  const getAnalysisSummary = (): {
-    summary: string;
-    tags: string[];
-  } => {
-    console.log('=== Analysis Summary Called ===');
-    console.log('isCompleted:', isCompleted);
-    console.log('showSummary:', showSummary);
-    console.log('runData.step_tasks:', runData?.step_tasks);
+  // Get analysis summary from step tasks - memoized to avoid recalculation on each render
+  const getAnalysisSummary = useMemo(() => {
+    logger.log('=== Analysis Summary Called ===');
+    logger.log('isCompleted:', isCompleted);
+    logger.log('showSummary:', showSummary);
+    logger.log('runData.step_tasks:', runData?.step_tasks);
 
     if (!runData?.step_tasks || runData.step_tasks.length === 0) {
-      console.log('No step tasks found in runData');
+      logger.log('No step tasks found in runData');
       return { summary: '', tags: [] };
     }
 
     // Debug: Log the available step tasks
-    console.log(
+    logger.log(
       'Available step tasks:',
       runData.step_tasks.map((task) => ({
         step_slug: task.step_slug,
@@ -150,10 +166,10 @@ export default function WebsiteAnalysisUI({
 
       return { summary, tags };
     } catch (e) {
-      console.error('Error extracting data from step tasks:', e);
+      logger.error('Error extracting data from step tasks:', e);
       return { summary: '', tags: [] };
     }
-  };
+  }, [runData?.step_tasks, isCompleted, showSummary, getOrderedStepTasks]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,7 +182,8 @@ export default function WebsiteAnalysisUI({
     }
   };
 
-  const { summary, tags } = getAnalysisSummary();
+  // Destructure values from memoized result
+  const { summary, tags } = getAnalysisSummary;
   const websiteUrl = getWebsiteUrl();
 
   if (loading) {
@@ -387,7 +404,7 @@ export default function WebsiteAnalysisUI({
                     </p>
                   </div>
                   {/* Steps are already sorted by the getOrderedStepStates function */}
-                  {sortedSteps.map((step, index) => (
+                  {getOrderedStepStates.map((step, index) => (
                     <motion.div
                       key={step.step_slug}
                       initial={{ opacity: 0, y: 10 }}

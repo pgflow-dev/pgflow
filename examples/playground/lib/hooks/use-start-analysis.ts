@@ -15,6 +15,7 @@ export function useStartAnalysis() {
     startTransition(async () => {
       try {
         const runId = await startWebsiteAnalysis(url);
+        // Direct navigation to run page without going through /websites first
         router.push(`/websites/runs/${runId}`);
       } catch (err: any) {
         if (err?.code === 'AUTH_REQUIRED') {

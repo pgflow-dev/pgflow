@@ -21,7 +21,7 @@ function RunPageContent() {
     runData,
     loading,
     error,
-    currentTime,
+    // currentTime removed
     analyzeWebsite,
     analyzeLoading,
     analyzeError,
@@ -132,7 +132,7 @@ function RunPageContent() {
             runData={runData}
             loading={loading}
             error={error}
-            currentTime={currentTime}
+            // currentTime removed
           />
         </div>
       </div>

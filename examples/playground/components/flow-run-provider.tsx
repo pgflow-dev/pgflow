@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStartAnalysis } from '@/lib/hooks/use-start-analysis';
 import {
@@ -17,12 +17,13 @@ import {
 } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/client';
 import { useLoadingState } from './loading-state-provider';
+import { logger } from '@/utils/utils';
 
 interface FlowRunContextType {
   runData: ResultRow | null;
   loading: boolean;
   error: string | null;
-  currentTime: Date;
+  // No longer passing a Date object to avoid re-renders
   analyzeWebsite: (url: string) => Promise<void>;
   analyzeLoading: boolean;
   analyzeError: string | null;
@@ -32,7 +33,6 @@ const FlowRunContext = createContext<FlowRunContextType>({
   runData: null,
   loading: true,
   error: null,
-  currentTime: new Date(),
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   analyzeWebsite: async () => {},
   analyzeLoading: false,
@@ -61,7 +61,9 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
   // UI state
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  
+  // No longer need currentTime state that causes re-renders
+  // Components will calculate relative times on-demand using Date.now()
 
   const router = useRouter();
   const supabase = createClient();
@@ -125,7 +127,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     const handleStepStateUpdate = (
       payload: RealtimePostgresUpdatePayload<StepStateRow>,
     ) => {
-      console.log('Step state updated:', payload);
+      logger.log('Step state updated:', payload);
 
       // When step state is updated, we don't need to preserve step_index anymore
       // because we have our cached stepOrderMap
@@ -142,14 +144,14 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     ) => {
       // Log appropriately for INSERT or UPDATE event
       const isInsert = !payload.old;
-      console.log(`Step task ${isInsert ? 'created' : 'updated'}:`, payload);
+      logger.log(`Step task ${isInsert ? 'created' : 'updated'}:`, payload);
 
       // Log important details about the new task
       if (
         payload.new.step_slug === 'summary' ||
         payload.new.step_slug === 'tags'
       ) {
-        console.log(`Important task updated - ${payload.new.step_slug}:`, {
+        logger.log(`Important task updated - ${payload.new.step_slug}:`, {
           status: payload.new.status,
           has_output: !!payload.new.output,
           output: payload.new.output,
@@ -191,14 +193,14 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     const handleStepTaskInsert = (
       payload: RealtimePostgresInsertPayload<StepTaskRow>,
     ) => {
-      console.log('Step task inserted:', payload);
+      logger.log('Step task inserted:', payload);
 
       // Log important details about the new task
       if (
         payload.new.step_slug === 'summary' ||
         payload.new.step_slug === 'tags'
       ) {
-        console.log(`Important task inserted - ${payload.new.step_slug}:`, {
+        logger.log(`Important task inserted - ${payload.new.step_slug}:`, {
           status: payload.new.status,
           has_output: !!payload.new.output,
         });
@@ -225,11 +227,14 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     const subscription = observeFlowRun({
       runId,
       onRunUpdate(payload: RealtimePostgresUpdatePayload<RunRow>) {
-        console.log('Run updated:', payload);
+        logger.log('Run updated:', payload);
+
+        // Check if the run has reached a terminal state
+        const isTerminalState = ['completed', 'failed', 'error', 'cancelled'].includes(payload.new.status);
 
         // When run is marked as completed, fetch all data again to ensure we have all step outputs
         if (payload.new.status === 'completed') {
-          console.log(
+          logger.log(
             'Run completed - fetching full data to ensure we have all step outputs',
           );
 
@@ -239,9 +244,9 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
           // Fetch fresh data from API
           fetchFlowRunData(runId).then(({ data, error }) => {
             if (error) {
-              console.error('Error fetching complete run data:', error);
+              logger.error('Error fetching complete run data:', error);
             } else if (data) {
-              console.log('Fetched complete run data:', data);
+              logger.log('Fetched complete run data:', data);
               // Update all state pieces with fresh data
               setRun({
                 ...data,
@@ -271,6 +276,10 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
                 tasksMap[task.step_slug].push(taskWithIndex);
               });
               setStepTasks(tasksMap);
+              
+              // Unsubscribe from Supabase channel since we have all data and the run is complete
+              subscription.unsubscribe();
+              logger.log('Unsubscribed from realtime updates as run is complete');
             }
           });
 
@@ -283,6 +292,10 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
         // Turn off loading if the run fails
         if (payload.new.status === 'failed' || payload.new.status === 'error' || payload.new.status === 'cancelled') {
           setGlobalLoading(false);
+          
+          // Unsubscribe from Supabase channel for failed/error/cancelled states too
+          subscription.unsubscribe();
+          logger.log(`Unsubscribed from realtime updates as run is in terminal state: ${payload.new.status}`);
         }
       },
       onStepStateUpdate: handleStepStateUpdate,
@@ -290,10 +303,8 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       onStepTaskInsert: handleStepTaskInsert,
     });
 
-    // Set up a timer to update the current time every second
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+    // No more interval for updating currentTime
+    // This removes the source of continuous re-renders
 
     // Load data after subscription is set up to avoid race conditions
     const loadData = async () => {      
@@ -310,10 +321,15 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
           step_tasks: undefined,
         } as RunRow);
 
-        // If the run is already completed, turn off the global loading state
-        if (data.status === 'completed' || data.status === 'failed' || 
-            data.status === 'error' || data.status === 'cancelled') {
+        // If the run is already in a terminal state (completed/failed/error/cancelled)
+        const isTerminalState = ['completed', 'failed', 'error', 'cancelled'].includes(data.status);
+        if (isTerminalState) {
           setGlobalLoading(false);
+          
+          // Unsubscribe from realtime updates for already completed runs
+          // We can do this safely within loadData since the subscription is created before this
+          subscription.unsubscribe();
+          logger.log(`Initial data load: Unsubscribed from realtime updates as run is already in terminal state: ${data.status}`);
         }
 
         // Create and cache the step order map from step_states
@@ -358,7 +374,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
 
     return () => {
       subscription.unsubscribe();
-      clearInterval(timer);
+      // No more timer to clear
     };
   }, [runId, router]);
 
@@ -366,7 +382,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     runData,
     loading,
     error,
-    currentTime,
+    // currentTime removed to avoid re-renders
     analyzeWebsite,
     analyzeLoading,
     analyzeError,
