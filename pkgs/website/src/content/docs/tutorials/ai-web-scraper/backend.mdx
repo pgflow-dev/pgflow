@@ -403,6 +403,8 @@ Your AI scraper pipeline:
 | `Missing OPENAI_API_KEY` | Add to `supabase/functions/.env` |
 | `401 (Unauthorized)` | Check OpenAI key is valid |
 | Compile errors | Run `npx pgflow@latest compile --help` |
+| No logs appearing after starting flow | Make sure you ran the `curl` command to boot the worker. Check `supabase functions serve` terminal for activity. |
+| Flow stuck in `Created` state | Worker might not be polling. Restart `functions serve` and `curl` the worker endpoint again. |
 
 </details>
 
