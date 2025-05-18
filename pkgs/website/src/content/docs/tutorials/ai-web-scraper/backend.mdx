@@ -20,8 +20,9 @@ What we'll create:
 1. Database table for results
 2. Four task functions (scrape, summarize, tag, save)
 3. pgflow workflow connecting them
-4. Edge Worker to run it
-5. Test everything locally
+4. Compile flow to SQL and migrate
+5. Setup Edge Worker to run it
+6. Test everything locally
 </Steps>
 
 ## Step 1 - Create `websites` table
@@ -248,7 +249,7 @@ Flow structure:
 <img src="/analyze_website.svg" alt="AI Web Scraper Workflow" title="AI-powered web scraper workflow DAG" className="responsive-svg" width="70%" />
 
 - `website` → fetches the URL (root step)
-- `summary` & `tags` → run in parallel (both need website content)  
+- `summary` & `tags` → run in parallel (both need website content)
 - `saveToDb` → waits for both, then saves everything
 
 Summary and tags execute simultaneously since both only need website content - cutting execution time in half. All state transitions happen transactionally in the database, ensuring your flow never ends up in an inconsistent state even if tasks fail or workers crash.
@@ -296,7 +297,7 @@ Changing steps requires a new flow with unique `slug`. This is a core design dec
    ```typescript title="supabase/functions/analyze_website_worker/index.ts"
    import { EdgeWorker } from "jsr:@pgflow/edge-worker";
    import AnalyzeWebsite from '../_flows/analyze_website.ts';
-   
+
    EdgeWorker.start(AnalyzeWebsite);  // That's it! 🤯
    ```
 
@@ -331,9 +332,15 @@ Start the services (make sure `supabase start` is already running):
    ```bash frame="none"
    curl -X POST http://127.0.0.1:54321/functions/v1/analyze_website_worker
    ```
-   
-   :::note[Why curl?]
-   First request boots the worker - subsequent requests have no effect. It polls for tasks on its own.
+
+   :::note[How the worker runs]
+   The Edge Function ecosystem works like this:
+
+   - `supabase functions serve` - Runs a server that hosts your Edge Functions
+   - First curl request - Boots the worker, which stays alive and continuously polls the database for tasks
+   - Subsequent curl requests - Have no effect (worker is already running)
+
+   In production environments, workers are typically triggered by cron schedules rather than manual curl commands.
    :::
 
 3. Trigger the flow in SQL Editor:
@@ -385,7 +392,7 @@ See more in [Monitor flow execution](/how-to/monitor-flow-execution/) documentat
 Your AI scraper pipeline:
 
 - **Auto-retries** - Failed steps retry up to 3 times
-- **Parallel AI** - Summary and tags run simultaneously  
+- **Parallel AI** - Summary and tags run simultaneously
 - **Full history** - Every run tracked in your database
 - **Modular code** - Each task is independent and testable
 - **ACID guarantees** - Built on pgmq, a real Postgres queue with transactional safety
