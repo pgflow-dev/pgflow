@@ -235,7 +235,7 @@ export default new Flow<Input>({ slug: "analyze_website", maxAttempts: 3 })
     ({ run }) => scrapeWebsite(run.url))
 
   .step({ slug: "summary", dependsOn: ["website"] },
-    ({ website }) => summarize(website.content))  // 👈 Type inferred automatically!
+    ({ website }) => summarize(website.content))
 
   .step({ slug: "tags", dependsOn: ["website"] },
     ({ website }) => extractTags(website.content))
@@ -407,6 +407,19 @@ Your AI scraper pipeline:
 </details>
 
 For debugging, see [Monitor flow execution](/how-to/monitor-flow-execution/).
+
+---
+
+## Next Steps
+
+You've built the backend workflow! Coming next:
+
+- **Part 2: Frontend Dashboard** (coming soon) - Create a real-time UI using the upcoming pgflow client library that leverages Supabase Realtime to stream flow progress directly to the browser
+
+In the meantime, experiment with:
+- Adding more AI analysis tasks to your flow
+- Creating custom flow visualizations with the pgflow monitoring tables
+- Optimizing performance with parallel step execution
 
 ---
 
