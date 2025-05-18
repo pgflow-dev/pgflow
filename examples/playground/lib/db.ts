@@ -1,4 +1,5 @@
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/utils/supabase/browser-client';
+import { logger } from '@/utils/utils';
 import { Database } from '@/supabase/functions/database-types';
 import type {
   RealtimePostgresUpdatePayload,
@@ -68,7 +69,7 @@ export async function fetchFlowRunData(runId: string): Promise<{
 
     return { data, error: null };
   } catch (err) {
-    console.error('Error fetching flow run:', err);
+    logger.error('Error fetching flow run:', err);
     return {
       data: null,
       error: 'An error occurred while fetching the flow run data',
@@ -109,12 +110,8 @@ export function observeFlowRun({
       { ...updateEventSpec, table: 'step_states' },
       onStepStateUpdate,
     )
-    .on(
-      'postgres_changes' as any,
-      { ...updateEventSpec, table: 'step_tasks' },
-      onStepTaskUpdate,
-    )
-    // Also listen for INSERTs on step_tasks
+    // Only listen for INSERTs on step_tasks as that's more efficient
+    // and sufficient for our needs (tasks are immutable once created)
     .on(
       'postgres_changes' as any,
       { ...insertEventSpec, table: 'step_tasks' },

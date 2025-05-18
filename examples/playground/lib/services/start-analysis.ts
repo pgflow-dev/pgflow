@@ -1,5 +1,5 @@
 // lib/services/start-analysis.ts
-import { createClient } from '@/utils/supabase/client'; // will be swapped for pgflow later
+import { createClient } from '@/utils/supabase/browser-client'; // will be swapped for pgflow later
 
 // What we will need soon
 // import { PgflowClient } from '@pgflow/client';

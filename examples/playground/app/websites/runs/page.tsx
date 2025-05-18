@@ -7,11 +7,13 @@ type RunRow = Database['pgflow']['Tables']['runs']['Row'];
 export default async function RunsListPage() {
   // Server-side data fetching
   const supabase = await createClient();
+  // Keep specific fields selected and add pagination
   const { data: runs, error } = await supabase
     .schema('pgflow')
     .from('runs')
-    .select('*')
-    .order('started_at', { ascending: false }); // Add sorting by most recent first
+    .select('run_id, flow_slug, started_at, status')
+    .order('started_at', { ascending: false })
+    .limit(20); // Limit to most recent 20 runs
 
   // Modified error handling for server component
   if (error) {

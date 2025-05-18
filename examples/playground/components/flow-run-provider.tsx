@@ -15,7 +15,7 @@ import {
   RealtimePostgresUpdatePayload,
   RealtimePostgresInsertPayload,
 } from '@supabase/supabase-js';
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/utils/supabase/browser-client';
 import { useLoadingState } from './loading-state-provider';
 import { logger } from '@/utils/utils';
 
@@ -139,56 +139,8 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       }));
     };
 
-    const handleStepTaskUpdate = (
-      payload: RealtimePostgresUpdatePayload<StepTaskRow>,
-    ) => {
-      // Log appropriately for INSERT or UPDATE event
-      const isInsert = !payload.old;
-      logger.log(`Step task ${isInsert ? 'created' : 'updated'}:`, payload);
-
-      // Log important details about the new task
-      if (
-        payload.new.step_slug === 'summary' ||
-        payload.new.step_slug === 'tags'
-      ) {
-        logger.log(`Important task updated - ${payload.new.step_slug}:`, {
-          status: payload.new.status,
-          has_output: !!payload.new.output,
-          output: payload.new.output,
-        });
-      }
-
-      // Add step_index to the task from our cached stepOrderMap
-      const newTask = {
-        ...payload.new,
-        step_index: stepOrderMap[payload.new.step_slug] || 0,
-      };
-
-      setStepTasks((prevTasksMap) => {
-        const stepSlug = newTask.step_slug;
-        const currentTasks = prevTasksMap[stepSlug] || [];
-
-        // Check if this task already exists
-        const taskIndex = currentTasks.findIndex(
-          (task) => task.step_slug === newTask.step_slug,
-        );
-
-        let updatedTasks;
-        if (taskIndex >= 0) {
-          // Update existing task
-          updatedTasks = [...currentTasks];
-          updatedTasks[taskIndex] = newTask;
-        } else {
-          // Add new task
-          updatedTasks = [...currentTasks, newTask];
-        }
-
-        return {
-          ...prevTasksMap,
-          [stepSlug]: updatedTasks,
-        };
-      });
-    };
+    // No longer used - we only listen for INSERT events now
+    // This makes the application more efficient
 
     const handleStepTaskInsert = (
       payload: RealtimePostgresInsertPayload<StepTaskRow>,
@@ -299,7 +251,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
         }
       },
       onStepStateUpdate: handleStepStateUpdate,
-      onStepTaskUpdate: handleStepTaskUpdate,
+      // No longer listening to UPDATE events, only INSERTs
       onStepTaskInsert: handleStepTaskInsert,
     });
 

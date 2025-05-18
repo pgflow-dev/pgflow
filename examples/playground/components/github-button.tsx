@@ -1,7 +1,8 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/utils/supabase/browser-client';
+import { logger } from '@/utils/utils';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -29,7 +30,7 @@ export function GithubButton({ className = '', onLoadingChange, disabled, text =
       });
 
       if (error) {
-        console.error('GitHub OAuth error:', error);
+        logger.error('GitHub OAuth error:', error);
         setIsLoadingLocal(false);
         onLoadingChange?.(false);
         return;
@@ -40,7 +41,7 @@ export function GithubButton({ className = '', onLoadingChange, disabled, text =
         window.location.href = data.url;
       }
     } catch (error) {
-      console.error('GitHub sign-in error:', error);
+      logger.error('GitHub sign-in error:', error);
       setIsLoadingLocal(false);
       onLoadingChange?.(false);
     }
