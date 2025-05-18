@@ -52,6 +52,10 @@ Set up your database to store AI analysis results.
    ```bash
    npx supabase migrations up --local
    ```
+
+   :::note
+   Make sure `supabase start` is running before applying migrations. The SQL file will be created at `supabase/migrations/<timestamp>_add_websites.sql`.
+   :::
 </Steps>
 
 ---
