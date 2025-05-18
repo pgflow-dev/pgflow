@@ -6,6 +6,7 @@ sidebar:
 ---
 
 import { Steps, LinkCard, CardGrid } from '@astrojs/starlight/components';
+import { FileTree } from '@astrojs/starlight/components';
 import JoinCommunity from '@/components/JoinCommunity.astro';
 
 :::note[Tech Stack]
@@ -30,6 +31,24 @@ You'll create a practical AI web scraper workflow that:
 </Steps>
 
 <img src="/analyze_website.svg" alt="AI Web Scraper Workflow" title="AI-powered web scraper workflow DAG" className="responsive-svg" />
+
+## Project Structure
+
+Here's the file structure we'll create:
+
+<FileTree>
+- supabase/
+  - functions/
+    - _tasks/
+      - scrapeWebsite.ts
+      - summarize.ts
+      - extractTags.ts
+      - saveWebsite.ts
+    - _flows/
+      - analyze_website.ts
+    - analyze_website_worker/
+      - index.ts
+</FileTree>
 
 ## Architecture overview
 
