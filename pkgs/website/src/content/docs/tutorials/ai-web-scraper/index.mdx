@@ -16,7 +16,7 @@ import JoinCommunity from '@/components/JoinCommunity.astro';
 - **OpenAI API** - AI content analysis
 :::
 
-Build an AI-powered scraper: fetch → analyze → store
+Build an AI-powered scraper: fetch → analyze → store.
 
 ## What you'll build
 
@@ -50,10 +50,6 @@ Here's the file structure we'll create:
       - index.ts
 </FileTree>
 
-## Architecture overview
-
-This tutorial covers building the backend workflow. Future tutorials will add a frontend UI and production deployment.
-
 :::tip[Why pgflow for AI scraping?]
 pgflow handles AI workflow complexity: automatic retries for API failures, parallel processing, and full observability.
 Everything runs in your Supabase project - no external infrastructure needed.
@@ -75,6 +71,17 @@ Everything runs in your Supabase project - no external infrastructure needed.
    + OPENAI_API_KEY=sk-...
    ```
 :::
+
+### Versions Used in This Tutorial
+
+This tutorial was tested with these specific tool versions:
+
+| Tool | Tested version |
+|------|----------------|
+| Supabase CLI | 2.22.12 |
+| pgflow CLI | 0.2.4 |
+| Deno | 1.45.2 |
+| OpenAI SDK | 4.33.0 |
 
 ## What you'll learn
 
