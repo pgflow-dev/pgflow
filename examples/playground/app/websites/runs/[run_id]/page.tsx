@@ -27,7 +27,7 @@ function ErrorDisplay({ message }: { message: string }) {
 // Main server component
 export default async function RunPage({ params }: { params: { run_id: string } }) {
   // Get the run ID from the URL params
-  const runId = params.run_id;
+  const { run_id: runId } = await params;
   
   // Initial server-side data fetch - using optimized query for faster initial load
   // The client component will fetch full data on completion
