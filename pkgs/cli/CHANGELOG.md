@@ -1,5 +1,12 @@
 # pgflow
 
+## 0.2.5
+
+### Patch Changes
+
+- 69390b4: Make sure install command creates migrations using UTC timestamps
+  - @pgflow/core@0.2.5
+
 ## 0.2.4
 
 ### Patch Changes

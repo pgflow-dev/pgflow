@@ -1,6 +1,6 @@
 {
   "name": "pgflow",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "type": "module",
   "main": "./dist/index.js",
   "typings": "./dist/index.d.ts",
