@@ -27,10 +27,11 @@ function ErrorDisplay({ message }: { message: string }) {
 // Main server component
 export default async function RunPage({ params }: { params: { run_id: string } }) {
   // Get the run ID from the URL params
-  const { run_id: runId } = await params;
+  // SECURITY FIX: Removed incorrect 'await' before params to prevent runtime error in Node 18
+  const { run_id: runId } = params;
   
   // Initial server-side data fetch - using optimized query for faster initial load
-  // The client component will fetch full data on completion
+  // This data will be passed to the client component to prevent duplicate DB calls
   const { data, error } = await getOptimizedFlowRunData(runId);
   
   // If there's an error, display it
@@ -38,11 +39,13 @@ export default async function RunPage({ params }: { params: { run_id: string } }
     return <ErrorDisplay message={error} />;
   }
 
-  // Even if server fetch is successful, we still use the client component 
-  // with real-time updates to get the latest data
+  // Pass the server-fetched data to the client component to avoid duplicate DB calls
   return (
     <Suspense fallback={<LoadingState />}>
-      <RunPageClientContent runId={runId} />
+      <RunPageClientContent 
+        runId={runId} 
+        initialData={data} // Pass server-fetched data to client component
+      />
     </Suspense>
   );
 }

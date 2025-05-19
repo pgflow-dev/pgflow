@@ -43,22 +43,86 @@ const FlowRunContext = createContext<FlowRunContextType>({
 
 export const useFlowRun = () => useContext(FlowRunContext);
 
+/**
+ * Props for the FlowRunProvider component
+ * 
+ * @param runId - The ID of the flow run to display
+ * @param children - Child components to render inside the provider
+ * @param initialData - PERFORMANCE FIX: Optional pre-fetched run data from server component
+ *                      to prevent duplicate database calls
+ */
 interface FlowRunProviderProps {
   runId: string;
   children: React.ReactNode;
+  initialData?: ResultRow | null;
 }
 
-export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
-  // Split the state into separate pieces
-  const [run, setRun] = useState<RunRow | null>(null);
-  const [stepStates, setStepStates] = useState<Record<string, StepStateRow>>(
-    {},
-  );
-  const [stepTasks, setStepTasks] = useState<Record<string, StepTaskRow[]>>({});
+export function FlowRunProvider({ runId, children, initialData = null }: FlowRunProviderProps) {
+  // Initialize state from initialData if provided
+  const [run, setRun] = useState<RunRow | null>(() => {
+    if (!initialData) return null;
+    return {
+      ...initialData,
+      step_states: undefined,
+      step_tasks: undefined,
+    } as RunRow;
+  });
+  
+  const [stepStates, setStepStates] = useState<Record<string, StepStateRow>>(() => {
+    if (!initialData?.step_states) return {};
+    
+    // Convert step states array to a map
+    const stateMap: Record<string, StepStateRow> = {};
+    initialData.step_states.forEach((state) => {
+      stateMap[state.step_slug] = state;
+    });
+    return stateMap;
+  });
+  
+  const [stepTasks, setStepTasks] = useState<Record<string, StepTaskRow[]>>(() => {
+    if (!initialData?.step_tasks) return {};
+    
+    // Create order map from initial data
+    const orderMap: Record<string, number> = {};
+    if (initialData.step_states) {
+      initialData.step_states.forEach((state) => {
+        if (state.step && state.step_slug) {
+          orderMap[state.step_slug] = state.step.step_index || 0;
+        }
+      });
+    }
+    
+    // Group step tasks by step_slug
+    const tasksMap: Record<string, StepTaskRow[]> = {};
+    initialData.step_tasks.forEach((task) => {
+      // Add step_index to task
+      const taskWithIndex = {
+        ...task,
+        step_index: orderMap[task.step_slug] || 0,
+      };
+      
+      if (!tasksMap[task.step_slug]) {
+        tasksMap[task.step_slug] = [];
+      }
+      tasksMap[task.step_slug].push(taskWithIndex);
+    });
+    return tasksMap;
+  });
 
   // Create a persistent mapping of step_slug to step_index
   // This is cached once when the data is loaded and never changes
-  const [stepOrderMap, setStepOrderMap] = useState<Record<string, number>>({});
+  const [stepOrderMap, setStepOrderMap] = useState<Record<string, number>>(() => {
+    if (!initialData?.step_states) return {};
+    
+    // Create order map from initial data
+    const orderMap: Record<string, number> = {};
+    initialData.step_states.forEach((state) => {
+      if (state.step && state.step_slug) {
+        orderMap[state.step_slug] = state.step.step_index || 0;
+      }
+    });
+    return orderMap;
+  });
   
   // Cache for tracking summary and tags tasks to handle them together
   // This is the key for batching related tasks
@@ -601,7 +665,25 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
 
     // Load data after subscription is set up to avoid race conditions
     const loadData = async () => {      
-      // For initial load, use full data query to get complete information
+      // Skip data fetch if initialData was provided
+      if (initialData) {
+        logger.log('Using provided initialData, skipping initial fetch');
+        
+        // If the run is already in a terminal state (completed/failed/error/cancelled)
+        const isTerminalState = ['completed', 'failed', 'error', 'cancelled'].includes(initialData.status);
+        if (isTerminalState) {
+          setGlobalLoading(false);
+          
+          // Unsubscribe from realtime updates for already completed runs
+          subscription.unsubscribe();
+          logger.log(`Initial data from props: Unsubscribed from realtime updates as run is already in terminal state: ${initialData.status}`);
+        }
+        
+        setLoading(false);
+        return;
+      }
+      
+      // If no initialData, perform a full data query
       logger.log('Initial load: Fetching full data');
       const { data, error } = await fetchFlowRunData(runId);
 

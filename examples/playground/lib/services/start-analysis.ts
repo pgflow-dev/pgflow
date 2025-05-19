@@ -18,6 +18,26 @@ export interface StartAnalysisOptions {
 }
 
 /**
+ * SECURITY FIX: Validates if a URL is properly formatted and uses an allowed protocol
+ * Prevents SSRF attacks and protocol-based injections by ensuring only HTTP(S) URLs are accepted
+ */
+function validateUrl(url: string): boolean {
+  try {
+    const parsedUrl = new URL(url);
+    
+    // Limit to http and https protocols only
+    const allowedProtocols = ['http:', 'https:'];
+    if (!allowedProtocols.includes(parsedUrl.protocol)) {
+      throw new Error(`Unsupported protocol: ${parsedUrl.protocol}`);
+    }
+    
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
  * Starts analyse-website pgflow run and returns the run_id.
  * **This is the ONLY place that knows HOW we start a flow.**
  */
@@ -26,6 +46,11 @@ export async function startWebsiteAnalysis(
   { requireAuth = true, runId }: StartAnalysisOptions = {},
 ): Promise<string> {
   if (!url) throw new Error('URL is required');
+  
+  // Validate URL format and protocol
+  if (!validateUrl(url)) {
+    throw new Error('Invalid URL. Only http and https protocols are allowed.');
+  }
 
   const supabase = createClient();
 

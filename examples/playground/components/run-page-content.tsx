@@ -149,10 +149,22 @@ function RunPageContent({ runId }: { runId: string }) {
   );
 }
 
-// Wrapper component that provides the FlowRunProvider context
-export default function RunPageClientContent({ runId }: { runId: string }) {
+/**
+ * Wrapper component that provides the FlowRunProvider context
+ * 
+ * @param runId - The ID of the flow run to display
+ * @param initialData - PERFORMANCE FIX: Server-side fetched data passed down to prevent duplicate DB calls
+ *                      This fixes the performance issue identified in the security audit
+ */
+export default function RunPageClientContent({ 
+  runId, 
+  initialData 
+}: { 
+  runId: string;
+  initialData?: any;
+}) {
   return (
-    <FlowRunProvider runId={runId}>
+    <FlowRunProvider runId={runId} initialData={initialData}>
       <RunPageContent runId={runId} />
     </FlowRunProvider>
   );
