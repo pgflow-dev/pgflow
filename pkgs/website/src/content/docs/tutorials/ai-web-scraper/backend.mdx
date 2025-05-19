@@ -307,6 +307,18 @@ Turn your TypeScript flow into SQL using pgflow's [compiler](/getting-started/co
    npx pgflow@latest compile supabase/functions/_flows/analyze_website.ts
    # Generates supabase/migrations/<timestamp>_analyze_website.sql
    ```
+   
+   <details>
+     <summary>Using import maps or custom `deno.json`?</summary>
+     
+     You can use `--deno-json` flag to point at your `deno.json` file:
+     ```bash
+     npx pgflow@latest compile \
+       --deno-json=path/to/deno.json \
+       supabase/functions/_flows/analyze_website.ts
+     ```
+     Run `npx pgflow@latest compile --help` for additional options.
+   </details>
 
 2. Apply migration to database:
    ```bash
