@@ -70,7 +70,7 @@ Build four focused functions that each do one thing well:
 | `scrapeWebsite.ts` | Fetches webpage content |
 | `summarize.ts` | AI summary |
 | `extractTags.ts` | AI tags |
-| `saveWebsite.ts` | Saves to database |
+| `saveToDb.ts` | Saves to database |
 
 Put these in `supabase/functions/_tasks` (see [organizing flows code](/how-to/organize-flows-code/) for project structure):
 
@@ -85,15 +85,18 @@ export default async function scrapeWebsite(url: string) {
   console.log("[scrapeWebsite] fetching", url);
 
   const res = await fetch(url, {
-    signal: AbortSignal.timeout(10000)  // 10 second timeout
+    signal: AbortSignal.timeout(10000), // 10 second timeout
   });
 
   if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
 
   const html = await res.text();
-  const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const text = html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
-  return { content: text.slice(0, 25_000) };  // limit tokens
+  return { content: text.slice(0, 25_000) }; // limit tokens
 }
 ```
 
@@ -107,7 +110,7 @@ In production, use [html-to-text](https://www.npmjs.com/package/html-to-text) fo
 Two OpenAI functions that return structured, type-safe data:
 
 :::tip[Structured Outputs]
-We're using OpenAI's newer Responses API (`openai.responses.parse`) rather than traditional Chat Completions. This provides [Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs) for reliable, validated responses. Note that `openai.responses.parse` will throw an exception if the model output doesn't match your Zod schema.
+We're using OpenAI's newer Responses API (`openai.responses.parse`) rather than traditional Chat Completions. This provides [Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs) for reliable, validated responses using JSON Schema. Note that `openai.responses.parse` will throw an exception if the model output doesn't match your schema.
 :::
 
 <details>
@@ -115,18 +118,15 @@ We're using OpenAI's newer Responses API (`openai.responses.parse`) rather than 
 
 ```typescript
 // supabase/functions/_tasks/summarize.ts
-import OpenAI from "jsr:@openai/openai@4.33.0";
-import { z } from "jsr:@zod/zod";
-import { zodTextFormat } from "jsr:@openai/openai@4.33.0/helpers/zod";
-
-const apiKey = Deno.env.get("OPENAI_API_KEY");
-if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
-
-const openai = new OpenAI({ apiKey });
-const SummarySchema = z.object({ summary: z.string() });
+import OpenAI from "npm:openai";
 
 export default async function summarize(content: string) {
   console.log("[summarize] processing content");
+
+  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
+
+  const openai = new OpenAI({ apiKey });
 
   const response = await openai.responses.parse({
     model: "gpt-4o",
@@ -134,7 +134,23 @@ export default async function summarize(content: string) {
       { role: "system", content: "Return a short paragraph summary." },
       { role: "user", content },
     ],
-    text: { format: zodTextFormat(SummarySchema, "summary") },
+    text: {
+      format: {
+        type: "json_schema",
+        name: "summary_format",
+        schema: {
+          type: "object",
+          properties: {
+            summary: {
+              type: "string",
+              description: "A short paragraph summary of the content",
+            },
+          },
+          required: ["summary"],
+          additionalProperties: false,
+        },
+      },
+    },
   });
 
   return response.output_parsed.summary;
@@ -147,18 +163,15 @@ export default async function summarize(content: string) {
 
 ```typescript
 // supabase/functions/_tasks/extractTags.ts
-import OpenAI from "jsr:@openai/openai@4.33.0";
-import { z } from "jsr:@zod/zod";
-import { zodTextFormat } from "jsr:@openai/openai@4.33.0/helpers/zod";
-
-const apiKey = Deno.env.get("OPENAI_API_KEY");
-if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
-
-const openai = new OpenAI({ apiKey });
-const TagsSchema = z.object({ tags: z.array(z.string()).max(10) });
+import OpenAI from "npm:openai";
 
 export default async function extractTags(content: string) {
   console.log("[extractTags] extracting tags");
+
+  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
+
+  const openai = new OpenAI({ apiKey });
 
   const response = await openai.responses.parse({
     model: "gpt-4o",
@@ -166,7 +179,26 @@ export default async function extractTags(content: string) {
       { role: "system", content: "Return 5-10 descriptive tags." },
       { role: "user", content },
     ],
-    text: { format: zodTextFormat(TagsSchema, "tags") },
+    text: {
+      format: {
+        type: "json_schema",
+        name: "tags_format",
+        schema: {
+          type: "object",
+          properties: {
+            tags: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+              description: "An array of 5-10 descriptive tags",
+            },
+          },
+          required: ["tags"],
+          additionalProperties: false,
+        },
+      },
+    },
   });
 
   return response.output_parsed.tags;
@@ -179,24 +211,26 @@ export default async function extractTags(content: string) {
 The final task saves all results to your database:
 
 <details>
-  <summary><strong>saveWebsite.ts</strong> - Store results</summary>
+  <summary><strong>saveToDb.ts</strong> - Store results</summary>
 
 ```typescript
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "jsr:@supabase/supabase-js";
 
-const supabaseUrl = Deno.env.get("SUPABASE_URL");
-const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-export default async function saveWebsite(row: {
-  website_url: string; summary: string; tags: string[];
+export default async function saveToDb(row: {
+  website_url: string;
+  summary: string;
+  tags: string[];
 }) {
   console.log("[saveWebsite] inserting row");
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
   const { data } = await supabase
     .from("websites")
@@ -222,26 +256,27 @@ Uses service role key for direct database access. Both URL and key are auto-avai
 Connect tasks into a workflow using pgflow's [TypeScript DSL](/concepts/flow-dsl/) (`supabase/functions/_flows/analyze_website.ts`):
 
 ```typescript title="supabase/functions/_flows/analyze_website.ts"
-import { Flow } from "@pgflow/dsl";
+import { Flow } from "npm:@pgflow/dsl";
 import scrapeWebsite from "../_tasks/scrapeWebsite.ts";
 import summarize from "../_tasks/summarize.ts";
 import extractTags from "../_tasks/extractTags.ts";
-import saveWebsite from "../_tasks/saveWebsite.ts";
+import saveToDb from "../_tasks/saveToDb.ts";
 
 type Input = { url: string };
 
-export default new Flow<Input>({ slug: "analyze_website", maxAttempts: 3 })
-  .step({ slug: "website" },
-    ({ run }) => scrapeWebsite(run.url))
-
-  .step({ slug: "summary", dependsOn: ["website"] },
-    ({ website }) => summarize(website.content))
-
-  .step({ slug: "tags", dependsOn: ["website"] },
-    ({ website }) => extractTags(website.content))
-
-  .step({ slug: "saveToDb", dependsOn: ["summary", "tags"] },
-    ({ run, summary, tags }) => saveWebsite({ website_url: run.url, summary, tags }));
+export default new Flow<Input>({ slug: "analyzeWebsite", maxAttempts: 3 })
+  .step({ slug: "website" }, ({ run }) => scrapeWebsite(run.url))
+  .step({ slug: "summary", dependsOn: ["website"] }, ({ website }) =>
+    summarize(website.content),
+  )
+  .step({ slug: "tags", dependsOn: ["website"] }, ({ website }) =>
+    extractTags(website.content),
+  )
+  .step(
+    { slug: "saveToDb", dependsOn: ["summary", "tags"] },
+    ({ run, summary, tags }) =>
+      saveToDb({ website_url: run.url, summary, tags }),
+  );
 ```
 
 Flow structure:
@@ -338,7 +373,7 @@ Start the services (make sure `supabase start` is already running):
 3. Trigger the flow in SQL Editor:
    ```sql
    select * from pgflow.start_flow(
-     flow_slug => 'analyze_website',
+     flow_slug => 'analyzeWebsite',
      input     => '{"url":"https://supabase.com"}'
    );
    ```
@@ -351,8 +386,8 @@ Worker output:
 [scrapeWebsite] fetching https://supabase.com
 [summarize] processing content
 [extractTags] extracting tags
-[saveWebsite] inserting row
-[saveWebsite] inserted with id: 1
+[saveToDb] inserting row
+[saveToDb] inserted with id: 1
 ```
 
 Check your database:
@@ -371,7 +406,7 @@ select website_url, tags, summary from websites;
 Check flow status anytime:
 
 ```sql
-SELECT * FROM pgflow.runs WHERE flow_slug = 'analyze_website'
+SELECT * FROM pgflow.runs WHERE flow_slug = 'analyzeWebsite'
 ```
 
 See more in [Monitor flow execution](/how-to/monitor-flow-execution/) documentation page
