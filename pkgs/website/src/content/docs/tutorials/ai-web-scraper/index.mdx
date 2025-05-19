@@ -9,14 +9,22 @@ import { Steps, LinkCard, CardGrid } from '@astrojs/starlight/components';
 import { FileTree } from '@astrojs/starlight/components';
 import JoinCommunity from '@/components/JoinCommunity.astro';
 
+**Build an AI-powered web scraper: fetch → analyze → store.**
+
+<div>
+  <a href="/analyze_website.gif" target="_blank" rel="noopener noreferrer">
+    <img src="/analyze_website_small.gif" alt="Description of animation" />
+  </a>
+</div>
+
+---
+
 :::note[Tech Stack]
 - **Supabase Edge Functions** - Serverless runtime for workflow execution
 - **Deno** - JavaScript/TypeScript runtime environment
 - **pgflow** - Postgres-native workflow engine
 - **OpenAI API** - AI content analysis
 :::
-
-Build an AI-powered scraper: fetch → analyze → store.
 
 This tutorial uses **pgflow**, a Postgres-native workflow engine that manages DAG dependencies, state transitions, and execution flow directly in your database. It works with **Edge Worker**, a lightweight runner that executes your workflow tasks, handles retries, and reports results back to pgflow - all running within Supabase Edge Functions. Together, they let you build reliable, observable workflows without extra infrastructure.
 
