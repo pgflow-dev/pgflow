@@ -6,26 +6,55 @@ sidebar:
 ---
 
 import { Steps, LinkCard, CardGrid } from '@astrojs/starlight/components';
+import { FileTree } from '@astrojs/starlight/components';
 import JoinCommunity from '@/components/JoinCommunity.astro';
 
-Build an AI-powered scraper: fetch → analyze → store
+:::note[Tech Stack]
+- **Supabase Edge Functions** - Serverless runtime for workflow execution
+- **Deno** - JavaScript/TypeScript runtime environment
+- **pgflow** - Postgres-native workflow engine
+- **OpenAI API** - AI content analysis
+:::
+
+Build an AI-powered scraper: fetch → analyze → store.
+
+This tutorial uses **pgflow**, a Postgres-native workflow engine that manages DAG dependencies, state transitions, and execution flow directly in your database. It works with **Edge Worker**, a lightweight runner that executes your workflow tasks, handles retries, and reports results back to pgflow - all running within Supabase Edge Functions. Together, they let you build reliable, observable workflows without extra infrastructure.
+
+:::note[Complete Source Code]
+All code for this tutorial is available in the [pgflow-dev/ai-web-scraper](https://github.com/pgflow-dev/ai-web-scraper) GitHub repository.
+:::
 
 ## What you'll build
 
-You'll create a web scraper that:
+You'll create a practical AI web scraper workflow that:
 
 <Steps>
-1. Fetches webpage content
-2. Analyzes it with OpenAI
-3. Runs parallel AI operations  
-4. Saves results to your database
+1. Grabs content from any webpage with built-in error handling
+2. Uses GPT-4o to generate summaries and extract relevant tags
+3. Runs multiple AI operations in parallel (cutting processing time in half)
+4. Stores everything neatly in your Postgres database
+5. Auto-retries when things go wrong (because APIs sometimes fail)
 </Steps>
 
 <img src="/analyze_website.svg" alt="AI Web Scraper Workflow" title="AI-powered web scraper workflow DAG" className="responsive-svg" />
 
-## Architecture overview
+## Project Structure
 
-This tutorial covers building the backend workflow. Future tutorials will add a frontend UI and production deployment.
+Here's the file structure we'll create:
+
+<FileTree>
+- supabase/
+  - functions/
+    - _tasks/
+      - scrapeWebsite.ts
+      - summarize.ts
+      - extractTags.ts
+      - saveToDb.ts
+    - _flows/
+      - analyze_website.ts
+    - analyze_website_worker/
+      - index.ts
+</FileTree>
 
 :::tip[Why pgflow for AI scraping?]
 pgflow handles AI workflow complexity: automatic retries for API failures, parallel processing, and full observability.
@@ -36,25 +65,42 @@ Everything runs in your Supabase project - no external infrastructure needed.
 
 :::caution[Before you begin]
 
-1. [Install pgflow](/getting-started/install-pgflow/) - it automatically sets up Edge Worker environment variables
+1. Have a Supabase project initialized locally - see [Supabase Local Development Guide](https://supabase.com/docs/guides/local-development)
 
-2. Add your [OpenAI API key](https://platform.openai.com/api-keys) to `supabase/functions/.env`:
+2. [Install pgflow](/getting-started/install-pgflow/) - it automatically sets up Edge Worker environment variables
+   ```sh
+   npx pgflow@latest install
+   ```
+
+3. Add your [OpenAI API key](https://platform.openai.com/api-keys) to `supabase/functions/.env`:
    ```diff
      # supabase/functions/.env
      EDGE_WORKER_DB_URL=postgres://...
      EDGE_WORKER_LOG_LEVEL=info
    + OPENAI_API_KEY=sk-...
    ```
+
+   **Important:** Place this `.env` file in the `supabase/functions` directory, not in your project root. Edge Functions specifically look for environment variables in this location.
 :::
+
+### Versions Used in This Tutorial
+
+This tutorial was tested with these specific tool versions:
+
+| Tool | Tested version |
+|------|----------------|
+| Supabase CLI | 2.22.12 |
+| pgflow CLI | 0.2.5 |
+| Deno | 1.45.2 |
 
 ## What you'll learn
 
 <Steps>
-1. Create database tables for storing scraping results
-2. Build modular task functions for web scraping
-3. Integrate OpenAI with structured outputs for AI analysis
-4. Design parallel DAG workflows for concurrent processing
-5. Execute flows using Supabase Edge Functions
+1. Write task functions to fetch and process web content
+2. Generate structured data from AI using type-safe schemas
+3. Create parallel DAG workflows with the TypeScript DSL
+4. Compile flows to SQL and apply migrations
+5. Execute workflows using the Edge Worker
 </Steps>
 
 ## Get started
