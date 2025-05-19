@@ -18,12 +18,12 @@ import './globals.css';
 import PlausibleProvider from 'next-plausible';
 
 const defaultUrl = process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
+  ? 'https://pgflow-demo.netlify.app'
   : 'http://localhost:3000';
 
 export const metadata = {
   metadataBase: new URL(defaultUrl),
-  title: 'pgflow - Analyze Website Demo',
+  title: 'pgflow',
   description: 'Place to test and understand how pgflow works',
 };
 

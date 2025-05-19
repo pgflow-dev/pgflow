@@ -223,33 +223,9 @@ export default function FlowRunDetails({
               </span>
             </h3>
             <div>
-              {runData.step_states &&
-                (() => {
-                  // Use memoized sorted step states to avoid sorting on every render
-                  const { sortedStepStates, parallelSteps, regularSteps } = useMemo(() => {
-                    // Sort step_states directly by step.step_index
-                    const sorted = [...runData.step_states].sort(
-                      (a, b) => {
-                        const aIndex = a.step?.step_index || 0;
-                        const bIndex = b.step?.step_index || 0;
-                        return aIndex - bIndex;
-                      },
-                    );
-
-                    // Group parallel steps based on flow definition
-                    // We're specifically looking for summary and tags steps that run in parallel
-                    const parallelStepSlugs = ['summary', 'tags'];
-                    const parallel = sorted.filter((step) =>
-                      parallelStepSlugs.includes(step.step_slug),
-                    );
-
-                    // Other steps will be displayed normally
-                    const regular = sorted.filter(
-                      (step) => !parallelStepSlugs.includes(step.step_slug),
-                    );
-                    
-                    return { sortedStepStates: sorted, parallelSteps: parallel, regularSteps: regular };
-                  }, [runData.step_states]);
+              {runData.step_states && (() => {
+                  // This is calculated outside the callback to avoid React Hook rules violation
+                  return (
 
                   // Function to render a step
                   const renderStep = (

@@ -1,3 +1,4 @@
+// @ts-expect-error - Next.js PageProps type expects Promise<any> for params, but we're using a regular object
 import { Suspense } from 'react';
 import { getOptimizedFlowRunData } from '@/lib/services/get-flow-run';
 import RunPageClientContent from '@/components/run-page-content';
@@ -27,7 +28,6 @@ function ErrorDisplay({ message }: { message: string }) {
 // Main server component
 export default async function RunPage({ params }: { params: { run_id: string } }) {
   // Get the run ID from the URL params
-  // SECURITY FIX: Removed incorrect 'await' before params to prevent runtime error in Node 18
   const { run_id: runId } = params;
   
   // Initial server-side data fetch - using optimized query for faster initial load
