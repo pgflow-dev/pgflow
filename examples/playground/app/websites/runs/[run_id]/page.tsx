@@ -29,17 +29,10 @@ export default async function RunPage({ params }: { params: Promise<{ run_id: st
   // Get the run ID from the URL params
   const { run_id: runId } = await params;
   
-  // Initial server-side data fetch - using optimized query for faster initial load
-  // The client component will fetch full data on completion
-  const { data, error } = await getOptimizedFlowRunData(runId);
+  // No initial server-side data fetch here
+  // The client component will fetch the data via useFlowRun
   
-  // If there's an error, display it
-  if (error) {
-    return <ErrorDisplay message={error} />;
-  }
-
-  // Even if server fetch is successful, we still use the client component 
-  // with real-time updates to get the latest data
+  // Return the client component to handle data fetching and real-time updates
   return (
     <Suspense fallback={<LoadingState />}>
       <RunPageClientContent runId={runId} />

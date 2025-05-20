@@ -3,7 +3,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import { Database } from '@/supabase/functions/database-types';
 import { logger } from '@/utils/utils';
 
-let supabaseClientInstance: ReturnType<typeof createBrowserClient<Database>> | null = null;
+let supabaseClientInstance: ReturnType<typeof createBrowserClient> | null = null;
 
 /**
  * Creates a singleton Supabase client for browser use.

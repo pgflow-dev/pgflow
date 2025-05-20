@@ -1,4 +1,5 @@
-import { createClient } from '@/utils/supabase/browser-client';
+import { createClient as createBrowserClient } from '@/utils/supabase/browser-client';
+import { createClient as createServerClient } from '@/utils/supabase/server';
 import { logger } from '@/utils/utils';
 import { Database } from '@/supabase/functions/database-types';
 import type {
@@ -75,7 +76,7 @@ export async function fetchFlowRunData(runId: string): Promise<{
   data: ResultRow | null;
   error: string | null;
 }> {
-  const supabase = createClient();
+  const supabase = createBrowserClient();
 
   try {
     // Full data fetch including all input and output blobs
@@ -101,7 +102,7 @@ export async function fetchOptimizedFlowRunData(runId: string): Promise<{
   data: ResultRow | null;
   error: string | null;
 }> {
-  const supabase = createClient();
+  const supabase = createBrowserClient();
 
   try {
     // Optimized query omitting large input/output blobs
@@ -132,7 +133,7 @@ export function observeFlowRun({
 }: {
   runId: string;
 } & ObserveFlowRunCallbacks) {
-  const supabase = createClient();
+  const supabase = createBrowserClient();
 
   const updateEventSpec: RealtimePostgresChangesFilter<`${REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.UPDATE}`> =
     {

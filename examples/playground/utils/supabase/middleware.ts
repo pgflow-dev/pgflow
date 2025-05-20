@@ -39,6 +39,14 @@ export const updateSession = async (request: NextRequest) => {
     // https://supabase.com/docs/guides/auth/server-side/nextjs
     const user = await supabase.auth.getUser();
 
+    // Skip auth check for auth-related routes
+    if (request.nextUrl.pathname.startsWith("/sign-in") ||
+        request.nextUrl.pathname.startsWith("/sign-up") ||
+        request.nextUrl.pathname.startsWith("/auth/callback") ||
+        request.nextUrl.pathname.startsWith("/forgot-password")) {
+      return response;
+    }
+        
     // protected routes
     if ((request.nextUrl.pathname.startsWith("/protected") || 
          request.nextUrl.pathname.startsWith("/websites/runs")) && 
