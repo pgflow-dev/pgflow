@@ -1,120 +1,123 @@
-<a href="https://demo-nextjs-with-supabase.vercel.app/">
-  <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
-  <h1 align="center">Next.js and Supabase Starter Kit</h1>
-</a>
+# pgflow Playground
 
-<p align="center">
- The fastest way to build apps with Next.js and Supabase
-</p>
-
-<p align="center">
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#demo"><strong>Demo</strong></a> ·
-  <a href="#deploy-to-vercel"><strong>Deploy to Vercel</strong></a> ·
-  <a href="#clone-and-run-locally"><strong>Clone and run locally</strong></a> ·
-  <a href="#feedback-and-issues"><strong>Feedback and issues</strong></a>
-  <a href="#more-supabase-examples"><strong>More Examples</strong></a>
-</p>
-<br/>
+A demo application showcasing pgflow workflows with Next.js and Supabase integration.
 
 ## Features
 
-- Works across the entire [Next.js](https://nextjs.org) stack
-  - App Router
-  - Pages Router
-  - Middleware
-  - Client
-  - Server
-  - It just works!
-- supabase-ssr. A package to configure Supabase Auth to use cookies
-- Styling with [Tailwind CSS](https://tailwindcss.com)
-- Components with [shadcn/ui](https://ui.shadcn.com/)
-- Optional deployment with [Supabase Vercel Integration and Vercel deploy](#deploy-your-own)
-  - Environment variables automatically assigned to Vercel project
+- Website analysis workflow with pgflow
+- Next.js frontend with App Router
+- Supabase backend with pgflow integration
+- Edge Worker execution of workflow tasks
 
-## Demo
+## Architecture
 
-You can view a fully working demo at [demo-nextjs-with-supabase.vercel.app](https://demo-nextjs-with-supabase.vercel.app/).
+This playground demonstrates the complete pgflow stack:
 
-## Deploy to Vercel
+1. **Frontend**: Next.js application for triggering and displaying workflow results
+2. **Backend**: Supabase with pgflow core database schema
+3. **Workers**: Edge Workers processing workflow tasks
+4. **Workflow Definition**: Example website analysis flow
 
-Vercel deployment will guide you through creating a Supabase account and project.
+## Development
 
-After installation of the Supabase integration, all relevant environment variables will be assigned to the project so the deployment is fully functioning.
+### Prerequisites
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&project-name=nextjs-with-supabase&repository-name=nextjs-with-supabase&demo-title=nextjs-with-supabase&demo-description=This+starter+configures+Supabase+Auth+to+use+cookies%2C+making+the+user%27s+session+available+throughout+the+entire+Next.js+app+-+Client+Components%2C+Server+Components%2C+Route+Handlers%2C+Server+Actions+and+Middleware.&demo-url=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2F&external-id=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&demo-image=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2Fopengraph-image.png)
+- Node.js 18+
+- npm or pnpm
+- Supabase CLI
 
-The above will also clone the Starter kit to your GitHub, you can clone that locally and develop locally.
+### Local Development with Nx
 
-If you wish to just develop locally and not deploy to Vercel, [follow the steps below](#clone-and-run-locally).
+This playground is integrated with the Nx monorepo structure. You can use Nx commands for development:
 
-## Clone and run locally
+```bash
+# Start Next.js development server
+nx run playground:dev
 
-1. You'll first need a Supabase project which can be made [via the Supabase dashboard](https://database.new)
+# Build the application
+nx run playground:build
 
-2. Create a Next.js app using the Supabase Starter template npx command
+# Start production server
+nx run playground:start
 
-   ```bash
-   npx create-next-app --example with-supabase with-supabase-app
-   ```
+# Supabase commands
+nx run playground:supabase:start
+nx run playground:supabase:stop
+nx run playground:supabase:functions
+nx run playground:supabase:workers
+nx run playground:supabase:gen-types
+```
 
-   ```bash
-   yarn create next-app --example with-supabase with-supabase-app
-   ```
+### Using npm scripts
 
-   ```bash
-   pnpm create next-app --example with-supabase with-supabase-app
-   ```
+For compatibility, you can also use the original npm scripts:
 
-3. Use `cd` to change into the app's directory
+```bash
+# Start development server
+npm run dev
 
-   ```bash
-   cd with-supabase-app
-   ```
+# Build the application
+npm run build
 
-4. Rename `.env.example` to `.env.local` and update the following:
+# Start production server
+npm run start
 
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=[INSERT SUPABASE PROJECT API ANON KEY]
-   ```
+# Start Supabase
+npm run start-supabase
 
-   Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` can be found in [your Supabase project's API settings](https://app.supabase.com/project/_/settings/api)
+# Stop Supabase
+npm run stop-supabase
 
-5. Set up GitHub OAuth provider:
+# Start Edge Functions
+npm run start-functions
 
-   - Go to [GitHub Developer Settings](https://github.com/settings/developers)
-   - Click "New OAuth App"
-   - Fill in the form:
-     - Application name: (Your app name)
-     - Homepage URL: `http://localhost:3000`
-     - Authorization callback URL: `http://localhost:3000/auth/callback`
-   - Click "Register application"
-   - Copy the Client ID
-   - Generate a new Client Secret and copy it
-   - In your Supabase dashboard, go to Authentication > Providers
-   - Find GitHub and enable it
-   - Enter your GitHub Client ID and Client Secret
-   - Save changes
+# Start Workers
+npm run start-workers
 
-6. You can now run the Next.js local development server:
+# Generate types
+npm run gen-types
+```
 
-   ```bash
-   npm run dev
-   ```
+## Workflow Definition
 
-   The starter kit should now be running on [localhost:3000](http://localhost:3000/).
+The example workflow is defined in `supabase/functions/_flows/analyze_website.ts` using the pgflow DSL. It performs the following steps:
 
-7. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
+1. Scrape a website URL
+2. Save website metadata
+3. Convert HTML to markdown
+4. Extract tags from content
+5. Generate an AI summary
 
-> Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
+## How It Works
 
-## Feedback and issues
+1. User submits a URL in the frontend
+2. The analyze_website flow is triggered through Supabase
+3. Edge Workers process each step of the workflow
+4. Results are stored in the database and displayed to the user
 
-Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).
+## Supabase Functions
 
-## More Supabase examples
+The application uses the following Supabase Edge Functions:
 
-- [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)
-- [Cookie-based Auth and the Next.js 13 App Router (free course)](https://youtube.com/playlist?list=PL5S4mPUpp4OtMhpnp93EFSo42iQ40XjbF)
-- [Supabase Auth and the Next.js App Router](https://github.com/supabase/supabase/tree/master/examples/auth/nextjs)
+- `analyze_website_worker_0`: Worker for processing tasks
+- `analyze_website_worker_1`: Secondary worker for parallel processing
+- `_tasks/*`: Individual task implementations
+
+## Configuration
+
+Set up your local environment:
+
+1. Run `nx run playground:supabase:gen-types` to generate database types
+2. Make sure Supabase is running with `nx run playground:supabase:start`
+3. Start the Edge Functions with `nx run playground:supabase:functions`
+4. Start the workers with `nx run playground:supabase:workers`
+5. Start the Next.js app with `nx run playground:dev`
+
+## Note on Dependencies
+
+This playground uses published versions of pgflow packages:
+
+- `npm:@pgflow/dsl` for workflow definition
+- `jsr:@pgflow/edge-worker` for worker implementation
+
+This is required because Supabase Edge Functions cannot access workspace dependencies.

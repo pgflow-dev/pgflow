@@ -6,7 +6,61 @@
   "tags": [],
   "targets": {
     "build": {
-      "executor": "nx:noop"
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "examples/playground",
+        "command": "next build"
+      },
+      "dependsOn": ["^build"]
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "examples/playground",
+        "command": "next dev"
+      }
+    },
+    "start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "examples/playground",
+        "command": "next start"
+      }
+    },
+    "supabase:start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "examples/playground",
+        "command": "./scripts/supabase start"
+      }
+    },
+    "supabase:stop": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "examples/playground",
+        "command": "./scripts/supabase stop"
+      }
+    },
+    "supabase:functions": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "examples/playground",
+        "command": "./scripts/supabase functions serve"
+      }
+    },
+    "supabase:workers": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "examples/playground",
+        "command": "for workerIndex in 0 1; do curl -X POST http://127.0.0.1:54321/functions/v1/analyze_website_worker_$workerIndex; done"
+      }
+    },
+    "supabase:gen-types": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "examples/playground",
+        "command": "./scripts/supabase gen types --local --schema public --schema pgflow > supabase/functions/database-types.d.ts"
+      }
     }
   }
 }

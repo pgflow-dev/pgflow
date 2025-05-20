@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "skipLibCheck": true
+  },
+  "exclude": [
+    "node_modules",
+    "supabase",
+    "supabase/functions",
+    "supabase/functions/**/*",
+    ".next",
+    "out"
+  ]
+}
