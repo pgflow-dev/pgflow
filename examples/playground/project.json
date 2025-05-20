@@ -6,7 +6,59 @@
   "tags": [],
   "targets": {
     "build": {
-      "executor": "nx:noop"
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "next build",
+        "cwd": "examples/playground"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "next dev",
+        "cwd": "examples/playground"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "next start",
+        "cwd": "examples/playground"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["examples/playground/**/*.{ts,tsx,js,jsx}"]
+      }
+    },
+    "type-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p tsconfig.json --noEmit",
+        "cwd": "examples/playground"
+      }
+    },
+    "start-functions": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "./scripts/supabase functions serve",
+        "cwd": "examples/playground"
+      }
+    },
+    "start-workers": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "for workerIndex in 0 1; do curl -X POST http://127.0.0.1:54321/functions/v1/analyze_website_worker_$workerIndex; done",
+        "cwd": "examples/playground"
+      }
+    },
+    "gen-types": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "./scripts/supabase gen types --local --schema public --schema pgflow > supabase/functions/database-types.d.ts",
+        "cwd": "examples/playground"
+      }
     }
   }
 }

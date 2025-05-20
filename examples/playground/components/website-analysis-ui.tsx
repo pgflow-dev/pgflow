@@ -118,7 +118,7 @@ export default function WebsiteAnalysisUI({
   const isCompleted = runData?.status === 'completed';
   const isFailed = runData?.status === 'failed';
   const isRunning = runData?.status === 'started';
-  const showSteps = runData && (isRunning || isCompleted || isFailed);
+  const showSteps = !!(runData && (isRunning || isCompleted || isFailed));
 
   // Get website URL from input
   const getWebsiteUrl = (): string => {
@@ -202,45 +202,45 @@ export default function WebsiteAnalysisUI({
           if (Array.isArray(tagsTask.output)) {
             // Direct array output - filter to ensure all elements are strings
             tags = tagsTask.output
-              .filter(tag => typeof tag === 'string')
-              .map(tag => tag.trim())
-              .filter(tag => tag.length > 0);
+              .filter((tag: unknown) => typeof tag === 'string')
+              .map((tag: string) => tag.trim())
+              .filter((tag: string) => tag.length > 0);
           } else if (typeof tagsTask.output === 'string') {
             // Try to parse JSON first
             try {
               const parsedOutput = JSON.parse(tagsTask.output);
               if (Array.isArray(parsedOutput)) {
                 tags = parsedOutput
-                  .filter(tag => typeof tag === 'string')
-                  .map(tag => tag.trim())
-                  .filter(tag => tag.length > 0);
+                  .filter((tag: unknown) => typeof tag === 'string')
+                  .map((tag: string) => tag.trim())
+                  .filter((tag: string) => tag.length > 0);
               } else {
                 // If not an array, fall back to comma splitting
                 tags = tagsTask.output
                   .split(',')
-                  .map(t => t.trim())
-                  .filter(tag => tag.length > 0);
+                  .map((t: string) => t.trim())
+                  .filter((tag: string) => tag.length > 0);
               }
             } catch {
               // If parsing fails, just split by commas
               tags = tagsTask.output
                 .split(',')
-                .map(t => t.trim())
-                .filter(tag => tag.length > 0);
+                .map((t: string) => t.trim())
+                .filter((tag: string) => tag.length > 0);
             }
           } else if (tagsTask.output && typeof tagsTask.output === 'object') {
             // Handle object with tags property
             const anyOutput = tagsTask.output as any;
             if (Array.isArray(anyOutput.tags)) {
               tags = anyOutput.tags
-                .filter(tag => typeof tag === 'string')
-                .map(tag => tag.trim())
-                .filter(tag => tag.length > 0);
+                .filter((tag: unknown) => typeof tag === 'string')
+                .map((tag: string) => tag.trim())
+                .filter((tag: string) => tag.length > 0);
             }
           }
           
           // Remove duplicates from tags
-          tags = [...new Set(tags)];
+          tags = Array.from(new Set(tags));
           
           // Sort tags alphabetically for consistent display
           tags.sort((a, b) => a.localeCompare(b));
@@ -264,8 +264,8 @@ export default function WebsiteAnalysisUI({
 
   // ONLY show summary when both tags and summary tasks are ready
   // This is critical to preventing flickering
-  const showSummary = runData && isCompleted && analysisData.dataReady;
-  const showAnalyzeAnother = runData && (isCompleted || isFailed);
+  const showSummary = !!(runData && isCompleted && analysisData.dataReady);
+  const showAnalyzeAnother = !!(runData && (isCompleted || isFailed));
 
   // Keep analysis section expanded when running or failed, collapse only when completed successfully
   useEffect(() => {

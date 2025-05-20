@@ -25,7 +25,7 @@ function ErrorDisplay({ message }: { message: string }) {
 }
 
 // Main server component
-export default async function RunPage({ params }: { params: { run_id: string } }) {
+export default async function RunPage({ params }: { params: Promise<{ run_id: string }> }) {
   // Get the run ID from the URL params
   const { run_id: runId } = await params;
   

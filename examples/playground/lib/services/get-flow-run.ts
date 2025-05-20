@@ -52,7 +52,7 @@ export async function getFlowRunData(runId: string): Promise<{
   try {
     // Use full data query including all blobs
     const { data, error } = await buildServerRunQuery(supabase, runId, false)
-      .single<ResultRow>();
+      .single();
 
     if (error) {
       return { data: null, error: `Error fetching run data: ${error.message}` };
@@ -81,7 +81,7 @@ export async function getOptimizedFlowRunData(runId: string): Promise<{
   try {
     // Use optimized query excluding large blobs
     const { data, error } = await buildServerRunQuery(supabase, runId, true)
-      .single<ResultRow>();
+      .single();
 
     if (error) {
       return { data: null, error: `Error fetching optimized run data: ${error.message}` };

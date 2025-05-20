@@ -154,7 +154,12 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
           
           // Sort the summary and tags to enforce consistent order
           summarizedTasks.sort((a, b) => {
-            return (taskOrder[a.step_slug] ?? 99) - (taskOrder[b.step_slug] ?? 99);
+            // Use type-safe property access for the taskOrder object
+            const aOrder = a.step_slug === 'tags' ? taskOrder.tags : 
+                          a.step_slug === 'summary' ? taskOrder.summary : 99;
+            const bOrder = b.step_slug === 'tags' ? taskOrder.tags : 
+                          b.step_slug === 'summary' ? taskOrder.summary : 99;
+            return aOrder - bOrder;
           });
           
           // Group them back into the map
@@ -211,8 +216,8 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     const taskOrder = { tags: 0, summary: 1 };
 
     // First, separate summary and tags tasks from others for special handling
-    let summaryTagsTasks: StepTaskRow[] = [];
-    let otherTasks: StepTaskRow[] = [];
+    const summaryTagsTasks: StepTaskRow[] = [];
+    const otherTasks: StepTaskRow[] = [];
     
     // Process all task groups
     Object.entries(stepTasks).forEach(([slug, tasks]) => {
@@ -236,7 +241,11 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     // Sort summary and tags tasks by their fixed order first
     summaryTagsTasks.sort((a, b) => {
       // First by their mandated order (tags always before summary)
-      const orderDiff = (taskOrder[a.step_slug] ?? 99) - (taskOrder[b.step_slug] ?? 99);
+      const aOrder = a.step_slug === 'tags' ? taskOrder.tags : 
+                    a.step_slug === 'summary' ? taskOrder.summary : 99;
+      const bOrder = b.step_slug === 'tags' ? taskOrder.tags : 
+                    b.step_slug === 'summary' ? taskOrder.summary : 99;
+      const orderDiff = aOrder - bOrder;
       if (orderDiff !== 0) return orderDiff;
       
       // Then by task_index if needed
@@ -510,8 +519,9 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
                 // Log if this task has been retried (attempts_count > 1)
                 if (task.attempts_count && task.attempts_count > 1) {
                   logger.log(`Complete run data: Found retry for task - attempt ${task.attempts_count}`, {
+                    run_id: task.run_id,
                     step_slug: task.step_slug,
-                    step_task_id: task.step_task_id,
+                    task_index: task.task_index,
                     status: task.status
                   });
                 }
@@ -657,7 +667,8 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
           if (task.attempts_count && task.attempts_count > 1) {
             logger.log(`Initial load: Found retry for task - attempt ${task.attempts_count}`, {
               step_slug: task.step_slug,
-              step_task_id: task.step_task_id,
+              run_id: task.run_id,
+              task_index: task.task_index,
               status: task.status
             });
           }

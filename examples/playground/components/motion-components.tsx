@@ -209,7 +209,7 @@ export default function MotionComponents({
                 {/* Use a stable list with a layoutId for each element to prevent flickering */}
                 <div className="space-y-6">
                   {/* Optional polish: Turn off exit animations for step rows */}
-                  <AnimatePresence initial={false} exitBeforeEnter={false}>
+                  <AnimatePresence initial={false} mode="wait">
                     {getOrderedStepStates.map((step, index) => {
                       // Pre-compute all the conditional values outside of the JSX to ensure stability
                       // Fix #2: Use stable key based only on step_slug (without index)
