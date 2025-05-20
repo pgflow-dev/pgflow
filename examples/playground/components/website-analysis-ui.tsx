@@ -1,13 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { ResultRow, StepStateRow } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { exampleLinks } from '@/lib/example-links';
+import { logger } from '@/utils/utils';
+
+// Dynamic import for framer-motion components
+const MotionComponents = lazy(() => import('./motion-components'));
 
 interface WebsiteAnalysisUIProps {
   runData: ResultRow | null;
@@ -16,6 +19,13 @@ interface WebsiteAnalysisUIProps {
   onAnalyzeWebsite: (url: string) => Promise<void>;
   analyzeLoading?: boolean;
   analyzeError?: string | null;
+}
+
+// Define analysis data type
+interface AnalysisData {
+  summary: string;
+  tags: string[];
+  dataReady: boolean;
 }
 
 export default function WebsiteAnalysisUI({
@@ -29,8 +39,8 @@ export default function WebsiteAnalysisUI({
   const [url, setUrl] = useState('');
   const [analysisExpanded, setAnalysisExpanded] = useState(true);
 
-  // Get ordered step states
-  const getOrderedStepStates = (): StepStateRow[] => {
+  // Get ordered step states - memoized to avoid expensive sorting on every render
+  const getOrderedStepStates = useMemo(() => {
     if (!runData?.step_states) return [];
 
     // Sort step_states directly by step.step_index
@@ -39,44 +49,76 @@ export default function WebsiteAnalysisUI({
       const bIndex = b.step?.step_index || 0;
       return aIndex - bIndex;
     });
-  };
+  }, [runData?.step_states]);
 
-  // Get ordered step tasks for a specific step
-  const getOrderedStepTasks = (stepSlug: string): any[] => {
-    if (!runData?.step_tasks) return [];
+  // Memoize all step tasks grouped by slug to avoid expensive filtering/sorting on each render
+  const tasksByStepSlug = useMemo(() => {
+    if (!runData?.step_tasks) return {};
+    
+    // Create a map of step_slug to sorted tasks
+    const taskMap: Record<string, any[]> = {};
+    
+    // Group tasks by step_slug and create a composite key for stable identification
+    runData.step_tasks.forEach(task => {
+      // Create a stable key for this task based on the composite primary key fields
+      const stepSlug = task.step_slug;
+      
+      if (!taskMap[stepSlug]) {
+        taskMap[stepSlug] = [];
+      }
+      
+      // Add task to the appropriate group
+      taskMap[stepSlug].push(task);
+    });
+    
+    // Create a stable sorting function that will produce consistent results
+    // instead of relying on Array.sort() which can be unstable
+    for (const [slug, tasks] of Object.entries(taskMap)) {
+      // First create a stable sort by task_index (which should never change)
+      // Use a stable sort implementation to avoid UI jumpiness
+      const stableSortedTasks = [...tasks].sort((a, b) => {
+        // Primary sort by task_index
+        const indexDiff = (a.task_index || 0) - (b.task_index || 0);
+        if (indexDiff !== 0) return indexDiff;
+        
+        // Secondary sort by attempts_count (descending)
+        const attemptsDiff = (b.attempts_count || 0) - (a.attempts_count || 0);
+        if (attemptsDiff !== 0) return attemptsDiff;
+        
+        // Tertiary sort by status to ensure consistent ordering
+        // completed tasks first, then started, then created, then failed
+        const getStatusPriority = (status: string) => {
+          switch (status) {
+            case 'completed': return 0;
+            case 'started': return 1;
+            case 'created': return 2;
+            case 'failed': return 3;
+            default: return 4;
+          }
+        };
+        return getStatusPriority(a.status) - getStatusPriority(b.status);
+      });
+      
+      // Replace the tasks array with the stably sorted one
+      taskMap[slug] = stableSortedTasks;
+    }
+    
+    return taskMap;
+  }, [runData?.step_tasks]);
+  
+  // Get ordered step tasks for a specific step - memoize this too for stability
+  const getOrderedStepTasks = useMemo(() => {
+    // Return a function that uses the memoized tasksByStepSlug
+    return (stepSlug: string): any[] => {
+      return tasksByStepSlug[stepSlug] || [];
+    };
+  }, [tasksByStepSlug]);
 
-    // Filter tasks for the given step slug and sort by step_index
-    return runData.step_tasks
-      .filter((task) => task.step_slug === stepSlug)
-      .sort((a, b) => (a.step_index || 0) - (b.step_index || 0));
-  };
-
-  const sortedSteps = getOrderedStepStates();
+  // Basic run state
   const isCompleted = runData?.status === 'completed';
   const isFailed = runData?.status === 'failed';
   const isRunning = runData?.status === 'started';
-  const showSteps = runData && (isRunning || isCompleted || isFailed);
-
-  // For summary, check if:
-  // 1. We have runData
-  // 2. Status is completed (only show when the entire flow is completed)
-  const summaryTaskCompleted = runData?.step_tasks?.some(
-    (task) =>
-      task.step_slug === 'summary' &&
-      task.status === 'completed' &&
-      task.output,
-  );
-  const showSummary = runData && isCompleted;
-  const showAnalyzeAnother = runData && (isCompleted || isFailed);
-
-  // Keep analysis section expanded when running or failed, collapse only when completed successfully
-  useEffect(() => {
-    if (isRunning || isFailed) {
-      setAnalysisExpanded(true);
-    } else if (isCompleted) {
-      setAnalysisExpanded(false);
-    }
-  }, [isRunning, isCompleted, isFailed, runData?.run_id]);
+  const showSteps = !!(runData && (isRunning || isCompleted || isFailed));
 
   // Get website URL from input
   const getWebsiteUrl = (): string => {
@@ -91,69 +133,148 @@ export default function WebsiteAnalysisUI({
     return '';
   };
 
-  // Get analysis summary from step tasks
-  const getAnalysisSummary = (): {
-    summary: string;
-    tags: string[];
-  } => {
-    console.log('=== Analysis Summary Called ===');
-    console.log('isCompleted:', isCompleted);
-    console.log('showSummary:', showSummary);
-    console.log('runData.step_tasks:', runData?.step_tasks);
+  // Get analysis summary from step tasks - memoized to avoid recalculation on each render
+  const analysisData: AnalysisData = useMemo(() => {
+    logger.log('=== Analysis Summary Called ===');
+    logger.log('isCompleted:', isCompleted);
 
+    // Return empty state if no data is available
     if (!runData?.step_tasks || runData.step_tasks.length === 0) {
-      console.log('No step tasks found in runData');
-      return { summary: '', tags: [] };
+      logger.log('No step tasks found in runData');
+      return { summary: '', tags: [], dataReady: false };
     }
-
-    // Debug: Log the available step tasks
-    console.log(
-      'Available step tasks:',
-      runData.step_tasks.map((task) => ({
-        step_slug: task.step_slug,
-        status: task.status,
-        has_output: !!task.output,
-      })),
+    
+    // Check if both tags and summary tasks are completed
+    const tagTask = runData.step_tasks.find(
+      task => task.step_slug === 'tags' && task.status === 'completed'
     );
+    const summaryTask = runData.step_tasks.find(
+      task => task.step_slug === 'summary' && task.status === 'completed'
+    );
+    
+    // Only consider data ready when both are available
+    const dataReady = !!tagTask && !!summaryTask;
 
     try {
-      // Find the step tasks by their step_slug but use our ordered tasks
+      // Find the step tasks by their step_slug using our ordered function
       const summaryTasks = getOrderedStepTasks('summary');
       const tagsTasks = getOrderedStepTasks('tags');
 
-      // Get the completed tasks
-      const summaryTask = summaryTasks.find(
-        (task) => task.status === 'completed',
-      );
-      const tagsTask = tagsTasks.find((task) => task.status === 'completed');
+      // Get the completed tasks - take the first completed one in order
+      const summaryTask = summaryTasks.find(task => task.status === 'completed');
+      const tagsTask = tagsTasks.find(task => task.status === 'completed');
 
       // Extract summary
       let summary = '';
       if (summaryTask?.output) {
-        // Use the output directly as a JSON object
-        const summaryOutput = summaryTask.output as any;
-        // Look for aiSummary field based on flow definition
-        summary = summaryOutput || '';
-      }
-
-      // Extract tags
-      let tags: string[] = [];
-      if (tagsTask?.output) {
-        // Based on flow definition, tags task directly returns the keywords array
-        const tagsOutput = tagsTask.output;
-
-        // Use output directly as it should be an array of strings
-        if (Array.isArray(tagsOutput)) {
-          tags = tagsOutput;
+        logger.log('Found completed summary task');
+        
+        try {
+          // Handle different data formats consistently
+          if (typeof summaryTask.output === 'string') {
+            // If it's already a string, use it directly
+            summary = summaryTask.output;
+          } else if (summaryTask.output && typeof summaryTask.output === 'object') {
+            // If it's an object, try to find a summary property or stringify it
+            const anyOutput = summaryTask.output as any;
+            if (typeof anyOutput.summary === 'string') {
+              summary = anyOutput.summary;
+            } else if (typeof anyOutput.text === 'string') {
+              summary = anyOutput.text;
+            } else {
+              // Last resort: convert object to string
+              summary = JSON.stringify(summaryTask.output);
+            }
+          }
+        } catch (e) {
+          logger.error('Error parsing summary output:', e);
+          summary = 'Error parsing summary data';
         }
       }
 
-      return { summary, tags };
+      // Extract tags with improved consistency
+      let tags: string[] = [];
+      if (tagsTask?.output) {
+        logger.log('Found completed tags task');
+        
+        try {
+          // Special handling for tag arrays to ensure consistent format
+          if (Array.isArray(tagsTask.output)) {
+            // Direct array output - filter to ensure all elements are strings
+            tags = tagsTask.output
+              .filter((tag: unknown) => typeof tag === 'string')
+              .map((tag: string) => tag.trim())
+              .filter((tag: string) => tag.length > 0);
+          } else if (typeof tagsTask.output === 'string') {
+            // Try to parse JSON first
+            try {
+              const parsedOutput = JSON.parse(tagsTask.output);
+              if (Array.isArray(parsedOutput)) {
+                tags = parsedOutput
+                  .filter((tag: unknown) => typeof tag === 'string')
+                  .map((tag: string) => tag.trim())
+                  .filter((tag: string) => tag.length > 0);
+              } else {
+                // If not an array, fall back to comma splitting
+                tags = tagsTask.output
+                  .split(',')
+                  .map((t: string) => t.trim())
+                  .filter((tag: string) => tag.length > 0);
+              }
+            } catch {
+              // If parsing fails, just split by commas
+              tags = tagsTask.output
+                .split(',')
+                .map((t: string) => t.trim())
+                .filter((tag: string) => tag.length > 0);
+            }
+          } else if (tagsTask.output && typeof tagsTask.output === 'object') {
+            // Handle object with tags property
+            const anyOutput = tagsTask.output as any;
+            if (Array.isArray(anyOutput.tags)) {
+              tags = anyOutput.tags
+                .filter((tag: unknown) => typeof tag === 'string')
+                .map((tag: string) => tag.trim())
+                .filter((tag: string) => tag.length > 0);
+            }
+          }
+          
+          // Remove duplicates from tags
+          tags = Array.from(new Set(tags));
+          
+          // Sort tags alphabetically for consistent display
+          tags.sort((a, b) => a.localeCompare(b));
+        } catch (e) {
+          logger.error('Error parsing tags output:', e);
+          tags = [];
+        }
+      }
+
+      // Return consistent object with sanitized data
+      return { 
+        summary: summary.trim(), 
+        tags: tags,
+        dataReady: dataReady
+      };
     } catch (e) {
-      console.error('Error extracting data from step tasks:', e);
-      return { summary: '', tags: [] };
+      logger.error('Error extracting data from step tasks:', e);
+      return { summary: '', tags: [], dataReady: false };
     }
-  };
+  }, [runData?.step_tasks, isCompleted, getOrderedStepTasks]);
+
+  // ONLY show summary when both tags and summary tasks are ready
+  // This is critical to preventing flickering
+  const showSummary = !!(runData && isCompleted && analysisData.dataReady);
+  const showAnalyzeAnother = !!(runData && (isCompleted || isFailed));
+
+  // Keep analysis section expanded when running or failed, collapse only when completed successfully
+  useEffect(() => {
+    if (isRunning || isFailed) {
+      setAnalysisExpanded(true);
+    } else if (isCompleted) {
+      setAnalysisExpanded(false);
+    }
+  }, [isRunning, isCompleted, isFailed, runData?.run_id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,7 +287,6 @@ export default function WebsiteAnalysisUI({
     }
   };
 
-  const { summary, tags } = getAnalysisSummary();
   const websiteUrl = getWebsiteUrl();
 
   if (loading) {
@@ -188,6 +308,9 @@ export default function WebsiteAnalysisUI({
       </div>
     );
   }
+
+  // Fallback for when motion components are loading
+  const MotionFallback = () => <div>Loading animation components...</div>;
 
   return (
     <div className="p-6 mt-4 bg-muted/30 rounded-lg">
@@ -230,10 +353,11 @@ export default function WebsiteAnalysisUI({
                 <button
                   key={link.url}
                   onClick={() => onAnalyzeWebsite(link.url)}
-                  className={`${link.variant === 'success'
+                  className={`${
+                    link.variant === 'success'
                       ? 'text-green-600 hover:bg-green-50 hover:text-green-700'
                       : 'text-red-600 hover:bg-red-50 hover:text-red-700'
-                    } px-2 py-1 rounded`}
+                  } px-2 py-1 rounded`}
                   disabled={analyzeLoading}
                 >
                   {link.label}
@@ -244,355 +368,28 @@ export default function WebsiteAnalysisUI({
         </div>
       )}
 
-      <AnimatePresence>
-        {/* Initial URL input form - only show when no analysis is running or completed */}
-        {!showSteps && !showSummary && (
-          <motion.div
-            initial={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="url" className="block text-sm font-medium mb-1">
-                  Website URL
-                </label>
-                <Input
-                  id="url"
-                  type="url"
-                  placeholder="https://example.com"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  required
-                  className="w-full"
-                />
-              </div>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Analyzing...' : 'Analyze Website'}
-              </Button>
-            </form>
-
-            {/* Example site links */}
-            <div className="mt-2 flex items-center text-xs">
-              <span className="text-muted-foreground mr-2">Examples:</span>
-              <div className="flex flex-wrap gap-2">
-                {exampleLinks.map((link) => (
-                  <button
-                    key={link.url}
-                    type="button"
-                    onClick={() => onAnalyzeWebsite(link.url)}
-                    className={`${link.variant === 'success'
-                        ? 'text-green-600 hover:bg-green-50 hover:text-green-700'
-                        : 'text-red-600 hover:bg-red-50 hover:text-red-700'
-                      } px-2 py-1 rounded`}
-                    disabled={loading}
-                  >
-                    {link.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Step-by-step process - only show full header when analysis is running */}
-        {showSteps && (isRunning || analysisExpanded) && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="space-y-8"
-          >
-            {/* Show the header when running or failed */}
-            {(isRunning || isFailed) && (
-              <div
-                onClick={() => {
-                  // Only allow toggling if not failed
-                  if (!isFailed) {
-                    setAnalysisExpanded(!analysisExpanded);
-                  }
-                }}
-                className={`flex justify-between items-center mb-4 p-2 rounded-md ${isFailed
-                    ? 'border border-red-200 bg-red-50/30'
-                    : 'cursor-pointer hover:bg-muted/50'
-                  }`}
-              >
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-medium">
-                    {isFailed ? 'Analysis Failed' : 'Analysis Progress'}
-                  </h3>
-                  {isRunning && (
-                    <span className="inline-flex items-center text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">
-                      Running
-                    </span>
-                  )}
-                  {isFailed && (
-                    <span className="inline-flex items-center text-xs px-2 py-1 rounded-full bg-red-100 text-red-800">
-                      Failed
-                    </span>
-                  )}
-                </div>
-                {!isFailed &&
-                  (analysisExpanded ? (
-                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  ))}
-              </div>
-            )}
-
-            <AnimatePresence>
-              {analysisExpanded && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="space-y-8 overflow-hidden"
-                >
-                  {/* X button with label at the top right corner to close details */}
-                  {!isRunning && !isFailed && (
-                    <div className="flex justify-end mb-2">
-                      <button
-                        onClick={() => setAnalysisExpanded(false)}
-                        className="flex items-center gap-1 px-2 py-1 rounded-md hover:bg-muted/70 text-muted-foreground hover:text-foreground transition-colors text-xs border border-muted"
-                        aria-label="Close details"
-                      >
-                        <span>close details</span>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <line x1="18" y1="6" x2="6" y2="18"></line>
-                          <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                      </button>
-                    </div>
-                  )}
-                  <div className="p-3 bg-muted rounded-md">
-                    <p
-                      className="font-medium truncate max-w-full"
-                      title={websiteUrl}
-                    >
-                      {websiteUrl.length > 50
-                        ? `${websiteUrl.substring(0, 50)}...`
-                        : websiteUrl}
-                    </p>
-                  </div>
-                  {/* Steps are already sorted by the getOrderedStepStates function */}
-                  {sortedSteps.map((step, index) => (
-                    <motion.div
-                      key={step.step_slug}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className={`flex items-start space-x-4 ${isCompleted && step.status === 'completed'
-                          ? 'opacity-80'
-                          : step.status === 'created'
-                            ? 'opacity-50'
-                            : ''
-                        }`}
-                    >
-                      <div className="flex-shrink-0 mt-1">
-                        <div
-                          className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${(() => {
-                            // Use the getOrderedStepTasks function to get pre-ordered tasks
-                            const orderedStepTasks = getOrderedStepTasks(
-                              step.step_slug,
-                            );
-
-                            // Get the most recent task (usually the one with the highest attempts_count)
-                            const latestTask =
-                              orderedStepTasks.length > 0
-                                ? [...orderedStepTasks].sort(
-                                  (a, b) =>
-                                    (b.attempts_count || 0) -
-                                    (a.attempts_count || 0),
-                                )[0]
-                                : null;
-
-                            // Check if this is a retry (attempts_count > 1)
-                            const isRetrying =
-                              latestTask &&
-                              latestTask.attempts_count > 1 &&
-                              step.status === 'started';
-
-                            if (step.status === 'completed') {
-                              return 'bg-green-500 border-green-500 text-white';
-                            } else if (isRetrying) {
-                              return 'border-red-500 text-red-500 animate-pulse';
-                            } else if (step.status === 'started') {
-                              return 'border-yellow-500 text-yellow-500';
-                            } else if (step.status === 'failed') {
-                              return 'border-red-500 text-red-500';
-                            } else {
-                              return 'border-gray-300 text-gray-300';
-                            }
-                          })()}`}
-                        >
-                          {step.status === 'completed' ? (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                          ) : (
-                            <span>{index + 1}</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-medium capitalize">
-                          {step.step_slug.replace(/_/g, ' ')}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {(() => {
-                            // Use the getOrderedStepTasks function to get pre-ordered tasks
-                            const orderedStepTasks = getOrderedStepTasks(
-                              step.step_slug,
-                            );
-
-                            // Get the most recent task (usually the one with the highest attempts_count)
-                            const latestTask =
-                              orderedStepTasks.length > 0
-                                ? [...orderedStepTasks].sort(
-                                  (a, b) =>
-                                    (b.attempts_count || 0) -
-                                    (a.attempts_count || 0),
-                                )[0]
-                                : null;
-
-                            // Check if this is a retry (attempts_count > 1)
-                            const isRetrying =
-                              latestTask &&
-                              latestTask.attempts_count > 1 &&
-                              step.status === 'started';
-
-                            if (isRetrying) {
-                              return `Retrying (Retry ${latestTask.attempts_count - 1})...`;
-                            } else if (step.status === 'completed') {
-                              return 'Completed';
-                            } else if (step.status === 'started') {
-                              return 'In progress...';
-                            } else if (step.status === 'failed') {
-                              return 'Failed';
-                            } else {
-                              return 'Waiting...';
-                            }
-                          })()}
-                        </p>
-                        {step.status === 'failed' &&
-                          (() => {
-                            // Get the ordered tasks and find the failed one
-                            const orderedStepTasks = getOrderedStepTasks(
-                              step.step_slug,
-                            );
-                            const failedTask = orderedStepTasks.find(
-                              (task) =>
-                                task.status === 'failed' && task.error_message,
-                            );
-
-                            return failedTask?.error_message ? (
-                              <div className="mt-2 overflow-auto">
-                                <div className="max-h-40 overflow-hidden border border-red-500/30 rounded-md">
-                                  <div className="overflow-auto max-h-40">
-                                    <pre className="bg-red-500/5 rounded-md p-4 text-xs text-white whitespace-pre-wrap">
-                                      {failedTask.error_message}
-                                    </pre>
-                                  </div>
-                                </div>
-                              </div>
-                            ) : null;
-                          })()}
-                      </div>
-                    </motion.div>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        )}
-
-        {/* Summary view */}
-        {showSummary && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="space-y-6 mt-8"
-          >
-            <div className="mb-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-                <h3 className="text-xl font-medium">Analysis Results</h3>
-              </div>
-              <span className="text-sm font-medium text-muted-foreground">
-                Website:
-              </span>
-              <a
-                href={websiteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-2 text-primary hover:underline overflow-hidden"
-              >
-                {websiteUrl.length > 30
-                  ? `${websiteUrl.substring(0, 30)}...`
-                  : websiteUrl}
-              </a>
-            </div>
-
-            <dl className="space-y-6">
-              <div className="flex flex-row gap-6">
-                <div className="flex flex-col space-y-2 w-2/3">
-                  <dt className="text-sm font-medium text-muted-foreground">
-                    Tags
-                  </dt>
-                  <dd className="flex flex-wrap gap-2">
-                    {tags.length > 0 ? (
-                      tags.map((tag, index) => (
-                        <Badge
-                          key={index}
-                          variant="secondary"
-                          className="text-xs"
-                        >
-                          {tag}
-                        </Badge>
-                      ))
-                    ) : (
-                      <span className="text-sm text-muted-foreground">
-                        No tags available
-                      </span>
-                    )}
-                  </dd>
-                </div>
-              </div>
-
-              <div className="flex flex-col space-y-2">
-                <dt className="text-sm font-medium text-muted-foreground">
-                  Summary
-                </dt>
-                <dd className="text-foreground/90 whitespace-pre-line leading-relaxed">
-                  {summary}
-                </dd>
-              </div>
-            </dl>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Suspense fallback={<MotionFallback />}>
+        <MotionComponents
+          websiteUrl={websiteUrl}
+          getOrderedStepStates={getOrderedStepStates}
+          getOrderedStepTasks={getOrderedStepTasks}
+          analysisExpanded={analysisExpanded}
+          setAnalysisExpanded={setAnalysisExpanded}
+          handleSubmit={handleSubmit}
+          url={url}
+          setUrl={setUrl}
+          loading={loading}
+          analyzeLoading={analyzeLoading}
+          onAnalyzeWebsite={onAnalyzeWebsite}
+          exampleLinks={exampleLinks}
+          showSteps={showSteps}
+          showSummary={showSummary}
+          isRunning={isRunning}
+          isCompleted={isCompleted}
+          isFailed={isFailed}
+          analysisData={analysisData}
+        />
+      </Suspense>
     </div>
   );
 }

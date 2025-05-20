@@ -1,4 +1,3 @@
-import Hero from '@/components/hero';
 import WebsiteAnalyzerForm from '@/components/website-analyzer-form';
 import AuthRedirectHandler from '@/components/auth-redirect-handler';
 import ExampleLinks from '@/components/example-links';

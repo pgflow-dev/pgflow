@@ -1,8 +1,8 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { createClient } from '@/utils/supabase/client';
-import { useRouter } from 'next/navigation';
+import { createClient } from '@/utils/supabase/browser-client';
+import { logger } from '@/utils/utils';
 import { useState } from 'react';
 
 interface GithubButtonProps {
@@ -13,7 +13,6 @@ interface GithubButtonProps {
 }
 
 export function GithubButton({ className = '', onLoadingChange, disabled, text = 'Sign in with GitHub' }: GithubButtonProps) {
-  const router = useRouter();
   const [isLoadingLocal, setIsLoadingLocal] = useState(false);
 
   const handleGithubSignIn = async () => {
@@ -29,7 +28,7 @@ export function GithubButton({ className = '', onLoadingChange, disabled, text =
       });
 
       if (error) {
-        console.error('GitHub OAuth error:', error);
+        logger.error('GitHub OAuth error:', error);
         setIsLoadingLocal(false);
         onLoadingChange?.(false);
         return;
@@ -40,7 +39,7 @@ export function GithubButton({ className = '', onLoadingChange, disabled, text =
         window.location.href = data.url;
       }
     } catch (error) {
-      console.error('GitHub sign-in error:', error);
+      logger.error('GitHub sign-in error:', error);
       setIsLoadingLocal(false);
       onLoadingChange?.(false);
     }

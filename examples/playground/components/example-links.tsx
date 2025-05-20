@@ -7,13 +7,14 @@ import { exampleLinks } from '@/lib/example-links';
 import { useLoadingState } from './loading-state-provider';
 
 export default function ExampleLinks() {
-  const { start, isPending, error: startError } = useStartAnalysis();
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const { start, isPending } = useStartAnalysis();
+  // Track login state for possible future use
+  const [, setIsLoggedIn] = useState<boolean | null>(null);
   const supabase = createClient();
   const { setLoading } = useLoadingState();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: { data: { user: any } }) => {
       setIsLoggedIn(!!data.user);
     });
   }, []);

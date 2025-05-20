@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import { logger } from '@/utils/utils';
 
 export default function AuthRedirectHandler() {
   const router = useRouter();
@@ -25,31 +26,31 @@ export default function AuthRedirectHandler() {
           const pendingUrl = localStorage.getItem('pendingAnalysisUrl');
           
           if (pendingUrl) {
-            console.log('Found pending analysis URL:', pendingUrl);
+            logger.log('Found pending analysis URL:', pendingUrl);
             
             // Clear the pending URL
             localStorage.removeItem('pendingAnalysisUrl');
             
             try {
               // Start the analysis with the stored URL
-              console.log('Starting analysis for URL:', pendingUrl);
+              logger.log('Starting analysis for URL:', pendingUrl);
               const { data, error } = await supabase.rpc('start_analyze_website_flow', {
                 url: pendingUrl,
               });
 
               if (error) {
-                console.error('Error starting analysis:', error);
+                logger.error('Error starting analysis:', error);
                 return;
               }
 
               if (data && data.run_id) {
-                console.log('Analysis started, redirecting to:', `/websites/runs/${data.run_id}`);
+                logger.log('Analysis started, redirecting to:', `/websites/runs/${data.run_id}`);
                 router.push(`/websites/runs/${data.run_id}`);
               } else {
-                console.error('No run_id returned from analysis');
+                logger.error('No run_id returned from analysis');
               }
             } catch (error) {
-              console.error('Failed to start analysis:', error);
+              logger.error('Failed to start analysis:', error);
             }
           }
         }

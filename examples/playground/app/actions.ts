@@ -1,6 +1,6 @@
 'use server';
 
-import { encodedRedirect } from '@/utils/utils';
+import { encodedRedirect, logger } from '@/utils/utils';
 import { createClient } from '@/utils/supabase/server';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -33,7 +33,7 @@ export const signUpAction = async (formData: FormData) => {
   });
 
   if (signUpError) {
-    console.error(signUpError.code + ' ' + signUpError.message);
+    logger.error(signUpError.code + ' ' + signUpError.message);
     return encodedRedirect('error', '/sign-up', signUpError.message);
   }
 
@@ -44,7 +44,7 @@ export const signUpAction = async (formData: FormData) => {
   });
 
   if (signInError) {
-    console.error(signInError.code + ' ' + signInError.message);
+    logger.error(signInError.code + ' ' + signInError.message);
     return encodedRedirect('error', '/sign-up', 'Sign up successful but could not automatically sign in.');
   }
 
@@ -85,7 +85,7 @@ export const forgotPasswordAction = async (formData: FormData) => {
   });
 
   if (error) {
-    console.error(error.message);
+    logger.error(error.message);
     return encodedRedirect(
       'error',
       '/forgot-password',

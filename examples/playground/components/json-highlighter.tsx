@@ -1,6 +1,15 @@
 import { Json } from '@/supabase/functions/database-types';
 
 export default function JSONHighlighter({ data }: { data: Json }) {
+  // Safety check for undefined or null data
+  if (data === undefined || data === null) {
+    return (
+      <pre className="bg-gray-500/5 rounded-md p-4 text-sm text-muted-foreground">
+        <code>No data available</code>
+      </pre>
+    );
+  }
+  
   const jsonString = JSON.stringify(data, null, 2)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

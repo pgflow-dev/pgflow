@@ -1,8 +1,14 @@
+// Load the parent configuration
 const baseConfig = require('../../eslint.config.cjs');
 
+// Export our configuration
 module.exports = [
-  ...baseConfig,
   {
-    ignores: ['.next/**', 'supabase/functions/**/*.ts'],
+    ignores: [
+      '.next/**',
+      'node_modules/**',
+      'supabase/functions/**/*.ts',
+    ],
   },
+  ...baseConfig,
 ];

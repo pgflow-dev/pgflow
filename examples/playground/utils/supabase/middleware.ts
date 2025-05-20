@@ -12,9 +12,16 @@ export const updateSession = async (request: NextRequest) => {
       },
     });
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Missing required environment variables for Supabase client');
+    }
+    
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseUrl,
+      supabaseAnonKey,
       {
         cookies: {
           getAll() {
@@ -39,6 +46,14 @@ export const updateSession = async (request: NextRequest) => {
     // https://supabase.com/docs/guides/auth/server-side/nextjs
     const user = await supabase.auth.getUser();
 
+    // Skip auth check for auth-related routes
+    if (request.nextUrl.pathname.startsWith("/sign-in") ||
+        request.nextUrl.pathname.startsWith("/sign-up") ||
+        request.nextUrl.pathname.startsWith("/auth/callback") ||
+        request.nextUrl.pathname.startsWith("/forgot-password")) {
+      return response;
+    }
+        
     // protected routes
     if ((request.nextUrl.pathname.startsWith("/protected") || 
          request.nextUrl.pathname.startsWith("/websites/runs")) && 
@@ -52,7 +67,7 @@ export const updateSession = async (request: NextRequest) => {
     }
 
     return response;
-  } catch (e) {
+  } catch (error) {
     // If you are here, a Supabase client could not be created!
     // This is likely because you have not set up environment variables.
     // Check out http://localhost:3000 for Next Steps.
