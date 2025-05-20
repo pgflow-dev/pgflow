@@ -1,5 +1,12 @@
 # pgflow
 
+## 0.2.6
+
+### Patch Changes
+
+- 7eed629: Make compile generate migration timestamp using UTC
+  - @pgflow/core@0.2.6
+
 ## 0.2.5
 
 ### Patch Changes
