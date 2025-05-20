@@ -2,8 +2,6 @@ import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
 import { Database } from '@/supabase/functions/database-types';
 
-type RunRow = Database['pgflow']['Tables']['runs']['Row'];
-
 export default async function RunsListPage() {
   // Server-side data fetching
   const supabase = await createClient();

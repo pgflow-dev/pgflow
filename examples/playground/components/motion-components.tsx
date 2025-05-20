@@ -1,8 +1,7 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp } from 'lucide-react';
@@ -17,19 +16,47 @@ interface AnalysisData {
   dataReady: boolean;
 }
 
+// Define a more specific type for step states
+interface StepState {
+  step_slug: string;
+  status: string;
+  started_at?: string;
+  completed_at?: string;
+  failed_at?: string;
+  step?: {
+    step_index?: number;
+  };
+}
+
+// Define a more specific type for step tasks
+interface StepTask {
+  step_slug: string;
+  status: string;
+  step_index?: number;
+  attempts_count?: number;
+  error_message?: string;
+  output?: Record<string, unknown>;
+}
+
+// Define a more specific type for example links
+interface ExampleLink {
+  url: string;
+  label: string;
+  variant: string;
+}
+
 interface MotionComponentsProps {
   websiteUrl: string;
-  getOrderedStepStates: any[];
-  getOrderedStepTasks: (stepSlug: string) => any[];
+  getOrderedStepStates: StepState[];
+  getOrderedStepTasks: (stepSlug: string) => StepTask[];
   analysisExpanded: boolean;
   setAnalysisExpanded: (value: boolean) => void;
   handleSubmit: (e: React.FormEvent) => Promise<void>;
   url: string;
   setUrl: (value: string) => void;
   loading: boolean;
-  analyzeLoading: boolean;
   onAnalyzeWebsite: (url: string) => Promise<void>;
-  exampleLinks: any[];
+  exampleLinks: ExampleLink[];
   showSteps: boolean;
   showSummary: boolean;
   isRunning: boolean;
@@ -48,7 +75,6 @@ export default function MotionComponents({
   url,
   setUrl,
   loading,
-  analyzeLoading,
   onAnalyzeWebsite,
   exampleLinks,
   showSteps,

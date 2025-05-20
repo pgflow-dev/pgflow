@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense, lazy, useMemo } from 'react';
+import { useState, Suspense, lazy, useMemo } from 'react';
 import { ResultRow } from '@/lib/db';
 import {
   Collapsible,
@@ -47,7 +47,7 @@ function formatTimeDifference(
 }
 
 // Lazy-loaded JSON output component with file size estimation
-function LazyJSONOutput({ data }: { data: any }) {
+function LazyJSONOutput({ data }: { data: Record<string, unknown> }) {
   const [isOpen, setIsOpen] = useState(false);
   
   // Safety check for undefined or null data
@@ -226,7 +226,7 @@ export default function FlowRunDetails({
               {runData.step_states &&
                 (() => {
                   // Use memoized sorted step states to avoid sorting on every render
-                  const { sortedStepStates, parallelSteps, regularSteps } = useMemo(() => {
+                  const { parallelSteps, regularSteps } = useMemo(() => {
                     // Sort step_states directly by step.step_index
                     const sorted = [...runData.step_states].sort(
                       (a, b) => {
@@ -253,7 +253,7 @@ export default function FlowRunDetails({
 
                   // Function to render a step
                   const renderStep = (
-                    step: any,
+                    step: Record<string, unknown>,
                     index: number,
                     isParallel = false,
                   ) => {

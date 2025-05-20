@@ -3,7 +3,6 @@
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/utils/supabase/browser-client';
 import { logger } from '@/utils/utils';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 interface GithubButtonProps {
@@ -14,7 +13,6 @@ interface GithubButtonProps {
 }
 
 export function GithubButton({ className = '', onLoadingChange, disabled, text = 'Sign in with GitHub' }: GithubButtonProps) {
-  const router = useRouter();
   const [isLoadingLocal, setIsLoadingLocal] = useState(false);
 
   const handleGithubSignIn = async () => {

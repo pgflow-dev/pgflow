@@ -1,5 +1,4 @@
 import { Suspense } from 'react';
-import { getOptimizedFlowRunData } from '@/lib/services/get-flow-run';
 import RunPageClientContent from '@/components/run-page-content';
 
 // Loading component
@@ -14,7 +13,9 @@ function LoadingState() {
   );
 }
 
-// Error component
+// Note: This error component is kept for future use
+// but commented out for now since it's currently unused
+/*
 function ErrorDisplay({ message }: { message: string }) {
   return (
     <div className="p-4 border border-destructive/20 bg-destructive/10 rounded-lg">
@@ -23,6 +24,7 @@ function ErrorDisplay({ message }: { message: string }) {
     </div>
   );
 }
+*/
 
 // Main server component
 export default async function RunPage({ params }: { params: Promise<{ run_id: string }> }) {

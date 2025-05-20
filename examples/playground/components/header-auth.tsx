@@ -11,7 +11,7 @@ import { SpinnerWrapper } from "./spinner-wrapper";
 import { useEffect, useState } from "react";
 
 export default function AuthButton() {
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<Record<string, unknown> | null>(null);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
