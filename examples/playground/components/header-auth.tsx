@@ -10,15 +10,20 @@ import { createClient } from "@/utils/supabase/browser-client";
 import { SpinnerWrapper } from "./spinner-wrapper";
 import { useEffect, useState } from "react";
 
+interface User {
+  email?: string;
+  [key: string]: any;
+}
+
 export default function AuthButton() {
-  const [user, setUser] = useState<Record<string, unknown> | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     const supabase = createClient();
     
     // Initial auth check
-    supabase.auth.getUser().then(({ data, error }) => {
+    supabase.auth.getUser().then(({ data, error }: { data: { user: any }, error: any }) => {
       logger.log('Auth check - user:', data.user);
       logger.log('Auth check - error:', error);
       setUser(data.user ?? null);
@@ -26,7 +31,7 @@ export default function AuthButton() {
     });
     
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
       logger.log('Auth state changed:', _event, session?.user);
       setUser(session?.user ?? null);
     });

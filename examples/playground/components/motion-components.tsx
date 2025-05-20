@@ -20,9 +20,9 @@ interface AnalysisData {
 interface StepState {
   step_slug: string;
   status: string;
-  started_at?: string;
-  completed_at?: string;
-  failed_at?: string;
+  started_at: string | null;
+  completed_at: string | null;
+  failed_at: string | null;
   step?: {
     step_index?: number;
   };
@@ -55,6 +55,7 @@ interface MotionComponentsProps {
   url: string;
   setUrl: (value: string) => void;
   loading: boolean;
+  analyzeLoading: boolean;
   onAnalyzeWebsite: (url: string) => Promise<void>;
   exampleLinks: ExampleLink[];
   showSteps: boolean;

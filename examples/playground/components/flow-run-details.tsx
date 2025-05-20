@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, Suspense, lazy, useMemo } from 'react';
-import { ResultRow } from '@/lib/db';
+import { ResultRow, StepStateRow, StepTaskRow } from '@/lib/db';
 import {
   Collapsible,
   CollapsibleContent,
@@ -46,8 +46,11 @@ function formatTimeDifference(
   return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
 }
 
+// Import the Json type
+import { Json } from '@/supabase/functions/database-types';
+
 // Lazy-loaded JSON output component with file size estimation
-function LazyJSONOutput({ data }: { data: Record<string, unknown> }) {
+function LazyJSONOutput({ data }: { data: Json }) {
   const [isOpen, setIsOpen] = useState(false);
   
   // Safety check for undefined or null data
@@ -253,7 +256,7 @@ export default function FlowRunDetails({
 
                   // Function to render a step
                   const renderStep = (
-                    step: Record<string, unknown>,
+                    step: StepStateRow,
                     index: number,
                     isParallel = false,
                   ) => {

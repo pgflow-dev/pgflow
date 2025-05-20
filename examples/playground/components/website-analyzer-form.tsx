@@ -16,7 +16,7 @@ export default function WebsiteAnalyzerForm() {
   const { setLoading } = useLoadingState();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: { data: { user: any } }) => {
       setIsLoggedIn(!!data.user);
     });
   }, []);

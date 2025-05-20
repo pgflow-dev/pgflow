@@ -14,7 +14,7 @@ export default function ExampleLinks() {
   const { setLoading } = useLoadingState();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: { data: { user: any } }) => {
       setIsLoggedIn(!!data.user);
     });
   }, []);
