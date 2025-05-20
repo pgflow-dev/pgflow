@@ -115,15 +115,15 @@ export default (program: Command) => {
           log.success(`Created migrations directory: ${migrationsDir}`);
         }
 
-        // Generate timestamp for migration file in format YYYYMMDDHHMMSS
+        // Generate timestamp for migration file in format YYYYMMDDHHMMSS using UTC
         const now = new Date();
         const timestamp = [
-          now.getFullYear(),
-          String(now.getMonth() + 1).padStart(2, '0'),
-          String(now.getDate()).padStart(2, '0'),
-          String(now.getHours()).padStart(2, '0'),
-          String(now.getMinutes()).padStart(2, '0'),
-          String(now.getSeconds()).padStart(2, '0'),
+          now.getUTCFullYear(),
+          String(now.getUTCMonth() + 1).padStart(2, '0'),
+          String(now.getUTCDate()).padStart(2, '0'),
+          String(now.getUTCHours()).padStart(2, '0'),
+          String(now.getUTCMinutes()).padStart(2, '0'),
+          String(now.getUTCSeconds()).padStart(2, '0'),
         ].join('');
 
         // Run the compilation
