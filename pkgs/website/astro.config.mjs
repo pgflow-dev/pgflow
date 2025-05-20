@@ -11,6 +11,7 @@ import react from '@astrojs/react';
 
 const GITHUB_REPO_URL = 'https://github.com/pgflow-dev/pgflow';
 const DISCORD_INVITE_URL = 'https://discord.gg/NpffdEyb';
+const EMAIL_URL = 'mailto:hello@pgflow.dev';
 const PLAUSIBLE_PROXY = {
   url: 'https://wispy-pond-c6f8.wojciech-majewski.workers.dev',
   eventPath: '/data/event',
@@ -183,6 +184,7 @@ export default defineConfig({
           href: 'https://x.com/pgflow_dev',
         },
         { icon: 'discord', label: 'Discord', href: DISCORD_INVITE_URL },
+        { icon: 'email', label: 'Contact author', href: EMAIL_URL },
       ],
       components: {
         Hero: './src/components/ConditionalHero.astro',
