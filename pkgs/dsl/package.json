@@ -1,6 +1,6 @@
 {
   "name": "@pgflow/dsl",
-  "version": "0.2.4",
+  "version": "0.2.6",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

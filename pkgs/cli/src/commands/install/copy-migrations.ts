@@ -78,18 +78,18 @@ function getTimestampFromFilename(filename: string): string {
   return '';
 }
 
-// Helper function to format a Date object into a migration timestamp string (YYYYMMDDhhmmss)
+// Helper function to format a Date object into a migration timestamp string (YYYYMMDDhhmmss) using UTC
 function formatDateToTimestamp(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  const hours = String(date.getUTCHours()).padStart(2, '0');
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(date.getUTCSeconds()).padStart(2, '0');
   return `${year}${month}${day}${hours}${minutes}${seconds}`;
 }
 
-// Helper function to parse a timestamp string into a Date object
+// Helper function to parse a timestamp string into a Date object (interpreted as UTC)
 function parseTimestampToDate(timestamp: string): Date | null {
   // Validate format: YYYYMMDDhhmmss
   if (!timestamp || timestamp.length !== 14 || !/^\d{14}$/.test(timestamp)) {
@@ -103,18 +103,18 @@ function parseTimestampToDate(timestamp: string): Date | null {
   const minutes = parseInt(timestamp.substring(10, 12), 10);
   const seconds = parseInt(timestamp.substring(12, 14), 10);
 
-  // Create date and validate (invalid dates like Feb 31 will be auto-corrected by JS Date)
-  const date = new Date(year, month, day, hours, minutes, seconds);
+  // Create date in UTC and validate (invalid dates like Feb 31 will be auto-corrected by JS Date)
+  const date = new Date(Date.UTC(year, month, day, hours, minutes, seconds));
   
   // Additional validation to ensure the parsed date matches the input
   // This catches edge cases like month=13 that JS Date would autocorrect
   if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month ||
-    date.getDate() !== day ||
-    date.getHours() !== hours ||
-    date.getMinutes() !== minutes ||
-    date.getSeconds() !== seconds
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month ||
+    date.getUTCDate() !== day ||
+    date.getUTCHours() !== hours ||
+    date.getUTCMinutes() !== minutes ||
+    date.getUTCSeconds() !== seconds
   ) {
     return null;
   }
@@ -122,7 +122,7 @@ function parseTimestampToDate(timestamp: string): Date | null {
   return date;
 }
 
-// Helper function to generate a new timestamp that's higher than the reference timestamp
+// Helper function to generate a new timestamp that's higher than the reference timestamp (using UTC)
 function generateNewTimestamp(
   referenceTimestamp: string,
   increment = 1
@@ -130,15 +130,15 @@ function generateNewTimestamp(
   // First try to parse the reference timestamp to a Date
   const parsedDate = parseTimestampToDate(referenceTimestamp);
   
-  // If we couldn't parse it, use current time
+  // If we couldn't parse it, use current UTC time
   if (!parsedDate) {
     return formatDateToTimestamp(new Date());
   }
   
   // Add the specified number of seconds (default: 1)
-  parsedDate.setSeconds(parsedDate.getSeconds() + increment);
+  parsedDate.setUTCSeconds(parsedDate.getUTCSeconds() + increment);
   
-  // Get current time for comparison
+  // Get current UTC time for comparison
   const now = new Date();
   
   // Return either the incremented timestamp or current time, whichever is later
@@ -147,7 +147,7 @@ function generateNewTimestamp(
     return formatDateToTimestamp(parsedDate);
   } else {
     // If we're already at or past current time, add increment to now
-    now.setSeconds(now.getSeconds() + increment);
+    now.setUTCSeconds(now.getUTCSeconds() + increment);
     return formatDateToTimestamp(now);
   }
 }

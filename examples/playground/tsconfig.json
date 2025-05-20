@@ -21,10 +21,11 @@
     ],
     "paths": {
       "@/*": ["./*"]
-    }
+    },
+    "typeRoots": ["./types", "./node_modules/@types"]
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "supabase/functions/**/*.ts"],
+  "exclude": ["node_modules", "supabase/functions/**/*.ts", "supabase/functions/**/*.d.ts"],
   "references": [
     {
       "path": "../../pkgs/core"

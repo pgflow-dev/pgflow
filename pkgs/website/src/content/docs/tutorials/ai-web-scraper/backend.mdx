@@ -10,8 +10,8 @@ import JoinCommunity from '@/components/JoinCommunity.astro';
 
 Let's build the backend workflow that powers your AI web scraper.
 
-:::note[New to pgflow?]
-If you haven't installed pgflow yet, check the [installation guide](/getting-started/install-pgflow/) first.
+:::note[Before You Start]
+Make sure you've checked the [tutorial introduction](/tutorials/ai-web-scraper/) first for all prerequisites, required tools, and version information.
 :::
 
 What we'll create:
@@ -20,8 +20,9 @@ What we'll create:
 1. Database table for results
 2. Four task functions (scrape, summarize, tag, save)
 3. pgflow workflow connecting them
-4. Edge Worker to run it
-5. Test everything locally
+4. Compile flow to SQL and migrate
+5. Setup Edge Worker to run it
+6. Test everything locally
 </Steps>
 
 ## Step 1 - Create `websites` table
@@ -52,6 +53,10 @@ Set up your database to store AI analysis results.
    ```bash
    npx supabase migrations up --local
    ```
+
+   :::note
+   Make sure `supabase start` is running before applying migrations. The SQL file will be created at `supabase/migrations/<timestamp>_add_websites.sql`.
+   :::
 </Steps>
 
 ---
@@ -65,7 +70,7 @@ Build four focused functions that each do one thing well:
 | `scrapeWebsite.ts` | Fetches webpage content |
 | `summarize.ts` | AI summary |
 | `extractTags.ts` | AI tags |
-| `saveWebsite.ts` | Saves to database |
+| `saveToDb.ts` | Saves to database |
 
 Put these in `supabase/functions/_tasks` (see [organizing flows code](/how-to/organize-flows-code/) for project structure):
 
@@ -80,15 +85,18 @@ export default async function scrapeWebsite(url: string) {
   console.log("[scrapeWebsite] fetching", url);
 
   const res = await fetch(url, {
-    signal: AbortSignal.timeout(10000)  // 10 second timeout
+    signal: AbortSignal.timeout(10000), // 10 second timeout
   });
 
   if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
 
   const html = await res.text();
-  const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const text = html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
-  return { content: text.slice(0, 25_000) };  // limit tokens
+  return { content: text.slice(0, 25_000) }; // limit tokens
 }
 ```
 
@@ -102,7 +110,7 @@ In production, use [html-to-text](https://www.npmjs.com/package/html-to-text) fo
 Two OpenAI functions that return structured, type-safe data:
 
 :::tip[Structured Outputs]
-Using OpenAI's [Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs) for reliable, validated responses.
+We're using OpenAI's newer Responses API (`openai.responses.parse`) rather than traditional Chat Completions. This provides [Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs) for reliable, validated responses using JSON Schema. Note that `openai.responses.parse` will throw an exception if the model output doesn't match your schema.
 :::
 
 <details>
@@ -110,18 +118,15 @@ Using OpenAI's [Structured Outputs](https://platform.openai.com/docs/guides/stru
 
 ```typescript
 // supabase/functions/_tasks/summarize.ts
-import OpenAI from "jsr:@openai/openai@4.33.0";
-import { z } from "jsr:@zod/zod";
-import { zodTextFormat } from "jsr:@openai/openai@4.33.0/helpers/zod";
-
-const apiKey = Deno.env.get("OPENAI_API_KEY");
-if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
-
-const openai = new OpenAI({ apiKey });
-const SummarySchema = z.object({ summary: z.string() });
+import OpenAI from "npm:openai";
 
 export default async function summarize(content: string) {
   console.log("[summarize] processing content");
+
+  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
+
+  const openai = new OpenAI({ apiKey });
 
   const response = await openai.responses.parse({
     model: "gpt-4o",
@@ -129,7 +134,23 @@ export default async function summarize(content: string) {
       { role: "system", content: "Return a short paragraph summary." },
       { role: "user", content },
     ],
-    text: { format: zodTextFormat(SummarySchema, "summary") },
+    text: {
+      format: {
+        type: "json_schema",
+        name: "summary_format",
+        schema: {
+          type: "object",
+          properties: {
+            summary: {
+              type: "string",
+              description: "A short paragraph summary of the content",
+            },
+          },
+          required: ["summary"],
+          additionalProperties: false,
+        },
+      },
+    },
   });
 
   return response.output_parsed.summary;
@@ -142,18 +163,15 @@ export default async function summarize(content: string) {
 
 ```typescript
 // supabase/functions/_tasks/extractTags.ts
-import OpenAI from "jsr:@openai/openai@4.33.0";
-import { z } from "jsr:@zod/zod";
-import { zodTextFormat } from "jsr:@openai/openai@4.33.0/helpers/zod";
-
-const apiKey = Deno.env.get("OPENAI_API_KEY");
-if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
-
-const openai = new OpenAI({ apiKey });
-const TagsSchema = z.object({ tags: z.array(z.string()).max(10) });
+import OpenAI from "npm:openai";
 
 export default async function extractTags(content: string) {
   console.log("[extractTags] extracting tags");
+
+  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
+
+  const openai = new OpenAI({ apiKey });
 
   const response = await openai.responses.parse({
     model: "gpt-4o",
@@ -161,7 +179,26 @@ export default async function extractTags(content: string) {
       { role: "system", content: "Return 5-10 descriptive tags." },
       { role: "user", content },
     ],
-    text: { format: zodTextFormat(TagsSchema, "tags") },
+    text: {
+      format: {
+        type: "json_schema",
+        name: "tags_format",
+        schema: {
+          type: "object",
+          properties: {
+            tags: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+              description: "An array of 5-10 descriptive tags",
+            },
+          },
+          required: ["tags"],
+          additionalProperties: false,
+        },
+      },
+    },
   });
 
   return response.output_parsed.tags;
@@ -174,24 +211,27 @@ export default async function extractTags(content: string) {
 The final task saves all results to your database:
 
 <details>
-  <summary><strong>saveWebsite.ts</strong> - Store results</summary>
+  <summary><strong>saveToDb.ts</strong> - Store results</summary>
 
 ```typescript
-import { createClient } from "@supabase/supabase-js";
+// supabase/functions/_tasks/saveToDb.ts
+import { createClient } from "jsr:@supabase/supabase-js";
 
-const supabaseUrl = Deno.env.get("SUPABASE_URL");
-const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-export default async function saveWebsite(row: {
-  website_url: string; summary: string; tags: string[];
+export default async function saveToDb(row: {
+  website_url: string;
+  summary: string;
+  tags: string[];
 }) {
   console.log("[saveWebsite] inserting row");
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
   const { data } = await supabase
     .from("websites")
@@ -216,33 +256,37 @@ Uses service role key for direct database access. Both URL and key are auto-avai
 
 Connect tasks into a workflow using pgflow's [TypeScript DSL](/concepts/flow-dsl/) (`supabase/functions/_flows/analyze_website.ts`):
 
-```typescript title="supabase/functions/_flows/analyze_website.ts"
-import { Flow } from "@pgflow/dsl";
-import scrapeWebsite   from "../_tasks/scrapeWebsite.ts";
+```typescript
+// supabase/functions/_flows/analyze_website.ts
+import { Flow } from "npm:@pgflow/dsl";
+import scrapeWebsite from "../_tasks/scrapeWebsite.ts";
 import summarize from "../_tasks/summarize.ts";
-import extractTags     from "../_tasks/extractTags.ts";
-import saveWebsite     from "../_tasks/saveWebsite.ts";
+import extractTags from "../_tasks/extractTags.ts";
+import saveToDb from "../_tasks/saveToDb.ts";
 
 type Input = { url: string };
 
-export default new Flow<Input>({ slug: "analyze_website", maxAttempts: 3 })
-  .step({ slug: "website" },
-    ({ run })      => scrapeWebsite(run.url))
-
-  .step({ slug: "summary", dependsOn: ["website"] },
-    ({ website })  => summarize(website.content))  // 👈 Type inferred automatically!
-
-  .step({ slug: "tags",    dependsOn: ["website"] },
-    ({ website })  => extractTags(website.content))
-
-  .step({ slug: "saveToDb", dependsOn: ["summary", "tags"] },
+export default new Flow<Input>({ slug: "analyzeWebsite", maxAttempts: 3 })
+  .step({ slug: "website" }, ({ run }) => scrapeWebsite(run.url))
+  .step({ slug: "summary", dependsOn: ["website"] }, ({ website }) =>
+    summarize(website.content),
+  )
+  .step({ slug: "tags", dependsOn: ["website"] }, ({ website }) =>
+    extractTags(website.content),
+  )
+  .step(
+    { slug: "saveToDb", dependsOn: ["summary", "tags"] },
     ({ run, summary, tags }) =>
-      saveWebsite({ website_url: run.url, summary, tags }));
+      saveToDb({ website_url: run.url, summary, tags }),
+  );
 ```
 
 Flow structure:
+
+<img src="/analyze_website.svg" alt="AI Web Scraper Workflow" title="AI-powered web scraper workflow DAG" class="responsive-svg"/>
+
 - `website` → fetches the URL (root step)
-- `summary` & `tags` → run in parallel (both need website content)  
+- `summary` & `tags` → run in parallel (both need website content)
 - `saveToDb` → waits for both, then saves everything
 
 Summary and tags execute simultaneously since both only need website content - cutting execution time in half. All state transitions happen transactionally in the database, ensuring your flow never ends up in an inconsistent state even if tasks fail or workers crash.
@@ -257,89 +301,98 @@ Summary and tags execute simultaneously since both only need website content - c
 
 Turn your TypeScript flow into SQL using pgflow's [compiler](/getting-started/compile-to-sql/):
 
-```bash
-# TypeScript → SQL
-npx pgflow@latest compile supabase/functions/_flows/analyze_website.ts
+<Steps>
+1. Compile TypeScript to SQL:
+   ```bash
+   npx pgflow@latest compile supabase/functions/_flows/analyze_website.ts
+   # Generates supabase/migrations/<timestamp>_analyze_website.sql
+   ```
+   
+   <details>
+     <summary>Using import maps or custom `deno.json`?</summary>
+     
+     You can use `--deno-json` flag to point at your `deno.json` file:
+     ```bash
+     npx pgflow@latest compile \
+       --deno-json=path/to/deno.json \
+       supabase/functions/_flows/analyze_website.ts
+     ```
+     Run `npx pgflow@latest compile --help` for additional options.
+   </details>
 
-# Apply to database
-npx supabase migrations up --local
-```
+2. Apply migration to database:
+   ```bash
+   npx supabase migrations up --local
+   ```
+</Steps>
 
 The DSL compiler extracts your flow's shape (steps, dependencies) and generates SQL that inserts it into the database. **The database's flow definition determines what runs and when.** The TypeScript DSL also wires up step handlers so the Edge Worker knows which function to invoke for each step. Learn more about [how pgflow works](/concepts/how-pgflow-works/).
 
 :::danger[Adding or removing steps]
-Changing steps requires a new flow with unique `slug`. This is a current limitation, but workarounds for local development are planned to make iteration easier. See [versioning](/how-to/version-your-flows/). For development, you can [delete a flow and its data](/how-to/delete-flow-and-data/) to start fresh.
+Changing steps requires a new flow with unique `slug`. This is a core design decision in pgflow to ensure idempotency and data integrity. See [versioning](/how-to/version-your-flows/) for best practices. While local development experience will be improved in future releases, for now you can [delete a flow and its data](/how-to/delete-flow-and-data/) to start fresh during development.
 :::
 
 ---
 
 ## Step 5 - Setup Edge Worker
 
-Create a worker function that will process steps from your flow:
+<Steps>
+1. Create a worker function that will process steps from your flow:
+   ```bash
+   npx supabase functions new analyze_website_worker
+   ```
 
-```bash
-npx supabase functions new analyze_website_worker
-```
+2. Replace the generated `index.ts` with the following code:
+   ```typescript
+   // supabase/functions/analyze_website_worker/index.ts
+   import { EdgeWorker } from "jsr:@pgflow/edge-worker";
+   import AnalyzeWebsite from '../_flows/analyze_website.ts';
 
-Replace the generated `index.ts` with the following code:
+   EdgeWorker.start(AnalyzeWebsite);  // That's it! 🤯
+   ```
 
-```typescript title="supabase/functions/analyze_website_worker/index.ts"
-import { EdgeWorker } from "jsr:@pgflow/edge-worker";
-import AnalyzeWebsite from '../_flows/analyze_website.ts';
+3. Update your `supabase/config.toml`:
+   ```diff title="supabase/config.toml"
+     [functions.analyze_website_worker]
+     enabled = true
+   - verify_jwt = true
+   + verify_jwt = false
+   ```
+</Steps>
 
-EdgeWorker.start(AnalyzeWebsite);  // That's it! 🤯
-```
-
-and update your `supabase/config.toml`:
-
-```diff title="supabase/config.toml"
-  [functions.analyze_website_worker]
-  enabled = true
-- verify_jwt = true
-+ verify_jwt = false
-```
-
-:::caution
-Only disable JWT for local development.
-:::
-
-:::note[Worker magic]
-EdgeWorker handles polling, retries, and failures automatically. Your code just defines the flow shape!
-
-See more in [Run your flow](/getting-started/run-flow/) documentation page
-:::
 
 ---
 
 ## Step 6 - Run & test
 
-Start everything:
+Start the services (make sure `supabase start` is already running):
 
 <Steps>
-1. Start Supabase:
-   ```bash frame="none"
-   npx supabase start
-   ```
-
-2. Serve Edge Functions:
+1. Serve Edge Functions (keep this terminal open):
    ```bash frame="none"
    npx supabase functions serve
    ```
 
-3. Start the worker (keep this terminal open):
+2. In a new terminal, start the worker:
    ```bash frame="none"
    curl -X POST http://127.0.0.1:54321/functions/v1/analyze_website_worker
    ```
+
+   :::note[How the worker runs]
+   - First curl request boots the worker, which then continuously polls for tasks
+   - Subsequent requests have no effect (worker is already running)
+   - If you stop and restart `functions serve`, you'll need to curl again
+   - In production, workers are triggered by cron schedules, not curl
+   :::
+
+3. Trigger the flow in SQL Editor:
+   ```sql
+   select * from pgflow.start_flow(
+     flow_slug => 'analyzeWebsite',
+     input     => '{"url":"https://supabase.com"}'
+   );
+   ```
 </Steps>
-
-Trigger the flow in SQL Editor:
-
-```sql
-select * from pgflow.start_flow(
-  flow_slug => 'analyze_website',
-  input     => '{"url":"https://supabase.com"}'
-);
-```
 
 ### What happens
 
@@ -348,20 +401,27 @@ Worker output:
 [scrapeWebsite] fetching https://supabase.com
 [summarize] processing content
 [extractTags] extracting tags
-[saveWebsite] inserting row
-[saveWebsite] inserted with id: 1
+[saveToDb] inserting row
+[saveToDb] inserted with id: 1
 ```
 
 Check your database:
 ```sql
 select website_url, tags, summary from websites;
+
+-- Example output:
+-- website_url          | tags                                               | summary
+-- ---------------------|----------------------------------------------------|---------------------------------------------------------
+-- https://supabase.com | {"postgres","api","backend","database","realtime"} | Supabase is an open source Firebase alternative providing
+--                      |                                                    | a PostgreSQL database, authentication, instant APIs,
+--                      |                                                    | realtime subscriptions, and storage.
 ```
 
 :::tip[Monitor with simple SQL queries]
 Check flow status anytime:
 
 ```sql
-SELECT * FROM pgflow.runs WHERE flow_slug = 'analyze_website'
+SELECT * FROM pgflow.runs WHERE flow_slug = 'analyzeWebsite'
 ```
 
 See more in [Monitor flow execution](/how-to/monitor-flow-execution/) documentation page
@@ -374,11 +434,14 @@ See more in [Monitor flow execution](/how-to/monitor-flow-execution/) documentat
 Your AI scraper pipeline:
 
 - **Auto-retries** - Failed steps retry up to 3 times
-- **Parallel AI** - Summary and tags run simultaneously  
+- **Parallel AI** - Summary and tags run simultaneously
 - **Full history** - Every run tracked in your database
 - **Modular code** - Each task is independent and testable
 - **ACID guarantees** - Built on pgmq, a real Postgres queue with transactional safety
 
+:::note[Complete Source Code]
+If you'd like to review or compare your code with reference implementation, check out the [pgflow-dev/ai-web-scraper](https://github.com/pgflow-dev/ai-web-scraper) GitHub repository.
+:::
 
 ---
 
@@ -393,10 +456,25 @@ Your AI scraper pipeline:
 | `Missing OPENAI_API_KEY` | Add to `supabase/functions/.env` |
 | `401 (Unauthorized)` | Check OpenAI key is valid |
 | Compile errors | Run `npx pgflow@latest compile --help` |
+| No logs appearing after starting flow | Make sure you ran the `curl` command to boot the worker. Check `supabase functions serve` terminal for activity. |
+| Flow stuck in `Created` state | Worker might not be polling. Restart `functions serve` and `curl` the worker endpoint again. |
 
 </details>
 
 For debugging, see [Monitor flow execution](/how-to/monitor-flow-execution/).
+
+---
+
+## Next Steps
+
+You've built the backend workflow! Coming next:
+
+- **Part 2: Frontend Dashboard** (coming soon) - Create a real-time UI using the upcoming pgflow client library that leverages Supabase Realtime to stream flow progress directly to the browser
+
+In the meantime, experiment with:
+- Adding more AI analysis tasks to your flow
+- Creating custom flow visualizations with the pgflow monitoring tables
+- Optimizing performance with parallel step execution
 
 ---
 
