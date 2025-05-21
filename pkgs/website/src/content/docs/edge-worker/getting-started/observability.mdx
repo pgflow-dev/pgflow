@@ -29,7 +29,7 @@ By default, Edge Worker's log level is `info`.
 
 ## Heartbeats
 
-Edge Worker sends heartbeats every 5 seconds and updates `last_heartbeat_at` column in `edge_worker.workers` table.
+Edge Worker sends heartbeats every 5 seconds and updates `last_heartbeat_at` column in `pgflow.workers` table.
 
 ### List of active workers
 
@@ -37,6 +37,6 @@ In order to get a list of active workers, we need to fetch those that have pinge
 
 ```sql frame="none"
 SELECT *
-FROM edge_worker.workers
+FROM pgflow.workers
 WHERE last_heartbeat_at > now() - make_interval(secs => 6)
 ```
