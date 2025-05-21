@@ -51,11 +51,12 @@ export const AnalyzeWebsite = new Flow<Input>({
   .step(
     { slug: 'saveToDb', dependsOn: ['sentiment', 'summary'] },
     async (input) => {
-      return await saveToDb({
+      const results = await saveToDb({
         websiteUrl: input.run.url,
         sentiment: input.sentiment.score,
         summary: input.summary.aiSummary,
       });
+      return results.status;
     }
   );
 ```
@@ -79,7 +80,7 @@ Configure flows and steps with runtime options:
 ```typescript
 new Flow<Input>({
   slug: 'my_flow',     // Required: Unique flow identifier
-  maxAttempts: 3,      // Optional: Maximum retry attempts (default: 1)
+  maxAttempts: 3,      // Optional: Maximum retry attempts (default: 3)
   baseDelay: 5,        // Optional: Base delay in seconds for retries (default: 1)
   timeout: 10,         // Optional: Task timeout in seconds (default: 30)
 })
