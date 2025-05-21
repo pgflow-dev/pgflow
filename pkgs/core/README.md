@@ -165,7 +165,9 @@ The Edge Worker continuously polls for available tasks using the `poll_for_tasks
 SELECT * FROM pgflow.poll_for_tasks(
   queue_name => 'analyze_website',
   vt => 60, -- visibility timeout in seconds
-  qty => 5  -- maximum number of tasks to fetch
+  qty => 5,  -- maximum number of tasks to fetch
+  max_poll_seconds => 5, -- maximum time to poll for tasks
+  poll_interval_ms => 100 -- interval between polling attempts
 );
 ```
 
@@ -244,7 +246,7 @@ SELECT pgflow.create_flow(
 SELECT pgflow.add_step(
   flow_slug => 'analyze_website',
   step_slug => 'sentiment',
-  deps_slugs => ARRAY['website']::text[],
+  deps_slugs => ARRAY['website'],
   max_attempts => 5,    -- Override max attempts for this step
   base_delay => 2,      -- Override base delay for exponential backoff
   timeout => 30         -- Override timeout for this step
