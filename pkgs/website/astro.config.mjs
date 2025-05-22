@@ -46,6 +46,9 @@ export default defineConfig({
       '/how-to/deploy-to-supabasecom/',
     '/edge-worker/how-to/prepare-db-string/': '/how-to/prepare-db-string/',
 
+    // File rename redirects
+    '/how-to/version-your-flows/': '/how-to/version-flows/',
+
     // New redirects for reorganization
     '/explanations/': '/concepts/',
     '/explanations/flow-dsl/': '/concepts/flow-dsl/',

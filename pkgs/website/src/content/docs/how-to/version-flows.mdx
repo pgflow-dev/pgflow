@@ -1,0 +1,104 @@
+---
+title: Version flows
+description: Update flows without breaking running jobs
+sidebar:
+  order: 50
+---
+
+import { CardGrid, LinkCard, Steps, FileTree } from '@astrojs/starlight/components';
+
+When you need to update a flow's structure or add new steps, create a new flow version with a unique slug. This approach keeps existing runs safe while allowing you to deploy new functionality.
+
+## Flow immutability
+
+Flows are immutable by design. Once registered in the database, their structure cannot be modified to protect running workflows and maintain data integrity.
+
+Changing flow shape requires a new flow definition with a unique `flow_slug`. Use `pgflow compile` to generate the proper migration.
+
+:::danger[Prohibited Changes]
+Never modify these in an existing flow:
+- Step slugs
+- Dependencies between steps
+- Adding or removing steps
+- Altering the flow's input type structure
+
+They break active runs and corrupt data.
+:::
+
+## Safe vs. breaking changes
+
+| | |
+| ------------ | --------------- |
+| ✅ Modifying step implementation | ❌ Adding/removing steps |
+| ✅ Adjusting retry parameters | ❌ Changing step dependencies |
+| ✅ Updating timeout values | ❌ Modifying input/output types |
+| ✅ Bug fixes within steps | ❌ Changing step slug names |
+
+## Create a new version
+
+Put the new flow in its own file with a versioned slug.
+
+<FileTree>
+- supabase/functions/
+  - _tasks/
+    - fetchUserData.ts
+    - sendEmail.ts
+  - _flows/
+    - greet_user.ts
+    - **greet_user_v2.ts**     // 👈 new
+</FileTree>
+
+<Steps>
+
+1. **Create new flow file**
+
+   ```typescript
+   // supabase/functions/_flows/greet_user_v2.ts
+   export default new Flow<Input>({
+     slug: 'greet_user_v2',
+     // ...new configuration and step definitions
+   })
+   ```
+
+2. **Compile it**
+
+   [Compile the new flow to SQL](/getting-started/compile-to-sql/) which generates a migration file:
+
+   ```bash frame="none"
+   npx pgflow@latest compile supabase/functions/_flows/greet_user_v2.ts
+   ```
+
+3. **Run migration**
+
+   ```bash frame="none"
+   npx supabase migrations up --local
+   ```
+
+</Steps>
+
+Old version stays live; new one is separate.
+
+## Update runtime settings
+
+For simple configuration changes like retry counts or timeouts, update the database directly without creating a new version.
+
+See the [updating flow options](/how-to/update-flow-options/) for SQL commands to modify runtime settings safely.
+
+## Development reset
+
+In development, you can [delete the entire flow](/how-to/delete-flow-and-data/) to start fresh when testing structural changes. This permanently removes all flow data and should never be used in production.
+
+## See Also
+
+<CardGrid>
+  <LinkCard
+    title="Delete flow and its data"
+    description="Delete flow & data"
+    href="/how-to/delete-flow-and-data/"
+  />
+  <LinkCard
+    title="Update flow options"
+    description="Change options via SQL"
+    href="/how-to/update-flow-options/"
+  />
+</CardGrid>
