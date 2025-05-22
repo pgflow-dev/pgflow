@@ -83,7 +83,7 @@ export default defineConfig({
         },
       ],
       plugins: [
-        // starlightLlmsTxt({ exclude: ['/'] }),
+        starlightLlmsTxt({ exclude: ['/'] }),
         starlightLinksValidator({ exclude: ['http://localhost*'] }),
         starlightSidebarTopics([
           {
