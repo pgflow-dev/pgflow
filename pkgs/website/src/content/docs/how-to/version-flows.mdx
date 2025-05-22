@@ -1,0 +1,107 @@
+---
+title: Version flows
+description: Update flows without breaking running jobs
+sidebar:
+  order: 50
+---
+
+import { CardGrid, LinkCard, Steps, FileTree } from '@astrojs/starlight/components';
+
+## Compiler limits
+
+pgflow compiler limits:
+
+1. Always creates a new migration file
+2. No automatic updates; can't change deps or structure safely
+
+If you edit a flow:
+- Handle migrations yourself
+- Use SQL for non-breaking edits
+
+:::danger[Prohibited Changes]
+Never change:
+- Step slugs
+- Dependencies between steps
+- Adding or removing steps
+- Altering the flow's input type structure
+
+They break active runs and corrupt data.
+:::
+
+## Safe vs. breaking changes
+
+| | |
+| ------------ | --------------- |
+| ✅ Modifying step implementation | ❌ Adding/removing steps |
+| ✅ Adjusting retry parameters | ❌ Changing step dependencies |
+| ✅ Updating timeout values | ❌ Modifying input/output types |
+| ✅ Bug fixes within steps | ❌ Changing step slug names |
+
+## Create a new version
+
+Put the new flow in its own file with a versioned slug.
+
+<FileTree>
+- supabase/functions/
+  - _tasks/
+    - fetchUserData.ts
+    - sendEmail.ts
+  - _flows/
+    - greet_user.ts
+    - greet_user_v2.ts
+</FileTree>
+
+<Steps>
+
+1. **Create new flow file**
+
+   ```typescript
+   // supabase/functions/_flows/greet_user_v2.ts
+   export default new Flow<Input>({
+     slug: 'greet_user_v2',
+     // ...new configuration and step definitions
+   })
+   ```
+
+2. **Compile it**
+
+   [Compile the new flow to SQL](/getting-started/compile-to-sql/) which generates a migration file:
+
+   ```bash frame="none"
+   npx pgflow@latest compile supabase/functions/_flows/greet_user_v2.ts
+   ```
+
+3. **Run migration**
+
+   ```bash frame="none"
+   npx supabase migrations up --local
+   ```
+
+</Steps>
+
+Old version stays live; new one is separate.
+
+## Change non-breaking options
+
+Tweak retries/timeouts with SQL—no recompile.
+
+See [how to update flow options](/how-to/update-flow-options/) guide for allowed fields, SQL snippets, and compatibility tips.
+
+## Dev-only shortcut
+
+During dev you can [wipe the flow and its data](/how-to/delete-flow-and-data/); never do this in prod.
+
+## See Also
+
+<CardGrid>
+  <LinkCard
+    title="Delete flow and its data"
+    description="Delete flow & data"
+    href="/how-to/delete-flow-and-data/"
+  />
+  <LinkCard
+    title="Update flow options"
+    description="Change options via SQL"
+    href="/how-to/update-flow-options/"
+  />
+</CardGrid>
