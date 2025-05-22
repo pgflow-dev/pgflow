@@ -58,7 +58,7 @@ The installer will:
 1. Update `config.toml` to enable required connection pooling
 2. Copy pgflow SQL migrations to your project
 3. Configure environment variables for Edge Functions
-4. Guide you through applying migrations
+4. Guide you through applying migrations with `supabase migration up`
 
 ### Compile Flow Definition
 
@@ -70,7 +70,7 @@ npx pgflow@latest compile supabase/functions/_flows/my_flow.ts
 
 Options:
 
-- `--deno-json <path>` - Path to custom deno.json with import map
+- `--deno-json <path>` - Path to custom deno.json with import map for resolving imports in your flow file
 - `--supabase-path <path>` - Path to custom Supabase directory
 
 The compiler will:
@@ -78,7 +78,7 @@ The compiler will:
 1. Parse your TypeScript flow definition
 2. Extract step dependencies and configuration
 3. Generate SQL commands for database registration
-4. Create a timestamped migration file in your migrations folder
+4. Create a migration file in your migrations folder with format `<timestamp>_create_<flow_name>_flow.sql`
 
 ## Building
 
@@ -95,3 +95,11 @@ For detailed documentation, visit:
 - [Installation Guide](https://pgflow.dev/getting-started/install-pgflow/)
 - [Compiling Flows](https://pgflow.dev/getting-started/compile-to-sql/)
 - [Running Flows](https://pgflow.dev/getting-started/run-flow/)
+
+## Applying Migrations
+
+After compiling your flow to SQL, you need to apply the migration with:
+
+```bash
+supabase migrations up
+```
