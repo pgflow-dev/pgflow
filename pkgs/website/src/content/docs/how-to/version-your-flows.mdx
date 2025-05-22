@@ -5,7 +5,7 @@ sidebar:
   order: 50
 ---
 
-import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard, Steps, FileTree } from '@astrojs/starlight/components';
 
 ## Current Compilation Limitations
 
@@ -42,34 +42,51 @@ Before making changes to your flows, understand which modifications are safe:
 
 ## Version Management Strategy
 
-pgflow uses the flow's `slug` as its identifier, so to create a new version:
+To create a new version of an existing flow, we'll create a new flow definition in a separate file with a versioned slug. The new version can reuse tasks from the previous version while implementing different logic or structure. Your project structure will look like this:
 
-1. **Create a new flow definition file** with a versioned slug (e.g., `greet_user_v2.ts`)
-2. **Compile and apply the new version** using the normal compilation process
+<FileTree>
+- supabase/functions/
+  - _tasks/
+    - fetchUserData.ts
+    - sendEmail.ts
+  - _flows/
+    - greet_user.ts        // Original version
+    - greet_user_v2.ts     // New version
+</FileTree>
 
-```typescript
-// greet_user_v2.ts
-export default new Flow<Input>({
-  slug: 'greet_user_v2',  // Note the versioned slug
-  // ...configuration
-})
-```
+<Steps>
 
-### Compiling the new version
+1. **Create new flow definition file**
 
-Once you've created your new flow file with a versioned slug, simply [compile it to SQL](/getting-started/compile-to-sql/) like any other flow:
+   Create a new flow file with a versioned slug that can reuse existing tasks:
 
-```bash frame="none"
-npx pgflow@latest compile supabase/functions/_flows/greet_user_v2.ts
-npx supabase migrations up --local
-```
+   ```typescript
+   // supabase/functions/_flows/greet_user_v2.ts
+   export default new Flow<Input>({
+     slug: 'greet_user_v2',  // Note the versioned slug
+     // ...new configuration and step definitions
+   })
+   ```
 
-The compilation process will:
-- Generate a new migration file for the new flow version
-- Register the new flow alongside the existing version in the database
-- Leave the previous version completely untouched
+2. **Compile new migration**
 
-You don't need to manually manage migration files or think about previous versions - each flow version is a separate entity identified by its unique slug.
+   [Compile the new flow to SQL](/getting-started/compile-to-sql/) which generates a migration file for the new version:
+
+   ```bash frame="none"
+   npx pgflow@latest compile supabase/functions/_flows/greet_user_v2.ts
+   ```
+
+3. **Apply migration to database**
+
+   Apply the migration to register the new flow version alongside the existing one:
+
+   ```bash frame="none"
+   npx supabase migrations up --local
+   ```
+
+</Steps>
+
+The new flow version is registered as a completely separate entity in the database, leaving the previous version untouched and available for existing runs.
 
 ## Updating Non-Breaking Configuration Options
 
