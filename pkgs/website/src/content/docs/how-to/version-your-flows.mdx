@@ -45,9 +45,7 @@ Before making changes to your flows, understand which modifications are safe:
 pgflow uses the flow's `slug` as its identifier, so to create a new version:
 
 1. **Create a new flow definition file** with a versioned slug (e.g., `greet_user_v2.ts`)
-2. **Manually manage migration files**:
-   - Keep previous migration files for existing runs
-   - Create new migrations for the new flow version
+2. **Compile and apply the new version** using the normal compilation process
 
 ```typescript
 // greet_user_v2.ts
@@ -56,6 +54,22 @@ export default new Flow<Input>({
   // ...configuration
 })
 ```
+
+### Compiling the new version
+
+Once you've created your new flow file with a versioned slug, simply [compile it to SQL](/getting-started/compile-to-sql/) like any other flow:
+
+```bash frame="none"
+npx pgflow@latest compile supabase/functions/_flows/greet_user_v2.ts
+npx supabase migrations up --local
+```
+
+The compilation process will:
+- Generate a new migration file for the new flow version
+- Register the new flow alongside the existing version in the database
+- Leave the previous version completely untouched
+
+You don't need to manually manage migration files or think about previous versions - each flow version is a separate entity identified by its unique slug.
 
 ## Updating Non-Breaking Configuration Options
 
