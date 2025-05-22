@@ -329,7 +329,7 @@ Turn your TypeScript flow into SQL using pgflow's [compiler](/getting-started/co
 The DSL compiler extracts your flow's shape (steps, dependencies) and generates SQL that inserts it into the database. **The database's flow definition determines what runs and when.** The TypeScript DSL also wires up step handlers so the Edge Worker knows which function to invoke for each step. Learn more about [how pgflow works](/concepts/how-pgflow-works/).
 
 :::danger[Adding or removing steps]
-Changing steps requires a new flow with unique `slug`. This is a core design decision in pgflow to ensure idempotency and data integrity. See [versioning](/how-to/version-your-flows/) for best practices. While local development experience will be improved in future releases, for now you can [delete a flow and its data](/how-to/delete-flow-and-data/) to start fresh during development.
+Changing steps requires a new flow with unique `slug`. This is a core design decision in pgflow to ensure idempotency and data integrity. See [versioning](/how-to/version-flows/) for best practices. While local development experience will be improved in future releases, for now you can [delete a flow and its data](/how-to/delete-flow-and-data/) to start fresh during development.
 :::
 
 ---
