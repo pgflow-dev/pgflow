@@ -7,19 +7,16 @@ sidebar:
 
 import { CardGrid, LinkCard, Steps, FileTree } from '@astrojs/starlight/components';
 
-## Compiler limits
+When you need to update a flow's structure or add new steps, create a new flow version with a unique slug. This approach keeps existing runs safe while allowing you to deploy new functionality.
 
-pgflow compiler limits:
+## Flow immutability
 
-1. Always creates a new migration file
-2. No automatic updates; can't change deps or structure safely
+Flows are immutable by design. Once registered in the database, their structure cannot be modified to protect running workflows and maintain data integrity.
 
-If you edit a flow:
-- Handle migrations yourself
-- Use SQL for non-breaking edits
+Changing flow shape requires a new flow definition with a unique `flow_slug`. Use `pgflow compile` to generate the proper migration.
 
 :::danger[Prohibited Changes]
-Never change:
+Never modify these in an existing flow:
 - Step slugs
 - Dependencies between steps
 - Adding or removing steps
@@ -48,7 +45,7 @@ Put the new flow in its own file with a versioned slug.
     - sendEmail.ts
   - _flows/
     - greet_user.ts
-    - greet_user_v2.ts
+    - **greet_user_v2.ts**     // 👈 new
 </FileTree>
 
 <Steps>
@@ -81,15 +78,15 @@ Put the new flow in its own file with a versioned slug.
 
 Old version stays live; new one is separate.
 
-## Change non-breaking options
+## Update runtime settings
 
-Tweak retries/timeouts with SQL—no recompile.
+For simple configuration changes like retry counts or timeouts, update the database directly without creating a new version.
 
-See [how to update flow options](/how-to/update-flow-options/) guide for allowed fields, SQL snippets, and compatibility tips.
+See the [updating flow options](/how-to/update-flow-options/) for SQL commands to modify runtime settings safely.
 
-## Dev-only shortcut
+## Development reset
 
-During dev you can [wipe the flow and its data](/how-to/delete-flow-and-data/); never do this in prod.
+In development, you can [delete the entire flow](/how-to/delete-flow-and-data/) to start fresh when testing structural changes. This permanently removes all flow data and should never be used in production.
 
 ## See Also
 
