@@ -5,7 +5,7 @@ sidebar:
   order: 55
 ---
 
-import { Aside, Code } from "@astrojs/starlight/components";
+import { Aside, Code, CardGrid, LinkCard } from "@astrojs/starlight/components";
 import deleteFlowFunctionCode from '../../../../../core/supabase/tests/_shared/delete_flow_and_data.sql.raw?raw';
 
 During development, you may want to completely remove a flow and all its associated data to start fresh. This operation is destructive and should **never be used in production**.
@@ -65,5 +65,15 @@ Once you've deleted the flow:
 
 ## See Also
 
-- [Version your flows](/how-to/version-your-flows/) - Safe flow updates for production
-- [Update flow options](/how-to/update-flow-options/) - Non-breaking configuration changes
+<CardGrid>
+  <LinkCard
+    title="Version your flows"
+    description="Safe flow updates for production"
+    href="/how-to/version-your-flows/"
+  />
+  <LinkCard
+    title="Update flow options"
+    description="Non-breaking configuration changes"
+    href="/how-to/update-flow-options/"
+  />
+</CardGrid>
