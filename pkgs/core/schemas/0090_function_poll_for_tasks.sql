@@ -38,8 +38,16 @@ begin
       task.run_id,
       task.step_slug,
       task.task_index,
-      task.message_id
+      task.message_id,
+      step.step_type,
+      -- For fanout steps, get the single dependency slug
+      case 
+        when step.step_type = 'fanout' then 
+          (select d.dep_slug from pgflow.deps d where d.flow_slug = task.flow_slug and d.step_slug = task.step_slug limit 1)
+        else null
+      end as fanout_dep_slug
     from pgflow.step_tasks as task
+    join pgflow.steps step on step.flow_slug = task.flow_slug and step.step_slug = task.step_slug
     where task.message_id = any(msg_ids)
       and task.status = 'queued'
   ),
@@ -90,8 +98,18 @@ begin
     st.flow_slug,
     st.run_id,
     st.step_slug,
-    jsonb_build_object('run', r.input) ||
-    coalesce(dep_out.deps_output, '{}'::jsonb) as input,
+    case 
+      when st.step_type = 'fanout' then
+        -- For fanout: only send the specific array item
+        jsonb_build_object(
+          'item', 
+          (dep_out.deps_output -> st.fanout_dep_slug) -> st.task_index
+        )
+      else
+        -- For single: current behavior
+        jsonb_build_object('run', r.input) ||
+        coalesce(dep_out.deps_output, '{}'::jsonb)
+    end as input,
     st.message_id as msg_id
   from tasks st
   join runs r on st.run_id = r.run_id

@@ -28,6 +28,7 @@ create table pgflow.step_states (
   status text not null default 'created',
   remaining_tasks int not null default 1 check (remaining_tasks >= 0),
   remaining_deps int not null default 0 check (remaining_deps >= 0),
+  output jsonb,
   created_at timestamptz not null default now(),
   started_at timestamptz,
   completed_at timestamptz,
@@ -72,7 +73,6 @@ create table pgflow.step_tasks (
   constraint output_valid_only_for_completed check (
     output is null or status = 'completed'
   ),
-  constraint only_single_task_per_step check (task_index = 0),
   constraint attempts_count_nonnegative check (attempts_count >= 0),
   constraint completed_at_or_failed_at check (not (completed_at is not null and failed_at is not null)),
   constraint completed_at_is_after_queued_at check (completed_at is null or completed_at >= queued_at),

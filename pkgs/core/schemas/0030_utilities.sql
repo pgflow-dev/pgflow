@@ -28,3 +28,11 @@ parallel safe
 as $$
   select floor(base_delay * power(2, attempts_count))::int
 $$;
+
+-- Helper function to raise exceptions in SQL contexts
+create or replace function pgflow.raise_exception(message text)
+returns void as $$
+begin
+  raise exception '%', message;
+end;
+$$ language plpgsql;

@@ -1,17 +1,5 @@
-create or replace function pgflow.add_step(
-  flow_slug text,
-  step_slug text,
-  deps_slugs text [],
-  max_attempts int default null,
-  base_delay int default null,
-  timeout int default null,
-  step_type text default 'single'
-)
-returns pgflow.steps
-language plpgsql
-set search_path to ''
-volatile
-as $$
+-- Modify "add_step" function
+CREATE OR REPLACE FUNCTION "pgflow"."add_step" ("flow_slug" text, "step_slug" text, "deps_slugs" text[], "max_attempts" integer DEFAULT NULL::integer, "base_delay" integer DEFAULT NULL::integer, "timeout" integer DEFAULT NULL::integer, "step_type" text DEFAULT 'single') RETURNS "pgflow"."steps" LANGUAGE plpgsql SET "search_path" = '' AS $$
 begin
   -- Validate fanout constraints
   if add_step.step_type = 'fanout' then
@@ -49,21 +37,4 @@ begin
     SELECT * FROM create_step
   );
 end;
-$$;
-
--- New overloaded function without deps_slugs parameter
-create or replace function pgflow.add_step(
-  flow_slug text,
-  step_slug text,
-  max_attempts int default null,
-  base_delay int default null,
-  timeout int default null
-)
-returns pgflow.steps
-language sql
-set search_path to ''
-volatile
-as $$
-    -- Call the original function with an empty array and default step_type
-    SELECT * FROM pgflow.add_step(flow_slug, step_slug, ARRAY[]::text[], max_attempts, base_delay, timeout, 'single');
 $$;

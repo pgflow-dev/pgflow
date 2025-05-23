@@ -50,6 +50,23 @@ step_state AS (
     AND pgflow.step_states.step_slug = complete_task.step_slug
   RETURNING pgflow.step_states.*
 ),
+-- For fanout steps that just completed all tasks, aggregate outputs
+fanout_aggregation AS (
+  UPDATE pgflow.step_states ss
+  SET output = (
+    SELECT jsonb_agg(st.output ORDER BY st.task_index)
+    FROM pgflow.step_tasks st
+    WHERE st.run_id = ss.run_id
+      AND st.step_slug = ss.step_slug
+      AND st.status = 'completed'
+  )
+  FROM step_state s
+  JOIN pgflow.steps step ON step.flow_slug = s.flow_slug AND step.step_slug = s.step_slug
+  WHERE ss.run_id = s.run_id
+    AND ss.step_slug = s.step_slug
+    AND s.status = 'completed'
+    AND step.step_type = 'fanout'
+),
 -- Find all dependent steps if the current step was completed
 dependent_steps AS (
   SELECT d.step_slug AS dependent_step_slug

@@ -27,7 +27,7 @@ create table pgflow.steps (
   primary key (flow_slug, step_slug),
   unique (flow_slug, step_index),  -- Ensure step_index is unique within a flow
   check (pgflow.is_valid_slug(step_slug)),
-  check (step_type in ('single')),
+  check (step_type in ('single', 'fanout')),
   constraint opt_max_attempts_is_nonnegative check (opt_max_attempts is null or opt_max_attempts >= 0),
   constraint opt_base_delay_is_nonnegative check (opt_base_delay is null or opt_base_delay >= 0),
   constraint opt_timeout_is_positive check (opt_timeout is null or opt_timeout > 0)

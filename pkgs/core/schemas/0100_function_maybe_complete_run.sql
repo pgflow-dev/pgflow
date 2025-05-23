@@ -12,12 +12,17 @@ as $$
     completed_at = now(),
     output = (
       -- Get outputs from final steps (steps that are not dependencies for other steps)
-      SELECT jsonb_object_agg(st.step_slug, st.output)
-      FROM pgflow.step_tasks st
-      JOIN pgflow.step_states ss ON ss.run_id = st.run_id AND ss.step_slug = st.step_slug
-      JOIN pgflow.runs r ON r.run_id = ss.run_id AND r.flow_slug = ss.flow_slug
-      WHERE st.run_id = maybe_complete_run.run_id
-        AND st.status = 'completed'
+      SELECT jsonb_object_agg(ss.step_slug, 
+        CASE 
+          WHEN s.step_type = 'fanout' THEN ss.output  -- For fanout, use aggregated output from step_states
+          ELSE st.output  -- For single, use task output
+        END
+      )
+      FROM pgflow.step_states ss
+      JOIN pgflow.steps s ON s.flow_slug = ss.flow_slug AND s.step_slug = ss.step_slug
+      LEFT JOIN pgflow.step_tasks st ON st.run_id = ss.run_id AND st.step_slug = ss.step_slug AND st.task_index = 0
+      WHERE ss.run_id = maybe_complete_run.run_id
+        AND ss.status = 'completed'
         AND NOT EXISTS (
           SELECT 1
           FROM pgflow.deps d

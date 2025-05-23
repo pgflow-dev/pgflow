@@ -24,10 +24,16 @@ export function compileFlow(flow: AnyFlow): string[] {
     if (step.dependencies.length > 0) {
       const depsArray = step.dependencies.map((dep) => `'${dep}'`).join(', ');
       depsClause = `, ARRAY[${depsArray}]`;
+    } else {
+      // If no dependencies, pass empty array
+      depsClause = ', ARRAY[]::text[]';
     }
 
+    // Add step_type parameter if it's a fanout step
+    const stepTypeClause = step.fanout ? `, step_type => 'fanout'` : '';
+
     statements.push(
-      `SELECT pgflow.add_step('${flow.slug}', '${step.slug}'${depsClause}${stepOptions});`
+      `SELECT pgflow.add_step(flow_slug => '${flow.slug}', step_slug => '${step.slug}', deps_slugs => ${depsClause.slice(2)}${stepOptions}${stepTypeClause});`
     );
   }
 

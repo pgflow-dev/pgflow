@@ -170,6 +170,7 @@ export interface StepDefinition<
   handler: (input: TInput) => TOutput | Promise<TOutput>;
   dependencies: string[];
   options: RuntimeOptions;
+  fanout?: boolean;
 }
 
 // Utility type to merge two object types and preserve required properties
@@ -251,7 +252,7 @@ export class Flow<
     Deps extends Extract<keyof Steps, string> = never,
     RetType extends AnyOutput = AnyOutput
   >(
-    opts: Simplify<{ slug: Slug; dependsOn?: Deps[] } & RuntimeOptions>,
+    opts: Simplify<{ slug: Slug; dependsOn?: Deps[]; fanout?: boolean } & RuntimeOptions>,
     handler: (
       input: Simplify<
         {
@@ -282,6 +283,14 @@ export class Flow<
     }
 
     const dependencies = opts.dependsOn || [];
+    
+    // Validate fanout constraints
+    if (opts.fanout) {
+      if (dependencies.length !== 1) {
+        throw new Error(`Fanout step "${slug}" must have exactly one dependency, got ${dependencies.length}`);
+      }
+    }
+    
     // Validate dependencies - check if all referenced steps exist
     if (dependencies.length > 0) {
       for (const dep of dependencies) {
@@ -323,6 +332,7 @@ export class Flow<
       ) => RetType | Promise<RetType>,
       dependencies: dependencies as string[],
       options,
+      fanout: opts.fanout,
     };
 
     const newStepDefinitions = {

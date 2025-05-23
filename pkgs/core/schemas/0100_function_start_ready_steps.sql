@@ -1,46 +1,73 @@
 create or replace function pgflow.start_ready_steps(run_id uuid)
 returns void
-language sql
+language plpgsql
 set search_path to ''
 as $$
-
-WITH ready_steps AS (
-  SELECT *
-  FROM pgflow.step_states AS step_state
-  WHERE step_state.run_id = start_ready_steps.run_id
-    AND step_state.status = 'created'
-    AND step_state.remaining_deps = 0
-  ORDER BY step_state.step_slug
-  FOR UPDATE
-),
-started_step_states AS (
-  UPDATE pgflow.step_states
-  SET status = 'started',
-      started_at = now()
-  FROM ready_steps
-  WHERE pgflow.step_states.run_id = start_ready_steps.run_id
-    AND pgflow.step_states.step_slug = ready_steps.step_slug
-  RETURNING pgflow.step_states.*
-),
-sent_messages AS (
-  SELECT
-    started_step.flow_slug,
-    started_step.run_id,
-    started_step.step_slug,
-    pgmq.send(started_step.flow_slug, jsonb_build_object(
-      'flow_slug', started_step.flow_slug,
-      'run_id', started_step.run_id,
-      'step_slug', started_step.step_slug,
-      'task_index', 0
-    )) AS msg_id
-  FROM started_step_states AS started_step
-)
-INSERT INTO pgflow.step_tasks (flow_slug, run_id, step_slug, message_id)
-SELECT
-  sent_messages.flow_slug,
-  sent_messages.run_id,
-  sent_messages.step_slug,
-  sent_messages.msg_id
-FROM sent_messages;
-
+declare
+  fanout_step record;
+begin
+  -- First, update all ready steps to started status
+  with ready_steps as (
+    update pgflow.step_states ss
+    set 
+      status = 'started',
+      started_at = clock_timestamp()
+    from pgflow.runs r
+    where ss.run_id = start_ready_steps.run_id
+      and ss.run_id = r.run_id
+      and ss.status = 'created'
+      and ss.remaining_deps = 0
+    returning 
+      ss.run_id,
+      ss.step_slug, 
+      r.flow_slug
+  ),
+  step_details as (
+    -- Get step type for each ready step
+    select 
+      rs.*,
+      s.step_type
+    from ready_steps rs
+    join pgflow.steps s on s.flow_slug = rs.flow_slug and s.step_slug = rs.step_slug
+  ),
+  -- Handle single-type steps
+  single_tasks as (
+    insert into pgflow.step_tasks (
+      flow_slug,
+      run_id,
+      step_slug,
+      task_index,
+      status,
+      attempts_count,
+      message_id
+    )
+    select
+      sd.flow_slug,
+      sd.run_id,
+      sd.step_slug,
+      0,
+      'queued',
+      0,
+      pgmq.send('pgflow-tasks', jsonb_build_object(
+        'run_id', sd.run_id,
+        'flow_slug', sd.flow_slug,
+        'step_slug', sd.step_slug,
+        'task_index', 0
+      ))
+    from step_details sd
+    where sd.step_type = 'single'
+  )
+  -- Get fanout steps to process
+  select * from step_details where step_type = 'fanout';
+  
+  -- Handle fanout-type steps
+  for fanout_step in
+    select rs.run_id, rs.step_slug 
+    from ready_steps rs
+    join pgflow.steps s on s.flow_slug = rs.flow_slug and s.step_slug = rs.step_slug
+    where s.step_type = 'fanout'
+  loop
+    perform pgflow.spawn_fanout_tasks(fanout_step.run_id, fanout_step.step_slug);
+  end loop;
+end;
 $$;
