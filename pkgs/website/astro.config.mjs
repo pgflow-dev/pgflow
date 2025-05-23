@@ -83,7 +83,18 @@ export default defineConfig({
         },
       ],
       plugins: [
-        starlightLlmsTxt({ exclude: ['/'] }),
+        starlightLlmsTxt({
+          exclude: [
+            'index',
+            '*index',
+            // 'getting-started/index',
+            // 'how-to/index',
+            // 'concepts/index',
+            // 'tutorials/index',
+            // 'comparisons/index',
+          ],
+          promote: ['getting-started*', 'how-to*', 'concepts*', 'tutorials*'],
+        }),
         starlightLinksValidator({ exclude: ['http://localhost*'] }),
         starlightSidebarTopics([
           {
