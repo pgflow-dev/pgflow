@@ -132,3 +132,7 @@ For reading and crawling web content, Claude Code has access to an MCP server th
 > QUOTE ALL THE FILE PATHS THAT CONTAIN SPECIAL CHARACTERS LIKE '[run_id]'
 > BECAUSE BRACKETS HAVE SPECIAL MEANING IN BASH!
 > Do this: `cat 'some/path/to/[id]/page.tsx'` instead of `cat some/path/to/[id]/page.tsx`
+
+## Testing Guidelines
+
+- **IMPORTANT**: Never write tests that access private properties or change private properties to public ones in order to test them!
