@@ -56,6 +56,8 @@ export function isFlowRunEvent<TFlow extends AnyFlow>(value: unknown): value is 
     !!value &&
     typeof value === 'object' &&
     'run_id' in value &&
+    'flow_slug' in value &&
+    !('step_slug' in value) &&
     'status' in value &&
     (
       value.status === FlowRunStatus.Started ||
@@ -179,9 +181,14 @@ export function isStepStartedEvent<
   TFlow extends AnyFlow,
   TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
 >(
-  event: StepEvent<TFlow, TStepSlug>
+  event: unknown
 ): event is StepEventData<TFlow, TStepSlug>['started'] {
-  return event.status === FlowStepStatus.Started;
+  return (
+    isStepEvent<TFlow, TStepSlug>(event) &&
+    event.status === FlowStepStatus.Started &&
+    'event_type' in event &&
+    event.event_type === 'step:started'
+  );
 }
 
 /**
@@ -191,9 +198,14 @@ export function isStepCompletedEvent<
   TFlow extends AnyFlow,
   TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
 >(
-  event: StepEvent<TFlow, TStepSlug>
+  event: unknown
 ): event is StepEventData<TFlow, TStepSlug>['completed'] {
-  return event.status === FlowStepStatus.Completed;
+  return (
+    isStepEvent<TFlow, TStepSlug>(event) &&
+    event.status === FlowStepStatus.Completed &&
+    'event_type' in event &&
+    event.event_type === 'step:completed'
+  );
 }
 
 /**
@@ -203,9 +215,14 @@ export function isStepFailedEvent<
   TFlow extends AnyFlow,
   TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
 >(
-  event: StepEvent<TFlow, TStepSlug>
+  event: unknown
 ): event is StepEventData<TFlow, TStepSlug>['failed'] {
-  return event.status === FlowStepStatus.Failed;
+  return (
+    isStepEvent<TFlow, TStepSlug>(event) &&
+    event.status === FlowStepStatus.Failed &&
+    'event_type' in event &&
+    event.event_type === 'step:failed'
+  );
 }
 
 /**
