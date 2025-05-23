@@ -57,6 +57,7 @@ When suggesting changes or improvements, bias heavily toward solutions that can 
 - `pnpm nx test:vitest <package>` - Run vitest unit tests
 - `pnpm nx lint <package>` - Run linting
 - `pnpm nx fix-sql <package>` - Fix SQL formatting issues
+- `pnpm nx test client [-- optional/path/to/test/file.test.ts]` - Run vitest tests for pkgs/client package with optional specific test file
 
 ## Code Style Guidelines
 
