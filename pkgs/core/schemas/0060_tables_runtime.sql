@@ -79,7 +79,7 @@ create table pgflow.step_tasks (
   constraint failed_at_is_after_queued_at check (failed_at is null or failed_at >= queued_at)
 );
 
-create unique index if not exists idx_step_tasks_message_id on pgflow.step_tasks (message_id) where message_id is not null;
+create unique index if not exists idx_step_tasks_flow_msg on pgflow.step_tasks (flow_slug, message_id) where message_id is not null;
 create index if not exists idx_step_tasks_queued on pgflow.step_tasks (run_id, step_slug) where status = 'queued';
 create index if not exists idx_step_tasks_completed on pgflow.step_tasks (run_id, step_slug) where status = 'completed';
 create index if not exists idx_step_tasks_failed on pgflow.step_tasks (run_id, step_slug) where status = 'failed';
