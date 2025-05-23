@@ -103,7 +103,7 @@ begin
     --       builds dynamic query from string every time it is called
     --       implement set_vt_batch(msgs_ids bigint[], vt_delays int[])
     select pgmq.set_vt(queue_name, st.message_id,
-      (select t.vt_delay from timeouts t where t.message_id = st.message_id)
+      (select t.vt_delay from timeouts t where t.message_id = st.message_id limit 1)
     )
   ) set_vt;
 end;
