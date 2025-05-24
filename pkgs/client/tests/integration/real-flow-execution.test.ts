@@ -10,12 +10,11 @@ describe('Real Flow Execution E2E', () => {
     // Setup test flow definition
     const testFlow = createTestFlow();
     
-    // 1. Configure authenticator role to expose pgflow schema to PostgREST
-    await sql`ALTER ROLE authenticator SET pgrst.db_schemas TO 'public, pgflow, graphql_public'`;
-    await sql`NOTIFY pgrst`;
+    // 1. Absolute minimum grants - only what's needed
     await sql`GRANT USAGE ON SCHEMA pgflow TO anon`;
+    await sql`GRANT EXECUTE ON FUNCTION pgflow.start_flow_with_states(text, jsonb, uuid) TO anon`;
     
-    // Make start_flow_with_states security definer so it runs with postgres privileges
+    // 2. Make start_flow_with_states SECURITY DEFINER
     await sql`
       CREATE OR REPLACE FUNCTION pgflow.start_flow_with_states(
         flow_slug TEXT,
@@ -37,11 +36,15 @@ describe('Real Flow Execution E2E', () => {
       $$ language plpgsql;
     `;
     
-    // 2. Create flow and step definitions in database
+    // 3. Absolute minimum grants for authenticated user to call RPC in pgflow schema
+    await sql`GRANT USAGE ON SCHEMA pgflow TO anon`;
+    await sql`GRANT EXECUTE ON FUNCTION pgflow.start_flow_with_states(text, jsonb, uuid) TO anon`;
+    
+    // 4. Create flow and step definitions in database
     await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
     await sql`SELECT pgflow.add_step(${testFlow.slug}, 'simple_step')`;
     
-    // 3. Create PgflowClient and start flow using the actual client API
+    // 5. Create PgflowClient and start flow using the actual client API
     const supabaseClient = createTestSupabaseClient();
     const pgflowClient = new PgflowClient(supabaseClient);
     
@@ -51,7 +54,7 @@ describe('Real Flow Execution E2E', () => {
     expect(run.run_id).toBeDefined();
     expect(run.flow_slug).toBe(testFlow.slug);
     
-    // 4. Poll for task (simulate worker using raw SQL)
+    // 6. Poll for task (simulate worker using raw SQL)
     const tasks = await sql`
       SELECT * FROM pgflow.poll_for_tasks(${testFlow.slug}, 30, 1)
     `;
@@ -61,7 +64,7 @@ describe('Real Flow Execution E2E', () => {
     expect(tasks[0].step_slug).toBe('simple_step');
     expect(tasks[0].input.run).toEqual(input);
     
-    // 5. Complete task with output (simulate worker using raw SQL)
+    // 7. Complete task with output (simulate worker using raw SQL)
     const taskOutput = { result: 'completed successfully', timestamp: new Date().toISOString() };
     
     await sql`
@@ -73,13 +76,13 @@ describe('Real Flow Execution E2E', () => {
       )
     `;
     
-    // 6. Wait for broadcast event and verify PgflowClient received it
+    // 8. Wait for broadcast event and verify PgflowClient received it
     const step = run.step('simple_step');
     
     // Wait for step completion with timeout (this tests the broadcast mechanism)
     await step.waitForStatus(FlowStepStatus.Completed, { timeoutMs: 5000 });
     
-    // 7. Verify the PgflowClient state was updated correctly
+    // 9. Verify the PgflowClient state was updated correctly
     expect(step.status).toBe(FlowStepStatus.Completed);
     expect(JSON.parse(step.output as string)).toEqual(taskOutput);
     expect(step.completed_at).toBeDefined();
