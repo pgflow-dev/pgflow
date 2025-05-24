@@ -1,0 +1,20 @@
+#!/bin/bash
+set -e
+
+HOST=${1:-localhost}
+PORT=${2:-50522}
+TIMEOUT=${3:-30}
+
+echo "Waiting for $HOST:$PORT to be available..."
+
+for i in $(seq 1 $TIMEOUT); do
+  if nc -z $HOST $PORT > /dev/null 2>&1; then
+    echo "Service is available!"
+    exit 0
+  fi
+  echo "Waiting... ($i/$TIMEOUT)"
+  sleep 1
+done
+
+echo "Service not available after $TIMEOUT seconds"
+exit 1

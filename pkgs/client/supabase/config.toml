@@ -1,0 +1,38 @@
+project_id = "client"
+
+[api]
+enabled = true
+port = 50521  # distinct from core:50421 and edge-worker:50321
+
+[db]
+port = 50522  # distinct from core:50422 and edge-worker:50322
+shadow_port = 50520
+major_version = 15
+
+[db.pooler]
+enabled = true
+port = 50529
+pool_mode = "transaction"
+default_pool_size = 100
+max_client_conn = 150
+
+[db.seed]
+enabled = true
+sql_paths = ["seed.sql"]
+
+[realtime]
+enabled = true  # required for broadcast adapter testing
+
+# disable unused features
+[edge_runtime]
+enabled = false
+[studio]
+enabled = false
+[inbucket]
+enabled = false
+[analytics]
+enabled = false
+[storage]
+enabled = false
+[auth]
+enabled = false
