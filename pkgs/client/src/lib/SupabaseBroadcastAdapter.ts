@@ -184,32 +184,34 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
     flow: FlowRow;
     steps: StepRow[];
   }> {
-    // Fetch flow details
-    const { data: flow, error: flowError } = await this.#supabase
-      .schema('pgflow')
-      .from('flows')
-      .select('*')
-      .eq('flow_slug', flow_slug)
-      .single();
+    // Fetch flow details and steps in parallel
+    const [flowResult, stepsResult] = await Promise.all([
+      this.#supabase
+        .schema('pgflow')
+        .from('flows')
+        .select('*')
+        .eq('flow_slug', flow_slug)
+        .single(),
+      this.#supabase
+        .schema('pgflow')
+        .from('steps')
+        .select('*')
+        .eq('flow_slug', flow_slug)
+        .order('step_index', { ascending: true })
+    ]);
 
-    if (flowError) throw flowError;
-    if (!flow) throw new Error(`Flow "${flow_slug}" not found`);
+    // Handle flow result
+    if (flowResult.error) throw flowResult.error;
+    if (!flowResult.data) throw new Error(`Flow "${flow_slug}" not found`);
 
-    // Fetch steps for this flow
-    const { data: steps, error: stepsError } = await this.#supabase
-      .schema('pgflow')
-      .from('steps')
-      .select('*')
-      .eq('flow_slug', flow_slug)
-      .order('step_index', { ascending: true });
-
-    if (stepsError) throw stepsError;
+    // Handle steps result
+    if (stepsResult.error) throw stepsResult.error;
     
     // Ensure steps is always an array, even if it's null or undefined
-    const stepsArray = Array.isArray(steps) ? steps : [];
+    const stepsArray = Array.isArray(stepsResult.data) ? stepsResult.data : [];
 
     return {
-      flow: flow as FlowRow,
+      flow: flowResult.data as FlowRow,
       steps: stepsArray as StepRow[],
     };
   }
