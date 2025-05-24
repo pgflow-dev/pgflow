@@ -50,6 +50,9 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
     const event = payload.event as string;
     const eventData = payload.payload;
 
+    // Auto-parse JSON strings in broadcast data (realtime sends JSONB as strings)
+    this.#parseJsonFields(eventData);
+
     if (event.startsWith('run:')) {
       // Handle run events
       this.#emitter.emit('runEvent', eventData as BroadcastRunEvent);
@@ -58,6 +61,31 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
       this.#emitter.emit('stepEvent', eventData as BroadcastStepEvent);
     }
   }
+
+  /**
+   * Parse JSON string fields in broadcast event data
+   * @param eventData - The event data object to parse
+   */
+  #parseJsonFields(eventData: any): void {
+    // Parse output field if it's a JSON string
+    if ('output' in eventData && typeof eventData.output === 'string') {
+      try {
+        eventData.output = JSON.parse(eventData.output);
+      } catch (e) {
+        // Keep as string if not valid JSON
+      }
+    }
+    
+    // Parse input field if it's a JSON string
+    if ('input' in eventData && typeof eventData.input === 'string') {
+      try {
+        eventData.input = JSON.parse(eventData.input);
+      } catch (e) {
+        // Keep as string if not valid JSON
+      }
+    }
+  }
+
   
   /**
    * Handle channel errors and reconnection
