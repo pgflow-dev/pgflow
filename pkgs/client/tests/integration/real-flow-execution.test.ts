@@ -10,16 +10,10 @@ describe('Real Flow Execution E2E', () => {
     // Setup test flow definition
     const testFlow = createTestFlow();
     
-    // 1. Configure authenticator role to expose schemas and grant permissions
-    await sql`ALTER ROLE authenticator SET pgrst.db_schemas TO 'public, pgflow, pgmq, graphql_public'`;
+    // 1. Configure authenticator role to expose pgflow schema to PostgREST
+    await sql`ALTER ROLE authenticator SET pgrst.db_schemas TO 'public, pgflow, graphql_public'`;
     await sql`NOTIFY pgrst`;
     await sql`GRANT USAGE ON SCHEMA pgflow TO anon`;
-    await sql`GRANT ALL ON ALL TABLES IN SCHEMA pgflow TO anon`;
-    await sql`GRANT ALL ON ALL ROUTINES IN SCHEMA pgflow TO anon`;
-    await sql`GRANT USAGE ON SCHEMA pgmq TO anon`;
-    await sql`GRANT ALL ON ALL TABLES IN SCHEMA pgmq TO anon`;
-    await sql`GRANT ALL ON ALL ROUTINES IN SCHEMA pgmq TO anon`;
-    await sql`ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA pgmq GRANT ALL ON TABLES TO anon`;
     
     // Make start_flow_with_states security definer so it runs with postgres privileges
     await sql`
@@ -87,7 +81,7 @@ describe('Real Flow Execution E2E', () => {
     
     // 7. Verify the PgflowClient state was updated correctly
     expect(step.status).toBe(FlowStepStatus.Completed);
-    expect(step.output).toEqual(taskOutput);
+    expect(JSON.parse(step.output as string)).toEqual(taskOutput);
     expect(step.completed_at).toBeDefined();
     
     // Clean up

@@ -3,7 +3,6 @@ project_id = "client"
 [api]
 enabled = true
 port = 50521  # distinct from core:50421 and edge-worker:50321
-extra_search_path = ["public", "pgflow"]
 
 [db]
 port = 50522  # distinct from core:50422 and edge-worker:50322
