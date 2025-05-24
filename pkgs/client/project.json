@@ -1,0 +1,101 @@
+{
+  "name": "client",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "pkgs/client/src",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "outputPath": "pkgs/client/dist",
+        "main": "pkgs/client/src/index.ts",
+        "tsConfig": "pkgs/client/tsconfig.lib.json",
+        "assets": ["pkgs/client/*.md"],
+        "rootDir": "pkgs/client/src"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "inputs": ["default"]
+    },
+    "supabase:ensure-started": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          "supabase status || (echo \"Starting Supabase...\" && supabase start)"
+        ],
+        "parallel": false
+      }
+    },
+    "supabase:start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["supabase start"],
+        "parallel": false
+      }
+    },
+    "supabase:stop": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["supabase stop --no-backup"],
+        "parallel": false
+      }
+    },
+    "supabase:prepare": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^verify-migrations"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          "mkdir -p supabase/migrations/",
+          "rm -f supabase/migrations/*.sql",
+          "cp ../core/supabase/migrations/*.sql supabase/migrations/"
+        ],
+        "parallel": false
+      }
+    },
+    "supabase:reset": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["supabase:prepare"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["supabase db reset"],
+        "parallel": false
+      }
+    },
+    "db:ensure": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["supabase:ensure-started", "supabase:prepare"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["./scripts/ensure-db"],
+        "parallel": false
+      }
+    },
+    "test:integration": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["db:ensure"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["vitest run tests/integration/"],
+        "parallel": false
+      }
+    },
+    "test:unit": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["vitest run __tests__/"],
+        "parallel": false
+      }
+    },
+    "test": {
+      "executor": "nx:noop",
+      "dependsOn": ["test:unit", "test:integration"]
+    }
+  }
+}

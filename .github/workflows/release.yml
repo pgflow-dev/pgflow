@@ -33,6 +33,8 @@ jobs:
 
       - name: Setup Atlas
         uses: ariga/setup-atlas@master
+        with:
+          cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile

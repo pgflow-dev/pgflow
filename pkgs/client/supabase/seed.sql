@@ -1,0 +1,1 @@
+-- Empty seed file - migrations will be copied from pkgs/core/

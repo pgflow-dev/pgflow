@@ -16,12 +16,6 @@
     "deno/full.d.ts": "npm:@teidesu/deno-types@1.42.4/full.d.ts"
   },
   "tasks": {
-    "db:down": "docker compose -f tests/db/compose.yaml down --volumes --remove-orphans",
-    "db:clean": "rm tests/db/migrations/*.sql || true",
-    "db:copy-migrations": "./scripts/concatenate-migrations.sh",
-    "db:up": "docker compose -f tests/db/compose.yaml up --detach && ./scripts/wait-for-localhost 5432",
-    "db:ensure": "deno task --config deno.test.json db:down && deno task --config deno.test.json db:clean && deno task --config deno.test.json db:copy-migrations && deno task --config deno.test.json db:up && sleep 5",
-    "test:integration": "deno task --config deno.test.json db:ensure && deno test --allow-net --allow-env tests/integration",
     "jsr:download-count": "deno run --allow-net jsr:@inbestigator/saves @pgflow/edge-worker"
   },
   "lint": {
