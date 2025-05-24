@@ -1,0 +1,82 @@
+---
+title: Client Library
+description: Real-time workflow monitoring and observation for pgflow applications
+topic: pgflow
+sidebar:
+  order: 4
+---
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+import NotProductionReady from '@/components/NotProductionReady.astro';
+
+<NotProductionReady />
+
+The **pgflow Client Library** enables real-time monitoring and observation of workflow execution in your applications. Built on Supabase's real-time infrastructure, it provides reactive updates as your flows progress through their lifecycle.
+
+## Key Features
+
+- **Real-time Flow Monitoring** - Observe flow execution as it happens
+- **Type-safe API** - Full TypeScript support with automatic type inference
+- **Framework Agnostic** - Works with React, Vue, Svelte, or vanilla JavaScript
+- **Broadcast Adapters** - Flexible real-time communication layer
+- **Connection Management** - Automatic reconnection and error handling
+
+## Getting Started
+
+<CardGrid>
+  <LinkCard
+    title="Install Client Library"
+    description="Set up the pgflow client library in your application"
+    href="/client/getting-started/install/"
+  />
+  <LinkCard
+    title="Monitor Flow Execution"
+    description="Connect to real-time flow updates and track progress"
+    href="/client/getting-started/monitor-flows/"
+  />
+</CardGrid>
+
+## Concepts
+
+<CardGrid>
+  <LinkCard
+    title="How Client Library Works"
+    description="Understand real-time flow observation and broadcast adapters"
+    href="/client/concepts/how-it-works/"
+  />
+  <LinkCard
+    title="Flow Lifecycle Events"
+    description="Learn about the different events emitted during flow execution"
+    href="/client/concepts/flow-lifecycle-events/"
+  />
+</CardGrid>
+
+## How-to Guides
+
+<CardGrid>
+  <LinkCard
+    title="Handle Connection Issues"
+    description="Implement robust error handling and reconnection logic"
+    href="/client/how-to/handle-connection-issues/"
+  />
+  <LinkCard
+    title="Integrate with React"
+    description="Build reactive flow monitoring components in React"
+    href="/client/how-to/integrate-with-react/"
+  />
+  <LinkCard
+    title="Build Custom Event Handlers"
+    description="Create specialized handlers for different flow events"
+    href="/client/how-to/custom-event-handlers/"
+  />
+</CardGrid>
+
+## Tutorials
+
+<CardGrid>
+  <LinkCard
+    title="Build a Live Flow Dashboard"
+    description="Create a real-time dashboard to monitor workflow execution"
+    href="/client/tutorials/flow-dashboard/"
+  />
+</CardGrid>

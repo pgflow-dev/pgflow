@@ -1,0 +1,207 @@
+---
+title: How the Client Library Works
+description: Understand pgflow's real-time flow observation system and broadcast adapters
+topic: pgflow
+sidebar:
+  order: 1
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import NotProductionReady from '@/components/NotProductionReady.astro';
+
+<NotProductionReady />
+
+The pgflow Client Library provides real-time monitoring of workflow execution by listening to database events through Supabase's real-time infrastructure. This enables you to build reactive user interfaces that update automatically as flows progress.
+
+## Architecture Overview
+
+The client library sits between your application and the pgflow database, translating low-level database events into high-level flow lifecycle events.
+
+```
+┌─────────────────┐    Real-time Events    ┌─────────────────┐
+│   Your App      │◄─────────────────────►│  Client Library │
+│                 │                        │                 │
+│ • React         │                        │ • PgflowClient  │
+│ • Vue           │                        │ • FlowRun       │
+│ • Vanilla JS    │                        │ • FlowStep      │
+└─────────────────┘                        └─────────────────┘
+                                                     │
+                                           Supabase  │
+                                           Real-time │
+                                                     ▼
+                                           ┌─────────────────┐
+                                           │   pgflow DB     │
+                                           │                 │
+                                           │ • runs          │
+                                           │ • step_states   │
+                                           │ • step_tasks    │
+                                           └─────────────────┘
+```
+
+## Core Components
+
+### PgflowClient
+
+The main entry point that manages the connection to your Supabase instance and provides methods to observe flows:
+
+```typescript
+import { PgflowClient } from '@pgflow/client';
+
+const client = new PgflowClient({
+  supabaseUrl: 'https://your-project.supabase.co',
+  supabaseKey: 'your-anon-key'
+});
+
+// Observe a specific flow run
+const flowRun = await client.observeRun('run-id-123');
+```
+
+### FlowRun
+
+Represents a single workflow execution, providing real-time updates about the run's progress:
+
+```typescript
+// Listen for overall run status changes
+flowRun.on('statusChanged', (status) => {
+  console.log(`Flow ${status}`); // 'started', 'completed', 'failed'
+});
+
+// Get current run information
+console.log(flowRun.status);
+console.log(flowRun.input);
+console.log(flowRun.output); // Available when completed
+```
+
+### FlowStep
+
+Represents individual steps within a flow, with detailed progress tracking:
+
+```typescript
+// Listen for step completion
+flowRun.on('stepCompleted', (step) => {
+  console.log(`Step ${step.slug} completed with output:`, step.output);
+});
+
+// Access step details
+const steps = flowRun.steps;
+steps.forEach(step => {
+  console.log(`${step.slug}: ${step.status}`);
+});
+```
+
+## Broadcast Adapters
+
+The client library uses **broadcast adapters** to abstract away the real-time communication layer. This design allows pgflow to work with different real-time providers while maintaining a consistent API.
+
+### Supabase Broadcast Adapter
+
+The default adapter uses Supabase's real-time channels to deliver events:
+
+```typescript
+import { SupabaseBroadcastAdapter } from '@pgflow/client';
+
+const adapter = new SupabaseBroadcastAdapter({
+  supabaseUrl: 'https://your-project.supabase.co',
+  supabaseKey: 'your-anon-key'
+});
+
+const client = new PgflowClient({ adapter });
+```
+
+<Aside type="note" title="Custom Adapters">
+You can implement custom broadcast adapters for other real-time providers like Pusher, Ably, or WebSockets. The adapter interface is designed to be simple and provider-agnostic.
+</Aside>
+
+## Event Flow
+
+When a workflow executes, the following sequence occurs:
+
+1. **Database Events**: pgflow triggers emit events to the `pgflow_events` table
+2. **Real-time Delivery**: Supabase real-time delivers these events to subscribed clients
+3. **Event Processing**: The broadcast adapter receives and processes raw events
+4. **State Management**: FlowRun and FlowStep objects update their internal state
+5. **User Callbacks**: Your application code receives high-level events
+
+```typescript
+// This high-level event...
+flowRun.on('stepCompleted', (step) => {
+  // Your callback code
+});
+
+// ...is derived from low-level database events:
+// INSERT INTO pgflow.step_states (status = 'completed', ...)
+// -> Supabase real-time notification
+// -> Broadcast adapter processing
+// -> FlowStep state update
+// -> stepCompleted event emission
+```
+
+## Connection Management
+
+The client library handles connection lifecycle automatically:
+
+- **Automatic Reconnection**: Reconnects when the network connection is restored
+- **Event Replay**: Catches up on missed events after reconnection
+- **Error Handling**: Gracefully handles temporary connection failures
+- **Resource Cleanup**: Properly unsubscribes when no longer needed
+
+```typescript
+// Connection status monitoring
+client.on('connected', () => {
+  console.log('Connected to real-time updates');
+});
+
+client.on('disconnected', () => {
+  console.log('Disconnected - will attempt to reconnect');
+});
+
+client.on('error', (error) => {
+  console.error('Connection error:', error);
+});
+```
+
+## Type Safety
+
+The client library provides full TypeScript support with automatic type inference based on your flow definitions:
+
+```typescript
+import { MyFlow } from './flows/my-flow';
+
+// TypeScript knows the exact input/output types
+const flowRun = await client.observeRun<MyFlow>('run-id');
+
+// Type-safe access to step outputs
+flowRun.on('stepCompleted', (step) => {
+  if (step.slug === 'process_data') {
+    // TypeScript knows step.output is ProcessDataOutput
+    console.log(step.output.processedCount);
+  }
+});
+```
+
+## Performance Characteristics
+
+The client library is designed for efficiency:
+
+- **Selective Subscriptions**: Only subscribes to events for flows you're actually observing
+- **State Caching**: Maintains local state to avoid redundant API calls
+- **Batched Updates**: Groups rapid state changes to prevent UI thrashing
+- **Memory Management**: Automatically cleans up resources when flows complete
+
+<Aside type="tip" title="Best Practices">
+- Create one PgflowClient instance per application
+- Observe only the flows you need to display
+- Use `unobserve()` to clean up when components unmount
+- Handle connection errors gracefully in your UI
+</Aside>
+
+## Real-time vs Polling
+
+Unlike polling-based solutions, pgflow's real-time approach provides:
+
+- **Instant Updates**: Events arrive as soon as they occur
+- **Lower Latency**: No polling interval delays
+- **Reduced Load**: No unnecessary requests when nothing changes
+- **Better UX**: Users see progress immediately
+
+This makes it ideal for building responsive workflow dashboards and progress indicators.

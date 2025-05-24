@@ -1,0 +1,397 @@
+---
+title: Build a Flow Dashboard
+description: Create a real-time dashboard to visualize and monitor pgflow execution using the client library
+sidebar:
+  order: 12
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Learn how to build a real-time dashboard that displays flow execution progress, step states, and outputs using the pgflow client library.
+
+<Aside type="caution" title="Prerequisites">
+- pgflow client library set up in your project
+- A React/Next.js application (examples use React, but concepts apply to any framework)
+- At least one pgflow workflow deployed
+</Aside>
+
+## Dashboard Components
+
+A typical flow dashboard includes:
+
+- **Flow run list** - Shows recent and active runs
+- **Step progress visualization** - Displays step states in real-time  
+- **Output viewer** - Shows step and run outputs
+- **Error handling** - Displays failures and retry information
+
+## Basic Dashboard Setup
+
+<Steps>
+
+1. **Create the dashboard hook**
+
+   ```typescript title="hooks/useFlowDashboard.ts"
+   import { useState, useEffect } from 'react'
+   import { PgflowClient } from '@pgflow/client'
+
+   export function useFlowDashboard(pgflow: PgflowClient, flowSlug: string) {
+     const [runs, setRuns] = useState([])
+     const [activeRuns, setActiveRuns] = useState(new Map())
+
+     useEffect(() => {
+       // Fetch recent runs
+       const fetchRuns = async () => {
+         const recentRuns = await pgflow.getRecentRuns(flowSlug, { limit: 20 })
+         setRuns(recentRuns)
+
+         // Start observing active runs
+         recentRuns
+           .filter(run => run.status === 'running')
+           .forEach(run => {
+             const flowRun = pgflow.observeRun(run.run_id)
+             setActiveRuns(prev => new Map(prev.set(run.run_id, flowRun)))
+           })
+       }
+
+       fetchRuns()
+     }, [pgflow, flowSlug])
+
+     return { runs, activeRuns }
+   }
+   ```
+
+2. **Create the main dashboard component**
+
+   ```typescript title="components/FlowDashboard.tsx"
+   import { useFlowDashboard } from '../hooks/useFlowDashboard'
+   import { FlowRunCard } from './FlowRunCard'
+   import { StepProgressBar } from './StepProgressBar'
+
+   interface FlowDashboardProps {
+     pgflow: PgflowClient
+     flowSlug: string
+   }
+
+   export function FlowDashboard({ pgflow, flowSlug }: FlowDashboardProps) {
+     const { runs, activeRuns } = useFlowDashboard(pgflow, flowSlug)
+
+     return (
+       <div className="flow-dashboard">
+         <h1>Flow Dashboard: {flowSlug}</h1>
+         
+         <div className="runs-grid">
+           {runs.map(run => (
+             <FlowRunCard 
+               key={run.run_id} 
+               run={run}
+               flowRun={activeRuns.get(run.run_id)}
+             />
+           ))}
+         </div>
+       </div>
+     )
+   }
+   ```
+
+3. **Create the run card component**
+
+   ```typescript title="components/FlowRunCard.tsx"
+   import { useState, useEffect } from 'react'
+   import { FlowRun } from '@pgflow/client'
+
+   interface FlowRunCardProps {
+     run: any
+     flowRun?: FlowRun
+   }
+
+   export function FlowRunCard({ run, flowRun }: FlowRunCardProps) {
+     const [steps, setSteps] = useState([])
+     const [currentRun, setCurrentRun] = useState(run)
+
+     useEffect(() => {
+       if (flowRun) {
+         // Listen for step updates
+         flowRun.onStepComplete((step) => {
+           setSteps(prev => prev.map(s => 
+             s.step_slug === step.step_slug ? step : s
+           ))
+         })
+
+         // Listen for run completion
+         flowRun.onComplete((updatedRun) => {
+           setCurrentRun(updatedRun)
+         })
+
+         // Get initial steps
+         flowRun.getSteps().then(setSteps)
+       }
+     }, [flowRun])
+
+     return (
+       <div className={`run-card run-card--${currentRun.status}`}>
+         <div className="run-header">
+           <h3>Run {currentRun.run_id.slice(0, 8)}</h3>
+           <span className="run-status">{currentRun.status}</span>
+         </div>
+
+         <StepProgressBar steps={steps} />
+
+         {currentRun.status === 'completed' && (
+           <div className="run-output">
+             <h4>Output:</h4>
+             <pre>{JSON.stringify(currentRun.output, null, 2)}</pre>
+           </div>
+         )}
+       </div>
+     )
+   }
+   ```
+
+</Steps>
+
+## Step Progress Visualization
+
+Create a component to visualize step execution progress:
+
+```typescript title="components/StepProgressBar.tsx"
+interface StepProgressBarProps {
+  steps: Array<{
+    step_slug: string
+    status: 'pending' | 'running' | 'completed' | 'failed'
+    output?: any
+  }>
+}
+
+export function StepProgressBar({ steps }: StepProgressBarProps) {
+  return (
+    <div className="step-progress">
+      {steps.map((step, index) => (
+        <div key={step.step_slug} className="step-item">
+          <div className={`step-indicator step-indicator--${step.status}`}>
+            {step.status === 'completed' && '✓'}
+            {step.status === 'failed' && '✗'}
+            {step.status === 'running' && '⟳'}
+          </div>
+          <div className="step-label">{step.step_slug}</div>
+          {index < steps.length - 1 && (
+            <div className="step-connector" />
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+```
+
+## Real-time Updates
+
+<Tabs>
+  <TabItem label="React Hook">
+
+```typescript title="hooks/useRealtimeFlowRun.ts"
+import { useState, useEffect } from 'react'
+import { FlowRun } from '@pgflow/client'
+
+export function useRealtimeFlowRun(flowRun: FlowRun) {
+  const [run, setRun] = useState(null)
+  const [steps, setSteps] = useState([])
+  const [errors, setErrors] = useState([])
+
+  useEffect(() => {
+    if (!flowRun) return
+
+    // Initial data fetch
+    Promise.all([
+      flowRun.getRun(),
+      flowRun.getSteps()
+    ]).then(([runData, stepsData]) => {
+      setRun(runData)
+      setSteps(stepsData)
+    })
+
+    // Real-time listeners
+    const unsubscribeStep = flowRun.onStepComplete((step) => {
+      setSteps(prev => prev.map(s => 
+        s.step_slug === step.step_slug ? step : s
+      ))
+    })
+
+    const unsubscribeRun = flowRun.onComplete((updatedRun) => {
+      setRun(updatedRun)
+    })
+
+    const unsubscribeError = flowRun.onError((error) => {
+      setErrors(prev => [...prev, error])
+    })
+
+    return () => {
+      unsubscribeStep()
+      unsubscribeRun()
+      unsubscribeError()
+    }
+  }, [flowRun])
+
+  return { run, steps, errors }
+}
+```
+
+  </TabItem>
+  <TabItem label="Vue Composable">
+
+```typescript title="composables/useRealtimeFlowRun.ts"
+import { ref, onMounted, onUnmounted } from 'vue'
+import { FlowRun } from '@pgflow/client'
+
+export function useRealtimeFlowRun(flowRun: FlowRun) {
+  const run = ref(null)
+  const steps = ref([])
+  const errors = ref([])
+
+  let unsubscribeFunctions = []
+
+  onMounted(async () => {
+    if (!flowRun) return
+
+    // Initial data
+    const [runData, stepsData] = await Promise.all([
+      flowRun.getRun(),
+      flowRun.getSteps()
+    ])
+    
+    run.value = runData
+    steps.value = stepsData
+
+    // Real-time listeners
+    unsubscribeFunctions = [
+      flowRun.onStepComplete((step) => {
+        const index = steps.value.findIndex(s => s.step_slug === step.step_slug)
+        if (index !== -1) {
+          steps.value[index] = step
+        }
+      }),
+      flowRun.onComplete((updatedRun) => {
+        run.value = updatedRun
+      }),
+      flowRun.onError((error) => {
+        errors.value.push(error)
+      })
+    ]
+  })
+
+  onUnmounted(() => {
+    unsubscribeFunctions.forEach(fn => fn())
+  })
+
+  return { run, steps, errors }
+}
+```
+
+  </TabItem>
+</Tabs>
+
+## Dashboard Styling
+
+Add CSS to make your dashboard visually appealing:
+
+```css title="styles/dashboard.css"
+.flow-dashboard {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.runs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.run-card {
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  padding: 16px;
+  background: white;
+}
+
+.run-card--running {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.run-card--completed {
+  border-color: #10b981;
+  background: #ecfdf5;
+}
+
+.run-card--failed {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.step-progress {
+  display: flex;
+  align-items: center;
+  margin: 12px 0;
+}
+
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.step-indicator {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.step-indicator--pending {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.step-indicator--running {
+  background: #3b82f6;
+  color: white;
+  animation: spin 1s linear infinite;
+}
+
+.step-indicator--completed {
+  background: #10b981;
+  color: white;
+}
+
+.step-indicator--failed {
+  background: #ef4444;
+  color: white;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+```
+
+## Advanced Features
+
+Consider adding these enhancements to your dashboard:
+
+- **Flow filtering** - Filter runs by status, date range, or input parameters
+- **Performance metrics** - Show execution times and step durations
+- **Error details** - Expandable error messages and stack traces
+- **Manual controls** - Buttons to retry failed runs or cancel running flows
+- **Export functionality** - Download run data as JSON or CSV
+
+## Next Steps
+
+- [Handle Client-Side Errors](/how-to/handle-client-errors/) - Implement comprehensive error handling
+- [Monitor Flow Execution](/how-to/monitor-flow-execution/) - Learn about different monitoring strategies
+- [Set Up the Client Library](/how-to/setup-client-library/) - Review client setup if needed

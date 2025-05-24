@@ -1,0 +1,500 @@
+---
+title: Handle Client-Side Errors
+description: Implement robust error handling and recovery strategies when using the pgflow client library
+sidebar:
+  order: 13
+---
+
+import { Aside, TabItem, Tabs } from '@astrojs/starlight/components';
+
+Learn how to handle errors gracefully when observing pgflow execution, including connection issues, step failures, and run timeouts.
+
+## Types of Client-Side Errors
+
+The pgflow client library can encounter several types of errors:
+
+- **Connection errors** - Network issues or Supabase connectivity problems
+- **Step failures** - Individual workflow steps that fail during execution
+- **Run failures** - Entire workflow runs that fail or timeout
+- **Subscription errors** - Real-time subscription issues with broadcast channels
+
+## Basic Error Handling
+
+### Flow Run Error Handling
+
+```typescript
+import { PgflowClient } from '@pgflow/client'
+
+const pgflow = new PgflowClient(supabase)
+const flowRun = pgflow.observeRun(runId)
+
+// Handle step failures
+flowRun.onStepError((error) => {
+  console.error(`Step ${error.step_slug} failed:`, {
+    message: error.message,
+    attempts: error.attempts,
+    maxRetries: error.max_retries,
+    willRetry: error.attempts < error.max_retries
+  })
+  
+  // Show user-friendly error message
+  showNotification({
+    type: 'error',
+    title: `Step "${error.step_slug}" failed`,
+    message: error.willRetry ? 'Retrying...' : 'Maximum retries exceeded',
+    duration: error.willRetry ? 3000 : null // Don't auto-dismiss permanent failures
+  })
+})
+
+// Handle complete run failures
+flowRun.onError((error) => {
+  console.error('Flow run failed:', error)
+  
+  // Handle different error types
+  switch (error.type) {
+    case 'timeout':
+      showErrorDialog({
+        title: 'Flow Timeout',
+        message: 'The workflow took too long to complete. You can try running it again.',
+        actions: [
+          { label: 'Retry', action: () => retryFlow(runId) },
+          { label: 'Cancel', action: () => cancelFlow(runId) }
+        ]
+      })
+      break
+      
+    case 'dependency_failure':
+      showErrorDialog({
+        title: 'Dependency Failed',
+        message: `Step "${error.failed_step}" failed and other steps cannot continue.`,
+        actions: [{ label: 'View Details', action: () => showStepDetails(error.failed_step) }]
+      })
+      break
+      
+    default:
+      showGenericError(error)
+  }
+})
+```
+
+### Connection Error Handling
+
+```typescript
+// Handle connection and subscription errors
+flowRun.onConnectionError((error) => {
+  console.warn('Connection error:', error)
+  
+  switch (error.code) {
+    case 'SUBSCRIPTION_FAILED':
+      // Attempt to reconnect
+      setTimeout(() => {
+        flowRun.reconnect()
+      }, 2000)
+      
+      showNotification({
+        type: 'warning',
+        title: 'Connection Lost',
+        message: 'Attempting to reconnect...'
+      })
+      break
+      
+    case 'UNAUTHORIZED':
+      // Handle auth issues
+      redirectToLogin()
+      break
+      
+    default:
+      // Show offline indicator
+      setConnectionStatus('offline')
+  }
+})
+
+// Handle successful reconnection
+flowRun.onReconnected(() => {
+  showNotification({
+    type: 'success',
+    title: 'Reconnected',
+    message: 'Real-time updates restored'
+  })
+  setConnectionStatus('online')
+})
+```
+
+## Error Recovery Strategies
+
+### Automatic Retry with Exponential Backoff
+
+```typescript
+class FlowObserver {
+  private retryCount = 0
+  private maxRetries = 3
+  private baseDelay = 1000
+
+  async observeWithRetry(runId: string) {
+    try {
+      const flowRun = this.pgflow.observeRun(runId)
+      this.setupErrorHandlers(flowRun)
+      return flowRun
+    } catch (error) {
+      if (this.retryCount < this.maxRetries) {
+        this.retryCount++
+        const delay = this.baseDelay * Math.pow(2, this.retryCount - 1)
+        
+        console.log(`Retry attempt ${this.retryCount} in ${delay}ms`)
+        
+        await new Promise(resolve => setTimeout(resolve, delay))
+        return this.observeWithRetry(runId)
+      } else {
+        throw new Error(`Failed to observe run after ${this.maxRetries} attempts`)
+      }
+    }
+  }
+
+  private setupErrorHandlers(flowRun: FlowRun) {
+    flowRun.onConnectionError((error) => {
+      if (error.code === 'SUBSCRIPTION_FAILED') {
+        // Reset retry count on connection errors
+        this.retryCount = 0
+        setTimeout(() => this.observeWithRetry(flowRun.runId), 2000)
+      }
+    })
+  }
+}
+```
+
+### Graceful Degradation
+
+When real-time updates fail, fall back to polling:
+
+```typescript
+class RobustFlowObserver {
+  private pollInterval: NodeJS.Timeout | null = null
+  private isRealtime = true
+
+  observeRun(runId: string) {
+    const flowRun = this.pgflow.observeRun(runId)
+    
+    flowRun.onConnectionError((error) => {
+      console.warn('Real-time failed, switching to polling:', error)
+      this.fallbackToPolling(runId)
+    })
+    
+    return flowRun
+  }
+
+  private fallbackToPolling(runId: string) {
+    this.isRealtime = false
+    this.showFallbackNotification()
+    
+    this.pollInterval = setInterval(async () => {
+      try {
+        const runStatus = await this.pgflow.getRunStatus(runId)
+        this.handleStatusUpdate(runStatus)
+        
+        if (runStatus.status === 'completed' || runStatus.status === 'failed') {
+          this.stopPolling()
+        }
+      } catch (error) {
+        console.error('Polling failed:', error)
+        this.stopPolling()
+      }
+    }, 3000) // Poll every 3 seconds
+  }
+
+  private stopPolling() {
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval)
+      this.pollInterval = null
+    }
+  }
+  
+  private showFallbackNotification() {
+    showNotification({
+      type: 'info',
+      title: 'Using Polling Mode',
+      message: 'Real-time updates unavailable. Status will refresh every 3 seconds.',
+      duration: 5000
+    })
+  }
+}
+```
+
+## Error Boundaries for React
+
+<Tabs>
+  <TabItem label="React Error Boundary">
+
+```typescript title="components/FlowErrorBoundary.tsx"
+import { Component, ReactNode, ErrorInfo } from 'react'
+
+interface Props {
+  children: ReactNode
+  fallback?: ReactNode
+  onError?: (error: Error, errorInfo: ErrorInfo) => void
+}
+
+interface State {
+  hasError: boolean
+  error: Error | null
+}
+
+export class FlowErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Flow observation error:', error, errorInfo)
+    
+    // Log to error tracking service
+    this.props.onError?.(error, errorInfo)
+    
+    // Report to analytics
+    analytics.track('flow_observation_error', {
+      error: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack
+    })
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || (
+        <div className="flow-error-fallback">
+          <h3>Something went wrong with flow observation</h3>
+          <details>
+            <summary>Error details</summary>
+            <pre>{this.state.error?.stack}</pre>
+          </details>
+          <button onClick={() => window.location.reload()}>
+            Reload Page
+          </button>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
+```
+
+Usage:
+
+```typescript title="components/FlowDashboard.tsx"
+export function FlowDashboard() {
+  return (
+    <FlowErrorBoundary
+      fallback={<FlowDashboardError />}
+      onError={(error, errorInfo) => {
+        // Send to error tracking
+        Sentry.captureException(error, { extra: errorInfo })
+      }}
+    >
+      <FlowRunsList />
+      <ActiveFlowMonitor />
+    </FlowErrorBoundary>
+  )
+}
+```
+
+  </TabItem>
+  <TabItem label="Vue Error Handling">
+
+```typescript title="composables/useErrorHandler.ts"
+import { ref, onErrorCaptured } from 'vue'
+
+export function useFlowErrorHandler() {
+  const error = ref<Error | null>(null)
+  const isRecovering = ref(false)
+
+  onErrorCaptured((err: Error) => {
+    console.error('Flow error captured:', err)
+    error.value = err
+    
+    // Attempt recovery
+    if (!isRecovering.value) {
+      attemptRecovery(err)
+    }
+    
+    return true // Prevent error from bubbling up
+  })
+
+  const attemptRecovery = async (err: Error) => {
+    isRecovering.value = true
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      error.value = null
+    } catch (recoveryError) {
+      console.error('Recovery failed:', recoveryError)
+    } finally {
+      isRecovering.value = false
+    }
+  }
+
+  const clearError = () => {
+    error.value = null
+  }
+
+  return {
+    error: readonly(error),
+    isRecovering: readonly(isRecovering),
+    clearError
+  }
+}
+```
+
+  </TabItem>
+</Tabs>
+
+## User-Friendly Error Messages
+
+```typescript
+const errorMessages = {
+  // Technical errors -> User-friendly messages
+  'PGFLW001': 'The workflow is taking longer than expected. Please wait a moment.',
+  'PGFLW002': 'Unable to connect to the workflow engine. Please check your connection.',
+  'PGFLW003': 'This workflow step requires additional permissions.',
+  'TIMEOUT': 'The operation timed out. You can try again or check the workflow status later.',
+  'NETWORK_ERROR': 'Connection issue detected. Retrying automatically...',
+  
+  // Default fallback
+  'UNKNOWN': 'An unexpected error occurred. Our team has been notified.'
+}
+
+function getErrorMessage(error: any): string {
+  const code = error.code || error.type || 'UNKNOWN'
+  return errorMessages[code] || errorMessages.UNKNOWN
+}
+
+// Usage in error handlers
+flowRun.onError((error) => {
+  const userMessage = getErrorMessage(error)
+  showNotification({
+    type: 'error',
+    title: 'Workflow Error',
+    message: userMessage
+  })
+})
+```
+
+## Error Reporting and Analytics
+
+```typescript
+interface ErrorContext {
+  runId: string
+  flowSlug: string
+  userId?: string
+  timestamp: string
+  userAgent: string
+  url: string
+}
+
+class ErrorReporter {
+  static report(error: Error, context: ErrorContext) {
+    // Send to error tracking service
+    Sentry.withScope((scope) => {
+      scope.setTag('component', 'pgflow-client')
+      scope.setContext('flow', {
+        runId: context.runId,
+        flowSlug: context.flowSlug
+      })
+      scope.setUser({ id: context.userId })
+      
+      Sentry.captureException(error)
+    })
+    
+    // Send to analytics
+    analytics.track('pgflow_client_error', {
+      error_type: error.constructor.name,
+      error_message: error.message,
+      ...context
+    })
+    
+    // Log for debugging
+    console.group('🔴 pgflow Client Error')
+    console.error('Error:', error)
+    console.table(context)
+    console.groupEnd()
+  }
+}
+
+// Usage in error handlers
+flowRun.onError((error) => {
+  ErrorReporter.report(error, {
+    runId: flowRun.runId,
+    flowSlug: flowRun.flowSlug,
+    userId: currentUser?.id,
+    timestamp: new Date().toISOString(),
+    userAgent: navigator.userAgent,
+    url: window.location.href
+  })
+})
+```
+
+<Aside type="note" title="Error Tracking Services">
+Consider integrating with error tracking services like Sentry, Bugsnag, or LogRocket to automatically capture and organize client-side errors in production.
+</Aside>
+
+## Testing Error Scenarios
+
+```typescript title="__tests__/error-handling.test.ts"
+import { PgflowClient } from '@pgflow/client'
+import { createMockSupabase } from './mocks'
+
+describe('Error Handling', () => {
+  it('should handle connection errors gracefully', async () => {
+    const mockSupabase = createMockSupabase()
+    const pgflow = new PgflowClient(mockSupabase)
+    
+    // Simulate connection failure
+    mockSupabase.channel.mockImplementation(() => {
+      throw new Error('SUBSCRIPTION_FAILED')
+    })
+    
+    const flowRun = pgflow.observeRun('test-run-id')
+    const errorHandler = jest.fn()
+    
+    flowRun.onConnectionError(errorHandler)
+    
+    // Trigger the error
+    await expect(flowRun.connect()).rejects.toThrow()
+    
+    expect(errorHandler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: 'SUBSCRIPTION_FAILED'
+      })
+    )
+  })
+  
+  it('should retry failed operations', async () => {
+    const mockSupabase = createMockSupabase()
+    const pgflow = new PgflowClient(mockSupabase)
+    
+    let callCount = 0
+    mockSupabase.rpc.mockImplementation(() => {
+      callCount++
+      if (callCount < 3) {
+        throw new Error('Temporary failure')
+      }
+      return { data: { status: 'completed' } }
+    })
+    
+    const result = await pgflow.getRunStatus('test-run-id')
+    
+    expect(callCount).toBe(3)
+    expect(result.status).toBe('completed')
+  })
+})
+```
+
+## Next Steps
+
+- [Build a Flow Dashboard](/how-to/build-flow-dashboard/) - Create error-aware dashboard components
+- [Monitor Flow Execution](/how-to/monitor-flow-execution/) - Learn about comprehensive monitoring
+- [Set Up the Client Library](/how-to/setup-client-library/) - Review basic client setup

@@ -1,0 +1,118 @@
+---
+title: Set Up the Client Library
+description: Install and configure the pgflow client library to observe workflow execution in your application
+sidebar:
+  order: 11
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+The pgflow client library allows you to observe workflow execution from your application, providing real-time updates on flow progress and step completion.
+
+<Aside type="caution" title="Prerequisites">
+- A Supabase project with pgflow installed
+- Node.js 18 or higher
+- Your Supabase project URL and anon key
+</Aside>
+
+<Steps>
+
+1. **Install the client library**
+
+   ```bash frame="none"
+   npm install @pgflow/client
+   ```
+
+2. **Set up your Supabase client**
+
+   Create a Supabase client with the required configuration:
+
+   ```typescript
+   import { createClient } from '@supabase/supabase-js'
+
+   const supabase = createClient(
+     process.env.NEXT_PUBLIC_SUPABASE_URL!,
+     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+   )
+   ```
+
+3. **Initialize the pgflow client**
+
+   ```typescript
+   import { PgflowClient } from '@pgflow/client'
+
+   const pgflow = new PgflowClient(supabase)
+   ```
+
+4. **Start observing a flow run**
+
+   ```typescript
+   // Start a flow and get the run ID
+   const { data: run } = await supabase
+     .rpc('pgflow.start_flow', {
+       flow_slug: 'analyze_website',
+       run_input: { url: 'https://example.com' }
+     })
+
+   // Observe the flow execution
+   const flowRun = pgflow.observeRun(run.run_id)
+
+   flowRun.onStepComplete((step) => {
+     console.log(`Step ${step.step_slug} completed:`, step.output)
+   })
+
+   flowRun.onComplete((run) => {
+     console.log('Flow completed:', run.output)
+   })
+
+   flowRun.onError((error) => {
+     console.error('Flow error:', error)
+   })
+   ```
+
+</Steps>
+
+## Client Configuration Options
+
+The PgflowClient accepts optional configuration:
+
+```typescript
+const pgflow = new PgflowClient(supabase, {
+  schema: 'pgflow', // Custom schema name if different
+  enableRealtime: true, // Enable real-time updates (default: true)
+})
+```
+
+## TypeScript Support
+
+The client library provides full TypeScript support with automatic type inference:
+
+```typescript
+// Type-safe flow observation with inferred step types
+const flowRun = pgflow.observeRun<AnalyzeWebsiteFlow>(runId)
+
+flowRun.onStepComplete((step) => {
+  // step.output is properly typed based on your flow definition
+  if (step.step_slug === 'summary') {
+    console.log(step.output.title) // TypeScript knows this exists
+  }
+})
+```
+
+## Real-time Updates
+
+The client automatically subscribes to real-time updates using Supabase's broadcast functionality. This provides immediate notifications when:
+
+- Steps complete or fail
+- Flow runs finish
+- Errors occur
+
+<Aside type="note" title="Broadcast Channel">
+The client subscribes to the `pgflow:runs` broadcast channel. Make sure your Supabase project has realtime enabled and the pgflow realtime configuration is properly set up.
+</Aside>
+
+## Next Steps
+
+- [Build a Flow Dashboard](/how-to/build-flow-dashboard/) - Create a UI to visualize flow execution
+- [Handle Client-Side Errors](/how-to/handle-client-errors/) - Implement proper error handling and recovery
+- [Monitor Flow Execution](/how-to/monitor-flow-execution/) - Learn about different monitoring approaches
