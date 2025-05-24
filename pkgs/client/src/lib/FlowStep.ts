@@ -35,6 +35,13 @@ export class FlowStep<
   }
 
   /**
+   * Get the run ID this step belongs to
+   */
+  get run_id(): string {
+    return this.#state.run_id;
+  }
+
+  /**
    * Get the step slug
    */
   get step_slug(): TStepSlug {

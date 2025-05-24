@@ -23,10 +23,9 @@ export class FlowRun<TFlow extends AnyFlow> implements FlowRunBase<FlowRunEvent<
   #events = createNanoEvents<FlowRunEvents<TFlow>>();
   #steps = new Map<string, FlowStepBase>();
   #statusPrecedence: Record<FlowRunStatus, number> = {
-    [FlowRunStatus.Queued]: 0,
-    [FlowRunStatus.Started]: 1,
-    [FlowRunStatus.Completed]: 2,
-    [FlowRunStatus.Failed]: 3,
+    [FlowRunStatus.Started]: 0,
+    [FlowRunStatus.Completed]: 1,
+    [FlowRunStatus.Failed]: 2,
   };
   #disposed = false;
 

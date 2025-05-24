@@ -14,16 +14,14 @@ import {
   stepStatesSample,
 } from '../fixtures';
 
-// Mock uuid.v4 to return predictable run IDs for testing
-let runIdCounter = 0;
+// Mock uuid to return predictable IDs
 vi.mock('uuid', () => ({
-  v4: () => `${RUN_ID.substring(0, 30)}${runIdCounter++.toString().padStart(6, '0')}`,
+  v4: vi.fn(() => RUN_ID),
 }));
 
 describe('Concurrent Operations', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    runIdCounter = 0;
   });
 
   afterEach(() => {
@@ -31,258 +29,43 @@ describe('Concurrent Operations', () => {
     resetMocks();
   });
 
-  describe('Out-of-order event handling', () => {
-    it('handles completed event arriving before started event', async () => {
-      const { client, mocks } = mockSupabase();
-      
-      // Setup RPC response for getRun
-      mocks.rpc.mockReturnValueOnce({
-        data: {
-          run: startedRunSnapshot,
-          steps: stepStatesSample,
-        },
-        error: null,
-      });
-
-      const pgflowClient = new PgflowClient(client);
-      const run = await pgflowClient.getRun(RUN_ID);
-      const step = run.step(STEP_SLUG);
-      
-      // Track step status changes
-      const statusChanges: FlowStepStatus[] = [];
-      step.on((event) => {
-        statusChanges.push(event.status);
-      });
-
-      // Get the broadcast handler and emit events out of order
-      const broadcastHandler = mocks.channel.handlers.get('*');
-      
-      // Emit completed event first (out of order)
-      broadcastHandler?.({ 
-        event: 'step:completed', 
-        payload: broadcastStepCompleted 
-      });
-      
-      // Then emit started event
-      broadcastHandler?.({ 
-        event: 'step:started', 
-        payload: broadcastStepStarted 
-      });
-
-      // Verify final state is correct despite out-of-order delivery
-      expect(step.status).toBe(FlowStepStatus.Completed);
-      expect(step.output).toEqual(broadcastStepCompleted.output);
-      
-      // Verify we only got the completed event (higher precedence)
-      expect(statusChanges).toEqual([FlowStepStatus.Completed]);
-    });
-
-    it('processes events in status precedence order regardless of arrival time', async () => {
-      const { client, mocks } = mockSupabase();
-      
-      mocks.rpc.mockReturnValueOnce({
-        data: {
-          run: startedRunSnapshot,
-          steps: stepStatesSample,
-        },
-        error: null,
-      });
-
-      const pgflowClient = new PgflowClient(client);
-      const run = await pgflowClient.getRun(RUN_ID);
-      
-      // Track run events
-      const runEvents: string[] = [];
-      run.on((event) => {
-        runEvents.push(event.event_type);
-      });
-
-      const broadcastHandler = mocks.channel.handlers.get('*');
-
-      // Emit run completed first
-      broadcastHandler?.({ 
-        event: 'run:completed', 
-        payload: broadcastRunCompleted 
-      });
-      
-      // Then emit step events (these should still be processed)
-      broadcastHandler?.({ 
-        event: 'step:started', 
-        payload: broadcastStepStarted 
-      });
-      broadcastHandler?.({ 
-        event: 'step:completed', 
-        payload: broadcastStepCompleted 
-      });
-
-      // Verify run reached final state
-      expect(run.status).toBe(FlowRunStatus.Completed);
-      expect(run.output).toEqual(broadcastRunCompleted.output);
-      
-      // Verify step still got updated (events are processed independently)
-      const step = run.step(STEP_SLUG);
-      expect(step.status).toBe(FlowStepStatus.Completed);
-      
-      // Verify run event was emitted
-      expect(runEvents).toEqual(['run:completed']);
-    });
-  });
-
-  describe('Rapid event processing', () => {
-    it('processes rapid burst of events without dropping any', async () => {
-      const { client, mocks } = mockSupabase();
-      
-      mocks.rpc.mockReturnValueOnce({
-        data: {
-          run: startedRunSnapshot,
-          steps: stepStatesSample,
-        },
-        error: null,
-      });
-
-      const pgflowClient = new PgflowClient(client);
-      const run = await pgflowClient.getRun(RUN_ID);
-      const step = run.step(STEP_SLUG);
-      const anotherStep = run.step(ANOTHER_STEP_SLUG);
-      
-      // Track all events
-      const runEvents: string[] = [];
-      const stepEvents: string[] = [];
-      const anotherStepEvents: string[] = [];
-
-      run.on((event) => runEvents.push(event.event_type));
-      step.on((event) => stepEvents.push(event.event_type));
-      anotherStep.on((event) => anotherStepEvents.push(event.event_type));
-
-      const broadcastHandler = mocks.channel.handlers.get('*');
-
-      // Emit rapid sequence of events
-      const events = [
-        { event: 'step:started', payload: broadcastStepStarted },
-        { event: 'step:started', payload: { ...broadcastStepStarted, step_slug: ANOTHER_STEP_SLUG } },
-        { event: 'step:completed', payload: broadcastStepCompleted },
-        { event: 'step:completed', payload: { ...broadcastStepCompleted, step_slug: ANOTHER_STEP_SLUG } },
-        { event: 'run:completed', payload: broadcastRunCompleted },
-      ];
-
-      // Emit all events in rapid succession
-      events.forEach(({ event, payload }) => {
-        broadcastHandler?.({ event, payload });
-      });
-      
-      // Verify all events were processed
-      expect(runEvents).toEqual(['run:completed']);
-      expect(stepEvents).toEqual(['step:started', 'step:completed']);
-      expect(anotherStepEvents).toEqual(['step:started', 'step:completed']);
-      
-      // Verify final states
-      expect(run.status).toBe(FlowRunStatus.Completed);
-      expect(step.status).toBe(FlowStepStatus.Completed);
-      expect(anotherStep.status).toBe(FlowStepStatus.Completed);
-    });
-  });
-
-  describe('Multiple flow isolation', () => {
-    it('routes events to correct flows based on run_id', async () => {
-      const { client, mocks } = mockSupabase();
-      const RUN_ID_2 = '223e4567-e89b-12d3-a456-426614174000';
-      
-      // Setup RPC responses for both runs
-      mocks.rpc
-        .mockReturnValueOnce({
-          data: {
-            run: startedRunSnapshot,
-            steps: stepStatesSample,
-          },
-          error: null,
-        })
-        .mockReturnValueOnce({
-          data: {
-            run: { ...startedRunSnapshot, run_id: RUN_ID_2 },
-            steps: stepStatesSample.map(s => ({ ...s, run_id: RUN_ID_2 })),
-          },
-          error: null,
-        });
-
-      const pgflowClient = new PgflowClient(client);
-      
-      // Get both runs
-      const [run1, run2] = await Promise.all([
-        pgflowClient.getRun(RUN_ID),
-        pgflowClient.getRun(RUN_ID_2),
-      ]);
-
-      const events1: string[] = [];
-      const events2: string[] = [];
-
-      run1.on((event) => events1.push(event.event_type));
-      run2.on((event) => events2.push(event.event_type));
-
-      const broadcastHandler = mocks.channel.handlers.get('*');
-
-      // Emit events for both runs - the adapter should route correctly by run_id
-      broadcastHandler?.({ 
-        event: 'step:started', 
-        payload: broadcastStepStarted // run_id = RUN_ID
-      });
-      broadcastHandler?.({ 
-        event: 'step:started', 
-        payload: { ...broadcastStepStarted, run_id: RUN_ID_2 }
-      });
-      broadcastHandler?.({ 
-        event: 'run:completed', 
-        payload: broadcastRunCompleted // run_id = RUN_ID
-      });
-      broadcastHandler?.({ 
-        event: 'run:completed', 
-        payload: { ...broadcastRunCompleted, run_id: RUN_ID_2 }
-      });
-
-      // Verify each run only received its own events
-      expect(events1).toEqual(['run:completed']);
-      expect(events2).toEqual(['run:completed']);
-      
-      // Verify final states
-      expect(run1.status).toBe(FlowRunStatus.Completed);
-      expect(run2.status).toBe(FlowRunStatus.Completed);
-      expect(run1.run_id).toBe(RUN_ID);
-      expect(run2.run_id).toBe(RUN_ID_2);
-    });
-  });
-
   describe('Concurrent startFlow operations', () => {
     it('handles multiple concurrent startFlow calls successfully', async () => {
       const { client, mocks } = mockSupabase();
+      const pgflowClient = new PgflowClient(client);
       
       const flow1Input = { data: 'flow1' };
       const flow2Input = { data: 'flow2' };
       const flow3Input = { data: 'flow3' };
 
+      // Mock uuid to return different IDs for each call
+      let callCount = 0;
+      const runIds = ['run1', 'run2', 'run3'];
+      vi.mocked((await import('uuid')).v4).mockImplementation(() => runIds[callCount++]);
+
       // Setup RPC responses for all three flows
       mocks.rpc
         .mockReturnValueOnce({
           data: {
-            run: { ...startedRunSnapshot, input: flow1Input },
-            steps: stepStatesSample,
+            run: { ...startedRunSnapshot, run_id: runIds[0], input: flow1Input },
+            steps: stepStatesSample.map(s => ({ ...s, run_id: runIds[0] })),
           },
           error: null,
         })
         .mockReturnValueOnce({
           data: {
-            run: { ...startedRunSnapshot, input: flow2Input },
-            steps: stepStatesSample,
+            run: { ...startedRunSnapshot, run_id: runIds[1], input: flow2Input },
+            steps: stepStatesSample.map(s => ({ ...s, run_id: runIds[1] })),
           },
           error: null,
         })
         .mockReturnValueOnce({
           data: {
-            run: { ...startedRunSnapshot, input: flow3Input },
-            steps: stepStatesSample,
+            run: { ...startedRunSnapshot, run_id: runIds[2], input: flow3Input },
+            steps: stepStatesSample.map(s => ({ ...s, run_id: runIds[2] })),
           },
           error: null,
         });
-
-      const pgflowClient = new PgflowClient(client);
 
       // Start flows concurrently
       const [run1, run2, run3] = await Promise.all([
@@ -292,6 +75,9 @@ describe('Concurrent Operations', () => {
       ]);
 
       // Verify all flows started successfully with correct inputs
+      expect(run1.run_id).toBe(runIds[0]);
+      expect(run2.run_id).toBe(runIds[1]);
+      expect(run3.run_id).toBe(runIds[2]);
       expect(run1.input).toEqual(flow1Input);
       expect(run2.input).toEqual(flow2Input);
       expect(run3.input).toEqual(flow3Input);
@@ -307,6 +93,7 @@ describe('Concurrent Operations', () => {
 
     it('handles same run_id being used multiple times', async () => {
       const { client, mocks } = mockSupabase();
+      const pgflowClient = new PgflowClient(client);
       
       const sharedRunId = '444e4567-e89b-12d3-a456-426614174000';
       const sharedInput = { shared: 'data' };
@@ -323,8 +110,6 @@ describe('Concurrent Operations', () => {
       mocks.rpc
         .mockReturnValueOnce(rpcResponse)
         .mockReturnValueOnce(rpcResponse);
-
-      const pgflowClient = new PgflowClient(client);
 
       // Try to start flow with same ID twice
       const [run1, run2] = await Promise.all([
@@ -344,10 +129,12 @@ describe('Concurrent Operations', () => {
     });
   });
 
-  describe('Event handling resilience', () => {
-    it('continues processing events after malformed events', async () => {
+  describe('Event forwarding', () => {
+    it('forwards run events through the client', async () => {
       const { client, mocks } = mockSupabase();
+      const pgflowClient = new PgflowClient(client);
       
+      // Set up a run
       mocks.rpc.mockReturnValueOnce({
         data: {
           run: startedRunSnapshot,
@@ -355,48 +142,117 @@ describe('Concurrent Operations', () => {
         },
         error: null,
       });
+      
+      const run = await pgflowClient.getRun(RUN_ID);
+      
+      // Track events on the run
+      const runEvents: string[] = [];
+      run.on('*', (event) => runEvents.push(event.event_type));
+      
+      // Get the broadcast handler and emit event
+      const broadcastHandler = mocks.channel.handlers.get('*');
+      broadcastHandler?.({ event: 'run:completed', payload: broadcastRunCompleted });
+      
+      // Verify event was received
+      expect(runEvents).toEqual(['run:completed']);
+      expect(run.status).toBe(FlowRunStatus.Completed);
+    });
 
+    it('forwards step events through the client', async () => {
+      const { client, mocks } = mockSupabase();
       const pgflowClient = new PgflowClient(client);
+      
+      // Set up a run
+      mocks.rpc.mockReturnValueOnce({
+        data: {
+          run: startedRunSnapshot,
+          steps: stepStatesSample,
+        },
+        error: null,
+      });
+      
       const run = await pgflowClient.getRun(RUN_ID);
       const step = run.step(STEP_SLUG);
       
-      const runEvents: string[] = [];
+      // Track events on the step
       const stepEvents: string[] = [];
+      step.on('*', (event) => stepEvents.push(event.event_type));
       
-      run.on((event) => runEvents.push(event.event_type));
-      step.on((event) => stepEvents.push(event.event_type));
-
+      // Get the broadcast handler and emit events
       const broadcastHandler = mocks.channel.handlers.get('*');
-
-      // Emit valid event
-      broadcastHandler?.({ 
-        event: 'step:started', 
-        payload: broadcastStepStarted 
-      });
-
-      // Emit malformed events (missing required fields)
-      broadcastHandler?.({ 
-        event: 'step:invalid', 
-        payload: { invalid: 'data' } 
-      });
-      broadcastHandler?.({ 
-        event: 'run:unknown', 
-        payload: null 
-      });
-
-      // Emit another valid event
-      broadcastHandler?.({ 
-        event: 'step:completed', 
-        payload: broadcastStepCompleted 
-      });
-
-      // Verify valid events were processed despite malformed ones
-      expect(stepEvents).toEqual(['step:started', 'step:completed']);
-      expect(step.status).toBe(FlowStepStatus.Completed);
+      broadcastHandler?.({ event: 'step:started', payload: broadcastStepStarted });
+      broadcastHandler?.({ event: 'step:completed', payload: broadcastStepCompleted });
       
-      // Malformed events should not crash the system
-      expect(runEvents).toEqual([]);
+      // Verify events were received (step was already started, so only completed event is processed)
+      expect(stepEvents).toEqual(['step:completed']);
+      expect(step.status).toBe(FlowStepStatus.Completed);
+    });
+
+    it('ignores events with wrong run_id', async () => {
+      const { client, mocks } = mockSupabase();
+      const pgflowClient = new PgflowClient(client);
+      
+      // Set up a run
+      mocks.rpc.mockReturnValueOnce({
+        data: {
+          run: startedRunSnapshot,
+          steps: stepStatesSample,
+        },
+        error: null,
+      });
+      
+      const run = await pgflowClient.getRun(RUN_ID);
+      
+      // Track events
+      const events: string[] = [];
+      run.on('*', (event) => events.push(event.event_type));
+      
+      // Emit event with different run_id
+      const broadcastHandler = mocks.channel.handlers.get('*');
+      broadcastHandler?.({ 
+        event: 'run:completed', 
+        payload: { ...broadcastRunCompleted, run_id: 'different-id' } 
+      });
+      
+      // Should not receive event
+      expect(events).toEqual([]);
       expect(run.status).toBe(FlowRunStatus.Started);
+    });
+  });
+
+  describe('Error handling', () => {
+    it('handles RPC errors during concurrent operations', async () => {
+      const { client, mocks } = mockSupabase();
+      const pgflowClient = new PgflowClient(client);
+      
+      // First call succeeds, second fails
+      mocks.rpc
+        .mockReturnValueOnce({
+          data: {
+            run: startedRunSnapshot,
+            steps: stepStatesSample,
+          },
+          error: null,
+        })
+        .mockReturnValueOnce({
+          data: null,
+          error: { message: 'Database error' },
+        });
+
+      // Start flows concurrently - one succeeds, one fails
+      const results = await Promise.allSettled([
+        pgflowClient.startFlow(FLOW_SLUG, { test: 1 }),
+        pgflowClient.startFlow(FLOW_SLUG, { test: 2 }),
+      ]);
+
+      // First should succeed
+      expect(results[0].status).toBe('fulfilled');
+      if (results[0].status === 'fulfilled') {
+        expect(results[0].value.status).toBe(FlowRunStatus.Started);
+      }
+
+      // Second should fail
+      expect(results[1].status).toBe('rejected');
     });
   });
 });

@@ -32,7 +32,7 @@ describe('FlowRun', () => {
     const run = new FlowRun({
       run_id: RUN_ID,
       flow_slug: FLOW_SLUG,
-      status: FlowRunStatus.Queued,
+      status: FlowRunStatus.Started,
       input: { foo: 'bar' } as any,
       output: null,
       error: null,
@@ -45,7 +45,7 @@ describe('FlowRun', () => {
 
     expect(run.run_id).toBe(RUN_ID);
     expect(run.flow_slug).toBe(FLOW_SLUG);
-    expect(run.status).toBe(FlowRunStatus.Queued);
+    expect(run.status).toBe(FlowRunStatus.Started);
     expect(run.input).toEqual({ foo: 'bar' });
     expect(run.output).toBeNull();
     expect(run.error).toBeNull();
@@ -57,19 +57,20 @@ describe('FlowRun', () => {
   });
 
   describe('event → state mapping', () => {
-    test('handles started event correctly', () => {
+    test('ignores started event when already started', () => {
+      // Runs are created with 'started' status by default in the database
       const run = new FlowRun({
         run_id: RUN_ID,
         flow_slug: FLOW_SLUG,
-        status: FlowRunStatus.Queued,
+        status: FlowRunStatus.Started,
         input: { foo: 'bar' } as any,
         output: null,
         error: null,
         error_message: null,
-        started_at: null,
+        started_at: new Date(),
         completed_at: null,
         failed_at: null,
-        remaining_steps: 0,
+        remaining_steps: 2,
       });
 
       const allCallback = vi.fn();
@@ -77,22 +78,19 @@ describe('FlowRun', () => {
       run.on('*', allCallback);
       run.on('started', startedCallback);
 
-      // Update state with started event
-      run.updateState(broadcastRunStarted);
+      // Update state with started event (should be ignored due to same status)
+      const result = run.updateState(broadcastRunStarted);
 
-      // Check state was updated correctly
+      // Check update was rejected
+      expect(result).toBe(false);
+      
+      // Check state remains unchanged
       expect(run.status).toBe(FlowRunStatus.Started);
-      expect(run.started_at).toBeInstanceOf(Date);
       expect(run.remaining_steps).toBe(2);
       
-      // Check callbacks were called with correct events
-      expect(startedCallback).toHaveBeenCalledTimes(1);
-      expect(startedCallback).toHaveBeenCalledWith(expect.objectContaining({
-        run_id: RUN_ID,
-        flow_slug: FLOW_SLUG,
-        status: FlowRunStatus.Started
-      }));
-      expect(allCallback).toHaveBeenCalledTimes(1);
+      // Check no callbacks were called
+      expect(startedCallback).toHaveBeenCalledTimes(0);
+      expect(allCallback).toHaveBeenCalledTimes(0);
     });
 
     test('handles completed event correctly', () => {
@@ -178,7 +176,7 @@ describe('FlowRun', () => {
       const run = new FlowRun({
         run_id: RUN_ID,
         flow_slug: FLOW_SLUG,
-        status: FlowRunStatus.Queued,
+        status: FlowRunStatus.Started,
         input: { foo: 'bar' } as any,
         output: null,
         error: null,
@@ -210,7 +208,7 @@ describe('FlowRun', () => {
       const run = new FlowRun({
         run_id: RUN_ID,
         flow_slug: FLOW_SLUG,
-        status: FlowRunStatus.Queued,
+        status: FlowRunStatus.Started,
         input: { foo: 'bar' } as any,
         output: null,
         error: null,
@@ -221,9 +219,8 @@ describe('FlowRun', () => {
         remaining_steps: 0,
       });
 
-      // Lower to higher precedence should succeed
-      // Queued -> Started (allowed)
-      expect(run.updateState(broadcastRunStarted)).toBe(true);
+      // Started -> Started (same precedence, should be rejected)
+      expect(run.updateState(broadcastRunStarted)).toBe(false);
       expect(run.status).toBe(FlowRunStatus.Started);
 
       // Started -> Completed (allowed - higher precedence)
@@ -251,16 +248,16 @@ describe('FlowRun', () => {
         remaining_steps: 2,
       });
 
-      // Create a "queued" event (lower precedence than Started)
-      const queuedEvent = {
+      // Create another started event (same precedence)
+      const startedEvent = {
         run_id: RUN_ID,
         flow_slug: FLOW_SLUG,
-        status: FlowRunStatus.Queued,
+        status: FlowRunStatus.Started,
         input: { foo: 'bar' },
       };
 
-      // Should not update to lower precedence status
-      expect(run.updateState(queuedEvent as any)).toBe(false);
+      // Should not update to same precedence status
+      expect(run.updateState(startedEvent as any)).toBe(false);
       expect(run.status).toBe(FlowRunStatus.Started);
     });
 
@@ -333,7 +330,7 @@ describe('FlowRun', () => {
       const run = new FlowRun({
         run_id: RUN_ID,
         flow_slug: FLOW_SLUG,
-        status: FlowRunStatus.Queued,
+        status: FlowRunStatus.Started,
         input: { foo: 'bar' } as any,
         output: null,
         error: null,
@@ -401,7 +398,7 @@ describe('FlowRun', () => {
       const run = new FlowRun({
         run_id: RUN_ID,
         flow_slug: FLOW_SLUG,
-        status: FlowRunStatus.Queued,
+        status: FlowRunStatus.Started,
         input: { foo: 'bar' } as any,
         output: null,
         error: null,
@@ -433,7 +430,7 @@ describe('FlowRun', () => {
       const run = new FlowRun({
         run_id: RUN_ID,
         flow_slug: FLOW_SLUG,
-        status: FlowRunStatus.Queued,
+        status: FlowRunStatus.Started,
         input: { foo: 'bar' } as any,
         output: null,
         error: null,
@@ -480,7 +477,7 @@ describe('FlowRun', () => {
       const run = new FlowRun({
         run_id: RUN_ID,
         flow_slug: FLOW_SLUG,
-        status: FlowRunStatus.Queued,
+        status: FlowRunStatus.Started,
         input: { foo: 'bar' } as any,
         output: null,
         error: null,
@@ -515,7 +512,7 @@ describe('FlowRun', () => {
       const run = new FlowRun({
         run_id: RUN_ID,
         flow_slug: FLOW_SLUG,
-        status: FlowRunStatus.Queued,
+        status: FlowRunStatus.Started,
         input: { foo: 'bar' } as any,
         output: null,
         error: null,
@@ -722,7 +719,7 @@ describe('FlowRun', () => {
       const run = new FlowRun({
         run_id: RUN_ID,
         flow_slug: FLOW_SLUG,
-        status: FlowRunStatus.Queued,
+        status: FlowRunStatus.Started,
         input: { foo: 'bar' } as any,
         output: null,
         error: null,

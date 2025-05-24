@@ -6,7 +6,6 @@ import type { FlowRun } from './FlowRun';
  * Flow run status enum
  */
 export enum FlowRunStatus {
-  Queued = 'queued',
   Started = 'started',
   Completed = 'completed',
   Failed = 'failed'

@@ -52,7 +52,7 @@ describe('Flow Lifecycle Integration', () => {
       expect(run).toBeDefined();
       expect(run.run_id).toBe(RUN_ID);
       expect(run.flow_slug).toBe(FLOW_SLUG);
-      expect(run.status).toBe(FlowRunStatus.Queued);
+      expect(run.status).toBe(FlowRunStatus.Started);
       expect(run.input).toEqual(input);
 
       // Verify RPC was called correctly
@@ -162,7 +162,7 @@ describe('Flow Lifecycle Integration', () => {
       const pgflowClient = new PgflowClient(client);
       const run = await pgflowClient.startFlow(FLOW_SLUG, { data: 'will-fail' });
 
-      expect(run.status).toBe(FlowRunStatus.Queued);
+      expect(run.status).toBe(FlowRunStatus.Started);
 
       // Simulate step failure (would normally come via broadcast)
       const step = run.step(STEP_SLUG);
@@ -231,7 +231,7 @@ describe('Flow Lifecycle Integration', () => {
       expect(run).toBeDefined();
       expect(run.status).toBe(FlowRunStatus.Completed);
       expect(run.output).toEqual(completedRunSnapshot.output);
-      expect(run.completed_at).toBe(completedRunSnapshot.completed_at);
+      expect(run.completed_at?.toISOString()).toBe(completedRunSnapshot.completed_at);
 
       // Verify step state
       const step = run.step(STEP_SLUG);

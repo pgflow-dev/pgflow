@@ -206,7 +206,7 @@ describe('Error Recovery', () => {
       // Now it should resolve
       const run = await startFlowPromise;
       expect(run).toBeDefined();
-      expect(run.status).toBe(FlowRunStatus.Queued);
+      expect(run.status).toBe(FlowRunStatus.Started);
     });
   });
 

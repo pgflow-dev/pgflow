@@ -73,7 +73,7 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
     const initialState: FlowRunState<TSpecificFlow> = {
       run_id: id,
       flow_slug,
-      status: FlowRunStatus.Queued,
+      status: FlowRunStatus.Started,
       input: input as ExtractFlowInput<TSpecificFlow>,
       output: null,
       error: null,
@@ -222,6 +222,17 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
       // Use type assertion since RunRow doesn't include error_message field
       const runData = run as unknown as (RunRow & { error_message?: string });
       
+      // Validate required fields
+      if (!runData.run_id || !runData.flow_slug || !runData.status) {
+        throw new Error('Invalid run data: missing required fields');
+      }
+      
+      // Validate status is a valid FlowRunStatus
+      const validStatuses = Object.values(FlowRunStatus);
+      if (!validStatuses.includes(runData.status as FlowRunStatus)) {
+        throw new Error(`Invalid run data: invalid status '${runData.status}'`);
+      }
+      
       const initialState: FlowRunState<TSpecificFlow> = {
         run_id: runData.run_id,
         flow_slug: runData.flow_slug,
@@ -248,6 +259,11 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
       // Initialize steps
       if (steps && Array.isArray(steps)) {
         for (const stepState of steps) {
+          // Validate step has required fields
+          if (!stepState.step_slug || !stepState.status) {
+            throw new Error('Invalid step data: missing required fields');
+          }
+          
           // Convert database step state to appropriate event type
           const stepEvent = this.#convertStepStateToEvent(stepState, run_id);
           if (stepEvent) {
@@ -260,6 +276,10 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
       return flowRun;
     } catch (error) {
       console.error('Error getting run:', error);
+      // Re-throw if it's a validation error
+      if (error instanceof Error && (error.message.includes('Invalid run data') || error.message.includes('Invalid step data'))) {
+        throw error;
+      }
       return null;
     }
   }

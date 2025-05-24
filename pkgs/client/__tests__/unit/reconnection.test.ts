@@ -76,7 +76,7 @@ describe('Reconnection Logic', () => {
     });
 
     it('uses configurable reconnection delay', async () => {
-      const { client } = mockSupabase();
+      const { client, mocks } = mockSupabase();
       
       const customDelay = 5000;
       const scheduleCalls: Array<{ delay: number }> = [];
@@ -94,7 +94,6 @@ describe('Reconnection Logic', () => {
       const unsubscribe = adapter.subscribeToRun(RUN_ID);
 
       // Simulate error to test reconnection delay
-      const { mocks } = mockSupabase();
       const errorHandler = mocks.channel.systemHandlers.get('error');
       errorHandler?.({ error: new Error('Custom delay test') });
 

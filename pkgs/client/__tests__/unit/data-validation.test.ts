@@ -402,6 +402,9 @@ describe('Data Validation and Edge Cases', () => {
       const runPromise = pgflowClient.getRun(RUN_ID);
       pgflowClient.dispose(RUN_ID); // Dispose before completion
       
+      // Advance timers to resolve the promise
+      await vi.advanceTimersByTimeAsync(1000);
+      
       // Should still complete without error
       const run = await runPromise;
       expect(run).toBeDefined();
