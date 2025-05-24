@@ -37,6 +37,9 @@ describe('JSON Parsing in Broadcasts', () => {
     runEventHandler = vi.fn();
     adapter.onStepEvent(stepEventHandler);
     adapter.onRunEvent(runEventHandler);
+    
+    // Subscribe to a run to configure the channel and capture broadcast callback
+    adapter.subscribeToRun('test-run-id');
   });
 
   describe('Step Events', () => {

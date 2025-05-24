@@ -50,10 +50,9 @@ describe('SupabaseBroadcastAdapter - Simple Tests', () => {
     // Check channel was subscribed
     expect(mocks.channel.channel.subscribe).toHaveBeenCalled();
     
-    // Check handlers were registered
+    // Check handlers were registered (2-argument form)
     expect(mocks.channel.channel.on).toHaveBeenCalledWith(
       'broadcast', 
-      { event: '*' }, 
       expect.any(Function)
     );
     

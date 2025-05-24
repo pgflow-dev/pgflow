@@ -81,7 +81,6 @@ describe('SupabaseBroadcastAdapter', () => {
       
       expect(mocks.channel.channel.on).toHaveBeenCalledWith(
         'broadcast', 
-        { event: '*' }, 
         expect.any(Function)
       );
     });

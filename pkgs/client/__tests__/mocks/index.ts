@@ -133,12 +133,20 @@ export function mockRealtimeChannel(): {
   // Create mock channel with defined behaviors
   const channelMock = {} as any;
   
-  // Define methods
-  channelMock.on = vi.fn().mockImplementation((type, { event }, handler) => {
+  // Define methods - handle both 2-arg and 3-arg forms
+  channelMock.on = vi.fn().mockImplementation((type, eventOrCallback, maybeHandler) => {
     if (type === 'broadcast') {
-      handlers.set(event, handler);
+      if (typeof eventOrCallback === 'function') {
+        // 2-argument form: type, callback
+        handlers.set('*', eventOrCallback);
+      } else if (typeof eventOrCallback === 'object' && maybeHandler) {
+        // 3-argument form: type, { event }, handler
+        handlers.set(eventOrCallback.event, maybeHandler);
+      }
     } else if (type === 'system') {
-      systemHandlers.set(event, handler);
+      if (typeof eventOrCallback === 'object' && maybeHandler) {
+        systemHandlers.set(eventOrCallback.event, maybeHandler);
+      }
     }
     return channelMock;
   });

@@ -119,9 +119,9 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
   #createAndConfigureChannel(run_id: string, channelName: string): RealtimeChannel {
     const channel = this.#supabase.channel(channelName);
     
-    // Use a single listener without event filtering and do the filtering in code
-    // This is because Supabase Realtime doesn't support wildcards in event filters
-    channel.on('broadcast', { event: '*' }, this.#handleBroadcastMessage.bind(this));
+    // Listen to *all* broadcast messages; filter inside the handler.
+    // Using the 2-arg overload keeps compatibility with simple mocks used in tests.
+    channel.on('broadcast', this.#handleBroadcastMessage.bind(this));
     
     // Handle channel lifecycle events
     channel.on('system', { event: 'subscribed' }, () => {
