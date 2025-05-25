@@ -65,7 +65,7 @@ describe('Realtime Send Integration', () => {
       // 3. Subscribe to broadcast channel
       const channel = supabaseClient.channel(testChannel);
 
-      channel.on('broadcast', (payload) => {
+      channel.on('broadcast', { event: '*' }, (payload) => {
         console.log('Received broadcast event:', payload);
         receivedEvents.push(payload);
       });
@@ -98,7 +98,7 @@ describe('Realtime Send Integration', () => {
       console.log('Sending broadcast via realtime.send()...');
       await sql`
         SELECT realtime.send(
-          ${JSON.stringify(dbPayload)}::jsonb,
+          ${dbPayload}::jsonb,
           'test-sql-event',
           ${testChannel},
           false
@@ -121,7 +121,13 @@ describe('Realtime Send Integration', () => {
       console.log('Final received events:', receivedEvents);
 
       expect(receivedEvents.length).toBeGreaterThan(0);
-      expect(receivedEvents[0].payload).toEqual(dbPayload);
+      
+      // Check that our payload fields are present (ignore the auto-added 'id' field)
+      const receivedPayload = receivedEvents[0].payload;
+      expect(receivedPayload.test_message).toEqual(dbPayload.test_message);
+      expect(receivedPayload.timestamp).toEqual(dbPayload.timestamp);
+      expect(receivedPayload.counter).toEqual(dbPayload.counter);
+      expect(receivedPayload.source).toEqual(dbPayload.source);
 
       // Clean up
       await channel.unsubscribe();

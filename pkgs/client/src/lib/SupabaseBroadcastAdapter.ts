@@ -120,8 +120,8 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
     const channel = this.#supabase.channel(channelName);
     
     // Listen to *all* broadcast messages; filter inside the handler.
-    // Using the 2-arg overload keeps compatibility with simple mocks used in tests.
-    channel.on('broadcast', this.#handleBroadcastMessage.bind(this));
+    // Using the 3-arg overload with event filter for proper Supabase v2 client compatibility.
+    channel.on('broadcast', { event: '*' }, this.#handleBroadcastMessage.bind(this));
     
     // Handle channel lifecycle events
     channel.on('system', { event: 'subscribed' }, () => {

@@ -177,7 +177,7 @@ describe('Real Flow Execution E2E', () => {
         ${tasks[0].run_id}::uuid,
         ${tasks[0].step_slug},
         0, -- task_index
-        ${JSON.stringify(taskOutput)}::jsonb
+        ${taskOutput}::jsonb
       )
     `;
 
@@ -189,7 +189,7 @@ describe('Real Flow Execution E2E', () => {
       
       // Listen directly on the Supabase channel to see what's being broadcast
       const debugChannel = supabaseClient.channel(`pgflow:run:${run.run_id}`);
-      debugChannel.on('broadcast', (payload) => {
+      debugChannel.on('broadcast', { event: '*' }, (payload) => {
         console.log('Raw broadcast received:', payload);
         receivedEvents.push(payload);
       });
