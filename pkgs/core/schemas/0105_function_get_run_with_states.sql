@@ -9,4 +9,4 @@ create or replace function pgflow.get_run_with_states(
   LEFT JOIN pgflow.step_states s ON s.run_id = r.run_id
   WHERE r.run_id = get_run_with_states.run_id
   GROUP BY r.run_id;
-$$ language sql;
+$$ language sql security definer;

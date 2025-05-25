@@ -403,7 +403,7 @@ where st.run_id = fail_task.run_id
 end;
 $$;
 -- Create "get_run_with_states" function
-CREATE FUNCTION "pgflow"."get_run_with_states" ("run_id" uuid) RETURNS jsonb LANGUAGE sql AS $$
+CREATE FUNCTION "pgflow"."get_run_with_states" ("run_id" uuid) RETURNS jsonb LANGUAGE sql SECURITY DEFINER AS $$
 SELECT jsonb_build_object(
     'run', to_jsonb(r),
     'steps', COALESCE(jsonb_agg(to_jsonb(s)) FILTER (WHERE s.run_id IS NOT NULL), '[]'::jsonb)
@@ -469,7 +469,7 @@ RETURN QUERY SELECT * FROM pgflow.runs where pgflow.runs.run_id = v_created_run.
 end;
 $$;
 -- Create "start_flow_with_states" function
-CREATE FUNCTION "pgflow"."start_flow_with_states" ("flow_slug" text, "input" jsonb, "run_id" uuid DEFAULT NULL::uuid) RETURNS jsonb LANGUAGE plpgsql AS $$
+CREATE FUNCTION "pgflow"."start_flow_with_states" ("flow_slug" text, "input" jsonb, "run_id" uuid DEFAULT NULL::uuid) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   v_run_id UUID;
 BEGIN

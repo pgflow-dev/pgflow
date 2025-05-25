@@ -16,4 +16,4 @@ BEGIN
   -- Use get_run_with_states to return the complete state
   RETURN pgflow.get_run_with_states(v_run_id);
 END;
-$$ language plpgsql;
+$$ language plpgsql security definer;
