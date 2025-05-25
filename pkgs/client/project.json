@@ -45,6 +45,14 @@
         "parallel": false
       }
     },
+    "supabase:status": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["supabase status"],
+        "parallel": false
+      }
+    },
     "supabase:prepare": {
       "executor": "nx:run-commands",
       "dependsOn": ["^verify-migrations"],

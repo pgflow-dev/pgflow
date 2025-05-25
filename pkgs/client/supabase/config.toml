@@ -36,4 +36,4 @@ enabled = false
 [storage]
 enabled = false
 [auth]
-enabled = false
+enabled = true  # required for realtime authentication
