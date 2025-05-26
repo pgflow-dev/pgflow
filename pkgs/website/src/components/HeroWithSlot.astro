@@ -1,13 +1,30 @@
 ---
 // import { PAGE_TITLE_ID } from '../constants';
 const PAGE_TITLE_ID = '_top';
-import type { Props } from '@astrojs/starlight/props';
 import { LinkButton } from '@astrojs/starlight/components';
+
+interface Props {
+  entry?: {
+    data?: {
+      hero?: {
+        title?: string;
+        tagline?: string;
+        actions?: Array<{
+          attrs?: { class?: string; [key: string]: any };
+          icon?: { name?: string; html?: string };
+          link: string;
+          text: string;
+          variant?: string;
+        }>;
+      };
+      title?: string;
+    };
+  };
+  [key: string]: any;
+}
 
 // Get hero data from Starlight props
 const { title, tagline, actions = [] } = (Astro.props as Props).entry?.data?.hero || {};
-// Fallback to page title if hero title is not set
-const heroTitle = title || (Astro.props as Props).entry?.data?.title;
 ---
 
 <div class="hero">

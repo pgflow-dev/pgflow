@@ -1,9 +1,11 @@
 ---
 import DefaultHead from "@astrojs/starlight/components/Head.astro";
 import Analytics from "@vercel/analytics/astro";
-import type { Props } from "@astrojs/starlight/props";
 
-type HeadProps = Props;
+interface HeadProps {
+  [key: string]: any;
+}
+
 const props = Astro.props as HeadProps;
 ---
 
