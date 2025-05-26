@@ -199,9 +199,9 @@ const testimonials = [
     if (!slides.length) return;
 
     let currentIndex = 0;
-    let autoScrollInterval;
+    let autoScrollInterval: ReturnType<typeof setInterval> | undefined;
 
-    function showSlide(index) {
+    function showSlide(index: number) {
       slides.forEach((slide, i) => {
         slide.classList.toggle('active', i === index);
       });
