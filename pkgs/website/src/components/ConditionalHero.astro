@@ -1,17 +1,12 @@
 ---
+import type { Props } from '@astrojs/starlight/props';
 import Default from '@astrojs/starlight/components/Hero.astro';
 import HeroWithSlot from './HeroWithSlot.astro';
 import LandingPageCodeExamples from './LandingPageCodeExamples.mdx';
 import PgflowLandingPageCodeExamples from './PgflowLandingPageCodeExamples.mdx';
 
-interface Props {
-  id?: string;
-  [key: string]: any;
-}
-
-const { id = '' } = Astro.props as Props;
-const isHomepage = id === '';
-const isPgflowLanding = id === 'pgflow/new-landing';
+const isHomepage = Astro.props.id === '';
+const isPgflowLanding = Astro.props.id === 'pgflow/new-landing';
 ---
 
 {
