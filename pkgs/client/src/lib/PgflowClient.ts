@@ -81,7 +81,7 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
       started_at: null,
       completed_at: null,
       failed_at: null,
-      remaining_steps: 0, // Will be updated with real value from start_flow
+      remaining_steps: -1, // Use -1 to indicate unknown until first snapshot arrives
     };
 
     // Create the flow run instance
@@ -90,10 +90,10 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
     // Store the run
     this.#runs.set(id, run);
 
-    // Set up subscription for run and step events
-    this.#realtimeAdapter.subscribeToRun(id);
+    // Set up subscription for run and step events (wait for subscription confirmation)
+    await this.#realtimeAdapter.subscribeToRun(id);
 
-    // Start the flow with the predetermined run_id
+    // Start the flow with the predetermined run_id (only after subscription is ready)
     const { data, error } = await this.#supabase.schema('pgflow').rpc('start_flow_with_states', {
       flow_slug: flow_slug,
       input: input as Record<string, unknown>,
@@ -186,8 +186,8 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
   /**
    * Subscribe to a flow run's events
    */
-  subscribeToRun(run_id: string): () => void {
-    return this.#realtimeAdapter.subscribeToRun(run_id);
+  async subscribeToRun(run_id: string): Promise<() => void> {
+    return await this.#realtimeAdapter.subscribeToRun(run_id);
   }
 
   /**
@@ -254,7 +254,7 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
       this.#runs.set(run_id, flowRun);
       
       // Set up subscription for run and step events
-      this.#realtimeAdapter.subscribeToRun(run_id);
+      await this.#realtimeAdapter.subscribeToRun(run_id);
       
       // Initialize steps
       if (steps && Array.isArray(steps)) {

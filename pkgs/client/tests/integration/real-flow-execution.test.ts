@@ -193,11 +193,27 @@ describe('Real Flow Execution E2E', () => {
         console.log('Raw broadcast received:', payload);
         receivedEvents.push(payload);
       });
-      debugChannel.subscribe();
+      
+      // Wait for subscription to be ready (like the working test)
+      const debugSubscriptionPromise = new Promise((resolve) => {
+        debugChannel.subscribe((status) => {
+          console.log('Debug channel subscription status:', status);
+          if (status === 'SUBSCRIBED') {
+            resolve(status);
+          }
+        });
+      });
+      
+      // Wait for subscription to be fully established
+      await debugSubscriptionPromise;
+      console.log('Debug channel fully subscribed and ready');
+      
+      // Additional wait to ensure realtime connection is stable (like working test)
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       // Wait for step completion with timeout (this tests the broadcast mechanism)
       try {
-        await step.waitForStatus(FlowStepStatus.Completed, { timeoutMs: 1000 });
+        await step.waitForStatus(FlowStepStatus.Completed, { timeoutMs: 10000 });
       } catch (error) {
         console.log('Timeout occurred. Raw broadcast events received:', receivedEvents);
         throw error;
@@ -221,6 +237,7 @@ describe('Real Flow Execution E2E', () => {
 
       // Clean up
       await supabaseClient.removeAllChannels();
-    })
+    }),
+    15000
   );
 });

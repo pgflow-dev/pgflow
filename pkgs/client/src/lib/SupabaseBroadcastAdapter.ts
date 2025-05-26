@@ -43,12 +43,15 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
    * Handle broadcast messages from Supabase
    * @param payload - The message payload
    */
-  #handleBroadcastMessage(payload: { 
+  #handleBroadcastMessage(msg: { 
     event: string; 
     payload: BroadcastRunEvent | BroadcastStepEvent;
   }): void {
-    const event = payload.event as string;
-    const eventData = payload.payload;
+    const { event, payload } = msg;
+    
+    // run_id is already inside the payload coming from the database trigger
+    // so just preserve it without overwriting
+    const eventData = payload;
 
     // Auto-parse JSON strings in broadcast data (realtime sends JSONB as strings)
     this.#parseJsonFields(eventData);
@@ -123,18 +126,9 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
     // Using the 3-arg overload with event filter for proper Supabase v2 client compatibility.
     channel.on('broadcast', { event: '*' }, this.#handleBroadcastMessage.bind(this));
     
-    // Handle channel lifecycle events
-    channel.on('system', { event: 'subscribed' }, () => {
-      console.log(`Subscribed to channel ${channelName}`);
-    });
-    
-    channel.on('system', { event: 'closed' }, () => {
-      console.log(`Channel ${channelName} closed`);
-    });
-    
-    channel.on('system', { event: 'error' }, (payload) => 
-      this.#handleChannelError(run_id, channelName, channel, payload.error)
-    );
+    // Note: Lifecycle event listeners (subscribed, closed, error) are handled 
+    // by the calling code to avoid conflicts when multiple listeners try to 
+    // handle the same events.
     
     return channel;
   }
@@ -159,6 +153,19 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
       
       // Create a new channel as the old one can't be reused
       const newChannel = this.#createAndConfigureChannel(run_id, channelName);
+      
+      // Set up lifecycle event handlers for reconnection
+      newChannel.on('system', { event: 'subscribed' }, () => {
+        console.log(`Reconnected and subscribed to channel ${channelName}`);
+      });
+      
+      newChannel.on('system', { event: 'closed' }, () => {
+        console.log(`Reconnected channel ${channelName} closed`);
+      });
+      
+      newChannel.on('system', { event: 'error' }, (payload) => 
+        this.#handleChannelError(run_id, channelName, newChannel, payload.error)
+      );
       
       // Subscribe and update the channels map
       newChannel.subscribe();
@@ -284,12 +291,42 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
   #unsubscribeFunctions: Map<string, () => void> = new Map();
 
   /**
+   * Wait for a channel to be ready by polling its status
+   * @param channel - The RealtimeChannel to wait for
+   * @param channelName - Channel name for logging
+   */
+  async #waitForChannelReady(channel: RealtimeChannel, channelName: string): Promise<void> {
+    const maxAttempts = 50; // 5 seconds max (50 * 100ms)
+    let attempts = 0;
+    
+    while (attempts < maxAttempts) {
+      const status = channel.state;
+      console.log(`Channel ${channelName} status: ${status}`);
+      
+      if (status === 'joined') {
+        console.log(`Channel ${channelName} is ready (joined)`);
+        return;
+      }
+      
+      if (status === 'closed' || status === 'errored') {
+        throw new Error(`Channel ${channelName} failed to join: ${status}`);
+      }
+      
+      // Wait 100ms before checking again
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+    }
+    
+    throw new Error(`Channel ${channelName} timeout: failed to join after ${maxAttempts * 100}ms`);
+  }
+
+  /**
    * Subscribes to a flow run's events
    *
    * @param run_id - Run ID to subscribe to
    * @returns Function to unsubscribe
    */
-  subscribeToRun(run_id: string): () => void {
+  async subscribeToRun(run_id: string): Promise<() => void> {
     const channelName = `pgflow:run:${run_id}`;
 
     // If already subscribed, return the existing unsubscribe function
@@ -300,18 +337,48 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
       }
     }
 
-    // Create a new unsubscribe function and store it
-    const unsubscribeFn = () => this.unsubscribe(run_id);
-    this.#unsubscribeFunctions.set(run_id, unsubscribeFn);
+    const channel = this.#supabase.channel(channelName);
+    
+    // Listen to *all* broadcast messages; filter inside the handler.
+    // Using the 3-arg overload with event filter for proper Supabase v2 client compatibility.
+    channel.on('broadcast', { event: '*' }, this.#handleBroadcastMessage.bind(this));
+    
+    // Set up error handling
+    channel.on('system', { event: 'closed' }, () => {
+      console.log(`Channel ${channelName} closed`);
+    });
+    channel.on('system', { event: 'error' }, (payload) => {
+      console.log(`Channel ${channelName} error:`, payload);
+      this.#handleChannelError(run_id, channelName, channel, payload.error);
+    });
+    
+    // Subscribe to channel and wait for confirmation (like the working realtime-send test)
+    console.log(`Subscribing to channel ${channelName}...`);
+    
+    const subscriptionPromise = new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error(`Subscription timeout for channel ${channelName}`));
+      }, 5000);
+      
+      channel.subscribe((status) => {
+        console.log(`Channel ${channelName} subscription status:`, status);
+        if (status === 'SUBSCRIBED') {
+          clearTimeout(timeout);
+          resolve();
+        }
+        // Don't reject on CHANNEL_ERROR - it's a transient state
+        // Only reject on timeout
+      });
+    });
+    
+    // Wait for the 'SUBSCRIBED' acknowledgment to avoid race conditions
+    await subscriptionPromise;
+    
+    this.#channels.set(run_id, channel);
 
-    // If new subscription, create and configure the channel
-    if (!this.#channels.has(run_id)) {
-      const channel = this.#createAndConfigureChannel(run_id, channelName);
-      channel.subscribe();
-      this.#channels.set(run_id, channel);
-    }
-
-    return this.#unsubscribeFunctions.get(run_id)!;
+    const unsubscribe = () => this.unsubscribe(run_id);
+    this.#unsubscribeFunctions.set(run_id, unsubscribe);
+    return unsubscribe;
   }
   
   /**

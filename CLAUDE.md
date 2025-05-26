@@ -129,6 +129,16 @@ For reading and crawling web content, Claude Code has access to an MCP server th
 - **Usage**: When you need to read web content or crawl websites, use the MCP tools instead of the standard WebFetch
 - **Benefits**: The MCP tools provide more robust capabilities for web content extraction and processing
 
+## Mighty AI Consultation
+
+When stuck on complex technical issues, you can consult the mighty AI using:
+
+```bash
+aichat -m openai:o3-2025-04-16 -f <file1> -f <file2> -f <fileX> "your detailed query"
+```
+
+**IMPORTANT**: File paths must be relative to your current working directory. Use relative paths like `../core/file.sql` not absolute paths when referencing files outside the current directory.
+
 > [!WARNING]
 > QUOTE ALL THE FILE PATHS THAT CONTAIN SPECIAL CHARACTERS LIKE '[run_id]'
 > BECAUSE BRACKETS HAVE SPECIAL MEANING IN BASH!
@@ -137,3 +147,7 @@ For reading and crawling web content, Claude Code has access to an MCP server th
 ## Testing Guidelines
 
 - **IMPORTANT**: Never write tests that access private properties or change private properties to public ones in order to test them!
+
+## AI Support and Debugging
+
+If you are stuck or feel lost, you can ask mightly AI that will always know - in order to do so, you must understand what you want to ask for and what files you will attach as context to your query. then you will thouroughly explain what you want to achieve, how you tried to achieve that, what failed and why you think it did, what you want to understand and how to verify. COMMAND TO RUN: aichat -m  openai:o3-2025-04-16 -f <file1> -f <file2> -f <fileX> "your detailed, multiline, markdown formatted, thorough query to the AI"
