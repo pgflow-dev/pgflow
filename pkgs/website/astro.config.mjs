@@ -4,10 +4,9 @@ import starlight from '@astrojs/starlight';
 import starlightLinksValidator from 'starlight-links-validator';
 import starlightSidebarTopics from 'starlight-sidebar-topics';
 import robotsTxt from 'astro-robots-txt';
-// import starlightLlmsTxt from 'starlight-llms-txt';
+import starlightLlmsTxt from 'starlight-llms-txt';
 import { fileURLToPath } from 'url';
 import path from 'path';
-import react from '@astrojs/react';
 
 const GITHUB_REPO_URL = 'https://github.com/pgflow-dev/pgflow';
 const DISCORD_INVITE_URL = 'https://discord.gg/NpffdEyb';
@@ -55,9 +54,14 @@ export default defineConfig({
     '/explanations/comparison-to-dbos/': '/comparisons/dbos/',
     '/explanations/comparison-to-inngest/': '/comparisons/inngest/',
     '/explanations/comparison-to-trigger-dev/': '/comparisons/trigger/',
+    
+    // Redirects for comparisons to vs rename
+    '/comparisons/': '/vs/',
+    '/comparisons/dbos/': '/vs/dbos/',
+    '/comparisons/inngest/': '/vs/inngest/',
+    '/comparisons/trigger/': '/vs/trigger/',
   },
   integrations: [
-    react(),
     starlight({
       favicon: '/favicons/favicon.ico',
       head: [
@@ -85,7 +89,37 @@ export default defineConfig({
         },
       ],
       plugins: [
-        // starlightLlmsTxt({ exclude: ['/'] }),
+        starlightLlmsTxt({
+          exclude: [
+            'index',
+            '**/index',
+            'tutorials/ai-web-scraper/*',
+            'how-to/naming-steps',
+            'how-to/update-flow-options',
+            'faq',
+          ],
+          promote: [
+            'getting-started/install-pgflow',
+            'getting-started/create-first-flow',
+            'getting-started/compile-to-sql',
+            'getting-started/run-flow',
+            'concepts/how-pgflow-works',
+            'concepts/flow-dsl',
+            'how-to/create-reusable-tasks',
+            'how-to/monitor-flow-execution',
+            'how-to/version-flows',
+            'how-to/organize-flows-code',
+          ],
+          demote: [
+            'edge-worker/*',
+            'vs/*',
+            'how-to/deploy-to-supabasecom',
+            'how-to/manual-installation',
+            'how-to/prepare-db-string',
+            'how-to/prune-old-records',
+            'how-to/delete-flow-and-data',
+          ],
+        }),
         starlightLinksValidator({ exclude: ['http://localhost*'] }),
         starlightSidebarTopics([
           {
@@ -126,7 +160,7 @@ export default defineConfig({
               {
                 label: 'COMPARISONS',
                 collapsed: true,
-                autogenerate: { directory: 'comparisons/' },
+                autogenerate: { directory: 'vs/' },
               },
               {
                 label: 'FAQ - Common Questions',

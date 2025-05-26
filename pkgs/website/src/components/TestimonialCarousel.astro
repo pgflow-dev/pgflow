@@ -1,0 +1,256 @@
+---
+const testimonials = [
+  {
+    author: 'Revolutionary-Fact28',
+    source: 'Reddit',
+    message:
+      'This looks amazing! I built a system on edge functions but it was very complicated and took so much time. I will probably switch to this.',
+  },
+  {
+    author: 'CjHuber',
+    source: 'Hacker News',
+    message:
+      'Exactly what I was looking for without even knowing it. Thank you for saving me tons of time in my project.',
+  },
+  {
+    author: 'bctreehugger',
+    source: 'Reddit',
+    message:
+      'Amazing work on taking the initiative to build this out. Watching closely and looking forward to using it once my project has a need for it.',
+  },
+  {
+    author: 'bota01',
+    source: 'Reddit',
+    message:
+      "This is very needed and the product looks nice. Can't wait for it to be production ready.",
+  },
+  {
+    author: 'Danish',
+    source: 'Discord',
+    message: 'Waiting for your amazing work to be production ready!',
+  },
+  {
+    author: 'tomaspozo_',
+    source: 'Discord',
+    message: 'This sounds awesome! Looking forward to see it.',
+  },
+  {
+    author: 'homj',
+    source: 'Discord',
+    message: "Sounds good, I'm looking forward to it!",
+  },
+];
+---
+
+<div class="testimonial-carousel-wrapper">
+  <a href="#testimonial-prev" class="testimonial-nav-arrow testimonial-nav-prev" aria-label="Previous testimonial">
+    ←
+  </a>
+
+  <div class="testimonial-container">
+    <div class="testimonial-slides">
+      {testimonials.map((testimonial, i) => (
+        <div
+          id={`testimonial-${i}`}
+          class={`testimonial-slide ${i === 0 ? 'active' : ''}`}
+          data-index={i}
+        >
+          <div class="testimonial-header">
+            <div class="testimonial-author">@{testimonial.author}</div>
+            <div class="testimonial-source">({testimonial.source})</div>
+          </div>
+          <blockquote class="testimonial-message">
+            {testimonial.message}
+          </blockquote>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <a href="#testimonial-next" class="testimonial-nav-arrow testimonial-nav-next" aria-label="Next testimonial">
+    →
+  </a>
+</div>
+
+<style>
+  .testimonial-carousel-wrapper {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .testimonial-container {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    padding: 0.5rem 0;
+    height: 160px; /* Fixed height to prevent jumping between slides */
+  }
+
+  .testimonial-slides {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .testimonial-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%; /* Each slide takes full width of the VISIBLE container */
+    height: 100%;
+    padding: 0.5rem;
+    text-align: left;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+  }
+
+  .testimonial-slide.active {
+    opacity: 1;
+  }
+
+  .testimonial-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .testimonial-author {
+    font-weight: bold;
+  }
+
+  .testimonial-source {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary, #6b7280);
+    margin-left: 0.5rem;
+  }
+
+  .testimonial-message {
+    font-size: 1.35rem;
+    font-style: italic;
+    margin: 0 0 0.5rem 0;
+    line-height: 1.6;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    hyphens: auto;
+    flex: 1; /* Take up available space */
+  }
+
+  .testimonial-nav-arrow {
+    position: absolute;
+    top: 30%;
+    z-index: 10;
+    border: none;
+    background: none;
+    color: var(--sl-color-accent);
+    cursor: pointer;
+    font-size: 2.5rem;
+    font-weight: 900;
+    padding: 0;
+    transition: color 0.2s;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+  }
+
+  .testimonial-nav-arrow:hover {
+    color: var(--sl-color-accent-high);
+  }
+
+  .testimonial-nav-prev {
+    left: -50px;
+  }
+
+  .testimonial-nav-next {
+    right: -50px;
+  }
+
+
+  @media (max-width: 768px) {
+    .testimonial-nav-arrow {
+      display: none;
+    }
+
+    .testimonial-carousel-wrapper {
+      overflow: visible;
+    }
+
+    .testimonial-container {
+      overflow-x: scroll;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const slides = document.querySelectorAll('.testimonial-slide');
+    const prevBtn = document.querySelector('.testimonial-nav-prev');
+    const nextBtn = document.querySelector('.testimonial-nav-next');
+
+    if (!slides.length) return;
+
+    let currentIndex = 0;
+    let autoScrollInterval: ReturnType<typeof setInterval> | undefined;
+
+    function showSlide(index: number) {
+      slides.forEach((slide, i) => {
+        slide.classList.toggle('active', i === index);
+      });
+    }
+
+    function nextSlide() {
+      currentIndex = (currentIndex + 1) % slides.length;
+      showSlide(currentIndex);
+    }
+
+    function prevSlide() {
+      currentIndex = currentIndex === 0 ? slides.length - 1 : currentIndex - 1;
+      showSlide(currentIndex);
+    }
+
+    function startAutoScroll() {
+      autoScrollInterval = setInterval(nextSlide, 6000);
+    }
+
+    function stopAutoScroll() {
+      if (autoScrollInterval) {
+        clearInterval(autoScrollInterval);
+      }
+    }
+
+    function restartAutoScroll() {
+      stopAutoScroll();
+      startAutoScroll();
+    }
+
+    // Navigation buttons
+    prevBtn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      prevSlide();
+      restartAutoScroll();
+    });
+
+    nextBtn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      nextSlide();
+      restartAutoScroll();
+    });
+
+    // Pause on hover
+    const wrapper = document.querySelector('.testimonial-carousel-wrapper');
+    wrapper?.addEventListener('mouseenter', stopAutoScroll);
+    wrapper?.addEventListener('mouseleave', startAutoScroll);
+
+    // Start auto-scroll
+    startAutoScroll();
+  });
+</script>

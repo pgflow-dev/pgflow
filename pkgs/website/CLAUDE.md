@@ -42,14 +42,14 @@ This section covers technical explanations like:
 - Supabase Edge Integration
 - Retry & Concurrency Model
 
-### 🔵 `COMPARISONS` (Conceptual – Evaluative understanding)
+### 🔵 `VS` (Conceptual – Evaluative understanding)
 
 > Helps users conceptually compare pgflow to alternatives. Supports decision-making.
 
 This section compares pgflow to other workflow engines:
-- Comparison to DBOS
-- Comparison to Trigger.dev
-- Comparison to Inngest
+- pgflow vs DBOS
+- pgflow vs Trigger.dev
+- pgflow vs Inngest
 
 ### 🟢 `HOW TO` (Tutorials – Procedural guides)
 
