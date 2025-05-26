@@ -54,6 +54,12 @@ export default defineConfig({
     '/explanations/comparison-to-dbos/': '/comparisons/dbos/',
     '/explanations/comparison-to-inngest/': '/comparisons/inngest/',
     '/explanations/comparison-to-trigger-dev/': '/comparisons/trigger/',
+    
+    // Redirects for comparisons to vs rename
+    '/comparisons/': '/vs/',
+    '/comparisons/dbos/': '/vs/dbos/',
+    '/comparisons/inngest/': '/vs/inngest/',
+    '/comparisons/trigger/': '/vs/trigger/',
   },
   integrations: [
     starlight({
@@ -135,7 +141,7 @@ export default defineConfig({
               {
                 label: 'COMPARISONS',
                 collapsed: true,
-                autogenerate: { directory: 'comparisons/' },
+                autogenerate: { directory: 'vs/' },
               },
               {
                 label: 'FAQ - Common Questions',
