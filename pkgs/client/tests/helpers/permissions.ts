@@ -3,9 +3,12 @@ import type { Sql } from 'postgres';
 /**
  * Grants minimal permissions required for PgflowClient to work with Supabase REST API.
  * This allows the anon role to access pgflow schema functions and tables through PostgREST.
+ * Also ensures realtime partitions exist for broadcast functionality.
  * Handles concurrent execution and already-granted permissions gracefully.
  */
 export async function grantMinimalPgflowPermissions(sql: Sql) {
+  // Ensure realtime partition exists (required after db reset)
+  await sql`SELECT pgflow_tests.create_realtime_partition()`;
   // Ensure the required functions have SECURITY DEFINER and proper permissions
   try {
     await sql`

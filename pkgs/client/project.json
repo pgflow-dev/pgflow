@@ -61,7 +61,8 @@
         "commands": [
           "mkdir -p supabase/migrations/",
           "rm -f supabase/migrations/*.sql",
-          "cp ../core/supabase/migrations/*.sql supabase/migrations/"
+          "cp ../core/supabase/migrations/*.sql supabase/migrations/",
+          "cp ../core/supabase/seed.sql supabase/"
         ],
         "parallel": false
       }
