@@ -1,14 +1,5 @@
-create or replace function pgflow.poll_for_tasks(
-  queue_name text,
-  vt integer,
-  qty integer,
-  max_poll_seconds integer default 5,
-  poll_interval_ms integer default 100
-)
-returns setof pgflow.step_task_record
-volatile
-set search_path to ''
-as $$
+-- Modify "poll_for_tasks" function
+CREATE OR REPLACE FUNCTION "pgflow"."poll_for_tasks" ("queue_name" text, "vt" integer, "qty" integer, "max_poll_seconds" integer DEFAULT 5, "poll_interval_ms" integer DEFAULT 100) RETURNS SETOF "pgflow"."step_task_record" LANGUAGE plpgsql SET "search_path" = '' AS $$
 declare
   msg_ids bigint[];
 begin
@@ -108,4 +99,4 @@ begin
     )
   ) set_vt;
 end;
-$$ language plpgsql;
+$$;
