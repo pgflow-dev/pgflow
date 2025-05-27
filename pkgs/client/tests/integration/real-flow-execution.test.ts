@@ -91,6 +91,7 @@ describe('Real Flow Execution E2E', () => {
             
             -- Quick patch: Add partition to realtime publication for local dev
             EXECUTE format('ALTER TABLE realtime.%I REPLICA IDENTITY FULL', partition_name);
+            EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE realtime.messages';
             EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE realtime.%I', partition_name);
             
             -- Grant same permissions as main realtime.messages table
@@ -150,6 +151,9 @@ describe('Real Flow Execution E2E', () => {
 
       expect(run.run_id).toBeDefined();
       expect(run.flow_slug).toBe(testFlow.slug);
+      
+      // Give the PgflowClient's internal channel subscription time to establish
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       // 5. Poll for task (simulate worker using raw SQL)
       const tasks = await sql`
@@ -161,7 +165,20 @@ describe('Real Flow Execution E2E', () => {
       expect(tasks[0].step_slug).toBe('simple_step');
       expect(tasks[0].input.run).toEqual(input);
 
-      // 6. Complete task with output (simulate worker using raw SQL)
+      // 6. Get reference to the step
+      const step = run.step('simple_step');
+
+      // 7. Add debug logging to track events BEFORE completing the task
+      let stepEventCount = 0;
+      const unsubscribe = step.on('*', (event) => {
+        stepEventCount++;
+        console.log(`Received step event #${stepEventCount}:`, JSON.stringify(event, null, 2));
+      });
+
+      // Wait a moment to ensure subscription is fully established
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // 8. Complete task with output (simulate worker using raw SQL)
       const taskOutput = {
         result: 'completed successfully',
         metadata: {
@@ -171,7 +188,6 @@ describe('Real Flow Execution E2E', () => {
         },
         data: { items: ['item1', 'item2'], count: 2 },
       };
-
       await sql`
       SELECT pgflow.complete_task(
         ${tasks[0].run_id}::uuid,
@@ -181,31 +197,29 @@ describe('Real Flow Execution E2E', () => {
       )
     `;
 
-      // 7. Wait for broadcast event and verify PgflowClient received it
-      const step = run.step('simple_step');
-
-      // Set up event listeners to debug what events are received
-      let receivedEvents: any[] = [];
-      
-      // Listen directly on the Supabase channel to see what's being broadcast
-      const debugChannel = supabaseClient.channel(`pgflow:run:${run.run_id}`);
-      debugChannel.on('broadcast', { event: '*' }, (payload) => {
-        console.log('Raw broadcast received:', payload);
-        receivedEvents.push(payload);
-      });
-      debugChannel.subscribe();
-
-      // Wait for step completion with timeout (this tests the broadcast mechanism)
+      // 9. Wait for step completion with timeout (this tests the broadcast mechanism)
       try {
-        await step.waitForStatus(FlowStepStatus.Completed, { timeoutMs: 1000 });
+        await step.waitForStatus(FlowStepStatus.Completed, { timeoutMs: 5000 });
       } catch (error) {
-        console.log('Timeout occurred. Raw broadcast events received:', receivedEvents);
+        console.log(`Total step events received: ${stepEventCount}`);
+        console.log(`Current step status: ${step.status}`);
+        console.log(`Current step output: ${JSON.stringify(step.output)}`);
+        
+        // Check if broadcast was sent
+        const sentBroadcast = await sql`
+          SELECT * FROM realtime.messages 
+          WHERE inserted_at > NOW() - INTERVAL '30 seconds'
+          ORDER BY inserted_at DESC
+          LIMIT 10
+        `;
+        console.log('Recent realtime messages:', JSON.stringify(sentBroadcast, null, 2));
+        
         throw error;
       } finally {
-        debugChannel.unsubscribe();
+        unsubscribe();
       }
 
-      // 8. Verify the PgflowClient state was updated correctly
+      // 10. Verify the PgflowClient state was updated correctly
       expect(step.status).toBe(FlowStepStatus.Completed);
       expect(step.output).toEqual(taskOutput); // Should be parsed object, not JSON string
       expect(typeof step.output).toBe('object'); // Verify it's an object, not a string
@@ -221,6 +235,7 @@ describe('Real Flow Execution E2E', () => {
 
       // Clean up
       await supabaseClient.removeAllChannels();
-    })
+    }),
+    { timeout: 15000 }
   );
 });

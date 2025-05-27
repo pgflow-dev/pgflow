@@ -13,4 +13,10 @@ fi
 echo "Resetting database..."
 supabase db reset
 
+# Wait for realtime system to stabilize after db reset
+# This is a workaround for a known Supabase local dev bug where realtime
+# doesn't work properly immediately after database reset
+echo "Waiting for realtime system to stabilize..."
+sleep 5
+
 echo "Test database is ready!"

@@ -1,12 +1,12 @@
 import { createNanoEvents } from 'nanoevents';
 import type { AnyFlow, ExtractFlowSteps, StepOutput } from '@pgflow/dsl';
 import { FlowStepStatus } from './types';
-import type { 
-  FlowStepState, 
-  StepEvents, 
-  Unsubscribe, 
+import type {
+  FlowStepState,
+  StepEvents,
+  Unsubscribe,
   FlowStepBase,
-  StepEvent
+  StepEvent,
 } from './types';
 
 /**
@@ -15,7 +15,8 @@ import type {
 export class FlowStep<
   TFlow extends AnyFlow,
   TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
-> implements FlowStepBase<StepEvent<TFlow, TStepSlug>> {
+> implements FlowStepBase<StepEvent<TFlow, TStepSlug>>
+{
   #state: FlowStepState<TFlow, TStepSlug>;
   #events = createNanoEvents<StepEvents<TFlow, TStepSlug>>();
   #statusPrecedence: Record<FlowStepStatus, number> = {
@@ -27,7 +28,7 @@ export class FlowStep<
 
   /**
    * Creates a new FlowStep instance
-   * 
+   *
    * @param initialState - Initial state for the step
    */
   constructor(initialState: FlowStepState<TFlow, TStepSlug>) {
@@ -99,7 +100,7 @@ export class FlowStep<
 
   /**
    * Register an event handler for a step event
-   * 
+   *
    * @param event - Event type to listen for
    * @param callback - Callback function to execute when event is emitted
    * @returns Function to unsubscribe from the event
@@ -113,13 +114,16 @@ export class FlowStep<
 
   /**
    * Wait for the step to reach a specific status
-   * 
+   *
    * @param targetStatus - The status to wait for
    * @param options - Optional timeout and abort signal
    * @returns Promise that resolves with the step instance when the status is reached
    */
   waitForStatus(
-    targetStatus: FlowStepStatus.Started | FlowStepStatus.Completed | FlowStepStatus.Failed,
+    targetStatus:
+      | FlowStepStatus.Started
+      | FlowStepStatus.Completed
+      | FlowStepStatus.Failed,
     options?: { timeoutMs?: number; signal?: AbortSignal }
   ): Promise<this> {
     const timeoutMs = options?.timeoutMs ?? 5 * 60 * 1000; // Default 5 minutes
@@ -133,30 +137,38 @@ export class FlowStep<
     // Otherwise, wait for the status to change
     return new Promise((resolve, reject) => {
       let timeoutId: NodeJS.Timeout | undefined;
-      
+
       // Set up timeout if provided
       if (timeoutMs > 0) {
         timeoutId = setTimeout(() => {
           unbind();
-          reject(new Error(`Timeout waiting for step ${this.step_slug} to reach status '${targetStatus}'`));
+          reject(
+            new Error(
+              `Timeout waiting for step ${this.step_slug} to reach status '${targetStatus}'`
+            )
+          );
         }, timeoutMs);
       }
-      
+
       // Set up abort signal if provided
       let abortCleanup: (() => void) | undefined;
       if (signal) {
         const abortHandler = () => {
           if (timeoutId) clearTimeout(timeoutId);
           unbind();
-          reject(new Error(`Aborted waiting for step ${this.step_slug} to reach status '${targetStatus}'`));
+          reject(
+            new Error(
+              `Aborted waiting for step ${this.step_slug} to reach status '${targetStatus}'`
+            )
+          );
         };
-        
+
         signal.addEventListener('abort', abortHandler);
         abortCleanup = () => {
           signal.removeEventListener('abort', abortHandler);
         };
       }
-      
+
       // Subscribe to all events
       const unbind = this.on('*', (event) => {
         if (event.status === targetStatus) {
@@ -171,7 +183,7 @@ export class FlowStep<
 
   /**
    * Updates the step state based on an event
-   * 
+   *
    * @param event - Event data to update the state with
    * @returns true if the state was updated, false otherwise
    */
@@ -180,12 +192,12 @@ export class FlowStep<
     if (event.step_slug !== this.#state.step_slug) {
       return false;
     }
-    
+
     // Validate event is for this run
     if (event.run_id !== this.#state.run_id) {
       return false;
     }
-    
+
     // Check if the event status has higher precedence than current status
     if (!this.#shouldUpdateStatus(this.#state.status, event.status)) {
       return false;
@@ -197,7 +209,10 @@ export class FlowStep<
         this.#state = {
           ...this.#state,
           status: FlowStepStatus.Started,
-          started_at: typeof event.started_at === 'string' ? new Date(event.started_at) : new Date(),
+          started_at:
+            typeof event.started_at === 'string'
+              ? new Date(event.started_at)
+              : new Date(),
         };
         this.#events.emit('started', event);
         break;
@@ -206,7 +221,10 @@ export class FlowStep<
         this.#state = {
           ...this.#state,
           status: FlowStepStatus.Completed,
-          completed_at: typeof event.completed_at === 'string' ? new Date(event.completed_at) : new Date(),
+          completed_at:
+            typeof event.completed_at === 'string'
+              ? new Date(event.completed_at)
+              : new Date(),
           output: event.output as StepOutput<TFlow, TStepSlug>,
         };
         this.#events.emit('completed', event);
@@ -216,9 +234,19 @@ export class FlowStep<
         this.#state = {
           ...this.#state,
           status: FlowStepStatus.Failed,
-          failed_at: typeof event.failed_at === 'string' ? new Date(event.failed_at) : new Date(),
-          error_message: typeof event.error_message === 'string' ? event.error_message : 'Unknown error',
-          error: new Error(typeof event.error_message === 'string' ? event.error_message : 'Unknown error'),
+          failed_at:
+            typeof event.failed_at === 'string'
+              ? new Date(event.failed_at)
+              : new Date(),
+          error_message:
+            typeof event.error_message === 'string'
+              ? event.error_message
+              : 'Unknown error',
+          error: new Error(
+            typeof event.error_message === 'string'
+              ? event.error_message
+              : 'Unknown error'
+          ),
         };
         this.#events.emit('failed', event);
         break;
@@ -232,23 +260,29 @@ export class FlowStep<
 
     // Also emit to the catch-all listener
     this.#events.emit('*', event);
-    
+
     return true;
   }
 
   /**
    * Determines if a status should be updated based on precedence
-   * 
+   *
    * @param currentStatus - Current status
    * @param newStatus - New status
    * @returns true if the status should be updated, false otherwise
    */
-  #shouldUpdateStatus(currentStatus: FlowStepStatus, newStatus: FlowStepStatus): boolean {
+  #shouldUpdateStatus(
+    currentStatus: FlowStepStatus,
+    newStatus: FlowStepStatus
+  ): boolean {
     // Don't allow changes to terminal states
-    if (currentStatus === FlowStepStatus.Completed || currentStatus === FlowStepStatus.Failed) {
+    if (
+      currentStatus === FlowStepStatus.Completed ||
+      currentStatus === FlowStepStatus.Failed
+    ) {
       return false; // Terminal states should never change
     }
-    
+
     const currentPrecedence = this.#statusPrecedence[currentStatus];
     const newPrecedence = this.#statusPrecedence[newStatus];
 
