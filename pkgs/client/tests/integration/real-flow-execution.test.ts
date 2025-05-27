@@ -4,6 +4,8 @@ import { createTestSupabaseClient } from '../helpers/setup.js';
 import { createTestFlow } from '../helpers/fixtures.js';
 import { PgflowClient } from '../../src/lib/PgflowClient.js';
 import { FlowStepStatus } from '../../src/lib/types.js';
+import { grantTestPermissions } from '../helpers/permissions.js';
+import { ensureRealtimePartition } from '../helpers/realtime-partition.js';
 
 describe('Real Flow Execution E2E', () => {
   it(
@@ -12,105 +14,11 @@ describe('Real Flow Execution E2E', () => {
       // Setup test flow definition
       const testFlow = createTestFlow();
 
-      // 1. Redefine functions with SECURITY DEFINER for test
-      await sql`
-      CREATE OR REPLACE FUNCTION pgflow.start_flow_with_states(
-        flow_slug TEXT,
-        input JSONB,
-        run_id UUID default null
-      ) RETURNS JSONB AS $$
-      DECLARE
-        v_run_id UUID;
-      BEGIN
-        -- Start the flow using existing function
-        SELECT r.run_id INTO v_run_id FROM pgflow.start_flow(
-          start_flow_with_states.flow_slug,
-          start_flow_with_states.input,
-          start_flow_with_states.run_id
-        ) AS r LIMIT 1;
-
-        -- Use get_run_with_states to return the complete state
-        RETURN pgflow.get_run_with_states(v_run_id);
-      END;
-      $$ LANGUAGE plpgsql SECURITY DEFINER;
-    `;
-
-      await sql`
-      CREATE OR REPLACE FUNCTION pgflow.get_run_with_states(
-        run_id UUID
-      ) RETURNS JSONB AS $$
-        SELECT jsonb_build_object(
-          'run', to_jsonb(r),
-          'steps', COALESCE(jsonb_agg(to_jsonb(s)) FILTER (WHERE s.run_id IS NOT NULL), '[]'::jsonb)
-        )
-        FROM pgflow.runs r
-        LEFT JOIN pgflow.step_states s ON s.run_id = r.run_id
-        WHERE r.run_id = get_run_with_states.run_id
-        GROUP BY r.run_id;
-      $$ LANGUAGE sql SECURITY DEFINER;
-    `;
-
-      // Grant minimal permissions
-      await sql`GRANT USAGE ON SCHEMA pgflow TO anon`;
-      await sql`GRANT EXECUTE ON FUNCTION pgflow.start_flow_with_states(text, jsonb, uuid) TO anon`;
-      await sql`GRANT EXECUTE ON FUNCTION pgflow.get_run_with_states(uuid) TO anon`;
-
-      // Temporary fix: Grant schema access to service_role for PostgREST (before any client calls)
-      await sql`GRANT USAGE ON SCHEMA pgflow TO anon, authenticated, service_role`;
-      await sql`GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA pgflow TO anon, authenticated, service_role`;
-      await sql`GRANT SELECT ON TABLE pgflow.flows, pgflow.steps TO anon, authenticated, service_role`;
+      // 1. Grant permissions for PostgREST access
+      await grantTestPermissions(sql);
 
       // 2. Create realtime partition - fixes Supabase/realtime bug after db-reset
-      // This is a workaround for a Supabase/realtime bug where partitions aren't immediately 
-      // available after db-reset, causing realtime.send() to silently fail
-      const partitionCreated = await sql`
-        DO $$
-        DECLARE
-          target_date date := CURRENT_DATE;
-          next_date date := target_date + interval '1 day';
-          partition_name text := 'messages_' || to_char(target_date, 'YYYY_MM_DD');
-          partition_exists boolean;
-        BEGIN
-          -- Check if partition already exists
-          SELECT EXISTS (
-            SELECT 1 FROM pg_class c
-            JOIN pg_namespace n ON c.relnamespace = n.oid
-            WHERE n.nspname = 'realtime'
-            AND c.relname = partition_name
-          ) INTO partition_exists;
-
-          -- Create partition if it doesn't exist
-          IF NOT partition_exists THEN
-            EXECUTE format(
-              'CREATE TABLE realtime.%I PARTITION OF realtime.messages
-               FOR VALUES FROM (%L) TO (%L)',
-              partition_name,
-              target_date,
-              next_date
-            );
-            
-            -- Quick patch: Add partition to realtime publication for local dev
-            EXECUTE format('ALTER TABLE realtime.%I REPLICA IDENTITY FULL', partition_name);
-            EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE realtime.messages';
-            EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE realtime.%I', partition_name);
-            
-            -- Grant same permissions as main realtime.messages table
-            EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE realtime.%I TO anon, authenticated, service_role', partition_name);
-            EXECUTE format('GRANT ALL ON TABLE realtime.%I TO supabase_realtime_admin, postgres, dashboard_user', partition_name);
-            
-            -- Enable RLS and create policies for realtime broadcast authorization
-            EXECUTE format('ALTER TABLE realtime.%I ENABLE ROW LEVEL SECURITY', partition_name);
-            EXECUTE format('CREATE POLICY "Allow service_role to receive broadcasts" ON realtime.%I FOR SELECT TO service_role USING (true)', partition_name);
-            EXECUTE format('CREATE POLICY "Allow service_role to send broadcasts" ON realtime.%I FOR INSERT TO service_role WITH CHECK (true)', partition_name);
-            
-            RAISE NOTICE 'Created partition % for date range % to %',
-              partition_name, target_date, next_date;
-          ELSE
-            RAISE NOTICE 'Partition % already exists', partition_name;
-          END IF;
-        END;
-        $$
-      `;
+      await ensureRealtimePartition(sql);
       console.log('Realtime partition creation attempted');
 
       // Test if realtime.send function exists
