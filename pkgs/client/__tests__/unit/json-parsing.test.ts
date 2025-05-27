@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SupabaseBroadcastAdapter } from '../../src/lib/SupabaseBroadcastAdapter';
 import type { BroadcastStepEvent, BroadcastRunEvent } from '../../src/lib/types';
 
@@ -8,18 +8,27 @@ describe('JSON Parsing in Broadcasts', () => {
   let runEventHandler: (event: BroadcastRunEvent) => void;
   let broadcastCallback: (payload: any) => void;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     
     // Mock Supabase client that captures the broadcast callback
     const mockChannel = {
-      on: vi.fn((event: string, callback: (payload: any) => void) => {
+      on: vi.fn((event: string, eventFilterOrCallback: any, maybeCallback?: any) => {
         if (event === 'broadcast') {
-          broadcastCallback = callback;
+          // Handle both 2-arg and 3-arg forms
+          if (typeof eventFilterOrCallback === 'function') {
+            broadcastCallback = eventFilterOrCallback;
+          } else if (typeof maybeCallback === 'function') {
+            broadcastCallback = maybeCallback;
+          }
         }
-        return { on: vi.fn(() => ({ subscribe: vi.fn() })) };
+        return mockChannel;
       }),
-      subscribe: vi.fn(),
+      subscribe: vi.fn((callback?: (status: string) => void) => {
+        // Immediately call the callback with SUBSCRIBED to resolve the promise
+        if (callback) callback('SUBSCRIBED');
+        return mockChannel;
+      }),
       unsubscribe: vi.fn(),
     };
 
@@ -39,7 +48,7 @@ describe('JSON Parsing in Broadcasts', () => {
     adapter.onRunEvent(runEventHandler);
     
     // Subscribe to a run to configure the channel and capture broadcast callback
-    adapter.subscribeToRun('test-run-id');
+    await adapter.subscribeToRun('test-run-id');
   });
 
   describe('Step Events', () => {

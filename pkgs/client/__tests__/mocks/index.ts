@@ -144,8 +144,14 @@ export function mockRealtimeChannel(): {
         handlers.set(eventOrCallback.event, maybeHandler);
       }
     } else if (type === 'system') {
-      if (typeof eventOrCallback === 'object' && maybeHandler) {
+      if (typeof eventOrCallback === 'function') {
+        // 2-argument form: type, callback for system events
+        systemHandlers.set('*', eventOrCallback);
+      } else if (typeof eventOrCallback === 'object' && maybeHandler) {
         systemHandlers.set(eventOrCallback.event, maybeHandler);
+      } else if (typeof eventOrCallback === 'string' && typeof maybeHandler === 'function') {
+        // Direct event name as string
+        systemHandlers.set(eventOrCallback, maybeHandler);
       }
     }
     return channelMock;
@@ -251,6 +257,48 @@ export function triggerRunEvent(event: BroadcastRunEvent): void {
  */
 export function triggerStepEvent(event: BroadcastStepEvent): void {
   globalTestState.broadcastCallbacks.stepEvents.forEach(callback => callback(event));
+}
+
+/**
+ * Helper to setup realistic channel subscription behavior for tests
+ * 
+ * @param mocks - The mocks object returned from mockSupabase()
+ * @param options - Configuration options
+ * @param options.delayMs - Delay before subscription succeeds (default: 0 for immediate)
+ * @param options.shouldFail - Whether subscription should fail (default: false)
+ * @param options.failureMessage - Error message if subscription fails
+ */
+export function useChannelSubscription(
+  mocks: ReturnType<typeof mockSupabase>['mocks'],
+  options: {
+    delayMs?: number;
+    shouldFail?: boolean;
+    failureMessage?: string;
+  } = {}
+): void {
+  const { delayMs = 0, shouldFail = false, failureMessage = 'Subscription failed' } = options;
+
+  mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+    if (callback) {
+      if (delayMs > 0) {
+        setTimeout(() => {
+          if (shouldFail) {
+            callback('CHANNEL_ERROR');
+          } else {
+            callback('SUBSCRIBED');
+          }
+        }, delayMs);
+      } else {
+        // Immediate execution for faster tests
+        if (shouldFail) {
+          callback('CHANNEL_ERROR');
+        } else {
+          callback('SUBSCRIBED');
+        }
+      }
+    }
+    return mocks.channel.channel;
+  });
 }
 
 /**

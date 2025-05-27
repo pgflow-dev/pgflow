@@ -32,6 +32,13 @@ describe('Concurrent Operations', () => {
   describe('Concurrent startFlow operations', () => {
     it('handles multiple concurrent startFlow calls successfully', async () => {
       const { client, mocks } = mockSupabase();
+      
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
+      
       const pgflowClient = new PgflowClient(client);
       
       const flow1Input = { data: 'flow1' };
@@ -93,6 +100,13 @@ describe('Concurrent Operations', () => {
 
     it('handles same run_id being used multiple times', async () => {
       const { client, mocks } = mockSupabase();
+      
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
+      
       const pgflowClient = new PgflowClient(client);
       
       const sharedRunId = '444e4567-e89b-12d3-a456-426614174000';
@@ -132,6 +146,13 @@ describe('Concurrent Operations', () => {
   describe('Event forwarding', () => {
     it('forwards run events through the client', async () => {
       const { client, mocks } = mockSupabase();
+      
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
+      
       const pgflowClient = new PgflowClient(client);
       
       // Set up a run
@@ -160,6 +181,13 @@ describe('Concurrent Operations', () => {
 
     it('forwards step events through the client', async () => {
       const { client, mocks } = mockSupabase();
+      
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
+      
       const pgflowClient = new PgflowClient(client);
       
       // Set up a run
@@ -190,6 +218,13 @@ describe('Concurrent Operations', () => {
 
     it('ignores events with wrong run_id', async () => {
       const { client, mocks } = mockSupabase();
+      
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
+      
       const pgflowClient = new PgflowClient(client);
       
       // Set up a run
@@ -223,6 +258,13 @@ describe('Concurrent Operations', () => {
   describe('Error handling', () => {
     it('handles RPC errors during concurrent operations', async () => {
       const { client, mocks } = mockSupabase();
+      
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
+      
       const pgflowClient = new PgflowClient(client);
       
       // First call succeeds, second fails

@@ -34,6 +34,12 @@ describe('Error Recovery', () => {
         error: new Error('Network connection failed'),
       });
 
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
+
       const pgflowClient = new PgflowClient(client);
 
       // Attempt to start flow should throw
@@ -55,6 +61,12 @@ describe('Error Recovery', () => {
       mocks.rpc.mockReturnValueOnce({
         data: null,
         error: new Error('Database query timeout'),
+      });
+
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
       });
 
       const pgflowClient = new PgflowClient(client);
@@ -79,6 +91,12 @@ describe('Error Recovery', () => {
         error: null,
       });
 
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
+
       const pgflowClient = new PgflowClient(client);
 
       // Should handle null data gracefully
@@ -96,6 +114,12 @@ describe('Error Recovery', () => {
           steps: [],
         },
         error: null,
+      });
+
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
       });
 
       const pgflowClient = new PgflowClient(client);
@@ -135,6 +159,12 @@ describe('Error Recovery', () => {
           },
           error: null,
         });
+
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
 
       const pgflowClient = new PgflowClient(client);
 
@@ -184,6 +214,12 @@ describe('Error Recovery', () => {
 
       mocks.rpc.mockReturnValueOnce(delayedPromise);
 
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
+
       const pgflowClient = new PgflowClient(client);
 
       // Start the operation
@@ -220,6 +256,12 @@ describe('Error Recovery', () => {
         error: new Error('Database connection lost'),
       });
 
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
+
       const pgflowClient = new PgflowClient(client);
 
       // Attempt to start flow should fail
@@ -242,6 +284,12 @@ describe('Error Recovery', () => {
           steps: stepStatesSample,
         },
         error: null,
+      });
+
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
       });
 
       const pgflowClient = new PgflowClient(client);
@@ -279,6 +327,12 @@ describe('Error Recovery', () => {
           error: null,
         });
 
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
+
       const pgflowClient = new PgflowClient(client);
       
       // Get multiple runs
@@ -311,6 +365,12 @@ describe('Error Recovery', () => {
         error: new Error('Flow "invalid-flow" not found'),
       });
 
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
+
       const pgflowClient = new PgflowClient(client);
 
       await expect(
@@ -325,6 +385,12 @@ describe('Error Recovery', () => {
       mocks.rpc.mockReturnValueOnce({
         data: null,
         error: new Error('Invalid UUID format'),
+      });
+
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
       });
 
       const pgflowClient = new PgflowClient(client);
@@ -345,6 +411,12 @@ describe('Error Recovery', () => {
           steps: stepStatesSample,
         },
         error: null,
+      });
+
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
       });
 
       const pgflowClient = new PgflowClient(client);

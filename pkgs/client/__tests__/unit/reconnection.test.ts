@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SupabaseBroadcastAdapter } from '../../src/lib/SupabaseBroadcastAdapter';
-import { mockSupabase, resetMocks } from '../mocks';
+import { mockSupabase, resetMocks, useChannelSubscription } from '../mocks';
 import {
   RUN_ID,
   startedRunSnapshot,
@@ -37,13 +37,16 @@ describe('Reconnection Logic', () => {
         return setTimeout(callback, delay);
       });
 
+      // Setup channel subscription (immediate for test performance)
+      useChannelSubscription(mocks);
+
       const adapter = new SupabaseBroadcastAdapter(client, {
         reconnectDelayMs: 1000,
         schedule: mockSchedule,
       });
 
-      // Subscribe to a run
-      const unsubscribe = adapter.subscribeToRun(RUN_ID);
+      // Subscribe to a run - await since it's async
+      const unsubscribe = await adapter.subscribeToRun(RUN_ID);
 
       // Simulate a channel error
       const errorHandler = mocks.channel.systemHandlers.get('error');
@@ -85,13 +88,19 @@ describe('Reconnection Logic', () => {
         return setTimeout(callback, delay);
       });
 
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
+
       const adapter = new SupabaseBroadcastAdapter(client, {
         reconnectDelayMs: customDelay,
         schedule: mockSchedule,
       });
 
-      // Subscribe to trigger potential reconnection
-      const unsubscribe = adapter.subscribeToRun(RUN_ID);
+      // Subscribe to trigger potential reconnection - await since it's async
+      const unsubscribe = await adapter.subscribeToRun(RUN_ID);
 
       // Simulate error to test reconnection delay
       const errorHandler = mocks.channel.systemHandlers.get('error');
@@ -121,13 +130,19 @@ describe('Reconnection Logic', () => {
         error: null,
       });
 
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
+
       const adapter = new SupabaseBroadcastAdapter(client, {
         reconnectDelayMs: 100,
         schedule: mockSchedule,
       });
 
-      // Subscribe then immediately unsubscribe
-      const unsubscribe = adapter.subscribeToRun(RUN_ID);
+      // Subscribe then immediately unsubscribe - await since it's async
+      const unsubscribe = await adapter.subscribeToRun(RUN_ID);
       unsubscribe();
 
       // Simulate error after unsubscribe
@@ -185,8 +200,14 @@ describe('Reconnection Logic', () => {
       adapter.onRunEvent((event) => runEvents.push(event));
       adapter.onStepEvent((event) => stepEvents.push(event));
 
-      // Subscribe to run
-      const unsubscribe = adapter.subscribeToRun(RUN_ID);
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
+
+      // Subscribe to run - await since it's async
+      const unsubscribe = await adapter.subscribeToRun(RUN_ID);
 
       // Simulate channel error to trigger reconnection
       const errorHandler = mocks.channel.systemHandlers.get('error');
@@ -221,13 +242,19 @@ describe('Reconnection Logic', () => {
         return setTimeout(callback, delay);
       });
 
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
+
       const adapter = new SupabaseBroadcastAdapter(client, {
         reconnectDelayMs: 100,
         schedule: mockSchedule,
       });
 
-      // Subscribe to run
-      const unsubscribe = adapter.subscribeToRun(RUN_ID);
+      // Subscribe to run - await since it's async
+      const unsubscribe = await adapter.subscribeToRun(RUN_ID);
 
       // Simulate channel error
       const errorHandler = mocks.channel.systemHandlers.get('error');
@@ -268,13 +295,19 @@ describe('Reconnection Logic', () => {
         return setTimeout(callback, delay);
       });
 
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
+
       const adapter = new SupabaseBroadcastAdapter(client, {
         reconnectDelayMs: 100,
         schedule: mockSchedule,
       });
 
-      // Subscribe to run
-      const unsubscribe = adapter.subscribeToRun(RUN_ID);
+      // Subscribe to run - await since it's async
+      const unsubscribe = await adapter.subscribeToRun(RUN_ID);
 
       // Simulate multiple rapid errors
       const errorHandler = mocks.channel.systemHandlers.get('error');
@@ -314,13 +347,19 @@ describe('Reconnection Logic', () => {
         return setTimeout(callback, delay);
       });
 
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
+
       const adapter = new SupabaseBroadcastAdapter(client, {
         reconnectDelayMs: 50,
         schedule: mockSchedule,
       });
 
-      // Subscribe to run
-      const unsubscribe = adapter.subscribeToRun(RUN_ID);
+      // Subscribe to run - await since it's async
+      const unsubscribe = await adapter.subscribeToRun(RUN_ID);
 
       // Verify initial subscription
       expect(client.channel).toHaveBeenCalledWith(`pgflow:run:${RUN_ID}`);
@@ -359,13 +398,19 @@ describe('Reconnection Logic', () => {
         return setTimeout(callback, delay);
       });
 
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
+
       const adapter = new SupabaseBroadcastAdapter(client, {
         reconnectDelayMs: 100,
         schedule: mockSchedule,
       });
 
-      // Subscribe to run
-      const unsubscribe = adapter.subscribeToRun(RUN_ID);
+      // Subscribe to run - await since it's async
+      const unsubscribe = await adapter.subscribeToRun(RUN_ID);
 
       // Get reference to original channel
       const originalChannelCalls = client.channel.mock.calls.length;
@@ -396,13 +441,19 @@ describe('Reconnection Logic', () => {
         error: null,
       });
 
+      // Mock channel subscription to resolve immediately
+      mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
+        if (callback) callback('SUBSCRIBED');
+        return mocks.channel.channel;
+      });
+
       const adapter = new SupabaseBroadcastAdapter(client, {
         reconnectDelayMs: 100,
       });
 
-      // Subscribe multiple times to same run
-      const unsubscribe1 = adapter.subscribeToRun(RUN_ID);
-      const unsubscribe2 = adapter.subscribeToRun(RUN_ID);
+      // Subscribe multiple times to same run - await since it's async
+      const unsubscribe1 = await adapter.subscribeToRun(RUN_ID);
+      const unsubscribe2 = await adapter.subscribeToRun(RUN_ID);
 
       // Should return the same unsubscribe function (reference equality)
       expect(unsubscribe1).toBe(unsubscribe2);

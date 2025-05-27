@@ -3,7 +3,7 @@ import { PgflowClient } from '../../src/lib/PgflowClient';
 import { FlowRun } from '../../src/lib/FlowRun';
 import { FlowStep } from '../../src/lib/FlowStep';
 import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types';
-import { mockSupabase, resetMocks } from '../mocks';
+import { mockSupabase, resetMocks, useChannelSubscription } from '../mocks';
 import {
   RUN_ID,
   FLOW_SLUG,
@@ -31,6 +31,9 @@ describe('Data Validation and Edge Cases', () => {
     it('handles missing step states gracefully', async () => {
       const { client, mocks } = mockSupabase();
       
+      // Setup realistic channel subscription with 200ms delay
+      useChannelSubscription(mocks);
+      
       // Mock response with no steps
       mocks.rpc.mockReturnValueOnce({
         data: {
@@ -55,6 +58,9 @@ describe('Data Validation and Edge Cases', () => {
     it('handles empty step states array', async () => {
       const { client, mocks } = mockSupabase();
       
+      // Setup realistic channel subscription with 200ms delay
+      useChannelSubscription(mocks);
+      
       mocks.rpc.mockReturnValueOnce({
         data: {
           run: startedRunSnapshot,
@@ -77,6 +83,9 @@ describe('Data Validation and Edge Cases', () => {
     it('handles corrupted run data gracefully', async () => {
       const { client, mocks } = mockSupabase();
       
+      // Setup realistic channel subscription with 200ms delay
+      useChannelSubscription(mocks);
+      
       // Mock response with invalid status
       mocks.rpc.mockReturnValueOnce({
         data: {
@@ -97,6 +106,9 @@ describe('Data Validation and Edge Cases', () => {
 
     it('handles step data with missing fields', async () => {
       const { client, mocks } = mockSupabase();
+      
+      // Setup realistic channel subscription with 200ms delay
+      useChannelSubscription(mocks);
       
       mocks.rpc.mockReturnValueOnce({
         data: {
@@ -207,6 +219,9 @@ describe('Data Validation and Edge Cases', () => {
     it('handles null flow input gracefully', async () => {
       const { client, mocks } = mockSupabase();
       
+      // Setup realistic channel subscription with 200ms delay
+      useChannelSubscription(mocks);
+      
       mocks.rpc.mockReturnValueOnce({
         data: {
           run: { ...startedRunSnapshot, input: null },
@@ -225,6 +240,9 @@ describe('Data Validation and Edge Cases', () => {
     it('handles undefined flow input gracefully', async () => {
       const { client, mocks } = mockSupabase();
       
+      // Setup realistic channel subscription with 200ms delay
+      useChannelSubscription(mocks);
+      
       mocks.rpc.mockReturnValueOnce({
         data: {
           run: { ...startedRunSnapshot, input: undefined },
@@ -242,6 +260,9 @@ describe('Data Validation and Edge Cases', () => {
 
     it('handles very large input objects', async () => {
       const { client, mocks } = mockSupabase();
+      
+      // Setup realistic channel subscription with 200ms delay
+      useChannelSubscription(mocks);
       
       // Create large input object
       const largeInput = {
@@ -270,6 +291,9 @@ describe('Data Validation and Edge Cases', () => {
     it('handles circular references in input gracefully', async () => {
       const { client, mocks } = mockSupabase();
       
+      // Setup realistic channel subscription with 200ms delay
+      useChannelSubscription(mocks);
+      
       // Create circular reference
       const circularInput: any = { name: 'test' };
       circularInput.self = circularInput;
@@ -295,6 +319,9 @@ describe('Data Validation and Edge Cases', () => {
   describe('Edge Case Memory Management', () => {
     it('handles rapid subscription and disposal cycles', async () => {
       const { client, mocks } = mockSupabase();
+      
+      // Setup realistic channel subscription with 200ms delay
+      useChannelSubscription(mocks);
       
       mocks.rpc.mockReturnValue({
         data: {
@@ -325,6 +352,9 @@ describe('Data Validation and Edge Cases', () => {
     it('handles accessing disposed runs gracefully', async () => {
       const { client, mocks } = mockSupabase();
       
+      // Setup realistic channel subscription with 200ms delay
+      useChannelSubscription(mocks);
+      
       mocks.rpc.mockReturnValueOnce({
         data: {
           run: startedRunSnapshot,
@@ -353,6 +383,9 @@ describe('Data Validation and Edge Cases', () => {
     it('handles multiple disposal calls gracefully', async () => {
       const { client, mocks } = mockSupabase();
       
+      // Setup realistic channel subscription with 200ms delay
+      useChannelSubscription(mocks);
+      
       mocks.rpc.mockReturnValueOnce({
         data: {
           run: startedRunSnapshot,
@@ -380,6 +413,9 @@ describe('Data Validation and Edge Cases', () => {
   describe('Async Operation Edge Cases', () => {
     it('handles cancelled operations gracefully', async () => {
       const { client, mocks } = mockSupabase();
+      
+      // Setup realistic channel subscription with 200ms delay
+      useChannelSubscription(mocks);
       
       // Mock delayed response
       const delayedResponse = new Promise((resolve) => {
@@ -412,6 +448,9 @@ describe('Data Validation and Edge Cases', () => {
 
     it('handles concurrent operations on same run ID', async () => {
       const { client, mocks } = mockSupabase();
+      
+      // Setup realistic channel subscription with 200ms delay
+      useChannelSubscription(mocks);
       
       // Mock multiple responses
       mocks.rpc
