@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SupabaseBroadcastAdapter } from '../../src/lib/SupabaseBroadcastAdapter';
 import type { BroadcastStepEvent, BroadcastRunEvent } from '../../src/lib/types';
+import { mockSupabase, mockChannelSubscription } from '../mocks';
 
 describe('JSON Parsing in Broadcasts', () => {
   let adapter: SupabaseBroadcastAdapter;
@@ -11,35 +12,10 @@ describe('JSON Parsing in Broadcasts', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     
-    // Mock Supabase client that captures the broadcast callback
-    const mockChannel = {
-      on: vi.fn((event: string, eventFilterOrCallback: any, maybeCallback?: any) => {
-        if (event === 'broadcast') {
-          // Handle both 2-arg and 3-arg forms
-          if (typeof eventFilterOrCallback === 'function') {
-            broadcastCallback = eventFilterOrCallback;
-          } else if (typeof maybeCallback === 'function') {
-            broadcastCallback = maybeCallback;
-          }
-        }
-        return mockChannel;
-      }),
-      subscribe: vi.fn((callback?: (status: string) => void) => {
-        // Immediately call the callback with SUBSCRIBED to resolve the promise
-        if (callback) callback('SUBSCRIBED');
-        return mockChannel;
-      }),
-      unsubscribe: vi.fn(),
-    };
-
-    const mockSupabase = {
-      channel: vi.fn(() => mockChannel),
-      schema: vi.fn(() => ({
-        rpc: vi.fn(),
-      })),
-    };
-
-    adapter = new SupabaseBroadcastAdapter(mockSupabase as any);
+    const { client, mocks } = mockSupabase();
+    mockChannelSubscription(mocks);
+    
+    adapter = new SupabaseBroadcastAdapter(client);
     
     // Set up event handlers to capture parsed events
     stepEventHandler = vi.fn();
@@ -47,8 +23,11 @@ describe('JSON Parsing in Broadcasts', () => {
     adapter.onStepEvent(stepEventHandler);
     adapter.onRunEvent(runEventHandler);
     
-    // Subscribe to a run to configure the channel and capture broadcast callback
+    // Subscribe to a run to configure the channel
     await adapter.subscribeToRun('test-run-id');
+    
+    // Get the broadcast callback for triggering events
+    broadcastCallback = mocks.channel.handlers.get('*');
   });
 
   describe('Step Events', () => {

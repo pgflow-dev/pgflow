@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SupabaseBroadcastAdapter } from '../../src/lib/SupabaseBroadcastAdapter';
-import { mockSupabase, resetMocks, useChannelSubscription } from '../mocks';
+import { mockSupabase, resetMocks, mockChannelSubscription } from '../mocks';
 import {
   RUN_ID,
   startedRunSnapshot,
@@ -38,7 +38,7 @@ describe('Reconnection Logic', () => {
       });
 
       // Setup channel subscription (immediate for test performance)
-      useChannelSubscription(mocks);
+      mockChannelSubscription(mocks);
 
       const adapter = new SupabaseBroadcastAdapter(client, {
         reconnectDelayMs: 1000,

@@ -268,7 +268,7 @@ export function triggerStepEvent(event: BroadcastStepEvent): void {
  * @param options.shouldFail - Whether subscription should fail (default: false)
  * @param options.failureMessage - Error message if subscription fails
  */
-export function useChannelSubscription(
+export function mockChannelSubscription(
   mocks: ReturnType<typeof mockSupabase>['mocks'],
   options: {
     delayMs?: number;
