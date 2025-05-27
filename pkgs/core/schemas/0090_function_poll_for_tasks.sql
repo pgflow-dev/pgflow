@@ -42,6 +42,7 @@ begin
     from pgflow.step_tasks as task
     where task.message_id = any(msg_ids)
       and task.status = 'queued'
+      and task.flow_slug = queue_name
   ),
   increment_attempts as (
     update pgflow.step_tasks
