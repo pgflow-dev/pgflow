@@ -14,9 +14,9 @@ describe('Real Flow Execution E2E', () => {
       await grantMinimalPgflowPermissions(sql);
 
       // Create test flow and step
-      const testFlow = createTestFlow();
+      const testFlow = createTestFlow('execution_flow');
       await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
-      await sql`SELECT pgflow.add_step(${testFlow.slug}, 'simple_step')`;
+      await sql`SELECT pgflow.add_step(${testFlow.slug}, 'execution_step')`;
 
       // Create PgflowClient and start flow
       const supabaseClient = createTestSupabaseClient();
@@ -36,7 +36,7 @@ describe('Real Flow Execution E2E', () => {
 
       expect(tasks).toHaveLength(1);
       expect(tasks[0].run_id).toBe(run.run_id);
-      expect(tasks[0].step_slug).toBe('simple_step');
+      expect(tasks[0].step_slug).toBe('execution_step');
       expect(tasks[0].input.run).toEqual(input);
 
       const taskOutput = {
@@ -59,7 +59,7 @@ describe('Real Flow Execution E2E', () => {
       `;
 
       // Wait for step completion
-      const step = run.step('simple_step');
+      const step = run.step('execution_step');
       await step.waitForStatus(FlowStepStatus.Completed, {
         timeoutMs: 5000,
       });

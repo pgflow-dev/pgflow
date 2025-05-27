@@ -36,7 +36,7 @@ describe('Supabase Setup Integration', () => {
   }));
 
   it('should create and retrieve a test flow', withTransaction(async (sql) => {
-    const testFlow = createTestFlow();
+    const testFlow = createTestFlow('setup_test_flow');
     
     // Create flow using pgflow function with default parameters
     await sql`

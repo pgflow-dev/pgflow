@@ -12,9 +12,9 @@ it(
     await grantMinimalPgflowPermissions(sql);
 
     // Create test flow and step
-    const testFlow = createTestFlow();
+    const testFlow = createTestFlow('minimal_flow');
     await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
-    await sql`SELECT pgflow.add_step(${testFlow.slug}, 'simple_step')`;
+    await sql`SELECT pgflow.add_step(${testFlow.slug}, 'minimal_step')`;
     console.log('created flow', testFlow);
 
     // Spin up client and start the flow
@@ -44,7 +44,7 @@ it(
     console.log(
       'waiting stepComplete',
       await run
-        .step('simple_step')
+        .step('minimal_step')
         .waitForStatus(FlowStepStatus.Completed, { timeoutMs: 1000 })
     );
     console.log(

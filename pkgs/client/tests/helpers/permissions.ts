@@ -7,6 +7,9 @@ import type { Sql } from 'postgres';
  * Handles concurrent execution and already-granted permissions gracefully.
  */
 export async function grantMinimalPgflowPermissions(sql: Sql) {
+  // Clean up any leftover data from previous tests
+  await sql`SELECT pgflow_tests.reset_db()`;
+  
   // Ensure realtime partition exists (required after db reset)
   await sql`SELECT pgflow_tests.create_realtime_partition()`;
   // Ensure the required functions have SECURITY DEFINER and proper permissions
