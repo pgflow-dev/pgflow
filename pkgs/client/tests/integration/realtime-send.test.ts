@@ -121,7 +121,7 @@ describe('Realtime Send Integration', () => {
       console.log('Final received events:', receivedEvents);
 
       expect(receivedEvents.length).toBeGreaterThan(0);
-      
+
       // Check that our payload fields are present (ignore the auto-added 'id' field)
       const receivedPayload = receivedEvents[0].payload;
       expect(receivedPayload.test_message).toEqual(dbPayload.test_message);
