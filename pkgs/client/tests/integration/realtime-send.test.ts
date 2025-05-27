@@ -2,17 +2,13 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { withPgNoTransaction } from '../helpers/db.js';
 import { createTestSupabaseClient } from '../helpers/setup.js';
 import { grantTestPermissions } from '../helpers/permissions.js';
-import { ensureRealtimePartition } from '../helpers/realtime-partition.js';
 
 describe('Realtime Send Integration', () => {
   it(
     'receives events sent via realtime.send() SQL function',
     withPgNoTransaction(async (sql) => {
-      // 0. Grant permissions for PostgREST access
+      // Grant permissions for PostgREST access
       await grantTestPermissions(sql);
-
-      // 1. Create realtime partition - fixes Supabase/realtime bug after db-reset
-      await ensureRealtimePartition(sql);
 
       // 2. Create Supabase client with real credentials
       const supabaseClient = createTestSupabaseClient();

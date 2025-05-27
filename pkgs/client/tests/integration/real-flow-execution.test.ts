@@ -5,7 +5,6 @@ import { createTestFlow } from '../helpers/fixtures.js';
 import { PgflowClient } from '../../src/lib/PgflowClient.js';
 import { FlowStepStatus } from '../../src/lib/types.js';
 import { grantTestPermissions } from '../helpers/permissions.js';
-import { ensureRealtimePartition } from '../helpers/realtime-partition.js';
 
 describe('Real Flow Execution E2E', () => {
   it(
@@ -14,12 +13,8 @@ describe('Real Flow Execution E2E', () => {
       // Setup test flow definition
       const testFlow = createTestFlow();
 
-      // 1. Grant permissions for PostgREST access
+      // Grant permissions for PostgREST access
       await grantTestPermissions(sql);
-
-      // 2. Create realtime partition - fixes Supabase/realtime bug after db-reset
-      await ensureRealtimePartition(sql);
-      console.log('Realtime partition creation attempted');
 
       // Test if realtime.send function exists
       const realtimeFunctionExists = await sql`

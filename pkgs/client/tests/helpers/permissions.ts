@@ -5,7 +5,8 @@ import type { Sql } from 'postgres';
  * These permissions should eventually be moved to the core migrations in production.
  */
 export async function grantTestPermissions(sql: Sql): Promise<void> {
-  await sql`GRANT USAGE ON SCHEMA pgflow TO anon, authenticated, service_role`;
-  await sql`GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA pgflow TO anon, authenticated, service_role`;
-  await sql`GRANT SELECT ON TABLE pgflow.flows, pgflow.steps TO anon, authenticated, service_role`;
+  await sql`GRANT USAGE ON SCHEMA pgflow TO service_role`;
+  // Grant only the specific functions needed for the API
+  await sql`GRANT EXECUTE ON FUNCTION pgflow.start_flow_with_states(text, jsonb, uuid) TO service_role`;
+  await sql`GRANT EXECUTE ON FUNCTION pgflow.get_run_with_states(uuid) TO service_role`;
 }
