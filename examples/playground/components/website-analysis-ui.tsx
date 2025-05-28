@@ -57,6 +57,7 @@ export default function WebsiteAnalysisUI({
   const isRunning = runData?.status === 'started';
   const showSteps = runData && (isRunning || isCompleted || isFailed);
 
+
   // For summary, check if:
   // 1. We have runData
   // 2. Status is completed (only show when the entire flow is completed)
