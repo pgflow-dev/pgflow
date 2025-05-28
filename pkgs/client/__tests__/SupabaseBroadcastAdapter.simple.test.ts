@@ -7,7 +7,7 @@ import {
   startedRunSnapshot,
   startedStepState
 } from './fixtures';
-import { mockSupabase } from './mocks';
+import { mockSupabase, mockChannelSubscription } from './mocks';
 
 /**
  * This is a simplified test that focuses on the core functionality
@@ -37,12 +37,15 @@ describe('SupabaseBroadcastAdapter - Simple Tests', () => {
   /**
    * Test basic connection functionality using the public interface
    */
-  test('subscribes to a run and configures channel correctly', () => {
+  test('subscribes to a run and configures channel correctly', async () => {
     const { client, mocks } = mockSupabase();
     const adapter = new SupabaseBroadcastAdapter(client);
     
+    // Setup realistic channel subscription
+    mockChannelSubscription(mocks);
+    
     // Subscribe to run
-    adapter.subscribeToRun(RUN_ID);
+    await adapter.subscribeToRun(RUN_ID);
     
     // Check channel was created with correct name
     expect(client.channel).toHaveBeenCalledWith(`pgflow:run:${RUN_ID}`);
@@ -50,9 +53,10 @@ describe('SupabaseBroadcastAdapter - Simple Tests', () => {
     // Check channel was subscribed
     expect(mocks.channel.channel.subscribe).toHaveBeenCalled();
     
-    // Check handlers were registered (2-argument form)
+    // Check handlers were registered (3-argument form)
     expect(mocks.channel.channel.on).toHaveBeenCalledWith(
       'broadcast', 
+      { event: '*' },
       expect.any(Function)
     );
     
@@ -157,12 +161,15 @@ describe('SupabaseBroadcastAdapter - Simple Tests', () => {
   /**
    * Test behavior during properly initiated unsubscribe
    */
-  test('properly cleans up on unsubscribe', () => {
+  test('properly cleans up on unsubscribe', async () => {
     const { client, mocks } = mockSupabase();
     const adapter = new SupabaseBroadcastAdapter(client);
     
+    // Setup realistic channel subscription
+    mockChannelSubscription(mocks);
+    
     // Subscribe then unsubscribe
-    adapter.subscribeToRun(RUN_ID);
+    await adapter.subscribeToRun(RUN_ID);
     adapter.unsubscribe(RUN_ID);
     
     // Check channel was unsubscribed
