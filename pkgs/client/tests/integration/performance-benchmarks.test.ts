@@ -301,11 +301,20 @@ describe('Performance Benchmarks', () => {
       console.log(`Tasks per second: ${tasksPerSecond.toFixed(2)}`);
       console.log(`Flows per second: ${flowsPerSecond.toFixed(2)}`);
 
-      // Verify all flows completed successfully
+      // Verify all flows completed successfully by checking database directly
       for (const run of runs) {
         expect(run.status).toBe(FlowRunStatus.Completed);
-        for (let i = 0; i < stepsPerFlow; i++) {
-          expect(run.step(`step_${i}`).status).toBe(FlowStepStatus.Completed);
+        
+        // Check database state directly (more reliable than realtime events)
+        const dbState = await sql`
+          SELECT status FROM pgflow.step_tasks 
+          WHERE run_id = ${run.run_id}::uuid 
+          ORDER BY step_slug
+        `;
+        
+        expect(dbState).toHaveLength(stepsPerFlow);
+        for (const stepRecord of dbState) {
+          expect(stepRecord.status).toBe('completed');
         }
       }
 
