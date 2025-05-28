@@ -90,7 +90,7 @@
       "dependsOn": ["db:ensure"],
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["vitest run tests/integration/"],
+        "commands": ["vitest run __tests__/integration/"],
         "parallel": false
       }
     },
