@@ -15,7 +15,7 @@ export function useStartAnalysis() {
     startTransition(async () => {
       try {
         const runId = await startWebsiteAnalysis(url);
-        router.push(`/websites/runs/${runId}/page-new`);
+        router.push(`/websites/runs/${runId}/new`);
       } catch (err: any) {
         if (err?.code === 'AUTH_REQUIRED') {
           // we want to remember the url and redirect

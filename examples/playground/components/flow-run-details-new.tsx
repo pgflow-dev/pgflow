@@ -96,6 +96,9 @@ export default function FlowRunDetailsNew({
   const [steps, setSteps] = useState<FlowStep[]>([]);
   const [stepGroups, setStepGroups] = useState<FlowStep[][]>([]);
 
+  // Known step names for the analyze_website flow
+  const knownStepSlugs = ['website', 'summary', 'tags', 'saveToDb'];
+
   // Set up real-time listeners and organize steps by generation
   useEffect(() => {
     if (!flowRun) {
@@ -104,8 +107,8 @@ export default function FlowRunDetailsNew({
       return;
     }
 
-    // Get all steps from the flow run
-    const allSteps = flowRun.steps();
+    // Get all steps from the flow run using known step names
+    const allSteps = knownStepSlugs.map(stepSlug => flowRun.step(stepSlug));
     setSteps(allSteps);
 
     // Group steps by generation (parallel steps share the same generation)
@@ -132,8 +135,9 @@ export default function FlowRunDetailsNew({
     allSteps.forEach(step => {
       const unsubscribe = step.on('*', (event) => {
         console.log(`Step ${step.step_slug} event:`, event);
-        // Force re-render by updating steps array
-        setSteps([...flowRun.steps()]);
+        // Force re-render by updating steps array using known step slugs
+        const allSteps = knownStepSlugs.map(stepSlug => flowRun.step(stepSlug));
+        setSteps([...allSteps]);
       });
       unsubscribers.push(unsubscribe);
     });
@@ -141,8 +145,9 @@ export default function FlowRunDetailsNew({
     // Listen to run-level events
     const runUnsubscribe = flowRun.on('*', (event) => {
       console.log('FlowRun event:', event);
-      // Force re-render
-      setSteps([...flowRun.steps()]);
+      // Force re-render using known step slugs
+      const allSteps = knownStepSlugs.map(stepSlug => flowRun.step(stepSlug));
+      setSteps([...allSteps]);
     });
     unsubscribers.push(runUnsubscribe);
 

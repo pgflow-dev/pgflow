@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStartAnalysis } from '@/lib/hooks/use-start-analysis';
 import { createClient } from '@/utils/supabase/client';
@@ -59,19 +59,59 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
   const { start: analyzeWebsite, isPending: analyzeLoading, error: analyzeError } = useStartAnalysis();
 
   // Derive legacy runData from FlowRun for backward compatibility
-  const runData = flowRun ? {
-    run_id: flowRun.run_id,
-    flow_slug: flowRun.flow_slug,
-    status: flowRun.status,
-    input: flowRun.input,
-    output: flowRun.output,
-    started_at: flowRun.started_at,
-    completed_at: flowRun.completed_at,
-    failed_at: flowRun.failed_at,
-    remaining_steps: flowRun.remaining_steps,
-    step_states: [], // Will be populated as components migrate
-    step_tasks: [], // Will be populated as components migrate
-  } : null;
+  const runData = useMemo(() => {
+    if (!flowRun) return null;
+
+    // Known step names for the analyze_website flow
+    const knownStepSlugs = ['website', 'summary', 'tags', 'saveToDb'];
+    
+    // Create step_states array from FlowRun steps
+    const step_states = knownStepSlugs.map(stepSlug => {
+      const step = flowRun.step(stepSlug);
+      return {
+        run_id: flowRun.run_id,
+        step_slug: stepSlug,
+        status: step.status,
+        started_at: step.started_at,
+        completed_at: step.completed_at,
+        failed_at: step.failed_at,
+        step: {
+          step_index: step.generation || 0 // Use generation as step_index
+        }
+      };
+    });
+
+    // Create step_tasks array from FlowRun steps
+    const step_tasks = knownStepSlugs.map(stepSlug => {
+      const step = flowRun.step(stepSlug);
+      return {
+        run_id: flowRun.run_id,
+        step_slug: stepSlug,
+        status: step.status,
+        output: step.output,
+        error_message: step.error_message,
+        started_at: step.started_at,
+        completed_at: step.completed_at,
+        failed_at: step.failed_at,
+        attempts_count: 1, // Default for compatibility
+        step_index: step.generation || 0
+      };
+    }).filter(task => task.status !== 'created'); // Only include tasks that have been started
+
+    return {
+      run_id: flowRun.run_id,
+      flow_slug: flowRun.flow_slug,
+      status: flowRun.status,
+      input: flowRun.input,
+      output: flowRun.output,
+      started_at: flowRun.started_at,
+      completed_at: flowRun.completed_at,
+      failed_at: flowRun.failed_at,
+      remaining_steps: flowRun.remaining_steps,
+      step_states,
+      step_tasks,
+    };
+  }, [flowRun]);
 
   useEffect(() => {
     if (!runId) return;
@@ -88,6 +128,9 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     // Get the FlowRun instance
     const loadFlowRun = async () => {
       try {
+        // First dispose any existing cached run to ensure fresh data
+        pgflow.dispose(runId);
+        
         const run = await pgflow.getRun(runId);
         
         if (disposed) return;
@@ -109,6 +152,9 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
           if (['completed', 'failed', 'error', 'cancelled'].includes(event.status)) {
             setGlobalLoading(false);
           }
+          
+          // Keep the run loaded and responsive during step transitions
+          // Don't change loading state for individual step events
         });
 
         // If run is already terminal, turn off loading
@@ -142,7 +188,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       clearInterval(timer);
       pgflow.dispose(runId);
     };
-  }, [runId, supabase, setGlobalLoading]);
+  }, [runId]);
 
   const value: FlowRunContextType = {
     // New PgflowClient-based properties
