@@ -98,6 +98,10 @@ For example, instead of writing `SELECT * FROM table`, write `SELECT table.* FRO
 Or, when referencing `run_id` argument to `pgflow.start_flow(run_id UUID)` function,
 write it as `start_flow.run_id` instead of `run_id`.
 
+### Keyword Arguments Style
+
+**IMPORTANT**: Never use `param := "value"` style for keyword arguments in PostgreSQL - always use `param => "value"` style instead.
+
 ## Packages
 
 - **core** - PostgreSQL-native workflow engine for defining, managing, and tracking DAG-based workflows
@@ -151,3 +155,4 @@ aichat -m openai:o3-2025-04-16 -f <file1> -f <file2> -f <fileX> "your detailed q
 ## AI Support and Debugging
 
 If you are stuck or feel lost, you can ask mightly AI that will always know - in order to do so, you must understand what you want to ask for and what files you will attach as context to your query. then you will thouroughly explain what you want to achieve, how you tried to achieve that, what failed and why you think it did, what you want to understand and how to verify. COMMAND TO RUN: aichat -m  openai:o3-2025-04-16 -f <file1> -f <file2> -f <fileX> "your detailed, multiline, markdown formatted, thorough query to the AI"
+```
