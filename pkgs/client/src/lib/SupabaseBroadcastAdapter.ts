@@ -335,6 +335,9 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
       if (existingUnsubscribe) {
         return existingUnsubscribe;
       }
+      // If channel exists but no unsubscribe function, something went wrong
+      // Let's clean up and recreate
+      this.#unsubscribe(run_id);
     }
 
     const channel = this.#supabase.channel(channelName);

@@ -11,7 +11,7 @@ import {
   startedRunSnapshot,
   startedStepState
 } from './fixtures';
-import { mockSupabase, resetMocks } from './mocks';
+import { mockSupabase, resetMocks, mockChannelSubscription } from './mocks';
 
 // Mock uuid.v4 to return a predictable run ID for testing
 vi.mock('uuid', () => ({
@@ -37,6 +37,9 @@ describe('PgflowClient', () => {
 
   test('startFlow calls RPC with correct parameters and returns run', async () => {
     const { client, mocks } = mockSupabase();
+    
+    // Setup realistic channel subscription
+    mockChannelSubscription(mocks);
     
     // Mock the RPC call to return run state and steps
     mocks.rpc.mockReturnValueOnce({
@@ -71,6 +74,9 @@ describe('PgflowClient', () => {
   test('startFlow handles error from RPC', async () => {
     const { client, mocks } = mockSupabase();
     
+    // Setup realistic channel subscription (though it shouldn't reach subscription)
+    mockChannelSubscription(mocks);
+    
     // Mock the RPC call to return an error
     const error = new Error('RPC error');
     mocks.rpc.mockReturnValueOnce({
@@ -87,6 +93,9 @@ describe('PgflowClient', () => {
 
   test('getRun returns cached run if exists', async () => {
     const { client, mocks } = mockSupabase();
+    
+    // Setup realistic channel subscription
+    mockChannelSubscription(mocks);
     
     // Mock the RPC calls
     mocks.rpc.mockReturnValueOnce({
@@ -130,6 +139,9 @@ describe('PgflowClient', () => {
 
   test('emits events through callbacks', async () => {
     const { client, mocks } = mockSupabase();
+    
+    // Setup realistic channel subscription
+    mockChannelSubscription(mocks);
     
     // Mock the getRunWithStates to return data
     mocks.rpc.mockReturnValueOnce({
@@ -175,6 +187,9 @@ describe('PgflowClient', () => {
   test('dispose removes run instance and unsubscribes', async () => {
     const { client, mocks } = mockSupabase();
     
+    // Setup realistic channel subscription
+    mockChannelSubscription(mocks);
+    
     // Mock the RPC call
     mocks.rpc.mockReturnValueOnce({
       data: {
@@ -219,6 +234,9 @@ describe('PgflowClient', () => {
   test('disposeAll removes all run instances', async () => {
     const { client, mocks } = mockSupabase();
     
+    // Setup realistic channel subscription
+    mockChannelSubscription(mocks);
+    
     // Mock the RPC calls
     mocks.rpc
       .mockReturnValueOnce({
@@ -256,6 +274,9 @@ describe('PgflowClient', () => {
 
   test('handles step events for steps that have not been previously accessed', async () => {
     const { client, mocks } = mockSupabase();
+    
+    // Setup realistic channel subscription
+    mockChannelSubscription(mocks);
     
     // Mock the RPC call
     mocks.rpc.mockReturnValueOnce({

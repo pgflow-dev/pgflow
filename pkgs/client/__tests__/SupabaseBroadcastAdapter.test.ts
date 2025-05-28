@@ -26,7 +26,8 @@ import {
 import { 
   mockSupabase, 
   resetMocks, 
-  emitBroadcastEvent 
+  emitBroadcastEvent,
+  mockChannelSubscription
 } from './mocks';
 
 describe('SupabaseBroadcastAdapter', () => {
@@ -73,31 +74,32 @@ describe('SupabaseBroadcastAdapter', () => {
       expect(client.channel).toHaveBeenCalledTimes(3);
     });
 
-    test('registers handlers for all broadcast events with wildcard', () => {
+    test('registers handlers for all broadcast events with wildcard', async () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
       
-      adapter.subscribeToRun(RUN_ID);
+      // Setup realistic channel subscription
+      mockChannelSubscription(mocks);
+      
+      await adapter.subscribeToRun(RUN_ID);
       
       expect(mocks.channel.channel.on).toHaveBeenCalledWith(
         'broadcast', 
+        { event: '*' },
         expect.any(Function)
       );
     });
 
-    test('registers handlers for system events', () => {
+    test('registers handlers for system events', async () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
       
-      adapter.subscribeToRun(RUN_ID);
+      // Setup realistic channel subscription
+      mockChannelSubscription(mocks);
       
-      // Should register handlers for subscribed, closed, and error events
-      expect(mocks.channel.channel.on).toHaveBeenCalledWith(
-        'system', 
-        { event: 'subscribed' }, 
-        expect.any(Function)
-      );
+      await adapter.subscribeToRun(RUN_ID);
       
+      // Should register handlers for closed and error events
       expect(mocks.channel.channel.on).toHaveBeenCalledWith(
         'system', 
         { event: 'closed' }, 
@@ -111,13 +113,16 @@ describe('SupabaseBroadcastAdapter', () => {
       );
     });
 
-    test('subscribing to the same run ID twice has no effect', () => {
-      const { client } = mockSupabase();
+    test('subscribing to the same run ID twice has no effect', async () => {
+      const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
       
+      // Setup realistic channel subscription
+      mockChannelSubscription(mocks);
+      
       // Subscribe multiple times to the same run ID
-      const unsubscribe1 = adapter.subscribeToRun(RUN_ID);
-      const unsubscribe2 = adapter.subscribeToRun(RUN_ID);
+      const unsubscribe1 = await adapter.subscribeToRun(RUN_ID);
+      const unsubscribe2 = await adapter.subscribeToRun(RUN_ID);
       
       // Should only create one channel
       expect(client.channel).toHaveBeenCalledTimes(1);
@@ -374,23 +379,29 @@ describe('SupabaseBroadcastAdapter', () => {
   });
 
   describe('unsubscribe', () => {
-    test('unsubscribes correctly by closing channel', () => {
+    test('unsubscribes correctly by closing channel', async () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
       
+      // Setup realistic channel subscription
+      mockChannelSubscription(mocks);
+      
       // Subscribe and then unsubscribe
-      adapter.subscribeToRun(RUN_ID);
+      await adapter.subscribeToRun(RUN_ID);
       adapter.unsubscribe(RUN_ID);
       
       expect(mocks.channel.channel.unsubscribe).toHaveBeenCalled();
     });
 
-    test('multiple unsubscribe calls are safe', () => {
+    test('multiple unsubscribe calls are safe', async () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
       
+      // Setup realistic channel subscription
+      mockChannelSubscription(mocks);
+      
       // Subscribe once
-      adapter.subscribeToRun(RUN_ID);
+      await adapter.subscribeToRun(RUN_ID);
       
       // Unsubscribe multiple times
       adapter.unsubscribe(RUN_ID);
@@ -411,12 +422,15 @@ describe('SupabaseBroadcastAdapter', () => {
       // Should not throw any errors
     });
 
-    test('multiple unsubscribe via returned function calls are safe', () => {
+    test('multiple unsubscribe via returned function calls are safe', async () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
       
+      // Setup realistic channel subscription
+      mockChannelSubscription(mocks);
+      
       // Subscribe
-      const unsubscribe = adapter.subscribeToRun(RUN_ID);
+      const unsubscribe = await adapter.subscribeToRun(RUN_ID);
       
       // Unsubscribe multiple times via the returned function
       unsubscribe();
