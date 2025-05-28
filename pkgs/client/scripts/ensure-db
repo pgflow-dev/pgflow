@@ -13,4 +13,9 @@ fi
 echo "Resetting database..."
 supabase db reset
 
+# One-time setup for integration tests
+echo "Setting up test database for integration tests..."
+psql "postgresql://postgres:postgres@localhost:50522/postgres" -c "SELECT pgflow_tests.reset_db();"
+psql "postgresql://postgres:postgres@localhost:50522/postgres" -c "SELECT pgflow_tests.create_realtime_partition();"
+
 echo "Test database is ready!"

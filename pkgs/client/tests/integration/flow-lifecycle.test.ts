@@ -5,6 +5,7 @@ import { createTestFlow } from '../helpers/fixtures.js';
 import { grantMinimalPgflowPermissions } from '../helpers/permissions.js';
 import { PgflowClient } from '../../src/lib/PgflowClient.js';
 import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types.js';
+import { PgflowSqlClient } from '../../../core/src/PgflowSqlClient.js';
 
 describe('Flow Lifecycle Integration', () => {
   describe('Complete Flow Execution', () => {
@@ -106,15 +107,20 @@ describe('Flow Lifecycle Integration', () => {
         await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
         await sql`SELECT pgflow.add_step(${testFlow.slug}, 'task_step')`;
 
+        const sqlClient = new PgflowSqlClient(sql);
         const supabaseClient = createTestSupabaseClient();
         const pgflowClient = new PgflowClient(supabaseClient);
 
         const input = { data: 'lifecycle-test' };
         const run = await pgflowClient.startFlow(testFlow.slug, input);
 
-        const tasks = await sql`
-          SELECT * FROM pgflow.poll_for_tasks(${testFlow.slug}, 30, 1)
-        `;
+        const tasks = await sqlClient.pollForTasks(
+          testFlow.slug,
+          1,
+          5,
+          200,
+          30
+        );
 
         expect(tasks).toHaveLength(1);
         expect(tasks[0].run_id).toBe(run.run_id);
@@ -122,14 +128,7 @@ describe('Flow Lifecycle Integration', () => {
 
         const taskOutput = { result: 'completed successfully' };
 
-        await sql`
-          SELECT pgflow.complete_task(
-            ${tasks[0].run_id}::uuid,
-            ${tasks[0].step_slug},
-            0,
-            ${taskOutput}::jsonb
-          )
-        `;
+        await sqlClient.completeTask(tasks[0], taskOutput);
 
         const step = run.step('task_step');
         await step.waitForStatus(FlowStepStatus.Completed, { timeoutMs: 5000 });
@@ -170,6 +169,7 @@ describe('Flow Lifecycle Integration', () => {
         await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
         await sql`SELECT pgflow.add_step(${testFlow.slug}, 'failing_step')`;
 
+        const sqlClient = new PgflowSqlClient(sql);
         const supabaseClient = createTestSupabaseClient();
         const pgflowClient = new PgflowClient(supabaseClient);
 
@@ -178,24 +178,18 @@ describe('Flow Lifecycle Integration', () => {
         });
         expect(run.status).toBe(FlowRunStatus.Started);
 
-        const tasks = await sql`
-          SELECT * FROM pgflow.poll_for_tasks(${testFlow.slug}, 30, 1)
-        `;
+        const tasks = await sqlClient.pollForTasks(
+          testFlow.slug,
+          1,
+          5,
+          200,
+          30
+        );
 
         expect(tasks).toHaveLength(1);
 
         // Call fail_task to test the failure mechanism
-        await sql`
-          SELECT pgflow.fail_task(
-            ${tasks[0].run_id}::uuid,
-            ${tasks[0].step_slug},
-            0,
-            'Step execution failed'
-          )
-        `;
-
-        // Verify the fail_task function executed without error
-        expect(true).toBe(true);
+        await sqlClient.failTask(tasks[0], 'Step execution failed');
 
         await supabaseClient.removeAllChannels();
       }),
@@ -213,6 +207,7 @@ describe('Flow Lifecycle Integration', () => {
         await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
         await sql`SELECT pgflow.add_step(${testFlow.slug}, 'completed_step')`;
 
+        const sqlClient = new PgflowSqlClient(sql);
         const supabaseClient = createTestSupabaseClient();
         const pgflowClient = new PgflowClient(supabaseClient);
 
@@ -220,19 +215,16 @@ describe('Flow Lifecycle Integration', () => {
           data: 'retrieve-test',
         });
 
-        const tasks = await sql`
-          SELECT * FROM pgflow.poll_for_tasks(${testFlow.slug}, 30, 1)
-        `;
+        const tasks = await sqlClient.pollForTasks(
+          testFlow.slug,
+          1,
+          5,
+          200,
+          30
+        );
 
         const taskOutput = { result: 'step completed' };
-        await sql`
-          SELECT pgflow.complete_task(
-            ${tasks[0].run_id}::uuid,
-            ${tasks[0].step_slug},
-            0,
-            ${taskOutput}::jsonb
-          )
-        `;
+        await sqlClient.completeTask(tasks[0], taskOutput);
 
         const step = originalRun.step('completed_step');
         await step.waitForStatus(FlowStepStatus.Completed, { timeoutMs: 5000 });
@@ -359,7 +351,7 @@ describe('Flow Lifecycle Integration', () => {
         const supabaseClient = createTestSupabaseClient();
         const pgflowClient = new PgflowClient(supabaseClient);
 
-        const customRunId = '12345678-1234-1234-1234-123456789abc';
+        const customRunId = `12345678-1234-1234-1234-${Date.now().toString().slice(-12)}`;
         const run = await pgflowClient.startFlow(
           testFlow.slug,
           { data: 'custom-id-test' },

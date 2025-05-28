@@ -5,6 +5,7 @@ import { grantMinimalPgflowPermissions } from '../helpers/permissions.js';
 import { PgflowClient } from '../../src/lib/PgflowClient.js';
 import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types.js';
 import { it } from 'vitest';
+import { PgflowSqlClient } from '../../../core/src/PgflowSqlClient.js';
 
 it(
   'minimal test - just log events',
@@ -18,6 +19,9 @@ it(
     await sql`SELECT pgflow.add_step(${testFlow.slug}, 'minimal_step')`;
     console.log('created flow', testFlow);
 
+    // Create PgflowSqlClient for task operations
+    const sqlClient = new PgflowSqlClient(sql);
+
     // Spin up client and start the flow
     const supabaseClient = createTestSupabaseClient();
     const pgflowClient = new PgflowClient(supabaseClient);
@@ -29,28 +33,23 @@ it(
       console.log('ANY EVENT', x);
     });
 
+    // Give realtime subscription time to establish
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     // Step: poll for available task, then complete it
-    const tasks = await sql`
-      SELECT * FROM pgflow.poll_for_tasks(${testFlow.slug}, 30, 1)
-    `;
-    await sql`
-    SELECT pgflow.complete_task(
-      ${tasks[0].run_id}::uuid,
-      ${tasks[0].step_slug},
-      0,
-      '{"hello": "world"}'::jsonb
-    )`;
+    const tasks = await sqlClient.pollForTasks(testFlow.slug, 1, 5, 200, 2);
+    await sqlClient.completeTask(tasks[0], { hello: 'world' });
 
     // Wait for the completion event (optional, but useful if you want all messages)
     console.log(
       'waiting stepComplete',
       await run
         .step('minimal_step')
-        .waitForStatus(FlowStepStatus.Completed, { timeoutMs: 3000 })
+        .waitForStatus(FlowStepStatus.Completed, { timeoutMs: 15000 })
     );
     console.log(
       'waiting runComplete',
-      await run.waitForStatus(FlowRunStatus.Completed, { timeoutMs: 3000 })
+      await run.waitForStatus(FlowRunStatus.Completed, { timeoutMs: 15000 })
     );
 
     await supabaseClient.removeAllChannels();

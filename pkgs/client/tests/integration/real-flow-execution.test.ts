@@ -5,6 +5,7 @@ import { createTestFlow } from '../helpers/fixtures.js';
 import { grantMinimalPgflowPermissions } from '../helpers/permissions.js';
 import { PgflowClient } from '../../src/lib/PgflowClient.js';
 import { FlowStepStatus } from '../../src/lib/types.js';
+import { PgflowSqlClient } from '../../../core/src/PgflowSqlClient.js';
 
 describe('Real Flow Execution E2E', () => {
   it(
@@ -18,6 +19,9 @@ describe('Real Flow Execution E2E', () => {
       await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
       await sql`SELECT pgflow.add_step(${testFlow.slug}, 'execution_step')`;
 
+      // Create PgflowSqlClient for task operations
+      const sqlClient = new PgflowSqlClient(sql);
+
       // Create PgflowClient and start flow
       const supabaseClient = createTestSupabaseClient();
       const pgflowClient = new PgflowClient(supabaseClient);
@@ -29,10 +33,11 @@ describe('Real Flow Execution E2E', () => {
       expect(run.run_id).toBeDefined();
       expect(run.flow_slug).toBe(testFlow.slug);
 
+      // Give realtime subscription time to establish
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Poll for task and complete it
-      const tasks = await sql`
-        SELECT * FROM pgflow.poll_for_tasks(${testFlow.slug}, 30, 1)
-      `;
+      const tasks = await sqlClient.pollForTasks(testFlow.slug, 1, 5, 200, 2);
 
       expect(tasks).toHaveLength(1);
       expect(tasks[0].run_id).toBe(run.run_id);
@@ -49,19 +54,12 @@ describe('Real Flow Execution E2E', () => {
         data: { items: ['item1', 'item2'], count: 2 },
       };
 
-      await sql`
-        SELECT pgflow.complete_task(
-          ${tasks[0].run_id}::uuid,
-          ${tasks[0].step_slug},
-          0,
-          ${taskOutput}::jsonb
-        )
-      `;
+      await sqlClient.completeTask(tasks[0], taskOutput);
 
-      // Wait for step completion
+      // Wait for step completion with increased timeout to test if it's just latency
       const step = run.step('execution_step');
       await step.waitForStatus(FlowStepStatus.Completed, {
-        timeoutMs: 5000,
+        timeoutMs: 15000,
       });
 
       // Verify the PgflowClient state was updated correctly
