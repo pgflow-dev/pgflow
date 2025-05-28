@@ -95,14 +95,6 @@ export default function FlowRunDetails({
   error,
   currentTime,
 }: FlowRunDetailsProps) {
-  // Debug state updates
-  console.log('FlowRunDetails render:', {
-    timestamp: new Date().toISOString(),
-    runId: runData?.run_id,
-    status: runData?.status,
-    stepStatesCount: runData?.step_states?.length,
-    stepTasksCount: runData?.step_tasks?.length
-  });
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[30vh]">

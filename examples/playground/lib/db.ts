@@ -38,42 +38,63 @@ export type ObserveFlowRunCallbacks = {
   ) => void;
 };
 
-export async function fetchFlowRunData(runId: string): Promise<{
+export async function fetchFlowRunData(runId: string, maxRetries = 3): Promise<{
   data: ResultRow | null;
   error: string | null;
 }> {
   const supabase = createClient();
 
-  try {
-    // Fetch the flow run data
-    const { data, error } = await supabase
-      .schema('pgflow')
-      .from('runs')
-      .select(
-        `
-        *,
-        step_states!step_states_run_id_fkey(
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Fetch the flow run data
+      const { data, error } = await supabase
+        .schema('pgflow')
+        .from('runs')
+        .select(
+          `
           *,
-          step:steps!inner(step_index)
-        ),
-        step_tasks!step_tasks_run_id_fkey(*)
-      `,
-      )
-      .eq('run_id', runId)
-      .single<ResultRow>();
+          step_states!step_states_run_id_fkey(
+            *,
+            step:steps!inner(step_index)
+          ),
+          step_tasks!step_tasks_run_id_fkey(*)
+        `,
+        )
+        .eq('run_id', runId)
+        .single<ResultRow>();
 
-    if (error) {
-      return { data: null, error: `Error fetching run data: ${error.message}` };
+      if (error) {
+        // If it's a "not found" error and we haven't exhausted retries, wait and try again
+        if (error.code === 'PGRST116' && attempt < maxRetries) {
+          console.log(`Run ${runId} not found, retrying in ${attempt * 500}ms (attempt ${attempt}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, attempt * 500));
+          continue;
+        }
+        return { data: null, error: `Error fetching run data: ${error.message}` };
+      }
+
+      return { data, error: null };
+    } catch (err) {
+      console.error(`Error fetching flow run (attempt ${attempt}/${maxRetries}):`, err);
+      
+      // If this is the last attempt, return the error
+      if (attempt === maxRetries) {
+        return {
+          data: null,
+          error: 'An error occurred while fetching the flow run data',
+        };
+      }
+      
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, attempt * 500));
     }
-
-    return { data, error: null };
-  } catch (err) {
-    console.error('Error fetching flow run:', err);
-    return {
-      data: null,
-      error: 'An error occurred while fetching the flow run data',
-    };
   }
+
+  // This should never be reached, but TypeScript requires it
+  return {
+    data: null,
+    error: 'Unexpected error in fetchFlowRunData',
+  };
 }
 
 export function observeFlowRun({

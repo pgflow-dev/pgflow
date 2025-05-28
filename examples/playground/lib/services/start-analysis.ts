@@ -22,12 +22,20 @@ export async function startWebsiteAnalysis(
   url: string,
   { requireAuth = true, runId }: StartAnalysisOptions = {},
 ): Promise<string> {
+  const startTime = performance.now();
+  console.log('🚀 startWebsiteAnalysis started:', { url, runId });
+  
   if (!url) throw new Error('URL is required');
 
   const supabase = createClient();
 
   // Get authenticated user (required for flow input)
+  console.log('⏳ Getting authenticated user...');
+  const authStart = performance.now();
   const { data, error: authError } = await supabase.auth.getUser();
+  const authEnd = performance.now();
+  console.log(`✅ Auth check completed in ${(authEnd - authStart).toFixed(2)}ms`);
+  
   if (requireAuth && (!data.user || authError)) {
     const err = new Error('AUTH_REQUIRED');
     (err as any).code = 'AUTH_REQUIRED';
@@ -35,9 +43,15 @@ export async function startWebsiteAnalysis(
   }
 
   // Initialize PgflowClient and start flow
+  console.log('⏳ Initializing PgflowClient...');
+  const clientStart = performance.now();
   const pgflow = new PgflowClient(supabase);
+  const clientEnd = performance.now();
+  console.log(`✅ PgflowClient initialized in ${(clientEnd - clientStart).toFixed(2)}ms`);
 
   try {
+    console.log('⏳ Starting flow with pgflow.startFlow()...');
+    const flowStart = performance.now();
     const run = await pgflow.startFlow(
       'analyze_website',
       {
@@ -46,7 +60,26 @@ export async function startWebsiteAnalysis(
       },
       runId,
     );
+    const flowEnd = performance.now();
+    console.log(`✅ Flow started in ${(flowEnd - flowStart).toFixed(2)}ms, run_id: ${run.run_id}`);
 
+    // Store the initial run data to avoid unnecessary fetch
+    console.log('⏳ Caching initial run data...');
+    const cacheStart = performance.now();
+    const initialRunData = {
+      ...run.run,
+      step_states: run.stepStates || [],
+      step_tasks: [] // Will be populated by real-time updates
+    };
+    
+    // Cache the data in sessionStorage for the FlowRunProvider
+    sessionStorage.setItem(`flow_run_${run.run_id}`, JSON.stringify(initialRunData));
+    const cacheEnd = performance.now();
+    console.log(`✅ Data cached in ${(cacheEnd - cacheStart).toFixed(2)}ms`);
+
+    const totalTime = performance.now() - startTime;
+    console.log(`🎉 startWebsiteAnalysis completed in ${totalTime.toFixed(2)}ms total`);
+    
     return run.run_id;
   } catch (error: any) {
     // Map PgflowClient errors to user-friendly messages

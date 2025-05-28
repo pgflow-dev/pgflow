@@ -75,7 +75,6 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
 
     // Helper function to update a single step state in runData
     const updateStepState = (updatedStepState: StepStateRow) => {
-      console.log('updateStepState called:', updatedStepState.step_slug, updatedStepState.status);
       setRunData((prevData) => {
         if (!prevData) return null;
         
@@ -83,18 +82,15 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
           state.step_slug === updatedStepState.step_slug ? updatedStepState : state
         );
         
-        const newData = {
+        return {
           ...prevData,
           step_states: updatedStepStates,
         };
-        console.log('updateStepState result:', newData.status, 'steps:', newData.step_states.map(s => `${s.step_slug}:${s.status}`));
-        return newData;
       });
     };
 
     // Helper function to update or insert a step task in runData
     const updateStepTask = (newTask: StepTaskRow) => {
-      console.log('updateStepTask called:', newTask.step_slug, newTask.status);
       setRunData((prevData) => {
         if (!prevData) return null;
         
@@ -112,12 +108,10 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
           updatedStepTasks = [...prevData.step_tasks, newTask];
         }
         
-        const newData = {
+        return {
           ...prevData,
           step_tasks: updatedStepTasks,
         };
-        console.log('updateStepTask result:', newData.status, 'tasks:', newData.step_tasks.map(t => `${t.step_slug}:${t.status}`));
-        return newData;
       });
     };
 
@@ -193,6 +187,9 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
 
           // Set global loading state to false when the run completes
           setGlobalLoading(false);
+          
+          // Stop timer since flow is completed
+          stopTimer();
 
           // Fetch fresh data from API to get final outputs
           fetchFlowRunData(runId).then(({ data, error }) => {
@@ -220,6 +217,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
         // Turn off loading if the run fails
         if (payload.new.status === 'failed' || payload.new.status === 'error' || payload.new.status === 'cancelled') {
           setGlobalLoading(false);
+          stopTimer();
         }
       },
       onStepStateUpdate: handleStepStateUpdate,
@@ -227,13 +225,57 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       onStepTaskInsert: handleStepTaskInsert,
     });
 
-    // Set up a timer to update the current time every second
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+    // Set up a timer to update the current time every second, but only when needed
+    let timer: NodeJS.Timeout | null = null;
+    
+    const startTimer = () => {
+      if (!timer) {
+        timer = setInterval(() => {
+          setCurrentTime(new Date());
+        }, 1000);
+      }
+    };
+    
+    const stopTimer = () => {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    };
+    
+    // Start timer initially to handle any existing running flows
+    startTimer();
 
     // Load data after subscription is set up to avoid race conditions
     const loadData = async () => {      
+      // First, try to get cached data from sessionStorage
+      const cachedData = sessionStorage.getItem(`flow_run_${runId}`);
+      if (cachedData) {
+        try {
+          const parsedData = JSON.parse(cachedData);
+          console.log('Using cached flow data from startFlow()');
+          setRunData(parsedData);
+          
+          // Clear the cache after using it
+          sessionStorage.removeItem(`flow_run_${runId}`);
+          
+          // If the run is already completed, turn off the global loading state
+          if (parsedData.status === 'completed' || parsedData.status === 'failed' || 
+              parsedData.status === 'error' || parsedData.status === 'cancelled') {
+            setGlobalLoading(false);
+            stopTimer();
+          }
+          
+          setLoading(false);
+          return;
+        } catch (err) {
+          console.error('Error parsing cached flow data:', err);
+          // Fall through to fetch from API
+        }
+      }
+      
+      // Fallback to fetching from API if no cached data or cache is invalid
+      console.log('No cached data found, fetching from API');
       const { data, error } = await fetchFlowRunData(runId);
 
       if (error) {
@@ -247,6 +289,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
         if (data.status === 'completed' || data.status === 'failed' || 
             data.status === 'error' || data.status === 'cancelled') {
           setGlobalLoading(false);
+          stopTimer();
         }
       }
 
@@ -258,7 +301,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
 
     return () => {
       subscription.unsubscribe();
-      clearInterval(timer);
+      stopTimer();
     };
   }, [runId, router]);
 

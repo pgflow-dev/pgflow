@@ -57,16 +57,6 @@ export default function WebsiteAnalysisUI({
   const isRunning = runData?.status === 'started';
   const showSteps = runData && (isRunning || isCompleted || isFailed);
 
-  // Debug state updates
-  console.log('WebsiteAnalysisUI render:', {
-    timestamp: new Date().toISOString(),
-    runId: runData?.run_id,
-    status: runData?.status,
-    stepStatesCount: runData?.step_states?.length,
-    stepTasksCount: runData?.step_tasks?.length,
-    isCompleted,
-    showSteps
-  });
 
 
 
