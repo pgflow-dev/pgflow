@@ -78,10 +78,15 @@ export default function AuthButton() {
     <div className="flex items-center gap-4">
       <SpinnerWrapper />
       <div className="flex items-center gap-2">
-        Hey, {user.email}!
+        <div 
+          className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium"
+          title={user.email}
+        >
+          {user.email?.charAt(0).toUpperCase()}
+        </div>
       </div>
       <form action={signOutAction}>
-        <Button type="submit" variant={"outline"}>
+        <Button type="submit" variant={"outline"} title={user.email}>
           Sign out
         </Button>
       </form>

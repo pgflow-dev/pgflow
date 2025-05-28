@@ -23,7 +23,7 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata = {
   metadataBase: new URL(defaultUrl),
-  title: 'pgflow - Analyze Website Demo',
+  title: 'pgflow',
   description: 'Place to test and understand how pgflow works',
 };
 

@@ -96,25 +96,11 @@ export default function WebsiteAnalysisUI({
     summary: string;
     tags: string[];
   } => {
-    console.log('=== Analysis Summary Called ===');
-    console.log('isCompleted:', isCompleted);
-    console.log('showSummary:', showSummary);
-    console.log('runData.step_tasks:', runData?.step_tasks);
 
     if (!runData?.step_tasks || runData.step_tasks.length === 0) {
-      console.log('No step tasks found in runData');
       return { summary: '', tags: [] };
     }
 
-    // Debug: Log the available step tasks
-    console.log(
-      'Available step tasks:',
-      runData.step_tasks.map((task) => ({
-        step_slug: task.step_slug,
-        status: task.status,
-        has_output: !!task.output,
-      })),
-    );
 
     try {
       // Find the step tasks by their step_slug but use our ordered tasks
