@@ -9,7 +9,8 @@ import type {
   BroadcastRunEvent, 
   BroadcastStepEvent, 
   Unsubscribe, 
-  FlowRunBase
+  FlowRunBase,
+  StartFlowOptions
 } from './types';
 import { SupabaseBroadcastAdapter } from './SupabaseBroadcastAdapter';
 import { FlowRun } from './FlowRun';
@@ -54,20 +55,33 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
   }
 
   /**
-   * Start a flow with optional run_id
+   * Start a flow with options
    *
    * @param flow_slug - Flow slug to start
    * @param input - Input data for the flow
-   * @param run_id - Optional run ID (will be generated if not provided)
+   * @param options - Options including realtime and run_id
    * @returns Promise that resolves with the FlowRun instance
    */
   async startFlow<TSpecificFlow extends TFlow>(
     flow_slug: string,
     input: ExtractFlowInput<TSpecificFlow>,
-    run_id?: string
+    options?: StartFlowOptions
   ): Promise<FlowRun<TSpecificFlow>> {
     // Generate a run_id if not provided
-    const id = run_id || uuidv4();
+    const id = options?.run_id || uuidv4();
+
+    // Determine realtime parameter for database call
+    let realtimeParam: string | null = null;
+    if (options?.realtime === true) {
+      realtimeParam = 'true';
+    } else if (options?.realtime === false) {
+      realtimeParam = 'false';
+    } else if (typeof options?.realtime === 'string') {
+      realtimeParam = options.realtime;
+    } else {
+      // Default behavior - enable realtime with default channel
+      realtimeParam = 'true';
+    }
 
     // Create initial state for the flow run
     const initialState: FlowRunState<TSpecificFlow> = {
@@ -90,14 +104,20 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
     // Store the run
     this.#runs.set(id, run);
 
-    // Set up subscription for run and step events (wait for subscription confirmation)
-    await this.#realtimeAdapter.subscribeToRun(id);
+    // Set up subscription for run and step events only if realtime is enabled
+    if (options?.realtime !== false) {
+      const channelName = typeof options?.realtime === 'string' 
+        ? options.realtime 
+        : `pgflow:run:${id}`;
+      await this.#realtimeAdapter.subscribeToRun(id, channelName);
+    }
 
     // Start the flow with the predetermined run_id (only after subscription is ready)
     const { data, error } = await this.#supabase.schema('pgflow').rpc('start_flow_with_states', {
       flow_slug: flow_slug,
       input: input as Record<string, unknown>,
-      run_id: id
+      run_id: id,
+      realtime: realtimeParam
     });
 
     if (error) {

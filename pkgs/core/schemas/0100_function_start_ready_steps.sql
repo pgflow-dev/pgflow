@@ -36,21 +36,19 @@ sent_messages AS (
   FROM started_step_states AS started_step
 ),
 broadcast_events AS (
-  SELECT 
-    realtime.send(
-      jsonb_build_object(
-        'event_type', 'step:started',
-        'run_id', started_step.run_id,
-        'step_slug', started_step.step_slug,
-        'status', 'started',
-        'started_at', started_step.started_at,
-        'remaining_tasks', 1,
-        'remaining_deps', started_step.remaining_deps
-      ),
-      concat('step:', started_step.step_slug, ':started'),
-      concat('pgflow:run:', started_step.run_id),
-      false
-    )
+  SELECT pgflow.maybe_realtime_send(
+    jsonb_build_object(
+      'event_type', 'step:started',
+      'run_id', started_step.run_id,
+      'step_slug', started_step.step_slug,
+      'status', 'started',
+      'started_at', started_step.started_at,
+      'remaining_tasks', 1,
+      'remaining_deps', started_step.remaining_deps
+    ),
+    concat('step:', started_step.step_slug, ':started'),
+    (SELECT realtime_channel FROM pgflow.runs WHERE run_id = start_ready_steps.run_id)
+  )
   FROM started_step_states AS started_step
 )
 INSERT INTO pgflow.step_tasks (flow_slug, run_id, step_slug, message_id)

@@ -410,21 +410,29 @@ export interface FlowStepBase<TEvt = unknown> {
 export type BroadcastEvent = BroadcastRunEvent | BroadcastStepEvent;
 
 /**
+ * Options for starting a flow
+ */
+export interface StartFlowOptions {
+  realtime?: boolean | string; // true → default channel, false → disabled, string → custom channel
+  run_id?: string;
+}
+
+/**
  * Composite interface for client
  */
 export interface IFlowClient<TFlow extends AnyFlow = AnyFlow> extends IFlowRealtime<TFlow> {
   /**
-   * Start a flow with optional run_id
+   * Start a flow with options
    * 
    * @param flow_slug - Flow slug to start
    * @param input - Input data for the flow
-   * @param run_id - Optional run ID (will be generated if not provided)
+   * @param options - Options including realtime and run_id
    * @returns Promise that resolves with the FlowRun instance
    */
   startFlow<TSpecificFlow extends TFlow>(
     flow_slug: string,
     input: ExtractFlowInput<TSpecificFlow>,
-    run_id?: string
+    options?: StartFlowOptions
   ): Promise<FlowRun<TSpecificFlow>>;
   
   /**

@@ -35,18 +35,19 @@ begin
 
   -- Only send broadcast if run was completed
   IF v_completed_run.run_id IS NOT NULL THEN
-    PERFORM realtime.send(
-      jsonb_build_object(
-        'event_type', 'run:completed',
-        'run_id', v_completed_run.run_id,
-        'flow_slug', v_completed_run.flow_slug,
-        'status', 'completed',
-        'output', v_completed_run.output,
-        'completed_at', v_completed_run.completed_at
-      ),
-      'run:completed',
-      concat('pgflow:run:', v_completed_run.run_id),
-      false
+    PERFORM (
+      SELECT pgflow.maybe_realtime_send(
+        jsonb_build_object(
+          'event_type', 'run:completed',
+          'run_id', v_completed_run.run_id,
+          'flow_slug', v_completed_run.flow_slug,
+          'status', 'completed',
+          'output', v_completed_run.output,
+          'completed_at', v_completed_run.completed_at
+        ),
+        'run:completed',
+        v_completed_run.realtime_channel
+      )
     );
   END IF;
 end;

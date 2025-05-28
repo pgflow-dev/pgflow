@@ -1,63 +1,59 @@
 create or replace function pgflow.start_flow(
-  flow_slug TEXT,
-  input JSONB,
-  run_id UUID default null
+  flow_slug text,
+  input jsonb,
+  run_id uuid default null,
+  realtime text default null
 )
-returns setof PGFLOW.RUNS
-language plpgsql
+returns setof pgflow.runs
+language sql
 set search_path to ''
 volatile
 as $$
-declare
-  v_created_run pgflow.runs%ROWTYPE;
-begin
-
 WITH
   flow_steps AS (
     SELECT steps.flow_slug, steps.step_slug, steps.deps_count
     FROM pgflow.steps
-    WHERE steps.flow_slug = start_flow.flow_slug
+    WHERE steps.flow_slug = $1
+  ),
+  target_channel AS (
+    SELECT 
+      CASE 
+        WHEN $4 = 'true' THEN concat('pgflow:run:', COALESCE($3, gen_random_uuid()))
+        WHEN $4 = 'false' OR $4 IS NULL THEN NULL
+        ELSE $4::text
+      END as realtime_channel,
+      COALESCE($3, gen_random_uuid()) as final_run_id
   ),
   created_run AS (
-    INSERT INTO pgflow.runs (run_id, flow_slug, input, remaining_steps)
-    VALUES (
-      COALESCE(start_flow.run_id, gen_random_uuid()),
-      start_flow.flow_slug,
-      start_flow.input,
-      (SELECT count(*) FROM flow_steps)
-    )
+    INSERT INTO pgflow.runs (run_id, flow_slug, input, remaining_steps, realtime_channel)
+    SELECT tc.final_run_id, $1, $2, COALESCE((SELECT count(*) FROM flow_steps), 0), tc.realtime_channel
+    FROM target_channel tc
     RETURNING *
   ),
   created_step_states AS (
     INSERT INTO pgflow.step_states (flow_slug, run_id, step_slug, remaining_deps)
-    SELECT
-      fs.flow_slug,
-      (SELECT created_run.run_id FROM created_run),
-      fs.step_slug,
-      fs.deps_count
-    FROM flow_steps fs
-  )
-SELECT * FROM created_run INTO v_created_run;
-
--- Send broadcast event for run started
-PERFORM realtime.send(
-  jsonb_build_object(
-    'event_type', 'run:started',
-    'run_id', v_created_run.run_id,
-    'flow_slug', v_created_run.flow_slug,
-    'input', v_created_run.input,
-    'status', 'started',
-    'remaining_steps', v_created_run.remaining_steps,
-    'started_at', v_created_run.started_at
+    SELECT s.flow_slug, cr.run_id, s.step_slug, s.deps_count
+    FROM pgflow.steps s, created_run cr
+    WHERE s.flow_slug = $1
   ),
-  'run:started',
-  concat('pgflow:run:', v_created_run.run_id),
-  false
-);
-
-PERFORM pgflow.start_ready_steps(v_created_run.run_id);
-
-RETURN QUERY SELECT * FROM pgflow.runs where pgflow.runs.run_id = v_created_run.run_id;
-
-end;
+  broadcast_run_started AS (
+    SELECT pgflow.maybe_realtime_send(
+      jsonb_build_object(
+        'event_type', 'run:started',
+        'run_id', run_id,
+        'flow_slug', flow_slug,
+        'input', input,
+        'status', 'started',
+        'remaining_steps', remaining_steps,
+        'started_at', started_at
+      ),
+      'run:started',
+      realtime_channel
+    )
+    FROM created_run
+  ),
+  kick_off AS (
+    SELECT pgflow.start_ready_steps(run_id) FROM created_run
+  )
+SELECT * FROM created_run;
 $$;

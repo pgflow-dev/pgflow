@@ -324,10 +324,11 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
    * Subscribes to a flow run's events
    *
    * @param run_id - Run ID to subscribe to
+   * @param channelName - Optional custom channel name (defaults to pgflow:run:{run_id})
    * @returns Function to unsubscribe
    */
-  async subscribeToRun(run_id: string): Promise<() => void> {
-    const channelName = `pgflow:run:${run_id}`;
+  async subscribeToRun(run_id: string, channelName?: string): Promise<() => void> {
+    const actualChannelName = channelName || `pgflow:run:${run_id}`;
 
     // If already subscribed, return the existing unsubscribe function
     if (this.#channels.has(run_id)) {
@@ -340,7 +341,7 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
       this.#unsubscribe(run_id);
     }
 
-    const channel = this.#supabase.channel(channelName);
+    const channel = this.#supabase.channel(actualChannelName);
     
     // Listen to *all* broadcast messages; filter inside the handler.
     // Using the 3-arg overload with event filter for proper Supabase v2 client compatibility.
@@ -348,23 +349,23 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
     
     // Set up error handling
     channel.on('system', { event: 'closed' }, () => {
-      console.log(`Channel ${channelName} closed`);
+      console.log(`Channel ${actualChannelName} closed`);
     });
     channel.on('system', { event: 'error' }, (payload) => {
-      console.log(`Channel ${channelName} error:`, payload);
-      this.#handleChannelError(run_id, channelName, channel, payload.error);
+      console.log(`Channel ${actualChannelName} error:`, payload);
+      this.#handleChannelError(run_id, actualChannelName, channel, payload.error);
     });
     
     // Subscribe to channel and wait for confirmation (like the working realtime-send test)
-    console.log(`Subscribing to channel ${channelName}...`);
+    console.log(`Subscribing to channel ${actualChannelName}...`);
     
     const subscriptionPromise = new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(new Error(`Subscription timeout for channel ${channelName}`));
+        reject(new Error(`Subscription timeout for channel ${actualChannelName}`));
       }, 5000);
       
       channel.subscribe((status) => {
-        console.log(`Channel ${channelName} subscription status:`, status);
+        console.log(`Channel ${actualChannelName} subscription status:`, status);
         if (status === 'SUBSCRIBED') {
           clearTimeout(timeout);
           resolve();

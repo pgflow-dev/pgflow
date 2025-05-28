@@ -88,18 +88,23 @@ WHERE pgflow.step_states.run_id = complete_task.run_id AND pgflow.step_states.st
 
 -- Send broadcast event for step completed if the step is completed
 IF v_step_state.status = 'completed' THEN
-  PERFORM realtime.send(
-    jsonb_build_object(
-      'event_type', 'step:completed',
-      'run_id', complete_task.run_id,
-      'step_slug', complete_task.step_slug,
-      'status', 'completed',
-      'output', complete_task.output,
-      'completed_at', v_step_state.completed_at
-    ),
-    concat('step:', complete_task.step_slug, ':completed'),
-    concat('pgflow:run:', complete_task.run_id),
-    false
+  PERFORM (
+    WITH run_info AS (
+      SELECT realtime_channel FROM pgflow.runs WHERE run_id = complete_task.run_id
+    )
+    SELECT pgflow.maybe_realtime_send(
+      jsonb_build_object(
+        'event_type', 'step:completed',
+        'run_id', complete_task.run_id,
+        'step_slug', complete_task.step_slug,
+        'status', 'completed',
+        'output', complete_task.output,
+        'completed_at', v_step_state.completed_at
+      ),
+      concat('step:', complete_task.step_slug, ':completed'),
+      ri.realtime_channel
+    )
+    FROM run_info ri
   );
 END IF;
 

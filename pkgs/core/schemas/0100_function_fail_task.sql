@@ -76,22 +76,20 @@ maybe_fail_step AS (
     AND pgflow.step_states.step_slug = fail_task.step_slug
   RETURNING pgflow.step_states.*
 ),
--- Send broadcast event for step failed if necessary
+-- Send broadcast event for step failed if necessary  
 broadcast_step_failed AS (
-  SELECT
-    realtime.send(
-      jsonb_build_object(
-        'event_type', 'step:failed',
-        'run_id', fail_task.run_id,
-        'step_slug', fail_task.step_slug,
-        'status', 'failed',
-        'error_message', fail_task.error_message,
-        'failed_at', now()
-      ),
-      concat('step:', fail_task.step_slug, ':failed'),
-      concat('pgflow:run:', fail_task.run_id),
-      false
-    )
+  SELECT pgflow.maybe_realtime_send(
+    jsonb_build_object(
+      'event_type', 'step:failed',
+      'run_id', fail_task.run_id,
+      'step_slug', fail_task.step_slug,
+      'status', 'failed',
+      'error_message', fail_task.error_message,
+      'failed_at', now()
+    ),
+    concat('step:', fail_task.step_slug, ':failed'),
+    (SELECT realtime_channel FROM pgflow.runs WHERE run_id = fail_task.run_id)
+  )
   FROM maybe_fail_step
   WHERE maybe_fail_step.status = 'failed'
 )
@@ -115,18 +113,23 @@ IF v_run_failed THEN
   BEGIN
     SELECT flow_slug INTO v_flow_slug FROM pgflow.runs WHERE pgflow.runs.run_id = fail_task.run_id;
 
-    PERFORM realtime.send(
-      jsonb_build_object(
-        'event_type', 'run:failed',
-        'run_id', fail_task.run_id,
-        'flow_slug', v_flow_slug,
-        'status', 'failed',
-        'error_message', fail_task.error_message,
-        'failed_at', now()
-      ),
-      'run:failed',
-      concat('pgflow:run:', fail_task.run_id),
-      false
+    PERFORM (
+      WITH run_info AS (
+        SELECT realtime_channel FROM pgflow.runs WHERE run_id = fail_task.run_id
+      )
+      SELECT pgflow.maybe_realtime_send(
+        jsonb_build_object(
+          'event_type', 'run:failed',
+          'run_id', fail_task.run_id,
+          'flow_slug', v_flow_slug,
+          'status', 'failed',
+          'error_message', fail_task.error_message,
+          'failed_at', now()
+        ),
+        'run:failed',
+        ri.realtime_channel
+      )
+      FROM run_info ri
     );
   END;
 END IF;

@@ -8,6 +8,7 @@ create table pgflow.runs (
   input jsonb not null,
   output jsonb,
   remaining_steps int not null default 0 check (remaining_steps >= 0),
+  realtime_channel text check (realtime_channel is null or length(realtime_channel) > 0),
   started_at timestamptz not null default now(),
   completed_at timestamptz,
   failed_at timestamptz,
@@ -19,6 +20,7 @@ create table pgflow.runs (
 
 create index if not exists idx_runs_flow_slug on pgflow.runs (flow_slug);
 create index if not exists idx_runs_status on pgflow.runs (status);
+create index if not exists idx_runs_realtime_channel on pgflow.runs (realtime_channel);
 
 -- Step states table - tracks the state of individual steps within a run
 create table pgflow.step_states (

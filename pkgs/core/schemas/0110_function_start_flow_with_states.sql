@@ -1,19 +1,17 @@
 create or replace function pgflow.start_flow_with_states(
-  flow_slug TEXT,
-  input JSONB,
-  run_id UUID default null
-) returns JSONB as $$
-DECLARE
-  v_run_id UUID;
-BEGIN
-  -- Start the flow using existing function
-  SELECT r.run_id INTO v_run_id FROM pgflow.start_flow(
-    start_flow_with_states.flow_slug,
-    start_flow_with_states.input,
-    start_flow_with_states.run_id
-  ) AS r LIMIT 1;
-
-  -- Use get_run_with_states to return the complete state
-  RETURN pgflow.get_run_with_states(v_run_id);
-END;
-$$ language plpgsql security definer;
+  flow_slug text,
+  input jsonb,
+  run_id uuid default null,
+  realtime text default null
+) returns jsonb 
+language sql
+security definer
+as $$
+WITH started_flow AS (
+  SELECT r.run_id 
+  FROM pgflow.start_flow($1, $2, $3, $4) AS r 
+  LIMIT 1
+)
+SELECT pgflow.get_run_with_states(sf.run_id)
+FROM started_flow sf;
+$$;
