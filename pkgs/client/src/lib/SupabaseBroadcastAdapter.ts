@@ -290,35 +290,6 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
   // Store unsubscribe functions per run ID for reference equality
   #unsubscribeFunctions: Map<string, () => void> = new Map();
 
-  /**
-   * Wait for a channel to be ready by polling its status
-   * @param channel - The RealtimeChannel to wait for
-   * @param channelName - Channel name for logging
-   */
-  async #waitForChannelReady(channel: RealtimeChannel, channelName: string): Promise<void> {
-    const maxAttempts = 50; // 5 seconds max (50 * 100ms)
-    let attempts = 0;
-    
-    while (attempts < maxAttempts) {
-      const status = channel.state;
-      console.log(`Channel ${channelName} status: ${status}`);
-      
-      if (status === 'joined') {
-        console.log(`Channel ${channelName} is ready (joined)`);
-        return;
-      }
-      
-      if (status === 'closed' || status === 'errored') {
-        throw new Error(`Channel ${channelName} failed to join: ${status}`);
-      }
-      
-      // Wait 100ms before checking again
-      await new Promise(resolve => setTimeout(resolve, 100));
-      attempts++;
-    }
-    
-    throw new Error(`Channel ${channelName} timeout: failed to join after ${maxAttempts * 100}ms`);
-  }
 
   /**
    * Subscribes to a flow run's events

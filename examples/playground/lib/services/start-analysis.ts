@@ -1,9 +1,6 @@
 // lib/services/start-analysis.ts
-import { createClient } from '@/utils/supabase/client'; // will be swapped for pgflow later
-
-// What we will need soon
-// import { PgflowClient } from '@pgflow/client';
-// const pgflow = new PgflowClient(supabase);
+import { createClient } from '@/utils/supabase/client';
+import { PgflowClient } from '@pgflow/client';
 
 export interface StartAnalysisOptions {
   /**
@@ -29,37 +26,38 @@ export async function startWebsiteAnalysis(
 
   const supabase = createClient();
 
-  // optional auth guard
-  if (requireAuth) {
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) {
-      const err = new Error('AUTH_REQUIRED');
-      // tiny custom error class makes catching easier
-      (err as any).code = 'AUTH_REQUIRED';
-      throw err;
-    }
+  // Get authenticated user (required for flow input)
+  const { data, error: authError } = await supabase.auth.getUser();
+  if (requireAuth && (!data.user || authError)) {
+    const err = new Error('AUTH_REQUIRED');
+    (err as any).code = 'AUTH_REQUIRED';
+    throw err;
   }
 
-  // when pgflow client is ready, replace the RPC:
-  //
-  // const pgflowRun = await pgflow.startFlow<typeof AnalyzeWebsite>(
-  //   'analyze_website',
-  //   { url },
-  //   runId ? { runId } : undefined
-  // );
-  // return pgflowRun.run_id;
-
-  // --- current "RPC then redirect" behaviour ---
-  const { data, error } = await supabase.rpc(
-    'start_analyze_website_flow',
-    { url },
-  );
-
-  if (error || !data?.run_id) {
-    throw new Error(
-      error?.message ?? 'start_analyze_website_flow returned no run_id',
+  // Initialize PgflowClient and start flow
+  const pgflow = new PgflowClient(supabase);
+  
+  try {
+    const run = await pgflow.startFlow(
+      'analyze_website',
+      { 
+        url, 
+        user_id: data.user?.id || 'anonymous' 
+      },
+      runId
     );
+    
+    return run.run_id;
+  } catch (error: any) {
+    // Map PgflowClient errors to user-friendly messages
+    if (error.message?.includes('FLOW_NOT_FOUND')) {
+      throw new Error('The analyze_website flow is not available. Please check your setup.');
+    }
+    if (error.message?.includes('INVALID_INPUT_JSON')) {
+      throw new Error('Invalid input provided for website analysis.');
+    }
+    
+    // Re-throw original error for other cases
+    throw error;
   }
-
-  return data.run_id as string;
 }

@@ -378,7 +378,7 @@ export interface IFlowRealtime<TFlow = unknown> {
   /**
    * Subscribe to a flow run's events
    */
-  subscribeToRun(run_id: string): () => void;
+  subscribeToRun(run_id: string): Promise<() => void>;
 
   /**
    * Fetch current state of a run and its steps
