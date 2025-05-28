@@ -41,6 +41,9 @@
       ],
       "@pgflow/dsl": [
         "./pkgs/dsl/src/index.ts"
+      ],
+      "@pgflow/client": [
+        "./pkgs/client/src/index.ts"
       ]
     }
   }

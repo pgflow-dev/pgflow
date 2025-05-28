@@ -20,21 +20,31 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@pgflow/client": ["../../pkgs/client/src"],
+      "@pgflow/core": ["../../pkgs/core/src"], 
+      "@pgflow/dsl": ["../../pkgs/dsl/src"]
     },
     "typeRoots": ["./types", "./node_modules/@types"]
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "supabase/functions/**/*.ts", "supabase/functions/**/*.d.ts"],
+  "exclude": [
+    "node_modules",
+    "supabase/functions/**/*.ts",
+    "supabase/functions/**/*.d.ts"
+  ],
   "references": [
-    {
-      "path": "../../pkgs/core"
-    },
     {
       "path": "../../pkgs/edge-worker"
     },
     {
       "path": "../../pkgs/dsl"
+    },
+    {
+      "path": "../../pkgs/core"
+    },
+    {
+      "path": "../../pkgs/client"
     }
   ]
 }
