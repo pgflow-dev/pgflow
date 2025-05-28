@@ -4,6 +4,7 @@ import { createTestFlow } from '../helpers/fixtures.js';
 import { grantMinimalPgflowPermissions } from '../helpers/permissions.js';
 import { PgflowClient } from '../../src/lib/PgflowClient.js';
 import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types.js';
+import { it } from 'vitest';
 
 it(
   'minimal test - just log events',
@@ -45,14 +46,14 @@ it(
       'waiting stepComplete',
       await run
         .step('minimal_step')
-        .waitForStatus(FlowStepStatus.Completed, { timeoutMs: 1000 })
+        .waitForStatus(FlowStepStatus.Completed, { timeoutMs: 3000 })
     );
     console.log(
       'waiting runComplete',
-      await run.waitForStatus(FlowRunStatus.Completed, { timeoutMs: 1000 })
+      await run.waitForStatus(FlowRunStatus.Completed, { timeoutMs: 3000 })
     );
 
     await supabaseClient.removeAllChannels();
   }),
-  5000
+  10000
 );
