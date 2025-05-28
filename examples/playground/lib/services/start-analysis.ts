@@ -36,27 +36,29 @@ export async function startWebsiteAnalysis(
 
   // Initialize PgflowClient and start flow
   const pgflow = new PgflowClient(supabase);
-  
+
   try {
     const run = await pgflow.startFlow(
       'analyze_website',
-      { 
-        url, 
-        user_id: data.user?.id || 'anonymous' 
+      {
+        url,
+        user_id: data.user?.id || 'anonymous',
       },
-      runId
+      runId,
     );
-    
+
     return run.run_id;
   } catch (error: any) {
     // Map PgflowClient errors to user-friendly messages
     if (error.message?.includes('FLOW_NOT_FOUND')) {
-      throw new Error('The analyze_website flow is not available. Please check your setup.');
+      throw new Error(
+        'The analyze_website flow is not available. Please check your setup.',
+      );
     }
     if (error.message?.includes('INVALID_INPUT_JSON')) {
       throw new Error('Invalid input provided for website analysis.');
     }
-    
+
     // Re-throw original error for other cases
     throw error;
   }

@@ -57,6 +57,18 @@ export default function WebsiteAnalysisUI({
   const isRunning = runData?.status === 'started';
   const showSteps = runData && (isRunning || isCompleted || isFailed);
 
+  // Debug state updates
+  console.log('WebsiteAnalysisUI render:', {
+    timestamp: new Date().toISOString(),
+    runId: runData?.run_id,
+    status: runData?.status,
+    stepStatesCount: runData?.step_states?.length,
+    stepTasksCount: runData?.step_tasks?.length,
+    isCompleted,
+    showSteps
+  });
+
+
 
   // For summary, check if:
   // 1. We have runData
@@ -282,35 +294,43 @@ export default function WebsiteAnalysisUI({
           </motion.div>
         )}
 
-        {/* Step-by-step process - only show full header when analysis is running */}
-        {showSteps && (isRunning || analysisExpanded) && (
+        {/* Step-by-step process - show when analysis is running, completed, or failed */}
+        {showSteps && (isRunning || isCompleted || isFailed || analysisExpanded) && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             className="space-y-8"
           >
-            {/* Show the header when running or failed */}
-            {(isRunning || isFailed) && (
+            {/* Show the header when running, completed, or failed */}
+            {(isRunning || isCompleted || isFailed) && (
               <div
                 onClick={() => {
-                  // Only allow toggling if not failed
-                  if (!isFailed) {
+                  // Allow toggling if not failed and not completed (completed state is always expanded)
+                  if (!isFailed && !isCompleted) {
                     setAnalysisExpanded(!analysisExpanded);
                   }
                 }}
-                className={`flex justify-between items-center mb-4 p-2 rounded-md ${isFailed
+                className={`flex justify-between items-center mb-4 p-2 rounded-md ${
+                  isFailed
                     ? 'border border-red-200 bg-red-50/30'
-                    : 'cursor-pointer hover:bg-muted/50'
+                    : isCompleted
+                      ? 'border border-green-200 bg-green-50/30'
+                      : 'cursor-pointer hover:bg-muted/50'
                   }`}
               >
                 <div className="flex items-center gap-2">
                   <h3 className="text-base font-medium">
-                    {isFailed ? 'Analysis Failed' : 'Analysis Progress'}
+                    {isFailed ? 'Analysis Failed' : isCompleted ? 'Analysis Complete' : 'Analysis Progress'}
                   </h3>
                   {isRunning && (
                     <span className="inline-flex items-center text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">
                       Running
+                    </span>
+                  )}
+                  {isCompleted && (
+                    <span className="inline-flex items-center text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">
+                      Completed
                     </span>
                   )}
                   {isFailed && (
@@ -319,7 +339,7 @@ export default function WebsiteAnalysisUI({
                     </span>
                   )}
                 </div>
-                {!isFailed &&
+                {!isFailed && !isCompleted &&
                   (analysisExpanded ? (
                     <ChevronUp className="h-4 w-4 text-muted-foreground" />
                   ) : (

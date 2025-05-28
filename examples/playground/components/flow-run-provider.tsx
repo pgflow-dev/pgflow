@@ -75,6 +75,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
 
     // Helper function to update a single step state in runData
     const updateStepState = (updatedStepState: StepStateRow) => {
+      console.log('updateStepState called:', updatedStepState.step_slug, updatedStepState.status);
       setRunData((prevData) => {
         if (!prevData) return null;
         
@@ -82,15 +83,18 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
           state.step_slug === updatedStepState.step_slug ? updatedStepState : state
         );
         
-        return {
+        const newData = {
           ...prevData,
           step_states: updatedStepStates,
         };
+        console.log('updateStepState result:', newData.status, 'steps:', newData.step_states.map(s => `${s.step_slug}:${s.status}`));
+        return newData;
       });
     };
 
     // Helper function to update or insert a step task in runData
     const updateStepTask = (newTask: StepTaskRow) => {
+      console.log('updateStepTask called:', newTask.step_slug, newTask.status);
       setRunData((prevData) => {
         if (!prevData) return null;
         
@@ -108,10 +112,12 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
           updatedStepTasks = [...prevData.step_tasks, newTask];
         }
         
-        return {
+        const newData = {
           ...prevData,
           step_tasks: updatedStepTasks,
         };
+        console.log('updateStepTask result:', newData.status, 'tasks:', newData.step_tasks.map(t => `${t.step_slug}:${t.status}`));
+        return newData;
       });
     };
 
@@ -170,22 +176,31 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       onRunUpdate(payload: RealtimePostgresUpdatePayload<RunRow>) {
         console.log('Run updated:', payload);
 
-        // When run is marked as completed, fetch all data again to ensure we have all step outputs
+        // When run is marked as completed, update immediately and then fetch fresh data
         if (payload.new.status === 'completed') {
           console.log(
-            'Run completed - fetching full data to ensure we have all step outputs',
+            'Run completed - updating status immediately and fetching full data',
           );
+
+          // Update status immediately to ensure UI responds
+          setRunData((prevData) => {
+            if (!prevData) return null;
+            return {
+              ...prevData,
+              ...payload.new,
+            };
+          });
 
           // Set global loading state to false when the run completes
           setGlobalLoading(false);
 
-          // Fetch fresh data from API
+          // Fetch fresh data from API to get final outputs
           fetchFlowRunData(runId).then(({ data, error }) => {
             if (error) {
               console.error('Error fetching complete run data:', error);
             } else if (data) {
               console.log('Fetched complete run data:', data);
-              // Update the single source of truth atomically
+              // Update with complete data
               setRunData(data);
             }
           });
