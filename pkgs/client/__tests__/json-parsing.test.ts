@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SupabaseBroadcastAdapter } from '../../src/lib/SupabaseBroadcastAdapter';
-import type { BroadcastStepEvent, BroadcastRunEvent } from '../../src/lib/types';
-import { mockSupabase, mockChannelSubscription } from '../mocks';
+import { SupabaseBroadcastAdapter } from '../src/lib/SupabaseBroadcastAdapter';
+import type { BroadcastStepEvent, BroadcastRunEvent } from '../src/lib/types';
+import { mockSupabase, mockChannelSubscription } from './mocks';
 
 describe('JSON Parsing in Broadcasts', () => {
   let adapter: SupabaseBroadcastAdapter;

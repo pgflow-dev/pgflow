@@ -15,7 +15,10 @@ import type {
   BroadcastStepStartedEvent,
   BroadcastStepCompletedEvent,
   BroadcastStepFailedEvent,
+  FlowRunEvent,
+  StepEvent,
 } from '../src/lib/types';
+import type { AnyFlow } from '@pgflow/dsl';
 
 // Test data constants
 export const RUN_ID = '123e4567-e89b-12d3-a456-426614174000';
@@ -34,7 +37,6 @@ export const startedRunSnapshot: RunRow = {
   status: 'started',
   input: { foo: 'bar' },
   output: null,
-  error_message: null,
   started_at: new Date().toISOString(),
   completed_at: null,
   failed_at: null,
@@ -58,7 +60,6 @@ export const completedRunSnapshot: RunRow = {
 export const failedRunSnapshot: RunRow = {
   ...startedRunSnapshot,
   status: 'failed',
-  error_message: 'Something went wrong',
   failed_at: new Date().toISOString(),
   remaining_steps: 1, // One step was never completed
 };
@@ -71,6 +72,10 @@ export const stepStatesSample: StepStateRow[] = [
     run_id: RUN_ID,
     step_slug: STEP_SLUG,
     status: 'started',
+    created_at: new Date().toISOString(),
+    flow_slug: FLOW_SLUG,
+    remaining_deps: 0,
+    remaining_tasks: 1,
     started_at: new Date().toISOString(),
     completed_at: null,
     failed_at: null,
@@ -80,6 +85,10 @@ export const stepStatesSample: StepStateRow[] = [
     run_id: RUN_ID,
     step_slug: ANOTHER_STEP_SLUG,
     status: 'created',
+    created_at: new Date().toISOString(),
+    flow_slug: FLOW_SLUG,
+    remaining_deps: 1,
+    remaining_tasks: 0,
     started_at: null,
     completed_at: null,
     failed_at: null,
@@ -94,6 +103,10 @@ export const startedStepState: StepStateRow = {
   run_id: RUN_ID,
   step_slug: STEP_SLUG,
   status: 'started',
+  created_at: new Date().toISOString(),
+  flow_slug: FLOW_SLUG,
+  remaining_deps: 0,
+  remaining_tasks: 1,
   started_at: new Date().toISOString(),
   completed_at: null,
   failed_at: null,
@@ -107,7 +120,6 @@ export const completedStepState: StepStateRow = {
   ...startedStepState,
   status: 'completed',
   completed_at: new Date().toISOString(),
-  output: { step_result: 'success' },
 };
 
 /**
@@ -125,10 +137,10 @@ export const failedStepState: StepStateRow = {
  */
 export const sampleFlowDefinition: FlowRow = {
   flow_slug: FLOW_SLUG,
-  version: '1.0.0',
-  definition: { steps: [STEP_SLUG, ANOTHER_STEP_SLUG] },
+  opt_base_delay: 1000,
+  opt_max_attempts: 3,
+  opt_timeout: 30000,
   created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
 };
 
 /**
@@ -139,17 +151,23 @@ export const sampleStepsDefinition: StepRow[] = [
     flow_slug: FLOW_SLUG,
     step_slug: STEP_SLUG,
     step_index: 0,
-    dependencies: [],
+    step_type: 'task',
+    deps_count: 0,
+    opt_base_delay: null,
+    opt_max_attempts: null,
+    opt_timeout: null,
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
   },
   {
     flow_slug: FLOW_SLUG,
     step_slug: ANOTHER_STEP_SLUG,
     step_index: 1,
-    dependencies: [STEP_SLUG],
+    step_type: 'task',
+    deps_count: 1,
+    opt_base_delay: null,
+    opt_max_attempts: null,
+    opt_timeout: null,
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
   }
 ];
 
@@ -256,6 +274,71 @@ export const failurePathEventSequence = [
   broadcastStepFailed,
   broadcastRunFailed,
 ];
+
+// ===== CONVERSION UTILITIES =====
+
+/**
+ * Convert broadcast events to flow events for testing FlowRun
+ */
+export function toFlowRunEvent(broadcast: BroadcastRunEvent): FlowRunEvent<AnyFlow> {
+  switch (broadcast.event_type) {
+    case 'run:started':
+      return {
+        run_id: broadcast.run_id,
+        flow_slug: broadcast.flow_slug,
+        input: broadcast.input,
+        status: broadcast.status,
+        started_at: broadcast.started_at,
+        remaining_steps: broadcast.remaining_steps,
+      };
+    case 'run:completed':
+      return {
+        run_id: broadcast.run_id,
+        flow_slug: broadcast.flow_slug,
+        output: broadcast.output,
+        status: broadcast.status,
+        completed_at: broadcast.completed_at,
+      };
+    case 'run:failed':
+      return {
+        run_id: broadcast.run_id,
+        flow_slug: broadcast.flow_slug,
+        error_message: broadcast.error_message,
+        status: broadcast.status,
+        failed_at: broadcast.failed_at,
+      };
+  }
+}
+
+export function toStepEvent<TStepSlug extends string>(
+  broadcast: BroadcastStepEvent
+): StepEvent<AnyFlow, TStepSlug> {
+  switch (broadcast.event_type) {
+    case 'step:started':
+      return {
+        run_id: broadcast.run_id,
+        step_slug: broadcast.step_slug as TStepSlug,
+        status: broadcast.status,
+        started_at: broadcast.started_at,
+      };
+    case 'step:completed':
+      return {
+        run_id: broadcast.run_id,
+        step_slug: broadcast.step_slug as TStepSlug,
+        output: broadcast.output,
+        status: broadcast.status,
+        completed_at: broadcast.completed_at,
+      };
+    case 'step:failed':
+      return {
+        run_id: broadcast.run_id,
+        step_slug: broadcast.step_slug as TStepSlug,
+        error_message: broadcast.error_message,
+        status: broadcast.status,
+        failed_at: broadcast.failed_at,
+      };
+  }
+}
 
 // ===== TEST UTILITIES =====
 

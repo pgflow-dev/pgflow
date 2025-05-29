@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { SupabaseBroadcastAdapter } from '../../src/lib/SupabaseBroadcastAdapter';
-import { mockSupabase, resetMocks, mockChannelSubscription } from '../mocks';
+import { SupabaseBroadcastAdapter } from '../src/lib/SupabaseBroadcastAdapter';
+import { mockSupabase, resetMocks, mockChannelSubscription } from './mocks';
 import {
   RUN_ID,
   startedRunSnapshot,
   stepStatesSample,
-} from '../fixtures';
+} from './fixtures';
+
+type MockScheduler = (callback: () => void, delay: number) => NodeJS.Timeout;
 
 describe('Reconnection Logic', () => {
   beforeEach(() => {
@@ -35,7 +37,7 @@ describe('Reconnection Logic', () => {
       const mockSchedule = vi.fn((callback: () => void, delay: number) => {
         scheduleCalls.push({ delay, callback });
         return setTimeout(callback, delay);
-      });
+      }) as MockScheduler;
 
       // Setup channel subscription (immediate for test performance)
       mockChannelSubscription(mocks);
@@ -86,13 +88,13 @@ describe('Reconnection Logic', () => {
       const mockSchedule = vi.fn((callback: () => void, delay: number) => {
         scheduleCalls.push({ delay });
         return setTimeout(callback, delay);
-      });
+      }) as MockScheduler;
 
       // Mock channel subscription to resolve immediately
       mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
         if (callback) callback('SUBSCRIBED');
         return mocks.channel.channel;
-      });
+      }) as any;
 
       const adapter = new SupabaseBroadcastAdapter(client, {
         reconnectDelayMs: customDelay,
@@ -119,7 +121,7 @@ describe('Reconnection Logic', () => {
       const mockSchedule = vi.fn((callback: () => void, delay: number) => {
         scheduleCalls.push({ callback });
         return setTimeout(callback, delay);
-      });
+      }) as MockScheduler;
 
       // Mock RPC for potential reconnection attempt
       mocks.rpc.mockReturnValue({
@@ -128,13 +130,13 @@ describe('Reconnection Logic', () => {
           steps: stepStatesSample,
         },
         error: null,
-      });
+      }) as any;
 
       // Mock channel subscription to resolve immediately
       mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
         if (callback) callback('SUBSCRIBED');
         return mocks.channel.channel;
-      });
+      }) as any;
 
       const adapter = new SupabaseBroadcastAdapter(client, {
         reconnectDelayMs: 100,
@@ -186,7 +188,7 @@ describe('Reconnection Logic', () => {
       const mockSchedule = vi.fn((callback: () => void, delay: number) => {
         scheduleCalls.push({ callback });
         return setTimeout(callback, delay);
-      });
+      }) as MockScheduler;
 
       const adapter = new SupabaseBroadcastAdapter(client, {
         reconnectDelayMs: 100,
@@ -240,13 +242,13 @@ describe('Reconnection Logic', () => {
       const mockSchedule = vi.fn((callback: () => void, delay: number) => {
         scheduleCalls.push({ callback });
         return setTimeout(callback, delay);
-      });
+      }) as MockScheduler;
 
       // Mock channel subscription to resolve immediately
       mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
         if (callback) callback('SUBSCRIBED');
         return mocks.channel.channel;
-      });
+      }) as any;
 
       const adapter = new SupabaseBroadcastAdapter(client, {
         reconnectDelayMs: 100,
@@ -293,13 +295,13 @@ describe('Reconnection Logic', () => {
       const mockSchedule = vi.fn((callback: () => void, delay: number) => {
         scheduleCalls.push({ delay, callback });
         return setTimeout(callback, delay);
-      });
+      }) as MockScheduler;
 
       // Mock channel subscription to resolve immediately
       mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
         if (callback) callback('SUBSCRIBED');
         return mocks.channel.channel;
-      });
+      }) as any;
 
       const adapter = new SupabaseBroadcastAdapter(client, {
         reconnectDelayMs: 100,
@@ -345,13 +347,13 @@ describe('Reconnection Logic', () => {
       const mockSchedule = vi.fn((callback: () => void, delay: number) => {
         scheduleCalls.push({ callback });
         return setTimeout(callback, delay);
-      });
+      }) as MockScheduler;
 
       // Mock channel subscription to resolve immediately
       mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
         if (callback) callback('SUBSCRIBED');
         return mocks.channel.channel;
-      });
+      }) as any;
 
       const adapter = new SupabaseBroadcastAdapter(client, {
         reconnectDelayMs: 50,
@@ -396,13 +398,13 @@ describe('Reconnection Logic', () => {
       const mockSchedule = vi.fn((callback: () => void, delay: number) => {
         scheduleCalls.push({ callback });
         return setTimeout(callback, delay);
-      });
+      }) as MockScheduler;
 
       // Mock channel subscription to resolve immediately
       mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
         if (callback) callback('SUBSCRIBED');
         return mocks.channel.channel;
-      });
+      }) as any;
 
       const adapter = new SupabaseBroadcastAdapter(client, {
         reconnectDelayMs: 100,
@@ -413,7 +415,7 @@ describe('Reconnection Logic', () => {
       const unsubscribe = await adapter.subscribeToRun(RUN_ID);
 
       // Get reference to original channel
-      const originalChannelCalls = client.channel.mock.calls.length;
+      const originalChannelCalls = (client.channel as any).mock.calls.length;
 
       // Simulate error and reconnection
       const errorHandler = mocks.channel.systemHandlers.get('error');
@@ -425,7 +427,7 @@ describe('Reconnection Logic', () => {
       }
 
       // Verify new channel was created
-      expect(client.channel.mock.calls.length).toBeGreaterThan(originalChannelCalls);
+      expect((client.channel as any).mock.calls.length).toBeGreaterThan(originalChannelCalls);
 
       unsubscribe();
     });
@@ -439,13 +441,13 @@ describe('Reconnection Logic', () => {
           steps: stepStatesSample,
         },
         error: null,
-      });
+      }) as any;
 
       // Mock channel subscription to resolve immediately
       mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
         if (callback) callback('SUBSCRIBED');
         return mocks.channel.channel;
-      });
+      }) as any;
 
       const adapter = new SupabaseBroadcastAdapter(client, {
         reconnectDelayMs: 100,

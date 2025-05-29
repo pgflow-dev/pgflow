@@ -1,18 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { PgflowClient } from '../../src/lib/PgflowClient';
-import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types';
-import { mockSupabase, resetMocks, mockChannelSubscription } from '../mocks';
+import { PgflowClient } from '../src/lib/PgflowClient';
+import { FlowRunStatus, FlowStepStatus } from '../src/lib/types';
+import { mockSupabase, resetMocks, mockChannelSubscription } from './mocks';
 import {
   RUN_ID,
   FLOW_SLUG,
   STEP_SLUG,
-  ANOTHER_STEP_SLUG,
   startedRunSnapshot,
   broadcastStepStarted,
   broadcastStepCompleted,
   broadcastRunCompleted,
   stepStatesSample,
-} from '../fixtures';
+} from './fixtures';
 
 // Mock uuid to return predictable IDs
 vi.mock('uuid', () => ({
@@ -153,10 +152,11 @@ describe('Concurrent Operations', () => {
       });
       
       const run = await pgflowClient.getRun(RUN_ID);
+      if (!run) throw new Error('Run should not be null');
       
       // Track events on the run
       const runEvents: string[] = [];
-      run.on('*', (event) => runEvents.push(event.event_type));
+      run.on('*', (event) => runEvents.push(`run:${event.status}`));
       
       // Get the broadcast handler and emit event
       const broadcastHandler = mocks.channel.handlers.get('*');
@@ -184,11 +184,12 @@ describe('Concurrent Operations', () => {
       });
       
       const run = await pgflowClient.getRun(RUN_ID);
+      if (!run) throw new Error('Run should not be null');
       const step = run.step(STEP_SLUG);
       
       // Track events on the step
       const stepEvents: string[] = [];
-      step.on('*', (event) => stepEvents.push(event.event_type));
+      step.on('*', (event) => stepEvents.push(`step:${event.status}`));
       
       // Get the broadcast handler and emit events
       const broadcastHandler = mocks.channel.handlers.get('*');
@@ -217,10 +218,11 @@ describe('Concurrent Operations', () => {
       });
       
       const run = await pgflowClient.getRun(RUN_ID);
+      if (!run) throw new Error('Run should not be null');
       
       // Track events
       const events: string[] = [];
-      run.on('*', (event) => events.push(event.event_type));
+      run.on('*', (event) => events.push(`run:${event.status}`));
       
       // Emit event with different run_id
       const broadcastHandler = mocks.channel.handlers.get('*');

@@ -24,15 +24,6 @@ describe('SupabaseBroadcastAdapter - Simple Tests', () => {
     vi.restoreAllMocks();
   });
 
-  /**
-   * Helper to create a synchronous scheduler for immediate execution
-   */
-  function createImmediateScheduler() {
-    return (fn: Function) => {
-      fn();
-      return 0 as unknown as NodeJS.Timeout;
-    };
-  }
 
   /**
    * Test basic connection functionality using the public interface

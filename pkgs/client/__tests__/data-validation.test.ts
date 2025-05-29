@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { PgflowClient } from '../../src/lib/PgflowClient';
-import { FlowRun } from '../../src/lib/FlowRun';
-import { FlowStep } from '../../src/lib/FlowStep';
-import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types';
-import { mockSupabase, resetMocks, mockChannelSubscription } from '../mocks';
+import { PgflowClient } from '../src/lib/PgflowClient';
+import { FlowRun } from '../src/lib/FlowRun';
+import { FlowStep } from '../src/lib/FlowStep';
+import { FlowRunStatus, FlowStepStatus } from '../src/lib/types';
+import { mockSupabase, resetMocks, mockChannelSubscription } from './mocks';
 import {
   RUN_ID,
   FLOW_SLUG,
   STEP_SLUG,
   startedRunSnapshot,
   stepStatesSample,
-} from '../fixtures';
+} from './fixtures';
 
 // Mock uuid.v4 to return predictable run ID for testing
 vi.mock('uuid', () => ({
@@ -47,6 +47,7 @@ describe('Data Validation and Edge Cases', () => {
       const run = await pgflowClient.getRun(RUN_ID);
       
       expect(run).toBeDefined();
+      if (!run) throw new Error('Run should not be null');
       expect(run.run_id).toBe(RUN_ID);
       
       // Should be able to get steps even if none exist initially
@@ -73,6 +74,7 @@ describe('Data Validation and Edge Cases', () => {
       const run = await pgflowClient.getRun(RUN_ID);
       
       expect(run).toBeDefined();
+      if (!run) throw new Error('Run should not be null');
       
       // Should still be able to create steps on demand
       const step = run.step(STEP_SLUG);
@@ -141,15 +143,24 @@ describe('Data Validation and Edge Cases', () => {
         run_id: RUN_ID,
         flow_slug: FLOW_SLUG,
         status: FlowRunStatus.Completed, // Terminal state
-        step_states: [],
-        completed_at: new Date().toISOString(),
+        input: {},
         output: { result: 'done' },
+        error: null,
+        error_message: null,
+        started_at: null,
+        completed_at: new Date(),
+        failed_at: null,
+        remaining_steps: 0,
       });
 
       // Try to update with invalid transition
       const updated = run.updateState({
         run_id: RUN_ID,
+        flow_slug: FLOW_SLUG,
         status: FlowRunStatus.Started, // Lower precedence
+        input: {},
+        started_at: new Date().toISOString(),
+        remaining_steps: 0,
       });
 
       expect(updated).toBe(false);
@@ -161,9 +172,12 @@ describe('Data Validation and Edge Cases', () => {
         run_id: RUN_ID,
         step_slug: STEP_SLUG,
         status: FlowStepStatus.Failed, // Terminal state
-        started_at: new Date().toISOString(),
-        failed_at: new Date().toISOString(),
+        output: null,
+        error: null,
         error_message: 'Step failed',
+        started_at: new Date(),
+        completed_at: null,
+        failed_at: new Date(),
       });
 
       // Try to update with invalid transition
@@ -171,6 +185,8 @@ describe('Data Validation and Edge Cases', () => {
         run_id: RUN_ID,
         step_slug: STEP_SLUG,
         status: FlowStepStatus.Completed, // Should not be allowed after failed
+        output: {},
+        completed_at: new Date().toISOString(),
       });
 
       expect(updated).toBe(false);
@@ -182,32 +198,49 @@ describe('Data Validation and Edge Cases', () => {
         run_id: RUN_ID,
         flow_slug: FLOW_SLUG,
         status: FlowRunStatus.Started,
-        step_states: [],
+        input: {},
+        output: null,
+        error: null,
+        error_message: null,
+        started_at: new Date(),
+        completed_at: null,
+        failed_at: null,
+        remaining_steps: 1,
       });
 
       // Try to update with different run_id
       const updated = run.updateState({
         run_id: 'different-run-id',
+        flow_slug: FLOW_SLUG,
         status: FlowRunStatus.Completed,
+        output: {},
+        completed_at: new Date().toISOString(),
       });
 
       expect(updated).toBe(false);
       expect(run.status).toBe(FlowRunStatus.Started);
     });
 
-    it('validates step_slug consistency in FlowStep updates', () => {
+    it('validates run_id consistency in FlowStep updates', () => {
       const step = new FlowStep({
         run_id: RUN_ID,
         step_slug: STEP_SLUG,
         status: FlowStepStatus.Started,
-        started_at: new Date().toISOString(),
+        output: null,
+        error: null,
+        error_message: null,
+        started_at: new Date(),
+        completed_at: null,
+        failed_at: null,
       });
 
-      // Try to update with different step_slug
+      // Try to update with different run_id
       const updated = step.updateState({
-        run_id: RUN_ID,
-        step_slug: 'different-step',
+        run_id: 'different-run-id',
+        step_slug: STEP_SLUG,
         status: FlowStepStatus.Completed,
+        output: {},
+        completed_at: new Date().toISOString(),
       });
 
       expect(updated).toBe(false);
@@ -337,6 +370,7 @@ describe('Data Validation and Edge Cases', () => {
       for (let i = 0; i < 10; i++) {
         const run = await pgflowClient.getRun(RUN_ID);
         expect(run).toBeDefined();
+        if (!run) throw new Error('Run should not be null');
         
         const step = run.step(STEP_SLUG);
         expect(step).toBeDefined();
@@ -367,6 +401,7 @@ describe('Data Validation and Edge Cases', () => {
       const run = await pgflowClient.getRun(RUN_ID);
       
       expect(run).toBeDefined();
+      if (!run) throw new Error('Run should not be null');
       
       // Dispose the run
       pgflowClient.dispose(RUN_ID);
@@ -398,6 +433,7 @@ describe('Data Validation and Edge Cases', () => {
       const run = await pgflowClient.getRun(RUN_ID);
       
       expect(run).toBeDefined();
+      if (!run) throw new Error('Run should not be null');
       
       // Multiple disposal calls should not throw
       expect(() => {
@@ -480,6 +516,8 @@ describe('Data Validation and Edge Cases', () => {
       // Both should succeed and return run instances
       expect(run1).toBeDefined();
       expect(run2).toBeDefined();
+      if (!run1) throw new Error('Run1 should not be null');
+      if (!run2) throw new Error('Run2 should not be null');
       expect(run1.run_id).toBe(RUN_ID);
       expect(run2.run_id).toBe(RUN_ID);
     });

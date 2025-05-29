@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import { PgflowClient } from '../../src/lib/PgflowClient';
-import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types';
+import { PgflowClient } from '../src/lib/PgflowClient';
+import { FlowRunStatus, FlowStepStatus } from '../src/lib/types';
 import {
   Flow,
   type AnyFlow,

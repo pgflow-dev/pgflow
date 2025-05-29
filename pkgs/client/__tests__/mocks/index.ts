@@ -1,7 +1,6 @@
 import { vi } from 'vitest';
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
-import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types';
-import type { BroadcastRunEvent, BroadcastStepEvent } from '../../src/lib/types';
+import type { BroadcastRunEvent, BroadcastStepEvent } from '../src/lib/types';
 
 /**
  * Global state for singleton/shared test state
@@ -98,7 +97,7 @@ export function mockSupabase(): { client: SupabaseClient; mocks: Record<string, 
     storage: {
       from: vi.fn().mockReturnValue({
         upload: vi.fn().mockResolvedValue({ data: { path: 'test-file-path' }, error: null }),
-        download: vi.fn().mockResolvedValue({ data: new Blob(), error: null }),
+        download: vi.fn().mockResolvedValue({ data: new Blob([]), error: null }),
       }),
     },
   } as unknown as SupabaseClient;
@@ -276,7 +275,7 @@ export function mockChannelSubscription(
     failureMessage?: string;
   } = {}
 ): void {
-  const { delayMs = 0, shouldFail = false, failureMessage = 'Subscription failed' } = options;
+  const { delayMs = 0, shouldFail = false } = options;
 
   mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
     if (callback) {

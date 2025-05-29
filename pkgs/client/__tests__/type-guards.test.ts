@@ -7,7 +7,7 @@ import {
   isStepFailedEvent,
   FlowRunStatus,
   FlowStepStatus,
-} from '../../src/lib/types';
+} from '../src/lib/types';
 import {
   broadcastRunStarted,
   broadcastRunCompleted,
@@ -17,7 +17,7 @@ import {
   broadcastStepFailed,
   RUN_ID,
   STEP_SLUG,
-} from '../fixtures';
+} from './fixtures';
 
 describe('Type Guards', () => {
   describe('isFlowRunEvent', () => {
@@ -351,9 +351,9 @@ describe('Type Guards', () => {
       
       if (isFlowRunEvent(unknownEvent)) {
         // TypeScript should know this is a FlowRunEvent
-        expect(unknownEvent.event_type).toMatch(/^run:/);
+        expect((unknownEvent as any).event_type).toMatch(/^run:/);
         expect(unknownEvent.run_id).toBe(RUN_ID);
-        expect(unknownEvent.flow_slug).toBeDefined();
+        expect((unknownEvent as any).flow_slug).toBeDefined();
         expect(unknownEvent.status).toBeDefined();
       }
     });
@@ -363,7 +363,7 @@ describe('Type Guards', () => {
       
       if (isStepEvent(unknownEvent)) {
         // TypeScript should know this is a StepEvent
-        expect(unknownEvent.event_type).toMatch(/^step:/);
+        expect((unknownEvent as any).event_type).toMatch(/^step:/);
         expect(unknownEvent.run_id).toBe(RUN_ID);
         expect(unknownEvent.step_slug).toBeDefined();
         expect(unknownEvent.status).toBeDefined();
@@ -375,7 +375,7 @@ describe('Type Guards', () => {
       
       if (isStepCompletedEvent(unknownEvent)) {
         // TypeScript should know this is specifically a StepCompletedEvent
-        expect(unknownEvent.event_type).toBe('step:completed');
+        expect((unknownEvent as any).event_type).toBe('step:completed');
         expect(unknownEvent.status).toBe(FlowStepStatus.Completed);
         // completed_at should be available
         expect(unknownEvent.completed_at).toBeDefined();

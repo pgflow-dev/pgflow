@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { withTransaction } from '../helpers/db.js';
 import { createTestSupabaseClient } from '../helpers/setup.js';
-import { createTestFlow, createTestRun } from '../helpers/fixtures.js';
+import { createTestFlow } from '../helpers/fixtures.js';
 
 describe('Supabase Setup Integration', () => {
   it('should connect to test database', withTransaction(async (sql) => {

@@ -12,21 +12,13 @@ import {
   broadcastStepCompleted,
   broadcastStepFailed,
   startedRunSnapshot,
-  completedRunSnapshot,
-  failedRunSnapshot,
   startedStepState,
-  completedStepState,
-  failedStepState,
-  stepStatesSample,
   sampleFlowDefinition,
   sampleStepsDefinition,
-  advanceAndFlush,
-  createRunSnapshot
 } from './fixtures';
 import { 
   mockSupabase, 
   resetMocks, 
-  emitBroadcastEvent,
   mockChannelSubscription
 } from './mocks';
 
@@ -501,8 +493,8 @@ describe('SupabaseBroadcastAdapter', () => {
       // Make sure the flow matches what we expect
       expect(result.flow).toEqual(expect.objectContaining({
         flow_slug: FLOW_SLUG,
-        version: sampleFlowDefinition.version,
-        definition: sampleFlowDefinition.definition
+        version: '1.0.0',
+        definition: { steps: [STEP_SLUG, ANOTHER_STEP_SLUG] }
       }));
       
       // The step array might be empty in the mocked response, so just verify it's an array

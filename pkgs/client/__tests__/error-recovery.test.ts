@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { PgflowClient } from '../../src/lib/PgflowClient';
-import { FlowRunStatus } from '../../src/lib/types';
-import { mockSupabase, resetMocks, mockChannelSubscription } from '../mocks';
+import { PgflowClient } from '../src/lib/PgflowClient';
+import { FlowRunStatus } from '../src/lib/types';
+import { mockSupabase, resetMocks, mockChannelSubscription } from './mocks';
 import {
   RUN_ID,
   FLOW_SLUG,
   startedRunSnapshot,
   stepStatesSample,
-} from '../fixtures';
+} from './fixtures';
 
 // Mock uuid.v4 to return predictable run ID for testing
 vi.mock('uuid', () => ({

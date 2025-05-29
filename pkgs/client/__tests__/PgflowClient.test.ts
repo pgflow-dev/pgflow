@@ -4,8 +4,7 @@ import { FlowRunStatus, FlowStepStatus } from '../src/lib/types';
 import { 
   RUN_ID, 
   FLOW_SLUG, 
-  STEP_SLUG,
-  broadcastRunStarted, 
+ 
   broadcastRunCompleted, 
   broadcastStepStarted,
   startedRunSnapshot,

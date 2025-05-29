@@ -25,12 +25,14 @@ export type FlowRunEventData<TFlow extends AnyFlow> = {
   };
   completed: {
     run_id: string;
+    flow_slug: string;
     output: ExtractFlowOutput<TFlow>;
     status: FlowRunStatus.Completed;
     completed_at: string;
   };
   failed: { 
     run_id: string; 
+    flow_slug: string;
     error_message: string; 
     status: FlowRunStatus.Failed;
     failed_at: string;
@@ -378,7 +380,7 @@ export interface IFlowRealtime<TFlow = unknown> {
   /**
    * Subscribe to a flow run's events
    */
-  subscribeToRun(run_id: string): () => void;
+  subscribeToRun(run_id: string): Promise<() => void>;
 
   /**
    * Fetch current state of a run and its steps

@@ -3,8 +3,8 @@ import { withPgNoTransaction } from '../helpers/db.js';
 import { createTestSupabaseClient } from '../helpers/setup.js';
 import { createTestFlow } from '../helpers/fixtures.js';
 import { grantMinimalPgflowPermissions } from '../helpers/permissions.js';
-import { PgflowClient } from '../../src/lib/PgflowClient.js';
-import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types.js';
+import { PgflowClient } from '../src/lib/PgflowClient.js';
+import { FlowRunStatus, FlowStepStatus } from '../src/lib/types.js';
 import { PgflowSqlClient } from '../../../core/src/PgflowSqlClient.js';
 
 describe('Flow Lifecycle Integration', () => {

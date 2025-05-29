@@ -10,10 +10,8 @@ import {
   broadcastRunCompleted, 
   broadcastRunFailed,
   broadcastStepStarted,
-  broadcastStepCompleted,
-  broadcastStepFailed,
   advanceAndFlush,
-  happyPathEventSequence
+  toFlowRunEvent
 } from './fixtures';
 import { resetMocks } from './mocks';
 
@@ -79,7 +77,7 @@ describe('FlowRun', () => {
       run.on('started', startedCallback);
 
       // Update state with started event (should be ignored due to same status)
-      const result = run.updateState(broadcastRunStarted);
+      const result = run.updateState(toFlowRunEvent(broadcastRunStarted));
 
       // Check update was rejected
       expect(result).toBe(false);
@@ -114,7 +112,7 @@ describe('FlowRun', () => {
       run.on('completed', completedCallback);
 
       // Update state with completed event
-      run.updateState(broadcastRunCompleted);
+      run.updateState(toFlowRunEvent(broadcastRunCompleted));
 
       // Check state was updated correctly
       expect(run.status).toBe(FlowRunStatus.Completed);
@@ -153,7 +151,7 @@ describe('FlowRun', () => {
       run.on('failed', failedCallback);
 
       // Update state with failed event
-      run.updateState(broadcastRunFailed);
+      run.updateState(toFlowRunEvent(broadcastRunFailed));
 
       // Check state was updated correctly
       expect(run.status).toBe(FlowRunStatus.Failed);
@@ -220,15 +218,15 @@ describe('FlowRun', () => {
       });
 
       // Started -> Started (same precedence, should be rejected)
-      expect(run.updateState(broadcastRunStarted)).toBe(false);
+      expect(run.updateState(toFlowRunEvent(broadcastRunStarted))).toBe(false);
       expect(run.status).toBe(FlowRunStatus.Started);
 
       // Started -> Completed (allowed - higher precedence)
-      expect(run.updateState(broadcastRunCompleted)).toBe(true);
+      expect(run.updateState(toFlowRunEvent(broadcastRunCompleted))).toBe(true);
       expect(run.status).toBe(FlowRunStatus.Completed);
 
       // Completed -> Failed (denied - terminal state protection)
-      expect(run.updateState(broadcastRunFailed)).toBe(false);
+      expect(run.updateState(toFlowRunEvent(broadcastRunFailed))).toBe(false);
       // State should not change
       expect(run.status).toBe(FlowRunStatus.Completed);
     });
@@ -278,7 +276,7 @@ describe('FlowRun', () => {
       });
 
       // Try to update to failed state
-      const result = run.updateState(broadcastRunFailed);
+      const result = run.updateState(toFlowRunEvent(broadcastRunFailed));
       
       // Should not update terminal state
       expect(result).toBe(false);
@@ -414,7 +412,7 @@ describe('FlowRun', () => {
       
       // Update the status after a delay
       setTimeout(() => {
-        run.updateState(broadcastRunCompleted);
+        run.updateState(toFlowRunEvent(broadcastRunCompleted));
       }, 1000);
 
       // Advance timers to trigger the update
@@ -528,7 +526,7 @@ describe('FlowRun', () => {
       
       // Update status before timeout
       setTimeout(() => {
-        run.updateState(broadcastRunCompleted);
+        run.updateState(toFlowRunEvent(broadcastRunCompleted));
       }, 1000);
       
       // Advance timers partway
@@ -671,7 +669,7 @@ describe('FlowRun', () => {
       });
 
       // Create a step so we can check it gets cleaned up
-      const step = run.step(STEP_SLUG as any);
+      run.step(STEP_SLUG as any);
       
       // Spy on the dispose method
       const disposeSpy = vi.spyOn(run, 'dispose');
@@ -681,7 +679,7 @@ describe('FlowRun', () => {
       unsubscribe();
 
       // Update to a terminal state
-      run.updateState(broadcastRunCompleted);
+      run.updateState(toFlowRunEvent(broadcastRunCompleted));
       
       // Dispose should be called
       expect(disposeSpy).toHaveBeenCalled();
@@ -709,7 +707,7 @@ describe('FlowRun', () => {
       run.on('*', vi.fn());
 
       // Update to a terminal state
-      run.updateState(broadcastRunCompleted);
+      run.updateState(toFlowRunEvent(broadcastRunCompleted));
       
       // Dispose should NOT be called when listeners are active
       expect(disposeSpy).not.toHaveBeenCalled();
@@ -738,7 +736,7 @@ describe('FlowRun', () => {
       unsubscribe();
 
       // Update to a non-terminal state
-      run.updateState(broadcastRunStarted);
+      run.updateState(toFlowRunEvent(broadcastRunStarted));
       
       // Dispose should NOT be called for non-terminal state
       expect(disposeSpy).not.toHaveBeenCalled();
@@ -766,14 +764,14 @@ describe('FlowRun', () => {
       // Add some event listeners
       const callback1 = vi.fn();
       const callback2 = vi.fn();
-      const unsubscribe1 = run.on('completed', callback1);
-      const unsubscribe2 = run.on('failed', callback2);
+      run.on('completed', callback1);
+      run.on('failed', callback2);
 
       // Manually dispose
       run.dispose();
       
       // Verify event handlers are cleared by trying to trigger events
-      run.updateState(broadcastRunCompleted);
+      run.updateState(toFlowRunEvent(broadcastRunCompleted));
       
       // Callbacks should not be called after dispose
       expect(callback1).not.toHaveBeenCalled();

@@ -68,7 +68,7 @@ async function monitorSteps() {
   });
 
   rootStep.on('completed', (event) => {
-    event.output;
+    console.log('Step completed with output:', event.output);
   });
 
   // Wait for the step to complete
