@@ -69,12 +69,12 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
    * Parse JSON string fields in broadcast event data
    * @param eventData - The event data object to parse
    */
-  #parseJsonFields(eventData: any): void {
+  #parseJsonFields(eventData: Record<string, unknown>): void {
     // Parse output field if it's a JSON string
     if ('output' in eventData && typeof eventData.output === 'string') {
       try {
         eventData.output = JSON.parse(eventData.output);
-      } catch (e) {
+      } catch {
         // Keep as string if not valid JSON
       }
     }
@@ -83,7 +83,7 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
     if ('input' in eventData && typeof eventData.input === 'string') {
       try {
         eventData.input = JSON.parse(eventData.input);
-      } catch (e) {
+      } catch {
         // Keep as string if not valid JSON
       }
     }

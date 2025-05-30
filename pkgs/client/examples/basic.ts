@@ -68,7 +68,7 @@ async function monitorSteps() {
   });
 
   rootStep.on('completed', (event) => {
-    event.output;
+    console.log(`Step completed. Output: ${JSON.stringify(event.output)}`);
   });
 
   // Wait for the step to complete
@@ -80,6 +80,16 @@ async function monitorSteps() {
   console.log(`Step status: ${rootStep.status}`);
   console.log(`Step output: ${JSON.stringify(rootStep.output)}`);
 
+  return run;
+}
+
+/**
+ * Example 3: Get existing run
+ */
+async function getRun(runId: string) {
+  const run = await client.getRun(runId);
+  console.log(`Retrieved run: ${run.run_id}`);
+  console.log(`Status: ${run.status}`);
   return run;
 }
 

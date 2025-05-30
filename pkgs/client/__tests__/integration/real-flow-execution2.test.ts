@@ -5,7 +5,7 @@ import { grantMinimalPgflowPermissions } from '../helpers/permissions.js';
 import { PgflowClient } from '../../src/lib/PgflowClient.js';
 import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types.js';
 import { it } from 'vitest';
-import { PgflowSqlClient } from '../../../core/src/PgflowSqlClient.js';
+import { PgflowSqlClient } from '@pgflow/core';
 
 it(
   'minimal test - just log events',

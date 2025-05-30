@@ -5,7 +5,7 @@ import { createTestFlow } from '../helpers/fixtures.js';
 import { grantMinimalPgflowPermissions } from '../helpers/permissions.js';
 import { PgflowClient } from '../../src/lib/PgflowClient.js';
 import { FlowStepStatus } from '../../src/lib/types.js';
-import { PgflowSqlClient } from '../../../core/src/PgflowSqlClient.js';
+import { PgflowSqlClient } from '@pgflow/core';
 
 describe('Network Resilience Tests', () => {
   it(

@@ -28,7 +28,7 @@ export async function waitForRealtimeReady(channel: any, timeout = 5000): Promis
     checkStatus();
     
     // Listen for state changes
-    channel.on('presence', {}, () => {}); // forces registration
+    channel.on('presence', {}, () => { /* forces registration */ });
     channel.on('phx_reply', (event: any) => {
       if (event.payload?.status === 'ok' && event.ref === channel.joinRef()) {
         clearTimeout(timer);

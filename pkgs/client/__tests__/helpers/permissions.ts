@@ -11,12 +11,12 @@ export async function grantMinimalPgflowPermissions(sql: Sql) {
   // await sql`SELECT pgflow_tests.reset_db()`; // MOVED TO ONE-TIME SETUP
   
   // Ensure realtime partition exists (required after db reset) - safe to call multiple times
-  try { await sql`SELECT pgflow_tests.create_realtime_partition()`; } catch {}
+  try { await sql`SELECT pgflow_tests.create_realtime_partition()`; } catch { /* ignore errors */ }
 
   // Grant minimal permissions to service_role (used by tests) - ignore if already granted
-  try { await sql`GRANT USAGE ON SCHEMA pgflow TO service_role`; } catch {}
-  try { await sql`GRANT EXECUTE ON FUNCTION pgflow.start_flow_with_states(text, jsonb, uuid) TO service_role`; } catch {}
-  try { await sql`GRANT EXECUTE ON FUNCTION pgflow.get_run_with_states(uuid) TO service_role`; } catch {}
-  try { await sql`GRANT SELECT ON TABLE pgflow.flows TO service_role`; } catch {}
-  try { await sql`GRANT SELECT ON TABLE pgflow.steps TO service_role`; } catch {}
+  try { await sql`GRANT USAGE ON SCHEMA pgflow TO service_role`; } catch { /* ignore errors */ }
+  try { await sql`GRANT EXECUTE ON FUNCTION pgflow.start_flow_with_states(text, jsonb, uuid) TO service_role`; } catch { /* ignore errors */ }
+  try { await sql`GRANT EXECUTE ON FUNCTION pgflow.get_run_with_states(uuid) TO service_role`; } catch { /* ignore errors */ }
+  try { await sql`GRANT SELECT ON TABLE pgflow.flows TO service_role`; } catch { /* ignore errors */ }
+  try { await sql`GRANT SELECT ON TABLE pgflow.steps TO service_role`; } catch { /* ignore errors */ }
 }

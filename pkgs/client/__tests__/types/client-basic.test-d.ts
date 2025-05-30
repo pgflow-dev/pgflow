@@ -23,13 +23,13 @@ const AnalyzeWebsite = new Flow<{ url: string }>({
   .step({ slug: 'website' }, (input) => ({
     content: `Content for ${input.run.url}`,
   }))
-  .step({ slug: 'sentiment', dependsOn: ['website'] }, (input) => ({
+  .step({ slug: 'sentiment', dependsOn: ['website'] }, (_input) => ({
     score: 0.75,
   }))
   .step({ slug: 'summary', dependsOn: ['website'] }, (input) => ({
     aiSummary: `Summary of ${input.website.content}`,
   }))
-  .step({ slug: 'saveToDb', dependsOn: ['sentiment', 'summary'] }, (input) => ({
+  .step({ slug: 'saveToDb', dependsOn: ['sentiment', 'summary'] }, (_input) => ({
     status: 'success',
   }));
 

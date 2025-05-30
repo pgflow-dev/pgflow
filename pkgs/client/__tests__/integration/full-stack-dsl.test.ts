@@ -4,9 +4,9 @@ import { createTestSupabaseClient } from '../helpers/setup.js';
 import { grantMinimalPgflowPermissions } from '../helpers/permissions.js';
 import { PgflowClient } from '../../src/lib/PgflowClient.js';
 import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types.js';
-import { PgflowSqlClient } from '../../../core/src/PgflowSqlClient.js';
-import { Flow } from '../../../dsl/src/dsl.js';
-import { compileFlow } from '../../../dsl/src/compile-flow.js';
+import { PgflowSqlClient } from '@pgflow/core';
+import { Flow } from '@pgflow/dsl';
+import { compileFlow } from '@pgflow/dsl';
 
 describe('Full Stack DSL Integration', () => {
   it(

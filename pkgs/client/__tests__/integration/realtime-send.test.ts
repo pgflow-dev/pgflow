@@ -13,7 +13,7 @@ describe('Realtime Send Integration', () => {
       const supabaseClient = createTestSupabaseClient();
       const testChannel = 'test-realtime-sql-send';
 
-      let receivedEvents: any[] = [];
+      const receivedEvents: any[] = [];
 
       // 3. Subscribe to broadcast channel
       const channel = supabaseClient.channel(testChannel);

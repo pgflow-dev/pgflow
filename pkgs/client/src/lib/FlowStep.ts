@@ -223,11 +223,13 @@ export class FlowStep<
         this.#events.emit('failed', event);
         break;
 
-      default:
+      default: {
         // Exhaustiveness check - should never happen with proper types
         // @ts-expect-error Intentional exhaustiveness check
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const _exhaustivenessCheck: never = event;
         return false;
+      }
     }
 
     // Also emit to the catch-all listener

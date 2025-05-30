@@ -16,8 +16,8 @@ import { mockSupabase, mockChannelSubscription } from './mocks';
 describe('SupabaseBroadcastAdapter - Simple Tests', () => {
   beforeEach(() => {
     // Silence console logs/errors in tests
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => { /* intentionally empty */ });
+    vi.spyOn(console, 'log').mockImplementation(() => { /* intentionally empty */ });
   });
 
   afterEach(() => {
