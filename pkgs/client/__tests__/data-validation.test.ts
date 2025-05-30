@@ -1,16 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { PgflowClient } from '../../src/lib/PgflowClient';
-import { FlowRun } from '../../src/lib/FlowRun';
-import { FlowStep } from '../../src/lib/FlowStep';
-import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types';
-import { mockSupabase, resetMocks, mockChannelSubscription } from '../mocks';
+import { PgflowClient } from '../src/lib/PgflowClient';
+import { FlowRun } from '../src/lib/FlowRun';
+import { FlowStep } from '../src/lib/FlowStep';
+import { FlowRunStatus, FlowStepStatus, type BroadcastRunStartedEvent, type BroadcastRunCompletedEvent, type BroadcastStepCompletedEvent } from '../src/lib/types';
+import { toTypedRunEvent, toTypedStepEvent } from '../src/lib/eventAdapters';
+import { mockSupabase, resetMocks, mockChannelSubscription } from './mocks';
 import {
   RUN_ID,
   FLOW_SLUG,
   STEP_SLUG,
   startedRunSnapshot,
   stepStatesSample,
-} from '../fixtures';
+} from './fixtures';
 
 // Mock uuid.v4 to return predictable run ID for testing
 vi.mock('uuid', () => ({
@@ -30,10 +31,10 @@ describe('Data Validation and Edge Cases', () => {
   describe('Database Data Validation', () => {
     it('handles missing step states gracefully', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
-      
+
       // Mock response with no steps
       mocks.rpc.mockReturnValueOnce({
         data: {
@@ -45,10 +46,10 @@ describe('Data Validation and Edge Cases', () => {
 
       const pgflowClient = new PgflowClient(client);
       const run = await pgflowClient.getRun(RUN_ID);
-      
-      expect(run).toBeDefined();
+      if (!run) throw new Error('Run not found');
+
       expect(run.run_id).toBe(RUN_ID);
-      
+
       // Should be able to get steps even if none exist initially
       const step = run.step(STEP_SLUG);
       expect(step).toBeDefined();
@@ -57,10 +58,10 @@ describe('Data Validation and Edge Cases', () => {
 
     it('handles empty step states array', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
-      
+
       mocks.rpc.mockReturnValueOnce({
         data: {
           run: startedRunSnapshot,
@@ -71,9 +72,8 @@ describe('Data Validation and Edge Cases', () => {
 
       const pgflowClient = new PgflowClient(client);
       const run = await pgflowClient.getRun(RUN_ID);
-      
-      expect(run).toBeDefined();
-      
+      if (!run) throw new Error('Run not found');
+
       // Should still be able to create steps on demand
       const step = run.step(STEP_SLUG);
       expect(step).toBeDefined();
@@ -82,10 +82,10 @@ describe('Data Validation and Edge Cases', () => {
 
     it('handles corrupted run data gracefully', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
-      
+
       // Mock response with invalid status
       mocks.rpc.mockReturnValueOnce({
         data: {
@@ -99,17 +99,17 @@ describe('Data Validation and Edge Cases', () => {
       });
 
       const pgflowClient = new PgflowClient(client);
-      
+
       // Should handle gracefully without throwing
       await expect(pgflowClient.getRun(RUN_ID)).rejects.toThrow();
     });
 
     it('handles step data with missing fields', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
-      
+
       mocks.rpc.mockReturnValueOnce({
         data: {
           run: startedRunSnapshot,
@@ -122,14 +122,14 @@ describe('Data Validation and Edge Cases', () => {
               completed_at: null,
               failed_at: null,
               error_message: null,
-            }
+            },
           ],
         },
         error: null,
       });
 
       const pgflowClient = new PgflowClient(client);
-      
+
       // Should handle missing fields gracefully
       await expect(pgflowClient.getRun(RUN_ID)).rejects.toThrow();
     });
@@ -140,17 +140,28 @@ describe('Data Validation and Edge Cases', () => {
       const run = new FlowRun({
         run_id: RUN_ID,
         flow_slug: FLOW_SLUG,
-        status: FlowRunStatus.Completed, // Terminal state
-        step_states: [],
-        completed_at: new Date().toISOString(),
+        status: FlowRunStatus.Completed,
+        input: { test: 'input' },
         output: { result: 'done' },
+        error: null,
+        error_message: null,
+        started_at: new Date(),
+        completed_at: new Date(),
+        failed_at: null,
+        remaining_steps: 0,
       });
 
       // Try to update with invalid transition
-      const updated = run.updateState({
+      const broadcastEvent: BroadcastRunStartedEvent = {
+        event_type: 'run:started',
         run_id: RUN_ID,
-        status: FlowRunStatus.Started, // Lower precedence
-      });
+        flow_slug: FLOW_SLUG,
+        status: FlowRunStatus.Started,
+        input: { test: 'input' },
+        started_at: new Date().toISOString(),
+        remaining_steps: 1,
+      };
+      const updated = run.updateState(toTypedRunEvent(broadcastEvent));
 
       expect(updated).toBe(false);
       expect(run.status).toBe(FlowRunStatus.Completed);
@@ -160,18 +171,25 @@ describe('Data Validation and Edge Cases', () => {
       const step = new FlowStep({
         run_id: RUN_ID,
         step_slug: STEP_SLUG,
-        status: FlowStepStatus.Failed, // Terminal state
-        started_at: new Date().toISOString(),
-        failed_at: new Date().toISOString(),
+        status: FlowStepStatus.Failed,
+        output: null,
+        error: null,
         error_message: 'Step failed',
+        started_at: new Date(),
+        completed_at: null,
+        failed_at: new Date(),
       });
 
       // Try to update with invalid transition
-      const updated = step.updateState({
+      const broadcastEvent: BroadcastStepCompletedEvent = {
+        event_type: 'step:completed',
         run_id: RUN_ID,
         step_slug: STEP_SLUG,
-        status: FlowStepStatus.Completed, // Should not be allowed after failed
-      });
+        status: FlowStepStatus.Completed,
+        output: { result: 'test' },
+        completed_at: new Date().toISOString(),
+      };
+      const updated = step.updateState(toTypedStepEvent(broadcastEvent));
 
       expect(updated).toBe(false);
       expect(step.status).toBe(FlowStepStatus.Failed);
@@ -182,14 +200,26 @@ describe('Data Validation and Edge Cases', () => {
         run_id: RUN_ID,
         flow_slug: FLOW_SLUG,
         status: FlowRunStatus.Started,
-        step_states: [],
+        input: { test: 'input' },
+        output: null,
+        error: null,
+        error_message: null,
+        started_at: new Date(),
+        completed_at: null,
+        failed_at: null,
+        remaining_steps: 1,
       });
 
       // Try to update with different run_id
-      const updated = run.updateState({
+      const broadcastEvent: BroadcastRunCompletedEvent = {
+        event_type: 'run:completed',
         run_id: 'different-run-id',
+        flow_slug: FLOW_SLUG,
         status: FlowRunStatus.Completed,
-      });
+        output: { result: 'done' },
+        completed_at: new Date().toISOString(),
+      };
+      const updated = run.updateState(toTypedRunEvent(broadcastEvent));
 
       expect(updated).toBe(false);
       expect(run.status).toBe(FlowRunStatus.Started);
@@ -200,15 +230,24 @@ describe('Data Validation and Edge Cases', () => {
         run_id: RUN_ID,
         step_slug: STEP_SLUG,
         status: FlowStepStatus.Started,
-        started_at: new Date().toISOString(),
+        output: null,
+        error: null,
+        error_message: null,
+        started_at: new Date(),
+        completed_at: null,
+        failed_at: null,
       });
 
       // Try to update with different step_slug
-      const updated = step.updateState({
+      const broadcastEvent: BroadcastStepCompletedEvent = {
+        event_type: 'step:completed',
         run_id: RUN_ID,
         step_slug: 'different-step',
         status: FlowStepStatus.Completed,
-      });
+        output: { result: 'test' },
+        completed_at: new Date().toISOString(),
+      };
+      const updated = step.updateState(toTypedStepEvent(broadcastEvent));
 
       expect(updated).toBe(false);
       expect(step.status).toBe(FlowStepStatus.Started);
@@ -218,10 +257,10 @@ describe('Data Validation and Edge Cases', () => {
   describe('Input Validation', () => {
     it('handles null flow input gracefully', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
-      
+
       mocks.rpc.mockReturnValueOnce({
         data: {
           run: { ...startedRunSnapshot, input: null },
@@ -232,17 +271,17 @@ describe('Data Validation and Edge Cases', () => {
 
       const pgflowClient = new PgflowClient(client);
       const run = await pgflowClient.startFlow(FLOW_SLUG, null as any);
-      
+
       expect(run).toBeDefined();
       expect(run.input).toBeNull();
     });
 
     it('handles undefined flow input gracefully', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
-      
+
       mocks.rpc.mockReturnValueOnce({
         data: {
           run: { ...startedRunSnapshot, input: undefined },
@@ -253,17 +292,17 @@ describe('Data Validation and Edge Cases', () => {
 
       const pgflowClient = new PgflowClient(client);
       const run = await pgflowClient.startFlow(FLOW_SLUG, undefined as any);
-      
+
       expect(run).toBeDefined();
       expect(run.input).toBeUndefined();
     });
 
     it('handles very large input objects', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
-      
+
       // Create large input object
       const largeInput = {
         data: Array.from({ length: 1000 }, (_, i) => ({
@@ -283,17 +322,17 @@ describe('Data Validation and Edge Cases', () => {
 
       const pgflowClient = new PgflowClient(client);
       const run = await pgflowClient.startFlow(FLOW_SLUG, largeInput);
-      
+
       expect(run).toBeDefined();
       expect(run.input).toEqual(largeInput);
     });
 
     it('handles circular references in input gracefully', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
-      
+
       // Create circular reference
       const circularInput: any = { name: 'test' };
       circularInput.self = circularInput;
@@ -308,7 +347,7 @@ describe('Data Validation and Edge Cases', () => {
       });
 
       const pgflowClient = new PgflowClient(client);
-      
+
       // Should not throw during flow start
       expect(async () => {
         await pgflowClient.startFlow(FLOW_SLUG, circularInput);
@@ -319,10 +358,10 @@ describe('Data Validation and Edge Cases', () => {
   describe('Edge Case Memory Management', () => {
     it('handles rapid subscription and disposal cycles', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
-      
+
       mocks.rpc.mockReturnValue({
         data: {
           run: startedRunSnapshot,
@@ -336,11 +375,11 @@ describe('Data Validation and Edge Cases', () => {
       // Rapid subscribe/dispose cycles
       for (let i = 0; i < 10; i++) {
         const run = await pgflowClient.getRun(RUN_ID);
-        expect(run).toBeDefined();
-        
+        if (!run) throw new Error('Run not found');
+
         const step = run.step(STEP_SLUG);
         expect(step).toBeDefined();
-        
+
         // Immediate disposal
         pgflowClient.dispose(RUN_ID);
       }
@@ -351,10 +390,10 @@ describe('Data Validation and Edge Cases', () => {
 
     it('handles accessing disposed runs gracefully', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
-      
+
       mocks.rpc.mockReturnValueOnce({
         data: {
           run: startedRunSnapshot,
@@ -365,16 +404,15 @@ describe('Data Validation and Edge Cases', () => {
 
       const pgflowClient = new PgflowClient(client);
       const run = await pgflowClient.getRun(RUN_ID);
-      
-      expect(run).toBeDefined();
-      
+      if (!run) throw new Error('Run not found');
+
       // Dispose the run
       pgflowClient.dispose(RUN_ID);
-      
+
       // Accessing disposed run should still work for basic properties
       expect(run.run_id).toBe(RUN_ID);
       expect(run.status).toBeDefined();
-      
+
       // But trying to get the same run again should fetch fresh
       const cachedRun = await pgflowClient.getRun(RUN_ID);
       expect(cachedRun).toBeNull(); // Should return null since not in cache
@@ -382,10 +420,10 @@ describe('Data Validation and Edge Cases', () => {
 
     it('handles multiple disposal calls gracefully', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
-      
+
       mocks.rpc.mockReturnValueOnce({
         data: {
           run: startedRunSnapshot,
@@ -396,9 +434,9 @@ describe('Data Validation and Edge Cases', () => {
 
       const pgflowClient = new PgflowClient(client);
       const run = await pgflowClient.getRun(RUN_ID);
-      
+
       expect(run).toBeDefined();
-      
+
       // Multiple disposal calls should not throw
       expect(() => {
         pgflowClient.dispose(RUN_ID);
@@ -413,10 +451,10 @@ describe('Data Validation and Edge Cases', () => {
   describe('Async Operation Edge Cases', () => {
     it('handles cancelled operations gracefully', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
-      
+
       // Mock delayed response
       const delayedResponse = new Promise((resolve) => {
         setTimeout(() => {
@@ -433,14 +471,14 @@ describe('Data Validation and Edge Cases', () => {
       mocks.rpc.mockReturnValueOnce(delayedResponse);
 
       const pgflowClient = new PgflowClient(client);
-      
+
       // Start operation then immediately dispose
       const runPromise = pgflowClient.getRun(RUN_ID);
       pgflowClient.dispose(RUN_ID); // Dispose before completion
-      
+
       // Advance timers to resolve the promise
       await vi.advanceTimersByTimeAsync(1000);
-      
+
       // Should still complete without error
       const run = await runPromise;
       expect(run).toBeDefined();
@@ -448,10 +486,10 @@ describe('Data Validation and Edge Cases', () => {
 
     it('handles concurrent operations on same run ID', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
-      
+
       // Mock multiple responses
       mocks.rpc
         .mockReturnValueOnce({
@@ -470,7 +508,7 @@ describe('Data Validation and Edge Cases', () => {
         });
 
       const pgflowClient = new PgflowClient(client);
-      
+
       // Start multiple operations concurrently for same run
       const [run1, run2] = await Promise.all([
         pgflowClient.getRun(RUN_ID),
@@ -478,8 +516,9 @@ describe('Data Validation and Edge Cases', () => {
       ]);
 
       // Both should succeed and return run instances
-      expect(run1).toBeDefined();
-      expect(run2).toBeDefined();
+      if (!run1) throw new Error('Run `run1` not found');
+      if (!run2) throw new Error('Run `run2` not found');
+
       expect(run1.run_id).toBe(RUN_ID);
       expect(run2.run_id).toBe(RUN_ID);
     });

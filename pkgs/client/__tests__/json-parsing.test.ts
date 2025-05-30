@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SupabaseBroadcastAdapter } from '../../src/lib/SupabaseBroadcastAdapter';
-import type { BroadcastStepEvent, BroadcastRunEvent } from '../../src/lib/types';
-import { mockSupabase, mockChannelSubscription } from '../mocks';
+import { SupabaseBroadcastAdapter } from '../src/lib/SupabaseBroadcastAdapter';
+import type { BroadcastStepEvent, BroadcastRunEvent } from '../src/lib/types';
+import { mockSupabase, mockChannelSubscription } from './mocks';
 
 describe('JSON Parsing in Broadcasts', () => {
   let adapter: SupabaseBroadcastAdapter;
@@ -11,21 +11,21 @@ describe('JSON Parsing in Broadcasts', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    
+
     const { client, mocks } = mockSupabase();
     mockChannelSubscription(mocks);
-    
+
     adapter = new SupabaseBroadcastAdapter(client);
-    
+
     // Set up event handlers to capture parsed events
     stepEventHandler = vi.fn();
     runEventHandler = vi.fn();
     adapter.onStepEvent(stepEventHandler);
     adapter.onRunEvent(runEventHandler);
-    
+
     // Subscribe to a run to configure the channel
     await adapter.subscribeToRun('test-run-id');
-    
+
     // Get the broadcast callback for triggering events
     broadcastCallback = mocks.channel.handlers.get('*');
   });
@@ -35,7 +35,7 @@ describe('JSON Parsing in Broadcasts', () => {
       const complexOutput = {
         result: 'success',
         data: { count: 42, items: ['a', 'b', 'c'] },
-        metadata: { timestamp: '2024-01-01T00:00:00Z' }
+        metadata: { timestamp: '2024-01-01T00:00:00Z' },
       };
 
       // Simulate broadcast with JSON string output (as sent by realtime.send)
@@ -47,8 +47,8 @@ describe('JSON Parsing in Broadcasts', () => {
           step_slug: 'simple_step',
           status: 'completed',
           output: JSON.stringify(complexOutput), // Realtime sends this as string
-          completed_at: '2024-01-01T00:00:00Z'
-        }
+          completed_at: '2024-01-01T00:00:00Z',
+        },
       };
 
       // Trigger the broadcast callback (simulating Supabase realtime)
@@ -61,7 +61,7 @@ describe('JSON Parsing in Broadcasts', () => {
         step_slug: 'simple_step',
         status: 'completed',
         output: complexOutput, // Should be parsed object
-        completed_at: '2024-01-01T00:00:00Z'
+        completed_at: '2024-01-01T00:00:00Z',
       });
     });
 
@@ -75,8 +75,8 @@ describe('JSON Parsing in Broadcasts', () => {
           step_slug: 'simple_step',
           status: 'completed',
           output: 'plain text output', // Not JSON
-          completed_at: '2024-01-01T00:00:00Z'
-        }
+          completed_at: '2024-01-01T00:00:00Z',
+        },
       };
 
       // Trigger the broadcast callback (simulating Supabase realtime)
@@ -89,7 +89,7 @@ describe('JSON Parsing in Broadcasts', () => {
         step_slug: 'simple_step',
         status: 'completed',
         output: 'plain text output', // Should remain as string
-        completed_at: '2024-01-01T00:00:00Z'
+        completed_at: '2024-01-01T00:00:00Z',
       });
     });
 
@@ -105,8 +105,8 @@ describe('JSON Parsing in Broadcasts', () => {
           step_slug: 'simple_step',
           status: 'completed',
           output: objectOutput, // Already an object
-          completed_at: '2024-01-01T00:00:00Z'
-        }
+          completed_at: '2024-01-01T00:00:00Z',
+        },
       };
 
       // Trigger the broadcast callback (simulating Supabase realtime)
@@ -119,7 +119,7 @@ describe('JSON Parsing in Broadcasts', () => {
         step_slug: 'simple_step',
         status: 'completed',
         output: objectOutput, // Should remain as object
-        completed_at: '2024-01-01T00:00:00Z'
+        completed_at: '2024-01-01T00:00:00Z',
       });
     });
   });
@@ -129,7 +129,7 @@ describe('JSON Parsing in Broadcasts', () => {
       const complexInput = {
         url: 'https://example.com',
         options: { timeout: 30000, retries: 3 },
-        metadata: { user_id: 123 }
+        metadata: { user_id: 123 },
       };
 
       // Simulate broadcast with JSON string input
@@ -141,8 +141,8 @@ describe('JSON Parsing in Broadcasts', () => {
           input: JSON.stringify(complexInput), // Realtime sends this as string
           status: 'started',
           started_at: '2024-01-01T00:00:00Z',
-          remaining_steps: 3
-        }
+          remaining_steps: 3,
+        },
       };
 
       // Trigger the broadcast callback (simulating Supabase realtime)
@@ -155,7 +155,7 @@ describe('JSON Parsing in Broadcasts', () => {
         input: complexInput, // Should be parsed object
         status: 'started',
         started_at: '2024-01-01T00:00:00Z',
-        remaining_steps: 3
+        remaining_steps: 3,
       });
     });
 
@@ -163,7 +163,7 @@ describe('JSON Parsing in Broadcasts', () => {
       const complexOutput = {
         final_result: 'success',
         steps_completed: 5,
-        summary: { total_time: '10.5s', errors: 0 }
+        summary: { total_time: '10.5s', errors: 0 },
       };
 
       // Simulate broadcast with JSON string output
@@ -173,8 +173,8 @@ describe('JSON Parsing in Broadcasts', () => {
           run_id: 'test-run-id',
           output: JSON.stringify(complexOutput), // Realtime sends this as string
           status: 'completed',
-          completed_at: '2024-01-01T00:00:00Z'
-        }
+          completed_at: '2024-01-01T00:00:00Z',
+        },
       };
 
       // Trigger the broadcast callback (simulating Supabase realtime)
@@ -185,7 +185,7 @@ describe('JSON Parsing in Broadcasts', () => {
         run_id: 'test-run-id',
         output: complexOutput, // Should be parsed object
         status: 'completed',
-        completed_at: '2024-01-01T00:00:00Z'
+        completed_at: '2024-01-01T00:00:00Z',
       });
     });
   });
@@ -200,8 +200,8 @@ describe('JSON Parsing in Broadcasts', () => {
           step_slug: 'simple_step',
           status: 'completed',
           output: '{"malformed": json}', // Invalid JSON
-          completed_at: '2024-01-01T00:00:00Z'
-        }
+          completed_at: '2024-01-01T00:00:00Z',
+        },
       };
 
       // Should not throw error
@@ -216,7 +216,7 @@ describe('JSON Parsing in Broadcasts', () => {
         step_slug: 'simple_step',
         status: 'completed',
         output: '{"malformed": json}', // Should remain as original string
-        completed_at: '2024-01-01T00:00:00Z'
+        completed_at: '2024-01-01T00:00:00Z',
       });
     });
 
@@ -229,8 +229,8 @@ describe('JSON Parsing in Broadcasts', () => {
           step_slug: 'simple_step',
           status: 'completed',
           output: '', // Empty string
-          completed_at: '2024-01-01T00:00:00Z'
-        }
+          completed_at: '2024-01-01T00:00:00Z',
+        },
       };
 
       // Should not throw error
@@ -245,7 +245,7 @@ describe('JSON Parsing in Broadcasts', () => {
         step_slug: 'simple_step',
         status: 'completed',
         output: '', // Should remain as empty string
-        completed_at: '2024-01-01T00:00:00Z'
+        completed_at: '2024-01-01T00:00:00Z',
       });
     });
   });

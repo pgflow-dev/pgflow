@@ -235,7 +235,7 @@ describe('Flow Lifecycle Integration', () => {
         const retrievedRun = await pgflowClient.getRun(originalRun.run_id);
 
         expect(retrievedRun).toBeDefined();
-        expect(retrievedRun.run_id).toBe(originalRun.run_id);
+        expect(retrievedRun?.run_id).toBe(originalRun.run_id);
 
         // Verify step completion from database directly
         const stepTasks = await sql`
@@ -351,7 +351,9 @@ describe('Flow Lifecycle Integration', () => {
         const supabaseClient = createTestSupabaseClient();
         const pgflowClient = new PgflowClient(supabaseClient);
 
-        const customRunId = `12345678-1234-1234-1234-${Date.now().toString().slice(-12)}`;
+        const customRunId = `12345678-1234-1234-1234-${Date.now()
+          .toString()
+          .slice(-12)}`;
         const run = await pgflowClient.startFlow(
           testFlow.slug,
           { data: 'custom-id-test' },

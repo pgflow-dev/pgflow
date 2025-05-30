@@ -1,18 +1,27 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { PgflowClient } from '../../src/lib/PgflowClient';
-import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types';
-import { mockSupabase, resetMocks, mockChannelSubscription } from '../mocks';
+import { PgflowClient } from '../src/lib/PgflowClient';
+import {
+  FlowRunStatus,
+  FlowStepStatus,
+  type FlowRunEvent,
+  type StepEvent,
+} from '../src/lib/types';
+import { Flow } from '@pgflow/dsl';
+
+// Create a test flow for proper typing
+const TestFlow = new Flow<{ test: string }>({ slug: 'test-flow' })
+  .step({ slug: 'test-step' }, (input) => ({ result: input.run.test }));
+import { mockSupabase, resetMocks, mockChannelSubscription } from './mocks';
 import {
   RUN_ID,
   FLOW_SLUG,
   STEP_SLUG,
-  ANOTHER_STEP_SLUG,
   startedRunSnapshot,
   broadcastStepStarted,
   broadcastStepCompleted,
   broadcastRunCompleted,
   stepStatesSample,
-} from '../fixtures';
+} from './fixtures';
 
 // Mock uuid to return predictable IDs
 vi.mock('uuid', () => ({
@@ -32,11 +41,11 @@ describe('Concurrent Operations', () => {
   describe('Concurrent startFlow operations', () => {
     it('handles multiple concurrent startFlow calls successfully', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       mockChannelSubscription(mocks);
-      
+
       const pgflowClient = new PgflowClient(client);
-      
+
       const flow1Input = { data: 'flow1' };
       const flow2Input = { data: 'flow2' };
       const flow3Input = { data: 'flow3' };
@@ -44,28 +53,42 @@ describe('Concurrent Operations', () => {
       // Mock uuid to return different IDs for each call
       let callCount = 0;
       const runIds = ['run1', 'run2', 'run3'];
-      vi.mocked((await import('uuid')).v4).mockImplementation(() => runIds[callCount++]);
+      vi.mocked((await import('uuid')).v4).mockImplementation(
+        () => runIds[callCount++]
+      );
 
       // Setup RPC responses for all three flows
       mocks.rpc
         .mockReturnValueOnce({
           data: {
-            run: { ...startedRunSnapshot, run_id: runIds[0], input: flow1Input },
-            steps: stepStatesSample.map(s => ({ ...s, run_id: runIds[0] })),
+            run: {
+              ...startedRunSnapshot,
+              run_id: runIds[0],
+              input: flow1Input,
+            },
+            steps: stepStatesSample.map((s) => ({ ...s, run_id: runIds[0] })),
           },
           error: null,
         })
         .mockReturnValueOnce({
           data: {
-            run: { ...startedRunSnapshot, run_id: runIds[1], input: flow2Input },
-            steps: stepStatesSample.map(s => ({ ...s, run_id: runIds[1] })),
+            run: {
+              ...startedRunSnapshot,
+              run_id: runIds[1],
+              input: flow2Input,
+            },
+            steps: stepStatesSample.map((s) => ({ ...s, run_id: runIds[1] })),
           },
           error: null,
         })
         .mockReturnValueOnce({
           data: {
-            run: { ...startedRunSnapshot, run_id: runIds[2], input: flow3Input },
-            steps: stepStatesSample.map(s => ({ ...s, run_id: runIds[2] })),
+            run: {
+              ...startedRunSnapshot,
+              run_id: runIds[2],
+              input: flow3Input,
+            },
+            steps: stepStatesSample.map((s) => ({ ...s, run_id: runIds[2] })),
           },
           error: null,
         });
@@ -96,19 +119,23 @@ describe('Concurrent Operations', () => {
 
     it('handles same run_id being used multiple times', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       mockChannelSubscription(mocks);
-      
+
       const pgflowClient = new PgflowClient(client);
-      
+
       const sharedRunId = '444e4567-e89b-12d3-a456-426614174000';
       const sharedInput = { shared: 'data' };
 
       // Setup RPC to return the same response
       const rpcResponse = {
         data: {
-          run: { ...startedRunSnapshot, run_id: sharedRunId, input: sharedInput },
-          steps: stepStatesSample.map(s => ({ ...s, run_id: sharedRunId })),
+          run: {
+            ...startedRunSnapshot,
+            run_id: sharedRunId,
+            input: sharedInput,
+          },
+          steps: stepStatesSample.map((s) => ({ ...s, run_id: sharedRunId })),
         },
         error: null,
       };
@@ -128,7 +155,7 @@ describe('Concurrent Operations', () => {
       expect(run2.run_id).toBe(sharedRunId);
       expect(run1.input).toEqual(sharedInput);
       expect(run2.input).toEqual(sharedInput);
-      
+
       // Both should be in correct state
       expect(run1.status).toBe(FlowRunStatus.Started);
       expect(run2.status).toBe(FlowRunStatus.Started);
@@ -138,11 +165,11 @@ describe('Concurrent Operations', () => {
   describe('Event forwarding', () => {
     it('forwards run events through the client', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       mockChannelSubscription(mocks);
-      
+
       const pgflowClient = new PgflowClient(client);
-      
+
       // Set up a run
       mocks.rpc.mockReturnValueOnce({
         data: {
@@ -151,17 +178,23 @@ describe('Concurrent Operations', () => {
         },
         error: null,
       });
-      
-      const run = await pgflowClient.getRun(RUN_ID);
-      
+
+      const run = await pgflowClient.getRun<typeof TestFlow>(RUN_ID);
+      if (!run) throw new Error('Run not found');
+
       // Track events on the run
       const runEvents: string[] = [];
-      run.on('*', (event) => runEvents.push(event.event_type));
-      
+      run.on('*', (event) =>
+        runEvents.push(event.event_type)
+      );
+
       // Get the broadcast handler and emit event
       const broadcastHandler = mocks.channel.handlers.get('*');
-      broadcastHandler?.({ event: 'run:completed', payload: broadcastRunCompleted });
-      
+      broadcastHandler?.({
+        event: 'run:completed',
+        payload: broadcastRunCompleted,
+      });
+
       // Verify event was received
       expect(runEvents).toEqual(['run:completed']);
       expect(run.status).toBe(FlowRunStatus.Completed);
@@ -169,11 +202,11 @@ describe('Concurrent Operations', () => {
 
     it('forwards step events through the client', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       mockChannelSubscription(mocks);
-      
+
       const pgflowClient = new PgflowClient(client);
-      
+
       // Set up a run
       mocks.rpc.mockReturnValueOnce({
         data: {
@@ -182,19 +215,29 @@ describe('Concurrent Operations', () => {
         },
         error: null,
       });
-      
-      const run = await pgflowClient.getRun(RUN_ID);
+
+      const run = await pgflowClient.getRun<typeof TestFlow>(RUN_ID);
+      if (!run) throw new Error('Run not found');
+
       const step = run.step(STEP_SLUG);
-      
+
       // Track events on the step
       const stepEvents: string[] = [];
-      step.on('*', (event) => stepEvents.push(event.event_type));
-      
+      step.on('*', (event) =>
+        stepEvents.push(event.event_type)
+      );
+
       // Get the broadcast handler and emit events
       const broadcastHandler = mocks.channel.handlers.get('*');
-      broadcastHandler?.({ event: 'step:started', payload: broadcastStepStarted });
-      broadcastHandler?.({ event: 'step:completed', payload: broadcastStepCompleted });
-      
+      broadcastHandler?.({
+        event: 'step:started',
+        payload: broadcastStepStarted,
+      });
+      broadcastHandler?.({
+        event: 'step:completed',
+        payload: broadcastStepCompleted,
+      });
+
       // Verify events were received (step was already started, so only completed event is processed)
       expect(stepEvents).toEqual(['step:completed']);
       expect(step.status).toBe(FlowStepStatus.Completed);
@@ -202,11 +245,11 @@ describe('Concurrent Operations', () => {
 
     it('ignores events with wrong run_id', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       mockChannelSubscription(mocks);
-      
+
       const pgflowClient = new PgflowClient(client);
-      
+
       // Set up a run
       mocks.rpc.mockReturnValueOnce({
         data: {
@@ -215,20 +258,23 @@ describe('Concurrent Operations', () => {
         },
         error: null,
       });
-      
-      const run = await pgflowClient.getRun(RUN_ID);
-      
+
+      const run = await pgflowClient.getRun<typeof TestFlow>(RUN_ID);
+      if (!run) throw new Error('Run not found');
+
       // Track events
       const events: string[] = [];
-      run.on('*', (event) => events.push(event.event_type));
-      
+      run.on('*', (event) =>
+        events.push(event.event_type)
+      );
+
       // Emit event with different run_id
       const broadcastHandler = mocks.channel.handlers.get('*');
-      broadcastHandler?.({ 
-        event: 'run:completed', 
-        payload: { ...broadcastRunCompleted, run_id: 'different-id' } 
+      broadcastHandler?.({
+        event: 'run:completed',
+        payload: { ...broadcastRunCompleted, run_id: 'different-id' },
       });
-      
+
       // Should not receive event
       expect(events).toEqual([]);
       expect(run.status).toBe(FlowRunStatus.Started);
@@ -238,11 +284,11 @@ describe('Concurrent Operations', () => {
   describe('Error handling', () => {
     it('handles RPC errors during concurrent operations', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       mockChannelSubscription(mocks);
-      
+
       const pgflowClient = new PgflowClient(client);
-      
+
       // First call succeeds, second fails
       mocks.rpc
         .mockReturnValueOnce({

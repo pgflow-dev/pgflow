@@ -1,13 +1,13 @@
 import { createNanoEvents } from 'nanoevents';
 import type { AnyFlow, ExtractFlowSteps, StepOutput } from '@pgflow/dsl';
-import { FlowStepStatus } from './types';
+import { FlowStepStatus } from './types.js';
 import type { 
   FlowStepState, 
   StepEvents, 
   Unsubscribe, 
   FlowStepBase,
   StepEvent
-} from './types';
+} from './types.js';
 
 /**
  * Represents a single step in a flow run

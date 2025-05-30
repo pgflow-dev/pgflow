@@ -1,6 +1,18 @@
-import type { AnyFlow, ExtractFlowInput, ExtractFlowOutput, ExtractFlowSteps, StepOutput } from '@pgflow/dsl';
-import type { Json, RunRow, StepStateRow, FlowRow, StepRow } from '@pgflow/core';
-import type { FlowRun } from './FlowRun';
+import type {
+  AnyFlow,
+  ExtractFlowInput,
+  ExtractFlowOutput,
+  ExtractFlowSteps,
+  StepOutput,
+} from '@pgflow/dsl';
+import type {
+  Json,
+  RunRow,
+  StepStateRow,
+  FlowRow,
+  StepRow,
+} from '@pgflow/core';
+import type { FlowRun } from './FlowRun.js';
 
 /**
  * Flow run status enum
@@ -8,14 +20,15 @@ import type { FlowRun } from './FlowRun';
 export enum FlowRunStatus {
   Started = 'started',
   Completed = 'completed',
-  Failed = 'failed'
+  Failed = 'failed',
 }
 
 /**
- * Flow run event data types - individual event shapes
+ * Flow run event data types - individual event shapes (no circular reference)
  */
 export type FlowRunEventData<TFlow extends AnyFlow> = {
   started: {
+    event_type: 'run:started';
     run_id: string;
     flow_slug: string;
     input: ExtractFlowInput<TFlow>;
@@ -24,33 +37,35 @@ export type FlowRunEventData<TFlow extends AnyFlow> = {
     remaining_steps: number;
   };
   completed: {
+    event_type: 'run:completed';
     run_id: string;
+    flow_slug: string;
     output: ExtractFlowOutput<TFlow>;
     status: FlowRunStatus.Completed;
     completed_at: string;
   };
-  failed: { 
-    run_id: string; 
-    error_message: string; 
+  failed: {
+    event_type: 'run:failed';
+    run_id: string;
+    flow_slug: string;
+    error_message: string;
     status: FlowRunStatus.Failed;
     failed_at: string;
   };
-  // General event type that includes all events with type union
-  '*': FlowRunEvent<TFlow>;
 };
 
 /**
- * Strong discriminated union for all flow run events
+ * Strong discriminated union for all flow run events (no circular reference)
  */
-export type FlowRunEvent<TFlow extends AnyFlow> = 
-  | FlowRunEventData<TFlow>['started'] 
-  | FlowRunEventData<TFlow>['completed']
-  | FlowRunEventData<TFlow>['failed'];
+export type FlowRunEvent<TFlow extends AnyFlow> =
+  FlowRunEventData<TFlow>[keyof FlowRunEventData<TFlow>];
 
 /**
  * Type guard to check if an unknown value is a valid FlowRunEvent
  */
-export function isFlowRunEvent<TFlow extends AnyFlow>(value: unknown): value is FlowRunEvent<TFlow> {
+export function isFlowRunEvent<TFlow extends AnyFlow>(
+  value: unknown
+): value is FlowRunEvent<TFlow> {
   return (
     !!value &&
     typeof value === 'object' &&
@@ -58,11 +73,9 @@ export function isFlowRunEvent<TFlow extends AnyFlow>(value: unknown): value is 
     'flow_slug' in value &&
     !('step_slug' in value) &&
     'status' in value &&
-    (
-      value.status === FlowRunStatus.Started ||
+    (value.status === FlowRunStatus.Started ||
       value.status === FlowRunStatus.Completed ||
-      value.status === FlowRunStatus.Failed
-    )
+      value.status === FlowRunStatus.Failed)
   );
 }
 
@@ -94,10 +107,14 @@ export function isFlowRunFailedEvent<TFlow extends AnyFlow>(
 }
 
 /**
- * Flow run event types matching nanoevents expectations
+ * Flow run event types matching nanoevents expectations (wildcard added separately)
  */
 export type FlowRunEvents<TFlow extends AnyFlow> = {
-  [K in keyof FlowRunEventData<TFlow>]: (event: FlowRunEventData<TFlow>[K]) => void;
+  [K in keyof FlowRunEventData<TFlow>]: (
+    event: FlowRunEventData<TFlow>[K]
+  ) => void;
+} & {
+  '*': (event: FlowRunEvent<TFlow>) => void;
 };
 
 /**
@@ -107,23 +124,25 @@ export enum FlowStepStatus {
   Created = 'created',
   Started = 'started',
   Completed = 'completed',
-  Failed = 'failed'
+  Failed = 'failed',
 }
 
 /**
- * Step event data types
+ * Step event data types (no circular reference)
  */
 export type StepEventData<
   TFlow extends AnyFlow,
   TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
 > = {
-  started: { 
-    run_id: string; 
-    step_slug: TStepSlug; 
+  started: {
+    event_type: 'step:started';
+    run_id: string;
+    step_slug: TStepSlug;
     status: FlowStepStatus.Started;
     started_at: string;
   };
   completed: {
+    event_type: 'step:completed';
     run_id: string;
     step_slug: TStepSlug;
     output: StepOutput<TFlow, TStepSlug>;
@@ -131,26 +150,22 @@ export type StepEventData<
     completed_at: string;
   };
   failed: {
+    event_type: 'step:failed';
     run_id: string;
     step_slug: TStepSlug;
     error_message: string;
     status: FlowStepStatus.Failed;
     failed_at: string;
   };
-  // General event type that includes the discriminated union
-  '*': StepEvent<TFlow, TStepSlug>;
 };
 
 /**
- * Strong discriminated union for all step events
+ * Strong discriminated union for all step events (no circular reference)
  */
 export type StepEvent<
   TFlow extends AnyFlow,
   TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
-> = 
-  | StepEventData<TFlow, TStepSlug>['started']
-  | StepEventData<TFlow, TStepSlug>['completed']
-  | StepEventData<TFlow, TStepSlug>['failed'];
+> = StepEventData<TFlow, TStepSlug>[keyof StepEventData<TFlow, TStepSlug>];
 
 /**
  * Type guard to check if an unknown value is a valid StepEvent
@@ -165,11 +180,9 @@ export function isStepEvent<
     'run_id' in value &&
     'step_slug' in value &&
     'status' in value &&
-    (
-      value.status === FlowStepStatus.Started ||
+    (value.status === FlowStepStatus.Started ||
       value.status === FlowStepStatus.Completed ||
-      value.status === FlowStepStatus.Failed
-    )
+      value.status === FlowStepStatus.Failed)
   );
 }
 
@@ -179,9 +192,7 @@ export function isStepEvent<
 export function isStepStartedEvent<
   TFlow extends AnyFlow,
   TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
->(
-  event: unknown
-): event is StepEventData<TFlow, TStepSlug>['started'] {
+>(event: unknown): event is StepEventData<TFlow, TStepSlug>['started'] {
   return (
     isStepEvent<TFlow, TStepSlug>(event) &&
     event.status === FlowStepStatus.Started &&
@@ -196,9 +207,7 @@ export function isStepStartedEvent<
 export function isStepCompletedEvent<
   TFlow extends AnyFlow,
   TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
->(
-  event: unknown
-): event is StepEventData<TFlow, TStepSlug>['completed'] {
+>(event: unknown): event is StepEventData<TFlow, TStepSlug>['completed'] {
   return (
     isStepEvent<TFlow, TStepSlug>(event) &&
     event.status === FlowStepStatus.Completed &&
@@ -213,9 +222,7 @@ export function isStepCompletedEvent<
 export function isStepFailedEvent<
   TFlow extends AnyFlow,
   TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
->(
-  event: unknown
-): event is StepEventData<TFlow, TStepSlug>['failed'] {
+>(event: unknown): event is StepEventData<TFlow, TStepSlug>['failed'] {
   return (
     isStepEvent<TFlow, TStepSlug>(event) &&
     event.status === FlowStepStatus.Failed &&
@@ -225,14 +232,17 @@ export function isStepFailedEvent<
 }
 
 /**
- * Step event types matching nanoevents expectations
+ * Step event types matching nanoevents expectations (wildcard added separately)
  */
 export type StepEvents<
   TFlow extends AnyFlow,
   TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
 > = {
-  [K in keyof StepEventData<TFlow, TStepSlug>]: 
-    (event: StepEventData<TFlow, TStepSlug>[K]) => void;
+  [K in keyof StepEventData<TFlow, TStepSlug>]: (
+    event: StepEventData<TFlow, TStepSlug>[K]
+  ) => void;
+} & {
+  '*': (event: StepEvent<TFlow, TStepSlug>) => void;
 };
 
 /**
@@ -273,7 +283,7 @@ export type BroadcastRunFailedEvent = {
   failed_at: string;
 };
 
-export type BroadcastRunEvent = 
+export type BroadcastRunEvent =
   | BroadcastRunStartedEvent
   | BroadcastRunCompletedEvent
   | BroadcastRunFailedEvent;
@@ -313,7 +323,7 @@ export type BroadcastStepFailedEvent = {
   output?: Json; // Adding for type compatibility
 };
 
-export type BroadcastStepEvent = 
+export type BroadcastStepEvent =
   | BroadcastStepStartedEvent
   | BroadcastStepCompletedEvent
   | BroadcastStepFailedEvent;
@@ -338,7 +348,10 @@ export type FlowRunState<TFlow extends AnyFlow> = {
 /**
  * Flow step state
  */
-export type FlowStepState<TFlow extends AnyFlow, TStepSlug extends keyof ExtractFlowSteps<TFlow> & string> = {
+export type FlowStepState<
+  TFlow extends AnyFlow,
+  TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
+> = {
   run_id: string;
   step_slug: TStepSlug;
   status: FlowStepStatus;
@@ -378,12 +391,14 @@ export interface IFlowRealtime<TFlow = unknown> {
   /**
    * Subscribe to a flow run's events
    */
-  subscribeToRun(run_id: string): () => void;
+  subscribeToRun(run_id: string): Promise<Unsubscribe>;
 
   /**
    * Fetch current state of a run and its steps
    */
-  getRunWithStates(run_id: string): Promise<{ run: RunRow; steps: StepStateRow[] }>;
+  getRunWithStates(
+    run_id: string
+  ): Promise<{ run: RunRow; steps: StepStateRow[] }>;
 }
 
 /**
@@ -412,10 +427,11 @@ export type BroadcastEvent = BroadcastRunEvent | BroadcastStepEvent;
 /**
  * Composite interface for client
  */
-export interface IFlowClient<TFlow extends AnyFlow = AnyFlow> extends IFlowRealtime<TFlow> {
+export interface IFlowClient<TFlow extends AnyFlow = AnyFlow>
+  extends IFlowRealtime<TFlow> {
   /**
    * Start a flow with optional run_id
-   * 
+   *
    * @param flow_slug - Flow slug to start
    * @param input - Input data for the flow
    * @param run_id - Optional run ID (will be generated if not provided)
@@ -426,12 +442,14 @@ export interface IFlowClient<TFlow extends AnyFlow = AnyFlow> extends IFlowRealt
     input: ExtractFlowInput<TSpecificFlow>,
     run_id?: string
   ): Promise<FlowRun<TSpecificFlow>>;
-  
+
   /**
    * Get a flow run by ID
-   * 
+   *
    * @param run_id - ID of the run to get
    * @returns Promise that resolves with the FlowRun instance or null if not found
    */
-  getRun<TSpecificFlow extends TFlow = TFlow>(run_id: string): Promise<FlowRun<TSpecificFlow> | null>;
+  getRun<TSpecificFlow extends TFlow = TFlow>(
+    run_id: string
+  ): Promise<FlowRun<TSpecificFlow> | null>;
 }

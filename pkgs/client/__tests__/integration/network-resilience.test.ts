@@ -4,7 +4,7 @@ import { createTestSupabaseClient } from '../helpers/setup.js';
 import { createTestFlow } from '../helpers/fixtures.js';
 import { grantMinimalPgflowPermissions } from '../helpers/permissions.js';
 import { PgflowClient } from '../../src/lib/PgflowClient.js';
-import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types.js';
+import { FlowStepStatus } from '../../src/lib/types.js';
 import { PgflowSqlClient } from '../../../core/src/PgflowSqlClient.js';
 
 describe('Network Resilience Tests', () => {
@@ -39,7 +39,7 @@ describe('Network Resilience Tests', () => {
       });
 
       // Give subscription time to establish
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       // Complete first step before disconnection
       let tasks = await sqlClient.pollForTasks(testFlow.slug, 1, 5, 200, 30);
@@ -50,15 +50,17 @@ describe('Network Resilience Tests', () => {
       await sqlClient.completeTask(tasks[0], stepOneOutput);
 
       const stepOne = run.step('step_one');
-      await stepOne.waitForStatus(FlowStepStatus.Completed, { timeoutMs: 5000 });
+      await stepOne.waitForStatus(FlowStepStatus.Completed, {
+        timeoutMs: 5000,
+      });
       expect(stepOne.status).toBe(FlowStepStatus.Completed);
 
       // Simulate network disconnection by unsubscribing from all channels
       console.log('=== Simulating network disconnection ===');
       await supabaseClient.removeAllChannels();
-      
+
       // Wait a bit to ensure disconnection
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Complete second step while disconnected
       tasks = await sqlClient.pollForTasks(testFlow.slug, 1, 5, 200, 30);
@@ -72,7 +74,7 @@ describe('Network Resilience Tests', () => {
       console.log('=== Simulating reconnection ===');
       const reconnectedRun = await pgflowClient.getRun(run.run_id);
       expect(reconnectedRun).toBeTruthy();
-      
+
       if (!reconnectedRun) {
         throw new Error('Failed to retrieve run after reconnection');
       }
@@ -85,23 +87,24 @@ describe('Network Resilience Tests', () => {
 
       // Check database state directly to verify completion (bypass realtime dependency)
       // Wait a bit for async operations to complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const runState = await sql`SELECT status FROM pgflow.runs WHERE run_id = ${reconnectedRun.run_id}::uuid`;
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const runState =
+        await sql`SELECT status FROM pgflow.runs WHERE run_id = ${reconnectedRun.run_id}::uuid`;
       expect(runState[0].status).toBe('completed');
 
       // Verify final state by checking database directly (more reliable than realtime events)
       const dbState = await sql`
-        SELECT step_slug, status, output FROM pgflow.step_tasks 
-        WHERE run_id = ${reconnectedRun.run_id}::uuid 
+        SELECT step_slug, status, output FROM pgflow.step_tasks
+        WHERE run_id = ${reconnectedRun.run_id}::uuid
         ORDER BY step_slug
       `;
-      
+
       expect(dbState).toHaveLength(2);
       expect(dbState[0].step_slug).toBe('step_one');
       expect(dbState[0].status).toBe('completed');
       expect(dbState[0].output).toEqual(stepOneOutput);
-      
+
       expect(dbState[1].step_slug).toBe('step_two');
       expect(dbState[1].status).toBe('completed');
       expect(dbState[1].output).toEqual(stepTwoOutput);
@@ -129,7 +132,7 @@ describe('Network Resilience Tests', () => {
 
       // Track subscription status changes
       const connectionEvents: string[] = [];
-      
+
       const input = { data: 'subscription-test' };
       const run = await pgflowClient.startFlow(testFlow.slug, input);
 
@@ -143,7 +146,7 @@ describe('Network Resilience Tests', () => {
       }
 
       // Give subscription time to establish
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       // Complete step while monitoring connection
       const tasks = await sqlClient.pollForTasks(testFlow.slug, 1, 5, 200, 30);
@@ -184,16 +187,16 @@ describe('Network Resilience Tests', () => {
       // Simulate poor network by introducing delays and multiple reconnections
       for (let i = 0; i < 3; i++) {
         console.log(`=== Connection cycle ${i + 1} ===`);
-        
+
         // Short connection period
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
         // Disconnect
         await supabaseClient.removeAllChannels();
-        
+
         // Short disconnection period
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
+        await new Promise((resolve) => setTimeout(resolve, 200));
+
         // Reconnect by getting run again
         const tempRun = await pgflowClient.getRun(run.run_id);
         expect(tempRun).toBeTruthy();
@@ -209,24 +212,25 @@ describe('Network Resilience Tests', () => {
       // Get fresh run instance and verify consistency
       const finalRun = await pgflowClient.getRun(run.run_id);
       expect(finalRun).toBeTruthy();
-      
+
       if (!finalRun) {
         throw new Error('Failed to retrieve run after network instability');
       }
 
       // Check database state directly to verify completion (bypass realtime dependency)
       // Wait a bit for async operations to complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const runState = await sql`SELECT status FROM pgflow.runs WHERE run_id = ${finalRun.run_id}::uuid`;
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const runState =
+        await sql`SELECT status FROM pgflow.runs WHERE run_id = ${finalRun.run_id}::uuid`;
       expect(runState[0].status).toBe('completed');
-      
+
       // Verify final state by checking database directly
       const dbState = await sql`
-        SELECT status, output FROM pgflow.step_tasks 
+        SELECT status, output FROM pgflow.step_tasks
         WHERE run_id = ${finalRun.run_id}::uuid AND step_slug = 'network_step'
       `;
-      
+
       expect(dbState).toHaveLength(1);
       expect(dbState[0].status).toBe('completed');
       expect(dbState[0].output).toEqual(stepOutput);

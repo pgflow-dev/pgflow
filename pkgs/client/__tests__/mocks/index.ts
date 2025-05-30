@@ -1,7 +1,14 @@
 import { vi } from 'vitest';
-import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
-import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types';
-import type { BroadcastRunEvent, BroadcastStepEvent } from '../../src/lib/types';
+import type { Mock } from 'vitest';
+import type {
+  RealtimeChannel,
+  SupabaseClient,
+  RealtimeChannelOptions,
+} from '@supabase/supabase-js';
+import type {
+  BroadcastRunEvent,
+  BroadcastStepEvent,
+} from '../../src/lib/types';
 
 /**
  * Global state for singleton/shared test state
@@ -28,9 +35,38 @@ const globalTestState: GlobalTestState = {
 };
 
 /**
+ * Supabase client type with mock channel for proper typing
+ */
+type SupabaseClientWithMockChannel = SupabaseClient & {
+  channel: Mock<[name: string, opts?: RealtimeChannelOptions], RealtimeChannel>;
+};
+
+/**
+ * Helper to create a setTimeout-compatible mock function
+ */
+export function createMockSchedule() {
+  const calls: Array<{ delay: number; callback: () => void }> = [];
+
+  const impl = (cb: () => void, delay: number) => {
+    calls.push({ delay, callback: cb });
+    return setTimeout(cb, delay);
+  };
+
+  // Create spy and add missing __promisify__ property
+  const spy = Object.assign(vi.fn(impl), {
+    __promisify__: vi.fn(),
+  }) as unknown as typeof setTimeout;
+
+  return { spy, calls };
+}
+
+/**
  * Fully mocked Supabase client with tracked calls
  */
-export function mockSupabase(): { client: SupabaseClient; mocks: Record<string, any> } {
+export function mockSupabase(): {
+  client: SupabaseClientWithMockChannel;
+  mocks: Record<string, any>;
+} {
   // Create an RPC mock returning response with data and error properties
   const rpcMock = vi.fn().mockReturnValue({
     data: null,
@@ -77,7 +113,7 @@ export function mockSupabase(): { client: SupabaseClient; mocks: Record<string, 
 
   // Create the from function that will be called multiple times
   const fromMock = vi.fn().mockReturnValue(queryBuilderMock);
-  
+
   // Create a schema function that returns the query builder
   const schemaMock = vi.fn().mockReturnValue({
     rpc: rpcMock,
@@ -87,21 +123,33 @@ export function mockSupabase(): { client: SupabaseClient; mocks: Record<string, 
   // Create a channel mock
   const channelMock = mockRealtimeChannel();
 
+  // Create channel spy with proper typing
+  const channelSpy = vi
+    .fn<[string, RealtimeChannelOptions?], RealtimeChannel>()
+    .mockReturnValue(channelMock.channel);
+
   // Actual client mock
   const supabaseMock = {
     schema: schemaMock,
-    channel: vi.fn().mockReturnValue(channelMock.channel),
+    channel: channelSpy,
     // Add common Supabase methods that might be used in other parts of the client
     auth: {
-      getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'test-user-id' } }, error: null }),
+      getUser: vi.fn().mockResolvedValue({
+        data: { user: { id: 'test-user-id' } },
+        error: null,
+      }),
     },
     storage: {
       from: vi.fn().mockReturnValue({
-        upload: vi.fn().mockResolvedValue({ data: { path: 'test-file-path' }, error: null }),
-        download: vi.fn().mockResolvedValue({ data: new Blob(), error: null }),
+        upload: vi
+          .fn()
+          .mockResolvedValue({ data: { path: 'test-file-path' }, error: null }),
+        download: vi
+          .fn()
+          .mockResolvedValue({ data: new Blob([], {}), error: null }),
       }),
     },
-  } as unknown as SupabaseClient;
+  } as unknown as SupabaseClientWithMockChannel;
 
   return {
     client: supabaseMock,
@@ -119,8 +167,8 @@ export function mockSupabase(): { client: SupabaseClient; mocks: Record<string, 
  * Creates a mock for the Supabase Realtime Channel
  * Allows tracking broadcast messages and system events
  */
-export function mockRealtimeChannel(): { 
-  channel: RealtimeChannel; 
+export function mockRealtimeChannel(): {
+  channel: RealtimeChannel;
   handlers: Map<string, (payload: any) => void>;
   systemHandlers: Map<string, (payload: any) => void>;
   sendBroadcast: (eventType: string, payload: any) => void;
@@ -132,31 +180,36 @@ export function mockRealtimeChannel(): {
 
   // Create mock channel with defined behaviors
   const channelMock = {} as any;
-  
+
   // Define methods - handle both 2-arg and 3-arg forms
-  channelMock.on = vi.fn().mockImplementation((type, eventOrCallback, maybeHandler) => {
-    if (type === 'broadcast') {
-      if (typeof eventOrCallback === 'function') {
-        // 2-argument form: type, callback
-        handlers.set('*', eventOrCallback);
-      } else if (typeof eventOrCallback === 'object' && maybeHandler) {
-        // 3-argument form: type, { event }, handler
-        handlers.set(eventOrCallback.event, maybeHandler);
+  channelMock.on = vi
+    .fn()
+    .mockImplementation((type, eventOrCallback, maybeHandler) => {
+      if (type === 'broadcast') {
+        if (typeof eventOrCallback === 'function') {
+          // 2-argument form: type, callback
+          handlers.set('*', eventOrCallback);
+        } else if (typeof eventOrCallback === 'object' && maybeHandler) {
+          // 3-argument form: type, { event }, handler
+          handlers.set(eventOrCallback.event, maybeHandler);
+        }
+      } else if (type === 'system') {
+        if (typeof eventOrCallback === 'function') {
+          // 2-argument form: type, callback for system events
+          systemHandlers.set('*', eventOrCallback);
+        } else if (typeof eventOrCallback === 'object' && maybeHandler) {
+          systemHandlers.set(eventOrCallback.event, maybeHandler);
+        } else if (
+          typeof eventOrCallback === 'string' &&
+          typeof maybeHandler === 'function'
+        ) {
+          // Direct event name as string
+          systemHandlers.set(eventOrCallback, maybeHandler);
+        }
       }
-    } else if (type === 'system') {
-      if (typeof eventOrCallback === 'function') {
-        // 2-argument form: type, callback for system events
-        systemHandlers.set('*', eventOrCallback);
-      } else if (typeof eventOrCallback === 'object' && maybeHandler) {
-        systemHandlers.set(eventOrCallback.event, maybeHandler);
-      } else if (typeof eventOrCallback === 'string' && typeof maybeHandler === 'function') {
-        // Direct event name as string
-        systemHandlers.set(eventOrCallback, maybeHandler);
-      }
-    }
-    return channelMock;
-  });
-  
+      return channelMock;
+    });
+
   // Track subscription state
   channelMock.subscribe = vi.fn().mockImplementation(() => {
     if (channelMock.channelName) {
@@ -188,9 +241,9 @@ export function mockRealtimeChannel(): {
     }
   };
 
-  return { 
-    channel: channelMock as RealtimeChannel, 
-    handlers, 
+  return {
+    channel: channelMock as RealtimeChannel,
+    handlers,
     systemHandlers,
     sendBroadcast,
     sendSystemEvent,
@@ -202,8 +255,8 @@ export function mockRealtimeChannel(): {
  * Automatically formats the payload with proper event_type
  */
 export function emitBroadcastEvent(
-  channelMock: any, 
-  eventType: string, 
+  channelMock: any,
+  eventType: string,
   payload: any
 ): void {
   const handler = channelMock.handlers.get('*');
@@ -220,11 +273,14 @@ export function emitBroadcastEvent(
 /**
  * Registers a mock callback for run events in the global state
  */
-export function registerRunEventCallback(callback: (event: BroadcastRunEvent) => void): () => void {
+export function registerRunEventCallback(
+  callback: (event: BroadcastRunEvent) => void
+): () => void {
   globalTestState.broadcastCallbacks.runEvents.push(callback);
-  
+
   return () => {
-    const index = globalTestState.broadcastCallbacks.runEvents.indexOf(callback);
+    const index =
+      globalTestState.broadcastCallbacks.runEvents.indexOf(callback);
     if (index !== -1) {
       globalTestState.broadcastCallbacks.runEvents.splice(index, 1);
     }
@@ -234,11 +290,14 @@ export function registerRunEventCallback(callback: (event: BroadcastRunEvent) =>
 /**
  * Registers a mock callback for step events in the global state
  */
-export function registerStepEventCallback(callback: (event: BroadcastStepEvent) => void): () => void {
+export function registerStepEventCallback(
+  callback: (event: BroadcastStepEvent) => void
+): () => void {
   globalTestState.broadcastCallbacks.stepEvents.push(callback);
-  
+
   return () => {
-    const index = globalTestState.broadcastCallbacks.stepEvents.indexOf(callback);
+    const index =
+      globalTestState.broadcastCallbacks.stepEvents.indexOf(callback);
     if (index !== -1) {
       globalTestState.broadcastCallbacks.stepEvents.splice(index, 1);
     }
@@ -249,19 +308,23 @@ export function registerStepEventCallback(callback: (event: BroadcastStepEvent) 
  * Triggers run event callbacks registered in the global state
  */
 export function triggerRunEvent(event: BroadcastRunEvent): void {
-  globalTestState.broadcastCallbacks.runEvents.forEach(callback => callback(event));
+  globalTestState.broadcastCallbacks.runEvents.forEach((callback) =>
+    callback(event)
+  );
 }
 
 /**
  * Triggers step event callbacks registered in the global state
  */
 export function triggerStepEvent(event: BroadcastStepEvent): void {
-  globalTestState.broadcastCallbacks.stepEvents.forEach(callback => callback(event));
+  globalTestState.broadcastCallbacks.stepEvents.forEach((callback) =>
+    callback(event)
+  );
 }
 
 /**
  * Helper to setup realistic channel subscription behavior for tests
- * 
+ *
  * @param mocks - The mocks object returned from mockSupabase()
  * @param options - Configuration options
  * @param options.delayMs - Delay before subscription succeeds (default: 0 for immediate)
@@ -276,7 +339,7 @@ export function mockChannelSubscription(
     failureMessage?: string;
   } = {}
 ): void {
-  const { delayMs = 0, shouldFail = false, failureMessage = 'Subscription failed' } = options;
+  const { delayMs = 0, shouldFail = false } = options;
 
   mocks.channel.channel.subscribe = vi.fn().mockImplementation((callback) => {
     if (callback) {
@@ -307,7 +370,7 @@ export function mockChannelSubscription(
 export function resetMocks(): void {
   vi.restoreAllMocks();
   vi.clearAllMocks();
-  
+
   // Clear global test state
   globalTestState.runs.clear();
   globalTestState.steps.clear();

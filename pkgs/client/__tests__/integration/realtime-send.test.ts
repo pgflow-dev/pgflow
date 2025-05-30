@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { withPgNoTransaction } from '../helpers/db.js';
 import { createTestSupabaseClient } from '../helpers/setup.js';
 
@@ -51,7 +51,7 @@ describe('Realtime Send Integration', () => {
       console.log('Sending broadcast via realtime.send()...');
       await sql`
         SELECT realtime.send(
-          ${dbPayload}::jsonb,
+          ${sql.json(dbPayload)}::jsonb,
           'test-sql-event',
           ${testChannel},
           false

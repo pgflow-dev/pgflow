@@ -3,7 +3,7 @@ import type { AnyFlow, ExtractFlowInput, ExtractFlowOutput, ExtractFlowSteps } f
 import { 
   FlowRunStatus,
   FlowStepStatus
-} from './types';
+} from './types.js';
 import type { 
   FlowRunState, 
   FlowRunEvents, 
@@ -12,8 +12,8 @@ import type {
   FlowStepBase,
   FlowRunEvent,
   StepEvent
-} from './types';
-import { FlowStep } from './FlowStep';
+} from './types.js';
+import { FlowStep } from './FlowStep.js';
 
 /**
  * Represents a single execution of a flow

@@ -1,8 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
-import type { RunRow, StepStateRow } from '@pgflow/core';
-import { FlowRunStatus, FlowStepStatus } from './types';
+import type { RunRow } from '@pgflow/core';
+import { FlowRunStatus } from './types.js';
 import type { 
   IFlowClient, 
   FlowRunState, 
@@ -10,9 +10,10 @@ import type {
   BroadcastStepEvent, 
   Unsubscribe, 
   FlowRunBase
-} from './types';
-import { SupabaseBroadcastAdapter } from './SupabaseBroadcastAdapter';
-import { FlowRun } from './FlowRun';
+} from './types.js';
+import { SupabaseBroadcastAdapter } from './SupabaseBroadcastAdapter.js';
+import { FlowRun } from './FlowRun.js';
+import { toTypedRunEvent, toTypedStepEvent, runRowToTypedEvent, stepStateRowToTypedEvent } from './eventAdapters.js';
 
 /**
  * Client for interacting with pgflow
@@ -34,21 +35,21 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
     this.#realtimeAdapter = new SupabaseBroadcastAdapter(supabaseClient);
 
     // Set up global event listeners - properly typed
-    this.#realtimeAdapter.onRunEvent((event) => {
+    this.#realtimeAdapter.onRunEvent((event: BroadcastRunEvent) => {
       const run = this.#runs.get(event.run_id);
       if (run) {
-        // The FlowRunBase<unknown> interface accepts any event type
-        run.updateState(event);
+        // Convert broadcast event to typed event before updating state
+        run.updateState(toTypedRunEvent(event));
       }
     });
 
-    this.#realtimeAdapter.onStepEvent((event) => {
+    this.#realtimeAdapter.onStepEvent((event: BroadcastStepEvent) => {
       const run = this.#runs.get(event.run_id);
       if (run) {
         // Always materialize the step before updating to avoid event loss
         // This ensures we cache all steps even if they were never explicitly requested
         const stepSlug = event.step_slug;
-        run.step(stepSlug).updateState(event);
+        run.step(stepSlug).updateState(toTypedStepEvent(event));
       }
     });
   }
@@ -108,22 +109,13 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
 
     // Update the run state with the complete initial state snapshot
     if (data.run) {
-      run.updateState({
-        ...data.run,
-        status: data.run.status,
-        run_id: data.run.run_id, // Correctly use run_id instead of id
-      });
+      run.updateState(runRowToTypedEvent<TSpecificFlow>(data.run));
     }
 
     // Update step states from the initial snapshot
     if (data.steps && Array.isArray(data.steps)) {
       for (const stepState of data.steps) {
-        run.step(stepState.step_slug).updateState({
-          ...stepState,
-          status: stepState.status,
-          run_id: id,
-          step_slug: stepState.step_slug,
-        });
+        run.step(stepState.step_slug).updateState(stepStateRowToTypedEvent<TSpecificFlow, any>(stepState));
       }
     }
 
@@ -264,12 +256,8 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
             throw new Error('Invalid step data: missing required fields');
           }
           
-          // Convert database step state to appropriate event type
-          const stepEvent = this.#convertStepStateToEvent(stepState, run_id);
-          if (stepEvent) {
-            // Type assertion is safe here because FlowStepBase<unknown> accepts any event type
-            flowRun.step(stepState.step_slug).updateState(stepEvent as any);
-          }
+          // Convert database step state to typed event
+          flowRun.step(stepState.step_slug).updateState(stepStateRowToTypedEvent<AnyFlow, any>(stepState));
         }
       }
       
@@ -284,46 +272,4 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
     }
   }
   
-  /**
-   * Convert database step state to an appropriate step event
-   * This ensures we're creating valid events matching the required shape
-   */
-  #convertStepStateToEvent(
-    stepState: StepStateRow, 
-    run_id: string
-  ): object | null {
-    const baseEvent = {
-      run_id,
-      step_slug: stepState.step_slug,
-    };
-    
-    switch (stepState.status) {
-      case 'started':
-        return {
-          ...baseEvent,
-          status: FlowStepStatus.Started,
-          started_at: stepState.started_at || new Date().toISOString(),
-        };
-        
-      case 'completed':
-        return {
-          ...baseEvent,
-          status: FlowStepStatus.Completed,
-          completed_at: stepState.completed_at || new Date().toISOString(),
-          // StepStateRow doesn't include output in its type, but it's typically present in the data
-          output: (stepState as any).output || null,
-        };
-        
-      case 'failed':
-        return {
-          ...baseEvent,
-          status: FlowStepStatus.Failed,
-          failed_at: stepState.failed_at || new Date().toISOString(),
-          error_message: stepState.error_message || "Unknown error",
-        };
-        
-      default:
-        return null;
-    }
-  }
 }

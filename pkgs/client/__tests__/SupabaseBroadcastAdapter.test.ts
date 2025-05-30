@@ -1,34 +1,20 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SupabaseBroadcastAdapter } from '../src/lib/SupabaseBroadcastAdapter';
-import { 
-  RUN_ID, 
-  FLOW_SLUG, 
-  STEP_SLUG,
-  ANOTHER_STEP_SLUG,
-  broadcastRunStarted, 
+import {
+  RUN_ID,
+  FLOW_SLUG,
+  broadcastRunStarted,
   broadcastRunCompleted,
   broadcastRunFailed,
   broadcastStepStarted,
   broadcastStepCompleted,
   broadcastStepFailed,
   startedRunSnapshot,
-  completedRunSnapshot,
-  failedRunSnapshot,
   startedStepState,
-  completedStepState,
-  failedStepState,
-  stepStatesSample,
   sampleFlowDefinition,
   sampleStepsDefinition,
-  advanceAndFlush,
-  createRunSnapshot
 } from './fixtures';
-import { 
-  mockSupabase, 
-  resetMocks, 
-  emitBroadcastEvent,
-  mockChannelSubscription
-} from './mocks';
+import { mockSupabase, resetMocks, mockChannelSubscription } from './mocks';
 
 describe('SupabaseBroadcastAdapter', () => {
   beforeEach(() => {
@@ -43,7 +29,7 @@ describe('SupabaseBroadcastAdapter', () => {
   test('initializes correctly', () => {
     const { client } = mockSupabase();
     const adapter = new SupabaseBroadcastAdapter(client);
-    
+
     expect(adapter).toBeDefined();
   });
 
@@ -51,9 +37,9 @@ describe('SupabaseBroadcastAdapter', () => {
     test('subscribes to run events with correct channel name format', () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       adapter.subscribeToRun(RUN_ID);
-      
+
       expect(client.channel).toHaveBeenCalledWith(`pgflow:run:${RUN_ID}`);
       expect(mocks.channel.channel.subscribe).toHaveBeenCalled();
     });
@@ -61,12 +47,12 @@ describe('SupabaseBroadcastAdapter', () => {
     test('can subscribe to multiple different run IDs', () => {
       const { client } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Subscribe to multiple runs
       adapter.subscribeToRun(RUN_ID);
       adapter.subscribeToRun('another-run-id');
       adapter.subscribeToRun('third-run-id');
-      
+
       // Each should create a unique channel
       expect(client.channel).toHaveBeenCalledWith(`pgflow:run:${RUN_ID}`);
       expect(client.channel).toHaveBeenCalledWith('pgflow:run:another-run-id');
@@ -77,14 +63,14 @@ describe('SupabaseBroadcastAdapter', () => {
     test('registers handlers for all broadcast events with wildcard', async () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Setup realistic channel subscription
       mockChannelSubscription(mocks);
-      
+
       await adapter.subscribeToRun(RUN_ID);
-      
+
       expect(mocks.channel.channel.on).toHaveBeenCalledWith(
-        'broadcast', 
+        'broadcast',
         { event: '*' },
         expect.any(Function)
       );
@@ -93,22 +79,22 @@ describe('SupabaseBroadcastAdapter', () => {
     test('registers handlers for system events', async () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Setup realistic channel subscription
       mockChannelSubscription(mocks);
-      
+
       await adapter.subscribeToRun(RUN_ID);
-      
+
       // Should register handlers for closed and error events
       expect(mocks.channel.channel.on).toHaveBeenCalledWith(
-        'system', 
-        { event: 'closed' }, 
+        'system',
+        { event: 'closed' },
         expect.any(Function)
       );
-      
+
       expect(mocks.channel.channel.on).toHaveBeenCalledWith(
-        'system', 
-        { event: 'error' }, 
+        'system',
+        { event: 'error' },
         expect.any(Function)
       );
     });
@@ -116,17 +102,17 @@ describe('SupabaseBroadcastAdapter', () => {
     test('subscribing to the same run ID twice has no effect', async () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Setup realistic channel subscription
       mockChannelSubscription(mocks);
-      
+
       // Subscribe multiple times to the same run ID
       const unsubscribe1 = await adapter.subscribeToRun(RUN_ID);
       const unsubscribe2 = await adapter.subscribeToRun(RUN_ID);
-      
+
       // Should only create one channel
       expect(client.channel).toHaveBeenCalledTimes(1);
-      
+
       // Unsubscribe functions should be the same
       expect(unsubscribe1).toBe(unsubscribe2);
     });
@@ -136,24 +122,24 @@ describe('SupabaseBroadcastAdapter', () => {
     test('routes run:started events correctly', () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Set up an event listener
       const runEventCallback = vi.fn();
       adapter.onRunEvent(runEventCallback);
-      
+
       // Subscribe to run
       adapter.subscribeToRun(RUN_ID);
-      
+
       // Get the broadcast handler
       const broadcastHandler = mocks.channel.handlers.get('*');
       expect(broadcastHandler).toBeDefined();
-      
+
       // Simulate a run event
-      broadcastHandler?.({ 
-        event: 'run:started', 
-        payload: broadcastRunStarted 
+      broadcastHandler?.({
+        event: 'run:started',
+        payload: broadcastRunStarted,
       });
-      
+
       // The run event callback should be called
       expect(runEventCallback).toHaveBeenCalledWith(broadcastRunStarted);
     });
@@ -161,23 +147,23 @@ describe('SupabaseBroadcastAdapter', () => {
     test('routes run:completed events correctly', () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Set up an event listener
       const runEventCallback = vi.fn();
       adapter.onRunEvent(runEventCallback);
-      
+
       // Subscribe to run
       adapter.subscribeToRun(RUN_ID);
-      
+
       // Get the broadcast handler
       const broadcastHandler = mocks.channel.handlers.get('*');
-      
+
       // Simulate a run completed event
-      broadcastHandler?.({ 
-        event: 'run:completed', 
-        payload: broadcastRunCompleted 
+      broadcastHandler?.({
+        event: 'run:completed',
+        payload: broadcastRunCompleted,
       });
-      
+
       // The run event callback should be called
       expect(runEventCallback).toHaveBeenCalledWith(broadcastRunCompleted);
     });
@@ -185,23 +171,23 @@ describe('SupabaseBroadcastAdapter', () => {
     test('routes run:failed events correctly', () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Set up an event listener
       const runEventCallback = vi.fn();
       adapter.onRunEvent(runEventCallback);
-      
+
       // Subscribe to run
       adapter.subscribeToRun(RUN_ID);
-      
+
       // Get the broadcast handler
       const broadcastHandler = mocks.channel.handlers.get('*');
-      
+
       // Simulate a run failed event
-      broadcastHandler?.({ 
-        event: 'run:failed', 
-        payload: broadcastRunFailed 
+      broadcastHandler?.({
+        event: 'run:failed',
+        payload: broadcastRunFailed,
       });
-      
+
       // The run event callback should be called
       expect(runEventCallback).toHaveBeenCalledWith(broadcastRunFailed);
     });
@@ -209,23 +195,23 @@ describe('SupabaseBroadcastAdapter', () => {
     test('routes step:started events correctly', () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Set up an event listener
       const stepEventCallback = vi.fn();
       adapter.onStepEvent(stepEventCallback);
-      
+
       // Subscribe to run
       adapter.subscribeToRun(RUN_ID);
-      
+
       // Get the broadcast handler
       const broadcastHandler = mocks.channel.handlers.get('*');
-      
+
       // Simulate a step started event
-      broadcastHandler?.({ 
-        event: 'step:started', 
-        payload: broadcastStepStarted 
+      broadcastHandler?.({
+        event: 'step:started',
+        payload: broadcastStepStarted,
       });
-      
+
       // The step event callback should be called
       expect(stepEventCallback).toHaveBeenCalledWith(broadcastStepStarted);
     });
@@ -233,23 +219,23 @@ describe('SupabaseBroadcastAdapter', () => {
     test('routes step:completed events correctly', () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Set up an event listener
       const stepEventCallback = vi.fn();
       adapter.onStepEvent(stepEventCallback);
-      
+
       // Subscribe to run
       adapter.subscribeToRun(RUN_ID);
-      
+
       // Get the broadcast handler
       const broadcastHandler = mocks.channel.handlers.get('*');
-      
+
       // Simulate a step completed event
-      broadcastHandler?.({ 
-        event: 'step:completed', 
-        payload: broadcastStepCompleted 
+      broadcastHandler?.({
+        event: 'step:completed',
+        payload: broadcastStepCompleted,
       });
-      
+
       // The step event callback should be called
       expect(stepEventCallback).toHaveBeenCalledWith(broadcastStepCompleted);
     });
@@ -257,23 +243,23 @@ describe('SupabaseBroadcastAdapter', () => {
     test('routes step:failed events correctly', () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Set up an event listener
       const stepEventCallback = vi.fn();
       adapter.onStepEvent(stepEventCallback);
-      
+
       // Subscribe to run
       adapter.subscribeToRun(RUN_ID);
-      
+
       // Get the broadcast handler
       const broadcastHandler = mocks.channel.handlers.get('*');
-      
+
       // Simulate a step failed event
-      broadcastHandler?.({ 
-        event: 'step:failed', 
-        payload: broadcastStepFailed 
+      broadcastHandler?.({
+        event: 'step:failed',
+        payload: broadcastStepFailed,
       });
-      
+
       // The step event callback should be called
       expect(stepEventCallback).toHaveBeenCalledWith(broadcastStepFailed);
     });
@@ -281,25 +267,25 @@ describe('SupabaseBroadcastAdapter', () => {
     test('ignores unknown event types', () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Set up event listeners
       const runEventCallback = vi.fn();
       const stepEventCallback = vi.fn();
       adapter.onRunEvent(runEventCallback);
       adapter.onStepEvent(stepEventCallback);
-      
+
       // Subscribe to run
       adapter.subscribeToRun(RUN_ID);
-      
+
       // Get the broadcast handler
       const broadcastHandler = mocks.channel.handlers.get('*');
-      
+
       // Simulate an unknown event type
-      broadcastHandler?.({ 
-        event: 'unknown:event', 
-        payload: { some: 'data' } 
+      broadcastHandler?.({
+        event: 'unknown:event',
+        payload: { some: 'data' },
       });
-      
+
       // No callbacks should be called
       expect(runEventCallback).not.toHaveBeenCalled();
       expect(stepEventCallback).not.toHaveBeenCalled();
@@ -308,35 +294,35 @@ describe('SupabaseBroadcastAdapter', () => {
     test('onRunEvent returns unsubscribe function that works', () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Set up an event listener
       const runEventCallback = vi.fn();
       const unsubscribe = adapter.onRunEvent(runEventCallback);
-      
+
       // Subscribe to run
       adapter.subscribeToRun(RUN_ID);
-      
+
       // Get the broadcast handler
       const broadcastHandler = mocks.channel.handlers.get('*');
-      
+
       // Trigger an event
-      broadcastHandler?.({ 
-        event: 'run:started', 
-        payload: broadcastRunStarted 
+      broadcastHandler?.({
+        event: 'run:started',
+        payload: broadcastRunStarted,
       });
-      
+
       // Callback should be called
       expect(runEventCallback).toHaveBeenCalledTimes(1);
-      
+
       // Unsubscribe
       unsubscribe();
-      
+
       // Trigger event again
-      broadcastHandler?.({ 
-        event: 'run:started', 
-        payload: broadcastRunStarted 
+      broadcastHandler?.({
+        event: 'run:started',
+        payload: broadcastRunStarted,
       });
-      
+
       // Callback should not be called again
       expect(runEventCallback).toHaveBeenCalledTimes(1);
     });
@@ -344,35 +330,35 @@ describe('SupabaseBroadcastAdapter', () => {
     test('onStepEvent returns unsubscribe function that works', () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Set up an event listener
       const stepEventCallback = vi.fn();
       const unsubscribe = adapter.onStepEvent(stepEventCallback);
-      
+
       // Subscribe to run
       adapter.subscribeToRun(RUN_ID);
-      
+
       // Get the broadcast handler
       const broadcastHandler = mocks.channel.handlers.get('*');
-      
+
       // Trigger an event
-      broadcastHandler?.({ 
-        event: 'step:started', 
-        payload: broadcastStepStarted 
+      broadcastHandler?.({
+        event: 'step:started',
+        payload: broadcastStepStarted,
       });
-      
+
       // Callback should be called
       expect(stepEventCallback).toHaveBeenCalledTimes(1);
-      
+
       // Unsubscribe
       unsubscribe();
-      
+
       // Trigger event again
-      broadcastHandler?.({ 
-        event: 'step:started', 
-        payload: broadcastStepStarted 
+      broadcastHandler?.({
+        event: 'step:started',
+        payload: broadcastStepStarted,
       });
-      
+
       // Callback should not be called again
       expect(stepEventCallback).toHaveBeenCalledTimes(1);
     });
@@ -382,32 +368,32 @@ describe('SupabaseBroadcastAdapter', () => {
     test('unsubscribes correctly by closing channel', async () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Setup realistic channel subscription
       mockChannelSubscription(mocks);
-      
+
       // Subscribe and then unsubscribe
       await adapter.subscribeToRun(RUN_ID);
       adapter.unsubscribe(RUN_ID);
-      
+
       expect(mocks.channel.channel.unsubscribe).toHaveBeenCalled();
     });
 
     test('multiple unsubscribe calls are safe', async () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Setup realistic channel subscription
       mockChannelSubscription(mocks);
-      
+
       // Subscribe once
       await adapter.subscribeToRun(RUN_ID);
-      
+
       // Unsubscribe multiple times
       adapter.unsubscribe(RUN_ID);
       adapter.unsubscribe(RUN_ID);
       adapter.unsubscribe(RUN_ID);
-      
+
       // Channel.unsubscribe should only be called once
       expect(mocks.channel.channel.unsubscribe).toHaveBeenCalledTimes(1);
     });
@@ -415,28 +401,28 @@ describe('SupabaseBroadcastAdapter', () => {
     test('unsubscribe for non-existent run ID is safe', () => {
       const { client } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Unsubscribe from a run ID that was never subscribed to
       adapter.unsubscribe('non-existent-run-id');
-      
+
       // Should not throw any errors
     });
 
     test('multiple unsubscribe via returned function calls are safe', async () => {
       const { client, mocks } = mockSupabase();
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Setup realistic channel subscription
       mockChannelSubscription(mocks);
-      
+
       // Subscribe
       const unsubscribe = await adapter.subscribeToRun(RUN_ID);
-      
+
       // Unsubscribe multiple times via the returned function
       unsubscribe();
       unsubscribe();
       unsubscribe();
-      
+
       // Channel.unsubscribe should only be called once
       expect(mocks.channel.channel.unsubscribe).toHaveBeenCalledTimes(1);
     });
@@ -449,7 +435,7 @@ describe('SupabaseBroadcastAdapter', () => {
     test('has been moved to a separate file', () => {
       expect(true).toBe(true);
     });
-    
+
     // See SupabaseBroadcastAdapter.reconnect.test.ts for the new implementation
 
     // See SupabaseBroadcastAdapter.reconnect.test.ts for the new implementation
@@ -471,128 +457,151 @@ describe('SupabaseBroadcastAdapter', () => {
   describe('data access methods', () => {
     test('fetchFlowDefinition queries flow and steps tables', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       // Mock the database queries
-      mocks.queryBuilder.single.mockReturnValueOnce({ 
-        data: sampleFlowDefinition, 
-        error: null 
+      mocks.queryBuilder.single.mockReturnValueOnce({
+        data: sampleFlowDefinition,
+        error: null,
       });
-      
+
       // Explicitly mock the steps query result with sampleStepsDefinition
       mocks.queryBuilder.execute.mockReturnValueOnce({
         data: sampleStepsDefinition,
-        error: null
+        error: null,
       });
-      
+
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       const result = await adapter.fetchFlowDefinition(FLOW_SLUG);
-      
+
       // Verify schema was used for pgflow
       expect(mocks.schema).toHaveBeenCalledWith('pgflow');
-      
+
       // Verify flow table query
-      expect(mocks.queryBuilder.eq).toHaveBeenCalledWith('flow_slug', FLOW_SLUG);
-      
+      expect(mocks.queryBuilder.eq).toHaveBeenCalledWith(
+        'flow_slug',
+        FLOW_SLUG
+      );
+
       // Verify steps query
-      expect(mocks.queryBuilder.eq).toHaveBeenCalledWith('flow_slug', FLOW_SLUG);
-      expect(mocks.queryBuilder.order).toHaveBeenCalledWith('step_index', expect.any(Object));
-      
+      expect(mocks.queryBuilder.eq).toHaveBeenCalledWith(
+        'flow_slug',
+        FLOW_SLUG
+      );
+      expect(mocks.queryBuilder.order).toHaveBeenCalledWith(
+        'step_index',
+        expect.any(Object)
+      );
+
       // Make sure the flow matches what we expect
-      expect(result.flow).toEqual(expect.objectContaining({
-        flow_slug: FLOW_SLUG,
-        version: sampleFlowDefinition.version,
-        definition: sampleFlowDefinition.definition
-      }));
-      
+      expect(result.flow).toEqual(
+        expect.objectContaining({
+          flow_slug: FLOW_SLUG,
+          // Only test fields that actually exist in the database schema
+          opt_max_attempts: sampleFlowDefinition.opt_max_attempts,
+          opt_base_delay: sampleFlowDefinition.opt_base_delay,
+          opt_timeout: sampleFlowDefinition.opt_timeout,
+        })
+      );
+
       // The step array might be empty in the mocked response, so just verify it's an array
       expect(Array.isArray(result.steps)).toBe(true);
     });
 
     test('fetchFlowDefinition throws error if flow not found', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       // Mock flow query to return null (not found)
-      mocks.queryBuilder.single.mockReturnValueOnce({ 
-        data: null, 
-        error: null 
+      mocks.queryBuilder.single.mockReturnValueOnce({
+        data: null,
+        error: null,
       });
-      
+
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Should throw an error
-      await expect(adapter.fetchFlowDefinition(FLOW_SLUG)).rejects.toThrow(/not found/);
+      await expect(adapter.fetchFlowDefinition(FLOW_SLUG)).rejects.toThrow(
+        /not found/
+      );
     });
 
     test('fetchFlowDefinition throws error if query fails', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       // Mock flow query to return an error
-      mocks.queryBuilder.single.mockReturnValueOnce({ 
-        data: null, 
-        error: new Error('Database query failed') 
+      mocks.queryBuilder.single.mockReturnValueOnce({
+        data: null,
+        error: new Error('Database query failed'),
       });
-      
+
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Should throw the error from the database
-      await expect(adapter.fetchFlowDefinition(FLOW_SLUG)).rejects.toThrow('Database query failed');
+      await expect(adapter.fetchFlowDefinition(FLOW_SLUG)).rejects.toThrow(
+        'Database query failed'
+      );
     });
 
     test('getRunWithStates calls RPC with correct parameters', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       // Mock the RPC response
       const rpcResponse = {
         run: startedRunSnapshot,
         steps: [startedStepState],
       };
-      
-      mocks.rpc.mockReturnValueOnce({ 
+
+      mocks.rpc.mockReturnValueOnce({
         data: rpcResponse,
-        error: null 
+        error: null,
       });
-      
+
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       const result = await adapter.getRunWithStates(RUN_ID);
-      
+
       // Verify RPC was called
       expect(mocks.schema).toHaveBeenCalledWith('pgflow');
-      expect(mocks.rpc).toHaveBeenCalledWith('get_run_with_states', { run_id: RUN_ID });
-      
+      expect(mocks.rpc).toHaveBeenCalledWith('get_run_with_states', {
+        run_id: RUN_ID,
+      });
+
       // Verify result
       expect(result).toEqual(rpcResponse);
     });
 
     test('getRunWithStates throws error if RPC call fails', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       // Mock RPC to return an error
-      mocks.rpc.mockReturnValueOnce({ 
+      mocks.rpc.mockReturnValueOnce({
         data: null,
-        error: new Error('RPC call failed') 
+        error: new Error('RPC call failed'),
       });
-      
+
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Should throw the error from the RPC call
-      await expect(adapter.getRunWithStates(RUN_ID)).rejects.toThrow('RPC call failed');
+      await expect(adapter.getRunWithStates(RUN_ID)).rejects.toThrow(
+        'RPC call failed'
+      );
     });
 
     test('getRunWithStates throws error if no data returned', async () => {
       const { client, mocks } = mockSupabase();
-      
+
       // Mock RPC to return null data
-      mocks.rpc.mockReturnValueOnce({ 
+      mocks.rpc.mockReturnValueOnce({
         data: null,
-        error: null 
+        error: null,
       });
-      
+
       const adapter = new SupabaseBroadcastAdapter(client);
-      
+
       // Should throw an error about missing data
-      await expect(adapter.getRunWithStates(RUN_ID)).rejects.toThrow(/No data returned/);
+      await expect(adapter.getRunWithStates(RUN_ID)).rejects.toThrow(
+        /No data returned/
+      );
     });
   });
 });

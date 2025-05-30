@@ -7,7 +7,10 @@ import {
   isStepFailedEvent,
   FlowRunStatus,
   FlowStepStatus,
-} from '../../src/lib/types';
+  BroadcastRunStartedEvent,
+  BroadcastStepStartedEvent,
+  BroadcastStepCompletedEvent,
+} from '../src/lib/types';
 import {
   broadcastRunStarted,
   broadcastRunCompleted,
@@ -17,7 +20,7 @@ import {
   broadcastStepFailed,
   RUN_ID,
   STEP_SLUG,
-} from '../fixtures';
+} from './fixtures';
 
 describe('Type Guards', () => {
   describe('isFlowRunEvent', () => {
@@ -48,26 +51,32 @@ describe('Type Guards', () => {
     });
 
     it('rejects events with missing required fields', () => {
-      expect(isFlowRunEvent({
-        event_type: 'run:started',
-        // missing run_id
-        flow_slug: 'test-flow',
-        status: FlowRunStatus.Started,
-      })).toBe(false);
+      expect(
+        isFlowRunEvent({
+          event_type: 'run:started',
+          // missing run_id
+          flow_slug: 'test-flow',
+          status: FlowRunStatus.Started,
+        })
+      ).toBe(false);
 
-      expect(isFlowRunEvent({
-        event_type: 'run:started',
-        run_id: RUN_ID,
-        // missing flow_slug
-        status: FlowRunStatus.Started,
-      })).toBe(false);
+      expect(
+        isFlowRunEvent({
+          event_type: 'run:started',
+          run_id: RUN_ID,
+          // missing flow_slug
+          status: FlowRunStatus.Started,
+        })
+      ).toBe(false);
 
-      expect(isFlowRunEvent({
-        event_type: 'run:started',
-        run_id: RUN_ID,
-        flow_slug: 'test-flow',
-        // missing status
-      })).toBe(false);
+      expect(
+        isFlowRunEvent({
+          event_type: 'run:started',
+          run_id: RUN_ID,
+          flow_slug: 'test-flow',
+          // missing status
+        })
+      ).toBe(false);
     });
 
     it('handles edge cases with extra properties', () => {
@@ -80,19 +89,23 @@ describe('Type Guards', () => {
     });
 
     it('validates status field correctly', () => {
-      expect(isFlowRunEvent({
-        event_type: 'run:started',
-        run_id: RUN_ID,
-        flow_slug: 'test-flow',
-        status: 'invalid-status',
-      })).toBe(false);
+      expect(
+        isFlowRunEvent({
+          event_type: 'run:started',
+          run_id: RUN_ID,
+          flow_slug: 'test-flow',
+          status: 'invalid-status',
+        })
+      ).toBe(false);
 
-      expect(isFlowRunEvent({
-        event_type: 'run:started',
-        run_id: RUN_ID,
-        flow_slug: 'test-flow',
-        status: null,
-      })).toBe(false);
+      expect(
+        isFlowRunEvent({
+          event_type: 'run:started',
+          run_id: RUN_ID,
+          flow_slug: 'test-flow',
+          status: null,
+        })
+      ).toBe(false);
     });
   });
 
@@ -124,42 +137,52 @@ describe('Type Guards', () => {
     });
 
     it('rejects events with missing required fields', () => {
-      expect(isStepEvent({
-        event_type: 'step:started',
-        // missing run_id
-        step_slug: STEP_SLUG,
-        status: FlowStepStatus.Started,
-      })).toBe(false);
+      expect(
+        isStepEvent({
+          event_type: 'step:started',
+          // missing run_id
+          step_slug: STEP_SLUG,
+          status: FlowStepStatus.Started,
+        })
+      ).toBe(false);
 
-      expect(isStepEvent({
-        event_type: 'step:started',
-        run_id: RUN_ID,
-        // missing step_slug
-        status: FlowStepStatus.Started,
-      })).toBe(false);
+      expect(
+        isStepEvent({
+          event_type: 'step:started',
+          run_id: RUN_ID,
+          // missing step_slug
+          status: FlowStepStatus.Started,
+        })
+      ).toBe(false);
 
-      expect(isStepEvent({
-        event_type: 'step:started',
-        run_id: RUN_ID,
-        step_slug: STEP_SLUG,
-        // missing status
-      })).toBe(false);
+      expect(
+        isStepEvent({
+          event_type: 'step:started',
+          run_id: RUN_ID,
+          step_slug: STEP_SLUG,
+          // missing status
+        })
+      ).toBe(false);
     });
 
     it('validates status field correctly', () => {
-      expect(isStepEvent({
-        event_type: 'step:started',
-        run_id: RUN_ID,
-        step_slug: STEP_SLUG,
-        status: 'invalid-status',
-      })).toBe(false);
+      expect(
+        isStepEvent({
+          event_type: 'step:started',
+          run_id: RUN_ID,
+          step_slug: STEP_SLUG,
+          status: 'invalid-status',
+        })
+      ).toBe(false);
 
-      expect(isStepEvent({
-        event_type: 'step:started',
-        run_id: RUN_ID,
-        step_slug: STEP_SLUG,
-        status: null,
-      })).toBe(false);
+      expect(
+        isStepEvent({
+          event_type: 'step:started',
+          run_id: RUN_ID,
+          step_slug: STEP_SLUG,
+          status: null,
+        })
+      ).toBe(false);
     });
   });
 
@@ -180,34 +203,40 @@ describe('Type Guards', () => {
     it('rejects malformed events', () => {
       expect(isStepStartedEvent(null)).toBe(false);
       expect(isStepStartedEvent({})).toBe(false);
-      expect(isStepStartedEvent({
-        event_type: 'step:completed', // wrong event type
-        run_id: RUN_ID,
-        step_slug: STEP_SLUG,
-        status: FlowStepStatus.Started,
-      })).toBe(false);
+      expect(
+        isStepStartedEvent({
+          event_type: 'step:completed', // wrong event type
+          run_id: RUN_ID,
+          step_slug: STEP_SLUG,
+          status: FlowStepStatus.Started,
+        })
+      ).toBe(false);
     });
 
     it('validates required fields for started events', () => {
-      expect(isStepStartedEvent({
-        event_type: 'step:started',
-        run_id: RUN_ID,
-        step_slug: STEP_SLUG,
-        status: FlowStepStatus.Started,
-        started_at: new Date().toISOString(),
-        remaining_tasks: 1,
-        remaining_deps: 0,
-      })).toBe(true);
+      expect(
+        isStepStartedEvent({
+          event_type: 'step:started',
+          run_id: RUN_ID,
+          step_slug: STEP_SLUG,
+          status: FlowStepStatus.Started,
+          started_at: new Date().toISOString(),
+          remaining_tasks: 1,
+          remaining_deps: 0,
+        })
+      ).toBe(true);
 
       // Missing started_at should still pass (optional field)
-      expect(isStepStartedEvent({
-        event_type: 'step:started',
-        run_id: RUN_ID,
-        step_slug: STEP_SLUG,
-        status: FlowStepStatus.Started,
-        remaining_tasks: 1,
-        remaining_deps: 0,
-      })).toBe(true);
+      expect(
+        isStepStartedEvent({
+          event_type: 'step:started',
+          run_id: RUN_ID,
+          step_slug: STEP_SLUG,
+          status: FlowStepStatus.Started,
+          remaining_tasks: 1,
+          remaining_deps: 0,
+        })
+      ).toBe(true);
     });
   });
 
@@ -226,23 +255,27 @@ describe('Type Guards', () => {
     });
 
     it('validates completed-specific fields', () => {
-      expect(isStepCompletedEvent({
-        event_type: 'step:completed',
-        run_id: RUN_ID,
-        step_slug: STEP_SLUG,
-        status: FlowStepStatus.Completed,
-        completed_at: new Date().toISOString(),
-        output: { result: 'success' },
-      })).toBe(true);
+      expect(
+        isStepCompletedEvent({
+          event_type: 'step:completed',
+          run_id: RUN_ID,
+          step_slug: STEP_SLUG,
+          status: FlowStepStatus.Completed,
+          completed_at: new Date().toISOString(),
+          output: { result: 'success' },
+        })
+      ).toBe(true);
 
       // Should work without output (optional)
-      expect(isStepCompletedEvent({
-        event_type: 'step:completed',
-        run_id: RUN_ID,
-        step_slug: STEP_SLUG,
-        status: FlowStepStatus.Completed,
-        completed_at: new Date().toISOString(),
-      })).toBe(true);
+      expect(
+        isStepCompletedEvent({
+          event_type: 'step:completed',
+          run_id: RUN_ID,
+          step_slug: STEP_SLUG,
+          status: FlowStepStatus.Completed,
+          completed_at: new Date().toISOString(),
+        })
+      ).toBe(true);
     });
   });
 
@@ -261,23 +294,27 @@ describe('Type Guards', () => {
     });
 
     it('validates failed-specific fields', () => {
-      expect(isStepFailedEvent({
-        event_type: 'step:failed',
-        run_id: RUN_ID,
-        step_slug: STEP_SLUG,
-        status: FlowStepStatus.Failed,
-        failed_at: new Date().toISOString(),
-        error_message: 'Step failed',
-      })).toBe(true);
+      expect(
+        isStepFailedEvent({
+          event_type: 'step:failed',
+          run_id: RUN_ID,
+          step_slug: STEP_SLUG,
+          status: FlowStepStatus.Failed,
+          failed_at: new Date().toISOString(),
+          error_message: 'Step failed',
+        })
+      ).toBe(true);
 
       // Should work without error_message (optional)
-      expect(isStepFailedEvent({
-        event_type: 'step:failed',
-        run_id: RUN_ID,
-        step_slug: STEP_SLUG,
-        status: FlowStepStatus.Failed,
-        failed_at: new Date().toISOString(),
-      })).toBe(true);
+      expect(
+        isStepFailedEvent({
+          event_type: 'step:failed',
+          run_id: RUN_ID,
+          step_slug: STEP_SLUG,
+          status: FlowStepStatus.Failed,
+          failed_at: new Date().toISOString(),
+        })
+      ).toBe(true);
     });
   });
 
@@ -347,8 +384,8 @@ describe('Type Guards', () => {
 
   describe('Type inference validation', () => {
     it('provides correct type narrowing for flow run events', () => {
-      const unknownEvent: unknown = broadcastRunStarted;
-      
+      const unknownEvent: BroadcastRunStartedEvent = broadcastRunStarted;
+
       if (isFlowRunEvent(unknownEvent)) {
         // TypeScript should know this is a FlowRunEvent
         expect(unknownEvent.event_type).toMatch(/^run:/);
@@ -359,8 +396,8 @@ describe('Type Guards', () => {
     });
 
     it('provides correct type narrowing for step events', () => {
-      const unknownEvent: unknown = broadcastStepStarted;
-      
+      const unknownEvent: BroadcastStepStartedEvent = broadcastStepStarted;
+
       if (isStepEvent(unknownEvent)) {
         // TypeScript should know this is a StepEvent
         expect(unknownEvent.event_type).toMatch(/^step:/);
@@ -371,8 +408,8 @@ describe('Type Guards', () => {
     });
 
     it('provides correct type narrowing for specific step events', () => {
-      const unknownEvent: unknown = broadcastStepCompleted;
-      
+      const unknownEvent: BroadcastStepCompletedEvent = broadcastStepCompleted;
+
       if (isStepCompletedEvent(unknownEvent)) {
         // TypeScript should know this is specifically a StepCompletedEvent
         expect(unknownEvent.event_type).toBe('step:completed');
