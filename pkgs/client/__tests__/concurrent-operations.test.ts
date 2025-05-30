@@ -9,8 +9,10 @@ import {
 import { Flow } from '@pgflow/dsl';
 
 // Create a test flow for proper typing
-const TestFlow = new Flow<{ test: string }>({ slug: 'test-flow' })
-  .step({ slug: 'test-step' }, (input) => ({ result: input.run.test }));
+const TestFlow = new Flow<{ test: string }>({ slug: 'test_flow' }).step(
+  { slug: 'test_step' },
+  (input) => ({ result: input.run.test })
+);
 import { mockSupabase, resetMocks, mockChannelSubscription } from './mocks';
 import {
   RUN_ID,
@@ -184,9 +186,7 @@ describe('Concurrent Operations', () => {
 
       // Track events on the run
       const runEvents: string[] = [];
-      run.on('*', (event) =>
-        runEvents.push(event.event_type)
-      );
+      run.on('*', (event) => runEvents.push(event.event_type));
 
       // Get the broadcast handler and emit event
       const broadcastHandler = mocks.channel.handlers.get('*');
@@ -223,9 +223,7 @@ describe('Concurrent Operations', () => {
 
       // Track events on the step
       const stepEvents: string[] = [];
-      step.on('*', (event) =>
-        stepEvents.push(event.event_type)
-      );
+      step.on('*', (event) => stepEvents.push(event.event_type));
 
       // Get the broadcast handler and emit events
       const broadcastHandler = mocks.channel.handlers.get('*');
@@ -264,9 +262,7 @@ describe('Concurrent Operations', () => {
 
       // Track events
       const events: string[] = [];
-      run.on('*', (event) =>
-        events.push(event.event_type)
-      );
+      run.on('*', (event) => events.push(event.event_type));
 
       // Emit event with different run_id
       const broadcastHandler = mocks.channel.handlers.get('*');
