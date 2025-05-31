@@ -91,10 +91,14 @@ function printPerformanceStats(stats) {
   
   if (stats.eventCounts) {
     console.log(`\n📡 Event Breakdown:`);
-    console.log(`   Run Events:         ${stats.eventCounts.run_started} started, ${stats.eventCounts.run_completed} completed`);
-    console.log(`   Step Events:        ${stats.eventCounts.step_started} started, ${stats.eventCounts.step_completed} completed`);
+    console.log(`   run:started:        ${stats.eventCounts.run_started}`);
+    console.log(`   run:completed:      ${stats.eventCounts.run_completed}`);
+    console.log(`   run:failed:         ${stats.eventCounts.run_failed}`);
+    console.log(`   step:started:       ${stats.eventCounts.step_started}`);
+    console.log(`   step:completed:     ${stats.eventCounts.step_completed}`);
+    console.log(`   step:failed:        ${stats.eventCounts.step_failed}`);
     if (stats.eventCounts.other > 0) {
-      console.log(`   Other Events:       ${stats.eventCounts.other}`);
+      console.log(`   other:              ${stats.eventCounts.other}`);
     }
   }
   
@@ -158,8 +162,10 @@ async function runHighFrequencyTest() {
     const eventCounts = {
       run_started: 0,
       run_completed: 0,
+      run_failed: 0,
       step_started: 0,
       step_completed: 0,
+      step_failed: 0,
       other: 0
     };
     let eventsReceived = 0;
@@ -178,22 +184,60 @@ async function runHighFrequencyTest() {
     run.on('*', (event) => {
       eventsReceived++;
       
-      // Count by event type
-      if (event.status === 'started' && 'run_id' in event && !('step_slug' in event)) {
+      // DEBUG: Log each event received by the benchmark
+      console.log(`📊 [BENCHMARK] RUN EVENT RECEIVED:`, {
+        event_type: event.event_type,
+        run_id: event.run_id,
+        step_slug: event.step_slug || 'N/A'
+      });
+      
+      // Count by event type using event_type field
+      if (event.event_type === 'run:started') {
         eventCounts.run_started++;
-      } else if (event.status === 'completed' && 'run_id' in event && !('step_slug' in event)) {
+      } else if (event.event_type === 'run:completed') {
         eventCounts.run_completed++;
-      } else if (event.status === 'started' && 'step_slug' in event) {
-        eventCounts.step_started++;
-      } else if (event.status === 'completed' && 'step_slug' in event) {
-        eventCounts.step_completed++;
+      } else if (event.event_type === 'run:failed') {
+        eventCounts.run_failed++;
       } else {
         eventCounts.other++;
+        console.log(`📊 [BENCHMARK] UNKNOWN RUN EVENT TYPE:`, event.event_type);
       }
       
       const currentMemory = getMemoryUsage();
       if (currentMemory > peakMemory) peakMemory = currentMemory;
     });
+    
+    // Set up step event listeners for each step
+    for (let i = 0; i < CONFIG.STEP_COUNT; i++) {
+      const stepSlug = `step_${i}`;
+      const step = run.step(stepSlug);
+      
+      step.on('*', (event) => {
+        eventsReceived++;
+        
+        // DEBUG: Log each step event received by the benchmark
+        console.log(`📊 [BENCHMARK] STEP EVENT RECEIVED:`, {
+          event_type: event.event_type,
+          run_id: event.run_id,
+          step_slug: event.step_slug || 'N/A'
+        });
+        
+        // Count step events
+        if (event.event_type === 'step:started') {
+          eventCounts.step_started++;
+        } else if (event.event_type === 'step:completed') {
+          eventCounts.step_completed++;
+        } else if (event.event_type === 'step:failed') {
+          eventCounts.step_failed++;
+        } else {
+          eventCounts.other++;
+          console.log(`📊 [BENCHMARK] UNKNOWN STEP EVENT TYPE:`, event.event_type);
+        }
+        
+        const currentMemory = getMemoryUsage();
+        if (currentMemory > peakMemory) peakMemory = currentMemory;
+      });
+    }
     
     // Give subscription time to establish
     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -324,12 +368,76 @@ async function runConcurrentFlowsTest() {
     const runs = await Promise.all(runPromises);
     
     // Track events from all runs
-    runs.forEach(run => {
-      run.on('*', () => {
+    const eventCounts = {
+      run_started: 0,
+      run_completed: 0,
+      run_failed: 0,
+      step_started: 0,
+      step_completed: 0,
+      step_failed: 0,
+      other: 0
+    };
+    
+    runs.forEach((run, runIndex) => {
+      run.on('*', (event) => {
         eventsReceived++;
+        
+        // DEBUG: Log each event received by the benchmark
+        console.log(`📊 [BENCHMARK] CONCURRENT RUN EVENT RECEIVED:`, {
+          event_type: event.event_type,
+          run_id: event.run_id,
+          step_slug: event.step_slug || 'N/A',
+          run_index: runIndex
+        });
+        
+        // Count by event type using event_type field
+        if (event.event_type === 'run:started') {
+          eventCounts.run_started++;
+        } else if (event.event_type === 'run:completed') {
+          eventCounts.run_completed++;
+        } else if (event.event_type === 'run:failed') {
+          eventCounts.run_failed++;
+        } else {
+          eventCounts.other++;
+          console.log(`📊 [BENCHMARK] UNKNOWN CONCURRENT RUN EVENT TYPE:`, event.event_type);
+        }
+        
         const currentMemory = getMemoryUsage();
         if (currentMemory > peakMemory) peakMemory = currentMemory;
       });
+      
+      // Set up step event listeners for each step in this run
+      for (let j = 0; j < CONFIG.STEPS_PER_FLOW; j++) {
+        const stepSlug = `step_${j}`;
+        const step = run.step(stepSlug);
+        
+        step.on('*', (event) => {
+          eventsReceived++;
+          
+          // DEBUG: Log each step event received by the benchmark
+          console.log(`📊 [BENCHMARK] CONCURRENT STEP EVENT RECEIVED:`, {
+            event_type: event.event_type,
+            run_id: event.run_id,
+            step_slug: event.step_slug || 'N/A',
+            run_index: runIndex
+          });
+          
+          // Count step events
+          if (event.event_type === 'step:started') {
+            eventCounts.step_started++;
+          } else if (event.event_type === 'step:completed') {
+            eventCounts.step_completed++;
+          } else if (event.event_type === 'step:failed') {
+            eventCounts.step_failed++;
+          } else {
+            eventCounts.other++;
+            console.log(`📊 [BENCHMARK] UNKNOWN CONCURRENT STEP EVENT TYPE:`, event.event_type);
+          }
+          
+          const currentMemory = getMemoryUsage();
+          if (currentMemory > peakMemory) peakMemory = currentMemory;
+        });
+      }
     });
     
     // Give subscriptions time to establish
@@ -380,7 +488,8 @@ async function runConcurrentFlowsTest() {
       stepCount: totalSteps,
       completedSteps: completedTasks,
       eventsReceived,
-      expectedEvents,
+      eventCounts,
+      expectedEvents: CONFIG.CONCURRENT_FLOWS * 2 + totalSteps * 2, // run events (started + completed) + step events (started + completed)
       stepsPerSecond: (completedTasks / taskCompletionDuration) * 1000,
       eventsPerSecond: (eventsReceived / totalDuration) * 1000,
       tasksPerSecond: (completedTasks / taskCompletionDuration) * 1000,
