@@ -89,16 +89,24 @@ function printPerformanceStats(stats) {
   console.log(`   Steps Completed:    ${stats.completedSteps.toLocaleString()} / ${stats.stepCount.toLocaleString()}`);
   console.log(`   Events Received:    ${stats.eventsReceived.toLocaleString()} / ${stats.expectedEvents.toLocaleString()}`);
   
-  if (stats.eventCounts) {
+  if (stats.eventCounts && stats.expectedEventCounts) {
     console.log(`\n📡 Event Breakdown:`);
-    console.log(`   run:started:        ${stats.eventCounts.run_started}`);
-    console.log(`   run:completed:      ${stats.eventCounts.run_completed}`);
-    console.log(`   run:failed:         ${stats.eventCounts.run_failed}`);
-    console.log(`   step:started:       ${stats.eventCounts.step_started}`);
-    console.log(`   step:completed:     ${stats.eventCounts.step_completed}`);
-    console.log(`   step:failed:        ${stats.eventCounts.step_failed}`);
+    const runStartedPct = stats.expectedEventCounts.run_started > 0 ? formatNumber((stats.eventCounts.run_started / stats.expectedEventCounts.run_started) * 100) : '0.00';
+    const runCompletedPct = stats.expectedEventCounts.run_completed > 0 ? formatNumber((stats.eventCounts.run_completed / stats.expectedEventCounts.run_completed) * 100) : '0.00';
+    const runFailedPct = stats.expectedEventCounts.run_failed > 0 ? formatNumber((stats.eventCounts.run_failed / stats.expectedEventCounts.run_failed) * 100) : '0.00';
+    const stepStartedPct = stats.expectedEventCounts.step_started > 0 ? formatNumber((stats.eventCounts.step_started / stats.expectedEventCounts.step_started) * 100) : '0.00';
+    const stepCompletedPct = stats.expectedEventCounts.step_completed > 0 ? formatNumber((stats.eventCounts.step_completed / stats.expectedEventCounts.step_completed) * 100) : '0.00';
+    const stepFailedPct = stats.expectedEventCounts.step_failed > 0 ? formatNumber((stats.eventCounts.step_failed / stats.expectedEventCounts.step_failed) * 100) : '0.00';
+    
+    console.log(`   run:started:        ${stats.eventCounts.run_started} / ${stats.expectedEventCounts.run_started} (${runStartedPct}%)`);
+    console.log(`   run:completed:      ${stats.eventCounts.run_completed} / ${stats.expectedEventCounts.run_completed} (${runCompletedPct}%)`);
+    console.log(`   run:failed:         ${stats.eventCounts.run_failed} / ${stats.expectedEventCounts.run_failed} (${runFailedPct}%)`);
+    console.log(`   step:started:       ${stats.eventCounts.step_started} / ${stats.expectedEventCounts.step_started} (${stepStartedPct}%)`);
+    console.log(`   step:completed:     ${stats.eventCounts.step_completed} / ${stats.expectedEventCounts.step_completed} (${stepCompletedPct}%)`);
+    console.log(`   step:failed:        ${stats.eventCounts.step_failed} / ${stats.expectedEventCounts.step_failed} (${stepFailedPct}%)`);
     if (stats.eventCounts.other > 0) {
-      console.log(`   other:              ${stats.eventCounts.other}`);
+      const otherPct = (stats.expectedEventCounts.other || 0) > 0 ? formatNumber((stats.eventCounts.other / (stats.expectedEventCounts.other || 1)) * 100) : 'N/A';
+      console.log(`   other:              ${stats.eventCounts.other} / ${stats.expectedEventCounts.other || 0} (${otherPct}%)`);
     }
   }
   
@@ -295,6 +303,16 @@ async function runHighFrequencyTest() {
     
     console.log(`📊 Execution completed in ${executionDuration}ms (setup: ${setupDuration}ms)`);
     
+    const expectedEventCounts = {
+      run_started: 1,
+      run_completed: 1,
+      run_failed: 0,
+      step_started: CONFIG.STEP_COUNT,
+      step_completed: CONFIG.STEP_COUNT,
+      step_failed: 0,
+      other: 0
+    };
+    
     const stats = {
       testName: 'High-Frequency Step Completion',
       setupDuration,
@@ -304,6 +322,7 @@ async function runHighFrequencyTest() {
       completedSteps: tasks.length,
       eventsReceived,
       eventCounts,
+      expectedEventCounts,
       expectedEvents: CONFIG.STEP_COUNT * 2 + 2, // step events (started + completed) + run events (started + completed)
       stepsPerSecond: (tasks.length / completionDuration) * 1000,
       eventsPerSecond: (eventsReceived / executionDuration) * 1000, // Use consistent denominator
@@ -482,6 +501,16 @@ async function runConcurrentFlowsTest() {
     const totalSteps = CONFIG.CONCURRENT_FLOWS * CONFIG.STEPS_PER_FLOW;
     const expectedEvents = totalSteps * 2; // started + completed for each step
     
+    const expectedEventCounts = {
+      run_started: CONFIG.CONCURRENT_FLOWS,
+      run_completed: CONFIG.CONCURRENT_FLOWS,
+      run_failed: 0,
+      step_started: totalSteps,
+      step_completed: totalSteps,
+      step_failed: 0,
+      other: 0
+    };
+    
     const stats = {
       testName: 'Concurrent Flows',
       totalDuration,
@@ -489,6 +518,7 @@ async function runConcurrentFlowsTest() {
       completedSteps: completedTasks,
       eventsReceived,
       eventCounts,
+      expectedEventCounts,
       expectedEvents: CONFIG.CONCURRENT_FLOWS * 2 + totalSteps * 2, // run events (started + completed) + step events (started + completed)
       stepsPerSecond: (completedTasks / taskCompletionDuration) * 1000,
       eventsPerSecond: (eventsReceived / totalDuration) * 1000,
@@ -551,7 +581,7 @@ async function main() {
     
     const totalSteps = allStats.reduce((sum, stats) => sum + stats.completedSteps, 0);
     const totalEvents = allStats.reduce((sum, stats) => sum + stats.eventsReceived, 0);
-    const totalDuration = allStats.reduce((sum, stats) => sum + stats.totalDuration, 0);
+    const totalDuration = allStats.reduce((sum, stats) => sum + (stats.executionDuration || stats.totalDuration), 0);
     
     console.log(`\n🏆 Overall Performance:`);
     console.log(`   Total Steps Completed: ${totalSteps.toLocaleString()}`);
