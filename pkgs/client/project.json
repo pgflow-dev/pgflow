@@ -105,6 +105,15 @@
     "test": {
       "executor": "nx:noop",
       "dependsOn": ["test:unit", "test:integration"]
+    },
+    "benchmark": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["db:ensure", "build"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["node scripts/performance-benchmark.mjs"],
+        "parallel": false
+      }
     }
   }
 }
