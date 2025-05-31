@@ -1,24 +1,28 @@
 import { createNanoEvents } from 'nanoevents';
-import type { AnyFlow, ExtractFlowInput, ExtractFlowOutput, ExtractFlowSteps } from '@pgflow/dsl';
-import { 
-  FlowRunStatus,
-  FlowStepStatus
-} from './types.js';
-import type { 
-  FlowRunState, 
-  FlowRunEvents, 
-  Unsubscribe, 
-  FlowRunBase, 
+import type {
+  AnyFlow,
+  ExtractFlowInput,
+  ExtractFlowOutput,
+  ExtractFlowSteps,
+} from '@pgflow/dsl';
+import { FlowRunStatus, FlowStepStatus } from './types.js';
+import type {
+  FlowRunState,
+  FlowRunEvents,
+  Unsubscribe,
+  FlowRunBase,
   FlowStepBase,
   FlowRunEvent,
-  StepEvent
+  StepEvent,
 } from './types.js';
 import { FlowStep } from './FlowStep.js';
 
 /**
  * Represents a single execution of a flow
  */
-export class FlowRun<TFlow extends AnyFlow> implements FlowRunBase<FlowRunEvent<TFlow>> {
+export class FlowRun<TFlow extends AnyFlow>
+  implements FlowRunBase<FlowRunEvent<TFlow>>
+{
   #state: FlowRunState<TFlow>;
   #events = createNanoEvents<FlowRunEvents<TFlow>>();
   #steps = new Map<string, FlowStepBase>();
@@ -31,7 +35,7 @@ export class FlowRun<TFlow extends AnyFlow> implements FlowRunBase<FlowRunEvent<
 
   /**
    * Creates a new FlowRun instance
-   * 
+   *
    * @param initialState - Initial state for the run
    */
   constructor(initialState: FlowRunState<TFlow>) {
@@ -117,7 +121,7 @@ export class FlowRun<TFlow extends AnyFlow> implements FlowRunBase<FlowRunEvent<
 
   /**
    * Register an event handler for a run event
-   * 
+   *
    * @param event - Event type to listen for
    * @param callback - Callback function to execute when event is emitted
    * @returns Function to unsubscribe from the event
@@ -127,10 +131,10 @@ export class FlowRun<TFlow extends AnyFlow> implements FlowRunBase<FlowRunEvent<
     callback: FlowRunEvents<TFlow>[E]
   ): Unsubscribe {
     this.#listenerCount++;
-    
+
     // Wrap the unsubscribe function to track listener count
     const unsubscribe = this.#events.on(event, callback);
-    
+
     return () => {
       unsubscribe();
       this.#listenerCount--;
@@ -140,7 +144,7 @@ export class FlowRun<TFlow extends AnyFlow> implements FlowRunBase<FlowRunEvent<
 
   /**
    * Get a FlowStep instance for a specific step
-   * 
+   *
    * @param stepSlug - Step slug to get
    * @returns FlowStep instance for the specified step
    */
@@ -168,14 +172,17 @@ export class FlowRun<TFlow extends AnyFlow> implements FlowRunBase<FlowRunEvent<
     });
 
     // Cache the step
-    this.#steps.set(stepSlug as string, step as FlowStepBase<StepEvent<TFlow, TStepSlug>>);
-    
+    this.#steps.set(
+      stepSlug as string,
+      step as FlowStepBase<StepEvent<TFlow, TStepSlug>>
+    );
+
     return step;
   }
-  
+
   /**
    * Check if this run has a specific step
-   * 
+   *
    * @param stepSlug - Step slug to check
    * @returns true if the step exists, false otherwise
    */
@@ -186,7 +193,7 @@ export class FlowRun<TFlow extends AnyFlow> implements FlowRunBase<FlowRunEvent<
 
   /**
    * Wait for the run to reach a specific status
-   * 
+   *
    * @param targetStatus - The status to wait for
    * @param options - Optional timeout and abort signal
    * @returns Promise that resolves with the run instance when the status is reached
@@ -206,30 +213,38 @@ export class FlowRun<TFlow extends AnyFlow> implements FlowRunBase<FlowRunEvent<
     // Otherwise, wait for the status to change
     return new Promise((resolve, reject) => {
       let timeoutId: NodeJS.Timeout | undefined;
-      
+
       // Set up timeout if provided
       if (timeoutMs > 0) {
         timeoutId = setTimeout(() => {
           unbind();
-          reject(new Error(`Timeout waiting for run ${this.run_id} to reach status '${targetStatus}'`));
+          reject(
+            new Error(
+              `Timeout waiting for run ${this.run_id} to reach status '${targetStatus}'`
+            )
+          );
         }, timeoutMs);
       }
-      
+
       // Set up abort signal if provided
       let abortCleanup: (() => void) | undefined;
       if (signal) {
         const abortHandler = () => {
           if (timeoutId) clearTimeout(timeoutId);
           unbind();
-          reject(new Error(`Aborted waiting for run ${this.run_id} to reach status '${targetStatus}'`));
+          reject(
+            new Error(
+              `Aborted waiting for run ${this.run_id} to reach status '${targetStatus}'`
+            )
+          );
         };
-        
+
         signal.addEventListener('abort', abortHandler);
         abortCleanup = () => {
           signal.removeEventListener('abort', abortHandler);
         };
       }
-      
+
       // Subscribe to all events
       const unbind = this.on('*', (event) => {
         if (event.status === targetStatus) {
@@ -244,7 +259,7 @@ export class FlowRun<TFlow extends AnyFlow> implements FlowRunBase<FlowRunEvent<
 
   /**
    * Updates the run state based on an event
-   * 
+   *
    * @param event - Event data to update the state with
    * @returns true if the state was updated, false otherwise
    */
@@ -253,7 +268,7 @@ export class FlowRun<TFlow extends AnyFlow> implements FlowRunBase<FlowRunEvent<
     if (event.run_id !== this.#state.run_id) {
       return false;
     }
-    
+
     // Check if the event status has higher precedence than current status
     if (!this.#shouldUpdateStatus(this.#state.status, event.status)) {
       return false;
@@ -265,8 +280,14 @@ export class FlowRun<TFlow extends AnyFlow> implements FlowRunBase<FlowRunEvent<
         this.#state = {
           ...this.#state,
           status: FlowRunStatus.Started,
-          started_at: typeof event.started_at === 'string' ? new Date(event.started_at) : new Date(),
-          remaining_steps: 'remaining_steps' in event ? Number(event.remaining_steps) : this.#state.remaining_steps,
+          started_at:
+            typeof event.started_at === 'string'
+              ? new Date(event.started_at)
+              : new Date(),
+          remaining_steps:
+            'remaining_steps' in event
+              ? Number(event.remaining_steps)
+              : this.#state.remaining_steps,
         };
         this.#events.emit('started', event);
         break;
@@ -275,12 +296,15 @@ export class FlowRun<TFlow extends AnyFlow> implements FlowRunBase<FlowRunEvent<
         this.#state = {
           ...this.#state,
           status: FlowRunStatus.Completed,
-          completed_at: typeof event.completed_at === 'string' ? new Date(event.completed_at) : new Date(),
+          completed_at:
+            typeof event.completed_at === 'string'
+              ? new Date(event.completed_at)
+              : new Date(),
           output: event.output as ExtractFlowOutput<TFlow>,
           remaining_steps: 0,
         };
         this.#events.emit('completed', event);
-        
+
         // Check for auto-dispose
         this.#checkAutoDispose();
         break;
@@ -289,12 +313,22 @@ export class FlowRun<TFlow extends AnyFlow> implements FlowRunBase<FlowRunEvent<
         this.#state = {
           ...this.#state,
           status: FlowRunStatus.Failed,
-          failed_at: typeof event.failed_at === 'string' ? new Date(event.failed_at) : new Date(),
-          error_message: typeof event.error_message === 'string' ? event.error_message : 'Unknown error',
-          error: new Error(typeof event.error_message === 'string' ? event.error_message : 'Unknown error'),
+          failed_at:
+            typeof event.failed_at === 'string'
+              ? new Date(event.failed_at)
+              : new Date(),
+          error_message:
+            typeof event.error_message === 'string'
+              ? event.error_message
+              : 'Unknown error',
+          error: new Error(
+            typeof event.error_message === 'string'
+              ? event.error_message
+              : 'Unknown error'
+          ),
         };
         this.#events.emit('failed', event);
-        
+
         // Check for auto-dispose
         this.#checkAutoDispose();
         break;
@@ -310,19 +344,19 @@ export class FlowRun<TFlow extends AnyFlow> implements FlowRunBase<FlowRunEvent<
 
     // Also emit to the catch-all listener
     this.#events.emit('*', event);
-    
+
     return true;
   }
 
   /**
    * Updates a step state based on an event
-   * 
+   *
    * @param stepSlug - Step slug to update
    * @param event - Event data to update the step with
    * @returns true if the state was updated, false otherwise
    */
   updateStepState<TStepSlug extends keyof ExtractFlowSteps<TFlow> & string>(
-    stepSlug: TStepSlug, 
+    stepSlug: TStepSlug,
     event: StepEvent<TFlow, TStepSlug>
   ): boolean {
     const step = this.step(stepSlug);
@@ -331,7 +365,7 @@ export class FlowRun<TFlow extends AnyFlow> implements FlowRunBase<FlowRunEvent<
 
   // Track number of listeners
   #listenerCount = 0;
-  
+
   /**
    * Checks if auto-dispose should be triggered (when in terminal state with no listeners)
    */
@@ -342,7 +376,10 @@ export class FlowRun<TFlow extends AnyFlow> implements FlowRunBase<FlowRunEvent<
     }
 
     // Only auto-dispose in terminal states
-    if (this.status !== FlowRunStatus.Completed && this.status !== FlowRunStatus.Failed) {
+    if (
+      this.status !== FlowRunStatus.Completed &&
+      this.status !== FlowRunStatus.Failed
+    ) {
       return;
     }
 
@@ -354,17 +391,23 @@ export class FlowRun<TFlow extends AnyFlow> implements FlowRunBase<FlowRunEvent<
 
   /**
    * Determines if a status should be updated based on precedence
-   * 
+   *
    * @param currentStatus - Current status
    * @param newStatus - New status
    * @returns true if the status should be updated, false otherwise
    */
-  #shouldUpdateStatus(currentStatus: FlowRunStatus, newStatus: FlowRunStatus): boolean {
+  #shouldUpdateStatus(
+    currentStatus: FlowRunStatus,
+    newStatus: FlowRunStatus
+  ): boolean {
     // Don't allow changes to terminal states
-    if (currentStatus === FlowRunStatus.Completed || currentStatus === FlowRunStatus.Failed) {
+    if (
+      currentStatus === FlowRunStatus.Completed ||
+      currentStatus === FlowRunStatus.Failed
+    ) {
       return false; // Terminal states should never change
     }
-    
+
     const currentPrecedence = this.#statusPrecedence[currentStatus];
     const newPrecedence = this.#statusPrecedence[newStatus];
 
@@ -382,12 +425,12 @@ export class FlowRun<TFlow extends AnyFlow> implements FlowRunBase<FlowRunEvent<
 
     // Clear the map to allow garbage collection of steps
     this.#steps.clear();
-    
+
     // Create a new events object - this effectively clears all listeners
     // without accessing the private internals of nanoevents
     this.#events = createNanoEvents<FlowRunEvents<TFlow>>();
     this.#listenerCount = 0;
-    
+
     // Mark as disposed
     this.#disposed = true;
   }
