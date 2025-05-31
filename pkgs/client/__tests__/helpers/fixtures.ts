@@ -1,9 +1,13 @@
 import { v4 as uuidv4 } from 'uuid';
 
 export function createTestFlow(flowSlug?: string) {
-  const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+  const uniqueSuffix = `${Date.now()}_${Math.random()
+    .toString(36)
+    .substr(2, 5)}`;
   return {
-    slug: flowSlug ? `${flowSlug}_${uniqueSuffix}` : `test_flow_${uniqueSuffix}`,
+    slug: flowSlug
+      ? `${flowSlug}_${uniqueSuffix}`
+      : `test_flow_${uniqueSuffix}`,
     options: {},
   };
 }

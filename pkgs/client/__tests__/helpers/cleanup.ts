@@ -9,7 +9,7 @@ export async function cleanupTestData(sql: postgres.Sql) {
   await sql`DELETE FROM pgflow.flows WHERE slug LIKE 'test_flow_%'`;
 }
 
-export async function resetSequences(sql: postgres.Sql) {
+export async function resetSequences(_sql: postgres.Sql) {
   // Reset any sequences that might affect test isolation
   // This is optional but can help with consistent test runs
 }

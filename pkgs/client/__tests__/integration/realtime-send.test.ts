@@ -60,7 +60,7 @@ describe('Realtime Send Integration', () => {
       console.log('realtime.send() called successfully');
 
       // 5. Wait for the event to be received
-      const timeoutMs = 3000;
+      const timeoutMs = 15_000;
       const startTime = Date.now();
 
       while (

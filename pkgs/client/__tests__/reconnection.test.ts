@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SupabaseBroadcastAdapter } from '../src/lib/SupabaseBroadcastAdapter';
-import { mockSupabase, resetMocks, mockChannelSubscription, createMockSchedule } from './mocks';
+import {
+  mockSupabase,
+  resetMocks,
+  mockChannelSubscription,
+  createMockSchedule,
+} from './mocks';
 import { RUN_ID, startedRunSnapshot, stepStatesSample } from './fixtures';
 
 describe('Reconnection Logic', () => {
@@ -58,7 +63,7 @@ describe('Reconnection Logic', () => {
       expect(scheduleCalls[0].delay).toBe(1000);
 
       // Execute the scheduled reconnection
-      await scheduleCalls[0].callback();
+      scheduleCalls[0].callback();
 
       // Verify state refresh was called during reconnection
       expect(mocks.rpc).toHaveBeenCalledWith('get_run_with_states', {
@@ -138,7 +143,7 @@ describe('Reconnection Logic', () => {
 
       // Execute any scheduled reconnections
       if (scheduleCalls.length > 0) {
-        await scheduleCalls[0].callback();
+        scheduleCalls[0].callback();
       }
 
       // Verify RPC was not called for reconnection since channel was unsubscribed
@@ -200,7 +205,7 @@ describe('Reconnection Logic', () => {
 
       // Execute scheduled reconnection
       if (scheduleCalls.length > 0) {
-        await scheduleCalls[0].callback();
+        scheduleCalls[0].callback();
       }
 
       // Verify state was refreshed
@@ -245,7 +250,7 @@ describe('Reconnection Logic', () => {
       // Execute reconnection - should not throw despite refresh error
       expect(async () => {
         if (scheduleCalls.length > 0) {
-          await scheduleCalls[0].callback();
+          scheduleCalls[0].callback();
         }
       }).not.toThrow();
 
@@ -300,7 +305,7 @@ describe('Reconnection Logic', () => {
 
       // Execute all scheduled reconnections
       for (const call of scheduleCalls) {
-        await call.callback();
+        call.callback();
       }
 
       // Verify state refresh was called for each reconnection
@@ -347,7 +352,7 @@ describe('Reconnection Logic', () => {
 
       // Execute reconnection
       if (scheduleCalls.length > 0) {
-        await scheduleCalls[0].callback();
+        scheduleCalls[0].callback();
       }
 
       // Verify new channel was created during reconnection
@@ -396,7 +401,7 @@ describe('Reconnection Logic', () => {
 
       // Execute reconnection
       if (scheduleCalls.length > 0) {
-        await scheduleCalls[0].callback();
+        scheduleCalls[0].callback();
       }
 
       // Verify new channel was created

@@ -692,9 +692,6 @@ describe('FlowRun', () => {
         remaining_steps: 1,
       });
 
-      // Create a step so we can check it gets cleaned up
-      const step = run.step(STEP_SLUG as any);
-
       // Spy on the dispose method
       const disposeSpy = vi.spyOn(run, 'dispose');
 
@@ -788,8 +785,8 @@ describe('FlowRun', () => {
       // Add some event listeners
       const callback1 = vi.fn();
       const callback2 = vi.fn();
-      const unsubscribe1 = run.on('completed', callback1);
-      const unsubscribe2 = run.on('failed', callback2);
+      run.on('completed', callback1);
+      run.on('failed', callback2);
 
       // Manually dispose
       run.dispose();

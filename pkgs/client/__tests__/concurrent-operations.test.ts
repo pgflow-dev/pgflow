@@ -1,11 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PgflowClient } from '../src/lib/PgflowClient';
-import {
-  FlowRunStatus,
-  FlowStepStatus,
-  type FlowRunEvent,
-  type StepEvent,
-} from '../src/lib/types';
+import { FlowRunStatus, FlowStepStatus } from '../src/lib/types';
 import { Flow } from '@pgflow/dsl';
 
 // Create a test flow for proper typing
@@ -219,7 +214,7 @@ describe('Concurrent Operations', () => {
       const run = await pgflowClient.getRun<typeof TestFlow>(RUN_ID);
       if (!run) throw new Error('Run not found');
 
-      const step = run.step(STEP_SLUG);
+      const step = run.step(STEP_SLUG as any);
 
       // Track events on the step
       const stepEvents: string[] = [];
