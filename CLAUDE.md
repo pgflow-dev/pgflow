@@ -133,15 +133,22 @@ For reading and crawling web content, Claude Code has access to an MCP server th
 - **Usage**: When you need to read web content or crawl websites, use the MCP tools instead of the standard WebFetch
 - **Benefits**: The MCP tools provide more robust capabilities for web content extraction and processing
 
-## Mighty AI Consultation
+## Advanced AI Consultation
 
-When stuck on complex technical issues, you can consult the mighty AI using:
+When stuck on complex technical issues, you can consult the advanced AI using:
 
 ```bash
-aichat -m openai:o3-2025-04-16 -f <file1> -f <file2> -f <fileX> "your detailed query"
+aichat -m $MODEL -f <file1> -f <file2> -f <fileX> "your detailed query"
 ```
 
 **IMPORTANT**: File paths must be relative to your current working directory. Use relative paths like `../core/file.sql` not absolute paths when referencing files outside the current directory.
+
+### Models
+
+By default, use `openrouter:deepseek/deepseek-r1-0528` for `$MODEL` variable.
+
+For **ULTRA HARD** technical issues or if the deepseek model is not enough,
+you can use `openai:o3-2025-04-16` model.
 
 > [!WARNING]
 > QUOTE ALL THE FILE PATHS THAT CONTAIN SPECIAL CHARACTERS LIKE '[run_id]'
@@ -154,5 +161,4 @@ aichat -m openai:o3-2025-04-16 -f <file1> -f <file2> -f <fileX> "your detailed q
 
 ## AI Support and Debugging
 
-If you are stuck or feel lost, you can ask mightly AI that will always know - in order to do so, you must understand what you want to ask for and what files you will attach as context to your query. then you will thouroughly explain what you want to achieve, how you tried to achieve that, what failed and why you think it did, what you want to understand and how to verify. COMMAND TO RUN: aichat -m  openai:o3-2025-04-16 -f <file1> -f <file2> -f <fileX> "your detailed, multiline, markdown formatted, thorough query to the AI"
-```
+If you are stuck or feel lost, you can ask mightly AI that will always know - in order to do so, you must understand what you want to ask for and what files you will attach as context to your query. then you will thouroughly explain what you want to achieve, how you tried to achieve that, what failed and why you think it did, what you want to understand and how to verify. COMMAND TO RUN: aichat -m openai:o3-2025-04-16 -f <file1> -f <file2> -f <fileX> "your detailed, multiline, markdown formatted, thorough query to the AI"

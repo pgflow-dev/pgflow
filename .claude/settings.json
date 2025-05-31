@@ -16,7 +16,8 @@
       "Bash(pnpm vitest:*)",
       "Bash(rg:*)",
       "Bash(supabase start:*)",
-      "Bash(supabase stop:*)"
+      "Bash(supabase stop:*)",
+      "Bash(aichat -m openrouter:deepseek/deepseek-r1-0528:*)"
     ],
     "deny": []
   }
