@@ -65,17 +65,20 @@ export class PgflowSqlClient<TFlow extends AnyFlow>
   }
 
   async startFlow<TFlow extends AnyFlow>(
-    flow: TFlow,
-    input: ExtractFlowInput<TFlow>
+    flow_slug: string,
+    input: ExtractFlowInput<TFlow>,
+    run_id?: string
   ): Promise<RunRow> {
     const results = await this.sql<RunRow[]>`
-      SELECT * FROM pgflow.start_flow(${flow.slug}::text, ${this.sql.json(
-      input
-    )}::jsonb);
+      SELECT * FROM pgflow.start_flow(
+        flow_slug => ${flow_slug}::text,
+        input => ${this.sql.json(input)}::jsonb
+        ${run_id ? this.sql`, run_id => ${run_id}::uuid` : this.sql``}
+      );
     `;
 
     if (results.length === 0) {
-      throw new Error(`Failed to start flow ${flow.slug}`);
+      throw new Error(`Failed to start flow ${flow_slug}`);
     }
 
     const [flowRun] = results;

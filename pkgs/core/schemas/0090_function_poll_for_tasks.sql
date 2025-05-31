@@ -32,7 +32,9 @@ begin
   -- Second statement: Process tasks with fresh snapshot
   -- This can now see step_tasks that were committed during the poll
   return query
-  with tasks as (
+  with
+  -- Order tasks by message_id to ensure deterministic lock acquisition
+  ordered_tasks as (
     select
       task.flow_slug,
       task.run_id,
@@ -42,12 +44,14 @@ begin
     from pgflow.step_tasks as task
     where task.message_id = any(msg_ids)
       and task.status = 'queued'
+      and task.flow_slug = queue_name
+    order by task.message_id  -- Deterministic ordering prevents deadlocks
   ),
   increment_attempts as (
     update pgflow.step_tasks
     set attempts_count = attempts_count + 1
-    from tasks
-    where step_tasks.message_id = tasks.message_id
+    from ordered_tasks
+    where step_tasks.message_id = ordered_tasks.message_id
     and status = 'queued'
   ),
   runs as (
@@ -55,7 +59,7 @@ begin
       r.run_id,
       r.input
     from pgflow.runs r
-    where r.run_id in (select run_id from tasks)
+    where r.run_id in (select run_id from ordered_tasks)
   ),
   deps as (
     select
@@ -63,7 +67,7 @@ begin
       st.step_slug,
       dep.dep_slug,
       dep_task.output as dep_output
-    from tasks st
+    from ordered_tasks st
     join pgflow.deps dep on dep.flow_slug = st.flow_slug and dep.step_slug = st.step_slug
     join pgflow.step_tasks dep_task on
       dep_task.run_id = st.run_id and
@@ -79,12 +83,13 @@ begin
     group by d.run_id, d.step_slug
   ),
   timeouts as (
-    select
+    select distinct on (task.message_id)
       task.message_id,
       coalesce(step.opt_timeout, flow.opt_timeout) + 2 as vt_delay
-    from tasks task
+    from ordered_tasks task
     join pgflow.flows flow on flow.flow_slug = task.flow_slug
     join pgflow.steps step on step.flow_slug = task.flow_slug and step.step_slug = task.step_slug
+    order by task.message_id
   )
   select
     st.flow_slug,
@@ -93,7 +98,7 @@ begin
     jsonb_build_object('run', r.input) ||
     coalesce(dep_out.deps_output, '{}'::jsonb) as input,
     st.message_id as msg_id
-  from tasks st
+  from ordered_tasks st
   join runs r on st.run_id = r.run_id
   left join deps_outputs dep_out on
     dep_out.run_id = st.run_id and
