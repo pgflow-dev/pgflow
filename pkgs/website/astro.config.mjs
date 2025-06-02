@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 
 const GITHUB_REPO_URL = 'https://github.com/pgflow-dev/pgflow';
-const DISCORD_INVITE_URL = 'https://discord.gg/NpffdEyb';
+const DISCORD_INVITE_URL = 'https://discord.gg/UcKXhfrfan';
 const EMAIL_URL = 'mailto:hello@pgflow.dev';
 const PLAUSIBLE_PROXY = {
   url: 'https://wispy-pond-c6f8.wojciech-majewski.workers.dev',
@@ -54,7 +54,7 @@ export default defineConfig({
     '/explanations/comparison-to-dbos/': '/comparisons/dbos/',
     '/explanations/comparison-to-inngest/': '/comparisons/inngest/',
     '/explanations/comparison-to-trigger-dev/': '/comparisons/trigger/',
-    
+
     // Redirects for comparisons to vs rename
     '/comparisons/': '/vs/',
     '/comparisons/dbos/': '/vs/dbos/',
