@@ -13,7 +13,7 @@ export async function startFlow<TFlow extends AnyFlow>(
 ) {
   const pgflow = new PgflowSqlClient<TFlow>(sql);
 
-  return await pgflow.startFlow(flow, input);
+  return await pgflow.startFlow(flow.slug, input);
 }
 
 export function startWorker<

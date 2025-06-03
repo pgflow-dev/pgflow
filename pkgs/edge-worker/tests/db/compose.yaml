@@ -1,15 +1,12 @@
 services:
   db:
+    image: jumski/postgres-15-pgmq:latest
     # image: postgres:15.8-alpine
-    # image: supabase/postgres:15.8.1.039
-    # image: supabase/postgres:15.1.0.37
-
-    image: supabase/postgres:15.8.1.020
-    # image: supabase/postgres:15.8.1.018
+    # image: supabase/postgres:15.8.1.020
     ports:
       - '5432:5432'
     volumes:
-      - ./migrations/pgflow.sql:/docker-entrypoint-initdb.d/migrations/950_pgflow.sql
+      - ./migrations/pgflow.sql:/docker-entrypoint-initdb.d/950_pgflow.sql
     environment:
       POSTGRES_DB: postgres
       # commented out because of the problems with supabase_admin permissions

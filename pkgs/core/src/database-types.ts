@@ -124,6 +124,7 @@ export type Database = {
         Row: {
           completed_at: string | null
           created_at: string
+          error_message: string | null
           failed_at: string | null
           flow_slug: string
           remaining_deps: number
@@ -136,6 +137,7 @@ export type Database = {
         Insert: {
           completed_at?: string | null
           created_at?: string
+          error_message?: string | null
           failed_at?: string | null
           flow_slug: string
           remaining_deps?: number
@@ -148,6 +150,7 @@ export type Database = {
         Update: {
           completed_at?: string | null
           created_at?: string
+          error_message?: string | null
           failed_at?: string | null
           flow_slug?: string
           remaining_deps?: number
@@ -416,6 +419,10 @@ export type Database = {
           task_index: number
         }[]
       }
+      get_run_with_states: {
+        Args: { run_id: string }
+        Returns: Json
+      }
       is_valid_slug: {
         Args: { slug: string }
         Returns: boolean
@@ -446,7 +453,7 @@ export type Database = {
         Returns: Database["pgmq"]["CompositeTypes"]["message_record"][]
       }
       start_flow: {
-        Args: { flow_slug: string; input: Json }
+        Args: { flow_slug: string; input: Json; run_id?: string }
         Returns: {
           completed_at: string | null
           failed_at: string | null
@@ -458,6 +465,10 @@ export type Database = {
           started_at: string
           status: string
         }[]
+      }
+      start_flow_with_states: {
+        Args: { flow_slug: string; input: Json; run_id?: string }
+        Returns: Json
       }
       start_ready_steps: {
         Args: { run_id: string }
