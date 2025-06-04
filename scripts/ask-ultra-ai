@@ -1,0 +1,3 @@
+#!/bin/bash
+# Wrapper for aichat with o3 model
+exec aichat -m openai:o3-2025-04-16 "$@"
