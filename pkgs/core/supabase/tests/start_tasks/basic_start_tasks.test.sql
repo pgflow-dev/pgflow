@@ -6,13 +6,20 @@ select pgflow.create_flow('simple');
 select pgflow.add_step('simple', 'task');
 select pgflow.start_flow('simple', '"hello"'::jsonb);
 
--- SETUP: Get message IDs by reading from queue
-select array_agg(msg_id) into @msg_ids 
-from pgflow.read_with_poll('simple', 10, 5, 1, 100);
+-- Create a worker
+insert into pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
+values ('11111111-1111-1111-1111-111111111111'::uuid, 'simple', 'test_worker', now());
 
 -- TEST: start_tasks returns tasks for valid message IDs
+with msg_ids as (
+  select array_agg(msg_id) as ids
+  from pgflow.read_with_poll('simple', 10, 5, 1, 100)
+)
 select is(
-  (select count(*)::int from pgflow.start_tasks(@msg_ids, gen_random_uuid())),
+  (select count(*)::int from pgflow.start_tasks(
+    (select ids from msg_ids), 
+    '11111111-1111-1111-1111-111111111111'::uuid
+  )),
   1,
   'start_tasks should return one task for valid message ID'
 );
@@ -45,7 +52,7 @@ select ok(
 
 -- TEST: Empty array returns no tasks
 select is(
-  (select count(*)::int from pgflow.start_tasks(array[]::bigint[], gen_random_uuid())),
+  (select count(*)::int from pgflow.start_tasks(array[]::bigint[], '11111111-1111-1111-1111-111111111111'::uuid)),
   0,
   'start_tasks with empty array should return no tasks'
 );
