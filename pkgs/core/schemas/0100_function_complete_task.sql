@@ -31,6 +31,7 @@ task AS (
   WHERE pgflow.step_tasks.run_id = complete_task.run_id
     AND pgflow.step_tasks.step_slug = complete_task.step_slug
     AND pgflow.step_tasks.task_index = complete_task.task_index
+    AND pgflow.step_tasks.status = 'started'
   RETURNING *
 ),
 step_state AS (

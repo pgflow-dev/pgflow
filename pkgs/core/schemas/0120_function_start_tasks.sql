@@ -1,37 +1,12 @@
-create or replace function pgflow.poll_for_tasks(
-  queue_name text,
-  vt integer,
-  qty integer,
-  max_poll_seconds integer default 5,
-  poll_interval_ms integer default 100
+create or replace function pgflow.start_tasks(
+  msg_ids bigint[],
+  worker_id uuid
 )
 returns setof pgflow.step_task_record
 volatile
 set search_path to ''
+language sql
 as $$
-declare
-  msg_ids bigint[];
-begin
-  -- First statement: Read messages and capture their IDs
-  -- This gets its own snapshot and can see newly committed messages
-  select array_agg(msg_id)
-  into msg_ids
-  from pgflow.read_with_poll(
-    queue_name,
-    vt,
-    qty,
-    max_poll_seconds,
-    poll_interval_ms
-  );
-
-  -- If no messages were read, return empty set
-  if msg_ids is null or array_length(msg_ids, 1) is null then
-    return;
-  end if;
-
-  -- Second statement: Process tasks with fresh snapshot
-  -- This can now see step_tasks that were committed during the poll
-  return query
   with tasks as (
     select
       task.flow_slug,
@@ -43,15 +18,16 @@ begin
     where task.message_id = any(msg_ids)
       and task.status = 'queued'
   ),
-  increment_attempts as (
+  start_tasks_update as (
     update pgflow.step_tasks
     set 
       attempts_count = attempts_count + 1,
       status = 'started',
-      started_at = now()
+      started_at = now(),
+      last_worker_id = worker_id
     from tasks
     where step_tasks.message_id = tasks.message_id
-    and status = 'queued'
+    and step_tasks.status = 'queued'
   ),
   runs as (
     select
@@ -84,6 +60,7 @@ begin
   timeouts as (
     select
       task.message_id,
+      task.flow_slug,
       coalesce(step.opt_timeout, flow.opt_timeout) + 2 as vt_delay
     from tasks task
     join pgflow.flows flow on flow.flow_slug = task.flow_slug
@@ -105,9 +82,10 @@ begin
     -- TODO: this is slow because it calls set_vt for each row, and set_vt
     --       builds dynamic query from string every time it is called
     --       implement set_vt_batch(msgs_ids bigint[], vt_delays int[])
-    select pgmq.set_vt(queue_name, st.message_id,
+    select pgmq.set_vt(
+      (select t.flow_slug from timeouts t where t.message_id = st.message_id),
+      st.message_id,
       (select t.vt_delay from timeouts t where t.message_id = st.message_id)
     )
-  ) set_vt;
-end;
-$$ language plpgsql;
+  ) set_vt
+$$;
