@@ -38,6 +38,17 @@ export type StepTaskRecord<TFlow extends AnyFlow> = {
 export type StepTaskKey = Pick<StepTaskRecord<any>, 'run_id' | 'step_slug'>;
 
 /**
+ * Record representing a message from queue polling
+ */
+export type MessageRecord = {
+  msg_id: number;
+  read_ct: number;
+  enqueued_at: string;
+  vt: string;
+  message: Json;
+};
+
+/**
  * Interface for interacting with pgflow database functions
  */
 export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow> {
@@ -55,6 +66,32 @@ export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow> {
     visibilityTimeout?: number,
     maxPollSeconds?: number,
     pollIntervalMs?: number
+  ): Promise<StepTaskRecord<TFlow>[]>;
+
+  /**
+   * Reads messages from queue without starting tasks (phase 1 of two-phase approach)
+   * @param queueName - Name of the queue
+   * @param visibilityTimeout - Visibility timeout for messages
+   * @param batchSize - Number of messages to fetch
+   * @param maxPollSeconds - Maximum time to poll for messages
+   * @param pollIntervalMs - Poll interval in milliseconds
+   */
+  readMessages(
+    queueName: string,
+    visibilityTimeout: number,
+    batchSize: number,
+    maxPollSeconds?: number,
+    pollIntervalMs?: number
+  ): Promise<MessageRecord[]>;
+
+  /**
+   * Starts tasks for given message IDs (phase 2 of two-phase approach)
+   * @param msgIds - Array of message IDs from readMessages
+   * @param workerId - ID of the worker starting the tasks
+   */
+  startTasks(
+    msgIds: number[],
+    workerId: string
   ): Promise<StepTaskRecord<TFlow>[]>;
 
   /**

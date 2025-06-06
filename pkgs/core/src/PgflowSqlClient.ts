@@ -4,6 +4,7 @@ import type {
   IPgflowClient,
   StepTaskKey,
   RunRow,
+  MessageRecord,
 } from './types.js';
 import type { Json } from './types.js';
 import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
@@ -31,6 +32,38 @@ export class PgflowSqlClient<TFlow extends AnyFlow>
         qty => ${batchSize},
         max_poll_seconds => ${maxPollSeconds},
         poll_interval_ms => ${pollIntervalMs}
+      );
+    `;
+  }
+
+  async readMessages(
+    queueName: string,
+    visibilityTimeout: number,
+    batchSize: number,
+    maxPollSeconds = 5,
+    pollIntervalMs = 200
+  ): Promise<MessageRecord[]> {
+    return await this.sql<MessageRecord[]>`
+      SELECT *
+      FROM pgflow.read_with_poll(
+        queue_name => ${queueName},
+        vt => ${visibilityTimeout},
+        qty => ${batchSize},
+        max_poll_seconds => ${maxPollSeconds},
+        poll_interval_ms => ${pollIntervalMs}
+      );
+    `;
+  }
+
+  async startTasks(
+    msgIds: number[],
+    workerId: string
+  ): Promise<StepTaskRecord<TFlow>[]> {
+    return await this.sql<StepTaskRecord<TFlow>[]>`
+      SELECT *
+      FROM pgflow.start_tasks(
+        msg_ids => ${this.sql.array(msgIds, 'bigint')},
+        worker_id => ${workerId}::uuid
       );
     `;
   }
