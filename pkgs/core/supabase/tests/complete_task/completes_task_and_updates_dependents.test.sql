@@ -6,6 +6,24 @@ select pgflow_tests.setup_flow('sequential');
 -- Start a flow run
 select pgflow.start_flow('sequential', '"hello"'::jsonb);
 
+-- Create a worker
+insert into pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
+values ('11111111-1111-1111-1111-111111111111'::uuid, 'sequential', 'test_worker', now());
+
+-- Get message IDs for the first task
+with msg_ids as (
+  select array_agg(message_id) as ids
+  from pgflow.step_tasks
+  where run_id = (select run_id from pgflow.runs limit 1)
+    and step_slug = 'first'
+    and status = 'queued'
+)
+-- Start the first task
+select pgflow.start_tasks(
+  (select ids from msg_ids),
+  '11111111-1111-1111-1111-111111111111'::uuid
+);
+
 -- Complete the first task
 select pgflow.complete_task(
   (select run_id from pgflow.runs limit 1),

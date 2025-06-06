@@ -58,9 +58,24 @@ create or replace function pgflow_tests.poll_and_fail(
   vt integer default 1,
   qty integer default 1
 ) returns setof pgflow.step_tasks as $$
-  -- Poll for a task and fail it in one step
-  WITH task AS (
-    SELECT * FROM pgflow.poll_for_tasks(flow_slug, vt, qty) LIMIT 1
+  -- Poll for a task and fail it in one step using new two-phase approach
+  WITH test_worker AS (
+    INSERT INTO pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
+    VALUES ('11111111-1111-1111-1111-111111111111'::uuid, flow_slug, 'test_worker', now())
+    ON CONFLICT (worker_id) DO UPDATE SET last_heartbeat_at = now()
+    RETURNING worker_id
+  ),
+  messages AS (
+    SELECT * FROM pgflow.read_with_poll(flow_slug, vt, qty, 1, 50) LIMIT qty
+  ),
+  msg_ids AS (
+    SELECT array_agg(msg_id) as ids FROM messages
+  ),
+  task AS (
+    SELECT * FROM pgflow.start_tasks(
+      (SELECT ids FROM msg_ids),
+      (SELECT worker_id FROM test_worker)
+    ) LIMIT 1
   )
   SELECT pgflow.fail_task(
     (SELECT run_id FROM task),
@@ -79,9 +94,24 @@ create or replace function pgflow_tests.poll_and_complete(
   vt integer default 1,
   qty integer default 1
 ) returns setof pgflow.step_tasks as $$
-  -- Poll for a task and complete it in one step
-  WITH task AS (
-    SELECT * FROM pgflow.poll_for_tasks(flow_slug, vt, qty) LIMIT 1
+  -- Poll for a task and complete it in one step using new two-phase approach
+  WITH test_worker AS (
+    INSERT INTO pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
+    VALUES ('11111111-1111-1111-1111-111111111111'::uuid, flow_slug, 'test_worker', now())
+    ON CONFLICT (worker_id) DO UPDATE SET last_heartbeat_at = now()
+    RETURNING worker_id
+  ),
+  messages AS (
+    SELECT * FROM pgflow.read_with_poll(flow_slug, vt, qty, 1, 50) LIMIT qty
+  ),
+  msg_ids AS (
+    SELECT array_agg(msg_id) as ids FROM messages
+  ),
+  task AS (
+    SELECT * FROM pgflow.start_tasks(
+      (SELECT ids FROM msg_ids),
+      (SELECT worker_id FROM test_worker)
+    ) LIMIT 1
   )
   SELECT pgflow.complete_task(
     (SELECT run_id FROM task),

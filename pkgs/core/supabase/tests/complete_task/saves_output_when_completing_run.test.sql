@@ -6,25 +6,68 @@ select pgflow_tests.setup_flow('two_roots_left_right');
 -- Start the flow
 select pgflow.start_flow('two_roots_left_right', '"hello"'::JSONB);
 
--- Complete all the steps
+-- Create a worker
+insert into pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
+values ('11111111-1111-1111-1111-111111111111'::uuid, 'two_roots_left_right', 'test_worker', now());
+
+-- Start and complete all the steps
+with msg_ids as (
+  select array_agg(message_id) as ids
+  from pgflow.step_tasks
+  where run_id = (select run_id from pgflow.runs limit 1)
+    and step_slug = 'connected_root'
+    and status = 'queued'
+)
+select pgflow.start_tasks((select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
+
 select pgflow.complete_task(
   (select run_id from pgflow.runs limit 1),
   'connected_root',
   0,
   '"root successful"'::JSONB
 );
+
+with msg_ids as (
+  select array_agg(message_id) as ids
+  from pgflow.step_tasks
+  where run_id = (select run_id from pgflow.runs limit 1)
+    and step_slug = 'left'
+    and status = 'queued'
+)
+select pgflow.start_tasks((select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
+
 select pgflow.complete_task(
   (select run_id from pgflow.runs limit 1),
   'left',
   0,
   '"left successful"'::JSONB
 );
+
+with msg_ids as (
+  select array_agg(message_id) as ids
+  from pgflow.step_tasks
+  where run_id = (select run_id from pgflow.runs limit 1)
+    and step_slug = 'right'
+    and status = 'queued'
+)
+select pgflow.start_tasks((select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
+
 select pgflow.complete_task(
   (select run_id from pgflow.runs limit 1),
   'right',
   0,
   '"right successful"'::JSONB
 );
+
+with msg_ids as (
+  select array_agg(message_id) as ids
+  from pgflow.step_tasks
+  where run_id = (select run_id from pgflow.runs limit 1)
+    and step_slug = 'disconnected_root'
+    and status = 'queued'
+)
+select pgflow.start_tasks((select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
+
 select pgflow.complete_task(
   (select run_id from pgflow.runs limit 1),
   'disconnected_root',

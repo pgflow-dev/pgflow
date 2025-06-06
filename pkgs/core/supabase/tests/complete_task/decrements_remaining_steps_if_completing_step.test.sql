@@ -6,6 +6,10 @@ select pgflow_tests.setup_flow('sequential');
 -- Start the flow
 select pgflow.start_flow('sequential', '{"test": true}'::JSONB);
 
+-- Create a worker
+insert into pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
+values ('11111111-1111-1111-1111-111111111111'::uuid, 'sequential', 'test_worker', now());
+
 -- TEST: Initial remaining_steps should be 3
 select is(
   (select remaining_steps::INT from pgflow.runs limit 1),
@@ -13,7 +17,16 @@ select is(
   'Initial remaining_steps should be 3'
 );
 
--- Complete the first step's task
+-- Start and complete the first step's task
+with msg_ids as (
+  select array_agg(message_id) as ids
+  from pgflow.step_tasks
+  where run_id = (select run_id from pgflow.runs limit 1)
+    and step_slug = 'first'
+    and status = 'queued'
+)
+select pgflow.start_tasks((select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
+
 select pgflow.complete_task(
   (select run_id from pgflow.runs limit 1),
   'first',
@@ -28,7 +41,16 @@ select is(
   'After completing first step, remaining_steps should be 2'
 );
 
--- Complete the second step's task
+-- Start and complete the second step's task
+with msg_ids as (
+  select array_agg(message_id) as ids
+  from pgflow.step_tasks
+  where run_id = (select run_id from pgflow.runs limit 1)
+    and step_slug = 'second'
+    and status = 'queued'
+)
+select pgflow.start_tasks((select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
+
 select pgflow.complete_task(
   (select run_id from pgflow.runs limit 1),
   'second',
@@ -43,7 +65,16 @@ select is(
   'After completing second step, remaining_steps should be 1'
 );
 
--- Complete the last step's task
+-- Start and complete the last step's task
+with msg_ids as (
+  select array_agg(message_id) as ids
+  from pgflow.step_tasks
+  where run_id = (select run_id from pgflow.runs limit 1)
+    and step_slug = 'last'
+    and status = 'queued'
+)
+select pgflow.start_tasks((select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
+
 select pgflow.complete_task(
   (select run_id from pgflow.runs limit 1),
   'last',
