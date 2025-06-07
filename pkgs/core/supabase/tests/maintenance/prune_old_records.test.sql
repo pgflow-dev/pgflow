@@ -27,8 +27,8 @@ select pgflow.add_step('flow_that_is_still_running', 'step');
 
 -- Create a worker to test pruning
 insert into pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
-values ('11111111-1111-1111-1111-111111111111', 'old_worker', 'test_function', now() - interval '8 days'),
-('22222222-1111-1111-1111-111111111111', 'recent_worker', 'test_function', now());
+values ('99999999-1111-1111-1111-111111111111', 'old_worker', 'test_function', now() - interval '8 days'),
+('88888888-1111-1111-1111-111111111111', 'recent_worker', 'test_function', now());
 
 
 -- Start and complete flows
@@ -69,8 +69,8 @@ select is(
 
 select is(
   (select count(*) from pgflow.workers),
-  2::bigint,
-  'Should have 2 workers'
+  3::bigint,
+  'Should have 3 workers (2 manual + 1 from poll functions)'
 );
 
 -- PRUNE OLD RECORDS with 7-day retention - this should only prune the old worker
@@ -79,8 +79,8 @@ select pgflow.prune_data_older_than(make_interval(days => 7));
 -- TEST: Run pruning with a 7-day retention - only old worker should be pruned
 select is(
   (select count(*) from pgflow.workers),
-  1::bigint,
-  'Only old worker should be pruned and one worker should be left'
+  2::bigint,
+  'Only old worker should be pruned and two workers should be left'
 );
 
 -- Set timestamps only on the worker, leaving runs, steps, and tasks as is
