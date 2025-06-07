@@ -10,28 +10,34 @@ select pgflow.add_step('multi_flow', 'task2');
 select pgflow.start_flow('multi_flow', '"first"'::jsonb);
 select pgflow.start_flow('multi_flow', '"second"'::jsonb);
 
--- SETUP: Get all message IDs
-select array_agg(msg_id) into @msg_ids 
-from pgflow.read_with_poll('multi_flow', 10, 10, 1, 100);
+-- Ensure worker exists
+select pgflow_tests.ensure_worker('multi_flow');
 
 -- TEST: start_tasks should return multiple tasks
+with msg_ids as (
+  select array_agg(msg_id) as ids
+  from pgflow.read_with_poll('multi_flow', 10, 10, 1, 100)
+)
 select is(
-  (select count(*)::int from pgflow.start_tasks(@msg_ids, gen_random_uuid())),
-  2,
+  (select count(*)::int from pgflow.start_tasks(
+    (select ids from msg_ids),
+    '11111111-1111-1111-1111-111111111111'::uuid
+  )),
+  4,
   'start_tasks should return multiple tasks when multiple messages provided'
 );
 
 -- TEST: All tasks should be started
 select is(
   (select count(*)::int from pgflow.step_tasks where status = 'started'),
-  2,
+  4,
   'All tasks should be in started status'
 );
 
 -- TEST: All tasks should have started_at timestamp
 select is(
   (select count(*)::int from pgflow.step_tasks where started_at is not null),
-  2,
+  4,
   'All tasks should have started_at timestamp'
 );
 
