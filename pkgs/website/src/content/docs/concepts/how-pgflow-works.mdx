@@ -80,10 +80,14 @@ When you call `pgflow.start_flow()`, you only see step progression. That's the m
 
 ### How workers execute steps
 
-Behind the scenes, when a step becomes ready, workers handle the execution by calling simple SQL functions. The implementation details—queues, tasks, coordination—are handled transparently by the SQL Core.
+Behind the scenes, when a step becomes ready, workers handle the execution through a simple 3-call sequence:
+
+1. `read_with_poll` → locks queue messages  
+2. `start_tasks` → marks task started, builds input  
+3. `complete_task/fail_task` → finishes task, moves step forward
 
 <Aside type="note" title="Implementation detail">
-If you're just calling `start_flow()` and checking results, you don't need to know about tasks, queues, or worker coordination. Those are handled automatically by pgflow's SQL Core.
+If you're just calling `start_flow()` and checking results, you don't need to know about this coordination. It's handled automatically by pgflow's SQL Core.
 </Aside>
 
 :::note[Looks just like "queue-of-queues"]
