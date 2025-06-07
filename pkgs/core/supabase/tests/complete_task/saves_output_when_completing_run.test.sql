@@ -6,9 +6,8 @@ select pgflow_tests.setup_flow('two_roots_left_right');
 -- Start the flow
 select pgflow.start_flow('two_roots_left_right', '"hello"'::JSONB);
 
--- Create a worker
-insert into pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
-values ('11111111-1111-1111-1111-111111111111'::uuid, 'two_roots_left_right', 'test_worker', now());
+-- Ensure worker exists
+select pgflow_tests.ensure_worker('two_roots_left_right');
 
 -- Start and complete all the steps
 with msg_ids as (

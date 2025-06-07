@@ -6,9 +6,8 @@ select pgflow.create_flow('simple');
 select pgflow.add_step('simple', 'task');
 select pgflow.start_flow('simple', '"hello"'::jsonb);
 
--- Create a worker
-insert into pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
-values ('11111111-1111-1111-1111-111111111111'::uuid, 'simple', 'test_worker', now());
+-- Ensure worker exists
+select pgflow_tests.ensure_worker('simple');
 
 -- TEST: start_tasks returns tasks for valid message IDs
 with msg_ids as (

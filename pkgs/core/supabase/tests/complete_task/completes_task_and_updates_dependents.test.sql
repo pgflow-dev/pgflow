@@ -6,9 +6,8 @@ select pgflow_tests.setup_flow('sequential');
 -- Start a flow run
 select pgflow.start_flow('sequential', '"hello"'::jsonb);
 
--- Create a worker
-insert into pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
-values ('11111111-1111-1111-1111-111111111111'::uuid, 'sequential', 'test_worker', now());
+-- Ensure worker exists
+select pgflow_tests.ensure_worker('sequential');
 
 -- Get message IDs for the first task
 with msg_ids as (

@@ -13,9 +13,8 @@ select is(
   'Initial task status should be queued'
 );
 
--- Create a worker
-insert into pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
-values ('11111111-1111-1111-1111-111111111111'::uuid, 'status_flow', 'test_worker', now());
+-- Ensure worker exists
+select pgflow_tests.ensure_worker('status_flow');
 
 -- SETUP: Start the task using start_tasks
 with msg_ids as (

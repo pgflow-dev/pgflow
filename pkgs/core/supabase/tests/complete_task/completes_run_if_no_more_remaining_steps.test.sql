@@ -6,9 +6,8 @@ select pgflow_tests.setup_flow('sequential');
 -- Start the flow
 select pgflow.start_flow('sequential', '{"test": true}'::JSONB);
 
--- Create a worker
-insert into pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
-values ('11111111-1111-1111-1111-111111111111'::uuid, 'sequential', 'test_worker', now());
+-- Ensure worker exists
+select pgflow_tests.ensure_worker('sequential');
 
 -- TEST: Initial remaining_steps should be 3 and status should be 'started'
 select results_eq(

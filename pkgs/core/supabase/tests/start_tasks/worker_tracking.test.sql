@@ -7,10 +7,8 @@ select pgflow.add_step('simple', 'task');
 select pgflow.start_flow('simple', '"hello"'::jsonb);
 
 -- SETUP: Create workers
-insert into pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
-values 
-  ('00000000-0000-0000-0000-000000000001'::uuid, 'simple', 'test_function', now()),
-  ('00000000-0000-0000-0000-000000000002'::uuid, 'simple', 'test_function', now());
+select pgflow_tests.ensure_worker('simple', '00000000-0000-0000-0000-000000000001'::uuid);
+select pgflow_tests.ensure_worker('simple', '00000000-0000-0000-0000-000000000002'::uuid);
 
 -- SETUP: Get message IDs and start tasks with specific worker
 with msg_ids as (

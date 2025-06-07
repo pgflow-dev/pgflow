@@ -51,6 +51,23 @@ end;
 $$ language plpgsql;
 
 --------------------------------------------------------------------------------
+------- ensure_worker - creates or updates a test worker -----------------------
+--------------------------------------------------------------------------------
+create or replace function pgflow_tests.ensure_worker(
+  queue_name text,
+  worker_uuid uuid default '11111111-1111-1111-1111-111111111111'::uuid,
+  function_name text default 'test_worker'
+) returns uuid as $$
+  INSERT INTO pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
+  VALUES (worker_uuid, queue_name, function_name, now())
+  ON CONFLICT (worker_id) DO UPDATE SET 
+    last_heartbeat_at = now(),
+    queue_name = EXCLUDED.queue_name,
+    function_name = EXCLUDED.function_name
+  RETURNING worker_id;
+$$ language sql;
+
+--------------------------------------------------------------------------------
 ------- poll_and_fail - polls for a task and fails it immediately --------------
 --------------------------------------------------------------------------------
 create or replace function pgflow_tests.poll_and_fail(
@@ -60,10 +77,7 @@ create or replace function pgflow_tests.poll_and_fail(
 ) returns setof pgflow.step_tasks as $$
   -- Poll for a task and fail it in one step using new two-phase approach
   WITH test_worker AS (
-    INSERT INTO pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
-    VALUES ('11111111-1111-1111-1111-111111111111'::uuid, flow_slug, 'test_worker', now())
-    ON CONFLICT (worker_id) DO UPDATE SET last_heartbeat_at = now()
-    RETURNING worker_id
+    SELECT pgflow_tests.ensure_worker(flow_slug) as worker_id
   ),
   messages AS (
     SELECT * FROM pgflow.read_with_poll(flow_slug, vt, qty, 1, 50) LIMIT qty
@@ -96,10 +110,7 @@ create or replace function pgflow_tests.poll_and_complete(
 ) returns setof pgflow.step_tasks as $$
   -- Poll for a task and complete it in one step using new two-phase approach
   WITH test_worker AS (
-    INSERT INTO pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
-    VALUES ('11111111-1111-1111-1111-111111111111'::uuid, flow_slug, 'test_worker', now())
-    ON CONFLICT (worker_id) DO UPDATE SET last_heartbeat_at = now()
-    RETURNING worker_id
+    SELECT pgflow_tests.ensure_worker(flow_slug) as worker_id
   ),
   messages AS (
     SELECT * FROM pgflow.read_with_poll(flow_slug, vt, qty, 1, 50) LIMIT qty
