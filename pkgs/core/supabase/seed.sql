@@ -271,6 +271,7 @@ begin
   update pgflow.step_tasks
   set
     queued_at = now() - interval '1 day' - (days_old * interval '1 day'),
+    started_at = now() - interval '1 day' - (days_old * interval '1 day') + interval '1 minute',
     completed_at = now() - (days_old * interval '1 day'),
     status = 'completed'
   where flow_slug = p_flow_slug;
@@ -306,6 +307,7 @@ begin
   update pgflow.step_tasks
   set
     queued_at = now() - interval '1 day' - (days_old * interval '1 day'),
+    started_at = now() - interval '1 day' - (days_old * interval '1 day') + interval '1 minute',
     failed_at = now() - (days_old * interval '1 day'),
     status = 'failed',
     error_message = 'Test failure'

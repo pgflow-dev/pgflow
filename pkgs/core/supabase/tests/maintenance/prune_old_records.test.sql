@@ -125,6 +125,7 @@ where flow_slug = 'flow_that_is_still_running';
 update pgflow.step_tasks
 set
   queued_at = now() - interval '32 days',
+  started_at = now() - interval '31 days' - interval '1 minute',
   completed_at = now() - interval '31 days',
   status = 'completed'
 where flow_slug = 'flow_that_completes';
@@ -150,7 +151,8 @@ where flow_slug = 'flow_that_completes';
 update pgflow.step_tasks
 set
   queued_at = now() - interval '30 days',
-  completed_at = now() - interval '30 days',
+  started_at = now() - interval '30 days' + interval '1 minute',
+  completed_at = now() - interval '30 days' + interval '2 minutes',
   status = 'completed'
 where flow_slug = 'flow_that_completed_recently';
 
@@ -175,6 +177,7 @@ where flow_slug = 'flow_that_completed_recently';
 update pgflow.step_tasks
 set
   queued_at = now() - interval '32 days',
+  started_at = now() - interval '31 days' - interval '1 minute',
   failed_at = now() - interval '31 days',
   status = 'failed',
   error_message = 'Test failure'
@@ -199,7 +202,8 @@ where flow_slug = 'flow_that_fails';
 update pgflow.step_tasks
 set
   queued_at = now() - interval '30 days',
-  failed_at = now() - interval '30 days'
+  started_at = now() - interval '30 days' + interval '1 minute',
+  failed_at = now() - interval '30 days' + interval '2 minutes'
 where flow_slug = 'flow_that_failed_recently';
 
 update pgflow.step_states
