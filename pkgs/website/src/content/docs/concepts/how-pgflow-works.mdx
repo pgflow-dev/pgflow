@@ -14,8 +14,8 @@ Yet those pieces compose into a full workflow engine with **Postgres as the sing
 This page walks you through the **mental model** in three short hops:
 
 1. The three layers (DSL → SQL Core → Worker)
-2. The life-cycle of a task (`poll_for_tasks → complete_task | fail_task`)
-3. Why type safety and queues matter
+2. The task state machine (`queued → started → completed/failed`)
+3. Why type safety and coordination matter
 
 pgflow follows four core design principles:
 - **Postgres-first**: All state and orchestration logic in your database
@@ -65,13 +65,19 @@ Because updates happen **inside the same transaction** that handles the queue me
 
 ## 3. The execution cycle
 
-1. **Worker calls** `poll_for_tasks(queue, vt, qty)`
-   • Locks & returns up-to-`qty` ready tasks
+1. **Worker polls for messages** `read_with_poll(queue, vt, qty)`
+   • Very fast operation that locks & returns up-to-`qty` queue message records
+   • Returns message records, no task payloads yet
+   • Separate from task starting - pure message coordination
+2. **Worker starts tasks** `start_tasks(msg_ids[], worker_id)`
+   • Finds tasks with `status = 'queued'` matching the message IDs
+   • Marks tasks as `started` with `started_at` timestamp and `worker_id`
    • Builds an *input object* that merges `run.input` with outputs of completed deps
-2. Worker runs your handler function.
-3. On success → `complete_task(run_id, step_slug, task_index, output)`
+   • Returns the task records with inputs
+3. Worker runs your handler function.
+4. On success → `complete_task(run_id, step_slug, task_index, output)`
    On error   → `fail_task(run_id, step_slug, task_index, error)`
-4. SQL Core, in the *same commit*:
+5. SQL Core, in the *same commit*:
    - stores output / error
    - moves step & run state forward
    - enqueues next steps if deps are met
@@ -82,7 +88,9 @@ Retry settings are configurable at both flow and step levels, with sensible defa
 - Each retry uses exponential backoff (base_delay * 2^attempts) to avoid overload
 - When retries are exhausted, the step and flow are marked as failed
 
-That's it—**two SQL calls** advance the entire graph.
+Task states flow through: `queued` → `started` → `completed`/`failed`. The `started` state tracks which tasks are actively being processed, preventing duplicate execution and enabling crash recovery.
+
+That's it—**three SQL calls** advance the entire graph.
 
 :::note[Looks just like "queue-of-queues"]
 If you ever wrote code that:

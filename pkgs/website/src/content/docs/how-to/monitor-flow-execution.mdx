@@ -73,7 +73,7 @@ Step statuses include:
 
 ## Monitor active tasks
 
-To see all tasks that are currently queued for execution:
+To see all tasks that are currently active (queued or being processed):
 
 ```sql
 SELECT
@@ -82,19 +82,26 @@ SELECT
   status,
   attempts_count,
   message_id,
-  queued_at
+  queued_at,
+  started_at,
+  last_worker_id
 FROM pgflow.step_tasks
-WHERE status = 'queued'
+WHERE status IN ('queued', 'started')
 ORDER BY queued_at ASC;
 ```
 
-This shows tasks that workers should pick up next:
+This shows active tasks at different stages:
 
 ```
-run_id        | step_slug     | status  | attempts_count | message_id | queued_at
---------------+--------------+---------+---------------+------------+---------------------
-<run_id>      | process_data | queued  | 1              | 123456     | 2023-05-01 12:00:00
+run_id   | step_slug    | status  | attempts_count | message_id | queued_at           | started_at          | last_worker_id
+---------+--------------+---------+---------------+------------+--------------------+--------------------+---------------
+<run_id> | process_data | queued  | 1              | 123456     | 2023-05-01 12:00:00| null               | null
+<run_id> | send_email   | started | 1              | 123457     | 2023-05-01 12:01:00| 2023-05-01 12:02:00| worker-uuid-123
 ```
+
+Active task statuses:
+- `queued`: Task is ready to run, waiting for a worker to claim it
+- `started`: Task is currently being processed by a worker (with `started_at` timestamp and `worker_id`)
 
 ## Get execution timeline for a run
 
