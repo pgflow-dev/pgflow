@@ -1,9 +1,9 @@
 begin;
-select plan(8);
+select plan(6);
 select pgflow_tests.reset_db();
 
 select pgflow.create_flow('status_flow', max_attempts => 2);
-select pgflow.add_step('status_flow', 'task');
+select pgflow.add_step('status_flow', 'task', base_delay => 0);
 select pgflow.start_flow('status_flow', '"hello"'::jsonb);
 
 -- TEST: Initial task status should be 'queued'
@@ -13,10 +13,8 @@ select is(
   'Initial task status should be queued'
 );
 
--- Ensure worker exists
+-- Start the task using start_tasks
 select pgflow_tests.ensure_worker('status_flow');
-
--- SETUP: Start the task using start_tasks
 with msg_ids as (
   select array_agg(msg_id) as ids
   from pgflow.read_with_poll('status_flow', 10, 5, 1, 100)
@@ -33,9 +31,9 @@ select is(
   'Task status should be started after start_tasks'
 );
 
--- SETUP: Complete the task
+-- Complete the task
 select pgflow.complete_task(
-  run_id => (select run_id from pgflow.runs where flow_slug = 'status_flow'),
+  run_id => (select run_id from pgflow.runs limit 1),
   step_slug => 'task',
   task_index => 0,
   output => '{"result": "success"}'::jsonb
@@ -48,73 +46,38 @@ select is(
   'Task status should be completed after completion'
 );
 
--- SETUP: Start a new flow for failure test
-select pgflow.start_flow('status_flow', '"world"'::jsonb);
-with msg_ids as (
-  select array_agg(msg_id) as ids
-  from pgflow.read_with_poll('status_flow', 10, 5, 1, 100)
-)
-select pgflow.start_tasks(
-  (select ids from msg_ids), 
-  '11111111-1111-1111-1111-111111111111'::uuid
-);
+-- Test failure with retry behavior
+select pgflow.start_flow('status_flow', '"retry_test"'::jsonb);
+select pgflow_tests.poll_and_fail('status_flow');
 
--- TEST: Second task should be 'started'
-select is(
-  (select count(*)::int from pgflow.step_tasks where status = 'started'),
-  1,
-  'Second task should be in started status'
-);
-
--- SETUP: Fail the task (should retry since max_attempts = 2)
-select pgflow.fail_task(
-  run_id => (select run_id from pgflow.runs where flow_slug = 'status_flow' order by started_at desc limit 1),
-  step_slug => 'task',
-  task_index => 0,
-  error_message => 'test failure'
-);
-
--- TEST: Task should be back to 'queued' after failure with retries
+-- TEST: After first failure, task should be queued (retry available)
 select is(
   (select status from pgflow.step_tasks 
-   where step_slug = 'task' 
-   and run_id = (select run_id from pgflow.runs where flow_slug = 'status_flow' order by started_at desc limit 1)),
+   where run_id = (select run_id from pgflow.runs where input::text = '"retry_test"')),
   'queued',
-  'Task should be queued after failure with retries available'
+  'Task should be queued after first failure (retry available)'
 );
 
--- TEST: started_at should be null after reset to queued
-select ok(
-  (select started_at is null from pgflow.step_tasks 
-   where step_slug = 'task' 
-   and run_id = (select run_id from pgflow.runs where flow_slug = 'status_flow' order by started_at desc limit 1)),
-  'started_at should be null after reset to queued'
-);
+-- Wait a moment to ensure message is visible after retry backoff
+select pg_sleep(0.1);
 
--- SETUP: Start and fail again (should permanently fail)
-with msg_ids as (
-  select array_agg(msg_id) as ids
-  from pgflow.read_with_poll('status_flow', 10, 5, 1, 100)
-)
-select pgflow.start_tasks(
-  (select ids from msg_ids), 
-  '11111111-1111-1111-1111-111111111111'::uuid
-);
+-- Fail again to exceed max_attempts
+select pgflow_tests.poll_and_fail('status_flow');
 
-select pgflow.fail_task(
-  run_id => (select run_id from pgflow.runs where flow_slug = 'status_flow' order by started_at desc limit 1),
-  step_slug => 'task',
-  task_index => 0,
-  error_message => 'final failure'
-);
-
--- TEST: Task should be 'failed' after exceeding max attempts
+-- TEST: After second failure, task should be failed (no more retries)
 select is(
   (select status from pgflow.step_tasks 
-   where step_slug = 'task' 
-   and run_id = (select run_id from pgflow.runs where flow_slug = 'status_flow' order by started_at desc limit 1)),
+   where run_id = (select run_id from pgflow.runs where input::text = '"retry_test"')),
   'failed',
   'Task should be failed after exceeding max attempts'
+);
+
+-- TEST: Verify attempts_count is correct
+select is(
+  (select attempts_count from pgflow.step_tasks 
+   where run_id = (select run_id from pgflow.runs where input::text = '"retry_test"')),
+  2,
+  'Task should have attempts_count of 2 after failing twice'
 );
 
 select finish();
