@@ -3,15 +3,11 @@ graph TD
       DSL[TypeScript DSL]
       DSL -->|npx pgflow compile| SQL[SQL migration]
     end
+    subgraph "Run-time (inside Postgres)"
+      CORE["SQL Core"]
+    end
     subgraph "Run-time (outside Postgres)"
       WORKER["Edge Worker"]
     end
-    subgraph "Run-time (inside Postgres)"
-      QUEUE["pgmq Queue"]
-      CORE["SQL Core"]
-    end
     SQL --> CORE
-    WORKER -->|read_with_poll| QUEUE
-    WORKER -->|start_tasks| CORE
-    WORKER -->|complete_task or fail_task| CORE
-    CORE -.->|enqueues| QUEUE
+    WORKER -->|poll for work & report results| CORE
