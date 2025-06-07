@@ -39,7 +39,7 @@ Layer cheat-sheet:
 
 <Aside type="tip" title="Swap the Worker if you like">
 Edge Worker is just a convenience wrapper.
-Any process that can *call* `poll_for_tasks` and later *call* `complete_task` (or `fail_task`) will work.
+Any process that can coordinate with the SQL Core (call `read_with_poll`, `start_tasks`, then `complete_task` / `fail_task`) will work.
 This modular design lets you use pgflow with any runtime environment that can connect to Postgres.
 </Aside>
 
@@ -65,7 +65,7 @@ Because updates happen **inside the same transaction** that handles the queue me
 
 ## 3. Steps drive your workflow
 
-A workflow run completes when every step reaches a terminal status. Each step in `pgflow.step_states` follows this lifecycle:
+A workflow run finishes when every step reaches a terminal status (completed or failed). Each step in `pgflow.step_states` follows this lifecycle:
 
 ```
 created → started → completed
@@ -75,8 +75,6 @@ created → started → completed
 - **created**: Step exists but dependencies aren't met yet
 - **started**: All dependencies complete, step is executing
 - **completed/failed**: Step has finished
-
-When you call `pgflow.start_flow()`, you only see step progression. That's the main mental model.
 
 ### How workers execute steps
 
@@ -183,7 +181,7 @@ The modular design means:
 
 1. **Three simple layers** keep concerns separate.
 2. **All state** is in Postgres tables—easy to query, backup, and reason about.
-3. **Two SQL functions** (`poll_for_tasks`, `complete_task` / `fail_task`) advance the graph transactionally.
+3. **Four SQL functions** (`read_with_poll`, `start_tasks`, `complete_task`, `fail_task`) advance the graph transactionally.
 4. The model feels like "a job queue that enqueues the next job", but pgflow does the wiring.
 5. **Type inference** guarantees that every step only consumes data that actually exists.
 
