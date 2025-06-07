@@ -6,18 +6,8 @@ select pgflow.create_flow('simple');
 select pgflow.add_step('simple', 'task');
 select pgflow.start_flow('simple', '"hello"'::jsonb);
 
--- Ensure worker exists
-select pgflow_tests.ensure_worker('simple');
-
 -- SETUP: Start the task first time
-with msg_ids as (
-  select array_agg(msg_id) as ids
-  from pgflow.read_with_poll('simple', 10, 5, 1, 100)
-)
-select pgflow.start_tasks(
-  (select ids from msg_ids),
-  '11111111-1111-1111-1111-111111111111'::uuid
-);
+select pgflow_tests.read_and_start('simple', 10, 5);
 
 -- TEST: start_tasks should return no tasks when task is already started
 -- Using the same message IDs again (task is now 'started', not 'queued')

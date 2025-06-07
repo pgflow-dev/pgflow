@@ -13,18 +13,21 @@ select pgflow.start_flow('multi_flow', '"second"'::jsonb);
 -- Ensure worker exists
 select pgflow_tests.ensure_worker('multi_flow');
 
--- TEST: start_tasks should return multiple tasks
-with msg_ids as (
-  select array_agg(msg_id) as ids
-  from pgflow.read_with_poll('multi_flow', 10, 10, 1, 100)
+-- Read and start multiple tasks
+with msgs as (
+  select * from pgflow.read_with_poll('multi_flow', 10, 10, 1, 50) limit 10
+),
+msg_ids as (
+  select array_agg(msg_id) as ids from msgs
 )
+-- TEST: start_tasks should return multiple tasks
 select is(
   (select count(*)::int from pgflow.start_tasks(
     (select ids from msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
   )),
   4,
-  'start_tasks should return multiple tasks when multiple messages provided'
+  'start_tasks should return multiple tasks when multiple messages available'
 );
 
 -- TEST: All tasks should be started

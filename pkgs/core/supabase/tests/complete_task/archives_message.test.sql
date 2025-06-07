@@ -17,17 +17,7 @@ select is(
 );
 
 -- SETUP: Start the task first
-with msg_ids as (
-  select array_agg(message_id) as ids
-  from pgflow.step_tasks
-  where run_id = (select run_id from pgflow.runs limit 1)
-    and step_slug = 'first'
-    and status = 'queued'
-)
-select pgflow.start_tasks(
-  (select ids from msg_ids),
-  '11111111-1111-1111-1111-111111111111'::uuid
-);
+select pgflow_tests.read_and_start('sequential');
 
 select pgflow.complete_task(
   (select run_id from pgflow.runs limit 1),

@@ -11,7 +11,8 @@ select pgflow.add_step('timestamp_test', 'dependent_step', array['success_step']
 -- Start a flow run
 select pgflow.start_flow('timestamp_test', '"hello"'::jsonb);
 
--- Complete the success_step
+-- Start and complete the success_step
+select pgflow_tests.read_and_start('timestamp_test');
 select pgflow.complete_task(
   (select run_id from pgflow.runs limit 1),
   'success_step',

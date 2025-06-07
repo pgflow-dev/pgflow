@@ -9,14 +9,17 @@ select pgflow.start_flow('simple', '"hello"'::jsonb);
 -- Ensure worker exists
 select pgflow_tests.ensure_worker('simple');
 
--- TEST: start_tasks returns tasks for valid message IDs
-with msg_ids as (
-  select array_agg(msg_id) as ids
-  from pgflow.read_with_poll('simple', 10, 5, 1, 100)
+-- Read messages from queue
+with msgs as (
+  select * from pgflow.read_with_poll('simple', 10, 5, 1, 50) limit 1
+),
+msg_ids as (
+  select array_agg(msg_id) as ids from msgs
 )
+-- TEST: start_tasks returns tasks for valid message IDs
 select is(
   (select count(*)::int from pgflow.start_tasks(
-    (select ids from msg_ids), 
+    (select ids from msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
   )),
   1,
@@ -49,11 +52,20 @@ select ok(
   'Task should have last_worker_id set'
 );
 
--- TEST: Empty array returns no tasks
+-- TEST: Empty queue returns no tasks (after task is already started)
+with msgs as (
+  select * from pgflow.read_with_poll('simple', 10, 5, 1, 50) limit 5
+),
+msg_ids as (
+  select array_agg(msg_id) as ids from msgs
+)
 select is(
-  (select count(*)::int from pgflow.start_tasks(array[]::bigint[], '11111111-1111-1111-1111-111111111111'::uuid)),
+  (select count(*)::int from pgflow.start_tasks(
+    (select ids from msg_ids),
+    '11111111-1111-1111-1111-111111111111'::uuid
+  )),
   0,
-  'start_tasks with empty array should return no tasks'
+  'start_tasks should return no tasks when queue is empty'
 );
 
 select finish();
