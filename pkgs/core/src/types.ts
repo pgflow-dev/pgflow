@@ -86,10 +86,12 @@ export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow> {
 
   /**
    * Starts tasks for given message IDs (phase 2 of two-phase approach)
+   * @param flowSlug - The flow slug to start tasks from
    * @param msgIds - Array of message IDs from readMessages
    * @param workerId - ID of the worker starting the tasks
    */
   startTasks(
+    flowSlug: string,
     msgIds: number[],
     workerId: string
   ): Promise<StepTaskRecord<TFlow>[]>;
