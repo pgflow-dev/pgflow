@@ -17,24 +17,6 @@ export class PgflowSqlClient<TFlow extends AnyFlow>
 {
   constructor(private readonly sql: postgres.Sql) {}
 
-  async pollForTasks(
-    queueName: string,
-    batchSize = 20,
-    maxPollSeconds = 5,
-    pollIntervalMs = 200,
-    visibilityTimeout = 2
-  ): Promise<StepTaskRecord<TFlow>[]> {
-    return await this.sql<StepTaskRecord<TFlow>[]>`
-      SELECT *
-      FROM pgflow.poll_for_tasks(
-        queue_name => ${queueName},
-        vt => ${visibilityTimeout},
-        qty => ${batchSize},
-        max_poll_seconds => ${maxPollSeconds},
-        poll_interval_ms => ${pollIntervalMs}
-      );
-    `;
-  }
 
   async readMessages(
     queueName: string,

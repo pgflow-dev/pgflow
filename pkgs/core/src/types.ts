@@ -15,7 +15,7 @@ export type Json =
   | Json[];
 
 /**
- * Record representing a task from pgflow.poll_for_tasks
+ * Record representing a task from pgflow.start_tasks
  *
  * Same as pgflow.step_task_record type, but with not-null fields and type argument for payload.
  * The input type is automatically inferred based on the step_slug using a discriminated union.
@@ -52,22 +52,6 @@ export type MessageRecord = {
  * Interface for interacting with pgflow database functions
  */
 export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow> {
-  /**
-   * Fetches tasks from pgflow
-   * @param queueName - Name
-   * @param batchSize - Number of tasks to fetch
-   * @param visibilityTimeout - Visibility timeout for tasks
-   * @param maxPollSeconds - Maximum time to poll for tasks
-   * @param pollIntervalMs - Poll interval in milliseconds
-   */
-  pollForTasks(
-    queueName: string,
-    batchSize?: number,
-    visibilityTimeout?: number,
-    maxPollSeconds?: number,
-    pollIntervalMs?: number
-  ): Promise<StepTaskRecord<TFlow>[]>;
-
   /**
    * Reads messages from queue without starting tasks (phase 1 of two-phase approach)
    * @param queueName - Name of the queue

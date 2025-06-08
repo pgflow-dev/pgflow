@@ -8,7 +8,7 @@ This document outlines a set of rules, best practices, ideas, and guidelines for
 
 - Store test files under the `supabase/tests/` directory.
 - Use descriptive file names with the `.test.sql` suffix.
-- Organize tests in subfolders, by functionality (e.g., `start_flow`, `create_flow`, `add_step`, `poll_for_tasks`, `complete_task`, etc).
+- Organize tests in subfolders, by functionality (e.g., `start_flow`, `create_flow`, `add_step`, `start_tasks`, `complete_task`, etc).
 
 ## Transactional Test Structure
 
@@ -124,31 +124,44 @@ select set_eq(
 );
 ```
 
-## Testing Message Queues
+## Testing Two-Phase Task Polling
 
-Simulate message polling and verify visibility timeouts:
+Test the two-phase polling approach with read_with_poll and start_tasks:
 
 ```sql
+-- Test phase 1: reading messages
 select is(
-  (select count(*)::integer from pgflow.poll_for_tasks(
+  (select count(*)::integer from pgflow.read_with_poll(
     queue_name => 'sequential'::text,
     vt => 5,
     qty => 1,
     max_poll_seconds => 1
   )),
   1::integer,
-  'First poll should get the available task'
+  'First read_with_poll should get the available message'
 );
 
+-- Test phase 2: starting tasks
 select is(
-  (select count(*)::integer from pgflow.poll_for_tasks(
+  (select count(*)::integer from pgflow.start_tasks(
+    flow_slug => 'sequential'::text,
+    msg_ids => array[1],
+    worker_id => '550e8400-e29b-41d4-a716-446655440000'::uuid
+  )),
+  1::integer,
+  'start_tasks should return one task for valid message'
+);
+
+-- Test visibility timeout
+select is(
+  (select count(*)::integer from pgflow.read_with_poll(
     queue_name => 'sequential'::text,
     vt => 5,
     qty => 1,
     max_poll_seconds => 1
   )),
   0::integer,
-  'Concurrent poll should not get the same task (due to visibility timeout)'
+  'Concurrent read_with_poll should not get the same message (due to visibility timeout)'
 );
 ```
 

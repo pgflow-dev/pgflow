@@ -23,12 +23,6 @@ describe('PgflowSqlClient Type Compatibility with Flow', () => {
     const flow = new Flow<{ url: string }>({ slug: 'test_flow' });
     const client = new PgflowSqlClient<typeof flow>(sql);
 
-    // Check pollForTasks method types
-    expectTypeOf(client.pollForTasks).toBeFunction();
-    expectTypeOf(client.pollForTasks).parameters.toMatchTypeOf<
-      [string, number?, number?, number?, number?]
-    >();
-
     // Check completeTask method types
     expectTypeOf(client.completeTask).toBeFunction();
     expectTypeOf(client.completeTask).parameters.toMatchTypeOf<
