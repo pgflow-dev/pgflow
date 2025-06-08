@@ -17,7 +17,6 @@ export class PgflowSqlClient<TFlow extends AnyFlow>
 {
   constructor(private readonly sql: postgres.Sql) {}
 
-
   async readMessages(
     queueName: string,
     visibilityTimeout: number,
@@ -46,7 +45,7 @@ export class PgflowSqlClient<TFlow extends AnyFlow>
       SELECT *
       FROM pgflow.start_tasks(
         flow_slug => ${flowSlug},
-        msg_ids => ${this.sql.array(msgIds, 'bigint')},
+        msg_ids => ${this.sql.array(msgIds)},
         worker_id => ${workerId}::uuid
       );
     `;
