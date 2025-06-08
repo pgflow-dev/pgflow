@@ -11,9 +11,10 @@ import { Worker } from '../core/Worker.js';
 import postgres from 'postgres';
 import { FlowWorkerLifecycle } from './FlowWorkerLifecycle.js';
 import { BatchProcessor } from '../core/BatchProcessor.js';
+import { randomUUID } from 'crypto';
 
 /**
- * Configuration for the flow worker
+ * Configuration for the flow worker with two-phase polling
  */
 export type FlowWorkerConfig = {
   /**
@@ -46,6 +47,12 @@ export type FlowWorkerConfig = {
   batchSize?: number;
 
   /**
+   * Visibility timeout for messages in seconds
+   * @default 2
+   */
+  visibilityTimeout?: number;
+
+  /**
    * In-worker polling interval in seconds
    * @default 2
    */
@@ -56,10 +63,17 @@ export type FlowWorkerConfig = {
    * @default 100
    */
   pollIntervalMs?: number;
+
+  /**
+   * Worker ID for tracking task ownership
+   * If not provided, a random UUID will be generated
+   */
+  workerId?: string;
 };
 
 /**
- * Creates a new Worker instance for processing flow tasks.
+ * Creates a new Worker instance for processing flow tasks using the two-phase polling approach.
+ * This eliminates race conditions by separating message polling from task processing.
  *
  * @param flow - The Flow DSL definition
  * @param config - Configuration options for the worker
@@ -96,6 +110,10 @@ export function createFlowWorker<TFlow extends AnyFlow>(
   const queueName = flow.slug || 'tasks';
   logger.debug(`Using queue name: ${queueName}`);
 
+  // Generate worker ID if not provided
+  const workerId = config.workerId || randomUUID();
+  logger.debug(`Using worker ID: ${workerId}`);
+
   // Create specialized FlowWorkerLifecycle with the proxied queue and flow
   const queries = new Queries(sql);
   const lifecycle = new FlowWorkerLifecycle<TFlow>(
@@ -104,10 +122,12 @@ export function createFlowWorker<TFlow extends AnyFlow>(
     createLogger('FlowWorkerLifecycle')
   );
 
-  // Create StepTaskPoller
+  // Create StepTaskPoller with two-phase approach
   const pollerConfig: StepTaskPollerConfig = {
     batchSize: config.batchSize || 10,
     queueName: flow.slug,
+    workerId: workerId,
+    visibilityTimeout: config.visibilityTimeout || 2,
     maxPollSeconds: config.maxPollSeconds || 2,
     pollIntervalMs: config.pollIntervalMs || 100,
   };
