@@ -59,7 +59,7 @@ export class StepTaskPollerV2<TFlow extends AnyFlow>
 
       // Phase 2: Start tasks for the retrieved messages
       const msgIds = messages.map((msg) => msg.msg_id);
-      const tasks = await this.adapter.startTasks(msgIds, this.config.workerId);
+      const tasks = await this.adapter.startTasks(this.config.queueName, msgIds, this.config.workerId);
 
       this.logger.debug(`Started ${tasks.length} tasks from ${messages.length} messages`);
       
