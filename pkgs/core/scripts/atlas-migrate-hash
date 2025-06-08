@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Color codes
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+# Check for --yes flag
+if [ "$1" == "--yes" ]; then
+    SKIP_CONFIRM=true
+else
+    SKIP_CONFIRM=false
+fi
+
+# Show confirmation prompt unless --yes flag is provided
+if [ "$SKIP_CONFIRM" != "true" ]; then
+    echo -e "${RED}WARNING: This will regenerate the migration hash file.${NC}"
+    echo "Are you sure you want to continue? Type 'yes' to confirm:"
+    read -r confirmation
+    
+    if [ "$confirmation" != "yes" ]; then
+        echo "Operation cancelled."
+        exit 0
+    fi
+fi
+
+atlas migrate hash --config file://atlas.hcl --dir file://supabase/migrations/
