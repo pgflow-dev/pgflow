@@ -16,6 +16,7 @@ with msg_ids as (
   from pgflow.read_with_poll('simple', 10, 5, 1, 100)
 )
 select pgflow.start_tasks(
+  'simple',
   (select ids from msg_ids), 
   '00000000-0000-0000-0000-000000000001'::uuid
 );
@@ -34,6 +35,7 @@ with msg_ids as (
   from pgflow.read_with_poll('simple', 10, 5, 1, 100)
 )
 select pgflow.start_tasks(
+  'simple',
   (select ids from msg_ids), 
   '00000000-0000-0000-0000-000000000002'::uuid
 );
@@ -48,6 +50,7 @@ select is(
 -- TEST: start_tasks with empty message array returns no tasks
 select is(
   (select count(*)::int from pgflow.start_tasks(
+    'simple',
     array[]::bigint[], 
     '00000000-0000-0000-0000-000000000001'::uuid
   )),

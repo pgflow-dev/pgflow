@@ -19,6 +19,7 @@ msg_ids as (
 -- TEST: start_tasks returns tasks for valid message IDs
 select is(
   (select count(*)::int from pgflow.start_tasks(
+    'simple',
     (select ids from msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
   )),
@@ -61,6 +62,7 @@ msg_ids as (
 )
 select is(
   (select count(*)::int from pgflow.start_tasks(
+    'simple',
     (select ids from msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
   )),

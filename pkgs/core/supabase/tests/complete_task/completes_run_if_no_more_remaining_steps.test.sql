@@ -25,6 +25,7 @@ with msg_ids as (
     and status = 'queued'
 )
 select pgflow.start_tasks(
+  'sequential',
   (select ids from msg_ids),
   '11111111-1111-1111-1111-111111111111'::uuid
 );
@@ -52,6 +53,7 @@ with msg_ids as (
     and status = 'queued'
 )
 select pgflow.start_tasks(
+  'sequential',
   (select ids from msg_ids),
   '11111111-1111-1111-1111-111111111111'::uuid
 );
@@ -79,6 +81,7 @@ with msg_ids as (
     and status = 'queued'
 )
 select pgflow.start_tasks(
+  'sequential',
   (select ids from msg_ids),
   '11111111-1111-1111-1111-111111111111'::uuid
 );

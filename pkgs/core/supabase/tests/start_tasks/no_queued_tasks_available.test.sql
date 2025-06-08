@@ -18,6 +18,7 @@ with original_msg_ids as (
 )
 select is(
   (select count(*)::int from pgflow.start_tasks(
+    'simple',
     (select ids from original_msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
   )),

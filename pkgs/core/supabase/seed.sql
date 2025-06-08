@@ -100,6 +100,7 @@ as $$
   -- 4. start the tasks and return the resulting rows
   SELECT *
     FROM pgflow.start_tasks(
+           flow_slug,
            (SELECT msg_ids FROM ids),
            (SELECT wid FROM w)
          );

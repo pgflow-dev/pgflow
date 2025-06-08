@@ -367,7 +367,7 @@ end;
 $$;
 -- Create "start_tasks" function
 create function "pgflow"."start_tasks"(
-  "msg_ids" bigint [], "worker_id" uuid
+  "flow_slug" text, "msg_ids" bigint [], "worker_id" uuid
 ) returns setof "pgflow"."step_task_record" language sql set "search_path"
 = '' as $$
 with tasks as (
@@ -378,7 +378,8 @@ with tasks as (
       task.task_index,
       task.message_id
     from pgflow.step_tasks as task
-    where task.message_id = any(msg_ids)
+    where task.flow_slug = start_tasks.flow_slug
+      and task.message_id = any(msg_ids)
       and task.status = 'queued'
   ),
   start_tasks_update as (
@@ -390,7 +391,8 @@ with tasks as (
       last_worker_id = worker_id
     from tasks
     where step_tasks.message_id = tasks.message_id
-    and step_tasks.status = 'queued'
+      and step_tasks.flow_slug = tasks.flow_slug
+      and step_tasks.status = 'queued'
   ),
   runs as (
     select
@@ -445,10 +447,9 @@ with tasks as (
     -- TODO: this is slow because it calls set_vt for each row, and set_vt
     --       builds dynamic query from string every time it is called
     --       implement set_vt_batch(msgs_ids bigint[], vt_delays int[])
-    select pgmq.set_vt(
-      (select t.flow_slug from timeouts t where t.message_id = st.message_id),
-      st.message_id,
-      (select t.vt_delay from timeouts t where t.message_id = st.message_id)
-    )
+    select pgmq.set_vt(t.flow_slug, st.message_id, t.vt_delay)
+    from timeouts t
+    where t.message_id = st.message_id
+      and t.flow_slug = st.flow_slug
   ) set_vt
 $$;

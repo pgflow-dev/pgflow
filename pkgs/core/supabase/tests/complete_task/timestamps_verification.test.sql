@@ -17,7 +17,7 @@ with msg_ids as (
     and step_slug = 'first'
     and status = 'queued'
 )
-select pgflow.start_tasks((select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
+select pgflow.start_tasks('sequential', (select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
 
 select pgflow.complete_task(
   (select run_id from pgflow.runs limit 1),
@@ -74,7 +74,7 @@ with msg_ids as (
     and step_slug = 'second'
     and status = 'queued'
 )
-select pgflow.start_tasks((select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
+select pgflow.start_tasks('sequential', (select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
 
 select
   pgflow.complete_task((select run_id from pgflow.runs limit 1), 'second', 0, '{"result": "second completed"}'::jsonb);
@@ -86,7 +86,7 @@ with msg_ids as (
     and step_slug = 'last'
     and status = 'queued'
 )
-select pgflow.start_tasks((select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
+select pgflow.start_tasks('sequential', (select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
 
 select
   pgflow.complete_task((select run_id from pgflow.runs limit 1), 'last', 0, '{"result": "last completed"}'::jsonb);

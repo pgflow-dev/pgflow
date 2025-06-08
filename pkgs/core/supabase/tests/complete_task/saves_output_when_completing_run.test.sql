@@ -17,7 +17,7 @@ with msg_ids as (
     and step_slug = 'connected_root'
     and status = 'queued'
 )
-select pgflow.start_tasks((select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
+select pgflow.start_tasks('two_roots_left_right', (select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
 
 select pgflow.complete_task(
   (select run_id from pgflow.runs limit 1),
@@ -33,7 +33,7 @@ with msg_ids as (
     and step_slug = 'left'
     and status = 'queued'
 )
-select pgflow.start_tasks((select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
+select pgflow.start_tasks('two_roots_left_right', (select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
 
 select pgflow.complete_task(
   (select run_id from pgflow.runs limit 1),
@@ -49,7 +49,7 @@ with msg_ids as (
     and step_slug = 'right'
     and status = 'queued'
 )
-select pgflow.start_tasks((select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
+select pgflow.start_tasks('two_roots_left_right', (select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
 
 select pgflow.complete_task(
   (select run_id from pgflow.runs limit 1),
@@ -65,7 +65,7 @@ with msg_ids as (
     and step_slug = 'disconnected_root'
     and status = 'queued'
 )
-select pgflow.start_tasks((select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
+select pgflow.start_tasks('two_roots_left_right', (select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
 
 select pgflow.complete_task(
   (select run_id from pgflow.runs limit 1),

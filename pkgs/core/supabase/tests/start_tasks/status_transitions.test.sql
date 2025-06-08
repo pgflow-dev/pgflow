@@ -20,6 +20,7 @@ with msg_ids as (
   from pgflow.read_with_poll('status_flow', 10, 5, 1, 100)
 )
 select pgflow.start_tasks(
+  'status_flow',
   (select ids from msg_ids), 
   '11111111-1111-1111-1111-111111111111'::uuid
 );

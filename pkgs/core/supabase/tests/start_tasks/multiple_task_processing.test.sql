@@ -23,6 +23,7 @@ msg_ids as (
 -- TEST: start_tasks should return multiple tasks
 select is(
   (select count(*)::int from pgflow.start_tasks(
+    'multi_flow',
     (select ids from msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
   )),

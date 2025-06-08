@@ -17,6 +17,7 @@ with first_msg_ids as (
   from pgflow.read_with_poll('dep_flow', 10, 5, 1, 100)
 )
 select pgflow.start_tasks(
+  'dep_flow',
   (select ids from first_msg_ids),
   '11111111-1111-1111-1111-111111111111'::uuid
 );
@@ -35,6 +36,7 @@ with second_msg_ids as (
 )
 select is(
   (select count(*)::int from pgflow.start_tasks(
+    'dep_flow',
     (select ids from second_msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
   ) where step_slug = 'second'),
