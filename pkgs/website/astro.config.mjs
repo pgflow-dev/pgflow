@@ -105,6 +105,13 @@ export default defineConfig({
               url: 'https://github.com/jumski',
             },
           },
+          navigation: 'header-end',
+          postCount: 10,
+          recentPostCount: 5,
+          metrics: {
+            readingTime: true,
+            words: 'rounded',
+          },
         }),
         starlightLlmsTxt({
           exclude: [
