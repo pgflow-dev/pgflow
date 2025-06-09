@@ -22,6 +22,7 @@
     "@astrojs/starlight": "^0.34.3",
     "@vercel/analytics": "^1.5.0",
     "astro": "^5.7.14",
+    "astro-d2": "^0.8.0",
     "astro-robots-txt": "^1.0.0",
     "sharp": "^0.32.6",
     "starlight-links-validator": "^0.14.3",

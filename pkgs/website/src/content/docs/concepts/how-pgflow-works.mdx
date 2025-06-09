@@ -27,7 +27,41 @@ pgflow follows four core design principles:
 
 ## 1. Three thin layers
 
-<img src="/diagrams/three-layers.svg" alt="Three layers of pgflow architecture: TypeScript DSL, SQL Core, and Worker" width="90%" />
+```d2
+direction: down
+
+Build-time: {
+  dsl: "TypeScript DSL" {
+    shape: document
+  }
+  
+  sql: "SQL migration" {
+    shape: stored_data
+  }
+  
+  dsl -> sql: "npx pgflow compile"
+}
+
+Runtime Postgres: {
+  label: "Run-time (inside Postgres)"
+  
+  core: "SQL Core" {
+    shape: diamond
+  }
+}
+
+Runtime Worker: {
+  label: "Run-time (outside Postgres)"
+  
+  worker: "Edge Worker" {
+    shape: cloud
+  }
+}
+
+# Connections
+Build-time.sql -> Runtime Postgres.core
+Runtime Worker.worker -> Runtime Postgres.core: "poll for work &\nreport results"
+```
 
 Layer cheat-sheet:
 
@@ -79,6 +113,49 @@ created → started → completed
 ### How workers execute steps
 
 Behind the scenes, when a step becomes ready, workers handle the execution through a simple 3-call sequence:
+
+```d2
+direction: down
+
+Step Lifecycle: {
+  step: "Step: created → started → completed" {
+    shape: hexagon
+  }
+}
+
+Task Execution: {
+  label: "Task Execution (inside Postgres)"
+  
+  queue: "pgmq Queue" {
+    shape: cylinder
+  }
+  
+  core: "SQL Core" {
+    shape: diamond
+  }
+  
+  tasks: "step_tasks table" {
+    shape: sql_table
+  }
+}
+
+Worker Process: {
+  worker: "Edge Worker" {
+    shape: cloud
+  }
+}
+
+# Connections
+Step Lifecycle.step -> Task Execution.tasks: creates
+Step Lifecycle.step -> Task Execution.queue: enqueues
+
+Worker Process.worker -> Task Execution.queue: "1. read_with_poll"
+Worker Process.worker -> Task Execution.core: "2. start_tasks"
+Worker Process.worker -> Task Execution.core: "3. complete_task/fail_task"
+
+Task Execution.core -> Task Execution.tasks: updates
+Task Execution.core -> Step Lifecycle.step: advances
+```
 
 1. `read_with_poll` → locks queue messages  
 2. `start_tasks` → marks task started, builds input  

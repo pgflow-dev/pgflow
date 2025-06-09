@@ -5,6 +5,7 @@ import starlightLinksValidator from 'starlight-links-validator';
 import starlightSidebarTopics from 'starlight-sidebar-topics';
 import robotsTxt from 'astro-robots-txt';
 import starlightLlmsTxt from 'starlight-llms-txt';
+import d2 from 'astro-d2';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
@@ -62,6 +63,42 @@ export default defineConfig({
     '/comparisons/trigger/': '/vs/trigger/',
   },
   integrations: [
+    d2({
+      themeId: 0, // neutral theme as base
+      themeOverrides: {
+        // pgflow brand colors for light theme
+        B1: "#007b6e", // accent
+        B2: "#a3d4cb", // accent-high
+        B3: "#bce0d9", // accent-low
+        B4: "#e7f0ee", // gray-1
+        B5: "#c2cdca", // gray-2
+        B6: "#92a8a3", // gray-3
+        
+        AA2: "#003b34", // accent-high (dark)
+        AA4: "#00574d", // accent (dark)
+        AA5: "#495d59", // gray-4
+        
+        AB4: "#2a3d39", // gray-5
+        AB5: "#182b28", // gray-6
+      },
+      darkThemeId: 0,
+      darkThemeOverrides: {
+        // pgflow brand colors for dark theme
+        B1: "#007b6e", // accent
+        B2: "#a3d4cb", // accent-high
+        B3: "#002b26", // accent-low
+        B4: "#2a3d39", // gray-5
+        B5: "#495d59", // gray-4
+        B6: "#92a8a3", // gray-3
+        
+        AA2: "#a3d4cb", // accent-high
+        AA4: "#007b6e", // accent
+        AA5: "#c2cdca", // gray-2
+        
+        AB4: "#e7f0ee", // gray-1
+        AB5: "#ffffff", // white
+      },
+    }),
     starlight({
       favicon: '/favicons/favicon.ico',
       head: [
