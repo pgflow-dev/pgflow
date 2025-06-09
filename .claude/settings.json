@@ -3,6 +3,7 @@
     "allow": [
       "Bash(./scripts/run-test-with-colors:*)",
       "Bash(./scripts/supabase:*)",
+      "Bash(cat:*)",
       "Bash(find:*)",
       "Bash(grep:*)",
       "Bash(ls:*)",
@@ -16,7 +17,12 @@
       "Bash(pnpm vitest run:*)",
       "Bash(pnpm vitest:*)",
       "Bash(rg:*)",
-      "Bash(scripts/ask-ai:*)"
+      "Bash(scripts/ask-ai:*)",
+      "Bash(tree:*)",
+      "mcp__c4ai-sse__crawl",
+      "mcp__c4ai-sse__md",
+      "mcp__context7__get-library-docs",
+      "mcp__context7__resolve-library-id"
     ],
     "deny": []
   }
