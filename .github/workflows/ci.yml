@@ -44,6 +44,8 @@ jobs:
       - name: Set Nx SHAs for affected commands
         uses: nrwl/nx-set-shas@v4
 
+      - uses: ./.github/actions/setup-d2
+
       - name: Quality gate (lint + typecheck + test)
         run: pnpm nx affected -t lint typecheck test --parallel --configuration=production
 
@@ -112,7 +114,9 @@ jobs:
 
       - name: Set Nx SHAs for affected commands
         uses: nrwl/nx-set-shas@v4
-      
+
+      - uses: ./.github/actions/setup-d2
+
       - name: Check if website is affected
         id: check-affected
         run: |

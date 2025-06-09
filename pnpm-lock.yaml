@@ -373,6 +373,9 @@ importers:
       astro:
         specifier: ^5.7.14
         version: 5.12.4(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(stylus@0.64.0)(typescript@5.8.3)
+      astro-d2:
+        specifier: ^0.8.0
+        version: 0.8.0(astro@5.12.4)
       astro-robots-txt:
         specifier: ^1.0.0
         version: 1.0.0
@@ -9997,6 +10000,18 @@ packages:
   /astring@1.9.0:
     resolution: {integrity: sha512-LElXdjswlqjWrPpJFg1Fx4wpkOCxj1TDHlSV4PlaRxHGWko024xICaa97ZkMfs6DRKlCguiAI+rbXv5GWwXIkg==}
     hasBin: true
+    dev: false
+
+  /astro-d2@0.8.0(astro@5.12.4):
+    resolution: {integrity: sha512-vs1crOjTmYeQg+kHUymB8AhcmFRZyiQBuK1bsuMoTbX1upX3ljhny8DdvOWoiEVUBQAwlUojjwO5bB8tRo8hCw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      astro: '>=5.0.0'
+    dependencies:
+      astro: 5.12.4(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(stylus@0.64.0)(typescript@5.8.3)
+      hast-util-from-html: 2.0.3
+      hast-util-to-html: 9.0.5
+      unist-util-visit: 5.0.0
     dev: false
 
   /astro-expressive-code@0.41.3(astro@5.12.4):
