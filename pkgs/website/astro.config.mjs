@@ -94,6 +94,27 @@ export default defineConfig({
             src: PLAUSIBLE_PROXY.url + PLAUSIBLE_PROXY.scriptPath,
           },
         },
+        {
+          tag: 'meta',
+          attrs: {
+            property: 'og:image',
+            content: `https://${DOMAIN_NAME}/og-image.jpg`,
+          },
+        },
+        {
+          tag: 'meta',
+          attrs: {
+            property: 'twitter:image',
+            content: `https://${DOMAIN_NAME}/og-image.jpg`,
+          },
+        },
+        {
+          tag: 'meta',
+          attrs: {
+            property: 'og:type',
+            content: 'website',
+          },
+        },
       ],
       plugins: [
         starlightBlog({
