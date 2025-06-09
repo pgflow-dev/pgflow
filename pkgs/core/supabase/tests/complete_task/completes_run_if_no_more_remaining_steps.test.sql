@@ -17,25 +17,15 @@ select results_eq(
 );
 
 -- Start and complete the first step's task
-with msg_ids as (
-  select array_agg(message_id) as ids
-  from pgflow.step_tasks
-  where run_id = (select run_id from pgflow.runs limit 1)
-    and step_slug = 'first'
-    and status = 'queued'
+with task as (
+  select * from pgflow_tests.read_and_start('sequential') limit 1
 )
-select pgflow.start_tasks(
-  'sequential',
-  (select ids from msg_ids),
-  '11111111-1111-1111-1111-111111111111'::uuid
-);
-
 select pgflow.complete_task(
-  (select run_id from pgflow.runs limit 1),
-  'first',
+  task.run_id,
+  task.step_slug,
   0,
   '"first was successful"'::JSONB
-);
+) from task;
 
 -- TEST: After completing first step, remaining_steps should be 2 and status still 'started'
 select results_eq(
@@ -45,25 +35,15 @@ select results_eq(
 );
 
 -- Start and complete the second step's task
-with msg_ids as (
-  select array_agg(message_id) as ids
-  from pgflow.step_tasks
-  where run_id = (select run_id from pgflow.runs limit 1)
-    and step_slug = 'second'
-    and status = 'queued'
+with task as (
+  select * from pgflow_tests.read_and_start('sequential') limit 1
 )
-select pgflow.start_tasks(
-  'sequential',
-  (select ids from msg_ids),
-  '11111111-1111-1111-1111-111111111111'::uuid
-);
-
 select pgflow.complete_task(
-  (select run_id from pgflow.runs limit 1),
-  'second',
+  task.run_id,
+  task.step_slug,
   0,
   '"second was successful"'::JSONB
-);
+) from task;
 
 -- TEST: After completing second step, remaining_steps should be 1 and status still 'started'
 select results_eq(
@@ -73,25 +53,15 @@ select results_eq(
 );
 
 -- Start and complete the last step's task
-with msg_ids as (
-  select array_agg(message_id) as ids
-  from pgflow.step_tasks
-  where run_id = (select run_id from pgflow.runs limit 1)
-    and step_slug = 'last'
-    and status = 'queued'
+with task as (
+  select * from pgflow_tests.read_and_start('sequential') limit 1
 )
-select pgflow.start_tasks(
-  'sequential',
-  (select ids from msg_ids),
-  '11111111-1111-1111-1111-111111111111'::uuid
-);
-
 select pgflow.complete_task(
-  (select run_id from pgflow.runs limit 1),
-  'last',
+  task.run_id,
+  task.step_slug,
   0,
   '"last was successful"'::JSONB
-);
+) from task;
 
 -- TEST: Final remaining_steps should be 0 and status should be 'completed'
 select results_eq(

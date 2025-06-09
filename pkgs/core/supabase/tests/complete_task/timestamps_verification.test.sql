@@ -10,21 +10,15 @@ select pgflow.start_flow('sequential', '"hello"'::jsonb);
 select pgflow_tests.ensure_worker('sequential');
 
 -- Start and complete the first task
-with msg_ids as (
-  select array_agg(message_id) as ids
-  from pgflow.step_tasks
-  where run_id = (select run_id from pgflow.runs limit 1)
-    and step_slug = 'first'
-    and status = 'queued'
+with task as (
+  select * from pgflow_tests.read_and_start('sequential') limit 1
 )
-select pgflow.start_tasks('sequential', (select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
-
 select pgflow.complete_task(
-  (select run_id from pgflow.runs limit 1),
-  'first',
+  task.run_id,
+  task.step_slug,
   0,
   '{"result": "first completed"}'::jsonb
-);
+) from task;
 
 -- TEST: Task should have completed_at timestamp set
 select isnt(
@@ -67,29 +61,25 @@ select is(
 );
 
 -- Start and complete all remaining tasks to complete the run
-with msg_ids as (
-  select array_agg(message_id) as ids
-  from pgflow.step_tasks
-  where run_id = (select run_id from pgflow.runs limit 1)
-    and step_slug = 'second'
-    and status = 'queued'
+with task as (
+  select * from pgflow_tests.read_and_start('sequential') limit 1
 )
-select pgflow.start_tasks('sequential', (select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
+select pgflow.complete_task(
+  task.run_id,
+  task.step_slug,
+  0,
+  '{"result": "second completed"}'::jsonb
+) from task;
 
-select
-  pgflow.complete_task((select run_id from pgflow.runs limit 1), 'second', 0, '{"result": "second completed"}'::jsonb);
-
-with msg_ids as (
-  select array_agg(message_id) as ids
-  from pgflow.step_tasks
-  where run_id = (select run_id from pgflow.runs limit 1)
-    and step_slug = 'last'
-    and status = 'queued'
+with task as (
+  select * from pgflow_tests.read_and_start('sequential') limit 1
 )
-select pgflow.start_tasks('sequential', (select ids from msg_ids), '11111111-1111-1111-1111-111111111111'::uuid);
-
-select
-  pgflow.complete_task((select run_id from pgflow.runs limit 1), 'last', 0, '{"result": "last completed"}'::jsonb);
+select pgflow.complete_task(
+  task.run_id,
+  task.step_slug,
+  0,
+  '{"result": "last completed"}'::jsonb
+) from task;
 
 -- -- TEST: Run should have completed_at timestamp set
 select isnt(
