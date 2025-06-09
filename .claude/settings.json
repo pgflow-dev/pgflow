@@ -19,8 +19,8 @@
       "Bash(rg:*)",
       "Bash(scripts/ask-ai:*)",
       "Bash(tree:*)",
-      "mcp__c4ai-sse__crawl",
-      "mcp__c4ai-sse__md",
+      "mcp__crawl4ai-sse__crawl",
+      "mcp__crawl4ai-sse__md",
       "mcp__context7__get-library-docs",
       "mcp__context7__resolve-library-id"
     ],
