@@ -94,8 +94,8 @@ jobs:
       - name: Quality gate (lint + typecheck + test)
         run: pnpm nx affected -t lint typecheck test --parallel --configuration=production --base="$NX_BASE" --head="$NX_HEAD"
 
-      - name: Build all affected projects
-        run: pnpm nx affected -t build --configuration=production --parallel --base="$NX_BASE" --head="$NX_HEAD"
+      - name: Build all affected packages (excludes website and demo - they build during deploy)
+        run: pnpm nx affected -t build --configuration=production --parallel --exclude=website,demo --base="$NX_BASE" --head="$NX_HEAD"
 
       - name: Verify exports for built packages
         run: pnpm nx affected -t verify-exports --base="$NX_BASE" --head="$NX_HEAD"
@@ -305,6 +305,8 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
+
+      - uses: ./.github/actions/setup-d2
 
       - name: Check if website is affected
         id: check-affected
