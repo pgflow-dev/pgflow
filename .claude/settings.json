@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./scripts/run-test-with-colors:*)",
+      "Bash(./scripts/supabase:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(pnpm eslint:*)",
+      "Bash(pnpm nx lint:*)",
+      "Bash(pnpm nx run:*)",
+      "Bash(pnpm nx supabase:*)",
+      "Bash(pnpm nx test:*)",
+      "Bash(pnpm nx typecheck:*)",
+      "Bash(pnpm vitest run:*)",
+      "Bash(pnpm vitest:*)",
+      "Bash(rg:*)",
+      "Bash(scripts/ask-ai:*)"
+    ],
+    "deny": []
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "mcpServers": {
+    "context7": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "env": {}
+    },
+    "crawl4ai-sse": {
+      "type": "sse",
+      "url": "http://localhost:11235/mcp/sse"
+    },
+    "nx-mcp": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "nx-mcp@latest",
+        "./"
+      ]
+    },
+    "taskmanager": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@kazuph/mcp-taskmanager"
+      ],
+      "env": {}
+    },
+    "think": {
+      "type": "stdio",
+      "command": "mcp-think-tool",
+      "args": [],
+      "env": {}
+    }
+  }
+}

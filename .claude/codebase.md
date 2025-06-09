@@ -1,4 +1,4 @@
-# pgflow – High-Level Overview
+# pgflow – Codebase High-Level Overview
 
 ## Purpose
 
@@ -29,7 +29,7 @@ Layer 2 – Orchestration (SQL Core)
  – Runtime: `runs`, `step_states`, `step_tasks`.  
 • Functions
 – Definition: `create_flow`, `add_step`.  
- – Runtime: `start_flow`, `poll_for_tasks`, `complete_task`, `fail_task`.  
+ – Runtime: `start_flow`, `read_with_poll`, `start_tasks`, `complete_task`, `fail_task`.  
 • Guarantees
 – All operations are transactional.  
  – Visibility timeouts and exponential back-off handled in SQL.  
@@ -37,7 +37,7 @@ Layer 2 – Orchestration (SQL Core)
 
 Layer 3 – Execution (Edge Worker)
 • A tiny Node/deno script packaged as Supabase Edge Function.  
-• Polls pgmq queue via `poll_for_tasks`, executes handler, calls back `complete_task` / `fail_task`.  
+• Polls pgmq queue via `read_with_poll`, starts tasks with `start_tasks`, then executes handler for each returned input payload, calls back `complete_task` / `fail_task`.  
 • Auto-restarts, trivial horizontal scaling, no local state.
 
 ## Supporting Tooling
@@ -71,7 +71,7 @@ Website / Docs (`pgflow.dev`)
 
 ## Trade-offs & Non-Goals
 
-• No long-running (>15 min) tasks inside Edge Worker yet - Edge Functions have a time limit
+• No long-running (> 150s) tasks inside Edge Worker yet - Edge Functions have a time limit
 • No sub-flows / dynamic fan-out yet (fan-out _within_ a step via `task_index` roadmap).  
 • No cron / schedule engine – start runs manually or via your own triggers, use Supabase pg_cron for recurring tasks.
 
