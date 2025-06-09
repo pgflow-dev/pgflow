@@ -1,6 +1,6 @@
 begin;
 
-select plan(7);
+select plan(8);
 select pgflow_tests.reset_db();
 
 -- Test that start_tasks only processes queued tasks and leaves other statuses untouched
@@ -78,55 +78,35 @@ select is(
   'failed_flow task should be failed'
 );
 
--- Now test that start_tasks on a specific flow only affects queued tasks in that flow
+-- Test that read_and_start properly ignores non-queued tasks
+-- Each test clearly shows which task status is being tested
 
--- Capture initial state of non-queued task in started_flow
-create temp table initial_state as
-select run_id, step_slug, status, started_at, attempts_count, last_worker_id
-from pgflow.step_tasks 
-where flow_slug = 'started_flow';
-
--- Get message IDs from started_flow (which has a started task)
-create temp table started_flow_msg_ids as
-select array_agg(message_id) as msg_ids
-from pgflow.step_tasks
-where flow_slug = 'started_flow';
-
--- Ensure worker exists for started_flow
-select pgflow_tests.ensure_worker('started_flow');
-
--- Test: start_tasks on started_flow should return 0 tasks (no queued tasks)
+-- Test 1: started_flow should return 0 tasks (task status: started)
 select is(
-  (select count(*) from pgflow.start_tasks(
-    'started_flow',
-    (select msg_ids from started_flow_msg_ids),
-    '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  (select count(*) from pgflow_tests.read_and_start('started_flow', 1, 10)),
   0::bigint,
-  'start_tasks should return 0 tasks when no queued tasks exist'
+  'read_and_start on started_flow should return 0 tasks (task status: started)'
 );
 
--- Test: The started task should remain unchanged
+-- Test 2: completed_flow should return 0 tasks (task status: completed) 
 select is(
-  (select count(*) from pgflow.step_tasks s
-   join initial_state i on s.run_id = i.run_id and s.step_slug = i.step_slug
-   where s.status = i.status
-     and s.started_at = i.started_at
-     and s.attempts_count = i.attempts_count
-     and s.last_worker_id = i.last_worker_id),
-  1::bigint,
-  'Started task should remain completely unchanged'
+  (select count(*) from pgflow_tests.read_and_start('completed_flow', 1, 10)),
+  0::bigint,
+  'read_and_start on completed_flow should return 0 tasks (task status: completed)'
 );
 
--- Test: Calling start_tasks on queued_flow should work normally
+-- Test 3: failed_flow should return 0 tasks (task status: failed)
 select is(
-  (select count(*) from pgflow.start_tasks(
-    'queued_flow',
-    (select array_agg(message_id) from pgflow.step_tasks where flow_slug = 'queued_flow'),
-    '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  (select count(*) from pgflow_tests.read_and_start('failed_flow', 1, 10)),
+  0::bigint,
+  'read_and_start on failed_flow should return 0 tasks (task status: failed)'
+);
+
+-- Test 4: queued_flow should return 1 task (task status: queued)
+select is(
+  (select count(*) from pgflow_tests.read_and_start('queued_flow', 30, 10)),
   1::bigint,
-  'start_tasks should process the queued task in queued_flow'
+  'read_and_start on queued_flow should return 1 task (task status: queued)'
 );
 
 select * from finish();

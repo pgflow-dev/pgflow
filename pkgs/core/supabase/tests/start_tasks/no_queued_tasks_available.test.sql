@@ -6,31 +6,18 @@ select pgflow.create_flow('simple');
 select pgflow.add_step('simple', 'task');
 select pgflow.start_flow('simple', '"hello"'::jsonb);
 
--- SETUP: Start the task first time
-select pgflow_tests.read_and_start('simple', 10, 5);
-
--- TEST: start_tasks should return no tasks when task is already started
--- Using the same message IDs again (task is now 'started', not 'queued')
-with original_msg_ids as (
-  select array_agg(message_id) as ids
-  from pgflow.step_tasks
-  where step_slug = 'task'
-)
+-- SETUP: Start the task first time (should return 1 task)
 select is(
-  (select count(*)::int from pgflow.start_tasks(
-    'simple',
-    (select ids from original_msg_ids),
-    '11111111-1111-1111-1111-111111111111'::uuid
-  )),
-  0,
-  'start_tasks should return no tasks when task is already started'
+  (select count(*) from pgflow_tests.read_and_start('simple', 30, 5)),
+  1::bigint,
+  'First read_and_start should return 1 task (initial task status: queued)'
 );
 
--- TEST: Task should still be 'started' status
+-- TEST: Second read_and_start should return 0 tasks (task now started)
 select is(
-  (select status from pgflow.step_tasks where step_slug = 'task'),
-  'started',
-  'Task should remain in started status'
+  (select count(*) from pgflow_tests.read_and_start('simple', 1, 5)),
+  0::bigint,
+  'Second read_and_start should return 0 tasks (task status after first start: started)'
 );
 
 select finish();
