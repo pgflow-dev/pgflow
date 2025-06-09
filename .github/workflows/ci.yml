@@ -52,6 +52,8 @@ jobs:
       - name: Verify NX_BASE and NX_HEAD are set
         run: echo "BASE=$NX_BASE HEAD=$NX_HEAD"
 
+      - uses: ./.github/actions/setup-d2
+
       - name: Quality gate (lint + typecheck + test)
         run: pnpm nx affected -t lint typecheck test --parallel --configuration=production --base="$NX_BASE" --head="$NX_HEAD"
 
@@ -138,6 +140,8 @@ jobs:
 
       - name: Verify NX_BASE and NX_HEAD are set
         run: echo "BASE=$NX_BASE HEAD=$NX_HEAD"
+
+      - uses: ./.github/actions/setup-d2
 
       - name: Check if website is affected
         id: check-affected
