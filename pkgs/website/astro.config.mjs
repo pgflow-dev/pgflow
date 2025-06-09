@@ -96,7 +96,16 @@ export default defineConfig({
         },
       ],
       plugins: [
-        starlightBlog(),
+        starlightBlog({
+          authors: {
+            jumski: {
+              name: 'Wojciech Majewski (@jumski)',
+              title: 'Creator and Maintainer',
+              picture: '/jumski-avatar.png',
+              url: 'https://github.com/jumski',
+            },
+          },
+        }),
         starlightLlmsTxt({
           exclude: [
             'index',
