@@ -131,7 +131,6 @@ export default defineConfig({
           recentPostCount: 5,
           metrics: {
             readingTime: true,
-            words: 'rounded',
           },
         }),
         starlightLlmsTxt({
