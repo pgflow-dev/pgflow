@@ -48,11 +48,15 @@ fail_or_retry_task as (
       WHEN task.attempts_count >= (SELECT opt_max_attempts FROM config) THEN now()
       ELSE NULL
     END,
+    started_at = CASE
+      WHEN task.attempts_count < (SELECT opt_max_attempts FROM config) THEN NULL
+      ELSE task.started_at
+    END,
     error_message = fail_task.error_message
   WHERE task.run_id = fail_task.run_id
     AND task.step_slug = fail_task.step_slug
     AND task.task_index = fail_task.task_index
-    AND task.status = 'queued'
+    AND task.status = 'started'
   RETURNING *
 ),
 maybe_fail_step AS (

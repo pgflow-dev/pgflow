@@ -51,6 +51,62 @@ end;
 $$ language plpgsql;
 
 --------------------------------------------------------------------------------
+------- ensure_worker - creates or updates a test worker -----------------------
+--------------------------------------------------------------------------------
+create or replace function pgflow_tests.ensure_worker(
+  queue_name text,
+  worker_uuid uuid default '11111111-1111-1111-1111-111111111111'::uuid,
+  function_name text default 'test_worker'
+) returns uuid as $$
+  INSERT INTO pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
+  VALUES (worker_uuid, queue_name, function_name, now())
+  ON CONFLICT (worker_id) DO UPDATE SET 
+    last_heartbeat_at = now(),
+    queue_name = EXCLUDED.queue_name,
+    function_name = EXCLUDED.function_name
+  RETURNING worker_id;
+$$ language sql;
+
+--------------------------------------------------------------------------------
+------- read_and_start - reads messages and starts tasks in one call -----------
+--------------------------------------------------------------------------------
+create or replace function pgflow_tests.read_and_start(
+  flow_slug     text,
+  vt            integer default 1,
+  qty           integer default 1,
+  worker_uuid   uuid    default '11111111-1111-1111-1111-111111111111'::uuid,
+  function_name text    default 'test_worker'
+) returns setof pgflow.step_task_record
+language sql
+as $$
+  -- 1. make sure the worker exists / update its heartbeat
+  WITH w AS (
+    SELECT pgflow_tests.ensure_worker(
+             queue_name   => flow_slug,
+             worker_uuid  => worker_uuid,
+             function_name => function_name
+           ) AS wid
+  ),
+  -- 2. read messages from the queue
+  msgs AS (
+    SELECT *
+      FROM pgflow.read_with_poll(flow_slug, vt, qty, 1, 50)
+     LIMIT qty
+  ),
+  -- 3. collect their msg_ids
+  ids AS (
+    SELECT array_agg(msg_id) AS msg_ids FROM msgs
+  )
+  -- 4. start the tasks and return the resulting rows
+  SELECT *
+    FROM pgflow.start_tasks(
+           flow_slug,
+           (SELECT msg_ids FROM ids),
+           (SELECT wid FROM w)
+         );
+$$;
+
+--------------------------------------------------------------------------------
 ------- poll_and_fail - polls for a task and fails it immediately --------------
 --------------------------------------------------------------------------------
 create or replace function pgflow_tests.poll_and_fail(
@@ -58,9 +114,9 @@ create or replace function pgflow_tests.poll_and_fail(
   vt integer default 1,
   qty integer default 1
 ) returns setof pgflow.step_tasks as $$
-  -- Poll for a task and fail it in one step
+  -- Poll for a task and fail it in one step using new two-phase approach
   WITH task AS (
-    SELECT * FROM pgflow.poll_for_tasks(flow_slug, vt, qty) LIMIT 1
+    SELECT * FROM pgflow_tests.read_and_start(flow_slug, vt, qty) LIMIT 1
   )
   SELECT pgflow.fail_task(
     (SELECT run_id FROM task),
@@ -79,9 +135,9 @@ create or replace function pgflow_tests.poll_and_complete(
   vt integer default 1,
   qty integer default 1
 ) returns setof pgflow.step_tasks as $$
-  -- Poll for a task and complete it in one step
+  -- Poll for a task and complete it in one step using new two-phase approach
   WITH task AS (
-    SELECT * FROM pgflow.poll_for_tasks(flow_slug, vt, qty) LIMIT 1
+    SELECT * FROM pgflow_tests.read_and_start(flow_slug, vt, qty) LIMIT 1
   )
   SELECT pgflow.complete_task(
     (SELECT run_id FROM task),
@@ -216,6 +272,7 @@ begin
   update pgflow.step_tasks
   set
     queued_at = now() - interval '1 day' - (days_old * interval '1 day'),
+    started_at = now() - interval '1 day' - (days_old * interval '1 day') + interval '1 minute',
     completed_at = now() - (days_old * interval '1 day'),
     status = 'completed'
   where flow_slug = p_flow_slug;
@@ -251,6 +308,7 @@ begin
   update pgflow.step_tasks
   set
     queued_at = now() - interval '1 day' - (days_old * interval '1 day'),
+    started_at = now() - interval '1 day' - (days_old * interval '1 day') + interval '1 minute',
     failed_at = now() - (days_old * interval '1 day'),
     status = 'failed',
     error_message = 'Test failure'

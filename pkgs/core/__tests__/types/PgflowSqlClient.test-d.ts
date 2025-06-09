@@ -8,7 +8,7 @@ vi.mock('postgres', () => {
 });
 
 import { PgflowSqlClient } from '../../src/PgflowSqlClient.js';
-import type { Json, StepTaskKey } from '../../src/types.js';
+import type { Json, StepTaskKey, StepTaskRecord } from '../../src/types.js';
 import postgres from 'postgres';
 import { Flow } from '@pgflow/dsl';
 
@@ -23,10 +23,13 @@ describe('PgflowSqlClient Type Compatibility with Flow', () => {
     const flow = new Flow<{ url: string }>({ slug: 'test_flow' });
     const client = new PgflowSqlClient<typeof flow>(sql);
 
-    // Check pollForTasks method types
-    expectTypeOf(client.pollForTasks).toBeFunction();
-    expectTypeOf(client.pollForTasks).parameters.toMatchTypeOf<
-      [string, number?, number?, number?, number?]
+    // Check startTasks method types
+    expectTypeOf(client.startTasks).toBeFunction();
+    expectTypeOf(client.startTasks).parameters.toMatchTypeOf<
+      [string, number[], string]
+    >();
+    expectTypeOf(client.startTasks).returns.toEqualTypeOf<
+      Promise<StepTaskRecord<typeof flow>[]>
     >();
 
     // Check completeTask method types
@@ -55,5 +58,27 @@ describe('PgflowSqlClient Type Compatibility with Flow', () => {
 
     // @ts-expect-error - Flow does not accept extraneous keys
     client.startFlow(flow, { url: 'string', extraneousKey: 'value' });
+  });
+
+  it('should properly type startTasks method parameters', () => {
+    const sql = postgres();
+    const flow = new Flow<{ url: string }>({ slug: 'test_flow' });
+    const client = new PgflowSqlClient<typeof flow>(sql);
+
+    // Valid calls should compile
+    client.startTasks('flow_slug', [1, 2, 3], 'worker-id');
+    client.startTasks('flow_slug', [], 'worker-id');
+
+    // @ts-expect-error - flowSlug must be string
+    client.startTasks(123, [1, 2, 3], 'worker-id');
+
+    // @ts-expect-error - msgIds must be number array
+    client.startTasks('flow_slug', ['1', '2', '3'], 'worker-id');
+
+    // @ts-expect-error - msgIds must be array
+    client.startTasks('flow_slug', 123, 'worker-id');
+
+    // @ts-expect-error - workerId must be string
+    client.startTasks('flow_slug', [1, 2, 3], 123);
   });
 });

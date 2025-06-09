@@ -6,6 +6,9 @@ select pgflow_tests.setup_flow('sequential');
 -- Start the flow
 select pgflow.start_flow('sequential', '{"test": true}'::JSONB);
 
+-- Ensure worker exists
+select pgflow_tests.ensure_worker('sequential');
+
 -- TEST: Initial remaining_steps should be 3 and status should be 'started'
 select results_eq(
   $$ SELECT remaining_steps::int, status FROM pgflow.runs LIMIT 1 $$,
@@ -13,13 +16,16 @@ select results_eq(
   'Initial remaining_steps should be 3 and status should be started'
 );
 
--- Complete the first step's task
+-- Start and complete the first step's task
+with task as (
+  select * from pgflow_tests.read_and_start('sequential') limit 1
+)
 select pgflow.complete_task(
-  (select run_id from pgflow.runs limit 1),
-  'first',
+  task.run_id,
+  task.step_slug,
   0,
   '"first was successful"'::JSONB
-);
+) from task;
 
 -- TEST: After completing first step, remaining_steps should be 2 and status still 'started'
 select results_eq(
@@ -28,13 +34,16 @@ select results_eq(
   'After completing first step, remaining_steps should be 2 and status still started'
 );
 
--- Complete the second step's task
+-- Start and complete the second step's task
+with task as (
+  select * from pgflow_tests.read_and_start('sequential') limit 1
+)
 select pgflow.complete_task(
-  (select run_id from pgflow.runs limit 1),
-  'second',
+  task.run_id,
+  task.step_slug,
   0,
   '"second was successful"'::JSONB
-);
+) from task;
 
 -- TEST: After completing second step, remaining_steps should be 1 and status still 'started'
 select results_eq(
@@ -43,13 +52,16 @@ select results_eq(
   'After completing second step, remaining_steps should be 1 and status still started'
 );
 
--- Complete the last step's task
+-- Start and complete the last step's task
+with task as (
+  select * from pgflow_tests.read_and_start('sequential') limit 1
+)
 select pgflow.complete_task(
-  (select run_id from pgflow.runs limit 1),
-  'last',
+  task.run_id,
+  task.step_slug,
   0,
   '"last was successful"'::JSONB
-);
+) from task;
 
 -- TEST: Final remaining_steps should be 0 and status should be 'completed'
 select results_eq(

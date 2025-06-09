@@ -15,7 +15,7 @@ export type Json =
   | Json[];
 
 /**
- * Record representing a task from pgflow.poll_for_tasks
+ * Record representing a task from pgflow.start_tasks
  *
  * Same as pgflow.step_task_record type, but with not-null fields and type argument for payload.
  * The input type is automatically inferred based on the step_slug using a discriminated union.
@@ -38,23 +38,46 @@ export type StepTaskRecord<TFlow extends AnyFlow> = {
 export type StepTaskKey = Pick<StepTaskRecord<any>, 'run_id' | 'step_slug'>;
 
 /**
+ * Record representing a message from queue polling
+ */
+export type MessageRecord = {
+  msg_id: number;
+  read_ct: number;
+  enqueued_at: string;
+  vt: string;
+  message: Json;
+};
+
+/**
  * Interface for interacting with pgflow database functions
  */
 export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow> {
   /**
-   * Fetches tasks from pgflow
-   * @param queueName - Name
-   * @param batchSize - Number of tasks to fetch
-   * @param visibilityTimeout - Visibility timeout for tasks
-   * @param maxPollSeconds - Maximum time to poll for tasks
+   * Reads messages from queue without starting tasks (phase 1 of two-phase approach)
+   * @param queueName - Name of the queue
+   * @param visibilityTimeout - Visibility timeout for messages
+   * @param batchSize - Number of messages to fetch
+   * @param maxPollSeconds - Maximum time to poll for messages
    * @param pollIntervalMs - Poll interval in milliseconds
    */
-  pollForTasks(
+  readMessages(
     queueName: string,
-    batchSize?: number,
-    visibilityTimeout?: number,
+    visibilityTimeout: number,
+    batchSize: number,
     maxPollSeconds?: number,
     pollIntervalMs?: number
+  ): Promise<MessageRecord[]>;
+
+  /**
+   * Starts tasks for given message IDs (phase 2 of two-phase approach)
+   * @param flowSlug - The flow slug to start tasks from
+   * @param msgIds - Array of message IDs from readMessages
+   * @param workerId - ID of the worker starting the tasks
+   */
+  startTasks(
+    flowSlug: string,
+    msgIds: number[],
+    workerId: string
   ): Promise<StepTaskRecord<TFlow>[]>;
 
   /**

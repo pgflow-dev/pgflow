@@ -13,7 +13,7 @@ import { FlowWorkerLifecycle } from './FlowWorkerLifecycle.js';
 import { BatchProcessor } from '../core/BatchProcessor.js';
 
 /**
- * Configuration for the flow worker
+ * Configuration for the flow worker with two-phase polling
  */
 export type FlowWorkerConfig = {
   /**
@@ -46,6 +46,12 @@ export type FlowWorkerConfig = {
   batchSize?: number;
 
   /**
+   * Visibility timeout for messages in seconds
+   * @default 2
+   */
+  visibilityTimeout?: number;
+
+  /**
    * In-worker polling interval in seconds
    * @default 2
    */
@@ -59,7 +65,8 @@ export type FlowWorkerConfig = {
 };
 
 /**
- * Creates a new Worker instance for processing flow tasks.
+ * Creates a new Worker instance for processing flow tasks using the two-phase polling approach.
+ * This eliminates race conditions by separating message polling from task processing.
  *
  * @param flow - The Flow DSL definition
  * @param config - Configuration options for the worker
@@ -104,17 +111,20 @@ export function createFlowWorker<TFlow extends AnyFlow>(
     createLogger('FlowWorkerLifecycle')
   );
 
-  // Create StepTaskPoller
+  // Create StepTaskPoller with two-phase approach
   const pollerConfig: StepTaskPollerConfig = {
     batchSize: config.batchSize || 10,
     queueName: flow.slug,
+    visibilityTimeout: config.visibilityTimeout || 2,
     maxPollSeconds: config.maxPollSeconds || 2,
     pollIntervalMs: config.pollIntervalMs || 100,
   };
+  // TODO: Pass workerId supplier to defer access until after startup
   const poller = new StepTaskPoller<TFlow>(
     pgflowAdapter,
     abortSignal,
     pollerConfig,
+    () => lifecycle.workerId,
     createLogger('StepTaskPoller')
   );
 

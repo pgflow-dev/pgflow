@@ -10,3 +10,4 @@ create table if not exists pgflow.workers (
 );
 
 create index if not exists idx_workers_queue_name on pgflow.workers (queue_name);
+create index if not exists idx_workers_heartbeat on pgflow.workers (last_heartbeat_at);

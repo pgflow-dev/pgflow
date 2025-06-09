@@ -6,7 +6,8 @@ select pgflow_tests.setup_flow('sequential');
 -- Start a flow run
 select pgflow.start_flow('sequential', '"hello"'::jsonb);
 
--- Complete the first task to make the second step ready
+-- Start and complete the first task to make the second step ready
+select pgflow_tests.read_and_start('sequential');
 select pgflow.complete_task(
   (select run_id from pgflow.runs limit 1),
   'first',

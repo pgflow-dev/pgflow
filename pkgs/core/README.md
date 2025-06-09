@@ -43,7 +43,7 @@ This package focuses on:
 - Defining and storing workflow shapes
 - Managing workflow state transitions
 - Exposing transactional functions for workflow operations
-- Providing APIs for task polling and status updates
+- Providing two-phase APIs for reliable task polling and status updates
 
 The actual execution of workflow tasks is handled by the [Edge Worker](../edge-worker/README.md), which calls back to the SQL Core to acknowledge task completion or failure.
 
@@ -87,7 +87,7 @@ The SQL Core handles the workflow lifecycle through these key operations:
 
 1. **Definition**: Workflows are defined using `create_flow` and `add_step`
 2. **Instantiation**: Workflow instances are started with `start_flow`, creating a new run
-3. **Task Management**: The [Edge Worker](../edge-worker/README.md) polls for available tasks using `poll_for_tasks`
+3. **Task Retrieval**: The [Edge Worker](../edge-worker/README.md) uses two-phase polling - first `read_with_poll` to reserve queue messages, then `start_tasks` to convert them to executable tasks
 4. **State Transitions**: When the Edge Worker reports back using `complete_task` or `fail_task`, the SQL Core handles state transitions and schedules dependent steps
 
 [Flow lifecycle diagram (click to enlarge)](./assets/flow-lifecycle.svg)
@@ -159,24 +159,33 @@ When a workflow starts:
 
 #### Task Polling
 
-The Edge Worker continuously polls for available tasks using the `poll_for_tasks` function:
+The Edge Worker uses a two-phase approach to retrieve and start tasks:
 
+**Phase 1 - Reserve Messages:**
 ```sql
-SELECT * FROM pgflow.poll_for_tasks(
+SELECT * FROM pgflow.read_with_poll(
   queue_name => 'analyze_website',
   vt => 60, -- visibility timeout in seconds
-  qty => 5  -- maximum number of tasks to fetch
+  qty => 5  -- maximum number of messages to fetch
 );
 ```
 
-When a task is polled:
+**Phase 2 - Start Tasks:**
+```sql
+SELECT * FROM pgflow.start_tasks(
+  flow_slug => 'analyze_website',
+  msg_ids => ARRAY[101, 102, 103], -- message IDs from phase 1
+  worker_id => '550e8400-e29b-41d4-a716-446655440000'::uuid
+);
+```
 
-1. The message is hidden from other workers for the specified timeout period
-2. The task's attempts counter is incremented for retry tracking
-3. An input object is built by combining the run input with outputs from completed dependency steps
-4. Task metadata and input are returned to the worker
+**How it works:**
 
-This process happens in a single transaction to ensure reliability. The worker then executes the appropriate handler function based on the task metadata.
+1. **read_with_poll** reserves raw queue messages and hides them from other workers
+2. **start_tasks** finds matching step_tasks, increments attempts counter, and builds task inputs
+3. Task metadata and input are returned to the worker for execution
+
+This two-phase approach ensures tasks always exist before processing begins, eliminating race conditions that could occur with single-phase polling.
 
 #### Task Completion
 

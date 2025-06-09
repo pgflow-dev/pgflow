@@ -1,29 +1,36 @@
 import type { StepTaskRecord, IPgflowClient } from './types.js';
-import type { IPoller } from '../core/types.js';
+import type { IPoller, Supplier } from '../core/types.js';
 import type { Logger } from '../platform/types.js';
 import type { AnyFlow } from '@pgflow/dsl';
 
 export interface StepTaskPollerConfig {
   batchSize: number;
   queueName: string;
+  visibilityTimeout?: number;
   maxPollSeconds?: number;
   pollIntervalMs?: number;
 }
 
 /**
- * A poller that retrieves flow tasks using an IPgflowClient
+ * A two-phase poller that first reads messages, then explicitly starts tasks
+ * This eliminates race conditions by separating message polling from task processing
  */
 export class StepTaskPoller<TFlow extends AnyFlow>
   implements IPoller<StepTaskRecord<TFlow>>
 {
   private logger: Logger;
+  // TODO: Temporary supplier pattern until we refactor initialization
+  // to pass workerId directly to createWorkerFn
+  private readonly getWorkerId: Supplier<string>;
 
   constructor(
     private readonly adapter: IPgflowClient<TFlow>,
     private readonly signal: AbortSignal,
     private readonly config: StepTaskPollerConfig,
+    workerIdSupplier: Supplier<string>,
     logger: Logger
   ) {
+    this.getWorkerId = workerIdSupplier;
     this.logger = logger;
   }
 
@@ -33,22 +40,53 @@ export class StepTaskPoller<TFlow extends AnyFlow>
       return [];
     }
 
+    const workerId = this.getWorkerId();
     this.logger.debug(
-      `Polling for flow tasks with batch size ${this.config.batchSize}, maxPollSeconds: ${this.config.maxPollSeconds}, pollIntervalMs: ${this.config.pollIntervalMs}`
+      `Two-phase polling for flow tasks with batch size ${this.config.batchSize}, maxPollSeconds: ${this.config.maxPollSeconds}, pollIntervalMs: ${this.config.pollIntervalMs}`
     );
 
     try {
-      // Pass polling configuration to the adapter if they're provided
-      const tasks = await this.adapter.pollForTasks(
+      // Phase 1: Read messages from queue
+      const messages = await this.adapter.readMessages(
         this.config.queueName,
+        this.config.visibilityTimeout ?? 2,
         this.config.batchSize,
         this.config.maxPollSeconds,
         this.config.pollIntervalMs
       );
-      this.logger.debug(`Retrieved ${tasks.length} flow tasks`);
+
+      if (messages.length === 0) {
+        this.logger.debug('No messages found in queue');
+        return [];
+      }
+
+      this.logger.debug(`Found ${messages.length} messages, starting tasks`);
+
+      // Phase 2: Start tasks for the retrieved messages
+      const msgIds = messages.map((msg) => msg.msg_id);
+      const tasks = await this.adapter.startTasks(
+        this.config.queueName,
+        msgIds,
+        workerId
+      );
+
+      this.logger.debug(
+        `Started ${tasks.length} tasks from ${messages.length} messages`
+      );
+
+      // Log if we got fewer tasks than messages (indicates some messages had no matching queued tasks)
+      if (tasks.length < messages.length) {
+        this.logger.debug(
+          `Note: Started ${tasks.length} tasks from ${messages.length} messages. ` +
+            `${
+              messages.length - tasks.length
+            } messages had no queued tasks (may retry later).`
+        );
+      }
+
       return tasks;
     } catch (err: unknown) {
-      this.logger.error(`Error polling for flow tasks: ${err}`);
+      this.logger.error(`Error in two-phase polling for flow tasks: ${err}`);
       return [];
     }
   }

@@ -10,5 +10,4 @@ graph TD
       WORKER["Edge Worker"]
     end
     SQL --> CORE
-    WORKER -->|poll_for_tasks| CORE
-    WORKER -->|complete_task or fail_task| CORE
+    WORKER -->|poll for work & report results| CORE

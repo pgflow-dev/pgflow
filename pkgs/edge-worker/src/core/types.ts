@@ -1,5 +1,11 @@
 export type { Json } from '@pgflow/core';
 
+// TODO: This Supplier pattern is a temporary measure to defer workerId access
+// until after worker startup. Consider refactoring initialization to pass
+// workerId directly to createWorkerFn instead of the two-phase approach
+// (createWorker → startOnlyOnce)
+export type Supplier<T> = () => T;
+
 export interface IPoller<IMessage> {
   poll(): Promise<IMessage[]>;
 }
