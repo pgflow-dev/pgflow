@@ -45,7 +45,7 @@ export class PgflowSqlClient<TFlow extends AnyFlow>
       SELECT *
       FROM pgflow.start_tasks(
         flow_slug => ${flowSlug},
-        msg_ids => ${this.sql.array(msgIds)},
+        msg_ids => ${msgIds}::bigint[],
         worker_id => ${workerId}::uuid
       );
     `;

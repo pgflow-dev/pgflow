@@ -1,12 +1,11 @@
 import type { StepTaskRecord, IPgflowClient } from './types.js';
-import type { IPoller } from '../core/types.js';
+import type { IPoller, Supplier } from '../core/types.js';
 import type { Logger } from '../platform/types.js';
 import type { AnyFlow } from '@pgflow/dsl';
 
 export interface StepTaskPollerConfig {
   batchSize: number;
   queueName: string;
-  workerId: string;
   visibilityTimeout?: number;
   maxPollSeconds?: number;
   pollIntervalMs?: number;
@@ -20,13 +19,18 @@ export class StepTaskPoller<TFlow extends AnyFlow>
   implements IPoller<StepTaskRecord<TFlow>>
 {
   private logger: Logger;
+  // TODO: Temporary supplier pattern until we refactor initialization
+  // to pass workerId directly to createWorkerFn
+  private readonly getWorkerId: Supplier<string>;
 
   constructor(
     private readonly adapter: IPgflowClient<TFlow>,
     private readonly signal: AbortSignal,
     private readonly config: StepTaskPollerConfig,
+    workerIdSupplier: Supplier<string>,
     logger: Logger
   ) {
+    this.getWorkerId = workerIdSupplier;
     this.logger = logger;
   }
 
@@ -36,6 +40,7 @@ export class StepTaskPoller<TFlow extends AnyFlow>
       return [];
     }
 
+    const workerId = this.getWorkerId();
     this.logger.debug(
       `Two-phase polling for flow tasks with batch size ${this.config.batchSize}, maxPollSeconds: ${this.config.maxPollSeconds}, pollIntervalMs: ${this.config.pollIntervalMs}`
     );
@@ -59,15 +64,23 @@ export class StepTaskPoller<TFlow extends AnyFlow>
 
       // Phase 2: Start tasks for the retrieved messages
       const msgIds = messages.map((msg) => msg.msg_id);
-      const tasks = await this.adapter.startTasks(this.config.queueName, msgIds, this.config.workerId);
+      const tasks = await this.adapter.startTasks(
+        this.config.queueName,
+        msgIds,
+        workerId
+      );
 
-      this.logger.debug(`Started ${tasks.length} tasks from ${messages.length} messages`);
-      
+      this.logger.debug(
+        `Started ${tasks.length} tasks from ${messages.length} messages`
+      );
+
       // Log if we got fewer tasks than messages (indicates some messages had no matching queued tasks)
       if (tasks.length < messages.length) {
         this.logger.debug(
           `Note: Started ${tasks.length} tasks from ${messages.length} messages. ` +
-          `${messages.length - tasks.length} messages had no queued tasks (may retry later).`
+            `${
+              messages.length - tasks.length
+            } messages had no queued tasks (may retry later).`
         );
       }
 
