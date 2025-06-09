@@ -201,6 +201,18 @@ export default defineConfig({
             ],
           },
           {
+            label: 'BLOG',
+            icon: 'pen',
+            link: '/blog/',
+            id: 'blog',
+            items: [
+              {
+                label: 'All Posts',
+                link: '/blog/',
+              },
+            ],
+          },
+          {
             label: 'Found a bug?',
             icon: 'github',
             link: 'https://github.com/pgflow-dev/pgflow/issues/new',
