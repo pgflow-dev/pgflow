@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import starlightBlog from 'starlight-blog';
 import starlightLinksValidator from 'starlight-links-validator';
 import starlightSidebarTopics from 'starlight-sidebar-topics';
 import robotsTxt from 'astro-robots-txt';
@@ -95,6 +96,7 @@ export default defineConfig({
         },
       ],
       plugins: [
+        starlightBlog(),
         starlightLlmsTxt({
           exclude: [
             'index',
