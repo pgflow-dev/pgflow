@@ -4,7 +4,6 @@ import type { ILifecycle, WorkerBootstrap, WorkerRow } from '../core/types.js';
 import type { Logger } from '../platform/types.js';
 import { States, WorkerState } from '../core/WorkerState.js';
 import type { AnyFlow } from '@pgflow/dsl';
-import type { StepTaskPoller } from './StepTaskPoller.js';
 
 /**
  * A specialized WorkerLifecycle for Flow-based workers that is aware of the Flow's step types
