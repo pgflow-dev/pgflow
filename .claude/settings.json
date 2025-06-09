@@ -1,8 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(./scripts/run-test-with-colors:*)",
-      "Bash(./scripts/supabase:*)",
+      "Bash(scripts/run-test-with-colors:*)",
+      "Bash(scripts/supabase:*)",
       "Bash(cat:*)",
       "Bash(find:*)",
       "Bash(grep:*)",
