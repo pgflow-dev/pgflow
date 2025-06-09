@@ -64,7 +64,7 @@ create table pgflow.step_tasks (
   started_at timestamptz,
   completed_at timestamptz,
   failed_at timestamptz,
-  last_worker_id uuid references pgflow.workers(worker_id) on delete set null,
+  last_worker_id uuid references pgflow.workers (worker_id) on delete set null,
   constraint step_tasks_pkey primary key (run_id, step_slug, task_index),
   foreign key (run_id, step_slug)
   references pgflow.step_states (run_id, step_slug),
@@ -80,7 +80,9 @@ create table pgflow.step_tasks (
   constraint completed_at_is_after_queued_at check (completed_at is null or completed_at >= queued_at),
   constraint failed_at_is_after_queued_at check (failed_at is null or failed_at >= queued_at),
   constraint started_at_is_after_queued_at check (started_at is null or started_at >= queued_at),
-  constraint completed_at_is_after_started_at check (completed_at is null or started_at is null or completed_at >= started_at),
+  constraint completed_at_is_after_started_at check (
+    completed_at is null or started_at is null or completed_at >= started_at
+  ),
   constraint failed_at_is_after_started_at check (failed_at is null or started_at is null or failed_at >= started_at)
 );
 

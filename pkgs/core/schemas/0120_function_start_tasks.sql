@@ -1,6 +1,6 @@
 create or replace function pgflow.start_tasks(
   flow_slug text,
-  msg_ids bigint[],
+  msg_ids bigint [],
   worker_id uuid
 )
 returns setof pgflow.step_task_record
