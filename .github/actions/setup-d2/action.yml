@@ -1,0 +1,23 @@
+name: 'Setup D2'
+description: 'Install D2 diagramming tool with retry logic'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install D2
+      shell: bash
+      run: |
+        for i in 1 2 3 4 5; do
+          echo "Attempt $i to install D2..."
+          if curl -fsSL https://d2lang.com/install.sh | sh -s --; then
+            echo "D2 installed successfully"
+            break
+          else
+            if [ $i -eq 5 ]; then
+              echo "Failed to install D2 after 5 attempts"
+              exit 1
+            fi
+            echo "Install failed, retrying in 5 seconds..."
+            sleep 5
+          fi
+        done
