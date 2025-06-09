@@ -19,4 +19,7 @@ pnpm-debug.log*
 
 # macOS-specific files
 .DS_Store
+
+# generated files
 public/edge-worker/
+public/d2/

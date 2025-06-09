@@ -1,0 +1,85 @@
+---
+import { execSync } from 'node:child_process';
+
+const {
+  padding = 100,
+  sketch = false,
+  theme = 0,
+  darkTheme = 200,
+  code,
+  layout = 'dagre',
+} = Astro.props;
+
+// Theme configuration that will be prepended to all diagrams
+const themeConfig = `vars: {
+  d2-config: {
+    theme-id: ${theme}
+    theme-overrides: {
+      # Neutrals - desaturated grays for default nodes
+      N1: "#e8eced"
+      N2: "#c5cacc"
+      N3: "#95a0a3"
+      N4: "#4a5759"
+      N5: "#2d3739"
+      N6: "#1a2324"
+      N7: "#ffffff"
+
+      # Borders - neutral grays
+      B1: "#3a4547"
+      B2: "#4a5759"
+      B3: "#5a6769"
+      B4: "#1a2324"
+      B5: "#2d3739"
+      B6: "#4a5759"
+
+      # Semantic colors - intentional states
+      AA2: "#d97706"
+      AA4: "#dc2626"
+      AA5: "#92400e"
+      AB4: "#059669"
+      AB5: "#2563eb"
+    }
+    dark-theme-overrides: {
+      # Neutrals - desaturated grays for default nodes
+      N1: "#e8eced"
+      N2: "#c5cacc"
+      N3: "#95a0a3"
+      N4: "#4a5759"
+      N5: "#2d3739"
+      N6: "#1a2324"
+      N7: "#121a19"
+
+      # Borders - neutral grays
+      B1: "#3a4547"
+      B2: "#4a5759"
+      B3: "#5a6769"
+      B4: "#1a2324"
+      B5: "#2d3739"
+      B6: "#4a5759"
+
+      # Semantic colors - intentional states
+      AA2: "#d97706"
+      AA4: "#dc2626"
+      AA5: "#92400e"
+      AB4: "#059669"
+      AB5: "#2563eb"
+    }
+  }
+}
+
+`;
+
+// Prepend theme config to the user's diagram code
+const fullCode = themeConfig + code;
+
+// Generate the diagram SVG
+const output = execSync(
+  `d2 --layout=${layout} --theme=${theme} --sketch=${sketch} --pad=${padding} --dark-theme=${darkTheme} - -`,
+  {
+    input: fullCode,
+    encoding: 'utf8',
+  }
+);
+---
+
+<Fragment set:html={output} />
