@@ -22,6 +22,7 @@
     "@types/react-dom": "^19.1.7",
     "@vercel/analytics": "^1.5.0",
     "astro": "^5.7.14",
+    "astro-d2": "^0.8.0",
     "astro-robots-txt": "^1.0.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
