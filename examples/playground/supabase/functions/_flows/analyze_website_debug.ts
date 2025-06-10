@@ -1,9 +1,12 @@
 import { Flow } from '@pgflow/dsl';
-import scrapeWebsite from '../_tasks/scrapeWebsite.ts';
-import summarizeWithAI from '../_tasks/summarizeWithAI.ts';
-import extractTags from '../_tasks/extractTags.ts';
-import saveWebsite from '../_tasks/saveWebsite.ts';
 import { simulateFailure } from '../utils.ts';
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const sleepWithJitter = (baseMs: number) => {
+  const jitter = (Math.random() - 0.5) * 0.4 * baseMs; // ±20%
+  return sleep(Math.round(baseMs + jitter));
+};
 
 type Input = {
   url: string;
@@ -18,7 +21,8 @@ export default new Flow<Input>({
 })
   .step({ slug: 'website' }, async (input) => {
     const startTime = new Date();
-    const results = await scrapeWebsite(input.run.url);
+    // Simulate website scraping
+    await sleepWithJitter(500);
     const endTime = new Date();
     const elapsedMs = endTime.getTime() - startTime.getTime();
 
@@ -28,7 +32,8 @@ export default new Flow<Input>({
   })
   .step({ slug: 'summary', dependsOn: ['website'] }, async (input) => {
     const startTime = new Date();
-    await summarizeWithAI(input.website.content);
+    // Simulate AI summarization
+    await sleepWithJitter(500);
     const endTime = new Date();
     const elapsedMs = endTime.getTime() - startTime.getTime();
 
@@ -38,7 +43,8 @@ export default new Flow<Input>({
     const startTime = new Date();
 
     await simulateFailure(input.run.url);
-    const { keywords } = await extractTags(input.website.content);
+    // Simulate tag extraction
+    await sleepWithJitter(500);
 
     const endTime = new Date();
     const elapsedMs = endTime.getTime() - startTime.getTime();
@@ -48,13 +54,16 @@ export default new Flow<Input>({
     };
   })
   .step({ slug: 'saveToDb', dependsOn: ['summary', 'tags'] }, async (input) => {
-    const websiteData = {
+    // Simulate database save operation
+    await sleepWithJitter(500);
+    
+    return {
+      id: Math.floor(Math.random() * 1000),
       user_id: input.run.user_id,
       website_url: input.run.url,
       summary: input.summary,
       tags: input.tags.keywords,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
-    const { website } = await saveWebsite(websiteData);
-
-    return website;
   });

@@ -91,6 +91,49 @@ group by step_slug
 order by step_slug;
 
 -- Overall system metrics across all steps
+with task_metrics as (
+  select
+    step_slug,
+    round(extract(epoch from (started_at - queued_at)) * 1000, 2) as queue_to_start_ms,
+    case
+      when step_slug = 'website' and output is not null
+        then
+          round(extract(epoch from (completed_at - started_at)) * 1000 - (output ->> 'content')::integer, 2)
+      when step_slug = 'summary' and output is not null
+        then
+          round(extract(epoch from (completed_at - started_at)) * 1000 - (output #>> '{}')::integer, 2)
+      when step_slug = 'tags' and output is not null
+        then
+          round(extract(epoch from (completed_at - started_at)) * 1000 - (output -> 'keywords' ->> 0)::integer, 2)
+      else null
+    end as worker_overhead_ms,
+    round(extract(epoch from (completed_at - started_at)) * 1000, 2) as total_execution_ms,
+    round(extract(epoch from (completed_at - queued_at)) * 1000, 2) as total_end_to_end_ms,
+    case
+      when step_slug = 'website' and output is not null
+        then
+          round(extract(epoch from (completed_at - queued_at)) * 1000 - (output ->> 'content')::integer, 2)
+      when step_slug = 'summary' and output is not null
+        then
+          round(extract(epoch from (completed_at - queued_at)) * 1000 - (output #>> '{}')::integer, 2)
+      when step_slug = 'tags' and output is not null
+        then
+          round(extract(epoch from (completed_at - queued_at)) * 1000 - (output -> 'keywords' ->> 0)::integer, 2)
+      else null
+    end as total_overhead_ms,
+    case
+      when step_slug = 'website' and output is not null then (output ->> 'content')::integer
+      when step_slug = 'summary' and output is not null then (output #>> '{}')::integer
+      when step_slug = 'tags' and output is not null then (output -> 'keywords' ->> 0)::integer
+      else null
+    end as actual_task_ms
+  from pgflow.step_tasks
+  where
+    status = 'completed'
+    and attempts_count = 1
+    and output is not null
+)
+
 select
   'OVERALL' as metric,
   count(*) as total_executions,
@@ -98,6 +141,6 @@ select
   round(percentile_cont(0.5) within group (order by total_overhead_ms)::numeric, 2) as p50_total_overhead_ms,
   round(percentile_cont(0.95) within group (order by total_overhead_ms)::numeric, 2) as p95_total_overhead_ms,
   round(avg(actual_task_ms), 2) as avg_actual_task_ms,
-  round(avg(total_overhead_ms::float / nullif(actual_task_ms, 0) * 100), 2) as avg_overhead_percentage
+  round(avg(total_overhead_ms::float / nullif(actual_task_ms, 0) * 100)::numeric, 2) as avg_overhead_percentage
 from task_metrics
 where worker_overhead_ms is not null;
