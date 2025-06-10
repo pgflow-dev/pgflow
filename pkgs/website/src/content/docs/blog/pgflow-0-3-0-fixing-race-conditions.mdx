@@ -22,13 +22,13 @@ sidebar:
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 
-pgflow 0.3.0 is here with a critical fix for race conditions that could cause tasks to be lost or duplicated under high concurrency. This release introduces **two-phase polling** to eliminate these issues while improving observability and reliability.
+[pgflow 0.3.0](https://github.com/pgflow-dev/pgflow/releases/tag/%40pgflow%2Fedge-worker%400.3.0) is here with a critical fix for race conditions that could cause tasks to be lost or processed multiple times when scaling workers horizontally. This release introduces **two-phase polling** to make polling super reliable in heavy concurrent scenarios - Edge Worker scales horizontally now!
 
 ## The Problem: When Scaling Reveals Hidden Bugs
 
 The race condition bug was particularly sneaky because it only appeared when scaling horizontally. With a single Edge Worker, everything worked perfectly. But as soon as multiple workers started polling simultaneously—especially on slower production hardware—users began experiencing:
 
-- **Constraint violations**: `PostgresError: more than one row returned by a subquery` 
+- **Constraint violations**: `PostgresError: more than one row returned by a subquery`
 - **Lost tasks**: Messages read from the queue but never processed
 - **Inconsistent behavior**: Works locally but fails in production
 
@@ -81,15 +81,6 @@ The critical issue was the **gap between Statement 1 and Statement 2**:
    - No row locking prevents this
    - Both call `complete_task` on the same message
    - Second call fails with constraint violation
-
-### Why Production vs Local Development Mattered
-
-| Environment | Hardware | Timing | Race Probability |
-|-------------|----------|--------|------------------|
-| **Production** | 0.5 vCPU VPS | Workers start within 4-20ms | HIGH |
-| **Local** | Fast multi-core | Worker A completes before B starts | LOW |
-
-On slower production hardware, multiple workers were much more likely to start `poll_for_tasks` within the same millisecond window, creating the perfect storm for race conditions.
 
 ## The Solution: Two-Phase Polling
 
@@ -157,17 +148,17 @@ Follow these steps to upgrade your pgflow installation:
 <Steps>
 
 1. **Update pgflow CLI and apply migrations**
-   
+
    ```bash frame="none"
    npx pgflow@0.3.0 install
    ```
-   
+
    This updates your database schema and adds the new `start_tasks` function.
 
 2. **Update your Edge Worker dependency**
-   
+
    In your Edge Function's `deno.json`:
-   
+
    ```json title="deno.json"
    {
      "imports": {
@@ -177,13 +168,13 @@ Follow these steps to upgrade your pgflow installation:
    ```
 
 3. **Update DSL and core packages** (if using them directly)
-   
+
    ```bash frame="none"
    npm install @pgflow/core@0.3.0 @pgflow/dsl@0.3.0
    ```
 
 4. **Apply migrations and deploy Edge Functions**
-   
+
    ```bash frame="none"
    supabase db push
    supabase functions deploy
@@ -224,7 +215,7 @@ This separation makes the system more predictable and easier to debug.
 This fix demonstrates pgflow's commitment to production-ready reliability. The two-phase polling approach not only eliminates race conditions but also provides better foundation for future features like:
 
 - Enhanced worker monitoring and health checks
-- More sophisticated task scheduling strategies  
+- More sophisticated task scheduling strategies
 - Improved error handling and retry mechanisms
 
 ---
