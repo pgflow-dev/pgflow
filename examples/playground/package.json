@@ -9,7 +9,7 @@
     "stop-supabase": "./scripts/supabase stop",
     "restart-supabase": "npm run stop-supabase && npm run start-supabase",
     "start-functions": "./scripts/supabase functions serve",
-    "start-workers": "for workerIndex in 0 1; do curl -X POST http://127.0.0.1:54321/functions/v1/analyze_website_worker_$workerIndex; done",
+    "start-workers": "for workerIndex in 0 1 2 3; do curl -X POST http://127.0.0.1:54321/functions/v1/analyze_website_worker_$workerIndex; done",
     "gen-types": "./scripts/supabase gen types --local --schema public --schema pgflow > supabase/functions/database-types.d.ts"
   },
   "dependencies": {
