@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# Source the environment variables
+source .env
+
+# Export required variables for Supabase
+export PRODUCTION_DB_URL
+
+# Execute supabase with all arguments passed through
+npx supabase@latest "$@" db push --db-url "$PRODUCTION_DB_URL"
