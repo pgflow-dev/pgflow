@@ -334,23 +334,3 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/analyze_website_worker_3/index.ts"
-[functions.analyze_website_worker_4]
-enabled = true
-verify_jwt = false
-import_map = "./functions/deno.json"
-entrypoint = "./functions/analyze_website_worker_4/index.ts"
-[functions.analyze_website_worker_5]
-enabled = true
-verify_jwt = false
-import_map = "./functions/deno.json"
-entrypoint = "./functions/analyze_website_worker_5/index.ts"
-[functions.analyze_website_worker_6]
-enabled = true
-verify_jwt = false
-import_map = "./functions/deno.json"
-entrypoint = "./functions/analyze_website_worker_6/index.ts"
-[functions.analyze_website_worker_7]
-enabled = true
-verify_jwt = false
-import_map = "./functions/deno.json"
-entrypoint = "./functions/analyze_website_worker_7/index.ts"
