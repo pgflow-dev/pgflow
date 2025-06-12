@@ -56,7 +56,7 @@ pgflow uses two categories of tables:
 
 **Runtime tables:**
 - `runs` - One row per workflow execution
-- `step_states` - Tracks each step's **status and dependencies**
+- `step_states` - Tracks each step's **current state**
 - `step_tasks` - Execution units for step processing (implementation detail)
 
 Because updates happen **inside the same transaction** that handles the queue message, pgflow gets ACID guarantees "for free".
