@@ -1,4 +1,5 @@
-h1:X7aZAj7sjUFI6upiMu4+Ds7W5ZB6/ONv8FM/OaAx16o=
+h1:JnvpfaLRrNaZsW+sgUhREEA/Sn1nx2Kd9B+LHIRlwU4=
 20250429164909_pgflow_initial.sql h1:5K7OqB/vj73TWJTQquUzn+i6H2wWduaW+Ir1an3QYmQ=
 20250517072017_pgflow_fix_poll_for_tasks_to_use_separate_statement_for_polling.sql h1:gnT6hYn43p5oIfr0HqoGlqX/4Si+uxMsCBtBa0/Z2Cg=
 20250609105135_pgflow_add_start_tasks_and_started_status.sql h1:9Yv/elMz9Nht9rCJOybx62eNrUyghsEMbMKeOJPUMVc=
+20250610180554_pgflow_add_set_vt_batch_and_use_it_in_start_tasks.sql h1:rqhO47GgL/M+Yq6vrNHB775wegnqs+snewqdtUs/E70=

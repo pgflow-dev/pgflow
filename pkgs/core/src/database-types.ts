@@ -462,6 +462,10 @@ export type Database = {
         }
         Returns: Database["pgmq"]["CompositeTypes"]["message_record"][]
       }
+      set_vt_batch: {
+        Args: { queue_name: string; msg_ids: number[]; vt_offsets: number[] }
+        Returns: Database["pgmq"]["CompositeTypes"]["message_record"][]
+      }
       start_flow: {
         Args: { flow_slug: string; input: Json }
         Returns: {
