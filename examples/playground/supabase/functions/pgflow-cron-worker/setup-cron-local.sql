@@ -9,6 +9,11 @@ CREATE EXTENSION IF NOT EXISTS pg_net;
 GRANT USAGE ON SCHEMA cron TO postgres;
 GRANT USAGE ON SCHEMA net TO postgres;
 
+-- Remove existing job if it exists to prevent duplicates
+SELECT cron.unschedule(jobname) 
+FROM cron.job 
+WHERE jobname = 'pgflow-analyze-website-worker';
+
 -- Create the cron job for analyze_website flow (LOCAL VERSION)
 -- This uses localhost URLs for local development
 SELECT cron.schedule(

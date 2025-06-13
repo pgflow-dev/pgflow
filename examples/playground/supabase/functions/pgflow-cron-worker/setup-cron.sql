@@ -9,6 +9,11 @@ CREATE EXTENSION IF NOT EXISTS pg_net;
 GRANT USAGE ON SCHEMA cron TO postgres;
 GRANT USAGE ON SCHEMA net TO postgres;
 
+-- Remove existing job if it exists to prevent duplicates
+SELECT cron.unschedule(jobname) 
+FROM cron.job 
+WHERE jobname = 'pgflow-analyze-website-worker';
+
 -- Create the cron job for analyze_website flow
 -- Replace 'YOUR_PROJECT_REF' with your actual Supabase project reference
 -- Replace 'YOUR_ANON_KEY' with your actual anon key (or use the setting approach below)
