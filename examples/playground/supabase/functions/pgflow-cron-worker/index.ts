@@ -117,27 +117,36 @@ serve(async (req) => {
   try {
     // Send heartbeat
     await heartbeat.send();
-    
+
     const body = await req.json();
-    const { flow_slug, batch_size, max_concurrent, cron_interval_seconds } = body;
+    const { flow_slug, batch_size, max_concurrent, cron_interval_seconds } =
+      body;
 
     // Validate required parameters
     const missingParams = [];
     if (!flow_slug) missingParams.push('flow_slug');
-    if (batch_size === undefined || batch_size === null) missingParams.push('batch_size');
-    if (max_concurrent === undefined || max_concurrent === null) missingParams.push('max_concurrent');
-    if (cron_interval_seconds === undefined || cron_interval_seconds === null) missingParams.push('cron_interval_seconds');
+    if (batch_size === undefined || batch_size === null)
+      missingParams.push('batch_size');
+    if (max_concurrent === undefined || max_concurrent === null)
+      missingParams.push('max_concurrent');
+    if (cron_interval_seconds === undefined || cron_interval_seconds === null)
+      missingParams.push('cron_interval_seconds');
 
     if (missingParams.length > 0) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: `Missing required parameters: ${missingParams.join(', ')}`,
-          required_params: ['flow_slug', 'batch_size', 'max_concurrent', 'cron_interval_seconds']
-        }), 
+          required_params: [
+            'flow_slug',
+            'batch_size',
+            'max_concurrent',
+            'cron_interval_seconds',
+          ],
+        }),
         {
           status: 400,
           headers: { 'Content-Type': 'application/json' },
-        }
+        },
       );
     }
 
@@ -160,8 +169,8 @@ serve(async (req) => {
 
     const processingStartTime = Date.now();
     const maxExecutionTime = (cron_interval_seconds - 1) * 1000; // Leave 1 second buffer
-    const maxIterations = cron_interval_seconds * 2; // Safety limit
-    
+    const maxIterations = cron_interval_seconds * 4; // Safety limit
+
     let iterations = 0;
     let totalProcessed = 0;
 
@@ -171,17 +180,17 @@ serve(async (req) => {
       iterations < maxIterations
     ) {
       iterations++;
-      
+
       logger.info(`Starting batch iteration ${iterations}`);
-      
+
       // Send heartbeat before each batch
       await heartbeat.send();
-      
+
       await processBatchForFlow(flow, flow_slug, batch_size, max_concurrent);
       totalProcessed++;
-      
+
       // Small delay to prevent tight loop if no tasks available
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     const totalDuration = Date.now() - processingStartTime;
