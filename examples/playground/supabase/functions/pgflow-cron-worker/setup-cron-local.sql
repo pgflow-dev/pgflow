@@ -12,13 +12,13 @@ GRANT USAGE ON SCHEMA net TO postgres;
 -- Remove existing job if it exists to prevent duplicates
 SELECT cron.unschedule(jobname) 
 FROM cron.job 
-WHERE jobname = 'pgflow-analyze-website-worker';
+WHERE jobname = 'pgflow-worker--analyze_website';
 
 -- Create the cron job for analyze_website flow (LOCAL VERSION)
 -- This uses localhost URLs for local development
 SELECT cron.schedule(
-  'pgflow-analyze-website-worker',  -- job name
-  '5 seconds',                      -- run every 5 seconds using interval syntax
+  'pgflow-worker--analyze_website',  -- job name
+  '4 seconds',                      -- run every 4 seconds using interval syntax
   $$
   SELECT net.http_post(
     url := 'http://host.docker.internal:54321/functions/v1/pgflow-cron-worker',
@@ -30,7 +30,7 @@ SELECT cron.schedule(
       'flow_slug', 'analyze_website',
       'batch_size', 5,
       'max_concurrent', 3,
-      'cron_interval_seconds', 5
+      'cron_interval_seconds', 4
     ),
     timeout_milliseconds := 25000
   ) as request_id;
@@ -45,7 +45,7 @@ SELECT * FROM cron.job;
 -- This query attempts to show job execution details
 
 -- To unschedule the job:
--- SELECT cron.unschedule('pgflow-analyze-website-worker');
+-- SELECT cron.unschedule('pgflow-worker--analyze_website');
 
 -- Monitor pg_net requests (useful for debugging)
 -- Check the net._http_response table for request logs

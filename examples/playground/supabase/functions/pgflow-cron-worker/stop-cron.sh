@@ -19,7 +19,7 @@ echo "Stopping pg_cron job for pgflow-cron-worker..."
 echo ""
 
 # Unschedule the cron job
-psql "$DB_URL" -c "SELECT cron.unschedule('pgflow-analyze-website-worker');"
+psql "$DB_URL" -c "SELECT cron.unschedule('pgflow-worker--analyze_website');"
 
 echo ""
 echo "Cron job stopped."

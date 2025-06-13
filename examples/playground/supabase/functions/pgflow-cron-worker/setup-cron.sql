@@ -12,14 +12,14 @@ GRANT USAGE ON SCHEMA net TO postgres;
 -- Remove existing job if it exists to prevent duplicates
 SELECT cron.unschedule(jobname) 
 FROM cron.job 
-WHERE jobname = 'pgflow-analyze-website-worker';
+WHERE jobname = 'pgflow-worker--analyze_website';
 
 -- Create the cron job for analyze_website flow
 -- Replace 'YOUR_PROJECT_REF' with your actual Supabase project reference
 -- Replace 'YOUR_ANON_KEY' with your actual anon key (or use the setting approach below)
 SELECT cron.schedule(
-  'pgflow-analyze-website-worker',  -- job name
-  '*/5 * * * * *',                  -- every 5 seconds
+  'pgflow-worker--analyze_website',  -- job name
+  '*/4 * * * * *',                  -- every 4 seconds
   $$
   SELECT net.http_post(
     url := 'https://YOUR_PROJECT_REF.supabase.co/functions/v1/pgflow-cron-worker',
@@ -31,7 +31,7 @@ SELECT cron.schedule(
       'flow_slug', 'analyze_website',
       'batch_size', 10,
       'max_concurrent', 5,
-      'cron_interval_seconds', 5
+      'cron_interval_seconds', 4
     ),
     timeout_milliseconds := 25000
   ) as request_id;
@@ -70,12 +70,12 @@ SELECT * FROM cron.job;
 
 -- View job run details (useful for debugging)
 SELECT * FROM cron.job_run_details 
-WHERE jobname = 'pgflow-analyze-website-worker'
+WHERE jobname = 'pgflow-worker--analyze_website'
 ORDER BY start_time DESC 
 LIMIT 10;
 
 -- To unschedule the job later:
--- SELECT cron.unschedule('pgflow-analyze-website-worker');
+-- SELECT cron.unschedule('pgflow-worker--analyze_website');
 
 -- Monitor pg_net requests (useful for debugging)
 /*

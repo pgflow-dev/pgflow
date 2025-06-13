@@ -40,7 +40,7 @@ const workerRow = await queries.onWorkerStarted({
 
 // Create heartbeat instance
 const heartbeat = new internal.core.Heartbeat(
-  5000, // Send heartbeat every 5 seconds
+  4000, // Send heartbeat every 4 seconds
   queries,
   workerRow,
   loggingFactory.createLogger('Heartbeat'),
