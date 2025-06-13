@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Create .nx-inputs directory
+mkdir -p .nx-inputs
+
 echo "Ensuring test database is ready..."
 
 # Check if supabase is running
@@ -17,5 +20,13 @@ supabase db reset
 echo "Setting up test database for integration tests..."
 psql "postgresql://postgres:postgres@localhost:50522/postgres" -c "SELECT pgflow_tests.reset_db();"
 psql "postgresql://postgres:postgres@localhost:50522/postgres" -c "SELECT pgflow_tests.create_realtime_partition();"
+
+# Write a marker file that Nx can track for caching
+# Include timestamp and database info
+cat > .nx-inputs/db-ready.txt << EOF
+Database ready at: $(date)
+Migrations applied: $(ls ../core/supabase/migrations/*.sql | wc -l)
+Seed file: $(md5sum ../core/supabase/seed.sql | cut -d' ' -f1)
+EOF
 
 echo "Test database is ready!"

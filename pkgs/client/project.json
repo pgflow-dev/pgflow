@@ -83,7 +83,19 @@
         "cwd": "{projectRoot}",
         "commands": ["./scripts/ensure-db"],
         "parallel": false
-      }
+      },
+      "inputs": [
+        "{projectRoot}/scripts/ensure-db",
+        "{workspaceRoot}/pkgs/core/supabase/migrations/**/*.sql",
+        "{workspaceRoot}/pkgs/core/supabase/seed.sql",
+        "{projectRoot}/supabase/config.toml",
+        "{projectRoot}/tests/helpers/db.ts",
+        "{projectRoot}/tests/helpers/permissions.ts"
+      ],
+      "outputs": [
+        "{projectRoot}/.nx-inputs/db-ready.txt"
+      ],
+      "cache": true
     },
     "test:integration": {
       "executor": "nx:run-commands",
@@ -103,8 +115,13 @@
       }
     },
     "test": {
-      "executor": "nx:noop",
-      "dependsOn": ["test:unit", "test:integration"]
+      "executor": "nx:run-commands",
+      "dependsOn": ["db:ensure"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["vitest run __tests__/"],
+        "parallel": false
+      }
     },
     "benchmark": {
       "executor": "nx:run-commands",
