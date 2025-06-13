@@ -2,6 +2,14 @@
 
 This Edge Function implements a cron-based worker architecture for pgflow, designed to be triggered by pg_cron instead of running as a persistent worker.
 
+## Overview
+
+The cron-based worker solves the scaling and control issues of persistent Edge Workers by:
+- Running on a predictable schedule (every 5 seconds)
+- Processing one batch of tasks per invocation
+- Terminating cleanly after each run
+- Avoiding uncontrolled worker spawning
+
 ## Dependencies
 
 This function requires:
@@ -20,9 +28,60 @@ This function uses the same environment variables as other Edge Workers. The req
 
 Unlike the traditional Edge Worker that runs continuously, this function:
 - Processes a single batch of tasks per HTTP request
-- Is triggered periodically by pg_cron
+- Is triggered periodically by pg_cron (every 5 seconds)
 - Completes and terminates after processing
 - Avoids the scaling issues of persistent Edge Workers
+
+## Quick Start
+
+### 1. Start the Edge Functions
+```bash
+npm run start-functions
+```
+
+### 2. Start the cron job
+```bash
+cd supabase/functions/pgflow-cron-worker
+./start-cron.sh
+```
+
+This will:
+- Get the database URL from `supabase status`
+- Create a pg_cron job that runs every 5 seconds
+- Start triggering the Edge Function automatically
+
+### 3. Monitor execution
+Check the cron job status and monitor HTTP responses using SQL queries to verify the worker is running correctly.
+
+### 4. Stop the cron job
+```bash
+./stop-cron.sh
+```
+
+## Helper Scripts
+
+### start-cron.sh
+Starts the pg_cron job by:
+- Getting the database URL dynamically from `supabase status`
+- Running the setup SQL to create the cron schedule
+- Configuring the job to call the Edge Function every 5 seconds
+
+### stop-cron.sh
+Stops the pg_cron job by:
+- Getting the database URL dynamically
+- Unscheduling the cron job
+
+### test-local.sh
+Tests the Edge Function directly without cron:
+```bash
+./test-local.sh
+```
+
+### setup-cron-local.sql
+SQL script that creates the pg_cron job with:
+- Schedule: '5 seconds' (using interval syntax)
+- URL: http://host.docker.internal:54321/functions/v1/pgflow-cron-worker
+- Payload: Configures flow_slug, batch_size, and max_concurrent
 
 ## Usage
 
