@@ -119,13 +119,26 @@ serve(async (req) => {
     await heartbeat.send();
     
     const body = await req.json();
-    const { flow_slug, batch_size = 10, max_concurrent = 5 } = body;
+    const { flow_slug, batch_size, max_concurrent, cron_interval_seconds } = body;
 
-    if (!flow_slug) {
-      return new Response(JSON.stringify({ error: 'flow_slug is required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    // Validate required parameters
+    const missingParams = [];
+    if (!flow_slug) missingParams.push('flow_slug');
+    if (batch_size === undefined || batch_size === null) missingParams.push('batch_size');
+    if (max_concurrent === undefined || max_concurrent === null) missingParams.push('max_concurrent');
+    if (cron_interval_seconds === undefined || cron_interval_seconds === null) missingParams.push('cron_interval_seconds');
+
+    if (missingParams.length > 0) {
+      return new Response(
+        JSON.stringify({ 
+          error: `Missing required parameters: ${missingParams.join(', ')}`,
+          required_params: ['flow_slug', 'batch_size', 'max_concurrent', 'cron_interval_seconds']
+        }), 
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     const flow = flows.get(flow_slug);
@@ -142,10 +155,35 @@ serve(async (req) => {
     logger.info(`Processing batch for flow: ${flow_slug}`, {
       batch_size,
       max_concurrent,
+      cron_interval_seconds,
     });
 
     const processingStartTime = Date.now();
-    await processBatchForFlow(flow, flow_slug, batch_size, max_concurrent);
+    const maxExecutionTime = (cron_interval_seconds - 1) * 1000; // Leave 1 second buffer
+    const maxIterations = cron_interval_seconds * 2; // Safety limit
+    
+    let iterations = 0;
+    let totalProcessed = 0;
+
+    // Keep processing batches until we're close to the next cron invocation
+    while (
+      Date.now() - processingStartTime < maxExecutionTime &&
+      iterations < maxIterations
+    ) {
+      iterations++;
+      
+      logger.info(`Starting batch iteration ${iterations}`);
+      
+      // Send heartbeat before each batch
+      await heartbeat.send();
+      
+      await processBatchForFlow(flow, flow_slug, batch_size, max_concurrent);
+      totalProcessed++;
+      
+      // Small delay to prevent tight loop if no tasks available
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
     const totalDuration = Date.now() - processingStartTime;
 
     const response = {
@@ -153,8 +191,10 @@ serve(async (req) => {
       flow_slug,
       batch_size,
       max_concurrent,
+      cron_interval_seconds,
       worker_id: workerId,
       duration_ms: totalDuration,
+      iterations: totalProcessed,
       timestamp: new Date().toISOString(),
     };
 

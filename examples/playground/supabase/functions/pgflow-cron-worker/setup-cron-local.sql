@@ -29,7 +29,8 @@ SELECT cron.schedule(
     body := jsonb_build_object(
       'flow_slug', 'analyze_website',
       'batch_size', 5,
-      'max_concurrent', 3
+      'max_concurrent', 3,
+      'cron_interval_seconds', 5
     ),
     timeout_milliseconds := 25000
   ) as request_id;
