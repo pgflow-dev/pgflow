@@ -109,6 +109,45 @@ If you wish to just develop locally and not deploy to Vercel, [follow the steps 
 
 > Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
 
+## Utility Scripts
+
+### run_sql.sh
+
+A convenient script for running SQL queries against the local Supabase database without needing to remember connection strings.
+
+Location: `./scripts/run_sql.sh`
+
+#### Usage Examples
+
+```bash
+# Run a simple query
+./scripts/run_sql.sh "SELECT * FROM pgflow.flows;"
+
+# Check cron job status
+./scripts/run_sql.sh "SELECT * FROM cron.job WHERE jobname = 'pgflow-analyze-website-worker';"
+
+# View HTTP responses from pg_net
+./scripts/run_sql.sh "SELECT id, status_code, created FROM net._http_response ORDER BY created DESC LIMIT 10;"
+
+# Check pgflow task processing
+./scripts/run_sql.sh "SELECT * FROM pgflow.step_tasks WHERE status = 'completed' ORDER BY completed_at DESC LIMIT 10;"
+
+# Run with explicit -c flag
+./scripts/run_sql.sh -c "SELECT COUNT(*) FROM pgflow.step_tasks;"
+
+# Run a SQL file
+./scripts/run_sql.sh -f some_script.sql
+
+# Pipe SQL to the script
+echo "SELECT NOW();" | ./scripts/run_sql.sh
+```
+
+The script automatically:
+- Gets the database URL from `supabase status`
+- Checks if Supabase is running
+- Passes through all psql options
+- Handles both direct SQL queries and file execution
+
 ## Feedback and issues
 
 Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).

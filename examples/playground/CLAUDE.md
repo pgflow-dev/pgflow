@@ -16,6 +16,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run start-worker` - Trigger the analyze_website function
 - `npm run gen-types` - Generate TypeScript types from Supabase schema
 
+## Utility Scripts
+
+### run_sql.sh
+A utility script for running SQL queries against the local Supabase database. It automatically gets the database URL from `supabase status`.
+
+Location: `./scripts/run_sql.sh`
+
+Usage:
+```bash
+# Run a simple query
+./scripts/run_sql.sh "SELECT * FROM pgflow.flows;"
+
+# Run with explicit -c flag
+./scripts/run_sql.sh -c "SELECT COUNT(*) FROM pgflow.step_tasks;"
+
+# Run a SQL file
+./scripts/run_sql.sh -f some_script.sql
+
+# Pipe SQL to the script
+echo "SELECT NOW();" | ./scripts/run_sql.sh
+```
+
+Benefits:
+- No need to remember or type the database connection string
+- Automatically detects if Supabase is running
+- Supports all standard psql options
+- Simplifies database queries during development
+
 ## Code Style Guidelines
 
 - **TypeScript**: Use strict mode with proper type annotations
