@@ -28,6 +28,7 @@ create table pgflow.step_states (
   status text not null default 'created',
   remaining_tasks int not null default 1 check (remaining_tasks >= 0),
   remaining_deps int not null default 0 check (remaining_deps >= 0),
+  error_message text,
   created_at timestamptz not null default now(),
   started_at timestamptz,
   completed_at timestamptz,
@@ -48,6 +49,7 @@ create index if not exists idx_step_states_ready on pgflow.step_states (run_id, 
 and remaining_deps = 0;
 create index if not exists idx_step_states_failed on pgflow.step_states (run_id, step_slug) where status = 'failed';
 create index if not exists idx_step_states_flow_slug on pgflow.step_states (flow_slug);
+create index if not exists idx_step_states_run_id on pgflow.step_states (run_id);
 
 -- Step tasks table - tracks units of work for step
 create table pgflow.step_tasks (

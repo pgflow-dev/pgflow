@@ -1,8 +1,6 @@
 {
   "permissions": {
     "allow": [
-      "Bash(scripts/run-test-with-colors:*)",
-      "Bash(scripts/supabase:*)",
       "Bash(cat:*)",
       "Bash(find:*)",
       "Bash(grep:*)",
@@ -18,6 +16,8 @@
       "Bash(pnpm vitest:*)",
       "Bash(rg:*)",
       "Bash(scripts/ask-ai:*)",
+      "Bash(scripts/run-test-with-colors:*)",
+      "Bash(scripts/supabase:*)",
       "Bash(tree:*)",
       "mcp__context7__get-library-docs",
       "mcp__context7__resolve-library-id",

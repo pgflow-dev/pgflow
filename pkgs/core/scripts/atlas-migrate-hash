@@ -23,4 +23,4 @@ if [ "$SKIP_CONFIRM" != "true" ]; then
     fi
 fi
 
-atlas migrate hash --config file://atlas.hcl --dir file://supabase/migrations/
+atlas migrate hash --config file://atlas/atlas.hcl --dir file://supabase/migrations/
