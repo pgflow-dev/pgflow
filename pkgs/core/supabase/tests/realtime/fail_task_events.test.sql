@@ -17,7 +17,7 @@ select run_id into temporary run_ids from flow;
 
 -- Poll for a task and fail it
 with task as (
-  select * from pgflow.poll_for_tasks('sequential', 1, 1)
+  select * from pgflow_tests.read_and_start('sequential', 1, 1)
 )
 select pgflow.fail_task(
   (select run_id from task),

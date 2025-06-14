@@ -192,7 +192,7 @@
     },
     "test:vitest": {
       "executor": "@nx/vite:test",
-      "dependsOn": ["build", "verify-gen-types"],
+      "dependsOn": ["^build", "build", "verify-gen-types"],
       "inputs": ["default", "databaseTypes"],
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {

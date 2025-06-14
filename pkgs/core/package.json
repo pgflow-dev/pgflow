@@ -1,6 +1,6 @@
 {
   "name": "@pgflow/core",
-  "version": "0.2.6",
+  "version": "0.3.1",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "./dist/index.js",

@@ -19,7 +19,7 @@ select run_id into temporary run_ids from flow;
 -- Poll for the first task and complete it
 -- This should trigger start_ready_steps internally for the 'second' step
 with task as (
-  select * from pgflow.poll_for_tasks('sequential', 1, 1)
+  select * from pgflow_tests.read_and_start('sequential', 1, 1)
 )
 select pgflow.complete_task(
   (select run_id from task),

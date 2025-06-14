@@ -15,6 +15,8 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
   private queries: Queries;
   private workerRow?: WorkerRow;
   private flow: TFlow;
+  // TODO: Temporary field for supplier pattern until we refactor initialization
+  private _workerId?: string;
 
   constructor(queries: Queries, flow: TFlow, logger: Logger) {
     this.queries = queries;
@@ -25,6 +27,9 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
 
   async acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void> {
     this.workerState.transitionTo(States.Starting);
+
+    // Store workerId for supplier pattern
+    this._workerId = workerBootstrap.workerId;
 
     this.workerRow = await this.queries.onWorkerStarted({
       queueName: this.queueName,
@@ -64,6 +69,14 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
 
   get queueName() {
     return this.flow.slug;
+  }
+
+  // TODO: Temporary getter for supplier pattern until we refactor initialization
+  get workerId(): string {
+    if (!this._workerId) {
+      throw new Error('WorkerId accessed before worker startup');
+    }
+    return this._workerId;
   }
 
   async sendHeartbeat() {

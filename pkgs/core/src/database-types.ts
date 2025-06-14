@@ -191,10 +191,12 @@ export type Database = {
           error_message: string | null
           failed_at: string | null
           flow_slug: string
+          last_worker_id: string | null
           message_id: number | null
           output: Json | null
           queued_at: string
           run_id: string
+          started_at: string | null
           status: string
           step_slug: string
           task_index: number
@@ -205,10 +207,12 @@ export type Database = {
           error_message?: string | null
           failed_at?: string | null
           flow_slug: string
+          last_worker_id?: string | null
           message_id?: number | null
           output?: Json | null
           queued_at?: string
           run_id: string
+          started_at?: string | null
           status?: string
           step_slug: string
           task_index?: number
@@ -219,10 +223,12 @@ export type Database = {
           error_message?: string | null
           failed_at?: string | null
           flow_slug?: string
+          last_worker_id?: string | null
           message_id?: number | null
           output?: Json | null
           queued_at?: string
           run_id?: string
+          started_at?: string | null
           status?: string
           step_slug?: string
           task_index?: number
@@ -234,6 +240,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "flows"
             referencedColumns: ["flow_slug"]
+          },
+          {
+            foreignKeyName: "step_tasks_last_worker_id_fkey"
+            columns: ["last_worker_id"]
+            isOneToOne: false
+            referencedRelation: "workers"
+            referencedColumns: ["worker_id"]
           },
           {
             foreignKeyName: "step_tasks_run_id_fkey"
@@ -373,10 +386,12 @@ export type Database = {
           error_message: string | null
           failed_at: string | null
           flow_slug: string
+          last_worker_id: string | null
           message_id: number | null
           output: Json | null
           queued_at: string
           run_id: string
+          started_at: string | null
           status: string
           step_slug: string
           task_index: number
@@ -410,10 +425,12 @@ export type Database = {
           error_message: string | null
           failed_at: string | null
           flow_slug: string
+          last_worker_id: string | null
           message_id: number | null
           output: Json | null
           queued_at: string
           run_id: string
+          started_at: string | null
           status: string
           step_slug: string
           task_index: number
@@ -452,6 +469,10 @@ export type Database = {
         }
         Returns: Database["pgmq"]["CompositeTypes"]["message_record"][]
       }
+      set_vt_batch: {
+        Args: { queue_name: string; msg_ids: number[]; vt_offsets: number[] }
+        Returns: Database["pgmq"]["CompositeTypes"]["message_record"][]
+      }
       start_flow: {
         Args: { flow_slug: string; input: Json; run_id?: string }
         Returns: {
@@ -473,6 +494,10 @@ export type Database = {
       start_ready_steps: {
         Args: { run_id: string }
         Returns: undefined
+      }
+      start_tasks: {
+        Args: { flow_slug: string; msg_ids: number[]; worker_id: string }
+        Returns: Database["pgflow"]["CompositeTypes"]["step_task_record"][]
       }
     }
     Enums: {

@@ -1,6 +1,6 @@
 {
   "name": "@pgflow/edge-worker",
-  "version": "0.2.6",
+  "version": "0.3.1",
   "license": "AGPL-3.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -11,6 +11,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./_internal": {
+      "types": "./dist/_internal.d.ts",
+      "import": "./dist/_internal.js"
     }
   },
   "files": [

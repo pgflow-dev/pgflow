@@ -6,7 +6,8 @@ select pgflow_tests.setup_flow('sequential');
 -- Start a flow run
 select pgflow.start_flow('sequential', '"hello"'::jsonb);
 
--- Complete the first task
+-- Start and complete the first task
+select pgflow_tests.read_and_start('sequential');
 select pgflow.complete_task(
   (select run_id from pgflow.runs limit 1),
   'first',
@@ -45,8 +46,10 @@ select isnt(
 );
 
 -- Complete all remaining tasks to complete the run
+select pgflow_tests.read_and_start('sequential');
 select
   pgflow.complete_task((select run_id from pgflow.runs limit 1), 'second', 0, '{"result": "second completed"}'::jsonb);
+select pgflow_tests.read_and_start('sequential');
 select
   pgflow.complete_task((select run_id from pgflow.runs limit 1), 'last', 0, '{"result": "last completed"}'::jsonb);
 

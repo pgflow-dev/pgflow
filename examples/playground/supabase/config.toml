@@ -334,3 +334,9 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/analyze_website_worker_3/index.ts"
+
+[functions.pgflow-cron-worker]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/pgflow-cron-worker/index.ts"

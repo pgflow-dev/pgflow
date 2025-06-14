@@ -19,7 +19,7 @@ The pruning function removes completed and failed records from:
 - `pgflow.runs` - Completed or failed workflow run records
 - `pgmq.a_{flow_slug}` - Archived messages from PGMQ tables
 
-Important: Only records older than the specified retention period are pruned. Active or running records are never removed regardless of age.
+Important: Only records older than the specified retention period are pruned. Active or running records (including tasks with 'started' status) are never removed regardless of age.
 </Aside>
 
 ## Using the Pruning Function

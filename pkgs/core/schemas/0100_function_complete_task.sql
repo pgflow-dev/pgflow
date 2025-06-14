@@ -33,6 +33,7 @@ task AS (
   WHERE pgflow.step_tasks.run_id = complete_task.run_id
     AND pgflow.step_tasks.step_slug = complete_task.step_slug
     AND pgflow.step_tasks.task_index = complete_task.task_index
+    AND pgflow.step_tasks.status = 'started'
   RETURNING *
 ),
 step_state AS (
@@ -103,12 +104,20 @@ IF v_step_state.status = 'completed' THEN
   );
 END IF;
 
-PERFORM pgmq.archive(
-  queue_name => (SELECT run.flow_slug FROM pgflow.runs AS run WHERE run.run_id = complete_task.run_id),
-  msg_id => (SELECT message_id FROM pgflow.step_tasks AS step_task
-             WHERE step_task.run_id = complete_task.run_id
-             AND step_task.step_slug = complete_task.step_slug
-             AND step_task.task_index = complete_task.task_index)
+-- For completed tasks: archive the message
+PERFORM (
+  WITH completed_tasks AS (
+    SELECT r.flow_slug, st.message_id
+    FROM pgflow.step_tasks st
+    JOIN pgflow.runs r ON st.run_id = r.run_id
+    WHERE st.run_id = complete_task.run_id
+      AND st.step_slug = complete_task.step_slug
+      AND st.task_index = complete_task.task_index
+      AND st.status = 'completed'
+  )
+  SELECT pgmq.archive(ct.flow_slug, ct.message_id)
+  FROM completed_tasks ct
+  WHERE EXISTS (SELECT 1 FROM completed_tasks)
 );
 
 PERFORM pgflow.start_ready_steps(complete_task.run_id);

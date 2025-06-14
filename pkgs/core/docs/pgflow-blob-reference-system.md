@@ -24,7 +24,7 @@ CREATE TABLE pgflow.output_blobs (
 
 ### Worker Task Structure
 
-The `poll_for_tasks` function returns tasks with both regular inputs and blob references through a custom type:
+The `start_tasks` function returns tasks with both regular inputs and blob references through a custom type:
 
 ```sql
 CREATE TYPE pgflow.step_task_record AS (
@@ -43,7 +43,7 @@ This design provides a clean separation between:
 
 ### Example Return Value
 
-A task returned by `poll_for_tasks` might look like:
+A task returned by `start_tasks` might look like:
 
 ```json
 {
@@ -76,7 +76,7 @@ A critical optimization in pgflow is that the task queue only stores minimal tas
 
 This lightweight approach keeps queue messages small and efficient. When a worker picks up a task, it uses these identifiers to:
 
-1. Call `poll_for_tasks` to get the full task data
+1. Call `start_tasks` to get the full task data
 2. Receive both the regular `input` and `blobs_refs` in a single query result
 3. Fetch the actual blob content for any referenced blobs
 4. Combine all data to form the complete input for the task handler
@@ -97,8 +97,8 @@ This lightweight approach keeps queue messages small and efficient. When a worke
 ### Task Execution
 
 1. Worker picks up the task identifier from the queue
-2. Worker calls `poll_for_tasks` to get the task details
-3. `poll_for_tasks` returns:
+2. Worker calls `start_tasks` to get the task details
+3. `start_tasks` returns:
    - The `input` object with regular data
    - The `blobs_refs` object with references to any large data outputs
 4. Worker fetches blob content for any references in `blobs_refs`
@@ -115,7 +115,7 @@ For a web scraping workflow:
    - Records only the blob reference in the step's output
 3. When `parse-html` step is ready to run:
    - Queue contains only the task identifier
-   - `poll_for_tasks` returns the task with:
+   - `start_tasks` returns the task with:
      ```json
      {
        "input": {
@@ -170,7 +170,7 @@ The developer never needs to:
 
 ### Considerations
 
-1. **Query Optimization**: Ensure `poll_for_tasks` efficiently retrieves both regular data and blob references
+1. **Query Optimization**: Ensure `start_tasks` efficiently retrieves both regular data and blob references
 2. **Blob Lifecycle Management**: Implement cleanup for orphaned or expired blobs
 3. **Size Threshold Tuning**: Configure appropriate thresholds for when data should use blob storage
 

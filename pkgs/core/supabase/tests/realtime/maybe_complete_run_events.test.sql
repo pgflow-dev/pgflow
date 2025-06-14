@@ -18,7 +18,7 @@ select run_id into temporary run_ids from flow;
 -- Poll for the task and complete it
 -- This should trigger maybe_complete_run internally
 with task as (
-  select * from pgflow.poll_for_tasks('simple', 1, 1)
+  select * from pgflow_tests.read_and_start('simple', 1, 1)
 )
 select pgflow.complete_task(
   (select run_id from task),

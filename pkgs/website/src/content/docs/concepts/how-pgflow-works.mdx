@@ -14,8 +14,8 @@ Yet those pieces compose into a full workflow engine with **Postgres as the sing
 This page walks you through the **mental model** in three short hops:
 
 1. The three layers (DSL → SQL Core → Worker)
-2. The life-cycle of a task (`poll_for_tasks → complete_task | fail_task`)
-3. Why type safety and queues matter
+2. The step state machine (`created → started → completed/failed`)
+3. How workers execute steps (the implementation detail)
 
 pgflow follows four core design principles:
 - **Postgres-first**: All state and orchestration logic in your database
@@ -39,7 +39,7 @@ Layer cheat-sheet:
 
 <Aside type="tip" title="Swap the Worker if you like">
 Edge Worker is just a convenience wrapper.
-Any process that can *call* `poll_for_tasks` and later *call* `complete_task` (or `fail_task`) will work.
+Any process that can coordinate with the SQL Core (call `read_with_poll`, `start_tasks`, then `complete_task` / `fail_task`) will work.
 This modular design lets you use pgflow with any runtime environment that can connect to Postgres.
 </Aside>
 
@@ -56,33 +56,37 @@ pgflow uses two categories of tables:
 
 **Runtime tables:**
 - `runs` - One row per workflow execution
-- `step_states` - Tracks each step's **status / deps / tasks**
-- `step_tasks` - One row per retryable *task* (fan-outs come later)
+- `step_states` - Tracks each step's **current state**
+- `step_tasks` - Execution units for step processing (implementation detail)
 
 Because updates happen **inside the same transaction** that handles the queue message, pgflow gets ACID guarantees "for free".
 
 ---
 
-## 3. The execution cycle
+## 3. Steps drive your workflow
 
-1. **Worker calls** `poll_for_tasks(queue, vt, qty)`
-   • Locks & returns up-to-`qty` ready tasks
-   • Builds an *input object* that merges `run.input` with outputs of completed deps
-2. Worker runs your handler function.
-3. On success → `complete_task(run_id, step_slug, task_index, output)`
-   On error   → `fail_task(run_id, step_slug, task_index, error)`
-4. SQL Core, in the *same commit*:
-   - stores output / error
-   - moves step & run state forward
-   - enqueues next steps if deps are met
-   - handles errors with configurable retry logic and exponential backoff
+A workflow run finishes when every step reaches a terminal status (completed or failed). Each step in `pgflow.step_states` follows this lifecycle:
 
-Retry settings are configurable at both flow and step levels, with sensible defaults:
-- When a task fails, it's automatically retried if attempts remain
-- Each retry uses exponential backoff (base_delay * 2^attempts) to avoid overload
-- When retries are exhausted, the step and flow are marked as failed
+```
+created → started → completed
+                  ↘ failed
+```
 
-That's it—**two SQL calls** advance the entire graph.
+- **created**: Step exists but dependencies aren't met yet
+- **started**: All dependencies complete, step is executing
+- **completed/failed**: Step has finished
+
+### How workers execute steps
+
+Behind the scenes, when a step becomes ready, workers handle the execution through a simple 3-call sequence:
+
+1. `read_with_poll` → locks queue messages  
+2. `start_tasks` → marks task started, builds input  
+3. `complete_task/fail_task` → finishes task, moves step forward
+
+<Aside type="note" title="Implementation detail">
+If you're just calling `start_flow()` and checking results, you don't need to know about this coordination. It's handled automatically by pgflow's SQL Core.
+</Aside>
 
 :::note[Looks just like "queue-of-queues"]
 If you ever wrote code that:
@@ -157,19 +161,19 @@ When a step executes, its input combines the flow input with outputs from depend
 
 ---
 
-## 6. Why "poll + complete" is liberating
+## 6. Why the three-layer design is liberating
 
-Because *all* orchestration lives in the database:
+Because *all* orchestration lives in the SQL Core:
 
 - Workers are **stateless** – they can crash or scale horizontally
 - You can mix & match: one flow processed by Edge Functions, another by a Rust service
 - Observability is trivial—`SELECT * FROM pgflow.runs` is your dashboard
 
-The Edge Worker adds powerful reliability features:
+The modular design means:
+- **Any worker** can process any flow (workers just call SQL functions)
 - **Automatic retries** with exponential backoff for transient failures
-- **Concurrency control** for processing multiple tasks in parallel
-- **Auto-restarts** to handle Edge Function CPU/memory limits
 - **Horizontal scaling** with multiple worker instances
+- **Zero vendor lock-in** – swap the worker layer anytime
 
 ---
 
@@ -177,7 +181,7 @@ The Edge Worker adds powerful reliability features:
 
 1. **Three simple layers** keep concerns separate.
 2. **All state** is in Postgres tables—easy to query, backup, and reason about.
-3. **Two SQL functions** (`poll_for_tasks`, `complete_task` / `fail_task`) advance the graph transactionally.
+3. **Four SQL functions** (`read_with_poll`, `start_tasks`, `complete_task`, `fail_task`) advance the graph transactionally.
 4. The model feels like "a job queue that enqueues the next job", but pgflow does the wiring.
 5. **Type inference** guarantees that every step only consumes data that actually exists.
 

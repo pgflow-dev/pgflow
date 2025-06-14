@@ -6,6 +6,9 @@ select pgflow_tests.setup_flow('sequential');
 -- SETUP
 select pgflow.start_flow('sequential', '{"test": true}'::JSONB);
 
+-- Ensure worker exists
+select pgflow_tests.ensure_worker('sequential');
+
 -- TEST: First message shoud be in the queue
 select is(
   (select message ->> 'step_slug' from pgmq.q_sequential limit 1),
@@ -13,7 +16,9 @@ select is(
   'First message should be in the queue'
 );
 
--- SETUP
+-- SETUP: Start the task first
+select pgflow_tests.read_and_start('sequential');
+
 select pgflow.complete_task(
   (select run_id from pgflow.runs limit 1),
   'first',

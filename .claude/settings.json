@@ -1,7 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(./scripts/supabase:*)",
+      "Bash(cat:*)",
       "Bash(find:*)",
       "Bash(grep:*)",
       "Bash(ls:*)",
@@ -15,9 +15,15 @@
       "Bash(pnpm vitest run:*)",
       "Bash(pnpm vitest:*)",
       "Bash(rg:*)",
-      "Bash(supabase start:*)",
-      "Bash(supabase stop:*)",
-      "Bash(aichat -m openrouter:deepseek/deepseek-r1-0528:*)"
+      "Bash(scripts/ask-ai:*)",
+      "Bash(scripts/run-test-with-colors:*)",
+      "Bash(scripts/supabase:*)",
+      "Bash(tree:*)",
+      "mcp__context7__get-library-docs",
+      "mcp__context7__resolve-library-id",
+      "mcp__crawl4ai-sse__crawl",
+      "mcp__crawl4ai-sse__md",
+      "mcp__nx-mcp__nx_project_details"
     ],
     "deny": []
   }

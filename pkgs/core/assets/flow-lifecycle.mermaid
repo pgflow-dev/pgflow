@@ -17,11 +17,17 @@ sequenceDiagram
     pgflow-->>Client: Return run details
     deactivate pgflow
 
-    Worker->>pgflow: poll_for_tasks(...)
-
+    note right of Worker: Two-Phase Polling
+    
+    Worker->>PGMQ: read_with_poll(queue_name, vt, qty)
+    activate PGMQ
+    PGMQ-->>Worker: Return messages
+    deactivate PGMQ
+    
+    Worker->>pgflow: start_tasks(flow_slug, msg_ids, worker_id)
     activate pgflow
-    pgflow->>PGMQ: Get visible messages
-    PGMQ-->>pgflow: Return messages
+    pgflow->>pgflow: Find step_tasks with matching message_ids
+    pgflow->>pgflow: Mark tasks as 'started' with worker_id
     pgflow->>pgflow: Increment attempts counter on task
     pgflow->>pgflow: Build step input by combining run input & dependency outputs
     pgflow-->>Worker: Return tasks with metadata and inputs
@@ -69,7 +75,9 @@ sequenceDiagram
         pgflow->>PGMQ: Delay message visibility
         PGMQ->>PGMQ: Message becomes visible
         note right of Worker: Worker attempts execution again
-        Worker->>pgflow: poll_for_tasks(...)
+        Worker->>PGMQ: read_with_poll(...)
+        PGMQ-->>Worker: Return messages
+        Worker->>pgflow: start_tasks(...)
       end
       rect rgb(255, 225, 225)
         note right of pgflow: No retries remaining

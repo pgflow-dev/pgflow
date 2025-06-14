@@ -1,13 +1,26 @@
 #!/bin/bash
 
-echo -e "\033[1;31m⚠️  This will hash migration files in supabase/migrations/\033[0m"
-echo -e "\033[33mOnly safe for unreleased migrations in development!\033[0m"
-echo ""
-read -p "Are you sure you want to proceed? Type 'yes' to continue: " confirmation
+# Color codes
+RED='\033[0;31m'
+NC='\033[0m' # No Color
 
-if [ "$confirmation" != "yes" ]; then
-    echo "Operation cancelled."
-    exit 1
+# Check for --yes flag
+if [ "$1" == "--yes" ]; then
+    SKIP_CONFIRM=true
+else
+    SKIP_CONFIRM=false
+fi
+
+# Show confirmation prompt unless --yes flag is provided
+if [ "$SKIP_CONFIRM" != "true" ]; then
+    echo -e "${RED}WARNING: This will regenerate the migration hash file.${NC}"
+    echo "Are you sure you want to continue? Type 'yes' to confirm:"
+    read -r confirmation
+    
+    if [ "$confirmation" != "yes" ]; then
+        echo "Operation cancelled."
+        exit 0
+    fi
 fi
 
 atlas migrate hash --config file://atlas/atlas.hcl --dir file://supabase/migrations/

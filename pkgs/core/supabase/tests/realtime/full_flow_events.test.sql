@@ -28,7 +28,7 @@ select is(
 
 -- Complete the connected_root step
 with task as (
-  select * from pgflow.poll_for_tasks('two_roots_left_right', 1, 1) 
+  select * from pgflow_tests.read_and_start('two_roots_left_right', 1, 1) 
   where step_slug = 'connected_root'
 )
 select pgflow.complete_task(
@@ -47,7 +47,7 @@ select is(
 
 -- Complete the disconnected_root step
 with task as (
-  select * from pgflow.poll_for_tasks('two_roots_left_right', 1, 1)
+  select * from pgflow_tests.read_and_start('two_roots_left_right', 1, 1)
   where step_slug = 'disconnected_root'
 )
 select pgflow.complete_task(
@@ -66,7 +66,7 @@ select is(
 
 -- Complete the left step
 with task as (
-  select * from pgflow.poll_for_tasks('two_roots_left_right', 1, 1)
+  select * from pgflow_tests.read_and_start('two_roots_left_right', 1, 1)
   where step_slug = 'left'
 )
 select pgflow.complete_task(
@@ -85,7 +85,7 @@ select is(
 
 -- Complete the right step
 with task as (
-  select * from pgflow.poll_for_tasks('two_roots_left_right', 1, 1)
+  select * from pgflow_tests.read_and_start('two_roots_left_right', 1, 1)
   where step_slug = 'right'
 )
 select pgflow.complete_task(

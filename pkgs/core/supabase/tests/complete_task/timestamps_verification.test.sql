@@ -6,13 +6,19 @@ select pgflow_tests.setup_flow('sequential');
 -- Start a flow run
 select pgflow.start_flow('sequential', '"hello"'::jsonb);
 
--- Complete the first task
+-- Ensure worker exists
+select pgflow_tests.ensure_worker('sequential');
+
+-- Start and complete the first task
+with task as (
+  select * from pgflow_tests.read_and_start('sequential') limit 1
+)
 select pgflow.complete_task(
-  (select run_id from pgflow.runs limit 1),
-  'first',
+  task.run_id,
+  task.step_slug,
   0,
   '{"result": "first completed"}'::jsonb
-);
+) from task;
 
 -- TEST: Task should have completed_at timestamp set
 select isnt(
@@ -54,11 +60,26 @@ select is(
   'Step state should have failed_at as null'
 );
 
--- Complete all remaining tasks to complete the run
-select
-  pgflow.complete_task((select run_id from pgflow.runs limit 1), 'second', 0, '{"result": "second completed"}'::jsonb);
-select
-  pgflow.complete_task((select run_id from pgflow.runs limit 1), 'last', 0, '{"result": "last completed"}'::jsonb);
+-- Start and complete all remaining tasks to complete the run
+with task as (
+  select * from pgflow_tests.read_and_start('sequential') limit 1
+)
+select pgflow.complete_task(
+  task.run_id,
+  task.step_slug,
+  0,
+  '{"result": "second completed"}'::jsonb
+) from task;
+
+with task as (
+  select * from pgflow_tests.read_and_start('sequential') limit 1
+)
+select pgflow.complete_task(
+  task.run_id,
+  task.step_slug,
+  0,
+  '{"result": "last completed"}'::jsonb
+) from task;
 
 -- -- TEST: Run should have completed_at timestamp set
 select isnt(
