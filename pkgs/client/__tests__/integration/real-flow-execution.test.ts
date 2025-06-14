@@ -6,6 +6,8 @@ import { grantMinimalPgflowPermissions } from '../helpers/permissions.js';
 import { PgflowClient } from '../../src/lib/PgflowClient.js';
 import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types.js';
 import { PgflowSqlClient } from '@pgflow/core';
+import { readAndStart } from '../helpers/polling.js';
+import { cleanupFlow } from '../helpers/cleanup.js';
 
 describe('Real Flow Execution', () => {
   it(
@@ -36,7 +38,7 @@ describe('Real Flow Execution', () => {
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Poll for task
-      const tasks = await sqlClient.pollForTasks(testFlow.slug, 1, 5, 200, 2);
+      const tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       
       expect(tasks).toHaveLength(1);
       expect(tasks[0].input.run).toEqual(input);
@@ -79,11 +81,14 @@ describe('Real Flow Execution', () => {
   it(
     'receives broadcast events during flow execution',
     withPgNoTransaction(async (sql) => {
-      // Grant minimal permissions for PgflowClient API access
-      await grantMinimalPgflowPermissions(sql);
-
       // Create test flow and step
       const testFlow = createTestFlow('event_flow');
+      
+      // Clean up flow data to ensure clean state
+      await cleanupFlow(sql, testFlow.slug);
+      
+      // Grant minimal permissions for PgflowClient API access
+      await grantMinimalPgflowPermissions(sql);
       await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
       await sql`SELECT pgflow.add_step(${testFlow.slug}, 'event_step')`;
 
@@ -109,7 +114,7 @@ describe('Real Flow Execution', () => {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       // Poll and complete task
-      const tasks = await sqlClient.pollForTasks(testFlow.slug, 1, 5, 200, 2);
+      const tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       await sqlClient.completeTask(tasks[0], { hello: 'world' });
 
       // Wait for completion

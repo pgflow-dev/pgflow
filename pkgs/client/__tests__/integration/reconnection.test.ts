@@ -6,6 +6,8 @@ import { grantMinimalPgflowPermissions } from '../helpers/permissions.js';
 import { PgflowClient } from '../../src/lib/PgflowClient.js';
 import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types.js';
 import { PgflowSqlClient } from '@pgflow/core';
+import { readAndStart } from '../helpers/polling.js';
+import { cleanupFlow } from '../helpers/cleanup.js';
 
 describe('Reconnection Integration Tests', () => {
   it(
@@ -61,7 +63,7 @@ describe('Reconnection Integration Tests', () => {
       expect(run.status).toBe(newRun.status);
 
       // Complete the step to generate events
-      const tasks = await sqlClient.pollForTasks(testFlow.slug, 1, 5, 200, 30);
+      const tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('reconnection_step');
 
@@ -132,7 +134,7 @@ describe('Reconnection Integration Tests', () => {
       expect(reconnectedRun.input).toEqual(input);
 
       // Complete the step to verify functionality
-      const tasks = await sqlClient.pollForTasks(testFlow.slug, 1, 5, 200, 30);
+      const tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
 
       const stepOutput = { result: 'recovered and completed' };
@@ -155,9 +157,12 @@ describe('Reconnection Integration Tests', () => {
   it(
     'handles multiple rapid subscriptions correctly',
     withPgNoTransaction(async (sql) => {
-      await grantMinimalPgflowPermissions(sql);
-
       const testFlow = createTestFlow('rapid_subscription_flow');
+      
+      // Clean up flow data to ensure clean state
+      await cleanupFlow(sql, testFlow.slug);
+      
+      await grantMinimalPgflowPermissions(sql);
       await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
       await sql`SELECT pgflow.add_step(${testFlow.slug}, 'rapid_step')`;
 
@@ -191,7 +196,7 @@ describe('Reconnection Integration Tests', () => {
       }
 
       // Complete the step to verify all instances work
-      const tasks = await sqlClient.pollForTasks(testFlow.slug, 1, 5, 200, 30);
+      const tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
 
       const stepOutput = { result: 'survived rapid subscriptions' };

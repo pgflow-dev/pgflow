@@ -6,6 +6,8 @@ import { grantMinimalPgflowPermissions } from '../helpers/permissions.js';
 import { PgflowClient } from '../../src/lib/PgflowClient.js';
 import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types.js';
 import { PgflowSqlClient } from '@pgflow/core';
+import { readAndStart } from '../helpers/polling.js';
+import { cleanupFlow } from '../helpers/cleanup.js';
 
 describe('Flow Lifecycle Integration', () => {
   describe('Complete Flow Execution', () => {
@@ -15,6 +17,8 @@ describe('Flow Lifecycle Integration', () => {
         await grantMinimalPgflowPermissions(sql);
 
         const testFlow = createTestFlow('simple_flow');
+        await cleanupFlow(sql, testFlow.slug);
+        
         await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
         await sql`SELECT pgflow.add_step(${testFlow.slug}, 'first_step')`;
 
@@ -37,9 +41,11 @@ describe('Flow Lifecycle Integration', () => {
     it(
       'handles flow completion through multiple steps',
       withPgNoTransaction(async (sql) => {
+        
         await grantMinimalPgflowPermissions(sql);
 
         const testFlow = createTestFlow('multi_step_flow');
+        await cleanupFlow(sql, testFlow.slug);
         await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
         await sql`SELECT pgflow.add_step(${testFlow.slug}, 'step_one')`;
         await sql`SELECT pgflow.add_step(${testFlow.slug}, 'step_two')`;
@@ -67,9 +73,11 @@ describe('Flow Lifecycle Integration', () => {
     it(
       'maintains state consistency during flow execution',
       withPgNoTransaction(async (sql) => {
+        
         await grantMinimalPgflowPermissions(sql);
 
         const testFlow = createTestFlow('consistency_flow');
+        await cleanupFlow(sql, testFlow.slug);
         await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
         await sql`SELECT pgflow.add_step(${testFlow.slug}, 'step_one')`;
         await sql`SELECT pgflow.add_step(${testFlow.slug}, 'step_two')`;
@@ -101,9 +109,11 @@ describe('Flow Lifecycle Integration', () => {
     it(
       'processes and completes a task through full lifecycle',
       withPgNoTransaction(async (sql) => {
+        
         await grantMinimalPgflowPermissions(sql);
 
         const testFlow = createTestFlow('complete_lifecycle');
+        await cleanupFlow(sql, testFlow.slug);
         await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
         await sql`SELECT pgflow.add_step(${testFlow.slug}, 'task_step')`;
 
@@ -114,13 +124,7 @@ describe('Flow Lifecycle Integration', () => {
         const input = { data: 'lifecycle-test' };
         const run = await pgflowClient.startFlow(testFlow.slug, input);
 
-        const tasks = await sqlClient.pollForTasks(
-          testFlow.slug,
-          1,
-          5,
-          200,
-          30
-        );
+        const tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
 
         expect(tasks).toHaveLength(1);
         expect(tasks[0].run_id).toBe(run.run_id);
@@ -146,6 +150,7 @@ describe('Flow Lifecycle Integration', () => {
     it(
       'handles flow start with non-existent flow gracefully',
       withPgNoTransaction(async (sql) => {
+        
         await grantMinimalPgflowPermissions(sql);
 
         const supabaseClient = createTestSupabaseClient();
@@ -163,9 +168,11 @@ describe('Flow Lifecycle Integration', () => {
     it(
       'handles task failure scenario',
       withPgNoTransaction(async (sql) => {
+        
         await grantMinimalPgflowPermissions(sql);
 
         const testFlow = createTestFlow('failure_flow');
+        await cleanupFlow(sql, testFlow.slug);
         await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
         await sql`SELECT pgflow.add_step(${testFlow.slug}, 'failing_step')`;
 
@@ -178,13 +185,7 @@ describe('Flow Lifecycle Integration', () => {
         });
         expect(run.status).toBe(FlowRunStatus.Started);
 
-        const tasks = await sqlClient.pollForTasks(
-          testFlow.slug,
-          1,
-          5,
-          200,
-          30
-        );
+        const tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
 
         expect(tasks).toHaveLength(1);
 
@@ -201,9 +202,11 @@ describe('Flow Lifecycle Integration', () => {
     it(
       'retrieves existing flow state correctly',
       withPgNoTransaction(async (sql) => {
+        
         await grantMinimalPgflowPermissions(sql);
 
         const testFlow = createTestFlow('retrieval_flow');
+        await cleanupFlow(sql, testFlow.slug);
         await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
         await sql`SELECT pgflow.add_step(${testFlow.slug}, 'completed_step')`;
 
@@ -215,13 +218,7 @@ describe('Flow Lifecycle Integration', () => {
           data: 'retrieve-test',
         });
 
-        const tasks = await sqlClient.pollForTasks(
-          testFlow.slug,
-          1,
-          5,
-          200,
-          30
-        );
+        const tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
 
         const taskOutput = { result: 'step completed' };
         await sqlClient.completeTask(tasks[0], taskOutput);
@@ -254,6 +251,7 @@ describe('Flow Lifecycle Integration', () => {
     it(
       'handles retrieval of non-existent flow',
       withPgNoTransaction(async (sql) => {
+        
         await grantMinimalPgflowPermissions(sql);
 
         const supabaseClient = createTestSupabaseClient();
@@ -272,9 +270,11 @@ describe('Flow Lifecycle Integration', () => {
     it(
       'caches flow runs correctly',
       withPgNoTransaction(async (sql) => {
+        
         await grantMinimalPgflowPermissions(sql);
 
         const testFlow = createTestFlow('caching_flow');
+        await cleanupFlow(sql, testFlow.slug);
         await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
         await sql`SELECT pgflow.add_step(${testFlow.slug}, 'cached_step')`;
 
@@ -298,10 +298,13 @@ describe('Flow Lifecycle Integration', () => {
     it(
       'properly cleans up resources across flow lifecycle',
       withPgNoTransaction(async (sql) => {
+        
         await grantMinimalPgflowPermissions(sql);
 
         const testFlow1 = createTestFlow('resource_flow_1');
+        await cleanupFlow(sql, testFlow1.slug);
         const testFlow2 = createTestFlow('resource_flow_2');
+        await cleanupFlow(sql, testFlow2.slug);
 
         await sql`SELECT pgflow.create_flow(${testFlow1.slug})`;
         await sql`SELECT pgflow.add_step(${testFlow1.slug}, 'step1')`;
@@ -342,9 +345,11 @@ describe('Flow Lifecycle Integration', () => {
     it(
       'handles flow start with custom run_id',
       withPgNoTransaction(async (sql) => {
+        
         await grantMinimalPgflowPermissions(sql);
 
         const testFlow = createTestFlow('custom_id_flow');
+        await cleanupFlow(sql, testFlow.slug);
         await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
         await sql`SELECT pgflow.add_step(${testFlow.slug}, 'custom_step')`;
 
@@ -370,9 +375,11 @@ describe('Flow Lifecycle Integration', () => {
     it(
       'handles complex input data structures',
       withPgNoTransaction(async (sql) => {
+        
         await grantMinimalPgflowPermissions(sql);
 
         const testFlow = createTestFlow('complex_input_flow');
+        await cleanupFlow(sql, testFlow.slug);
         await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
         await sql`SELECT pgflow.add_step(${testFlow.slug}, 'complex_step')`;
 

@@ -6,16 +6,22 @@ import { grantMinimalPgflowPermissions } from '../helpers/permissions.js';
 import { PgflowClient } from '../../src/lib/PgflowClient.js';
 import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types.js';
 import { PgflowSqlClient } from '@pgflow/core';
+import { readAndStart } from '../helpers/polling.js';
+import { cleanupFlow } from '../helpers/cleanup.js';
 
 describe('Concurrent Operations Tests', () => {
   it(
     'runs multiple flows simultaneously without interference',
     withPgNoTransaction(async (sql) => {
-      await grantMinimalPgflowPermissions(sql);
-
       // Create two simpler flows (reduce complexity for reliability)
       const flow1 = createTestFlow('concurrent_flow_1');
       const flow2 = createTestFlow('concurrent_flow_2');
+      
+      // Clean up flow data to ensure clean state
+      await cleanupFlow(sql, flow1.slug);
+      await cleanupFlow(sql, flow2.slug);
+      
+      await grantMinimalPgflowPermissions(sql);
 
       await sql`SELECT pgflow.create_flow(${flow1.slug})`;
       await sql`SELECT pgflow.add_step(${flow1.slug}, 'step_a')`;
@@ -41,8 +47,8 @@ describe('Concurrent Operations Tests', () => {
       // Get and complete tasks from both flows
       console.log('=== Completing steps ===');
       
-      const tasks1 = await sqlClient.pollForTasks(flow1.slug, 1, 5, 200, 30);
-      const tasks2 = await sqlClient.pollForTasks(flow2.slug, 1, 5, 200, 30);
+      const tasks1 = await readAndStart(sql, sqlClient, flow1.slug, 1, 5);
+      const tasks2 = await readAndStart(sql, sqlClient, flow2.slug, 1, 5);
 
       expect(tasks1).toHaveLength(1);
       expect(tasks2).toHaveLength(1);
@@ -82,9 +88,12 @@ describe('Concurrent Operations Tests', () => {
   it(
     'handles multiple clients observing the same flow',
     withPgNoTransaction(async (sql) => {
-      await grantMinimalPgflowPermissions(sql);
-
       const testFlow = createTestFlow('multi_client_flow');
+      
+      // Clean up flow data to ensure clean state
+      await cleanupFlow(sql, testFlow.slug);
+      
+      await grantMinimalPgflowPermissions(sql);
       await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
       await sql`SELECT pgflow.add_step(${testFlow.slug}, 'shared_step')`;
 
@@ -127,7 +136,7 @@ describe('Concurrent Operations Tests', () => {
       await new Promise(resolve => setTimeout(resolve, 300));
 
       // Complete the step
-      const tasks = await sqlClient.pollForTasks(testFlow.slug, 1, 5, 200, 30);
+      const tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
 
       const stepOutput = { result: 'completed with multiple observers' };
@@ -169,9 +178,12 @@ describe('Concurrent Operations Tests', () => {
   it(
     'prevents resource conflicts between concurrent operations',
     withPgNoTransaction(async (sql) => {
-      await grantMinimalPgflowPermissions(sql);
-
       const testFlow = createTestFlow('resource_conflict_flow');
+      
+      // Clean up flow data to ensure clean state
+      await cleanupFlow(sql, testFlow.slug);
+      
+      await grantMinimalPgflowPermissions(sql);
       await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
       await sql`SELECT pgflow.add_step(${testFlow.slug}, 'resource_step')`;
 
@@ -195,7 +207,7 @@ describe('Concurrent Operations Tests', () => {
       await new Promise(resolve => setTimeout(resolve, 300));
 
       // Poll for all tasks and complete them sequentially for reliability
-      const allTasks = await sqlClient.pollForTasks(testFlow.slug, 5, 5, 200, 30);
+      const allTasks = await readAndStart(sql, sqlClient, testFlow.slug, 5, 5);
       expect(allTasks.length).toBe(3); // One task per run
 
       // Verify each task belongs to a different run
@@ -244,11 +256,15 @@ describe('Concurrent Operations Tests', () => {
   it(
     'maintains isolation between concurrent flow definitions',
     withPgNoTransaction(async (sql) => {
-      await grantMinimalPgflowPermissions(sql);
-
       // Create flows with similar step names but different behavior
       const flowA = createTestFlow('isolation_flow_a');
       const flowB = createTestFlow('isolation_flow_b');
+      
+      // Clean up flow data to ensure clean state
+      await cleanupFlow(sql, flowA.slug);
+      await cleanupFlow(sql, flowB.slug);
+      
+      await grantMinimalPgflowPermissions(sql);
 
       await sql`SELECT pgflow.create_flow(${flowA.slug})`;
       await sql`SELECT pgflow.add_step(${flowA.slug}, 'common_step')`;
@@ -268,8 +284,8 @@ describe('Concurrent Operations Tests', () => {
       await new Promise(resolve => setTimeout(resolve, 300));
 
       // Get tasks from both flows
-      const tasksA = await sqlClient.pollForTasks(flowA.slug, 2, 5, 200, 30);
-      const tasksB = await sqlClient.pollForTasks(flowB.slug, 2, 5, 200, 30);
+      const tasksA = await readAndStart(sql, sqlClient, flowA.slug, 2, 5);
+      const tasksB = await readAndStart(sql, sqlClient, flowB.slug, 2, 5);
 
       expect(tasksA.length).toBe(1);
       expect(tasksB.length).toBe(1);

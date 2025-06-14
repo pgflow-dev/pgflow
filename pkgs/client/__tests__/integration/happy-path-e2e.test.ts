@@ -6,15 +6,20 @@ import { grantMinimalPgflowPermissions } from '../helpers/permissions.js';
 import { PgflowClient } from '../../src/lib/PgflowClient.js';
 import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types.js';
 import { PgflowSqlClient } from '@pgflow/core';
+import { readAndStart } from '../helpers/polling.js';
+import { cleanupFlow } from '../helpers/cleanup.js';
 
 describe('Happy Path E2E Integration', () => {
   it(
     'completes 3-step dependent DAG with realtime events end-to-end',
     withPgNoTransaction(async (sql) => {
-      await grantMinimalPgflowPermissions(sql);
-
       // Create 3-step dependent flow: fetch -> process -> save
       const testFlow = createTestFlow('happy_path_dag');
+      
+      // Clean up flow data to ensure clean state
+      await cleanupFlow(sql, testFlow.slug);
+      
+      await grantMinimalPgflowPermissions(sql);
       await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
       await sql`SELECT pgflow.add_step(${testFlow.slug}, 'fetch')`;
       await sql`SELECT pgflow.add_step(${testFlow.slug}, 'process', deps_slugs => ARRAY['fetch'])`;
@@ -65,7 +70,7 @@ describe('Happy Path E2E Integration', () => {
 
       // Step 1: Complete fetch step
       console.log('=== Step 1: Completing fetch step ===');
-      let tasks = await sqlClient.pollForTasks(testFlow.slug, 1, 5, 200, 30);
+      let tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('fetch');
       expect(tasks[0].input.run).toEqual(input);
@@ -80,7 +85,7 @@ describe('Happy Path E2E Integration', () => {
 
       // Step 2: Complete process step (should now be available)
       console.log('=== Step 2: Completing process step ===');
-      tasks = await sqlClient.pollForTasks(testFlow.slug, 1, 5, 200, 30);
+      tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('process');
       expect(tasks[0].input.run).toEqual(input);
@@ -116,7 +121,7 @@ describe('Happy Path E2E Integration', () => {
       `;
       console.log('Step tasks status:', stepTasks);
       
-      tasks = await sqlClient.pollForTasks(testFlow.slug, 1, 5, 200, 30);
+      tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('save');
       
@@ -176,7 +181,7 @@ describe('Happy Path E2E Integration', () => {
       expect(saveCompletedEvents.length).toBe(1);
 
       // Verify no tasks remain
-      const remainingTasks = await sqlClient.pollForTasks(testFlow.slug, 1, 1, 100, 1);
+      const remainingTasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 1);
       expect(remainingTasks).toHaveLength(0);
 
       console.log('=== Happy Path E2E Test Completed Successfully ===');

@@ -6,17 +6,23 @@ import { grantMinimalPgflowPermissions } from '../helpers/permissions.js';
 import { PgflowClient } from '../../src/lib/PgflowClient.js';
 import { FlowStepStatus } from '../../src/lib/types.js';
 import { PgflowSqlClient } from '@pgflow/core';
+import { readAndStart } from '../helpers/polling.js';
+import { cleanupFlow } from '../helpers/cleanup.js';
 
 describe('Network Resilience Tests', () => {
   it(
     'recovers from connection drops during flow execution',
     withPgNoTransaction(async (sql) => {
+      const testFlow = createTestFlow('network_resilience_flow');
+      
+      // Clean up flow data to ensure clean state
+      await cleanupFlow(sql, testFlow.slug);
+      
       await grantMinimalPgflowPermissions(sql);
 
-      const testFlow = createTestFlow('network_resilience_flow');
       await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
       await sql`SELECT pgflow.add_step(${testFlow.slug}, 'step_one')`;
-      await sql`SELECT pgflow.add_step(${testFlow.slug}, 'step_two')`;
+      await sql`SELECT pgflow.add_step(${testFlow.slug}, 'step_two', deps_slugs => ARRAY['step_one'])`;
 
       const sqlClient = new PgflowSqlClient(sql);
       const supabaseClient = createTestSupabaseClient();
@@ -42,7 +48,7 @@ describe('Network Resilience Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, 200));
 
       // Complete first step before disconnection
-      let tasks = await sqlClient.pollForTasks(testFlow.slug, 1, 5, 200, 30);
+      let tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('step_one');
 
@@ -63,7 +69,7 @@ describe('Network Resilience Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Complete second step while disconnected
-      tasks = await sqlClient.pollForTasks(testFlow.slug, 1, 5, 200, 30);
+      tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('step_two');
 
@@ -149,7 +155,7 @@ describe('Network Resilience Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, 200));
 
       // Complete step while monitoring connection
-      const tasks = await sqlClient.pollForTasks(testFlow.slug, 1, 5, 200, 30);
+      const tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
 
       const stepOutput = { result: 'completed despite connection issues' };
@@ -171,9 +177,12 @@ describe('Network Resilience Tests', () => {
   it(
     'maintains state consistency under poor network conditions',
     withPgNoTransaction(async (sql) => {
-      await grantMinimalPgflowPermissions(sql);
-
       const testFlow = createTestFlow('poor_network_flow');
+      
+      // Clean up flow data to ensure clean state
+      await cleanupFlow(sql, testFlow.slug);
+      
+      await grantMinimalPgflowPermissions(sql);
       await sql`SELECT pgflow.create_flow(${testFlow.slug})`;
       await sql`SELECT pgflow.add_step(${testFlow.slug}, 'network_step')`;
 
@@ -203,7 +212,7 @@ describe('Network Resilience Tests', () => {
       }
 
       // Complete the step after network instability
-      const tasks = await sqlClient.pollForTasks(testFlow.slug, 1, 5, 200, 30);
+      const tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
 
       const stepOutput = { result: 'survived network instability' };

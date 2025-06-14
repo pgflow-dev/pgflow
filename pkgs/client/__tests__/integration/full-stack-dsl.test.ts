@@ -7,13 +7,13 @@ import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types.js';
 import { PgflowSqlClient } from '@pgflow/core';
 import { Flow } from '@pgflow/dsl';
 import { compileFlow } from '@pgflow/dsl';
+import { readAndStart } from '../helpers/polling.js';
+import { cleanupFlow } from '../helpers/cleanup.js';
 
 describe('Full Stack DSL Integration', () => {
   it(
     'compiles and executes DSL flow end-to-end with proper dependency handling',
     withPgNoTransaction(async (sql) => {
-      await grantMinimalPgflowPermissions(sql);
-
       // 1. Define flow with DSL - simple 3-step dependent flow
       const SimpleFlow = new Flow<{ url: string }>({
         slug: 'simple_dag_test',
@@ -33,6 +33,11 @@ describe('Full Stack DSL Integration', () => {
           record_id: 'rec_12345',
           final_count: input.process.item_count,
         }));
+
+      // Clean up flow data to ensure clean state
+      await cleanupFlow(sql, SimpleFlow.slug);
+      
+      await grantMinimalPgflowPermissions(sql);
 
       // 2. Compile to SQL
       const flowSql = compileFlow(SimpleFlow);
@@ -85,9 +90,9 @@ describe('Full Stack DSL Integration', () => {
       // Give realtime subscription time to establish
       await new Promise((resolve) => setTimeout(resolve, 200));
 
-      // 6. Execute the complete flow lifecycle
+      // 7. Execute the complete flow lifecycle
       console.log('=== Step 1: Completing fetch step ===');
-      let tasks = await sqlClient.pollForTasks(SimpleFlow.slug, 1, 5, 200, 30);
+      let tasks = await readAndStart(sql, sqlClient, SimpleFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('fetch');
       expect(tasks[0].input.run).toEqual(input);
@@ -103,7 +108,7 @@ describe('Full Stack DSL Integration', () => {
       expect(fetchStep.output).toEqual(fetchOutput);
 
       console.log('=== Step 2: Completing process step ===');
-      tasks = await sqlClient.pollForTasks(SimpleFlow.slug, 1, 5, 200, 30);
+      tasks = await readAndStart(sql, sqlClient, SimpleFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('process');
       expect(tasks[0].input.run).toEqual(input);
@@ -124,7 +129,7 @@ describe('Full Stack DSL Integration', () => {
       expect(processStep.output).toEqual(processOutput);
 
       console.log('=== Step 3: Completing save step ===');
-      tasks = await sqlClient.pollForTasks(SimpleFlow.slug, 1, 5, 200, 30);
+      tasks = await readAndStart(sql, sqlClient, SimpleFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('save');
       expect(tasks[0].input.run).toEqual(input);
