@@ -41,11 +41,6 @@ export type StepTaskKey = Pick<StepTaskRecord<any>, 'run_id' | 'step_slug'>;
 
 
 /**
-<<<<<<< HEAD
- * SQL Client interface for interacting with pgflow
-||||||| ab832e9
- * Interface for interacting with pgflow database functions
-=======
  * Record representing a message from queue polling
  */
 export type MessageRecord = {
@@ -58,11 +53,9 @@ export type MessageRecord = {
 
 /**
  * Interface for interacting with pgflow database functions
->>>>>>> main
  */
 export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow> {
   /**
-<<<<<<< HEAD
    * Start a flow with optional run_id
    */
   startFlow<TFlow extends AnyFlow>(
@@ -72,22 +65,12 @@ export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow> {
   ): Promise<RunRow>;
 
   /**
-   * Poll for available tasks to process
-||||||| ab832e9
-   * Fetches tasks from pgflow
-   * @param queueName - Name
-   * @param batchSize - Number of tasks to fetch
-   * @param visibilityTimeout - Visibility timeout for tasks
-   * @param maxPollSeconds - Maximum time to poll for tasks
-   * @param pollIntervalMs - Poll interval in milliseconds
-=======
    * Reads messages from queue without starting tasks (phase 1 of two-phase approach)
    * @param queueName - Name of the queue
    * @param visibilityTimeout - Visibility timeout for messages
    * @param batchSize - Number of messages to fetch
    * @param maxPollSeconds - Maximum time to poll for messages
    * @param pollIntervalMs - Poll interval in milliseconds
->>>>>>> main
    */
   readMessages(
     queueName: string,
@@ -95,11 +78,6 @@ export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow> {
     batchSize: number,
     maxPollSeconds?: number,
     pollIntervalMs?: number
-<<<<<<< HEAD
-  ): Promise<StepTaskRecord<AnyFlow>[]>;
-||||||| ab832e9
-  ): Promise<StepTaskRecord<TFlow>[]>;
-=======
   ): Promise<MessageRecord[]>;
 
   /**
@@ -113,7 +91,6 @@ export interface IPgflowClient<TFlow extends AnyFlow = AnyFlow> {
     msgIds: number[],
     workerId: string
   ): Promise<StepTaskRecord<TFlow>[]>;
->>>>>>> main
 
   /**
    * Mark a task as completed with output
