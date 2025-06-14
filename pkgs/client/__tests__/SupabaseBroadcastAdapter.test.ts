@@ -1,33 +1,39 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import { SupabaseBroadcastAdapter } from '../src/lib/SupabaseBroadcastAdapter';
 import {
-  RUN_ID,
-  FLOW_SLUG,
-  broadcastRunStarted,
-  broadcastRunCompleted,
-  broadcastRunFailed,
-  broadcastStepStarted,
-  broadcastStepCompleted,
-  broadcastStepFailed,
+  setupTestEnvironment,
+  createMockClient,
+  emitBroadcastEvent,
+  createEventTracker,
+  createEventRoutingTest,
+} from './helpers/test-utils';
+import {
+  createRunStartedEvent,
+  createRunCompletedEvent,
+  createRunFailedEvent,
+  createStepStartedEvent,
+  createStepCompletedEvent,
+  createStepFailedEvent,
+} from './helpers/event-factories';
+import { mockChannelSubscription } from './mocks';
+import { 
+  RUN_ID, 
+  FLOW_SLUG, 
   startedRunSnapshot,
   startedStepState,
   sampleFlowDefinition,
   sampleStepsDefinition,
 } from './fixtures';
-import { mockSupabase, resetMocks, mockChannelSubscription } from './mocks';
 
 describe('SupabaseBroadcastAdapter', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
+  const { teardown } = setupTestEnvironment();
+  
   afterEach(() => {
-    vi.useRealTimers();
-    resetMocks();
+    teardown();
   });
 
   test('initializes correctly', () => {
-    const { client } = mockSupabase();
+    const { client } = createMockClient();
     const adapter = new SupabaseBroadcastAdapter(client);
 
     expect(adapter).toBeDefined();
@@ -35,7 +41,7 @@ describe('SupabaseBroadcastAdapter', () => {
 
   describe('channel naming & subscription', () => {
     test('subscribes to run events with correct channel name format', () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
       const adapter = new SupabaseBroadcastAdapter(client);
 
       adapter.subscribeToRun(RUN_ID);
@@ -45,7 +51,7 @@ describe('SupabaseBroadcastAdapter', () => {
     });
 
     test('can subscribe to multiple different run IDs', () => {
-      const { client } = mockSupabase();
+      const { client } = createMockClient();
       const adapter = new SupabaseBroadcastAdapter(client);
 
       // Subscribe to multiple runs
@@ -61,7 +67,7 @@ describe('SupabaseBroadcastAdapter', () => {
     });
 
     test('registers handlers for all broadcast events with wildcard', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
       const adapter = new SupabaseBroadcastAdapter(client);
 
       // Setup realistic channel subscription
@@ -77,7 +83,7 @@ describe('SupabaseBroadcastAdapter', () => {
     });
 
     test('registers handlers for system events', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
       const adapter = new SupabaseBroadcastAdapter(client);
 
       // Setup realistic channel subscription
@@ -100,7 +106,7 @@ describe('SupabaseBroadcastAdapter', () => {
     });
 
     test('subscribing to the same run ID twice has no effect', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
       const adapter = new SupabaseBroadcastAdapter(client);
 
       // Setup realistic channel subscription
@@ -119,57 +125,38 @@ describe('SupabaseBroadcastAdapter', () => {
   });
 
   describe('broadcast routing', () => {
-    test('routes run:started events correctly', () => {
-      const { client, mocks } = mockSupabase();
+    test('routes run:started events correctly', async () => {
+      const { client, mocks } = createMockClient();
       const adapter = new SupabaseBroadcastAdapter(client);
-
-      // Set up an event listener
-      const runEventCallback = vi.fn();
-      adapter.onRunEvent(runEventCallback);
-
-      // Subscribe to run
-      adapter.subscribeToRun(RUN_ID);
-
-      // Get the broadcast handler
-      const broadcastHandler = mocks.channel.handlers.get('*');
-      expect(broadcastHandler).toBeDefined();
-
-      // Simulate a run event
-      broadcastHandler?.({
-        event: 'run:started',
-        payload: broadcastRunStarted,
+      
+      const runStartedEvent = createRunStartedEvent({ run_id: RUN_ID });
+      
+      const testRouting = createEventRoutingTest({
+        eventType: 'run:started',
+        payload: runStartedEvent,
+        expectedCallbackType: 'run',
       });
-
-      // The run event callback should be called
-      expect(runEventCallback).toHaveBeenCalledWith(broadcastRunStarted);
+      
+      await testRouting(adapter, mocks);
     });
 
-    test('routes run:completed events correctly', () => {
-      const { client, mocks } = mockSupabase();
+    test('routes run:completed events correctly', async () => {
+      const { client, mocks } = createMockClient();
       const adapter = new SupabaseBroadcastAdapter(client);
-
-      // Set up an event listener
-      const runEventCallback = vi.fn();
-      adapter.onRunEvent(runEventCallback);
-
-      // Subscribe to run
-      adapter.subscribeToRun(RUN_ID);
-
-      // Get the broadcast handler
-      const broadcastHandler = mocks.channel.handlers.get('*');
-
-      // Simulate a run completed event
-      broadcastHandler?.({
-        event: 'run:completed',
-        payload: broadcastRunCompleted,
+      
+      const runCompletedEvent = createRunCompletedEvent({ run_id: RUN_ID });
+      
+      const testRouting = createEventRoutingTest({
+        eventType: 'run:completed',
+        payload: runCompletedEvent,
+        expectedCallbackType: 'run',
       });
-
-      // The run event callback should be called
-      expect(runEventCallback).toHaveBeenCalledWith(broadcastRunCompleted);
+      
+      await testRouting(adapter, mocks);
     });
 
     test('routes run:failed events correctly', () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
       const adapter = new SupabaseBroadcastAdapter(client);
 
       // Set up an event listener
@@ -179,45 +166,31 @@ describe('SupabaseBroadcastAdapter', () => {
       // Subscribe to run
       adapter.subscribeToRun(RUN_ID);
 
-      // Get the broadcast handler
-      const broadcastHandler = mocks.channel.handlers.get('*');
-
       // Simulate a run failed event
-      broadcastHandler?.({
-        event: 'run:failed',
-        payload: broadcastRunFailed,
-      });
+      const failedEvent = createRunFailedEvent({ run_id: RUN_ID });
+      emitBroadcastEvent(mocks, 'run:failed', failedEvent);
 
       // The run event callback should be called
-      expect(runEventCallback).toHaveBeenCalledWith(broadcastRunFailed);
+      expect(runEventCallback).toHaveBeenCalledWith(failedEvent);
     });
 
-    test('routes step:started events correctly', () => {
-      const { client, mocks } = mockSupabase();
+    test('routes step:started events correctly', async () => {
+      const { client, mocks } = createMockClient();
       const adapter = new SupabaseBroadcastAdapter(client);
-
-      // Set up an event listener
-      const stepEventCallback = vi.fn();
-      adapter.onStepEvent(stepEventCallback);
-
-      // Subscribe to run
-      adapter.subscribeToRun(RUN_ID);
-
-      // Get the broadcast handler
-      const broadcastHandler = mocks.channel.handlers.get('*');
-
-      // Simulate a step started event
-      broadcastHandler?.({
-        event: 'step:started',
-        payload: broadcastStepStarted,
+      
+      const stepStartedEvent = createStepStartedEvent({ run_id: RUN_ID });
+      
+      const testRouting = createEventRoutingTest({
+        eventType: 'step:started',
+        payload: stepStartedEvent,
+        expectedCallbackType: 'step',
       });
-
-      // The step event callback should be called
-      expect(stepEventCallback).toHaveBeenCalledWith(broadcastStepStarted);
+      
+      await testRouting(adapter, mocks);
     });
 
     test('routes step:completed events correctly', () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
       const adapter = new SupabaseBroadcastAdapter(client);
 
       // Set up an event listener
@@ -227,21 +200,16 @@ describe('SupabaseBroadcastAdapter', () => {
       // Subscribe to run
       adapter.subscribeToRun(RUN_ID);
 
-      // Get the broadcast handler
-      const broadcastHandler = mocks.channel.handlers.get('*');
-
       // Simulate a step completed event
-      broadcastHandler?.({
-        event: 'step:completed',
-        payload: broadcastStepCompleted,
-      });
+      const completedEvent = createStepCompletedEvent({ run_id: RUN_ID });
+      emitBroadcastEvent(mocks, 'step:completed', completedEvent);
 
       // The step event callback should be called
-      expect(stepEventCallback).toHaveBeenCalledWith(broadcastStepCompleted);
+      expect(stepEventCallback).toHaveBeenCalledWith(completedEvent);
     });
 
     test('routes step:failed events correctly', () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
       const adapter = new SupabaseBroadcastAdapter(client);
 
       // Set up an event listener
@@ -251,21 +219,16 @@ describe('SupabaseBroadcastAdapter', () => {
       // Subscribe to run
       adapter.subscribeToRun(RUN_ID);
 
-      // Get the broadcast handler
-      const broadcastHandler = mocks.channel.handlers.get('*');
-
       // Simulate a step failed event
-      broadcastHandler?.({
-        event: 'step:failed',
-        payload: broadcastStepFailed,
-      });
+      const failedEvent = createStepFailedEvent({ run_id: RUN_ID });
+      emitBroadcastEvent(mocks, 'step:failed', failedEvent);
 
       // The step event callback should be called
-      expect(stepEventCallback).toHaveBeenCalledWith(broadcastStepFailed);
+      expect(stepEventCallback).toHaveBeenCalledWith(failedEvent);
     });
 
     test('ignores unknown event types', () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
       const adapter = new SupabaseBroadcastAdapter(client);
 
       // Set up event listeners
@@ -277,10 +240,12 @@ describe('SupabaseBroadcastAdapter', () => {
       // Subscribe to run
       adapter.subscribeToRun(RUN_ID);
 
-      // Get the broadcast handler
-      const broadcastHandler = mocks.channel.handlers.get('*');
-
       // Simulate an unknown event type
+      const mockChannel = mocks.channel.channel as any;
+      const broadcastHandler = mockChannel.on.mock.calls.find(
+        (call: any) => call[0] === 'broadcast' && call[1].event === '*'
+      )?.[2];
+      
       broadcastHandler?.({
         event: 'unknown:event',
         payload: { some: 'data' },
@@ -292,7 +257,7 @@ describe('SupabaseBroadcastAdapter', () => {
     });
 
     test('onRunEvent returns unsubscribe function that works', () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
       const adapter = new SupabaseBroadcastAdapter(client);
 
       // Set up an event listener
@@ -302,14 +267,9 @@ describe('SupabaseBroadcastAdapter', () => {
       // Subscribe to run
       adapter.subscribeToRun(RUN_ID);
 
-      // Get the broadcast handler
-      const broadcastHandler = mocks.channel.handlers.get('*');
-
       // Trigger an event
-      broadcastHandler?.({
-        event: 'run:started',
-        payload: broadcastRunStarted,
-      });
+      const startedEvent = createRunStartedEvent({ run_id: RUN_ID });
+      emitBroadcastEvent(mocks, 'run:started', startedEvent);
 
       // Callback should be called
       expect(runEventCallback).toHaveBeenCalledTimes(1);
@@ -318,17 +278,14 @@ describe('SupabaseBroadcastAdapter', () => {
       unsubscribe();
 
       // Trigger event again
-      broadcastHandler?.({
-        event: 'run:started',
-        payload: broadcastRunStarted,
-      });
+      emitBroadcastEvent(mocks, 'run:started', startedEvent);
 
       // Callback should not be called again
       expect(runEventCallback).toHaveBeenCalledTimes(1);
     });
 
     test('onStepEvent returns unsubscribe function that works', () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
       const adapter = new SupabaseBroadcastAdapter(client);
 
       // Set up an event listener
@@ -338,14 +295,9 @@ describe('SupabaseBroadcastAdapter', () => {
       // Subscribe to run
       adapter.subscribeToRun(RUN_ID);
 
-      // Get the broadcast handler
-      const broadcastHandler = mocks.channel.handlers.get('*');
-
       // Trigger an event
-      broadcastHandler?.({
-        event: 'step:started',
-        payload: broadcastStepStarted,
-      });
+      const startedEvent = createStepStartedEvent({ run_id: RUN_ID });
+      emitBroadcastEvent(mocks, 'step:started', startedEvent);
 
       // Callback should be called
       expect(stepEventCallback).toHaveBeenCalledTimes(1);
@@ -354,10 +306,7 @@ describe('SupabaseBroadcastAdapter', () => {
       unsubscribe();
 
       // Trigger event again
-      broadcastHandler?.({
-        event: 'step:started',
-        payload: broadcastStepStarted,
-      });
+      emitBroadcastEvent(mocks, 'step:started', startedEvent);
 
       // Callback should not be called again
       expect(stepEventCallback).toHaveBeenCalledTimes(1);
@@ -366,7 +315,7 @@ describe('SupabaseBroadcastAdapter', () => {
 
   describe('unsubscribe', () => {
     test('unsubscribes correctly by closing channel', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
       const adapter = new SupabaseBroadcastAdapter(client);
 
       // Setup realistic channel subscription
@@ -380,7 +329,7 @@ describe('SupabaseBroadcastAdapter', () => {
     });
 
     test('multiple unsubscribe calls are safe', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
       const adapter = new SupabaseBroadcastAdapter(client);
 
       // Setup realistic channel subscription
@@ -409,7 +358,7 @@ describe('SupabaseBroadcastAdapter', () => {
     });
 
     test('multiple unsubscribe via returned function calls are safe', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
       const adapter = new SupabaseBroadcastAdapter(client);
 
       // Setup realistic channel subscription
@@ -456,7 +405,7 @@ describe('SupabaseBroadcastAdapter', () => {
 
   describe('data access methods', () => {
     test('fetchFlowDefinition queries flow and steps tables', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Mock the database queries
       mocks.queryBuilder.single.mockReturnValueOnce({
@@ -509,7 +458,7 @@ describe('SupabaseBroadcastAdapter', () => {
     });
 
     test('fetchFlowDefinition throws error if flow not found', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Mock flow query to return null (not found)
       mocks.queryBuilder.single.mockReturnValueOnce({
@@ -526,7 +475,7 @@ describe('SupabaseBroadcastAdapter', () => {
     });
 
     test('fetchFlowDefinition throws error if query fails', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Mock flow query to return an error
       mocks.queryBuilder.single.mockReturnValueOnce({
@@ -543,7 +492,7 @@ describe('SupabaseBroadcastAdapter', () => {
     });
 
     test('getRunWithStates calls RPC with correct parameters', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Mock the RPC response
       const rpcResponse = {
@@ -571,7 +520,7 @@ describe('SupabaseBroadcastAdapter', () => {
     });
 
     test('getRunWithStates throws error if RPC call fails', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Mock RPC to return an error
       mocks.rpc.mockReturnValueOnce({
@@ -588,7 +537,7 @@ describe('SupabaseBroadcastAdapter', () => {
     });
 
     test('getRunWithStates throws error if no data returned', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Mock RPC to return null data
       mocks.rpc.mockReturnValueOnce({

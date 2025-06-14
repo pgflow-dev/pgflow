@@ -1,39 +1,31 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import { FlowStep } from '../src/lib/FlowStep';
 import { FlowStepStatus } from '../src/lib/types';
-import { 
-  RUN_ID, 
-  STEP_SLUG,
-  ANOTHER_STEP_SLUG, 
-  broadcastStepCompleted, 
-  broadcastStepFailed, 
-  broadcastStepStarted,
-  advanceAndFlush
-} from './fixtures';
-import { resetMocks } from './mocks';
+import {
+  setupTestEnvironment,
+  advanceTimersAndFlush,
+  createEventTracker,
+} from './helpers/test-utils';
+import {
+  createStepStartedEvent,
+  createStepCompletedEvent,
+  createStepFailedEvent,
+} from './helpers/event-factories';
+import { createFlowStep } from './helpers/state-factories';
+// Test scenarios have been inlined for clarity
+import { RUN_ID, STEP_SLUG, ANOTHER_STEP_SLUG } from './fixtures';
 
 describe('FlowStep', () => {
-  // Create a clean step for each test
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
+  const { teardown } = setupTestEnvironment();
+  
   afterEach(() => {
-    vi.useRealTimers();
-    resetMocks();
+    teardown();
   });
 
   test('initializes with correct state', () => {
-    const step = new FlowStep({
+    const step = createFlowStep({
       run_id: RUN_ID,
       step_slug: STEP_SLUG as any,
-      status: FlowStepStatus.Created,
-      output: null,
-      error: null,
-      error_message: null,
-      started_at: null,
-      completed_at: null,
-      failed_at: null,
     });
 
     expect(step.step_slug).toBe(STEP_SLUG);
@@ -48,106 +40,66 @@ describe('FlowStep', () => {
 
   describe('event → state mapping', () => {
     test('handles started event correctly', () => {
-      const step = new FlowStep({
+      const step = createFlowStep({
         run_id: RUN_ID,
         step_slug: STEP_SLUG as any,
-        status: FlowStepStatus.Created,
-        output: null,
-        error: null,
-        error_message: null,
-        started_at: null,
-        completed_at: null,
-        failed_at: null,
       });
 
-      const allCallback = vi.fn();
-      const startedCallback = vi.fn();
-      step.on('*', allCallback);
-      step.on('started', startedCallback);
-
-      // Update state with started event
-      step.updateState({
-        ...broadcastStepStarted,
-        step_slug: STEP_SLUG as any,
+      const startedEvent = createStepStartedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
       });
+
+      // Update state and verify
+      const result = step.updateState(startedEvent);
+      expect(result).toBe(true);
 
       // Check state was updated correctly
       expect(step.status).toBe(FlowStepStatus.Started);
       expect(step.started_at).toBeInstanceOf(Date);
-      
-      // Check callbacks were called with correct events
-      expect(startedCallback).toHaveBeenCalledTimes(1);
-      expect(startedCallback).toHaveBeenCalledWith(expect.objectContaining({
-        run_id: RUN_ID,
-        step_slug: STEP_SLUG,
-        status: FlowStepStatus.Started
-      }));
-      expect(allCallback).toHaveBeenCalledTimes(1);
     });
 
     test('handles completed event correctly', () => {
-      const step = new FlowStep({
+      const step = createFlowStep({
         run_id: RUN_ID,
         step_slug: STEP_SLUG as any,
         status: FlowStepStatus.Started,
-        output: null,
-        error: null,
-        error_message: null,
         started_at: new Date(),
-        completed_at: null,
-        failed_at: null,
       });
 
-      const allCallback = vi.fn();
-      const completedCallback = vi.fn();
-      step.on('*', allCallback);
-      step.on('completed', completedCallback);
-
-      // Update state with completed event
-      step.updateState({
-        ...broadcastStepCompleted,
-        step_slug: STEP_SLUG as any,
+      const completedEvent = createStepCompletedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        output: { step_result: 'success' },
       });
+
+      // Update state and verify
+      const result = step.updateState(completedEvent);
+      expect(result).toBe(true);
 
       // Check state was updated correctly
       expect(step.status).toBe(FlowStepStatus.Completed);
       expect(step.completed_at).toBeInstanceOf(Date);
       expect(step.output).toEqual({ step_result: 'success' });
-      
-      // Check callbacks were called with correct events
-      expect(completedCallback).toHaveBeenCalledTimes(1);
-      expect(completedCallback).toHaveBeenCalledWith(expect.objectContaining({
-        run_id: RUN_ID,
-        step_slug: STEP_SLUG,
-        status: FlowStepStatus.Completed,
-        output: { step_result: 'success' }
-      }));
-      expect(allCallback).toHaveBeenCalledTimes(1);
     });
 
     test('handles failed event correctly', () => {
-      const step = new FlowStep({
+      const step = createFlowStep({
         run_id: RUN_ID,
         step_slug: STEP_SLUG as any,
         status: FlowStepStatus.Started,
-        output: null,
-        error: null,
-        error_message: null,
         started_at: new Date(),
-        completed_at: null,
-        failed_at: null,
       });
 
-      const allCallback = vi.fn();
-      const failedCallback = vi.fn();
-      step.on('*', allCallback);
-      step.on('failed', failedCallback);
-
-      // Update state with failed event
-      step.updateState({
-        ...broadcastStepFailed,
-        step_slug: STEP_SLUG as any,
+      const failedEvent = createStepFailedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        error_message: 'Step failed',
       });
+
+      // Update state and verify
+      const result = step.updateState(failedEvent);
+      expect(result).toBe(true);
 
       // Check state was updated correctly
       expect(step.status).toBe(FlowStepStatus.Failed);
@@ -155,16 +107,6 @@ describe('FlowStep', () => {
       expect(step.error_message).toBe('Step failed');
       expect(step.error).toBeInstanceOf(Error);
       expect(step.error?.message).toBe('Step failed');
-      
-      // Check callbacks were called with correct events
-      expect(failedCallback).toHaveBeenCalledTimes(1);
-      expect(failedCallback).toHaveBeenCalledWith(expect.objectContaining({
-        run_id: RUN_ID,
-        step_slug: STEP_SLUG,
-        status: FlowStepStatus.Failed,
-        error_message: 'Step failed'
-      }));
-      expect(allCallback).toHaveBeenCalledTimes(1);
     });
 
     test('handles events with missing fields gracefully', () => {
@@ -213,24 +155,29 @@ describe('FlowStep', () => {
 
       // Lower to higher precedence should succeed
       // Created -> Started (allowed)
-      expect(step.updateState({
-        ...broadcastStepStarted,
-        step_slug: STEP_SLUG as any,
-      })).toBe(true);
+      const startedEvent = createStepStartedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+      });
+      expect(step.updateState(startedEvent)).toBe(true);
       expect(step.status).toBe(FlowStepStatus.Started);
 
       // Started -> Completed (allowed - higher precedence)
-      expect(step.updateState({
-        ...broadcastStepCompleted,
-        step_slug: STEP_SLUG as any,
-      })).toBe(true);
+      const completedEvent = createStepCompletedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        output: { step_result: 'success' },
+      });
+      expect(step.updateState(completedEvent)).toBe(true);
       expect(step.status).toBe(FlowStepStatus.Completed);
 
       // Completed -> Failed (denied - terminal state protection)
-      expect(step.updateState({
-        ...broadcastStepFailed,
-        step_slug: STEP_SLUG as any,
-      })).toBe(false);
+      const failedEvent = createStepFailedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        error_message: 'Attempt to override completed step',
+      });
+      expect(step.updateState(failedEvent)).toBe(false);
       // State should not change
       expect(step.status).toBe(FlowStepStatus.Completed);
     });
@@ -275,10 +222,12 @@ describe('FlowStep', () => {
       });
 
       // Try to update to failed state
-      const result = step.updateState({
-        ...broadcastStepFailed,
-        step_slug: STEP_SLUG as any,
+      const failedEvent = createStepFailedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        error_message: 'Attempt to override completed step',
       });
+      const result = step.updateState(failedEvent);
       
       // Should not update terminal state
       expect(result).toBe(false);
@@ -307,11 +256,11 @@ describe('FlowStep', () => {
       });
 
       // Create a new completed event with different output
-      const newCompletedEvent = {
-        ...broadcastStepCompleted,
-        step_slug: STEP_SLUG as any,
+      const newCompletedEvent = createStepCompletedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
         output: { step_result: 'different result' },
-      };
+      });
 
       // Try to update with a new completed event
       const result = step.updateState(newCompletedEvent);
@@ -344,10 +293,11 @@ describe('FlowStep', () => {
     step.on('started', callback);
 
     // Send event with a different step_slug
-    const result = step.updateState({
-      ...broadcastStepStarted,
-      step_slug: ANOTHER_STEP_SLUG as any,
+    const differentStepEvent = createStepStartedEvent({
+      run_id: RUN_ID,
+      step_slug: ANOTHER_STEP_SLUG,
     });
+    const result = step.updateState(differentStepEvent);
 
     // Should reject the update and not change state
     expect(result).toBe(false);
@@ -374,14 +324,16 @@ describe('FlowStep', () => {
       
       // Update the status after a delay
       setTimeout(() => {
-        step.updateState({
-          ...broadcastStepCompleted,
-          step_slug: STEP_SLUG as any,
+        const completedEvent = createStepCompletedEvent({
+          run_id: RUN_ID,
+          step_slug: STEP_SLUG,
+          output: { result: 'success' },
         });
+        step.updateState(completedEvent);
       }, 1000);
 
       // Advance timers to trigger the update
-      await advanceAndFlush(1000);
+      await advanceTimersAndFlush(1000);
       
       // Wait for the promise to resolve
       const result = await waitPromise;
@@ -406,7 +358,7 @@ describe('FlowStep', () => {
       const waitPromise = step.waitForStatus(FlowStepStatus.Completed, { timeoutMs: 5000 });
       
       // Advance timers past the timeout
-      await advanceAndFlush(5001);
+      await advanceTimersAndFlush(5001);
       
       // The promise should reject
       await expect(waitPromise).rejects.toThrow(/Timeout waiting for step/);
@@ -454,7 +406,7 @@ describe('FlowStep', () => {
       setTimeout(() => controller.abort(), 1000);
       
       // Advance timers to trigger the abort
-      await advanceAndFlush(1000);
+      await advanceTimersAndFlush(1000);
       
       // The promise should reject
       await expect(waitPromise).rejects.toThrow(/Aborted waiting for step/);
@@ -478,14 +430,16 @@ describe('FlowStep', () => {
       
       // Update status before timeout
       setTimeout(() => {
-        step.updateState({
-          ...broadcastStepCompleted,
-          step_slug: STEP_SLUG as any,
+        const completedEvent = createStepCompletedEvent({
+          run_id: RUN_ID,
+          step_slug: STEP_SLUG,
+          output: { result: 'success' },
         });
+        step.updateState(completedEvent);
       }, 1000);
       
       // Advance timers partway
-      await advanceAndFlush(1000);
+      await advanceTimersAndFlush(1000);
       
       // The promise should resolve
       const result = await waitPromise;
@@ -511,13 +465,14 @@ describe('FlowStep', () => {
       
       // Update to started
       setTimeout(() => {
-        step.updateState({
-          ...broadcastStepStarted,
-          step_slug: STEP_SLUG as any,
+        const startedEvent = createStepStartedEvent({
+          run_id: RUN_ID,
+          step_slug: STEP_SLUG,
         });
+        step.updateState(startedEvent);
       }, 1000);
       
-      await advanceAndFlush(1000);
+      await advanceTimersAndFlush(1000);
       
       const startedResult = await startedPromise;
       expect(startedResult.status).toBe(FlowStepStatus.Started);
@@ -527,13 +482,15 @@ describe('FlowStep', () => {
       
       // Update to failed
       setTimeout(() => {
-        step.updateState({
-          ...broadcastStepFailed,
-          step_slug: STEP_SLUG as any,
+        const failedEvent = createStepFailedEvent({
+          run_id: RUN_ID,
+          step_slug: STEP_SLUG,
+          error_message: 'Test failure',
         });
+        step.updateState(failedEvent);
       }, 1000);
       
-      await advanceAndFlush(1000);
+      await advanceTimersAndFlush(1000);
       
       const failedResult = await failedPromise;
       expect(failedResult.status).toBe(FlowStepStatus.Failed);

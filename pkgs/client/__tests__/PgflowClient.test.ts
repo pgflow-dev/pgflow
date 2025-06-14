@@ -1,15 +1,18 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import { PgflowClient } from '../src/lib/PgflowClient';
 import { FlowRunStatus, FlowStepStatus } from '../src/lib/types';
 import {
-  RUN_ID,
-  FLOW_SLUG,
-  broadcastRunCompleted,
-  broadcastStepStarted,
-  startedRunSnapshot,
-  startedStepState,
-} from './fixtures';
-import { mockSupabase, resetMocks, mockChannelSubscription } from './mocks';
+  setupTestEnvironment,
+  createMockClient,
+  createRunResponse,
+  mockRpcCall,
+  emitBroadcastEvent,
+} from './helpers/test-utils';
+import {
+  createRunCompletedEvent,
+  createStepStartedEvent,
+} from './helpers/event-factories';
+import { RUN_ID, FLOW_SLUG } from './fixtures';
 
 // Mock uuid.v4 to return a predictable run ID for testing
 vi.mock('uuid', () => ({
@@ -17,40 +20,31 @@ vi.mock('uuid', () => ({
 }));
 
 describe('PgflowClient', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
+  const { teardown } = setupTestEnvironment();
+  
   afterEach(() => {
-    vi.useRealTimers();
-    resetMocks();
+    teardown();
   });
 
   test('initializes correctly', () => {
-    const { client } = mockSupabase();
+    const { client } = createMockClient();
     const pgflowClient = new PgflowClient(client);
 
     expect(pgflowClient).toBeDefined();
   });
 
   test('startFlow calls RPC with correct parameters and returns run', async () => {
-    const { client, mocks } = mockSupabase();
-
-    // Setup realistic channel subscription
-    mockChannelSubscription(mocks);
-
-    // Mock the RPC call to return run state and steps
-    mocks.rpc.mockReturnValueOnce({
-      data: {
-        run: startedRunSnapshot,
-        steps: [startedStepState],
-      },
-      error: null,
-    });
+    const { client, mocks } = createMockClient();
+    const input = { foo: 'bar' };
+    
+    // Mock the RPC response
+    const response = createRunResponse(
+      { run_id: RUN_ID, flow_slug: FLOW_SLUG, input },
+      [{ step_slug: 'test-step' }]
+    );
+    mockRpcCall(mocks, response);
 
     const pgflowClient = new PgflowClient(client);
-
-    const input = { foo: 'bar' };
     const run = await pgflowClient.startFlow(FLOW_SLUG, input);
 
     // Check RPC call
@@ -70,17 +64,11 @@ describe('PgflowClient', () => {
   });
 
   test('startFlow handles error from RPC', async () => {
-    const { client, mocks } = mockSupabase();
-
-    // Setup realistic channel subscription (though it shouldn't reach subscription)
-    mockChannelSubscription(mocks);
+    const { client, mocks } = createMockClient();
 
     // Mock the RPC call to return an error
     const error = new Error('RPC error');
-    mocks.rpc.mockReturnValueOnce({
-      data: null,
-      error,
-    });
+    mockRpcCall(mocks, { data: null, error });
 
     const pgflowClient = new PgflowClient(client);
 
@@ -91,19 +79,14 @@ describe('PgflowClient', () => {
   });
 
   test('getRun returns cached run if exists', async () => {
-    const { client, mocks } = mockSupabase();
+    const { client, mocks } = createMockClient();
 
-    // Setup realistic channel subscription
-    mockChannelSubscription(mocks);
-
-    // Mock the RPC calls
-    mocks.rpc.mockReturnValueOnce({
-      data: {
-        run: startedRunSnapshot,
-        steps: [startedStepState],
-      },
-      error: null,
-    });
+    // Mock the RPC response
+    const response = createRunResponse(
+      { run_id: RUN_ID },
+      [{ step_slug: 'test-step' }]
+    );
+    mockRpcCall(mocks, response);
 
     const pgflowClient = new PgflowClient(client);
 
@@ -121,13 +104,10 @@ describe('PgflowClient', () => {
   });
 
   test('getRun returns null for non-existent run', async () => {
-    const { client, mocks } = mockSupabase();
+    const { client, mocks } = createMockClient();
 
     // Mock the RPC call to return no run
-    mocks.rpc.mockReturnValueOnce({
-      data: { run: null, steps: [] },
-      error: null,
-    });
+    mockRpcCall(mocks, { data: { run: null, steps: [] }, error: null });
 
     const pgflowClient = new PgflowClient(client);
 
@@ -137,19 +117,11 @@ describe('PgflowClient', () => {
   });
 
   test('emits events through callbacks', async () => {
-    const { client, mocks } = mockSupabase();
-
-    // Setup realistic channel subscription
-    mockChannelSubscription(mocks);
+    const { client, mocks } = createMockClient();
 
     // Mock the getRunWithStates to return data
-    mocks.rpc.mockReturnValueOnce({
-      data: {
-        run: startedRunSnapshot,
-        steps: [startedStepState],
-      },
-      error: null,
-    });
+    const response = createRunResponse({ run_id: RUN_ID });
+    mockRpcCall(mocks, response);
 
     // Create test client
     const pgflowClient = new PgflowClient(client);
@@ -166,48 +138,30 @@ describe('PgflowClient', () => {
     pgflowClient.onRunEvent(runCallback);
     pgflowClient.onStepEvent(stepCallback);
 
-    // Get the broadcast handler from the mock channel
-    const broadcastHandler = mocks.channel.handlers.get('*');
-    expect(broadcastHandler).toBeDefined();
+    // Trigger events
+    const runCompletedEvent = createRunCompletedEvent({ run_id: RUN_ID });
+    const stepStartedEvent = createStepStartedEvent({ run_id: RUN_ID });
+    
+    emitBroadcastEvent(mocks, 'run:completed', runCompletedEvent);
+    emitBroadcastEvent(mocks, 'step:started', stepStartedEvent);
 
-    if (broadcastHandler) {
-      // Trigger a run event
-      broadcastHandler({
-        event: 'run:completed',
-        payload: broadcastRunCompleted,
-      });
-
-      // Trigger a step event
-      broadcastHandler({
-        event: 'step:started',
-        payload: broadcastStepStarted,
-      });
-
-      // Check callbacks were called with correct events
-      expect(runCallback).toHaveBeenCalledWith(broadcastRunCompleted);
-      expect(stepCallback).toHaveBeenCalledWith(broadcastStepStarted);
-    }
+    // Check callbacks were called with correct events
+    expect(runCallback).toHaveBeenCalledWith(runCompletedEvent);
+    expect(stepCallback).toHaveBeenCalledWith(stepStartedEvent);
   });
 
   test('dispose removes run instance and unsubscribes', async () => {
-    const { client, mocks } = mockSupabase();
+    const { client, mocks } = createMockClient();
+    const input = { foo: 'bar' };
 
-    // Setup realistic channel subscription
-    mockChannelSubscription(mocks);
-
-    // Mock the RPC call
-    mocks.rpc.mockReturnValueOnce({
-      data: {
-        run: startedRunSnapshot,
-        steps: [startedStepState],
-      },
-      error: null,
-    });
+    // Mock the RPC response
+    const response = createRunResponse({ run_id: RUN_ID, input });
+    mockRpcCall(mocks, response);
 
     const pgflowClient = new PgflowClient(client);
 
     // Start a flow to create a run instance
-    const run = await pgflowClient.startFlow(FLOW_SLUG, { foo: 'bar' });
+    const run = await pgflowClient.startFlow(FLOW_SLUG, input);
 
     // Spy on run's dispose method
     const runDisposeSpy = vi.spyOn(run, 'dispose');
@@ -222,14 +176,7 @@ describe('PgflowClient', () => {
     expect(mocks.channel.channel.unsubscribe).toHaveBeenCalled();
 
     // Getting the run again should require a new fetch
-    mocks.rpc.mockReturnValueOnce({
-      data: {
-        run: startedRunSnapshot,
-        steps: [startedStepState],
-      },
-      error: null,
-    });
-
+    mockRpcCall(mocks, response);
     await pgflowClient.getRun(RUN_ID);
 
     // RPC should be called again after disposal
@@ -237,27 +184,14 @@ describe('PgflowClient', () => {
   });
 
   test('disposeAll removes all run instances', async () => {
-    const { client, mocks } = mockSupabase();
+    const { client, mocks } = createMockClient();
 
-    // Setup realistic channel subscription
-    mockChannelSubscription(mocks);
-
-    // Mock the RPC calls
-    mocks.rpc
-      .mockReturnValueOnce({
-        data: {
-          run: { ...startedRunSnapshot, run_id: '1' },
-          steps: [{ ...startedStepState, run_id: '1' }],
-        },
-        error: null,
-      })
-      .mockReturnValueOnce({
-        data: {
-          run: { ...startedRunSnapshot, run_id: '2' },
-          steps: [{ ...startedStepState, run_id: '2' }],
-        },
-        error: null,
-      });
+    // Mock responses for two different runs
+    const response1 = createRunResponse({ run_id: '1' }, [{ step_slug: 'step-1' }]);
+    const response2 = createRunResponse({ run_id: '2' }, [{ step_slug: 'step-2' }]);
+    
+    mockRpcCall(mocks, response1);
+    mockRpcCall(mocks, response2);
 
     const pgflowClient = new PgflowClient(client);
 
@@ -278,51 +212,35 @@ describe('PgflowClient', () => {
   });
 
   test('handles step events for steps that have not been previously accessed', async () => {
-    const { client, mocks } = mockSupabase();
+    const { client, mocks } = createMockClient();
+    const input = { foo: 'bar' };
 
-    // Setup realistic channel subscription
-    mockChannelSubscription(mocks);
-
-    // Mock the RPC call
-    mocks.rpc.mockReturnValueOnce({
-      data: {
-        run: startedRunSnapshot,
-        steps: [],
-      },
-      error: null,
-    });
+    // Mock the RPC response with no steps
+    const response = createRunResponse({ run_id: RUN_ID, input }, []);
+    mockRpcCall(mocks, response);
 
     const pgflowClient = new PgflowClient(client);
 
     // Start a flow
-    const run = await pgflowClient.startFlow(FLOW_SLUG, { foo: 'bar' });
+    const run = await pgflowClient.startFlow(FLOW_SLUG, input);
 
     // Spy on the run.step method
     const stepSpy = vi.spyOn(run, 'step');
 
-    // Get handler from the mock channel
-    const broadcastHandler = mocks.channel.handlers.get('*');
-    expect(broadcastHandler).toBeDefined();
+    // Event for step that has never been accessed before
+    const neverAccessedStepEvent = createStepStartedEvent({
+      run_id: RUN_ID,
+      step_slug: 'never-accessed-step',
+    });
 
-    if (broadcastHandler) {
-      // Event for step that has never been accessed before
-      const neverAccessedStepEvent = {
-        ...broadcastStepStarted,
-        step_slug: 'never-accessed-step',
-      };
+    // Trigger broadcast event
+    emitBroadcastEvent(mocks, 'step:started', neverAccessedStepEvent);
 
-      // Trigger broadcast event
-      broadcastHandler({
-        event: 'step:started',
-        payload: neverAccessedStepEvent,
-      });
+    // Verify the step was created on demand
+    expect(stepSpy).toHaveBeenCalledWith('never-accessed-step');
 
-      // Verify the step was created on demand
-      expect(stepSpy).toHaveBeenCalledWith('never-accessed-step');
-
-      // Verify step was materialized and has correct state
-      const step = run.step('never-accessed-step');
-      expect(step.status).toBe(FlowStepStatus.Started);
-    }
+    // Verify step was materialized and has correct state
+    const step = run.step('never-accessed-step');
+    expect(step.status).toBe(FlowStepStatus.Started);
   });
 });

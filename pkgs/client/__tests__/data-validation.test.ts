@@ -1,10 +1,23 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { PgflowClient } from '../src/lib/PgflowClient';
 import { FlowRun } from '../src/lib/FlowRun';
 import { FlowStep } from '../src/lib/FlowStep';
-import { FlowRunStatus, FlowStepStatus, type BroadcastRunStartedEvent, type BroadcastRunCompletedEvent, type BroadcastStepCompletedEvent } from '../src/lib/types';
+import { FlowRunStatus, FlowStepStatus } from '../src/lib/types';
 import { toTypedRunEvent, toTypedStepEvent } from '../src/lib/eventAdapters';
-import { mockSupabase, resetMocks, mockChannelSubscription } from './mocks';
+import {
+  setupTestEnvironment,
+  createMockClient,
+  mockRpcCall,
+  createRunResponse,
+  emitBroadcastEvent,
+} from './helpers/test-utils';
+import {
+  createRunStartedEvent,
+  createRunCompletedEvent,
+  createStepStartedEvent,
+  createStepCompletedEvent,
+} from './helpers/event-factories';
+import { mockChannelSubscription } from './mocks';
 import {
   RUN_ID,
   FLOW_SLUG,
@@ -19,18 +32,15 @@ vi.mock('uuid', () => ({
 }));
 
 describe('Data Validation and Edge Cases', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
+  const { teardown } = setupTestEnvironment();
+  
   afterEach(() => {
-    vi.useRealTimers();
-    resetMocks();
+    teardown();
   });
 
   describe('Database Data Validation', () => {
     it('handles missing step states gracefully', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
@@ -57,7 +67,7 @@ describe('Data Validation and Edge Cases', () => {
     });
 
     it('handles empty step states array', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
@@ -81,7 +91,7 @@ describe('Data Validation and Edge Cases', () => {
     });
 
     it('handles corrupted run data gracefully', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
@@ -105,7 +115,7 @@ describe('Data Validation and Edge Cases', () => {
     });
 
     it('handles step data with missing fields', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
@@ -152,16 +162,12 @@ describe('Data Validation and Edge Cases', () => {
       });
 
       // Try to update with invalid transition
-      const broadcastEvent: BroadcastRunStartedEvent = {
-        event_type: 'run:started',
+      const startedEvent = createRunStartedEvent({
         run_id: RUN_ID,
-        flow_slug: FLOW_SLUG,
-        status: FlowRunStatus.Started,
         input: { test: 'input' },
-        started_at: new Date().toISOString(),
         remaining_steps: 1,
-      };
-      const updated = run.updateState(toTypedRunEvent(broadcastEvent));
+      });
+      const updated = run.updateState(toTypedRunEvent(startedEvent));
 
       expect(updated).toBe(false);
       expect(run.status).toBe(FlowRunStatus.Completed);
@@ -181,15 +187,12 @@ describe('Data Validation and Edge Cases', () => {
       });
 
       // Try to update with invalid transition
-      const broadcastEvent: BroadcastStepCompletedEvent = {
-        event_type: 'step:completed',
+      const completedEvent = createStepCompletedEvent({
         run_id: RUN_ID,
         step_slug: STEP_SLUG,
-        status: FlowStepStatus.Completed,
         output: { result: 'test' },
-        completed_at: new Date().toISOString(),
-      };
-      const updated = step.updateState(toTypedStepEvent(broadcastEvent));
+      });
+      const updated = step.updateState(toTypedStepEvent(completedEvent));
 
       expect(updated).toBe(false);
       expect(step.status).toBe(FlowStepStatus.Failed);
@@ -211,15 +214,11 @@ describe('Data Validation and Edge Cases', () => {
       });
 
       // Try to update with different run_id
-      const broadcastEvent: BroadcastRunCompletedEvent = {
-        event_type: 'run:completed',
+      const completedEvent = createRunCompletedEvent({
         run_id: 'different-run-id',
-        flow_slug: FLOW_SLUG,
-        status: FlowRunStatus.Completed,
         output: { result: 'done' },
-        completed_at: new Date().toISOString(),
-      };
-      const updated = run.updateState(toTypedRunEvent(broadcastEvent));
+      });
+      const updated = run.updateState(toTypedRunEvent(completedEvent));
 
       expect(updated).toBe(false);
       expect(run.status).toBe(FlowRunStatus.Started);
@@ -239,15 +238,12 @@ describe('Data Validation and Edge Cases', () => {
       });
 
       // Try to update with different step_slug
-      const broadcastEvent: BroadcastStepCompletedEvent = {
-        event_type: 'step:completed',
+      const completedEvent = createStepCompletedEvent({
         run_id: RUN_ID,
         step_slug: 'different-step',
-        status: FlowStepStatus.Completed,
         output: { result: 'test' },
-        completed_at: new Date().toISOString(),
-      };
-      const updated = step.updateState(toTypedStepEvent(broadcastEvent));
+      });
+      const updated = step.updateState(toTypedStepEvent(completedEvent));
 
       expect(updated).toBe(false);
       expect(step.status).toBe(FlowStepStatus.Started);
@@ -256,7 +252,7 @@ describe('Data Validation and Edge Cases', () => {
 
   describe('Input Validation', () => {
     it('handles null flow input gracefully', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
@@ -277,7 +273,7 @@ describe('Data Validation and Edge Cases', () => {
     });
 
     it('handles undefined flow input gracefully', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
@@ -298,7 +294,7 @@ describe('Data Validation and Edge Cases', () => {
     });
 
     it('handles very large input objects', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
@@ -328,7 +324,7 @@ describe('Data Validation and Edge Cases', () => {
     });
 
     it('handles circular references in input gracefully', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
@@ -357,7 +353,7 @@ describe('Data Validation and Edge Cases', () => {
 
   describe('Edge Case Memory Management', () => {
     it('handles rapid subscription and disposal cycles', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
@@ -389,7 +385,7 @@ describe('Data Validation and Edge Cases', () => {
     });
 
     it('handles accessing disposed runs gracefully', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
@@ -419,7 +415,7 @@ describe('Data Validation and Edge Cases', () => {
     });
 
     it('handles multiple disposal calls gracefully', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
@@ -450,7 +446,7 @@ describe('Data Validation and Edge Cases', () => {
 
   describe('Async Operation Edge Cases', () => {
     it('handles cancelled operations gracefully', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);
@@ -485,7 +481,7 @@ describe('Data Validation and Edge Cases', () => {
     });
 
     it('handles concurrent operations on same run ID', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Setup realistic channel subscription with 200ms delay
       mockChannelSubscription(mocks);

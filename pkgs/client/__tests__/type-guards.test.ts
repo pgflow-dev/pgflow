@@ -7,17 +7,16 @@ import {
   isStepFailedEvent,
   FlowRunStatus,
   FlowStepStatus,
-  BroadcastRunStartedEvent,
-  BroadcastStepStartedEvent,
-  BroadcastStepCompletedEvent,
 } from '../src/lib/types';
 import {
-  broadcastRunStarted,
-  broadcastRunCompleted,
-  broadcastRunFailed,
-  broadcastStepStarted,
-  broadcastStepCompleted,
-  broadcastStepFailed,
+  createRunStartedEvent,
+  createRunCompletedEvent,
+  createRunFailedEvent,
+  createStepStartedEvent,
+  createStepCompletedEvent,
+  createStepFailedEvent,
+} from './helpers/event-factories';
+import {
   RUN_ID,
   STEP_SLUG,
 } from './fixtures';
@@ -25,21 +24,27 @@ import {
 describe('Type Guards', () => {
   describe('isFlowRunEvent', () => {
     it('correctly identifies run:started events', () => {
-      expect(isFlowRunEvent(broadcastRunStarted)).toBe(true);
+      const runStarted = createRunStartedEvent({ run_id: RUN_ID });
+      expect(isFlowRunEvent(runStarted)).toBe(true);
     });
 
     it('correctly identifies run:completed events', () => {
-      expect(isFlowRunEvent(broadcastRunCompleted)).toBe(true);
+      const runCompleted = createRunCompletedEvent({ run_id: RUN_ID });
+      expect(isFlowRunEvent(runCompleted)).toBe(true);
     });
 
     it('correctly identifies run:failed events', () => {
-      expect(isFlowRunEvent(broadcastRunFailed)).toBe(true);
+      const runFailed = createRunFailedEvent({ run_id: RUN_ID });
+      expect(isFlowRunEvent(runFailed)).toBe(true);
     });
 
     it('rejects step events', () => {
-      expect(isFlowRunEvent(broadcastStepStarted)).toBe(false);
-      expect(isFlowRunEvent(broadcastStepCompleted)).toBe(false);
-      expect(isFlowRunEvent(broadcastStepFailed)).toBe(false);
+      const stepStarted = createStepStartedEvent({ run_id: RUN_ID });
+      const stepCompleted = createStepCompletedEvent({ run_id: RUN_ID });
+      const stepFailed = createStepFailedEvent({ run_id: RUN_ID });
+      expect(isFlowRunEvent(stepStarted)).toBe(false);
+      expect(isFlowRunEvent(stepCompleted)).toBe(false);
+      expect(isFlowRunEvent(stepFailed)).toBe(false);
     });
 
     it('rejects malformed events', () => {
@@ -80,8 +85,9 @@ describe('Type Guards', () => {
     });
 
     it('handles edge cases with extra properties', () => {
+      const runStarted = createRunStartedEvent({ run_id: RUN_ID });
       const eventWithExtra = {
-        ...broadcastRunStarted,
+        ...runStarted,
         extra_property: 'should not affect validation',
         another_field: 123,
       };
@@ -111,21 +117,27 @@ describe('Type Guards', () => {
 
   describe('isStepEvent', () => {
     it('correctly identifies step:started events', () => {
-      expect(isStepEvent(broadcastStepStarted)).toBe(true);
+      const stepStarted = createStepStartedEvent({ run_id: RUN_ID, step_slug: STEP_SLUG });
+      expect(isStepEvent(stepStarted)).toBe(true);
     });
 
     it('correctly identifies step:completed events', () => {
-      expect(isStepEvent(broadcastStepCompleted)).toBe(true);
+      const stepCompleted = createStepCompletedEvent({ run_id: RUN_ID, step_slug: STEP_SLUG });
+      expect(isStepEvent(stepCompleted)).toBe(true);
     });
 
     it('correctly identifies step:failed events', () => {
-      expect(isStepEvent(broadcastStepFailed)).toBe(true);
+      const stepFailed = createStepFailedEvent({ run_id: RUN_ID, step_slug: STEP_SLUG });
+      expect(isStepEvent(stepFailed)).toBe(true);
     });
 
     it('rejects run events', () => {
-      expect(isStepEvent(broadcastRunStarted)).toBe(false);
-      expect(isStepEvent(broadcastRunCompleted)).toBe(false);
-      expect(isStepEvent(broadcastRunFailed)).toBe(false);
+      const runStarted = createRunStartedEvent({ run_id: RUN_ID });
+      const runCompleted = createRunCompletedEvent({ run_id: RUN_ID });
+      const runFailed = createRunFailedEvent({ run_id: RUN_ID });
+      expect(isStepEvent(runStarted)).toBe(false);
+      expect(isStepEvent(runCompleted)).toBe(false);
+      expect(isStepEvent(runFailed)).toBe(false);
     });
 
     it('rejects malformed events', () => {
@@ -188,16 +200,20 @@ describe('Type Guards', () => {
 
   describe('isStepStartedEvent', () => {
     it('correctly identifies step:started events', () => {
-      expect(isStepStartedEvent(broadcastStepStarted)).toBe(true);
+      const stepStarted = createStepStartedEvent({ run_id: RUN_ID, step_slug: STEP_SLUG });
+      expect(isStepStartedEvent(stepStarted)).toBe(true);
     });
 
     it('rejects other step events', () => {
-      expect(isStepStartedEvent(broadcastStepCompleted)).toBe(false);
-      expect(isStepStartedEvent(broadcastStepFailed)).toBe(false);
+      const stepCompleted = createStepCompletedEvent({ run_id: RUN_ID, step_slug: STEP_SLUG });
+      const stepFailed = createStepFailedEvent({ run_id: RUN_ID, step_slug: STEP_SLUG });
+      expect(isStepStartedEvent(stepCompleted)).toBe(false);
+      expect(isStepStartedEvent(stepFailed)).toBe(false);
     });
 
     it('rejects run events', () => {
-      expect(isStepStartedEvent(broadcastRunStarted)).toBe(false);
+      const runStarted = createRunStartedEvent({ run_id: RUN_ID });
+      expect(isStepStartedEvent(runStarted)).toBe(false);
     });
 
     it('rejects malformed events', () => {
@@ -242,16 +258,20 @@ describe('Type Guards', () => {
 
   describe('isStepCompletedEvent', () => {
     it('correctly identifies step:completed events', () => {
-      expect(isStepCompletedEvent(broadcastStepCompleted)).toBe(true);
+      const stepCompleted = createStepCompletedEvent({ run_id: RUN_ID, step_slug: STEP_SLUG });
+      expect(isStepCompletedEvent(stepCompleted)).toBe(true);
     });
 
     it('rejects other step events', () => {
-      expect(isStepCompletedEvent(broadcastStepStarted)).toBe(false);
-      expect(isStepCompletedEvent(broadcastStepFailed)).toBe(false);
+      const stepStarted = createStepStartedEvent({ run_id: RUN_ID, step_slug: STEP_SLUG });
+      const stepFailed = createStepFailedEvent({ run_id: RUN_ID, step_slug: STEP_SLUG });
+      expect(isStepCompletedEvent(stepStarted)).toBe(false);
+      expect(isStepCompletedEvent(stepFailed)).toBe(false);
     });
 
     it('rejects run events', () => {
-      expect(isStepCompletedEvent(broadcastRunCompleted)).toBe(false);
+      const runCompleted = createRunCompletedEvent({ run_id: RUN_ID });
+      expect(isStepCompletedEvent(runCompleted)).toBe(false);
     });
 
     it('validates completed-specific fields', () => {
@@ -281,16 +301,20 @@ describe('Type Guards', () => {
 
   describe('isStepFailedEvent', () => {
     it('correctly identifies step:failed events', () => {
-      expect(isStepFailedEvent(broadcastStepFailed)).toBe(true);
+      const stepFailed = createStepFailedEvent({ run_id: RUN_ID, step_slug: STEP_SLUG });
+      expect(isStepFailedEvent(stepFailed)).toBe(true);
     });
 
     it('rejects other step events', () => {
-      expect(isStepFailedEvent(broadcastStepStarted)).toBe(false);
-      expect(isStepFailedEvent(broadcastStepCompleted)).toBe(false);
+      const stepStarted = createStepStartedEvent({ run_id: RUN_ID, step_slug: STEP_SLUG });
+      const stepCompleted = createStepCompletedEvent({ run_id: RUN_ID, step_slug: STEP_SLUG });
+      expect(isStepFailedEvent(stepStarted)).toBe(false);
+      expect(isStepFailedEvent(stepCompleted)).toBe(false);
     });
 
     it('rejects run events', () => {
-      expect(isStepFailedEvent(broadcastRunFailed)).toBe(false);
+      const runFailed = createRunFailedEvent({ run_id: RUN_ID });
+      expect(isStepFailedEvent(runFailed)).toBe(false);
     });
 
     it('validates failed-specific fields', () => {

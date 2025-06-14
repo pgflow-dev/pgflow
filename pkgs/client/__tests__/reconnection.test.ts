@@ -1,25 +1,26 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { SupabaseBroadcastAdapter } from '../src/lib/SupabaseBroadcastAdapter';
 import {
-  mockSupabase,
-  resetMocks,
+  setupTestEnvironment,
+  createMockClient,
+  mockRpcCall,
+  createRunResponse,
+} from './helpers/test-utils';
+import {
   createMockSchedule,
 } from './mocks';
 import { RUN_ID, startedRunSnapshot, stepStatesSample } from './fixtures';
 
 describe('Reconnection Logic', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
+  const { teardown } = setupTestEnvironment();
+  
   afterEach(() => {
-    vi.useRealTimers();
-    resetMocks();
+    teardown();
   });
 
   describe('Basic Error Handling', () => {
     it('registers error handlers during subscription', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       mocks.rpc.mockReturnValue({
         data: { run: startedRunSnapshot, steps: stepStatesSample },
@@ -44,7 +45,7 @@ describe('Reconnection Logic', () => {
     });
 
     it('schedules reconnection when error occurs', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
       const { spy: mockSchedule } = createMockSchedule();
 
       mocks.rpc.mockReturnValue({
@@ -81,7 +82,7 @@ describe('Reconnection Logic', () => {
     });
 
     it('uses configurable reconnection delay', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
       const { spy: mockSchedule } = createMockSchedule();
       const customDelay = 5000;
 

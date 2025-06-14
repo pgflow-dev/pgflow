@@ -1,5 +1,14 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import { SupabaseBroadcastAdapter } from '../src/lib/SupabaseBroadcastAdapter';
+import {
+  setupTestEnvironment,
+  createMockClient,
+  emitBroadcastEvent,
+} from './helpers/test-utils';
+import {
+  createRunStartedEvent,
+  createStepStartedEvent,
+} from './helpers/event-factories';
 import {
   RUN_ID,
   FLOW_SLUG,
@@ -7,13 +16,15 @@ import {
   startedRunSnapshot,
   startedStepState,
 } from './fixtures';
-import { mockSupabase, mockChannelSubscription } from './mocks';
+import { mockChannelSubscription } from './mocks';
 
 /**
  * This is a simplified test that focuses on the core functionality
  * without getting tied to implementation details or timer complexity.
  */
 describe('SupabaseBroadcastAdapter - Simple Tests', () => {
+  const { teardown } = setupTestEnvironment();
+  
   beforeEach(() => {
     // Silence console logs/errors in tests
     vi.spyOn(console, 'error').mockImplementation(() => { /* intentionally empty */ });
@@ -21,14 +32,14 @@ describe('SupabaseBroadcastAdapter - Simple Tests', () => {
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    teardown();
   });
 
   /**
    * Test basic connection functionality using the public interface
    */
   test('subscribes to a run and configures channel correctly', async () => {
-    const { client, mocks } = mockSupabase();
+    const { client, mocks } = createMockClient();
     const adapter = new SupabaseBroadcastAdapter(client);
 
     // Setup realistic channel subscription
@@ -62,7 +73,7 @@ describe('SupabaseBroadcastAdapter - Simple Tests', () => {
    * Test that event callbacks are invoked properly
    */
   test('properly routes events to registered callbacks', () => {
-    const { client, mocks } = mockSupabase();
+    const { client, mocks } = createMockClient();
     const adapter = new SupabaseBroadcastAdapter(client);
 
     // Set up event listeners
@@ -74,54 +85,26 @@ describe('SupabaseBroadcastAdapter - Simple Tests', () => {
     // Subscribe to run
     adapter.subscribeToRun(RUN_ID);
 
-    // Get the broadcast handler registered for '*'
-    const broadcastHandler = mocks.channel.handlers.get('*');
-    expect(broadcastHandler).toBeDefined();
-
-    // Simulate a run event via the handler
-    broadcastHandler?.({
-      event: 'run:started',
-      payload: {
-        event_type: 'run:started',
-        run_id: RUN_ID,
-        flow_slug: FLOW_SLUG,
-        status: 'started',
-      },
-    });
+    // Simulate a run event
+    const runStartedEvent = createRunStartedEvent({ run_id: RUN_ID });
+    emitBroadcastEvent(mocks, 'run:started', runStartedEvent);
 
     // Check that the run event callback was called
-    expect(runSpy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        event_type: 'run:started',
-        run_id: RUN_ID,
-      })
-    );
+    expect(runSpy).toHaveBeenCalledWith(runStartedEvent);
 
-    // Simulate a step event via the handler
-    broadcastHandler?.({
-      event: 'step:started',
-      payload: {
-        event_type: 'step:started',
-        run_id: RUN_ID,
-        step_slug: STEP_SLUG,
-        status: 'started',
-      },
-    });
+    // Simulate a step event
+    const stepStartedEvent = createStepStartedEvent({ run_id: RUN_ID, step_slug: STEP_SLUG });
+    emitBroadcastEvent(mocks, 'step:started', stepStartedEvent);
 
     // Check that the step event callback was called
-    expect(stepSpy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        event_type: 'step:started',
-        step_slug: STEP_SLUG,
-      })
-    );
+    expect(stepSpy).toHaveBeenCalledWith(stepStartedEvent);
   });
 
   /**
    * Test that RPC works correctly for fetching data
    */
   test('getRunWithStates calls RPC with correct parameters', async () => {
-    const { client, mocks } = mockSupabase();
+    const { client, mocks } = createMockClient();
 
     // Mock RPC response
     mocks.rpc.mockResolvedValueOnce({
@@ -154,7 +137,7 @@ describe('SupabaseBroadcastAdapter - Simple Tests', () => {
    * Test behavior during properly initiated unsubscribe
    */
   test('properly cleans up on unsubscribe', async () => {
-    const { client, mocks } = mockSupabase();
+    const { client, mocks } = createMockClient();
     const adapter = new SupabaseBroadcastAdapter(client);
 
     // Setup realistic channel subscription

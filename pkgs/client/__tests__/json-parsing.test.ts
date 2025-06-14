@@ -1,21 +1,26 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { SupabaseBroadcastAdapter } from '../src/lib/SupabaseBroadcastAdapter';
 import type { BroadcastStepEvent, BroadcastRunEvent } from '../src/lib/types';
-import { mockSupabase, mockChannelSubscription } from './mocks';
+import {
+  setupTestEnvironment,
+  createMockClient,
+  emitBroadcastEvent,
+} from './helpers/test-utils';
+import { mockChannelSubscription } from './mocks';
 
 describe('JSON Parsing in Broadcasts', () => {
+  const { teardown } = setupTestEnvironment();
   let adapter: SupabaseBroadcastAdapter;
   let stepEventHandler: (event: BroadcastStepEvent) => void;
   let runEventHandler: (event: BroadcastRunEvent) => void;
-  let broadcastCallback: (payload: any) => void;
+  let mocks: any;
 
   beforeEach(async () => {
-    vi.clearAllMocks();
-
-    const { client, mocks } = mockSupabase();
+    const mockClient = createMockClient();
+    mocks = mockClient.mocks;
     mockChannelSubscription(mocks);
 
-    adapter = new SupabaseBroadcastAdapter(client);
+    adapter = new SupabaseBroadcastAdapter(mockClient.client);
 
     // Set up event handlers to capture parsed events
     stepEventHandler = vi.fn();
@@ -25,9 +30,10 @@ describe('JSON Parsing in Broadcasts', () => {
 
     // Subscribe to a run to configure the channel
     await adapter.subscribeToRun('test-run-id');
-
-    // Get the broadcast callback for triggering events
-    broadcastCallback = mocks.channel.handlers.get('*');
+  });
+  
+  afterEach(() => {
+    teardown();
   });
 
   describe('Step Events', () => {
@@ -52,7 +58,7 @@ describe('JSON Parsing in Broadcasts', () => {
       };
 
       // Trigger the broadcast callback (simulating Supabase realtime)
-      broadcastCallback(broadcastPayload);
+      emitBroadcastEvent(mocks, broadcastPayload.event, broadcastPayload.payload);
 
       // Verify the handler received parsed object, not string
       expect(stepEventHandler).toHaveBeenCalledWith({
@@ -80,7 +86,7 @@ describe('JSON Parsing in Broadcasts', () => {
       };
 
       // Trigger the broadcast callback (simulating Supabase realtime)
-      broadcastCallback(broadcastPayload);
+      emitBroadcastEvent(mocks, broadcastPayload.event, broadcastPayload.payload);
 
       // Verify the handler received the original string (no parsing error)
       expect(stepEventHandler).toHaveBeenCalledWith({
@@ -110,7 +116,7 @@ describe('JSON Parsing in Broadcasts', () => {
       };
 
       // Trigger the broadcast callback (simulating Supabase realtime)
-      broadcastCallback(broadcastPayload);
+      emitBroadcastEvent(mocks, broadcastPayload.event, broadcastPayload.payload);
 
       // Verify the handler received the object unchanged
       expect(stepEventHandler).toHaveBeenCalledWith({
@@ -146,7 +152,7 @@ describe('JSON Parsing in Broadcasts', () => {
       };
 
       // Trigger the broadcast callback (simulating Supabase realtime)
-      broadcastCallback(broadcastPayload);
+      emitBroadcastEvent(mocks, broadcastPayload.event, broadcastPayload.payload);
 
       // Verify the handler received parsed object, not string
       expect(runEventHandler).toHaveBeenCalledWith({
@@ -178,7 +184,7 @@ describe('JSON Parsing in Broadcasts', () => {
       };
 
       // Trigger the broadcast callback (simulating Supabase realtime)
-      broadcastCallback(broadcastPayload);
+      emitBroadcastEvent(mocks, broadcastPayload.event, broadcastPayload.payload);
 
       // Verify the handler received parsed object, not string
       expect(runEventHandler).toHaveBeenCalledWith({
@@ -206,7 +212,7 @@ describe('JSON Parsing in Broadcasts', () => {
 
       // Should not throw error
       expect(() => {
-        broadcastCallback(broadcastPayload);
+        emitBroadcastEvent(mocks, broadcastPayload.event, broadcastPayload.payload);
       }).not.toThrow();
 
       // Should keep original string when JSON parsing fails
@@ -235,7 +241,7 @@ describe('JSON Parsing in Broadcasts', () => {
 
       // Should not throw error
       expect(() => {
-        broadcastCallback(broadcastPayload);
+        emitBroadcastEvent(mocks, broadcastPayload.event, broadcastPayload.payload);
       }).not.toThrow();
 
       // Should keep empty string when JSON parsing fails

@@ -245,34 +245,6 @@ export const broadcastStepFailed: BroadcastStepFailedEvent = {
   failed_at: new Date().toISOString(),
 };
 
-/**
- * Collection of all events in sequence for a happy path
- */
-export const happyPathEventSequence = [
-  broadcastRunStarted,
-  broadcastStepStarted,
-  broadcastStepCompleted,
-  {
-    ...broadcastStepStarted,
-    step_slug: ANOTHER_STEP_SLUG,
-  } as BroadcastStepStartedEvent,
-  {
-    ...broadcastStepCompleted,
-    step_slug: ANOTHER_STEP_SLUG,
-  } as BroadcastStepCompletedEvent,
-  broadcastRunCompleted,
-];
-
-/**
- * Collection of events for a failure path
- */
-export const failurePathEventSequence = [
-  broadcastRunStarted,
-  broadcastStepStarted,
-  broadcastStepFailed,
-  broadcastRunFailed,
-];
-
 // ===== TEST UTILITIES =====
 
 /**

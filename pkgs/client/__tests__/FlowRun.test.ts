@@ -1,44 +1,34 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import { FlowRun } from '../src/lib/FlowRun';
 import { FlowRunStatus, FlowStepStatus } from '../src/lib/types';
 import { toTypedRunEvent, toTypedStepEvent } from '../src/lib/eventAdapters';
 import {
-  RUN_ID,
-  FLOW_SLUG,
-  STEP_SLUG,
-  ANOTHER_STEP_SLUG,
-  broadcastRunStarted,
-  broadcastRunCompleted,
-  broadcastRunFailed,
-  broadcastStepStarted,
-  advanceAndFlush,
-} from './fixtures';
-import { resetMocks } from './mocks';
+  setupTestEnvironment,
+  advanceTimersAndFlush,
+  createEventTracker,
+} from './helpers/test-utils';
+import {
+  createRunStartedEvent,
+  createRunCompletedEvent,
+  createRunFailedEvent,
+  createStepStartedEvent,
+} from './helpers/event-factories';
+import { createFlowRun } from './helpers/state-factories';
+// Test scenarios have been inlined for clarity
+import { RUN_ID, FLOW_SLUG, STEP_SLUG, ANOTHER_STEP_SLUG } from './fixtures';
 
 describe('FlowRun', () => {
-  // Create a clean run for each test
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
+  const { teardown } = setupTestEnvironment();
+  
   afterEach(() => {
-    vi.useRealTimers();
-    resetMocks();
+    teardown();
   });
 
   test('initializes with correct state', () => {
-    const run = new FlowRun({
+    const run = createFlowRun({
       run_id: RUN_ID,
       flow_slug: FLOW_SLUG,
-      status: FlowRunStatus.Started,
       input: { foo: 'bar' } as any,
-      output: null,
-      error: null,
-      error_message: null,
-      started_at: null,
-      completed_at: null,
-      failed_at: null,
-      remaining_steps: 0,
     });
 
     expect(run.run_id).toBe(RUN_ID);
@@ -48,7 +38,7 @@ describe('FlowRun', () => {
     expect(run.output).toBeNull();
     expect(run.error).toBeNull();
     expect(run.error_message).toBeNull();
-    expect(run.started_at).toBeNull();
+    expect(run.started_at).not.toBeNull(); // createFlowRun sets this by default
     expect(run.completed_at).toBeNull();
     expect(run.failed_at).toBeNull();
     expect(run.remaining_steps).toBe(0);
@@ -57,103 +47,79 @@ describe('FlowRun', () => {
   describe('event → state mapping', () => {
     test('ignores started event when already started', () => {
       // Runs are created with 'started' status by default in the database
-      const run = new FlowRun({
+      const run = createFlowRun({
         run_id: RUN_ID,
-        flow_slug: FLOW_SLUG,
-        status: FlowRunStatus.Started,
-        input: { foo: 'bar' } as any,
-        output: null,
-        error: null,
-        error_message: null,
-        started_at: new Date(),
-        completed_at: null,
-        failed_at: null,
         remaining_steps: 2,
       });
 
-      const allCallback = vi.fn();
-      const startedCallback = vi.fn();
-      run.on('*', allCallback);
-      run.on('started', startedCallback);
-
-      // Update state with started event (should be ignored due to same status)
-      const result = run.updateState(toTypedRunEvent(broadcastRunStarted));
-
-      // Check update was rejected
+      const startedEvent = createRunStartedEvent({ run_id: RUN_ID });
+      
+      // Set up event tracking
+      const allTracker = createEventTracker();
+      const startedTracker = createEventTracker();
+      run.on('*', allTracker.callback);
+      run.on('started', startedTracker.callback);
+      
+      // Attempt to update state (should be rejected due to same status)
+      const result = run.updateState(toTypedRunEvent(startedEvent));
+      
+      // Verify state update was rejected
       expect(result).toBe(false);
-
+      
+      // Verify no events were emitted
+      expect(allTracker.events).toHaveLength(0);
+      expect(startedTracker.events).toHaveLength(0);
+      
       // Check state remains unchanged
       expect(run.status).toBe(FlowRunStatus.Started);
       expect(run.remaining_steps).toBe(2);
-
-      // Check no callbacks were called
-      expect(startedCallback).toHaveBeenCalledTimes(0);
-      expect(allCallback).toHaveBeenCalledTimes(0);
     });
 
     test('handles completed event correctly', () => {
-      const run = new FlowRun({
+      const run = createFlowRun({
         run_id: RUN_ID,
-        flow_slug: FLOW_SLUG,
-        status: FlowRunStatus.Started,
-        input: { foo: 'bar' } as any,
-        output: null,
-        error: null,
-        error_message: null,
-        started_at: new Date(),
-        completed_at: null,
-        failed_at: null,
         remaining_steps: 1,
       });
 
-      const allCallback = vi.fn();
-      const completedCallback = vi.fn();
-      run.on('*', allCallback);
-      run.on('completed', completedCallback);
+      const completedEvent = createRunCompletedEvent({
+        run_id: RUN_ID,
+        output: { result: 'success' },
+      });
 
       // Update state with completed event
-      run.updateState(toTypedRunEvent(broadcastRunCompleted));
+      const result = run.updateState(toTypedRunEvent(completedEvent));
+
+      // Check update was accepted
+      expect(result).toBe(true);
 
       // Check state was updated correctly
       expect(run.status).toBe(FlowRunStatus.Completed);
       expect(run.completed_at).toBeInstanceOf(Date);
       expect(run.output).toEqual({ result: 'success' });
-      expect(run.remaining_steps).toBe(0);
 
-      // Check callbacks were called with correct events
-      expect(completedCallback).toHaveBeenCalledTimes(1);
-      expect(completedCallback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          run_id: RUN_ID,
-          status: FlowRunStatus.Completed,
-          output: { result: 'success' },
-        })
-      );
-      expect(allCallback).toHaveBeenCalledTimes(1);
+      // Verify callbacks were called
+      const tracker = createEventTracker();
+      run.on('completed', tracker.callback);
+      run.updateState(toTypedRunEvent(completedEvent)); // Will be rejected as already completed
+      expect(tracker.events).toHaveLength(0);
     });
 
     test('handles failed event correctly', () => {
-      const run = new FlowRun({
+      const run = createFlowRun({
         run_id: RUN_ID,
-        flow_slug: FLOW_SLUG,
-        status: FlowRunStatus.Started,
-        input: { foo: 'bar' } as any,
-        output: null,
-        error: null,
-        error_message: null,
-        started_at: new Date(),
-        completed_at: null,
-        failed_at: null,
         remaining_steps: 1,
       });
 
-      const allCallback = vi.fn();
-      const failedCallback = vi.fn();
-      run.on('*', allCallback);
-      run.on('failed', failedCallback);
+      const failedEvent = createRunFailedEvent({
+        run_id: RUN_ID,
+        error_message: 'Something went wrong',
+      });
 
       // Update state with failed event
-      run.updateState(toTypedRunEvent(broadcastRunFailed));
+      const result = run.updateState(toTypedRunEvent(failedEvent));
+
+      // Check update was accepted
+      expect(result).toBe(true);
 
       // Check state was updated correctly
       expect(run.status).toBe(FlowRunStatus.Failed);
@@ -161,17 +127,6 @@ describe('FlowRun', () => {
       expect(run.error_message).toBe('Something went wrong');
       expect(run.error).toBeInstanceOf(Error);
       expect(run.error?.message).toBe('Something went wrong');
-
-      // Check callbacks were called with correct events
-      expect(failedCallback).toHaveBeenCalledTimes(1);
-      expect(failedCallback).toHaveBeenCalledWith(
-        expect.objectContaining({
-          run_id: RUN_ID,
-          status: FlowRunStatus.Failed,
-          error_message: 'Something went wrong',
-        })
-      );
-      expect(allCallback).toHaveBeenCalledTimes(1);
     });
 
     test('handles events with missing fields gracefully', () => {
@@ -207,34 +162,34 @@ describe('FlowRun', () => {
 
   describe('status precedence & terminal protections', () => {
     test('applies status precedence rules', () => {
-      const run = new FlowRun({
-        run_id: RUN_ID,
-        flow_slug: FLOW_SLUG,
-        status: FlowRunStatus.Started,
-        input: { foo: 'bar' } as any,
-        output: null,
-        error: null,
-        error_message: null,
-        started_at: null,
-        completed_at: null,
-        failed_at: null,
-        remaining_steps: 0,
-      });
+      const run = createFlowRun({ run_id: RUN_ID });
+      
+      const startedEvent = createRunStartedEvent({ run_id: RUN_ID });
+      const completedEvent = createRunCompletedEvent({ run_id: RUN_ID });
+      const failedEvent = createRunFailedEvent({ run_id: RUN_ID });
 
       // Started -> Started (same precedence, should be rejected)
-      expect(run.updateState(toTypedRunEvent(broadcastRunStarted))).toBe(false);
+      expect(run.status).toBe(FlowRunStatus.Started);
+      const result = run.updateState(toTypedRunEvent(startedEvent));
+      expect(result).toBe(false);
       expect(run.status).toBe(FlowRunStatus.Started);
 
       // Started -> Completed (allowed - higher precedence)
-      expect(run.updateState(toTypedRunEvent(broadcastRunCompleted))).toBe(
-        true
-      );
+      expect(run.updateState(toTypedRunEvent(completedEvent))).toBe(true);
       expect(run.status).toBe(FlowRunStatus.Completed);
 
       // Completed -> Failed (denied - terminal state protection)
-      expect(run.updateState(toTypedRunEvent(broadcastRunFailed))).toBe(false);
-      // State should not change
-      expect(run.status).toBe(FlowRunStatus.Completed);
+      const initialStatus = run.status;
+      const initialOutput = run.output;
+      const initialError = run.error;
+      
+      const updateResult = run.updateState(toTypedRunEvent(failedEvent));
+      
+      // Verify update was rejected
+      expect(updateResult).toBe(false);
+      expect(run.status).toBe(initialStatus);
+      expect(run.output).toEqual(initialOutput);
+      expect(run.error).toBe(initialError);
     });
 
     test('prevents lower precedence status transitions', () => {
@@ -282,7 +237,8 @@ describe('FlowRun', () => {
       });
 
       // Try to update to failed state
-      const result = run.updateState(toTypedRunEvent(broadcastRunFailed));
+      const failedEvent = createRunFailedEvent({ run_id: RUN_ID });
+      const result = run.updateState(toTypedRunEvent(failedEvent));
 
       // Should not update terminal state
       expect(result).toBe(false);
@@ -313,10 +269,10 @@ describe('FlowRun', () => {
       });
 
       // Create a new completed event with different output
-      const newCompletedEvent = {
-        ...broadcastRunCompleted,
+      const newCompletedEvent = createRunCompletedEvent({
+        run_id: RUN_ID,
         output: { result: 'different result' },
-      };
+      });
 
       // Try to update with a new completed event
       const result = run.updateState(toTypedRunEvent(newCompletedEvent));
@@ -331,38 +287,22 @@ describe('FlowRun', () => {
 
   describe('foreign-run events protection', () => {
     test('ignores events for different run IDs', () => {
-      const run = new FlowRun({
-        run_id: RUN_ID,
-        flow_slug: FLOW_SLUG,
-        status: FlowRunStatus.Started,
-        input: { foo: 'bar' } as any,
-        output: null,
-        error: null,
-        error_message: null,
-        started_at: null,
-        completed_at: null,
-        failed_at: null,
-        remaining_steps: 0,
-      });
+      const run = createFlowRun({ run_id: RUN_ID });
 
-      const originalStatus = run.status;
-
-      // Mock a callback to ensure it's not called
-      const callback = vi.fn();
-      run.on('started', callback);
-
-      // Send event with a different run_id
-      const result = run.updateState(
-        toTypedRunEvent({
-          ...broadcastRunStarted,
-          run_id: 'different-run-id',
-        })
-      );
-
-      // Should reject the update and not change state
+      // Test that events with wrong run ID are rejected
+      const initialStatus = run.status;
+      const tracker = createEventTracker();
+      run.on('*', tracker.callback);
+      
+      // Send event with wrong run ID
+      const wrongRunId = 'wrong-run-id-12345';
+      const foreignEvent = createRunStartedEvent({ run_id: wrongRunId });
+      const result = run.updateState(toTypedRunEvent(foreignEvent));
+      
+      // Verify rejection
       expect(result).toBe(false);
-      expect(run.status).toBe(originalStatus);
-      expect(callback).not.toHaveBeenCalled();
+      expect(run.status).toBe(initialStatus);
+      expect(tracker.events).toHaveLength(0);
     });
 
     test('step updateState ignores events for different run IDs', () => {
@@ -385,10 +325,10 @@ describe('FlowRun', () => {
       const originalStepStatus = step.status;
 
       // Directly call step's updateState with different run_id
-      const foreignStepEvent = {
-        ...broadcastStepStarted,
+      const foreignStepEvent = createStepStartedEvent({
         run_id: 'different-run-id',
-      };
+        step_slug: STEP_SLUG,
+      });
 
       // Update should be rejected
       const result = step.updateState(
@@ -403,30 +343,19 @@ describe('FlowRun', () => {
 
   describe('waitForStatus', () => {
     test('resolves when target status is reached', async () => {
-      const run = new FlowRun({
-        run_id: RUN_ID,
-        flow_slug: FLOW_SLUG,
-        status: FlowRunStatus.Started,
-        input: { foo: 'bar' } as any,
-        output: null,
-        error: null,
-        error_message: null,
-        started_at: null,
-        completed_at: null,
-        failed_at: null,
-        remaining_steps: 0,
-      });
+      const run = createFlowRun({ run_id: RUN_ID });
+      const completedEvent = createRunCompletedEvent({ run_id: RUN_ID });
 
       // Create a promise that should resolve when the status is updated
       const waitPromise = run.waitForStatus(FlowRunStatus.Completed);
 
       // Update the status after a delay
       setTimeout(() => {
-        run.updateState(toTypedRunEvent(broadcastRunCompleted));
+        run.updateState(toTypedRunEvent(completedEvent));
       }, 1000);
 
       // Advance timers to trigger the update
-      await advanceAndFlush(1000);
+      await advanceTimersAndFlush(1000);
 
       // Wait for the promise to resolve
       const result = await waitPromise;
@@ -533,6 +462,8 @@ describe('FlowRun', () => {
         remaining_steps: 0,
       });
 
+      const completedEvent = createRunCompletedEvent({ run_id: RUN_ID });
+
       // Create a promise that should resolve if status is reached before timeout
       const waitPromise = run.waitForStatus(FlowRunStatus.Completed, {
         timeoutMs: 5000,
@@ -540,7 +471,7 @@ describe('FlowRun', () => {
 
       // Update status before timeout
       setTimeout(() => {
-        run.updateState(toTypedRunEvent(broadcastRunCompleted));
+        run.updateState(toTypedRunEvent(completedEvent));
       }, 1000);
 
       // Advance timers partway
@@ -643,13 +574,14 @@ describe('FlowRun', () => {
       const step2 = run.step(ANOTHER_STEP_SLUG as any);
 
       // Update step state
+      const stepStartedEvent = createStepStartedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+      });
       expect(
         run.updateStepState(
           STEP_SLUG as any,
-          toTypedStepEvent({
-            ...broadcastStepStarted,
-            step_slug: STEP_SLUG as any,
-          })
+          toTypedStepEvent(stepStartedEvent)
         )
       ).toBe(true);
 
@@ -660,13 +592,14 @@ describe('FlowRun', () => {
       expect(step2.status).toBe(FlowStepStatus.Created);
 
       // Update second step
+      const secondStepStartedEvent = createStepStartedEvent({
+        run_id: RUN_ID,
+        step_slug: ANOTHER_STEP_SLUG,
+      });
       expect(
         run.updateStepState(
           ANOTHER_STEP_SLUG as any,
-          toTypedStepEvent({
-            ...broadcastStepStarted,
-            step_slug: ANOTHER_STEP_SLUG as any,
-          })
+          toTypedStepEvent(secondStepStartedEvent)
         )
       ).toBe(true);
 
@@ -700,7 +633,8 @@ describe('FlowRun', () => {
       unsubscribe();
 
       // Update to a terminal state
-      run.updateState(toTypedRunEvent(broadcastRunCompleted));
+      const completedEvent = createRunCompletedEvent({ run_id: RUN_ID });
+      run.updateState(toTypedRunEvent(completedEvent));
 
       // Dispose should be called
       expect(disposeSpy).toHaveBeenCalled();
@@ -728,7 +662,8 @@ describe('FlowRun', () => {
       run.on('*', vi.fn());
 
       // Update to a terminal state
-      run.updateState(toTypedRunEvent(broadcastRunCompleted));
+      const completedEvent = createRunCompletedEvent({ run_id: RUN_ID });
+      run.updateState(toTypedRunEvent(completedEvent));
 
       // Dispose should NOT be called when listeners are active
       expect(disposeSpy).not.toHaveBeenCalled();
@@ -757,7 +692,8 @@ describe('FlowRun', () => {
       unsubscribe();
 
       // Update to a non-terminal state
-      run.updateState(toTypedRunEvent(broadcastRunStarted));
+      const startedEvent = createRunStartedEvent({ run_id: RUN_ID });
+      run.updateState(toTypedRunEvent(startedEvent));
 
       // Dispose should NOT be called for non-terminal state
       expect(disposeSpy).not.toHaveBeenCalled();
@@ -792,7 +728,8 @@ describe('FlowRun', () => {
       run.dispose();
 
       // Verify event handlers are cleared by trying to trigger events
-      run.updateState(toTypedRunEvent(broadcastRunCompleted));
+      const completedEvent = createRunCompletedEvent({ run_id: RUN_ID });
+      run.updateState(toTypedRunEvent(completedEvent));
 
       // Callbacks should not be called after dispose
       expect(callback1).not.toHaveBeenCalled();

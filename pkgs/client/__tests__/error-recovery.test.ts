@@ -1,7 +1,13 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { PgflowClient } from '../src/lib/PgflowClient';
 import { FlowRunStatus } from '../src/lib/types';
-import { mockSupabase, resetMocks, mockChannelSubscription } from './mocks';
+import {
+  setupTestEnvironment,
+  createMockClient,
+  mockRpcCall,
+  createRunResponse,
+} from './helpers/test-utils';
+import { mockChannelSubscription } from './mocks';
 import {
   RUN_ID,
   FLOW_SLUG,
@@ -15,18 +21,15 @@ vi.mock('uuid', () => ({
 }));
 
 describe('Error Recovery', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
+  const { teardown } = setupTestEnvironment();
+  
   afterEach(() => {
-    vi.useRealTimers();
-    resetMocks();
+    teardown();
   });
 
   describe('RPC Error Handling', () => {
     it('handles RPC failures during startFlow gracefully', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Mock RPC to fail with network error
       mocks.rpc.mockReturnValueOnce({
@@ -52,7 +55,7 @@ describe('Error Recovery', () => {
     });
 
     it('handles RPC failures during getRun gracefully', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Mock RPC to fail with database error
       mocks.rpc.mockReturnValueOnce({
@@ -75,7 +78,7 @@ describe('Error Recovery', () => {
     });
 
     it('handles RPC returning null data gracefully', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Mock RPC to return null data (run not found)
       mocks.rpc.mockReturnValueOnce({
@@ -93,7 +96,7 @@ describe('Error Recovery', () => {
     });
 
     it('handles malformed RPC response structure', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Mock RPC to return malformed response (missing required fields)
       mocks.rpc.mockReturnValueOnce({
@@ -115,7 +118,7 @@ describe('Error Recovery', () => {
 
   describe('Concurrent Operation Error Handling', () => {
     it('handles mixed success and failure in concurrent startFlow calls', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       const flow1Input = { data: 'flow1' };
       const flow2Input = { data: 'flow2' };
@@ -175,7 +178,7 @@ describe('Error Recovery', () => {
     });
 
     it('handles timeout scenarios gracefully', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Mock RPC with delayed response
       const delayedPromise = new Promise((resolve) => {
@@ -224,7 +227,7 @@ describe('Error Recovery', () => {
 
   describe('Resource Management Under Error Conditions', () => {
     it('properly cleans up resources when startFlow fails', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Mock RPC to fail
       mocks.rpc.mockReturnValueOnce({
@@ -247,7 +250,7 @@ describe('Error Recovery', () => {
     });
 
     it('handles disposal during error states', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Mock successful getRun first
       mocks.rpc.mockReturnValueOnce({
@@ -276,7 +279,7 @@ describe('Error Recovery', () => {
     });
 
     it('handles disposeAll with multiple failed runs', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Mock multiple successful getRun calls
       mocks.rpc
@@ -321,7 +324,7 @@ describe('Error Recovery', () => {
 
   describe('Input Validation Error Handling', () => {
     it('handles invalid flow slug', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Mock RPC to return validation error
       mocks.rpc.mockReturnValueOnce({
@@ -339,7 +342,7 @@ describe('Error Recovery', () => {
     });
 
     it('handles invalid run_id format', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Mock RPC to return validation error for invalid UUID
       mocks.rpc.mockReturnValueOnce({
@@ -358,7 +361,7 @@ describe('Error Recovery', () => {
     });
 
     it('handles empty or null input gracefully', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
       // Mock successful response even with null input
       mocks.rpc.mockReturnValueOnce({
