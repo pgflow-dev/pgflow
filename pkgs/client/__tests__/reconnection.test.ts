@@ -12,11 +12,7 @@ import {
 import { RUN_ID, startedRunSnapshot, stepStatesSample } from './fixtures';
 
 describe('Reconnection Logic', () => {
-  const { teardown } = setupTestEnvironment();
-  
-  afterEach(() => {
-    teardown();
-  });
+  setupTestEnvironment();
 
   describe('Basic Error Handling', () => {
     it('registers error handlers during subscription', async () => {

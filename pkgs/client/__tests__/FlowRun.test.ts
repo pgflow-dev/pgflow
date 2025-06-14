@@ -18,11 +18,7 @@ import { createFlowRun } from './helpers/state-factories';
 import { RUN_ID, FLOW_SLUG, STEP_SLUG, ANOTHER_STEP_SLUG } from './fixtures';
 
 describe('FlowRun', () => {
-  const { teardown } = setupTestEnvironment();
-  
-  afterEach(() => {
-    teardown();
-  });
+  setupTestEnvironment();
 
   test('initializes with correct state', () => {
     const run = createFlowRun({
@@ -384,7 +380,7 @@ describe('FlowRun', () => {
       });
 
       // Advance timers past the timeout
-      await advanceAndFlush(5001);
+      await advanceTimersAndFlush(5001);
 
       // The promise should reject
       await expect(waitPromise).rejects.toThrow(/Timeout waiting for run/);
@@ -441,7 +437,7 @@ describe('FlowRun', () => {
       }, 1000);
 
       // Advance timers to trigger the abort
-      await advanceAndFlush(1000);
+      await advanceTimersAndFlush(1000);
 
       // The promise should reject
       await expect(waitPromise).rejects.toThrow(/Aborted waiting for run/);
@@ -475,7 +471,7 @@ describe('FlowRun', () => {
       }, 1000);
 
       // Advance timers partway
-      await advanceAndFlush(1000);
+      await advanceTimersAndFlush(1000);
 
       // The promise should resolve
       const result = await waitPromise;

@@ -10,6 +10,7 @@ import {
   mockRpcCall,
   createRunResponse,
   emitBroadcastEvent,
+  advanceTimersAndFlush,
 } from './helpers/test-utils';
 import {
   createRunStartedEvent,
@@ -32,11 +33,7 @@ vi.mock('uuid', () => ({
 }));
 
 describe('Data Validation and Edge Cases', () => {
-  const { teardown } = setupTestEnvironment();
-  
-  afterEach(() => {
-    teardown();
-  });
+  setupTestEnvironment();
 
   describe('Database Data Validation', () => {
     it('handles missing step states gracefully', async () => {
@@ -111,7 +108,7 @@ describe('Data Validation and Edge Cases', () => {
       const pgflowClient = new PgflowClient(client);
 
       // Should handle gracefully without throwing
-      await expect(pgflowClient.getRun(RUN_ID)).rejects.toThrow();
+      await expect(pgflowClient.getRun(RUN_ID)).rejects.toThrow('Invalid run data: invalid status');
     });
 
     it('handles step data with missing fields', async () => {
@@ -141,7 +138,7 @@ describe('Data Validation and Edge Cases', () => {
       const pgflowClient = new PgflowClient(client);
 
       // Should handle missing fields gracefully
-      await expect(pgflowClient.getRun(RUN_ID)).rejects.toThrow();
+      await expect(pgflowClient.getRun(RUN_ID)).rejects.toThrow('Invalid step data: missing required fields');
     });
   });
 
@@ -410,8 +407,17 @@ describe('Data Validation and Edge Cases', () => {
       expect(run.status).toBeDefined();
 
       // But trying to get the same run again should fetch fresh
+      // Need to mock a new response for the fresh fetch
+      mocks.rpc.mockReturnValueOnce({
+        data: {
+          run: startedRunSnapshot,
+          steps: stepStatesSample,
+        },
+        error: null,
+      });
+      
       const cachedRun = await pgflowClient.getRun(RUN_ID);
-      expect(cachedRun).toBeNull(); // Should return null since not in cache
+      expect(cachedRun).toBeDefined(); // Should fetch fresh from database
     });
 
     it('handles multiple disposal calls gracefully', async () => {
@@ -473,7 +479,7 @@ describe('Data Validation and Edge Cases', () => {
       pgflowClient.dispose(RUN_ID); // Dispose before completion
 
       // Advance timers to resolve the promise
-      await vi.advanceTimersByTimeAsync(1000);
+      await advanceTimersAndFlush(1000);
 
       // Should still complete without error
       const run = await runPromise;

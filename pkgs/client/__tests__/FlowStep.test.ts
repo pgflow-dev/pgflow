@@ -16,11 +16,7 @@ import { createFlowStep } from './helpers/state-factories';
 import { RUN_ID, STEP_SLUG, ANOTHER_STEP_SLUG } from './fixtures';
 
 describe('FlowStep', () => {
-  const { teardown } = setupTestEnvironment();
-  
-  afterEach(() => {
-    teardown();
-  });
+  setupTestEnvironment();
 
   test('initializes with correct state', () => {
     const step = createFlowStep({

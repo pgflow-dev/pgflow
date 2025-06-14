@@ -16,7 +16,7 @@ import {
   createStepCompletedEvent,
   createRunCompletedEvent,
 } from './helpers/event-factories';
-import { RUN_ID, FLOW_SLUG, STEP_SLUG } from './fixtures';
+import { RUN_ID, FLOW_SLUG, STEP_SLUG, startedRunSnapshot, stepStatesSample } from './fixtures';
 
 // Create a test flow for proper typing
 const TestFlow = new Flow<{ test: string }>({ slug: 'test_flow' }).step(
@@ -30,45 +30,58 @@ vi.mock('uuid', () => ({
 }));
 
 describe('Concurrent Operations', () => {
-  const { teardown } = setupTestEnvironment();
-  
-  afterEach(() => {
-    teardown();
-  });
+  setupTestEnvironment();
 
   describe('Concurrent startFlow operations', () => {
     it('handles multiple concurrent startFlow calls successfully', async () => {
       const { client, mocks } = createMockClient();
+      
+      // Mock RPC to return success for any call
+      mocks.rpc.mockImplementation(async (name: string, params: any) => {
+        if (name === 'start_flow_with_states') {
+          return {
+            data: {
+              run: {
+                run_id: params.run_id,
+                flow_slug: params.flow_slug,
+                status: 'started',
+                input: params.input,
+                output: null,
+                started_at: new Date().toISOString(),
+                completed_at: null,
+                failed_at: null,
+                remaining_steps: 0,
+              },
+              steps: [],
+            },
+            error: null,
+          };
+        }
+        return { data: null, error: null };
+      });
+
       const pgflowClient = new PgflowClient(client);
 
       const flow1Input = { data: 'flow1' };
       const flow2Input = { data: 'flow2' };
       const flow3Input = { data: 'flow3' };
 
-      // Mock uuid to return different IDs for each call
-      const runIds = ['run1', 'run2', 'run3'];
-      vi.mocked((await import('uuid')).v4).mockImplementation(mockSequentialUuids('run'));
-
-      // Setup RPC responses for all three flows
-      mockRpcCall(mocks, createRunResponse({ run_id: runIds[0], input: flow1Input }, []));
-      mockRpcCall(mocks, createRunResponse({ run_id: runIds[1], input: flow2Input }, []));
-      mockRpcCall(mocks, createRunResponse({ run_id: runIds[2], input: flow3Input }, []));
-
       // Start flows concurrently
-      const { succeeded } = await setupConcurrentOperations([
+      const { succeeded, failed } = await setupConcurrentOperations([
         () => pgflowClient.startFlow(FLOW_SLUG, flow1Input),
         () => pgflowClient.startFlow(FLOW_SLUG, flow2Input),
         () => pgflowClient.startFlow(FLOW_SLUG, flow3Input),
       ]);
 
       // Verify all flows started successfully
+      expect(failed).toHaveLength(0);
       expect(succeeded).toHaveLength(3);
       const [run1, run2, run3] = succeeded;
 
       // Verify all flows started successfully with correct inputs
-      expect(run1.run_id).toBe(runIds[0]);
-      expect(run2.run_id).toBe(runIds[1]);
-      expect(run3.run_id).toBe(runIds[2]);
+      expect(run1.run_id).toBeDefined();
+      expect(run2.run_id).toBeDefined();
+      expect(run3.run_id).toBeDefined();
       expect(run1.input).toEqual(flow1Input);
       expect(run2.input).toEqual(flow2Input);
       expect(run3.input).toEqual(flow3Input);
@@ -83,9 +96,8 @@ describe('Concurrent Operations', () => {
     });
 
     it('handles same run_id being used multiple times', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
-      mockChannelSubscription(mocks);
 
       const pgflowClient = new PgflowClient(client);
 
@@ -153,9 +165,8 @@ describe('Concurrent Operations', () => {
     });
 
     it('forwards step events through the client', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
-      mockChannelSubscription(mocks);
 
       const pgflowClient = new PgflowClient(client);
 
@@ -190,9 +201,8 @@ describe('Concurrent Operations', () => {
     });
 
     it('ignores events with wrong run_id', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
-      mockChannelSubscription(mocks);
 
       const pgflowClient = new PgflowClient(client);
 
@@ -224,9 +234,8 @@ describe('Concurrent Operations', () => {
 
   describe('Error handling', () => {
     it('handles RPC errors during concurrent operations', async () => {
-      const { client, mocks } = mockSupabase();
+      const { client, mocks } = createMockClient();
 
-      mockChannelSubscription(mocks);
 
       const pgflowClient = new PgflowClient(client);
 

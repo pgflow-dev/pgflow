@@ -23,7 +23,7 @@ import { mockChannelSubscription } from './mocks';
  * without getting tied to implementation details or timer complexity.
  */
 describe('SupabaseBroadcastAdapter - Simple Tests', () => {
-  const { teardown } = setupTestEnvironment();
+  setupTestEnvironment();
   
   beforeEach(() => {
     // Silence console logs/errors in tests
@@ -31,9 +31,6 @@ describe('SupabaseBroadcastAdapter - Simple Tests', () => {
     vi.spyOn(console, 'log').mockImplementation(() => { /* intentionally empty */ });
   });
 
-  afterEach(() => {
-    teardown();
-  });
 
   /**
    * Test basic connection functionality using the public interface

@@ -6,6 +6,7 @@ import {
   createMockClient,
   mockRpcCall,
   createRunResponse,
+  advanceTimersAndFlush,
 } from './helpers/test-utils';
 import { mockChannelSubscription } from './mocks';
 import {
@@ -21,11 +22,7 @@ vi.mock('uuid', () => ({
 }));
 
 describe('Error Recovery', () => {
-  const { teardown } = setupTestEnvironment();
-  
-  afterEach(() => {
-    teardown();
-  });
+  setupTestEnvironment();
 
   describe('RPC Error Handling', () => {
     it('handles RPC failures during startFlow gracefully', async () => {
@@ -34,7 +31,7 @@ describe('Error Recovery', () => {
       // Mock RPC to fail with network error
       mocks.rpc.mockReturnValueOnce({
         data: null,
-        error: new Error('Network connection failed'),
+        error: { message: 'Network connection failed' },
       });
 
       mockChannelSubscription(mocks);
@@ -60,7 +57,7 @@ describe('Error Recovery', () => {
       // Mock RPC to fail with database error
       mocks.rpc.mockReturnValueOnce({
         data: null,
-        error: new Error('Database query timeout'),
+        error: { message: 'Database query timeout' },
       });
 
       mockChannelSubscription(mocks);
@@ -135,7 +132,7 @@ describe('Error Recovery', () => {
         })
         .mockReturnValueOnce({
           data: null,
-          error: new Error('Flow validation failed'),
+          error: { message: 'Flow validation failed' },
         })
         .mockReturnValueOnce({
           data: {
@@ -205,18 +202,18 @@ describe('Error Recovery', () => {
       });
 
       // Advance timers by 2 seconds (less than the delay)
-      vi.advanceTimersByTime(2000);
+      await advanceTimersAndFlush(2000);
 
       // The promise should still be pending
-      const pendingCheck = Promise.race([
-        startFlowPromise,
+      const pendingCheck = await Promise.race([
+        startFlowPromise.then(() => 'resolved'),
         Promise.resolve('still-pending'),
       ]);
 
-      expect(await pendingCheck).toBe('still-pending');
+      expect(pendingCheck).toBe('still-pending');
 
       // Advance timers to complete the operation
-      vi.advanceTimersByTime(3000);
+      await advanceTimersAndFlush(3000);
 
       // Now it should resolve
       const run = await startFlowPromise;
@@ -232,7 +229,7 @@ describe('Error Recovery', () => {
       // Mock RPC to fail
       mocks.rpc.mockReturnValueOnce({
         data: null,
-        error: new Error('Database connection lost'),
+        error: { message: 'Database connection lost' },
       });
 
       mockChannelSubscription(mocks);
@@ -329,7 +326,7 @@ describe('Error Recovery', () => {
       // Mock RPC to return validation error
       mocks.rpc.mockReturnValueOnce({
         data: null,
-        error: new Error('Flow "invalid-flow" not found'),
+        error: { message: 'Flow "invalid-flow" not found' },
       });
 
       mockChannelSubscription(mocks);
@@ -347,7 +344,7 @@ describe('Error Recovery', () => {
       // Mock RPC to return validation error for invalid UUID
       mocks.rpc.mockReturnValueOnce({
         data: null,
-        error: new Error('Invalid UUID format'),
+        error: { message: 'Invalid UUID format' },
       });
 
       mockChannelSubscription(mocks);

@@ -26,11 +26,7 @@ import {
 } from './fixtures';
 
 describe('SupabaseBroadcastAdapter', () => {
-  const { teardown } = setupTestEnvironment();
-  
-  afterEach(() => {
-    teardown();
-  });
+  setupTestEnvironment();
 
   test('initializes correctly', () => {
     const { client } = createMockClient();
@@ -348,7 +344,7 @@ describe('SupabaseBroadcastAdapter', () => {
     });
 
     test('unsubscribe for non-existent run ID is safe', () => {
-      const { client } = mockSupabase();
+      const { client } = createMockClient();
       const adapter = new SupabaseBroadcastAdapter(client);
 
       // Unsubscribe from a run ID that was never subscribed to

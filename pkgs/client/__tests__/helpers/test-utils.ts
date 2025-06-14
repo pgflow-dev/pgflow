@@ -1,4 +1,4 @@
-import { vi, expect } from 'vitest';
+import { vi, expect, beforeEach, afterEach } from 'vitest';
 import {
   mockSupabase,
   mockChannelSubscription,
@@ -16,14 +16,18 @@ import type { RunRow, StepStateRow } from '@pgflow/core';
  * Standard test setup that should be used in beforeEach/afterEach hooks
  */
 export function setupTestEnvironment() {
-  vi.useFakeTimers();
+  // Enable fake timers before *each* individual test
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
 
-  return {
-    teardown: () => {
-      vi.useRealTimers();
-      resetAllMocks();
-    },
-  };
+  // Restore everything after the test finished
+  afterEach(() => {
+    vi.runOnlyPendingTimers();   // make sure nothing is left
+    vi.clearAllTimers();         // remove timeouts/intervals
+    resetAllMocks();             // reset our custom mocks
+    vi.useRealTimers();          // go back to real time for the next test
+  });
 }
 
 /**
@@ -174,9 +178,13 @@ export function createEventTracker<T extends { event_type: string }>() {
  * Advances timers and flushes all pending microtasks
  */
 export async function advanceTimersAndFlush(ms: number): Promise<void> {
-  vi.advanceTimersByTime(ms);
-  vi.runAllTimers();
-  vi.runAllTicks();
+  // Advance *only* the requested time, then flush micro-tasks.
+  try {
+    await vi.advanceTimersByTimeAsync(ms);
+  } catch {
+    vi.advanceTimersByTime(ms);
+  }
+  // Flush pending micro-tasks (promises) without triggering later timers
   await Promise.resolve();
 }
 
@@ -250,7 +258,8 @@ export async function setupConcurrentOperations<T>(
   succeeded: T[];
   failed: any[];
 }> {
-  const results = await Promise.allSettled(operations);
+  // Invoke each operation first
+  const results = await Promise.allSettled(operations.map(op => op()));
 
   const succeeded = results
     .filter((r): r is PromiseFulfilledResult<T> => r.status === 'fulfilled')

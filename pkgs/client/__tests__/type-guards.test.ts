@@ -7,6 +7,8 @@ import {
   isStepFailedEvent,
   FlowRunStatus,
   FlowStepStatus,
+  type BroadcastRunStartedEvent,
+  type BroadcastStepStartedEvent,
 } from '../src/lib/types';
 import {
   createRunStartedEvent,
@@ -20,6 +22,11 @@ import {
   RUN_ID,
   STEP_SLUG,
 } from './fixtures';
+
+// Create test events
+const broadcastRunStarted = createRunStartedEvent({ run_id: RUN_ID });
+const broadcastStepStarted = createStepStartedEvent({ run_id: RUN_ID, step_slug: STEP_SLUG });
+const broadcastStepCompleted = createStepCompletedEvent({ run_id: RUN_ID, step_slug: STEP_SLUG, output: { result: 'test' } });
 
 describe('Type Guards', () => {
   describe('isFlowRunEvent', () => {

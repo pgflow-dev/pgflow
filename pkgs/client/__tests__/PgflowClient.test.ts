@@ -20,11 +20,7 @@ vi.mock('uuid', () => ({
 }));
 
 describe('PgflowClient', () => {
-  const { teardown } = setupTestEnvironment();
-  
-  afterEach(() => {
-    teardown();
-  });
+  setupTestEnvironment();
 
   test('initializes correctly', () => {
     const { client } = createMockClient();

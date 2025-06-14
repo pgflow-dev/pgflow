@@ -9,7 +9,7 @@ import {
 import { mockChannelSubscription } from './mocks';
 
 describe('JSON Parsing in Broadcasts', () => {
-  const { teardown } = setupTestEnvironment();
+  setupTestEnvironment();
   let adapter: SupabaseBroadcastAdapter;
   let stepEventHandler: (event: BroadcastStepEvent) => void;
   let runEventHandler: (event: BroadcastRunEvent) => void;
@@ -31,13 +31,9 @@ describe('JSON Parsing in Broadcasts', () => {
     // Subscribe to a run to configure the channel
     await adapter.subscribeToRun('test-run-id');
   });
-  
-  afterEach(() => {
-    teardown();
-  });
 
   describe('Step Events', () => {
-    it('should parse JSON string output from step:completed broadcast', () => {
+    it('should parse JSON string output from step:completed broadcast', async () => {
       const complexOutput = {
         result: 'success',
         data: { count: 42, items: ['a', 'b', 'c'] },
@@ -60,6 +56,7 @@ describe('JSON Parsing in Broadcasts', () => {
       // Trigger the broadcast callback (simulating Supabase realtime)
       emitBroadcastEvent(mocks, broadcastPayload.event, broadcastPayload.payload);
 
+
       // Verify the handler received parsed object, not string
       expect(stepEventHandler).toHaveBeenCalledWith({
         event_type: 'step:completed',
@@ -71,7 +68,7 @@ describe('JSON Parsing in Broadcasts', () => {
       });
     });
 
-    it('should handle non-JSON output gracefully', () => {
+    it('should handle non-JSON output gracefully', async () => {
       // Simulate broadcast with non-JSON string output
       const broadcastPayload = {
         event: 'step:simple_step:completed',
@@ -99,7 +96,7 @@ describe('JSON Parsing in Broadcasts', () => {
       });
     });
 
-    it('should handle already parsed output objects', () => {
+    it('should handle already parsed output objects', async () => {
       const objectOutput = { already: 'parsed' };
 
       // Simulate broadcast with already parsed object (edge case)
@@ -131,7 +128,7 @@ describe('JSON Parsing in Broadcasts', () => {
   });
 
   describe('Run Events', () => {
-    it('should parse JSON string input from run:started broadcast', () => {
+    it('should parse JSON string input from run:started broadcast', async () => {
       const complexInput = {
         url: 'https://example.com',
         options: { timeout: 30000, retries: 3 },
@@ -154,6 +151,7 @@ describe('JSON Parsing in Broadcasts', () => {
       // Trigger the broadcast callback (simulating Supabase realtime)
       emitBroadcastEvent(mocks, broadcastPayload.event, broadcastPayload.payload);
 
+
       // Verify the handler received parsed object, not string
       expect(runEventHandler).toHaveBeenCalledWith({
         run_id: 'test-run-id',
@@ -165,7 +163,7 @@ describe('JSON Parsing in Broadcasts', () => {
       });
     });
 
-    it('should parse JSON string output from run:completed broadcast', () => {
+    it('should parse JSON string output from run:completed broadcast', async () => {
       const complexOutput = {
         final_result: 'success',
         steps_completed: 5,
@@ -186,6 +184,7 @@ describe('JSON Parsing in Broadcasts', () => {
       // Trigger the broadcast callback (simulating Supabase realtime)
       emitBroadcastEvent(mocks, broadcastPayload.event, broadcastPayload.payload);
 
+
       // Verify the handler received parsed object, not string
       expect(runEventHandler).toHaveBeenCalledWith({
         run_id: 'test-run-id',
@@ -197,7 +196,7 @@ describe('JSON Parsing in Broadcasts', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle malformed JSON gracefully', () => {
+    it('should handle malformed JSON gracefully', async () => {
       const broadcastPayload = {
         event: 'step:simple_step:completed',
         payload: {
@@ -226,7 +225,7 @@ describe('JSON Parsing in Broadcasts', () => {
       });
     });
 
-    it('should handle empty string JSON fields', () => {
+    it('should handle empty string JSON fields', async () => {
       const broadcastPayload = {
         event: 'step:simple_step:completed',
         payload: {
