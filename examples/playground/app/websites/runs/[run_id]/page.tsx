@@ -18,7 +18,7 @@ function RunPageContent() {
   });
   
   const {
-    runData,
+    flowRun,
     loading,
     error,
     currentTime,
@@ -128,8 +128,8 @@ function RunPageContent() {
           )}
 
           <FlowRunDetails
-            runId={runData?.run_id || ''}
-            runData={runData}
+            runId={flowRun?.run_id || ''}
+            flowRun={flowRun}
             loading={loading}
             error={error}
             currentTime={currentTime}
@@ -140,7 +140,7 @@ function RunPageContent() {
       {/* Main panel: User-friendly UI - second on mobile, left side on desktop */}
       <div className="w-full lg:w-[65%] xl:w-[70%] lg:pr-6 order-last lg:order-first">
         <WebsiteAnalysisUI
-          runData={runData}
+          flowRun={flowRun}
           loading={loading}
           error={error}
           onAnalyzeWebsite={analyzeWebsite}
