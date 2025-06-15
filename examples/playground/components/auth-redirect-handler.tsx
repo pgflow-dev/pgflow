@@ -33,21 +33,13 @@ export default function AuthRedirectHandler() {
             try {
               // Start the analysis with the stored URL
               console.log('Starting analysis for URL:', pendingUrl);
-              const { data, error } = await supabase.rpc('start_analyze_website_flow', {
-                url: pendingUrl,
-              });
-
-              if (error) {
-                console.error('Error starting analysis:', error);
-                return;
-              }
-
-              if (data && data.run_id) {
-                console.log('Analysis started, redirecting to:', `/websites/runs/${data.run_id}`);
-                router.push(`/websites/runs/${data.run_id}`);
-              } else {
-                console.error('No run_id returned from analysis');
-              }
+              
+              // Import startWebsiteAnalysis to reuse the same logic
+              const { startWebsiteAnalysis } = await import('@/lib/services/start-analysis');
+              
+              const runId = await startWebsiteAnalysis(pendingUrl);
+              console.log('Analysis started, redirecting to:', `/websites/runs/${runId}`);
+              router.push(`/websites/runs/${runId}`);
             } catch (error) {
               console.error('Failed to start analysis:', error);
             }
