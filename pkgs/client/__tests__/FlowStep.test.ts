@@ -353,11 +353,14 @@ describe('FlowStep', () => {
       // Should timeout after 5000ms (default is 5min, but we'll use a shorter timeout)
       const waitPromise = step.waitForStatus(FlowStepStatus.Completed, { timeoutMs: 5000 });
       
+      // Immediately add catch handler to avoid unhandled rejection
+      const expectPromise = expect(waitPromise).rejects.toThrow(/Timeout waiting for step/);
+      
       // Advance timers past the timeout
       await advanceTimersAndFlush(5001);
       
-      // The promise should reject
-      await expect(waitPromise).rejects.toThrow(/Timeout waiting for step/);
+      // Wait for the expectation to complete
+      await expectPromise;
     });
 
     test('resolves immediately if already in target status', async () => {
@@ -398,14 +401,17 @@ describe('FlowStep', () => {
         signal: controller.signal 
       });
       
+      // Immediately add catch handler to avoid unhandled rejection
+      const expectPromise = expect(waitPromise).rejects.toThrow(/Aborted waiting for step/);
+      
       // Abort the operation
       setTimeout(() => controller.abort(), 1000);
       
       // Advance timers to trigger the abort
       await advanceTimersAndFlush(1000);
       
-      // The promise should reject
-      await expect(waitPromise).rejects.toThrow(/Aborted waiting for step/);
+      // Wait for the expectation to complete
+      await expectPromise;
     });
 
     test('resolves if target status is reached before timeout', async () => {

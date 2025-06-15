@@ -133,10 +133,13 @@ export class FlowStep<
     // Otherwise, wait for the status to change
     return new Promise((resolve, reject) => {
       let timeoutId: NodeJS.Timeout | undefined;
+      let cleanedUp = false;
       
       // Set up timeout if provided
       if (timeoutMs > 0) {
         timeoutId = setTimeout(() => {
+          if (cleanedUp) return; // Prevent firing if already cleaned up
+          cleanedUp = true;
           unbind();
           reject(new Error(`Timeout waiting for step ${this.step_slug} to reach status '${targetStatus}'`));
         }, timeoutMs);
@@ -146,6 +149,8 @@ export class FlowStep<
       let abortCleanup: (() => void) | undefined;
       if (signal) {
         const abortHandler = () => {
+          if (cleanedUp) return; // Prevent double cleanup
+          cleanedUp = true;
           if (timeoutId) clearTimeout(timeoutId);
           unbind();
           reject(new Error(`Aborted waiting for step ${this.step_slug} to reach status '${targetStatus}'`));
@@ -160,6 +165,8 @@ export class FlowStep<
       // Subscribe to all events
       const unbind = this.on('*', (event) => {
         if (event.status === targetStatus) {
+          if (cleanedUp) return; // Prevent double cleanup
+          cleanedUp = true;
           if (timeoutId) clearTimeout(timeoutId);
           if (abortCleanup) abortCleanup();
           unbind();

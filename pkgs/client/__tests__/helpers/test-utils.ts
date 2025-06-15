@@ -22,9 +22,17 @@ export function setupTestEnvironment() {
   });
 
   // Restore everything after the test finished
-  afterEach(() => {
-    vi.runOnlyPendingTimers();   // make sure nothing is left
+  afterEach(async () => {
+    // Clear all timers without running them to avoid unhandled promise rejections
     vi.clearAllTimers();         // remove timeouts/intervals
+    
+    // Flush any pending promises to ensure they're handled
+    // First await: Flushes the current microtask queue (processes promises already scheduled)
+    await Promise.resolve();
+    // Second await: Catches any promise rejections triggered by the first flush
+    // (rejection handlers are themselves queued as microtasks)
+    await Promise.resolve();
+    
     resetAllMocks();             // reset our custom mocks
     vi.useRealTimers();          // go back to real time for the next test
   });
@@ -185,6 +193,10 @@ export async function advanceTimersAndFlush(ms: number): Promise<void> {
     vi.advanceTimersByTime(ms);
   }
   // Flush pending micro-tasks (promises) without triggering later timers
+  // First await: Processes promises that were resolved by the timer advancement
+  await Promise.resolve();
+  // Second await: Ensures any promise rejections from the first flush are handled
+  // (prevents "Unhandled promise rejection" warnings in tests)
   await Promise.resolve();
 }
 

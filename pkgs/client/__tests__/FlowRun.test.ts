@@ -379,11 +379,14 @@ describe('FlowRun', () => {
         timeoutMs: 5000,
       });
 
+      // Immediately add catch handler to avoid unhandled rejection
+      const expectPromise = expect(waitPromise).rejects.toThrow(/Timeout waiting for run/);
+
       // Advance timers past the timeout
       await advanceTimersAndFlush(5001);
 
-      // The promise should reject
-      await expect(waitPromise).rejects.toThrow(/Timeout waiting for run/);
+      // Wait for the expectation to complete
+      await expectPromise;
     });
 
     test('resolves immediately if already in target status', async () => {
@@ -431,6 +434,9 @@ describe('FlowRun', () => {
         signal: controller.signal,
       });
 
+      // Immediately add catch handler to avoid unhandled rejection
+      const expectPromise = expect(waitPromise).rejects.toThrow(/Aborted waiting for run/);
+
       // Abort the operation
       setTimeout(() => {
         controller.abort();
@@ -439,8 +445,8 @@ describe('FlowRun', () => {
       // Advance timers to trigger the abort
       await advanceTimersAndFlush(1000);
 
-      // The promise should reject
-      await expect(waitPromise).rejects.toThrow(/Aborted waiting for run/);
+      // Wait for the expectation to complete
+      await expectPromise;
     });
 
     test('resolves if target status is reached before timeout', async () => {
