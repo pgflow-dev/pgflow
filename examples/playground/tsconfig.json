@@ -35,6 +35,9 @@
     },
     {
       "path": "../../pkgs/dsl"
+    },
+    {
+      "path": "../../pkgs/client"
     }
   ]
 }
