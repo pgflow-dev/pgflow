@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/collapsible';
 import JSONHighlighter from '@/components/json-highlighter';
 import { FormMessage } from '@/components/form-message';
+import { useElapsedTime } from '@/lib/hooks/use-elapsed-time';
 
 // Format time difference in a concise way (e.g., "5s", "3m 45s", "2h 15m")
 function formatTimeDifference(
@@ -44,48 +45,12 @@ function formatTimeDifference(
   return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
 }
 
-// Format relative time in a concise way (e.g., "3s ago", "5m ago")
-function formatRelativeTime(
-  date: Date | null,
-  now: Date = new Date(),
-): string {
-  if (!date) return '';
-
-  const then = date;
-  const diffMs = now.getTime() - then.getTime();
-  const diffSec = Math.floor(diffMs / 1000);
-
-  // Handle case where time difference is negative (server/client time mismatch)
-  if (diffSec < 1) {
-    return '0s';
-  }
-
-  if (diffSec < 60) {
-    return `${diffSec}s`;
-  }
-
-  const minutes = Math.floor(diffSec / 60);
-
-  if (minutes < 60) {
-    return `${minutes}m`;
-  }
-
-  const hours = Math.floor(minutes / 60);
-
-  if (hours < 24) {
-    return `${hours}h`;
-  }
-
-  const days = Math.floor(hours / 24);
-  return `${days}d`;
-}
 
 interface FlowRunDetailsProps {
   runId: string;
   flowRun: FlowRun | null;
   loading: boolean;
   error: string | null;
-  currentTime: Date;
 }
 
 export default function FlowRunDetails({
@@ -93,9 +58,9 @@ export default function FlowRunDetails({
   flowRun,
   loading,
   error,
-  currentTime,
 }: FlowRunDetailsProps) {
   const [refresh, setRefresh] = useState(0);
+  const elapsedTimeRef = useElapsedTime(flowRun?.started_at || null);
 
   useEffect(() => {
     if (!flowRun) return;
@@ -164,7 +129,7 @@ export default function FlowRunDetails({
             {flowRun.started_at && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Started:</span>
-                <span>{formatRelativeTime(flowRun.started_at, currentTime)} ago</span>
+                <span ref={elapsedTimeRef}></span>
               </div>
             )}
             {flowRun.completed_at && (

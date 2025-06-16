@@ -21,7 +21,6 @@ function RunPageContent() {
     flowRun,
     loading,
     error,
-    currentTime,
     analyzeWebsite,
     analyzeLoading,
     analyzeError,
@@ -132,13 +131,19 @@ function RunPageContent() {
             flowRun={flowRun}
             loading={loading}
             error={error}
-            currentTime={currentTime}
           />
         </div>
       </div>
 
       {/* Main panel: User-friendly UI - second on mobile, left side on desktop */}
       <div className="w-full lg:w-[65%] xl:w-[70%] lg:pr-6 order-last lg:order-first">
+        {console.log('RunPageContent: Rendering WebsiteAnalysisUI with props:', {
+          flowRun: flowRun,
+          loading,
+          error,
+          analyzeLoading,
+          analyzeError
+        })}
         <WebsiteAnalysisUI
           flowRun={flowRun}
           loading={loading}

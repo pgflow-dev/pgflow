@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation';
 import { useStartAnalysis } from '@/lib/hooks/use-start-analysis';
 import { getPgflowClient } from '@/lib/pgflow-client';
 import { useLoadingState } from './loading-state-provider';
+import { useFlowRunStore } from './flow-run-store-provider';
 import type { FlowRun } from '@pgflow/client';
 
 interface FlowRunContextType {
   flowRun: FlowRun | null;
   loading: boolean;
   error: string | null;
-  currentTime: Date;
   analyzeWebsite: (url: string) => Promise<void>;
   analyzeLoading: boolean;
   analyzeError: string | null;
@@ -21,7 +21,6 @@ const FlowRunContext = createContext<FlowRunContextType>({
   flowRun: null,
   loading: true,
   error: null,
-  currentTime: new Date(),
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   analyzeWebsite: async () => {},
   analyzeLoading: false,
@@ -39,10 +38,10 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
   const [flowRun, setFlowRun] = useState<FlowRun | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentTime, setCurrentTime] = useState<Date>(new Date());
 
   const router = useRouter();
   const { setLoading: setGlobalLoading } = useLoadingState();
+  const { hasRunId, removeRunId } = useFlowRunStore();
   
   // Use the shared hook for starting analysis
   const { start: analyzeWebsite, isPending: analyzeLoading, error: analyzeError } = useStartAnalysis();
@@ -53,25 +52,40 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     setLoading(true);
     // Set global loading state to true when initially loading run data
     setGlobalLoading(true);
-
-    // Set up a timer to update the current time every second
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+    
+    // Track if this effect is still mounted
+    let isMounted = true;
 
     // Load the flow run
     const loadFlowRun = async () => {
       try {
         const pgflow = getPgflowClient();
+        
+        // Check if we know about this run from navigation
+        const isKnownRun = hasRunId(runId);
+        console.log('FlowRunProvider: Loading run', runId, 'Known from navigation:', isKnownRun);
+        
+        // If this is a newly created run, wait a bit for the database to be ready
+        if (isKnownRun) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        // Always call getRun - the PgflowClient will handle caching and subscription management
         const run = await pgflow.getRun(runId);
         
         if (!run) {
-          setError('Flow run not found');
-          setGlobalLoading(false);
-          setLoading(false);
+          console.error('FlowRunProvider: No run found for', runId);
+          if (isMounted) {
+            setError('Flow run not found');
+            setGlobalLoading(false);
+            setLoading(false);
+          }
           return;
         }
 
+        if (!isMounted) return;
+
+        console.log('FlowRunProvider: Setting flowRun', run);
         setFlowRun(run);
 
         // Subscribe to all run events to update global loading
@@ -89,37 +103,48 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
           setGlobalLoading(false);
         }
 
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
 
         // Return cleanup function
         return () => {
+          console.log('FlowRunProvider: Cleanup called for run', runId);
           unsubscribeStatus();
           pgflow.dispose(runId);
+          // Only remove from store if this wasn't a navigation from start
+          if (!hasRunId(runId)) {
+            removeRunId(runId);
+          }
         };
       } catch (err) {
         console.error('Error loading flow run:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load flow run');
-        setGlobalLoading(false);
-        setLoading(false);
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Failed to load flow run');
+          setGlobalLoading(false);
+          setLoading(false);
+        }
       }
     };
 
     let cleanup: (() => void) | undefined;
     loadFlowRun().then(cleanupFn => {
-      cleanup = cleanupFn;
+      if (isMounted) {
+        cleanup = cleanupFn;
+      }
     });
 
     return () => {
-      clearInterval(timer);
+      console.log('FlowRunProvider: Effect cleanup for run', runId);
+      isMounted = false;
       cleanup?.();
     };
-  }, [runId, router, setGlobalLoading]);
+  }, [runId, router, setGlobalLoading, hasRunId, removeRunId]);
 
   const value = {
     flowRun,
     loading,
     error,
-    currentTime,
     analyzeWebsite,
     analyzeLoading,
     analyzeError,
