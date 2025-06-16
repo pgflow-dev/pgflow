@@ -2,31 +2,27 @@
 
 import React, { useState, useEffect } from 'react';
 import type { FlowRun } from '@pgflow/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { exampleLinks } from '@/lib/example-links';
 
 interface WebsiteAnalysisUIProps {
   flowRun: FlowRun | null;
   loading: boolean;
   error: string | null;
-  onAnalyzeWebsite: (url: string) => Promise<void>;
-  analyzeLoading?: boolean;
-  analyzeError?: string | null;
 }
 
 export default function WebsiteAnalysisUI({
   flowRun,
   loading,
   error,
-  onAnalyzeWebsite,
-  analyzeLoading = false,
-  analyzeError = null,
 }: WebsiteAnalysisUIProps) {
-  const [url, setUrl] = useState('');
   const [analysisExpanded, setAnalysisExpanded] = useState(true);
   const [refresh, setRefresh] = useState(0);
 
@@ -38,7 +34,6 @@ export default function WebsiteAnalysisUI({
     // Subscribe to flow run events
     unsubscribes.push(
       flowRun.on('*', (event) => {
-        console.log('WebsiteAnalysisUI: Flow event received', event);
         setRefresh(prev => prev + 1);
       })
     );
@@ -49,7 +44,6 @@ export default function WebsiteAnalysisUI({
       const step = flowRun.step(stepSlug);
       unsubscribes.push(
         step.on('*', (event) => {
-          console.log(`WebsiteAnalysisUI: Step ${stepSlug} event received`, event);
           setRefresh(prev => prev + 1);
         })
       );
@@ -76,13 +70,6 @@ export default function WebsiteAnalysisUI({
   // The tags step returns an array of strings directly
   const tags = Array.isArray(tagsStep?.output) ? tagsStep.output : [];
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (url.trim()) {
-      await onAnalyzeWebsite(url.trim());
-      setUrl('');
-    }
-  };
 
   if (loading) {
     return <div className="p-6">Loading...</div>;
@@ -102,47 +89,6 @@ export default function WebsiteAnalysisUI({
         </p>
       </div>
 
-      {/* URL Input Form */}
-      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
-        <div className="flex gap-2">
-          <Input
-            type="url"
-            placeholder="Enter a website URL to analyze..."
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            className="flex-1"
-            disabled={analyzeLoading}
-          />
-          <Button 
-            type="submit" 
-            disabled={analyzeLoading || !url.trim()}
-            className="min-w-[100px]"
-          >
-            {analyzeLoading ? 'Analyzing...' : 'Analyze'}
-          </Button>
-        </div>
-        {analyzeError && (
-          <p className="text-red-500 text-sm mt-2">{String(analyzeError)}</p>
-        )}
-      </form>
-
-      {/* Example Links */}
-      <div className="max-w-2xl mx-auto">
-        <p className="text-sm text-muted-foreground mb-2">Try these examples:</p>
-        <div className="flex flex-wrap gap-2">
-          {exampleLinks.map((link, index) => (
-            <Button
-              key={index}
-              variant="outline"
-              size="sm"
-              onClick={() => setUrl(link.url)}
-              disabled={analyzeLoading}
-            >
-              {link.label}
-            </Button>
-          ))}
-        </div>
-      </div>
 
       {/* Analysis Results */}
       {flowRun && (
