@@ -160,6 +160,8 @@ function RunPageContent() {
 export default function RunPage() {
   const params = useParams();
   const runId = params.run_id as string;
+  
+  console.log('RunPage: Rendering with runId', runId);
 
   return (
     <FlowRunProvider runId={runId}>

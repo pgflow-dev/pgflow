@@ -37,9 +37,9 @@ export default function AuthRedirectHandler() {
               // Import startWebsiteAnalysis to reuse the same logic
               const { startWebsiteAnalysis } = await import('@/lib/services/start-analysis');
               
-              const runId = await startWebsiteAnalysis(pendingUrl);
-              console.log('Analysis started, redirecting to:', `/websites/runs/${runId}`);
-              router.push(`/websites/runs/${runId}`);
+              const flowRun = await startWebsiteAnalysis(pendingUrl);
+              console.log('Analysis started, redirecting to:', `/websites/runs/${flowRun.run_id}`);
+              router.push(`/websites/runs/${flowRun.run_id}`);
             } catch (error) {
               console.error('Failed to start analysis:', error);
             }
