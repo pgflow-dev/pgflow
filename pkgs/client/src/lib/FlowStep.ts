@@ -179,8 +179,9 @@ export class FlowStep<
   /**
    * Updates the step state based on an event
    * 
-   * @param event - Event data to update the state with
-   * @returns true if the state was updated, false otherwise
+   * @internal This method is only intended for use by FlowRun and tests.
+   * Applications should not call this directly - state updates should come from
+   * database events through the PgflowClient.
    */
   updateState(event: StepEvent<TFlow, TStepSlug>): boolean {
     // Validate event is for this step

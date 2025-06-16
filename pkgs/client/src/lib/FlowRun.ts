@@ -266,9 +266,10 @@ export class FlowRun<TFlow extends AnyFlow>
 
   /**
    * Updates the run state based on an event
-   *
-   * @param event - Event data to update the state with
-   * @returns true if the state was updated, false otherwise
+   * 
+   * @internal This method is only intended for use by PgflowClient and tests.
+   * Applications should not call this directly - state updates should come from
+   * database events through the PgflowClient.
    */
   updateState(event: FlowRunEvent<TFlow>): boolean {
     // Validate the event is for this run

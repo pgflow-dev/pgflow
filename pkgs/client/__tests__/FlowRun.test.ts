@@ -1,5 +1,6 @@
 import { describe, test, expect, vi } from 'vitest';
 import { FlowRun } from '../src/lib/FlowRun';
+import { FlowStep } from '../src/lib/FlowStep';
 import { FlowRunStatus, FlowStepStatus } from '../src/lib/types';
 import { toTypedRunEvent, toTypedStepEvent } from '../src/lib/eventAdapters';
 import {
@@ -34,7 +35,7 @@ describe('FlowRun', () => {
     expect(run.output).toBeNull();
     expect(run.error).toBeNull();
     expect(run.error_message).toBeNull();
-    expect(run.started_at).not.toBeNull(); // createFlowRun sets this by default
+    expect(run.started_at).toBeInstanceOf(Date);
     expect(run.completed_at).toBeNull();
     expect(run.failed_at).toBeNull();
     expect(run.remaining_steps).toBe(0);
