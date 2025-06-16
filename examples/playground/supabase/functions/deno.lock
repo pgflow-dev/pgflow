@@ -3,14 +3,16 @@
   "packages": {
     "specifiers": {
       "jsr:@henrygd/queue@^1.0.7": "jsr:@henrygd/queue@1.0.7",
-      "jsr:@pgflow/edge-worker@0.2.4": "jsr:@pgflow/edge-worker@0.2.4",
-      "jsr:@supabase/supabase-js@^2.49.4": "jsr:@supabase/supabase-js@2.49.4",
-      "npm:@pgflow/core@0.2.4": "npm:@pgflow/core@0.2.4",
-      "npm:@pgflow/dsl@0.2.4": "npm:@pgflow/dsl@0.2.4",
+      "jsr:@pgflow/edge-worker@0.3.1": "jsr:@pgflow/edge-worker@0.3.1",
+      "jsr:@supabase/supabase-js@^2.49.4": "jsr:@supabase/supabase-js@2.50.0",
+      "npm:@pgflow/core@0.3.1": "npm:@pgflow/core@0.3.1",
+      "npm:@pgflow/dsl@0.3.1": "npm:@pgflow/dsl@0.3.1",
       "npm:@supabase/auth-js@2.69.1": "npm:@supabase/auth-js@2.69.1",
+      "npm:@supabase/auth-js@2.70.0": "npm:@supabase/auth-js@2.70.0",
       "npm:@supabase/functions-js@2.4.4": "npm:@supabase/functions-js@2.4.4",
       "npm:@supabase/node-fetch@2.6.15": "npm:@supabase/node-fetch@2.6.15",
       "npm:@supabase/postgrest-js@1.19.4": "npm:@supabase/postgrest-js@1.19.4",
+      "npm:@supabase/realtime-js@2.11.10": "npm:@supabase/realtime-js@2.11.10",
       "npm:@supabase/realtime-js@2.11.2": "npm:@supabase/realtime-js@2.11.2",
       "npm:@supabase/storage-js@2.7.1": "npm:@supabase/storage-js@2.7.1",
       "npm:groq-sdk@^0.20.1": "npm:groq-sdk@0.20.1",
@@ -22,12 +24,12 @@
       "@henrygd/queue@1.0.7": {
         "integrity": "98cade132744bb420957c5413393f76eb8ba7261826f026c8a89a562b8fa2961"
       },
-      "@pgflow/edge-worker@0.2.4": {
-        "integrity": "9703e02b07e6b4eb2a02f058ca35bd25000afb4e3e41933b3b52ceacbc0749dd",
+      "@pgflow/edge-worker@0.3.1": {
+        "integrity": "30055d593c94bf9ea333f3aab87907fc48bd3dadf25d4cfb8ca7c4f442313067",
         "dependencies": [
           "jsr:@henrygd/queue@^1.0.7",
-          "npm:@pgflow/core@0.2.4",
-          "npm:@pgflow/dsl@0.2.4",
+          "npm:@pgflow/core@0.3.1",
+          "npm:@pgflow/dsl@0.3.1",
           "npm:postgres@3.4.5"
         ]
       },
@@ -41,6 +43,17 @@
           "npm:@supabase/realtime-js@2.11.2",
           "npm:@supabase/storage-js@2.7.1"
         ]
+      },
+      "@supabase/supabase-js@2.50.0": {
+        "integrity": "d583ced1777f6bda163de3aca49f9b00b62c48633c5d129492531a11b3542457",
+        "dependencies": [
+          "npm:@supabase/auth-js@2.70.0",
+          "npm:@supabase/functions-js@2.4.4",
+          "npm:@supabase/node-fetch@2.6.15",
+          "npm:@supabase/postgrest-js@1.19.4",
+          "npm:@supabase/realtime-js@2.11.10",
+          "npm:@supabase/storage-js@2.7.1"
+        ]
       }
     },
     "npm": {
@@ -48,19 +61,25 @@
         "integrity": "sha512-Y28PR25bHXUg88kCV7nivXrP2Nj2RueZ3/l/jdx6J9f8J4nsEGcgX0Qe6lt7Pa+J79+kPiJU3LguR6O/6zrLOw==",
         "dependencies": {}
       },
-      "@pgflow/core@0.2.4": {
-        "integrity": "sha512-a0TzuS5KR5ecNH6G006FIUNPW319mbn+7UPD4DKQ0NdCHRQu/tAsQJCBql5EHOowUH55gvWrL6L89Elh5AidTw==",
+      "@pgflow/core@0.3.1": {
+        "integrity": "sha512-pve5X9VWk8tqihJQ5X1E2/y8tI84N8GqMKHN49fzOUoNbRlqF7ilYZAr1jseSv6v3VbpwDuVa4I96GCJWuzNUA==",
         "dependencies": {
-          "@pgflow/dsl": "@pgflow/dsl@0.2.4",
+          "@pgflow/dsl": "@pgflow/dsl@0.3.1",
           "postgres": "postgres@3.4.5"
         }
       },
-      "@pgflow/dsl@0.2.4": {
-        "integrity": "sha512-E+mWUO2bYekRAL3dapskE6fWpXVZqInu5Vp9lALiPM0g6nVrjGWbNoBRJFoIhgxII0ohJ3Uhx+G9M3BH61Vxag==",
+      "@pgflow/dsl@0.3.1": {
+        "integrity": "sha512-NbBDmX6q60UWsuUCuyDO/gDLypHZdH7281hYNk65mX3L0pXgmvxPvo77rehctemrxwzALQOhIPXc529s9OggRw==",
         "dependencies": {}
       },
       "@supabase/auth-js@2.69.1": {
         "integrity": "sha512-FILtt5WjCNzmReeRLq5wRs3iShwmnWgBvxHfqapC/VoljJl+W8hDAyFmf1NVw3zH+ZjZ05AKxiKxVeb0HNWRMQ==",
+        "dependencies": {
+          "@supabase/node-fetch": "@supabase/node-fetch@2.6.15"
+        }
+      },
+      "@supabase/auth-js@2.70.0": {
+        "integrity": "sha512-BaAK/tOAZFJtzF1sE3gJ2FwTjLf4ky3PSvcvLGEgEmO4BSBkwWKu8l67rLLIBZPDnCyV7Owk2uPyKHa0kj5QGg==",
         "dependencies": {
           "@supabase/node-fetch": "@supabase/node-fetch@2.6.15"
         }
@@ -81,6 +100,15 @@
         "integrity": "sha512-O4soKqKtZIW3olqmbXXbKugUtByD2jPa8kL2m2c1oozAO11uCcGrRhkZL0kVxjBLrXHE0mdSkFsMj7jDSfyNpw==",
         "dependencies": {
           "@supabase/node-fetch": "@supabase/node-fetch@2.6.15"
+        }
+      },
+      "@supabase/realtime-js@2.11.10": {
+        "integrity": "sha512-SJKVa7EejnuyfImrbzx+HaD9i6T784khuw1zP+MBD7BmJYChegGxYigPzkKX8CK8nGuDntmeSD3fvriaH0EGZA==",
+        "dependencies": {
+          "@supabase/node-fetch": "@supabase/node-fetch@2.6.15",
+          "@types/phoenix": "@types/phoenix@1.6.6",
+          "@types/ws": "@types/ws@8.18.1",
+          "ws": "ws@8.18.2"
         }
       },
       "@supabase/realtime-js@2.11.2": {
@@ -427,16 +455,34 @@
       "ws@8.18.1": {
         "integrity": "sha512-RKW2aJZMXeMxVpnZ6bck+RswznaxmzdULiBr6KY7XkTnW8uvt0iT9H5DkHUChXrc+uurzwa0rVI16n/Xzjdz1w==",
         "dependencies": {}
+      },
+      "ws@8.18.2": {
+        "integrity": "sha512-DMricUmwGZUVr++AEAe2uiVM7UoO9MAVZMDu05UQOaUII0lp+zOzLLU4Xqh/JvTqklB1T4uELaaPBKyjE1r4fQ==",
+        "dependencies": {}
       }
     }
   },
-  "remote": {},
+  "remote": {
+    "https://deno.land/std@0.168.0/async/abortable.ts": "80b2ac399f142cc528f95a037a7d0e653296352d95c681e284533765961de409",
+    "https://deno.land/std@0.168.0/async/deadline.ts": "2c2deb53c7c28ca1dda7a3ad81e70508b1ebc25db52559de6b8636c9278fd41f",
+    "https://deno.land/std@0.168.0/async/debounce.ts": "60301ffb37e730cd2d6f9dadfd0ecb2a38857681bd7aaf6b0a106b06e5210a98",
+    "https://deno.land/std@0.168.0/async/deferred.ts": "77d3f84255c3627f1cc88699d8472b664d7635990d5358c4351623e098e917d6",
+    "https://deno.land/std@0.168.0/async/delay.ts": "5a9bfba8de38840308a7a33786a0155a7f6c1f7a859558ddcec5fe06e16daf57",
+    "https://deno.land/std@0.168.0/async/mod.ts": "7809ad4bb223e40f5fdc043e5c7ca04e0e25eed35c32c3c32e28697c553fa6d9",
+    "https://deno.land/std@0.168.0/async/mux_async_iterator.ts": "770a0ff26c59f8bbbda6b703a2235f04e379f73238e8d66a087edc68c2a2c35f",
+    "https://deno.land/std@0.168.0/async/pool.ts": "6854d8cd675a74c73391c82005cbbe4cc58183bddcd1fbbd7c2bcda42b61cf69",
+    "https://deno.land/std@0.168.0/async/retry.ts": "e8e5173623915bbc0ddc537698fa418cf875456c347eda1ed453528645b42e67",
+    "https://deno.land/std@0.168.0/async/tee.ts": "3a47cc4e9a940904fd4341f0224907e199121c80b831faa5ec2b054c6d2eff5e",
+    "https://deno.land/std@0.168.0/http/server.ts": "e99c1bee8a3f6571ee4cdeb2966efad465b8f6fe62bec1bdb59c1f007cc4d155"
+  },
   "workspace": {
     "dependencies": [
-      "jsr:@pgflow/edge-worker@0.2.4",
+      "jsr:@pgflow/edge-worker@0.3.1",
       "jsr:@supabase/supabase-js@^2.49.4",
-      "npm:@pgflow/dsl@0.2.4",
+      "npm:@pgflow/core@0.3.1",
+      "npm:@pgflow/dsl@0.3.1",
       "npm:groq-sdk@^0.20.1",
+      "npm:postgres@3.4.5",
       "npm:sanitize-html@^2.16.0",
       "npm:turndown@^7.2.0"
     ]
