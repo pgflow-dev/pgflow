@@ -1,7 +1,7 @@
 // lib/services/start-analysis.ts
 import { createClient } from '@/utils/supabase/client';
-import { getPgflowClient } from '@/lib/pgflow-client';
 import type { FlowRun } from '@pgflow/client';
+import type { PgflowClient } from '@pgflow/client';
 
 export interface StartAnalysisOptions {
   /**
@@ -22,6 +22,7 @@ export interface StartAnalysisOptions {
 export async function startWebsiteAnalysis(
   url: string,
   { requireAuth = true, runId }: StartAnalysisOptions = {},
+  pgflow?: PgflowClient
 ): Promise<FlowRun> {
   if (!url) throw new Error('URL is required');
 
@@ -43,7 +44,12 @@ export async function startWebsiteAnalysis(
   const userId = userData.user?.id;
 
   // Use pgflow client to start the flow
-  const pgflow = getPgflowClient();
+  if (!pgflow) {
+    // Fallback to singleton if not provided (for auth redirect handler)
+    const { getPgflowClient } = await import('@/lib/pgflow-client');
+    pgflow = getPgflowClient();
+  }
+  
   const flowRun = await pgflow.startFlow(
     'analyze_website',
     { url, user_id: userId },

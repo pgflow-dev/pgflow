@@ -33,14 +33,30 @@ export default function WebsiteAnalysisUI({
   useEffect(() => {
     if (!flowRun) return;
 
-    // Subscribe to all events to trigger re-renders
-    const unsubscribe = flowRun.on('*', (event) => {
-      console.log('WebsiteAnalysisUI: Flow event received', event);
-      setRefresh(prev => prev + 1);
-    });
+    const unsubscribes: (() => void)[] = [];
+
+    // Subscribe to flow run events
+    unsubscribes.push(
+      flowRun.on('*', (event) => {
+        console.log('WebsiteAnalysisUI: Flow event received', event);
+        setRefresh(prev => prev + 1);
+      })
+    );
+
+    // Subscribe to step events for the steps we care about
+    const stepSlugs = ['website', 'summary', 'tags', 'saveToDb'];
+    for (const stepSlug of stepSlugs) {
+      const step = flowRun.step(stepSlug);
+      unsubscribes.push(
+        step.on('*', (event) => {
+          console.log(`WebsiteAnalysisUI: Step ${stepSlug} event received`, event);
+          setRefresh(prev => prev + 1);
+        })
+      );
+    }
 
     return () => {
-      unsubscribe();
+      unsubscribes.forEach(unsubscribe => unsubscribe());
     };
   }, [flowRun]);
 
