@@ -15,7 +15,7 @@ export async function ensureWorker(
   sql: postgres.Sql,
   queueName: string,
   workerUuid: string = TEST_WORKER_UUID,
-  functionName: string = 'test_worker'
+  functionName = 'test_worker'
 ): Promise<string> {
   const result = await sql<{ worker_id: string }[]>`
     INSERT INTO pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
@@ -37,10 +37,10 @@ export async function readAndStart<TFlow extends AnyFlow>(
   sql: postgres.Sql,
   sqlClient: PgflowSqlClient<TFlow>,
   flowSlug: string,
-  vt: number = 1,
-  qty: number = 1,
+  vt = 1,
+  qty = 1,
   workerUuid: string = TEST_WORKER_UUID,
-  functionName: string = 'test_worker'
+  functionName = 'test_worker'
 ) {
   // 1. Ensure the worker exists / update its heartbeat
   const workerId = await ensureWorker(sql, flowSlug, workerUuid, functionName);
