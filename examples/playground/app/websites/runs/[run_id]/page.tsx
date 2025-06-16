@@ -17,14 +17,7 @@ function RunPageContent() {
     return true; // Default to true
   });
   
-  const {
-    flowRun,
-    loading,
-    error,
-    analyzeWebsite,
-    analyzeLoading,
-    analyzeError,
-  } = useFlowRun();
+  const { flowRun, loading, error } = useFlowRun();
 
   return (
     <div className="flex flex-col lg:flex-row">
@@ -137,20 +130,10 @@ function RunPageContent() {
 
       {/* Main panel: User-friendly UI - second on mobile, left side on desktop */}
       <div className="w-full lg:w-[65%] xl:w-[70%] lg:pr-6 order-last lg:order-first">
-        {console.log('RunPageContent: Rendering WebsiteAnalysisUI with props:', {
-          flowRun: flowRun,
-          loading,
-          error,
-          analyzeLoading,
-          analyzeError
-        })}
         <WebsiteAnalysisUI
           flowRun={flowRun}
           loading={loading}
           error={error}
-          onAnalyzeWebsite={analyzeWebsite}
-          analyzeLoading={analyzeLoading}
-          analyzeError={analyzeError}
         />
       </div>
     </div>
@@ -161,7 +144,6 @@ export default function RunPage() {
   const params = useParams();
   const runId = params.run_id as string;
   
-  console.log('RunPage: Rendering with runId', runId);
 
   return (
     <FlowRunProvider runId={runId}>

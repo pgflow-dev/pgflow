@@ -19,7 +19,6 @@ export function useStartAnalysis() {
     try {
       const flowRun = await startWebsiteAnalysis(url, {}, pgflow);
       // Navigate immediately - PgflowClient already has the run cached
-      console.log('useStartAnalysis: Navigating to run', flowRun.run_id);
       router.push(`/websites/runs/${flowRun.run_id}`);
     } catch (err: any) {
       if (err?.code === 'AUTH_REQUIRED') {
