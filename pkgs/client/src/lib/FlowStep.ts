@@ -182,6 +182,9 @@ export class FlowStep<
    * @internal This method is only intended for use by FlowRun and tests.
    * Applications should not call this directly - state updates should come from
    * database events through the PgflowClient.
+   * 
+   * TODO: After v1.0, make this method private and refactor tests to use PgflowClient
+   * with event emission instead of direct state manipulation.
    */
   updateState(event: StepEvent<TFlow, TStepSlug>): boolean {
     // Validate event is for this step

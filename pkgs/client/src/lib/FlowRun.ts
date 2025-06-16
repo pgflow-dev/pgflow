@@ -270,6 +270,9 @@ export class FlowRun<TFlow extends AnyFlow>
    * @internal This method is only intended for use by PgflowClient and tests.
    * Applications should not call this directly - state updates should come from
    * database events through the PgflowClient.
+   * 
+   * TODO: After v1.0, make this method private and refactor tests to use PgflowClient
+   * with event emission instead of direct state manipulation.
    */
   updateState(event: FlowRunEvent<TFlow>): boolean {
     // Validate the event is for this run
