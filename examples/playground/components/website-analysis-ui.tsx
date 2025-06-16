@@ -34,7 +34,8 @@ export default function WebsiteAnalysisUI({
     if (!flowRun) return;
 
     // Subscribe to all events to trigger re-renders
-    const unsubscribe = flowRun.on('*', () => {
+    const unsubscribe = flowRun.on('*', (event) => {
+      console.log('WebsiteAnalysisUI: Flow event received', event);
       setRefresh(prev => prev + 1);
     });
 
@@ -54,8 +55,10 @@ export default function WebsiteAnalysisUI({
   const summaryStep = flowRun?.step('summary');
   const tagsStep = flowRun?.step('tags');
   
-  const summary = summaryStep?.output?.summary || null;
-  const tags = tagsStep?.output?.tags || [];
+  // The summary step returns a string directly
+  const summary = typeof summaryStep?.output === 'string' ? summaryStep.output : null;
+  // The tags step returns an array of strings directly
+  const tags = Array.isArray(tagsStep?.output) ? tagsStep.output : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +73,7 @@ export default function WebsiteAnalysisUI({
   }
 
   if (error) {
-    return <div className="p-6 text-red-600">Error: {error}</div>;
+    return <div className="p-6 text-red-600">Error: {String(error)}</div>;
   }
 
   return (
@@ -103,7 +106,7 @@ export default function WebsiteAnalysisUI({
           </Button>
         </div>
         {analyzeError && (
-          <p className="text-red-500 text-sm mt-2">{analyzeError}</p>
+          <p className="text-red-500 text-sm mt-2">{String(analyzeError)}</p>
         )}
       </form>
 
@@ -156,25 +159,27 @@ export default function WebsiteAnalysisUI({
                   >
                     {/* Progress Steps */}
                     <div className="space-y-3">
-                      {['scrape', 'markdown', 'summary', 'tags', 'save'].map((stepSlug) => {
+                      {['website', 'summary', 'tags', 'saveToDb'].map((stepSlug) => {
                         const step = flowRun.step(stepSlug);
+                        const displayName = stepSlug === 'saveToDb' ? 'Save to Database' : stepSlug;
+                        const stepStatus = step?.status || 'pending';
                         return (
                           <div
                             key={stepSlug}
                             className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
                           >
                             <span className="font-medium capitalize">
-                              {stepSlug.replace(/_/g, ' ')}
+                              {displayName.replace(/_/g, ' ')}
                             </span>
                             <Badge
                               variant={
-                                step.status === 'completed' ? 'default' :
-                                step.status === 'failed' ? 'destructive' :
-                                step.status === 'started' ? 'secondary' :
+                                stepStatus === 'completed' ? 'default' :
+                                stepStatus === 'failed' ? 'destructive' :
+                                stepStatus === 'started' ? 'secondary' :
                                 'outline'
                               }
                             >
-                              {step.status}
+                              {stepStatus}
                             </Badge>
                           </div>
                         );
@@ -186,7 +191,7 @@ export default function WebsiteAnalysisUI({
                       <div className="space-y-2">
                         <h3 className="text-lg font-semibold">Summary</h3>
                         <p className="text-muted-foreground leading-relaxed">
-                          {summary}
+                          {String(summary)}
                         </p>
                       </div>
                     )}
@@ -198,7 +203,7 @@ export default function WebsiteAnalysisUI({
                         <div className="flex flex-wrap gap-2">
                           {tags.map((tag: string, index: number) => (
                             <Badge key={index} variant="secondary">
-                              {tag}
+                              {String(tag)}
                             </Badge>
                           ))}
                         </div>

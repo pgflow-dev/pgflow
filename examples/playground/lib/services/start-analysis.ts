@@ -1,6 +1,7 @@
 // lib/services/start-analysis.ts
 import { createClient } from '@/utils/supabase/client';
 import { getPgflowClient } from '@/lib/pgflow-client';
+import type { FlowRun } from '@pgflow/client';
 
 export interface StartAnalysisOptions {
   /**
@@ -15,13 +16,13 @@ export interface StartAnalysisOptions {
 }
 
 /**
- * Starts analyse-website pgflow run and returns the run_id.
+ * Starts analyse-website pgflow run and returns the FlowRun instance.
  * **This is the ONLY place that knows HOW we start a flow.**
  */
 export async function startWebsiteAnalysis(
   url: string,
   { requireAuth = true, runId }: StartAnalysisOptions = {},
-): Promise<string> {
+): Promise<FlowRun> {
   if (!url) throw new Error('URL is required');
 
   const supabase = createClient();
@@ -49,5 +50,7 @@ export async function startWebsiteAnalysis(
     runId
   );
   
-  return flowRun.run_id;
+  console.log('startWebsiteAnalysis: Created FlowRun', flowRun.run_id, 'Instance:', flowRun);
+  
+  return flowRun;
 }
