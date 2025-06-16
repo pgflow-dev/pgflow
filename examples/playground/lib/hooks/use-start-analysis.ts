@@ -4,11 +4,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { startWebsiteAnalysis } from '@/lib/services/start-analysis';
-import { useFlowRunStore } from '@/components/flow-run-store-provider';
+import { usePgflowClient } from '@/lib/pgflow-client-provider';
 
 export function useStartAnalysis() {
   const router = useRouter();
-  const { addRunId } = useFlowRunStore();
+  const pgflow = usePgflowClient();
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
@@ -17,14 +17,9 @@ export function useStartAnalysis() {
     setIsPending(true);
     
     try {
-      const flowRun = await startWebsiteAnalysis(url);
-      // Store only the run ID before navigating
-      console.log('useStartAnalysis: Storing run ID in store', flowRun.run_id);
-      addRunId(flowRun.run_id);
-      
-      // Small delay to ensure store update completes
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
+      const flowRun = await startWebsiteAnalysis(url, {}, pgflow);
+      // Navigate immediately - PgflowClient already has the run cached
+      console.log('useStartAnalysis: Navigating to run', flowRun.run_id);
       router.push(`/websites/runs/${flowRun.run_id}`);
     } catch (err: any) {
       if (err?.code === 'AUTH_REQUIRED') {

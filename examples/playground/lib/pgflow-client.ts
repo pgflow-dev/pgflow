@@ -7,6 +7,7 @@ let pgflowClient: PgflowClient | null = null;
 
 export function getPgflowClient(): PgflowClient {
   if (!pgflowClient) {
+    console.log('Creating new PgflowClient singleton instance');
     const supabase = createClient();
     pgflowClient = new PgflowClient(supabase);
   }

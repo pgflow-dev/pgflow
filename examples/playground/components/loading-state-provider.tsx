@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 
 interface LoadingState {
@@ -24,9 +24,9 @@ export function LoadingStateProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, [pathname]);
 
-  const setLoading = (loading: boolean) => {
+  const setLoading = useCallback((loading: boolean) => {
     setIsLoading(loading);
-  };
+  }, []);
 
   return (
     <LoadingStateContext.Provider value={{ isLoading, setLoading }}>

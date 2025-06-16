@@ -1,11 +1,9 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useStartAnalysis } from '@/lib/hooks/use-start-analysis';
-import { getPgflowClient } from '@/lib/pgflow-client';
+import { usePgflowClient } from '@/lib/pgflow-client-provider';
 import { useLoadingState } from './loading-state-provider';
-import { useFlowRunStore } from './flow-run-store-provider';
 import type { FlowRun } from '@pgflow/client';
 
 interface FlowRunContextType {
@@ -35,18 +33,20 @@ interface FlowRunProviderProps {
 }
 
 export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
+  console.log('FlowRunProvider: Component rendering for runId', runId);
+  
   const [flowRun, setFlowRun] = useState<FlowRun | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const router = useRouter();
   const { setLoading: setGlobalLoading } = useLoadingState();
-  const { hasRunId, removeRunId } = useFlowRunStore();
+  const pgflow = usePgflowClient();
   
   // Use the shared hook for starting analysis
   const { start: analyzeWebsite, isPending: analyzeLoading, error: analyzeError } = useStartAnalysis();
 
   useEffect(() => {
+    console.log('FlowRunProvider: useEffect triggered for runId', runId);
     if (!runId) return;
     
     setLoading(true);
@@ -59,18 +59,9 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
     // Load the flow run
     const loadFlowRun = async () => {
       try {
-        const pgflow = getPgflowClient();
+        console.log('FlowRunProvider: Getting run', runId);
         
-        // Check if we know about this run from navigation
-        const isKnownRun = hasRunId(runId);
-        console.log('FlowRunProvider: Loading run', runId, 'Known from navigation:', isKnownRun);
-        
-        // If this is a newly created run, wait a bit for the database to be ready
-        if (isKnownRun) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        
-        // Always call getRun - the PgflowClient will handle caching and subscription management
+        // Just call getRun - the PgflowClient will return cached instance if exists
         const run = await pgflow.getRun(runId);
         
         if (!run) {
@@ -85,7 +76,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
 
         if (!isMounted) return;
 
-        console.log('FlowRunProvider: Setting flowRun', run);
+        console.log('FlowRunProvider: Got flowRun', run);
         setFlowRun(run);
 
         // Subscribe to all run events to update global loading
@@ -111,11 +102,8 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
         return () => {
           console.log('FlowRunProvider: Cleanup called for run', runId);
           unsubscribeStatus();
-          pgflow.dispose(runId);
-          // Only remove from store if this wasn't a navigation from start
-          if (!hasRunId(runId)) {
-            removeRunId(runId);
-          }
+          // Don't dispose the run - let PgflowClient manage its cache
+          // pgflow.dispose(runId);
         };
       } catch (err) {
         console.error('Error loading flow run:', err);
@@ -139,7 +127,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
       isMounted = false;
       cleanup?.();
     };
-  }, [runId, router, setGlobalLoading, hasRunId, removeRunId]);
+  }, [runId, setGlobalLoading, pgflow]);
 
   const value = {
     flowRun,
