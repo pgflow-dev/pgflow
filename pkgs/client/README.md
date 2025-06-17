@@ -2,7 +2,8 @@
 
 TypeScript client library for interacting with pgflow workflows and observing real-time progress updates.
 
-> [!WARNING] > **Security Notice**: pgflow does not handle security yet. **YOU are responsible for securing access to schemas, tables, and functions.**
+> [!WARNING]
+> **Security Notice**: pgflow does not handle security yet. **YOU are responsible for securing access to schemas, tables, and functions.**
 >
 > See [SECURITY.md](./SECURITY.md) for required permission grants and their implications.
 
@@ -198,6 +199,8 @@ unsubscribe();
 Wait for a step to reach a specific status.
 
 ```typescript
+import { FlowStepStatus } from '@pgflow/client';
+
 const step = run.step('data_processing');
 
 // Wait for step completion
@@ -376,3 +379,4 @@ For more detailed documentation, visit:
 
 - [pgflow Documentation](https://pgflow.dev)
 - [Client Library Guide](https://pgflow.dev/how-to/monitor-flow-execution)
+
