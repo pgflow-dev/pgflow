@@ -40,12 +40,6 @@
         "typecheckTargetName": "typecheck"
       }
     },
-    {
-      "plugin": "@nx/rollup/plugin",
-      "options": {
-        "buildTargetName": "build"
-      }
-    }
   ],
   "targetDefaults": {
     "@nx/esbuild:esbuild": {
