@@ -7,8 +7,8 @@ export default defineConfig({
   cacheDir: '../../node_modules/.vite/pkgs/client',
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
-      name: 'PgflowClient',  // Global variable: window.PgflowClient
+      entry: resolve(__dirname, 'src/browser.ts'),
+      name: 'pgflow',  // Global variable: window.pgflow
       formats: ['iife'],
       fileName: () => 'pgflow-client.browser.js'
     },

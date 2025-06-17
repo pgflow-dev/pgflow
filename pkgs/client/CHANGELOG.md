@@ -28,6 +28,7 @@
 
   ```typescript
   // Start a workflow
+  import { PgflowClient } from '@pgflow/client';
   const pgflow = new PgflowClient(supabase);
   const run = await pgflow.startFlow('analyze_website', {
     url: 'https://example.com',

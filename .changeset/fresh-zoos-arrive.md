@@ -21,7 +21,7 @@ The @pgflow/client package now builds for multiple environments, making it usabl
 
 - Node.js: `import { PgflowClient } from '@pgflow/client'`
 - CommonJS: `const { PgflowClient } = require('@pgflow/client')`
-- Browser: `<script src="https://unpkg.com/@pgflow/client"></script>`
+- Browser: `<script src="https://unpkg.com/@pgflow/client"></script>` - then use `window.pgflow.createClient(supabase)`
 - Bundlers: Automatically picks the right format
 
 **Other changes:**

@@ -16,7 +16,7 @@ The package is built in multiple formats to support various JavaScript environme
 - **IIFE Bundle** (`dist/pgflow-client.browser.js`) - Browser-ready build
 - Includes all dependencies EXCEPT @supabase/supabase-js
 - Expects users to provide their own Supabase client instance
-- Exposes `window.PgflowClient` global variable
+- Exposes `window.pgflow` global variable with factory functions
 - Always minified with terser for optimal file size (16KB gzipped: 4.3KB)
 - Includes source maps for debugging
 
@@ -66,8 +66,8 @@ const { PgflowClient } = require('@pgflow/client');
   // Initialize Supabase (you already have this)
   const supabase = window.supabase.createClient('your-url', 'your-anon-key');
   
-  // Pass your Supabase instance to PgflowClient
-  const pgflow = new window.PgflowClient.PgflowClient(supabase);
+  // Create pgflow client using the factory function
+  const pgflow = window.pgflow.createClient(supabase);
 </script>
 ```
 

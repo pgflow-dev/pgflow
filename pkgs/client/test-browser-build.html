@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Browser Build</title>
+</head>
+<body>
+    <h1>Testing pgflow Browser Build</h1>
+    <pre id="output"></pre>
+    
+    <script src="dist/pgflow-client.browser.js"></script>
+    <script>
+        const output = document.getElementById('output');
+        
+        // Test that global is available
+        output.textContent += `window.pgflow exists: ${!!window.pgflow}\n`;
+        output.textContent += `window.pgflow.createClient exists: ${typeof window.pgflow.createClient === 'function'}\n`;
+        output.textContent += `window.pgflow.PgflowClient exists: ${typeof window.pgflow.PgflowClient === 'function'}\n`;
+        
+        // Test factory function
+        const mockSupabase = {
+            channel: () => ({ on: () => {}, subscribe: () => {} }),
+            schema: () => ({ from: () => {}, rpc: () => {} })
+        };
+        
+        const client = window.pgflow.createClient(mockSupabase);
+        output.textContent += `Client created successfully: ${!!client}\n`;
+        output.textContent += `Client has startFlow method: ${typeof client.startFlow === 'function'}\n`;
+    </script>
+</body>
+</html>

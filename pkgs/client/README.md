@@ -30,26 +30,13 @@ npm install @pgflow/client
 
 ## Quick Start
 
-### Basic Setup
-
 ```typescript
 import { createClient } from '@supabase/supabase-js';
-import { PgflowClient } from '@pgflow/client';
+import { PgflowClient, FlowRunStatus } from '@pgflow/client';
 
-// Initialize Supabase client
-const supabase = createClient(
-  'https://your-project.supabase.co',
-  'your-anon-key'
-);
-
-// Create pgflow client
+// Initialize clients
+const supabase = createClient('https://your-project.supabase.co', 'your-anon-key');
 const pgflow = new PgflowClient(supabase);
-```
-
-### Start and Monitor a Workflow
-
-```typescript
-import { FlowRunStatus } from '@pgflow/client';
 
 // Start a workflow
 const run = await pgflow.startFlow('analyze_website', {
@@ -366,6 +353,17 @@ nx test:integration client
 ### Example Usage
 
 See [examples/basic.ts](./examples/basic.ts) for comprehensive usage examples.
+
+## Browser Usage
+
+```html
+<script src="https://unpkg.com/@pgflow/client"></script>
+<script>
+  const pgflow = window.pgflow.createClient(supabase);
+</script>
+```
+
+See [BUILD_AND_RELEASE.md](./BUILD_AND_RELEASE.md#browser-via-cdn) for full CDN usage details.
 
 ## Related Packages
 
