@@ -2,7 +2,7 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   root: __dirname,
   cacheDir: '../../node_modules/.vite/pkgs/client',
   build: {
@@ -17,8 +17,8 @@ export default defineConfig({
       external: [],
     },
     outDir: 'dist',
-    minify: false,  // Default to no minification for development
+    minify: mode === 'production' ? 'terser' : false,
     sourcemap: true,
     emptyOutDir: false,  // Don't empty the directory to preserve library build
   }
-});
+}));
