@@ -13,7 +13,7 @@
     "gen-types": "./scripts/supabase gen types --local --schema public --schema pgflow > supabase/functions/database-types.d.ts"
   },
   "dependencies": {
-    "@pgflow/client": "workspace:*",
+    "@pgflow/client": "0.4.1",
     "@radix-ui/react-checkbox": "^1.1.1",
     "@radix-ui/react-collapsible": "^1.1.8",
     "@radix-ui/react-dropdown-menu": "^2.1.1",
