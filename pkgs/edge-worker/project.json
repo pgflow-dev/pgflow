@@ -126,6 +126,7 @@
     },
     "test:e2e": {
       "executor": "nx:run-commands",
+      "dependsOn": ["db:ensure", "^build"],
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [

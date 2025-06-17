@@ -99,7 +99,7 @@
     },
     "test:integration": {
       "executor": "nx:run-commands",
-      "dependsOn": ["db:ensure"],
+      "dependsOn": ["db:ensure", "build"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["vitest run __tests__/integration/"],
@@ -108,6 +108,7 @@
     },
     "test:unit": {
       "executor": "nx:run-commands",
+      "dependsOn": ["build"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["vitest run __tests__/"],
@@ -116,7 +117,7 @@
     },
     "test": {
       "executor": "nx:run-commands",
-      "dependsOn": ["db:ensure"],
+      "dependsOn": ["db:ensure", "build"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["vitest run __tests__/"],
