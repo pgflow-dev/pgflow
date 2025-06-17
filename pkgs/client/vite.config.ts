@@ -1,16 +1,29 @@
 /// <reference types='vitest' />
 import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
+import dts from 'vite-plugin-dts';
 
 export default defineConfig({
   root: __dirname,
   cacheDir: '../../node_modules/.vite/pkgs/client',
-  plugins: [],
+  plugins: [
+    dts({ 
+      include: ['src/**/*.ts'],
+      outDir: 'dist',
+      rollupTypes: false,  // Don't bundle for now
+      insertTypesEntry: true,
+      compilerOptions: {
+        declaration: true,
+        emitDeclarationOnly: true,
+        skipLibCheck: true
+      }
+    })
+  ],
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'PgflowClient',
-      fileName: 'index',
+      fileName: (format) => format === 'cjs' ? 'index.cjs' : 'index.js',
       // Generate both .js (ES) and .cjs (CommonJS) files
       formats: ['es', 'cjs']
     },
@@ -29,7 +42,7 @@ export default defineConfig({
       }
     },
     sourcemap: true,
-    emptyOutDir: true,
+    emptyOutDir: false,  // Don't empty the directory to preserve browser build
   },
   test: {
     watch: false,

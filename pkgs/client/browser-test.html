@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>pgflow Client Browser Test</title>
+  </head>
+  <body>
+    <h1>pgflow Client Browser Test</h1>
+    <p>Open the browser console to see the test results.</p>
+
+    <script src="./dist/pgflow-client.browser.js"></script>
+    <script>
+      console.log('PgflowClient available:', typeof window.PgflowClient);
+      console.log('PgflowClient object:', window.PgflowClient);
+
+      // The browser bundle includes all exports from the module
+      if (window.PgflowClient) {
+        console.log('Available exports:', Object.keys(window.PgflowClient));
+      }
+    </script>
+  </body>
+</html>
