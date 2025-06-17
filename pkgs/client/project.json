@@ -33,7 +33,9 @@
       "executor": "@nx/js:tsc",
       "options": {
         "noEmit": true,
-        "tsConfig": "pkgs/client/tsconfig.lib.json"
+        "tsConfig": "pkgs/client/tsconfig.lib.json",
+        "main": "pkgs/client/src/index.ts",
+        "outputPath": "pkgs/client/dist"
       }
     },
     "lint": {
