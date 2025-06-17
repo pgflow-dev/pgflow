@@ -12,7 +12,7 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "unpkg": "./dist/pgflow-client.browser.js",
-  "private": true,
+  "private": false,
   "sideEffects": false,
   "files": [
     "dist/**/*",
@@ -29,6 +29,9 @@
       "default": "./dist/index.js"
     },
     "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "devDependencies": {
     "@pgflow/dsl": "workspace:*",
