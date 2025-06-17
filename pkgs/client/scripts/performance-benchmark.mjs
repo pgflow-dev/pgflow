@@ -22,9 +22,9 @@ const CONFIG = {
   CONCURRENT_FLOWS: parseInt(process.env.CONCURRENT_FLOWS || '20'), // 2.5x increase
   STEPS_PER_FLOW: parseInt(process.env.STEPS_PER_FLOW || '5'),
   
-  // Database settings
-  DATABASE_URL: process.env.DATABASE_URL || 'postgresql://postgres:postgres@127.0.0.1:54322/postgres',
-  SUPABASE_URL: process.env.SUPABASE_URL || 'http://127.0.0.1:54321',
+  // Database settings - use same ports as integration tests
+  DATABASE_URL: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:50522/postgres',
+  SUPABASE_URL: process.env.SUPABASE_URL || 'http://localhost:50521',
   SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
   
   // Timing settings
