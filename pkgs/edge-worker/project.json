@@ -103,7 +103,7 @@
       }
     },
     "test:unit": {
-      "dependsOn": ["db:ensure"],
+      "dependsOn": ["db:ensure", "^build"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",
@@ -114,7 +114,7 @@
       }
     },
     "test:integration": {
-      "dependsOn": ["db:ensure"],
+      "dependsOn": ["db:ensure", "^build"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",
