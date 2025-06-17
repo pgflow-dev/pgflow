@@ -2,6 +2,11 @@
 
 TypeScript client library for interacting with pgflow workflows and observing real-time progress updates.
 
+> [!WARNING]
+> **Security Notice**: pgflow currently has minimal security controls. All authenticated users can potentially access all workflows and runs. 
+> 
+> See [SECURITY.md](./SECURITY.md) for details and required permissions setup.
+
 > [!NOTE]
 > This project and all its components are licensed under [Apache 2.0](./LICENSE) license.
 
@@ -322,16 +327,7 @@ pgflow.dispose(run.run_id);
 To use the client, your Supabase project needs:
 
 1. **pgflow schema installed** (via `@pgflow/core` migrations)
-2. **Schema permissions** for your Supabase roles:
-
-```sql
--- Grant access to pgflow schema
-GRANT USAGE ON SCHEMA pgflow TO anon, authenticated, service_role;
-GRANT ALL ON ALL TABLES IN SCHEMA pgflow TO anon, authenticated, service_role;
-GRANT ALL ON ALL ROUTINES IN SCHEMA pgflow TO anon, authenticated, service_role;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA pgflow TO anon, authenticated, service_role;
-```
-
+2. **Proper permissions** - See [SECURITY.md](./SECURITY.md) for required grants
 3. **Exposed schema** in your Supabase dashboard (API Settings → Exposed schemas)
 
 ## Development
