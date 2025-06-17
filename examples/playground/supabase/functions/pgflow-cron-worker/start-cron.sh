@@ -21,11 +21,11 @@ echo ""
 echo "Setting up pg_cron job for pgflow-cron-worker..."
 echo ""
 
-# Run the SQL script
+# Run the SQL script (it already handles duplicate prevention)
 psql "$DB_URL" -f "$SCRIPT_DIR/setup-cron-local.sql"
 
 echo ""
-echo "Done! The cron job should now be running every 5 seconds."
+echo "Done! The cron job should now be running every 4 seconds."
 echo ""
 echo "To check the job status, run:"
 echo "  psql \"$DB_URL\" -c \"SELECT * FROM cron.job;\""
