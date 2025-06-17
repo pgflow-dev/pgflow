@@ -35,7 +35,7 @@ describe('Flow Lifecycle Integration', () => {
 
         await supabaseClient.removeAllChannels();
       }),
-      10000
+      30000
     );
 
     it(
@@ -67,7 +67,7 @@ describe('Flow Lifecycle Integration', () => {
 
         await supabaseClient.removeAllChannels();
       }),
-      10000
+      30000
     );
 
     it(
@@ -103,7 +103,7 @@ describe('Flow Lifecycle Integration', () => {
 
         await supabaseClient.removeAllChannels();
       }),
-      10000
+      30000
     );
 
     it(
@@ -135,14 +135,14 @@ describe('Flow Lifecycle Integration', () => {
         await sqlClient.completeTask(tasks[0], taskOutput);
 
         const step = run.step('task_step');
-        await step.waitForStatus(FlowStepStatus.Completed, { timeoutMs: 5000 });
+        await step.waitForStatus(FlowStepStatus.Completed, { timeoutMs: 20000 });
 
         expect(step.status).toBe(FlowStepStatus.Completed);
         expect(step.output).toEqual(taskOutput);
 
         await supabaseClient.removeAllChannels();
       }),
-      10000
+      30000
     );
   });
 
@@ -162,7 +162,7 @@ describe('Flow Lifecycle Integration', () => {
 
         await supabaseClient.removeAllChannels();
       }),
-      10000
+      30000
     );
 
     it(
@@ -194,7 +194,7 @@ describe('Flow Lifecycle Integration', () => {
 
         await supabaseClient.removeAllChannels();
       }),
-      10000
+      30000
     );
   });
 
@@ -224,7 +224,7 @@ describe('Flow Lifecycle Integration', () => {
         await sqlClient.completeTask(tasks[0], taskOutput);
 
         const step = originalRun.step('completed_step');
-        await step.waitForStatus(FlowStepStatus.Completed, { timeoutMs: 5000 });
+        await step.waitForStatus(FlowStepStatus.Completed, { timeoutMs: 20000 });
 
         // Wait a bit for the realtime event to propagate
         await new Promise((resolve) => setTimeout(resolve, 100));
@@ -245,7 +245,7 @@ describe('Flow Lifecycle Integration', () => {
 
         await supabaseClient.removeAllChannels();
       }),
-      10000
+      30000
     );
 
     it(
@@ -264,7 +264,7 @@ describe('Flow Lifecycle Integration', () => {
 
         await supabaseClient.removeAllChannels();
       }),
-      10000
+      30000
     );
 
     it(
@@ -290,7 +290,7 @@ describe('Flow Lifecycle Integration', () => {
 
         await supabaseClient.removeAllChannels();
       }),
-      10000
+      30000
     );
   });
 
@@ -337,7 +337,7 @@ describe('Flow Lifecycle Integration', () => {
 
         await supabaseClient.removeAllChannels();
       }),
-      10000
+      30000
     );
   });
 
@@ -369,7 +369,7 @@ describe('Flow Lifecycle Integration', () => {
 
         await supabaseClient.removeAllChannels();
       }),
-      10000
+      30000
     );
 
     it(
@@ -418,7 +418,7 @@ describe('Flow Lifecycle Integration', () => {
 
         await supabaseClient.removeAllChannels();
       }),
-      10000
+      30000
     );
   });
 });

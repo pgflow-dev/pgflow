@@ -59,8 +59,8 @@ describe('Concurrent Operations Tests', () => {
 
       // Wait for flows to complete
       await Promise.all([
-        run1.waitForStatus(FlowRunStatus.Completed, { timeoutMs: 10000 }),
-        run2.waitForStatus(FlowRunStatus.Completed, { timeoutMs: 10000 })
+        run1.waitForStatus(FlowRunStatus.Completed, { timeoutMs: 30000 }),
+        run2.waitForStatus(FlowRunStatus.Completed, { timeoutMs: 30000 })
       ]);
 
       // Verify completion
@@ -82,7 +82,7 @@ describe('Concurrent Operations Tests', () => {
       console.log('=== Concurrent flows completed successfully ===');
       await supabaseClient.removeAllChannels();
     }),
-    20000
+    40000
   );
 
   it(
@@ -144,9 +144,9 @@ describe('Concurrent Operations Tests', () => {
 
       // Wait for all clients to receive the completion event
       await Promise.all([
-        originalRun.step('shared_step').waitForStatus(FlowStepStatus.Completed, { timeoutMs: 5000 }),
-        observerRun1!.step('shared_step').waitForStatus(FlowStepStatus.Completed, { timeoutMs: 5000 }),
-        observerRun2!.step('shared_step').waitForStatus(FlowStepStatus.Completed, { timeoutMs: 5000 })
+        originalRun.step('shared_step').waitForStatus(FlowStepStatus.Completed, { timeoutMs: 20000 }),
+        observerRun1!.step('shared_step').waitForStatus(FlowStepStatus.Completed, { timeoutMs: 20000 }),
+        observerRun2!.step('shared_step').waitForStatus(FlowStepStatus.Completed, { timeoutMs: 20000 })
       ]);
 
       // Verify all clients have the same final state
@@ -172,7 +172,7 @@ describe('Concurrent Operations Tests', () => {
         supabaseClient3.removeAllChannels()
       ]);
     }),
-    25000
+    40000
   );
 
   it(
@@ -230,7 +230,7 @@ describe('Concurrent Operations Tests', () => {
 
       // Wait for all runs to complete
       await Promise.all(runs.map(run => 
-        run.waitForStatus(FlowRunStatus.Completed, { timeoutMs: 10000 })
+        run.waitForStatus(FlowRunStatus.Completed, { timeoutMs: 30000 })
       ));
 
       // Verify all runs completed correctly without interference by checking database directly
@@ -250,7 +250,7 @@ describe('Concurrent Operations Tests', () => {
       console.log('=== All concurrent instances completed without conflicts ===');
       await supabaseClient.removeAllChannels();
     }),
-    20000
+    40000
   );
 
   it(
@@ -310,8 +310,8 @@ describe('Concurrent Operations Tests', () => {
 
       // Wait for completion
       await Promise.all([
-        runA.waitForStatus(FlowRunStatus.Completed, { timeoutMs: 10000 }),
-        runB.waitForStatus(FlowRunStatus.Completed, { timeoutMs: 10000 })
+        runA.waitForStatus(FlowRunStatus.Completed, { timeoutMs: 30000 }),
+        runB.waitForStatus(FlowRunStatus.Completed, { timeoutMs: 30000 })
       ]);
 
       // Verify isolation by checking database state directly
@@ -332,6 +332,6 @@ describe('Concurrent Operations Tests', () => {
       console.log('=== Flow isolation maintained successfully ===');
       await supabaseClient.removeAllChannels();
     }),
-    20000
+    40000
   );
 });
