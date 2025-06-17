@@ -6,13 +6,36 @@
   "tags": [],
   "targets": {
     "build": {
-      "executor": "@nx/js:tsc",
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "nx run client:build:lib",
+          "nx run client:build:browser"
+        ],
+        "parallel": false
+      }
+    },
+    "build:lib": {
+      "executor": "@nx/vite:build",
       "options": {
         "outputPath": "pkgs/client/dist",
-        "main": "pkgs/client/src/index.ts",
+        "configFile": "pkgs/client/vite.config.ts"
+      }
+    },
+    "build:browser": {
+      "executor": "@nx/vite:build",
+      "options": {
+        "outputPath": "pkgs/client/dist",
+        "configFile": "pkgs/client/vite.browser.config.ts"
+      }
+    },
+    "typecheck": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "noEmit": true,
         "tsConfig": "pkgs/client/tsconfig.lib.json",
-        "assets": ["pkgs/client/*.md"],
-        "rootDir": "pkgs/client/src"
+        "main": "pkgs/client/src/index.ts",
+        "outputPath": "pkgs/client/dist"
       }
     },
     "lint": {
