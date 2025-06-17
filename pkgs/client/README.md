@@ -2,10 +2,9 @@
 
 TypeScript client library for interacting with pgflow workflows and observing real-time progress updates.
 
-> [!WARNING]
-> **Security Notice**: pgflow currently has minimal security controls. All authenticated users can potentially access all workflows and runs. 
-> 
-> See [SECURITY.md](./SECURITY.md) for details and required permissions setup.
+> [!WARNING] > **Security Notice**: pgflow does not handle security yet. **YOU are responsible for securing access to schemas, tables, and functions.**
+>
+> See [SECURITY.md](./SECURITY.md) for required permission grants and their implications.
 
 > [!NOTE]
 > This project and all its components are licensed under [Apache 2.0](./LICENSE) license.
@@ -53,14 +52,14 @@ import { FlowRunStatus } from '@pgflow/client';
 
 // Start a workflow
 const run = await pgflow.startFlow('analyze_website', {
-  url: 'https://example.com'
+  url: 'https://example.com',
 });
 
 console.log(`Started workflow: ${run.run_id}`);
 
 // Wait for completion
 const completed = await run.waitForStatus(FlowRunStatus.Completed, {
-  timeoutMs: 30000
+  timeoutMs: 30000,
 });
 
 console.log('Workflow completed:', completed.output);
@@ -74,15 +73,15 @@ A `FlowRun` represents a single execution instance of a workflow. It provides me
 
 ```typescript
 // Get run status and metadata
-console.log(run.status);        // 'started' | 'completed' | 'failed'
-console.log(run.flow_slug);     // 'analyze_website'
-console.log(run.input);         // Original input data
-console.log(run.output);        // Final output (when completed)
+console.log(run.status); // 'started' | 'completed' | 'failed'
+console.log(run.flow_slug); // 'analyze_website'
+console.log(run.input); // Original input data
+console.log(run.output); // Final output (when completed)
 
 // Access individual steps
 const step = run.step('website_scraper');
-console.log(step.status);       // Step-specific status
-console.log(step.output);       // Step output data
+console.log(step.status); // Step-specific status
+console.log(step.output); // Step output data
 ```
 
 ### FlowStep
@@ -93,10 +92,10 @@ Individual steps within a workflow run. Each step has its own status, input, out
 const step = run.step('sentiment_analysis');
 
 // Step metadata
-console.log(step.step_slug);     // 'sentiment_analysis'
-console.log(step.status);        // 'created' | 'started' | 'completed' | 'failed'
-console.log(step.started_at);    // Timestamp when step started
-console.log(step.completed_at);  // Timestamp when step completed
+console.log(step.step_slug); // 'sentiment_analysis'
+console.log(step.status); // 'created' | 'started' | 'completed' | 'failed'
+console.log(step.started_at); // Timestamp when step started
+console.log(step.completed_at); // Timestamp when step completed
 console.log(step.error_message); // Error message if failed
 ```
 
@@ -116,7 +115,9 @@ const run = await pgflow.startFlow('my_flow', { data: 'input' }, 'custom-id');
 
 // With type safety (requires flow definition)
 import { MyFlow } from './flows/my-flow';
-const run = await pgflow.startFlow<typeof MyFlow>(MyFlow.slug, { data: 'input' });
+const run = await pgflow.startFlow<typeof MyFlow>(MyFlow.slug, {
+  data: 'input',
+});
 ```
 
 #### `getRun(run_id)`
@@ -156,13 +157,13 @@ const completed = await run.waitForStatus(FlowRunStatus.Completed);
 
 // With timeout
 const completed = await run.waitForStatus(FlowRunStatus.Completed, {
-  timeoutMs: 30000
+  timeoutMs: 30000,
 });
 
 // Wait for any terminal status
 const terminal = await run.waitForStatus([
   FlowRunStatus.Completed,
-  FlowRunStatus.Failed
+  FlowRunStatus.Failed,
 ]);
 ```
 
@@ -204,7 +205,7 @@ await step.waitForStatus(FlowStepStatus.Completed);
 
 // With timeout
 await step.waitForStatus(FlowStepStatus.Completed, {
-  timeoutMs: 15000
+  timeoutMs: 15000,
 });
 ```
 
@@ -243,16 +244,16 @@ const AnalyzeWebsite = new Flow<{ url: string }>({ slug: 'analyze_website' })
 // Type-safe client usage
 const run = await pgflow.startFlow<typeof AnalyzeWebsite>(
   AnalyzeWebsite.slug,
-  { url: 'https://example.com' }  // TypeScript validates this matches Flow input
+  { url: 'https://example.com' } // TypeScript validates this matches Flow input
 );
 
 // Typed step access
-const scrapeStep = run.step('scrape');  // TypeScript knows this step exists
+const scrapeStep = run.step('scrape'); // TypeScript knows this step exists
 const analyzeStep = run.step('analyze');
 
 // Typed output access
 await run.waitForStatus(FlowRunStatus.Completed);
-console.log(run.output);  // TypeScript knows the output structure
+console.log(run.output); // TypeScript knows the output structure
 ```
 
 ## Advanced Usage
@@ -262,22 +263,21 @@ console.log(run.output);  // TypeScript knows the output structure
 ```typescript
 try {
   const run = await pgflow.startFlow('risky_workflow', { data: 'test' });
-  
+
   // Monitor for failures
   run.on('failed', (event) => {
     console.error('Workflow failed:', event.error_message);
     // Handle failure (retry, alert, etc.)
   });
-  
+
   const result = await run.waitForStatus([
     FlowRunStatus.Completed,
-    FlowRunStatus.Failed
+    FlowRunStatus.Failed,
   ]);
-  
+
   if (result.status === FlowRunStatus.Failed) {
     throw new Error(`Workflow failed: ${result.error_message}`);
   }
-  
 } catch (error) {
   console.error('Error managing workflow:', error);
 }
@@ -290,7 +290,7 @@ const run = await pgflow.startFlow('complex_workflow', { data: 'input' });
 
 // Monitor specific steps in parallel
 const steps = ['step1', 'step2', 'step3'];
-const stepPromises = steps.map(stepSlug => 
+const stepPromises = steps.map((stepSlug) =>
   run.step(stepSlug).waitForStatus(FlowStepStatus.Completed)
 );
 
@@ -327,8 +327,18 @@ pgflow.dispose(run.run_id);
 To use the client, your Supabase project needs:
 
 1. **pgflow schema installed** (via `@pgflow/core` migrations)
+
 2. **Proper permissions** - See [SECURITY.md](./SECURITY.md) for required grants
-3. **Exposed schema** in your Supabase dashboard (API Settings → Exposed schemas)
+
+3. **Exposed schema** - Add `pgflow` to your exposed schemas:
+   - **Dashboard**: Settings → API → Data API Settings → Exposed schemas
+   - **Config**: Add to `api.schemas` in `supabase/config.toml`:
+     ```toml
+     [api]
+     schemas = ["public", "graphql_public", "pgflow"]
+     extra_search_path = ["public", "extensions"]
+     max_rows = 1000
+     ```
 
 ## Development
 
@@ -363,5 +373,6 @@ See [examples/basic.ts](./examples/basic.ts) for comprehensive usage examples.
 ## Documentation
 
 For more detailed documentation, visit:
+
 - [pgflow Documentation](https://pgflow.dev)
 - [Client Library Guide](https://pgflow.dev/how-to/monitor-flow-execution)
