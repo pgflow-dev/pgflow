@@ -5,12 +5,8 @@ echo "Dumping baseline schema for Atlas"
 
 echo > atlas/.supabase-baseline-schema.sql
 
-echo "Inspecting realtime schema..."
-atlas schema inspect --schema realtime -u "postgres://postgres:postgres@localhost:50422/postgres?sslmode=disable" --format "{{ sql . }}" >> atlas/.supabase-baseline-schema.sql || {
-  echo "Failed to inspect realtime schema"
-  exit 1
-}
-
+# Only dump pgmq schema as baseline
+# Realtime schema is managed by Supabase and should not be included in Atlas baseline
 echo "Inspecting pgmq schema..."
 atlas schema inspect --schema pgmq -u "postgres://postgres:postgres@localhost:50422/postgres?sslmode=disable" --format "{{ sql . }}" >> atlas/.supabase-baseline-schema.sql || {
   echo "Failed to inspect pgmq schema"
