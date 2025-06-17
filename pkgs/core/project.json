@@ -35,7 +35,7 @@
     },
     "verify-schemas-synced": {
       "executor": "nx:run-commands",
-      "dependsOn": ["supabase:ensure-started"],
+      "dependsOn": ["dump-realtime-schema", "supabase:ensure-started"],
       "inputs": [
         "schemas",
         "migrations",
