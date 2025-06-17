@@ -24,6 +24,7 @@
     },
     "serve": {
       "executor": "nx:run-commands",
+      "dependsOn": ["build"],
       "options": {
         "command": "tsx src/index.ts",
         "cwd": "{projectRoot}"
