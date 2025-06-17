@@ -331,7 +331,7 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
     const subscriptionPromise = new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error(`Subscription timeout for channel ${channelName}`));
-      }, 5000);
+      }, 20000); // Increased from 5s to 20s for slower CI environments
       
       channel.subscribe((status) => {
         console.log(`Channel ${channelName} subscription status:`, status);
