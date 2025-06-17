@@ -27,11 +27,6 @@
       "options": {
         "outputPath": "pkgs/client/dist",
         "configFile": "pkgs/client/vite.browser.config.ts"
-      },
-      "configurations": {
-        "production": {
-          "minify": "terser"
-        }
       }
     },
     "typecheck": {
