@@ -100,7 +100,7 @@ importers:
   examples/playground:
     dependencies:
       '@pgflow/client':
-        specifier: workspace:*
+        specifier: 0.4.1
         version: link:../../pkgs/client
       '@radix-ui/react-checkbox':
         specifier: ^1.1.1
