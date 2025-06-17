@@ -6,13 +6,22 @@
   "tags": [],
   "targets": {
     "build": {
+      "executor": "@nx/vite:build",
+      "dependsOn": ["typecheck"],
+      "options": {
+        "outputPath": "pkgs/client/dist",
+        "configFile": "pkgs/client/vite.config.ts"
+      }
+    },
+    "typecheck": {
       "executor": "@nx/js:tsc",
       "options": {
         "outputPath": "pkgs/client/dist",
         "main": "pkgs/client/src/index.ts",
         "tsConfig": "pkgs/client/tsconfig.lib.json",
         "assets": ["pkgs/client/*.md"],
-        "rootDir": "pkgs/client/src"
+        "rootDir": "pkgs/client/src",
+        "emitOnlyDtsFiles": true
       }
     },
     "lint": {
