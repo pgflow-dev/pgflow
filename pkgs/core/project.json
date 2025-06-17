@@ -22,8 +22,20 @@
     "databaseTypes": ["{projectRoot}/src/database-types.ts"]
   },
   "targets": {
+    "dump-realtime-schema": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["supabase:ensure-started"],
+      "outputs": ["{projectRoot}/atlas/.supabase-baseline-schema.sql"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["scripts/atlas-dump-realtime-schema"],
+        "parallel": false
+      },
+      "cache": true
+    },
     "verify-schemas-synced": {
       "executor": "nx:run-commands",
+      "dependsOn": ["dump-realtime-schema", "supabase:ensure-started"],
       "inputs": [
         "schemas",
         "migrations",
@@ -59,7 +71,7 @@
     "build": {
       "executor": "@nx/js:tsc",
       "dependsOn": ["gen-types"],
-      "inputs": ["databaseTypes"],
+      "inputs": ["default", "databaseTypes"],
       "options": {
         "outputPath": "pkgs/core/dist",
         "main": "pkgs/core/src/index.ts",
@@ -95,9 +107,13 @@
         "parallel": false
       }
     },
+    "lint:eslint": {
+      "executor": "@nx/eslint:lint",
+      "inputs": ["default"]
+    },
     "lint": {
       "executor": "nx:noop",
-      "dependsOn": ["lint:sqruff"]
+      "dependsOn": ["lint:sqruff", "lint:eslint"]
     },
     "fix-sql": {
       "executor": "nx:run-commands",
@@ -177,6 +193,7 @@
     "test:vitest": {
       "executor": "@nx/vite:test",
       "dependsOn": ["^build", "build", "verify-gen-types"],
+      "inputs": ["default", "databaseTypes"],
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "passWithNoTests": true,

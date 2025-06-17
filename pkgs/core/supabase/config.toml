@@ -20,7 +20,7 @@ enabled = false
 [edge_runtime]
 enabled = false
 [realtime]
-enabled = false
+enabled = true
 [studio]
 enabled = false
 [inbucket]

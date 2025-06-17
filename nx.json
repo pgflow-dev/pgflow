@@ -39,7 +39,7 @@
         "serveStaticTargetName": "serve-static",
         "typecheckTargetName": "typecheck"
       }
-    }
+    },
   ],
   "targetDefaults": {
     "@nx/esbuild:esbuild": {

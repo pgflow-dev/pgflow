@@ -4,7 +4,7 @@
 
 > "Things just happen. What the hell. And the reason things just happen is that a hundred billion other things just happened, all working unheeded and unseen, to make sure that they do."
 >
-> –- Terry Pratchett, Last Continent, reflecting on the elegant machinery of complex systems
+> –- **Terry Pratchett, "Last Continent"**, reflecting on the elegant machinery of complex systems
 
 ## Overview
 
@@ -14,6 +14,7 @@ The system combines:
 
 - **[SQL Core](./pkgs/core/)** - Workflow state management natively in Postgres with ACID compliance
 - **[TypeScript DSL](./pkgs/dsl/)** - Type-safe workflow definitions with automatic inference
+- **[TypeScript Client](./pkgs/client/)** - Client library for starting workflows and monitoring real-time progress
 - **[Edge Worker](./pkgs/edge-worker/)** - Auto-respawning task processor that handles retries and concurrency
 - **[CLI Tools](./pkgs/cli/)** - One-command setup with automatic schema migrations
 
@@ -54,6 +55,7 @@ The execution system handles the rest - scheduling steps when dependencies compl
 | Package                                | Description                                                             |
 | -------------------------------------- | ----------------------------------------------------------------------- |
 | [cli](./pkgs/cli/)                     | Command-line interface for installing and compiling flows               |
+| [client](./pkgs/client/)               | TypeScript client for starting workflows and monitoring real-time progress |
 | [core](./pkgs/core/)                   | SQL Core for the workflow engine - foundational tables and functions    |
 | [dsl](./pkgs/dsl/)                     | TypeScript DSL for defining flows with type inference                   |
 | [edge-worker](./pkgs/edge-worker/)     | Task queue worker for Supabase Edge Functions with reliability features |

@@ -1,0 +1,18 @@
+#!/bin/bash
+set -e
+
+echo "Dumping baseline schema for Atlas"
+
+echo > atlas/.supabase-baseline-schema.sql
+
+echo "Inspecting realtime schema..."
+atlas schema inspect --schema realtime -u "postgres://postgres:postgres@localhost:50422/postgres?sslmode=disable" --format "{{ sql . }}" >> atlas/.supabase-baseline-schema.sql || {
+  echo "Failed to inspect realtime schema"
+  exit 1
+}
+
+echo "Inspecting pgmq schema..."
+atlas schema inspect --schema pgmq -u "postgres://postgres:postgres@localhost:50422/postgres?sslmode=disable" --format "{{ sql . }}" >> atlas/.supabase-baseline-schema.sql || {
+  echo "Failed to inspect pgmq schema"
+  exit 1
+}

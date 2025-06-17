@@ -32,7 +32,7 @@
       "executor": "@axhxrx/nx-deno:lint",
       "options": {
         "denoConfig": "pkgs/edge-worker/deno.test.json",
-        "ignore": "pkgs/edge-worker/supabase/functions/_src/"
+        "ignore": "pkgs/edge-worker/supabase/functions/_dist/"
       }
     },
     "supabase:start": {
@@ -95,15 +95,15 @@
     },
     "db:ensure": {
       "executor": "nx:run-commands",
-      "dependsOn": ["^verify-migrations"],
+      "dependsOn": ["^verify-migrations", "^dump-realtime-schema"],
       "options": {
         "cwd": "pkgs/edge-worker",
-        "commands": ["deno task --config deno.test.json db:ensure"],
+        "commands": ["./scripts/ensure-db"],
         "parallel": false
       }
     },
     "test:unit": {
-      "dependsOn": ["db:ensure"],
+      "dependsOn": ["db:ensure", "^build"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",
@@ -114,7 +114,7 @@
       }
     },
     "test:integration": {
-      "dependsOn": ["db:ensure"],
+      "dependsOn": ["db:ensure", "^build"],
       "executor": "nx:run-commands",
       "options": {
         "cwd": "pkgs/edge-worker",
