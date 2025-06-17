@@ -2,7 +2,7 @@
 
 TypeScript client library for interacting with pgflow workflows and observing real-time progress updates.
 
-> [!WARNING]
+> [!CAUTION]
 > **Security Notice**: pgflow does not handle security yet. **YOU are responsible for securing access to schemas, tables, and functions.**
 >
 > See [SECURITY.md](./SECURITY.md) for required permission grants and their implications.
