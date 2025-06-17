@@ -342,6 +342,8 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA pgflow TO anon, authenticated, service_role
 nx build client
 ```
 
+For detailed information about the build process and output formats, see [BUILD_AND_RELEASE.md](./BUILD_AND_RELEASE.md).
+
 ### Testing
 
 ```bash
