@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+# Clean up any existing Atlas dev container to avoid "schema already exists" errors
+# Container name from docker "postgres" "pgflow" block
+docker rm -f atlas-dev-postgres-pgflow 2>/dev/null || true
+
 # First, ensure the baseline schema file is updated
 echo "Running atlas-dump-realtime-schema..."
 ./scripts/atlas-dump-realtime-schema

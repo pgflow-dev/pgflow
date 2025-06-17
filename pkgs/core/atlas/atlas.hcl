@@ -1,6 +1,6 @@
 env "local" {
   // Define the Dev Database used to evaluate the current state
-  dev = docker.postgres.dev.url
+  dev = docker.postgres.pgflow.url
 
   // Specify the desired schema source
   src = "file://schemas/"
@@ -11,7 +11,7 @@ env "local" {
   }
 }
 
-docker "postgres" "dev" {
+docker "postgres" "pgflow" {
   # image = "postgres:15"
   # custom image is built and pushed to speed up schema verification,
   # otherwise it takes around 30s
