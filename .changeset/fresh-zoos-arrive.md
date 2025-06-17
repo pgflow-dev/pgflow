@@ -1,5 +1,6 @@
 ---
 '@pgflow/client': patch
+'@pgflow/core': patch
 ---
 
 feat: add multi-target build support for @pgflow/client package
@@ -14,6 +15,7 @@ The @pgflow/client package now builds for multiple environments, making it usabl
 - CDN support via unpkg
 - Production builds with minification
 - Proper tree-shaking support
+- `@supabase/supabase-js` is now a regular dependency (not peer dependency)
 
 **You can now use it in:**
 
@@ -21,3 +23,7 @@ The @pgflow/client package now builds for multiple environments, making it usabl
 - CommonJS: `const { PgflowClient } = require('@pgflow/client')`
 - Browser: `<script src="https://unpkg.com/@pgflow/client"></script>`
 - Bundlers: Automatically picks the right format
+
+**Other changes:**
+
+- Pin Supabase CLI to exact version 2.21.1 to ensure consistent type generation between local and CI environments

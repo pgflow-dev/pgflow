@@ -9,14 +9,15 @@ The package is built in multiple formats to support various JavaScript environme
 ### Node.js Builds
 - **ES Module** (`dist/index.js`) - Modern JavaScript modules using `import/export`
 - **CommonJS** (`dist/index.cjs`) - Legacy Node.js format using `require()`
-- Both formats exclude dependencies, expecting them to be installed separately
+- Both formats exclude dependencies (they are installed automatically via npm)
 - Not minified - allows bundlers to optimize as needed
 
 ### Browser Build
-- **IIFE Bundle** (`dist/pgflow-client.browser.js`) - Self-contained browser build
-- Includes all dependencies bundled together
+- **IIFE Bundle** (`dist/pgflow-client.browser.js`) - Browser-ready build
+- Includes all dependencies EXCEPT @supabase/supabase-js
+- Expects users to provide their own Supabase client instance
 - Exposes `window.PgflowClient` global variable
-- Always minified with terser for optimal file size
+- Always minified with terser for optimal file size (16KB gzipped: 4.3KB)
 - Includes source maps for debugging
 
 ### TypeScript Declarations
@@ -55,11 +56,18 @@ const { PgflowClient } = require('@pgflow/client');
 
 ### Browser via CDN
 ```html
+<!-- First, load Supabase (required) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- Then load pgflow client -->
 <script src="https://unpkg.com/@pgflow/client"></script>
+
 <script>
-  const client = new window.PgflowClient.PgflowClient({
-    supabaseClient: supabase
-  });
+  // Initialize Supabase (you already have this)
+  const supabase = window.supabase.createClient('your-url', 'your-anon-key');
+  
+  // Pass your Supabase instance to PgflowClient
+  const pgflow = new window.PgflowClient.PgflowClient(supabase);
 </script>
 ```
 
@@ -108,7 +116,6 @@ pnpm nx build:browser client
 
 ## Dependencies
 
-- **Runtime**: @pgflow/core, @pgflow/dsl, nanoevents, uuid
-- **Peer**: @supabase/supabase-js (required, not bundled)
+- **Runtime**: @pgflow/core, @pgflow/dsl, @supabase/supabase-js, nanoevents, uuid
 
-The browser build includes all runtime dependencies except the peer dependency, which must be provided separately.
+All runtime dependencies are automatically installed when you install @pgflow/client. The browser build includes all these dependencies bundled together.
