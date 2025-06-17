@@ -241,7 +241,7 @@ importers:
         specifier: ^3.4.5
         version: 3.4.5
       supabase:
-        specifier: ^2.21.1
+        specifier: 2.21.1
         version: 2.21.1
       terser:
         specifier: ^5.43.0
@@ -266,7 +266,7 @@ importers:
         specifier: ^22.14.1
         version: 22.14.1
       supabase:
-        specifier: ^2.21.1
+        specifier: 2.21.1
         version: 2.21.1
 
   pkgs/dsl:

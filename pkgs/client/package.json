@@ -5,6 +5,7 @@
   "dependencies": {
     "@pgflow/core": "workspace:*",
     "@pgflow/dsl": "workspace:*",
+    "@supabase/supabase-js": "^2.49.4",
     "nanoevents": "^7.0.1",
     "uuid": "^9.0.0"
   },
@@ -35,15 +36,11 @@
   },
   "devDependencies": {
     "@pgflow/dsl": "workspace:*",
-    "@supabase/supabase-js": "^2.49.4",
     "@types/uuid": "^10.0.0",
     "postgres": "^3.4.5",
-    "supabase": "^2.21.1",
+    "supabase": "2.21.1",
     "terser": "^5.43.0",
     "vite-plugin-dts": "~3.8.1",
     "vitest": "1.3.1"
-  },
-  "peerDependencies": {
-    "@supabase/supabase-js": "^2.49.4"
   }
 }

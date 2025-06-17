@@ -25,7 +25,7 @@ Key features:
 ## Installation
 
 ```bash
-npm install @pgflow/client @supabase/supabase-js
+npm install @pgflow/client
 ```
 
 ## Quick Start
