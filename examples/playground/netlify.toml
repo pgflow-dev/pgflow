@@ -6,3 +6,4 @@
 [build.environment]
   NPM_FLAGS = "--version" # This prevents Netlify from automatically running npm install
   NETLIFY_USE_PNPM = "true"
+  PNPM_VERSION = "8.14.1"
