@@ -1,6 +1,7 @@
 import { EnvVarWarning } from '@/components/env-var-warning';
 import HeaderAuth from '@/components/header-auth';
 import { LoadingStateProvider } from '@/components/loading-state-provider';
+import { PgflowClientProvider } from '@/lib/pgflow-client-provider';
 import { MobileLinks } from '@/components/mobile-links';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { hasEnvVars } from '@/utils/supabase/check-env-vars';
@@ -48,9 +49,10 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <LoadingStateProvider>
-              <main className="min-h-screen flex flex-col items-center relative">
-                <div className="flex-1 w-full flex flex-col items-center">
-                  <nav className="w-full flex justify-center border-b border-b-foreground/10 h-14">
+              <PgflowClientProvider>
+                <main className="min-h-screen flex flex-col items-center relative">
+                  <div className="flex-1 w-full flex flex-col items-center">
+                    <nav className="w-full flex justify-center border-b border-b-foreground/10 h-14">
                     <div className="w-full max-w-5xl flex justify-between items-center p-1 px-5 text-sm">
                       <div className="flex gap-5 items-center">
                         <Link href={'/'} className="font-semibold">
@@ -144,6 +146,7 @@ export default function RootLayout({
                   </footer>
                 </div>
               </main>
+            </PgflowClientProvider>
             </LoadingStateProvider>
           </ThemeProvider>
         </PlausibleProvider>

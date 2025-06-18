@@ -239,7 +239,7 @@
           "echo 'Verifying database types are up-to-date...'",
           "cp src/database-types.ts .nx-inputs/database-types.ts.backup",
           "supabase gen types --local --schema pgflow --schema pgmq > .nx-inputs/database-types.ts.new",
-          "diff .nx-inputs/database-types.ts.backup .nx-inputs/database-types.ts.new > .nx-inputs/verify-gen-types.txt 2>&1 || (echo 'ERROR: Database types are out of date! Run \"nx gen-types core\" to update them.' && exit 1)",
+          "diff .nx-inputs/database-types.ts.backup .nx-inputs/database-types.ts.new > .nx-inputs/verify-gen-types.txt 2>&1 || (echo 'ERROR: Database types are out of date! Run \"nx gen-types core\" to update them.' && echo '=============================================' && echo 'Diff between current and generated types:' && echo '=============================================' && diff -u .nx-inputs/database-types.ts.backup .nx-inputs/database-types.ts.new || true && echo '=============================================' && exit 1)",
           "echo 'Database types are up-to-date' > .nx-inputs/verify-gen-types.txt"
         ],
         "parallel": false

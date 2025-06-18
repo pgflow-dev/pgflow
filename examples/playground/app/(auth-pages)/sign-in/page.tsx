@@ -22,7 +22,6 @@ export default function Login({
   const router = useRouter();
 
   // After successful login, redirect to home page
-  // The AuthRedirectHandler on the home page will handle the pending analysis
   useEffect(() => {
     // Process the searchParams Promise when component mounts
     const processSearchParams = async () => {

@@ -66,7 +66,7 @@ export const signInAction = async (formData: FormData) => {
     return encodedRedirect('error', '/sign-in', error.message);
   }
 
-  // Redirect to home page where AuthRedirectHandler will check for pendingAnalysisUrl
+  // Redirect to home page
   return redirect('/');
 };
 

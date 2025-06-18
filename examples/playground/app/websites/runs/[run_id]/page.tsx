@@ -17,15 +17,7 @@ function RunPageContent() {
     return true; // Default to true
   });
   
-  const {
-    runData,
-    loading,
-    error,
-    currentTime,
-    analyzeWebsite,
-    analyzeLoading,
-    analyzeError,
-  } = useFlowRun();
+  const { flowRun, loading, error } = useFlowRun();
 
   return (
     <div className="flex flex-col lg:flex-row">
@@ -128,11 +120,10 @@ function RunPageContent() {
           )}
 
           <FlowRunDetails
-            runId={runData?.run_id || ''}
-            runData={runData}
+            runId={flowRun?.run_id || ''}
+            flowRun={flowRun}
             loading={loading}
             error={error}
-            currentTime={currentTime}
           />
         </div>
       </div>
@@ -140,12 +131,9 @@ function RunPageContent() {
       {/* Main panel: User-friendly UI - second on mobile, left side on desktop */}
       <div className="w-full lg:w-[65%] xl:w-[70%] lg:pr-6 order-last lg:order-first">
         <WebsiteAnalysisUI
-          runData={runData}
+          flowRun={flowRun}
           loading={loading}
           error={error}
-          onAnalyzeWebsite={analyzeWebsite}
-          analyzeLoading={analyzeLoading}
-          analyzeError={analyzeError}
         />
       </div>
     </div>
@@ -155,6 +143,7 @@ function RunPageContent() {
 export default function RunPage() {
   const params = useParams();
   const runId = params.run_id as string;
+  
 
   return (
     <FlowRunProvider runId={runId}>

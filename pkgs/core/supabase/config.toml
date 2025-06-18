@@ -12,16 +12,22 @@ sql_paths = [
   "seed.sql",
 ]
 
+[realtime]
+enabled = true
+
+##################################################################
+# disabled services ##############################################
+##################################################################
+
 [api]
-port = 50421  # Add custom port for Kong
-enabled = false  # Keep disabled as per your config
+port = 50421
+enabled = false
 [db.pooler]
 enabled = false
 [edge_runtime]
 enabled = false
-[realtime]
-enabled = true
 [studio]
+port = 50323
 enabled = false
 [inbucket]
 enabled = false

@@ -1,9 +1,6 @@
 // lib/services/start-analysis.ts
-import { createClient } from '@/utils/supabase/client'; // will be swapped for pgflow later
-
-// What we will need soon
-// import { PgflowClient } from '@pgflow/client';
-// const pgflow = new PgflowClient(supabase);
+import { createClient } from '@/utils/supabase/client';
+import type { FlowRun, PgflowClient } from '@pgflow/client';
 
 export interface StartAnalysisOptions {
   /**
@@ -18,14 +15,16 @@ export interface StartAnalysisOptions {
 }
 
 /**
- * Starts analyse-website pgflow run and returns the run_id.
+ * Starts analyse-website pgflow run and returns the FlowRun instance.
  * **This is the ONLY place that knows HOW we start a flow.**
  */
 export async function startWebsiteAnalysis(
   url: string,
   { requireAuth = true, runId }: StartAnalysisOptions = {},
-): Promise<string> {
+  pgflow: PgflowClient
+): Promise<FlowRun> {
   if (!url) throw new Error('URL is required');
+  if (!pgflow) throw new Error('PgflowClient is required');
 
   const supabase = createClient();
 
@@ -40,26 +39,15 @@ export async function startWebsiteAnalysis(
     }
   }
 
-  // when pgflow client is ready, replace the RPC:
-  //
-  // const pgflowRun = await pgflow.startFlow<typeof AnalyzeWebsite>(
-  //   'analyze_website',
-  //   { url },
-  //   runId ? { runId } : undefined
-  // );
-  // return pgflowRun.run_id;
+  // Get the user ID for the flow input
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id;
 
-  // --- current "RPC then redirect" behaviour ---
-  const { data, error } = await supabase.rpc(
-    'start_analyze_website_flow',
-    { url },
+  const flowRun = await pgflow.startFlow(
+    'analyze_website',
+    { url, user_id: userId },
+    runId
   );
-
-  if (error || !data?.run_id) {
-    throw new Error(
-      error?.message ?? 'start_analyze_website_flow returned no run_id',
-    );
-  }
-
-  return data.run_id as string;
+  
+  return flowRun;
 }
