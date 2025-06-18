@@ -42,7 +42,7 @@ function formatRelativeTime(
  */
 export function useElapsedTime(startDate: Date | null) {
   const elementRefs = useRef<Set<HTMLElement>>(new Set());
-  const intervalRef = useRef<NodeJS.Timeout>();
+  const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   // Update all registered elements with the current elapsed time
   const updateElements = useCallback(() => {

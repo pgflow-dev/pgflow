@@ -2,18 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import type { FlowRun } from '@pgflow/client';
+import type { AnyFlow } from '@pgflow/dsl';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface WebsiteAnalysisUIProps {
-  flowRun: FlowRun | null;
+  flowRun: FlowRun<AnyFlow> | null;
   loading: boolean;
   error: string | null;
 }
