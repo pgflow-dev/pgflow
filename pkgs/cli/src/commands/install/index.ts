@@ -11,6 +11,7 @@ export default (program: Command) => {
     .command('install')
     .description('Set up pgflow in your Supabase project')
     .option('--supabase-path <path>', 'Path to the Supabase folder')
+    .option('--skip-config', `Skips the 'config.toml' setup`, false)
     .option('-y, --yes', 'Automatically confirm all prompts', false)
     .action(async (options) => {
       intro('Installing pgflow in your Supabase project');
@@ -25,6 +26,7 @@ export default (program: Command) => {
           // Step 2: Update config.toml
           configUpdate: async ({ results: { supabasePath } }) => {
             if (!supabasePath) return false;
+            if (options.skipConfig) return true;
 
             return await updateConfigToml({
               supabasePath,
