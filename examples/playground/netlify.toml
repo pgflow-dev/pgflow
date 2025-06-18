@@ -1,3 +1,8 @@
 [build]
-  command = "npm run build"
+  base = "examples/playground"
+  command = "pnpm install --frozen-lockfile && pnpm run build"
   publish = ".next"
+
+[build.environment]
+  NPM_FLAGS = "--version" # This prevents Netlify from automatically running npm install
+  NETLIFY_USE_PNPM = "true"
