@@ -1,6 +1,6 @@
 [build]
   base = "examples/playground"
-  command = "pnpm install --frozen-lockfile && pnpm run build"
+  command = "cd ../.. && pnpm install --frozen-lockfile && cd examples/playground && pnpm run build"
   publish = ".next"
 
 [build.environment]
