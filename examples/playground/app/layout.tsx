@@ -16,7 +16,7 @@ import {
   MessagesSquare,
 } from 'lucide-react';
 import './globals.css';
-import PlausibleProvider from 'next-plausible';
+// import PlausibleProvider from 'next-plausible';
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -41,7 +41,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={geistSans.className} suppressHydrationWarning>
       <body className="bg-background text-foreground">
-        <PlausibleProvider domain="pgflow-demo.netlify.app">
+        {/* <PlausibleProvider domain="pgflow-demo.netlify.app"> */}
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
@@ -149,7 +149,7 @@ export default function RootLayout({
             </PgflowClientProvider>
             </LoadingStateProvider>
           </ThemeProvider>
-        </PlausibleProvider>
+        {/* </PlausibleProvider> */}
       </body>
     </html>
   );
