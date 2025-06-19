@@ -4,9 +4,10 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { usePgflowClient } from '@/lib/pgflow-client-provider';
 import { useLoadingState } from './loading-state-provider';
 import type { FlowRun } from '@pgflow/client';
+import type { AnyFlow } from '@pgflow/dsl';
 
 interface FlowRunContextType {
-  flowRun: FlowRun | null;
+  flowRun: FlowRun<AnyFlow> | null;
   loading: boolean;
   error: string | null;
 }
@@ -25,7 +26,7 @@ interface FlowRunProviderProps {
 }
 
 export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
-  const [flowRun, setFlowRun] = useState<FlowRun | null>(null);
+  const [flowRun, setFlowRun] = useState<FlowRun<AnyFlow> | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,16 +65,14 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
 
         // Subscribe to all run events to update global loading
         const unsubscribeStatus = run.on('*', (event) => {
-          if (event.status === 'completed' || event.status === 'failed' || 
-              event.status === 'error' || event.status === 'cancelled') {
+          if (event.status === 'completed' || event.status === 'failed') {
             setGlobalLoading(false);
           }
         });
 
         // Check initial status
         const currentStatus = run.status;
-        if (currentStatus === 'completed' || currentStatus === 'failed' || 
-            currentStatus === 'error' || currentStatus === 'cancelled') {
+        if (currentStatus === 'completed' || currentStatus === 'failed') {
           setGlobalLoading(false);
         }
 

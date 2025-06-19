@@ -1,3 +1,8 @@
 [build]
-  command = "npm run build"
+  base = "examples/playground"
+  command = "npm show @pgflow/client@0.4.1 && rm -rf node_modules package-lock.json && npm install && npm run build"
   publish = ".next"
+
+[build.environment]
+  NPM_FLAGS = "--force" # Force npm to install packages even if there are conflicts
+  NODE_VERSION = "20.18.1"

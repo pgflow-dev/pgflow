@@ -51,3 +51,9 @@ deno-dist/
 .vscode
 
 **/.claude/settings.local.json
+
+# Output files
+*.out
+
+# Local Netlify folder
+.netlify

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { FlowRun } from '@pgflow/client';
+import type { AnyFlow } from '@pgflow/dsl';
 import {
   Collapsible,
   CollapsibleContent,
@@ -48,7 +49,7 @@ function formatTimeDifference(
 
 interface FlowRunDetailsProps {
   runId: string;
-  flowRun: FlowRun | null;
+  flowRun: FlowRun<AnyFlow> | null;
   loading: boolean;
   error: string | null;
 }
@@ -152,7 +153,7 @@ export default function FlowRunDetails({
             <CollapsibleContent>
               <div className="px-3 pb-3">
                 <div className="bg-muted/20 rounded p-2 overflow-x-auto">
-                  <JSONHighlighter json={flowRun.input} />
+                  <JSONHighlighter data={flowRun.input} />
                 </div>
               </div>
             </CollapsibleContent>
@@ -169,7 +170,7 @@ export default function FlowRunDetails({
             <CollapsibleContent>
               <div className="px-3 pb-3">
                 <div className="bg-muted/20 rounded p-2 overflow-x-auto">
-                  <JSONHighlighter json={flowRun.output} />
+                  <JSONHighlighter data={flowRun.output} />
                 </div>
               </div>
             </CollapsibleContent>

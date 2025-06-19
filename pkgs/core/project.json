@@ -70,7 +70,6 @@
     },
     "build": {
       "executor": "@nx/js:tsc",
-      "dependsOn": ["gen-types"],
       "inputs": ["default", "databaseTypes"],
       "options": {
         "outputPath": "pkgs/core/dist",
