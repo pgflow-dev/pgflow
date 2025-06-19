@@ -1,9 +1,8 @@
 [build]
   base = "examples/playground"
-  command = "pnpm install && pnpm run build"
+  command = "npm install && npm run build"
   publish = ".next"
 
 [build.environment]
-  NPM_FLAGS = "--version" # This prevents Netlify from automatically running npm install
-  NETLIFY_USE_PNPM = "true"
-  PNPM_VERSION = "8.14.1"
+  NPM_FLAGS = "--force" # Force npm to install packages even if there are conflicts
+  NODE_VERSION = "20.18.1"
