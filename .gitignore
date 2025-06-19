@@ -54,3 +54,6 @@ deno-dist/
 
 # Output files
 *.out
+
+# Local Netlify folder
+.netlify
