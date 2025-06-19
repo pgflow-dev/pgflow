@@ -6,30 +6,31 @@ select pgflow_tests.create_realtime_partition();
 
 -- Reset database and setup a flow with max_attempts = 1 to fail immediately
 select pgflow_tests.reset_db();
-select pgflow.create_flow('test-flow', max_attempts => 1);
-select pgflow.add_step('test-flow', 'failing-step');
+select pgflow.create_flow('test_flow', max_attempts => 1);
+select pgflow.add_step('test_flow', 'failing_step');
 
 -- Start the flow
 with flow as (
-  select * from pgflow.start_flow('test-flow', '{}'::jsonb)
+  select * from pgflow.start_flow('test_flow', '{}'::jsonb)
 )
 select run_id into temporary run_ids from flow;
 
--- Manually create a started task (simulating worker started processing)
-insert into pgflow.step_tasks (run_id, step_slug, task_index, status, message_id, attempts_count)
-select run_id, 'failing-step', 0, 'started', 12345, 1
-from run_ids;
+-- Start ready steps (this creates the task)
+select pgflow.start_ready_steps((select run_id from run_ids));
 
--- Update step state to started
-update pgflow.step_states
-set status = 'started', started_at = now()
+-- Update the task to started status (simulating worker processing)
+update pgflow.step_tasks
+set status = 'started', 
+    started_at = now(),
+    attempts_count = 1
 where run_id = (select run_id from run_ids)
-  and step_slug = 'failing-step';
+  and step_slug = 'failing_step'
+  and task_index = 0;
 
 -- Call fail_task to fail the step permanently
 select pgflow.fail_task(
   (select run_id from run_ids),
-  'failing-step',
+  'failing_step',
   0,
   'Test failure to check step:failed event'
 );
@@ -41,7 +42,7 @@ select pg_sleep(0.1);
 select is(
   (select status from pgflow.step_states 
    where run_id = (select run_id from run_ids) 
-   and step_slug = 'failing-step'),
+   and step_slug = 'failing_step'),
   'failed',
   'Step state should be marked as failed in the database'
 );
@@ -53,9 +54,9 @@ select is(
   'run:failed event should be broadcast'
 );
 
--- Test 3: Verify step:failed event was sent (THIS IS THE BUG - IT MIGHT FAIL!)
+-- Test 3: Verify step:failed event was sent (THIS IS THE BUG - IT WILL FAIL!)
 select is(
-  pgflow_tests.count_realtime_events('step:failed', (select run_id from run_ids), 'failing-step'),
+  pgflow_tests.count_realtime_events('step:failed', (select run_id from run_ids), 'failing_step'),
   1::int,
   'step:failed event should be broadcast when step fails permanently'
 );
