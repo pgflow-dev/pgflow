@@ -1,6 +1,6 @@
 [build]
   base = "examples/playground"
-  command = "rm -rf node_modules package-lock.json && npm install && npm run build"
+  command = "npm show @pgflow/client@0.4.1 && rm -rf node_modules package-lock.json && npm install && npm run build"
   publish = ".next"
 
 [build.environment]
