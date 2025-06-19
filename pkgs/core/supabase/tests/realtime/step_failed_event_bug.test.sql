@@ -9,34 +9,15 @@ select pgflow_tests.reset_db();
 select pgflow.create_flow('test_flow', max_attempts => 1);
 select pgflow.add_step('test_flow', 'failing_step');
 
--- Start the flow
+-- Start the flow and capture the run_id
 with flow as (
   select * from pgflow.start_flow('test_flow', '{}'::jsonb)
 )
 select run_id into temporary run_ids from flow;
 
--- Start ready steps (this creates the task)
-select pgflow.start_ready_steps((select run_id from run_ids));
-
--- Update the task to started status (simulating worker processing)
-update pgflow.step_tasks
-set status = 'started', 
-    started_at = now(),
-    attempts_count = 1
-where run_id = (select run_id from run_ids)
-  and step_slug = 'failing_step'
-  and task_index = 0;
-
--- Call fail_task to fail the step permanently
-select pgflow.fail_task(
-  (select run_id from run_ids),
-  'failing_step',
-  0,
-  'Test failure to check step:failed event'
-);
-
--- Wait a bit for async processing
-select pg_sleep(0.1);
+-- Poll and fail the task using helper function
+-- Since max_attempts = 1, it will fail permanently
+select pgflow_tests.poll_and_fail('test_flow');
 
 -- Test 1: Verify step state is failed in database
 select is(
