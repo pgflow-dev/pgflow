@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { withPgNoTransaction } from '../helpers/db.js';
-import { createTestSupabaseClient } from '../helpers/setup.js';
-import { grantMinimalPgflowPermissions } from '../helpers/permissions.js';
-import { PgflowClient } from '../../src/lib/PgflowClient.js';
+import { withPgNoTransaction } from '../../helpers/db.js';
+import { createTestSupabaseClient } from '../../helpers/setup.js';
+import { grantMinimalPgflowPermissions } from '../../helpers/permissions.js';
+import { PgflowClient } from '../../../src/lib/PgflowClient.js';
 
-describe('Step Failed Event Broadcasting Bug', () => {
+describe('Step Failed Event Broadcasting', () => {
   it(
-    'demonstrates that step:failed events are not broadcast due to CTE optimization',
+    'should broadcast step:failed event when a step fails permanently',
     withPgNoTransaction(async (sql) => {
       // Grant minimal permissions
       await grantMinimalPgflowPermissions(sql);
@@ -84,13 +84,9 @@ describe('Step Failed Event Broadcasting Bug', () => {
       // Verify run:failed was broadcast (this works)
       expect(eventTypes).toContain('run:failed');
       
-      // BUG: step:failed is NOT broadcast due to CTE optimization
-      // The following assertion SHOULD pass but WILL fail
+      // Verify step:failed event is broadcast
+      // Regression: This fails due to PostgreSQL optimizing away the CTE that sends the event
       expect(eventTypes).toContain('step:failed');
-      
-      // This test intentionally fails to demonstrate the bug
-      // The fix would be to change the broadcast_step_failed CTE 
-      // from using SELECT to using PERFORM like run:failed does
     })
   );
 });
