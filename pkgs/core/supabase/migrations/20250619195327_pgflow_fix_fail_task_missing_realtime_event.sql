@@ -1,14 +1,5 @@
-create or replace function pgflow.fail_task(
-  run_id uuid,
-  step_slug text,
-  task_index int,
-  error_message text
-)
-returns setof pgflow.step_tasks
-language plpgsql
-volatile
-set search_path to ''
-as $$
+-- Modify "fail_task" function
+CREATE OR REPLACE FUNCTION "pgflow"."fail_task" ("run_id" uuid, "step_slug" text, "task_index" integer, "error_message" text) RETURNS SETOF "pgflow"."step_tasks" LANGUAGE plpgsql SET "search_path" = '' AS $$
 DECLARE
   v_run_failed boolean;
   v_step_failed boolean;
