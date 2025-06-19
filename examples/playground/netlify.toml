@@ -1,6 +1,6 @@
 [build]
   base = "examples/playground"
-  command = "cd ../.. && pnpm install && cd examples/playground && pnpm run build"
+  command = "pnpm install && pnpm run build"
   publish = ".next"
 
 [build.environment]
