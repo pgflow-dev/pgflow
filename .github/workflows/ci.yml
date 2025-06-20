@@ -130,7 +130,16 @@ jobs:
 
       - name: Deploy Preview for ${{ matrix.site }}
         id: deploy
-        run: pnpm exec nx run ${{ matrix.site }}:deploy:preview
+        run: |
+          # Run the deployment
+          pnpm exec nx run ${{ matrix.site }}:deploy:preview
+          
+          # Use the predictable branch alias URL
+          # Cloudflare Pages always creates a branch alias at: <branch-name>.<project-name>.pages.dev
+          DEPLOYMENT_URL="https://${{ steps.extract_branch.outputs.branch }}.pgflow.pages.dev"
+          
+          echo "deployment_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+          echo "::notice title=Preview URL::$DEPLOYMENT_URL"
         env:
           CLOUDFLARE_BRANCH: ${{ steps.extract_branch.outputs.branch }}
 
@@ -145,7 +154,7 @@ jobs:
             
             ✅ **Deployment successful!**
             
-            🔗 **Preview URL**: https://${{ steps.extract_branch.outputs.branch }}.pgflow.pages.dev
+            🔗 **Preview URL**: ${{ steps.deploy.outputs.deployment_url }}
             
             📝 **Details**:
             - Site: `${{ matrix.site }}`
