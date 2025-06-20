@@ -100,8 +100,8 @@ importers:
   examples/playground:
     dependencies:
       '@pgflow/client':
-        specifier: 0.4.1
-        version: 0.4.1
+        specifier: workspace:*
+        version: link:../../pkgs/client
       '@radix-ui/react-checkbox':
         specifier: ^1.1.1
         version: 1.3.2(@types/react-dom@19.0.2)(@types/react@19.1.8)(react-dom@19.0.0)(react@19.0.0)
@@ -7417,30 +7417,6 @@ packages:
       '@parcel/watcher-win32-ia32': 2.5.1
       '@parcel/watcher-win32-x64': 2.5.1
     dev: true
-
-  /@pgflow/client@0.4.1:
-    resolution: {integrity: sha512-QoeXx3NiXc8EUuxOjq28m+a0SeNYeVos11YNo9qNhdOSokUh6ZnSvXg2ld0Tvf+8MNpS8RUj9JeV3iK8ar3B0g==}
-    dependencies:
-      '@pgflow/core': 0.4.1
-      '@pgflow/dsl': 0.4.1
-      '@supabase/supabase-js': 2.49.4
-      nanoevents: 7.0.1
-      uuid: 9.0.1
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-    dev: false
-
-  /@pgflow/core@0.4.1:
-    resolution: {integrity: sha512-W9xyQLPSVxmdhf2AS1yCywc7m+lwfp7A8onw89vUyPw0NC9hkPLxxnzMMG/tXix5gRKWmNelbaEJ2BxL93MNAw==}
-    dependencies:
-      '@pgflow/dsl': 0.4.1
-      postgres: 3.4.5
-    dev: false
-
-  /@pgflow/dsl@0.4.1:
-    resolution: {integrity: sha512-zVFMc/dgRgzd3ZU+WRjxR9GRP5vii6VgeOj8KVrdudTsFf+y+8ULUutpRF3/4MVbD6+OaOmw7ZR0/FwwZH3hzQ==}
-    dev: false
 
   /@phenomnomnominal/tsquery@5.0.1(typescript@5.6.3):
     resolution: {integrity: sha512-3nVv+e2FQwsW8Aw6qTU6f+1rfcJ3hrcnvH/mu9i8YhxO+9sqbOfpL8m6PbET5+xKOlz/VSbp0RoYWYCtIsnmuA==}
