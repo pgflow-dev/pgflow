@@ -90,6 +90,8 @@ jobs:
     needs: build
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write # allow writing PR comments
     strategy:
       matrix:
         site: [website]
@@ -124,25 +126,44 @@ jobs:
           echo "branch=$SAFE_BRANCH" >> $GITHUB_OUTPUT
           echo "Preview will be deployed to: https://$SAFE_BRANCH.pgflow.pages.dev"
 
-      - name: \ud83c\udf10 Deploy Preview for ${{ matrix.site }}
+      - name: Deploy Preview for ${{ matrix.site }}
+        id: deploy
         run: pnpm exec nx run ${{ matrix.site }}:deploy:preview
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_BRANCH: ${{ steps.extract_branch.outputs.branch }}
 
-      - name: \ud83d\udcac Comment PR with preview URL
-        uses: actions/github-script@v7
+      - name: Comment deployment status on PR
+        if: always()  # Always run this step to update status
+        uses: mshick/add-pr-comment@v2
         with:
-          script: |
-            const branch = '${{ steps.extract_branch.outputs.branch }}';
-            const previewUrl = `https://${branch}.pgflow.pages.dev`;
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `🚀 **Preview deployment ready!**\n\n🔗 Preview URL: ${previewUrl}\n\n_Note: It may take a few moments for the deployment to be fully available._`
-            })
+          message-id: preview-deployment-${{ matrix.site }}
+          refresh-message-position: true
+          message-success: |
+            ## 🔍 Preview Deployment: ${{ matrix.site }}
+            
+            ✅ **Deployment successful!**
+            
+            🔗 **Preview URL**: https://${{ steps.extract_branch.outputs.branch }}.pgflow.pages.dev
+            
+            📝 **Details**:
+            - Site: `${{ matrix.site }}`
+            - Branch: `${{ steps.extract_branch.outputs.branch }}`
+            - Workflow: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            
+            _Last updated: ${{ github.event.head_commit.timestamp }}_
+          message-failure: |
+            ## 🔍 Preview Deployment: ${{ matrix.site }}
+            
+            ❌ **Deployment failed!**
+            
+            📝 **Details**:
+            - Site: `${{ matrix.site }}`
+            - Branch: `${{ steps.extract_branch.outputs.branch }}`
+            - Error: Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            
+            _Last updated: ${{ github.event.head_commit.timestamp }}_
 
   # ────────── 3. DEPLOY PRODUCTION (Main branch) ──────────
   deploy-production:
@@ -174,8 +195,57 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: \ud83d\ude80 Deploy ${{ matrix.site }} to Production
+      - name: Deploy ${{ matrix.site }} to Production
+        id: deploy
         run: pnpm exec nx run ${{ matrix.site }}:deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Find the PR that was merged (if any)
+      - name: Find associated PR
+        id: find-pr
+        if: always()
+        run: |
+          # Try to find a recently merged PR for this commit
+          PR_NUMBER=$(gh pr list --state merged --limit 10 --json number,mergedAt,headRefName --jq '.[] | select(.mergedAt != null) | .number' | head -1)
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          if [ -n "$PR_NUMBER" ]; then
+            echo "Found merged PR: #$PR_NUMBER"
+          else
+            echo "No associated PR found"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Comment deployment status on PR (if found)
+        if: always() && steps.find-pr.outputs.pr_number != ''
+        uses: mshick/add-pr-comment@v2
+        with:
+          issue: ${{ steps.find-pr.outputs.pr_number }}
+          message-id: production-deployment-${{ matrix.site }}
+          refresh-message-position: true
+          message-success: |
+            ## 🚀 Production Deployment: ${{ matrix.site }}
+            
+            ✅ **Successfully deployed to production!**
+            
+            🔗 **Production URL**: https://pgflow.pages.dev
+            
+            📝 **Details**:
+            - Site: `${{ matrix.site }}`
+            - Commit: `${{ github.sha }}`
+            - Workflow: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            
+            _Deployed at: ${{ github.event.head_commit.timestamp }}_
+          message-failure: |
+            ## 🚀 Production Deployment: ${{ matrix.site }}
+            
+            ❌ **Production deployment failed!**
+            
+            📝 **Details**:
+            - Site: `${{ matrix.site }}`
+            - Commit: `${{ github.sha }}`
+            - Error: Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            
+            _Failed at: ${{ github.event.head_commit.timestamp }}_
