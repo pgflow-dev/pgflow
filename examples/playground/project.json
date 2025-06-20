@@ -23,7 +23,7 @@
       "dependsOn": ["build", "ensure-ci-environment"],
       "options": {
         "cwd": "examples/playground",
-        "command": "npx netlify deploy --prod --dir=.next"
+        "command": "netlify deploy --prod --dir=.next"
       }
     },
     "deploy:preview": {
@@ -31,7 +31,7 @@
       "dependsOn": ["build", "ensure-ci-environment"],
       "options": {
         "cwd": "examples/playground",
-        "command": "npx netlify deploy --dir=.next --alias=pr-${PR_NUMBER:-preview}"
+        "command": "netlify deploy --dir=.next --alias=pr-${PR_NUMBER:-preview}"
       }
     }
   }
