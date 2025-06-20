@@ -28,11 +28,26 @@
         "command": "astro preview"
       }
     },
+    "ensure-ci-environment": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "if [ \"$CI\" != \"true\" ]; then echo \"Error: Deploy commands should only be run in CI environments. Set CI=true to override.\"; exit 1; else echo \"CI environment verified\"; fi"
+      }
+    },
     "deploy": {
       "executor": "nx:run-commands",
-      "dependsOn": ["build"],
+      "dependsOn": ["build", "ensure-ci-environment"],
       "options": {
-        "command": "echo 'Deploy command would go here - configure based on your platform (Vercel/Netlify)'"
+        "cwd": "pkgs/website",
+        "command": "wrangler pages deploy dist"
+      }
+    },
+    "deploy:preview": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build", "ensure-ci-environment"],
+      "options": {
+        "cwd": "pkgs/website",
+        "command": "wrangler pages deploy dist --branch=${CLOUDFLARE_BRANCH:-preview}"
       }
     }
   }
