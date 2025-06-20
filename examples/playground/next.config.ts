@@ -6,21 +6,24 @@ import path from 'path';
 const nextConfig: NextConfig = {
   /* config options here */
   transpilePackages: ['@pgflow/client', '@pgflow/core', '@pgflow/dsl'],
+  experimental: {
+    externalDir: true,
+  },
   webpack: (config, { isServer }) => {
     // Force workspace packages to resolve correctly in CI
     config.resolve.alias = {
       ...config.resolve.alias,
       '@pgflow/client': path.resolve(
         __dirname,
-        './node_modules/@pgflow/client',
+        '../../pkgs/client',
       ),
       '@pgflow/dsl': path.resolve(
         __dirname,
-        './node_modules/@pgflow/dsl',
+        '../../pkgs/dsl',
       ),
       '@pgflow/core': path.resolve(
         __dirname,
-        './node_modules/@pgflow/core',
+        '../../pkgs/core',
       ),
     };
 
