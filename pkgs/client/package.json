@@ -1,6 +1,6 @@
 {
   "name": "@pgflow/client",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "type": "module",
   "dependencies": {
     "@pgflow/core": "workspace:*",
