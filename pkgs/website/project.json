@@ -27,6 +27,13 @@
         "cwd": "pkgs/website",
         "command": "astro preview"
       }
+    },
+    "deploy": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "command": "echo 'Deploy command would go here - configure based on your platform (Vercel/Netlify)'"
+      }
     }
   }
 }

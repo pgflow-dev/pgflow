@@ -1,4 +1,5 @@
-name: CI
+# CI workflow - build and deploy pattern
+name: ci-and-deploy
 
 on:
   push:
@@ -9,12 +10,16 @@ on:
       - '**'
       - '!changeset-release/**'
 
+env:
+  NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+
 permissions:
   actions: read
   contents: read
 
 jobs:
-  main:
+  # ────────── 1. BUILD ──────────
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -73,4 +78,37 @@ jobs:
       # - run: pnpm exec nx-cloud record -- echo Hello World
       # Nx Affected runs only tasks affected by the changes in this PR/commit. Learn more: https://nx.dev/ci/features/affected
       - name: Nx - run affected targets
-        run: pnpm exec nx affected -t lint typecheck test build
+        run: pnpm exec nx affected -t lint typecheck test build --parallel
+
+  # ────────── 2. DEPLOY ──────────
+  deploy:
+    needs: build                     # waits until artifacts are in the cache
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        site: [website]              # add more as needed
+    environment: production          # enables manual approval & secret scoping
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '8.14.1'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.18.1'
+          cache: 'pnpm'
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Deploy ${{ matrix.site }}
+        run: pnpm exec nx run ${{ matrix.site }}:deploy
+        env:
+          VERCEL_TOKEN:       ${{ secrets.VERCEL_TOKEN }}
+          CF_API_TOKEN:       ${{ secrets.CF_API_TOKEN }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_TOKEN }}
