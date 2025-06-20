@@ -12,6 +12,8 @@ on:
 
 env:
   NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
 permissions:
   actions: read
@@ -130,8 +132,6 @@ jobs:
         id: deploy
         run: pnpm exec nx run ${{ matrix.site }}:deploy:preview
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_BRANCH: ${{ steps.extract_branch.outputs.branch }}
 
       - name: Comment deployment status on PR
@@ -198,9 +198,6 @@ jobs:
       - name: Deploy ${{ matrix.site }} to Production
         id: deploy
         run: pnpm exec nx run ${{ matrix.site }}:deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       # Find the PR that was merged (if any)
       - name: Find associated PR
