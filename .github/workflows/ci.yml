@@ -1,5 +1,5 @@
 # CI workflow - build and deploy pattern
-name: ci-and-deploy
+name: CI
 
 on:
   push:
@@ -20,13 +20,16 @@ permissions:
 jobs:
   # ────────── 1. BUILD ──────────
   build:
+    name: 'Build'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
           version: '8.14.1'
 
@@ -37,7 +40,8 @@ jobs:
       # - run: pnpm dlx nx-cloud start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
 
       # Cache node_modules
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js with cache
+        uses: actions/setup-node@v4
         with:
           node-version: '20.18.1'
           cache: 'pnpm'
@@ -58,7 +62,7 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Nx - capture commits SHAs
+      - name: Set Nx SHAs for affected commands
         uses: nrwl/nx-set-shas@v4
 
       # # Clear Nx cache before running affected commands
@@ -77,11 +81,12 @@ jobs:
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
       # - run: pnpm exec nx-cloud record -- echo Hello World
       # Nx Affected runs only tasks affected by the changes in this PR/commit. Learn more: https://nx.dev/ci/features/affected
-      - name: Nx - run affected targets
+      - name: 🚀 Run Nx affected (lint, typecheck, test, build)
         run: pnpm exec nx affected -t lint typecheck test build --parallel
 
   # ────────── 2. DEPLOY PREVIEW (Pull Requests) ──────────
   deploy-preview:
+    name: 'Deploy: Preview'
     needs: build
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -90,15 +95,18 @@ jobs:
         site: [website]
     environment: preview
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
           version: '8.14.1'
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js with cache
+        uses: actions/setup-node@v4
         with:
           node-version: '20.18.1'
           cache: 'pnpm'
@@ -116,14 +124,14 @@ jobs:
           echo "branch=$SAFE_BRANCH" >> $GITHUB_OUTPUT
           echo "Preview will be deployed to: https://$SAFE_BRANCH.pgflow.pages.dev"
 
-      - name: Deploy Preview for ${{ matrix.site }}
+      - name: \ud83c\udf10 Deploy Preview for ${{ matrix.site }}
         run: pnpm exec nx run ${{ matrix.site }}:deploy:preview
         env:
-          CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_BRANCH: ${{ steps.extract_branch.outputs.branch }}
 
-      - name: Comment PR with preview URL
+      - name: \ud83d\udcac Comment PR with preview URL
         uses: actions/github-script@v7
         with:
           script: |
@@ -138,23 +146,27 @@ jobs:
 
   # ────────── 3. DEPLOY PRODUCTION (Main branch) ──────────
   deploy-production:
+    name: 'Deploy: PRODUCTION'
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     strategy:
       matrix:
         site: [website]
-    environment: production          # enables manual approval & secret scoping
+    environment: production # enables manual approval & secret scoping
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
           version: '8.14.1'
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js with cache
+        uses: actions/setup-node@v4
         with:
           node-version: '20.18.1'
           cache: 'pnpm'
@@ -162,8 +174,8 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Deploy ${{ matrix.site }} to Production
+      - name: \ud83d\ude80 Deploy ${{ matrix.site }} to Production
         run: pnpm exec nx run ${{ matrix.site }}:deploy
         env:
-          CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
