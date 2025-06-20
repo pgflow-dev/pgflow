@@ -9,7 +9,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "examples/playground",
-        "command": "npm run build"
+        "command": "next build"
       }
     },
     "ensure-ci-environment": {

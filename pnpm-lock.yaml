@@ -102,6 +102,9 @@ importers:
       '@pgflow/client':
         specifier: workspace:*
         version: link:../../pkgs/client
+      '@pgflow/dsl':
+        specifier: workspace:*
+        version: link:../../pkgs/dsl
       '@radix-ui/react-checkbox':
         specifier: ^1.1.1
         version: 1.3.2(@types/react-dom@19.0.2)(@types/react@19.1.8)(react-dom@19.0.0)(react@19.0.0)
