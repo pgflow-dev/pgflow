@@ -24,7 +24,7 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata = {
   metadataBase: new URL(defaultUrl),
-  title: 'pgflow - Analyze Website Demo',
+  title: 'pgflow',
   description: 'Place to test and understand how pgflow works',
 };
 
@@ -42,17 +42,17 @@ export default function RootLayout({
     <html lang="en" className={geistSans.className} suppressHydrationWarning>
       <body className="bg-background text-foreground">
         {/* <PlausibleProvider domain="pgflow-demo.netlify.app"> */}
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <LoadingStateProvider>
-              <PgflowClientProvider>
-                <main className="min-h-screen flex flex-col items-center relative">
-                  <div className="flex-1 w-full flex flex-col items-center">
-                    <nav className="w-full flex justify-center border-b border-b-foreground/10 h-14">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <LoadingStateProvider>
+            <PgflowClientProvider>
+              <main className="min-h-screen flex flex-col items-center relative">
+                <div className="flex-1 w-full flex flex-col items-center">
+                  <nav className="w-full flex justify-center border-b border-b-foreground/10 h-14">
                     <div className="w-full max-w-5xl flex justify-between items-center p-1 px-5 text-sm">
                       <div className="flex gap-5 items-center">
                         <Link href={'/'} className="font-semibold">
@@ -147,8 +147,8 @@ export default function RootLayout({
                 </div>
               </main>
             </PgflowClientProvider>
-            </LoadingStateProvider>
-          </ThemeProvider>
+          </LoadingStateProvider>
+        </ThemeProvider>
         {/* </PlausibleProvider> */}
       </body>
     </html>
