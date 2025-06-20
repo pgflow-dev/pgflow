@@ -67,22 +67,6 @@ jobs:
       - name: Set Nx SHAs for affected commands
         uses: nrwl/nx-set-shas@v4
 
-      # # Clear Nx cache before running affected commands
-      # - name: Clear Nx cache
-      #   run: pnpm exec nx reset
-      #
-      # # Ensure core migrations run and types are generated
-      # - name: Ensure Supabase is reset with latest migrations
-      #   run: |
-      #     cd pkgs/core
-      #     pnpm supabase stop --no-backup || true
-      #     pnpm supabase start
-      #     pnpm supabase db reset || true
-      #     pnpm supabase gen types --local --schema pgflow --schema pgmq > src/database-types.ts
-
-      # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
-      # - run: pnpm exec nx-cloud record -- echo Hello World
-      # Nx Affected runs only tasks affected by the changes in this PR/commit. Learn more: https://nx.dev/ci/features/affected
       - name: 🚀 Run Nx affected (lint, typecheck, test, build)
         run: pnpm exec nx affected -t lint typecheck test build
 
@@ -94,9 +78,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write # allow writing PR comments
-    strategy:
-      matrix:
-        site: [website]
     environment: preview
     steps:
       - name: Checkout repository
@@ -118,58 +99,40 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Extract branch name
-        id: extract_branch
-        run: |
-          # For PR events, use the head branch name
-          BRANCH_NAME="${{ github.head_ref }}"
-          # Sanitize branch name for Cloudflare (lowercase, replace special chars)
-          SAFE_BRANCH=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/^-*//' | sed 's/-*$//')
-          echo "branch=$SAFE_BRANCH" >> $GITHUB_OUTPUT
-          echo "Preview will be deployed to: https://$SAFE_BRANCH.pgflow.pages.dev"
-
-      - name: Deploy Preview for ${{ matrix.site }}
-        id: deploy
-        run: |
-          # Run the deployment
-          pnpm exec nx run ${{ matrix.site }}:deploy:preview
-          
-          # Use the predictable branch alias URL
-          # Cloudflare Pages always creates a branch alias at: <branch-name>.<project-name>.pages.dev
-          DEPLOYMENT_URL="https://${{ steps.extract_branch.outputs.branch }}.pgflow.pages.dev"
-          
-          echo "deployment_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
-          echo "::notice title=Preview URL::$DEPLOYMENT_URL"
+      - name: Deploy Preview for website
+        run: pnpm exec nx run website:deploy:preview
         env:
-          CLOUDFLARE_BRANCH: ${{ steps.extract_branch.outputs.branch }}
+          CLOUDFLARE_BRANCH: pr-${{ github.event.pull_request.number }}
 
       - name: Comment deployment status on PR
-        if: always()  # Always run this step to update status
+        if: always()
         uses: mshick/add-pr-comment@v2
         with:
-          message-id: preview-deployment-${{ matrix.site }}
+          message-id: preview-deployment-website
           refresh-message-position: true
           message-success: |
-            ## 🔍 Preview Deployment: ${{ matrix.site }}
+            ## 🔍 Preview Deployment: website
             
             ✅ **Deployment successful!**
             
-            🔗 **Preview URL**: ${{ steps.deploy.outputs.deployment_url }}
+            🔗 **Preview URL**: https://pr-${{ github.event.pull_request.number }}.pgflow.pages.dev
             
             📝 **Details**:
-            - Site: `${{ matrix.site }}`
-            - Branch: `${{ steps.extract_branch.outputs.branch }}`
+            - Site: `website`
+            - PR: #${{ github.event.pull_request.number }}
+            - Branch: `${{ github.head_ref }}`
             - Workflow: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
             
             _Last updated: ${{ github.event.head_commit.timestamp }}_
           message-failure: |
-            ## 🔍 Preview Deployment: ${{ matrix.site }}
+            ## 🔍 Preview Deployment: website
             
             ❌ **Deployment failed!**
             
             📝 **Details**:
-            - Site: `${{ matrix.site }}`
-            - Branch: `${{ steps.extract_branch.outputs.branch }}`
+            - Site: `website`
+            - PR: #${{ github.event.pull_request.number }}
+            - Branch: `${{ github.head_ref }}`
             - Error: Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
             
             _Last updated: ${{ github.event.head_commit.timestamp }}_
@@ -180,9 +143,6 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        site: [website]
     environment: production # enables manual approval & secret scoping
     steps:
       - name: Checkout repository
@@ -204,54 +164,8 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Deploy ${{ matrix.site }} to Production
-        id: deploy
-        run: pnpm exec nx run ${{ matrix.site }}:deploy
+      - name: Deploy website to Production
+        run: pnpm exec nx run website:deploy
 
-      # Find the PR that was merged (if any)
-      - name: Find associated PR
-        id: find-pr
-        if: always()
-        run: |
-          # Try to find a recently merged PR for this commit
-          PR_NUMBER=$(gh pr list --state merged --limit 10 --json number,mergedAt,headRefName --jq '.[] | select(.mergedAt != null) | .number' | head -1)
-          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
-          if [ -n "$PR_NUMBER" ]; then
-            echo "Found merged PR: #$PR_NUMBER"
-          else
-            echo "No associated PR found"
-          fi
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Comment deployment status on PR (if found)
-        if: always() && steps.find-pr.outputs.pr_number != ''
-        uses: mshick/add-pr-comment@v2
-        with:
-          issue: ${{ steps.find-pr.outputs.pr_number }}
-          message-id: production-deployment-${{ matrix.site }}
-          refresh-message-position: true
-          message-success: |
-            ## 🚀 Production Deployment: ${{ matrix.site }}
-            
-            ✅ **Successfully deployed to production!**
-            
-            🔗 **Production URL**: https://pgflow.pages.dev
-            
-            📝 **Details**:
-            - Site: `${{ matrix.site }}`
-            - Commit: `${{ github.sha }}`
-            - Workflow: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            
-            _Deployed at: ${{ github.event.head_commit.timestamp }}_
-          message-failure: |
-            ## 🚀 Production Deployment: ${{ matrix.site }}
-            
-            ❌ **Production deployment failed!**
-            
-            📝 **Details**:
-            - Site: `${{ matrix.site }}`
-            - Commit: `${{ github.sha }}`
-            - Error: Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            
-            _Failed at: ${{ github.event.head_commit.timestamp }}_
+      # Production deployment notification could be added here if needed
+      # For example, posting to a Slack channel or creating a GitHub release
