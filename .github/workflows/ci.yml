@@ -82,7 +82,7 @@ jobs:
       # - run: pnpm exec nx-cloud record -- echo Hello World
       # Nx Affected runs only tasks affected by the changes in this PR/commit. Learn more: https://nx.dev/ci/features/affected
       - name: 🚀 Run Nx affected (lint, typecheck, test, build)
-        run: pnpm exec nx affected -t lint typecheck test build --parallel
+        run: pnpm exec nx affected -t lint typecheck test build
 
   # ────────── 2. DEPLOY PREVIEW (Pull Requests) ──────────
   deploy-preview:
