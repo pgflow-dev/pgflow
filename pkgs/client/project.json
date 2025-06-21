@@ -6,17 +6,13 @@
   "tags": [],
   "targets": {
     "build": {
-      "executor": "nx:run-commands",
-      "options": {
-        "commands": [
-          "nx run client:build:lib",
-          "nx run client:build:browser"
-        ],
-        "parallel": false
-      }
+      "executor": "@nx/js:noop",
+      "outputs": ["{projectRoot}/dist"],
+      "dependsOn": ["build:lib", "build:browser"]
     },
     "build:lib": {
       "executor": "@nx/vite:build",
+      "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "pkgs/client/dist",
         "configFile": "pkgs/client/vite.config.ts"
@@ -24,6 +20,7 @@
     },
     "build:browser": {
       "executor": "@nx/vite:build",
+      "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "pkgs/client/dist",
         "configFile": "pkgs/client/vite.browser.config.ts"
