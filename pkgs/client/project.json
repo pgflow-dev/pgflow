@@ -6,7 +6,7 @@
   "tags": [],
   "targets": {
     "build": {
-      "executor": "@nx/js:noop",
+      "executor": "nx:noop",
       "outputs": ["{projectRoot}/dist"],
       "dependsOn": ["build:lib", "build:browser"]
     },
