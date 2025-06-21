@@ -12,11 +12,10 @@ export default defineConfig({
       outDir: 'dist',
       rollupTypes: false,  // Don't bundle for now
       insertTypesEntry: true,
-      compilerOptions: {
-        declaration: true,
-        emitDeclarationOnly: true,
-        skipLibCheck: true
-      }
+      tsConfigFilePath: resolve(__dirname, 'tsconfig.lib.json'),
+      skipDiagnostics: true  // Skip TypeScript diagnostics to avoid vite-plugin-dts errors with monorepo project references. 
+                             // The plugin tries to compile all imported files (including from other packages) 
+                             // which breaks rootDir boundaries. Nx runs proper type checking separately.
     })
   ],
   build: {
