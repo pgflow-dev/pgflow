@@ -20,7 +20,7 @@ export default function WebsiteAnalysisUI({
   error,
 }: WebsiteAnalysisUIProps) {
   const [analysisExpanded, setAnalysisExpanded] = useState(true);
-  const [refresh, setRefresh] = useState(0);
+  const [, setRefresh] = useState(0);
 
   useEffect(() => {
     if (!flowRun) return;
@@ -29,7 +29,7 @@ export default function WebsiteAnalysisUI({
 
     // Subscribe to flow run events
     unsubscribes.push(
-      flowRun.on('*', (event) => {
+      flowRun.on('*', () => {
         setRefresh(prev => prev + 1);
       })
     );
@@ -39,7 +39,7 @@ export default function WebsiteAnalysisUI({
     for (const stepSlug of stepSlugs) {
       const step = flowRun.step(stepSlug);
       unsubscribes.push(
-        step.on('*', (event) => {
+        step.on('*', () => {
           setRefresh(prev => prev + 1);
         })
       );
@@ -202,7 +202,7 @@ function Collapsible({
       {React.Children.map(children, child => {
         if (React.isValidElement(child)) {
           if (child.type === CollapsibleTrigger) {
-            return React.cloneElement(child as any, {
+            return React.cloneElement(child as React.ReactElement<{onClick?: () => void}>, {
               onClick: () => onOpenChange(!open)
             });
           }
@@ -226,7 +226,7 @@ function CollapsibleTrigger({
   onClick?: () => void;
 }) {
   if (asChild && React.isValidElement(children)) {
-    return React.cloneElement(children as any, { onClick });
+    return React.cloneElement(children as React.ReactElement<{onClick?: () => void}>, { onClick });
   }
   return <div onClick={onClick}>{children}</div>;
 }

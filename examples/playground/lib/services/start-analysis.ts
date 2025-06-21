@@ -33,9 +33,9 @@ export async function startWebsiteAnalysis(
   if (requireAuth) {
     const { data } = await supabase.auth.getUser();
     if (!data.user) {
-      const err = new Error('AUTH_REQUIRED');
+      const err = new Error('AUTH_REQUIRED') as Error & {code?: string};
       // tiny custom error class makes catching easier
-      (err as any).code = 'AUTH_REQUIRED';
+      err.code = 'AUTH_REQUIRED';
       throw err;
     }
   }

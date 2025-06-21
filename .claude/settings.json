@@ -23,7 +23,11 @@
       "mcp__context7__resolve-library-id",
       "mcp__crawl4ai-sse__crawl",
       "mcp__crawl4ai-sse__md",
-      "mcp__nx-mcp__nx_project_details"
+      "mcp__nx-mcp__nx_available_plugins",
+      "mcp__nx-mcp__nx_docs",
+      "mcp__nx-mcp__nx_project_details",
+      "mcp__nx-mcp__nx_workspace",
+      "mcp__nx-mcp__nx_workspace_path"
     ],
     "deny": []
   }

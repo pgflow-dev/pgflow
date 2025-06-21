@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@astrojs/check": "^0.9.4",
+    "@astrojs/cloudflare": "^12.6.0",
     "@astrojs/starlight": "^0.34.3",
     "@vercel/analytics": "^1.5.0",
     "astro": "^5.7.14",
@@ -30,9 +31,7 @@
     "typescript": "^5.8.3"
   },
   "devDependencies": {
-    "prettier-plugin-astro": "^0.14.1"
-  },
-  "publishConfig": {
-    "access": "public"
+    "prettier-plugin-astro": "^0.14.1",
+    "wrangler": "^4.20.3"
   }
 }

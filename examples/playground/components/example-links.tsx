@@ -1,22 +1,12 @@
 'use client';
 
 import { useStartAnalysis } from '@/lib/hooks/use-start-analysis';
-import { useEffect, useState } from 'react';
-import { createClient } from '@/utils/supabase/client';
 import { exampleLinks } from '@/lib/example-links';
 import { useLoadingState } from './loading-state-provider';
 
 export default function ExampleLinks() {
-  const { start, isPending, error: startError } = useStartAnalysis();
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
-  const supabase = createClient();
+  const { start, isPending } = useStartAnalysis();
   const { setLoading } = useLoadingState();
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setIsLoggedIn(!!data.user);
-    });
-  }, []);
 
   // Function to handle example link clicks
   const handleExampleClick = (e: React.MouseEvent<HTMLAnchorElement>, url: string) => {

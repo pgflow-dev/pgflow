@@ -1,18 +1,32 @@
 import type { NextConfig } from 'next';
-// import { withPlausibleProxy } from 'next-plausible';
+import { withPlausibleProxy } from 'next-plausible';
 
 import path from 'path';
 
 const nextConfig: NextConfig = {
   /* config options here */
   transpilePackages: ['@pgflow/client', '@pgflow/core', '@pgflow/dsl'],
+  experimental: {
+    externalDir: true,
+  },
   webpack: (config, { isServer }) => {
-    // Force @pgflow/client to use the ES module
+    // Force workspace packages to resolve correctly in CI
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@pgflow/client$': path.resolve(__dirname, 'node_modules/@pgflow/client/dist/index.js'),
+      '@pgflow/client': path.resolve(
+        __dirname,
+        '../../pkgs/client',
+      ),
+      '@pgflow/dsl': path.resolve(
+        __dirname,
+        '../../pkgs/dsl',
+      ),
+      '@pgflow/core': path.resolve(
+        __dirname,
+        '../../pkgs/core',
+      ),
     };
-    
+
     if (!isServer) {
       // Provide fallbacks for Node.js modules that ws tries to use
       config.resolve.fallback = {
@@ -23,10 +37,9 @@ const nextConfig: NextConfig = {
         crypto: false,
       };
     }
-    
+
     return config;
   },
 };
 
-// export default withPlausibleProxy()(nextConfig);
-export default nextConfig;
+export default withPlausibleProxy()(nextConfig);

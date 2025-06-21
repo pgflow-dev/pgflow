@@ -60,7 +60,7 @@ export default function FlowRunDetails({
   loading,
   error,
 }: FlowRunDetailsProps) {
-  const [refresh, setRefresh] = useState(0);
+  const [, setRefresh] = useState(0);
   const elapsedTimeRef = useElapsedTime(flowRun?.started_at || null);
 
   useEffect(() => {
