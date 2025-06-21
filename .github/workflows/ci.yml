@@ -170,6 +170,8 @@ jobs:
         run: pnpm exec nx run playground:deploy:preview
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.DEMO_PREVIEW_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY }}
 
       - name: Get deployment URL
         id: deployment
@@ -270,3 +272,6 @@ jobs:
 
       - name: Deploy playground to Production
         run: pnpm exec nx run playground:deploy
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.DEMO_PRODUCTION_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }}
