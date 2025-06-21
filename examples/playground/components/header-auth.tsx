@@ -8,9 +8,10 @@ import { Button } from "./ui/button";
 import { createClient } from "@/utils/supabase/client";
 import { SpinnerWrapper } from "./spinner-wrapper";
 import { useEffect, useState } from "react";
+import type { User } from "@supabase/supabase-js";
 
 export default function AuthButton() {
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
