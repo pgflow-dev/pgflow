@@ -39,6 +39,14 @@
         "serveStaticTargetName": "serve-static",
         "typecheckTargetName": "typecheck"
       }
+    },
+    {
+      "plugin": "@nx/next/plugin",
+      "options": {
+        "buildTargetName": "build",
+        "devTargetName": "dev",
+        "startTargetName": "start"
+      }
     }
   ],
   "targetDefaults": {
