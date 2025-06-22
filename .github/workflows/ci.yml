@@ -72,6 +72,9 @@ jobs:
 
       - name: 🚀 Run Nx affected build with dependencies
         run: pnpm exec nx affected -t build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_URL || secrets.DEMO_PRODUCTION_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY || secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }}
 
   # ────────── 2. DEPLOY PREVIEW (Pull Requests) ──────────
   deploy-preview-website:
