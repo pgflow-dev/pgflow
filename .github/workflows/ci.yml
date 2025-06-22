@@ -71,7 +71,7 @@ jobs:
         run: pnpm exec nx affected -t lint typecheck test
 
       - name: 🚀 Run Nx affected build with dependencies
-        run: pnpm exec nx affected -t build --with-deps
+        run: pnpm exec nx affected -t build
 
   # ────────── 2. DEPLOY PREVIEW (Pull Requests) ──────────
   deploy-preview-website:
@@ -115,29 +115,29 @@ jobs:
           refresh-message-position: true
           message-success: |
             ## 🔍 Preview Deployment: website
-            
+
             ✅ **Deployment successful!**
-            
+
             🔗 **Preview URL**: https://pr-${{ github.event.pull_request.number }}.pgflow.pages.dev
-            
+
             📝 **Details**:
             - Site: `website`
             - PR: #${{ github.event.pull_request.number }}
             - Branch: `${{ github.head_ref }}`
             - Workflow: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            
+
             _Last updated: ${{ github.event.head_commit.timestamp }}_
           message-failure: |
             ## 🔍 Preview Deployment: website
-            
+
             ❌ **Deployment failed!**
-            
+
             📝 **Details**:
             - Site: `website`
             - PR: #${{ github.event.pull_request.number }}
             - Branch: `${{ github.head_ref }}`
             - Error: Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            
+
             _Last updated: ${{ github.event.head_commit.timestamp }}_
 
   deploy-preview-playground:
@@ -191,29 +191,29 @@ jobs:
           refresh-message-position: true
           message-success: |
             ## 🎮 Preview Deployment: Playground
-            
+
             ✅ **Deployment successful!**
-            
+
             🔗 **Preview URL**: ${{ steps.deployment.outputs.url }}
-            
+
             📝 **Details**:
             - Site: `playground`
             - PR: #${{ github.event.pull_request.number }}
             - Branch: `${{ github.head_ref }}`
             - Workflow: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            
+
             _Last updated: ${{ github.event.head_commit.timestamp }}_
           message-failure: |
             ## 🎮 Preview Deployment: Playground
-            
+
             ❌ **Deployment failed!**
-            
+
             📝 **Details**:
             - Site: `playground`
             - PR: #${{ github.event.pull_request.number }}
             - Branch: `${{ github.head_ref }}`
             - Error: Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            
+
             _Last updated: ${{ github.event.head_commit.timestamp }}_
 
   # ────────── 3. DEPLOY PRODUCTION (Main branch) ──────────
