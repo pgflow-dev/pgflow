@@ -5,6 +5,18 @@
   "projectType": "application",
   "tags": [],
   "targets": {
+    "build": {
+      "inputs": [
+        "production",
+        "^production",
+        {
+          "env": "NEXT_PUBLIC_SUPABASE_URL"
+        },
+        {
+          "env": "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+        }
+      ]
+    },
     "ensure-ci-environment": {
       "executor": "nx:run-commands",
       "options": {
