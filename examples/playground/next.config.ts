@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   experimental: {
     externalDir: true,
   },
+  transpilePackages: ['@pgflow/client', '@pgflow/dsl', '@pgflow/core'],
   nx: {
     svgr: false, // Disable deprecated SVGR support
   },
