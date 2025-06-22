@@ -68,7 +68,7 @@ jobs:
         uses: nrwl/nx-set-shas@v4
 
       - name: 🚀 Run Nx affected (lint, typecheck, test)
-        run: pnpm exec nx affected -t lint typecheck test
+        run: npx nx-cloud record -- pnpm exec nx affected -t lint typecheck test
 
       - name: 🚀 Run Nx affected build with dependencies
         run: npx nx-cloud record -- pnpm exec nx affected -t build
