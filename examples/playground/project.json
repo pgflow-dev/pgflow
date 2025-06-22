@@ -6,11 +6,24 @@
   "tags": [],
   "targets": {
     "build": {
-      "executor": "nx:run-commands",
-      "dependsOn": ["^build"],
+      "executor": "@nx/next:build",
+      "outputs": ["{options.outputPath}"],
       "options": {
-        "cwd": "examples/playground",
-        "command": "next build"
+        "outputPath": "examples/playground/.next"
+      },
+      "dependsOn": ["^build"]
+    },
+    "serve": {
+      "executor": "@nx/next:server",
+      "options": {
+        "buildTarget": "playground:build",
+        "dev": true
+      }
+    },
+    "export": {
+      "executor": "@nx/next:export",
+      "options": {
+        "buildTarget": "playground:build:production"
       }
     },
     "ensure-ci-environment": {
