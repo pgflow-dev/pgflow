@@ -67,8 +67,11 @@ jobs:
       - name: Set Nx SHAs for affected commands
         uses: nrwl/nx-set-shas@v4
 
-      - name: 🚀 Run Nx affected (lint, typecheck, test, build)
-        run: pnpm exec nx affected -t lint typecheck test build --with-deps
+      - name: 🚀 Run Nx affected (lint, typecheck, test)
+        run: pnpm exec nx affected -t lint typecheck test
+
+      - name: 🚀 Run Nx affected build with dependencies
+        run: pnpm exec nx affected -t build --with-deps
 
   # ────────── 2. DEPLOY PREVIEW (Pull Requests) ──────────
   deploy-preview-website:
