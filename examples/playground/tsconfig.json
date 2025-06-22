@@ -2,11 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "target": "es5",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -26,14 +22,9 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     },
-    "typeRoots": [
-      "./types",
-      "./node_modules/@types"
-    ]
+    "typeRoots": ["./types", "./node_modules/@types"]
   },
   "include": [
     "**/*.ts",
@@ -46,5 +37,19 @@
     "node_modules",
     "supabase/functions/**/*.ts",
     "supabase/functions/**/*.d.ts"
+  ],
+  "references": [
+    {
+      "path": "../../pkgs/core"
+    },
+    {
+      "path": "../../pkgs/edge-worker"
+    },
+    {
+      "path": "../../pkgs/dsl"
+    },
+    {
+      "path": "../../pkgs/client"
+    }
   ]
 }
