@@ -8,9 +8,12 @@
     "build": {
       "executor": "@nx/next:build",
       "outputs": [
-        "{projectRoot}/.next",
+        "{options.outputPath}",
         "{projectRoot}/.netlify/functions"
       ],
+      "options": {
+        "outputPath": "examples/playground/.next"
+      },
       "inputs": [
         "production",
         "^production",
