@@ -1,8 +1,11 @@
 [build]
-  base = "examples/playground"
+  base = "."
   command = "echo 'Build already completed in GitHub Actions'"
-  publish = "dist"
+  publish = ".next"
 
 [build.environment]
   NPM_FLAGS = "--force" # Force npm to install packages even if there are conflicts
   NODE_VERSION = "20.18.1"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

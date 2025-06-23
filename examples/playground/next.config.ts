@@ -3,7 +3,6 @@ import { composePlugins, withNx } from '@nx/next';
 import { withPlausibleProxy } from 'next-plausible';
 
 const nextConfig: NextConfig = {
-  distDir: 'dist',
   experimental: {
     externalDir: true,
   },

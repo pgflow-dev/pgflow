@@ -83,7 +83,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playground-dist-preview
-          path: examples/playground/dist
+          path: |
+            examples/playground/.next
+            examples/playground/package.json
+            examples/playground/next.config.ts
+            examples/playground/netlify.toml
           retention-days: 1
 
       # Build for production (main branch)
@@ -99,7 +103,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playground-dist-production
-          path: examples/playground/dist
+          path: |
+            examples/playground/.next
+            examples/playground/package.json
+            examples/playground/next.config.ts
+            examples/playground/netlify.toml
           retention-days: 1
 
       # Build other affected projects (without environment-specific vars)
@@ -185,23 +193,17 @@ jobs:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            examples/playground/netlify.toml
-
       - name: Download playground build artifact
         uses: actions/download-artifact@v4
         with:
           name: playground-dist-preview
-          path: examples/playground/dist
+          path: examples/playground
 
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
       - name: Deploy Preview for playground
-        run: netlify deploy --dir=dist --alias=pr-${{ github.event.pull_request.number }}
+        run: netlify deploy --dir=. --alias=pr-${{ github.event.pull_request.number }}
         working-directory: examples/playground
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -286,21 +288,15 @@ jobs:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            examples/playground/netlify.toml
-
       - name: Download playground build artifact
         uses: actions/download-artifact@v4
         with:
           name: playground-dist-production
-          path: examples/playground/dist
+          path: examples/playground
 
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
       - name: Deploy playground to Production
-        run: netlify deploy --prod --dir=dist
+        run: netlify deploy --prod --dir=.
         working-directory: examples/playground

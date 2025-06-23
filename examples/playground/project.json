@@ -28,7 +28,7 @@
       "dependsOn": ["build", "ensure-ci-environment"],
       "options": {
         "cwd": "examples/playground",
-        "command": "netlify deploy --prod --dir=dist"
+        "command": "netlify deploy --prod --dir=.next"
       }
     },
     "deploy:preview": {
@@ -36,7 +36,7 @@
       "dependsOn": ["build", "ensure-ci-environment"],
       "options": {
         "cwd": "examples/playground",
-        "command": "netlify deploy --dir=dist --alias=pr-${PR_NUMBER:-preview}"
+        "command": "netlify deploy --dir=.next --alias=pr-${PR_NUMBER:-preview}"
       }
     }
   }
