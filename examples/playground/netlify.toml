@@ -1,7 +1,7 @@
 [build]
   base = "."
   command = "echo 'Build already completed in GitHub Actions'"
-  publish = ".next"
+  publish = "."
 
 [build.environment]
   NPM_FLAGS = "--force" # Force npm to install packages even if there are conflicts

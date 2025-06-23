@@ -193,11 +193,23 @@ jobs:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
     steps:
+      - name: Create playground directory
+        run: mkdir -p examples/playground
+
       - name: Download playground build artifact
         uses: actions/download-artifact@v4
         with:
           name: playground-dist-preview
           path: examples/playground
+
+      - name: Debug - List playground directory structure
+        run: |
+          echo "=== Current directory ==="
+          pwd
+          echo "=== Contents of examples/playground ==="
+          ls -la examples/playground/
+          echo "=== Check for .next directory ==="
+          ls -la examples/playground/.next/ || echo ".next directory not found"
 
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
@@ -288,6 +300,9 @@ jobs:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
     steps:
+      - name: Create playground directory
+        run: mkdir -p examples/playground
+
       - name: Download playground build artifact
         uses: actions/download-artifact@v4
         with:
