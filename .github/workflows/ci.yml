@@ -78,24 +78,16 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.DEMO_PREVIEW_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY }}
 
-      - name: Debug - Check build output
-        if: github.event_name == 'pull_request'
-        run: |
-          echo "=== Current working directory ==="
-          pwd
-          echo "=== Checking if .next exists ==="
-          ls -la examples/playground/.next 2>/dev/null | head -10 || echo ".next directory not found!"
-          echo "=== Checking playground directory ==="
-          ls -la examples/playground/
-          echo "=== Find .next directory ==="
-          find . -name ".next" -type d 2>/dev/null | grep -v node_modules | head -10
-          
       - name: Upload playground preview artifact
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: playground-dist-preview
-          path: examples/playground
+          path: |
+            examples/playground/.next
+            examples/playground/package.json
+            examples/playground/next.config.ts
+            examples/playground/netlify.toml
           retention-days: 1
 
       # Build for production (main branch)
@@ -111,7 +103,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playground-dist-production
-          path: examples/playground
+          path: |
+            examples/playground/.next
+            examples/playground/package.json
+            examples/playground/next.config.ts
+            examples/playground/netlify.toml
           retention-days: 1
 
       # Build other affected projects (without environment-specific vars)
@@ -206,63 +202,23 @@ jobs:
           name: playground-dist-preview
           path: examples/playground
 
-      - name: Debug - List playground directory structure
-        run: |
-          echo "=== Current directory ==="
-          pwd
-          echo "=== Contents of examples/playground ==="
-          ls -la examples/playground/
-          echo "=== Check for .next directory ==="
-          ls -la examples/playground/.next/ || echo ".next directory not found"
-
-      - name: Install Netlify CLI
-        run: npm install -g netlify-cli
-
-      - name: Deploy Preview for playground
-        run: netlify deploy --dir=. --alias=pr-${{ github.event.pull_request.number }}
-        working-directory: examples/playground
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-
-      - name: Get deployment URL
-        id: deployment
-        run: |
-          # Netlify deploy output includes the URL
-          DEPLOY_URL="https://pr-${{ github.event.pull_request.number }}--pgflow-playground.netlify.app"
-          echo "url=$DEPLOY_URL" >> $GITHUB_OUTPUT
-
-      - name: Comment deployment status on PR
-        if: always()
-        uses: mshick/add-pr-comment@v2
+      - name: Deploy to Netlify
+        id: netlify-deploy
+        uses: nwtgck/actions-netlify@v3.0
         with:
-          message-id: preview-deployment-playground
-          refresh-message-position: true
-          message-success: |
-            ## 🎮 Preview Deployment: Playground
-
-            ✅ **Deployment successful!**
-
-            🔗 **Preview URL**: ${{ steps.deployment.outputs.url }}
-
-            📝 **Details**:
-            - Site: `playground`
-            - PR: #${{ github.event.pull_request.number }}
-            - Branch: `${{ github.head_ref }}`
-            - Workflow: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
-            _Last updated: ${{ github.event.head_commit.timestamp }}_
-          message-failure: |
-            ## 🎮 Preview Deployment: Playground
-
-            ❌ **Deployment failed!**
-
-            📝 **Details**:
-            - Site: `playground`
-            - PR: #${{ github.event.pull_request.number }}
-            - Branch: `${{ github.head_ref }}`
-            - Error: Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
-            _Last updated: ${{ github.event.head_commit.timestamp }}_
+          publish-dir: ./examples/playground
+          production-deploy: false
+          deploy-message: "Deploy from GitHub Actions - PR #${{ github.event.pull_request.number }}"
+          alias: pr-${{ github.event.pull_request.number }}
+          enable-pull-request-comment: true
+          enable-commit-comment: false
+          overwrites-pull-request-comment: true
+          github-deployment-environment: preview-playground
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        timeout-minutes: 10
 
   # ────────── 3. DEPLOY PRODUCTION (Main branch) ──────────
   deploy-production-website:
@@ -313,9 +269,14 @@ jobs:
           name: playground-dist-production
           path: examples/playground
 
-      - name: Install Netlify CLI
-        run: npm install -g netlify-cli
-
-      - name: Deploy playground to Production
-        run: netlify deploy --prod --dir=.
-        working-directory: examples/playground
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: ./examples/playground
+          production-deploy: true
+          deploy-message: "Deploy from GitHub Actions - Production"
+          enable-commit-comment: false
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
+        timeout-minutes: 10
