@@ -67,7 +67,7 @@ jobs:
           docker pull supabase/supavisor:1.1.56 || true
 
       - name: Start Nx Cloud run
-        run: .github/scripts/nx-cloud.sh start
+        run: pnpm dlx nx-cloud start-ci-run
 
       - run: pnpm install --frozen-lockfile
 
@@ -113,7 +113,8 @@ jobs:
           retention-days: 7
 
       - name: Stop Nx Cloud run
-        run: .github/scripts/nx-cloud.sh stop
+        if: always()
+        run: pnpm dlx nx-cloud stop-all-agents || true
 
 # ────────────────────────────────── 2. PREVIEW DEPLOYS (PR) ───────────────────────────
   deploy-preview-playground:
