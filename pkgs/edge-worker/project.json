@@ -37,6 +37,8 @@
     },
     "supabase:start": {
       "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": ["supabase start"],
@@ -45,6 +47,8 @@
     },
     "supabase:stop": {
       "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": ["supabase stop --no-backup"],
@@ -53,6 +57,8 @@
     },
     "supabase:status": {
       "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": ["supabase status"],
@@ -61,6 +67,8 @@
     },
     "supabase:restart": {
       "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": ["supabase stop --no-backup", "supabase start"],
@@ -70,6 +78,8 @@
     "supabase:reset": {
       "dependsOn": ["supabase:prepare"],
       "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
@@ -85,6 +95,8 @@
     "supabase:functions-serve": {
       "dependsOn": ["supabase:start"],
       "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
@@ -95,6 +107,7 @@
     },
     "db:ensure": {
       "executor": "nx:run-commands",
+      "local": true,
       "dependsOn": ["^verify-migrations", "^dump-realtime-schema"],
       "options": {
         "cwd": "pkgs/edge-worker",
@@ -105,6 +118,7 @@
     "test:unit": {
       "dependsOn": ["db:ensure", "^build"],
       "executor": "nx:run-commands",
+      "local": true,
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
@@ -116,6 +130,7 @@
     "test:integration": {
       "dependsOn": ["db:ensure", "^build"],
       "executor": "nx:run-commands",
+      "local": true,
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
@@ -127,6 +142,7 @@
     "test:e2e": {
       "executor": "nx:run-commands",
       "dependsOn": ["db:ensure", "^build"],
+      "local": true,
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [

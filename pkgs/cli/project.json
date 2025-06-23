@@ -44,6 +44,7 @@
     },
     "test:e2e:install": {
       "executor": "nx:run-commands",
+      "local": true,
       "dependsOn": ["build"],
       "options": {
         "commands": [
@@ -56,6 +57,7 @@
     },
     "test:e2e:compile": {
       "executor": "nx:run-commands",
+      "local": true,
       "dependsOn": ["test:e2e:install", "build"],
       "options": {
         "commands": [
