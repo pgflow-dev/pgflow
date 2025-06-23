@@ -85,9 +85,19 @@ jobs:
           name: playground-dist-preview
           path: |
             examples/playground/.next
+            examples/playground/app
+            examples/playground/components
+            examples/playground/lib
+            examples/playground/utils
+            examples/playground/types
+            examples/playground/public
             examples/playground/package.json
             examples/playground/next.config.ts
             examples/playground/netlify.toml
+            examples/playground/tsconfig.json
+            examples/playground/tailwind.config.ts
+            examples/playground/postcss.config.js
+            examples/playground/middleware.ts
           retention-days: 1
 
       # Build for production (main branch)
@@ -105,9 +115,19 @@ jobs:
           name: playground-dist-production
           path: |
             examples/playground/.next
+            examples/playground/app
+            examples/playground/components
+            examples/playground/lib
+            examples/playground/utils
+            examples/playground/types
+            examples/playground/public
             examples/playground/package.json
             examples/playground/next.config.ts
             examples/playground/netlify.toml
+            examples/playground/tsconfig.json
+            examples/playground/tailwind.config.ts
+            examples/playground/postcss.config.js
+            examples/playground/middleware.ts
           retention-days: 1
 
       # Build other affected projects (without environment-specific vars)
@@ -268,6 +288,20 @@ jobs:
         with:
           name: playground-dist-production
           path: examples/playground
+
+      - name: Debug - List playground directory structure
+        run: |
+          echo "=== Contents of examples/playground ==="
+          ls -la examples/playground/
+          echo ""
+          echo "=== Contents of .next directory ==="
+          ls -la examples/playground/.next/ || echo ".next directory not found"
+          echo ""
+          echo "=== Contents of .next/static directory ==="
+          ls -la examples/playground/.next/static/ || echo ".next/static directory not found"
+          echo ""
+          echo "=== Check for netlify.toml ==="
+          cat examples/playground/netlify.toml || echo "netlify.toml not found"
 
       - name: Deploy to Netlify
         uses: nwtgck/actions-netlify@v3.0
