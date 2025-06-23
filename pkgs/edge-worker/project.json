@@ -20,6 +20,7 @@
     },
     "test:nx-deno": {
       "executor": "@axhxrx/nx-deno:test",
+      "local": true,
       "outputs": ["{workspaceRoot}/coverage/pkgs/edge-worker"],
       "options": {
         "coverageDirectory": "coverage/pkgs/edge-worker",
@@ -30,6 +31,7 @@
     },
     "lint": {
       "executor": "@axhxrx/nx-deno:lint",
+      "local": true,
       "options": {
         "denoConfig": "pkgs/edge-worker/deno.test.json",
         "ignore": "pkgs/edge-worker/supabase/functions/_dist/"

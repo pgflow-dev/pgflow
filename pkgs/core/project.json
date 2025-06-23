@@ -100,6 +100,7 @@
     },
     "lint:sqruff": {
       "executor": "nx:run-commands",
+      "local": true,
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
@@ -115,10 +116,12 @@
     },
     "lint": {
       "executor": "nx:noop",
+      "local": true,
       "dependsOn": ["lint:sqruff", "lint:eslint"]
     },
     "fix-sql": {
       "executor": "nx:run-commands",
+      "local": true,
       "options": {
         "cwd": "{projectRoot}",
         "commands": [

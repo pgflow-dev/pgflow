@@ -78,6 +78,43 @@
     },
     "preview": {
       "dependsOn": ["^build"]
+    },
+    "supabase:*": {
+      "local": true,
+      "cache": false
+    },
+    "lint:sqruff": {
+      "local": true
+    },
+    "fix-sql": {
+      "local": true
+    },
+    "@axhxrx/nx-deno:*": {
+      "local": true
+    },
+    "verify-*": {
+      "local": true,
+      "cache": true
+    },
+    "dump-realtime-schema": {
+      "local": true,
+      "cache": true
+    },
+    "gen-types": {
+      "local": true,
+      "cache": true
+    },
+    "db:*": {
+      "local": true
+    },
+    "test:pgtap*": {
+      "local": true
+    },
+    "test:integration": {
+      "local": true
+    },
+    "test:e2e:*": {
+      "local": true
     }
   }
 }
