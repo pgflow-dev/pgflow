@@ -1,51 +1,41 @@
-# CI workflow - build and deploy pattern
 name: CI
-
 on:
-  push:
-    branches:
-      - main
   pull_request:
-    branches:
-      - '**'
-      - '!changeset-release/**'
+    branches: ['**', '!changeset-release/**']
+  push:
+    branches: ['main']
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write       # for preview comments
+  deployments: write         # Netlify action needs it
 
 env:
   NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
-  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-permissions:
-  actions: read
-  contents: read
+  CLOUDFLARE_API_TOKEN:     ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  CLOUDFLARE_ACCOUNT_ID:    ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
 jobs:
-  # ────────── 1. BUILD ──────────
+# ─────────────────────────────────────── 1. BUILD ──────────────────────────────────────
   build:
-    name: 'Build'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: '8.14.1'
+      - uses: pnpm/action-setup@v4
+        with: { version: '8.14.1' }
 
-      # This enables task distribution via Nx Cloud
-      # Run this command as early as possible, before dependencies are installed
-      # Learn more at https://nx.dev/ci/reference/nx-cloud-cli#npx-nxcloud-startcirun
-      # Uncomment this line to enable task distribution
-      # - run: pnpm dlx nx-cloud start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
-
-      # Cache node_modules
-      - name: Setup Node.js with cache
-        uses: actions/setup-node@v4
+      # Cache pnpm store
+      - uses: actions/cache@v4
         with:
-          node-version: '20.18.1'
+          path: ~/.local/share/pnpm/store/v3
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
           cache: 'pnpm'
 
       - name: Setup Deno
@@ -61,256 +51,140 @@ jobs:
         with:
           cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 
-      - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Start Nx Cloud run
+        run: .github/scripts/nx-cloud.sh start
+
+      - run: pnpm install --frozen-lockfile
 
       - name: Set Nx SHAs for affected commands
         uses: nrwl/nx-set-shas@v4
 
-      - name: 🚀 Run Nx affected (lint, typecheck, test)
-        run: npx nx-cloud record -- pnpm exec nx affected -t lint typecheck test
+      - name: Quality gate (lint + typecheck + test)
+        run: pnpm nx affected -t lint typecheck test --parallel --configuration=production
 
-      # Build for preview (PRs)
-      - name: 🔨 Build playground for preview
+      - name: Build all affected projects
+        run: pnpm nx affected -t build --configuration=production --parallel
+
+      # ── playground extra build with env vars ────────────────────────────────────────
+      - name: Build playground (preview)
+        id: build_playground_preview
         if: github.event_name == 'pull_request'
-        run: npx nx-cloud record -- pnpm exec nx run playground:build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.DEMO_PREVIEW_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY }}
-
-      - name: Upload playground preview artifact
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: playground-dist-preview
-          path: |
-            examples/playground/.next
-            examples/playground/app
-            examples/playground/components
-            examples/playground/lib
-            examples/playground/utils
-            examples/playground/types
-            examples/playground/public
-            examples/playground/package.json
-            examples/playground/next.config.ts
-            examples/playground/netlify.toml
-            examples/playground/tsconfig.json
-            examples/playground/tailwind.config.ts
-            examples/playground/postcss.config.js
-            examples/playground/middleware.ts
-          retention-days: 1
-
-      # Build for production (main branch)
-      - name: 🔨 Build playground for production
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: npx nx-cloud record -- pnpm exec nx run playground:build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.DEMO_PRODUCTION_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }}
-
-      - name: Upload playground production artifact
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: actions/upload-artifact@v4
-        with:
-          name: playground-dist-production
-          path: |
-            examples/playground/.next
-            examples/playground/app
-            examples/playground/components
-            examples/playground/lib
-            examples/playground/utils
-            examples/playground/types
-            examples/playground/public
-            examples/playground/package.json
-            examples/playground/next.config.ts
-            examples/playground/netlify.toml
-            examples/playground/tsconfig.json
-            examples/playground/tailwind.config.ts
-            examples/playground/postcss.config.js
-            examples/playground/middleware.ts
-          retention-days: 1
-
-      # Build other affected projects (without environment-specific vars)
-      - name: 🚀 Build remaining affected projects
-        run: npx nx-cloud record -- pnpm exec nx affected -t build --exclude=playground
-
-  # ────────── 2. DEPLOY PREVIEW (Pull Requests) ──────────
-  deploy-preview-website:
-    name: 'Deploy Preview: Website'
-    needs: build
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write # allow writing PR comments
-    environment: preview
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: '8.14.1'
-
-      - name: Setup Node.js with cache
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.18.1'
-          cache: 'pnpm'
-
-      - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Deploy Preview for website
-        run: pnpm exec nx run website:deploy:preview
-        env:
-          CLOUDFLARE_BRANCH: pr-${{ github.event.pull_request.number }}
-
-      - name: Comment deployment status on PR
-        if: always()
-        uses: mshick/add-pr-comment@v2
-        with:
-          message-id: preview-deployment-website
-          refresh-message-position: true
-          message-success: |
-            ## 🔍 Preview Deployment: website
-
-            ✅ **Deployment successful!**
-
-            🔗 **Preview URL**: https://pr-${{ github.event.pull_request.number }}.pgflow.pages.dev
-
-            📝 **Details**:
-            - Site: `website`
-            - PR: #${{ github.event.pull_request.number }}
-            - Branch: `${{ github.head_ref }}`
-            - Workflow: [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
-            _Last updated: ${{ github.event.head_commit.timestamp }}_
-          message-failure: |
-            ## 🔍 Preview Deployment: website
-
-            ❌ **Deployment failed!**
-
-            📝 **Details**:
-            - Site: `website`
-            - PR: #${{ github.event.pull_request.number }}
-            - Branch: `${{ github.head_ref }}`
-            - Error: Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
-            _Last updated: ${{ github.event.head_commit.timestamp }}_
-
-  deploy-preview-playground:
-    name: 'Deploy Preview: Playground'
-    needs: build
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write # allow writing PR comments
-    environment: preview
-    env:
-      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
-    steps:
-      - name: Create playground directory
-        run: mkdir -p examples/playground
-
-      - name: Download playground build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: playground-dist-preview
-          path: examples/playground
-
-      - name: Deploy to Netlify
-        id: netlify-deploy
-        uses: nwtgck/actions-netlify@v3.0
-        with:
-          publish-dir: ./examples/playground
-          production-deploy: false
-          deploy-message: "Deploy from GitHub Actions - PR #${{ github.event.pull_request.number }}"
-          alias: pr-${{ github.event.pull_request.number }}
-          enable-pull-request-comment: true
-          enable-commit-comment: false
-          overwrites-pull-request-comment: true
-          github-deployment-environment: preview-playground
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        timeout-minutes: 10
-
-  # ────────── 3. DEPLOY PRODUCTION (Main branch) ──────────
-  deploy-production-website:
-    name: 'Deploy Production: Website'
-    needs: build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    environment: production # enables manual approval & secret scoping
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: '8.14.1'
-
-      - name: Setup Node.js with cache
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.18.1'
-          cache: 'pnpm'
-
-      - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Deploy website to Production
-        run: pnpm exec nx run website:deploy
-
-  deploy-production-playground:
-    name: 'Deploy Production: Playground'
-    needs: build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    environment: production # enables manual approval & secret scoping
-    env:
-      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
-    steps:
-      - name: Create playground directory
-        run: mkdir -p examples/playground
-
-      - name: Download playground build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: playground-dist-production
-          path: examples/playground
-
-      - name: Debug - List playground directory structure
         run: |
-          echo "=== Contents of examples/playground ==="
-          ls -la examples/playground/
-          echo ""
-          echo "=== Contents of .next directory ==="
-          ls -la examples/playground/.next/ || echo ".next directory not found"
-          echo ""
-          echo "=== Contents of .next/static directory ==="
-          ls -la examples/playground/.next/static/ || echo ".next/static directory not found"
-          echo ""
-          echo "=== Check for netlify.toml ==="
-          cat examples/playground/netlify.toml || echo "netlify.toml not found"
+          NEXT_PUBLIC_SUPABASE_URL=${{ secrets.DEMO_PREVIEW_SUPABASE_URL }} \
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY }} \
+          pnpm nx run playground:build
+      - name: Build playground (production)
+        id: build_playground_production
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          NEXT_PUBLIC_SUPABASE_URL=${{ secrets.DEMO_PRODUCTION_SUPABASE_URL }} \
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }} \
+          pnpm nx run playground:build
 
-      - name: Deploy to Netlify
-        uses: nwtgck/actions-netlify@v3.0
+      - name: Upload playground artifact
+        if: github.event_name == 'pull_request' && steps.build_playground_preview.outcome == 'success'
+        uses: actions/upload-artifact@v4
         with:
-          publish-dir: ./examples/playground
-          production-deploy: true
-          deploy-message: "Deploy from GitHub Actions - Production"
-          enable-commit-comment: false
+          name: playground-dist
+          path: examples/playground/.next
+          retention-days: 7
+
+      - name: Upload playground artifact (production)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.build_playground_production.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playground-dist
+          path: examples/playground/.next
+          retention-days: 7
+
+      - name: Stop Nx Cloud run
+        run: .github/scripts/nx-cloud.sh stop
+
+# ────────────────────────────────── 2. PREVIEW DEPLOYS (PR) ───────────────────────────
+  deploy-preview-playground:
+    needs: build
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID:    ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            examples/playground/netlify.toml
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/download-artifact@v4
+        with: { name: playground-dist, path: examples/playground/.next }
+
+      - run: |
+          pnpm dlx netlify-cli@latest deploy \
+            --dir=examples/playground \
+            --alias=pr-${{ github.event.pull_request.number }} \
+            --message="PR #${{ github.event.pull_request.number }}" \
+            --functions=examples/playground/.netlify/functions \
+            --site=$NETLIFY_SITE_ID
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
-        timeout-minutes: 10
+
+  deploy-preview-website:
+    needs: build
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    environment: preview
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: '8.14.1' }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm nx run website:deploy:preview --skip-nx-cache
+
+# ──────────────────────────────── 3. PRODUCTION DEPLOYS (main) ────────────────────────
+  deploy-production-playground:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID:    ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            examples/playground/netlify.toml
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/download-artifact@v4
+        with: { name: playground-dist, path: examples/playground/.next }
+
+      # Production deploy
+      - run: |
+          pnpm dlx netlify-cli@latest deploy \
+            --prod \
+            --dir=examples/playground \
+            --message="Deploy from GitHub Actions (main)" \
+            --functions=examples/playground/.netlify/functions \
+            --site=$NETLIFY_SITE_ID
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+
+  deploy-production-website:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: '8.14.1' }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm nx run website:deploy --skip-nx-cache

@@ -6,9 +6,9 @@
   "tags": [],
   "targets": {
     "build": {
-      "executor": "nx:noop",
-      "outputs": ["{projectRoot}/dist"],
-      "dependsOn": ["build:lib", "build:browser"]
+      "executor": "@nx/composite",
+      "targets": ["build:lib", "build:browser"],
+      "outputs": ["{projectRoot}/dist"]
     },
     "build:lib": {
       "executor": "@nx/vite:build",

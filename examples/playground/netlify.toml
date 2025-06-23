@@ -1,10 +1,8 @@
 [build]
-  base = "."
-  command = "echo 'Build already completed in GitHub Actions'"
+  command = "next build"          # ↙ still required by plugin if you run netlify build locally
   publish = ".next"
 
 [build.environment]
-  NPM_FLAGS = "--force" # Force npm to install packages even if there are conflicts
   NODE_VERSION = "20.18.1"
 
 [[plugins]]

@@ -6,6 +6,11 @@
   "tags": [],
   "targets": {
     "build": {
+      "executor": "@nx/next:build",
+      "outputs": [
+        "{projectRoot}/.next",
+        "{projectRoot}/.netlify/functions"
+      ],
       "inputs": [
         "production",
         "^production",
