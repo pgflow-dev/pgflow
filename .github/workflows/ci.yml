@@ -66,9 +66,6 @@ jobs:
           docker pull timberio/vector:0.28.1-alpine || true
           docker pull supabase/supavisor:1.1.56 || true
 
-      - name: Start Nx Cloud run
-        run: pnpm dlx nx-cloud start-ci-run
-
       - run: pnpm install --frozen-lockfile
 
       - name: Set Nx SHAs for affected commands
@@ -112,9 +109,6 @@ jobs:
           path: examples/playground/.next
           retention-days: 7
 
-      - name: Stop Nx Cloud run
-        if: always()
-        run: pnpm dlx nx-cloud stop-all-agents || true
 
 # ────────────────────────────────── 2. PREVIEW DEPLOYS (PR) ───────────────────────────
   deploy-preview-playground:
