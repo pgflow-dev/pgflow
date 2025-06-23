@@ -78,16 +78,24 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.DEMO_PREVIEW_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY }}
 
+      - name: Debug - Check build output
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "=== Current working directory ==="
+          pwd
+          echo "=== Checking if .next exists ==="
+          ls -la examples/playground/.next 2>/dev/null | head -10 || echo ".next directory not found!"
+          echo "=== Checking playground directory ==="
+          ls -la examples/playground/
+          echo "=== Find .next directory ==="
+          find . -name ".next" -type d 2>/dev/null | grep -v node_modules | head -10
+          
       - name: Upload playground preview artifact
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: playground-dist-preview
-          path: |
-            examples/playground/.next
-            examples/playground/package.json
-            examples/playground/next.config.ts
-            examples/playground/netlify.toml
+          path: examples/playground
           retention-days: 1
 
       # Build for production (main branch)
@@ -103,11 +111,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playground-dist-production
-          path: |
-            examples/playground/.next
-            examples/playground/package.json
-            examples/playground/next.config.ts
-            examples/playground/netlify.toml
+          path: examples/playground
           retention-days: 1
 
       # Build other affected projects (without environment-specific vars)
