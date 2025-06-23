@@ -70,11 +70,41 @@ jobs:
       - name: 🚀 Run Nx affected (lint, typecheck, test)
         run: npx nx-cloud record -- pnpm exec nx affected -t lint typecheck test
 
-      - name: 🚀 Run Nx affected build with dependencies
-        run: npx nx-cloud record -- pnpm exec nx affected -t build
+      # Build for preview (PRs)
+      - name: 🔨 Build playground for preview
+        if: github.event_name == 'pull_request'
+        run: npx nx-cloud record -- pnpm exec nx run playground:build
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_URL || secrets.DEMO_PRODUCTION_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY || secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.DEMO_PREVIEW_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY }}
+
+      - name: Upload playground preview artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playground-dist-preview
+          path: examples/playground/dist
+          retention-days: 1
+
+      # Build for production (main branch)
+      - name: 🔨 Build playground for production
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: npx nx-cloud record -- pnpm exec nx run playground:build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.DEMO_PRODUCTION_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }}
+
+      - name: Upload playground production artifact
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playground-dist-production
+          path: examples/playground/dist
+          retention-days: 1
+
+      # Build other affected projects (without environment-specific vars)
+      - name: 🚀 Build remaining affected projects
+        run: npx nx-cloud record -- pnpm exec nx affected -t build --exclude=playground
 
   # ────────── 2. DEPLOY PREVIEW (Pull Requests) ──────────
   deploy-preview-website:
@@ -157,27 +187,24 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
         with:
-          version: '8.14.1'
+          sparse-checkout: |
+            examples/playground/netlify.toml
 
-      - name: Setup Node.js with cache
-        uses: actions/setup-node@v4
+      - name: Download playground build artifact
+        uses: actions/download-artifact@v4
         with:
-          node-version: '20.18.1'
-          cache: 'pnpm'
+          name: playground-dist-preview
+          path: examples/playground/dist
 
-      - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
 
       - name: Deploy Preview for playground
-        run: pnpm exec nx run playground:deploy:preview
+        run: netlify deploy --dir=dist --alias=pr-${{ github.event.pull_request.number }}
+        working-directory: examples/playground
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.DEMO_PREVIEW_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY }}
 
       - name: Get deployment URL
         id: deployment
@@ -261,23 +288,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
         with:
-          version: '8.14.1'
+          sparse-checkout: |
+            examples/playground/netlify.toml
 
-      - name: Setup Node.js with cache
-        uses: actions/setup-node@v4
+      - name: Download playground build artifact
+        uses: actions/download-artifact@v4
         with:
-          node-version: '20.18.1'
-          cache: 'pnpm'
+          name: playground-dist-production
+          path: examples/playground/dist
 
-      - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
 
       - name: Deploy playground to Production
-        run: pnpm exec nx run playground:deploy
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.DEMO_PRODUCTION_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }}
+        run: netlify deploy --prod --dir=dist
+        working-directory: examples/playground
