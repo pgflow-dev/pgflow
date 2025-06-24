@@ -18,7 +18,7 @@
     "sequentialthinking": {
       "name": "sequentialthinking",
       "command": "npx",
-      "args": ["-y", "@mattmagg/sequential-thinking-claude-code"]
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
     }
   }
 }
