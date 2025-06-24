@@ -90,8 +90,19 @@ jobs:
         id: playground_build
         if: github.event_name == 'pull_request' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
         run: |
+          echo "=== Playground Build Debug ==="
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Checking affected projects..."
+          
+          # Show all affected projects for debugging
+          AFFECTED=$(pnpm nx show projects --affected --plain)
+          echo "All affected projects:"
+          echo "$AFFECTED"
+          echo "========================="
+          
           # Check if playground is affected
-          if pnpm nx show projects --affected --plain | grep -qx "playground"; then
+          if echo "$AFFECTED" | grep -qx "playground"; then
             echo "Playground is affected, building..."
             
             # Set environment variables based on event type
@@ -134,6 +145,8 @@ jobs:
         run: |
           echo "Playground built: ${{ needs.build.outputs.playground-built }}"
           echo "Should deploy: ${{ github.event_name == 'pull_request' && needs.build.outputs.playground-built == 'true' }}"
+          echo "Event name: ${{ github.event_name }}"
+          echo "GitHub ref: ${{ github.ref }}"
 
       - uses: actions/checkout@v4
         with:
