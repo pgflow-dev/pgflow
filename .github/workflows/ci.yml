@@ -141,7 +141,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playground-dist
-          path: ${{ github.workspace }}/examples/playground/.next
+          path: examples/playground/.next
+          include-hidden-files: true
           retention-days: 7
           if-no-files-found: error
 
