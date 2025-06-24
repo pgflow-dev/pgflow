@@ -2,6 +2,9 @@
   "name": "@pgflow/client",
   "version": "0.4.1",
   "type": "module",
+  "scripts": {
+    "verify-exports": "node scripts/verify-exports.js"
+  },
   "dependencies": {
     "@pgflow/core": "workspace:*",
     "@pgflow/dsl": "workspace:*",

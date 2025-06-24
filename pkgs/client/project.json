@@ -8,6 +8,14 @@
     "build": {
       "executor": "nx:noop",
       "outputs": ["{projectRoot}/dist"],
+      "dependsOn": ["build:lib", "build:browser", "verify-exports"]
+    },
+    "verify-exports": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "pnpm run verify-exports"
+      },
       "dependsOn": ["build:lib", "build:browser"]
     },
     "build:lib": {
