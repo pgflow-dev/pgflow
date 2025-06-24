@@ -130,7 +130,6 @@ jobs:
           production-deploy: false
           alias: pr-${{ github.event.pull_request.number }}
           deploy-message: "PR #${{ github.event.pull_request.number }}"
-          functions-dir: './examples/playground/.netlify/functions'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           enable-pull-request-comment: true
           enable-commit-comment: false
@@ -179,7 +178,6 @@ jobs:
           publish-dir: './examples/playground'
           production-deploy: true
           deploy-message: "Deploy from GitHub Actions (main)"
-          functions-dir: './examples/playground/.netlify/functions'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           enable-pull-request-comment: false
           enable-commit-comment: false
