@@ -143,15 +143,21 @@ jobs:
       - uses: actions/download-artifact@v4
         with: { name: playground-dist, path: examples/playground/.next }
 
-      - run: |
-          pnpm dlx netlify-cli@latest deploy \
-            --dir=examples/playground \
-            --alias=pr-${{ github.event.pull_request.number }} \
-            --message="PR #${{ github.event.pull_request.number }}" \
-            --functions=examples/playground/.netlify/functions \
-            --site=$NETLIFY_SITE_ID
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: './examples/playground'
+          production-deploy: false
+          alias: pr-${{ github.event.pull_request.number }}
+          deploy-message: "PR #${{ github.event.pull_request.number }}"
+          functions-dir: './examples/playground/.netlify/functions'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          enable-pull-request-comment: true
+          enable-commit-comment: false
+          overwrites-pull-request-comment: true
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
 
   deploy-preview-website:
     needs: build
@@ -187,16 +193,19 @@ jobs:
       - uses: actions/download-artifact@v4
         with: { name: playground-dist, path: examples/playground/.next }
 
-      # Production deploy
-      - run: |
-          pnpm dlx netlify-cli@latest deploy \
-            --prod \
-            --dir=examples/playground \
-            --message="Deploy from GitHub Actions (main)" \
-            --functions=examples/playground/.netlify/functions \
-            --site=$NETLIFY_SITE_ID
+      - name: Deploy to Netlify Production
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: './examples/playground'
+          production-deploy: true
+          deploy-message: "Deploy from GitHub Actions (main)"
+          functions-dir: './examples/playground/.netlify/functions'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          enable-pull-request-comment: false
+          enable-commit-comment: false
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
 
   deploy-production-website:
     needs: build
