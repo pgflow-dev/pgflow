@@ -125,12 +125,11 @@ jobs:
 
       - name: Deploy to Netlify
         run: |
+          cd examples/playground
           npx netlify-cli@latest deploy \
             --no-build \
-            --dir=examples/playground \
             --alias=pr-${{ github.event.pull_request.number }} \
-            --message="PR #${{ github.event.pull_request.number }}" \
-            --site=$NETLIFY_SITE_ID
+            --message="PR #${{ github.event.pull_request.number }}"
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
@@ -171,12 +170,11 @@ jobs:
 
       - name: Deploy to Netlify Production
         run: |
+          cd examples/playground
           npx netlify-cli@latest deploy \
             --no-build \
             --prod \
-            --dir=examples/playground \
-            --message="Deploy from GitHub Actions (main)" \
-            --site=$NETLIFY_SITE_ID
+            --message="Deploy from GitHub Actions (main)"
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
