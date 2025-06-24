@@ -38,10 +38,11 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    ".next/types/**/*.ts",
     "dist/.next/types/**/*.ts",
     "dist/types/**/*.ts",
     "next-env.d.ts",
-    ".next/types/**/*.ts"
+    "../../examples/playground/.next/.next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

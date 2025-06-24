@@ -6,14 +6,6 @@
   "tags": [],
   "targets": {
     "build": {
-      "executor": "@nx/next:build",
-      "outputs": [
-        "{options.outputPath}",
-        "{projectRoot}/.netlify/functions"
-      ],
-      "options": {
-        "outputPath": "examples/playground/.next"
-      },
       "inputs": [
         "production",
         "^production",
@@ -22,30 +14,16 @@
         },
         {
           "env": "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+        },
+        {
+          "externalDependencies": ["next"]
         }
+      ],
+      "outputs": [
+        "{projectRoot}/.netlify/functions",
+        "{workspaceRoot}/examples/playground/.next/!(cache)/**/*",
+        "{workspaceRoot}/examples/playground/.next/!(cache)"
       ]
-    },
-    "ensure-ci-environment": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "if [ \"$CI\" != \"true\" ]; then echo \"Error: Deploy commands should only be run in CI environments. Set CI=true to override.\"; exit 1; else echo \"CI environment verified\"; fi"
-      }
-    },
-    "deploy": {
-      "executor": "nx:run-commands",
-      "dependsOn": ["build", "ensure-ci-environment"],
-      "options": {
-        "cwd": "examples/playground",
-        "command": "netlify deploy --prod --dir=.next"
-      }
-    },
-    "deploy:preview": {
-      "executor": "nx:run-commands",
-      "dependsOn": ["build", "ensure-ci-environment"],
-      "options": {
-        "cwd": "examples/playground",
-        "command": "netlify deploy --dir=.next --alias=pr-${PR_NUMBER:-preview}"
-      }
     }
   }
 }

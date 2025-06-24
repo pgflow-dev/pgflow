@@ -52,23 +52,23 @@ esmTest.on('close', (code) => {
     process.exit(1);
   }
   
-  // Test CJS require (expected to fail with nanoevents ESM dependency)
-  console.log('\nTesting CJS require...');
+  // No longer testing CJS as we've dropped support
+  console.log('\n✅ CommonJS support has been dropped - package is now ESM-only');
+  
+  // Test that CJS file doesn't exist
+  console.log('\nVerifying CJS file has been removed...');
   const cjsTest = spawn('node', ['-e', `
-    try {
-      const { PgflowClient, FlowRun, FlowStep } = require('@pgflow/client');
-      console.log('✅ CJS require successful');
-      console.log('  - PgflowClient:', typeof PgflowClient);
-      console.log('  - FlowRun:', typeof FlowRun);
-      console.log('  - FlowStep:', typeof FlowStep);
-    } catch (err) {
-      if (err.code === 'ERR_REQUIRE_ESM') {
-        console.log('⚠️  CJS require failed with ERR_REQUIRE_ESM');
-        console.log('   This is expected due to ESM-only dependencies (nanoevents)');
-        console.log('   Next.js and other bundlers should handle this correctly');
-      } else {
-        throw err;
-      }
+    const fs = require('fs');
+    const path = require('path');
+    
+    const cjsPath = path.join('${packageRoot}', 'dist', 'index.cjs');
+    
+    if (fs.existsSync(cjsPath)) {
+      console.error('❌ CommonJS file still exists at:', cjsPath);
+      console.error('   Please remove this file as CommonJS is no longer supported');
+      process.exit(1);
+    } else {
+      console.log('✅ CommonJS file correctly removed');
     }
   `], { cwd: packageRoot });
   

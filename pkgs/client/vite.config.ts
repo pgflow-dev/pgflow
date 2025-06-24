@@ -22,9 +22,9 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'PgflowClient',
-      fileName: (format) => format === 'cjs' ? 'index.cjs' : 'index.js',
-      // Generate both .js (ES) and .cjs (CommonJS) files
-      formats: ['es', 'cjs']
+      fileName: 'index',
+      // Only generate ES module
+      formats: ['es']
     },
     rollupOptions: {
       // External dependencies that shouldn't be bundled
