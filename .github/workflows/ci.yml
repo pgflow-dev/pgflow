@@ -141,10 +141,6 @@ jobs:
     environment: preview
     steps:
       - uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            examples/playground
-          sparse-checkout-cone-mode: true
       - uses: pnpm/action-setup@v4
         with: { version: '8.14.1' }
       - uses: actions/setup-node@v4
@@ -190,10 +186,6 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            examples/playground
-          sparse-checkout-cone-mode: true
       - uses: pnpm/action-setup@v4
         with: { version: '8.14.1' }
       - uses: actions/setup-node@v4
