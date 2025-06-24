@@ -31,15 +31,9 @@ jobs:
         with: { fetch-depth: 0 }
 
       - uses: pnpm/action-setup@v4
-        with: { version: '8.14.1' }
-
-      # Cache pnpm store
-      - uses: actions/cache@v4
-        with:
-          path: ~/.local/share/pnpm/store/v3
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
+        with: 
+          version: '8.14.1'
+          run_install: false
 
       - uses: actions/setup-node@v4
         with:
@@ -74,7 +68,7 @@ jobs:
           docker pull timberio/vector:0.28.1-alpine || true
           docker pull supabase/supavisor:1.1.56 || true
 
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Set Nx SHAs for affected commands
         uses: nrwl/nx-set-shas@v4
@@ -172,7 +166,7 @@ jobs:
         with:
           node-version: 20
           cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm nx run website:deploy:preview --skip-nx-cache
 
 # ──────────────────────────────── 3. PRODUCTION DEPLOYS (main) ────────────────────────
@@ -220,5 +214,5 @@ jobs:
         with:
           node-version: 20
           cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm nx run website:deploy --skip-nx-cache
