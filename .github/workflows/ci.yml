@@ -115,10 +115,6 @@ jobs:
     steps:
 
       - uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            examples/playground/netlify.toml
-          sparse-checkout-cone-mode: false
 
       - uses: actions/download-artifact@v4
         with: { name: playground-dist, path: examples/playground/.next }
@@ -160,10 +156,6 @@ jobs:
       NETLIFY_SITE_ID:    ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            examples/playground/netlify.toml
-          sparse-checkout-cone-mode: false
 
       - uses: actions/download-artifact@v4
         with: { name: playground-dist, path: examples/playground/.next }
