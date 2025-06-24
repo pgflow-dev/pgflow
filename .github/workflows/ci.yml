@@ -20,6 +20,8 @@ jobs:
 # ─────────────────────────────────────── 1. BUILD ──────────────────────────────────────
   build:
     runs-on: ubuntu-latest
+    outputs:
+      playground-built: ${{ steps.playground_affected.outputs.affected }}
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
@@ -78,15 +80,24 @@ jobs:
         run: pnpm nx affected -t build --configuration=production --parallel --exclude=playground
 
       # ── playground build with env vars ────────────────────────────────────────
+      - name: Check if playground is affected
+        id: playground_affected
+        run: |
+          if pnpm nx show projects --affected --json | jq -e 'contains(["playground"])' > /dev/null 2>&1; then
+            echo "affected=true" >> $GITHUB_OUTPUT
+          else
+            echo "affected=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build playground
-        if: github.event_name == 'pull_request' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
+        if: steps.playground_affected.outputs.affected == 'true' && (github.event_name == 'pull_request' || (github.ref == 'refs/heads/main' && github.event_name == 'push'))
         run: |
           NEXT_PUBLIC_SUPABASE_URL=${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_URL || secrets.DEMO_PRODUCTION_SUPABASE_URL }} \
           NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY || secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }} \
           pnpm nx run playground:build
 
       - name: Upload playground artifact
-        if: github.event_name == 'pull_request' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
+        if: steps.playground_affected.outputs.affected == 'true' && (github.event_name == 'pull_request' || (github.ref == 'refs/heads/main' && github.event_name == 'push'))
         uses: actions/upload-artifact@v4
         with:
           name: playground-dist
@@ -97,7 +108,7 @@ jobs:
 # ────────────────────────────────── 2. PREVIEW DEPLOYS (PR) ───────────────────────────
   deploy-preview-playground:
     needs: build
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && needs.build.outputs.playground-built == 'true'
     runs-on: ubuntu-latest
     env:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
@@ -141,7 +152,7 @@ jobs:
 # ──────────────────────────────── 3. PRODUCTION DEPLOYS (main) ────────────────────────
   deploy-production-playground:
     needs: build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.build.outputs.playground-built == 'true'
     runs-on: ubuntu-latest
     env:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
