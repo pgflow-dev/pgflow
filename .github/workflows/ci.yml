@@ -113,6 +113,19 @@ jobs:
             if pnpm nx run playground:build; then
               echo "Build successful"
               echo "built=true" >> $GITHUB_OUTPUT
+              
+              # Debug: Check if .next directory exists
+              echo "Checking for .next directory..."
+              if [ -d "examples/playground/.next" ]; then
+                echo "✓ .next directory exists at examples/playground/.next"
+                echo "Contents:"
+                ls -la examples/playground/.next | head -10
+              else
+                echo "✗ .next directory NOT FOUND at examples/playground/.next"
+                echo "Current directory: $(pwd)"
+                echo "Looking for .next directories:"
+                find . -name ".next" -type d | grep -v node_modules
+              fi
             else
               echo "Build failed"
               echo "built=false" >> $GITHUB_OUTPUT
@@ -128,8 +141,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playground-dist
-          path: examples/playground/.next
+          path: ${{ github.workspace }}/examples/playground/.next
           retention-days: 7
+          if-no-files-found: error
 
 
 # ────────────────────────────────── 2. PREVIEW DEPLOYS (PR) ───────────────────────────
