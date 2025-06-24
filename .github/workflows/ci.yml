@@ -83,9 +83,15 @@ jobs:
       - name: Check if playground is affected
         id: playground_affected
         run: |
-          if pnpm nx show projects --affected --json | jq -e 'contains(["playground"])' > /dev/null 2>&1; then
+          # Get list of affected projects
+          AFFECTED=$(pnpm nx show projects --affected --plain)
+          echo "Affected projects: $AFFECTED"
+          
+          if echo "$AFFECTED" | grep -q "^playground$"; then
+            echo "Playground is affected"
             echo "affected=true" >> $GITHUB_OUTPUT
           else
+            echo "Playground is NOT affected"
             echo "affected=false" >> $GITHUB_OUTPUT
           fi
 
@@ -114,6 +120,11 @@ jobs:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE_ID:    ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
     steps:
+      - name: Debug build outputs
+        run: |
+          echo "Playground built: ${{ needs.build.outputs.playground-built }}"
+          echo "Should deploy: ${{ github.event_name == 'pull_request' && needs.build.outputs.playground-built == 'true' }}"
+
       - uses: actions/checkout@v4
         with:
           sparse-checkout: |
