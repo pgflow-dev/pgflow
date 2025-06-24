@@ -50,12 +50,6 @@
   ],
   "references": [
     {
-      "path": "../../pkgs/core"
-    },
-    {
-      "path": "../../pkgs/edge-worker"
-    },
-    {
       "path": "../../pkgs/dsl"
     },
     {
