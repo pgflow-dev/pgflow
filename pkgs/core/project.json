@@ -36,7 +36,6 @@
     },
     "verify-schemas-synced": {
       "executor": "nx:run-commands",
-      "local": true,
       "dependsOn": ["dump-realtime-schema", "supabase:ensure-started"],
       "inputs": [
         "schemas",
@@ -57,7 +56,6 @@
     },
     "verify-migrations": {
       "executor": "nx:run-commands",
-      "local": true,
       "dependsOn": ["verify-schemas-synced", "supabase:ensure-started"],
       "inputs": ["migrations", "migrationVerificationCache"],
       "outputs": ["{projectRoot}/.nx-inputs/verify-migrations.txt"],
@@ -230,7 +228,6 @@
     },
     "gen-types": {
       "executor": "nx:run-commands",
-      "local": true,
       "dependsOn": ["verify-migrations"],
       "inputs": ["migrations"],
       "outputs": ["{projectRoot}/src/database-types.ts"],
@@ -249,7 +246,6 @@
     },
     "verify-gen-types": {
       "executor": "nx:run-commands",
-      "local": true,
       "dependsOn": ["verify-migrations"],
       "inputs": ["migrations", "databaseTypes"],
       "outputs": ["{projectRoot}/.nx-inputs/verify-gen-types.txt"],

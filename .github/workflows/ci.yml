@@ -53,20 +53,6 @@ jobs:
         with:
           cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 
-      - name: Pre-pull Docker images
-        run: |
-          docker pull jumski/postgres-15-pgmq:latest || true
-          docker pull supabase/postgres:15.1.0.117 || true
-          docker pull supabase/gotrue:v2.132.3 || true
-          docker pull supabase/postgrest:v11.2.0 || true
-          docker pull supabase/realtime:v2.25.50 || true
-          docker pull supabase/storage-api:v0.46.4 || true
-          docker pull supabase/edge-runtime:v1.29.1 || true
-          docker pull supabase/studio:20240122-5cf8f30 || true
-          docker pull supabase/postgres-meta:v0.77.2 || true
-          docker pull supabase/logflare:1.4.0 || true
-          docker pull timberio/vector:0.28.1-alpine || true
-          docker pull supabase/supavisor:1.1.56 || true
 
       - run: pnpm install --frozen-lockfile --prefer-offline
 
