@@ -74,35 +74,19 @@ jobs:
       - name: Quality gate (lint + typecheck + test)
         run: pnpm nx affected -t lint typecheck test --parallel --configuration=production
 
-      - name: Build all affected projects
-        run: pnpm nx affected -t build --configuration=production --parallel
+      - name: Build all affected projects (except playground)
+        run: pnpm nx affected -t build --configuration=production --parallel --exclude=playground
 
-      # ── playground extra build with env vars ────────────────────────────────────────
-      - name: Build playground (preview)
-        id: build_playground_preview
-        if: github.event_name == 'pull_request'
+      # ── playground build with env vars ────────────────────────────────────────
+      - name: Build playground
+        if: github.event_name == 'pull_request' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
         run: |
-          NEXT_PUBLIC_SUPABASE_URL=${{ secrets.DEMO_PREVIEW_SUPABASE_URL }} \
-          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY }} \
-          pnpm nx run playground:build
-      - name: Build playground (production)
-        id: build_playground_production
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: |
-          NEXT_PUBLIC_SUPABASE_URL=${{ secrets.DEMO_PRODUCTION_SUPABASE_URL }} \
-          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }} \
+          NEXT_PUBLIC_SUPABASE_URL=${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_URL || secrets.DEMO_PRODUCTION_SUPABASE_URL }} \
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY || secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }} \
           pnpm nx run playground:build
 
       - name: Upload playground artifact
-        if: github.event_name == 'pull_request' && steps.build_playground_preview.outcome == 'success'
-        uses: actions/upload-artifact@v4
-        with:
-          name: playground-dist
-          path: examples/playground/.next
-          retention-days: 7
-
-      - name: Upload playground artifact (production)
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && steps.build_playground_production.outcome == 'success'
+        if: github.event_name == 'pull_request' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
         uses: actions/upload-artifact@v4
         with:
           name: playground-dist
