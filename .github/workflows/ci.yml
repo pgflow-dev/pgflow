@@ -124,16 +124,13 @@ jobs:
         with: { name: playground-dist, path: examples/playground/.next }
 
       - name: Deploy to Netlify
-        uses: nwtgck/actions-netlify@v3.0
-        with:
-          publish-dir: './examples/playground'
-          production-deploy: false
-          alias: pr-${{ github.event.pull_request.number }}
-          deploy-message: "PR #${{ github.event.pull_request.number }}"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          enable-pull-request-comment: true
-          enable-commit-comment: false
-          overwrites-pull-request-comment: true
+        run: |
+          npx netlify-cli@latest deploy \
+            --build=false \
+            --dir=examples/playground \
+            --alias=pr-${{ github.event.pull_request.number }} \
+            --message="PR #${{ github.event.pull_request.number }}" \
+            --site=$NETLIFY_SITE_ID
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
@@ -173,14 +170,13 @@ jobs:
         with: { name: playground-dist, path: examples/playground/.next }
 
       - name: Deploy to Netlify Production
-        uses: nwtgck/actions-netlify@v3.0
-        with:
-          publish-dir: './examples/playground'
-          production-deploy: true
-          deploy-message: "Deploy from GitHub Actions (main)"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          enable-pull-request-comment: false
-          enable-commit-comment: false
+        run: |
+          npx netlify-cli@latest deploy \
+            --build=false \
+            --prod \
+            --dir=examples/playground \
+            --message="Deploy from GitHub Actions (main)" \
+            --site=$NETLIFY_SITE_ID
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
