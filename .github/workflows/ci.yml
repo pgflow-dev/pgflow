@@ -5,6 +5,10 @@ on:
   push:
     branches: ['main']
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   actions: read
@@ -34,6 +38,8 @@ jobs:
         with:
           path: ~/.local/share/pnpm/store/v3
           key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
 
       - uses: actions/setup-node@v4
         with:
@@ -83,11 +89,13 @@ jobs:
       - name: Check if playground is affected
         id: playground_affected
         run: |
-          # Get list of affected projects
+          # Get list of affected projects (one per line)
           AFFECTED=$(pnpm nx show projects --affected --plain)
-          echo "Affected projects: $AFFECTED"
+          echo "Affected projects:"
+          echo "$AFFECTED"
           
-          if echo "$AFFECTED" | grep -q "^playground$"; then
+          # Use grep with exact match (-x) to avoid partial matches
+          if echo "$AFFECTED" | grep -qx "playground"; then
             echo "Playground is affected"
             echo "affected=true" >> $GITHUB_OUTPUT
           else
