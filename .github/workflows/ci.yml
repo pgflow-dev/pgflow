@@ -25,7 +25,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      playground-built: ${{ steps.playground_affected.outputs.affected }}
+      playground-built: ${{ steps.playground_build.outputs.built }}
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
@@ -86,32 +86,34 @@ jobs:
         run: pnpm nx affected -t build --configuration=production --parallel --exclude=playground
 
       # ── playground build with env vars ────────────────────────────────────────
-      - name: Check if playground is affected
-        id: playground_affected
+      - name: Build playground
+        id: playground_build
+        if: github.event_name == 'pull_request' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
         run: |
-          # Get list of affected projects (one per line)
-          AFFECTED=$(pnpm nx show projects --affected --plain)
-          echo "Affected projects:"
-          echo "$AFFECTED"
-          
-          # Use grep with exact match (-x) to avoid partial matches
-          if echo "$AFFECTED" | grep -qx "playground"; then
-            echo "Playground is affected"
-            echo "affected=true" >> $GITHUB_OUTPUT
+          # Check if playground is affected
+          if pnpm nx show projects --affected --plain | grep -qx "playground"; then
+            echo "Playground is affected, building..."
+            
+            # Set environment variables based on event type
+            export NEXT_PUBLIC_SUPABASE_URL=${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_URL || secrets.DEMO_PRODUCTION_SUPABASE_URL }}
+            export NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY || secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }}
+            
+            # Build and set output based on success
+            if pnpm nx run playground:build; then
+              echo "Build successful"
+              echo "built=true" >> $GITHUB_OUTPUT
+            else
+              echo "Build failed"
+              echo "built=false" >> $GITHUB_OUTPUT
+              exit 1
+            fi
           else
-            echo "Playground is NOT affected"
-            echo "affected=false" >> $GITHUB_OUTPUT
+            echo "Playground not affected, skipping build"
+            echo "built=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build playground
-        if: steps.playground_affected.outputs.affected == 'true' && (github.event_name == 'pull_request' || (github.ref == 'refs/heads/main' && github.event_name == 'push'))
-        run: |
-          NEXT_PUBLIC_SUPABASE_URL=${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_URL || secrets.DEMO_PRODUCTION_SUPABASE_URL }} \
-          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY || secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }} \
-          pnpm nx run playground:build
-
       - name: Upload playground artifact
-        if: steps.playground_affected.outputs.affected == 'true' && (github.event_name == 'pull_request' || (github.ref == 'refs/heads/main' && github.event_name == 'push'))
+        if: steps.playground_build.outputs.built == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: playground-dist
