@@ -126,7 +126,7 @@ jobs:
       - name: Deploy to Netlify
         run: |
           npx netlify-cli@latest deploy \
-            --build=false \
+            --no-build \
             --dir=examples/playground \
             --alias=pr-${{ github.event.pull_request.number }} \
             --message="PR #${{ github.event.pull_request.number }}" \
@@ -172,7 +172,7 @@ jobs:
       - name: Deploy to Netlify Production
         run: |
           npx netlify-cli@latest deploy \
-            --build=false \
+            --no-build \
             --prod \
             --dir=examples/playground \
             --message="Deploy from GitHub Actions (main)" \
