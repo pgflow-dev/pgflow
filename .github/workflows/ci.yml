@@ -130,17 +130,11 @@ jobs:
 
       - name: Prepare deployment structure
         run: |
-          cd examples/playground
-          # Copy standalone contents (includes node_modules, package.json, etc)
-          cp -r ../../playground-artifact/.next/standalone/examples/playground/* .
-          # Ensure .next directory exists
-          mkdir -p .next
-          # Copy static files
-          cp -r ../../playground-artifact/.next/static .next/
-          # Copy public files if they exist
-          if [ -d "../../playground-artifact/public" ]; then
-            cp -r ../../playground-artifact/public/* public/ 2>/dev/null || true
-          fi
+          # The standalone directory contains the full path structure
+          cp -r playground-artifact/.next/standalone/* .
+          # Copy static files to the correct location
+          cp -r playground-artifact/.next/static examples/playground/.next/
+          # Public files are already there from sparse checkout
 
       - name: Deploy to Netlify
         run: |
@@ -192,17 +186,11 @@ jobs:
 
       - name: Prepare deployment structure
         run: |
-          cd examples/playground
-          # Copy standalone contents (includes node_modules, package.json, etc)
-          cp -r ../../playground-artifact/.next/standalone/examples/playground/* .
-          # Ensure .next directory exists
-          mkdir -p .next
-          # Copy static files
-          cp -r ../../playground-artifact/.next/static .next/
-          # Copy public files if they exist
-          if [ -d "../../playground-artifact/public" ]; then
-            cp -r ../../playground-artifact/public/* public/ 2>/dev/null || true
-          fi
+          # The standalone directory contains the full path structure
+          cp -r playground-artifact/.next/standalone/* .
+          # Copy static files to the correct location
+          cp -r playground-artifact/.next/static examples/playground/.next/
+          # Public files are already there from sparse checkout
 
       - name: Deploy to Netlify Production
         run: |
