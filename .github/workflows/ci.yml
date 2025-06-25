@@ -126,8 +126,9 @@ jobs:
       - name: Deploy to Netlify
         run: |
           cd examples/playground
+          cp netlify-ci.toml netlify.toml
+          npx netlify-cli@latest build
           npx netlify-cli@latest deploy \
-            --no-build \
             --alias=pr-${{ github.event.pull_request.number }} \
             --message="PR #${{ github.event.pull_request.number }}"
         env:
@@ -171,8 +172,9 @@ jobs:
       - name: Deploy to Netlify Production
         run: |
           cd examples/playground
+          cp netlify-ci.toml netlify.toml
+          npx netlify-cli@latest build
           npx netlify-cli@latest deploy \
-            --no-build \
             --prod \
             --message="Deploy from GitHub Actions (main)"
         env:
