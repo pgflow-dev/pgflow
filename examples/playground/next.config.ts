@@ -1,9 +1,11 @@
 import type { NextConfig } from 'next';
 import { composePlugins, withNx } from '@nx/next';
 import { withPlausibleProxy } from 'next-plausible';
+import * as path from 'path';
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  outputFileTracingRoot: path.join(__dirname, '../../'),
   experimental: {
     externalDir: true,
   },

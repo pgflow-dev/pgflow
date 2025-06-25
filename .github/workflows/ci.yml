@@ -99,9 +99,8 @@ jobs:
         with:
           name: playground-dist
           path: |
-            examples/playground/.next/standalone/
-            examples/playground/.next/static/
-            examples/playground/public/
+            examples/playground/.netlify/
+            examples/playground/.next/
           include-hidden-files: true
           retention-days: 7
           if-no-files-found: error
@@ -117,30 +116,14 @@ jobs:
       NETLIFY_SITE_ID:    ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
     steps:
 
-      - uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            examples/playground
-          sparse-checkout-cone-mode: true
-
       - uses: actions/download-artifact@v4
         with: 
           name: playground-dist
-          path: playground-artifact
-
-      - name: Prepare deployment structure
-        run: |
-          # The standalone directory contains the full path structure
-          cp -r playground-artifact/.next/standalone/* .
-          # Copy static files to the correct location
-          cp -r playground-artifact/.next/static examples/playground/.next/
-          # Public files are already there from sparse checkout
+          path: examples/playground
 
       - name: Deploy to Netlify
         run: |
           cd examples/playground
-          cp netlify-ci.toml netlify.toml
-          npx netlify-cli@latest build
           npx netlify-cli@latest deploy \
             --alias=pr-${{ github.event.pull_request.number }} \
             --message="PR #${{ github.event.pull_request.number }}"
@@ -173,30 +156,14 @@ jobs:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE_ID:    ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            examples/playground
-          sparse-checkout-cone-mode: true
-
       - uses: actions/download-artifact@v4
         with: 
           name: playground-dist
-          path: playground-artifact
-
-      - name: Prepare deployment structure
-        run: |
-          # The standalone directory contains the full path structure
-          cp -r playground-artifact/.next/standalone/* .
-          # Copy static files to the correct location
-          cp -r playground-artifact/.next/static examples/playground/.next/
-          # Public files are already there from sparse checkout
+          path: examples/playground
 
       - name: Deploy to Netlify Production
         run: |
           cd examples/playground
-          cp netlify-ci.toml netlify.toml
-          npx netlify-cli@latest build
           npx netlify-cli@latest deploy \
             --prod \
             --message="Deploy from GitHub Actions (main)"

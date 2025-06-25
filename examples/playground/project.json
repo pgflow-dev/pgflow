@@ -6,6 +6,11 @@
   "tags": [],
   "targets": {
     "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "netlify build --offline",
+        "cwd": "examples/playground"
+      },
       "inputs": [
         "production",
         "^production",
@@ -16,13 +21,12 @@
           "env": "NEXT_PUBLIC_SUPABASE_ANON_KEY"
         },
         {
-          "externalDependencies": ["next"]
+          "externalDependencies": ["netlify-cli"]
         }
       ],
       "outputs": [
-        "{projectRoot}/.netlify/functions",
-        "{workspaceRoot}/examples/playground/.next/!(cache)/**/*",
-        "{workspaceRoot}/examples/playground/.next/!(cache)"
+        "{projectRoot}/.netlify",
+        "{projectRoot}/.next"
       ]
     }
   }
