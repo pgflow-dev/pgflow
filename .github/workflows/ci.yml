@@ -125,6 +125,9 @@ jobs:
         run: |
           cd examples/playground
           npx netlify-cli@latest deploy \
+            --site=${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }} \
+            --dir=.next \
+            --functions=.netlify/functions \
             --alias=pr-${{ github.event.pull_request.number }} \
             --message="PR #${{ github.event.pull_request.number }}"
         env:
@@ -165,6 +168,9 @@ jobs:
         run: |
           cd examples/playground
           npx netlify-cli@latest deploy \
+            --site=${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }} \
+            --dir=.next \
+            --functions=.netlify/functions \
             --prod \
             --message="Deploy from GitHub Actions (main)"
         env:
