@@ -1,6 +1,7 @@
 [build]
   command = "[ -d .next ] && echo '✓ Using pre-built .next directory' || (echo '✗ ERROR: .next directory not found! Run build first.' && exit 1)"
-  publish = ".next"
+  # Don't set publish - let the plugin handle it
+  # publish = ".next"
 
 [build.environment]
   NODE_VERSION = "20.18.1"

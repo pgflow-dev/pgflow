@@ -98,7 +98,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playground-dist
-          path: examples/playground/.next
+          path: |
+            examples/playground/.next/standalone/
+            examples/playground/.next/static/
+            examples/playground/public/
           include-hidden-files: true
           retention-days: 7
           if-no-files-found: error
@@ -121,7 +124,23 @@ jobs:
           sparse-checkout-cone-mode: true
 
       - uses: actions/download-artifact@v4
-        with: { name: playground-dist, path: examples/playground/.next }
+        with: 
+          name: playground-dist
+          path: playground-artifact
+
+      - name: Prepare deployment structure
+        run: |
+          cd examples/playground
+          # Copy standalone contents (includes node_modules, package.json, etc)
+          cp -r ../../playground-artifact/.next/standalone/examples/playground/* .
+          # Ensure .next directory exists
+          mkdir -p .next
+          # Copy static files
+          cp -r ../../playground-artifact/.next/static .next/
+          # Copy public files if they exist
+          if [ -d "../../playground-artifact/public" ]; then
+            cp -r ../../playground-artifact/public/* public/ 2>/dev/null || true
+          fi
 
       - name: Deploy to Netlify
         run: |
@@ -167,7 +186,23 @@ jobs:
           sparse-checkout-cone-mode: true
 
       - uses: actions/download-artifact@v4
-        with: { name: playground-dist, path: examples/playground/.next }
+        with: 
+          name: playground-dist
+          path: playground-artifact
+
+      - name: Prepare deployment structure
+        run: |
+          cd examples/playground
+          # Copy standalone contents (includes node_modules, package.json, etc)
+          cp -r ../../playground-artifact/.next/standalone/examples/playground/* .
+          # Ensure .next directory exists
+          mkdir -p .next
+          # Copy static files
+          cp -r ../../playground-artifact/.next/static .next/
+          # Copy public files if they exist
+          if [ -d "../../playground-artifact/public" ]; then
+            cp -r ../../playground-artifact/public/* public/ 2>/dev/null || true
+          fi
 
       - name: Deploy to Netlify Production
         run: |
