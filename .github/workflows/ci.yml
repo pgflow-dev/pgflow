@@ -109,7 +109,11 @@ jobs:
 # ────────────────────────────────── 2. PREVIEW DEPLOYS (PR) ───────────────────────────
   deploy-preview-playground:
     needs: build
-    if: github.event_name == 'pull_request' && needs.build.outputs.playground-built == 'true'
+    # Only run for PRs from the same repository (not forks) to ensure secrets are available
+    if: |
+      github.event_name == 'pull_request' && 
+      needs.build.outputs.playground-built == 'true' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     env:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
@@ -124,8 +128,10 @@ jobs:
       - name: Deploy to Netlify
         run: |
           cd examples/playground
+          # Create state.json to make Netlify CLI recognize the site
+          echo '{"siteId":"${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}"}' > .netlify/state.json
           npx netlify-cli@latest deploy \
-            --site=${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }} \
+            --site="${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}" \
             --dir=.next \
             --functions=.netlify/functions \
             --alias=pr-${{ github.event.pull_request.number }} \
@@ -136,7 +142,10 @@ jobs:
 
   deploy-preview-website:
     needs: build
-    if: github.event_name == 'pull_request'
+    # Only run for PRs from the same repository (not forks) to ensure secrets are available
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     environment: preview
     steps:
@@ -167,8 +176,10 @@ jobs:
       - name: Deploy to Netlify Production
         run: |
           cd examples/playground
+          # Create state.json to make Netlify CLI recognize the site
+          echo '{"siteId":"${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}"}' > .netlify/state.json
           npx netlify-cli@latest deploy \
-            --site=${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }} \
+            --site="${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}" \
             --dir=.next \
             --functions=.netlify/functions \
             --prod \
