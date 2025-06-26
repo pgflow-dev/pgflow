@@ -77,10 +77,19 @@ jobs:
       - run: pnpm nx run-many -t build --projects client,dsl --configuration=production
 
       - name: Build & deploy to Netlify
+        id: deploy
         run: |
           pnpm netlify deploy --build --filter=playground \
             --context ${{ github.event_name == 'pull_request' && 'deploy-preview' || 'production' }} \
             ${{ github.event_name == 'pull_request' && format('--alias=pr-{0}', github.event.pull_request.number) || '--prod' }}
+
+      - name: Post deployment comment
+        if: always()
+        uses: ./.github/actions/deployment-comment
+        with:
+          project-name: Playground
+          preview-url: https://pr-${{ github.event.pull_request.number }}--pgflow-demo.netlify.app
+          production-url: https://playground.pgflow.dev
 
 # ────────────────────────────────── 3. DEPLOY WEBSITE ───────────────────────────
   deploy-website:
@@ -91,11 +100,21 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: ./.github/actions/setup
+      
       - name: Deploy website
+        id: deploy-website
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             pnpm nx run website:deploy:preview --skip-nx-cache
           else
             pnpm nx run website:deploy --skip-nx-cache
           fi
+
+      - name: Post deployment comment
+        if: always()
+        uses: ./.github/actions/deployment-comment
+        with:
+          project-name: Website
+          preview-url: https://${{ github.event.pull_request.number }}.pgflow.pages.dev
+          production-url: https://pgflow.dev
 

@@ -1,0 +1,84 @@
+name: 'Deployment Comment'
+description: 'Post deployment status comments on PRs for both preview and production deployments'
+
+inputs:
+  project-name:
+    description: 'Name of the project being deployed (e.g., playground, website)'
+    required: true
+  preview-url:
+    description: 'The preview deployment URL'
+    required: true
+  production-url:
+    description: 'The production deployment URL'
+    required: true
+  deployment-status:
+    description: 'Status of the deployment (success or failure)'
+    required: true
+    default: ${{ job.status }}
+
+runs:
+  using: 'composite'
+  steps:
+    # Preview deployment comment (for PRs)
+    - name: Comment preview deployment on PR
+      if: always() && github.event_name == 'pull_request'
+      uses: mshick/add-pr-comment@v2
+      with:
+        message-id: preview-deployment-${{ inputs.project-name }}
+        refresh-message-position: true
+        message-success: |
+          ## 🔍 Preview Deployment: ${{ inputs.project-name }}
+          
+          ✅ **Deployment successful!**
+          
+          🔗 **Preview URL**: ${{ inputs.preview-url }}
+          
+          📝 **Details**:
+          - Branch: `${{ github.head_ref }}`
+          - Commit: `${{ github.sha }}`
+          - [View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          
+          _Last updated: ${{ github.event.head_commit.timestamp }}_
+        message-failure: |
+          ## 🔍 Preview Deployment: ${{ inputs.project-name }}
+          
+          ❌ **Deployment failed!**
+          
+          Please check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+
+    # Production deployment comment (for main branch)
+    - name: Find PR for commit
+      id: find-pr
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      shell: bash
+      run: |
+        PR_NUMBER=$(gh pr list --state merged --json number,mergeCommit --jq ".[] | select(.mergeCommit.oid == \"${{ github.sha }}\") | .number" | head -n1)
+        echo "pr_number=${PR_NUMBER}" >> $GITHUB_OUTPUT
+      env:
+        GH_TOKEN: ${{ github.token }}
+
+    - name: Comment on merged PR
+      if: always() && steps.find-pr.outputs.pr_number != '' && github.ref == 'refs/heads/main'
+      uses: mshick/add-pr-comment@v2
+      with:
+        issue: ${{ steps.find-pr.outputs.pr_number }}
+        message-id: production-deployment-${{ inputs.project-name }}
+        refresh-message-position: true
+        message-success: |
+          ## 🚀 Production Deployment: ${{ inputs.project-name }}
+          
+          ✅ **Successfully deployed to production!**
+          
+          🔗 **Production URL**: ${{ inputs.production-url }}
+          
+          📝 **Details**:
+          - Commit: `${{ github.sha }}`
+          - [View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          
+          _Deployed at: ${{ github.event.head_commit.timestamp }}_
+        message-failure: |
+          ## 🚀 Production Deployment: ${{ inputs.project-name }}
+          
+          ❌ **Production deployment failed!**
+          
+          Please check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
