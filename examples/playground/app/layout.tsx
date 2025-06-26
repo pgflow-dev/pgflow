@@ -16,6 +16,7 @@ import {
   MessagesSquare,
 } from 'lucide-react';
 import './globals.css';
+
 // import PlausibleProvider from 'next-plausible';
 
 const defaultUrl = process.env.VERCEL_URL
