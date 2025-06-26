@@ -60,6 +60,7 @@ jobs:
         (github.ref == 'refs/heads/main' && github.event_name == 'push')
       }}
     runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
     env:
       NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
@@ -124,6 +125,8 @@ jobs:
       - name: Deploy website
         id: deploy-website
         if: steps.check-affected.outputs.affected == 'true'
+        env:
+          CLOUDFLARE_BRANCH: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || '' }}
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             pnpm nx run website:deploy:preview --skip-nx-cache
