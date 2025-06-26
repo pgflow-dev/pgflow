@@ -123,6 +123,14 @@ jobs:
       - uses: actions/download-artifact@v4
         with: 
           name: playground-dist
+          path: examples/playground
+
+      - name: Verify Netlify build output
+        run: |
+          echo "Checking for .netlify directory..."
+          ls -la examples/playground/.netlify/
+          echo "Checking for functions..."
+          ls -la examples/playground/.netlify/functions/
 
       - name: Deploy to Netlify
         run: |
@@ -166,6 +174,14 @@ jobs:
       - uses: actions/download-artifact@v4
         with: 
           name: playground-dist
+          path: examples/playground
+
+      - name: Verify Netlify build output
+        run: |
+          echo "Checking for .netlify directory..."
+          ls -la examples/playground/.netlify/
+          echo "Checking for functions..."
+          ls -la examples/playground/.netlify/functions/
 
       - name: Deploy to Netlify Production
         run: |

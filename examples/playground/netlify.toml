@@ -1,6 +1,6 @@
 [build]
   command = "next build"          # will be ignored because you're pre-building
-  publish = ".netlify"
+  publish = ".next"
 
 [build.environment]
   NODE_VERSION = "20.18.1"
