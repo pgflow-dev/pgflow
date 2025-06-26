@@ -6,12 +6,20 @@
   "tags": [],
   "targets": {
     "build": {
-      "executor": "nx:run-commands",
+      "executor": "@nx/next:build",
+      "outputs": ["{projectRoot}/.next"],
+      "defaultConfiguration": "production",
       "options": {
-        "cwd": "{projectRoot}",
-        "command": "next build"
+        "outputPath": "{projectRoot}"
       },
-      "outputs": ["{projectRoot}/.next"]
+      "configurations": {
+        "development": {
+          "outputPath": "{projectRoot}"
+        },
+        "production": {
+          "outputPath": "{projectRoot}"
+        }
+      }
     },
     "bundle": {
       "executor": "nx:run-commands",

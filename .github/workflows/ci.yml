@@ -81,12 +81,12 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: '8.14.1'
           run_install: false
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20.18.1
+          node-version: 20
           cache: 'pnpm'
 
       - run: pnpm install --frozen-lockfile --prefer-offline
@@ -96,7 +96,7 @@ jobs:
 
       - name: Build & deploy to Netlify
         run: |
-          cd examples/playground && pnpm netlify deploy --build \
+          pnpm netlify deploy --build --filter=playground \
             --context ${{ github.event_name == 'pull_request' && 'deploy-preview' || 'production' }} \
             ${{ github.event_name == 'pull_request' && format('--alias={0}', github.sha) || '--prod' }}
 

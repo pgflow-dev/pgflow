@@ -1,2 +1,7 @@
-# pgflow/netlify.toml
-# This is the root netlify.toml - specific app configurations are in their respective directories
+[build]
+  base    = "examples/playground"
+  command = "pnpm build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
