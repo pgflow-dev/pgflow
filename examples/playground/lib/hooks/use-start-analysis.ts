@@ -20,14 +20,15 @@ export function useStartAnalysis() {
       const flowRun = await startWebsiteAnalysis(url, {}, pgflow);
       // Navigate immediately - PgflowClient already has the run cached
       router.push(`/websites/runs/${flowRun.run_id}`);
-    } catch (err: any) {
-      if (err?.code === 'AUTH_REQUIRED') {
+    } catch (err) {
+      const error = err as {code?: string; message?: string};
+      if (error?.code === 'AUTH_REQUIRED') {
         // we want to remember the url and redirect
         localStorage.setItem('pendingAnalysisUrl', url);
         router.push('/sign-in');
         return;
       }
-      setError(err.message ?? 'Something went wrong');
+      setError(error.message ?? 'Something went wrong');
     } finally {
       setIsPending(false);
     }

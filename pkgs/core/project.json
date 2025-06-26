@@ -24,6 +24,7 @@
   "targets": {
     "dump-realtime-schema": {
       "executor": "nx:run-commands",
+      "local": true,
       "dependsOn": ["supabase:ensure-started"],
       "outputs": ["{projectRoot}/atlas/.supabase-baseline-schema.sql"],
       "options": {
@@ -97,6 +98,7 @@
     },
     "lint:sqruff": {
       "executor": "nx:run-commands",
+      "local": true,
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
@@ -112,10 +114,12 @@
     },
     "lint": {
       "executor": "nx:noop",
+      "local": true,
       "dependsOn": ["lint:sqruff", "lint:eslint"]
     },
     "fix-sql": {
       "executor": "nx:run-commands",
+      "local": true,
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
@@ -127,6 +131,8 @@
     },
     "supabase:ensure-started": {
       "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
@@ -137,6 +143,8 @@
     },
     "supabase:start": {
       "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["supabase start"],
@@ -145,6 +153,8 @@
     },
     "supabase:stop": {
       "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["supabase stop --no-backup"],
@@ -153,6 +163,8 @@
     },
     "supabase:status": {
       "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["supabase status"],
@@ -161,6 +173,8 @@
     },
     "supabase:restart": {
       "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["supabase stop --no-backup", "supabase start"],
@@ -169,6 +183,8 @@
     },
     "supabase:reset": {
       "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
       "dependsOn": ["supabase:ensure-started"],
       "options": {
         "cwd": "{projectRoot}",
@@ -182,6 +198,7 @@
     },
     "test:pgtap": {
       "executor": "nx:run-commands",
+      "local": true,
       "dependsOn": ["verify-migrations", "supabase:ensure-started"],
       "options": {
         "cwd": "{projectRoot}",
@@ -201,6 +218,7 @@
     },
     "test:pgtap:watch": {
       "executor": "nx:run-commands",
+      "local": true,
       "dependsOn": ["verify-migrations", "supabase:ensure-started"],
       "options": {
         "cwd": "{projectRoot}",

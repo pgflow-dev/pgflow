@@ -8,6 +8,8 @@ import starlightLlmsTxt from 'starlight-llms-txt';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
+import cloudflare from '@astrojs/cloudflare';
+
 const GITHUB_REPO_URL = 'https://github.com/pgflow-dev/pgflow';
 const DISCORD_INVITE_URL = 'https://discord.gg/UcKXhfrfan';
 const EMAIL_URL = 'mailto:hello@pgflow.dev';
@@ -24,10 +26,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   site: `https://${DOMAIN_NAME}`,
   trailingSlash: 'always',
+
   build: {
     // prevents problems with trailing slash redirects (SEO issue)
     format: 'directory',
   },
+
   vite: {
     resolve: {
       alias: {
@@ -35,6 +39,7 @@ export default defineConfig({
       },
     },
   },
+
   redirects: {
     // Existing redirects
     '/edge-worker/how-to/run-on-hosted-supabase':
@@ -61,6 +66,7 @@ export default defineConfig({
     '/comparisons/inngest/': '/vs/inngest/',
     '/comparisons/trigger/': '/vs/trigger/',
   },
+
   integrations: [
     starlight({
       favicon: '/favicons/favicon.ico',
@@ -237,4 +243,6 @@ export default defineConfig({
       ],
     }),
   ],
+
+  adapter: cloudflare(),
 });

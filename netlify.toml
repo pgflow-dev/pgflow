@@ -1,0 +1,7 @@
+[build]
+  base    = "examples/playground"
+  command = "pnpm build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

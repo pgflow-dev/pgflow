@@ -92,6 +92,7 @@ export function FlowRunProvider({ runId, children }: FlowRunProviderProps) {
           setGlobalLoading(false);
           setLoading(false);
         }
+        return undefined;
       }
     };
 

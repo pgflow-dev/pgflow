@@ -6,17 +6,21 @@
   "tags": [],
   "targets": {
     "build": {
+      "executor": "nx:noop",
+      "outputs": ["{projectRoot}/dist"],
+      "dependsOn": ["build:lib", "build:browser", "verify-exports"]
+    },
+    "verify-exports": {
       "executor": "nx:run-commands",
       "options": {
-        "commands": [
-          "nx run client:build:lib",
-          "nx run client:build:browser"
-        ],
-        "parallel": false
-      }
+        "cwd": "{projectRoot}",
+        "command": "pnpm run verify-exports"
+      },
+      "dependsOn": ["build:lib", "build:browser"]
     },
     "build:lib": {
       "executor": "@nx/vite:build",
+      "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "pkgs/client/dist",
         "configFile": "pkgs/client/vite.config.ts"
@@ -24,6 +28,7 @@
     },
     "build:browser": {
       "executor": "@nx/vite:build",
+      "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "pkgs/client/dist",
         "configFile": "pkgs/client/vite.browser.config.ts"
@@ -44,6 +49,8 @@
     },
     "supabase:ensure-started": {
       "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
@@ -54,6 +61,8 @@
     },
     "supabase:start": {
       "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["supabase start"],
@@ -62,6 +71,8 @@
     },
     "supabase:stop": {
       "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["supabase stop --no-backup"],
@@ -70,6 +81,8 @@
     },
     "supabase:status": {
       "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["supabase status"],
@@ -78,6 +91,7 @@
     },
     "supabase:prepare": {
       "executor": "nx:run-commands",
+      "local": true,
       "dependsOn": ["^verify-migrations"],
       "options": {
         "cwd": "{projectRoot}",
@@ -92,6 +106,8 @@
     },
     "supabase:reset": {
       "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
       "dependsOn": ["supabase:prepare"],
       "options": {
         "cwd": "{projectRoot}",
@@ -101,6 +117,7 @@
     },
     "db:ensure": {
       "executor": "nx:run-commands",
+      "local": true,
       "dependsOn": ["supabase:ensure-started", "supabase:prepare"],
       "options": {
         "cwd": "{projectRoot}",
@@ -122,6 +139,7 @@
     },
     "test:integration": {
       "executor": "nx:run-commands",
+      "local": true,
       "dependsOn": ["db:ensure", "build"],
       "options": {
         "cwd": "{projectRoot}",
@@ -140,6 +158,7 @@
     },
     "test": {
       "executor": "nx:run-commands",
+      "local": true,
       "dependsOn": ["db:ensure", "build"],
       "options": {
         "cwd": "{projectRoot}",
@@ -149,6 +168,7 @@
     },
     "benchmark": {
       "executor": "nx:run-commands",
+      "local": true,
       "dependsOn": ["db:ensure", "build"],
       "options": {
         "cwd": "{projectRoot}",

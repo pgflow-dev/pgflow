@@ -6,7 +6,45 @@
   "tags": [],
   "targets": {
     "build": {
-      "executor": "nx:noop"
+      "executor": "@nx/next:build",
+      "outputs": ["{projectRoot}/.next"],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "{projectRoot}"
+      },
+      "configurations": {
+        "development": {
+          "outputPath": "{projectRoot}"
+        },
+        "production": {
+          "outputPath": "{projectRoot}"
+        }
+      }
+    },
+    "bundle": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "pnpm netlify build --context=${NETLIFY_CONTEXT:-production}"
+      },
+      "outputs": ["{projectRoot}/.netlify"]
+    },
+    "deploy:preview": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["bundle"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "pnpm netlify deploy --dir=.netlify/dist --functions=.netlify/functions --alias=${GITHUB_SHA:-preview}"
+      }
+    },
+    "deploy:prod": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["bundle"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "pnpm netlify deploy --dir=.netlify/dist --functions=.netlify/functions --prod"
+      }
     }
   }
 }

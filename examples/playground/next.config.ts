@@ -1,18 +1,19 @@
 import type { NextConfig } from 'next';
-// import { withPlausibleProxy } from 'next-plausible';
-
-import path from 'path';
+import { composePlugins, withNx } from '@nx/next';
+import { withPlausibleProxy } from 'next-plausible';
+import * as path from 'path';
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  transpilePackages: ['@pgflow/client', '@pgflow/core', '@pgflow/dsl'],
+  output: 'standalone',
+  outputFileTracingRoot: path.join(__dirname, '../../'),
+  experimental: {
+    externalDir: true,
+  },
+  transpilePackages: ['@pgflow/client', '@pgflow/dsl'],
+  nx: {
+    svgr: false, // Disable deprecated SVGR support
+  },
   webpack: (config, { isServer }) => {
-    // Force @pgflow/client to use the ES module
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@pgflow/client$': path.resolve(__dirname, 'node_modules/@pgflow/client/dist/index.js'),
-    };
-    
     if (!isServer) {
       // Provide fallbacks for Node.js modules that ws tries to use
       config.resolve.fallback = {
@@ -23,10 +24,13 @@ const nextConfig: NextConfig = {
         crypto: false,
       };
     }
-    
+
     return config;
   },
 };
 
-// export default withPlausibleProxy()(nextConfig);
-export default nextConfig;
+// Compose plugins properly - withNx handles workspace library resolution
+export default composePlugins(
+  withNx,
+  withPlausibleProxy()
+)(nextConfig);

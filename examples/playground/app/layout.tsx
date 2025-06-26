@@ -16,6 +16,7 @@ import {
   MessagesSquare,
 } from 'lucide-react';
 import './globals.css';
+
 // import PlausibleProvider from 'next-plausible';
 
 const defaultUrl = process.env.VERCEL_URL
@@ -25,7 +26,7 @@ const defaultUrl = process.env.VERCEL_URL
 export const metadata = {
   metadataBase: new URL(defaultUrl),
   title: 'pgflow',
-  description: 'Place to test and understand how pgflow works',
+  description: 'Place to test and understand how pgflow works.',
 };
 
 const geistSans = Geist({
