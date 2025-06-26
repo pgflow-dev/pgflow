@@ -90,6 +90,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile --prefer-offline
 
+      - name: Set Nx SHAs for affected commands
+        uses: nrwl/nx-set-shas@v4
+
       - name: Check if playground is affected
         id: check_affected
         run: |
