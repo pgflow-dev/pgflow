@@ -96,7 +96,7 @@ jobs:
 
       - name: Build & deploy to Netlify
         run: |
-          pnpm netlify deploy --build \
+          cd examples/playground && pnpm netlify deploy --build \
             --context ${{ github.event_name == 'pull_request' && 'deploy-preview' || 'production' }} \
             ${{ github.event_name == 'pull_request' && format('--alias={0}', github.sha) || '--prod' }}
 
