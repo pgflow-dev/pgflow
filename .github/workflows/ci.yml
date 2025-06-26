@@ -115,6 +115,6 @@ jobs:
         uses: ./.github/actions/deployment-comment
         with:
           project-name: Website
-          preview-url: https://${{ github.event.pull_request.number }}.pgflow.pages.dev
+          preview-url: https://pr-${{ github.event.pull_request.number }}.pgflow.pages.dev
           production-url: https://pgflow.dev
 
