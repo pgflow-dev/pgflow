@@ -1,6 +1,5 @@
 [build]
   command = "next build"
-  publish = ".next"              # plugin will copy everything to .netlify
 
 [build.environment]
   NODE_VERSION = "20.18.1"

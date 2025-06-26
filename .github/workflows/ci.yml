@@ -94,13 +94,13 @@ jobs:
       # Build the workspace libraries that the app imports
       - run: pnpm nx run-many -t build --projects client,dsl --configuration=production
 
-      - name: Netlify: build bundle
+      - name: Netlify build bundle
         working-directory: examples/playground
         env:
           NETLIFY_CONTEXT: ${{ github.event_name == 'pull_request' && 'deploy-preview' || 'production' }}
         run: pnpm netlify build --context "$NETLIFY_CONTEXT"
 
-      - name: Netlify: deploy
+      - name: Netlify deploy
         working-directory: examples/playground
         run: |
           pnpm netlify deploy \

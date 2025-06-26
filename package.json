@@ -23,6 +23,7 @@
     "@nx/node": "21.2.1",
     "@nx/plugin": "21.2.1",
     "@nx/vite": "21.2.1",
+    "@netlify/plugin-nextjs": "^5.11.4",
     "@nx/web": "21.2.1",
     "@types/node": "~18.16.9",
     "@vitest/coverage-v8": "^1.0.4",
