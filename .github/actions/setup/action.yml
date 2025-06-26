@@ -1,18 +1,9 @@
 name: 'Setup pgflow workspace'
-description: 'Common setup steps for pgflow CI workflow'
-inputs:
-  fetch-depth:
-    description: 'Fetch depth for checkout'
-    required: false
-    default: '1'
+description: 'Common setup steps for pgflow CI workflow (run after checkout)'
 
 runs:
   using: 'composite'
   steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: ${{ inputs.fetch-depth }}
-
     - uses: pnpm/action-setup@v4
       with:
         version: '8.14.1'
@@ -22,6 +13,8 @@ runs:
       with:
         node-version: 20
         cache: 'pnpm'
+        cache-dependency-path: |
+          **/pnpm-lock.yaml
 
     - name: Install dependencies
       shell: bash

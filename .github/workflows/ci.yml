@@ -25,9 +25,11 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: ./.github/actions/setup
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: '0'
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
 
       - name: Setup Deno
         uses: denoland/setup-deno@v2
@@ -65,9 +67,11 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_URL || secrets.DEMO_PRODUCTION_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY || secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }}
     steps:
-      - uses: ./.github/actions/setup
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: '0'
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
 
       # Build the workspace libraries that the app imports
       - run: pnpm nx run-many -t build --projects client,dsl --configuration=production
@@ -84,6 +88,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
     steps:
+      - uses: actions/checkout@v4
+
       - uses: ./.github/actions/setup
       - name: Deploy website
         run: |
