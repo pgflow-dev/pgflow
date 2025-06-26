@@ -123,7 +123,6 @@ jobs:
       - uses: actions/download-artifact@v4
         with: 
           name: playground-dist
-          path: examples/playground
 
       - name: Debug artifact contents
         run: |
@@ -181,7 +180,6 @@ jobs:
       - uses: actions/download-artifact@v4
         with: 
           name: playground-dist
-          path: examples/playground
 
       - name: Deploy to Netlify Production
         working-directory: ${{ github.workspace }}
