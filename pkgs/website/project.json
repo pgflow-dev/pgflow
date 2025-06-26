@@ -4,10 +4,6 @@
   "sourceRoot": "pkgs/website/src",
   "projectType": "application",
   "tags": [],
-  "implicitDependencies": [
-    "pkgs/core/supabase/tests/_shared/delete_flow_and_data.sql.raw",
-    "pkgs/core/supabase/tests/_shared/prune_data_older_than.sql.raw"
-  ],
   "targets": {
     "build": {
       "executor": "nx:run-commands",
