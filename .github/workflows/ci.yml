@@ -108,19 +108,20 @@ jobs:
 
       - name: Build playground with Netlify
         if: steps.check_affected.outputs.affected == 'true'
+        working-directory: examples/playground
         env:
           NETLIFY_CONTEXT: ${{ github.event_name == 'pull_request' && 'deploy-preview' || 'production' }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_URL || secrets.DEMO_PRODUCTION_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY || secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }}
-        run: pnpm netlify build --context $NETLIFY_CONTEXT --filter examples/playground
+        run: pnpm netlify build --context $NETLIFY_CONTEXT
 
       - name: Deploy to Netlify
         if: steps.check_affected.outputs.affected == 'true'
+        working-directory: examples/playground
         run: |
           pnpm netlify deploy \
             --dir=.netlify \
             --functions=.netlify/functions \
-            --filter examples/playground \
             ${{ github.event_name == 'pull_request' 
                 && format('--alias={0}', github.event.pull_request.head.sha) 
                 || '--prod' }}

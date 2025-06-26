@@ -1,5 +1,4 @@
 [build]
-  base = "examples/playground"   # chdir before anything else (monorepo support)
   command = "next build"
   publish = ".next"              # plugin will copy everything to .netlify
 

@@ -8,8 +8,8 @@
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "pnpm netlify build --context=${NETLIFY_CONTEXT:-production} --filter examples/playground",
-        "cwd": "{workspaceRoot}"
+        "command": "next build",
+        "cwd": "{projectRoot}"
       },
       "inputs": [
         "production",
@@ -19,29 +19,25 @@
         },
         {
           "env": "NEXT_PUBLIC_SUPABASE_ANON_KEY"
-        },
-        {
-          "externalDependencies": ["netlify-cli"]
         }
       ],
       "outputs": [
-        ".netlify",
         "{projectRoot}/.next"
       ]
     },
     "deploy:preview": {
       "executor": "nx:run-commands",
       "options": {
-        "cwd": "{workspaceRoot}",
-        "command": "pnpm netlify deploy --dir=.netlify --functions=.netlify/functions --filter examples/playground --alias=${GITHUB_SHA:-preview}",
+        "cwd": "{projectRoot}",
+        "command": "pnpm netlify deploy --dir=.netlify --functions=.netlify/functions --alias=${GITHUB_SHA:-preview}",
         "parallel": false
       }
     },
     "deploy:prod": {
       "executor": "nx:run-commands",
       "options": {
-        "cwd": "{workspaceRoot}",
-        "command": "pnpm netlify deploy --dir=.netlify --functions=.netlify/functions --filter examples/playground --prod",
+        "cwd": "{projectRoot}",
+        "command": "pnpm netlify deploy --dir=.netlify --functions=.netlify/functions --prod",
         "parallel": false
       }
     }
