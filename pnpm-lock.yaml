@@ -21,6 +21,9 @@ importers:
       '@eslint/js':
         specifier: ^9.8.0
         version: 9.17.0
+      '@netlify/plugin-nextjs':
+        specifier: ^5.11.4
+        version: 5.11.4
       '@nx/esbuild':
         specifier: 21.2.1
         version: 21.2.1(esbuild@0.19.12)(nx@21.2.1)
@@ -6893,6 +6896,11 @@ packages:
       '@opentelemetry/api': ~1.8.0
     dependencies:
       '@opentelemetry/api': 1.8.0
+    dev: true
+
+  /@netlify/plugin-nextjs@5.11.4:
+    resolution: {integrity: sha512-hJJthlDU76wn1vuOF48GiYx7HLhSK0u9xJU7N4BSmOjc741zvI5NgfWlQwfPOydp5OOuoxPDXxbZj9EttBycPw==}
+    engines: {node: '>=18.0.0'}
     dev: true
 
   /@netlify/plugins-list@6.80.0:
