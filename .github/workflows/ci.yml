@@ -81,12 +81,12 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: '8.14.1'
+          version: 9
           run_install: false
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 20.18.1
           cache: 'pnpm'
 
       - run: pnpm install --frozen-lockfile --prefer-offline
@@ -94,18 +94,10 @@ jobs:
       # Build the workspace libraries that the app imports
       - run: pnpm nx run-many -t build --projects client,dsl --configuration=production
 
-      - name: Netlify build bundle
-        working-directory: examples/playground
-        env:
-          NETLIFY_CONTEXT: ${{ github.event_name == 'pull_request' && 'deploy-preview' || 'production' }}
-        run: pnpm netlify build --context "$NETLIFY_CONTEXT"
-
-      - name: Netlify deploy
-        working-directory: examples/playground
+      - name: Build & deploy to Netlify
         run: |
-          pnpm netlify deploy \
-            --dir=.netlify \
-            --functions=.netlify/functions \
+          pnpm netlify deploy --build \
+            --context ${{ github.event_name == 'pull_request' && 'deploy-preview' || 'production' }} \
             ${{ github.event_name == 'pull_request' && format('--alias={0}', github.sha) || '--prod' }}
 
 # ────────────────────────────────── 3. DEPLOY WEBSITE ───────────────────────────
