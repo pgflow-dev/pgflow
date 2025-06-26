@@ -1,6 +1,7 @@
 [build]
-  command = "next build"          # will be ignored because you're pre-building
-  publish = ".next"
+  base = "examples/playground"   # chdir before anything else (monorepo support)
+  command = "next build"
+  publish = ".next"              # plugin will copy everything to .netlify
 
 [build.environment]
   NODE_VERSION = "20.18.1"
