@@ -1,13 +1,2 @@
 # pgflow/netlify.toml
-[build]
-  # tells Netlify to CD into the Next.js app before running anything
-  base     = "examples/playground"
-  command  = "next build"
-  # since v5 the plugin writes the static assets here, not in "dist"
-  publish  = ".netlify/static"
-
-[build.environment]
-  NODE_VERSION = "20.18.1"
-
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
+# This is the root netlify.toml - specific app configurations are in their respective directories
