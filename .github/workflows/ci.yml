@@ -80,7 +80,7 @@ jobs:
         run: |
           pnpm netlify deploy --build --filter=playground \
             --context ${{ github.event_name == 'pull_request' && 'deploy-preview' || 'production' }} \
-            ${{ github.event_name == 'pull_request' && format('--alias={0}', github.sha) || '--prod' }}
+            ${{ github.event_name == 'pull_request' && format('--alias=pr-{0}', github.event.pull_request.number) || '--prod' }}
 
 # ────────────────────────────────── 3. DEPLOY WEBSITE ───────────────────────────
   deploy-website:
