@@ -28,6 +28,22 @@
         "{projectRoot}/.netlify",
         "{projectRoot}/.next"
       ]
+    },
+    "deploy:preview": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "examples/playground",
+        "command": "netlify deploy --prebuilt --alias=${CI_BRANCH:-preview}",
+        "parallel": false
+      }
+    },
+    "deploy:prod": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "examples/playground",
+        "command": "netlify deploy --prebuilt --prod",
+        "parallel": false
+      }
     }
   }
 }

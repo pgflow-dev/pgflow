@@ -1,6 +1,6 @@
 [build]
-  command = "next build"          # ↙ still required by plugin if you run netlify build locally
-  publish = ".next"
+  command = "next build"          # will be ignored because you're pre-building
+  publish = ".netlify"
 
 [build.environment]
   NODE_VERSION = "20.18.1"
