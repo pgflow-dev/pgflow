@@ -126,14 +126,14 @@ jobs:
           path: examples/playground
 
       - name: Deploy to Netlify
+        working-directory: ${{ github.workspace }}
         run: |
           # Create state.json at repo root for monorepo detection
           mkdir -p .netlify
           echo '{"siteId":"${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}"}' > .netlify/state.json
-          npx netlify-cli@latest deploy \
-            --filter=playground \
+          npx netlify-cli@22.1.3 deploy \
+            --filter=examples/playground \
             --dir=examples/playground/.next \
-            --functions=examples/playground/.netlify/functions \
             --alias=pr-${{ github.event.pull_request.number }} \
             --message="PR #${{ github.event.pull_request.number }}" \
             --no-build
@@ -175,14 +175,14 @@ jobs:
           path: examples/playground
 
       - name: Deploy to Netlify Production
+        working-directory: ${{ github.workspace }}
         run: |
           # Create state.json at repo root for monorepo detection
           mkdir -p .netlify
           echo '{"siteId":"${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}"}' > .netlify/state.json
-          npx netlify-cli@latest deploy \
-            --filter=playground \
+          npx netlify-cli@22.1.3 deploy \
+            --filter=examples/playground \
             --dir=examples/playground/.next \
-            --functions=examples/playground/.netlify/functions \
             --prod \
             --message="Deploy from GitHub Actions (main)" \
             --no-build
