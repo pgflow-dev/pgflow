@@ -125,6 +125,15 @@ jobs:
           name: playground-dist
           path: examples/playground
 
+      - name: Debug artifact contents
+        run: |
+          echo "=== Checking downloaded artifact structure ==="
+          ls -la examples/playground/.netlify/ || echo ".netlify not found"
+          ls -la examples/playground/.netlify/functions-internal/ || echo "functions-internal not found"
+          ls -la examples/playground/.netlify/functions/ || echo "functions not found"
+          echo "=== Looking for server handler ==="
+          find examples/playground/.netlify -name "___netlify-server-handler*" -type f || echo "No server handler found"
+
       - name: Deploy to Netlify
         working-directory: ${{ github.workspace }}
         run: |
