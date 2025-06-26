@@ -127,15 +127,16 @@ jobs:
 
       - name: Deploy to Netlify
         run: |
-          cd examples/playground
-          # Create state.json to make Netlify CLI recognize the site
+          # Create state.json at repo root for monorepo detection
+          mkdir -p .netlify
           echo '{"siteId":"${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}"}' > .netlify/state.json
           npx netlify-cli@latest deploy \
-            --site="${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}" \
-            --dir=.next \
-            --functions=.netlify/functions \
+            --filter=playground \
+            --dir=examples/playground/.next \
+            --functions=examples/playground/.netlify/functions \
             --alias=pr-${{ github.event.pull_request.number }} \
-            --message="PR #${{ github.event.pull_request.number }}"
+            --message="PR #${{ github.event.pull_request.number }}" \
+            --no-build
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
@@ -175,15 +176,16 @@ jobs:
 
       - name: Deploy to Netlify Production
         run: |
-          cd examples/playground
-          # Create state.json to make Netlify CLI recognize the site
+          # Create state.json at repo root for monorepo detection
+          mkdir -p .netlify
           echo '{"siteId":"${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}"}' > .netlify/state.json
           npx netlify-cli@latest deploy \
-            --site="${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}" \
-            --dir=.next \
-            --functions=.netlify/functions \
+            --filter=playground \
+            --dir=examples/playground/.next \
+            --functions=examples/playground/.netlify/functions \
             --prod \
-            --message="Deploy from GitHub Actions (main)"
+            --message="Deploy from GitHub Actions (main)" \
+            --no-build
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
