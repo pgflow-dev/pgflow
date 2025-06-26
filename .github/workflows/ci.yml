@@ -126,19 +126,32 @@ jobs:
 
       - name: Debug artifact contents
         run: |
-          echo "=== Checking downloaded artifact structure ==="
-          ls -la examples/playground/.netlify/ || echo ".netlify not found"
-          ls -la examples/playground/.netlify/functions-internal/ || echo "functions-internal not found"
-          ls -la examples/playground/.netlify/functions/ || echo "functions not found"
-          echo "=== Looking for server handler ==="
-          find examples/playground/.netlify -name "___netlify-server-handler*" -type f || echo "No server handler found"
+          echo "=== Current directory ==="
+          pwd
+          echo "=== Top level contents ==="
+          ls -la
+          echo "=== Finding .netlify directories anywhere ==="
+          find . -name ".netlify" -type d 2>/dev/null | head -20
+          echo "=== Finding .next directories anywhere ==="
+          find . -name ".next" -type d 2>/dev/null | head -20
 
       - name: Deploy to Netlify
         working-directory: ${{ github.workspace }}
         run: |
+          # Verify the artifact extracted to the correct location
+          echo "=== Verifying artifact extraction ==="
+          ls examples/playground/.netlify/functions-internal/___netlify-server-handler || {
+            echo "ERROR: Server handler not found at expected location!"
+            echo "Looking for .netlify directories:"
+            find . -name ".netlify" -type d
+            exit 1
+          }
+          
           # Create state.json at repo root for monorepo detection
           mkdir -p .netlify
-          echo '{"siteId":"${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}"}' > .netlify/state.json
+          echo "{\"siteId\":\"${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}\"}" > .netlify/state.json
+          
+          # Deploy
           npx netlify-cli@22.1.3 deploy \
             --filter=examples/playground \
             --dir=examples/playground/.next \
@@ -186,7 +199,7 @@ jobs:
         run: |
           # Create state.json at repo root for monorepo detection
           mkdir -p .netlify
-          echo '{"siteId":"${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}"}' > .netlify/state.json
+          echo "{\"siteId\":\"${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}\"}" > .netlify/state.json
           npx netlify-cli@22.1.3 deploy \
             --filter=examples/playground \
             --dir=examples/playground/.next \
