@@ -66,14 +66,15 @@ jobs:
 # ────────────────────────────────── 2. DEPLOY PLAYGROUND ───────────────────────────
   deploy-playground:
     needs: build-and-test
-    # Run for PRs (preview) and main branch (production)
     if: |
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'pull_request') ||
       (github.ref == 'refs/heads/main' && github.event_name == 'push')
     runs-on: ubuntu-latest
     env:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_URL || secrets.DEMO_PRODUCTION_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY || secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }}
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
@@ -90,41 +91,22 @@ jobs:
 
       - run: pnpm install --frozen-lockfile --prefer-offline
 
-      - name: Set Nx SHAs for affected commands
-        uses: nrwl/nx-set-shas@v4
+      # Build the workspace libraries that the app imports
+      - run: pnpm nx run-many -t build --projects client,dsl --configuration=production
 
-      - name: Check if playground is affected
-        id: check_affected
-        run: |
-          if pnpm nx show projects --affected --plain | grep -qx "playground"; then
-            echo "affected=true" >> $GITHUB_OUTPUT
-          else
-            echo "affected=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Build dependencies
-        if: steps.check_affected.outputs.affected == 'true'
-        run: pnpm nx run-many -t build --projects client,dsl --configuration=production
-
-      - name: Build playground with Netlify
-        if: steps.check_affected.outputs.affected == 'true'
+      - name: Netlify: build bundle
         working-directory: examples/playground
         env:
           NETLIFY_CONTEXT: ${{ github.event_name == 'pull_request' && 'deploy-preview' || 'production' }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_URL || secrets.DEMO_PRODUCTION_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY || secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }}
-        run: pnpm netlify build --context $NETLIFY_CONTEXT
+        run: pnpm netlify build --context "$NETLIFY_CONTEXT"
 
-      - name: Deploy to Netlify
-        if: steps.check_affected.outputs.affected == 'true'
+      - name: Netlify: deploy
         working-directory: examples/playground
         run: |
           pnpm netlify deploy \
             --dir=.netlify \
             --functions=.netlify/functions \
-            ${{ github.event_name == 'pull_request' 
-                && format('--alias={0}', github.event.pull_request.head.sha) 
-                || '--prod' }}
+            ${{ github.event_name == 'pull_request' && format('--alias={0}', github.sha) || '--prod' }}
 
 # ────────────────────────────────── 3. DEPLOY WEBSITE ───────────────────────────
   deploy-website:
