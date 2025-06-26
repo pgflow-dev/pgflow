@@ -1,0 +1,28 @@
+name: 'Setup pgflow workspace'
+description: 'Common setup steps for pgflow CI workflow'
+inputs:
+  fetch-depth:
+    description: 'Fetch depth for checkout'
+    required: false
+    default: '1'
+
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: ${{ inputs.fetch-depth }}
+
+    - uses: pnpm/action-setup@v4
+      with:
+        version: '8.14.1'
+        run_install: false
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'pnpm'
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile --prefer-offline

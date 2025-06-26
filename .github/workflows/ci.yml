@@ -25,18 +25,9 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-
-      - uses: pnpm/action-setup@v4
-        with: 
-          version: '8.14.1'
-          run_install: false
-
-      - uses: actions/setup-node@v4
+      - uses: ./.github/actions/setup
         with:
-          node-version: 20
-          cache: 'pnpm'
+          fetch-depth: '0'
 
       - name: Setup Deno
         uses: denoland/setup-deno@v2
@@ -50,8 +41,6 @@ jobs:
         uses: ariga/setup-atlas@master
         with:
           cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
-
-      - run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Set Nx SHAs for affected commands
         uses: nrwl/nx-set-shas@v4
@@ -76,20 +65,9 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_URL || secrets.DEMO_PRODUCTION_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY || secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }}
     steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-
-      - uses: pnpm/action-setup@v4
+      - uses: ./.github/actions/setup
         with:
-          version: '8.14.1'
-          run_install: false
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
-
-      - run: pnpm install --frozen-lockfile --prefer-offline
+          fetch-depth: '0'
 
       # Build the workspace libraries that the app imports
       - run: pnpm nx run-many -t build --projects client,dsl --configuration=production
@@ -106,14 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with: { version: '8.14.1' }
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile --prefer-offline
+      - uses: ./.github/actions/setup
       - name: Deploy website
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
