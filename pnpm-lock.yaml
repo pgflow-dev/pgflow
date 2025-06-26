@@ -75,6 +75,9 @@ importers:
       jsr:
         specifier: ^0.13.4
         version: 0.13.4
+      netlify-cli:
+        specifier: ^22.1.3
+        version: 22.1.3(@types/node@18.16.20)
       nx:
         specifier: 21.2.1
         version: 21.2.1
@@ -6221,7 +6224,7 @@ packages:
       '@module-federation/sdk': 0.15.0
       btoa: 1.2.1
       encoding: 0.1.13
-      next: 15.3.4(@babel/core@7.27.1)(react-dom@19.0.0)(react@19.0.0)
+      next: 15.3.4(@babel/core@7.27.1)(@opentelemetry/api@1.8.0)(react-dom@19.0.0)(react@19.0.0)
       node-fetch: 2.7.0(encoding@0.1.13)
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
@@ -6452,6 +6455,84 @@ packages:
       semver: 7.7.2
       yaml: 2.8.0
       yargs: 17.7.2
+    dev: true
+
+  /@netlify/build@33.4.3(@opentelemetry/api@1.8.0)(@types/node@18.16.20):
+    resolution: {integrity: sha512-NmD44quYcl810FZMmr60BjMHcT0YA1SsSFXEXWsv6z5AugIzHekjWyRMpPCwd2CthnEDqo3md/AoI4lAmlNkIg==}
+    engines: {node: '>=18.14.0'}
+    hasBin: true
+    peerDependencies:
+      '@netlify/opentelemetry-sdk-setup': ^2.0.0
+      '@opentelemetry/api': ~1.8.0
+    peerDependenciesMeta:
+      '@netlify/opentelemetry-sdk-setup':
+        optional: true
+    dependencies:
+      '@bugsnag/js': 8.4.0
+      '@netlify/blobs': 9.1.5
+      '@netlify/cache-utils': 6.0.3
+      '@netlify/config': 23.0.10
+      '@netlify/edge-bundler': 14.0.6
+      '@netlify/framework-info': 10.0.5
+      '@netlify/functions-utils': 6.0.10(supports-color@10.0.0)
+      '@netlify/git-utils': 6.0.2
+      '@netlify/opentelemetry-utils': 2.0.1(@opentelemetry/api@1.8.0)
+      '@netlify/plugins-list': 6.80.0
+      '@netlify/run-utils': 6.0.2
+      '@netlify/zip-it-and-ship-it': 12.1.4(supports-color@10.0.0)
+      '@opentelemetry/api': 1.8.0
+      '@sindresorhus/slugify': 2.2.1
+      ansi-escapes: 7.0.0
+      chalk: 5.4.1
+      clean-stack: 5.2.0
+      execa: 8.0.1
+      fdir: 6.4.4(picomatch@4.0.2)
+      figures: 6.1.0
+      filter-obj: 6.1.0
+      got: 13.0.0
+      hot-shots: 10.2.1
+      indent-string: 5.0.0
+      is-plain-obj: 4.1.0
+      js-yaml: 4.1.0
+      keep-func-props: 4.0.1
+      locate-path: 7.2.0
+      log-process-errors: 8.0.0
+      map-obj: 5.0.2
+      memoize-one: 6.0.0
+      minimatch: 9.0.5
+      os-name: 6.1.0
+      p-event: 6.0.1
+      p-every: 2.0.0
+      p-filter: 4.1.0
+      p-locate: 6.0.0
+      p-map: 7.0.3
+      p-reduce: 3.0.0
+      path-exists: 5.0.0
+      path-type: 6.0.0
+      pkg-dir: 8.0.0
+      pretty-ms: 9.2.0
+      ps-list: 8.1.1
+      read-package-up: 11.0.0
+      readdirp: 4.1.2
+      resolve: 2.0.0-next.5
+      rfdc: 1.4.1
+      safe-json-stringify: 1.2.0
+      semver: 7.7.2
+      string-width: 7.2.0
+      strip-ansi: 7.1.0
+      supports-color: 10.0.0
+      terminal-link: 4.0.0
+      ts-node: 10.9.1(@types/node@18.16.20)(typescript@5.8.3)
+      typescript: 5.8.3
+      uuid: 11.1.0
+      yargs: 17.7.2
+    transitivePeerDependencies:
+      - '@swc/core'
+      - '@swc/wasm'
+      - '@types/node'
+      - encoding
+      - picomatch
+      - rollup
     dev: true
 
   /@netlify/build@33.4.3(@opentelemetry/api@1.8.0)(@types/node@22.10.2):
@@ -6851,7 +6932,7 @@ packages:
     engines: {node: '>=18.14.0'}
     hasBin: true
     dependencies:
-      '@babel/parser': 7.27.1
+      '@babel/parser': 7.27.5
       '@babel/types': 7.27.6
       '@netlify/binary-info': 1.0.0
       '@netlify/serverless-functions-api': 2.1.2
@@ -7521,7 +7602,7 @@ packages:
       copy-webpack-plugin: 10.2.4(webpack@5.99.9)
       file-loader: 6.2.0(webpack@5.99.9)
       ignore: 5.3.2
-      next: 15.3.4(@babel/core@7.27.1)(react-dom@19.0.0)(react@19.0.0)
+      next: 15.3.4(@babel/core@7.27.1)(@opentelemetry/api@1.8.0)(react-dom@19.0.0)(react@19.0.0)
       semver: 7.7.2
       tslib: 2.8.1
       webpack-merge: 5.10.0
@@ -10475,7 +10556,7 @@ packages:
       vue-router:
         optional: true
     dependencies:
-      next: 15.3.4(@babel/core@7.27.1)(react-dom@19.0.0)(react@19.0.0)
+      next: 15.3.4(@babel/core@7.27.1)(@opentelemetry/api@1.8.0)(react-dom@19.0.0)(react@19.0.0)
       react: 19.0.0
     dev: false
 
@@ -12076,7 +12157,7 @@ packages:
       chalk: 5.4.1
       cli-boxes: 3.0.0
       string-width: 7.2.0
-      type-fest: 4.33.0
+      type-fest: 4.41.0
       widest-line: 5.0.0
       wrap-ansi: 9.0.0
 
@@ -13579,7 +13660,7 @@ packages:
     resolution: {integrity: sha512-1gxPBJpI/pcjQhKgIU91II6Wkay+dLcN3M6rf2uwP8hRur3HtQXjVrdAK3sjC0piaEuxzMwjXChcETiJl47lAQ==}
     engines: {node: '>=18'}
     dependencies:
-      type-fest: 4.33.0
+      type-fest: 4.41.0
 
   /dotenv-expand@10.0.0:
     resolution: {integrity: sha512-GopVGCpVS1UKH75VKHGuQFqS1Gusej0z4FyQkPdwjil2gNIv+LNsqBlboOzpJFZKVT95GkCyWJbBSdFEFUWI2A==}
@@ -18683,6 +18764,138 @@ packages:
     engines: {node: '>= 10'}
     dev: false
 
+  /netlify-cli@22.1.3(@types/node@18.16.20):
+    resolution: {integrity: sha512-VkTWscJcT63AYAAXVPP3nFpU90HJBHkZ9wwCCd6AX9Cm96aexwe01hDcpaCyWBqBOHYok6ylN9XqBe6zsfCMvQ==}
+    engines: {node: '>=20.12.2'}
+    hasBin: true
+    requiresBuild: true
+    dependencies:
+      '@fastify/static': 7.0.4
+      '@netlify/api': 14.0.3
+      '@netlify/blobs': 9.1.5
+      '@netlify/build': 33.4.3(@opentelemetry/api@1.8.0)(@types/node@18.16.20)
+      '@netlify/build-info': 10.0.5
+      '@netlify/config': 23.0.10
+      '@netlify/edge-bundler': 14.0.6
+      '@netlify/edge-functions': 2.12.0
+      '@netlify/headers-parser': 9.0.1
+      '@netlify/local-functions-proxy': 2.0.3
+      '@netlify/redirect-parser': 15.0.2
+      '@netlify/zip-it-and-ship-it': 12.1.4(supports-color@10.0.0)
+      '@octokit/rest': 21.1.1
+      '@opentelemetry/api': 1.8.0
+      '@pnpm/tabtab': 0.5.4
+      ansi-escapes: 7.0.0
+      ansi-to-html: 0.7.2
+      ascii-table: 0.0.9
+      backoff: 2.5.0
+      boxen: 8.0.1
+      chalk: 5.4.1
+      chokidar: 3.6.0
+      ci-info: 4.2.0
+      clean-deep: 3.4.0
+      commander: 12.1.0
+      comment-json: 4.2.5
+      content-type: 1.0.5
+      cookie: 1.0.2
+      cron-parser: 4.9.0
+      debug: 4.4.0(supports-color@10.0.0)
+      decache: 4.6.2
+      dot-prop: 9.0.0
+      dotenv: 16.5.0
+      env-paths: 3.0.0
+      envinfo: 7.14.0
+      etag: 1.8.1
+      execa: 5.1.1
+      express: 4.21.2
+      express-logging: 1.1.1
+      extract-zip: 2.0.1
+      fastest-levenshtein: 1.0.16
+      fastify: 4.29.1
+      find-up: 7.0.0
+      folder-walker: 3.2.0
+      fuzzy: 0.1.3
+      get-port: 5.1.1
+      gh-release-fetch: 4.0.3
+      git-repo-info: 2.1.1
+      gitconfiglocal: 2.1.0
+      http-proxy: 1.18.1(debug@4.4.0)
+      http-proxy-middleware: 2.0.9(debug@4.4.0)
+      https-proxy-agent: 7.0.6(supports-color@10.0.0)
+      inquirer: 8.2.6
+      inquirer-autocomplete-prompt: 1.4.0(inquirer@8.2.6)
+      ipx: 2.1.0(@netlify/blobs@9.1.5)
+      is-docker: 3.0.0
+      is-stream: 4.0.1
+      is-wsl: 3.1.0
+      isexe: 3.1.1
+      jsonwebtoken: 9.0.2
+      jwt-decode: 4.0.0
+      lambda-local: 2.2.0
+      locate-path: 7.2.0
+      lodash: 4.17.21
+      log-update: 6.1.0
+      maxstache: 1.0.7
+      maxstache-stream: 1.0.4
+      multiparty: 4.2.3
+      nanospinner: 1.2.2
+      netlify-redirector: 0.5.0
+      node-fetch: 3.3.2
+      normalize-package-data: 6.0.2
+      open: 10.1.2
+      p-filter: 4.1.0
+      p-map: 7.0.3
+      p-wait-for: 5.0.2
+      parallel-transform: 1.2.0
+      parse-github-url: 1.0.3
+      parse-gitignore: 2.0.0
+      prettyjson: 1.2.5
+      raw-body: 3.0.0
+      read-package-up: 11.0.0
+      readdirp: 4.1.2
+      semver: 7.7.1
+      source-map-support: 0.5.21
+      terminal-link: 4.0.0
+      toml: 3.0.0
+      tomlify-j0.4: 3.0.0
+      ulid: 3.0.0
+      update-notifier: 7.3.1
+      uuid: 11.1.0
+      wait-port: 1.1.0
+      write-file-atomic: 5.0.1
+      ws: 8.18.2
+    transitivePeerDependencies:
+      - '@azure/app-configuration'
+      - '@azure/cosmos'
+      - '@azure/data-tables'
+      - '@azure/identity'
+      - '@azure/keyvault-secrets'
+      - '@azure/storage-blob'
+      - '@capacitor/preferences'
+      - '@deno/kv'
+      - '@netlify/opentelemetry-sdk-setup'
+      - '@planetscale/database'
+      - '@swc/core'
+      - '@swc/wasm'
+      - '@types/express'
+      - '@types/node'
+      - '@upstash/redis'
+      - '@vercel/blob'
+      - '@vercel/kv'
+      - aws4fetch
+      - bare-buffer
+      - bufferutil
+      - db0
+      - encoding
+      - idb-keyval
+      - ioredis
+      - picomatch
+      - rollup
+      - supports-color
+      - uploadthing
+      - utf-8-validate
+    dev: true
+
   /netlify-cli@22.1.3(@types/node@22.10.2):
     resolution: {integrity: sha512-VkTWscJcT63AYAAXVPP3nFpU90HJBHkZ9wwCCd6AX9Cm96aexwe01hDcpaCyWBqBOHYok6ylN9XqBe6zsfCMvQ==}
     engines: {node: '>=20.12.2'}
@@ -18887,7 +19100,7 @@ packages:
       - babel-plugin-macros
     dev: false
 
-  /next@15.3.4(@babel/core@7.27.1)(react-dom@19.0.0)(react@19.0.0):
+  /next@15.3.4(@babel/core@7.27.1)(@opentelemetry/api@1.8.0)(react-dom@19.0.0)(react@19.0.0):
     resolution: {integrity: sha512-mHKd50C+mCjam/gcnwqL1T1vPx/XQNFlXqFIVdgQdVAFY9iIQtY0IfaVflEYzKiqjeA7B0cYYMaCrmAYFjs4rA==}
     engines: {node: ^18.18.0 || ^19.8.0 || >= 20.0.0}
     hasBin: true
@@ -18909,6 +19122,7 @@ packages:
         optional: true
     dependencies:
       '@next/env': 15.3.4
+      '@opentelemetry/api': 1.8.0
       '@swc/counter': 0.1.3
       '@swc/helpers': 0.5.15
       busboy: 1.6.0
@@ -20804,7 +21018,7 @@ packages:
     dependencies:
       find-up-simple: 1.0.1
       read-pkg: 9.0.1
-      type-fest: 4.33.0
+      type-fest: 4.41.0
     dev: true
 
   /read-pkg@9.0.1:
@@ -23291,11 +23505,11 @@ packages:
   /type-fest@4.33.0:
     resolution: {integrity: sha512-s6zVrxuyKbbAsSAD5ZPTB77q4YIdRctkTbJ2/Dqlinwz+8ooH2gd+YA7VA6Pa93KML9GockVvoxjZ2vHP+mu8g==}
     engines: {node: '>=16'}
+    dev: true
 
   /type-fest@4.41.0:
     resolution: {integrity: sha512-TeTSQ6H5YHvpqVwBRcnLDCBnDOHWYu7IvGbHT6N8AOymcr9PJGjc1GTtiWZTYg0NCgYwvnYWEkVChQAr9bjfwA==}
     engines: {node: '>=16'}
-    dev: true
 
   /type-is@1.6.18:
     resolution: {integrity: sha512-TkRKr9sUTxEH8MdfuCSP7VizJyzRNMjj2J2do2Jr3Kym598JVdEksuzPQCnlFPW4ky9Q+iA+ma9BGm06XQBy8g==}

@@ -8,7 +8,7 @@
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "netlify build --context=${NETLIFY_CONTEXT:-production}",
+        "command": "pnpm netlify build --context=${NETLIFY_CONTEXT:-production}",
         "cwd": "{workspaceRoot}"
       },
       "inputs": [
@@ -33,7 +33,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{workspaceRoot}",
-        "command": "netlify deploy --dir=.netlify --functions=.netlify/functions --filter examples/playground --alias=${GITHUB_SHA:-preview}",
+        "command": "pnpm netlify deploy --dir=.netlify --functions=.netlify/functions --filter examples/playground --alias=${GITHUB_SHA:-preview}",
         "parallel": false
       }
     },
@@ -41,7 +41,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{workspaceRoot}",
-        "command": "netlify deploy --dir=.netlify --functions=.netlify/functions --filter examples/playground --prod",
+        "command": "pnpm netlify deploy --dir=.netlify --functions=.netlify/functions --filter examples/playground --prod",
         "parallel": false
       }
     }
