@@ -54,10 +54,11 @@ jobs:
 # ────────────────────────────────── 2. DEPLOY PLAYGROUND ───────────────────────────
   deploy-playground:
     needs: build-and-test
-    if: ${{
-      (github.event_name == 'pull_request') ||
-      (github.ref == 'refs/heads/main' && github.event_name == 'push')
-    }}
+    if: >-
+      ${{
+        (github.event_name == 'pull_request') ||
+        (github.ref == 'refs/heads/main' && github.event_name == 'push')
+      }}
     runs-on: ubuntu-latest
     env:
       NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
