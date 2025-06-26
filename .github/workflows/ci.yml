@@ -15,15 +15,12 @@ permissions:
   pull-requests: write       # for preview comments
   deployments: write         # Netlify action needs it
 
-env:
-  NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
-  CLOUDFLARE_API_TOKEN:     ${{ secrets.CLOUDFLARE_API_TOKEN }}
-  CLOUDFLARE_ACCOUNT_ID:    ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
 jobs:
 # ─────────────────────────────────────── 1. BUILD & TEST ──────────────────────────────────────
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,6 +59,7 @@ jobs:
       (github.ref == 'refs/heads/main' && github.event_name == 'push')
     runs-on: ubuntu-latest
     env:
+      NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
       NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
       NEXT_PUBLIC_SUPABASE_URL: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_URL || secrets.DEMO_PRODUCTION_SUPABASE_URL }}
@@ -96,6 +94,9 @@ jobs:
     needs: build-and-test
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
 
