@@ -112,7 +112,7 @@ jobs:
           NETLIFY_CONTEXT: ${{ github.event_name == 'pull_request' && 'deploy-preview' || 'production' }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_URL || secrets.DEMO_PRODUCTION_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY || secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }}
-        run: pnpm netlify build --context $NETLIFY_CONTEXT
+        run: pnpm netlify build --context $NETLIFY_CONTEXT --filter examples/playground
 
       - name: Deploy to Netlify
         if: steps.check_affected.outputs.affected == 'true'

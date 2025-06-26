@@ -8,7 +8,7 @@
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "pnpm netlify build --context=${NETLIFY_CONTEXT:-production}",
+        "command": "pnpm netlify build --context=${NETLIFY_CONTEXT:-production} --filter examples/playground",
         "cwd": "{workspaceRoot}"
       },
       "inputs": [
