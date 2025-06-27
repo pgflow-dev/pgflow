@@ -5,7 +5,7 @@
   "scripts": {
     "build": "nx run-many --target=build --all",
     "version": "pnpm changeset version && ./scripts/update-jsr-json-version.sh",
-    "publish:npm": "pnpm nx run-many -t build && pnpm publish --recursive --filter=!./pkgs/edge-worker",
+    "publish:npm": "pnpm nx run-many -t build --exclude=playground && pnpm publish --recursive --filter=!./pkgs/edge-worker",
     "publish:jsr": "cd ./pkgs/edge-worker && jsr publish --allow-slow-types",
     "changeset:tag": "pnpm changeset tag && git push --follow-tags",
     "release": "git status && pnpm run publish:npm && pnpm run publish:jsr && pnpm run changeset:tag"
