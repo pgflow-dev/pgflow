@@ -17,7 +17,9 @@ create function pgflow.read_with_poll(
   poll_interval_ms INTEGER default 100,
   conditional JSONB default '{}'
 )
-returns setof PGMQ.MESSAGE_RECORD as $$
+returns setof PGMQ.MESSAGE_RECORD
+set search_path = ''
+as $$
 DECLARE
     r pgmq.message_record;
     stop_at TIMESTAMP;
