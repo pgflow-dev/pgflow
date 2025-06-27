@@ -1,5 +1,12 @@
 # @pgflow/core
 
+## 0.4.3
+
+### Patch Changes
+
+- fa78968: Fix Supabase Security Advisor warnings by setting empty search_path on functions
+  - @pgflow/dsl@0.4.3
+
 ## 0.4.2
 
 ### Patch Changes
