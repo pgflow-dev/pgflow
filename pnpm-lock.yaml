@@ -193,6 +193,9 @@ importers:
       postcss:
         specifier: 8.4.49
         version: 8.4.49
+      supabase:
+        specifier: 2.21.1
+        version: 2.21.1
       tailwind-merge:
         specifier: ^2.5.2
         version: 2.6.0
@@ -11725,7 +11728,7 @@ packages:
   /axios@1.10.0:
     resolution: {integrity: sha512-/1xYAC4MP/HEG+3duIhFr4ZQXR4sQXOIe+o6sdqzeykGLx6Upp/1p8MHqhINOvGeP7xyNHe7tsiJByc4SSVUxw==}
     dependencies:
-      follow-redirects: 1.15.9(debug@4.4.0)
+      follow-redirects: 1.15.9(debug@4.4.1)
       form-data: 4.0.1
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
@@ -14943,6 +14946,7 @@ packages:
         optional: true
     dependencies:
       debug: 4.4.0(supports-color@10.0.0)
+    dev: true
 
   /follow-redirects@1.15.9(debug@4.4.1):
     resolution: {integrity: sha512-gew4GsXizNgdoRyqmyfMHyAmXsZDk6mHkSxZFCzW9gwlbtOW44CDtYavM+y+72qD/Vq2l550kMF52DT8fOLJqQ==}
@@ -14954,7 +14958,6 @@ packages:
         optional: true
     dependencies:
       debug: 4.4.1(supports-color@10.0.0)
-    dev: true
 
   /fontace@0.3.0:
     resolution: {integrity: sha512-czoqATrcnxgWb/nAkfyIrRp6Q8biYj7nGnL6zfhTcX+JKKpWHFBnb8uNMw/kZr7u++3Y3wYSYoZgHkCcsuBpBg==}
@@ -15926,7 +15929,7 @@ packages:
     dependencies:
       '@types/express': 4.17.23
       '@types/http-proxy': 1.17.16
-      http-proxy: 1.18.1(debug@4.4.0)
+      http-proxy: 1.18.1(debug@4.4.1)
       is-glob: 4.0.3
       is-plain-obj: 3.0.0
       micromatch: 4.0.8
@@ -15998,7 +16001,7 @@ packages:
       corser: 2.0.1
       he: 1.2.0
       html-encoding-sniffer: 3.0.0
-      http-proxy: 1.18.1(debug@4.4.0)
+      http-proxy: 1.18.1(debug@4.4.1)
       mime: 1.6.0
       minimist: 1.2.8
       opener: 1.5.2

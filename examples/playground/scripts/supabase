@@ -8,4 +8,4 @@ export GITHUB_OAUTH_CLIENT_ID
 export GITHUB_OAUTH_CLIENT_SECRET
 
 # Execute supabase with all arguments passed through
-npx supabase@latest "$@"
+pnpm exec supabase "$@"
