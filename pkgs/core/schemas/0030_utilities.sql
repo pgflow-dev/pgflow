@@ -6,6 +6,7 @@ create or replace function pgflow.is_valid_slug(
 returns boolean
 language plpgsql
 immutable
+set search_path = ''
 as $$
 begin
     return
@@ -25,6 +26,7 @@ returns int
 language sql
 immutable
 parallel safe
+set search_path = ''
 as $$
   select floor(base_delay * power(2, attempts_count))::int
 $$;
