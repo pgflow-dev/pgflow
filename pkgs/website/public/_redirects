@@ -1,2 +1,3 @@
+# Discord redirects
 /discord https://discord.gg/UcKXhfrfan 302
-/discord/ https://discord.gg/UcKXhfrfan 302
+/discord/* https://discord.gg/UcKXhfrfan 302
