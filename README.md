@@ -24,7 +24,7 @@ The pgflow documentation is [available on pgflow.dev](https://pgflow.dev).
 
 ## Getting help
 
-File an issue on [GitHub](https://github.com/pgflow-dev/pgflow/issues/new) or join our [Discord](https://discord.gg/NpffdEyb).
+File an issue on [GitHub](https://github.com/pgflow-dev/pgflow/issues/new) or join our [Discord](https://pgflow.dev/discord/).
 
 ## Why pgflow?
 

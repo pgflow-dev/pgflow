@@ -66,7 +66,7 @@ export function MobileLinks() {
               Twitter (X)
             </a>
             <a 
-              href="https://discord.gg/NpffdEyb" 
+              href="https://pgflow.dev/discord/" 
               target="_blank" 
               rel="noopener noreferrer" 
               className="flex items-center gap-2 py-2 text-sm text-foreground hover:text-primary transition-colors"

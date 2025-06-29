@@ -101,7 +101,7 @@ export default function RootLayout({
                               Twitter
                             </a>
                             <a
-                              href="https://discord.gg/NpffdEyb"
+                              href="https://pgflow.dev/discord/"
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"

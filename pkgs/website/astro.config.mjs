@@ -65,6 +65,9 @@ export default defineConfig({
     '/comparisons/dbos/': '/vs/dbos/',
     '/comparisons/inngest/': '/vs/inngest/',
     '/comparisons/trigger/': '/vs/trigger/',
+
+    // Discord redirect
+    '/discord/': DISCORD_INVITE_URL,
   },
 
   integrations: [
