@@ -1,4 +1,4 @@
-import { assertEquals, assertGreaterOrEqual } from '@std/assert';
+import { assertEquals } from '@std/assert';
 import { createQueueWorker } from '../../src/queue/createQueueWorker.ts';
 import { withTransaction } from '../db.ts';
 import { createFakeLogger } from '../fakes.ts';
@@ -48,7 +48,7 @@ function createFailingHandler() {
 /**
  * Test verifies that exponential backoff is applied correctly:
  * - 1st retry: baseDelay * 2^0 = 2 seconds
- * - 2nd retry: baseDelay * 2^1 = 4 seconds  
+ * - 2nd retry: baseDelay * 2^1 = 4 seconds
  * - 3rd retry: baseDelay * 2^2 = 8 seconds
  */
 Deno.test(
@@ -70,24 +70,31 @@ Deno.test(
         edgeFunctionName: 'exponential-backoff-test',
         workerId: crypto.randomUUID(),
       });
-      
+
       // Send a single message
-      const [{ send_batch: msgIds }] = await sendBatch(1, workerConfig.queueName, sql);
+      const [{ send_batch: msgIds }] = await sendBatch(
+        1,
+        workerConfig.queueName,
+        sql
+      );
       const msgId = msgIds[0];
       log(`Sent message with ID: ${msgId}`);
 
       // Collect visibility times after each failure
       const visibilityTimes: number[] = [];
-      
+
       for (let i = 1; i <= workerConfig.retryLimit; i++) {
         // Wait for failure
-        await waitFor(
-          async () => getFailureCount() >= i ? true : false,
-          { timeoutMs: 15000 }
-        );
-        
+        await waitFor(async () => (getFailureCount() >= i ? true : false), {
+          timeoutMs: 15000,
+        });
+
         // Get visibility time after failure
-        const vt = await getMessageVisibilityTime(sql, workerConfig.queueName, msgId);
+        const vt = await getMessageVisibilityTime(
+          sql,
+          workerConfig.queueName,
+          msgId
+        );
         if (vt !== null) {
           visibilityTimes.push(vt);
           log(`Visibility time after failure #${i}: ${vt}s`);
@@ -96,9 +103,9 @@ Deno.test(
 
       // Expected exponential backoff pattern: baseDelay * 2^(attempt-1)
       const expectedDelays = [
-        2,  // First retry: 2 * 2^0 = 2 seconds
-        4,  // Second retry: 2 * 2^1 = 4 seconds
-        8,  // Third retry: 2 * 2^2 = 8 seconds
+        2, // First retry: 2 * 2^0 = 2 seconds
+        4, // Second retry: 2 * 2^1 = 4 seconds
+        8, // Third retry: 2 * 2^2 = 8 seconds
       ];
 
       // Compare actual vs expected delays
@@ -114,7 +121,6 @@ Deno.test(
         workerConfig.retryLimit,
         `Handler should be called ${workerConfig.retryLimit} times`
       );
-
     } finally {
       await worker.stop();
     }
