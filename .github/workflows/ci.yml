@@ -126,7 +126,7 @@ jobs:
         id: deploy-website
         if: steps.check-affected.outputs.affected == 'true'
         env:
-          CLOUDFLARE_BRANCH: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || '' }}
+          CLOUDFLARE_BRANCH: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || 'main' }}
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             pnpm nx run website:deploy:preview --skip-nx-cache

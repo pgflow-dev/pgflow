@@ -39,15 +39,15 @@
       "dependsOn": ["build", "ensure-ci-environment"],
       "options": {
         "cwd": "pkgs/website",
-        "command": "wrangler pages deploy dist"
+        "command": "wrangler pages deploy dist --branch=main"
       }
     },
     "deploy:preview": {
       "executor": "nx:run-commands",
-      "dependsOn": ["build", "ensure-ci-environment"],
+      "dependsOn": ["build"],
       "options": {
         "cwd": "pkgs/website",
-        "command": "wrangler pages deploy dist --branch=${CLOUDFLARE_BRANCH:-preview}"
+        "command": "wrangler pages deploy dist --branch=${CLOUDFLARE_BRANCH:-preview-local}"
       }
     }
   }
