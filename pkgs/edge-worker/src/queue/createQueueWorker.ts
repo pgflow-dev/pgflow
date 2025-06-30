@@ -183,12 +183,21 @@ export function createQueueWorker<TPayload extends Json>(
   }
 
   // Migration logic: create retry config from old fields if not provided
-  const retryConfig: RetryConfig = config.retry || {
-    strategy: 'exponential' as const,
-    limit: config.retryLimit ?? 5,
-    baseDelay: config.retryDelay ?? 3,
-    maxDelay: 300,
-  };
+  const retryConfig: RetryConfig = config.retry || (
+    // If using legacy fields, use fixed strategy for backwards compatibility
+    (config.retryLimit !== undefined || config.retryDelay !== undefined)
+      ? {
+          strategy: 'fixed' as const,
+          limit: config.retryLimit ?? 5,
+          baseDelay: config.retryDelay ?? 3,
+        }
+      : {
+          strategy: 'exponential' as const,
+          limit: 5,
+          baseDelay: 3,
+          maxDelay: 300,
+        }
+  );
 
   const abortController = new AbortController();
   const abortSignal = abortController.signal;

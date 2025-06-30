@@ -47,7 +47,7 @@ Deno.test(
     const { handler, getFailureCount } = createFailingHandler();
     
     // Track warning messages
-    let warnMessages: string[] = [];
+    const warnMessages: string[] = [];
     const customCreateLogger = (module: string) => ({
       ...createFakeLogger(module),
       warn: (msg: string) => {
