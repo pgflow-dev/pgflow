@@ -14,7 +14,7 @@ export function log(message: string, ...args: unknown[]) {
 }
 
 export async function waitFor<T>(
-  predicate: () => Promise<T | false>,
+  predicate: (() => Promise<T | false>) | (() => T | false),
   options: WaitForOptions = {}
 ): Promise<T> {
   const {
@@ -26,7 +26,7 @@ export async function waitFor<T>(
   const startTime = Date.now();
 
   while (true) {
-    const result = await predicate();
+    const result = await Promise.resolve(predicate());
 
     if (result) return result;
 
