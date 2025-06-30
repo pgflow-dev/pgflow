@@ -184,9 +184,10 @@ export function createQueueWorker<TPayload extends Json>(
 
   // Migration logic: create retry config from old fields if not provided
   const retryConfig: RetryConfig = config.retry || {
-    strategy: 'fixed' as const,
+    strategy: 'exponential' as const,
     limit: config.retryLimit ?? 5,
     baseDelay: config.retryDelay ?? 3,
+    maxDelay: 300,
   };
 
   const abortController = new AbortController();
