@@ -6,16 +6,6 @@ import { log, waitFor } from '../e2e/_helpers.ts';
 import { sendBatch } from '../helpers.ts';
 import type { postgres } from '../sql.ts';
 
-const workerConfig = {
-  maxPollSeconds: 1,
-  retry: {
-    strategy: 'exponential' as const,
-    limit: 3,
-    baseDelay: 2,
-  },
-  queueName: 'exponential_backoff_test',
-} as const;
-
 /**
  * Helper to get message visibility time from pgmq queue table
  */
@@ -41,7 +31,7 @@ function createFailingHandler() {
     handler: () => {
       failureTimes.push(Date.now());
       log(`Failure #${failureTimes.length} at ${new Date().toISOString()}`);
-      throw new Error('Intentional failure for exponential backoff test');
+      throw new Error('Intentional failure for legacy config test');
     },
     getFailureCount: () => failureTimes.length,
     getFailureTimes: () => failureTimes,
@@ -49,35 +39,53 @@ function createFailingHandler() {
 }
 
 /**
- * Test verifies that exponential backoff is applied correctly:
- * - 1st retry: baseDelay * 2^0 = 2 seconds
- * - 2nd retry: baseDelay * 2^1 = 4 seconds
- * - 3rd retry: baseDelay * 2^2 = 8 seconds
+ * Test verifies that legacy retryLimit and retryDelay still work (backwards compatibility)
  */
 Deno.test(
-  'queue worker applies exponential backoff on retries',
+  'queue worker supports legacy retryLimit and retryDelay config',
   withTransaction(async (sql) => {
     const { handler, getFailureCount } = createFailingHandler();
+    
+    // Track warning messages
+    let warnMessages: string[] = [];
+    const customCreateLogger = (module: string) => ({
+      ...createFakeLogger(module),
+      warn: (msg: string) => {
+        log(`WARN: ${msg}`);
+        warnMessages.push(msg);
+      },
+    });
+    
     const worker = createQueueWorker(
       handler,
       {
         sql,
-        ...workerConfig,
+        maxPollSeconds: 1,
+        retryLimit: 2,    // Legacy config
+        retryDelay: 5,    // Legacy config
+        queueName: 'legacy_retry_test',
       },
-      createFakeLogger
+      customCreateLogger
     );
 
     try {
+      // Verify deprecation warning was shown
+      assertEquals(
+        warnMessages.some(msg => msg.includes('retryLimit and retryDelay are deprecated')),
+        true,
+        'Should show deprecation warning for legacy config'
+      );
+
       // Start worker and send test message
       worker.startOnlyOnce({
-        edgeFunctionName: 'exponential-backoff-test',
+        edgeFunctionName: 'legacy-retry-test',
         workerId: crypto.randomUUID(),
       });
 
       // Send a single message
       const [{ send_batch: msgIds }] = await sendBatch(
         1,
-        workerConfig.queueName,
+        'legacy_retry_test',
         sql
       );
       const msgId = msgIds[0];
@@ -86,7 +94,7 @@ Deno.test(
       // Collect visibility times after each failure
       const visibilityTimes: number[] = [];
 
-      for (let i = 1; i <= workerConfig.retry.limit; i++) {
+      for (let i = 1; i <= 2; i++) {
         // Wait for failure
         await waitFor(async () => (getFailureCount() >= i ? true : false), {
           timeoutMs: 15000,
@@ -95,7 +103,7 @@ Deno.test(
         // Get visibility time after failure
         const vt = await getMessageVisibilityTime(
           sql,
-          workerConfig.queueName,
+          'legacy_retry_test',
           msgId
         );
         if (vt !== null) {
@@ -114,25 +122,24 @@ Deno.test(
         }
       }
 
-      // Expected exponential backoff pattern: baseDelay * 2^(attempt-1)
+      // Legacy config should result in fixed delays
       const expectedDelays = [
-        2, // First retry: 2 * 2^0 = 2 seconds
-        4, // Second retry: 2 * 2^1 = 4 seconds
-        8, // Third retry: 2 * 2^2 = 8 seconds
+        5, // First retry: 5 seconds (retryDelay)
+        5, // Second retry: 5 seconds (retryDelay)
       ];
 
       // Compare actual vs expected delays
       assertEquals(
         actualDelays,
         expectedDelays,
-        'Retry delays should follow exponential backoff pattern'
+        'Legacy config should use fixed delays'
       );
 
       // Verify total failure count
       assertEquals(
         getFailureCount(),
-        workerConfig.retry.limit,
-        `Handler should be called ${workerConfig.retry.limit} times`
+        2, // retryLimit
+        'Handler should be called 2 times (retryLimit)'
       );
     } finally {
       await worker.stop();

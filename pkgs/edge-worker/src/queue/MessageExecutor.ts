@@ -2,6 +2,7 @@ import type { Json } from '../core/types.js';
 import type { MessageHandlerFn, PgmqMessageRecord } from './types.js';
 import type { Queue } from './Queue.js';
 import type { Logger } from '../platform/types.js';
+import type { RetryConfig } from './createQueueWorker.js';
 
 class AbortError extends Error {
   constructor() {
@@ -26,8 +27,8 @@ export class MessageExecutor<TPayload extends Json> {
     private readonly record: PgmqMessageRecord<TPayload>,
     private readonly messageHandler: MessageHandlerFn<TPayload>,
     private readonly signal: AbortSignal,
-    private readonly retryLimit: number,
-    private readonly retryDelay: number,
+    private readonly retryConfig: RetryConfig,
+    private readonly calculateRetryDelay: (attempt: number, config: RetryConfig) => number,
     logger: Logger
   ) {
     this.logger = logger;
@@ -85,9 +86,14 @@ export class MessageExecutor<TPayload extends Json> {
    */
   private async retryOrArchive() {
     if (this.retryAvailable) {
+      // Calculate delay based on retry attempt number
+      // read_ct=1 means first attempt failed, so this is retry attempt 1
+      const retryAttempt = this.record.read_ct;
+      const retryDelay = this.calculateRetryDelay(retryAttempt, this.retryConfig);
+      
       // adjust visibility timeout for message to appear after retryDelay
-      this.logger.debug(`Retrying ${this.msgId} in ${this.retryDelay} seconds`);
-      await this.queue.setVt(this.msgId, this.retryDelay);
+      this.logger.debug(`Retrying ${this.msgId} in ${retryDelay} seconds (retry attempt ${retryAttempt})`);
+      await this.queue.setVt(this.msgId, retryDelay);
     } else {
       // archive message forever and stop processing it
       this.logger.debug(`Archiving ${this.msgId} forever`);
@@ -99,7 +105,7 @@ export class MessageExecutor<TPayload extends Json> {
    * Returns true if the message can be retried.
    */
   private get retryAvailable() {
-    const readCountLimit = this.retryLimit + 1; // initial read also counts
+    const readCountLimit = this.retryConfig.limit + 1; // initial read also counts
 
     return this.record.read_ct < readCountLimit;
   }

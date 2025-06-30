@@ -9,11 +9,11 @@ import type { postgres } from '../sql.ts';
 const workerConfig = {
   maxPollSeconds: 1,
   retry: {
-    strategy: 'exponential' as const,
+    strategy: 'fixed' as const,
     limit: 3,
-    baseDelay: 2,
+    baseDelay: 3,
   },
-  queueName: 'exponential_backoff_test',
+  queueName: 'fixed_retry_test',
 } as const;
 
 /**
@@ -41,7 +41,7 @@ function createFailingHandler() {
     handler: () => {
       failureTimes.push(Date.now());
       log(`Failure #${failureTimes.length} at ${new Date().toISOString()}`);
-      throw new Error('Intentional failure for exponential backoff test');
+      throw new Error('Intentional failure for fixed retry test');
     },
     getFailureCount: () => failureTimes.length,
     getFailureTimes: () => failureTimes,
@@ -49,13 +49,10 @@ function createFailingHandler() {
 }
 
 /**
- * Test verifies that exponential backoff is applied correctly:
- * - 1st retry: baseDelay * 2^0 = 2 seconds
- * - 2nd retry: baseDelay * 2^1 = 4 seconds
- * - 3rd retry: baseDelay * 2^2 = 8 seconds
+ * Test verifies that fixed retry strategy applies constant delay
  */
 Deno.test(
-  'queue worker applies exponential backoff on retries',
+  'queue worker applies fixed delay on retries',
   withTransaction(async (sql) => {
     const { handler, getFailureCount } = createFailingHandler();
     const worker = createQueueWorker(
@@ -70,7 +67,7 @@ Deno.test(
     try {
       // Start worker and send test message
       worker.startOnlyOnce({
-        edgeFunctionName: 'exponential-backoff-test',
+        edgeFunctionName: 'fixed-retry-test',
         workerId: crypto.randomUUID(),
       });
 
@@ -114,18 +111,18 @@ Deno.test(
         }
       }
 
-      // Expected exponential backoff pattern: baseDelay * 2^(attempt-1)
+      // Expected fixed delay pattern: always baseDelay
       const expectedDelays = [
-        2, // First retry: 2 * 2^0 = 2 seconds
-        4, // Second retry: 2 * 2^1 = 4 seconds
-        8, // Third retry: 2 * 2^2 = 8 seconds
+        3, // First retry: 3 seconds
+        3, // Second retry: 3 seconds
+        3, // Third retry: 3 seconds
       ];
 
       // Compare actual vs expected delays
       assertEquals(
         actualDelays,
         expectedDelays,
-        'Retry delays should follow exponential backoff pattern'
+        'Retry delays should be constant for fixed retry strategy'
       );
 
       // Verify total failure count
