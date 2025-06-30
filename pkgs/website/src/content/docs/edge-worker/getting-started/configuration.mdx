@@ -240,10 +240,12 @@ EdgeWorker.start(handler, {
 ```
 
 <Aside type="tip" title="Exponential Backoff Benefits">
-Exponential backoff is recommended because it:
+Exponential backoff is the default strategy because it:
 - Reduces load on failing services by spacing out retries
 - Gives transient errors more time to resolve
 - Prevents thundering herd problems during outages
+
+This strategy provides better resilience and system stability compared to fixed delays.
 </Aside>
 
 #### Fixed Delay Strategy
