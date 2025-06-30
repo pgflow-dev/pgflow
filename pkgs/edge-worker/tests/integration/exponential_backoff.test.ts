@@ -88,7 +88,7 @@ Deno.test(
 
       for (let i = 1; i <= workerConfig.retry.limit; i++) {
         // Wait for failure
-        await waitFor(async () => (getFailureCount() >= i ? true : false), {
+        await waitFor(async () => getFailureCount() >= i, {
           timeoutMs: 15000,
         });
 
