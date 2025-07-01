@@ -259,7 +259,7 @@ else
   if [[ -f "pkgs/edge-worker/jsr.json" ]]; then
     echo -e "\n${GREEN}Publishing edge-worker to JSR...${NC}"
     # Use --allow-dirty since we have uncommitted version changes
-    if ! (cd "pkgs/edge-worker" && jsr publish --allow-slow-types --allow-dirty); then
+    if ! (cd "pkgs/edge-worker" && pnpm jsr publish --allow-slow-types --allow-dirty); then
       echo -e "${YELLOW}Warning: JSR publish failed - continuing${NC}"
       echo -e "${YELLOW}You may need to manually publish to JSR or check your authentication${NC}"
     fi
