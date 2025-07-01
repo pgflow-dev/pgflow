@@ -11,6 +11,7 @@ import { createAdapter } from './platform/createAdapter.js';
 import type { PlatformAdapter } from './platform/types.js';
 import type { MessageHandlerFn } from './queue/types.js';
 import type { AnyFlow } from '@pgflow/dsl';
+import { validateRetryConfig, validateLegacyRetryConfig } from './queue/validateRetryConfig.js';
 
 /**
  * Configuration options for the EdgeWorker.
@@ -143,6 +144,20 @@ export class EdgeWorker {
     config: QueueWorkerConfig = {}
   ) {
     this.ensureFirstCall();
+
+    // Validate retry configuration
+    if (config.retry) {
+      const result = validateRetryConfig(config.retry);
+      if (!result.valid) {
+        throw new Error(result.error);
+      }
+    }
+    
+    // Validate legacy retry configuration
+    const legacyResult = validateLegacyRetryConfig(config);
+    if (!legacyResult.valid) {
+      throw new Error(legacyResult.error);
+    }
 
     // First, create the adapter
     this.platform = await createAdapter();
