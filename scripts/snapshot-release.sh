@@ -101,7 +101,7 @@ echo ""
 # Check if we have uncommitted changes
 if ! git diff --quiet || ! git diff --cached --quiet; then
   echo -e "${YELLOW}Warning: You have uncommitted changes${NC}"
-  
+
   # Check specifically for uncommitted changesets
   if git ls-files --others --exclude-standard .changeset/*.md | grep -q .; then
     echo -e "${RED}Error: Uncommitted changeset files detected!${NC}"
@@ -110,7 +110,7 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
     echo -e "\nRun: ${GREEN}git add .changeset/*.md && git commit -m 'Add changeset'${NC}"
     exit 1
   fi
-  
+
   if [[ "$DRY_RUN" != true ]]; then
     # In CI, abort on uncommitted changes. In interactive mode, ask.
     if [[ -t 0 ]]; then
@@ -177,7 +177,7 @@ else
     VERSION_OUTPUT=$(CI=true pnpm changeset version --snapshot "${UNIQUE_TAG}" 2>&1)
   fi
   echo "$VERSION_OUTPUT"
-  
+
   # Check if changesets warned about no unreleased changesets
   if echo "$VERSION_OUTPUT" | grep -q "No unreleased changesets found"; then
     echo -e "\n${YELLOW}Warning: No changesets found!${NC}"
@@ -188,10 +188,10 @@ else
     echo -e "\n${RED}Aborting to prevent publishing existing versions.${NC}"
     exit 1
   fi
-  
+
   # Mark that cleanup is needed from this point
   CLEANUP_NEEDED=true
-  
+
   # Update JSR versions to match
   echo -e "\n${GREEN}Syncing JSR versions...${NC}"
   "${SCRIPT_DIR}/update-jsr-json-version.sh"
@@ -215,7 +215,7 @@ else
       ((SNAPSHOT_COUNT++))
     fi
   done < <(find pkgs -name "package.json" -not -path "*/node_modules/*")
-  
+
   # Safety check: ensure we have snapshot versions before proceeding
   if [[ $SNAPSHOT_COUNT -eq 0 ]]; then
     echo -e "\n${RED}Error: No snapshot versions found!${NC}"
@@ -241,11 +241,12 @@ fi
 # Publish edge-worker to JSR (without dist-tags)
 if [[ "$DRY_RUN" == true ]]; then
   echo -e "\n${YELLOW}DRY RUN: Skipping JSR publish${NC}"
-  echo "Would run: cd pkgs/edge-worker && jsr publish --allow-slow-types"
+  echo "Would run: cd pkgs/edge-worker && jsr publish --allow-slow-types --allow-dirty"
 else
   if [[ -f "pkgs/edge-worker/jsr.json" ]]; then
     echo -e "\n${GREEN}Publishing edge-worker to JSR...${NC}"
-    if ! (cd "pkgs/edge-worker" && jsr publish --allow-slow-types); then
+    # Use --allow-dirty since we have uncommitted version changes
+    if ! (cd "pkgs/edge-worker" && jsr publish --allow-slow-types --allow-dirty); then
       echo -e "${YELLOW}Warning: JSR publish failed - continuing${NC}"
       echo -e "${YELLOW}You may need to manually publish to JSR or check your authentication${NC}"
     fi
@@ -256,13 +257,13 @@ fi
 if [[ "$DRY_RUN" != true ]]; then
   echo -e "\n${GREEN}=== Snapshot Release Complete! ===${NC}"
   echo -e "\n${BLUE}Copy and paste to install:${NC}\n"
-  
+
   # Create machine-readable output for CI
   SNAPSHOT_OUTPUT_DIR="${TMPDIR:-/tmp}"
   SNAPSHOT_OUTPUT_FILE="${SNAPSHOT_OUTPUT_DIR}/snapshot-release-output.json"
   echo '{"packages":[' > "$SNAPSHOT_OUTPUT_FILE"
   FIRST_PKG=true
-  
+
   # Print npm install commands
   echo -e "${YELLOW}# NPM packages:${NC}"
   while IFS= read -r pkg; do
@@ -278,7 +279,7 @@ if [[ "$DRY_RUN" != true ]]; then
       fi
     fi
   done < <(find pkgs -name "package.json" -not -path "*/node_modules/*")
-  
+
   # Print JSR install command
   if [[ -f "pkgs/edge-worker/jsr.json" ]]; then
     EDGE_WORKER_VERSION=$(jq -r .version "pkgs/edge-worker/jsr.json" 2>/dev/null || echo "unknown")
@@ -290,7 +291,7 @@ if [[ "$DRY_RUN" != true ]]; then
     if [[ "$FIRST_PKG" != true ]]; then echo "," >> "$SNAPSHOT_OUTPUT_FILE"; fi
     echo -n "{\"name\":\"@pgflow/edge-worker\",\"version\":\"${EDGE_WORKER_VERSION}\",\"registry\":\"jsr\"}" >> "$SNAPSHOT_OUTPUT_FILE"
   fi
-  
+
   echo "]}" >> "$SNAPSHOT_OUTPUT_FILE"
   if [[ -f "$SNAPSHOT_OUTPUT_FILE" ]]; then
     echo -e "\n${GREEN}Machine-readable output saved to: ${SNAPSHOT_OUTPUT_FILE}${NC}"
