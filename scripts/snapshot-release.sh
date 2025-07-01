@@ -35,22 +35,25 @@ NC='\033[0m' # No Color
 TAG=""
 DRY_RUN=false
 NO_GIT_TAG="--no-git-tag" # Default to no git tags for snapshots
+ALLOW_UNCOMMITTED_CHANGESETS=false
 
 # Function to print usage
 usage() {
   echo "Usage: $0 [snapshot-tag] [options]"
   echo ""
   echo "Options:"
-  echo "  --dry-run         Run without actually publishing"
-  echo "  --help            Show this help message"
+  echo "  --dry-run                      Run without actually publishing"
+  echo "  --allow-uncommitted-changesets Allow uncommitted changeset files"
+  echo "  --help                         Show this help message"
   echo ""
   echo "Examples:"
   echo "  $0                      # Create snapshot with branch name as tag"
   echo "  $0 my-feature           # Create snapshot with 'my-feature' tag"
   echo "  $0 fix-123 --dry-run    # Dry run for 'fix-123' snapshot"
+  echo "  $0 --allow-uncommitted-changesets  # Allow dirty changesets"
   echo ""
   echo "Note: Packages are published with exact versions (no dist-tags)"
-  echo "      Install with: npm install @pgflow/core@0.0.0-TAG-TIMESTAMP"
+  echo "      Install with: npm install @pgflow/core@0.0.0-TAG-TIMESTAMP-SHA"
   exit 0
 }
 
@@ -59,6 +62,10 @@ while [[ $# -gt 0 ]]; do
   case $1 in
     --dry-run)
       DRY_RUN=true
+      shift
+      ;;
+    --allow-uncommitted-changesets)
+      ALLOW_UNCOMMITTED_CHANGESETS=true
       shift
       ;;
     --help)
@@ -104,11 +111,17 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
 
   # Check specifically for uncommitted changesets
   if git ls-files --others --exclude-standard .changeset/*.md | grep -q .; then
-    echo -e "${RED}Error: Uncommitted changeset files detected!${NC}"
-    echo -e "${YELLOW}Please commit your changesets before creating a snapshot release.${NC}"
-    echo -e "\nThis prevents losing your changeset messages during cleanup."
-    echo -e "\nRun: ${GREEN}git add .changeset/*.md && git commit -m 'Add changeset'${NC}"
-    exit 1
+    if [[ "$ALLOW_UNCOMMITTED_CHANGESETS" == true ]]; then
+      echo -e "${YELLOW}Note: Proceeding with uncommitted changeset files (--allow-uncommitted-changesets)${NC}"
+    else
+      echo -e "${RED}Error: Uncommitted changeset files detected!${NC}"
+      echo -e "${YELLOW}Please commit your changesets before creating a snapshot release.${NC}"
+      echo -e "\nThis prevents losing your changeset messages during cleanup."
+      echo -e "\nYou can either:"
+      echo -e "  1. Commit your changesets: ${GREEN}git add .changeset/*.md && git commit -m 'Add changeset'${NC}"
+      echo -e "  2. Use the flag: ${GREEN}--allow-uncommitted-changesets${NC}"
+      exit 1
+    fi
   fi
 
   if [[ "$DRY_RUN" != true ]]; then

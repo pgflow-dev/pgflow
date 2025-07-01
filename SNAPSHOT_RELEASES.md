@@ -65,6 +65,7 @@ Main script for creating snapshot releases locally or in CI.
 |------|-------------|---------|
 | `[tag]` | Custom snapshot tag | Branch name |
 | `--dry-run` | Preview without publishing | false |
+| `--allow-uncommitted-changesets` | Allow uncommitted changeset files | false |
 | `--help` | Show usage | - |
 
 **Examples:**
@@ -72,6 +73,7 @@ Main script for creating snapshot releases locally or in CI.
 ./scripts/snapshot-release.sh              # Uses branch name
 ./scripts/snapshot-release.sh my-feature   # Custom tag
 ./scripts/snapshot-release.sh --dry-run    # Preview only
+./scripts/snapshot-release.sh --allow-uncommitted-changesets  # Allow dirty changesets
 ```
 
 **Output:**
@@ -141,7 +143,11 @@ pnpm add -D @changesets/cli
 <details>
 <summary>🛑 "You have uncommitted changes"</summary>
 
-Commit changes or answer "y" to continue anyway
+For general uncommitted changes: Answer "y" to continue anyway.
+
+For uncommitted changesets specifically:
+- Commit them: `git add .changeset/*.md && git commit -m 'Add changeset'`
+- Or use: `--allow-uncommitted-changesets` flag
 </details>
 
 <details>
