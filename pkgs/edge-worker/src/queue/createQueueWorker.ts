@@ -177,27 +177,12 @@ export function createQueueWorker<TPayload extends Json>(
   const logger = createLogger('QueueWorker');
   logger.info(`Creating queue worker for ${config.queueName || 'tasks'}`);
 
-  // Show deprecation warnings for old fields
-  if (config.retryLimit !== undefined || config.retryDelay !== undefined) {
-    logger.warn('retryLimit and retryDelay are deprecated. Use retry config instead.');
+  // At this point, config.retry should always be provided and validated by EdgeWorker
+  if (!config.retry) {
+    throw new Error('retry config is required');
   }
-
-  // Migration logic: create retry config from old fields if not provided
-  const retryConfig: RetryConfig = config.retry || (
-    // If using legacy fields, use fixed strategy for backwards compatibility
-    (config.retryLimit !== undefined || config.retryDelay !== undefined)
-      ? {
-          strategy: 'fixed' as const,
-          limit: config.retryLimit ?? 5,
-          baseDelay: config.retryDelay ?? 3,
-        }
-      : {
-          strategy: 'exponential' as const,
-          limit: 5,
-          baseDelay: 3,
-          maxDelay: 300,
-        }
-  );
+  
+  const retryConfig = config.retry;
 
   const abortController = new AbortController();
   const abortSignal = abortController.signal;

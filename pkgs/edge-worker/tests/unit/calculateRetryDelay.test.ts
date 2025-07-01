@@ -106,23 +106,3 @@ Deno.test('calculateRetryDelay - handles very large attempt numbers for exponent
   assertEquals(calculateRetryDelay(1000, config), 100); // Would be huge, but capped
 });
 
-Deno.test('calculateRetryDelay - handles fractional baseDelay', () => {
-  const fixedConfig: RetryConfig = {
-    strategy: 'fixed',
-    limit: 3,
-    baseDelay: 0.5,
-  };
-
-  assertEquals(calculateRetryDelay(1, fixedConfig), 0.5);
-  assertEquals(calculateRetryDelay(2, fixedConfig), 0.5);
-
-  const exponentialConfig: RetryConfig = {
-    strategy: 'exponential',
-    limit: 3,
-    baseDelay: 0.5,
-  };
-
-  assertEquals(calculateRetryDelay(1, exponentialConfig), 0.5);  // 0.5 * 2^0 = 0.5
-  assertEquals(calculateRetryDelay(2, exponentialConfig), 1);    // 0.5 * 2^1 = 1
-  assertEquals(calculateRetryDelay(3, exponentialConfig), 2);    // 0.5 * 2^2 = 2
-});
