@@ -33,7 +33,7 @@ if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
     # Use branch name or commit SHA
     BRANCH_NAME="${GITHUB_REF##*/}"
     if [[ "$BRANCH_NAME" != "main" && "$BRANCH_NAME" != "HEAD" ]]; then
-      SNAPSHOT_TAG=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
+      SNAPSHOT_TAG=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
     else
       SNAPSHOT_TAG="${GITHUB_SHA:0:7}"
     fi
@@ -54,7 +54,7 @@ if [[ "${GITLAB_CI:-}" == "true" ]]; then
   else
     BRANCH_NAME="${CI_COMMIT_REF_NAME:-}"
     if [[ "$BRANCH_NAME" != "main" && -n "$BRANCH_NAME" ]]; then
-      SNAPSHOT_TAG=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
+      SNAPSHOT_TAG=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
     else
       SNAPSHOT_TAG="${CI_COMMIT_SHORT_SHA:-unknown}"
     fi
@@ -74,7 +74,7 @@ if [[ "${CIRCLECI:-}" == "true" ]]; then
   else
     BRANCH_NAME="${CIRCLE_BRANCH:-}"
     if [[ "$BRANCH_NAME" != "main" && -n "$BRANCH_NAME" ]]; then
-      SNAPSHOT_TAG=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
+      SNAPSHOT_TAG=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
     else
       SNAPSHOT_TAG="${CIRCLE_SHA1:0:7}"
     fi
@@ -96,10 +96,12 @@ echo -e "PR Number: ${PR_NUMBER:-N/A}"
 echo ""
 
 # Run the main snapshot release script
-"${SCRIPT_DIR}/snapshot-release.sh" "$SNAPSHOT_TAG" 2>&1 | tee /tmp/snapshot-release.log
+SNAPSHOT_LOG="${TMPDIR:-/tmp}/snapshot-release.log"
+"${SCRIPT_DIR}/snapshot-release.sh" "$SNAPSHOT_TAG" 2>&1 | tee "$SNAPSHOT_LOG"
 
 # Read machine-readable output
-SNAPSHOT_OUTPUT_FILE="/tmp/snapshot-release-output.json"
+SNAPSHOT_OUTPUT_DIR="${TMPDIR:-/tmp}"
+SNAPSHOT_OUTPUT_FILE="${SNAPSHOT_OUTPUT_DIR}/snapshot-release-output.json"
 
 # Generate installation instructions for PR comment
 if [[ "$CI_DETECTED" == true && -n "$PR_COMMENT_FILE" ]]; then
@@ -125,7 +127,7 @@ EOF
     jq -r '.packages[] | if .registry == "npm" then "npm install \(.name)@\(.version)" elif .registry == "jsr" then "deno add \(.name)@\(.version)" else "" end' "$SNAPSHOT_OUTPUT_FILE" >> "$PR_COMMENT_FILE"
   else
     # Fallback to extracting from log
-    grep -E '^npm install @pgflow/|^deno add @pgflow/' /tmp/snapshot-release.log >> "$PR_COMMENT_FILE" || echo "# Check logs for installation commands" >> "$PR_COMMENT_FILE"
+    grep -E '^npm install @pgflow/|^deno add @pgflow/' "$SNAPSHOT_LOG" >> "$PR_COMMENT_FILE" || echo "# Check logs for installation commands" >> "$PR_COMMENT_FILE"
   fi
 
   echo '```' >> "$PR_COMMENT_FILE"

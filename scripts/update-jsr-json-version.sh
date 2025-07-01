@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Find all directories within pkgs/ that contain both package.json and jsr.json files
 find ./pkgs -type f -name "package.json" | while read -r package_file; do
@@ -13,9 +14,18 @@ find ./pkgs -type f -name "package.json" | while read -r package_file; do
     current_version=$(jq -r '.version' "$package_file")
     echo "Package version: $current_version"
 
+    # Create a proper temporary file
+    tmp_file=$(mktemp "${jsr_file}.XXXXXX")
+    trap "rm -f '$tmp_file'" EXIT
+
     # First update the package version in jsr.json
-    jq --arg version "$current_version" '.version = $version' "$jsr_file" > "$dir/tmp.json" \
-      && mv "$dir/tmp.json" "$jsr_file"
+    if jq --arg version "$current_version" '.version = $version' "$jsr_file" > "$tmp_file"; then
+      mv "$tmp_file" "$jsr_file"
+    else
+      echo "Error: Failed to update version in $jsr_file"
+      rm -f "$tmp_file"
+      exit 1
+    fi
 
     # Now update any pgflow dependencies in the imports section to match the same version
     if jq -e '.imports' "$jsr_file" > /dev/null 2>&1; then
@@ -23,10 +33,17 @@ find ./pkgs -type f -name "package.json" | while read -r package_file; do
       for pgflow_dep in $(jq -r '.imports | keys[] | select(contains("pgflow"))' "$jsr_file"); do
         echo "Updating $pgflow_dep to version $current_version"
         
+        # Create a new temporary file for each update
+        tmp_file=$(mktemp "${jsr_file}.XXXXXX")
         # Update the dependency version
-        jq --arg dep "$pgflow_dep" --arg version "$current_version" \
-          '.imports[$dep] = "npm:" + $dep + "@" + $version' "$jsr_file" > "$dir/tmp.json" \
-          && mv "$dir/tmp.json" "$jsr_file"
+        if jq --arg dep "$pgflow_dep" --arg version "$current_version" \
+          '.imports[$dep] = "npm:" + $dep + "@" + $version' "$jsr_file" > "$tmp_file"; then
+          mv "$tmp_file" "$jsr_file"
+        else
+          echo "Error: Failed to update $pgflow_dep in $jsr_file"
+          rm -f "$tmp_file"
+          exit 1
+        fi
       done
     fi
 

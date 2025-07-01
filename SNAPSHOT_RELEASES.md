@@ -1,6 +1,6 @@
 # Snapshot Releases
 
-> Temporary test versions for PR testing. Version format: `0.0.0-{tag}-{timestamp}`
+> Temporary test versions for PR testing. Version format: `0.0.0-{tag}-{timestamp}-{sha}`
 
 ## Quick Start
 
@@ -34,17 +34,17 @@ Snapshots are published with exact versions. Always install using the full versi
 
 ### NPM Packages
 ```bash
-npm install @pgflow/core@0.0.0-my-feature-20240101120000
-npm install @pgflow/cli@0.0.0-my-feature-20240101120000
-npm install @pgflow/client@0.0.0-my-feature-20240101120000
-npm install @pgflow/dsl@0.0.0-my-feature-20240101120000
+npm install @pgflow/core@0.0.0-my-feature-20240101120000-abc1234
+npm install @pgflow/cli@0.0.0-my-feature-20240101120000-abc1234
+npm install @pgflow/client@0.0.0-my-feature-20240101120000-abc1234
+npm install @pgflow/dsl@0.0.0-my-feature-20240101120000-abc1234
 ```
 
 ### JSR Package (Edge Worker)
 ```bash
-deno add @pgflow/edge-worker@0.0.0-my-feature-20240101120000
+deno add @pgflow/edge-worker@0.0.0-my-feature-20240101120000-abc1234
 # Or in import map:
-"@pgflow/edge-worker": "jsr:@pgflow/edge-worker@0.0.0-my-feature-20240101120000"
+"@pgflow/edge-worker": "jsr:@pgflow/edge-worker@0.0.0-my-feature-20240101120000-abc1234"
 ```
 
 > [!TIP]
@@ -102,12 +102,13 @@ CI-specific wrapper that auto-detects environment and generates PR comments.
 <details>
 <summary>🔧 Technical Details</summary>
 
-1. **Creates versions**: `changeset version --snapshot` → `0.0.0-{tag}-{timestamp}`
+1. **Creates versions**: `changeset version --snapshot` → `0.0.0-{tag}-{timestamp}-{sha}`
 2. **Syncs JSR**: Runs `update-jsr-json-version.sh`
 3. **Publishes**: npm with "snapshot" tag (protects "latest"), then JSR
 4. **Cleans up**: Automatically reverts all version changes via trap (even on errors!)
-   - Uses `git restore --source=HEAD` for reliable cleanup
+   - Uses `git restore --source=HEAD` for reliable cleanup (falls back to `git checkout` for older git)
    - Branch always stays clean
+   - Works in CI and locally
 </details>
 
 ## Best Practices
