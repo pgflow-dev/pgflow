@@ -148,37 +148,14 @@ export class EdgeWorker {
     // First, create the adapter
     this.platform = await createAdapter();
 
-    // Convert legacy retry fields to new format if present
-    let retry = config.retry;
-    if (!retry && (config.retryDelay !== undefined || config.retryLimit !== undefined)) {
-      // Show deprecation warning
-      console.warn('retryLimit and retryDelay are deprecated. Use retry config instead.');
-      retry = {
-        strategy: 'fixed' as const,
-        limit: config.retryLimit ?? 5,
-        baseDelay: config.retryDelay ?? 3,
-      };
+    // If retry config is provided, validate it
+    if (config.retry) {
+      validateRetryConfig(config.retry);
     }
-    
-    // Default retry config if none provided
-    if (!retry) {
-      retry = {
-        strategy: 'exponential' as const,
-        limit: 5,
-        baseDelay: 3,
-        maxDelay: 300,
-      };
-    }
-    
-    // Validate the retry configuration
-    validateRetryConfig(retry);
-
-    // Remove legacy fields from config
-    const { retryDelay: _retryDelay, retryLimit: _retryLimit, ...configWithoutLegacy } = config;
 
     // Apply default values to the config
     const workerConfig: QueueWorkerConfig = {
-      ...configWithoutLegacy,
+      ...config,
       queueName: config.queueName || 'tasks',
       maxConcurrent: config.maxConcurrent ?? 10,
       maxPgConnections: config.maxPgConnections ?? 4,
@@ -187,7 +164,6 @@ export class EdgeWorker {
       visibilityTimeout: config.visibilityTimeout ?? 10,
       connectionString:
         config.connectionString || this.platform.getConnectionString(),
-      retry, // Use the normalized and validated retry config
     };
 
     await this.platform.startWorker((createLoggerFn) => {
