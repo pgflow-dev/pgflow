@@ -96,10 +96,10 @@ echo -e "PR Number: ${PR_NUMBER:-N/A}"
 echo ""
 
 # Run the main snapshot release script
-"${SCRIPT_DIR}/snapshot-release.sh" "$SNAPSHOT_TAG" --npm-tag "pr-snapshot" --jsr-tag "pr-snapshot" 2>&1 | tee /tmp/snapshot-release.log
+"${SCRIPT_DIR}/snapshot-release.sh" "$SNAPSHOT_TAG" 2>&1 | tee /tmp/snapshot-release.log
 
-# Extract published packages from the log
-PUBLISHED_PACKAGES=$(grep -E '@pgflow/[a-z-]+@0\.0\.0-' /tmp/snapshot-release.log || true)
+# Read machine-readable output
+SNAPSHOT_OUTPUT_FILE="/tmp/snapshot-release-output.json"
 
 # Generate installation instructions for PR comment
 if [[ "$CI_DETECTED" == true && -n "$PR_COMMENT_FILE" ]]; then
@@ -116,32 +116,21 @@ A snapshot release has been created for this pull request.
 #### NPM Packages
 
 \`\`\`bash
-# Install all pgflow packages from this snapshot
-npm install @pgflow/core@pr-snapshot @pgflow/cli@pr-snapshot @pgflow/client@pr-snapshot @pgflow/dsl@pr-snapshot
-
-# Or install specific versions
+# Install specific versions:
 EOF
 
-  # Add specific package versions if we found them
-  if [[ -n "$PUBLISHED_PACKAGES" ]]; then
-    echo '```' >> "$PR_COMMENT_FILE"
-    echo "$PUBLISHED_PACKAGES" | while read -r pkg; do
-      echo "npm install $pkg" >> "$PR_COMMENT_FILE"
-    done
-    echo '```' >> "$PR_COMMENT_FILE"
+  # Generate install commands from JSON output
+  if [[ -f "$SNAPSHOT_OUTPUT_FILE" ]] && command -v jq &> /dev/null; then
+    # Use jq to parse JSON
+    jq -r '.packages[] | if .registry == "npm" then "npm install \(.name)@\(.version)" elif .registry == "jsr" then "deno add \(.name)@\(.version)" else "" end' "$SNAPSHOT_OUTPUT_FILE" >> "$PR_COMMENT_FILE"
+  else
+    # Fallback to extracting from log
+    grep -E '^npm install @pgflow/|^deno add @pgflow/' /tmp/snapshot-release.log >> "$PR_COMMENT_FILE" || echo "# Check logs for installation commands" >> "$PR_COMMENT_FILE"
   fi
 
+  echo '```' >> "$PR_COMMENT_FILE"
+  
   cat >> "$PR_COMMENT_FILE" << EOF
-
-#### Edge Worker (JSR)
-
-\`\`\`bash
-# In your import map or deno.json
-"@pgflow/edge-worker": "jsr:@pgflow/edge-worker@pr-snapshot"
-
-# Or with deno add
-deno add @pgflow/edge-worker@pr-snapshot
-\`\`\`
 
 ### Testing the Snapshot
 
@@ -157,7 +146,7 @@ EOF
   
   # If in GitHub Actions, also output as a comment command
   if [[ "${GITHUB_ACTIONS:-}" == "true" && -n "${PR_NUMBER}" ]]; then
-    echo "::notice title=Snapshot Release::Snapshot packages published with tag: pr-snapshot"
+    echo "::notice title=Snapshot Release::Snapshot packages published for PR #${PR_NUMBER}"
   fi
 fi
 

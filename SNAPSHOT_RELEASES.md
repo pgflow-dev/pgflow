@@ -24,44 +24,72 @@
 
 ## Installation
 
-After publishing a snapshot:
+Snapshots are published with exact versions. Always install using the full version:
 
 ### NPM Packages
 ```bash
-npm install @pgflow/core@snapshot
-npm install @pgflow/cli@snapshot
-# Or specific version:
 npm install @pgflow/core@0.0.0-my-feature-20240101120000
+npm install @pgflow/cli@0.0.0-my-feature-20240101120000
+npm install @pgflow/client@0.0.0-my-feature-20240101120000
+npm install @pgflow/dsl@0.0.0-my-feature-20240101120000
 ```
 
 ### JSR Package (Edge Worker)
 ```bash
-deno add @pgflow/edge-worker@experimental
+deno add @pgflow/edge-worker@0.0.0-my-feature-20240101120000
 # Or in import map:
-"@pgflow/edge-worker": "jsr:@pgflow/edge-worker@experimental"
+"@pgflow/edge-worker": "jsr:@pgflow/edge-worker@0.0.0-my-feature-20240101120000"
 ```
 
-## Script Options
+> [!TIP]
+> The script outputs exact install commands - just copy and paste!
 
-### Local Development
+> [!NOTE]
+> npm packages are published with dist-tag "snapshot" to protect the "latest" tag.
+> Always use exact versions - never install with `@snapshot`.
 
-| Command | Description |
-|---------|-------------|
-| `./scripts/snapshot-release.sh` | Use branch name as tag |
-| `./scripts/snapshot-release.sh my-tag` | Custom tag |
-| `./scripts/snapshot-release.sh --dry-run` | Preview only |
-| `./scripts/snapshot-release.sh --npm-tag next` | Custom npm tag |
+## Available Scripts
 
-### CI Usage
+### `snapshot-release.sh`
 
+Main script for creating snapshot releases locally or in CI.
+
+**Options:**
+| Flag | Description | Default |
+|------|-------------|---------|
+| `[tag]` | Custom snapshot tag | Branch name |
+| `--dry-run` | Preview without publishing | false |
+| `--help` | Show usage | - |
+
+**Examples:**
 ```bash
-./scripts/snapshot-release-ci.sh  # Auto-detects PR number
+./scripts/snapshot-release.sh              # Uses branch name
+./scripts/snapshot-release.sh my-feature   # Custom tag
+./scripts/snapshot-release.sh --dry-run    # Preview only
 ```
 
-Features:
-- 🔍 Auto-detects PR number/branch
-- 📝 Generates install instructions
-- 💬 Formats for PR comments
+**Output:**
+- Shows all packages being published with exact versions
+- Prints ready-to-use install commands
+- Creates JSON output at `/tmp/snapshot-release-output.json` for CI integration
+- Uses "snapshot" dist-tag to protect "latest" (but you always install by version)
+
+### `snapshot-release-ci.sh`
+
+CI-specific wrapper that auto-detects environment and generates PR comments.
+
+**Features:**
+- 🔍 Auto-detects PR number/branch from CI environment
+- 📝 Generates installation instructions
+- 💬 Outputs to GitHub Actions summary
+- 🤖 Supports GitHub Actions, GitLab CI, CircleCI
+
+**Usage:**
+```bash
+./scripts/snapshot-release-ci.sh  # No arguments needed
+```
+
+**Output:** Creates markdown file with installation instructions for PR comments.
 
 ## How It Works
 
@@ -70,8 +98,10 @@ Features:
 
 1. **Creates versions**: `changeset version --snapshot` → `0.0.0-{tag}-{timestamp}`
 2. **Syncs JSR**: Runs `update-jsr-json-version.sh`
-3. **Publishes**: npm with custom tag, then JSR
-4. **Cleans up**: Reverts all version changes (branch stays clean!)
+3. **Publishes**: npm with "snapshot" tag (protects "latest"), then JSR
+4. **Cleans up**: Automatically reverts all version changes via trap (even on errors!)
+   - Uses `git restore --source=HEAD` for reliable cleanup
+   - Branch always stays clean
 </details>
 
 ## Best Practices
