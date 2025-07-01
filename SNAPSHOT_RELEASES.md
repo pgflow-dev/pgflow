@@ -4,7 +4,13 @@
 
 ## Quick Start
 
+**Prerequisites:** You need at least one changeset for packages to publish.
+
 ```bash
+# First, create a changeset
+pnpm changeset
+
+# Then create snapshot
 ./scripts/snapshot-release.sh              # Uses branch name as tag
 ./scripts/snapshot-release.sh my-feature   # Custom tag
 ./scripts/snapshot-release.sh --dry-run    # Preview only
@@ -113,6 +119,15 @@ CI-specific wrapper that auto-detects environment and generates PR comments.
 > - Clean up old snapshots periodically
 
 ## Troubleshooting
+
+<details>
+<summary>🛑 "No unreleased changesets found"</summary>
+
+Snapshot releases require changesets to work. Create one first:
+```bash
+pnpm changeset  # Select packages and describe changes
+```
+</details>
 
 <details>
 <summary>🛑 "Changesets CLI not found"</summary>

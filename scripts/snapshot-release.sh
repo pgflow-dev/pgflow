@@ -87,8 +87,18 @@ echo ""
 # Check if we have uncommitted changes
 if ! git diff --quiet || ! git diff --cached --quiet; then
   echo -e "${YELLOW}Warning: You have uncommitted changes${NC}"
+  
+  # Check specifically for uncommitted changesets
+  if git ls-files --others --exclude-standard .changeset/*.md | grep -q .; then
+    echo -e "${RED}Error: Uncommitted changeset files detected!${NC}"
+    echo -e "${YELLOW}Please commit your changesets before creating a snapshot release.${NC}"
+    echo -e "\nThis prevents losing your changeset messages during cleanup."
+    echo -e "\nRun: ${GREEN}git add .changeset/*.md && git commit -m 'Add changeset'${NC}"
+    exit 1
+  fi
+  
   if [[ "$DRY_RUN" != true ]]; then
-    read -p "Continue anyway? (y/N) " -n 1 -r
+    read -p "Continue with other uncommitted changes? (y/N) " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
       echo -e "${RED}Aborted${NC}"
@@ -118,7 +128,20 @@ echo -e "\n${GREEN}Creating snapshot versions...${NC}"
 if [[ "$DRY_RUN" == true ]]; then
   echo "(DRY RUN) Would run: pnpm changeset version --snapshot ${TAG}"
 else
-  pnpm changeset version --snapshot "${TAG}"
+  # Capture output to check for warnings
+  VERSION_OUTPUT=$(pnpm changeset version --snapshot "${TAG}" 2>&1)
+  echo "$VERSION_OUTPUT"
+  
+  # Check if changesets warned about no unreleased changesets
+  if echo "$VERSION_OUTPUT" | grep -q "No unreleased changesets found"; then
+    echo -e "\n${YELLOW}Warning: No changesets found!${NC}"
+    echo -e "${YELLOW}Snapshot releases require changesets to determine which packages to publish.${NC}"
+    echo -e "\nTo create a snapshot release:"
+    echo -e "  1. Run ${GREEN}pnpm changeset${NC} to create a changeset"
+    echo -e "  2. Run this script again"
+    echo -e "\n${RED}Aborting to prevent publishing existing versions.${NC}"
+    exit 1
+  fi
   
   # Mark that cleanup is needed from this point
   CLEANUP_NEEDED=true
@@ -131,6 +154,8 @@ fi
 # Show what would be published
 echo -e "\n${GREEN}Packages to be published:${NC}"
 SNAPSHOT_PACKAGES=""
+SNAPSHOT_COUNT=0
+
 if [[ "$DRY_RUN" == true ]]; then
   echo "(DRY RUN) Would show packages with version 0.0.0-${TAG}-*"
 else
@@ -141,8 +166,19 @@ else
       PKG_VERSION=$(jq -r .version "$pkg" 2>/dev/null || echo "unknown")
       echo -e "  ${BLUE}${PKG_NAME}${NC} @ ${YELLOW}${PKG_VERSION}${NC}"
       SNAPSHOT_PACKAGES="${SNAPSHOT_PACKAGES}${PKG_NAME}@${PKG_VERSION}\n"
+      ((SNAPSHOT_COUNT++))
     fi
   done < <(find pkgs -name "package.json" -not -path "*/node_modules/*")
+  
+  # Safety check: ensure we have snapshot versions before proceeding
+  if [[ $SNAPSHOT_COUNT -eq 0 ]]; then
+    echo -e "\n${RED}Error: No snapshot versions found!${NC}"
+    echo -e "${YELLOW}This usually means no changesets were applied.${NC}"
+    echo -e "\nPlease ensure you have:"
+    echo -e "  1. Created changesets with ${GREEN}pnpm changeset${NC}"
+    echo -e "  2. Not already published these changes"
+    exit 1
+  fi
 fi
 
 # Publish to npm
