@@ -68,5 +68,9 @@ The execution system handles the rest - scheduling steps when dependencies compl
 - 🚀 **Demo**: [pgflow-demo.netlify.app](https://pgflow-demo.netlify.app)
 - 🛠️ **Getting Started**: [pgflow.dev/getting-started](https://pgflow.dev/getting-started)
 
+## Releases
+
+- 📦 **Snapshot Releases**: See [SNAPSHOT_RELEASES.md](./SNAPSHOT_RELEASES.md) for testing changes before release
+
 > [!NOTE]
 > This project and all its components are licensed under [Apache 2.0](./LICENSE) license.
