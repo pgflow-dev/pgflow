@@ -70,6 +70,7 @@ The execution system handles the rest - scheduling steps when dependencies compl
 
 ## Releases
 
+- 📋 **Release Process**: See [RELEASES.md](./RELEASES.md) for how versions are managed and published
 - 📦 **Snapshot Releases**: See [SNAPSHOT_RELEASES.md](./SNAPSHOT_RELEASES.md) for testing changes before release
 
 > [!NOTE]
