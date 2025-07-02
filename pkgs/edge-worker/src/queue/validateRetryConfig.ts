@@ -1,6 +1,12 @@
 import type { RetryConfig } from './createQueueWorker.js';
 
 /**
+ * Maximum value for PostgreSQL interval type (signed 32-bit integer)
+ * This is the maximum number of seconds that can be stored in a PostgreSQL interval
+ */
+const MAX_POSTGRES_INTERVAL_SECONDS = 2147483647;
+
+/**
  * Validates retry configuration to ensure all values are valid
  * @param config - The retry configuration to validate
  * @throws Error if any configuration value is invalid
@@ -31,8 +37,8 @@ export function validateRetryConfig(config: RetryConfig): void {
     throw new Error('baseDelay must be greater than 0');
   }
   // Prevent values that would overflow PostgreSQL interval type
-  if (config.baseDelay > 2147483647) {
-    throw new Error('baseDelay must not exceed 2147483647 seconds');
+  if (config.baseDelay > MAX_POSTGRES_INTERVAL_SECONDS) {
+    throw new Error(`baseDelay must not exceed ${MAX_POSTGRES_INTERVAL_SECONDS} seconds`);
   }
 
   // Strategy-specific validation
@@ -54,8 +60,8 @@ export function validateRetryConfig(config: RetryConfig): void {
         throw new Error('maxDelay must be greater than or equal to baseDelay');
       }
       // Prevent values that would overflow PostgreSQL interval type
-      if (config.maxDelay > 2147483647) {
-        throw new Error('maxDelay must not exceed 2147483647 seconds');
+      if (config.maxDelay > MAX_POSTGRES_INTERVAL_SECONDS) {
+        throw new Error(`maxDelay must not exceed ${MAX_POSTGRES_INTERVAL_SECONDS} seconds`);
       }
     }
   }
