@@ -143,31 +143,14 @@ fi
 # Navigate to root directory
 cd "$ROOT_DIR"
 
-# Check if required tools are installed
-MISSING_TOOLS=()
-for tool in pnpm changeset jq jsr; do
-  if ! command -v "$tool" &> /dev/null; then
-    MISSING_TOOLS+=("$tool")
-  fi
-done
-
-# Special check for changeset via npx
-if [[ " ${MISSING_TOOLS[@]} " =~ " changeset " ]] && command -v npx &> /dev/null && npx changeset --version &> /dev/null 2>&1; then
-  # Remove changeset from missing tools if npx can run it
-  MISSING_TOOLS=("${MISSING_TOOLS[@]/changeset}")
+# Quick check for required tools (script will fail anyway if missing due to set -e)
+if ! command -v pnpm &> /dev/null; then
+  echo -e "${RED}Error: pnpm is required. Install from https://pnpm.io/installation${NC}"
+  exit 1
 fi
 
-if [[ ${#MISSING_TOOLS[@]} -gt 0 ]]; then
-  echo -e "${RED}Error: Missing required tools: ${MISSING_TOOLS[*]}${NC}"
-  echo -e "\nPlease install:"
-  for tool in "${MISSING_TOOLS[@]}"; do
-    case "$tool" in
-      pnpm) echo "  - pnpm: https://pnpm.io/installation" ;;
-      changeset) echo "  - changesets: pnpm add -D @changesets/cli" ;;
-      jq) echo "  - jq: https://stedolan.github.io/jq/download/" ;;
-      jsr) echo "  - jsr: https://jsr.io/docs/cli" ;;
-    esac
-  done
+if ! command -v jq &> /dev/null; then
+  echo -e "${RED}Error: jq is required for JSON parsing${NC}"
   exit 1
 fi
 
