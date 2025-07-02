@@ -69,6 +69,18 @@ For complete documentation, visit:
 - [Edge Worker Documentation (old one)](https://pgflow.dev/edge-worker/getting-started/install-edge-worker/)
 - [JSR Package](https://jsr.io/@pgflow/edge-worker)
 
+## Manual E2E Testing
+
+For manual end-to-end testing of edge-worker features, we maintain example edge functions in the `supabase/functions` directory.
+
+### Available Tests
+
+- **[Retry Demo](./supabase/functions/retry-demo/README.md)** - Demonstrates exponential backoff retry mechanism
+
+To run a manual test:
+1. Start Supabase: `pnpm nx supabase:start edge-worker`
+2. Follow the instructions in the specific test's README
+
 ## Building
 
 Run `nx build edge-worker` to build the library.
