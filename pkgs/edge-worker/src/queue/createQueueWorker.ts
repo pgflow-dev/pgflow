@@ -10,6 +10,76 @@ import postgres from 'postgres';
 import { WorkerLifecycle } from '../core/WorkerLifecycle.js';
 import { BatchProcessor } from '../core/BatchProcessor.js';
 import type { Logger } from '../platform/types.js';
+import { validateRetryConfig } from './validateRetryConfig.js';
+
+/**
+ * Fixed retry strategy configuration
+ */
+export interface FixedRetryConfig {
+  /**
+   * Use fixed delay between retries
+   */
+  strategy: 'fixed';
+
+  /**
+   * Maximum number of retry attempts
+   */
+  limit: number;
+
+  /**
+   * Fixed delay in seconds between retries
+   */
+  baseDelay: number;
+}
+
+/**
+ * Exponential backoff retry strategy configuration
+ */
+export interface ExponentialRetryConfig {
+  /**
+   * Use exponential backoff between retries
+   */
+  strategy: 'exponential';
+
+  /**
+   * Maximum number of retry attempts
+   */
+  limit: number;
+
+  /**
+   * Base delay in seconds (initial delay for exponential backoff)
+   */
+  baseDelay: number;
+
+  /**
+   * Maximum delay in seconds for exponential backoff
+   * @default 300
+   */
+  maxDelay?: number;
+}
+
+/**
+ * Retry configuration for message processing
+ */
+export type RetryConfig = FixedRetryConfig | ExponentialRetryConfig;
+
+/**
+ * Calculates the delay before the next retry attempt based on the retry strategy
+ * @param attempt - The current attempt number (1-based)
+ * @param config - The retry configuration
+ * @returns The delay in seconds before the next retry
+ */
+export function calculateRetryDelay(attempt: number, config: RetryConfig): number {
+  switch (config.strategy) {
+    case 'fixed':
+      return config.baseDelay;
+
+    case 'exponential': {
+      const delay = config.baseDelay * Math.pow(2, attempt - 1);
+      return Math.min(delay, config.maxDelay ?? 300);
+    }
+  }
+}
 
 /**
  * Configuration for the queue worker
@@ -52,13 +122,20 @@ export type QueueWorkerConfig = {
   pollIntervalMs?: number;
 
   /**
+   * Retry configuration for failed messages
+   */
+  retry?: RetryConfig;
+
+  /**
    * How long to wait before retrying a failed job in seconds
+   * @deprecated Use retry.baseDelay with retry.strategy = 'fixed' instead
    * @default 5
    */
   retryDelay?: number;
 
   /**
    * How many times to retry a failed job
+   * @deprecated Use retry.limit instead
    * @default 5
    */
   retryLimit?: number;
@@ -101,6 +178,37 @@ export function createQueueWorker<TPayload extends Json>(
   const logger = createLogger('QueueWorker');
   logger.info(`Creating queue worker for ${config.queueName || 'tasks'}`);
 
+  // Handle legacy retry configuration
+  let retryConfig = config.retry;
+  
+  // Check if both new and legacy config are provided
+  if (retryConfig && (config.retryDelay !== undefined || config.retryLimit !== undefined)) {
+    logger.warn(
+      'Both "retry" and legacy "retryDelay/retryLimit" were supplied - ignoring legacy values',
+      { retry: retryConfig, retryDelay: config.retryDelay, retryLimit: config.retryLimit }
+    );
+  } else if (!retryConfig && (config.retryDelay !== undefined || config.retryLimit !== undefined)) {
+    logger.warn('retryLimit and retryDelay are deprecated. Use retry config instead.');
+    retryConfig = {
+      strategy: 'fixed' as const,
+      limit: config.retryLimit ?? 5,
+      baseDelay: config.retryDelay ?? 3,
+    };
+  }
+  
+  // Default retry config if none provided
+  if (!retryConfig) {
+    retryConfig = {
+      strategy: 'exponential' as const,
+      limit: 5,
+      baseDelay: 3,
+      maxDelay: 300,
+    };
+  }
+  
+  // Validate the final retry config
+  validateRetryConfig(retryConfig);
+
   const abortController = new AbortController();
   const abortSignal = abortController.signal;
 
@@ -132,8 +240,8 @@ export function createQueueWorker<TPayload extends Json>(
       record,
       handler,
       signal,
-      config.retryLimit || 5,
-      config.retryDelay || 3,
+      retryConfig,
+      calculateRetryDelay,
       createLogger('MessageExecutor')
     );
   };

@@ -155,8 +155,6 @@ export class EdgeWorker {
       maxPgConnections: config.maxPgConnections ?? 4,
       maxPollSeconds: config.maxPollSeconds ?? 5,
       pollIntervalMs: config.pollIntervalMs ?? 200,
-      retryDelay: config.retryDelay ?? 5,
-      retryLimit: config.retryLimit ?? 5,
       visibilityTimeout: config.visibilityTimeout ?? 10,
       connectionString:
         config.connectionString || this.platform.getConnectionString(),

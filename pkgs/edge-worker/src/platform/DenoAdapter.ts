@@ -141,8 +141,11 @@ export class DenoAdapter implements PlatformAdapter {
    * by passing a promise that never resolves.
    */
   private extendLifetimeOfEdgeFunction(): void {
-    const promiseThatNeverResolves = new Promise(() => {});
-    EdgeRuntime.waitUntil(promiseThatNeverResolves);
+    // EdgeRuntime is only available in the actual Supabase Edge Runtime, not in tests
+    if (typeof EdgeRuntime !== 'undefined') {
+      const promiseThatNeverResolves = new Promise(() => {});
+      EdgeRuntime.waitUntil(promiseThatNeverResolves);
+    }
   }
 
   private setupStartupHandler(createWorkerFn: CreateWorkerFn): void {
