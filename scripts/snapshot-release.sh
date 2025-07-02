@@ -4,8 +4,11 @@ set -euo pipefail               # abort on first error, unset var or pipe-fail
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
 
-# Quick check for required tool
+# Quick check for requirements
 command -v jq >/dev/null || { echo "jq is required"; exit 1; }
+[[ ${BASH_VERSINFO[0]} -lt 4 ]] && { 
+  echo "Bash 4+ required (macOS: brew install bash)"; exit 1; 
+}
 
 # ------------------------------------------------------------------
 # 1. Resolve snapshot tag
@@ -30,7 +33,8 @@ SNAPSHOT="$TAG-$TS-$SHA"        # 0.0.0-TAG-TIMESTAMP-SHA will be added by chang
 # 2. Clean-up on exit (always keep branch clean)
 # ------------------------------------------------------------------
 trap 'git restore --source=HEAD --worktree --staged \
-      "**/package.json" "**/jsr.json" pnpm-lock.yaml 2>/dev/null || true' EXIT
+      "**/package.json" "**/jsr.json" pnpm-lock.yaml \
+      .changeset/pre.json 2>/dev/null || true' EXIT
 
 # ------------------------------------------------------------------
 # 3. Create versions
@@ -44,7 +48,7 @@ pnpm changeset version --snapshot "$SNAPSHOT"
 mapfile -t PKGS < <(
   find pkgs -name package.json -not -path "*/node_modules/*" -print0 |
   xargs -0 jq -r '.name + "@" + .version' |
-  grep '^@pgflow/.*0\.0\.0-'                 # only freshly versioned snapshots
+  grep "$SNAPSHOT\$"                 # only packages with this snapshot version
 )
 
 [[ ${#PKGS[@]} -eq 0 ]] && { echo "Nothing to publish, aborting"; exit 1; }
@@ -55,7 +59,7 @@ printf '  %s\n' "${PKGS[@]}"
 # ------------------------------------------------------------------
 # 5. Publish – npm first, then JSR
 # ------------------------------------------------------------------
-pnpm changeset publish --tag snapshot --no-git-tag-version
+pnpm changeset publish --tag snapshot
 
 if [[ -f pkgs/edge-worker/jsr.json ]]; then
   ( cd pkgs/edge-worker && pnpm jsr publish --allow-slow-types --allow-dirty ) \

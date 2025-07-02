@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Find all directories within pkgs/ that contain both package.json and jsr.json files
-find ./pkgs -type f -name "package.json" | while read -r package_file; do
+find ./pkgs -type f -name "package.json" -print0 | while IFS= read -r -d '' package_file; do
   dir=$(dirname "$package_file")
   jsr_file="$dir/jsr.json"
 
@@ -16,7 +16,6 @@ find ./pkgs -type f -name "package.json" | while read -r package_file; do
 
     # Create a proper temporary file
     tmp_file=$(mktemp "${jsr_file}.XXXXXX")
-    trap "rm -f '$tmp_file'" EXIT
 
     # First update the package version in jsr.json
     if jq --arg version "$current_version" '.version = $version' "$jsr_file" > "$tmp_file"; then
