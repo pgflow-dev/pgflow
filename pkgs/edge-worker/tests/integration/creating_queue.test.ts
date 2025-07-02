@@ -23,7 +23,7 @@ Deno.test(
       workerId: crypto.randomUUID(),
     });
 
-    await delay(100);
+    await delay(200);
 
     try {
       const result: { queue_name: string }[] =

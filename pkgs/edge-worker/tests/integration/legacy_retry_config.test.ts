@@ -47,13 +47,15 @@ Deno.test(
   withTransaction(async (sql) => {
     const { handler, getFailureCount } = createFailingHandler();
     
-    // Track warning messages by overriding console.warn
+    // Track warning messages through logger
     const warnMessages: string[] = [];
-    const originalWarn = console.warn;
-    console.warn = (msg: string) => {
-      log(`WARN: ${msg}`);
-      warnMessages.push(msg);
-    };
+    const customCreateLogger = (module: string) => ({
+      ...createFakeLogger(module),
+      warn: (msg: string, data?: any) => {
+        log(`WARN: ${msg}`);
+        warnMessages.push(msg);
+      },
+    });
     
     const worker = createQueueWorker(
       handler,
@@ -64,7 +66,7 @@ Deno.test(
         retryDelay: 5,    // Legacy config
         queueName: 'legacy_retry_test',
       },
-      createFakeLogger
+      customCreateLogger
     );
 
     try {
@@ -153,7 +155,6 @@ Deno.test(
         'Handler should be called 2 times (retryLimit)'
       );
     } finally {
-      console.warn = originalWarn;
       await worker.stop();
     }
   })

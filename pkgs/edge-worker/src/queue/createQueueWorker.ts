@@ -10,6 +10,7 @@ import postgres from 'postgres';
 import { WorkerLifecycle } from '../core/WorkerLifecycle.js';
 import { BatchProcessor } from '../core/BatchProcessor.js';
 import type { Logger } from '../platform/types.js';
+import { validateRetryConfig } from './validateRetryConfig.js';
 
 /**
  * Fixed retry strategy configuration
@@ -179,8 +180,15 @@ export function createQueueWorker<TPayload extends Json>(
 
   // Handle legacy retry configuration
   let retryConfig = config.retry;
-  if (!retryConfig && (config.retryDelay !== undefined || config.retryLimit !== undefined)) {
-    console.warn('retryLimit and retryDelay are deprecated. Use retry config instead.');
+  
+  // Check if both new and legacy config are provided
+  if (retryConfig && (config.retryDelay !== undefined || config.retryLimit !== undefined)) {
+    logger.warn(
+      'Both "retry" and legacy "retryDelay/retryLimit" were supplied - ignoring legacy values',
+      { retry: retryConfig, retryDelay: config.retryDelay, retryLimit: config.retryLimit }
+    );
+  } else if (!retryConfig && (config.retryDelay !== undefined || config.retryLimit !== undefined)) {
+    logger.warn('retryLimit and retryDelay are deprecated. Use retry config instead.');
     retryConfig = {
       strategy: 'fixed' as const,
       limit: config.retryLimit ?? 5,
@@ -197,6 +205,9 @@ export function createQueueWorker<TPayload extends Json>(
       maxDelay: 300,
     };
   }
+  
+  // Validate the final retry config
+  validateRetryConfig(retryConfig);
 
   const abortController = new AbortController();
   const abortSignal = abortController.signal;

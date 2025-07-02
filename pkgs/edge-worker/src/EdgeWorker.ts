@@ -11,7 +11,6 @@ import { createAdapter } from './platform/createAdapter.js';
 import type { PlatformAdapter } from './platform/types.js';
 import type { MessageHandlerFn } from './queue/types.js';
 import type { AnyFlow } from '@pgflow/dsl';
-import { validateRetryConfig } from './queue/validateRetryConfig.js';
 
 /**
  * Configuration options for the EdgeWorker.
@@ -147,11 +146,6 @@ export class EdgeWorker {
 
     // First, create the adapter
     this.platform = await createAdapter();
-
-    // If retry config is provided, validate it
-    if (config.retry) {
-      validateRetryConfig(config.retry);
-    }
 
     // Apply default values to the config
     const workerConfig: QueueWorkerConfig = {

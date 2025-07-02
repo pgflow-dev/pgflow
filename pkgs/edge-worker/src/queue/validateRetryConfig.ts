@@ -18,6 +18,10 @@ export function validateRetryConfig(config: RetryConfig): void {
   if (config.limit < 0) {
     throw new Error('limit must be greater than or equal to 0');
   }
+  // Prevent overflow in Math.pow(2, limit-1)
+  if (config.limit > 50) {
+    throw new Error('limit must not exceed 50');
+  }
 
   // Validate baseDelay
   if (!Number.isInteger(config.baseDelay)) {
@@ -25,6 +29,10 @@ export function validateRetryConfig(config: RetryConfig): void {
   }
   if (config.baseDelay <= 0) {
     throw new Error('baseDelay must be greater than 0');
+  }
+  // Prevent values that would overflow PostgreSQL interval type
+  if (config.baseDelay > 2147483647) {
+    throw new Error('baseDelay must not exceed 2147483647 seconds');
   }
 
   // Strategy-specific validation
@@ -44,6 +52,10 @@ export function validateRetryConfig(config: RetryConfig): void {
       }
       if (config.maxDelay < config.baseDelay) {
         throw new Error('maxDelay must be greater than or equal to baseDelay');
+      }
+      // Prevent values that would overflow PostgreSQL interval type
+      if (config.maxDelay > 2147483647) {
+        throw new Error('maxDelay must not exceed 2147483647 seconds');
       }
     }
   }
