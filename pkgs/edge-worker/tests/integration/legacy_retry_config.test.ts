@@ -51,7 +51,7 @@ Deno.test(
     const warnMessages: string[] = [];
     const customCreateLogger = (module: string) => ({
       ...createFakeLogger(module),
-      warn: (msg: string, data?: any) => {
+      warn: (msg: string, _data?: unknown) => {
         log(`WARN: ${msg}`);
         warnMessages.push(msg);
       },
