@@ -25,8 +25,8 @@ export function createLoggingFactory() {
           levels[logLevel as keyof typeof levels] ?? levels.info;
         if (levelValue >= levels.debug) {
           // Use console.log for debug messages since console.debug isn't available in Supabase
-          console.log(
-            `[DEBUG] worker_id=${sharedWorkerId} module=${module} ${message}`,
+          console.debug(
+            `worker_id=${sharedWorkerId} module=${module} ${message}`,
             ...args
           );
         }
@@ -36,8 +36,8 @@ export function createLoggingFactory() {
           levels[logLevel as keyof typeof levels] ?? levels.info;
         if (levelValue >= levels.info) {
           // Use console.log for info messages since console.info isn't available in Supabase
-          console.log(
-            `[INFO] worker_id=${sharedWorkerId} module=${module} ${message}`,
+          console.info(
+            `worker_id=${sharedWorkerId} module=${module} ${message}`,
             ...args
           );
         }

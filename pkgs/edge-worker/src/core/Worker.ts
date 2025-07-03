@@ -81,17 +81,17 @@ export class Worker {
         throw error;
       }
 
-      this.logger.info('-> Waiting for pending tasks to complete...');
+      this.logger.debug('-> Waiting for pending tasks to complete...');
       await this.batchProcessor.awaitCompletion();
-      this.logger.info('-> Pending tasks completed!');
+      this.logger.debug('-> Pending tasks completed!');
 
       this.lifecycle.acknowledgeStop();
 
-      this.logger.info('-> Closing SQL connection...');
+      this.logger.debug('-> Closing SQL connection...');
       await this.sql.end();
-      this.logger.info('-> SQL connection closed!');
+      this.logger.debug('-> SQL connection closed!');
     } catch (error) {
-      this.logger.info(`Error during worker stop: ${error}`);
+      this.logger.debug(`Error during worker stop: ${error}`);
       throw error;
     }
   }
