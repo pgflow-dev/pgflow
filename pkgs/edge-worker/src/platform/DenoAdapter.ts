@@ -20,7 +20,7 @@ export class DenoAdapter implements PlatformAdapter {
 
   constructor() {
     // Set initial log level
-    const logLevel = this.getEnvVarOrThrow('EDGE_WORKER_LOG_LEVEL') || 'info';
+    const logLevel = this.getEnvVar('EDGE_WORKER_LOG_LEVEL') || 'info';
     this.loggingFactory.setLogLevel(logLevel);
 
     // startWorker logger with a default module name
@@ -67,7 +67,7 @@ export class DenoAdapter implements PlatformAdapter {
       const message =
         `${name} is not set!\n` +
         'See docs to learn how to prepare the environment:\n' +
-        'https://pgflow.pages.dev/edge-worker/prepare-environment';
+        'https://www.pgflow.dev/how-to/prepare-db-string/';
       throw new Error(message);
     }
 
