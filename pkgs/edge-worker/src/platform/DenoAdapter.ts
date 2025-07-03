@@ -20,7 +20,7 @@ export class DenoAdapter implements PlatformAdapter {
 
   constructor() {
     // Set initial log level
-    const logLevel = this.getEnvVar('EDGE_WORKER_LOG_LEVEL') || 'info';
+    const logLevel = this.getEnvVar('EDGE_WORKER_LOG_LEVEL', 'info');
     this.loggingFactory.setLogLevel(logLevel);
 
     // startWorker logger with a default module name
@@ -75,16 +75,12 @@ export class DenoAdapter implements PlatformAdapter {
   }
 
   /**
-   * Get the environment variable value or undefined if it doesn't exist
+   * Get the environment variable value if not undefined or "" otherwise the default value if provided
    */
+  private getEnvVar(name: string): string | undefined;
+  private getEnvVar(name: string, defaultValue: string): string;
   private getEnvVar(name: string, defaultValue?: string): string | undefined {
-    const envVar = Deno.env.get(name);
-
-    if (envVar === undefined && defaultValue !== undefined) {
-      return defaultValue;
-    }
-
-    return envVar;
+    return Deno.env.get(name) || defaultValue;
   }
 
   private async spawnNewEdgeFunction(): Promise<void> {
