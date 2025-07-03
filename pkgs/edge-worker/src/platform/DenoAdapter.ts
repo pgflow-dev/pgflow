@@ -25,7 +25,7 @@ export class DenoAdapter implements PlatformAdapter {
 
     // startWorker logger with a default module name
     this.logger = this.loggingFactory.createLogger('DenoAdapter');
-    this.logger.info('DenoAdapter logger instance created and working.'); // Use the created logger
+    this.logger.debug('DenoAdapter logger instance created and working.'); // Use the created logger
   }
 
   /**
@@ -123,7 +123,7 @@ export class DenoAdapter implements PlatformAdapter {
 
   private setupShutdownHandler(): void {
     globalThis.onbeforeunload = async () => {
-      this.logger.info('Shutting down...');
+      this.logger.debug('Shutting down...');
 
       if (this.worker) {
         await this.spawnNewEdgeFunction();
@@ -150,7 +150,7 @@ export class DenoAdapter implements PlatformAdapter {
 
   private setupStartupHandler(createWorkerFn: CreateWorkerFn): void {
     Deno.serve({}, (req: Request) => {
-      this.logger.info(`HTTP Request: ${this.edgeFunctionName}`);
+      this.logger.debug(`HTTP Request: ${this.edgeFunctionName}`);
 
       if (!this.worker) {
         this.edgeFunctionName = this.extractFunctionName(req);

@@ -27,7 +27,7 @@ export class WorkerLifecycle<IMessage extends Json> implements ILifecycle {
   async acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void> {
     this.workerState.transitionTo(States.Starting);
 
-    this.logger.info(`Ensuring queue '${this.queue.queueName}' exists...`);
+    this.logger.debug(`Ensuring queue '${this.queue.queueName}' exists...`);
     await this.queue.safeCreate();
 
     this.workerRow = await this.queries.onWorkerStarted({
