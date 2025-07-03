@@ -4,7 +4,7 @@ let attemptCount = 0;
 let lastAttemptTime: number | null = null;
 
 EdgeWorker.start(
-  async (payload: any) => {
+  (payload: unknown) => {
     attemptCount++;
     const now = Date.now();
     const timestamp = new Date(now).toISOString();
