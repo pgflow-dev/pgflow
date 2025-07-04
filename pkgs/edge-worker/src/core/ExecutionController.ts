@@ -33,9 +33,9 @@ export class ExecutionController<TMessage extends IMessage> {
       try {
         this.logger.debug(`Executing task ${executor.msgId}...`);
         await executor.execute();
-        this.logger.debug(`Execution successful for ${executor.msgId}`);
+        this.logger.info(`Execution successful for ${executor.msgId}`);
       } catch (error) {
-        this.logger.error(`Execution failed for ${executor.msgId}:`, error);
+        this.logger.error(`Execution failed for ${executor.msgId}`, error);
         throw error;
       }
     });

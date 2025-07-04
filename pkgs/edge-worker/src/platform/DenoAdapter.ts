@@ -20,12 +20,12 @@ export class DenoAdapter implements PlatformAdapter {
 
   constructor() {
     // Set initial log level
-    const logLevel = this.getEnvVarOrThrow('EDGE_WORKER_LOG_LEVEL') || 'info';
+    const logLevel = this.getEnvVar('EDGE_WORKER_LOG_LEVEL', 'info');
     this.loggingFactory.setLogLevel(logLevel);
 
     // startWorker logger with a default module name
     this.logger = this.loggingFactory.createLogger('DenoAdapter');
-    this.logger.info('DenoAdapter logger instance created and working.'); // Use the created logger
+    this.logger.debug('DenoAdapter logger instance created and working.'); // Use the created logger
   }
 
   /**
@@ -67,7 +67,7 @@ export class DenoAdapter implements PlatformAdapter {
       const message =
         `${name} is not set!\n` +
         'See docs to learn how to prepare the environment:\n' +
-        'https://pgflow.pages.dev/edge-worker/prepare-environment';
+        'https://www.pgflow.dev/how-to/prepare-db-string/';
       throw new Error(message);
     }
 
@@ -75,16 +75,12 @@ export class DenoAdapter implements PlatformAdapter {
   }
 
   /**
-   * Get the environment variable value or undefined if it doesn't exist
+   * Get the environment variable value if not undefined or "" otherwise the default value if provided
    */
+  private getEnvVar(name: string): string | undefined;
+  private getEnvVar(name: string, defaultValue: string): string;
   private getEnvVar(name: string, defaultValue?: string): string | undefined {
-    const envVar = Deno.env.get(name);
-
-    if (envVar === undefined && defaultValue !== undefined) {
-      return defaultValue;
-    }
-
-    return envVar;
+    return Deno.env.get(name) || defaultValue;
   }
 
   private async spawnNewEdgeFunction(): Promise<void> {
@@ -123,7 +119,7 @@ export class DenoAdapter implements PlatformAdapter {
 
   private setupShutdownHandler(): void {
     globalThis.onbeforeunload = async () => {
-      this.logger.info('Shutting down...');
+      this.logger.debug('Shutting down...');
 
       if (this.worker) {
         await this.spawnNewEdgeFunction();
@@ -150,7 +146,7 @@ export class DenoAdapter implements PlatformAdapter {
 
   private setupStartupHandler(createWorkerFn: CreateWorkerFn): void {
     Deno.serve({}, (req: Request) => {
-      this.logger.info(`HTTP Request: ${this.edgeFunctionName}`);
+      this.logger.debug(`HTTP Request: ${this.edgeFunctionName}`);
 
       if (!this.worker) {
         this.edgeFunctionName = this.extractFunctionName(req);
