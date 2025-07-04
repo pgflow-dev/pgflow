@@ -47,10 +47,10 @@ export class MessageExecutor<TPayload extends Json> {
       // Check if already aborted before starting
       this.signal.throwIfAborted();
 
-      this.logger.debug(`Executing task ${this.msgId}...`);
+      this.logger.info(`Executing task ${this.msgId}...`);
       await this.messageHandler(this.record.message!);
 
-      this.logger.debug(
+      this.logger.info(
         `Task ${this.msgId} completed successfully, archiving...`
       );
       await this.queue.archive(this.msgId);
@@ -70,12 +70,12 @@ export class MessageExecutor<TPayload extends Json> {
    */
   private async handleExecutionError(error: unknown) {
     if (error instanceof Error && error.name === 'AbortError') {
-      this.logger.debug(`Aborted execution for ${this.msgId}`);
+      this.logger.info(`Aborted execution for ${this.msgId}`);
       // Do not throw - the worker was aborted and stopping,
       // the message will reappear after the visibility timeout
       // and be picked up by another worker
     } else {
-      this.logger.debug(`Task ${this.msgId} failed with error: ${error}`);
+      this.logger.error(`Task ${this.msgId} failed with error: ${error}`);
       await this.retryOrArchive();
     }
   }
@@ -92,11 +92,13 @@ export class MessageExecutor<TPayload extends Json> {
       const retryDelay = this.calculateRetryDelay(retryAttempt, this.retryConfig);
       
       // adjust visibility timeout for message to appear after retryDelay
-      this.logger.debug(`Retrying ${this.msgId} in ${retryDelay} seconds (retry attempt ${retryAttempt})`);
+      this.logger.info(
+        `Retrying ${this.msgId} in ${retryDelay} seconds (retry attempt ${retryAttempt})`
+      );
       await this.queue.setVt(this.msgId, retryDelay);
     } else {
       // archive message forever and stop processing it
-      this.logger.debug(`Archiving ${this.msgId} forever`);
+      this.logger.info(`Archiving ${this.msgId} forever`);
       await this.queue.archive(this.msgId);
     }
   }
