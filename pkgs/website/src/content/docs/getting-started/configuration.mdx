@@ -11,6 +11,10 @@ pgflow's configuration is divided into two distinct parts, each serving a differ
 
 pgflow separates configuration into **task execution** settings (how individual steps are executed and retried) and **worker** settings (how the worker processes the entire flow). Task settings are stored in your database and control retry behavior, while worker settings control concurrency, connections, and batching.
 
+<Aside type="note" title="Documentation Structure">
+This page covers both pgflow configuration and Edge Worker configuration in one place. Future versions may separate these concerns for clarity.
+</Aside>
+
 <CardGrid>
   <LinkCard 
     title="maxAttempts" 
