@@ -5,9 +5,26 @@ sidebar:
   order: 50
 ---
 
-import { Aside, Badge } from "@astrojs/starlight/components";
+import { Aside, Badge, CardGrid, LinkCard } from "@astrojs/starlight/components";
 
-You can configure pgflow at both the flow and step levels to control retry behavior, timeouts, and execution settings.
+pgflow's configuration is divided into two distinct parts, each serving a different purpose in the workflow lifecycle.
+
+## Configuration Overview
+
+pgflow separates configuration into **task execution** settings (how individual steps are executed and retried) and **worker** settings (how the worker processes the entire flow). Task settings are stored in your database and control retry behavior, while worker settings control concurrency, connections, and batching.
+
+<CardGrid>
+  <LinkCard 
+    title="Flow & Step Configuration" 
+    description="Database-persisted settings that define retry behavior, timeouts, and error handling. Can be updated on the fly without redeployment using SQL queries."
+    href="#flow--step-configuration"
+  />
+  <LinkCard 
+    title="Worker Configuration" 
+    description="Runtime settings that control how EdgeWorker executes tasks. These affect concurrency, polling behavior, and resource usage. Requires redeployment to change."
+    href="#worker-configuration"
+  />
+</CardGrid>
 
 <Aside title="Zero Configuration" type="tip">
 pgflow comes with sensible defaults for all configuration options.
@@ -21,7 +38,15 @@ new Flow({ slug: 'my_flow' })
 ```
 </Aside>
 
-## Default configuration
+## Flow & Step Configuration
+
+These settings are defined in your TypeScript flow code and compiled into SQL migrations. They control how individual tasks behave when they fail or timeout.
+
+<Aside type="tip">
+After deployment, you can update these settings without recompiling your flow. See [Update Flow Options](/how-to/update-flow-options/) for details.
+</Aside>
+
+### Default configuration
 
 ```typescript
 // Flow-level configuration
@@ -45,7 +70,7 @@ new Flow({
 }, handler)
 ```
 
-## Flow Configuration
+### Flow-level Options
 
 ### `maxAttempts`
 **Type:** `number`  
@@ -102,7 +127,7 @@ new Flow({
 })
 ```
 
-## Step Configuration
+### Step-level Options
 
 Individual steps can override flow-level defaults by providing their own configuration:
 
@@ -130,7 +155,7 @@ new Flow({
   })
 ```
 
-## Retry Behavior
+### Retry Behavior
 
 pgflow uses **exponential backoff** for retries. The delay between attempts is calculated as:
 
@@ -164,9 +189,15 @@ A task is marked as permanently failed when:
 - The task status changes from `queued` to `failed`
 - The error message from the last attempt is stored
 
-## Flow Worker Configuration
+## Worker Configuration
 
-When using pgflow with EdgeWorker, you can configure the worker's behavior:
+These settings control how the EdgeWorker processes tasks from your flows. They're passed when starting the worker and affect performance and resource utilization.
+
+<Aside type="note">
+Worker configuration requires redeploying your Edge Function to change, while flow/step configuration can be updated on the fly with SQL queries. See [Update Flow Options](/how-to/update-flow-options/) for details on updating configuration without redeployment.
+</Aside>
+
+### Using with EdgeWorker
 
 ```typescript
 import { EdgeWorker } from '@pgflow/edge-worker';
@@ -220,7 +251,9 @@ Keep `maxPollSeconds` at 2 seconds or lower for flow workers to ensure proper he
 
 How frequently (in milliseconds) to check the database for new tasks during the poll cycle.
 
-## Configuration Examples
+## Complete Examples
+
+These examples show how flow/step configuration and worker configuration work together in real scenarios.
 
 ### High-Reliability API Integration
 
