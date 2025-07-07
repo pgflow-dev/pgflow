@@ -1,5 +1,18 @@
 # @pgflow/edge-worker
 
+## 0.5.2
+
+### Patch Changes
+
+- d9fbe85: Refine task logging levels for better visibility
+
+  - Move detailed execution logs from ExecutionController to MessageExecutor
+  - Demote controller-level logs from info to debug
+  - Promote task execution, retry, and error logs from debug to appropriate levels (info/error)
+  - Improve visibility of task lifecycle events and failures
+  - @pgflow/core@0.5.2
+  - @pgflow/dsl@0.5.2
+
 ## 0.5.1
 
 ### Patch Changes
