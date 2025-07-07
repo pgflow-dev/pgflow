@@ -16,6 +16,9 @@ select pgflow.start_flow('ready_delay_flow', '{"test": "ready"}'::jsonb);
 create temp table test_run as
   select run_id from pgflow.runs where flow_slug = 'ready_delay_flow' limit 1;
 
+-- Start the root task (read from queue and mark as started)
+select pgflow_tests.read_and_start('ready_delay_flow');
+
 -- Complete the root step to make dependent steps ready
 select pgflow.complete_task(
   (select run_id from test_run),
