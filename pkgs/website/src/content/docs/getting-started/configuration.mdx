@@ -46,61 +46,46 @@ These settings are defined in your TypeScript flow code and compiled into SQL mi
 After deployment, you can update these settings without recompiling your flow. See [Update Flow Options](/how-to/update-flow-options/) for details.
 </Aside>
 
-### Default configuration
+### Configuration Options
 
-```typescript
-// Flow-level configuration
-new Flow({
-  slug: 'my_flow',
-  
-  // Retry configuration
-  maxAttempts: 3,    // max retry attempts before marking as failed
-  baseDelay: 5,      // initial retry delay in seconds
-  
-  // Execution configuration  
-  timeout: 60,       // visibility timeout in seconds
-})
+#### Shared Options (Flow & Step)
 
-// Step-level configuration (overrides flow defaults)
-.step({
-  slug: 'my_step',
-  maxAttempts: 5,    // override flow's maxAttempts
-  baseDelay: 2,      // override flow's baseDelay
-  timeout: 30,       // override flow's timeout
-}, handler)
-```
+These options can be set at both flow and step levels. Step-level settings override flow defaults.
 
-### Flow-level Options
-
-### `maxAttempts`
+##### `maxAttempts`
 **Type:** `number`  
-**Default:** `3`
+**Default:** `3`  
+**Levels:** Flow & Step
 
 The maximum number of times a task will be attempted before being marked as permanently failed.
 
 ```ts
-new Flow({
-  slug: 'my_flow',
-  maxAttempts: 5  // Try up to 5 times before giving up
-})
+// Flow level
+new Flow({ slug: 'my_flow', maxAttempts: 5 })
+
+// Step level (overrides flow default)
+.step({ slug: 'my_step', maxAttempts: 7 }, handler)
 ```
 
-### `baseDelay`
+##### `baseDelay`
 **Type:** `number`  
-**Default:** `5`
+**Default:** `5`  
+**Levels:** Flow & Step
 
 The initial delay (in seconds) before the first retry. pgflow uses exponential backoff, so subsequent retries will have increasingly longer delays.
 
 ```ts
-new Flow({
-  slug: 'my_flow',
-  baseDelay: 2  // Start with 2 second delay
-})
+// Flow level
+new Flow({ slug: 'my_flow', baseDelay: 2 })
+
+// Step level (overrides flow default)
+.step({ slug: 'my_step', baseDelay: 10 }, handler)
 ```
 
-### `timeout`
+##### `timeout`
 **Type:** `number`  
-**Default:** `60`
+**Default:** `60`  
+**Levels:** Flow & Step
 
 The visibility timeout (in seconds) - how long a task remains invisible to other workers while being processed.
 
@@ -121,38 +106,62 @@ Currently, pgflow uses timeout only for visibility. In the future, the Edge Work
 </Aside>
 
 ```ts
+// Flow level
+new Flow({ slug: 'my_flow', timeout: 120 })
+
+// Step level (overrides flow default)
+.step({ slug: 'my_step', timeout: 300 }, handler)
+```
+
+#### Step-Only Options
+
+These options can only be set at the step level.
+
+<Aside type="note">
+Step-only options are coming soon. The first will be `startDelay` for delaying initial task execution.
+</Aside>
+
+### Setting Configuration
+
+#### Flow-level defaults
+
+Set default configuration for all steps in your flow:
+
+```typescript
 new Flow({
   slug: 'my_flow',
-  timeout: 120  // Tasks invisible for 2 minutes while processing
+  maxAttempts: 3,    // Default for all steps
+  baseDelay: 5,      // Default for all steps
+  timeout: 60        // Default for all steps
 })
 ```
 
-### Step-level Options
+#### Step-level overrides
 
-Individual steps can override flow-level defaults by providing their own configuration:
+Override flow defaults for specific steps that need different behavior:
 
 ```typescript
 new Flow({
   slug: 'analyze_data',
-  maxAttempts: 3,    // Flow default
-  baseDelay: 5,      // Flow default  
-  timeout: 60        // Flow default
+  maxAttempts: 3,    // Flow defaults
+  baseDelay: 5,
+  timeout: 60
 })
   .step({
     slug: 'fetch_data',
-    // Uses flow defaults
-  }, async (input) => {
-    // Quick operation, flow defaults are fine
-    return await fetchData(input.run.source);
-  })
+    // Uses all flow defaults
+  }, fetchHandler)
   .step({
     slug: 'process_data',
-    maxAttempts: 5,    // Override: more retries for flaky processing
+    maxAttempts: 5,    // Override: more retries
     timeout: 300       // Override: needs more time
-  }, async (input) => {
-    // Long-running operation that may fail
-    return await processLargeDataset(input.fetch_data);
-  })
+    // baseDelay uses flow default (5)
+  }, processHandler)
+  .step({
+    slug: 'call_api',
+    baseDelay: 10,     // Override: longer initial delay
+    // maxAttempts and timeout use flow defaults
+  }, apiHandler)
 ```
 
 ### Retry Behavior
@@ -197,7 +206,9 @@ These settings control how the EdgeWorker processes tasks from your flows. They'
 Worker configuration requires redeploying your Edge Function to change, while flow/step configuration can be updated on the fly with SQL queries. See [Update Flow Options](/how-to/update-flow-options/) for details on updating configuration without redeployment.
 </Aside>
 
-### Using with EdgeWorker
+### Default Configuration
+
+When using pgflow with EdgeWorker, configure the worker's behavior:
 
 ```typescript
 import { EdgeWorker } from '@pgflow/edge-worker';
@@ -215,27 +226,25 @@ EdgeWorker.start(MyFlow, {
 });
 ```
 
-### Worker Options
-
-#### `maxConcurrent`
+### `maxConcurrent`
 **Type:** `number`  
 **Default:** `10`
 
 Maximum number of tasks that can be processed simultaneously. Increase for I/O-heavy tasks, decrease for CPU-heavy tasks.
 
-#### `maxPgConnections`
+### `maxPgConnections`
 **Type:** `number`  
 **Default:** `4`
 
 Size of the PostgreSQL connection pool. Should generally be less than `maxConcurrent` since not all tasks need a connection at all times.
 
-#### `batchSize`
+### `batchSize`
 **Type:** `number`  
 **Default:** `10`
 
 Maximum number of tasks to fetch in a single poll operation. Larger batches are more efficient but may lead to uneven work distribution.
 
-#### `maxPollSeconds`
+### `maxPollSeconds`
 **Type:** `number`  
 **Default:** `2`
 
@@ -245,7 +254,7 @@ How long to wait for tasks during each poll cycle. Shorter durations ensure more
 Keep `maxPollSeconds` at 2 seconds or lower for flow workers to ensure proper heartbeat intervals.
 </Aside>
 
-#### `pollIntervalMs`
+### `pollIntervalMs`
 **Type:** `number`  
 **Default:** `100`
 
