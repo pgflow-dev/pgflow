@@ -4,7 +4,8 @@ create or replace function pgflow.add_step(
   deps_slugs text [],
   max_attempts int default null,
   base_delay int default null,
-  timeout int default null
+  timeout int default null,
+  start_delay int default null
 )
 returns pgflow.steps
 language sql
@@ -18,8 +19,8 @@ WITH
     WHERE flow_slug = add_step.flow_slug
   ),
   create_step AS (
-    INSERT INTO pgflow.steps (flow_slug, step_slug, step_index, deps_count, opt_max_attempts, opt_base_delay, opt_timeout)
-    SELECT add_step.flow_slug, add_step.step_slug, idx, COALESCE(array_length(deps_slugs, 1), 0), max_attempts, base_delay, timeout
+    INSERT INTO pgflow.steps (flow_slug, step_slug, step_index, deps_count, opt_max_attempts, opt_base_delay, opt_timeout, opt_start_delay)
+    SELECT add_step.flow_slug, add_step.step_slug, idx, COALESCE(array_length(deps_slugs, 1), 0), max_attempts, base_delay, timeout, start_delay
     FROM next_index
     ON CONFLICT (flow_slug, step_slug)
     DO UPDATE SET step_slug = pgflow.steps.step_slug
@@ -42,7 +43,8 @@ create or replace function pgflow.add_step(
   step_slug text,
   max_attempts int default null,
   base_delay int default null,
-  timeout int default null
+  timeout int default null,
+  start_delay int default null
 )
 returns pgflow.steps
 language sql
@@ -50,5 +52,5 @@ set search_path to ''
 volatile
 as $$
     -- Call the original function with an empty array
-    SELECT * FROM pgflow.add_step(flow_slug, step_slug, ARRAY[]::text[], max_attempts, base_delay, timeout);
+    SELECT * FROM pgflow.add_step(flow_slug, step_slug, ARRAY[]::text[], max_attempts, base_delay, timeout, start_delay);
 $$;

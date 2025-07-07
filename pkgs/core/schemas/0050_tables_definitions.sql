@@ -23,6 +23,7 @@ create table pgflow.steps (
   opt_max_attempts int,
   opt_base_delay int,
   opt_timeout int,
+  opt_start_delay int,
   created_at timestamptz not null default now(),
   primary key (flow_slug, step_slug),
   unique (flow_slug, step_index),  -- Ensure step_index is unique within a flow
@@ -30,7 +31,8 @@ create table pgflow.steps (
   check (step_type in ('single')),
   constraint opt_max_attempts_is_nonnegative check (opt_max_attempts is null or opt_max_attempts >= 0),
   constraint opt_base_delay_is_nonnegative check (opt_base_delay is null or opt_base_delay >= 0),
-  constraint opt_timeout_is_positive check (opt_timeout is null or opt_timeout > 0)
+  constraint opt_timeout_is_positive check (opt_timeout is null or opt_timeout > 0),
+  constraint opt_start_delay_is_nonnegative check (opt_start_delay is null or opt_start_delay >= 0)
 );
 
 -- Dependencies table - stores relationships between steps

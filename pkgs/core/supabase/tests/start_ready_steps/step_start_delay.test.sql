@@ -18,8 +18,9 @@ create temp table test_run as
 
 -- Complete the root step to make dependent steps ready
 select pgflow.complete_task(
-  'ready_delay_flow',
-  (select message_id from pgflow.step_tasks where step_slug = 'root_step' and run_id = (select run_id from test_run)),
+  (select run_id from test_run),
+  'root_step',
+  0,
   '{"root": "completed"}'::jsonb
 );
 
