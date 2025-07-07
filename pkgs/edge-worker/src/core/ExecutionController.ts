@@ -27,13 +27,13 @@ export class ExecutionController<TMessage extends IMessage> {
   async start(record: TMessage) {
     const executor = this.createExecutor(record, this.signal);
 
-    this.logger.info(`Scheduling execution of task ${executor.msgId}`);
+    this.logger.debug(`Scheduling execution of task ${executor.msgId}`);
 
     return await this.promiseQueue.add(async () => {
       try {
         this.logger.debug(`Executing task ${executor.msgId}...`);
         await executor.execute();
-        this.logger.info(`Execution successful for ${executor.msgId}`);
+        this.logger.debug(`Execution successful for ${executor.msgId}`);
       } catch (error) {
         this.logger.error(`Execution failed for ${executor.msgId}`, error);
         throw error;
