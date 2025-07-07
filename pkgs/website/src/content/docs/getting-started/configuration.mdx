@@ -9,19 +9,27 @@ import { Aside, Badge, CardGrid, LinkCard } from "@astrojs/starlight/components"
 
 pgflow's configuration is divided into two distinct parts, each serving a different purpose in the workflow lifecycle.
 
-## Configuration Overview
-
 pgflow separates configuration into **task execution** settings (how individual steps are executed and retried) and **worker** settings (how the worker processes the entire flow). Task settings are stored in your database and control retry behavior, while worker settings control concurrency, connections, and batching.
 
 <CardGrid>
   <LinkCard 
-    title="Flow & Step Configuration" 
-    description="Database-persisted settings that define retry behavior, timeouts, and error handling. Can be updated on the fly without redeployment using SQL queries."
-    href="#flow--step-configuration"
+    title="maxAttempts" 
+    description="Maximum retry attempts before marking a task as failed. Can be set at flow or step level."
+    href="#maxattempts"
   />
   <LinkCard 
-    title="Worker Configuration" 
-    description="Runtime settings that control how EdgeWorker executes tasks. These affect concurrency, polling behavior, and resource usage. Requires redeployment to change."
+    title="baseDelay" 
+    description="Initial retry delay in seconds for exponential backoff. Can be set at flow or step level."
+    href="#basedelay"
+  />
+  <LinkCard 
+    title="timeout" 
+    description="Visibility timeout in seconds. How long a task stays invisible while being processed."
+    href="#timeout"
+  />
+  <LinkCard 
+    title="Worker Options" 
+    description="Runtime settings like concurrency, connections, and polling behavior for the EdgeWorker."
     href="#worker-configuration"
   />
 </CardGrid>
@@ -46,13 +54,22 @@ These settings are defined in your TypeScript flow code and compiled into SQL mi
 After deployment, you can update these settings without recompiling your flow. See [Update Flow Options](/how-to/update-flow-options/) for details.
 </Aside>
 
-### Configuration Options
+### Default Configuration
 
-#### Shared Options (Flow & Step)
+```typescript
+new Flow({
+  slug: 'my_flow',
+  maxAttempts: 3,    // max retry attempts before marking as failed
+  baseDelay: 5,      // initial retry delay in seconds
+  timeout: 60        // visibility timeout in seconds
+})
+```
 
-These options can be set at both flow and step levels. Step-level settings override flow defaults.
+## Shared Options (Flow & Step)
 
-##### `maxAttempts`
+These options can be set at both flow and step levels. Step-level options are `null` by default, inheriting from flow-level settings. When explicitly set at the step level, they override the flow defaults.
+
+### `maxAttempts`
 **Type:** `number`  
 **Default:** `3`  
 **Levels:** Flow & Step
@@ -67,7 +84,7 @@ new Flow({ slug: 'my_flow', maxAttempts: 5 })
 .step({ slug: 'my_step', maxAttempts: 7 }, handler)
 ```
 
-##### `baseDelay`
+### `baseDelay`
 **Type:** `number`  
 **Default:** `5`  
 **Levels:** Flow & Step
@@ -82,7 +99,7 @@ new Flow({ slug: 'my_flow', baseDelay: 2 })
 .step({ slug: 'my_step', baseDelay: 10 }, handler)
 ```
 
-##### `timeout`
+### `timeout`
 **Type:** `number`  
 **Default:** `60`  
 **Levels:** Flow & Step
@@ -113,7 +130,7 @@ new Flow({ slug: 'my_flow', timeout: 120 })
 .step({ slug: 'my_step', timeout: 300 }, handler)
 ```
 
-#### Step-Only Options
+## Step-Only Options
 
 These options can only be set at the step level.
 
@@ -121,11 +138,11 @@ These options can only be set at the step level.
 Step-only options are coming soon. The first will be `startDelay` for delaying initial task execution.
 </Aside>
 
-### Setting Configuration
+## Configuration Examples
 
-#### Flow-level defaults
+### Flow with Defaults Only
 
-Set default configuration for all steps in your flow:
+When all steps can use the same configuration:
 
 ```typescript
 new Flow({
@@ -134,9 +151,11 @@ new Flow({
   baseDelay: 5,      // Default for all steps
   timeout: 60        // Default for all steps
 })
+  .step({ slug: 'step1' }, handler1)  // Uses flow defaults
+  .step({ slug: 'step2' }, handler2)  // Uses flow defaults
 ```
 
-#### Step-level overrides
+### Mixed Configuration
 
 Override flow defaults for specific steps that need different behavior:
 
@@ -164,7 +183,7 @@ new Flow({
   }, apiHandler)
 ```
 
-### Retry Behavior
+## Retry Behavior
 
 pgflow uses **exponential backoff** for retries. The delay between attempts is calculated as:
 
@@ -173,7 +192,7 @@ delay = baseDelay * 2^attemptCount
 ```
 
 <Aside type="note">
-Unlike the Edge Worker's queue-only mode which supports a `maxDelay` cap, pgflow's retry delays are not capped yet. Delays will continue to double with each attempt.
+Unlike the Edge Worker's queue-only mode which supports a `maxDelay` cap, pgflow's retry delays are not capped yet. Delays will continue to double with each attempt, at most `maxAttempts`-times, after which the step and flow are failed permanently
 </Aside>
 
 ### Retry Delay Examples
@@ -206,7 +225,7 @@ These settings control how the EdgeWorker processes tasks from your flows. They'
 Worker configuration requires redeploying your Edge Function to change, while flow/step configuration can be updated on the fly with SQL queries. See [Update Flow Options](/how-to/update-flow-options/) for details on updating configuration without redeployment.
 </Aside>
 
-### Default Configuration
+## Default Worker Configuration
 
 When using pgflow with EdgeWorker, configure the worker's behavior:
 
