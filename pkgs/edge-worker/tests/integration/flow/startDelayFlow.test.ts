@@ -3,7 +3,6 @@ import { withPgNoTransaction } from '../../db.ts';
 import { Flow } from '@pgflow/dsl';
 import { waitFor } from '../../e2e/_helpers.ts';
 import { delay } from '@std/async';
-import type { Json } from '@pgflow/core';
 import { startFlow, startWorker } from '../_helpers.ts';
 
 // Test flow with root step delay
@@ -15,7 +14,7 @@ const RootStepDelayFlow = new Flow<{ message: string }>({
   .step({ 
     slug: 'delayedRoot',
     startDelay: 2  // 2 second delay
-  }, async (input) => {
+  }, (input) => {
     console.log('Executing delayedRoot step');
     return `Delayed: ${input.run.message}`;
   });
@@ -26,7 +25,7 @@ const NormalStepDelayFlow = new Flow<{ value: number }>({
 })
   .step({ 
     slug: 'immediate' 
-  }, async (input) => {
+  }, (input) => {
     console.log('Executing immediate step');
     return input.run.value * 2;
   })
@@ -34,7 +33,7 @@ const NormalStepDelayFlow = new Flow<{ value: number }>({
     slug: 'delayed',
     dependsOn: ['immediate'],
     startDelay: 3  // 3 second delay after immediate completes
-  }, async (input) => {
+  }, (input) => {
     console.log('Executing delayed step');
     return input.immediate + 10;
   });
@@ -46,7 +45,7 @@ const CascadedDelayFlow = new Flow<{ start: string }>({
   .step({ 
     slug: 'first',
     startDelay: 1  // 1 second delay
-  }, async (input) => {
+  }, (input) => {
     console.log('Executing first step');
     return `${input.run.start}->first`;
   })
@@ -54,7 +53,7 @@ const CascadedDelayFlow = new Flow<{ start: string }>({
     slug: 'second',
     dependsOn: ['first'],
     startDelay: 2  // 2 second delay after first completes
-  }, async (input) => {
+  }, (input) => {
     console.log('Executing second step');
     return `${input.first}->second`;
   })
@@ -62,7 +61,7 @@ const CascadedDelayFlow = new Flow<{ start: string }>({
     slug: 'third',
     dependsOn: ['second'],
     startDelay: 1  // 1 second delay after second completes
-  }, async (input) => {
+  }, (input) => {
     console.log('Executing third step');
     return `${input.second}->third`;
   });
@@ -321,7 +320,7 @@ Deno.test(
       .step({ 
         slug: 'retryStep',
         startDelay: 3
-      }, async (input) => {
+      }, (_input) => {
         attemptCount++;
         console.log(`Attempt ${attemptCount}`);
         if (attemptCount === 1) {
