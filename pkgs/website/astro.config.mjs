@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import starlightBlog from 'starlight-blog';
 import starlightLinksValidator from 'starlight-links-validator';
 import starlightSidebarTopics from 'starlight-sidebar-topics';
 import robotsTxt from 'astro-robots-txt';
@@ -93,8 +94,45 @@ export default defineConfig({
             src: PLAUSIBLE_PROXY.url + PLAUSIBLE_PROXY.scriptPath,
           },
         },
+        {
+          tag: 'meta',
+          attrs: {
+            property: 'og:image',
+            content: `https://${DOMAIN_NAME}/og-image.jpg`,
+          },
+        },
+        {
+          tag: 'meta',
+          attrs: {
+            property: 'twitter:image',
+            content: `https://${DOMAIN_NAME}/og-image.jpg`,
+          },
+        },
+        {
+          tag: 'meta',
+          attrs: {
+            property: 'og:type',
+            content: 'website',
+          },
+        },
       ],
       plugins: [
+        starlightBlog({
+          authors: {
+            jumski: {
+              name: 'Wojciech Majewski (@jumski)',
+              title: 'Creator and Maintainer',
+              picture: '/jumski-avatar.png',
+              url: 'https://github.com/jumski',
+            },
+          },
+          navigation: 'none', // Remove blog link from navigation
+          postCount: 10,
+          recentPostCount: 5,
+          metrics: {
+            readingTime: true,
+          },
+        }),
         starlightLlmsTxt({
           exclude: [
             'index',
@@ -103,6 +141,7 @@ export default defineConfig({
             'how-to/naming-steps',
             'how-to/update-flow-options',
             'faq',
+            'blog/**',
           ],
           promote: [
             'getting-started/install-pgflow',
@@ -200,12 +239,29 @@ export default defineConfig({
               },
             ],
           },
+          // {
+          //   label: 'BLOG',
+          //   icon: 'pen',
+          //   link: '/blog/',
+          //   id: 'blog',
+          //   items: [
+          //     {
+          //       label: 'All Posts',
+          //       link: '/blog/',
+          //     },
+          //   ],
+          // },
           {
             label: 'Found a bug?',
             icon: 'github',
             link: 'https://github.com/pgflow-dev/pgflow/issues/new',
           },
-        ]),
+        ], { 
+          exclude: [
+            '/blog',
+            '/blog/**/*'
+          ] 
+        }),
       ],
       title: 'pgflow (Workflow Engine for Supabase)',
       description:

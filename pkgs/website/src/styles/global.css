@@ -206,3 +206,15 @@ svg .secondary {
     max-width: 100%;
   }
 }
+
+/* Blog cover image styling - target the figure element from Cover.astro component */
+.sl-markdown-content figure:first-child img {
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Blog list cover image styling - target cover images in preview articles */
+.preview figure.astro-nxioshll img {
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
