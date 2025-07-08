@@ -1,4 +1,4 @@
-import { AnyFlow, RuntimeOptions } from './dsl.js';
+import { AnyFlow, RuntimeOptions, StepRuntimeOptions } from './dsl.js';
 
 /**
  * Compiles a Flow object into an array of SQL statements
@@ -37,7 +37,7 @@ export function compileFlow(flow: AnyFlow): string[] {
 /**
  * Formats runtime options into SQL parameter string
  */
-function formatRuntimeOptions(options: RuntimeOptions): string {
+function formatRuntimeOptions(options: RuntimeOptions | StepRuntimeOptions): string {
   const parts: string[] = [];
 
   if (options.maxAttempts !== undefined) {
@@ -50,6 +50,10 @@ function formatRuntimeOptions(options: RuntimeOptions): string {
 
   if (options.timeout !== undefined) {
     parts.push(`timeout => ${options.timeout}`);
+  }
+
+  if ('startDelay' in options && options.startDelay !== undefined) {
+    parts.push(`start_delay => ${options.startDelay}`);
   }
 
   return parts.length > 0 ? `, ${parts.join(', ')}` : '';
