@@ -17,24 +17,24 @@ This page covers both pgflow configuration and Edge Worker configuration in one 
 
 <CardGrid>
   <LinkCard 
-    title="maxAttempts" 
-    description="Maximum retry attempts before marking a task as failed. Can be set at flow or step level."
-    href="#maxattempts"
+    title="Step Execution Options" 
+    description="Configure retry behavior, timeouts, and error handling for your workflow steps. Set defaults at flow level, override per step."
+    href="#step-execution-options"
   />
   <LinkCard 
-    title="baseDelay" 
-    description="Initial retry delay in seconds for exponential backoff. Can be set at flow or step level."
-    href="#basedelay"
+    title="Retry Behavior" 
+    description="Understand exponential backoff and how retry delays are calculated based on your configuration."
+    href="#retry-behavior"
   />
   <LinkCard 
-    title="timeout" 
-    description="Visibility timeout in seconds. How long a task stays invisible while being processed."
-    href="#timeout"
-  />
-  <LinkCard 
-    title="Worker Options" 
-    description="Runtime settings like concurrency, connections, and polling behavior for the EdgeWorker."
+    title="Worker Configuration" 
+    description="Runtime settings for EdgeWorker including concurrency, database connections, and polling behavior."
     href="#worker-configuration"
+  />
+  <LinkCard 
+    title="Complete Examples" 
+    description="Real-world configuration patterns for API integrations, local processing, and mixed workloads."
+    href="#complete-examples"
   />
 </CardGrid>
 
