@@ -19,6 +19,7 @@ You can safely modify these runtime options without creating a new flow version:
 | `opt_max_attempts` | Max retry attempts | 3 | Flow & Steps |
 | `opt_base_delay` | Base retry delay (seconds) | 1 | Flow only |
 | `opt_timeout` | Max execution time (seconds) | 60 | Flow & Steps |
+| `opt_start_delay` | Delay before task execution (for multi-day workflows, reminders, etc.) | 0 | Steps only |
 
 <Aside title="About opt_timeout" type="caution">
 Currently, `opt_timeout` is only used to set the visibility timeout of messages in the queue. You should set this value to be higher than the maximum time a job can possibly run. If processing takes longer than the timeout, the message will become visible again and may be processed by another worker, leading to duplicate processing.
@@ -34,6 +35,10 @@ pgflow uses a two-level configuration approach:
 - **Flow-level options**: Set defaults for all steps in the flow
 - **Step-level options**: Override flow defaults for specific steps
 
+<Aside type="note" title="startDelay is step-level only">
+Unlike other options, `startDelay` cannot be set at the flow level - it's only available for individual steps to avoid cascading delays in DAG execution.
+</Aside>
+
 ## Updating Options Manually
 
 Since the compiler doesn't support updating existing flows, you must manually update options in the database:
@@ -48,7 +53,7 @@ WHERE flow_slug = 'your_flow_slug';
 ### Step Level (Overrides Flow Defaults)
 ```sql
 UPDATE pgflow.steps
-SET opt_max_attempts = 3, opt_timeout = 30
+SET opt_max_attempts = 3, opt_timeout = 30, opt_start_delay = 5
 WHERE flow_slug = 'your_flow_slug' AND step_slug = 'your_step_slug';
 ```
 
