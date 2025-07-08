@@ -53,7 +53,7 @@ export class DenoAdapter implements PlatformAdapter {
   /**
    * Ensures the config has a connectionString by using the environment value if needed
    */
-  getConnectionString(): string {
+  get connectionString(): string {
     return this.getEnvVarOrThrow('EDGE_WORKER_DB_URL');
   }
 
@@ -86,7 +86,7 @@ export class DenoAdapter implements PlatformAdapter {
   /**
    * Get all environment variables as a record
    */
-  getEnv(): Record<string, string | undefined> {
+  get env(): Record<string, string | undefined> {
     return Deno.env.toObject();
   }
 

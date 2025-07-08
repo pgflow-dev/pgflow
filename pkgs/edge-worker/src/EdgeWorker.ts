@@ -88,14 +88,14 @@ export class EdgeWorker {
   >(
     handlerOrFlow: MessageHandlerFn<TPayload> | TFlow,
     config: EdgeWorkerConfig = {}
-  ): Promise<PlatformAdapter> {
+  ): Promise<void> {
     if (typeof handlerOrFlow === 'function') {
-      return await this.startQueueWorker(
+      await this.startQueueWorker(
         handlerOrFlow as MessageHandlerFn<TPayload>,
         config as QueueWorkerConfig
       );
     } else {
-      return await this.startFlowWorker(
+      await this.startFlowWorker(
         handlerOrFlow as TFlow,
         config as FlowWorkerConfig
       );
@@ -157,14 +157,12 @@ export class EdgeWorker {
       pollIntervalMs: config.pollIntervalMs ?? 200,
       visibilityTimeout: config.visibilityTimeout ?? 10,
       connectionString:
-        config.connectionString || this.platform.getConnectionString(),
+        config.connectionString || this.platform.connectionString,
     };
 
     await this.platform.startWorker((createLoggerFn) => {
       return createQueueWorker(handler, workerConfig, createLoggerFn);
     });
-
-    return this.platform;
   }
 
   /**
@@ -211,14 +209,12 @@ export class EdgeWorker {
       maxPollSeconds: config.maxPollSeconds ?? 2,
       pollIntervalMs: config.pollIntervalMs ?? 100,
       connectionString:
-        config.connectionString || this.platform.getConnectionString(),
+        config.connectionString || this.platform.connectionString,
     };
 
     await this.platform.startWorker((createLoggerFn) => {
       return createFlowWorker(flow, workerConfig, createLoggerFn);
     });
-
-    return this.platform;
   }
 
   /**

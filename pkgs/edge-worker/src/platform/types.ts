@@ -37,10 +37,10 @@ export interface PlatformAdapter {
   /**
    * Get the connection string for the database
    */
-  getConnectionString(): string;
+  get connectionString(): string;
 
   /**
    * Get all environment variables as a record
    */
-  getEnv(): Record<string, string | undefined>;
+  get env(): Record<string, string | undefined>;
 }
