@@ -9,7 +9,7 @@ import { Aside, Badge, CardGrid, LinkCard } from "@astrojs/starlight/components"
 
 pgflow's configuration is divided into two distinct parts, each serving a different purpose in the workflow lifecycle.
 
-pgflow separates configuration into **task execution** settings (how individual steps are executed and retried) and **worker** settings (how the worker processes the entire flow). Task settings are stored in your database and control retry behavior, while worker settings control concurrency, connections, and batching.
+pgflow separates configuration into **task execution** settings (how individual steps are executed and retried) and **worker** settings (how the worker processes the entire flow). Task settings are stored in your database and control retry behavior, delays, and timeouts, while worker settings control concurrency, connections, and batching.
 
 <Aside type="note" title="Documentation Structure">
 This page covers both pgflow configuration and Edge Worker configuration in one place. Future versions may separate these concerns for clarity.
@@ -52,7 +52,7 @@ new Flow({ slug: 'my_flow' })
 
 ## Step Execution Options
 
-These settings are defined in your TypeScript flow code and compiled into SQL migrations. They control how individual steps are executed and retried. Set defaults at the flow level, override for specific steps. Step-level options are `null` by default, inheriting from flow-level settings.
+These settings are defined in your TypeScript flow code and compiled into SQL migrations. They control how individual steps are executed, delayed, and retried. Set defaults at the flow level, override for specific steps. Step-level options are `null` by default, inheriting from flow-level settings.
 
 <Aside type="tip">
 After deployment, you can update these settings without recompiling your flow. See [Update Flow Options](/how-to/update-flow-options/) for details.
@@ -66,6 +66,7 @@ new Flow({
   maxAttempts: 3,    // max retry attempts before marking as failed
   baseDelay: 5,      // initial retry delay in seconds
   timeout: 60        // visibility timeout in seconds
+  // Note: startDelay is step-level only, not available as a default at flow level
 })
 ```
 
@@ -369,4 +370,31 @@ new Flow({
     slug: 'save_results',
     // Use flow defaults
   }, saveHandler)
+```
+
+### Multi-Day Workflow
+
+For workflows that span multiple days with scheduled follow-ups:
+
+```typescript
+new Flow({
+  slug: 'user_onboarding',
+  maxAttempts: 3,
+  baseDelay: 5,
+  timeout: 60
+})
+  .step({
+    slug: 'send_welcome_email',
+    // Executes immediately
+  }, sendWelcomeHandler)
+  .step({
+    slug: 'send_day_3_tips',
+    startDelay: 259200,  // 3 days (3 * 24 * 60 * 60)
+    timeout: 120
+  }, sendTipsHandler)
+  .step({
+    slug: 'send_week_review',
+    startDelay: 604800,  // 7 days after previous step
+    timeout: 120
+  }, sendReviewHandler)
 ```
