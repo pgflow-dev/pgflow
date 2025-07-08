@@ -146,6 +146,61 @@ describe('Steps', () => {
         timeout: 30,
       });
     });
+
+    it('stores startDelay option on the step definition', () => {
+      const newFlow = flow.step(
+        {
+          slug: 'test_step',
+          startDelay: 300,
+        },
+        noop
+      );
+
+      const stepDef = newFlow.getStepDefinition('test_step');
+      expect(stepDef.options).toEqual({
+        startDelay: 300,
+      });
+    });
+
+    it('stores all runtime options including startDelay', () => {
+      const newFlow = flow.step(
+        {
+          slug: 'test_step',
+          maxAttempts: 3,
+          baseDelay: 100,
+          timeout: 30,
+          startDelay: 600,
+        },
+        noop
+      );
+
+      const stepDef = newFlow.getStepDefinition('test_step');
+      expect(stepDef.options).toEqual({
+        maxAttempts: 3,
+        baseDelay: 100,
+        timeout: 30,
+        startDelay: 600,
+      });
+    });
+
+    it('validates startDelay option', () => {
+      const validateRuntimeOptionsSpy = vi.spyOn(
+        utils,
+        'validateRuntimeOptions'
+      );
+      flow.step(
+        {
+          slug: 'test_step',
+          startDelay: 300,
+        },
+        noop
+      );
+      expect(validateRuntimeOptionsSpy).toHaveBeenCalledWith(
+        { startDelay: 300 },
+        { optional: true }
+      );
+      validateRuntimeOptionsSpy.mockRestore();
+    });
   });
 
   describe('step integration', () => {
