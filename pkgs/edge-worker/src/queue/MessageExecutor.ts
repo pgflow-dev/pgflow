@@ -3,6 +3,8 @@ import type { MessageHandlerFn, PgmqMessageRecord } from './types.js';
 import type { Queue } from './Queue.js';
 import type { Logger } from '../platform/types.js';
 import type { RetryConfig } from './createQueueWorker.js';
+import type { Context } from '../core/context.js';
+import type { Sql } from 'postgres';
 
 class AbortError extends Error {
   constructor() {
@@ -29,7 +31,9 @@ export class MessageExecutor<TPayload extends Json> {
     private readonly signal: AbortSignal,
     private readonly retryConfig: RetryConfig,
     private readonly calculateRetryDelay: (attempt: number, config: RetryConfig) => number,
-    logger: Logger
+    logger: Logger,
+    private readonly sql: Sql,
+    private readonly env: Record<string, string | undefined>
   ) {
     this.logger = logger;
   }
@@ -48,7 +52,33 @@ export class MessageExecutor<TPayload extends Json> {
       this.signal.throwIfAborted();
 
       this.logger.debug(`Executing task ${this.msgId}...`);
-      await this.messageHandler(this.record.message!);
+      
+      // Check handler arity to determine if it accepts context
+      if (this.messageHandler.length >= 2) {
+        // Handler accepts context, create and pass it
+        const { createQueueWorkerContext } = await import('../core/context-utils.js');
+        const context = createQueueWorkerContext({
+          env: this.env,
+          sql: this.sql,
+          abortSignal: this.signal,
+          rawMessage: this.record,
+        });
+        
+        // Cast to the context-accepting signature
+        const handlerWithContext = this.messageHandler as (
+          message: TPayload,
+          context: Context<TPayload>
+        ) => Promise<void> | void;
+        
+        await handlerWithContext(this.record.message!, context);
+      } else {
+        // Legacy handler, call without context
+        const legacyHandler = this.messageHandler as (
+          message: TPayload
+        ) => Promise<void> | void;
+        
+        await legacyHandler(this.record.message!);
+      }
 
       this.logger.debug(
         `Task ${this.msgId} completed successfully, archiving...`

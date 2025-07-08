@@ -9,8 +9,9 @@ import { Worker } from '../core/Worker.js';
 import postgres from 'postgres';
 import { WorkerLifecycle } from '../core/WorkerLifecycle.js';
 import { BatchProcessor } from '../core/BatchProcessor.js';
-import type { Logger } from '../platform/types.js';
+import type { Logger, PlatformAdapter } from '../platform/types.js';
 import { validateRetryConfig } from './validateRetryConfig.js';
+import { createQueueWorkerContext } from '../core/context-utils.js';
 
 /**
  * Fixed retry strategy configuration
@@ -157,6 +158,12 @@ export type QueueWorkerConfig = {
    * Optional SQL client instance
    */
   sql?: postgres.Sql;
+
+  /**
+   * Environment variables for context
+   * @internal
+   */
+  env?: Record<string, string | undefined>;
 };
 
 /**
@@ -242,7 +249,9 @@ export function createQueueWorker<TPayload extends Json>(
       signal,
       retryConfig,
       calculateRetryDelay,
-      createLogger('MessageExecutor')
+      createLogger('MessageExecutor'),
+      sql,
+      config.env || {}
     );
   };
 

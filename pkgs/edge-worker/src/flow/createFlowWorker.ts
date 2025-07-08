@@ -62,6 +62,12 @@ export type FlowWorkerConfig = {
    * @default 100
    */
   pollIntervalMs?: number;
+
+  /**
+   * Environment variables for context
+   * @internal
+   */
+  env?: Record<string, string | undefined>;
 };
 
 /**
@@ -138,7 +144,9 @@ export function createFlowWorker<TFlow extends AnyFlow>(
       record,
       pgflowAdapter,
       signal,
-      createLogger('StepTaskExecutor')
+      createLogger('StepTaskExecutor'),
+      sql,
+      config.env || {}
     );
   };
 

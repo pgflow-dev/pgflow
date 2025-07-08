@@ -13,7 +13,8 @@
     "postgres": "npm:postgres@3.4.5",
     "@pgflow/core": "../core/src/index.ts",
     "@pgflow/dsl": "../dsl/src/index.ts",
-    "deno/full.d.ts": "npm:@teidesu/deno-types@1.42.4/full.d.ts"
+    "deno/full.d.ts": "npm:@teidesu/deno-types@1.42.4/full.d.ts",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@^2.39.0"
   },
   "tasks": {
     "jsr:download-count": "deno run --allow-net jsr:@inbestigator/saves @pgflow/edge-worker"

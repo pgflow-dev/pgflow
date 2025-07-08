@@ -158,6 +158,7 @@ export class EdgeWorker {
       visibilityTimeout: config.visibilityTimeout ?? 10,
       connectionString:
         config.connectionString || this.platform.connectionString,
+      env: this.platform.env,
     };
 
     await this.platform.startWorker((createLoggerFn) => {

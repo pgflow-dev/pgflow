@@ -2,6 +2,8 @@ import type { AnyFlow } from '@pgflow/dsl';
 import type { StepTaskRecord, IPgflowClient } from './types.js';
 import type { IExecutor } from '../core/types.js';
 import type { Logger } from '../platform/types.js';
+import type { Context } from '../core/context.js';
+import type { Sql } from 'postgres';
 
 class AbortError extends Error {
   constructor() {
@@ -22,7 +24,9 @@ export class StepTaskExecutor<TFlow extends AnyFlow> implements IExecutor {
     private readonly task: StepTaskRecord<TFlow>,
     private readonly adapter: IPgflowClient<TFlow>,
     private readonly signal: AbortSignal,
-    logger: Logger
+    logger: Logger,
+    private readonly sql: Sql,
+    private readonly env: Record<string, string | undefined>
   ) {
     this.logger = logger;
   }
