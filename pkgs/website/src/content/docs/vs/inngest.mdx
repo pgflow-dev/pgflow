@@ -17,7 +17,7 @@ sidebar:
 | **Failure Handling** | Automatic per-step retries | Automatic per-step retries |
 | **Execution Structure** | Database-driven DAG | Linear step-by-step with state persistence |
 | **State Management** | Input/output data stored in database | Input/output memoized in execution service |
-| **Time-based Operations** | Via Supabase pg_cron | Built-in sleep and waitForEvent capabilities |
+| **Time-based Operations** | Native step delays + Supabase pg_cron | Built-in sleep and waitForEvent capabilities |
 | **Maturity Level** | Active development | Production-ready |
 | **Monitoring Tools** | SQL queries for visibility | Comprehensive web dashboard |
 | **Concurrency Management** | Simple per-flow limits | Advanced throttling and concurrency controls |
