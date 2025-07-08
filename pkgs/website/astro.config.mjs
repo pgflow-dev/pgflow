@@ -126,7 +126,7 @@ export default defineConfig({
               url: 'https://github.com/jumski',
             },
           },
-          // navigation: 'header-end', // Uncomment to show Blog link in header
+          navigation: 'none', // Remove blog link from navigation
           postCount: 10,
           recentPostCount: 5,
           metrics: {
