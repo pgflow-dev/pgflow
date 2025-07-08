@@ -11,7 +11,6 @@ import { WorkerLifecycle } from '../core/WorkerLifecycle.js';
 import { BatchProcessor } from '../core/BatchProcessor.js';
 import type { Logger, PlatformAdapter } from '../platform/types.js';
 import { validateRetryConfig } from './validateRetryConfig.js';
-import { createQueueWorkerContext } from '../core/context-utils.js';
 
 /**
  * Fixed retry strategy configuration
@@ -172,12 +171,14 @@ export type QueueWorkerConfig = {
  * @param handler - The message handler function that processes each message from the queue
  * @param config - Configuration options for the worker
  * @param createLogger - Function to create loggers for different components
+ * @param platformAdapter - Platform adapter for creating contexts
  * @returns A configured Worker instance ready to be started
  */
 export function createQueueWorker<TPayload extends Json>(
   handler: MessageHandlerFn<TPayload>,
   config: QueueWorkerConfig,
-  createLogger: (module: string) => Logger
+  createLogger: (module: string) => Logger,
+  platformAdapter: PlatformAdapter
 ): Worker {
   type QueueMessage = PgmqMessageRecord<TPayload>;
 
@@ -250,8 +251,7 @@ export function createQueueWorker<TPayload extends Json>(
       retryConfig,
       calculateRetryDelay,
       createLogger('MessageExecutor'),
-      sql,
-      config.env || {}
+      platformAdapter
     );
   };
 

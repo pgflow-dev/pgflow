@@ -1,7 +1,9 @@
 import type { StepTaskRecord, IPgflowClient } from './types.js';
 import type { IPoller, Supplier } from '../core/types.js';
 import type { Logger } from '../platform/types.js';
-import type { AnyFlow } from '@pgflow/dsl';
+import type { AnyFlow, AllStepInputs } from '@pgflow/dsl';
+import type { StepTaskWithMessage } from '../core/context.js';
+import type { PgmqMessageRecord } from '../queue/types.js';
 
 export interface StepTaskPollerConfig {
   batchSize: number;
@@ -16,7 +18,7 @@ export interface StepTaskPollerConfig {
  * This eliminates race conditions by separating message polling from task processing
  */
 export class StepTaskPoller<TFlow extends AnyFlow>
-  implements IPoller<StepTaskRecord<TFlow>>
+  implements IPoller<StepTaskWithMessage<TFlow>>
 {
   private logger: Logger;
   // TODO: Temporary supplier pattern until we refactor initialization
@@ -34,7 +36,7 @@ export class StepTaskPoller<TFlow extends AnyFlow>
     this.logger = logger;
   }
 
-  async poll(): Promise<StepTaskRecord<TFlow>[]> {
+  async poll(): Promise<StepTaskWithMessage<TFlow>[]> {
     if (this.isAborted()) {
       this.logger.debug('Polling aborted, returning empty array');
       return [];
@@ -84,7 +86,28 @@ export class StepTaskPoller<TFlow extends AnyFlow>
         );
       }
 
-      return tasks;
+      // Create a map of message ID to message for quick lookup
+      const messageMap = new Map<number, PgmqMessageRecord<AllStepInputs<TFlow>>>();
+      for (const msg of messages) {
+        messageMap.set(msg.msg_id, msg);
+      }
+
+      // Pair each task with its corresponding message
+      const taskWithMessages: StepTaskWithMessage<TFlow>[] = tasks
+        .map(task => {
+          const message = messageMap.get(task.msg_id);
+          if (!message) {
+            this.logger.error(`No message found for task ${task.id} with msg_id ${task.msg_id}`);
+            return null;
+          }
+          return {
+            message,
+            task
+          };
+        })
+        .filter((item): item is StepTaskWithMessage<TFlow> => item !== null);
+
+      return taskWithMessages;
     } catch (err: unknown) {
       this.logger.error(`Error in two-phase polling for flow tasks: ${err}`);
       return [];

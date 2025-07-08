@@ -1,9 +1,8 @@
 import type { AnyFlow } from '@pgflow/dsl';
 import type { StepTaskRecord, IPgflowClient } from './types.js';
 import type { IExecutor } from '../core/types.js';
-import type { Logger } from '../platform/types.js';
-import type { Context } from '../core/context.js';
-import type { Sql } from 'postgres';
+import type { Logger, PlatformAdapter } from '../platform/types.js';
+import type { StepTaskWithMessage } from '../core/context.js';
 
 class AbortError extends Error {
   constructor() {
@@ -18,17 +17,18 @@ class AbortError extends Error {
  */
 export class StepTaskExecutor<TFlow extends AnyFlow> implements IExecutor {
   private logger: Logger;
+  private readonly task: StepTaskRecord<TFlow>;
 
   constructor(
     private readonly flow: TFlow,
-    private readonly task: StepTaskRecord<TFlow>,
+    private readonly taskWithMessage: StepTaskWithMessage<TFlow>,
     private readonly adapter: IPgflowClient<TFlow>,
     private readonly signal: AbortSignal,
     logger: Logger,
-    private readonly sql: Sql,
-    private readonly env: Record<string, string | undefined>
+    private readonly platformAdapter: PlatformAdapter
   ) {
     this.logger = logger;
+    this.task = taskWithMessage.task;
   }
 
   get msgId() {
@@ -57,13 +57,7 @@ export class StepTaskExecutor<TFlow extends AnyFlow> implements IExecutor {
       }
 
       // Create context for the handler
-      const { createContext } = await import('../core/context-utils.js');
-      const context = createContext({
-        env: this.env,
-        sql: this.sql,
-        abortSignal: this.signal,
-        // rawMessage is undefined for flow workers
-      });
+      const context = this.platformAdapter.createStepTaskContext(this.taskWithMessage);
 
       // !!! HANDLER EXECUTION !!!
       const result = await stepDef.handler(this.task.input, context);

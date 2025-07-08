@@ -6,7 +6,8 @@ import { PgflowSqlClient } from '@pgflow/core';
 import { Queries } from '../core/Queries.js';
 import type { StepTaskRecord } from './types.js';
 import type { IExecutor } from '../core/types.js';
-import type { Logger } from '../platform/types.js';
+import type { Logger, PlatformAdapter } from '../platform/types.js';
+import type { StepTaskWithMessage } from '../core/context.js';
 import { Worker } from '../core/Worker.js';
 import postgres from 'postgres';
 import { FlowWorkerLifecycle } from './FlowWorkerLifecycle.js';
@@ -76,12 +77,15 @@ export type FlowWorkerConfig = {
  *
  * @param flow - The Flow DSL definition
  * @param config - Configuration options for the worker
+ * @param createLogger - Function to create loggers for different modules
+ * @param platformAdapter - Platform adapter for creating contexts
  * @returns A configured Worker instance ready to be started
  */
 export function createFlowWorker<TFlow extends AnyFlow>(
   flow: TFlow,
   config: FlowWorkerConfig,
-  createLogger: (module: string) => Logger
+  createLogger: (module: string) => Logger,
+  platformAdapter: PlatformAdapter
 ): Worker {
   const logger = createLogger('createFlowWorker');
 
@@ -136,22 +140,21 @@ export function createFlowWorker<TFlow extends AnyFlow>(
 
   // Create executor factory with proper typing
   const executorFactory = (
-    record: StepTaskRecord<TFlow>,
+    taskWithMessage: StepTaskWithMessage<TFlow>,
     signal: AbortSignal
   ): IExecutor => {
     return new StepTaskExecutor<TFlow>(
       flow,
-      record,
+      taskWithMessage,
       pgflowAdapter,
       signal,
       createLogger('StepTaskExecutor'),
-      sql,
-      config.env || {}
+      platformAdapter
     );
   };
 
   // Create ExecutionController
-  const executionController = new ExecutionController<StepTaskRecord<TFlow>>(
+  const executionController = new ExecutionController<StepTaskWithMessage<TFlow>>(
     executorFactory,
     abortSignal,
     {
@@ -161,7 +164,7 @@ export function createFlowWorker<TFlow extends AnyFlow>(
   );
 
   // Create BatchProcessor
-  const batchProcessor = new BatchProcessor<StepTaskRecord<TFlow>>(
+  const batchProcessor = new BatchProcessor<StepTaskWithMessage<TFlow>>(
     executionController,
     poller,
     abortSignal,

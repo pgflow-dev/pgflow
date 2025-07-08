@@ -66,6 +66,14 @@ export type ExtractFlowInput<TFlow extends AnyFlow> = TFlow extends Flow<
   : never;
 
 /**
+ * Utility type to extract all possible step inputs from a flow
+ * This creates a union of all step input types
+ */
+export type AllStepInputs<TFlow extends AnyFlow> = {
+  [K in keyof ExtractFlowSteps<TFlow> & string]: StepInput<TFlow, K>
+}[keyof ExtractFlowSteps<TFlow> & string];
+
+/**
  * Extracts the output type from a Flow
  * @template TFlow - The Flow type to extract from
  */

@@ -1,12 +1,14 @@
 import type { PlatformAdapter } from './types.js';
-import { DenoAdapter } from './DenoAdapter.js';
+import { SupabasePlatformAdapter } from './SupabasePlatformAdapter.js';
 
 /**
  * Creates the appropriate platform adapter based on the runtime environment
  */
 export function createAdapter(): PlatformAdapter {
   if (isDenoEnvironment()) {
-    const adapter = new DenoAdapter();
+    // For now, always use SupabasePlatformAdapter for Deno
+    // In the future, we could detect Supabase vs other Deno environments
+    const adapter = new SupabasePlatformAdapter();
     return adapter;
   }
 

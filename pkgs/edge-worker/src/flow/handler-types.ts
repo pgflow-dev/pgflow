@@ -1,10 +1,9 @@
-import type { Context } from '../core/context.js';
+import type { AnyFlow } from '@pgflow/dsl';
 import type { Json } from '../core/types.js';
+import type { SupabaseStepTaskContext } from '../core/context.js';
 
 /**
- * Updated step handler function type that supports optional context parameter
- * for backward compatibility
+ * Supabase-specific step task handler function with typed context
  */
-export type StepHandlerWithContext<TInput extends Json, TOutput extends Json> = 
-  | ((input: TInput) => TOutput | Promise<TOutput>)
-  | ((input: TInput, context: Context) => TOutput | Promise<TOutput>);
+export type SupabaseStepTaskHandlerFn<TInput extends Json, TOutput extends Json, TFlow extends AnyFlow> = 
+  (input: TInput, context: SupabaseStepTaskContext<TFlow>) => TOutput | Promise<TOutput>;

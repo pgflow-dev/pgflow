@@ -3,8 +3,7 @@ import type { MessageHandlerFn, PgmqMessageRecord } from './types.js';
 import type { Queue } from './Queue.js';
 import type { Logger } from '../platform/types.js';
 import type { RetryConfig } from './createQueueWorker.js';
-import type { Context } from '../core/context.js';
-import type { Sql } from 'postgres';
+import type { PlatformAdapter } from '../platform/types.js';
 
 class AbortError extends Error {
   constructor() {
@@ -32,8 +31,7 @@ export class MessageExecutor<TPayload extends Json> {
     private readonly retryConfig: RetryConfig,
     private readonly calculateRetryDelay: (attempt: number, config: RetryConfig) => number,
     logger: Logger,
-    private readonly sql: Sql,
-    private readonly env: Record<string, string | undefined>
+    private readonly platformAdapter: PlatformAdapter
   ) {
     this.logger = logger;
   }
@@ -53,14 +51,8 @@ export class MessageExecutor<TPayload extends Json> {
 
       this.logger.debug(`Executing task ${this.msgId}...`);
       
-      // Always create and pass context (as per AI recommendation)
-      const { createContext } = await import('../core/context-utils.js');
-      const context = createContext({
-        env: this.env,
-        sql: this.sql,
-        abortSignal: this.signal,
-        rawMessage: this.record,
-      });
+      // Create context using platform adapter
+      const context = this.platformAdapter.createMessageContext(this.record);
       
       // Always pass context as second argument
       await this.messageHandler(this.record.message!, context)

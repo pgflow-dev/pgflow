@@ -1,17 +1,16 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@supabase/supabase-js';
-import type { Context } from './context.js';
 
 /**
- * Factory function to create an anonymous Supabase client from context
- * Returns undefined if required environment variables are missing
+ * Factory function to create an anonymous Supabase client
+ * Throws an error if required environment variables are missing (they should always be present on Supabase)
  */
-export function createAnonSupabaseClient(ctx: Pick<Context, 'env'>): SupabaseClient | undefined {
-  const url = ctx.env.SUPABASE_URL;
-  const anonKey = ctx.env.SUPABASE_ANON_KEY;
+export function createAnonSupabaseClient(env: Record<string, string | undefined>): SupabaseClient {
+  const url = env.SUPABASE_URL;
+  const anonKey = env.SUPABASE_ANON_KEY;
   
   if (!url || !anonKey) {
-    return undefined;
+    throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment');
   }
   
   return createClient(url, anonKey, {
@@ -23,15 +22,15 @@ export function createAnonSupabaseClient(ctx: Pick<Context, 'env'>): SupabaseCli
 }
 
 /**
- * Factory function to create a service role Supabase client from context
- * Returns undefined if required environment variables are missing
+ * Factory function to create a service role Supabase client
+ * Throws an error if required environment variables are missing (they should always be present on Supabase)
  */
-export function createServiceSupabaseClient(ctx: Pick<Context, 'env'>): SupabaseClient | undefined {
-  const url = ctx.env.SUPABASE_URL;
-  const serviceKey = ctx.env.SUPABASE_SERVICE_ROLE_KEY;
+export function createServiceSupabaseClient(env: Record<string, string | undefined>): SupabaseClient {
+  const url = env.SUPABASE_URL;
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
   
   if (!url || !serviceKey) {
-    return undefined;
+    throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment');
   }
   
   return createClient(url, serviceKey, {

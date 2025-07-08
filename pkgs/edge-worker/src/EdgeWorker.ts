@@ -162,7 +162,7 @@ export class EdgeWorker {
     };
 
     await this.platform.startWorker((createLoggerFn) => {
-      return createQueueWorker(handler, workerConfig, createLoggerFn);
+      return createQueueWorker(handler, workerConfig, createLoggerFn, this.platform!);
     });
   }
 
@@ -214,7 +214,7 @@ export class EdgeWorker {
     };
 
     await this.platform.startWorker((createLoggerFn) => {
-      return createFlowWorker(flow, workerConfig, createLoggerFn);
+      return createFlowWorker(flow, workerConfig, createLoggerFn, this.platform!);
     });
   }
 
