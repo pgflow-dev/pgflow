@@ -83,6 +83,13 @@ export class DenoAdapter implements PlatformAdapter {
     return Deno.env.get(name) || defaultValue;
   }
 
+  /**
+   * Get all environment variables as a record
+   */
+  getEnv(): Record<string, string | undefined> {
+    return Deno.env.toObject();
+  }
+
   private async spawnNewEdgeFunction(): Promise<void> {
     if (!this.edgeFunctionName) {
       throw new Error('functionName cannot be null or empty');
