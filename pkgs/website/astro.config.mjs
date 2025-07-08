@@ -126,7 +126,7 @@ export default defineConfig({
               url: 'https://github.com/jumski',
             },
           },
-          navigation: 'header-end',
+          // navigation: 'header-end', // Uncomment to show Blog link in header
           postCount: 10,
           recentPostCount: 5,
           metrics: {
@@ -238,18 +238,18 @@ export default defineConfig({
               },
             ],
           },
-          {
-            label: 'BLOG',
-            icon: 'pen',
-            link: '/blog/',
-            id: 'blog',
-            items: [
-              {
-                label: 'All Posts',
-                link: '/blog/',
-              },
-            ],
-          },
+          // {
+          //   label: 'BLOG',
+          //   icon: 'pen',
+          //   link: '/blog/',
+          //   id: 'blog',
+          //   items: [
+          //     {
+          //       label: 'All Posts',
+          //       link: '/blog/',
+          //     },
+          //   ],
+          // },
           {
             label: 'Found a bug?',
             icon: 'github',
