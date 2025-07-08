@@ -50,9 +50,9 @@ new Flow({ slug: 'my_flow' })
 ```
 </Aside>
 
-## Flow & Step Configuration
+## Step Execution Options
 
-These settings are defined in your TypeScript flow code and compiled into SQL migrations. They control how individual tasks behave when they fail or timeout.
+These settings are defined in your TypeScript flow code and compiled into SQL migrations. They control how individual steps are executed and retried. Set defaults at the flow level, override for specific steps. Step-level options are `null` by default, inheriting from flow-level settings.
 
 <Aside type="tip">
 After deployment, you can update these settings without recompiling your flow. See [Update Flow Options](/how-to/update-flow-options/) for details.
@@ -69,14 +69,9 @@ new Flow({
 })
 ```
 
-## Shared Options (Flow & Step)
-
-These options can be set at both flow and step levels. Step-level options are `null` by default, inheriting from flow-level settings. When explicitly set at the step level, they override the flow defaults.
-
 ### `maxAttempts`
 **Type:** `number`  
-**Default:** `3`  
-**Levels:** Flow & Step
+**Default:** `3`
 
 The maximum number of times a task will be attempted before being marked as permanently failed.
 
@@ -90,8 +85,7 @@ new Flow({ slug: 'my_flow', maxAttempts: 5 })
 
 ### `baseDelay`
 **Type:** `number`  
-**Default:** `5`  
-**Levels:** Flow & Step
+**Default:** `5`
 
 The initial delay (in seconds) before the first retry. pgflow uses exponential backoff, so subsequent retries will have increasingly longer delays.
 
@@ -105,8 +99,7 @@ new Flow({ slug: 'my_flow', baseDelay: 2 })
 
 ### `timeout`
 **Type:** `number`  
-**Default:** `60`  
-**Levels:** Flow & Step
+**Default:** `60`
 
 The visibility timeout (in seconds) - how long a task remains invisible to other workers while being processed.
 
@@ -134,17 +127,56 @@ new Flow({ slug: 'my_flow', timeout: 120 })
 .step({ slug: 'my_step', timeout: 300 }, handler)
 ```
 
-## Step-Only Options
+{/* 
+### `startDelay` (coming soon)
+**Type:** `number`  
+**Default:** `0`
 
-These options can only be set at the step level.
+Initial delay (in seconds) before task execution.
 
-<Aside type="note">
-Step-only options are coming soon. The first will be `startDelay` for delaying initial task execution.
+<Aside type="caution" title="Step-level only">
+Unlike other options, `startDelay` cannot be set at the flow level.
+<details>
+<summary>
+Why no flow-level default?
+</summary>
+
+Flow-level `startDelay` would create confusing cascading delays in DAG execution:
+
+```
+With flow-level startDelay: 10s
+
+Time 0:   Flow starts
+Time 10:  Step A starts (waits 10s)
+Time 15:  Step A completes
+Time 25:  Step B starts (waits 10s after A completes)
+Time 30:  Step B completes  
+Time 40:  Step C starts (waits 10s after B completes)
+```
+
+This results in 40+ seconds of delays, not the expected 10s.
+
+**Better alternatives:**
+- **Need uniform delays?** Use a constant as shown below
+- **Rate limiting?** Use worker's `maxConcurrent` setting
+- **Debug delays?** Add only to specific steps you're debugging
+- **Compliance delays?** Make them explicit on relevant steps
+</details>
+
+To apply the same delay to multiple steps, use a constant:
+
+```typescript
+const RATE_LIMIT_DELAY = 2;
+flow
+  .step({ slug: "api_call_1", startDelay: RATE_LIMIT_DELAY }, handler1)
+  .step({ slug: "api_call_2", startDelay: RATE_LIMIT_DELAY }, handler2)
+```
 </Aside>
+*/}
 
-## Configuration Examples
+### Configuration Examples
 
-### Flow with Defaults Only
+#### Flow with Defaults Only
 
 When all steps can use the same configuration:
 
@@ -159,7 +191,7 @@ new Flow({
   .step({ slug: 'step2' }, handler2)  // Uses flow defaults
 ```
 
-### Mixed Configuration
+#### Mixed Configuration
 
 Override flow defaults for specific steps that need different behavior:
 
