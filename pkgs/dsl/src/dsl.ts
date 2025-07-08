@@ -161,13 +161,23 @@ export interface RuntimeOptions {
   timeout?: number;
 }
 
+// Context type import placeholder - will be provided by edge-worker
+export interface Context<TPayload = Json> {
+  env: Record<string, string | undefined>;
+  sql: any; // postgres.Sql
+  rawMessage?: any; // PgmqMessageRecord<TPayload>
+  anonSupabase?: any; // SupabaseClient
+  serviceSupabase?: any; // SupabaseClient
+  abortSignal: AbortSignal;
+}
+
 // Define the StepDefinition interface with integrated options
 export interface StepDefinition<
   TInput extends AnyInput,
   TOutput extends AnyOutput
 > {
   slug: string;
-  handler: (input: TInput) => TOutput | Promise<TOutput>;
+  handler: (input: TInput, context: Context) => TOutput | Promise<TOutput>;
   dependencies: string[];
   options: RuntimeOptions;
 }
@@ -259,7 +269,8 @@ export class Flow<
         } & {
           [K in Deps]: K extends keyof Steps ? Steps[K] : never;
         }
-      >
+      >,
+      context: Context
     ) => RetType | Promise<RetType>
   ): Flow<
     TFlowInput,
@@ -319,7 +330,8 @@ export class Flow<
           } & {
             [K in Deps]: K extends keyof Steps ? Steps[K] : never;
           }
-        >
+        >,
+        context: Context
       ) => RetType | Promise<RetType>,
       dependencies: dependencies as string[],
       options,

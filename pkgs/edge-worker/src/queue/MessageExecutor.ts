@@ -53,32 +53,17 @@ export class MessageExecutor<TPayload extends Json> {
 
       this.logger.debug(`Executing task ${this.msgId}...`);
       
-      // Check handler arity to determine if it accepts context
-      if (this.messageHandler.length >= 2) {
-        // Handler accepts context, create and pass it
-        const { createQueueWorkerContext } = await import('../core/context-utils.js');
-        const context = createQueueWorkerContext({
-          env: this.env,
-          sql: this.sql,
-          abortSignal: this.signal,
-          rawMessage: this.record,
-        });
-        
-        // Cast to the context-accepting signature
-        const handlerWithContext = this.messageHandler as (
-          message: TPayload,
-          context: Context<TPayload>
-        ) => Promise<void> | void;
-        
-        await handlerWithContext(this.record.message!, context);
-      } else {
-        // Legacy handler, call without context
-        const legacyHandler = this.messageHandler as (
-          message: TPayload
-        ) => Promise<void> | void;
-        
-        await legacyHandler(this.record.message!);
-      }
+      // Always create and pass context (as per AI recommendation)
+      const { createContext } = await import('../core/context-utils.js');
+      const context = createContext({
+        env: this.env,
+        sql: this.sql,
+        abortSignal: this.signal,
+        rawMessage: this.record,
+      });
+      
+      // Always pass context as second argument
+      await this.messageHandler(this.record.message!, context)
 
       this.logger.debug(
         `Task ${this.msgId} completed successfully, archiving...`

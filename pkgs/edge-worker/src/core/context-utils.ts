@@ -5,22 +5,20 @@ import type { Json } from './types.js';
 import { createAnonSupabaseClient, createServiceSupabaseClient } from './supabase-factories.js';
 import { memoize } from './memoize.js';
 
-interface CreateContextOptions {
+interface CreateContextOptions<TPayload extends Json = Json> {
   env: Record<string, string | undefined>;
   sql: Sql;
   abortSignal: AbortSignal;
-}
-
-interface CreateQueueContextOptions<TPayload extends Json> extends CreateContextOptions {
-  rawMessage: PgmqMessageRecord<TPayload>;
+  rawMessage?: PgmqMessageRecord<TPayload>;
 }
 
 /**
- * Creates a context object for queue workers (MessageExecutor)
- * Includes the raw pgmq message record
+ * Creates a context object for workers with all required properties
+ * @param options - Parameters for creating the context
+ * @returns Context object with lazy-loaded Supabase clients
  */
-export function createQueueWorkerContext<TPayload extends Json>(
-  options: CreateQueueContextOptions<TPayload>
+export function createContext<TPayload extends Json = Json>(
+  options: CreateContextOptions<TPayload>
 ): Context<TPayload> {
   const { env, sql, abortSignal, rawMessage } = options;
   
@@ -33,33 +31,6 @@ export function createQueueWorkerContext<TPayload extends Json>(
     sql,
     abortSignal,
     rawMessage,
-    get anonSupabase() {
-      return getAnonSupabase();
-    },
-    get serviceSupabase() {
-      return getServiceSupabase();
-    },
-  };
-  
-  return context;
-}
-
-/**
- * Creates a context object for flow workers (StepTaskExecutor)
- * Does NOT include the raw message (undefined)
- */
-export function createFlowWorkerContext(options: CreateContextOptions): Context {
-  const { env, sql, abortSignal } = options;
-  
-  // Memoized Supabase client factories
-  const getAnonSupabase = memoize(() => createAnonSupabaseClient({ env }));
-  const getServiceSupabase = memoize(() => createServiceSupabaseClient({ env }));
-  
-  const context: Context = {
-    env,
-    sql,
-    abortSignal,
-    rawMessage: undefined, // Always undefined for flow workers
     get anonSupabase() {
       return getAnonSupabase();
     },

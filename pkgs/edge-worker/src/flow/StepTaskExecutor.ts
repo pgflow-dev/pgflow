@@ -56,8 +56,17 @@ export class StepTaskExecutor<TFlow extends AnyFlow> implements IExecutor {
         throw new Error(`No step definition found for slug=${stepSlug}`);
       }
 
+      // Create context for the handler
+      const { createContext } = await import('../core/context-utils.js');
+      const context = createContext({
+        env: this.env,
+        sql: this.sql,
+        abortSignal: this.signal,
+        // rawMessage is undefined for flow workers
+      });
+
       // !!! HANDLER EXECUTION !!!
-      const result = await stepDef.handler(this.task.input);
+      const result = await stepDef.handler(this.task.input, context);
       // !!! HANDLER EXECUTION !!!
 
       this.logger.debug(

@@ -16,8 +16,7 @@ export interface PgmqMessageRecord<TPayload extends Json | null = Json>
 
 /**
  * User-provided handler function, called for each message in the queue
- * Supports both legacy (message only) and new (message + context) signatures
+ * Always receives context as second parameter
  */
 export type MessageHandlerFn<TPayload extends Json = Json> = 
-  | ((message: TPayload) => Promise<void> | void)
-  | ((message: TPayload, context: Context<TPayload>) => Promise<void> | void);
+  (message: TPayload, context: Context<TPayload>) => Promise<void> | void;
