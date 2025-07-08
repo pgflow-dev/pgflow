@@ -63,6 +63,48 @@ describe('compileFlow', () => {
     );
   });
 
+  it('should compile a flow with steps that have startDelay', () => {
+    const flow = new Flow({ slug: 'test_flow' })
+      .step({ slug: 'step1', startDelay: 300 }, () => 'result1')
+      .step(
+        { slug: 'step2', dependsOn: ['step1'], startDelay: 600 },
+        () => 'result2'
+      );
+
+    const statements = compileFlow(flow);
+
+    expect(statements).toHaveLength(3);
+    expect(statements[0]).toBe("SELECT pgflow.create_flow('test_flow');");
+    expect(statements[1]).toBe(
+      "SELECT pgflow.add_step('test_flow', 'step1', start_delay => 300);"
+    );
+    expect(statements[2]).toBe(
+      "SELECT pgflow.add_step('test_flow', 'step2', ARRAY['step1'], start_delay => 600);"
+    );
+  });
+
+  it('should compile a flow with all runtime options including startDelay', () => {
+    const flow = new Flow({ slug: 'test_flow' })
+      .step(
+        { 
+          slug: 'step1', 
+          maxAttempts: 3, 
+          baseDelay: 5, 
+          timeout: 120,
+          startDelay: 900 
+        }, 
+        () => 'result1'
+      );
+
+    const statements = compileFlow(flow);
+
+    expect(statements).toHaveLength(2);
+    expect(statements[0]).toBe("SELECT pgflow.create_flow('test_flow');");
+    expect(statements[1]).toBe(
+      "SELECT pgflow.add_step('test_flow', 'step1', max_attempts => 3, base_delay => 5, timeout => 120, start_delay => 900);"
+    );
+  });
+
   it('should compile a complex flow with multiple steps and dependencies', () => {
     const flow = new Flow({
       slug: 'complex_flow',

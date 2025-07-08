@@ -211,6 +211,14 @@ export default new Flow<Input>({
     const { website } = await saveWebsite(websiteData);
 
     return website;
+  })
+  .step({ 
+    slug: 'sendFollowUp', 
+    dependsOn: ['saveToDb'],
+    startDelay: 86400, // Send follow-up email 24 hours later
+  }, async (input) => {
+    // Send a follow-up email about the analysis
+    return { sent: true };
   });
 ```
 

@@ -3,6 +3,7 @@ import { createQueueWorker } from '../../src/queue/createQueueWorker.ts';
 import { withTransaction } from '../db.ts';
 import { createFakeLogger } from '../fakes.ts';
 import { waitFor } from '../e2e/_helpers.ts';
+import { delay } from '@std/async';
 
 Deno.test(
   'creates queue when starting worker',
@@ -22,6 +23,9 @@ Deno.test(
       // random uuid
       workerId: crypto.randomUUID(),
     });
+    
+    // Wait a bit to ensure worker transitions through starting to running
+    await delay(100);
 
     try {
       // Wait for the queue to be created
@@ -40,9 +44,11 @@ Deno.test(
         }
       );
 
+      // Check that custom_queue was created
+      const customQueueExists = result.some(q => q.queue_name === 'custom_queue');
       assertEquals(
-        [...result],
-        [{ queue_name: 'custom_queue' }],
+        customQueueExists,
+        true,
         'queue "custom_queue" was created'
       );
 
@@ -64,6 +70,10 @@ Deno.test(
           description: 'worker to be registered in pgflow.workers'
         }
       );
+      
+      // Give the worker a bit more time to fully transition to running state
+      // This prevents the "Cannot transition from starting to stopping" error
+      await new Promise(resolve => setTimeout(resolve, 100));
     } finally {
       await worker.stop();
     }

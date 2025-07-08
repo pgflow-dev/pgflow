@@ -45,6 +45,7 @@ export interface ValidateRuntimeOptionsOpts {
  * - maxAttempts should be >= 1
  * - baseDelay should be >= 1
  * - timeout should be >= 3
+ * - startDelay should be >= 0
  *
  * @param options The runtime options to validate
  * @param opts Configuration options for validation
@@ -52,10 +53,10 @@ export interface ValidateRuntimeOptionsOpts {
  * @throws Error if any runtime option is invalid
  */
 export function validateRuntimeOptions(
-  options: { maxAttempts?: number; baseDelay?: number; timeout?: number },
+  options: { maxAttempts?: number; baseDelay?: number; timeout?: number; startDelay?: number },
   opts: ValidateRuntimeOptionsOpts = { optional: false }
 ): void {
-  const { maxAttempts, baseDelay, timeout } = options;
+  const { maxAttempts, baseDelay, timeout, startDelay } = options;
 
   // If optional is true, skip validation for undefined/null values
   if (maxAttempts !== undefined && maxAttempts !== null) {
@@ -80,5 +81,11 @@ export function validateRuntimeOptions(
     }
   } else if (!opts.optional) {
     throw new Error('timeout is required');
+  }
+
+  if (startDelay !== undefined && startDelay !== null) {
+    if (startDelay < 0) {
+      throw new Error('startDelay must be greater than or equal to 0');
+    }
   }
 }
