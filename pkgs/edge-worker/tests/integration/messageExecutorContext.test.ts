@@ -1,8 +1,8 @@
 import { assertEquals, assertExists } from '@std/assert';
-import { MessageExecutor } from '../../src/queue/MessageExecutor.ts';
+// import { MessageExecutor } from '../../src/queue/MessageExecutor.ts';
 import { Queue } from '../../src/queue/Queue.ts';
 import { withTransaction } from '../db.ts';
-import { createFakeLogger } from '../fakes.ts';
+// import { createFakeLogger } from '../fakes.ts';
 import type { PgmqMessageRecord } from '../../src/queue/types.ts';
 import type { MessageHandlerContext, Context } from '../../src/core/context.ts';
 import { createTestMessageContext } from '../../src/core/test-context-utils.ts';
@@ -24,14 +24,14 @@ Deno.test(
     };
     
     const abortController = new AbortController();
-    const logger = createFakeLogger();
-    const retryConfig = { limit: 3, delay: 1 };
+    // const logger = createFakeLogger();
+    // const retryConfig = { limit: 3, delay: 1 };
     
-    let receivedContext: MessageHandlerContext<{ data: string }, any> | undefined;
+    let receivedContext: MessageHandlerContext<{ data: string }, Record<string, unknown>> | undefined;
     let receivedPayload: { data: string } | undefined;
     
     // Handler that accepts context
-    const handler = async (payload: { data: string }, context: MessageHandlerContext<{ data: string }, any>) => {
+    const handler = async (payload: { data: string }, context: MessageHandlerContext<{ data: string }, Record<string, unknown>>) => {
       receivedPayload = payload;
       receivedContext = context;
       
@@ -80,7 +80,7 @@ Deno.test(
     let handlerCallCount = 0;
     
     // Legacy handler that only accepts payload
-    const legacyHandler = async (payload: { data: string }) => {
+    const legacyHandler = (payload: { data: string }) => {
       receivedPayload = payload;
       handlerCallCount++;
     };
@@ -114,8 +114,8 @@ Deno.test(
     let receivedRawMessage: PgmqMessageRecord<{ id: number; name: string }> | undefined;
     
     // Handler that checks rawMessage
-    const handler = async (
-      payload: { id: number; name: string },
+    const handler = (
+      _payload: { id: number; name: string },
       context?: Context<{ id: number; name: string }>
     ) => {
       receivedRawMessage = context?.rawMessage;
@@ -157,7 +157,7 @@ Deno.test(
     let serviceClientExists = false;
     
     // Handler that checks Supabase clients
-    const handler = async (payload: { test: string }, context?: Context<{ test: string }>) => {
+    const handler = (_payload: { test: string }, context?: Context<{ test: string }>) => {
       anonClientExists = context?.anonSupabase !== undefined;
       serviceClientExists = context?.serviceSupabase !== undefined;
     };

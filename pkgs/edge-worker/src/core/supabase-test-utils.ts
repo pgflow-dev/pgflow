@@ -8,7 +8,6 @@ import type {
   SupabaseStepTaskContext,
   StepTaskWithMessage
 } from './context.js';
-import type { StepTaskRecord } from '../flow/types.js';
 import { createAnonSupabaseClient, createServiceSupabaseClient } from './supabase-utils.js';
 
 /**
