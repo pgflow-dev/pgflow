@@ -1,8 +1,7 @@
-import { assertEquals } from '@std/assert';
+import { assertEquals, assertThrows } from '@std/assert';
 import { 
-  getAnonSupabaseClient, 
-  getServiceSupabaseClient, 
-  resetMemoizedClients 
+  createAnonSupabaseClient, 
+  createServiceSupabaseClient
 } from '../../src/core/supabase-utils.ts';
 
 // Mock env for testing
@@ -22,136 +21,122 @@ const mockEnvEmpty = {
   // No Supabase keys
 };
 
-Deno.test('getAnonSupabaseClient - returns undefined when SUPABASE_URL is missing', () => {
+Deno.test('createAnonSupabaseClient - throws when SUPABASE_URL is missing', () => {
   const env = {
     SUPABASE_ANON_KEY: 'test-anon-key',
   };
 
-  const client = getAnonSupabaseClient(env);
-  assertEquals(client, undefined);
+  assertThrows(
+    () => createAnonSupabaseClient(env),
+    Error,
+    'SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment'
+  );
 });
 
-Deno.test('getAnonSupabaseClient - returns undefined when SUPABASE_ANON_KEY is missing', () => {
+Deno.test('createAnonSupabaseClient - throws when SUPABASE_ANON_KEY is missing', () => {
   const env = {
     SUPABASE_URL: 'https://test.supabase.co',
   };
 
-  const client = getAnonSupabaseClient(env);
-  assertEquals(client, undefined);
+  assertThrows(
+    () => createAnonSupabaseClient(env),
+    Error,
+    'SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment'
+  );
 });
 
-Deno.test('getAnonSupabaseClient - returns undefined when both env vars are missing', () => {
+Deno.test('createAnonSupabaseClient - throws when both env vars are missing', () => {
   const env = {};
 
-  const client = getAnonSupabaseClient(env);
-  assertEquals(client, undefined);
+  assertThrows(
+    () => createAnonSupabaseClient(env),
+    Error,
+    'SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment'
+  );
 });
 
-Deno.test('getAnonSupabaseClient - creates client when both env vars exist', () => {
-  resetMemoizedClients(); // Start fresh
-  
+Deno.test('createAnonSupabaseClient - creates client when both env vars exist', () => {
   const env = {
     SUPABASE_URL: 'https://test.supabase.co',
     SUPABASE_ANON_KEY: 'test-anon-key',
   };
 
-  const client = getAnonSupabaseClient(env);
+  const client = createAnonSupabaseClient(env);
   assertEquals(client !== undefined, true);
 });
 
-Deno.test('getAnonSupabaseClient - returns same instance on subsequent calls (memoization)', () => {
-  resetMemoizedClients(); // Start fresh
-  
+Deno.test('createAnonSupabaseClient - creates new instance each time (no memoization)', () => {
   const env = {
     SUPABASE_URL: 'https://test.supabase.co',
     SUPABASE_ANON_KEY: 'test-anon-key',
   };
 
-  const client1 = getAnonSupabaseClient(env);
-  const client2 = getAnonSupabaseClient(env);
+  const client1 = createAnonSupabaseClient(env);
+  const client2 = createAnonSupabaseClient(env);
   
-  // Should be the exact same instance
-  assertEquals(client1, client2);
+  // Should be different instances since no memoization
+  assertEquals(client1 === client2, false);
 });
 
-Deno.test('getServiceSupabaseClient - returns undefined when SUPABASE_URL is missing', () => {
+Deno.test('createServiceSupabaseClient - throws when SUPABASE_URL is missing', () => {
   const env = {
     SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
   };
 
-  const client = getServiceSupabaseClient(env);
-  assertEquals(client, undefined);
+  assertThrows(
+    () => createServiceSupabaseClient(env),
+    Error,
+    'SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment'
+  );
 });
 
-Deno.test('getServiceSupabaseClient - returns undefined when SUPABASE_SERVICE_ROLE_KEY is missing', () => {
+Deno.test('createServiceSupabaseClient - throws when SUPABASE_SERVICE_ROLE_KEY is missing', () => {
   const env = {
     SUPABASE_URL: 'https://test.supabase.co',
   };
 
-  const client = getServiceSupabaseClient(env);
-  assertEquals(client, undefined);
+  assertThrows(
+    () => createServiceSupabaseClient(env),
+    Error,
+    'SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment'
+  );
 });
 
-Deno.test('getServiceSupabaseClient - creates client when both env vars exist', () => {
-  resetMemoizedClients(); // Start fresh
-  
+Deno.test('createServiceSupabaseClient - creates client when both env vars exist', () => {
   const env = {
     SUPABASE_URL: 'https://test.supabase.co',
     SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
   };
 
-  const client = getServiceSupabaseClient(env);
+  const client = createServiceSupabaseClient(env);
   assertEquals(client !== undefined, true);
 });
 
-Deno.test('getServiceSupabaseClient - returns same instance on subsequent calls (memoization)', () => {
-  resetMemoizedClients(); // Start fresh
-  
+Deno.test('createServiceSupabaseClient - creates new instance each time (no memoization)', () => {
   const env = {
     SUPABASE_URL: 'https://test.supabase.co',
     SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
   };
 
-  const client1 = getServiceSupabaseClient(env);
-  const client2 = getServiceSupabaseClient(env);
+  const client1 = createServiceSupabaseClient(env);
+  const client2 = createServiceSupabaseClient(env);
   
-  // Should be the exact same instance
-  assertEquals(client1, client2);
+  // Should be different instances since no memoization
+  assertEquals(client1 === client2, false);
 });
 
 Deno.test('client isolation - maintains separate instances for anon and service clients', () => {
-  resetMemoizedClients(); // Start fresh
-  
   const env = {
     SUPABASE_URL: 'https://test.supabase.co',
     SUPABASE_ANON_KEY: 'test-anon-key',
     SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
   };
 
-  const anonClient = getAnonSupabaseClient(env);
-  const serviceClient = getServiceSupabaseClient(env);
+  const anonClient = createAnonSupabaseClient(env);
+  const serviceClient = createServiceSupabaseClient(env);
 
   // Should be different instances
   assertEquals(anonClient === serviceClient, false);
-});
-
-Deno.test('resetMemoizedClients - clears memoized clients', () => {
-  const env = {
-    SUPABASE_URL: 'https://test.supabase.co',
-    SUPABASE_ANON_KEY: 'test-anon-key',
-  };
-
-  // Create clients
-  const client1 = getAnonSupabaseClient(env);
-
-  // Reset
-  resetMemoizedClients();
-
-  // Get new client
-  const client2 = getAnonSupabaseClient(env);
-
-  // Should be different instances after reset
-  assertEquals(client1 === client2, false);
 });
 
 Deno.test('edge cases - handles undefined values in env object', () => {
@@ -161,11 +146,17 @@ Deno.test('edge cases - handles undefined values in env object', () => {
     SUPABASE_SERVICE_ROLE_KEY: undefined,
   };
 
-  const anonClient = getAnonSupabaseClient(env);
-  const serviceClient = getServiceSupabaseClient(env);
-
-  assertEquals(anonClient, undefined);
-  assertEquals(serviceClient, undefined);
+  assertThrows(
+    () => createAnonSupabaseClient(env),
+    Error,
+    'SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment'
+  );
+  
+  assertThrows(
+    () => createServiceSupabaseClient(env),
+    Error,
+    'SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment'
+  );
 });
 
 Deno.test('edge cases - handles empty string values as missing', () => {
@@ -175,9 +166,15 @@ Deno.test('edge cases - handles empty string values as missing', () => {
     SUPABASE_SERVICE_ROLE_KEY: '',
   };
 
-  const anonClient = getAnonSupabaseClient(env);
-  const serviceClient = getServiceSupabaseClient(env);
-
-  assertEquals(anonClient, undefined);
-  assertEquals(serviceClient, undefined);
+  assertThrows(
+    () => createAnonSupabaseClient(env),
+    Error,
+    'SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment'
+  );
+  
+  assertThrows(
+    () => createServiceSupabaseClient(env),
+    Error,
+    'SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment'
+  );
 });
