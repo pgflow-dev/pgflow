@@ -21,6 +21,18 @@ export type CreateLoggerFn = (module: string) => Logger;
 export type CreateWorkerFn = (createLoggerFn: CreateLoggerFn) => Worker;
 
 /**
+ * Supabase platform environment variables
+ */
+export interface SupabaseEnv {
+  SUPABASE_URL: string;
+  SUPABASE_ANON_KEY: string;
+  SUPABASE_SERVICE_ROLE_KEY: string;
+  EDGE_WORKER_DB_URL: string;
+  SB_EXECUTION_ID: string;
+  EDGE_WORKER_LOG_LEVEL?: string;
+}
+
+/**
  * Common interface for all platform adapters
  * @template TResources - Platform-specific resources type
  */

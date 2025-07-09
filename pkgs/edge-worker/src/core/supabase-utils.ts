@@ -1,20 +1,17 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
+interface SupabaseClientEnv {
+  SUPABASE_URL: string;
+  SUPABASE_ANON_KEY?: string;
+  SUPABASE_SERVICE_ROLE_KEY?: string;
+}
+
 /**
  * Creates an anonymous Supabase client.
- * Throws if required environment variables are missing.
- * 
- * Required env vars: SUPABASE_URL, SUPABASE_ANON_KEY
+ * Expects SUPABASE_URL and SUPABASE_ANON_KEY to be present in env.
  */
-export function createAnonSupabaseClient(env: Record<string, string | undefined>): SupabaseClient {
-  const url = env.SUPABASE_URL;
-  const anonKey = env.SUPABASE_ANON_KEY;
-
-  if (!url || !anonKey) {
-    throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment');
-  }
-
-  return createClient(url, anonKey, {
+export function createAnonSupabaseClient(env: SupabaseClientEnv & { SUPABASE_ANON_KEY: string }): SupabaseClient {
+  return createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -24,19 +21,10 @@ export function createAnonSupabaseClient(env: Record<string, string | undefined>
 
 /**
  * Creates a service role Supabase client.
- * Throws if required environment variables are missing.
- * 
- * Required env vars: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+ * Expects SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to be present in env.
  */
-export function createServiceSupabaseClient(env: Record<string, string | undefined>): SupabaseClient {
-  const url = env.SUPABASE_URL;
-  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!url || !serviceKey) {
-    throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment');
-  }
-
-  return createClient(url, serviceKey, {
+export function createServiceSupabaseClient(env: SupabaseClientEnv & { SUPABASE_SERVICE_ROLE_KEY: string }): SupabaseClient {
+  return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,

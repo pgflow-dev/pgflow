@@ -60,12 +60,19 @@ export function createQueueWorkerContext<TPayload extends Json = Json>(
   };
 
   // Add Supabase clients if environment variables are present
+  // These are optional in test contexts where we might not have full env
   if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
-    context.anonSupabase = createAnonSupabaseClient(env);
+    context.anonSupabase = createAnonSupabaseClient({
+      SUPABASE_URL: env.SUPABASE_URL,
+      SUPABASE_ANON_KEY: env.SUPABASE_ANON_KEY
+    });
   }
 
   if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
-    context.serviceSupabase = createServiceSupabaseClient(env);
+    context.serviceSupabase = createServiceSupabaseClient({
+      SUPABASE_URL: env.SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY: env.SUPABASE_SERVICE_ROLE_KEY
+    });
   }
 
   return context;
@@ -102,12 +109,19 @@ export function createFlowWorkerContext<TFlow extends AnyFlow>(
   };
 
   // Add Supabase clients if environment variables are present
+  // These are optional in test contexts where we might not have full env
   if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
-    context.anonSupabase = createAnonSupabaseClient(env);
+    context.anonSupabase = createAnonSupabaseClient({
+      SUPABASE_URL: env.SUPABASE_URL,
+      SUPABASE_ANON_KEY: env.SUPABASE_ANON_KEY
+    });
   }
 
   if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
-    context.serviceSupabase = createServiceSupabaseClient(env);
+    context.serviceSupabase = createServiceSupabaseClient({
+      SUPABASE_URL: env.SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY: env.SUPABASE_SERVICE_ROLE_KEY
+    });
   }
 
   return context;
