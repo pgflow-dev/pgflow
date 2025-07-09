@@ -3,7 +3,7 @@ import type { MessageHandlerFn, PgmqMessageRecord } from './types.js';
 import type { Queue } from './Queue.js';
 import type { Logger } from '../platform/types.js';
 import type { RetryConfig } from './createQueueWorker.js';
-import type { PlatformAdapter } from '../platform/types.js';
+import type { SupabaseMessageContext } from '../core/context.js';
 
 class AbortError extends Error {
   constructor() {
@@ -25,19 +25,18 @@ export class MessageExecutor<TPayload extends Json> {
 
   constructor(
     private readonly queue: Queue<TPayload>,
-    private readonly record: PgmqMessageRecord<TPayload>,
     private readonly messageHandler: MessageHandlerFn<TPayload>,
     private readonly signal: AbortSignal,
     private readonly retryConfig: RetryConfig,
     private readonly calculateRetryDelay: (attempt: number, config: RetryConfig) => number,
     logger: Logger,
-    private readonly platformAdapter: PlatformAdapter
+    private readonly context: SupabaseMessageContext<TPayload>
   ) {
     this.logger = logger;
   }
 
   get msgId() {
-    return this.record.msg_id;
+    return this.context.rawMessage.msg_id;
   }
 
   async execute(): Promise<void> {
@@ -51,11 +50,8 @@ export class MessageExecutor<TPayload extends Json> {
 
       this.logger.debug(`Executing task ${this.msgId}...`);
       
-      // Create context using platform adapter
-      const context = this.platformAdapter.createMessageContext(this.record);
-      
       // Always pass context as second argument
-      await this.messageHandler(this.record.message!, context)
+      await this.messageHandler(this.record.message!, this.context)
 
       this.logger.debug(
         `Task ${this.msgId} completed successfully, archiving...`

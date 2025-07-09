@@ -15,8 +15,8 @@ export interface PgmqMessageRecord<TPayload extends Json | null = Json>
 }
 
 /**
- * User-provided handler function, called for each message in the queue
- * Always receives context as second parameter
+ * User-provided handler function for Supabase Edge Functions
+ * Always receives context as second parameter with Supabase-specific resources
  */
 export type MessageHandlerFn<TPayload extends Json = Json> = 
   (message: TPayload, context: SupabaseMessageContext<TPayload>) => Promise<void> | void;

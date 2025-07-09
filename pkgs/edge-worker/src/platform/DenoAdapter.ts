@@ -14,11 +14,15 @@ export class DenoAdapter implements PlatformAdapter {
   private edgeFunctionName: string | null = null;
   private worker: Worker | null = null;
   private logger: Logger;
+  private abortController: AbortController;
 
   // Logging factory with dynamic workerId support
   private loggingFactory = createLoggingFactory();
 
   constructor() {
+    // Create abort controller for shutdown signal
+    this.abortController = new AbortController();
+    
     // Set initial log level
     const logLevel = this.getEnvVar('EDGE_WORKER_LOG_LEVEL', 'info');
     this.loggingFactory.setLogLevel(logLevel);
@@ -88,6 +92,13 @@ export class DenoAdapter implements PlatformAdapter {
    */
   get env(): Record<string, string | undefined> {
     return Deno.env.toObject();
+  }
+
+  /**
+   * Get the shutdown signal that fires when the worker is shutting down
+   */
+  get shutdownSignal(): AbortSignal {
+    return this.abortController.signal;
   }
 
   private async spawnNewEdgeFunction(): Promise<void> {

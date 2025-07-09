@@ -89,9 +89,8 @@ export function createFlowWorker<TFlow extends AnyFlow>(
 ): Worker {
   const logger = createLogger('createFlowWorker');
 
-  // Create abort controller for graceful shutdown
-  const abortController = new AbortController();
-  const abortSignal = abortController.signal;
+  // Use platform's shutdown signal
+  const abortSignal = platformAdapter.shutdownSignal;
 
   if (!config.sql && !config.connectionString) {
     throw new Error(
@@ -143,13 +142,15 @@ export function createFlowWorker<TFlow extends AnyFlow>(
     taskWithMessage: StepTaskWithMessage<TFlow>,
     signal: AbortSignal
   ): IExecutor => {
+    // Create context at the factory level
+    const context = platformAdapter.createStepTaskContext(taskWithMessage);
+    
     return new StepTaskExecutor<TFlow>(
       flow,
-      taskWithMessage,
       pgflowAdapter,
       signal,
       createLogger('StepTaskExecutor'),
-      platformAdapter
+      context
     );
   };
 

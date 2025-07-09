@@ -217,8 +217,8 @@ export function createQueueWorker<TPayload extends Json>(
   // Validate the final retry config
   validateRetryConfig(retryConfig);
 
-  const abortController = new AbortController();
-  const abortSignal = abortController.signal;
+  // Use platform's shutdown signal
+  const abortSignal = platformAdapter.shutdownSignal;
 
   // Use provided SQL connection if available, otherwise create one from connection string
   const sql =
@@ -243,6 +243,9 @@ export function createQueueWorker<TPayload extends Json>(
   );
 
   const executorFactory = (record: QueueMessage, signal: AbortSignal) => {
+    // Create context at the factory level
+    const context = platformAdapter.createMessageContext(record);
+    
     return new MessageExecutor(
       queue,
       record,
@@ -251,7 +254,7 @@ export function createQueueWorker<TPayload extends Json>(
       retryConfig,
       calculateRetryDelay,
       createLogger('MessageExecutor'),
-      platformAdapter
+      context
     );
   };
 

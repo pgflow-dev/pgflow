@@ -1,8 +1,8 @@
 import type { AnyFlow } from '@pgflow/dsl';
-import type { StepTaskRecord, IPgflowClient } from './types.js';
+import type { IPgflowClient } from './types.js';
 import type { IExecutor } from '../core/types.js';
-import type { Logger, PlatformAdapter } from '../platform/types.js';
-import type { StepTaskWithMessage } from '../core/context.js';
+import type { Logger } from '../platform/types.js';
+import type { SupabaseStepTaskContext } from '../core/context.js';
 
 class AbortError extends Error {
   constructor() {
@@ -17,22 +17,19 @@ class AbortError extends Error {
  */
 export class StepTaskExecutor<TFlow extends AnyFlow> implements IExecutor {
   private logger: Logger;
-  private readonly task: StepTaskRecord<TFlow>;
 
   constructor(
     private readonly flow: TFlow,
-    private readonly taskWithMessage: StepTaskWithMessage<TFlow>,
     private readonly adapter: IPgflowClient<TFlow>,
     private readonly signal: AbortSignal,
     logger: Logger,
-    private readonly platformAdapter: PlatformAdapter
+    private readonly context: SupabaseStepTaskContext<TFlow>
   ) {
     this.logger = logger;
-    this.task = taskWithMessage.task;
   }
 
   get msgId() {
-    return this.task.msg_id;
+    return this.context.stepTask.msg_id;
   }
 
   async execute(): Promise<void> {
@@ -44,9 +41,9 @@ export class StepTaskExecutor<TFlow extends AnyFlow> implements IExecutor {
       // Check if already aborted before starting
       this.signal.throwIfAborted();
 
-      const stepSlug = this.task.step_slug;
+      const stepSlug = this.context.stepTask.step_slug;
       this.logger.debug(
-        `Executing step task ${this.task.msg_id} for step ${stepSlug}`
+        `Executing step task ${this.context.stepTask.msg_id} for step ${stepSlug}`
       );
 
       // Get the step handler from the flow with proper typing
@@ -56,19 +53,17 @@ export class StepTaskExecutor<TFlow extends AnyFlow> implements IExecutor {
         throw new Error(`No step definition found for slug=${stepSlug}`);
       }
 
-      // Create context for the handler
-      const context = this.platformAdapter.createStepTaskContext(this.taskWithMessage);
 
       // !!! HANDLER EXECUTION !!!
-      const result = await stepDef.handler(this.task.input, context);
+      const result = await stepDef.handler(this.context.stepTask.input, this.context);
       // !!! HANDLER EXECUTION !!!
 
       this.logger.debug(
-        `step task ${this.task.msg_id} completed successfully, marking as complete`
+        `step task ${this.context.stepTask.msg_id} completed successfully, marking as complete`
       );
-      await this.adapter.completeTask(this.task, result);
+      await this.adapter.completeTask(this.context.stepTask, result);
 
-      this.logger.debug(`step task ${this.task.msg_id} marked as complete`);
+      this.logger.debug(`step task ${this.context.stepTask.msg_id} marked as complete`);
     } catch (error) {
       await this.handleExecutionError(error);
     }
@@ -84,14 +79,14 @@ export class StepTaskExecutor<TFlow extends AnyFlow> implements IExecutor {
    */
   private async handleExecutionError(error: unknown) {
     if (error instanceof Error && error.name === 'AbortError') {
-      this.logger.debug(`Aborted execution for step task ${this.task.msg_id}`);
+      this.logger.debug(`Aborted execution for step task ${this.context.stepTask.msg_id}`);
       // Do not mark as failed - the worker was aborted and stopping,
       // the task will be picked up by another worker later
     } else {
       this.logger.error(
-        `step task ${this.task.msg_id} failed with error: ${error}`
+        `step task ${this.context.stepTask.msg_id} failed with error: ${error}`
       );
-      await this.adapter.failTask(this.task, error);
+      await this.adapter.failTask(this.context.stepTask, error);
     }
   }
 }
