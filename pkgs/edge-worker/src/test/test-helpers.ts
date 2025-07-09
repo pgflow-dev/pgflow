@@ -1,6 +1,6 @@
 import type { Sql } from 'postgres';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { AnyFlow } from '@pgflow/dsl';
+import type { AnyFlow, AllStepInputs } from '@pgflow/dsl';
 import type { SupabaseResources } from '@pgflow/dsl/supabase';
 import type { Json } from '../core/types.js';
 import type { PgmqMessageRecord } from '../queue/types.js';
@@ -37,7 +37,7 @@ export function createSupabaseMessageContext<TPayload extends Json = Json>(param
 
   return {
     // Core platform resources
-    env: env as never,
+    env,
     shutdownSignal: abortSignal,
     
     // Message execution context
@@ -47,7 +47,7 @@ export function createSupabaseMessageContext<TPayload extends Json = Json>(param
     sql,
     anonSupabase,
     serviceSupabase
-  } as SupabaseMessageContext<TPayload>;
+  };
 }
 
 /**
@@ -59,7 +59,7 @@ export function createSupabaseStepTaskContext<TFlow extends AnyFlow>(params: {
   sql: Sql;
   abortSignal: AbortSignal;
   stepTask: StepTaskRecord<TFlow>;
-  rawMessage: PgmqMessageRecord<Json>;
+  rawMessage: PgmqMessageRecord<AllStepInputs<TFlow>>;
 }): SupabaseStepTaskContext<TFlow> {
   const { env, sql, abortSignal, stepTask, rawMessage } = params;
 
@@ -77,18 +77,18 @@ export function createSupabaseStepTaskContext<TFlow extends AnyFlow>(params: {
 
   return {
     // Core platform resources
-    env: env as never,
+    env,
     shutdownSignal: abortSignal,
     
     // Step task execution context
-    rawMessage: rawMessage as never,
+    rawMessage,
     stepTask,
     
     // Supabase-specific resources (always present)
     sql,
     anonSupabase,
     serviceSupabase
-  } as SupabaseStepTaskContext<TFlow>;
+  };
 }
 
 /**

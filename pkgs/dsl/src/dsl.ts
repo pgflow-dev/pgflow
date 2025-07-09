@@ -17,6 +17,22 @@ export type Json =
 export type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
 
 // ========================
+// ENVIRONMENT TYPE SYSTEM
+// ========================
+
+// Base environment interface - minimal requirements
+export interface Env {
+  [key: string]: string | undefined;
+}
+
+// Validation utility for environment variables
+export type ValidEnv<T> = T extends Env ? T : never;
+
+// Empty interface that users can augment via declaration merging
+// Must extend Env to be compatible with ValidEnv constraint
+export interface UserEnv extends Env {}
+
+// ========================
 // FLOW COMPONENT TYPES
 // ========================
 
@@ -186,15 +202,6 @@ export interface RuntimeOptions {
   timeout?: number;
 }
 
-// Base env type - loose typing for any env var
-export type Env = Record<string, string | undefined>;
-
-// Constraint to ensure UserEnv is compatible with Env
-export type ValidEnv<T> = T extends Env ? T : never;
-
-// Empty interface that users can augment
-// eslint-disable-next-line @typescript-eslint/no-empty-interface, @typescript-eslint/no-empty-object-type
-export interface UserEnv {}
 
 // Base context interface - what ALL platforms must provide
 export interface BaseContext {
