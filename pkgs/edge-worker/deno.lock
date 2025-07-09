@@ -5,6 +5,7 @@
       "jsr:@deno-library/progress": "jsr:@deno-library/progress@1.5.1",
       "jsr:@henrygd/queue@^1.0.7": "jsr:@henrygd/queue@1.0.7",
       "jsr:@std/assert@^0.224.0": "jsr:@std/assert@0.224.0",
+      "jsr:@std/async@^0.224.0": "jsr:@std/async@0.224.2",
       "jsr:@std/fmt@1.0.3": "jsr:@std/fmt@1.0.3",
       "jsr:@std/fmt@^0.224.0": "jsr:@std/fmt@0.224.0",
       "jsr:@std/internal@^0.224.0": "jsr:@std/internal@0.224.0",
@@ -31,6 +32,9 @@
           "jsr:@std/fmt@^0.224.0",
           "jsr:@std/internal@^0.224.0"
         ]
+      },
+      "@std/async@0.224.2": {
+        "integrity": "4d277d6e165df43d5e061ba0ef3edfddb8e8d558f5b920e3e6b1d2614b44d074"
       },
       "@std/fmt@0.224.0": {
         "integrity": "e20e9a2312a8b5393272c26191c0a68eda8d2c4b08b046bad1673148f1d69851"
