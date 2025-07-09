@@ -90,7 +90,7 @@ type ExplicitFlowContext = ExtractFlowContext<typeof ExplicitFlow>;
 const _explicitTest: ExplicitFlowContext = {
   sql: {} as TestSql,
   cache: {} as TestRedis,
-  pubsub: { publish: () => {} }
+  pubsub: { publish: () => { /* empty */ } }
 }; // Should compile
 
 // Test 5: Mixed approach - explicit base with inferred additions
@@ -127,7 +127,7 @@ const _partialTest: PartialContextFlowContext = { customField: 'test' }; // Shou
 type AssertEqual<T, U> = T extends U ? (U extends T ? true : false) : false;
 
 // These should all be true
-type Test1 = AssertEqual<ExtractFlowContext<typeof MinimalFlow>, {}>;
+type Test1 = AssertEqual<ExtractFlowContext<typeof MinimalFlow>, Record<string, never>>;
 type Test2 = AssertEqual<ExtractFlowContext<typeof SingleInferredFlow>, { sql: TestSql }>;
 type Test3 = AssertEqual<
   ExtractFlowContext<typeof MultiInferredFlow>,
