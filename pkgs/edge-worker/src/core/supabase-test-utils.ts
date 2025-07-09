@@ -1,6 +1,6 @@
 import type { Sql } from 'postgres';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { AnyFlow, AllStepInputs } from '@pgflow/dsl';
+import type { AnyFlow } from '@pgflow/dsl';
 import type { Json } from './types.js';
 import type { PgmqMessageRecord } from '../queue/types.js';
 import type { 
@@ -111,5 +111,5 @@ function createMockSupabaseClient(): SupabaseClient {
         eq: () => Promise.resolve({ data: [], error: null }) 
       }) 
     })
-  } as any;
+  } as unknown as SupabaseClient;
 }

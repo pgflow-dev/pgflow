@@ -4,12 +4,12 @@ import {
   createSupabaseStepTaskContext,
   createMockSupabaseResources
 } from '../../src/test/test-helpers.ts';
-import { createTestMessageContext, createTestStepTaskContext } from '../../src/core/test-context-utils.ts';
+import { createTestMessageContext } from '../../src/core/test-context-utils.ts';
 import type { PgmqMessageRecord } from '../../src/queue/types.ts';
 import type { StepTaskRecord } from '../../src/flow/types.ts';
 
 // Mock SQL client
-const mockSql = {} as any;
+const mockSql = {} as unknown;
 
 // Mock abort signal
 const mockAbortSignal = new AbortController().signal;
@@ -37,7 +37,7 @@ const mockMessage: PgmqMessageRecord<{ test: string }> = {
 };
 
 // Mock step task
-const mockStepTask: StepTaskRecord<any> = {
+const mockStepTask: StepTaskRecord<unknown> = {
   flow_slug: 'test-flow',
   run_id: 'run-456',
   step_slug: 'test-step',
@@ -84,7 +84,7 @@ Deno.test('createTestMessageContext - allows custom resources for testing', () =
   
   // Check custom resources
   assertEquals(context.sql, mockSql);
-  assertEquals((context as any).customResource, 'test-value');
+  assertEquals((context as unknown as { customResource: string }).customResource, 'test-value');
 });
 
 Deno.test('createSupabaseStepTaskContext - creates context with step task', () => {

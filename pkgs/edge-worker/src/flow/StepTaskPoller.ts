@@ -1,4 +1,4 @@
-import type { StepTaskRecord, IPgflowClient } from './types.js';
+import type { IPgflowClient } from './types.js';
 import type { IPoller, Supplier } from '../core/types.js';
 import type { Logger } from '../platform/types.js';
 import type { AnyFlow, AllStepInputs } from '@pgflow/dsl';

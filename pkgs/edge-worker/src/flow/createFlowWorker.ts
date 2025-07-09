@@ -4,7 +4,6 @@ import { StepTaskPoller, type StepTaskPollerConfig } from './StepTaskPoller.js';
 import { StepTaskExecutor } from './StepTaskExecutor.js';
 import { PgflowSqlClient } from '@pgflow/core';
 import { Queries } from '../core/Queries.js';
-import type { StepTaskRecord } from './types.js';
 import type { IExecutor } from '../core/types.js';
 import type { Logger, PlatformAdapter } from '../platform/types.js';
 import type { StepTaskWithMessage } from '../core/context.js';

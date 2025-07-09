@@ -1,11 +1,9 @@
-import type { Sql } from 'postgres';
 import type { AnyFlow, AllStepInputs } from '@pgflow/dsl';
 import type { Json } from './types.js';
 import type { PgmqMessageRecord } from '../queue/types.js';
 import type { 
   MessageHandlerContext, 
-  StepTaskHandlerContext,
-  StepTaskWithMessage 
+  StepTaskHandlerContext
 } from './context.js';
 import type { StepTaskRecord } from '../flow/types.js';
 

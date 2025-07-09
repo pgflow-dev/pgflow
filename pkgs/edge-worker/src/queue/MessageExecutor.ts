@@ -3,7 +3,7 @@ import type { MessageHandlerFn, PgmqMessageRecord } from './types.js';
 import type { Queue } from './Queue.js';
 import type { Logger } from '../platform/types.js';
 import type { RetryConfig } from './createQueueWorker.js';
-import type { MessageHandlerContext, SupabaseMessageContext } from '../core/context.js';
+import type { MessageHandlerContext } from '../core/context.js';
 
 class AbortError extends Error {
   constructor() {

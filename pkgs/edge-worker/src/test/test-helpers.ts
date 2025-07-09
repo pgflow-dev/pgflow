@@ -59,7 +59,7 @@ export function createSupabaseStepTaskContext<TFlow extends AnyFlow>(params: {
   sql: Sql;
   abortSignal: AbortSignal;
   stepTask: StepTaskRecord<TFlow>;
-  rawMessage: PgmqMessageRecord<any>;
+  rawMessage: PgmqMessageRecord<unknown>;
 }): SupabaseStepTaskContext<TFlow> {
   const { env, sql, abortSignal, stepTask, rawMessage } = params;
 
@@ -97,7 +97,7 @@ export function createSupabaseStepTaskContext<TFlow extends AnyFlow>(params: {
 export function createMockSupabaseClient(): SupabaseClient {
   return {
     from: () => ({ select: () => ({ eq: () => Promise.resolve({ data: [], error: null }) }) })
-  } as any;
+  } as unknown as SupabaseClient;
 }
 
 /**
@@ -105,7 +105,7 @@ export function createMockSupabaseClient(): SupabaseClient {
  */
 export function createMockSupabaseResources(overrides?: Partial<SupabaseResources>): SupabaseResources {
   return {
-    sql: {} as any,
+    sql: {} as unknown as Sql,
     anonSupabase: createMockSupabaseClient(),
     serviceSupabase: createMockSupabaseClient(),
     ...overrides
