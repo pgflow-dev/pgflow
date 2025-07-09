@@ -93,11 +93,6 @@ export type SupabaseMessageContext<TPayload extends Json = Json> =
 export type SupabaseStepTaskContext<TFlow extends AnyFlow> = 
   StepTaskHandlerContext<TFlow, SupabaseResources>;
 
-/**
- * Generic context type for backward compatibility with tests
- * This will be gradually replaced with more specific context types
- */
-export type Context<TPayload extends Json = Json> = MessageHandlerContext<TPayload, Partial<SupabaseResources>>;
 
 
 /**

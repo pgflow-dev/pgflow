@@ -40,14 +40,14 @@ export type AnyDeps = Record<string, string[]>;
 /**
  * Represents a Flow that has not steps nor deps defined yet
  */
-export type EmptyFlow = Flow<AnyInput, EmptySteps, EmptyDeps>;
+export type EmptyFlow = Flow<AnyInput, {}, EmptySteps, EmptyDeps>;
 
 /**
- * Represents any Flow with flexible input, steps, and dependencies.
+ * Represents any Flow with flexible input, context, steps, and dependencies.
  * This type is intentionally more permissive to allow for better type inference
  * in utility types like StepOutput.
  */
-export type AnyFlow = Flow<any, any, any>;
+export type AnyFlow = Flow<any, any, any, any>;
 
 // ========================
 // UTILITY TYPES (with proper constraints)
@@ -59,6 +59,7 @@ export type AnyFlow = Flow<any, any, any>;
  */
 export type ExtractFlowInput<TFlow extends AnyFlow> = TFlow extends Flow<
   infer TI,
+  infer _TC,
   infer _TS,
   infer _TD
 >
@@ -79,6 +80,7 @@ export type AllStepInputs<TFlow extends AnyFlow> = {
  */
 export type ExtractFlowOutput<TFlow extends AnyFlow> = TFlow extends Flow<
   infer _TI,
+  infer _TC,
   infer _TS,
   infer _TD
 >
@@ -95,6 +97,7 @@ export type ExtractFlowOutput<TFlow extends AnyFlow> = TFlow extends Flow<
  */
 export type ExtractFlowSteps<TFlow extends AnyFlow> = TFlow extends Flow<
   infer _TI,
+  infer _TC,
   infer TS,
   infer _TD
 >
@@ -107,10 +110,24 @@ export type ExtractFlowSteps<TFlow extends AnyFlow> = TFlow extends Flow<
  */
 export type ExtractFlowDeps<TFlow extends AnyFlow> = TFlow extends Flow<
   infer _TI,
+  infer _TC,
   infer _TS,
   infer TD
 >
   ? TD
+  : never;
+
+/**
+ * Extracts the context type from a Flow
+ * @template TFlow - The Flow type to extract from
+ */
+export type ExtractFlowContext<TFlow extends AnyFlow> = TFlow extends Flow<
+  infer _TI,
+  infer TC,
+  infer _TS,
+  infer _TD
+>
+  ? TC
   : never;
 
 /**
@@ -169,15 +186,14 @@ export interface RuntimeOptions {
   timeout?: number;
 }
 
-// Context type import placeholder - will be provided by edge-worker
-export interface Context<TPayload = Json> {
+// Minimal context interface - only what ALL platforms must provide
+export interface Context {
   env: Record<string, string | undefined>;
-  sql: any; // postgres.Sql
-  rawMessage?: any; // PgmqMessageRecord<TPayload>
-  anonSupabase?: any; // SupabaseClient
-  serviceSupabase?: any; // SupabaseClient
-  abortSignal: AbortSignal;
+  shutdownSignal: AbortSignal;
 }
+
+// Helper type to extract context type from a handler function
+type ExtractHandlerContext<T> = T extends (input: any, context: infer C) => any ? C : never;
 
 // Define the StepDefinition interface with integrated options
 export interface StepDefinition<
@@ -196,6 +212,7 @@ type MergeObjects<T1 extends object, T2 extends object> = T1 & T2;
 // Flow class definition
 export class Flow<
   TFlowInput extends AnyInput = AnyInput,
+  TContext = {}, // Accumulated context requirements
   Steps extends AnySteps = EmptySteps,
   StepDependencies extends AnyDeps = EmptyDeps
 > {
@@ -267,10 +284,8 @@ export class Flow<
   step<
     Slug extends string,
     Deps extends Extract<keyof Steps, string> = never,
-    RetType extends AnyOutput = AnyOutput
-  >(
-    opts: Simplify<{ slug: Slug; dependsOn?: Deps[] } & RuntimeOptions>,
-    handler: (
+    RetType extends AnyOutput = AnyOutput,
+    THandler extends (input: any, context: any) => any = (
       input: Simplify<
         {
           run: TFlowInput;
@@ -278,10 +293,14 @@ export class Flow<
           [K in Deps]: K extends keyof Steps ? Steps[K] : never;
         }
       >,
-      context: Context
+      context: Context & TContext
     ) => RetType | Promise<RetType>
+  >(
+    opts: Simplify<{ slug: Slug; dependsOn?: Deps[] } & RuntimeOptions>,
+    handler: THandler
   ): Flow<
     TFlowInput,
+    TContext & ExtractHandlerContext<THandler>,
     Steps & { [K in Slug]: Awaited<RetType> },
     StepDependencies & { [K in Slug]: Deps[] }
   > {
@@ -357,10 +376,10 @@ export class Flow<
     // We need to use type assertions here because TypeScript cannot track the exact relationship
     // between the specific step definition types and the generic Flow type parameters
     // This is safe because we're constructing the newStepDefinitions in a type-safe way above
-    return new Flow<TFlowInput, NewSteps, NewDependencies>(
+    return new Flow<TFlowInput, TContext & ExtractHandlerContext<THandler>, NewSteps, NewDependencies>(
       { slug: this.slug, ...this.options },
       newStepDefinitions as Record<string, StepDefinition<AnyInput, AnyOutput>>,
       newStepOrder
-    ) as Flow<TFlowInput, NewSteps, NewDependencies>;
+    ) as Flow<TFlowInput, TContext & ExtractHandlerContext<THandler>, NewSteps, NewDependencies>;
   }
 }
