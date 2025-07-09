@@ -72,6 +72,7 @@ export type SupabaseContext = Context<SupabaseResources> & { env: SupabaseEnv & 
  */
 export class Flow<
   I extends AnyInput = AnyInput,
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   Extra extends Record<string, unknown> = {},
   S extends AnySteps = EmptySteps,
   D extends AnyDeps = EmptyDeps,

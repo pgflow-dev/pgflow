@@ -12,11 +12,11 @@ describe('Supabase Preset Flow', () => {
       .step({ slug: 'process' }, async (input, ctx) => {
         // These should all be available with full types
         // without needing to annotate ctx
-        const _sql = ctx.sql;
-        const _anonSupabase = ctx.anonSupabase;
-        const _serviceSupabase = ctx.serviceSupabase;
-        const _env = ctx.env;
-        const _shutdownSignal = ctx.shutdownSignal;
+        void ctx.sql;
+        void ctx.anonSupabase;
+        void ctx.serviceSupabase;
+        void ctx.env;
+        void ctx.shutdownSignal;
         
         // This would demonstrate that autocomplete works
         // In an IDE, typing "ctx." would show all these properties
@@ -24,7 +24,7 @@ describe('Supabase Preset Flow', () => {
       });
 
     // The flow should be correctly typed
-    const _: typeof flow = flow;
+    void flow;
   });
 
   it('should allow adding custom resources on top of platform resources', () => {
@@ -33,12 +33,12 @@ describe('Supabase Preset Flow', () => {
       cache: { get: (key: string) => string | null };
     }
 
-    const flow = new Flow<any, CustomResources>({ slug: 'custom_flow' })
+    const flow = new Flow<{ input: string }, CustomResources>({ slug: 'custom_flow' })
       .step({ slug: 'process' }, async (input, ctx) => {
         // Should have all platform resources
-        ctx.sql;
-        ctx.anonSupabase;
-        ctx.serviceSupabase;
+        void ctx.sql;
+        void ctx.anonSupabase;
+        void ctx.serviceSupabase;
         
         // Plus custom resources
         ctx.logger.log('test');
@@ -47,6 +47,6 @@ describe('Supabase Preset Flow', () => {
         return { done: true };
       });
 
-    const _: typeof flow = flow;
+    void flow;
   });
 });

@@ -193,6 +193,7 @@ export type Env = Record<string, string | undefined>;
 export type ValidEnv<T> = T extends Env ? T : never;
 
 // Empty interface that users can augment
+// eslint-disable-next-line @typescript-eslint/no-empty-interface, @typescript-eslint/no-empty-object-type
 export interface UserEnv {}
 
 // Base context interface - what ALL platforms must provide
@@ -202,6 +203,7 @@ export interface BaseContext {
 }
 
 // Generic context type that combines base with custom resources
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export type Context<T extends object = {}> = BaseContext & T;
 
 // Helper type to extract context type from a handler function

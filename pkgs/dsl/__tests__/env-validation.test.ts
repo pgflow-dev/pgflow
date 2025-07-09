@@ -1,6 +1,5 @@
 import { describe, it, expectTypeOf } from 'vitest';
 import { Flow } from '../src/platforms/supabase.js';
-import type { Env, UserEnv } from '../src/index.js';
 
 /**
  * This test file verifies the environment type validation system.
@@ -24,7 +23,7 @@ describe('Environment Type Validation', () => {
         return { processed: true };
       });
 
-    const _: typeof flow = flow;
+    void flow;
   });
 
   it('should work with custom resources', () => {
@@ -36,9 +35,9 @@ describe('Environment Type Validation', () => {
     const flow = new Flow<{ input: string }, CustomResources>({ slug: 'custom_flow' })
       .step({ slug: 'process' }, async (input, ctx) => {
         // Should have all platform resources
-        ctx.sql;
-        ctx.anonSupabase;
-        ctx.serviceSupabase;
+        void ctx.sql;
+        void ctx.anonSupabase;
+        void ctx.serviceSupabase;
         
         // Plus custom resources
         ctx.logger.log('test');
@@ -50,7 +49,7 @@ describe('Environment Type Validation', () => {
         return { done: true };
       });
 
-    const _: typeof flow = flow;
+    void flow;
   });
 
   it('should validate that Extra extends Record<string, unknown>', () => {
@@ -67,9 +66,9 @@ describe('Environment Type Validation', () => {
     const flow3 = new Flow<TestInput, ValidExtra3>({ slug: 'test3' });
     
     // Just verify they exist
-    const _: typeof flow1 = flow1;
-    const __: typeof flow2 = flow2;
-    const ___: typeof flow3 = flow3;
+    void flow1;
+    void flow2;
+    void flow3;
     
     // Note: Invalid types like string, number, etc. would cause compilation errors
     // but we can't easily test compilation failures in vitest
@@ -104,6 +103,6 @@ describe('UserEnv Augmentation', () => {
         return { processed: true };
       });
 
-    const _: typeof flow = flow;
+    void flow;
   });
 });
