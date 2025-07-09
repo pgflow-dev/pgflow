@@ -5,8 +5,8 @@
  * made configurable or determined by build-time configuration.
  */
 
-import type { SupabaseResources } from '../core/context.js';
-import type { Context } from '@pgflow/dsl';
+import type { SupabaseResources } from '@pgflow/dsl/supabase';
+import type { BaseContext } from '@pgflow/dsl';
 
 /**
  * The resources provided by the current platform.
@@ -17,4 +17,4 @@ export type CurrentPlatformResources = SupabaseResources;
 /**
  * All resources available to flows (base context + platform resources)
  */
-export type AvailableResources = Context & CurrentPlatformResources;
+export type AvailableResources = BaseContext & CurrentPlatformResources;

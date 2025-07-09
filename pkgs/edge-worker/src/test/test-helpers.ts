@@ -1,12 +1,12 @@
 import type { Sql } from 'postgres';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AnyFlow } from '@pgflow/dsl';
+import type { SupabaseResources } from '@pgflow/dsl/supabase';
 import type { Json } from '../core/types.js';
 import type { PgmqMessageRecord } from '../queue/types.js';
 import type { 
   SupabaseMessageContext,
-  SupabaseStepTaskContext,
-  SupabaseResources
+  SupabaseStepTaskContext
 } from '../core/context.js';
 import type { StepTaskRecord } from '../flow/types.js';
 import { createAnonSupabaseClient, createServiceSupabaseClient } from '../core/supabase-utils.js';

@@ -1,4 +1,4 @@
-import { Flow, Context, ExtractFlowContext } from '../../src/index.js';
+import { Flow, BaseContext, Context, ExtractFlowContext } from '../../src/index.js';
 import { describe, it, expectTypeOf } from 'vitest';
 
 // Mock types for testing
@@ -19,7 +19,7 @@ describe('Context Type Inference Tests', () => {
   it('should have minimal context by default', () => {
     const flow = new Flow({ slug: 'minimal_flow' })
       .step({ slug: 'process' }, (input, context) => {
-        expectTypeOf(context).toMatchTypeOf<Context>();
+        expectTypeOf(context).toMatchTypeOf<BaseContext>();
         expectTypeOf(context.env).toEqualTypeOf<Record<string, string | undefined>>();
         expectTypeOf(context.shutdownSignal).toEqualTypeOf<AbortSignal>();
         
@@ -29,9 +29,9 @@ describe('Context Type Inference Tests', () => {
         return { processed: true };
       });
 
-    // ExtractFlowContext should return base Context for minimal flow
+    // ExtractFlowContext should return BaseContext for minimal flow
     type FlowContext = ExtractFlowContext<typeof flow>;
-    expectTypeOf<FlowContext>().toEqualTypeOf<Context>();
+    expectTypeOf<FlowContext>().toEqualTypeOf<BaseContext>();
   });
 
   it('should infer context from single handler type annotation', () => {
@@ -45,30 +45,30 @@ describe('Context Type Inference Tests', () => {
         return { result: 'data' };
       });
 
-    // ExtractFlowContext should return Context & { sql: TestSql }
+    // ExtractFlowContext should return BaseContext & { sql: TestSql }
     type FlowContext = ExtractFlowContext<typeof flow>;
-    expectTypeOf<FlowContext>().toEqualTypeOf<Context & { sql: TestSql }>();
+    expectTypeOf<FlowContext>().toEqualTypeOf<BaseContext & { sql: TestSql }>();
   });
 
   it('should accumulate context from multiple handlers', () => {
     const flow = new Flow({ slug: 'multi_inferred' })
-      .step({ slug: 'query' }, (input, context: Context & { sql: TestSql }) => {
+      .step({ slug: 'query' }, (input, context: Context<{ sql: TestSql }>) => {
         expectTypeOf(context.sql).toEqualTypeOf<TestSql>();
         return { users: [] };
       })
-      .step({ slug: 'cache' }, (input, context: Context & { redis: TestRedis }) => {
+      .step({ slug: 'cache' }, (input, context: Context<{ redis: TestRedis }>) => {
         expectTypeOf(context.redis).toEqualTypeOf<TestRedis>();
         return { cached: true };
       })
-      .step({ slug: 'notify' }, (input, context: Context & { sql: TestSql, supabase: TestSupabase }) => {
+      .step({ slug: 'notify' }, (input, context: Context<{ sql: TestSql, supabase: TestSupabase }>) => {
         expectTypeOf(context.sql).toEqualTypeOf<TestSql>();
         expectTypeOf(context.supabase).toEqualTypeOf<TestSupabase>();
         return { notified: true };
       });
 
-    // ExtractFlowContext should have base Context plus all accumulated resources
+    // ExtractFlowContext should have BaseContext plus all accumulated resources
     type FlowContext = ExtractFlowContext<typeof flow>;
-    expectTypeOf<FlowContext>().toEqualTypeOf<Context & {
+    expectTypeOf<FlowContext>().toEqualTypeOf<BaseContext & {
       sql: TestSql;
       redis: TestRedis;
       supabase: TestSupabase;
@@ -85,7 +85,7 @@ describe('Context Type Inference Tests', () => {
     const flow = new Flow<{ userId: string }, ExplicitContext>({ slug: 'explicit_flow' })
       .step({ slug: 'get_user' }, (input, context) => {
         // All properties from ExplicitContext should be available
-        expectTypeOf(context).toMatchTypeOf<Context & ExplicitContext>();
+        expectTypeOf(context).toMatchTypeOf<BaseContext & ExplicitContext>();
         expectTypeOf(context.sql).toEqualTypeOf<TestSql>();
         expectTypeOf(context.cache).toEqualTypeOf<TestRedis>();
         expectTypeOf(context.pubsub).toEqualTypeOf<{ publish: (event: string) => void }>();
@@ -93,9 +93,9 @@ describe('Context Type Inference Tests', () => {
         return { id: 1, name: 'Test' };
       });
 
-    // ExtractFlowContext should return base Context merged with explicit type
+    // ExtractFlowContext should return BaseContext merged with explicit type
     type FlowContext = ExtractFlowContext<typeof flow>;
-    expectTypeOf<FlowContext>().toEqualTypeOf<Context & ExplicitContext>();
+    expectTypeOf<FlowContext>().toEqualTypeOf<BaseContext & ExplicitContext>();
   });
 
   it('should support mixed explicit and inferred context', () => {
@@ -105,16 +105,16 @@ describe('Context Type Inference Tests', () => {
         expectTypeOf(context.sql).toEqualTypeOf<TestSql>();
         return { data: 'result' };
       })
-      .step({ slug: 'enhance' }, (input, context: Context & { sql: TestSql, ai: { generate: () => string } }) => {
+      .step({ slug: 'enhance' }, (input, context: Context<{ sql: TestSql, ai: { generate: () => string } }>) => {
         // Should have both sql (from explicit) and ai (from inference)
         expectTypeOf(context.sql).toEqualTypeOf<TestSql>();
         expectTypeOf(context.ai).toEqualTypeOf<{ generate: () => string }>();
         return { enhanced: true };
       });
 
-    // ExtractFlowContext should have base Context plus both explicit and inferred
+    // ExtractFlowContext should have BaseContext plus both explicit and inferred
     type FlowContext = ExtractFlowContext<typeof flow>;
-    expectTypeOf<FlowContext>().toEqualTypeOf<Context & {
+    expectTypeOf<FlowContext>().toEqualTypeOf<BaseContext & {
       sql: TestSql;
       ai: { generate: () => string };
     }>();
@@ -131,19 +131,19 @@ describe('Context Type Inference Tests', () => {
         return { processed: context.customField };
       });
 
-    // ExtractFlowContext should have base Context plus the custom field
+    // ExtractFlowContext should have BaseContext plus the custom field
     type FlowContext = ExtractFlowContext<typeof flow>;
-    expectTypeOf<FlowContext>().toEqualTypeOf<Context & { customField: string }>();
+    expectTypeOf<FlowContext>().toEqualTypeOf<BaseContext & { customField: string }>();
   });
 
   it('should preserve existing step type inference while adding context', () => {
     const flow = new Flow<{ initial: number }>({ slug: 'step_chain' })
-      .step({ slug: 'double' }, (input, context: Context & { multiplier: number }) => {
+      .step({ slug: 'double' }, (input, context: Context<{ multiplier: number }>) => {
         expectTypeOf(input.run.initial).toEqualTypeOf<number>();
         expectTypeOf(context.multiplier).toEqualTypeOf<number>();
         return { doubled: input.run.initial * 2 };
       })
-      .step({ slug: 'format', dependsOn: ['double'] }, (input, context: Context & { formatter: (n: number) => string }) => {
+      .step({ slug: 'format', dependsOn: ['double'] }, (input, context: Context<{ formatter: (n: number) => string }>) => {
         expectTypeOf(input.run.initial).toEqualTypeOf<number>();
         expectTypeOf(input.double.doubled).toEqualTypeOf<number>();
         expectTypeOf(context.formatter).toEqualTypeOf<(n: number) => string>();
@@ -152,7 +152,7 @@ describe('Context Type Inference Tests', () => {
 
     // Context should have base plus accumulated requirements
     type FlowContext = ExtractFlowContext<typeof flow>;
-    expectTypeOf<FlowContext>().toEqualTypeOf<Context & {
+    expectTypeOf<FlowContext>().toEqualTypeOf<BaseContext & {
       multiplier: number;
       formatter: (n: number) => string;
     }>();

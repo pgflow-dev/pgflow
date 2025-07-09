@@ -40,7 +40,7 @@ export type AnyDeps = Record<string, string[]>;
 /**
  * Represents a Flow that has not steps nor deps defined yet
  */
-export type EmptyFlow = Flow<AnyInput, Context, EmptySteps, EmptyDeps>;
+export type EmptyFlow = Flow<AnyInput, BaseContext, EmptySteps, EmptyDeps>;
 
 /**
  * Represents any Flow with flexible input, context, steps, and dependencies.
@@ -186,11 +186,14 @@ export interface RuntimeOptions {
   timeout?: number;
 }
 
-// Minimal context interface - only what ALL platforms must provide
-export interface Context {
+// Base context interface - what ALL platforms must provide
+export interface BaseContext {
   env: Record<string, string | undefined>;
   shutdownSignal: AbortSignal;
 }
+
+// Generic context type that combines base with custom resources
+export type Context<T extends object = {}> = BaseContext & T;
 
 // Helper type to extract context type from a handler function
 type ExtractHandlerContext<T> = T extends (input: any, context: infer C) => any ? C : never;
@@ -199,7 +202,7 @@ type ExtractHandlerContext<T> = T extends (input: any, context: infer C) => any 
 export interface StepDefinition<
   TInput extends AnyInput,
   TOutput extends AnyOutput,
-  TContext = Context
+  TContext = BaseContext
 > {
   slug: string;
   handler: (input: TInput, context: TContext) => TOutput | Promise<TOutput>;
@@ -213,7 +216,7 @@ type MergeObjects<T1 extends object, T2 extends object> = T1 & T2;
 // Flow class definition
 export class Flow<
   TFlowInput extends AnyInput = AnyInput,
-  TContext = Context, // Accumulated context requirements (starts with base Context)
+  TContext = BaseContext, // Accumulated context requirements (starts with BaseContext)
   Steps extends AnySteps = EmptySteps,
   StepDependencies extends AnyDeps = EmptyDeps
 > {
@@ -294,14 +297,14 @@ export class Flow<
           [K in Deps]: K extends keyof Steps ? Steps[K] : never;
         }
       >,
-      context: Context & TContext
+      context: BaseContext & TContext
     ) => RetType | Promise<RetType>
   >(
     opts: Simplify<{ slug: Slug; dependsOn?: Deps[] } & RuntimeOptions>,
     handler: THandler
   ): Flow<
     TFlowInput,
-    TContext & Context & ExtractHandlerContext<THandler>,
+    TContext & BaseContext & ExtractHandlerContext<THandler>,
     Steps & { [K in Slug]: Awaited<RetType> },
     StepDependencies & { [K in Slug]: Deps[] }
   > {
@@ -377,10 +380,10 @@ export class Flow<
     // We need to use type assertions here because TypeScript cannot track the exact relationship
     // between the specific step definition types and the generic Flow type parameters
     // This is safe because we're constructing the newStepDefinitions in a type-safe way above
-    return new Flow<TFlowInput, TContext & Context & ExtractHandlerContext<THandler>, NewSteps, NewDependencies>(
+    return new Flow<TFlowInput, TContext & BaseContext & ExtractHandlerContext<THandler>, NewSteps, NewDependencies>(
       { slug: this.slug, ...this.options },
       newStepDefinitions as Record<string, StepDefinition<AnyInput, AnyOutput>>,
       newStepOrder
-    ) as Flow<TFlowInput, TContext & Context & ExtractHandlerContext<THandler>, NewSteps, NewDependencies>;
+    ) as Flow<TFlowInput, TContext & BaseContext & ExtractHandlerContext<THandler>, NewSteps, NewDependencies>;
   }
 }

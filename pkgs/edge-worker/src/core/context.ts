@@ -1,24 +1,8 @@
 import type { Json } from './types.js';
 import type { PgmqMessageRecord } from '../queue/types.js';
 import type { StepTaskRecord } from '../flow/types.js';
-import type { AnyFlow, AllStepInputs } from '@pgflow/dsl';
-import type { Sql } from 'postgres';
-import type { SupabaseClient } from '@supabase/supabase-js';
-
-/**
- * Core platform resources that every platform MUST provide
- */
-export interface CorePlatformResources {
-  /**
-   * Environment variables available to the handler
-   */
-  env: Record<string, string | undefined>;
-
-  /**
-   * Abort signal that fires when the worker is shutting down
-   */
-  shutdownSignal: AbortSignal;
-}
+import type { AnyFlow, AllStepInputs, BaseContext } from '@pgflow/dsl';
+import type { SupabaseResources } from '@pgflow/dsl/supabase';
 
 /**
  * Per-execution context for message handlers
@@ -51,7 +35,7 @@ export interface StepTaskExecution<TFlow extends AnyFlow> {
 export type MessageHandlerContext<
   TPayload extends Json = Json,
   TPlatformExtras extends Record<string, unknown> = Record<string, unknown>
-> = CorePlatformResources & MessageExecution<TPayload> & TPlatformExtras;
+> = BaseContext & MessageExecution<TPayload> & TPlatformExtras;
 
 /**
  * Generic step task handler context with platform extras
@@ -59,27 +43,7 @@ export type MessageHandlerContext<
 export type StepTaskHandlerContext<
   TFlow extends AnyFlow,
   TPlatformExtras extends Record<string, unknown> = Record<string, unknown>
-> = CorePlatformResources & StepTaskExecution<TFlow> & TPlatformExtras;
-
-/**
- * Supabase-specific platform resources
- */
-export type SupabaseResources = {
-  /**
-   * PostgreSQL client for database operations
-   */
-  sql: Sql;
-
-  /**
-   * Anonymous Supabase client (always available on Supabase)
-   */
-  anonSupabase: SupabaseClient;
-
-  /**
-   * Service role Supabase client (always available on Supabase)
-   */
-  serviceSupabase: SupabaseClient;
-};
+> = BaseContext & StepTaskExecution<TFlow> & TPlatformExtras;
 
 /**
  * User-facing context type for message handlers on Supabase

@@ -1,8 +1,8 @@
-import type { SupabaseResources } from '../core/context.js';
 import type { CreateWorkerFn, Logger, PlatformAdapter } from './types.js';
 import type { Worker } from '../core/Worker.js';
 import type { Sql } from 'postgres';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseResources } from '@pgflow/dsl/supabase';
 import { createSql } from '../core/sql-factory.js';
 import { createAnonSupabaseClient, createServiceSupabaseClient } from '../core/supabase-utils.js';
 import { createLoggingFactory } from './logging.js';

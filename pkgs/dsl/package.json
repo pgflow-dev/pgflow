@@ -14,12 +14,22 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./platforms": {
+      "types": "./dist/platforms/index.d.ts",
+      "import": "./dist/platforms/index.js"
+    },
+    "./supabase": {
+      "types": "./dist/platforms/supabase.d.ts",
+      "import": "./dist/platforms/supabase.js"
     }
   },
   "publishConfig": {
     "access": "public"
   },
   "devDependencies": {
-    "@types/node": "^22.14.1"
+    "@types/node": "^22.14.1",
+    "postgres": "^3.4.5",
+    "@supabase/supabase-js": "^2.47.10"
   }
 }
