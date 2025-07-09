@@ -40,7 +40,7 @@ export type AnyDeps = Record<string, string[]>;
 /**
  * Represents a Flow that has not steps nor deps defined yet
  */
-export type EmptyFlow = Flow<AnyInput, {}, EmptySteps, EmptyDeps>;
+export type EmptyFlow = Flow<AnyInput, Context, EmptySteps, EmptyDeps>;
 
 /**
  * Represents any Flow with flexible input, context, steps, and dependencies.
@@ -198,10 +198,11 @@ type ExtractHandlerContext<T> = T extends (input: any, context: infer C) => any 
 // Define the StepDefinition interface with integrated options
 export interface StepDefinition<
   TInput extends AnyInput,
-  TOutput extends AnyOutput
+  TOutput extends AnyOutput,
+  TContext = Context
 > {
   slug: string;
-  handler: (input: TInput, context: Context) => TOutput | Promise<TOutput>;
+  handler: (input: TInput, context: TContext) => TOutput | Promise<TOutput>;
   dependencies: string[];
   options: RuntimeOptions;
 }
@@ -212,7 +213,7 @@ type MergeObjects<T1 extends object, T2 extends object> = T1 & T2;
 // Flow class definition
 export class Flow<
   TFlowInput extends AnyInput = AnyInput,
-  TContext = {}, // Accumulated context requirements
+  TContext = Context, // Accumulated context requirements (starts with base Context)
   Steps extends AnySteps = EmptySteps,
   StepDependencies extends AnyDeps = EmptyDeps
 > {
@@ -300,7 +301,7 @@ export class Flow<
     handler: THandler
   ): Flow<
     TFlowInput,
-    TContext & ExtractHandlerContext<THandler>,
+    TContext & Context & ExtractHandlerContext<THandler>,
     Steps & { [K in Slug]: Awaited<RetType> },
     StepDependencies & { [K in Slug]: Deps[] }
   > {
@@ -358,7 +359,7 @@ export class Flow<
             [K in Deps]: K extends keyof Steps ? Steps[K] : never;
           }
         >,
-        context: Context
+        context: any
       ) => RetType | Promise<RetType>,
       dependencies: dependencies as string[],
       options,
@@ -376,10 +377,10 @@ export class Flow<
     // We need to use type assertions here because TypeScript cannot track the exact relationship
     // between the specific step definition types and the generic Flow type parameters
     // This is safe because we're constructing the newStepDefinitions in a type-safe way above
-    return new Flow<TFlowInput, TContext & ExtractHandlerContext<THandler>, NewSteps, NewDependencies>(
+    return new Flow<TFlowInput, TContext & Context & ExtractHandlerContext<THandler>, NewSteps, NewDependencies>(
       { slug: this.slug, ...this.options },
       newStepDefinitions as Record<string, StepDefinition<AnyInput, AnyOutput>>,
       newStepOrder
-    ) as Flow<TFlowInput, TContext & ExtractHandlerContext<THandler>, NewSteps, NewDependencies>;
+    ) as Flow<TFlowInput, TContext & Context & ExtractHandlerContext<THandler>, NewSteps, NewDependencies>;
   }
 }

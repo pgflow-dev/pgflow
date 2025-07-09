@@ -11,6 +11,7 @@ import { createAdapter } from './platform/createAdapter.js';
 import type { PlatformAdapter } from './platform/types.js';
 import type { MessageHandlerFn } from './queue/types.js';
 import type { AnyFlow } from '@pgflow/dsl';
+import type { CompatibleFlow } from './types/flowCompatibility.js';
 
 /**
  * Configuration options for the EdgeWorker.
@@ -70,7 +71,7 @@ export class EdgeWorker {
    * @param config - Configuration options for the flow worker
    */
   static async start<TFlow extends AnyFlow>(
-    flow: TFlow,
+    flow: CompatibleFlow<TFlow>,
     config?: Omit<FlowWorkerConfig, 'sql'>
   ): Promise<PlatformAdapter>;
 
@@ -193,7 +194,7 @@ export class EdgeWorker {
    * ```
    */
   static async startFlowWorker<TFlow extends AnyFlow>(
-    flow: TFlow,
+    flow: CompatibleFlow<TFlow>,
     config: FlowWorkerConfig = {}
   ) {
     this.ensureFirstCall();
