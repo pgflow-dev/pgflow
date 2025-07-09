@@ -13,5 +13,5 @@ import type { AvailableResources } from './currentPlatform.js';
  */
 export type CompatibleFlow<
   F extends AnyFlow,
-  Custom extends object = {}
+  Custom extends Record<string, unknown> = Record<string, never>
 > = ExtractFlowContext<F> extends (AvailableResources & Custom) ? F : never;

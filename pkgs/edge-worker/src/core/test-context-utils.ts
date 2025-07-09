@@ -14,7 +14,7 @@ import type { StepTaskRecord } from '../flow/types.js';
  * This is platform-agnostic and allows tests to provide any resources they need.
  * For Phase 1, resources are spread directly into the context.
  */
-export function createTestMessageContext<TPayload extends Json = Json, TResources extends Record<string, unknown> = {}>(params: {
+export function createTestMessageContext<TPayload extends Json = Json, TResources extends Record<string, unknown> = Record<string, never>>(params: {
   env: Record<string, string | undefined>;
   abortSignal: AbortSignal;
   rawMessage: PgmqMessageRecord<TPayload>;
@@ -33,7 +33,7 @@ export function createTestMessageContext<TPayload extends Json = Json, TResource
  * This is platform-agnostic and allows tests to provide any resources they need.
  * For Phase 1, resources are spread directly into the context.
  */
-export function createTestStepTaskContext<TFlow extends AnyFlow, TResources extends Record<string, unknown> = {}>(params: {
+export function createTestStepTaskContext<TFlow extends AnyFlow, TResources extends Record<string, unknown> = Record<string, never>>(params: {
   env: Record<string, string | undefined>;
   abortSignal: AbortSignal;
   stepTask: StepTaskRecord<TFlow>;

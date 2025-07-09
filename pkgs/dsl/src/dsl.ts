@@ -203,8 +203,7 @@ export interface BaseContext {
 }
 
 // Generic context type that combines base with custom resources
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export type Context<T extends object = {}> = BaseContext & T;
+export type Context<T extends Record<string, unknown> = Record<string, never>> = BaseContext & T;
 
 // Helper type to extract context type from a handler function
 type ExtractHandlerContext<T> = T extends (input: any, context: infer C) => any ? C : never;
