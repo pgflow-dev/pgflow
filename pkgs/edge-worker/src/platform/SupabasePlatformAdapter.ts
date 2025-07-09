@@ -1,12 +1,23 @@
 import type { SupabaseResources } from '../core/context.js';
-import type { CreateWorkerFn, Logger, PlatformAdapter, SupabaseEnv } from './types.js';
+import type { CreateWorkerFn, Logger, PlatformAdapter } from './types.js';
 import type { Worker } from '../core/Worker.js';
 import type { Sql } from 'postgres';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createSql } from '../core/sql-factory.js';
 import { createAnonSupabaseClient, createServiceSupabaseClient } from '../core/supabase-utils.js';
 import { createLoggingFactory } from './logging.js';
-import { validateSupabaseEnv } from './env-validation.js';
+
+/**
+ * Supabase-specific environment variables
+ */
+interface SupabaseEnv {
+  SUPABASE_URL: string;
+  SUPABASE_ANON_KEY: string;
+  SUPABASE_SERVICE_ROLE_KEY: string;
+  EDGE_WORKER_DB_URL: string;
+  SB_EXECUTION_ID: string;
+  EDGE_WORKER_LOG_LEVEL?: string;
+}
 
 /**
  * Supabase platform adapter for Deno runtime environment.
@@ -29,7 +40,9 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
 
   constructor() {
     // Validate environment variables once at startup
-    this.validatedEnv = validateSupabaseEnv(Deno.env.toObject());
+    const env = Deno.env.toObject();
+    this.assertSupabaseEnv(env);
+    this.validatedEnv = env;
     
     // Create abort controller for shutdown signal
     this.abortController = new AbortController();
@@ -211,5 +224,35 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
         headers: { 'Content-Type': 'application/json' },
       });
     });
+  }
+
+  /**
+   * Assertion function that validates environment has all required Supabase fields
+   * @throws Error if any required environment variable is missing
+   */
+  private assertSupabaseEnv(env: Record<string, string | undefined>): asserts env is SupabaseEnv {
+    const required = [
+      'SUPABASE_URL',
+      'SUPABASE_ANON_KEY', 
+      'SUPABASE_SERVICE_ROLE_KEY',
+      'EDGE_WORKER_DB_URL',
+      'SB_EXECUTION_ID'
+    ] as const;
+
+    const missing: string[] = [];
+    
+    for (const key of required) {
+      if (!env[key]) {
+        missing.push(key);
+      }
+    }
+
+    if (missing.length > 0) {
+      throw new Error(
+        `Missing required environment variables: ${missing.join(', ')}\n` +
+        'See docs to learn how to prepare the environment:\n' +
+        'https://www.pgflow.dev/how-to/prepare-db-string/'
+      );
+    }
   }
 }
