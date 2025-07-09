@@ -1,5 +1,6 @@
 import type { Sql } from 'postgres';
 import type { AnyFlow } from '@pgflow/dsl';
+import type { Json } from './types.js';
 import type { PgmqMessageRecord } from '../queue/types.js';
 import type { 
   MessageHandlerContext, 
@@ -12,7 +13,7 @@ import { getAnonSupabaseClient, getServiceSupabaseClient } from './supabase-util
 /**
  * Context creation parameters for queue workers
  */
-export interface QueueWorkerContextParams<TPayload> {
+export interface QueueWorkerContextParams<TPayload extends Json = Json> {
   env: Record<string, string | undefined>;
   sql: Sql;
   abortSignal: AbortSignal;

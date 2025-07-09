@@ -5,6 +5,7 @@ import { Queue } from './Queue.js';
 import { ReadWithPollPoller } from './ReadWithPollPoller.js';
 import type { Json } from '../core/types.js';
 import type { PgmqMessageRecord, MessageHandlerFn } from './types.js';
+import type { MessageHandlerContext } from '../core/context.js';
 import { Worker } from '../core/Worker.js';
 import postgres from 'postgres';
 import { WorkerLifecycle } from '../core/WorkerLifecycle.js';
@@ -175,7 +176,7 @@ export type QueueWorkerConfig = {
  * @returns A configured Worker instance ready to be started
  */
 export function createQueueWorker<TPayload extends Json, TResources extends Record<string, unknown>>(
-  handler: MessageHandlerFn<TPayload>,
+  handler: MessageHandlerFn<TPayload, MessageHandlerContext<TPayload, TResources>>,
   config: QueueWorkerConfig,
   createLogger: (module: string) => Logger,
   platformAdapter: PlatformAdapter<TResources>
@@ -244,7 +245,7 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
 
   const executorFactory = (record: QueueMessage, signal: AbortSignal) => {
     // Build context directly using platform resources
-    const context = {
+    const context: MessageHandlerContext<TPayload, TResources> = {
       // Core platform resources
       env: platformAdapter.env,
       shutdownSignal: platformAdapter.shutdownSignal,
@@ -256,7 +257,7 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
       ...platformAdapter.platformResources
     };
     
-    return new MessageExecutor(
+    return new MessageExecutor<TPayload, MessageHandlerContext<TPayload, TResources>>(
       queue,
       handler,
       signal,

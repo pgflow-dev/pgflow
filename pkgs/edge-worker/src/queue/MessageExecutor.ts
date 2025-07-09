@@ -3,7 +3,7 @@ import type { MessageHandlerFn, PgmqMessageRecord } from './types.js';
 import type { Queue } from './Queue.js';
 import type { Logger } from '../platform/types.js';
 import type { RetryConfig } from './createQueueWorker.js';
-import type { MessageHandlerContext } from '../core/context.js';
+import type { MessageHandlerContext, SupabaseMessageContext } from '../core/context.js';
 
 class AbortError extends Error {
   constructor() {
@@ -20,12 +20,12 @@ class AbortError extends Error {
  *
  * It also handles the abort signal and logs the error.
  */
-export class MessageExecutor<TPayload extends Json, TContext extends MessageHandlerContext<TPayload> = MessageHandlerContext<TPayload>> {
+export class MessageExecutor<TPayload extends Json, TContext extends MessageHandlerContext<TPayload, any> = MessageHandlerContext<TPayload, any>> {
   private logger: Logger;
 
   constructor(
     private readonly queue: Queue<TPayload>,
-    private readonly messageHandler: MessageHandlerFn<TPayload>,
+    private readonly messageHandler: MessageHandlerFn<TPayload, TContext>,
     private readonly signal: AbortSignal,
     private readonly retryConfig: RetryConfig,
     private readonly calculateRetryDelay: (attempt: number, config: RetryConfig) => number,
