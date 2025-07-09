@@ -31,7 +31,7 @@ export interface SupabaseEnv extends Env {
 /**
  * Supabase-specific platform resources
  */
-export interface SupabaseResources {
+export interface SupabaseResources extends Record<string, unknown> {
   /**
    * PostgreSQL client for database operations
    */

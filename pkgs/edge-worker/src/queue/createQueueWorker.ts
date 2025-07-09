@@ -247,7 +247,7 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
     // Build context directly using platform resources
     const context: MessageHandlerContext<TPayload, TResources> = {
       // Core platform resources
-      env: platformAdapter.env,
+      env: platformAdapter.env as never,
       shutdownSignal: platformAdapter.shutdownSignal,
       
       // Message execution context
@@ -255,7 +255,7 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
       
       // Platform-specific resources (generic)
       ...platformAdapter.platformResources
-    };
+    } as unknown as MessageHandlerContext<TPayload, TResources>;
     
     return new MessageExecutor<TPayload, MessageHandlerContext<TPayload, TResources>>(
       queue,

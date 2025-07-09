@@ -19,11 +19,11 @@ export function createTestMessageContext<TPayload extends Json = Json, TResource
 } & TResources): MessageHandlerContext<TPayload, TResources> {
   const { env, abortSignal, rawMessage, ...resources } = params;
   return {
-    env,
+    env: env as never,
     shutdownSignal: abortSignal,
     rawMessage,
     ...resources
-  } as MessageHandlerContext<TPayload, TResources>;
+  } as unknown as MessageHandlerContext<TPayload, TResources>;
 }
 
 /**
@@ -39,10 +39,10 @@ export function createTestStepTaskContext<TFlow extends AnyFlow, TResources exte
 } & TResources): StepTaskHandlerContext<TFlow, TResources> {
   const { env, abortSignal, stepTask, rawMessage, ...resources } = params;
   return {
-    env,
+    env: env as never,
     shutdownSignal: abortSignal,
     rawMessage,
     stepTask,
     ...resources
-  } as StepTaskHandlerContext<TFlow, TResources>;
+  } as unknown as StepTaskHandlerContext<TFlow, TResources>;
 }

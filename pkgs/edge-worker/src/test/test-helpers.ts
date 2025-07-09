@@ -37,7 +37,7 @@ export function createSupabaseMessageContext<TPayload extends Json = Json>(param
 
   return {
     // Core platform resources
-    env,
+    env: env as never,
     shutdownSignal: abortSignal,
     
     // Message execution context
@@ -47,7 +47,7 @@ export function createSupabaseMessageContext<TPayload extends Json = Json>(param
     sql,
     anonSupabase,
     serviceSupabase
-  };
+  } as SupabaseMessageContext<TPayload>;
 }
 
 /**
@@ -59,7 +59,7 @@ export function createSupabaseStepTaskContext<TFlow extends AnyFlow>(params: {
   sql: Sql;
   abortSignal: AbortSignal;
   stepTask: StepTaskRecord<TFlow>;
-  rawMessage: PgmqMessageRecord<unknown>;
+  rawMessage: PgmqMessageRecord<Json>;
 }): SupabaseStepTaskContext<TFlow> {
   const { env, sql, abortSignal, stepTask, rawMessage } = params;
 
@@ -77,18 +77,18 @@ export function createSupabaseStepTaskContext<TFlow extends AnyFlow>(params: {
 
   return {
     // Core platform resources
-    env,
+    env: env as never,
     shutdownSignal: abortSignal,
     
     // Step task execution context
-    rawMessage,
+    rawMessage: rawMessage as never,
     stepTask,
     
     // Supabase-specific resources (always present)
     sql,
     anonSupabase,
     serviceSupabase
-  };
+  } as SupabaseStepTaskContext<TFlow>;
 }
 
 /**

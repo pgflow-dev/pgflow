@@ -9,7 +9,7 @@ import type { PgmqMessageRecord } from '../../src/queue/types.ts';
 import type { StepTaskRecord } from '../../src/flow/types.ts';
 
 // Mock SQL client
-const mockSql = {} as unknown;
+const mockSql = {} as unknown as import('postgres').Sql;
 
 // Mock abort signal
 const mockAbortSignal = new AbortController().signal;
@@ -36,14 +36,23 @@ const mockMessage: PgmqMessageRecord<{ test: string }> = {
   message: { test: 'data' },
 };
 
-// Mock step task
-const mockStepTask: StepTaskRecord<unknown> = {
+// Mock pgmq message record with step input structure
+const mockStepMessage: PgmqMessageRecord<{ run: { test: string } }> = {
+  msg_id: 123,
+  read_ct: 1,
+  enqueued_at: '2024-01-01T00:00:00Z',
+  vt: '2024-01-01T00:01:00Z',
+  message: { run: { test: 'data' } },
+};
+
+// Mock step task (using generic typing)
+const mockStepTask = {
   flow_slug: 'test-flow',
   run_id: 'run-456',
   step_slug: 'test-step',
   input: { run: { test: 'input' } },
   msg_id: 123
-};
+} as StepTaskRecord<never>;
 
 Deno.test('createSupabaseMessageContext - creates context with all Supabase resources', () => {
   const context = createSupabaseMessageContext({
@@ -93,7 +102,7 @@ Deno.test('createSupabaseStepTaskContext - creates context with step task', () =
     sql: mockSql,
     abortSignal: mockAbortSignal,
     stepTask: mockStepTask,
-    rawMessage: mockMessage,
+    rawMessage: mockStepMessage,
   });
   
   // Check all properties exist
@@ -101,7 +110,7 @@ Deno.test('createSupabaseStepTaskContext - creates context with step task', () =
   assertEquals(context.sql, mockSql);
   assertEquals(context.shutdownSignal, mockAbortSignal);
   assertEquals(context.stepTask, mockStepTask);
-  assertEquals(context.rawMessage, mockMessage);
+  assertEquals(context.rawMessage, mockStepMessage);
   
   // Supabase clients should always be present
   assertExists(context.anonSupabase);
