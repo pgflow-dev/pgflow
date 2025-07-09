@@ -7,7 +7,7 @@ import type {
   MessageRecord,
 } from './types.js';
 import type { Json } from './types.js';
-import type { AnyFlow, ExtractFlowInput, AllStepInputs } from '@pgflow/dsl';
+import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
 
 /**
  * Implementation of IPgflowClient that uses direct SQL calls to pgflow functions
