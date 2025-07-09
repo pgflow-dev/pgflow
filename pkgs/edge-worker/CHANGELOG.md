@@ -1,5 +1,42 @@
 # @pgflow/edge-worker
 
+## 0.5.3
+
+### Patch Changes
+
+- Updated dependencies [af787ff]
+  - @pgflow/core@0.5.3
+  - @pgflow/dsl@0.5.3
+
+## 0.5.2
+
+### Patch Changes
+
+- d9fbe85: Refine task logging levels for better visibility
+
+  - Move detailed execution logs from ExecutionController to MessageExecutor
+  - Demote controller-level logs from info to debug
+  - Promote task execution, retry, and error logs from debug to appropriate levels (info/error)
+  - Improve visibility of task lifecycle events and failures
+  - @pgflow/core@0.5.2
+  - @pgflow/dsl@0.5.2
+
+## 0.5.1
+
+### Patch Changes
+
+- c9c4eb6: Improve EdgeWorker debug logging and error handling
+
+  - Fix consistent usage of log severity levels (debug, info, error) across the worker
+  - Move non-essential logs to debug level to reduce noise in production
+  - Move execution results to appropriate info/error levels
+  - Fix log_level to properly default to 'info' instead of crashing on startup
+  - Update documentation URL that was returning 404
+  - Refactor getEnvVar to be properly typed with default value support
+  - Fix linting errors in retry-demo (remove unnecessary async, replace any with unknown)
+  - @pgflow/core@0.5.1
+  - @pgflow/dsl@0.5.1
+
 ## 0.5.0
 
 ### Minor Changes

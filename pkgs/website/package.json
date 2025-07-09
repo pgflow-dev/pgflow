@@ -1,7 +1,7 @@
 {
   "name": "@pgflow/website",
   "type": "module",
-  "version": "0.5.0",
+  "version": "0.5.3",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -25,6 +25,7 @@
     "astro": "^5.7.14",
     "astro-robots-txt": "^1.0.0",
     "sharp": "^0.32.6",
+    "starlight-blog": "^0.24.0",
     "starlight-links-validator": "^0.14.3",
     "starlight-llms-txt": "^0.4.1",
     "starlight-sidebar-topics": "^0.6.0",

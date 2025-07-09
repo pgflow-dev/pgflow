@@ -271,6 +271,7 @@ export type Database = {
           flow_slug: string
           opt_base_delay: number | null
           opt_max_attempts: number | null
+          opt_start_delay: number | null
           opt_timeout: number | null
           step_index: number
           step_slug: string
@@ -282,6 +283,7 @@ export type Database = {
           flow_slug: string
           opt_base_delay?: number | null
           opt_max_attempts?: number | null
+          opt_start_delay?: number | null
           opt_timeout?: number | null
           step_index?: number
           step_slug: string
@@ -293,6 +295,7 @@ export type Database = {
           flow_slug?: string
           opt_base_delay?: number | null
           opt_max_attempts?: number | null
+          opt_start_delay?: number | null
           opt_timeout?: number | null
           step_index?: number
           step_slug?: string
@@ -349,6 +352,7 @@ export type Database = {
               max_attempts?: number
               base_delay?: number
               timeout?: number
+              start_delay?: number
             }
           | {
               flow_slug: string
@@ -356,6 +360,7 @@ export type Database = {
               max_attempts?: number
               base_delay?: number
               timeout?: number
+              start_delay?: number
             }
         Returns: {
           created_at: string
@@ -363,6 +368,7 @@ export type Database = {
           flow_slug: string
           opt_base_delay: number | null
           opt_max_attempts: number | null
+          opt_start_delay: number | null
           opt_timeout: number | null
           step_index: number
           step_slug: string

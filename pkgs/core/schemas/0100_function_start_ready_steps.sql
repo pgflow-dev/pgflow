@@ -27,13 +27,20 @@ sent_messages AS (
     started_step.flow_slug,
     started_step.run_id,
     started_step.step_slug,
-    pgmq.send(started_step.flow_slug, jsonb_build_object(
-      'flow_slug', started_step.flow_slug,
-      'run_id', started_step.run_id,
-      'step_slug', started_step.step_slug,
-      'task_index', 0
-    )) AS msg_id
+    pgmq.send(
+      started_step.flow_slug, 
+      jsonb_build_object(
+        'flow_slug', started_step.flow_slug,
+        'run_id', started_step.run_id,
+        'step_slug', started_step.step_slug,
+        'task_index', 0
+      ),
+      COALESCE(step.opt_start_delay, 0)
+    ) AS msg_id
   FROM started_step_states AS started_step
+  JOIN pgflow.steps AS step 
+    ON step.flow_slug = started_step.flow_slug 
+    AND step.step_slug = started_step.step_slug
 ),
 broadcast_events AS (
   SELECT 

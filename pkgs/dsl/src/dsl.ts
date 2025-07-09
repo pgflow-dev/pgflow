@@ -195,13 +195,12 @@ export type StepInput<TFlow extends AnyFlow, TStepSlug extends string> = {
   >]: ExtractFlowSteps<TFlow>[K];
 };
 
-// Runtime options interface
+// Runtime options interface for flow-level options
 export interface RuntimeOptions {
   maxAttempts?: number;
   baseDelay?: number;
   timeout?: number;
 }
-
 
 // Base context interface - what ALL platforms must provide
 export interface BaseContext {
@@ -215,6 +214,11 @@ export type Context<T extends Record<string, unknown> = Record<string, never>> =
 // Helper type to extract context type from a handler function
 type ExtractHandlerContext<T> = T extends (input: any, context: infer C) => any ? C : never;
 
+// Step runtime options interface that extends flow options with step-specific options
+export interface StepRuntimeOptions extends RuntimeOptions {
+  startDelay?: number;
+}
+
 // Define the StepDefinition interface with integrated options
 export interface StepDefinition<
   TInput extends AnyInput,
@@ -224,7 +228,7 @@ export interface StepDefinition<
   slug: string;
   handler: (input: TInput, context: TContext) => TOutput | Promise<TOutput>;
   dependencies: string[];
-  options: RuntimeOptions;
+  options: StepRuntimeOptions;
 }
 
 // Utility type to merge two object types and preserve required properties
@@ -317,7 +321,7 @@ export class Flow<
       context: BaseContext & TContext
     ) => RetType | Promise<RetType>
   >(
-    opts: Simplify<{ slug: Slug; dependsOn?: Deps[] } & RuntimeOptions>,
+    opts: Simplify<{ slug: Slug; dependsOn?: Deps[] } & StepRuntimeOptions>,
     handler: THandler
   ): Flow<
     TFlowInput,
@@ -351,10 +355,11 @@ export class Flow<
     }
 
     // Extract RuntimeOptions from opts
-    const options: RuntimeOptions = {};
+    const options: StepRuntimeOptions = {};
     if (opts.maxAttempts !== undefined) options.maxAttempts = opts.maxAttempts;
     if (opts.baseDelay !== undefined) options.baseDelay = opts.baseDelay;
     if (opts.timeout !== undefined) options.timeout = opts.timeout;
+    if (opts.startDelay !== undefined) options.startDelay = opts.startDelay;
 
     // Validate runtime options (optional for step level)
     validateRuntimeOptions(options, { optional: true });

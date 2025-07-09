@@ -21,7 +21,7 @@ sidebar:
 | **Monitoring Tools** | SQL queries for visibility | Comprehensive web dashboard |
 | **Execution Structure** | Database-driven DAG | Task/subtask hierarchy |
 | **Concurrency Management** | Simple per-flow limits | Advanced queues and limits |
-| **Scheduling Capabilities** | Built into Supabase (pg_cron) | Built-in cron scheduler |
+| **Scheduling Capabilities** | Native step delays + Supabase pg_cron | Built-in cron scheduler |
 
 Both systems provide reliable task execution with proper retries and error handling. The key difference is who controls the workflow orchestration: the database (pgflow) or the task execution platform (Trigger.dev).
 
@@ -41,7 +41,7 @@ Both systems provide reliable task execution with proper retries and error handl
 - **Task relationships** - Prefer parent-child task relationships over explicit dependency graphs
 - **Advanced concurrency** - Need sophisticated queuing with per-tenant concurrency controls
 - **Rich lifecycle hooks** - Want init, cleanup, onSuccess, and onFailure lifecycle hooks
-- **Delay capabilities** - Need to schedule tasks for future execution with precise timing
+- **Dynamic delays** - Need complex conditional delays or wait for external events
 - **Framework integration** - Desire tight integration with Next.js and other frameworks
 - **Immediate production use** - Need a mature, battle-tested solution ready for production
 

@@ -135,6 +135,35 @@ describe('validateRuntimeOptions', () => {
         )
       ).toThrowError('timeout must be greater than or equal to 3');
     });
+
+    it('validates startDelay when provided', () => {
+      expect(() =>
+        validateRuntimeOptions(
+          {
+            startDelay: -1,
+          },
+          { optional: true }
+        )
+      ).toThrowError('startDelay must be greater than or equal to 0');
+
+      expect(() =>
+        validateRuntimeOptions(
+          {
+            startDelay: 0,
+          },
+          { optional: true }
+        )
+      ).not.toThrowError();
+
+      expect(() =>
+        validateRuntimeOptions(
+          {
+            startDelay: 300,
+          },
+          { optional: true }
+        )
+      ).not.toThrowError();
+    });
   });
 
   it('accepts valid options', () => {
@@ -143,6 +172,17 @@ describe('validateRuntimeOptions', () => {
         maxAttempts: 3,
         baseDelay: 10,
         timeout: 30,
+      })
+    ).not.toThrowError();
+  });
+
+  it('accepts valid options including startDelay', () => {
+    expect(() =>
+      validateRuntimeOptions({
+        maxAttempts: 3,
+        baseDelay: 10,
+        timeout: 30,
+        startDelay: 600,
       })
     ).not.toThrowError();
   });
