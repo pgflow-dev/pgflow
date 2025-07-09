@@ -174,11 +174,11 @@ export type QueueWorkerConfig = {
  * @param platformAdapter - Platform adapter for creating contexts
  * @returns A configured Worker instance ready to be started
  */
-export function createQueueWorker<TPayload extends Json>(
+export function createQueueWorker<TPayload extends Json, TResources extends Record<string, unknown>>(
   handler: MessageHandlerFn<TPayload>,
   config: QueueWorkerConfig,
   createLogger: (module: string) => Logger,
-  platformAdapter: PlatformAdapter
+  platformAdapter: PlatformAdapter<TResources>
 ): Worker {
   type QueueMessage = PgmqMessageRecord<TPayload>;
 
@@ -243,12 +243,21 @@ export function createQueueWorker<TPayload extends Json>(
   );
 
   const executorFactory = (record: QueueMessage, signal: AbortSignal) => {
-    // Create context at the factory level
-    const context = platformAdapter.createMessageContext(record);
+    // Build context directly using platform resources
+    const context = {
+      // Core platform resources
+      env: platformAdapter.env,
+      shutdownSignal: platformAdapter.shutdownSignal,
+      
+      // Message execution context
+      rawMessage: record,
+      
+      // Platform-specific resources (generic)
+      ...platformAdapter.platformResources
+    };
     
     return new MessageExecutor(
       queue,
-      record,
       handler,
       signal,
       retryConfig,

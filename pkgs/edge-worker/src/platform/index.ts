@@ -1,3 +1,3 @@
 export * from './types.js';
 export { createAdapter } from './createAdapter.js';
-export { DenoAdapter } from './DenoAdapter.js';
+export { SupabasePlatformAdapter } from './SupabasePlatformAdapter.js';

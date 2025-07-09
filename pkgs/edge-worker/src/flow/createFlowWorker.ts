@@ -81,11 +81,11 @@ export type FlowWorkerConfig = {
  * @param platformAdapter - Platform adapter for creating contexts
  * @returns A configured Worker instance ready to be started
  */
-export function createFlowWorker<TFlow extends AnyFlow>(
+export function createFlowWorker<TFlow extends AnyFlow, TResources extends Record<string, unknown>>(
   flow: TFlow,
   config: FlowWorkerConfig,
   createLogger: (module: string) => Logger,
-  platformAdapter: PlatformAdapter
+  platformAdapter: PlatformAdapter<TResources>
 ): Worker {
   const logger = createLogger('createFlowWorker');
 
@@ -142,8 +142,19 @@ export function createFlowWorker<TFlow extends AnyFlow>(
     taskWithMessage: StepTaskWithMessage<TFlow>,
     signal: AbortSignal
   ): IExecutor => {
-    // Create context at the factory level
-    const context = platformAdapter.createStepTaskContext(taskWithMessage);
+    // Build context directly using platform resources
+    const context = {
+      // Core platform resources
+      env: platformAdapter.env,
+      shutdownSignal: platformAdapter.shutdownSignal,
+      
+      // Step task execution context
+      rawMessage: taskWithMessage.message,
+      stepTask: taskWithMessage.task,
+      
+      // Platform-specific resources (generic)
+      ...platformAdapter.platformResources
+    };
     
     return new StepTaskExecutor<TFlow>(
       flow,

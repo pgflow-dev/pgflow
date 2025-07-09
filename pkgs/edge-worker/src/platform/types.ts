@@ -1,11 +1,4 @@
 import type { Worker } from '../core/Worker.js';
-import type { AnyFlow } from '@pgflow/dsl';
-import type { PgmqMessageRecord } from '../queue/types.js';
-import type { 
-  MessageHandlerContext, 
-  StepTaskHandlerContext,
-  StepTaskWithMessage 
-} from '../core/context.js';
 
 /**
  * Basic logger interface used throughout the application
@@ -29,9 +22,9 @@ export type CreateWorkerFn = (createLoggerFn: CreateLoggerFn) => Worker;
 
 /**
  * Common interface for all platform adapters
- * @template TR - Platform-specific resources type
+ * @template TResources - Platform-specific resources type
  */
-export interface PlatformAdapter<TR extends object = Record<string, never>> {
+export interface PlatformAdapter<TResources extends Record<string, unknown> = Record<string, never>> {
   /**
    * startWorker the platform adapter with a worker factory function
    * @param createWorkerFn Function that creates a worker instance when called with a logger
@@ -59,18 +52,8 @@ export interface PlatformAdapter<TR extends object = Record<string, never>> {
   get shutdownSignal(): AbortSignal;
 
   /**
-   * Create a context for message handlers
-   * @param message The pgmq message record
+   * Get platform-specific resources
    */
-  createMessageContext<TPayload>(
-    message: PgmqMessageRecord<TPayload>
-  ): MessageHandlerContext<TPayload, TR>;
+  get platformResources(): TResources;
 
-  /**
-   * Create a context for step task handlers
-   * @param taskWithMessage The step task with its message
-   */
-  createStepTaskContext<TFlow extends AnyFlow>(
-    taskWithMessage: StepTaskWithMessage<TFlow>
-  ): StepTaskHandlerContext<TFlow, TR>;
 }
