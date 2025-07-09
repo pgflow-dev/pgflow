@@ -6,9 +6,27 @@ import {
   type AnySteps, 
   type AnyDeps, 
   EmptySteps, 
-  EmptyDeps 
+  EmptyDeps,
+  type Env,
+  type UserEnv,
+  type ValidEnv
 } from '../index.js';
 import type { Context } from './index.js';
+
+/**
+ * Supabase-specific environment requirements
+ */
+export interface SupabaseEnv extends Env {
+  /**
+   * Database URL for pgflow database connection
+   */
+  EDGE_WORKER_DB_URL: string;
+  
+  /**
+   * Log level for Edge Worker (optional)
+   */
+  EDGE_WORKER_LOG_LEVEL?: string;
+}
 
 /**
  * Supabase-specific platform resources
@@ -33,7 +51,7 @@ export interface SupabaseResources {
 /**
  * Complete context type for Supabase platform
  */
-export type SupabaseContext = Context<SupabaseResources>;
+export type SupabaseContext = Context<SupabaseResources> & { env: SupabaseEnv & ValidEnv<UserEnv> };
 
 /**
  * Pre-wired Flow class with Supabase context.
@@ -54,7 +72,7 @@ export type SupabaseContext = Context<SupabaseResources>;
  */
 export class Flow<
   I extends AnyInput = AnyInput,
-  Extra extends object = {},
+  Extra extends Record<string, unknown> = {},
   S extends AnySteps = EmptySteps,
   D extends AnyDeps = EmptyDeps,
-> extends CoreFlow<I, Context<SupabaseResources & Extra>, S, D> {}
+> extends CoreFlow<I, Context<SupabaseResources & Extra> & { env: SupabaseEnv & ValidEnv<UserEnv> }, S, D> {}

@@ -186,9 +186,18 @@ export interface RuntimeOptions {
   timeout?: number;
 }
 
+// Base env type - loose typing for any env var
+export type Env = Record<string, string | undefined>;
+
+// Constraint to ensure UserEnv is compatible with Env
+export type ValidEnv<T> = T extends Env ? T : never;
+
+// Empty interface that users can augment
+export interface UserEnv {}
+
 // Base context interface - what ALL platforms must provide
 export interface BaseContext {
-  env: Record<string, string | undefined>;
+  env: Env & ValidEnv<UserEnv>;
   shutdownSignal: AbortSignal;
 }
 
