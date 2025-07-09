@@ -2,8 +2,9 @@ import { assertEquals, assertExists } from '@std/assert';
 import { Flow } from '@pgflow/dsl';
 import { withTransaction } from '../db.ts';
 import { createFakeLogger } from '../fakes.ts';
-import type { Context } from '../../src/core/context.ts';
-import { createFlowWorkerContext } from '../../src/core/context-utils.ts';
+import type { StepTaskHandlerContext, Context } from '../../src/core/context.ts';
+import { createTestStepTaskContext } from '../../src/core/test-context-utils.ts';
+import { createFlowWorkerContext } from '../../src/core/supabase-test-utils.ts';
 import type { StepTaskRecord } from '../../src/flow/types.ts';
 
 // Define a test flow
@@ -26,22 +27,20 @@ Deno.test(
   withTransaction(async (sql) => {
     const abortController = new AbortController();
     
-    let receivedContext: Context | undefined;
+    let receivedContext: StepTaskHandlerContext<any, any> | undefined;
     let receivedInput: any;
     
     // Create a flow with handler that accepts context
     const ContextTestFlow = new Flow({ slug: 'context-test-flow' })
       .step(
         { slug: 'test-step' },
-        async (input: { run: { data: string } }, context?: Context) => {
+        async (input: { run: { data: string } }, context: StepTaskHandlerContext<any, any>) => {
           receivedInput = input;
           receivedContext = context;
           
           // Test that we can use context.sql
-          if (context?.sql) {
-            const result = await context.sql`SELECT 2 as test`;
-            assertEquals(result[0].test, 2);
-          }
+          const result = await context.sql`SELECT 2 as test`;
+          assertEquals(result[0].test, 2);
           
           return { processed: true };
         }
@@ -64,14 +63,12 @@ Deno.test(
       message: { run: { data: 'test data' } },
     };
     
-    const context = createFlowWorkerContext({
+    const context = createTestStepTaskContext({
       env: { FLOW_ENV: 'test' },
-      sql,
       abortSignal: abortController.signal,
-      taskWithMessage: {
-        message: mockMessage,
-        task: mockTask,
-      },
+      stepTask: mockTask,
+      rawMessage: mockMessage,
+      sql
     });
     
     // Get the step handler
@@ -129,7 +126,7 @@ Deno.test(
 );
 
 Deno.test(
-  'StepTaskExecutor - context.rawMessage is always undefined for flow workers',
+  'StepTaskExecutor - context.rawMessage matches the message from StepTaskWithMessage',
   withTransaction(async (sql) => {
     const abortController = new AbortController();
     
@@ -145,6 +142,15 @@ Deno.test(
         }
       );
     
+    // Mock message
+    const mockMessage: any = {
+      msg_id: 789,
+      read_ct: 1,
+      enqueued_at: '2024-01-01T00:00:00Z',
+      vt: '2024-01-01T00:01:00Z',
+      message: { run: {} },
+    };
+    
     // Mock step task record
     const mockTask: StepTaskRecord<typeof RawMessageFlow> = {
       msg_id: 789,
@@ -153,11 +159,17 @@ Deno.test(
       input: { run: {} },
     };
     
-    // Create context (flow worker context has no rawMessage)
+    // Create context - for this test we need a mock taskWithMessage
+    const mockTaskWithMessage = {
+      message: mockMessage,
+      task: mockTask
+    };
+    
     const context = createFlowWorkerContext({
       env: {},
       sql,
       abortSignal: abortController.signal,
+      taskWithMessage: mockTaskWithMessage
     });
     
     // Get the step handler
@@ -166,8 +178,8 @@ Deno.test(
     // Mock handler call with context
     await stepDef.handler(mockTask.input, context);
     
-    // Verify rawMessage is undefined
-    assertEquals(rawMessageValue, undefined);
+    // Verify rawMessage matches the message from taskWithMessage
+    assertEquals(rawMessageValue, mockMessage);
   })
 );
 
@@ -190,6 +202,15 @@ Deno.test(
         }
       );
     
+    // Mock message
+    const mockMessage: any = {
+      msg_id: 999,
+      read_ct: 1,
+      enqueued_at: '2024-01-01T00:00:00Z',
+      vt: '2024-01-01T00:01:00Z',
+      message: { run: {} },
+    };
+    
     // Mock step task record
     const mockTask: StepTaskRecord<typeof SupabaseFlow> = {
       msg_id: 999,
@@ -199,6 +220,11 @@ Deno.test(
     };
     
     // Create context with Supabase env vars
+    const mockTaskWithMessage = {
+      message: mockMessage,
+      task: mockTask
+    };
+    
     const context = createFlowWorkerContext({
       env: {
         SUPABASE_URL: 'https://test.supabase.co',
@@ -207,6 +233,7 @@ Deno.test(
       },
       sql,
       abortSignal: abortController.signal,
+      taskWithMessage: mockTaskWithMessage
     });
     
     // Get the step handler

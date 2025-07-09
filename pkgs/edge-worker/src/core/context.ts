@@ -50,7 +50,7 @@ export interface StepTaskExecution<TFlow extends AnyFlow> {
  */
 export type MessageHandlerContext<
   TPayload extends Json = Json,
-  TPlatformExtras extends object = Record<string, never>
+  TPlatformExtras extends Record<string, unknown> = Record<string, unknown>
 > = CorePlatformResources & MessageExecution<TPayload> & TPlatformExtras;
 
 /**
@@ -58,13 +58,13 @@ export type MessageHandlerContext<
  */
 export type StepTaskHandlerContext<
   TFlow extends AnyFlow,
-  TPlatformExtras extends object = Record<string, never>
+  TPlatformExtras extends Record<string, unknown> = Record<string, unknown>
 > = CorePlatformResources & StepTaskExecution<TFlow> & TPlatformExtras;
 
 /**
  * Supabase-specific platform resources
  */
-export interface SupabaseResources {
+export type SupabaseResources = {
   /**
    * PostgreSQL client for database operations
    */
@@ -79,7 +79,7 @@ export interface SupabaseResources {
    * Service role Supabase client (always available on Supabase)
    */
   serviceSupabase: SupabaseClient;
-}
+};
 
 /**
  * User-facing context type for message handlers on Supabase

@@ -20,7 +20,7 @@ class AbortError extends Error {
  *
  * It also handles the abort signal and logs the error.
  */
-export class MessageExecutor<TPayload extends Json, TContext extends MessageHandlerContext<TPayload, any> = MessageHandlerContext<TPayload, any>> {
+export class MessageExecutor<TPayload extends Json, TContext extends MessageHandlerContext<TPayload> = MessageHandlerContext<TPayload>> {
   private logger: Logger;
 
   constructor(

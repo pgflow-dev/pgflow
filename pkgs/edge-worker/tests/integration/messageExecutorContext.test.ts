@@ -4,8 +4,9 @@ import { Queue } from '../../src/queue/Queue.ts';
 import { withTransaction } from '../db.ts';
 import { createFakeLogger } from '../fakes.ts';
 import type { PgmqMessageRecord } from '../../src/queue/types.ts';
-import type { Context } from '../../src/core/context.ts';
-import { createQueueWorkerContext } from '../../src/core/context-utils.ts';
+import type { MessageHandlerContext, Context } from '../../src/core/context.ts';
+import { createTestMessageContext } from '../../src/core/test-context-utils.ts';
+import { createQueueWorkerContext } from '../../src/core/supabase-test-utils.ts';
 
 Deno.test(
   'MessageExecutor - handler with context receives all context properties',
@@ -26,27 +27,25 @@ Deno.test(
     const logger = createFakeLogger();
     const retryConfig = { limit: 3, delay: 1 };
     
-    let receivedContext: Context<{ data: string }> | undefined;
+    let receivedContext: MessageHandlerContext<{ data: string }, any> | undefined;
     let receivedPayload: { data: string } | undefined;
     
     // Handler that accepts context
-    const handler = async (payload: { data: string }, context?: Context<{ data: string }>) => {
+    const handler = async (payload: { data: string }, context: MessageHandlerContext<{ data: string }, any>) => {
       receivedPayload = payload;
       receivedContext = context;
       
       // Test that we can use context.sql
-      if (context?.sql) {
-        const result = await context.sql`SELECT 1 as test`;
-        assertEquals(result[0].test, 1);
-      }
+      const result = await context.sql`SELECT 1 as test`;
+      assertEquals(result[0].test, 1);
     };
     
     // Create context
-    const context = createQueueWorkerContext({
+    const context = createTestMessageContext({
       env: { TEST_ENV: 'test' },
-      sql,
       abortSignal: abortController.signal,
       rawMessage: mockMessage,
+      sql
     });
     
     // Mock handler call with context
