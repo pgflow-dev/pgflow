@@ -48,6 +48,7 @@ Deno.test(
     
     // Mock step task record
     const mockTask: StepTaskRecord<typeof ContextTestFlow> = {
+      flow_slug: 'context-test-flow',
       msg_id: 123,
       run_id: 'test-run-id',
       step_slug: 'test-step',
@@ -68,7 +69,7 @@ Deno.test(
       abortSignal: abortController.signal,
       stepTask: mockTask,
       rawMessage: mockMessage,
-      sql
+      sql: _sql
     });
     
     // Get the step handler
@@ -81,7 +82,7 @@ Deno.test(
     assertEquals(receivedInput, { run: { data: 'test data' } });
     assertExists(receivedContext);
     assertEquals(receivedContext.env.FLOW_ENV, 'test');
-    assertEquals(receivedContext.sql, sql);
+    assertEquals(receivedContext.sql, _sql);
     assertEquals(receivedContext.shutdownSignal, abortController.signal);
     assertEquals(receivedContext.rawMessage, mockMessage); // Should be the message from taskWithMessage
   })
@@ -106,6 +107,7 @@ Deno.test(
     
     // Mock step task record
     const mockTask: StepTaskRecord<typeof LegacyFlow> = {
+      flow_slug: 'legacy-flow',
       msg_id: 456,
       run_id: 'legacy-run-id',
       step_slug: 'legacy-step',
@@ -115,8 +117,9 @@ Deno.test(
     // Get the step handler
     const stepDef = LegacyFlow.getStepDefinition('legacy-step');
     
-    // Call legacy handler without context
-    const result = await stepDef.handler(mockTask.input);
+    // Call legacy handler with mock context
+    const mockContext = { sql: _sql };
+    const result = await stepDef.handler(mockTask.input, mockContext);
     
     // Verify handler worked correctly
     assertEquals(receivedInput, { run: { value: 42 } });
@@ -153,6 +156,7 @@ Deno.test(
     
     // Mock step task record
     const mockTask: StepTaskRecord<typeof RawMessageFlow> = {
+      flow_slug: 'raw-message-flow',
       msg_id: 789,
       run_id: 'raw-run-id',
       step_slug: 'check-raw',
@@ -167,7 +171,7 @@ Deno.test(
     
     const context = createFlowWorkerContext({
       env: {},
-      sql,
+      sql: _sql,
       abortSignal: abortController.signal,
       taskWithMessage: mockTaskWithMessage
     });
@@ -213,6 +217,7 @@ Deno.test(
     
     // Mock step task record
     const mockTask: StepTaskRecord<typeof SupabaseFlow> = {
+      flow_slug: 'supabase-flow',
       msg_id: 999,
       run_id: 'supabase-run-id',
       step_slug: 'check-clients',
@@ -231,7 +236,7 @@ Deno.test(
         SUPABASE_ANON_KEY: 'test-anon-key',
         SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
       },
-      sql,
+      sql: _sql,
       abortSignal: abortController.signal,
       taskWithMessage: mockTaskWithMessage
     });
@@ -306,7 +311,7 @@ Deno.test(
     
     const context = createFlowWorkerContext({
       env: { DATA_PREFIX: 'custom' },
-      sql,
+      sql: _sql,
       abortSignal: abortController.signal,
       taskWithMessage: {
         message: mockMessageForComplex,

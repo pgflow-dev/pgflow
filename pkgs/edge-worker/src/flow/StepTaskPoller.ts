@@ -89,7 +89,7 @@ export class StepTaskPoller<TFlow extends AnyFlow>
       // Create a map of message ID to message for quick lookup
       const messageMap = new Map<number, PgmqMessageRecord<AllStepInputs<TFlow>>>();
       for (const msg of messages) {
-        messageMap.set(msg.msg_id, msg);
+        messageMap.set(msg.msg_id, msg as PgmqMessageRecord<AllStepInputs<TFlow>>);
       }
 
       // Pair each task with its corresponding message
@@ -97,12 +97,13 @@ export class StepTaskPoller<TFlow extends AnyFlow>
         .map(task => {
           const message = messageMap.get(task.msg_id);
           if (!message) {
-            this.logger.error(`No message found for task ${task.id} with msg_id ${task.msg_id}`);
+            this.logger.error(`No message found for task ${task.run_id}:${task.step_slug} with msg_id ${task.msg_id}`);
             return null;
           }
           return {
             message,
-            task
+            task,
+            msg_id: task.msg_id
           };
         })
         .filter((item): item is StepTaskWithMessage<TFlow> => item !== null);

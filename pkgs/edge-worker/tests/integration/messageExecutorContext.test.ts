@@ -2,7 +2,7 @@ import { assertEquals, assertExists } from '@std/assert';
 // import { MessageExecutor } from '../../src/queue/MessageExecutor.ts';
 import { Queue } from '../../src/queue/Queue.ts';
 import { withTransaction } from '../db.ts';
-// import { createFakeLogger } from '../fakes.ts';
+import { createFakeLogger } from '../fakes.ts';
 import type { PgmqMessageRecord } from '../../src/queue/types.ts';
 import type { MessageHandlerContext, Context } from '../../src/core/context.ts';
 import { createTestMessageContext } from '../../src/core/test-context-utils.ts';
@@ -12,8 +12,8 @@ Deno.test(
   'MessageExecutor - handler with context receives all context properties',
   withTransaction(async (sql) => {
     const queueName = 'test-context-queue';
-    const queue = new Queue(sql, queueName);
-    await queue.create();
+    const queue = new Queue(sql, queueName, createFakeLogger());
+    await queue.safeCreate();
     
     const mockMessage: PgmqMessageRecord<{ data: string }> = {
       msg_id: 123,
@@ -65,8 +65,8 @@ Deno.test(
   'MessageExecutor - backward compatibility with single-arg handlers',
   withTransaction(async (sql) => {
     const queueName = 'test-legacy-queue';
-    const queue = new Queue(sql, queueName);
-    await queue.create();
+    const queue = new Queue(sql, queueName, createFakeLogger());
+    await queue.safeCreate();
     
     const mockMessage: PgmqMessageRecord<{ data: string }> = {
       msg_id: 456,
@@ -98,8 +98,8 @@ Deno.test(
   'MessageExecutor - context.rawMessage matches the message being processed',
   withTransaction(async (sql) => {
     const queueName = 'test-rawmessage-queue';
-    const queue = new Queue(sql, queueName);
-    await queue.create();
+    const queue = new Queue(sql, queueName, createFakeLogger());
+    await queue.safeCreate();
     
     const mockMessage: PgmqMessageRecord<{ id: number; name: string }> = {
       msg_id: 789,

@@ -15,11 +15,11 @@ const myFlow = new Flow({ slug: 'supabase_example' })
     // All Supabase resources available
     const { data: _data, error } = await ctx.serviceSupabase
       .from('admin_notifications')
-      .insert({ 
+      .insert({
         message: `Found ${input.query_users.users.length} active users`,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-    
+
     if (error) throw error;
     return { notified: true };
   })
@@ -29,10 +29,10 @@ const myFlow = new Flow({ slug: 'supabase_example' })
       .from('public_stats')
       .update({ last_user_count: input.query_users.users.length })
       .eq('id', 1);
-    
+
     // Also have access to env and shutdownSignal
     console.log('Running in environment:', ctx.env.NODE_ENV);
-    
+
     return { updated: true };
   });
 

@@ -1,48 +1,39 @@
-import type { AnyFlow, AllStepInputs } from '@pgflow/dsl';
 import type { Json } from './types.js';
-import type { PgmqMessageRecord } from '../queue/types.js';
-import type { 
-  MessageHandlerContext, 
-  StepTaskHandlerContext
+import type { Sql } from 'postgres';
+import type {
+  AnyFlow, AllStepInputs
+} from '@pgflow/dsl';
+import type {
+  MessageContext, StepTaskContext
 } from './context.js';
 import type { StepTaskRecord } from '../flow/types.js';
+import type { PgmqMessageRecord } from '../queue/types.js';
 
-/**
- * Creates a generic test context for message handlers.
- * This is platform-agnostic and allows tests to provide any resources they need.
- * For Phase 1, resources are spread directly into the context.
- */
-export function createTestMessageContext<TPayload extends Json = Json, TResources extends Record<string, unknown> = Record<string, never>>(params: {
-  env: Record<string, string | undefined>;
-  abortSignal: AbortSignal;
-  rawMessage: PgmqMessageRecord<TPayload>;
-} & TResources): MessageHandlerContext<TPayload, TResources> {
-  const { env, abortSignal, rawMessage, ...resources } = params;
-  return {
-    env,
-    shutdownSignal: abortSignal,
-    rawMessage,
-    ...resources
-  } as unknown as MessageHandlerContext<TPayload, TResources>;
+export function createMessageTestContext<
+  TPayload extends Json,
+  TResources extends Record<string, unknown>
+>(p: {
+  env          : Record<string, string | undefined>;
+  abortSignal  : AbortSignal;
+  rawMessage   : PgmqMessageRecord<TPayload>;
+} & TResources): MessageContext<TPayload, TResources> {
+  const { abortSignal, env, rawMessage, ...res } = p;
+  return { env, shutdownSignal: abortSignal, rawMessage, ...res } as unknown as MessageContext<TPayload, TResources>;
 }
 
-/**
- * Creates a generic test context for step task handlers.
- * This is platform-agnostic and allows tests to provide any resources they need.
- * For Phase 1, resources are spread directly into the context.
- */
-export function createTestStepTaskContext<TFlow extends AnyFlow, TResources extends Record<string, unknown> = Record<string, never>>(params: {
-  env: Record<string, string | undefined>;
-  abortSignal: AbortSignal;
-  stepTask: StepTaskRecord<TFlow>;
-  rawMessage: PgmqMessageRecord<AllStepInputs<TFlow>>;
-} & TResources): StepTaskHandlerContext<TFlow, TResources> {
-  const { env, abortSignal, stepTask, rawMessage, ...resources } = params;
-  return {
-    env,
-    shutdownSignal: abortSignal,
-    rawMessage,
-    stepTask,
-    ...resources
-  } as unknown as StepTaskHandlerContext<TFlow, TResources>;
+export function createStepTaskTestContext<
+  TFlow extends AnyFlow,
+  TResources extends Record<string, unknown>
+>(p: {
+  env          : Record<string, string | undefined>;
+  abortSignal  : AbortSignal;
+  stepTask     : StepTaskRecord<TFlow>;
+  rawMessage   : PgmqMessageRecord<AllStepInputs<TFlow>>;
+} & TResources): StepTaskContext<TFlow, TResources> {
+  const { abortSignal, env, stepTask, rawMessage, ...res } = p;
+  return { env, shutdownSignal: abortSignal, stepTask, rawMessage, ...res } as unknown as StepTaskContext<TFlow, TResources>;
 }
+
+// Legacy aliases for backward compatibility
+export const createTestMessageContext = createMessageTestContext;
+export const createTestStepTaskContext = createStepTaskTestContext;

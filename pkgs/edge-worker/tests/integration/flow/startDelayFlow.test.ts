@@ -35,7 +35,7 @@ const NormalStepDelayFlow = new Flow<{ value: number }>({
     startDelay: 3  // 3 second delay after immediate completes
   }, (input) => {
     console.log('Executing delayed step');
-    return input.immediate + 10;
+    return (input.immediate as number) + 10;
   });
 
 // Test flow with cascaded delays

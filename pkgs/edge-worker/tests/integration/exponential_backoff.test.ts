@@ -1,5 +1,6 @@
 import { assertEquals } from '@std/assert';
 import { createQueueWorker } from '../../src/queue/createQueueWorker.ts';
+import { createAdapter } from '../../src/platform/createAdapter.ts';
 import { withTransaction } from '../db.ts';
 import { createFakeLogger } from '../fakes.ts';
 import { log, waitFor } from '../e2e/_helpers.ts';
@@ -64,7 +65,8 @@ Deno.test(
         sql,
         ...workerConfig,
       },
-      createFakeLogger
+      createFakeLogger,
+      createAdapter()
     );
 
     try {

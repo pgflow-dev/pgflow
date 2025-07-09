@@ -3,6 +3,7 @@ import {
   createFlowWorker,
   type FlowWorkerConfig,
 } from '../../src/flow/createFlowWorker.ts';
+import { createAdapter } from '../../src/platform/createAdapter.ts';
 import type { postgres } from '../sql.ts';
 import { PgflowSqlClient } from '@pgflow/core';
 
@@ -39,7 +40,7 @@ export function startWorker<
     error: console.error,
   };
 
-  const worker = createFlowWorker(flow, mergedOptions, () => consoleLogger);
+  const worker = createFlowWorker(flow, mergedOptions, () => consoleLogger, createAdapter());
 
   worker.startOnlyOnce({
     edgeFunctionName: 'test_flow',

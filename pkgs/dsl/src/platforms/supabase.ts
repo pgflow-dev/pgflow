@@ -1,78 +1,55 @@
 import type { Sql } from 'postgres';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { 
-  Flow as CoreFlow, 
-  type AnyInput, 
-  type AnySteps, 
-  type AnyDeps, 
-  EmptySteps, 
-  EmptyDeps,
-  type Env,
-  type UserEnv,
-  type ValidEnv
+import {
+  Flow as CoreFlow,
+  type AnyInput, type AnySteps, type AnyDeps,
+  EmptySteps, EmptyDeps, type Env, type UserEnv, type ValidEnv,
+  type AnyFlow, type Json, type BaseContext
 } from '../index.js';
-import type { Context } from './index.js';
 
-/**
- * Supabase-specific environment requirements
- */
-export interface SupabaseEnv extends Env {
-  /**
-   * Database URL for pgflow database connection
-   */
-  EDGE_WORKER_DB_URL: string;
-  
-  /**
-   * Log level for Edge Worker (optional)
-   */
-  EDGE_WORKER_LOG_LEVEL?: string;
-}
-
-/**
- * Supabase-specific platform resources
- */
+/* ---------- 1. Resources ------------------------------------------- */
 export interface SupabaseResources extends Record<string, unknown> {
-  /**
-   * PostgreSQL client for database operations
-   */
-  sql: Sql;
-
-  /**
-   * Anonymous Supabase client (always available on Supabase)
-   */
-  anonSupabase: SupabaseClient;
-
-  /**
-   * Service role Supabase client (always available on Supabase)
-   */
+  sql            : Sql;
+  anonSupabase   : SupabaseClient;
   serviceSupabase: SupabaseClient;
 }
 
-/**
- * Complete context type for Supabase platform
- */
-export type SupabaseContext = Context<SupabaseResources> & { env: SupabaseEnv & ValidEnv<UserEnv> };
+/* ---------- 2. Environment ----------------------------------------- */
+export interface SupabaseEnv extends Env {
+  EDGE_WORKER_DB_URL      : string;
+  SUPABASE_URL            : string;
+  SUPABASE_ANON_KEY       : string;
+  SUPABASE_SERVICE_ROLE_KEY: string;
+  SB_EXECUTION_ID         : string;
+  EDGE_WORKER_LOG_LEVEL?  : string;
+}
 
-/**
- * Pre-wired Flow class with Supabase context.
- * Handlers automatically have access to sql, anonSupabase, serviceSupabase,
- * env, and shutdownSignal without explicit typing.
- * 
- * @example
- * ```typescript
- * import { Flow } from '@pgflow/dsl/supabase';
- * 
- * const flow = new Flow({ slug: 'my_flow' })
- *   .step({ slug: 'query' }, async (input, ctx) => {
- *     // Full autocomplete for all Supabase resources!
- *     const result = await ctx.sql`SELECT * FROM users`;
- *     return { users: result };
- *   });
- * ```
- */
+/* ---------- 3. Platform context ------------------------------------ */
+export type SupabasePlatformContext =
+  BaseContext & SupabaseResources & {
+    env: SupabaseEnv & ValidEnv<UserEnv>;
+  };
+
+/* ---------- 4. Execution contexts ---------------------------------- */
+export type SupabaseMessageContext<T extends Json = Json> =
+  SupabasePlatformContext & {
+    rawMessage: any; // Will be properly typed by edge-worker
+  };
+
+export type SupabaseStepTaskContext<F extends AnyFlow = AnyFlow> =
+  SupabasePlatformContext & {
+    rawMessage: any; // Will be properly typed by edge-worker
+    stepTask: any;   // Will be properly typed by edge-worker
+  };
+
+/* ---------- 5. pre-wired Flow helper -------------------------------- */
 export class Flow<
   I extends AnyInput = AnyInput,
-  Extra extends Record<string, unknown> = Record<string, never>,
+  ExtraCtx extends Record<string, unknown> = Record<string, never>,
   S extends AnySteps = EmptySteps,
-  D extends AnyDeps = EmptyDeps,
-> extends CoreFlow<I, Context<SupabaseResources & Extra> & { env: SupabaseEnv & ValidEnv<UserEnv> }, S, D> {}
+  D extends AnyDeps   = EmptyDeps,
+> extends CoreFlow<
+  I,
+  SupabasePlatformContext & ExtraCtx,   // <── full ctx in handlers
+  S, D
+> {}
