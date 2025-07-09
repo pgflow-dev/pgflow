@@ -7,7 +7,7 @@ import type {
   StepTaskWithMessage 
 } from './context.js';
 import type { StepTaskRecord } from '../flow/types.js';
-import { createAnonSupabaseClient, createServiceSupabaseClient } from './supabase-factories.js';
+import { getAnonSupabaseClient, getServiceSupabaseClient } from './supabase-utils.js';
 
 /**
  * Context creation parameters for queue workers
@@ -33,7 +33,7 @@ export interface FlowWorkerContextParams<TFlow extends AnyFlow> {
  * Creates a message handler context for queue workers
  * This function provides a simplified interface for testing
  */
-export function createQueueWorkerContext<TPayload>(
+export function createQueueWorkerContext<TPayload extends Json = Json>(
   params: QueueWorkerContextParams<TPayload>
 ): MessageHandlerContext<TPayload, {
   sql: Sql;
@@ -60,11 +60,11 @@ export function createQueueWorkerContext<TPayload>(
 
   // Add Supabase clients if environment variables are present
   if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
-    context.anonSupabase = createAnonSupabaseClient(env);
+    context.anonSupabase = getAnonSupabaseClient(env);
   }
 
   if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
-    context.serviceSupabase = createServiceSupabaseClient(env);
+    context.serviceSupabase = getServiceSupabaseClient(env);
   }
 
   return context;
@@ -102,11 +102,11 @@ export function createFlowWorkerContext<TFlow extends AnyFlow>(
 
   // Add Supabase clients if environment variables are present
   if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
-    context.anonSupabase = createAnonSupabaseClient(env);
+    context.anonSupabase = getAnonSupabaseClient(env);
   }
 
   if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
-    context.serviceSupabase = createServiceSupabaseClient(env);
+    context.serviceSupabase = getServiceSupabaseClient(env);
   }
 
   return context;

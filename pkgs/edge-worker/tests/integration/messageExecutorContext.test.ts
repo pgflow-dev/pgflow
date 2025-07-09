@@ -57,7 +57,7 @@ Deno.test(
     assertExists(receivedContext);
     assertEquals(receivedContext.env.TEST_ENV, 'test');
     assertEquals(receivedContext.sql, sql);
-    assertEquals(receivedContext.abortSignal, abortController.signal);
+    assertEquals(receivedContext.shutdownSignal, abortController.signal);
     assertEquals(receivedContext.rawMessage, mockMessage);
   })
 );

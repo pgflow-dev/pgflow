@@ -55,11 +55,23 @@ Deno.test(
       input: { run: { data: 'test data' } },
     };
     
-    // Create context
+    // Create context with mock task and message
+    const mockMessage: any = {
+      msg_id: 123,
+      read_ct: 1,
+      enqueued_at: '2024-01-01T00:00:00Z',
+      vt: '2024-01-01T00:01:00Z',
+      message: { run: { data: 'test data' } },
+    };
+    
     const context = createFlowWorkerContext({
       env: { FLOW_ENV: 'test' },
       sql,
       abortSignal: abortController.signal,
+      taskWithMessage: {
+        message: mockMessage,
+        task: mockTask,
+      },
     });
     
     // Get the step handler
@@ -73,8 +85,8 @@ Deno.test(
     assertExists(receivedContext);
     assertEquals(receivedContext.env.FLOW_ENV, 'test');
     assertEquals(receivedContext.sql, sql);
-    assertEquals(receivedContext.abortSignal, abortController.signal);
-    assertEquals(receivedContext.rawMessage, undefined); // Should be undefined for flow workers
+    assertEquals(receivedContext.shutdownSignal, abortController.signal);
+    assertEquals(receivedContext.rawMessage, mockMessage); // Should be the message from taskWithMessage
   })
 );
 
@@ -250,10 +262,29 @@ Deno.test(
       );
     
     // Create context
+    const mockMessageForComplex: any = {
+      msg_id: 456,
+      read_ct: 1,
+      enqueued_at: '2024-01-01T00:00:00Z',
+      vt: '2024-01-01T00:01:00Z',
+      message: { run: { id: 123 } },
+    };
+    
+    const mockTaskForComplex: any = {
+      msg_id: 456,
+      run_id: 'complex-run',
+      step_slug: 'fetch-data',
+      input: { run: { id: 123 } },
+    };
+    
     const context = createFlowWorkerContext({
       env: { DATA_PREFIX: 'custom' },
       sql,
       abortSignal: abortController.signal,
+      taskWithMessage: {
+        message: mockMessageForComplex,
+        task: mockTaskForComplex,
+      },
     });
     
     // Test first step

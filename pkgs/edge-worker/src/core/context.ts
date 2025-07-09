@@ -23,7 +23,7 @@ export interface CorePlatformResources {
 /**
  * Per-execution context for message handlers
  */
-export interface MessageExecution<TPayload> {
+export interface MessageExecution<TPayload extends Json = Json> {
   /**
    * The raw pgmq message record
    */
@@ -49,7 +49,7 @@ export interface StepTaskExecution<TFlow extends AnyFlow> {
  * Generic message handler context with platform extras
  */
 export type MessageHandlerContext<
-  TPayload = Json,
+  TPayload extends Json = Json,
   TPlatformExtras extends object = Record<string, never>
 > = CorePlatformResources & MessageExecution<TPayload> & TPlatformExtras;
 
@@ -84,7 +84,7 @@ export interface SupabaseResources {
 /**
  * User-facing context type for message handlers on Supabase
  */
-export type SupabaseMessageContext<TPayload = Json> = 
+export type SupabaseMessageContext<TPayload extends Json = Json> = 
   MessageHandlerContext<TPayload, SupabaseResources>;
 
 /**
@@ -92,6 +92,12 @@ export type SupabaseMessageContext<TPayload = Json> =
  */
 export type SupabaseStepTaskContext<TFlow extends AnyFlow> = 
   StepTaskHandlerContext<TFlow, SupabaseResources>;
+
+/**
+ * Generic context type for backward compatibility with tests
+ * This will be gradually replaced with more specific context types
+ */
+export type Context<TPayload extends Json = Json> = MessageHandlerContext<TPayload, Partial<SupabaseResources>>;
 
 
 /**

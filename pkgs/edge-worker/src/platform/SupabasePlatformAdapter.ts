@@ -3,9 +3,8 @@ import type { CreateWorkerFn, Logger, PlatformAdapter } from './types.js';
 import type { Worker } from '../core/Worker.js';
 import type { Sql } from 'postgres';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { memoize } from '../core/memoize.js';
 import { createSql } from '../core/sql-factory.js';
-import { createAnonSupabaseClient, createServiceSupabaseClient } from '../core/supabase-factories.js';
+import { getAnonSupabaseClient, getServiceSupabaseClient } from '../core/supabase-utils.js';
 import { createLoggingFactory } from './logging.js';
 
 /**
@@ -22,13 +21,11 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   private logger: Logger;
   private abortController: AbortController;
   private _sql: Sql | null = null;
-  private _anonSupabase: SupabaseClient | null = null;
-  private _serviceSupabase: SupabaseClient | null = null;
 
   // Logging factory with dynamic workerId support
   private loggingFactory = createLoggingFactory();
 
-  // Memoized resource factories
+  // Resource accessors
   private getSql: () => Sql;
   private getAnonSupabase: () => SupabaseClient;
   private getServiceSupabase: () => SupabaseClient;
@@ -45,27 +42,29 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
     this.logger = this.loggingFactory.createLogger('SupabasePlatformAdapter');
     this.logger.debug('SupabasePlatformAdapter logger instance created and working.'); // Use the created logger
     
-    // Setup memoized factories
-    this.getSql = memoize(() => {
+    // Setup resource factories - use the already-memoized utilities
+    this.getSql = () => {
       if (!this._sql) {
         this._sql = createSql(this.env);
       }
       return this._sql;
-    });
+    };
 
-    this.getAnonSupabase = memoize(() => {
-      if (!this._anonSupabase) {
-        this._anonSupabase = createAnonSupabaseClient(this.env);
+    this.getAnonSupabase = () => {
+      const client = getAnonSupabaseClient(this.env); // Already memoized
+      if (!client) {
+        throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment');
       }
-      return this._anonSupabase;
-    });
+      return client;
+    };
 
-    this.getServiceSupabase = memoize(() => {
-      if (!this._serviceSupabase) {
-        this._serviceSupabase = createServiceSupabaseClient(this.env);
+    this.getServiceSupabase = () => {
+      const client = getServiceSupabaseClient(this.env); // Already memoized
+      if (!client) {
+        throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment');
       }
-      return this._serviceSupabase;
-    });
+      return client;
+    };
   }
 
   /**
