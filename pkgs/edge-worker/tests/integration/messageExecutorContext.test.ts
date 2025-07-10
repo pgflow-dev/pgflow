@@ -6,7 +6,6 @@ import { createFakeLogger } from '../fakes.ts';
 import type { PgmqMessageRecord } from '../../src/queue/types.ts';
 import type { Context } from '@pgflow/dsl';
 import type { MessageHandlerContext } from '../../src/core/context.ts';
-import { createTestMessageContext } from '../../src/core/test-context-utils.ts';
 import { createQueueWorkerContext } from '../../src/core/supabase-test-utils.ts';
 
 Deno.test(
@@ -41,12 +40,12 @@ Deno.test(
       assertEquals(result[0].test, 1);
     };
     
-    // Create context
-    const context = createTestMessageContext({
+    // Create context using proper queue worker context creation
+    const context = createQueueWorkerContext({
       env: { TEST_ENV: 'test' },
+      sql,
       abortSignal: abortController.signal,
       rawMessage: mockMessage,
-      sql
     });
     
     // Mock handler call with context

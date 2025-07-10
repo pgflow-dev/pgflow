@@ -3,7 +3,6 @@ import { Flow } from '@pgflow/dsl';
 import type { SupabaseStepTaskContext, SupabasePlatformContext } from '@pgflow/dsl/supabase';
 import { withTransaction } from '../db.ts';
 // import { createFakeLogger } from '../fakes.ts';
-import { createTestStepTaskContext } from '../../src/core/test-context-utils.ts';
 import { createFlowWorkerContext } from '../../src/core/supabase-test-utils.ts';
 import type { StepTaskRecord } from '../../src/flow/types.ts';
 
@@ -55,7 +54,7 @@ Deno.test(
       input: { run: { data: 'test data' } },
     };
     
-    // Create context with mock task and message
+    // Create context with mock task and message using proper flow worker context creation
     const mockMessage: unknown = {
       msg_id: 123,
       read_ct: 1,
@@ -64,12 +63,14 @@ Deno.test(
       message: { run: { data: 'test data' } },
     };
     
-    const context = createTestStepTaskContext({
+    const context = createFlowWorkerContext({
       env: { FLOW_ENV: 'test' },
+      sql: _sql,
       abortSignal: abortController.signal,
-      stepTask: mockTask,
-      rawMessage: mockMessage,
-      sql: _sql
+      taskWithMessage: {
+        message: mockMessage,
+        task: mockTask
+      }
     });
     
     // Get the step handler
