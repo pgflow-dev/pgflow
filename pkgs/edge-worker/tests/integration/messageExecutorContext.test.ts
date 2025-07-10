@@ -4,7 +4,8 @@ import { Queue } from '../../src/queue/Queue.ts';
 import { withTransaction } from '../db.ts';
 import { createFakeLogger } from '../fakes.ts';
 import type { PgmqMessageRecord } from '../../src/queue/types.ts';
-import type { MessageHandlerContext, Context } from '../../src/core/context.ts';
+import type { Context } from '@pgflow/dsl';
+import type { MessageHandlerContext } from '../../src/core/context.ts';
 import { createTestMessageContext } from '../../src/core/test-context-utils.ts';
 import { createQueueWorkerContext } from '../../src/core/supabase-test-utils.ts';
 

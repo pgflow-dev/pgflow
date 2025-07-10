@@ -1,5 +1,4 @@
 import type { Json } from './types.js';
-import type { Sql } from 'postgres';
 import type {
   AnyFlow, AllStepInputs
 } from '@pgflow/dsl';

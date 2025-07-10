@@ -55,11 +55,6 @@ export interface StepTaskWithMessage<TFlow extends AnyFlow> {
    4.  LEGACY COMPATIBILITY (for backward compatibility only)
    --------------------------------------------------------------------- */
 
-/**
- * @deprecated Use specific context types instead: MessageContext, StepTaskContext
- * This legacy alias is for backward compatibility only
- */
-export type Context = BaseContext;
 
 // Re-export legacy types for backward compatibility
 export type MessageHandlerContext<

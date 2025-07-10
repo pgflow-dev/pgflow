@@ -1,8 +1,8 @@
 import { assertEquals, assertExists } from '@std/assert';
 import { Flow } from '@pgflow/dsl';
+import type { SupabaseStepTaskContext, SupabasePlatformContext } from '@pgflow/dsl/supabase';
 import { withTransaction } from '../db.ts';
 // import { createFakeLogger } from '../fakes.ts';
-import type { StepTaskHandlerContext, Context } from '../../src/core/context.ts';
 import { createTestStepTaskContext } from '../../src/core/test-context-utils.ts';
 import { createFlowWorkerContext } from '../../src/core/supabase-test-utils.ts';
 import type { StepTaskRecord } from '../../src/flow/types.ts';
@@ -27,14 +27,14 @@ Deno.test(
   withTransaction(async (_sql) => {
     const abortController = new AbortController();
     
-    let receivedContext: StepTaskHandlerContext<unknown, Record<string, unknown>> | undefined;
+    let receivedContext: SupabaseStepTaskContext | undefined;
     let receivedInput: unknown;
     
     // Create a flow with handler that accepts context
     const ContextTestFlow = new Flow({ slug: 'context-test-flow' })
       .step(
         { slug: 'test-step' },
-        async (input: { run: { data: string } }, context: StepTaskHandlerContext<unknown, Record<string, unknown>>) => {
+        async (input: { run: { data: string } }, context: SupabaseStepTaskContext) => {
           receivedInput = input;
           receivedContext = context;
           
@@ -139,7 +139,7 @@ Deno.test(
     const RawMessageFlow = new Flow({ slug: 'rawmessage-flow' })
       .step(
         { slug: 'check-raw' },
-        (_input: { run: Record<string, never> }, context?: Context) => {
+        (_input: { run: Record<string, never> }, context?: SupabaseStepTaskContext) => {
           rawMessageValue = context?.rawMessage;
           return { checked: true };
         }
@@ -199,7 +199,7 @@ Deno.test(
     const SupabaseFlow = new Flow({ slug: 'supabase-flow' })
       .step(
         { slug: 'check-clients' },
-        (_input: { run: Record<string, never> }, context?: Context) => {
+        (_input: { run: Record<string, never> }, context?: SupabaseStepTaskContext) => {
           anonClientExists = context?.anonSupabase !== undefined;
           serviceClientExists = context?.serviceSupabase !== undefined;
           return { checked: true };
