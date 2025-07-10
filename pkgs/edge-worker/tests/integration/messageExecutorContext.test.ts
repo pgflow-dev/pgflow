@@ -1,5 +1,4 @@
 import { assertEquals, assertExists } from '@std/assert';
-// import { MessageExecutor } from '../../src/queue/MessageExecutor.ts';
 import { Queue } from '../../src/queue/Queue.ts';
 import { withTransaction } from '../db.ts';
 import { createFakeLogger } from '../fakes.ts';
@@ -14,7 +13,7 @@ Deno.test(
     const queueName = 'test-context-queue';
     const queue = new Queue(sql, queueName, createFakeLogger());
     await queue.safeCreate();
-    
+
     const mockMessage: PgmqMessageRecord<{ data: string }> = {
       msg_id: 123,
       read_ct: 1,
@@ -22,24 +21,29 @@ Deno.test(
       vt: '2024-01-01T00:01:00Z',
       message: { data: 'test data' },
     };
-    
+
     const abortController = new AbortController();
     // const logger = createFakeLogger();
     // const retryConfig = { limit: 3, delay: 1 };
-    
-    let receivedContext: MessageHandlerContext<{ data: string }, Record<string, unknown>> | undefined;
+
+    let receivedContext:
+      | MessageHandlerContext<{ data: string }, Record<string, unknown>>
+      | undefined;
     let receivedPayload: { data: string } | undefined;
-    
+
     // Handler that accepts context
-    const handler = async (payload: { data: string }, context: MessageHandlerContext<{ data: string }, Record<string, unknown>>) => {
+    const handler = async (
+      payload: { data: string },
+      context: MessageHandlerContext<{ data: string }, Record<string, unknown>>
+    ) => {
       receivedPayload = payload;
       receivedContext = context;
-      
+
       // Test that we can use context.sql
       const result = await context.sql`SELECT 1 as test`;
       assertEquals(result[0].test, 1);
     };
-    
+
     // Create context using proper queue worker context creation
     const context = createQueueWorkerContext({
       env: { TEST_ENV: 'test' },
@@ -47,10 +51,10 @@ Deno.test(
       abortSignal: abortController.signal,
       rawMessage: mockMessage,
     });
-    
+
     // Mock handler call with context
     await handler(mockMessage.message!, context);
-    
+
     // Verify handler received correct payload and context
     assertEquals(receivedPayload, { data: 'test data' });
     assertExists(receivedContext);
@@ -67,7 +71,7 @@ Deno.test(
     const queueName = 'test-legacy-queue';
     const queue = new Queue(sql, queueName, createFakeLogger());
     await queue.safeCreate();
-    
+
     const mockMessage: PgmqMessageRecord<{ data: string }> = {
       msg_id: 456,
       read_ct: 1,
@@ -75,19 +79,19 @@ Deno.test(
       vt: '2024-01-01T00:01:00Z',
       message: { data: 'legacy test' },
     };
-    
+
     let receivedPayload: { data: string } | undefined;
     let handlerCallCount = 0;
-    
+
     // Legacy handler that only accepts payload
     const legacyHandler = (payload: { data: string }) => {
       receivedPayload = payload;
       handlerCallCount++;
     };
-    
+
     // Call legacy handler without context
     await legacyHandler(mockMessage.message!);
-    
+
     // Verify handler worked correctly
     assertEquals(receivedPayload, { data: 'legacy test' });
     assertEquals(handlerCallCount, 1);
@@ -100,7 +104,7 @@ Deno.test(
     const queueName = 'test-rawmessage-queue';
     const queue = new Queue(sql, queueName, createFakeLogger());
     await queue.safeCreate();
-    
+
     const mockMessage: PgmqMessageRecord<{ id: number; name: string }> = {
       msg_id: 789,
       read_ct: 2,
@@ -108,11 +112,13 @@ Deno.test(
       vt: '2024-01-01T00:01:00Z',
       message: { id: 42, name: 'test item' },
     };
-    
+
     const abortController = new AbortController();
-    
-    let receivedRawMessage: PgmqMessageRecord<{ id: number; name: string }> | undefined;
-    
+
+    let receivedRawMessage:
+      | PgmqMessageRecord<{ id: number; name: string }>
+      | undefined;
+
     // Handler that checks rawMessage
     const handler = (
       _payload: { id: number; name: string },
@@ -120,7 +126,7 @@ Deno.test(
     ) => {
       receivedRawMessage = context?.rawMessage;
     };
-    
+
     // Create context
     const context = createQueueWorkerContext({
       env: {},
@@ -128,10 +134,10 @@ Deno.test(
       abortSignal: abortController.signal,
       rawMessage: mockMessage,
     });
-    
+
     // Mock handler call with context
     await handler(mockMessage.message!, context);
-    
+
     // Verify rawMessage in context matches the original message
     assertExists(receivedRawMessage);
     assertEquals(receivedRawMessage.msg_id, 789);
@@ -150,18 +156,21 @@ Deno.test(
       vt: '2024-01-01T00:01:00Z',
       message: { test: 'supabase test' },
     };
-    
+
     const abortController = new AbortController();
-    
+
     let anonClientExists = false;
     let serviceClientExists = false;
-    
+
     // Handler that checks Supabase clients
-    const handler = (_payload: { test: string }, context?: Context<{ test: string }>) => {
+    const handler = (
+      _payload: { test: string },
+      context?: Context<{ test: string }>
+    ) => {
       anonClientExists = context?.anonSupabase !== undefined;
       serviceClientExists = context?.serviceSupabase !== undefined;
     };
-    
+
     // Create context with Supabase env vars
     const context = createQueueWorkerContext({
       env: {
@@ -173,10 +182,10 @@ Deno.test(
       abortSignal: abortController.signal,
       rawMessage: mockMessage,
     });
-    
+
     // Mock handler call with context
     await handler(mockMessage.message!, context);
-    
+
     // Verify Supabase clients are available
     assertEquals(anonClientExists, true);
     assertEquals(serviceClientExists, true);
