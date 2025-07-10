@@ -34,7 +34,7 @@ Deno.test(
     const ContextTestFlow = new Flow({ slug: 'context-test-flow' })
       .step(
         { slug: 'test-step' },
-        async (input: { run: { data: string } }, context: SupabaseStepTaskContext) => {
+        async (input: { run: { data: string } }, context) => {
           receivedInput = input;
           receivedContext = context;
           
@@ -139,7 +139,7 @@ Deno.test(
     const RawMessageFlow = new Flow({ slug: 'rawmessage-flow' })
       .step(
         { slug: 'check-raw' },
-        (_input: { run: Record<string, never> }, context?: SupabaseStepTaskContext) => {
+        (_input: { run: Record<string, never> }, context) => {
           rawMessageValue = context?.rawMessage;
           return { checked: true };
         }
@@ -199,7 +199,7 @@ Deno.test(
     const SupabaseFlow = new Flow({ slug: 'supabase-flow' })
       .step(
         { slug: 'check-clients' },
-        (_input: { run: Record<string, never> }, context?: SupabaseStepTaskContext) => {
+        (_input: { run: Record<string, never> }, context) => {
           anonClientExists = context?.anonSupabase !== undefined;
           serviceClientExists = context?.serviceSupabase !== undefined;
           return { checked: true };
@@ -258,14 +258,14 @@ Deno.test(
   withTransaction(async (_sql) => {
     const abortController = new AbortController();
     
-    let step1Context: Context | undefined;
-    let step2Context: Context | undefined;
+    let step1Context: SupabaseStepTaskContext | undefined;
+    let step2Context: SupabaseStepTaskContext | undefined;
     
     // Complex flow with multiple steps using context
     const ComplexFlow = new Flow({ slug: 'complex-context-flow' })
       .step(
         { slug: 'fetch-data' },
-        async (input: { run: { id: number } }, context?: Context) => {
+        async (input: { run: { id: number } }, context) => {
           step1Context = context;
           
           // Simulate using context.sql to fetch data
@@ -281,7 +281,7 @@ Deno.test(
         { slug: 'process-data', dependsOn: ['fetch-data'] },
         (
           input: { run: { id: number }; 'fetch-data': { data: { id: number; name: string } } },
-          context?: Context
+          context
         ) => {
           step2Context = context;
           
