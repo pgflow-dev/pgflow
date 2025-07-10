@@ -16,6 +16,13 @@ export type Json =
 // Used to flatten the types of a union of objects for readability
 export type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
 
+// Utility that unwraps Promise and keeps plain values unchanged
+type AwaitedReturn<T> = T extends (...args: any[]) => Promise<infer R>
+  ? R
+  : T extends (...args: any[]) => infer R
+    ? R
+    : never;
+
 // ========================
 // ENVIRONMENT TYPE SYSTEM
 // ========================
@@ -308,9 +315,7 @@ export class Flow<
   // SlugType extends keyof Steps & keyof StepDependencies
   step<
     Slug extends string,
-    Deps extends Extract<keyof Steps, string> = never,
-    RetType extends AnyOutput = AnyOutput,
-    THandler extends (input: any, context: any) => any = (
+    THandler extends (
       input: Simplify<
         {
           run: TFlowInput;
@@ -319,17 +324,19 @@ export class Flow<
         }
       >,
       context: BaseContext & TContext
-    ) => RetType | Promise<RetType>
+    ) => any,
+    Deps extends Extract<keyof Steps, string> = never
   >(
     opts: Simplify<{ slug: Slug; dependsOn?: Deps[] } & StepRuntimeOptions>,
     handler: THandler
   ): Flow<
     TFlowInput,
     TContext & BaseContext & ExtractHandlerContext<THandler>,
-    Steps & { [K in Slug]: Awaited<RetType> },
+    Steps & { [K in Slug]: AwaitedReturn<THandler> },
     StepDependencies & { [K in Slug]: Deps[] }
   > {
-    type NewSteps = MergeObjects<Steps, { [K in Slug]: Awaited<RetType> }>;
+    type RetType = AwaitedReturn<THandler>;
+    type NewSteps = MergeObjects<Steps, { [K in Slug]: RetType }>;
     type NewDependencies = MergeObjects<
       StepDependencies,
       { [K in Slug]: Deps[] }
@@ -373,19 +380,11 @@ export class Flow<
           [K in Deps]: K extends keyof Steps ? Steps[K] : never;
         }
       >,
-      RetType
+      RetType & Json,
+      BaseContext & TContext
     > = {
       slug,
-      handler: handler as (
-        input: Simplify<
-          {
-            run: TFlowInput;
-          } & {
-            [K in Deps]: K extends keyof Steps ? Steps[K] : never;
-          }
-        >,
-        context: any
-      ) => RetType | Promise<RetType>,
+      handler: handler as any, // Type assertion needed due to complex generic constraints
       dependencies: dependencies as string[],
       options,
     };
