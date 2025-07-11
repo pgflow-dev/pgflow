@@ -3,9 +3,8 @@ import { Queue } from '../../src/queue/Queue.ts';
 import { withTransaction } from '../db.ts';
 import { createFakeLogger } from '../fakes.ts';
 import type { PgmqMessageRecord } from '../../src/queue/types.ts';
-import type { MessageHandlerContext } from '../../src/core/context.ts';
 import { createQueueWorkerContext } from '../../src/core/supabase-test-utils.ts';
-import type { SupabaseMessageContext, SupabaseEnv } from '@pgflow/dsl/supabase';
+import type { SupabaseEnv } from '@pgflow/dsl/supabase';
 
 const DEFAULT_TEST_SUPABASE_ENV: SupabaseEnv = {
   EDGE_WORKER_DB_URL: 'postgresql://test',

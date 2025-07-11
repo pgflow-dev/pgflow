@@ -37,6 +37,7 @@ export type ValidEnv<T> = T extends Env ? T : never;
 
 // Empty interface that users can augment via declaration merging
 // Must extend Env to be compatible with ValidEnv constraint
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type, @typescript-eslint/no-empty-interface
 export interface UserEnv extends Env {}
 
 // ========================

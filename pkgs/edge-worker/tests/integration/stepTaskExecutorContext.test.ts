@@ -1,8 +1,6 @@
 import { assertEquals, assertExists } from '@std/assert';
 import { Flow } from '@pgflow/dsl/supabase';
 import type {
-  SupabaseStepTaskContext,
-  SupabasePlatformContext,
   SupabaseEnv,
 } from '@pgflow/dsl/supabase';
 import { withTransaction } from '../db.ts';
@@ -32,7 +30,7 @@ Deno.test(
   withTransaction(async (_sql) => {
     const abortController = new AbortController();
 
-    let receivedContext: any;
+    let receivedContext: unknown;
     let receivedInput: unknown;
 
     // Create a flow with handler that accepts context
@@ -263,8 +261,8 @@ Deno.test(
   withTransaction(async (_sql) => {
     const abortController = new AbortController();
 
-    let step1Context: any;
-    let step2Context: any;
+    let step1Context: unknown;
+    let step2Context: unknown;
 
     // Complex flow with multiple steps using context
     const ComplexFlow = new Flow<{ id: number }>({ slug: 'complex_context_flow' })
@@ -331,7 +329,7 @@ Deno.test(
     // Verify first step
     assertExists(step1Context);
     assertEquals(step1Context.env.DATA_PREFIX, 'custom');
-    assertEquals((step1Result as any).data.id, 123);
+    assertEquals((step1Result as { data: { id: number } }).data.id, 123);
 
     // Test second step
     const step2Def = ComplexFlow.getStepDefinition('process_data');
@@ -343,6 +341,6 @@ Deno.test(
     // Verify second step
     assertExists(step2Context);
     assertEquals(step2Context.env.DATA_PREFIX, 'custom');
-    assertEquals((step2Result as any).processed, 'custom:test:123');
+    assertEquals((step2Result as { processed: string }).processed, 'custom:test:123');
   })
 );

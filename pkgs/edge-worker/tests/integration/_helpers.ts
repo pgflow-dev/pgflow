@@ -1,4 +1,4 @@
-import type { AnyFlow, ExtractFlowInput, Json } from '@pgflow/dsl';
+import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
 import {
   createFlowWorker,
   type FlowWorkerConfig,
@@ -7,8 +7,6 @@ import type { postgres } from '../sql.ts';
 import { PgflowSqlClient } from '@pgflow/core';
 import type { PlatformAdapter } from '../../src/platform/types.ts';
 import type { SupabaseResources, SupabaseEnv } from '@pgflow/dsl/supabase';
-import type { ValidEnv, UserEnv } from '@pgflow/dsl';
-import { createSql } from '../../src/core/sql-factory.ts';
 import { createAnonSupabaseClient, createServiceSupabaseClient } from '../../src/core/supabase-utils.ts';
 
 const DEFAULT_TEST_SUPABASE_ENV: SupabaseEnv = {
@@ -43,7 +41,7 @@ export function createTestPlatformAdapter(sql: postgres.Sql): PlatformAdapter<Su
     get shutdownSignal() { return abortController.signal; },
     get platformResources() { return platformResources; },
     get connectionString() { return DEFAULT_TEST_SUPABASE_ENV.EDGE_WORKER_DB_URL; },
-    async startWorker(_createWorkerFn: (createLoggerFn: (module: string) => any) => any) {},
+    async startWorker(_createWorkerFn: (createLoggerFn: (module: string) => unknown) => unknown) {},
     async stopWorker() {},
   };
 }
