@@ -1,4 +1,4 @@
-import { Flow } from '@pgflow/dsl';
+import { Flow } from '@pgflow/dsl/supabase';
 import scrapeWebsite from '../_tasks/scrapeWebsite.ts';
 import summarizeWithAI from '../_tasks/summarizeWithAI.ts';
 import extractTags from '../_tasks/extractTags.ts';
