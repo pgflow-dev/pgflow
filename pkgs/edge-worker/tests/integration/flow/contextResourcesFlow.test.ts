@@ -8,7 +8,7 @@ import { startFlow, startWorker } from '../_helpers.ts';
 // Define a flow that tests ONLY the essential context resources provided by EdgeWorker
 const ContextResourcesFlow = new Flow<{ testId: number }>({
   slug: 'test_context_resources_flow',
-}).step({ slug: 'verifyContextResources' }, async (input, context) => {
+}).step({ slug: 'verifyContextResources' }, async (_input, context) => {
   await delay(1);
 
   // Assert all expected context resources exist

@@ -4,12 +4,9 @@ import type { AnyFlow } from '@pgflow/dsl';
 import type { Json } from './types.js';
 import type { PgmqMessageRecord } from '../queue/types.js';
 import type { 
-  SupabaseMessageContext,
-  SupabaseStepTaskContext,
   StepTaskWithMessage
 } from './context.js';
-import type { SupabaseEnv, SupabasePlatformContext } from '@pgflow/dsl/supabase';
-import type { ValidEnv, UserEnv } from '@pgflow/dsl';
+import type { SupabaseEnv } from '@pgflow/dsl/supabase';
 import { createAnonSupabaseClient, createServiceSupabaseClient } from './supabase-utils.js';
 
 /**

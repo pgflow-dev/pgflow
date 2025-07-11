@@ -10,7 +10,7 @@ import { createLoggingFactory } from './logging.js';
 // EdgeRuntime type declaration for Supabase Edge Functions
 declare global {
   const EdgeRuntime: {
-    waitUntil(promise: Promise<any>): void;
+    waitUntil(promise: Promise<unknown>): void;
   } | undefined;
 }
 
