@@ -1,0 +1,251 @@
+---
+title: Context Object
+description: Understanding how pgflow provides platform resources to handlers through context
+sidebar:
+  order: 5
+  badge:
+    text: New
+    variant: tip
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+The context object is pgflow's mechanism for providing handlers with access to platform resources like database connections, environment variables, and service clients. Instead of each handler creating its own connections, pgflow manages these resources centrally and injects them through a standardized context parameter.
+
+## Why Context Exists
+
+Before context, handlers faced several challenges:
+
+1. **Resource Management** - Each handler needed to create its own database connections and clients
+2. **Configuration Access** - No standardized way to access environment variables 
+3. **Boilerplate Code** - Repeated connection setup in every handler
+4. **Resource Leaks** - Risk of not properly closing connections
+5. **Testing Complexity** - Difficult to mock resources for testing
+
+The context object solves these problems by providing pre-configured, managed resources that handlers can use immediately.
+
+## Core Principles
+
+Context follows pgflow's design philosophy:
+
+1. **Zero Configuration** - Resources are ready to use without setup
+2. **Type Safety** - Full TypeScript support with proper inference
+3. **Resource Lifecycle** - pgflow manages opening and closing connections
+4. **Platform Agnostic** - Context interface can adapt to different platforms
+5. **Backward Compatible** - Existing single-parameter handlers continue to work
+
+## How Context Works
+
+When pgflow executes a handler, it passes two parameters:
+
+```typescript title="Handler with context" {2}
+async function myHandler(input: Input, context: Context) {
+  // Access pre-configured resources
+  const result = await context.sql`SELECT * FROM users WHERE id = ${input.userId}`;
+  return { user: result[0] };
+}
+```
+
+<Aside type="note">
+  The context parameter is optional. Handlers that don't need platform resources can omit it for backward compatibility.
+</Aside>
+
+## Available Resources
+
+The context object provides these resources:
+
+### Core Resources
+
+| Resource | Type | Description |
+|----------|------|-------------|
+| `env` | `Record<string, string>` | Environment variables |
+| `shutdownSignal` | `AbortSignal` | Signal for graceful shutdown |
+| `sql` | `postgres.Sql` | PostgreSQL client |
+| `rawMessage` | `PgmqMessage` | Original queue message |
+
+### Supabase Resources
+
+When running on Supabase, additional resources are available:
+
+| Resource | Type | Description |
+|----------|------|-------------|
+| `anonSupabase` | `SupabaseClient` | Anonymous Supabase client |
+| `serviceSupabase` | `SupabaseClient` | Service role Supabase client |
+| `stepTask` | `StepTask` | Step task details (flow handlers only) |
+
+## Usage Examples
+
+### Database Operations
+
+```typescript title="Using SQL in handlers" {4}
+const ProcessOrderFlow = new Flow<{ orderId: number }>({ 
+  slug: 'process_order_flow' 
+})
+  .step({ slug: 'validate_order' }, async (input, context) => {
+    const [order] = await context.sql`
+      SELECT * FROM orders 
+      WHERE id = ${input.orderId}
+    `;
+    
+    if (!order) {
+      throw new Error('Order not found');
+    }
+    
+    return { order };
+  });
+```
+
+### Environment Access
+
+```typescript title="Reading environment variables" {2}
+async function sendNotification(input: Input, context: Context) {
+  const apiKey = context.env.NOTIFICATION_API_KEY;
+  const endpoint = context.env.NOTIFICATION_ENDPOINT;
+  
+  // Use environment variables for configuration
+  const response = await fetch(endpoint, {
+    headers: { 'Authorization': `Bearer ${apiKey}` }
+  });
+  
+  return { sent: response.ok };
+}
+```
+
+### Supabase Integration
+
+```typescript title="Using Supabase clients" {3,8}
+async function uploadDocument(input: Input, context: Context) {
+  // Use service client for admin operations
+  const { data, error } = await context.serviceSupabase
+    .storage
+    .from('documents')
+    .upload(input.path, input.file);
+    
+  // Use anon client for user-scoped operations
+  const { data: publicUrl } = context.anonSupabase
+    .storage
+    .from('documents')
+    .getPublicUrl(data.path);
+    
+  return { url: publicUrl };
+}
+```
+
+### Graceful Shutdown
+
+```typescript title="Respecting shutdown signals" {5}
+async function longRunningTask(input: Input, context: Context) {
+  for (const item of input.items) {
+    // Check if we should stop processing
+    if (context.shutdownSignal.aborted) {
+      return { processed: false, reason: 'shutdown' };
+    }
+    
+    await processItem(item);
+  }
+  
+  return { processed: true };
+}
+```
+
+## Type Safety
+
+Context provides full type inference:
+
+<Tabs>
+<TabItem label="Flow handlers">
+```typescript {4}
+import { SupabaseFlow } from '@pgflow/edge-worker/flows';
+
+const MyFlow = new SupabaseFlow<{ userId: string }>({ slug: 'my_flow' })
+  .step({ slug: 'fetch_user' }, async (input, context) => {
+    // TypeScript knows context includes Supabase resources
+    const user = await context.serviceSupabase.auth.admin.getUserById(input.userId);
+    return { user };
+  });
+```
+</TabItem>
+<TabItem label="Queue handlers">
+```typescript {4}
+import { createQueueWorker } from '@pgflow/edge-worker';
+
+const worker = createQueueWorker(
+  async (payload: MyPayload, context) => {
+    // TypeScript infers context type from platform adapter
+    const result = await context.sql`SELECT * FROM tasks WHERE id = ${payload.taskId}`;
+    return { processed: true };
+  },
+  { sql, queueName: 'my_queue' },
+  createLogger,
+  platformAdapter
+);
+```
+</TabItem>
+</Tabs>
+
+## Migration Guide
+
+Updating existing handlers to use context is straightforward:
+
+<Tabs>
+<TabItem label="Before">
+```typescript
+// Creating own connection
+async function myHandler(input: Input) {
+  const sql = postgres(process.env.DATABASE_URL);
+  const result = await sql`SELECT * FROM users`;
+  await sql.end();
+  return result;
+}
+```
+</TabItem>
+<TabItem label="After">
+```typescript {2}
+// Using context resources
+async function myHandler(input: Input, context: Context) {
+  const result = await context.sql`SELECT * FROM users`;
+  return result;
+}
+```
+</TabItem>
+</Tabs>
+
+<Aside type="tip">
+  You don't need to update all handlers at once. Context is backward compatible, so you can migrate gradually.
+</Aside>
+
+## Future: Custom Resources
+
+The context system is designed to be extensible. Future versions will support:
+
+- **Custom Resources** - Add your own services to context
+- **Resource Providers** - Plugin system for third-party integrations  
+- **Context Middleware** - Transform or enhance context before handlers
+- **Scoped Resources** - Per-flow or per-step resource configuration
+
+```typescript title="Future: Custom resources (planned)"
+// This API is not yet available
+const MyFlow = new Flow({ slug: 'my_flow' })
+  .withContext({
+    redis: createRedisClient(),
+    stripe: new Stripe(process.env.STRIPE_KEY),
+    customService: new MyService()
+  })
+  .step({ slug: 'process' }, async (input, context) => {
+    // Access custom resources
+    await context.redis.set('key', 'value');
+    await context.stripe.charges.create({ ... });
+  });
+```
+
+## Summary
+
+The context object streamlines handler development by:
+
+- Providing ready-to-use platform resources
+- Eliminating connection boilerplate
+- Ensuring proper resource lifecycle management  
+- Maintaining type safety throughout
+- Supporting gradual migration of existing code
+
+Context embodies pgflow's philosophy of being **robust yet simple** - handlers get powerful capabilities without complexity.
