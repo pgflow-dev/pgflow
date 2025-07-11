@@ -4,7 +4,7 @@ import { withTransaction } from '../db.ts';
 import { createFakeLogger } from '../fakes.ts';
 import { waitFor } from '../e2e/_helpers.ts';
 import { delay } from '@std/async';
-import { createAdapter } from '../../src/platform/createAdapter.ts';
+import { createTestPlatformAdapter } from './_helpers.ts';
 
 Deno.test(
   'creates queue when starting worker',
@@ -17,7 +17,7 @@ Deno.test(
         queueName: 'custom_queue',
       },
       createFakeLogger,
-      createAdapter()
+      createTestPlatformAdapter(sql)
     );
 
     worker.startOnlyOnce({

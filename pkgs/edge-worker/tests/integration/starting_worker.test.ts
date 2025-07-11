@@ -1,7 +1,7 @@
 import { createQueueWorker } from '../../src/queue/createQueueWorker.ts';
-import { createAdapter } from '../../src/platform/createAdapter.ts';
 import { withTransaction } from '../db.ts';
 import { createFakeLogger } from '../fakes.ts';
+import { createTestPlatformAdapter } from './_helpers.ts';
 import { delay } from '@std/async';
 
 Deno.test(
@@ -14,7 +14,7 @@ Deno.test(
         maxPollSeconds: 1,
       },
       createFakeLogger,
-      createAdapter()
+      createTestPlatformAdapter(sql)
     );
 
     worker.startOnlyOnce({

@@ -29,7 +29,7 @@ export async function startFlow<TFlow extends AnyFlow>(
   return await pgflow.startFlow(flow.slug, input);
 }
 
-function createTestPlatformAdapter(sql: postgres.Sql): PlatformAdapter<SupabaseResources> {
+export function createTestPlatformAdapter(sql: postgres.Sql): PlatformAdapter<SupabaseResources> {
   const abortController = new AbortController();
 
   const platformResources: SupabaseResources = {
