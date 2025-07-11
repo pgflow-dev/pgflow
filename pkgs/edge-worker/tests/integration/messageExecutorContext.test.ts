@@ -3,15 +3,23 @@ import { Queue } from '../../src/queue/Queue.ts';
 import { withTransaction } from '../db.ts';
 import { createFakeLogger } from '../fakes.ts';
 import type { PgmqMessageRecord } from '../../src/queue/types.ts';
-import type { Context } from '@pgflow/dsl';
 import type { MessageHandlerContext } from '../../src/core/context.ts';
 import { createQueueWorkerContext } from '../../src/core/supabase-test-utils.ts';
+import type { SupabaseMessageContext } from '@pgflow/dsl/supabase';
+
+const DEFAULT_TEST_SUPABASE_ENV = {
+  EDGE_WORKER_DB_URL: 'postgresql://test',
+  SUPABASE_URL: 'https://test.supabase.co',
+  SUPABASE_ANON_KEY: 'test-anon-key',
+  SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
+  SB_EXECUTION_ID: 'test-execution-id',
+};
 
 Deno.test(
   'MessageExecutor - handler with context receives all context properties',
   withTransaction(async (sql) => {
     const queueName = 'test-context-queue';
-    const queue = new Queue(sql, queueName, createFakeLogger());
+    const queue = new Queue(sql, queueName, createFakeLogger('test-context-queue'));
     await queue.safeCreate();
 
     const mockMessage: PgmqMessageRecord<{ data: string }> = {
@@ -26,15 +34,13 @@ Deno.test(
     // const logger = createFakeLogger();
     // const retryConfig = { limit: 3, delay: 1 };
 
-    let receivedContext:
-      | MessageHandlerContext<{ data: string }, Record<string, unknown>>
-      | undefined;
+    let receivedContext: SupabaseMessageContext<{ data: string }> | undefined;
     let receivedPayload: { data: string } | undefined;
 
     // Handler that accepts context
     const handler = async (
       payload: { data: string },
-      context: MessageHandlerContext<{ data: string }, Record<string, unknown>>
+      context: SupabaseMessageContext<{ data: string }>
     ) => {
       receivedPayload = payload;
       receivedContext = context;
@@ -46,7 +52,7 @@ Deno.test(
 
     // Create context using proper queue worker context creation
     const context = createQueueWorkerContext({
-      env: { TEST_ENV: 'test' },
+      env: DEFAULT_TEST_SUPABASE_ENV,
       sql,
       abortSignal: abortController.signal,
       rawMessage: mockMessage,
@@ -69,7 +75,7 @@ Deno.test(
   'MessageExecutor - backward compatibility with single-arg handlers',
   withTransaction(async (sql) => {
     const queueName = 'test-legacy-queue';
-    const queue = new Queue(sql, queueName, createFakeLogger());
+    const queue = new Queue(sql, queueName, createFakeLogger('test-legacy-queue'));
     await queue.safeCreate();
 
     const mockMessage: PgmqMessageRecord<{ data: string }> = {
@@ -102,7 +108,7 @@ Deno.test(
   'MessageExecutor - context.rawMessage matches the message being processed',
   withTransaction(async (sql) => {
     const queueName = 'test-rawmessage-queue';
-    const queue = new Queue(sql, queueName, createFakeLogger());
+    const queue = new Queue(sql, queueName, createFakeLogger('test-rawmessage-queue'));
     await queue.safeCreate();
 
     const mockMessage: PgmqMessageRecord<{ id: number; name: string }> = {
@@ -122,14 +128,14 @@ Deno.test(
     // Handler that checks rawMessage
     const handler = (
       _payload: { id: number; name: string },
-      context?: Context<{ id: number; name: string }>
+      context?: SupabaseMessageContext<{ id: number; name: string }>
     ) => {
       receivedRawMessage = context?.rawMessage;
     };
 
     // Create context
     const context = createQueueWorkerContext({
-      env: {},
+      env: DEFAULT_TEST_SUPABASE_ENV,
       sql,
       abortSignal: abortController.signal,
       rawMessage: mockMessage,
@@ -165,7 +171,7 @@ Deno.test(
     // Handler that checks Supabase clients
     const handler = (
       _payload: { test: string },
-      context?: Context<{ test: string }>
+      context?: SupabaseMessageContext<{ test: string }>
     ) => {
       anonClientExists = context?.anonSupabase !== undefined;
       serviceClientExists = context?.serviceSupabase !== undefined;
@@ -173,11 +179,7 @@ Deno.test(
 
     // Create context with Supabase env vars
     const context = createQueueWorkerContext({
-      env: {
-        SUPABASE_URL: 'https://test.supabase.co',
-        SUPABASE_ANON_KEY: 'test-anon-key',
-        SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
-      },
+      env: DEFAULT_TEST_SUPABASE_ENV,
       sql,
       abortSignal: abortController.signal,
       rawMessage: mockMessage,

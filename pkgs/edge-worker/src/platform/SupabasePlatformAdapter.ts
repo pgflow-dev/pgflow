@@ -7,10 +7,17 @@ import { createSql } from '../core/sql-factory.js';
 import { createAnonSupabaseClient, createServiceSupabaseClient } from '../core/supabase-utils.js';
 import { createLoggingFactory } from './logging.js';
 
+// EdgeRuntime type declaration for Supabase Edge Functions
+declare global {
+  const EdgeRuntime: {
+    waitUntil(promise: Promise<any>): void;
+  } | undefined;
+}
+
 /**
  * Supabase-specific environment variables
  */
-interface SupabaseEnv {
+interface SupabaseEnv extends Record<string, string | undefined> {
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;
   SUPABASE_SERVICE_ROLE_KEY: string;

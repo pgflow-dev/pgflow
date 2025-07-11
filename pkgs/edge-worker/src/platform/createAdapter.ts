@@ -1,10 +1,11 @@
 import type { PlatformAdapter } from './types.js';
 import { SupabasePlatformAdapter } from './SupabasePlatformAdapter.js';
+import type { SupabaseResources } from '@pgflow/dsl/supabase';
 
 /**
  * Creates the appropriate platform adapter based on the runtime environment
  */
-export function createAdapter(): PlatformAdapter {
+export function createAdapter(): PlatformAdapter<SupabaseResources> {
   if (isDenoEnvironment()) {
     // For now, always use SupabasePlatformAdapter for Deno
     // In the future, we could detect Supabase vs other Deno environments

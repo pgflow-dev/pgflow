@@ -1,5 +1,5 @@
 import { assertEquals, assertExists } from '@std/assert';
-import { Flow } from '@pgflow/dsl';
+import { Flow } from '@pgflow/dsl/supabase';
 import type {
   SupabaseStepTaskContext,
   SupabasePlatformContext,
@@ -8,6 +8,14 @@ import { withTransaction } from '../db.ts';
 // import { createFakeLogger } from '../fakes.ts';
 import { createFlowWorkerContext } from '../../src/core/supabase-test-utils.ts';
 import type { StepTaskRecord } from '../../src/flow/types.ts';
+
+const DEFAULT_TEST_SUPABASE_ENV = {
+  EDGE_WORKER_DB_URL: 'postgresql://test',
+  SUPABASE_URL: 'https://test.supabase.co',
+  SUPABASE_ANON_KEY: 'test-anon-key',
+  SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
+  SB_EXECUTION_ID: 'test-execution-id',
+};
 
 // Define a test flow
 const _TestFlow = new Flow<{ value: number }>({ slug: 'test-context-flow' })
@@ -27,9 +35,9 @@ Deno.test(
     let receivedInput: unknown;
 
     // Create a flow with handler that accepts context
-    const ContextTestFlow = new Flow({ slug: 'context-test-flow' }).step(
+    const ContextTestFlow = new Flow<{ data: string }>({ slug: 'context-test-flow' }).step(
       { slug: 'test-step' },
-      async (input: { run: { data: string } }, context) => {
+      async (input, context) => {
         receivedInput = input;
         receivedContext = context;
 
@@ -60,10 +68,11 @@ Deno.test(
     };
 
     const context = createFlowWorkerContext({
-      env: { FLOW_ENV: 'test' },
+      env: DEFAULT_TEST_SUPABASE_ENV,
       sql: _sql,
       abortSignal: abortController.signal,
       taskWithMessage: {
+        msg_id: 123,
         message: mockMessage,
         task: mockTask,
       },
@@ -78,7 +87,6 @@ Deno.test(
     // Verify handler received correct input and context
     assertEquals(receivedInput, { run: { data: 'test data' } });
     assertExists(receivedContext);
-    assertEquals(receivedContext.env.FLOW_ENV, 'test');
     assertEquals(receivedContext.sql, _sql);
     assertEquals(receivedContext.shutdownSignal, abortController.signal);
     assertEquals(receivedContext.rawMessage, mockMessage); // Should be the message from taskWithMessage
@@ -92,9 +100,9 @@ Deno.test(
     let handlerCallCount = 0;
 
     // Legacy flow with single-arg handler
-    const LegacyFlow = new Flow({ slug: 'legacy-flow' }).step(
+    const LegacyFlow = new Flow<{ value: number }>({ slug: 'legacy-flow' }).step(
       { slug: 'legacy-step' },
-      (input: { run: { value: number } }) => {
+      (input) => {
         receivedInput = input;
         handlerCallCount++;
         return { doubled: input.run.value * 2 };
@@ -114,7 +122,11 @@ Deno.test(
     const stepDef = LegacyFlow.getStepDefinition('legacy-step');
 
     // Call legacy handler with mock context
-    const mockContext = { sql: _sql };
+    const mockContext = { 
+      sql: _sql, 
+      env: {},
+      shutdownSignal: new AbortController().signal
+    };
     const result = await stepDef.handler(mockTask.input, mockContext);
 
     // Verify handler worked correctly
@@ -132,9 +144,9 @@ Deno.test(
     let rawMessageValue: unknown = 'not-checked';
 
     // Flow that checks rawMessage
-    const RawMessageFlow = new Flow({ slug: 'rawmessage-flow' }).step(
+    const RawMessageFlow = new Flow<Record<string, never>>({ slug: 'rawmessage-flow' }).step(
       { slug: 'check-raw' },
-      (_input: { run: Record<string, never> }, context) => {
+      (_input, context) => {
         rawMessageValue = context?.rawMessage;
         return { checked: true };
       }
@@ -151,7 +163,7 @@ Deno.test(
 
     // Mock step task record
     const mockTask: StepTaskRecord<typeof RawMessageFlow> = {
-      flow_slug: 'raw-message-flow',
+      flow_slug: 'rawmessage-flow',
       msg_id: 789,
       run_id: 'raw-run-id',
       step_slug: 'check-raw',
@@ -160,12 +172,13 @@ Deno.test(
 
     // Create context - for this test we need a mock taskWithMessage
     const mockTaskWithMessage = {
+      msg_id: 789,
       message: mockMessage,
       task: mockTask,
     };
 
     const context = createFlowWorkerContext({
-      env: {},
+      env: DEFAULT_TEST_SUPABASE_ENV,
       sql: _sql,
       abortSignal: abortController.signal,
       taskWithMessage: mockTaskWithMessage,
@@ -191,9 +204,9 @@ Deno.test(
     let serviceClientExists = false;
 
     // Flow that checks Supabase clients
-    const SupabaseFlow = new Flow({ slug: 'supabase-flow' }).step(
+    const SupabaseFlow = new Flow<Record<string, never>>({ slug: 'supabase-flow' }).step(
       { slug: 'check-clients' },
-      (_input: { run: Record<string, never> }, context) => {
+      (_input, context) => {
         anonClientExists = context?.anonSupabase !== undefined;
         serviceClientExists = context?.serviceSupabase !== undefined;
         return { checked: true };
@@ -220,16 +233,13 @@ Deno.test(
 
     // Create context with Supabase env vars
     const mockTaskWithMessage = {
+      msg_id: 999,
       message: mockMessage,
       task: mockTask,
     };
 
     const context = createFlowWorkerContext({
-      env: {
-        SUPABASE_URL: 'https://test.supabase.co',
-        SUPABASE_ANON_KEY: 'test-anon-key',
-        SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
-      },
+      env: DEFAULT_TEST_SUPABASE_ENV,
       sql: _sql,
       abortSignal: abortController.signal,
       taskWithMessage: mockTaskWithMessage,
@@ -256,10 +266,10 @@ Deno.test(
     let step2Context: SupabaseStepTaskContext | undefined;
 
     // Complex flow with multiple steps using context
-    const ComplexFlow = new Flow({ slug: 'complex-context-flow' })
+    const ComplexFlow = new Flow<{ id: number }>({ slug: 'complex-context-flow' })
       .step(
         { slug: 'fetch-data' },
-        async (input: { run: { id: number } }, context) => {
+        async (input, context) => {
           step1Context = context;
 
           // Simulate using context.sql to fetch data
@@ -274,13 +284,7 @@ Deno.test(
       )
       .step(
         { slug: 'process-data', dependsOn: ['fetch-data'] },
-        (
-          input: {
-            run: { id: number };
-            'fetch-data': { data: { id: number; name: string } };
-          },
-          context
-        ) => {
+        (input, context) => {
           step2Context = context;
 
           // Process with context
@@ -300,7 +304,8 @@ Deno.test(
       message: { run: { id: 123 } },
     };
 
-    const mockTaskForComplex: unknown = {
+    const mockTaskForComplex: StepTaskRecord<typeof ComplexFlow> = {
+      flow_slug: 'complex-context-flow',
       msg_id: 456,
       run_id: 'complex-run',
       step_slug: 'fetch-data',
@@ -308,10 +313,11 @@ Deno.test(
     };
 
     const context = createFlowWorkerContext({
-      env: { DATA_PREFIX: 'custom' },
+      env: { ...DEFAULT_TEST_SUPABASE_ENV, DATA_PREFIX: 'custom' },
       sql: _sql,
       abortSignal: abortController.signal,
       taskWithMessage: {
+        msg_id: 456,
         message: mockMessageForComplex,
         task: mockTaskForComplex,
       },
@@ -324,7 +330,7 @@ Deno.test(
     // Verify first step
     assertExists(step1Context);
     assertEquals(step1Context.env.DATA_PREFIX, 'custom');
-    assertEquals(step1Result.data.id, 123);
+    assertEquals((step1Result as any).data.id, 123);
 
     // Test second step
     const step2Def = ComplexFlow.getStepDefinition('process-data');
@@ -336,6 +342,6 @@ Deno.test(
     // Verify second step
     assertExists(step2Context);
     assertEquals(step2Context.env.DATA_PREFIX, 'custom');
-    assertEquals(step2Result.processed, 'custom:test:123');
+    assertEquals((step2Result as any).processed, 'custom:test:123');
   })
 );

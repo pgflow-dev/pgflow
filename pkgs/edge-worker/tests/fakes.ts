@@ -9,4 +9,4 @@ export const fakeLogger: Logger = {
   error: noop,
 };
 
-export const createFakeLogger: CreateLoggerFn = () => fakeLogger;
+export const createFakeLogger: CreateLoggerFn = (_module: string) => fakeLogger;
