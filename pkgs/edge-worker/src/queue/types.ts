@@ -1,4 +1,5 @@
 import type { Json, IMessage } from '../core/types.js';
+import type { MessageHandlerContext } from '../core/context.js';
 
 /**
  * Fields are nullable because types in postgres does not allow NOT NULL,
@@ -14,8 +15,11 @@ export interface PgmqMessageRecord<TPayload extends Json | null = Json>
 }
 
 /**
- * User-provided handler function, called for each message in the queue
+ * Generic message handler function that can work with any platform
+ * @template TPayload - The message payload type
+ * @template TContext - The context type (defaults to base MessageHandlerContext)
  */
-export type MessageHandlerFn<TPayload> = (
-  message: TPayload
-) => Promise<void> | void;
+export type MessageHandlerFn<
+  TPayload extends Json = Json, 
+  TContext extends MessageHandlerContext<TPayload> = MessageHandlerContext<TPayload>
+> = (message: TPayload, context: TContext) => Promise<void> | void;

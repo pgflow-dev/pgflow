@@ -3,6 +3,7 @@ import type { MessageHandlerFn, PgmqMessageRecord } from './types.js';
 import type { Queue } from './Queue.js';
 import type { Logger } from '../platform/types.js';
 import type { RetryConfig } from './createQueueWorker.js';
+import type { MessageHandlerContext } from '../core/context.js';
 
 class AbortError extends Error {
   constructor() {
@@ -19,19 +20,24 @@ class AbortError extends Error {
  *
  * It also handles the abort signal and logs the error.
  */
-export class MessageExecutor<TPayload extends Json> {
+export class MessageExecutor<TPayload extends Json, TContext extends MessageHandlerContext<TPayload> = MessageHandlerContext<TPayload>> {
   private logger: Logger;
 
   constructor(
     private readonly queue: Queue<TPayload>,
-    private readonly record: PgmqMessageRecord<TPayload>,
-    private readonly messageHandler: MessageHandlerFn<TPayload>,
+    private readonly messageHandler: MessageHandlerFn<TPayload, TContext>,
     private readonly signal: AbortSignal,
     private readonly retryConfig: RetryConfig,
     private readonly calculateRetryDelay: (attempt: number, config: RetryConfig) => number,
-    logger: Logger
+    logger: Logger,
+    private readonly context: TContext
   ) {
     this.logger = logger;
+  }
+
+  // Convenience getters to avoid drilling into context
+  get record(): PgmqMessageRecord<TPayload> {
+    return this.context.rawMessage;
   }
 
   get msgId() {
@@ -48,7 +54,9 @@ export class MessageExecutor<TPayload extends Json> {
       this.signal.throwIfAborted();
 
       this.logger.info(`Executing task ${this.msgId}...`);
-      await this.messageHandler(this.record.message!);
+      
+      // Always pass context as second argument
+      await this.messageHandler(this.record.message, this.context);
 
       this.logger.info(
         `Task ${this.msgId} completed successfully, archiving...`

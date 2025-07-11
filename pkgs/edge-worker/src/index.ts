@@ -23,3 +23,6 @@ export type {
   ILifecycle,
   IBatchProcessor,
 } from './core/types.js';
+
+// Export context types
+export type { Context } from './core/context.js';

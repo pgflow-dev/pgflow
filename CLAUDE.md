@@ -16,3 +16,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 @.claude/testing_guidelines.md
 @.claude/mcp_crawler.md
 
+## Development Guidelines
+
+- Always run 'nx' as 'pnpm nx'

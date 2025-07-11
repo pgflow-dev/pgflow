@@ -30,14 +30,17 @@ export default new Flow<Input>({
     const { keywords } = await extractTags(input.website.content);
     return keywords;
   })
-  .step({ slug: 'saveToDb', dependsOn: ['summary', 'tags'] }, async (input) => {
-    const websiteData = {
-      user_id: input.run.user_id,
-      website_url: input.run.url,
-      summary: input.summary,
-      tags: input.tags,
-    };
-    const { website } = await saveWebsite(websiteData);
+  .step(
+    { slug: 'saveToDb', dependsOn: ['summary', 'tags'] },
+    async (input, { serviceSupabase }) => {
+      const websiteData = {
+        user_id: input.run.user_id,
+        website_url: input.run.url,
+        summary: input.summary,
+        tags: input.tags,
+      };
+      const { website } = await saveWebsite(websiteData, serviceSupabase);
 
-    return website;
-  });
+      return website;
+    },
+  );

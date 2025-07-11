@@ -37,13 +37,17 @@ Just pass it a handler function to `.start()`:
 import { EdgeWorker } from 'jsr:@pgflow/edge-worker';
 
 // Start a worker that processes messages from the 'tasks' queue
-EdgeWorker.start(async (payload) => {
+EdgeWorker.start(async (payload, context) => {
   console.log('Processing message:', payload);
+  
+  // Access platform resources through context
+  const result = await context.sql`
+    INSERT INTO processed_tasks (data) 
+    VALUES (${JSON.stringify(payload)}) 
+    RETURNING id
+  `;
 
-  // Your processing logic here...
-  const result = await processPayload(payload);
-
-  return result; // Optional
+  return { processed: true, id: result[0].id };
 });
 ```
 
@@ -55,11 +59,129 @@ Just pass it a Flow definition to `.start()`:
 
 ```typescript
 import { EdgeWorker } from 'jsr:@pgflow/edge-worker';
-import AnalyzeWebsite from '../_flows/analyze_website.ts';
+import { Flow } from 'jsr:@pgflow/dsl/supabase';
 
-// Start a worker that processes messages from the 'analyze_website' queue
+// Define a flow using Supabase preset for Supabase resources
+const AnalyzeWebsite = new Flow<{ url: string }>({
+  slug: 'analyze_website'
+})
+  .step({ slug: 'fetch' }, async (input, context) => {
+    // Access Supabase resources through context
+    const response = await fetch(input.run.url, {
+      signal: context.shutdownSignal
+    });
+    return { html: await response.text() };
+  })
+  .step({ slug: 'save' }, async (input, context) => {
+    // Use service role Supabase client from context
+    const { data } = await context.serviceSupabase
+      .from('websites')
+      .insert({ url: input.run.url, html: input.fetch.html })
+      .select()
+      .single();
+    return data;
+  });
+
+// Start the worker
 EdgeWorker.start(AnalyzeWebsite);
 ```
+
+## Context Resources
+
+EdgeWorker automatically provides a context object as the second parameter to all handlers. The context contains platform resources and runtime information.
+
+### Core Resources (Always Available)
+
+These resources are provided regardless of platform:
+
+- **`env`** - Environment variables (`Record<string, string | undefined>`)
+- **`shutdownSignal`** - AbortSignal for graceful shutdown handling
+- **`rawMessage`** - Original pgmq message with metadata
+  ```typescript
+  interface PgmqMessageRecord<T> {
+    msg_id: number;
+    read_ct: number;
+    enqueued_at: Date;
+    vt: Date;
+    message: T;
+  }
+  ```
+- **`stepTask`** - Current step task details (flow handlers only)
+  ```typescript
+  interface StepTaskRecord<TFlow> {
+    flow_slug: string;
+    run_id: string;
+    step_slug: string;
+    input: StepInput<TFlow, StepSlug>;
+    msg_id: number;
+  }
+  ```
+
+### Supabase Platform Resources
+
+When running on Supabase (the default), these additional resources are available:
+
+- **`sql`** - PostgreSQL client (`postgres.Sql`) for database queries
+- **`anonSupabase`** - Supabase client (`SupabaseClient`) with anonymous key
+- **`serviceSupabase`** - Supabase client (`SupabaseClient`) with service role key
+
+### Required Environment Variables
+
+The Supabase platform adapter requires these environment variables:
+
+- `EDGE_WORKER_DB_URL` - PostgreSQL connection string (automatically set by Supabase)
+- `SUPABASE_URL` - Your Supabase project URL (automatically set)
+- `SUPABASE_ANON_KEY` - Anonymous/public key (automatically set)
+- `SUPABASE_SERVICE_ROLE_KEY` - Service role key (automatically set)
+- `SB_EXECUTION_ID` - Execution ID for the Edge Function (automatically set)
+
+All these variables are automatically populated by Supabase Edge Functions runtime.
+
+### Using Context in Handlers
+
+```typescript
+// Queue handler with context
+EdgeWorker.start(async (payload, context) => {
+  // Check environment variables
+  if (context.env.FEATURE_FLAG === 'enabled') {
+    // Use SQL client
+    await context.sql`UPDATE tasks SET processed = true WHERE id = ${payload.id}`;
+  }
+  
+  // Handle graceful shutdown
+  if (context.shutdownSignal.aborted) {
+    return { status: 'aborted' };
+  }
+  
+  // Use Supabase client
+  const { data } = await context.serviceSupabase
+    .from('results')
+    .insert({ task_id: payload.id })
+    .select();
+    
+  return data;
+});
+```
+
+### Using Supabase Flow Preset for Type Safety
+
+When defining flows that use Supabase resources, import `Flow` from the Supabase preset:
+
+```typescript
+import { Flow } from 'jsr:@pgflow/dsl/supabase';
+
+const MyFlow = new Flow<InputType>({ slug: 'my_flow' })
+  .step({ slug: 'process' }, async (input, context) => {
+    // TypeScript knows context includes all Supabase resources
+    const users = await context.sql`SELECT * FROM users`;
+    return users;
+  });
+```
+
+> [!NOTE]
+> Context is optional for backward compatibility. Handlers that don't need platform resources can omit the second parameter.
+
+For more details on the context object and available resources, see the [Context documentation](https://github.com/pgflow-org/pgflow/tree/main/pkgs/dsl#context-object).
 
 ## Documentation
 
