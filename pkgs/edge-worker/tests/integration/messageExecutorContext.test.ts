@@ -5,9 +5,9 @@ import { createFakeLogger } from '../fakes.ts';
 import type { PgmqMessageRecord } from '../../src/queue/types.ts';
 import type { MessageHandlerContext } from '../../src/core/context.ts';
 import { createQueueWorkerContext } from '../../src/core/supabase-test-utils.ts';
-import type { SupabaseMessageContext } from '@pgflow/dsl/supabase';
+import type { SupabaseMessageContext, SupabaseEnv } from '@pgflow/dsl/supabase';
 
-const DEFAULT_TEST_SUPABASE_ENV = {
+const DEFAULT_TEST_SUPABASE_ENV: SupabaseEnv = {
   EDGE_WORKER_DB_URL: 'postgresql://test',
   SUPABASE_URL: 'https://test.supabase.co',
   SUPABASE_ANON_KEY: 'test-anon-key',
@@ -34,13 +34,13 @@ Deno.test(
     // const logger = createFakeLogger();
     // const retryConfig = { limit: 3, delay: 1 };
 
-    let receivedContext: SupabaseMessageContext<{ data: string }> | undefined;
+    let receivedContext: ReturnType<typeof createQueueWorkerContext<{ data: string }>> | undefined;
     let receivedPayload: { data: string } | undefined;
 
-    // Handler that accepts context
+    // Handler that accepts context - TypeScript infers the exact type
     const handler = async (
       payload: { data: string },
-      context: SupabaseMessageContext<{ data: string }>
+      context: ReturnType<typeof createQueueWorkerContext<{ data: string }>>
     ) => {
       receivedPayload = payload;
       receivedContext = context;
@@ -64,7 +64,7 @@ Deno.test(
     // Verify handler received correct payload and context
     assertEquals(receivedPayload, { data: 'test data' });
     assertExists(receivedContext);
-    assertEquals(receivedContext.env.TEST_ENV, 'test');
+    assertEquals(receivedContext.env.SUPABASE_URL, 'https://test.supabase.co');
     assertEquals(receivedContext.sql, sql);
     assertEquals(receivedContext.shutdownSignal, abortController.signal);
     assertEquals(receivedContext.rawMessage, mockMessage);
@@ -121,19 +121,17 @@ Deno.test(
 
     const abortController = new AbortController();
 
-    let receivedRawMessage:
-      | PgmqMessageRecord<{ id: number; name: string }>
-      | undefined;
+    let receivedRawMessage: typeof mockMessage | undefined;
 
-    // Handler that checks rawMessage
+    // Handler that checks rawMessage - TypeScript infers the exact type
     const handler = (
       _payload: { id: number; name: string },
-      context?: SupabaseMessageContext<{ id: number; name: string }>
+      context?: ReturnType<typeof createQueueWorkerContext<{ id: number; name: string }>>
     ) => {
       receivedRawMessage = context?.rawMessage;
     };
 
-    // Create context
+    // Create context first so we can infer its type
     const context = createQueueWorkerContext({
       env: DEFAULT_TEST_SUPABASE_ENV,
       sql,
@@ -168,10 +166,10 @@ Deno.test(
     let anonClientExists = false;
     let serviceClientExists = false;
 
-    // Handler that checks Supabase clients
+    // Handler that checks Supabase clients - TypeScript infers the exact type
     const handler = (
       _payload: { test: string },
-      context?: SupabaseMessageContext<{ test: string }>
+      context?: ReturnType<typeof createQueueWorkerContext<{ test: string }>>
     ) => {
       anonClientExists = context?.anonSupabase !== undefined;
       serviceClientExists = context?.serviceSupabase !== undefined;

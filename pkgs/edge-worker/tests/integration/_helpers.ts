@@ -6,11 +6,12 @@ import {
 import type { postgres } from '../sql.ts';
 import { PgflowSqlClient } from '@pgflow/core';
 import type { PlatformAdapter } from '../../src/platform/types.ts';
-import type { SupabaseResources } from '@pgflow/dsl/supabase';
+import type { SupabaseResources, SupabaseEnv } from '@pgflow/dsl/supabase';
+import type { ValidEnv, UserEnv } from '@pgflow/dsl';
 import { createSql } from '../../src/core/sql-factory.ts';
 import { createAnonSupabaseClient, createServiceSupabaseClient } from '../../src/core/supabase-utils.ts';
 
-const DEFAULT_TEST_SUPABASE_ENV = {
+const DEFAULT_TEST_SUPABASE_ENV: SupabaseEnv = {
   EDGE_WORKER_DB_URL: 'postgresql://postgres:postgres@localhost:5432/postgres',
   SUPABASE_URL: 'https://test.supabase.co',
   SUPABASE_ANON_KEY: 'test-anon-key',

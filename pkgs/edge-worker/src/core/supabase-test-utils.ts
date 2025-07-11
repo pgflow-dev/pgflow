@@ -8,18 +8,20 @@ import type {
   SupabaseStepTaskContext,
   StepTaskWithMessage
 } from './context.js';
+import type { SupabaseEnv, SupabasePlatformContext } from '@pgflow/dsl/supabase';
+import type { ValidEnv, UserEnv } from '@pgflow/dsl';
 import { createAnonSupabaseClient, createServiceSupabaseClient } from './supabase-utils.js';
 
 /**
  * Creates a test context that mimics what SupabasePlatformAdapter provides.
  * For queue workers that only deal with messages.
  */
-export function createQueueWorkerContext<TPayload extends Json = Json>(params: {
-  env: Record<string, string | undefined>;
+export function createQueueWorkerContext<TPayload extends Json>(params: {
+  env: SupabaseEnv;
   sql: Sql;
   abortSignal: AbortSignal;
   rawMessage: PgmqMessageRecord<TPayload>;
-}): SupabaseMessageContext<TPayload> {
+}) {
   const { env, sql, abortSignal, rawMessage } = params;
 
   // Create Supabase clients if env vars exist, otherwise create mocks
@@ -58,11 +60,11 @@ export function createQueueWorkerContext<TPayload extends Json = Json>(params: {
  * For testing, we allow passing it separately or via taskWithMessage.
  */
 export function createFlowWorkerContext<TFlow extends AnyFlow = AnyFlow>(params: {
-  env: Record<string, string | undefined>;
+  env: SupabaseEnv;
   sql: Sql;
   abortSignal: AbortSignal;
   taskWithMessage?: StepTaskWithMessage<TFlow>;
-}): SupabaseStepTaskContext<TFlow> {
+}) {
   const { env, sql, abortSignal, taskWithMessage } = params;
 
   // Create Supabase clients if env vars exist, otherwise create mocks

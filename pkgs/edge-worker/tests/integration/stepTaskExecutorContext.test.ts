@@ -3,13 +3,14 @@ import { Flow } from '@pgflow/dsl/supabase';
 import type {
   SupabaseStepTaskContext,
   SupabasePlatformContext,
+  SupabaseEnv,
 } from '@pgflow/dsl/supabase';
 import { withTransaction } from '../db.ts';
 // import { createFakeLogger } from '../fakes.ts';
 import { createFlowWorkerContext } from '../../src/core/supabase-test-utils.ts';
 import type { StepTaskRecord } from '../../src/flow/types.ts';
 
-const DEFAULT_TEST_SUPABASE_ENV = {
+const DEFAULT_TEST_SUPABASE_ENV: SupabaseEnv = {
   EDGE_WORKER_DB_URL: 'postgresql://test',
   SUPABASE_URL: 'https://test.supabase.co',
   SUPABASE_ANON_KEY: 'test-anon-key',
@@ -31,7 +32,7 @@ Deno.test(
   withTransaction(async (_sql) => {
     const abortController = new AbortController();
 
-    let receivedContext: SupabaseStepTaskContext | undefined;
+    let receivedContext: any;
     let receivedInput: unknown;
 
     // Create a flow with handler that accepts context
@@ -59,7 +60,7 @@ Deno.test(
     };
 
     // Create context with mock task and message using proper flow worker context creation
-    const mockMessage: unknown = {
+    const mockMessage = {
       msg_id: 123,
       read_ct: 1,
       enqueued_at: '2024-01-01T00:00:00Z',
@@ -153,7 +154,7 @@ Deno.test(
     );
 
     // Mock message
-    const mockMessage: unknown = {
+    const mockMessage = {
       msg_id: 789,
       read_ct: 1,
       enqueued_at: '2024-01-01T00:00:00Z',
@@ -214,7 +215,7 @@ Deno.test(
     );
 
     // Mock message
-    const mockMessage: unknown = {
+    const mockMessage = {
       msg_id: 999,
       read_ct: 1,
       enqueued_at: '2024-01-01T00:00:00Z',
@@ -262,8 +263,8 @@ Deno.test(
   withTransaction(async (_sql) => {
     const abortController = new AbortController();
 
-    let step1Context: SupabaseStepTaskContext | undefined;
-    let step2Context: SupabaseStepTaskContext | undefined;
+    let step1Context: any;
+    let step2Context: any;
 
     // Complex flow with multiple steps using context
     const ComplexFlow = new Flow<{ id: number }>({ slug: 'complex-context-flow' })
@@ -296,7 +297,7 @@ Deno.test(
       );
 
     // Create context
-    const mockMessageForComplex: unknown = {
+    const mockMessageForComplex = {
       msg_id: 456,
       read_ct: 1,
       enqueued_at: '2024-01-01T00:00:00Z',
