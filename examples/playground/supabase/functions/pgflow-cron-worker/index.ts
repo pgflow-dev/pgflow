@@ -17,6 +17,9 @@ const loggingFactory = internal.platform.createLoggingFactory();
 const workerId = crypto.randomUUID();
 loggingFactory.setWorkerId(workerId);
 
+// Create platform adapter
+const platformAdapter = new internal.platform.SupabasePlatformAdapter();
+
 const sql = postgres(Deno.env.get('EDGE_WORKER_DB_URL')!, {
   max: 10, // Reasonable default for cron-based execution
   prepare: false,
@@ -72,14 +75,29 @@ async function processBatchForFlow<TFlow extends AnyFlow>(
   );
 
   // Create execution controller for this flow
-  const executorFactory = (record: any, signal: AbortSignal) =>
-    new internal.flow.StepTaskExecutor(
+  const executorFactory = (record: any, signal: AbortSignal) => {
+    // Build context using platform adapter resources (following createFlowWorker pattern)
+    const context = {
+      // Core platform resources
+      env: platformAdapter.env,
+      shutdownSignal: signal,
+      
+      // Step task execution context
+      rawMessage: record.message,
+      stepTask: record.task,
+      
+      // Platform-specific resources (includes sql, anonSupabase, serviceSupabase)
+      ...platformAdapter.platformResources
+    };
+
+    return new internal.flow.StepTaskExecutor(
       flowDef,
-      record,
       pgflowClient,
       signal,
       loggingFactory.createLogger('StepTaskExecutor'),
+      context,
     );
+  };
 
   const executionController = new internal.core.ExecutionController(
     executorFactory,
