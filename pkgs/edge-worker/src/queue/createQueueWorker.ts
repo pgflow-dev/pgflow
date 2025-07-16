@@ -5,11 +5,12 @@ import { Queue } from './Queue.js';
 import { ReadWithPollPoller } from './ReadWithPollPoller.js';
 import type { Json } from '../core/types.js';
 import type { PgmqMessageRecord, MessageHandlerFn } from './types.js';
+import type { MessageHandlerContext } from '../core/context.js';
 import { Worker } from '../core/Worker.js';
 import postgres from 'postgres';
 import { WorkerLifecycle } from '../core/WorkerLifecycle.js';
 import { BatchProcessor } from '../core/BatchProcessor.js';
-import type { Logger } from '../platform/types.js';
+import type { Logger, PlatformAdapter } from '../platform/types.js';
 import { validateRetryConfig } from './validateRetryConfig.js';
 
 /**
@@ -157,6 +158,12 @@ export type QueueWorkerConfig = {
    * Optional SQL client instance
    */
   sql?: postgres.Sql;
+
+  /**
+   * Environment variables for context
+   * @internal
+   */
+  env?: Record<string, string | undefined>;
 };
 
 /**
@@ -165,12 +172,14 @@ export type QueueWorkerConfig = {
  * @param handler - The message handler function that processes each message from the queue
  * @param config - Configuration options for the worker
  * @param createLogger - Function to create loggers for different components
+ * @param platformAdapter - Platform adapter for creating contexts
  * @returns A configured Worker instance ready to be started
  */
-export function createQueueWorker<TPayload extends Json>(
-  handler: MessageHandlerFn<TPayload>,
+export function createQueueWorker<TPayload extends Json, TResources extends Record<string, unknown>>(
+  handler: MessageHandlerFn<TPayload, MessageHandlerContext<TPayload, TResources>>,
   config: QueueWorkerConfig,
-  createLogger: (module: string) => Logger
+  createLogger: (module: string) => Logger,
+  platformAdapter: PlatformAdapter<TResources>
 ): Worker {
   type QueueMessage = PgmqMessageRecord<TPayload>;
 
@@ -209,8 +218,8 @@ export function createQueueWorker<TPayload extends Json>(
   // Validate the final retry config
   validateRetryConfig(retryConfig);
 
-  const abortController = new AbortController();
-  const abortSignal = abortController.signal;
+  // Use platform's shutdown signal
+  const abortSignal = platformAdapter.shutdownSignal;
 
   // Use provided SQL connection if available, otherwise create one from connection string
   const sql =
@@ -235,14 +244,27 @@ export function createQueueWorker<TPayload extends Json>(
   );
 
   const executorFactory = (record: QueueMessage, signal: AbortSignal) => {
-    return new MessageExecutor(
+    // Build context directly using platform resources
+    const context: MessageHandlerContext<TPayload, TResources> = {
+      // Core platform resources
+      env: platformAdapter.env,
+      shutdownSignal: platformAdapter.shutdownSignal,
+      
+      // Message execution context
+      rawMessage: record,
+      
+      // Platform-specific resources (generic)
+      ...platformAdapter.platformResources
+    };
+    
+    return new MessageExecutor<TPayload, MessageHandlerContext<TPayload, TResources>>(
       queue,
-      record,
       handler,
       signal,
       retryConfig,
       calculateRetryDelay,
-      createLogger('MessageExecutor')
+      createLogger('MessageExecutor'),
+      context
     );
   };
 

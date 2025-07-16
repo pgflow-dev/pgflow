@@ -11,6 +11,7 @@ import { createAdapter } from './platform/createAdapter.js';
 import type { PlatformAdapter } from './platform/types.js';
 import type { MessageHandlerFn } from './queue/types.js';
 import type { AnyFlow } from '@pgflow/dsl';
+import type { CompatibleFlow } from './types/flowCompatibility.js';
 
 /**
  * Configuration options for the EdgeWorker.
@@ -70,7 +71,7 @@ export class EdgeWorker {
    * @param config - Configuration options for the flow worker
    */
   static async start<TFlow extends AnyFlow>(
-    flow: TFlow,
+    flow: CompatibleFlow<TFlow>,
     config?: Omit<FlowWorkerConfig, 'sql'>
   ): Promise<PlatformAdapter>;
 
@@ -88,14 +89,14 @@ export class EdgeWorker {
   >(
     handlerOrFlow: MessageHandlerFn<TPayload> | TFlow,
     config: EdgeWorkerConfig = {}
-  ): Promise<PlatformAdapter> {
+  ): Promise<void> {
     if (typeof handlerOrFlow === 'function') {
-      return await this.startQueueWorker(
+      await this.startQueueWorker(
         handlerOrFlow as MessageHandlerFn<TPayload>,
         config as QueueWorkerConfig
       );
     } else {
-      return await this.startFlowWorker(
+      await this.startFlowWorker(
         handlerOrFlow as TFlow,
         config as FlowWorkerConfig
       );
@@ -157,14 +158,13 @@ export class EdgeWorker {
       pollIntervalMs: config.pollIntervalMs ?? 200,
       visibilityTimeout: config.visibilityTimeout ?? 10,
       connectionString:
-        config.connectionString || this.platform.getConnectionString(),
+        config.connectionString || this.platform.connectionString,
+      env: this.platform.env,
     };
 
     await this.platform.startWorker((createLoggerFn) => {
-      return createQueueWorker(handler, workerConfig, createLoggerFn);
+      return createQueueWorker(handler, workerConfig, createLoggerFn, this.platform);
     });
-
-    return this.platform;
   }
 
   /**
@@ -194,7 +194,7 @@ export class EdgeWorker {
    * ```
    */
   static async startFlowWorker<TFlow extends AnyFlow>(
-    flow: TFlow,
+    flow: CompatibleFlow<TFlow>,
     config: FlowWorkerConfig = {}
   ) {
     this.ensureFirstCall();
@@ -211,14 +211,12 @@ export class EdgeWorker {
       maxPollSeconds: config.maxPollSeconds ?? 2,
       pollIntervalMs: config.pollIntervalMs ?? 100,
       connectionString:
-        config.connectionString || this.platform.getConnectionString(),
+        config.connectionString || this.platform.connectionString,
     };
 
     await this.platform.startWorker((createLoggerFn) => {
-      return createFlowWorker(flow, workerConfig, createLoggerFn);
+      return createFlowWorker(flow, workerConfig, createLoggerFn, this.platform);
     });
-
-    return this.platform;
   }
 
   /**
