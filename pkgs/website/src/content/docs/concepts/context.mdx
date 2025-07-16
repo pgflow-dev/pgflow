@@ -112,23 +112,47 @@ async function handler(input: Input, context: Context) {
 The original message from the pgmq queue, containing metadata like message ID, read count, and enqueued timestamp. Useful for debugging and advanced queue operations.
 
 ```typescript
+interface PgmqMessageRecord<T> {
+  msg_id: number;       // Unique message ID from pgmq
+  read_ct: number;      // How many times this message has been read
+  enqueued_at: string;  // ISO timestamp when message was enqueued
+  vt: string;           // ISO timestamp for visibility timeout
+  message: T;           // The actual payload
+}
+```
+
+```typescript
 async function handler(input: Input, context: Context) {
   console.log(`Processing message ${context.rawMessage.msg_id}`);
   console.log(`Attempt ${context.rawMessage.read_ct} of this message`);
+  console.log(`Enqueued at ${context.rawMessage.enqueued_at}`);
 }
 ```
 
 ### `stepTask`
-**Type:** `StepTask`  
+**Type:** `StepTaskRecord<TFlow>`  
 **Available:** Flow handlers only
 
-Details about the current step task being executed, including run ID, step slug, and task metadata. Only available in flow step handlers, not in queue workers.
+Details about the current step task being executed. This is a strongly-typed record that provides the essential task identification along with the typed input for the specific step. Only available in flow step handlers, not in queue workers.
+
+```typescript
+interface StepTaskRecord<TFlow> {
+  flow_slug: string;    // Slug identifier of the flow
+  run_id: string;       // UUID of the current flow run
+  step_slug: string;    // Slug identifier of the current step
+  input: StepInput;     // Typed input for this specific step (inferred from flow)
+  msg_id: number;       // pgmq message ID
+}
+```
 
 ```typescript
 const MyFlow = new Flow({ slug: 'my_flow' })
   .step({ slug: 'process' }, async (input, context) => {
     console.log(`Executing step: ${context.stepTask.step_slug}`);
     console.log(`For run: ${context.stepTask.run_id}`);
+    console.log(`Flow: ${context.stepTask.flow_slug}`);
+    console.log(`Message ID: ${context.stepTask.msg_id}`);
+    // context.stepTask.input is the same as the input parameter
   });
 ```
 
