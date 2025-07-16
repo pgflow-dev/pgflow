@@ -1,5 +1,12 @@
 # @pgflow/core
 
+## 0.5.4
+
+### Patch Changes
+
+- Updated dependencies [9f219a4]
+  - @pgflow/dsl@0.5.4
+
 ## 0.5.3
 
 ### Patch Changes
