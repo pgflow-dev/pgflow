@@ -449,6 +449,7 @@
     "packageJson": {
       "dependencies": [
         "npm:@henrygd/queue@^1.0.7",
+        "npm:@supabase/supabase-js@^2.47.10",
         "npm:@types/deno@^2.2.0",
         "npm:@types/node@~18.16.20",
         "npm:postgres@3.4.5",

@@ -24,6 +24,7 @@
     "@henrygd/queue": "^1.0.7",
     "@pgflow/core": "workspace:*",
     "@pgflow/dsl": "workspace:*",
+    "@supabase/supabase-js": "^2.47.10",
     "postgres": "3.4.5"
   },
   "devDependencies": {
