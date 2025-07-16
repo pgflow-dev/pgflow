@@ -148,6 +148,36 @@ The script automatically:
 - Passes through all psql options
 - Handles both direct SQL queries and file execution
 
+## Supabase Functions Local Development
+
+To run Supabase Edge Functions with local pgflow packages:
+
+```bash
+# Start functions with local pgflow packages (builds packages, copies them, then serves)
+nx run playground:functions:serve-local
+```
+
+### Regenerating Import Maps
+
+If you've added new files to the edge-worker package, you need to regenerate the import map:
+
+```bash
+# Regenerate deno.json with updated import mappings
+nx run playground:functions:generate-import-map
+
+# Commit the updated deno.json
+git add supabase/functions/deno.json
+git commit -m "chore: update edge-worker import mappings"
+```
+
+### How it works
+
+1. **`functions:prepare-local`** - Builds all pgflow packages and copies them to `supabase/functions/_dist/`
+2. **`functions:serve-local`** - Starts the Supabase functions server using the local packages
+3. **`functions:generate-import-map`** - Regenerates `deno.json` with all the `.js` → `.ts` mappings for edge-worker
+
+The `deno.json` file contains import mappings that allow Deno to resolve local TypeScript files when edge-worker imports reference `.js` extensions.
+
 ## Feedback and issues
 
 Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).

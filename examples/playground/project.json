@@ -45,6 +45,68 @@
         "cwd": "{projectRoot}",
         "command": "pnpm netlify deploy --dir=.netlify/dist --functions=.netlify/functions --prod"
       }
+    },
+    "functions:generate-import-map": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "{workspaceRoot}/pkgs/edge-worker/src/**/*.ts",
+        "{projectRoot}/scripts/generate-complete-import-map.sh"
+      ],
+      "outputs": ["{projectRoot}/supabase/functions/deno.json"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          "./scripts/copy-local-packages.sh",
+          "./scripts/generate-complete-import-map.sh > ./supabase/functions/deno.json"
+        ]
+      }
+    },
+    "functions:prepare-local": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "{workspaceRoot}/pkgs/*/dist/**",
+        "{projectRoot}/scripts/copy-local-packages.sh"
+      ],
+      "outputs": ["{projectRoot}/supabase/functions/_dist"],
+      "cache": true,
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "./scripts/copy-local-packages.sh"
+      }
+    },
+    "functions:serve-local": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["functions:prepare-local"],
+      "cache": false,
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "./scripts/supabase functions serve"
+      }
+    },
+    "functions:verify-deno-json": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "inputs": [
+        "{workspaceRoot}/pkgs/edge-worker/src/**/*.ts",
+        "{projectRoot}/scripts/verify-deno-json.sh",
+        "{projectRoot}/scripts/generate-complete-import-map.sh",
+        "{projectRoot}/scripts/copy-local-packages.sh"
+      ],
+      "outputs": ["{projectRoot}/.nx-inputs/verify-deno-json.txt"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          "mkdir -p .nx-inputs",
+          "echo 'Verifying deno.json is up-to-date and valid...'",
+          "./scripts/verify-deno-json.sh > .nx-inputs/verify-deno-json.txt 2>&1 || (echo 'ERROR: deno.json verification failed' && cat .nx-inputs/verify-deno-json.txt && exit 1)",
+          "echo 'deno.json verification passed' > .nx-inputs/verify-deno-json.txt"
+        ],
+        "parallel": false
+      },
+      "cache": true
     }
   }
 }
