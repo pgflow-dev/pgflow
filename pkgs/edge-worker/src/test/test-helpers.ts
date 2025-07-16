@@ -23,16 +23,31 @@ export function createSupabaseMessageContext<TPayload extends Json = Json>(param
 }): SupabaseMessageContext<TPayload> {
   const { env, sql, abortSignal, rawMessage } = params;
 
+  // Validate required environment variables
+  const supabaseUrl = env.SUPABASE_URL;
+  const supabaseAnonKey = env.SUPABASE_ANON_KEY;
+  const supabaseServiceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl) {
+    throw new Error('SUPABASE_URL environment variable is required but not defined');
+  }
+  if (!supabaseAnonKey) {
+    throw new Error('SUPABASE_ANON_KEY environment variable is required but not defined');
+  }
+  if (!supabaseServiceRoleKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is required but not defined');
+  }
+
   // In production, these would be validated at startup
   // For tests, we create them on demand
   const anonSupabase = createAnonSupabaseClient({
-    SUPABASE_URL: env.SUPABASE_URL!,
-    SUPABASE_ANON_KEY: env.SUPABASE_ANON_KEY!
+    SUPABASE_URL: supabaseUrl,
+    SUPABASE_ANON_KEY: supabaseAnonKey
   });
 
   const serviceSupabase = createServiceSupabaseClient({
-    SUPABASE_URL: env.SUPABASE_URL!,
-    SUPABASE_SERVICE_ROLE_KEY: env.SUPABASE_SERVICE_ROLE_KEY!
+    SUPABASE_URL: supabaseUrl,
+    SUPABASE_SERVICE_ROLE_KEY: supabaseServiceRoleKey
   });
 
   return {
@@ -63,16 +78,31 @@ export function createSupabaseStepTaskContext<TFlow extends AnyFlow>(params: {
 }): SupabaseStepTaskContext<TFlow> {
   const { env, sql, abortSignal, stepTask, rawMessage } = params;
 
+  // Validate required environment variables
+  const supabaseUrl = env.SUPABASE_URL;
+  const supabaseAnonKey = env.SUPABASE_ANON_KEY;
+  const supabaseServiceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl) {
+    throw new Error('SUPABASE_URL environment variable is required but not defined');
+  }
+  if (!supabaseAnonKey) {
+    throw new Error('SUPABASE_ANON_KEY environment variable is required but not defined');
+  }
+  if (!supabaseServiceRoleKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is required but not defined');
+  }
+
   // In production, these would be validated at startup
   // For tests, we create them on demand
   const anonSupabase = createAnonSupabaseClient({
-    SUPABASE_URL: env.SUPABASE_URL!,
-    SUPABASE_ANON_KEY: env.SUPABASE_ANON_KEY!
+    SUPABASE_URL: supabaseUrl,
+    SUPABASE_ANON_KEY: supabaseAnonKey
   });
 
   const serviceSupabase = createServiceSupabaseClient({
-    SUPABASE_URL: env.SUPABASE_URL!,
-    SUPABASE_SERVICE_ROLE_KEY: env.SUPABASE_SERVICE_ROLE_KEY!
+    SUPABASE_URL: supabaseUrl,
+    SUPABASE_SERVICE_ROLE_KEY: supabaseServiceRoleKey
   });
 
   return {
