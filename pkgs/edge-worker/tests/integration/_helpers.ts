@@ -5,7 +5,7 @@ import {
 } from '../../src/flow/createFlowWorker.ts';
 import type { postgres } from '../sql.ts';
 import { PgflowSqlClient } from '@pgflow/core';
-import type { PlatformAdapter, Logger, CreateLoggerFn, CreateWorkerFn } from '../../src/platform/types.ts';
+import type { PlatformAdapter, CreateWorkerFn } from '../../src/platform/types.ts';
 import type { SupabaseResources, SupabaseEnv } from '@pgflow/dsl/supabase';
 import { createAnonSupabaseClient, createServiceSupabaseClient } from '../../src/core/supabase-utils.ts';
 

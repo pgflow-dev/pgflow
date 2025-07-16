@@ -2,14 +2,12 @@ import { assertEquals, assertExists } from '@std/assert';
 import { Flow } from '@pgflow/dsl/supabase';
 import type {
   SupabaseEnv,
-  SupabaseResources,
   SupabasePlatformContext,
 } from '@pgflow/dsl/supabase';
 import { withTransaction } from '../db.ts';
 // import { createFakeLogger } from '../fakes.ts';
 import { createFlowWorkerContext } from '../../src/core/supabase-test-utils.ts';
 import type { StepTaskRecord } from '../../src/flow/types.ts';
-import type { StepTaskContext } from '../../src/core/context.ts';
 
 const DEFAULT_TEST_SUPABASE_ENV: SupabaseEnv = {
   EDGE_WORKER_DB_URL: 'postgresql://test',
