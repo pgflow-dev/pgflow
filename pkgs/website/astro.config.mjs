@@ -118,6 +118,7 @@ export default defineConfig({
       ],
       plugins: [
         starlightBlog({
+          prefix: 'news',
           authors: {
             jumski: {
               name: 'Wojciech Majewski (@jumski)',
@@ -126,7 +127,7 @@ export default defineConfig({
               url: 'https://github.com/jumski',
             },
           },
-          navigation: 'header-end', // Show blog link in navigation
+          navigation: 'header-end', // Show news link in navigation
           postCount: 10,
           recentPostCount: 5,
           metrics: {
@@ -141,7 +142,7 @@ export default defineConfig({
             'how-to/naming-steps',
             'how-to/update-flow-options',
             'faq',
-            'blog/**',
+            'news/**',
           ],
           promote: [
             'getting-started/install-pgflow',
@@ -168,6 +169,18 @@ export default defineConfig({
         starlightLinksValidator({ exclude: ['http://localhost*'] }),
         starlightSidebarTopics(
           [
+            {
+              label: 'News',
+              icon: 'pen',
+              link: '/news/',
+              id: 'news',
+              items: [
+                {
+                  label: 'All Posts',
+                  link: '/news/',
+                },
+              ],
+            },
             {
               label: 'pgflow',
               icon: 'open-book',
@@ -240,18 +253,6 @@ export default defineConfig({
                 },
               ],
             },
-            // {
-            //   label: 'BLOG',
-            //   icon: 'pen',
-            //   link: '/blog/',
-            //   id: 'blog',
-            //   items: [
-            //     {
-            //       label: 'All Posts',
-            //       link: '/blog/',
-            //     },
-            //   ],
-            // },
             {
               label: 'Found a bug?',
               icon: 'github',
@@ -259,7 +260,7 @@ export default defineConfig({
             },
           ],
           {
-            exclude: ['/blog', '/blog/**/*'],
+            exclude: ['/news', '/news/**/*'],
           }
         ),
       ],
