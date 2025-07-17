@@ -1,7 +1,7 @@
 ---
 draft: false
 title: 'Context - Simplify Your Handler Functions'
-description: 'pgflow edge workers now provide a context object for accessing platform resources like database connections and Supabase clients.'
+description: 'pgflow workers now provide a context object for accessing platform resources like database connections and Supabase clients.'
 date: 2025-07-17
 authors:
   - jumski
@@ -19,7 +19,7 @@ cover:
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 
-Edge workers now pass a **context object** as a second parameter to all handlers, providing ready-to-use database connections, environment variables, and Supabase clients.
+Workers now pass a **context object** as a second parameter to all handlers, providing ready-to-use database connections, environment variables, and Supabase clients.
 
 ## The Problem We Solved
 
