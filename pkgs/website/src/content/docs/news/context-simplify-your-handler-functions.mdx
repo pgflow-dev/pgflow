@@ -25,13 +25,13 @@ Workers now pass a **context object** as a second parameter to all handlers, pro
 
 Previously, handlers relied on global singletons or manual resource initialization:
 
-```typescript del="import { sql }" del="import { supabase }" ins="ctx: Context" ins="ctx.sql" ins="ctx.serviceSupabase"
+```typescript del={2,3} ins="ctx" ins="ctx.sql" ins="ctx.serviceSupabase"
 // Before: Global resources that complicated testing and lifecycle management
 import { sql } from '../db.js';
 import { supabase } from '../supabase-client.js';
 
 // After: Clean dependency injection via context
-async function processPayment(input: PaymentInput, ctx: Context) {
+async function processPayment(input, ctx) {
   const [payment] = await ctx.sql`
     SELECT * FROM payments WHERE id = ${input.paymentId}
   `;
@@ -45,15 +45,15 @@ async function processPayment(input: PaymentInput, ctx: Context) {
 ## What's in the Context
 
 **Core resources** (always available):
-- `ctx.env` - Environment variables
-- `ctx.shutdownSignal` - AbortSignal for graceful shutdown
-- `ctx.rawMessage` - pgmq message metadata (msg_id, read_ct, etc.)
-- `ctx.stepTask` - Step execution details (flows only)
+- `env` - Environment variables
+- `shutdownSignal` - AbortSignal for graceful shutdown
+- `rawMessage` - pgmq message metadata (msg_id, read_ct, etc.)
+- `stepTask` - Step execution details (flows only)
 
 **Supabase resources**:
-- `ctx.sql` - PostgreSQL client (postgres.js)
-- `ctx.anonSupabase` - Client with anon key (respects RLS)
-- `ctx.serviceSupabase` - Client with service role (bypasses RLS)
+- `sql` - PostgreSQL client (postgres.js)
+- `anonSupabase` - Client with anon key (respects RLS)
+- `serviceSupabase` - Client with service role (bypasses RLS)
 
 ## Key Benefits
 
@@ -64,7 +64,7 @@ async function processPayment(input: PaymentInput, ctx: Context) {
 
 ```typescript ins="{ env: { API_KEY: 'test' } }"
 // Handler uses only env? Test with only env:
-await handler(input, { env: { API_KEY: 'test' } } as any);
+await handler(input, { env: { API_KEY: 'test' } });
 ```
 
 ## Migration
