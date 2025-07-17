@@ -35,9 +35,9 @@ async function processPayment(input: PaymentInput, ctx: Context) {
   const [payment] = await ctx.sql`
     SELECT * FROM payments WHERE id = ${input.paymentId}
   `;
-  await ctx.serviceSupabase.from('audit_logs').insert({ 
-    action: 'payment_processed', 
-    payment_id: input.paymentId 
+  await ctx.serviceSupabase.from('audit_logs').insert({
+    action: 'payment_processed',
+    payment_id: input.paymentId
   });
 }
 ```
@@ -76,7 +76,7 @@ Existing handlers continue to work. Add the context parameter when you need plat
 async function handler(input) { return { ok: true }; }
 
 // New handlers get context
-async function handler(input, ctx) { 
+async function handler(input, ctx) {
   const data = await ctx.sql`SELECT * FROM table`;
   return { ok: true, count: data.length };
 }

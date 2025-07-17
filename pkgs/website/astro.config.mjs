@@ -260,7 +260,10 @@ export default defineConfig({
             },
           ],
           {
-            exclude: ['/news', '/news/**/*'],
+            exclude: [],
+            topics: {
+              news: ['/news', '/news/**/*']
+            }
           }
         ),
       ],
