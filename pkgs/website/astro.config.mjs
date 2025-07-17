@@ -174,6 +174,7 @@ export default defineConfig({
               icon: 'pen',
               link: '/news/',
               id: 'news',
+              badge: { text: 'NEW!', variant: 'tip' },
               items: [
                 {
                   label: 'All Posts',
@@ -193,12 +194,10 @@ export default defineConfig({
                 },
                 {
                   label: 'TUTORIALS',
-                  badge: 'NEW!',
                   collapsed: true,
                   items: [
                     {
                       label: 'AI Web Scraper',
-                      badge: 'NEW!',
                       autogenerate: {
                         directory: 'tutorials/ai-web-scraper/',
                         collapsed: true,
@@ -213,6 +212,7 @@ export default defineConfig({
                 },
                 {
                   label: 'CONCEPTS',
+                  badge: { text: 'NEW!', variant: 'tip' },
                   collapsed: true,
                   autogenerate: { directory: 'concepts/' },
                 },
