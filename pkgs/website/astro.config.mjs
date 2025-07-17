@@ -119,6 +119,7 @@ export default defineConfig({
       plugins: [
         starlightBlog({
           prefix: 'news',
+          title: 'News',
           authors: {
             jumski: {
               name: 'Wojciech Majewski (@jumski)',
