@@ -1,0 +1,188 @@
+---
+draft: false
+title: 'Context - Simplify Your Handler Functions'
+description: 'pgflow edge workers now provide a context object for accessing platform resources like database connections and Supabase clients.'
+date: 2025-07-17
+authors:
+  - jumski
+tags:
+  - release
+  - edge-worker
+  - dsl
+  - context
+  - supabase
+featured: true
+cover:
+  alt: 'Context object simplifying handler functions with platform resources'
+  image: '../../../assets/cover-images/context-simplify-your-handler-functions.png'
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+The latest update to pgflow brings a significant improvement to how handlers interact with platform resources. Edge workers now pass a **context object** as a second parameter to all handlers, providing ready-to-use database connections, environment variables, and Supabase clients.
+
+## What Changed
+
+Previously, handlers relied on resources initialized at the module level or had to create their own connections:
+
+```typescript
+// Before: Global resources or manual initialization
+import { sql } from '../db.js';  // Singleton initialized at top-level
+import { supabase } from '../supabase-client.js';  // Global instance
+
+async function processPayment(input: PaymentInput) {
+  // Using global resources that were initialized outside the handler
+  const [payment] = await sql`SELECT * FROM payments WHERE id = ${input.paymentId}`;
+
+  // Or handlers had to create their own connections
+  const localSupabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+}
+```
+
+This approach had several issues:
+- Global singletons made testing difficult
+- Resource lifecycle was hard to manage
+- No standardized way to access platform services
+- Connection pooling was left to individual implementations
+
+Now, handlers receive pre-configured resources through context:
+
+```typescript
+// After: Resources provided via context
+async function processPayment(input: PaymentInput, ctx: Context) {
+  const [payment] = await ctx.sql`
+    SELECT * FROM payments WHERE id = ${input.paymentId}
+  `;
+
+  const { data } = await ctx.serviceSupabase
+    .from('audit_logs')
+    .insert({ action: 'payment_processed', payment_id: input.paymentId });
+}
+```
+
+## Core Resources
+
+Every handler now has access to these essential resources:
+
+### Environment Variables
+Access any environment variable through `ctx.env`:
+
+```typescript
+const apiKey = ctx.env.STRIPE_API_KEY;
+const webhookUrl = ctx.env.WEBHOOK_ENDPOINT;
+```
+
+### Shutdown Signal
+Handle graceful shutdowns with `ctx.shutdownSignal`:
+
+```typescript
+const response = await fetch(url, {
+  signal: ctx.shutdownSignal,  // Automatically cancels on shutdown
+  method: 'POST',
+  body: JSON.stringify(data)
+});
+```
+
+### Message Metadata
+Access pgmq message details via `ctx.rawMessage`:
+
+```typescript
+console.log(`Processing message ${ctx.rawMessage.msg_id}`);
+console.log(`Attempt #${ctx.rawMessage.read_ct}`);
+```
+
+### Step Information (Flows Only)
+Flow handlers can access step execution details:
+
+```typescript
+console.log(`Running ${ctx.stepTask.step_slug} for run ${ctx.stepTask.run_id}`);
+```
+
+## Supabase Platform Resources
+
+When running on Supabase, handlers get three pre-configured clients:
+
+- **`ctx.sql`** - PostgreSQL client from postgres.js
+- **`ctx.anonSupabase`** - Supabase client with anonymous key (respects RLS)
+- **`ctx.serviceSupabase`** - Supabase client with service role key (bypasses RLS)
+
+## Backward Compatibility
+
+The context parameter is optional, so existing handlers continue to work:
+
+```typescript
+// Still works - single parameter
+async function legacyHandler(input: Input) {
+  return { processed: true };
+}
+
+// New style - with context
+async function modernHandler(input: Input, ctx: Context) {
+  const result = await ctx.sql`SELECT * FROM data`;
+  return { processed: true, count: result.length };
+}
+```
+
+## Benefits
+
+This update brings several improvements:
+
+1. **Zero Configuration** - No more connection boilerplate in every handler
+2. **Resource Management** - pgflow manages connection pools and lifecycle
+3. **Type Safety** - Full TypeScript support with proper type inference
+4. **Simplified Testing** - Services are now injected through the context object, making them trivial to mock or stub in tests. No more global singletons or complex setup
+5. **Future Ready** - Designed for extensibility with custom resources
+
+### Testing Made Easy
+
+The context injection pattern dramatically simplifies testing. Handlers only need the specific parts of context they actually use:
+
+```typescript
+// Handler that only uses env
+async function sendNotification(input: Input, ctx: Context) {
+  const apiKey = ctx.env.NOTIFICATION_API_KEY;
+  // ... send notification
+}
+
+// Test only needs to provide env
+const result = await sendNotification(testInput, {
+  env: { NOTIFICATION_API_KEY: 'test-key' }
+} as any);
+```
+
+```typescript
+// Handler using sql and serviceSupabase
+async function processOrder(input: Input, ctx: Context) {
+  const order = await ctx.sql`SELECT * FROM orders WHERE id = ${input.orderId}`;
+  await ctx.serviceSupabase.from('audit').insert({ action: 'order_processed' });
+}
+
+// Test only mocks what's used
+const mockContext = {
+  sql: mockSql,
+  serviceSupabase: { from: jest.fn().mockReturnValue({ insert: jest.fn() }) }
+} as any;
+
+await processOrder(testInput, mockContext);
+```
+
+No more monkey-patching globals or mocking services you don't even use!
+
+## Migration
+
+No immediate action required - your existing handlers will continue to work. To use the new context features, simply add the context parameter to your handler signatures when you need platform resources.
+
+## What's Next
+
+The context system is designed to be extensible. Future releases will support custom resources, allowing you to add your own services (OpenAI clients, Stripe API clients, external service integrations, etc.) while maintaining the same clean interface.
+
+## Updated Packages
+
+This release includes updates to:
+- `@pgflow/edge-worker` - Context support for handlers
+- `@pgflow/dsl` - Flow type definitions with context
+
+Upgrade to the latest versions to start using context in your handlers.
