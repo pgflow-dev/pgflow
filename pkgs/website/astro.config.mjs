@@ -118,6 +118,8 @@ export default defineConfig({
       ],
       plugins: [
         starlightBlog({
+          prefix: 'news',
+          title: 'News',
           authors: {
             jumski: {
               name: 'Wojciech Majewski (@jumski)',
@@ -126,7 +128,7 @@ export default defineConfig({
               url: 'https://github.com/jumski',
             },
           },
-          navigation: 'none', // Remove blog link from navigation
+          navigation: 'header-end', // Show news link in navigation
           postCount: 10,
           recentPostCount: 5,
           metrics: {
@@ -141,7 +143,7 @@ export default defineConfig({
             'how-to/naming-steps',
             'how-to/update-flow-options',
             'faq',
-            'blog/**',
+            'news/**',
           ],
           promote: [
             'getting-started/install-pgflow',
@@ -166,102 +168,105 @@ export default defineConfig({
           ],
         }),
         starlightLinksValidator({ exclude: ['http://localhost*'] }),
-        starlightSidebarTopics([
-          {
-            label: 'pgflow',
-            icon: 'open-book',
-            link: '/getting-started/install-pgflow/',
-            id: 'pgflow',
-            items: [
-              {
-                label: 'START HERE',
-                autogenerate: { directory: 'getting-started/' },
-              },
-              {
-                label: 'TUTORIALS',
-                badge: 'NEW!',
-                collapsed: true,
-                items: [
-                  {
-                    label: 'AI Web Scraper',
-                    badge: 'NEW!',
-                    autogenerate: {
-                      directory: 'tutorials/ai-web-scraper/',
-                      collapsed: true,
+        starlightSidebarTopics(
+          [
+            {
+              label: 'News',
+              icon: 'pen',
+              link: '/news/',
+              id: 'news',
+              badge: { text: 'NEW!', variant: 'tip' },
+              items: [
+                {
+                  label: 'All Posts',
+                  link: '/news/',
+                },
+              ],
+            },
+            {
+              label: 'pgflow',
+              icon: 'open-book',
+              link: '/getting-started/install-pgflow/',
+              id: 'pgflow',
+              items: [
+                {
+                  label: 'START HERE',
+                  autogenerate: { directory: 'getting-started/' },
+                },
+                {
+                  label: 'TUTORIALS',
+                  collapsed: true,
+                  items: [
+                    {
+                      label: 'AI Web Scraper',
+                      autogenerate: {
+                        directory: 'tutorials/ai-web-scraper/',
+                        collapsed: true,
+                      },
                     },
-                  },
-                ],
-              },
-              {
-                label: 'HOW TO',
-                collapsed: true,
-                autogenerate: { directory: 'how-to/' },
-              },
-              {
-                label: 'CONCEPTS',
-                collapsed: true,
-                autogenerate: { directory: 'concepts/' },
-              },
-              {
-                label: 'COMPARISONS',
-                collapsed: true,
-                autogenerate: { directory: 'vs/' },
-              },
-              {
-                label: 'FAQ - Common Questions',
-                link: '/faq/',
-              },
-            ],
-          },
+                  ],
+                },
+                {
+                  label: 'HOW TO',
+                  collapsed: true,
+                  autogenerate: { directory: 'how-to/' },
+                },
+                {
+                  label: 'CONCEPTS',
+                  badge: { text: 'NEW!', variant: 'tip' },
+                  collapsed: true,
+                  autogenerate: { directory: 'concepts/' },
+                },
+                {
+                  label: 'COMPARISONS',
+                  collapsed: true,
+                  autogenerate: { directory: 'vs/' },
+                },
+                {
+                  label: 'FAQ - Common Questions',
+                  link: '/faq/',
+                },
+              ],
+            },
+            {
+              label: 'Edge Worker',
+              icon: 'open-book',
+              link: '/edge-worker/how-it-works/',
+              id: 'edge-worker',
+              items: [
+                { label: 'How it works?', link: '/edge-worker/how-it-works/' },
+                {
+                  label: 'Getting started',
+                  autogenerate: { directory: 'edge-worker/getting-started/' },
+                },
+                {
+                  label: 'How To',
+                  items: [
+                    {
+                      label: 'Deploy to Supabase.com',
+                      link: '/how-to/deploy-to-supabasecom/',
+                    },
+                    {
+                      label: 'Prepare DB Connection String',
+                      link: '/how-to/prepare-db-string/',
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              label: 'Found a bug?',
+              icon: 'github',
+              link: 'https://github.com/pgflow-dev/pgflow/issues/new',
+            },
+          ],
           {
-            label: 'Edge Worker',
-            icon: 'open-book',
-            link: '/edge-worker/how-it-works/',
-            id: 'edge-worker',
-            items: [
-              { label: 'How it works?', link: '/edge-worker/how-it-works/' },
-              {
-                label: 'Getting started',
-                autogenerate: { directory: 'edge-worker/getting-started/' },
-              },
-              {
-                label: 'How To',
-                items: [
-                  {
-                    label: 'Deploy to Supabase.com',
-                    link: '/how-to/deploy-to-supabasecom/',
-                  },
-                  {
-                    label: 'Prepare DB Connection String',
-                    link: '/how-to/prepare-db-string/',
-                  },
-                ],
-              },
-            ],
-          },
-          // {
-          //   label: 'BLOG',
-          //   icon: 'pen',
-          //   link: '/blog/',
-          //   id: 'blog',
-          //   items: [
-          //     {
-          //       label: 'All Posts',
-          //       link: '/blog/',
-          //     },
-          //   ],
-          // },
-          {
-            label: 'Found a bug?',
-            icon: 'github',
-            link: 'https://github.com/pgflow-dev/pgflow/issues/new',
-          },
-        ], { 
-          exclude: [
-            '/blog',
-            '/blog/**/*'
-          ] 
-        }),
+            exclude: [],
+            topics: {
+              news: ['/news', '/news/**/*']
+            }
+          }
+        ),
       ],
       title: 'pgflow (Workflow Engine for Supabase)',
       description:
