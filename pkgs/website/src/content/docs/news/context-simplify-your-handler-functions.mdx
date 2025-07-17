@@ -21,10 +21,6 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 
 Workers now pass a **context object** as a second parameter to all handlers, providing ready-to-use database connections, environment variables, and Supabase clients.
 
-:::note[Coming Soon: Custom Resources]
-Future releases will let you extend the context with your own resources (OpenAI clients, Stripe APIs, helper functions, etc.) while maintaining full type safety. Start using the context pattern now to prepare for seamless integration later.
-:::
-
 ## The Problem We Solved
 
 Previously, handlers relied on global singletons or manual resource initialization:
@@ -86,8 +82,8 @@ async function handler(input, ctx) {
 }
 ```
 
-## What's Next
-
-Future releases will support custom resources (OpenAI, Stripe, etc.) while maintaining the same clean interface.
+:::note[This is Just the Beginning]
+Context is how pgflow manages resources. Soon you'll define your own resources (OpenAI, Stripe, Redis, helpers) and access them the same way. Start using context now to be ready.
+:::
 
 **Updated packages**: `@pgflow/edge-worker` and `@pgflow/dsl`
