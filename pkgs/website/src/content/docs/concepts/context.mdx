@@ -103,6 +103,7 @@ These resources are always available regardless of the platform adapter being us
 Environment variables from the runtime environment. The exact variables depend on your platform and deployment configuration.
 
 ```typescript "ctx.env"
+// Queue handler
 async function handler(input, ctx) {
   const apiKey = ctx.env.API_KEY;
   const endpoint = ctx.env.SERVICE_ENDPOINT;
@@ -116,7 +117,8 @@ async function handler(input, ctx) {
 An AbortSignal that triggers when the worker is shutting down. Use this to gracefully handle long-running operations and ensure clean shutdown.
 
 ```typescript "ctx.shutdownSignal"
-async function handler(input, ctx) {
+// Step handler
+.step({ slug: 'fetch_data' }, async (input, ctx) => {
   // Automatically cancels if worker shuts down
   const response = await fetch('https://api.example.com/data', {
     signal: ctx.shutdownSignal,
@@ -125,7 +127,7 @@ async function handler(input, ctx) {
   });
 
   return response.json();
-}
+})
 ```
 
 ### `rawMessage`
@@ -190,6 +192,7 @@ These resources are available when using the Supabase platform adapter.
 A configured PostgreSQL client from the postgres.js library, ready for executing SQL queries against your database.
 
 ```typescript "ctx.sql"
+// Queue handler
 async function handler(input, ctx) {
   const users = await ctx.sql`
     SELECT * FROM users
@@ -206,12 +209,15 @@ async function handler(input, ctx) {
 Supabase client authenticated with the anonymous key. Use this for operations that respect Row Level Security (RLS) policies as if performed by an unauthenticated user.
 
 ```typescript "ctx.anonSupabase"
-async function handler(input, ctx) {
+// Step handler
+.step({ slug: 'fetch_posts' }, async (input, ctx) => {
   const { data, error } = await ctx.anonSupabase
     .from('public_posts')
     .select('*')
     .limit(10);
-}
+    
+  return { posts: data || [] };
+})
 ```
 
 ### `serviceSupabase`
@@ -221,6 +227,7 @@ async function handler(input, ctx) {
 Supabase client authenticated with the service role key. This bypasses RLS and has full database access. Use with caution and only for admin operations.
 
 ```typescript "ctx.serviceSupabase" ins="// Service client bypasses RLS"
+// Queue handler
 async function handler(input, ctx) {
   // Service client bypasses RLS
   const { data, error } = await ctx.serviceSupabase
@@ -235,7 +242,7 @@ async function handler(input, ctx) {
 While examples in this documentation use `ctx.` for clarity, destructuring often makes your code more readable:
 
 ```typescript ins="{ sql, env, rawMessage }"
-// Destructure only what you need
+// Queue handler - destructure only what you need
 async function processOrder(input, { sql, env, rawMessage }) {
   console.log(`Processing order ${rawMessage.msg_id}`);
   
@@ -247,19 +254,20 @@ async function processOrder(input, { sql, env, rawMessage }) {
 }
 ```
 
-```typescript ins="{ sql, serviceSupabase, shutdownSignal }"
-// Clean and focused on what's being used
-async function syncData(input, { sql, serviceSupabase, shutdownSignal }) {
-  const data = await sql`SELECT * FROM pending_sync`;
+```typescript ins="{ sql, serviceSupabase, stepTask }"
+// Step handler - clean and focused
+.step({ slug: 'sync_data' }, async (input, { sql, serviceSupabase, stepTask }) => {
+  console.log(`Syncing for run ${stepTask.run_id}`);
   
-  for (const item of data) {
-    if (shutdownSignal.aborted) break;
+  const data = await sql`SELECT * FROM pending_sync WHERE user_id = ${input.userId}`;
+  
+  const synced = await serviceSupabase
+    .from('synced_data')
+    .upsert(data)
+    .select();
     
-    await serviceSupabase
-      .from('synced_data')
-      .upsert(item);
-  }
-}
+  return { syncedCount: synced.data.length };
+})
 ```
 
 <Aside type="tip">
