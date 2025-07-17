@@ -21,6 +21,10 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 
 Workers now pass a **context object** as a second parameter to all handlers, providing ready-to-use database connections, environment variables, and Supabase clients.
 
+:::note[Coming Soon: Custom Resources]
+Future releases will let you extend the context with your own resources (OpenAI clients, Stripe APIs, helper functions, etc.) while maintaining full type safety. Start using the context pattern now to prepare for seamless integration later.
+:::
+
 ## The Problem We Solved
 
 Previously, handlers relied on global singletons or manual resource initialization:
@@ -71,7 +75,7 @@ await handler(input, { env: { API_KEY: 'test' } });
 
 Existing handlers continue to work. Add the context parameter when you need platform resources:
 
-```typescript ins="ctx" "ctx.sql"
+```typescript ins="ctx" ins="ctx.sql"
 // Old handlers work fine
 async function handler(input) { return { ok: true }; }
 
