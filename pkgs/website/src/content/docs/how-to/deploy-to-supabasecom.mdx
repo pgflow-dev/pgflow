@@ -1,63 +1,147 @@
 ---
-title: Deploy to Supabase.com
-description: Learn how to deploy, manage and monitor Edge Worker on Supabase Background Tasks. Step-by-step guide for deployment, starting, and maintaining workers.
+title: Deploy to Supabase.com (With Limitations)
+description: Deploy Edge Workers to production with current workarounds. Includes manual worker management steps and known limitations.
 sidebar:
   order: 110
 ---
 
 import { Aside, Steps } from "@astrojs/starlight/components";
-import NotProductionReady from '../../../components/NotProductionReady.astro';
 
-This guide explains the current process for deploying and maintaining workers in hosted environment.
+This guide walks you through deploying pgflow Edge Workers to your production Supabase project.
 
-<NotProductionReady />
+<Aside type="caution" title="Current Limitations">
+Deploying to production currently has a significant limitation: workers don't automatically terminate when deploying new versions. This means you'll need to manually manage worker lifecycle. We're actively working on a solution - follow the <a href="https://github.com/orgs/pgflow-dev/discussions/171">GitHub discussion</a> for updates.
+</Aside>
 
-:::note
-Running Edge Worker on Supabase.com currently requires a few additional setup steps.
-Thanks to ongoing collaboration with the Supabase team, these requirements will be simplified in future releases.
-:::
+## Prerequisites
 
-## Deploying workers
+Before deploying your Edge Worker, ensure you have:
 
-Workers are just regular Edge Functions that run for few minutes and auto-respawn
-when CPU or Wall clock limits are reached (read more on those [Limits | Supabase Docs](https://supabase.com/docs/guides/functions/limits)).
+<Steps>
+1. **pgflow installed and configured** in your Supabase project
+2. **Database connection string** prepared (see [Prepare DB Connection String](/how-to/prepare-db-string/))
+3. **Environment variables** set in your Supabase dashboard:
+   - `EDGE_WORKER_DB_URL` - Your pooled connection string (transaction mode)
+   - `PGFLOW_WORKER_ID` - A unique identifier for this worker (e.g., `worker-1`)
+4. **Supabase CLI** authenticated with your project
+</Steps>
 
-Deploying new version is straightforward - you just update worker code
-and call `npx supabase functions deploy worker-name` to deploy it.
+## Deploying Workers
 
-When deploying a new version of your worker, be aware of the following:
+Workers are Edge Functions that process tasks from your pgflow queues. They automatically respawn when CPU or wall clock limits are reached ([see Supabase limits](https://supabase.com/docs/guides/functions/limits)).
 
-<Aside type="caution" title="Version Management">
-Currently, deploying a new version **does not automatically terminate** the previous version.
-This behavior will be improved in future releases.
+### Deploy Your Worker
+
+```bash frame="none"
+npx supabase functions deploy pgflow-worker
+```
+
+<Aside type="caution" title="Known Issue: Worker Management">
+Currently, deploying a new version does NOT automatically terminate the previous worker. This is a known limitation that can lead to multiple worker versions running simultaneously, potentially causing duplicate task processing.
+
+We're actively working on a fix. Track progress in this <a href="https://github.com/orgs/pgflow-dev/discussions/171">GitHub discussion</a>.
+
+**Workaround**: Remove old workers manually from the Supabase dashboard before deploying new versions.
 </Aside>
 
 ## Starting Workers
 
-Just like in local development, workers are started with a simple HTTP request.
-However, you need to pass Authorization header with your ANON_KEY when calling function.
-Consult this Supabase Docs page for details: [Invoking remote functions](https://supabase.com/docs/guides/functions/deploy#invoking-remote-functions)
+Start your worker with an authenticated HTTP request:
 
-After the initial request, the worker will auto-respawn if terminated.
+```bash frame="none"
+curl -L -X POST 'https://<project-ref>.supabase.co/functions/v1/pgflow-worker' \
+  -H 'Authorization: Bearer <your-anon-key>' \
+  -H 'Content-Type: application/json'
+```
 
-## Stopping Workers
+The worker will begin processing tasks immediately and auto-respawn when terminated.
 
-Currently, there's no built-in way to gracefully stop a running worker.
-You need to remove it from the Supabase Dashboard and wait for its CPU or clock limits to be reached
-for it to stop.
+### Verify Worker is Running
 
-**This will change in future releases.**
+Check your worker status in the Supabase dashboard under **Functions → Logs**. You should see:
+- Initial startup message: `Starting pgflow worker...`
+- Periodic heartbeat messages
+- Task processing logs
 
-## Ensuring Worker Availability
+## Managing Workers
 
-To ensure your worker stays active, it's recommended to use Cron to ping
-your worker edge function every few seconds.
-This is recommended in case there are any bugs in the respawn process,
-which currently is triggered from withing the worker that is shutting down.
+### Stopping Workers
 
-Use this Supabase guide [Invoking Supabase Function ever few seconds](https://supabase.com/docs/guides/cron/quickstart#invoke-supabase-edge-function-every-30-seconds).
-but use `5 seconds` instead of `30 seconds`.
+To stop a worker, remove it from the Supabase Dashboard under **Functions**. The worker will continue processing its current task and stop when it reaches the next execution limit.
 
-:::note
-Make sure to **set your own ANON key** in the `Authorization` header!
-:::
+### Scaling Workers
+
+For higher throughput, deploy multiple workers with different IDs:
+
+```bash frame="none"
+# Deploy additional workers
+npx supabase functions deploy pgflow-worker-2
+npx supabase functions deploy pgflow-worker-3
+```
+
+Each worker processes tasks independently, providing horizontal scaling.
+
+## Recommended: Ensuring Worker Restarts
+
+Due to the current worker management limitations, it's strongly recommended to set up a cron job that ensures your worker restarts if it stops:
+
+<Steps>
+1. **Create a cron function** following [Supabase's cron guide](https://supabase.com/docs/guides/cron/quickstart#invoke-supabase-edge-function-every-30-seconds)
+2. **Set the schedule** to run every 5 seconds: `*/5 * * * * *`
+3. **Configure the HTTP request** with your project's ANON key in the Authorization header
+</Steps>
+
+This ensures your worker restarts quickly if it ever fails unexpectedly.
+
+## Monitoring in Production
+
+### Key Metrics to Track
+
+- **Worker uptime** - Check Functions logs for consistent heartbeats
+- **Task processing rate** - Monitor `pgflow.step_states` for completion times
+- **Error rates** - Watch for failed tasks in `pgflow.step_states`
+- **Queue depth** - Monitor pending tasks to ensure workers keep up
+
+### Recommended Alerts
+
+<Aside type="tip">
+Set up alerts for:
+- Worker hasn't logged a heartbeat in 5 minutes
+- Failed task rate exceeds 5%
+- Queue depth growing continuously
+</Aside>
+
+## Troubleshooting Common Issues
+
+### Worker Not Starting
+- Verify your ANON key is correct
+- Check Functions logs for error messages
+- Ensure DATABASE_URL is properly set
+
+### Tasks Not Processing
+- Confirm worker is running (check logs)
+- Verify database connection string includes pooler
+- Check for tasks in `SELECT * FROM pgmq.queue_pgflow_tasks`
+
+### High Error Rate
+- Review worker logs for specific errors
+- Check if tasks are timing out (increase timeout in flow definition)
+- Ensure external APIs/services are accessible from Supabase
+
+## Should You Deploy to Production?
+
+Given the current worker management limitations, consider these factors:
+
+**Good fit if:**
+- You can tolerate manual worker management
+- Your workload allows for scheduled maintenance windows
+- You're comfortable with the workarounds described above
+
+**Wait for updates if:**
+- You need fully automated deployments
+- Zero-downtime deployments are critical
+- You can't risk duplicate task processing
+
+<Aside type="tip" title="Stay Updated">
+Follow the <a href="https://github.com/orgs/pgflow-dev/discussions/171">GitHub discussion</a> for updates on automatic worker termination. Once resolved, production deployments will be much simpler.
+</Aside>
