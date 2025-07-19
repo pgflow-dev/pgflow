@@ -15,12 +15,14 @@ export class Heartbeat {
     this.logger = logger;
   }
 
-  async send(): Promise<void> {
+  async send(): Promise<{ is_deprecated: boolean }> {
     const now = Date.now();
     if (now - this.lastHeartbeat >= this.interval) {
-      await this.queries.sendHeartbeat(this.workerRow);
-      this.logger.debug('OK');
+      const result = await this.queries.sendHeartbeat(this.workerRow);
+      this.logger.debug(result.is_deprecated ? 'DEPRECATED' : 'OK');
       this.lastHeartbeat = now;
+      return result;
     }
+    return { is_deprecated: false };
   }
 }

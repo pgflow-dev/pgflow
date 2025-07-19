@@ -25,7 +25,7 @@ export class Queries {
   async onWorkerStopped(workerRow: WorkerRow): Promise<WorkerRow> {
     const [worker] = await this.sql<WorkerRow[]>`
       UPDATE pgflow.workers AS w
-      SET stopped_at = clock_timestamp(), last_heartbeat_at = clock_timestamp()
+      SET deprecated_at = clock_timestamp(), last_heartbeat_at = clock_timestamp()
       WHERE w.worker_id = ${workerRow.worker_id}
       RETURNING *;
     `;
@@ -33,12 +33,14 @@ export class Queries {
     return worker;
   }
 
-  async sendHeartbeat(workerRow: WorkerRow): Promise<void> {
-    await this.sql<WorkerRow[]>`
+  async sendHeartbeat(workerRow: WorkerRow): Promise<{ is_deprecated: boolean }> {
+    const [result] = await this.sql<{ is_deprecated: boolean }[]>`
       UPDATE pgflow.workers AS w
       SET last_heartbeat_at = clock_timestamp()
       WHERE w.worker_id = ${workerRow.worker_id}
-      RETURNING *;
+      RETURNING (w.deprecated_at IS NOT NULL) AS is_deprecated;
     `;
+    
+    return result || { is_deprecated: false };
   }
 }

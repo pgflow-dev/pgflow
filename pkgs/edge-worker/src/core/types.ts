@@ -42,7 +42,7 @@ export type WorkerRow = {
   last_heartbeat_at: string;
   queue_name: string;
   started_at: string;
-  stopped_at: string | null;
+  deprecated_at: string | null;
   worker_id: string;
   function_name: string;
 };

@@ -74,7 +74,12 @@ export class WorkerLifecycle<IMessage extends Json> implements ILifecycle {
   }
 
   async sendHeartbeat() {
-    await this.heartbeat?.send();
+    const { is_deprecated } = await this.heartbeat?.send() || { is_deprecated: false };
+    
+    if (is_deprecated && !this.isDeprecated) {
+      this.logger.info('Worker marked for deprecation, transitioning to deprecated state');
+      this.transitionToDeprecated();
+    }
   }
 
   get isRunning() {
@@ -91,5 +96,13 @@ export class WorkerLifecycle<IMessage extends Json> implements ILifecycle {
 
   transitionToStopping() {
     this.workerState.transitionTo(States.Stopping);
+  }
+
+  transitionToDeprecated() {
+    this.workerState.transitionTo(States.Deprecated);
+  }
+
+  get isDeprecated() {
+    return this.workerState.isDeprecated;
   }
 }
