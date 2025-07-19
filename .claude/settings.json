@@ -2,6 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(cat:*)",
+      "Bash(deno test:*)",
       "Bash(find:*)",
       "Bash(gh issue list:*)",
       "Bash(gh issue view:*)",
