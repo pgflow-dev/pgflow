@@ -1,6 +1,6 @@
 import postgres from 'postgres';
 
-const DB_URL = 'postgresql://postgres:postgres@127.0.0.1:50322/postgres';
+const DB_URL = 'postgresql://postgres:postgres@127.0.0.1:5432/postgres';
 
 export function createSql() {
   return postgres(DB_URL, {
@@ -41,6 +41,4 @@ export async function withSql<T>(
   }
 }
 
-const sql = createSql();
-
-export { type postgres, sql };
+export { type postgres };
