@@ -1,29 +1,27 @@
 import { assertEquals, assertRejects } from '@std/assert';
 import { FlowWorkerLifecycle } from '../../src/flow/FlowWorkerLifecycle.ts';
 import { States, TransitionError } from '../../src/core/WorkerState.ts';
-import type { Queries } from '../../src/core/Queries.ts';
+import { Queries } from '../../src/core/Queries.ts';
 import type { WorkerRow } from '../../src/core/types.ts';
 import type { AnyFlow } from '@pgflow/dsl';
 import { createLoggingFactory } from '../../src/platform/logging.ts';
-import type { Heartbeat } from '../../src/core/Heartbeat.ts';
 
 const loggingFactory = createLoggingFactory();
 loggingFactory.setLogLevel('info');
 const logger = loggingFactory.createLogger('FlowWorkerLifecycle');
 
-// Mock Heartbeat that we can control
-class MockHeartbeat implements Pick<Heartbeat, 'send'> {
-  public sendCallCount = 0;
-  public nextResult: { is_deprecated: boolean } = { is_deprecated: false };
-
-  async send(): Promise<{ is_deprecated: boolean }> {
-    this.sendCallCount++;
-    return Promise.resolve(this.nextResult);
-  }
-}
 
 // Mock Queries
-class MockQueries implements Pick<Queries, 'onWorkerStarted' | 'sendHeartbeat'> {
+class MockQueries extends Queries {
+  public sendHeartbeatCallCount = 0;
+  public nextResult: { is_deprecated: boolean } = { is_deprecated: false };
+  public workerStopped = false;
+  
+  constructor() {
+    // Pass null as sql since we'll override all methods
+    super(null as any);
+  }
+  
   async onWorkerStarted(params: { workerId: string; edgeFunctionName: string; queueName: string }): Promise<WorkerRow> {
     return {
       worker_id: params.workerId,
@@ -36,8 +34,13 @@ class MockQueries implements Pick<Queries, 'onWorkerStarted' | 'sendHeartbeat'> 
   }
 
   async sendHeartbeat(workerRow: WorkerRow): Promise<{ is_deprecated: boolean }> {
-    // This shouldn't be called directly in our tests as we mock the heartbeat
-    return { is_deprecated: false };
+    this.sendHeartbeatCallCount++;
+    return this.nextResult;
+  }
+
+  async onWorkerStopped(workerRow: WorkerRow): Promise<WorkerRow> {
+    this.workerStopped = true;
+    return workerRow;
   }
 }
 
@@ -49,15 +52,16 @@ const createMockFlow = (): AnyFlow => {
   } as AnyFlow;
 };
 
-// Type guard to access private members in tests
-interface FlowWorkerLifecycleWithPrivates extends FlowWorkerLifecycle {
-  heartbeat?: Heartbeat;
-}
 
 Deno.test('FlowWorkerLifecycle - should transition to deprecated state when heartbeat returns is_deprecated true', async () => {
   const mockQueries = new MockQueries();
   const mockFlow = createMockFlow();
-  const lifecycle = new FlowWorkerLifecycle(mockQueries as unknown as Queries, mockFlow, logger);
+  const lifecycle = new FlowWorkerLifecycle(
+    mockQueries, 
+    mockFlow, 
+    logger,
+    { heartbeatInterval: 0 } // No interval for testing
+  );
 
   // Start the worker first
   await lifecycle.acknowledgeStart({
@@ -68,31 +72,32 @@ Deno.test('FlowWorkerLifecycle - should transition to deprecated state when hear
   assertEquals(lifecycle.isRunning, true);
   assertEquals(lifecycle.isDeprecated, false);
 
-  // Replace the heartbeat with our mock
-  const mockHeartbeat = new MockHeartbeat();
-  (lifecycle as unknown as FlowWorkerLifecycleWithPrivates).heartbeat = mockHeartbeat as unknown as Heartbeat;
-
   // First heartbeat - not deprecated
-  mockHeartbeat.nextResult = { is_deprecated: false };
+  mockQueries.nextResult = { is_deprecated: false };
   await lifecycle.sendHeartbeat();
   
   assertEquals(lifecycle.isRunning, true);
   assertEquals(lifecycle.isDeprecated, false);
-  assertEquals(mockHeartbeat.sendCallCount, 1);
+  assertEquals(mockQueries.sendHeartbeatCallCount, 1);
 
   // Second heartbeat - deprecated
-  mockHeartbeat.nextResult = { is_deprecated: true };
+  mockQueries.nextResult = { is_deprecated: true };
   await lifecycle.sendHeartbeat();
   
   assertEquals(lifecycle.isRunning, false); // Should be false now
   assertEquals(lifecycle.isDeprecated, true);
-  assertEquals(mockHeartbeat.sendCallCount, 2);
+  assertEquals(mockQueries.sendHeartbeatCallCount, 2);
 });
 
 Deno.test('FlowWorkerLifecycle - should only transition to deprecated once', async () => {
   const mockQueries = new MockQueries();
   const mockFlow = createMockFlow();
-  const lifecycle = new FlowWorkerLifecycle(mockQueries as unknown as Queries, mockFlow, logger);
+  const lifecycle = new FlowWorkerLifecycle(
+    mockQueries, 
+    mockFlow, 
+    logger,
+    { heartbeatInterval: 0 } // No interval for testing
+  );
 
   // Start the worker
   await lifecycle.acknowledgeStart({
@@ -100,12 +105,8 @@ Deno.test('FlowWorkerLifecycle - should only transition to deprecated once', asy
     edgeFunctionName: 'test-function',
   });
 
-  // Replace the heartbeat with our mock
-  const mockHeartbeat = new MockHeartbeat();
-  (lifecycle as unknown as FlowWorkerLifecycleWithPrivates).heartbeat = mockHeartbeat as unknown as Heartbeat;
-
   // First deprecated heartbeat
-  mockHeartbeat.nextResult = { is_deprecated: true };
+  mockQueries.nextResult = { is_deprecated: true };
   await lifecycle.sendHeartbeat();
   
   assertEquals(lifecycle.isDeprecated, true);
@@ -114,25 +115,27 @@ Deno.test('FlowWorkerLifecycle - should only transition to deprecated once', asy
   await lifecycle.sendHeartbeat();
   
   assertEquals(lifecycle.isDeprecated, true);
-  assertEquals(mockHeartbeat.sendCallCount, 2);
+  assertEquals(mockQueries.sendHeartbeatCallCount, 2);
 });
 
 Deno.test('FlowWorkerLifecycle - should handle missing heartbeat gracefully', async () => {
   const mockQueries = new MockQueries();
   const mockFlow = createMockFlow();
-  const lifecycle = new FlowWorkerLifecycle(mockQueries as unknown as Queries, mockFlow, logger);
+  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger);
 
-  // Don't start the worker, so heartbeat is not initialized
+  // Don't start the worker, so workerRow is not initialized
   await lifecycle.sendHeartbeat(); // Should not throw
   
   assertEquals(lifecycle.isRunning, false);
   assertEquals(lifecycle.isDeprecated, false);
+  // Should not have called sendHeartbeat on queries
+  assertEquals(mockQueries.sendHeartbeatCallCount, 0);
 });
 
 Deno.test('FlowWorkerLifecycle - deprecated state transitions', async () => {
   const mockQueries = new MockQueries();
   const mockFlow = createMockFlow();
-  const lifecycle = new FlowWorkerLifecycle(mockQueries as unknown as Queries, mockFlow, logger);
+  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger);
 
   // Start and deprecate the worker
   await lifecycle.acknowledgeStart({
@@ -155,7 +158,7 @@ Deno.test('FlowWorkerLifecycle - deprecated state transitions', async () => {
 Deno.test('FlowWorkerLifecycle - cannot transition to deprecated from non-running states', () => {
   const mockQueries = new MockQueries();
   const mockFlow = createMockFlow();
-  const lifecycle = new FlowWorkerLifecycle(mockQueries as unknown as Queries, mockFlow, logger);
+  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger);
 
   // Try to transition to deprecated from created state
   assertRejects(
@@ -178,9 +181,10 @@ Deno.test('FlowWorkerLifecycle - should log appropriate message when transitioni
   const mockQueries = new MockQueries();
   const mockFlow = createMockFlow();
   const lifecycle = new FlowWorkerLifecycle(
-    mockQueries as unknown as Queries, 
+    mockQueries, 
     mockFlow, 
-    testLogger as unknown as ReturnType<typeof logger>
+    testLogger as any,
+    { heartbeatInterval: 0 } // No interval for testing
   );
 
   // Start the worker
@@ -189,12 +193,8 @@ Deno.test('FlowWorkerLifecycle - should log appropriate message when transitioni
     edgeFunctionName: 'test-function',
   });
 
-  // Replace the heartbeat with our mock
-  const mockHeartbeat = new MockHeartbeat();
-  (lifecycle as unknown as FlowWorkerLifecycleWithPrivates).heartbeat = mockHeartbeat as unknown as Heartbeat;
-
   // Send deprecated heartbeat
-  mockHeartbeat.nextResult = { is_deprecated: true };
+  mockQueries.nextResult = { is_deprecated: true };
   await lifecycle.sendHeartbeat();
 
   // Check that the deprecation message was logged
@@ -207,7 +207,7 @@ Deno.test('FlowWorkerLifecycle - should log appropriate message when transitioni
 Deno.test('FlowWorkerLifecycle - queueName should return flow slug', () => {
   const mockQueries = new MockQueries();
   const mockFlow = createMockFlow();
-  const lifecycle = new FlowWorkerLifecycle(mockQueries as unknown as Queries, mockFlow, logger);
+  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger);
 
   assertEquals(lifecycle.queueName, 'test-flow');
 });
@@ -215,7 +215,7 @@ Deno.test('FlowWorkerLifecycle - queueName should return flow slug', () => {
 Deno.test('FlowWorkerLifecycle - workerId getter should work after start', async () => {
   const mockQueries = new MockQueries();
   const mockFlow = createMockFlow();
-  const lifecycle = new FlowWorkerLifecycle(mockQueries as unknown as Queries, mockFlow, logger);
+  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger);
 
   // Start the worker
   await lifecycle.acknowledgeStart({
@@ -224,4 +224,34 @@ Deno.test('FlowWorkerLifecycle - workerId getter should work after start', async
   });
 
   assertEquals(lifecycle.workerId, 'test-worker-id');
+});
+
+Deno.test('FlowWorkerLifecycle - should respect heartbeat interval', async () => {
+  const mockQueries = new MockQueries();
+  const mockFlow = createMockFlow();
+  const lifecycle = new FlowWorkerLifecycle(
+    mockQueries,
+    mockFlow,
+    logger,
+    { heartbeatInterval: 5000 } // 5 second interval
+  );
+
+  // Start the worker
+  await lifecycle.acknowledgeStart({
+    workerId: 'test-worker-id',
+    edgeFunctionName: 'test-function',
+  });
+
+  // First heartbeat should be sent
+  await lifecycle.sendHeartbeat();
+  assertEquals(mockQueries.sendHeartbeatCallCount, 1);
+
+  // Immediate second heartbeat should not be sent (interval not passed)
+  await lifecycle.sendHeartbeat();
+  assertEquals(mockQueries.sendHeartbeatCallCount, 1);
+
+  // More immediate calls should still not send
+  await lifecycle.sendHeartbeat();
+  await lifecycle.sendHeartbeat();
+  assertEquals(mockQueries.sendHeartbeatCallCount, 1);
 });

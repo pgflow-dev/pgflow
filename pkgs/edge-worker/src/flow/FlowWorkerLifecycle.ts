@@ -1,28 +1,33 @@
-import { Heartbeat } from '../core/Heartbeat.js';
 import type { Queries } from '../core/Queries.js';
 import type { ILifecycle, WorkerBootstrap, WorkerRow } from '../core/types.js';
 import type { Logger } from '../platform/types.js';
 import { States, WorkerState } from '../core/WorkerState.js';
 import type { AnyFlow } from '@pgflow/dsl';
 
+export interface FlowLifecycleConfig {
+  heartbeatInterval?: number;
+}
+
 /**
  * A specialized WorkerLifecycle for Flow-based workers that is aware of the Flow's step types
  */
 export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
   private workerState: WorkerState;
-  private heartbeat?: Heartbeat;
   private logger: Logger;
   private queries: Queries;
   private workerRow?: WorkerRow;
   private flow: TFlow;
   // TODO: Temporary field for supplier pattern until we refactor initialization
   private _workerId?: string;
+  private heartbeatInterval: number;
+  private lastHeartbeat = 0;
 
-  constructor(queries: Queries, flow: TFlow, logger: Logger) {
+  constructor(queries: Queries, flow: TFlow, logger: Logger, config?: FlowLifecycleConfig) {
     this.queries = queries;
     this.flow = flow;
     this.logger = logger;
     this.workerState = new WorkerState(logger);
+    this.heartbeatInterval = config?.heartbeatInterval ?? 5000;
   }
 
   async acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void> {
@@ -35,13 +40,6 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
       queueName: this.queueName,
       ...workerBootstrap,
     });
-
-    this.heartbeat = new Heartbeat(
-      5000,
-      this.queries,
-      this.workerRow,
-      this.logger
-    );
 
     this.workerState.transitionTo(States.Running);
   }
@@ -80,11 +78,20 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
   }
 
   async sendHeartbeat() {
-    const { is_deprecated } = await this.heartbeat?.send() || { is_deprecated: false };
-    
-    if (is_deprecated && !this.isDeprecated) {
-      this.logger.info('Worker marked for deprecation, transitioning to deprecated state');
-      this.transitionToDeprecated();
+    if (!this.workerRow) {
+      return;
+    }
+
+    const now = Date.now();
+    if (now - this.lastHeartbeat >= this.heartbeatInterval) {
+      const result = await this.queries.sendHeartbeat(this.workerRow);
+      this.logger.debug(result.is_deprecated ? 'DEPRECATED' : 'OK');
+      this.lastHeartbeat = now;
+      
+      if (result.is_deprecated && !this.isDeprecated) {
+        this.logger.info('Worker marked for deprecation, transitioning to deprecated state');
+        this.transitionToDeprecated();
+      }
     }
   }
 
