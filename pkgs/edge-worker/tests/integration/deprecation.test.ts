@@ -22,10 +22,10 @@ Deno.test(
     // Create worker with message tracking
     const logger = createFakeLogger('deprecation-test');
     const worker = createQueueWorker(
-      async (message: any, context: any) => {
+      async (message: unknown, _context: unknown) => {
         console.log('Processing message:', message, typeof message);
         // If message is a string, parse it
-        const msg = typeof message === 'string' ? JSON.parse(message) : message;
+        const msg = typeof message === 'string' ? JSON.parse(message) : message as { id: string };
         // Track that we processed this message
         processedMessages.push(msg.id);
         console.log(`Processed message ${msg.id}, total processed: ${processedMessages.length}`);
@@ -113,7 +113,7 @@ Deno.test(
     console.log('Messages in archive:', archiveMessages);
     
     // Check which messages from second batch are in the queue (unprocessed)
-    const unreadMessages = queueMessages.filter((msg: any) => {
+    const unreadMessages = queueMessages.filter((msg) => {
       // Handle double-encoded JSON
       const innerJson = JSON.parse(msg.message);
       const payload = JSON.parse(innerJson);
@@ -121,7 +121,7 @@ Deno.test(
     });
     
     // Check if any second batch messages were incorrectly processed (in archive)
-    const incorrectlyProcessed = archiveMessages.filter((msg: any) => {
+    const incorrectlyProcessed = archiveMessages.filter((msg) => {
       // Handle double-encoded JSON
       const innerJson = JSON.parse(msg.message);
       const payload = JSON.parse(innerJson);
@@ -156,9 +156,9 @@ Deno.test(
     // Create worker that processes messages slowly
     const logger = createFakeLogger('deprecation-test-inflight');
     const worker = createQueueWorker(
-      async (message: any, context: any) => {
+      async (message: unknown, _context: unknown) => {
         // If message is a string, parse it
-        const msg = typeof message === 'string' ? JSON.parse(message) : message;
+        const msg = typeof message === 'string' ? JSON.parse(message) : message as { id: string };
         processingStarted.add(msg.id);
         // Simulate slow processing
         await delay(2000); // 2 seconds to ensure deprecation happens during processing
@@ -250,7 +250,7 @@ Deno.test(
     console.log('Archive messages:', archiveMessages);
     
     // Check if after-deprecation messages are in queue (should be)
-    const unreadMessages = queueMessages.filter((msg: any) => {
+    const unreadMessages = queueMessages.filter((msg) => {
       // Handle double-encoded JSON
       const innerJson = JSON.parse(msg.message);
       const payload = JSON.parse(innerJson);
@@ -258,7 +258,7 @@ Deno.test(
     });
     
     // Check if after-deprecation messages were processed (should not be)
-    const incorrectlyProcessed = archiveMessages.filter((msg: any) => {
+    const incorrectlyProcessed = archiveMessages.filter((msg) => {
       // Handle double-encoded JSON
       const innerJson = JSON.parse(msg.message);
       const payload = JSON.parse(innerJson);
@@ -299,9 +299,9 @@ Deno.test(
     const logger2 = createFakeLogger('deprecation-worker2');
     
     const worker1 = createQueueWorker(
-      async (message: any, context: any) => {
+      async (message: unknown, _context: unknown) => {
         // If message is a string, parse it
-        const msg = typeof message === 'string' ? JSON.parse(message) : message;
+        const msg = typeof message === 'string' ? JSON.parse(message) : message as { id: string };
         worker1Messages.push(msg.id);
         await delay(100); // Simulate work
       },
@@ -316,9 +316,9 @@ Deno.test(
     );
 
     const worker2 = createQueueWorker(
-      async (message: any, context: any) => {
+      async (message: unknown, _context: unknown) => {
         // If message is a string, parse it
-        const msg = typeof message === 'string' ? JSON.parse(message) : message;
+        const msg = typeof message === 'string' ? JSON.parse(message) : message as { id: string };
         worker2Messages.push(msg.id);
         await delay(100); // Simulate work
       },
@@ -414,14 +414,14 @@ Deno.test(
     console.log('Archive messages:', archiveMessages);
     
     // Check where second batch messages ended up
-    const unreadMessages = queueMessages.filter((msg: any) => {
+    const unreadMessages = queueMessages.filter((msg) => {
       // Handle double-encoded JSON
       const innerJson = JSON.parse(msg.message);
       const payload = JSON.parse(innerJson);
       return secondBatch.includes(payload.id);
     });
     
-    const processedSecondBatch = archiveMessages.filter((msg: any) => {
+    const processedSecondBatch = archiveMessages.filter((msg) => {
       // Handle double-encoded JSON
       const innerJson = JSON.parse(msg.message);
       const payload = JSON.parse(innerJson);

@@ -4,14 +4,16 @@ import { States, TransitionError } from '../../src/core/WorkerState.ts';
 import type { Queries } from '../../src/core/Queries.ts';
 import type { Queue } from '../../src/queue/Queue.ts';
 import type { WorkerRow, Json } from '../../src/core/types.ts';
+import type { Logger } from '../../src/platform/types.ts';
 import { createLoggingFactory } from '../../src/platform/logging.ts';
+import type { Heartbeat } from '../../src/core/Heartbeat.ts';
 
 const loggingFactory = createLoggingFactory();
 loggingFactory.setLogLevel('info');
 const logger = loggingFactory.createLogger('WorkerLifecycle');
 
 // Mock Heartbeat that we can control
-class MockHeartbeat {
+class MockHeartbeat implements Pick<Heartbeat, 'send'> {
   public sendCallCount = 0;
   public nextResult: { is_deprecated: boolean } = { is_deprecated: false };
 
@@ -22,8 +24,14 @@ class MockHeartbeat {
 }
 
 // Mock Queries
-class MockQueries implements Pick<Queries, 'onWorkerStarted' | 'sendHeartbeat'> {
-  async onWorkerStarted(params: any): Promise<WorkerRow> {
+class MockQueries
+  implements Pick<Queries, 'onWorkerStarted' | 'sendHeartbeat'>
+{
+  async onWorkerStarted(params: {
+    workerId: string;
+    edgeFunctionName: string;
+    queueName: string;
+  }): Promise<WorkerRow> {
     return {
       worker_id: params.workerId,
       queue_name: params.queueName,
@@ -34,101 +42,137 @@ class MockQueries implements Pick<Queries, 'onWorkerStarted' | 'sendHeartbeat'> 
     };
   }
 
-  async sendHeartbeat(workerRow: WorkerRow): Promise<{ is_deprecated: boolean }> {
+  async sendHeartbeat(
+    workerRow: WorkerRow
+  ): Promise<{ is_deprecated: boolean }> {
     // This shouldn't be called directly in our tests as we mock the heartbeat
     return { is_deprecated: false };
   }
 }
 
 // Mock Queue
-class MockQueue<T extends Json> implements Pick<Queue<T>, 'queueName' | 'safeCreate'> {
+class MockQueue<T extends Json>
+  implements Pick<Queue<T>, 'queueName' | 'safeCreate'>
+{
   constructor(public queueName: string) {}
-  
+
   async safeCreate() {
     // Return empty array to match the expected type
-    return [] as any;
+    return [] as unknown as void;
   }
 }
 
-Deno.test('WorkerLifecycle - should transition to deprecated state when heartbeat returns is_deprecated true', async () => {
-  const mockQueries = new MockQueries();
-  const mockQueue = new MockQueue('test-queue');
-  const lifecycle = new WorkerLifecycle(mockQueries as any, mockQueue as any, logger);
+// Type guard to access private members in tests
+interface WorkerLifecycleWithPrivates extends WorkerLifecycle {
+  heartbeat?: Heartbeat;
+}
 
-  // Start the worker first
-  await lifecycle.acknowledgeStart({
-    workerId: 'test-worker-id',
-    edgeFunctionName: 'test-function',
-  });
+Deno.test(
+  'WorkerLifecycle - should transition to deprecated state when heartbeat returns is_deprecated true',
+  async () => {
+    const mockQueries = new MockQueries();
+    const mockQueue = new MockQueue('test-queue');
+    const lifecycle = new WorkerLifecycle(
+      mockQueries as unknown as Queries,
+      mockQueue as unknown as Queue<Json>,
+      logger
+    );
 
-  assertEquals(lifecycle.isRunning, true);
-  assertEquals(lifecycle.isDeprecated, false);
+    // Start the worker first
+    await lifecycle.acknowledgeStart({
+      workerId: 'test-worker-id',
+      edgeFunctionName: 'test-function',
+    });
 
-  // Replace the heartbeat with our mock
-  const mockHeartbeat = new MockHeartbeat();
-  (lifecycle as any).heartbeat = mockHeartbeat;
+    assertEquals(lifecycle.isRunning, true);
+    assertEquals(lifecycle.isDeprecated, false);
 
-  // First heartbeat - not deprecated
-  mockHeartbeat.nextResult = { is_deprecated: false };
-  await lifecycle.sendHeartbeat();
-  
-  assertEquals(lifecycle.isRunning, true);
-  assertEquals(lifecycle.isDeprecated, false);
-  assertEquals(mockHeartbeat.sendCallCount, 1);
+    // Replace the heartbeat with our mock
+    const mockHeartbeat = new MockHeartbeat();
+    (lifecycle as unknown as WorkerLifecycleWithPrivates).heartbeat =
+      mockHeartbeat as unknown as Heartbeat;
 
-  // Second heartbeat - deprecated
-  mockHeartbeat.nextResult = { is_deprecated: true };
-  await lifecycle.sendHeartbeat();
-  
-  assertEquals(lifecycle.isRunning, false); // Should be false now
-  assertEquals(lifecycle.isDeprecated, true);
-  assertEquals(mockHeartbeat.sendCallCount, 2);
-});
+    // First heartbeat - not deprecated
+    mockHeartbeat.nextResult = { is_deprecated: false };
+    await lifecycle.sendHeartbeat();
 
-Deno.test('WorkerLifecycle - should only transition to deprecated once', async () => {
-  const mockQueries = new MockQueries();
-  const mockQueue = new MockQueue('test-queue');
-  const lifecycle = new WorkerLifecycle(mockQueries as any, mockQueue as any, logger);
+    assertEquals(lifecycle.isRunning, true);
+    assertEquals(lifecycle.isDeprecated, false);
+    assertEquals(mockHeartbeat.sendCallCount, 1);
 
-  // Start the worker
-  await lifecycle.acknowledgeStart({
-    workerId: 'test-worker-id',
-    edgeFunctionName: 'test-function',
-  });
+    // Second heartbeat - deprecated
+    mockHeartbeat.nextResult = { is_deprecated: true };
+    await lifecycle.sendHeartbeat();
 
-  // Replace the heartbeat with our mock
-  const mockHeartbeat = new MockHeartbeat();
-  (lifecycle as any).heartbeat = mockHeartbeat;
+    assertEquals(lifecycle.isRunning, false); // Should be false now
+    assertEquals(lifecycle.isDeprecated, true);
+    assertEquals(mockHeartbeat.sendCallCount, 2);
+  }
+);
 
-  // First deprecated heartbeat
-  mockHeartbeat.nextResult = { is_deprecated: true };
-  await lifecycle.sendHeartbeat();
-  
-  assertEquals(lifecycle.isDeprecated, true);
+Deno.test(
+  'WorkerLifecycle - should only transition to deprecated once',
+  async () => {
+    const mockQueries = new MockQueries();
+    const mockQueue = new MockQueue('test-queue');
+    const lifecycle = new WorkerLifecycle(
+      mockQueries as unknown as Queries,
+      mockQueue as unknown as Queue<Json>,
+      logger
+    );
 
-  // Second deprecated heartbeat - should not cause issues
-  await lifecycle.sendHeartbeat();
-  
-  assertEquals(lifecycle.isDeprecated, true);
-  assertEquals(mockHeartbeat.sendCallCount, 2);
-});
+    // Start the worker
+    await lifecycle.acknowledgeStart({
+      workerId: 'test-worker-id',
+      edgeFunctionName: 'test-function',
+    });
 
-Deno.test('WorkerLifecycle - should handle missing heartbeat gracefully', async () => {
-  const mockQueries = new MockQueries();
-  const mockQueue = new MockQueue('test-queue');
-  const lifecycle = new WorkerLifecycle(mockQueries as any, mockQueue as any, logger);
+    // Replace the heartbeat with our mock
+    const mockHeartbeat = new MockHeartbeat();
+    (lifecycle as unknown as WorkerLifecycleWithPrivates).heartbeat =
+      mockHeartbeat as unknown as Heartbeat;
 
-  // Don't start the worker, so heartbeat is not initialized
-  await lifecycle.sendHeartbeat(); // Should not throw
-  
-  assertEquals(lifecycle.isRunning, false);
-  assertEquals(lifecycle.isDeprecated, false);
-});
+    // First deprecated heartbeat
+    mockHeartbeat.nextResult = { is_deprecated: true };
+    await lifecycle.sendHeartbeat();
+
+    assertEquals(lifecycle.isDeprecated, true);
+
+    // Second deprecated heartbeat - should not cause issues
+    await lifecycle.sendHeartbeat();
+
+    assertEquals(lifecycle.isDeprecated, true);
+    assertEquals(mockHeartbeat.sendCallCount, 2);
+  }
+);
+
+Deno.test(
+  'WorkerLifecycle - should handle missing heartbeat gracefully',
+  async () => {
+    const mockQueries = new MockQueries();
+    const mockQueue = new MockQueue('test-queue');
+    const lifecycle = new WorkerLifecycle(
+      mockQueries as unknown as Queries,
+      mockQueue as unknown as Queue<Json>,
+      logger
+    );
+
+    // Don't start the worker, so heartbeat is not initialized
+    await lifecycle.sendHeartbeat(); // Should not throw
+
+    assertEquals(lifecycle.isRunning, false);
+    assertEquals(lifecycle.isDeprecated, false);
+  }
+);
 
 Deno.test('WorkerLifecycle - deprecated state transitions', async () => {
   const mockQueries = new MockQueries();
   const mockQueue = new MockQueue('test-queue');
-  const lifecycle = new WorkerLifecycle(mockQueries as any, mockQueue as any, logger);
+  const lifecycle = new WorkerLifecycle(
+    mockQueries as unknown as Queries,
+    mockQueue as unknown as Queue<Json>,
+    logger
+  );
 
   // Start and deprecate the worker
   await lifecycle.acknowledgeStart({
@@ -148,50 +192,68 @@ Deno.test('WorkerLifecycle - deprecated state transitions', async () => {
   assertEquals(lifecycle.isStopped, true);
 });
 
-Deno.test('WorkerLifecycle - cannot transition to deprecated from non-running states', () => {
-  const mockQueries = new MockQueries();
-  const mockQueue = new MockQueue('test-queue');
-  const lifecycle = new WorkerLifecycle(mockQueries as any, mockQueue as any, logger);
+Deno.test(
+  'WorkerLifecycle - cannot transition to deprecated from non-running states',
+  () => {
+    const mockQueries = new MockQueries();
+    const mockQueue = new MockQueue('test-queue');
+    const lifecycle = new WorkerLifecycle(
+      mockQueries as unknown as Queries,
+      mockQueue as unknown as Queue<Json>,
+      logger
+    );
 
-  // Try to transition to deprecated from created state
-  assertRejects(
-    async () => {
-      lifecycle.transitionToDeprecated();
-    },
-    TransitionError,
-    'Cannot transition from created to deprecated'
-  );
-});
+    // Try to transition to deprecated from created state
+    assertRejects(
+      async () => {
+        lifecycle.transitionToDeprecated();
+      },
+      TransitionError,
+      'Cannot transition from created to deprecated'
+    );
+  }
+);
 
-Deno.test('WorkerLifecycle - should log appropriate message when transitioning to deprecated', async () => {
-  const logs: string[] = [];
-  const testLogger = {
-    debug: () => {},
-    info: (msg: string) => logs.push(msg),
-    error: () => {},
-  };
+Deno.test(
+  'WorkerLifecycle - should log appropriate message when transitioning to deprecated',
+  async () => {
+    const logs: string[] = [];
+    const testLogger: Logger = {
+      debug: () => {},
+      info: (msg: string) => logs.push(msg),
+      error: () => {},
+      warn: () => {},
+    };
 
-  const mockQueries = new MockQueries();
-  const mockQueue = new MockQueue('test-queue');
-  const lifecycle = new WorkerLifecycle(mockQueries as any, mockQueue as any, testLogger as any);
+    const mockQueries = new MockQueries();
+    const mockQueue = new MockQueue('test-queue');
+    const lifecycle = new WorkerLifecycle(
+      mockQueries as unknown as Queries,
+      mockQueue as unknown as Queue<Json>,
+      testLogger as unknown as ReturnType<typeof logger>
+    );
 
-  // Start the worker
-  await lifecycle.acknowledgeStart({
-    workerId: 'test-worker-id',
-    edgeFunctionName: 'test-function',
-  });
+    // Start the worker
+    await lifecycle.acknowledgeStart({
+      workerId: 'test-worker-id',
+      edgeFunctionName: 'test-function',
+    });
 
-  // Replace the heartbeat with our mock
-  const mockHeartbeat = new MockHeartbeat();
-  (lifecycle as any).heartbeat = mockHeartbeat;
+    // Replace the heartbeat with our mock
+    const mockHeartbeat = new MockHeartbeat();
+    (lifecycle as unknown as WorkerLifecycleWithPrivates).heartbeat =
+      mockHeartbeat as unknown as Heartbeat;
 
-  // Send deprecated heartbeat
-  mockHeartbeat.nextResult = { is_deprecated: true };
-  await lifecycle.sendHeartbeat();
+    // Send deprecated heartbeat
+    mockHeartbeat.nextResult = { is_deprecated: true };
+    await lifecycle.sendHeartbeat();
 
-  // Check that the deprecation message was logged
-  const deprecationLog = logs.find(log => 
-    log.includes('Worker marked for deprecation, transitioning to deprecated state')
-  );
-  assertEquals(deprecationLog !== undefined, true);
-});
+    // Check that the deprecation message was logged
+    const deprecationLog = logs.find((log) =>
+      log.includes(
+        'Worker marked for deprecation, transitioning to deprecated state'
+      )
+    );
+    assertEquals(deprecationLog !== undefined, true);
+  }
+);
