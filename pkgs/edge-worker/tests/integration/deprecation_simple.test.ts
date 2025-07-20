@@ -125,14 +125,25 @@ Deno.test(
     `;
 
     // Wait for heartbeat detection (need to ensure both workers get a heartbeat)
-    await delay(6000);
-
-    // Check that both workers detected deprecation
+    // Heartbeat interval is 5 seconds, but we need to account for when each worker
+    // sends its first heartbeat. Let's wait for up to 12 seconds total to ensure
+    // both workers have had at least 2 heartbeat intervals
+    const maxWaitTime = 12000;
+    const checkInterval = 500;
+    let elapsed = 0;
+    
     const lifecycle1 = (worker1 as any).lifecycle;
     const lifecycle2 = (worker2 as any).lifecycle;
     
-    assertEquals(lifecycle1.isDeprecated, true);
-    assertEquals(lifecycle2.isDeprecated, true);
+    // Wait until both workers are deprecated or timeout
+    while (elapsed < maxWaitTime && (!lifecycle1.isDeprecated || !lifecycle2.isDeprecated)) {
+      await delay(checkInterval);
+      elapsed += checkInterval;
+    }
+    
+    // Now check that both detected deprecation
+    assertEquals(lifecycle1.isDeprecated, true, 'Worker 1 should be deprecated');
+    assertEquals(lifecycle2.isDeprecated, true, 'Worker 2 should be deprecated');
 
     // Verify all workers are marked as deprecated
     const workersAfter = await sql<WorkerRow[]>`
