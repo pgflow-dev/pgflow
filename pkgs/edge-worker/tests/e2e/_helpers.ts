@@ -1,4 +1,4 @@
-import { sql } from '../sql.ts';
+import { createSql } from '../sql.ts';
 import { delay } from '@std/async';
 import ProgressBar from 'jsr:@deno-library/progress';
 import { dim } from 'https://deno.land/std@0.224.0/fmt/colors.ts';
@@ -41,28 +41,38 @@ export async function waitFor<T>(
 }
 
 export async function sendBatch(count: number, queueName: string) {
-  return await sql`
-    SELECT pgmq.send_batch(
-      ${queueName},
-      ARRAY(
-        SELECT '{}'::jsonb
-        FROM generate_series(1, ${count}::integer)
-      )
-    )`;
+  const sql = createSql();
+  try {
+    return await sql`
+      SELECT pgmq.send_batch(
+        ${queueName},
+        ARRAY(
+          SELECT '{}'::jsonb
+          FROM generate_series(1, ${count}::integer)
+        )
+      )`;
+  } finally {
+    await sql.end();
+  }
 }
 
 export async function seqLastValue(seqName = 'test_seq'): Promise<number> {
-  // Postgres sequences are startWorkerd with a value of 1,
-  // but incrementing them for the first time does not increment the last_value,
-  // only sets is_called to true
-  const seqResult = await sql`
-    SELECT
-      CASE
-        WHEN is_called THEN last_value::integer
-        ELSE 0
-      END as last_value
-    FROM ${sql(seqName)}`;
-  return seqResult[0].last_value;
+  const sql = createSql();
+  try {
+    // Postgres sequences are startWorkerd with a value of 1,
+    // but incrementing them for the first time does not increment the last_value,
+    // only sets is_called to true
+    const seqResult = await sql`
+      SELECT
+        CASE
+          WHEN is_called THEN last_value::integer
+          ELSE 0
+        END as last_value
+      FROM ${sql(seqName)}`;
+    return seqResult[0].last_value;
+  } finally {
+    await sql.end();
+  }
 }
 
 interface WaitForSeqValueOptions {
@@ -110,10 +120,15 @@ export async function waitForSeqToIncrementBy(
 export async function waitForActiveWorker() {
   return await waitFor(
     async () => {
-      const [{ has_active: hasActiveWorker }] =
-        await sql`SELECT count(*) > 0 AS has_active FROM pgflow.active_workers`;
-      log('waiting for active worker ', hasActiveWorker);
-      return hasActiveWorker;
+      const sql = createSql();
+      try {
+        const [{ has_active: hasActiveWorker }] =
+          await sql`SELECT count(*) > 0 AS has_active FROM pgflow.active_workers`;
+        log('waiting for active worker ', hasActiveWorker);
+        return hasActiveWorker;
+      } finally {
+        await sql.end();
+      }
     },
     {
       pollIntervalMs: 300,
@@ -123,11 +138,21 @@ export async function waitForActiveWorker() {
 }
 
 export async function fetchWorkers(functionName: string) {
-  return await sql`SELECT * FROM pgflow.workers WHERE function_name = ${functionName}`;
+  const sql = createSql();
+  try {
+    return await sql`SELECT * FROM pgflow.workers WHERE function_name = ${functionName}`;
+  } finally {
+    await sql.end();
+  }
 }
 
 export async function startWorker(workerName: string) {
-  await sql`SELECT pgflow.spawn(${workerName}::text)`;
+  const sql = createSql();
+  try {
+    await sql`SELECT pgflow.spawn(${workerName}::text)`;
+  } finally {
+    await sql.end();
+  }
   await waitForActiveWorker();
   log('worker spawned!');
 }

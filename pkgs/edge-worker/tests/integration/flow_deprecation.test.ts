@@ -97,8 +97,8 @@ Deno.test(
     await delay(6000);
 
     // Start more flow runs after deprecation
-    const run3 = await sql`select pgflow.start_flow(${flowSlug}::text, ${JSON.stringify({ value: 30 })}::jsonb)`;
-    const run4 = await sql`select pgflow.start_flow(${flowSlug}::text, ${JSON.stringify({ value: 40 })}::jsonb)`;
+    const run3Result = await sql`select run_id from pgflow.start_flow(${flowSlug}::text, ${JSON.stringify({ value: 30 })}::jsonb)`;
+    const run4Result = await sql`select run_id from pgflow.start_flow(${flowSlug}::text, ${JSON.stringify({ value: 40 })}::jsonb)`;
     
     // Wait to see if these get processed (they shouldn't)
     await delay(2000);
@@ -120,7 +120,7 @@ Deno.test(
     const runsAfter = await sql`
       SELECT run_id, status, remaining_steps FROM pgflow.runs 
       WHERE flow_slug = ${flowSlug}
-      AND run_id IN (${run3[0].run_id}::uuid, ${run4[0].run_id}::uuid)
+      AND run_id IN (${run3Result[0].run_id}, ${run4Result[0].run_id})
       ORDER BY started_at
     `;
     assertEquals(runsAfter.length, 2, 'Should have 2 new runs');
