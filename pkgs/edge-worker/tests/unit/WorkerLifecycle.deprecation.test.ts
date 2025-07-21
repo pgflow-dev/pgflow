@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects } from '@std/assert';
+import { assertEquals, assertThrows } from '@std/assert';
 import { WorkerLifecycle } from '../../src/core/WorkerLifecycle.ts';
 import { TransitionError } from '../../src/core/WorkerState.ts';
 import { Queries } from '../../src/core/Queries.ts';
@@ -205,8 +205,8 @@ Deno.test(
     );
 
     // Try to transition to deprecated from created state
-    assertRejects(
-      async () => {
+    assertThrows(
+      () => {
         lifecycle.transitionToDeprecated();
       },
       TransitionError,

@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects } from '@std/assert';
+import { assertEquals, assertThrows } from '@std/assert';
 import { FlowWorkerLifecycle } from '../../src/flow/FlowWorkerLifecycle.ts';
 import { TransitionError } from '../../src/core/WorkerState.ts';
 import { Queries } from '../../src/core/Queries.ts';
@@ -163,8 +163,8 @@ Deno.test('FlowWorkerLifecycle - cannot transition to deprecated from non-runnin
   const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger);
 
   // Try to transition to deprecated from created state
-  assertRejects(
-    async () => {
+  assertThrows(
+    () => {
       lifecycle.transitionToDeprecated();
     },
     TransitionError,
