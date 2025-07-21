@@ -22,9 +22,8 @@ Deno.test(
     // Create a simple worker
     const logger = createFakeLogger('deprecation-test');
     const worker = createQueueWorker(
-      async (message: unknown) => {
-        const msg = typeof message === 'string' ? JSON.parse(message) : message as { id: string };
-        processedMessages.push(msg.id);
+      async (message: { id: string }) => {
+        processedMessages.push(message.id);
         await delay(50); // Simulate some work
       },
       {
@@ -57,7 +56,7 @@ Deno.test(
     // Add first batch of messages
     const firstBatch = ['simple1', 'simple2'];
     for (const msgId of firstBatch) {
-      await sql`SELECT pgmq.send(${queueName}::text, ${JSON.stringify({ id: msgId })}::jsonb)`;
+      await sql`SELECT pgmq.send(${queueName}::text, ${sql.json({ id: msgId })}::jsonb)`;
     }
     
     // Wait for processing
@@ -81,7 +80,7 @@ Deno.test(
     // Add second batch of messages after deprecation
     const secondBatch = ['simple3', 'simple4'];
     for (const msgId of secondBatch) {
-      await sql`SELECT pgmq.send(${queueName}::text, ${JSON.stringify({ id: msgId })}::jsonb)`;
+      await sql`SELECT pgmq.send(${queueName}::text, ${sql.json({ id: msgId })}::jsonb)`;
     }
     
     // Wait to see if these messages get processed (they shouldn't)
@@ -137,9 +136,8 @@ Deno.test(
     const logger2 = createFakeLogger('worker2');
     
     const worker1 = createQueueWorker(
-      async (message: unknown) => {
-        const msg = typeof message === 'string' ? JSON.parse(message) : message as { id: string };
-        worker1Messages.push(msg.id);
+      async (message: { id: string }) => {
+        worker1Messages.push(message.id);
         await delay(100); // Simulate work
       },
       { 
@@ -153,9 +151,8 @@ Deno.test(
     );
 
     const worker2 = createQueueWorker(
-      async (message: unknown) => {
-        const msg = typeof message === 'string' ? JSON.parse(message) : message as { id: string };
-        worker2Messages.push(msg.id);
+      async (message: { id: string }) => {
+        worker2Messages.push(message.id);
         await delay(100); // Simulate work
       },
       { 
@@ -186,7 +183,7 @@ Deno.test(
     // Add messages - they should be distributed between workers
     const firstBatch = ['multi1', 'multi2', 'multi3', 'multi4'];
     for (const msgId of firstBatch) {
-      await sql`SELECT pgmq.send(${queueName}::text, ${JSON.stringify({ id: msgId })}::jsonb)`;
+      await sql`SELECT pgmq.send(${queueName}::text, ${sql.json({ id: msgId })}::jsonb)`;
     }
     
     // Wait for processing
@@ -222,7 +219,7 @@ Deno.test(
     // Add more messages after deprecation
     const secondBatch = ['multi5', 'multi6', 'multi7', 'multi8'];
     for (const msgId of secondBatch) {
-      await sql`SELECT pgmq.send(${queueName}::text, ${JSON.stringify({ id: msgId })}::jsonb)`;
+      await sql`SELECT pgmq.send(${queueName}::text, ${sql.json({ id: msgId })}::jsonb)`;
     }
     
     // Wait longer to ensure workers would have polled if they were still active
