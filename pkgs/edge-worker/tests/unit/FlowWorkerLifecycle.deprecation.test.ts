@@ -1,10 +1,12 @@
 import { assertEquals, assertRejects } from '@std/assert';
 import { FlowWorkerLifecycle } from '../../src/flow/FlowWorkerLifecycle.ts';
-import { States, TransitionError } from '../../src/core/WorkerState.ts';
+import { TransitionError } from '../../src/core/WorkerState.ts';
 import { Queries } from '../../src/core/Queries.ts';
 import type { WorkerRow } from '../../src/core/types.ts';
 import type { AnyFlow } from '@pgflow/dsl';
+import type { Logger } from '../../src/platform/types.ts';
 import { createLoggingFactory } from '../../src/platform/logging.ts';
+import type { postgres } from '../sql.ts';
 
 const loggingFactory = createLoggingFactory();
 loggingFactory.setLogLevel('info');
@@ -19,10 +21,10 @@ class MockQueries extends Queries {
   
   constructor() {
     // Pass null as sql since we'll override all methods
-    super(null as any);
+    super(null as unknown as postgres.Sql);
   }
   
-  async onWorkerStarted(params: { workerId: string; edgeFunctionName: string; queueName: string }): Promise<WorkerRow> {
+  onWorkerStarted(params: { workerId: string; edgeFunctionName: string; queueName: string }): Promise<WorkerRow> {
     return {
       worker_id: params.workerId,
       queue_name: params.queueName,
@@ -33,12 +35,12 @@ class MockQueries extends Queries {
     };
   }
 
-  async sendHeartbeat(workerRow: WorkerRow): Promise<{ is_deprecated: boolean }> {
+  sendHeartbeat(_workerRow: WorkerRow): Promise<{ is_deprecated: boolean }> {
     this.sendHeartbeatCallCount++;
     return this.nextResult;
   }
 
-  async onWorkerStopped(workerRow: WorkerRow): Promise<WorkerRow> {
+  onWorkerStopped(workerRow: WorkerRow): Promise<WorkerRow> {
     this.workerStopped = true;
     return workerRow;
   }
@@ -162,7 +164,7 @@ Deno.test('FlowWorkerLifecycle - cannot transition to deprecated from non-runnin
 
   // Try to transition to deprecated from created state
   assertRejects(
-    async () => {
+    () => {
       lifecycle.transitionToDeprecated();
     },
     TransitionError,
@@ -172,10 +174,11 @@ Deno.test('FlowWorkerLifecycle - cannot transition to deprecated from non-runnin
 
 Deno.test('FlowWorkerLifecycle - should log appropriate message when transitioning to deprecated', async () => {
   const logs: string[] = [];
-  const testLogger = {
+  const testLogger: Logger = {
     debug: () => {},
     info: (msg: string) => logs.push(msg),
     error: () => {},
+    warn: () => {},
   };
 
   const mockQueries = new MockQueries();
@@ -183,7 +186,7 @@ Deno.test('FlowWorkerLifecycle - should log appropriate message when transitioni
   const lifecycle = new FlowWorkerLifecycle(
     mockQueries, 
     mockFlow, 
-    testLogger as any,
+    testLogger,
     { heartbeatInterval: 0 } // No interval for testing
   );
 

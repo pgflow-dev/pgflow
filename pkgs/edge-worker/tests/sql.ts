@@ -41,4 +41,4 @@ export async function withSql<T>(
   }
 }
 
-export { type postgres };
+export type { postgres };

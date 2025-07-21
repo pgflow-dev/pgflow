@@ -28,7 +28,7 @@ Deno.test(
   withTransaction(async (sql) => {
     const flowSlug = 'test_flow_dep_' + crypto.randomUUID().slice(0, 8);
     const queueName = flowSlug;
-    const functionName = 'test_flow';
+    const _functionName = 'test_flow';
     
     // Track step executions
     const executions = { step1: 0, step2: 0 };
@@ -62,8 +62,8 @@ Deno.test(
     const workerId = workerRow.worker_id;
 
     // Start a few flow runs
-    const run1 = await sql`select pgflow.start_flow(${flowSlug}::text, ${JSON.stringify({ value: 10 })}::jsonb)`;
-    const run2 = await sql`select pgflow.start_flow(${flowSlug}::text, ${JSON.stringify({ value: 20 })}::jsonb)`;
+    const _run1 = await sql`select pgflow.start_flow(${flowSlug}::text, ${JSON.stringify({ value: 10 })}::jsonb)`;
+    const _run2 = await sql`select pgflow.start_flow(${flowSlug}::text, ${JSON.stringify({ value: 20 })}::jsonb)`;
     
     // Wait for flows to complete
     await delay(1000);

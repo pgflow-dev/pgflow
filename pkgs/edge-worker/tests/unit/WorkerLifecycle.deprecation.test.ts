@@ -1,11 +1,12 @@
 import { assertEquals, assertRejects } from '@std/assert';
 import { WorkerLifecycle } from '../../src/core/WorkerLifecycle.ts';
-import { States, TransitionError } from '../../src/core/WorkerState.ts';
+import { TransitionError } from '../../src/core/WorkerState.ts';
 import { Queries } from '../../src/core/Queries.ts';
 import { Queue } from '../../src/queue/Queue.ts';
 import type { WorkerRow, Json } from '../../src/core/types.ts';
 import type { Logger } from '../../src/platform/types.ts';
 import { createLoggingFactory } from '../../src/platform/logging.ts';
+import type { postgres } from '../sql.ts';
 
 const loggingFactory = createLoggingFactory();
 loggingFactory.setLogLevel('info');
@@ -20,34 +21,34 @@ class MockQueries extends Queries {
   
   constructor() {
     // Pass null as sql since we'll override all methods
-    super(null as any);
+    super(null as unknown as postgres.Sql);
   }
   
-  async onWorkerStarted(params: {
+  onWorkerStarted(params: {
     workerId: string;
     edgeFunctionName: string;
     queueName: string;
   }): Promise<WorkerRow> {
-    return {
+    return Promise.resolve({
       worker_id: params.workerId,
       queue_name: params.queueName,
       function_name: params.edgeFunctionName,
       started_at: new Date().toISOString(),
       deprecated_at: null,
       last_heartbeat_at: new Date().toISOString(),
-    };
+    });
   }
 
-  async sendHeartbeat(
-    workerRow: WorkerRow
+  sendHeartbeat(
+    _workerRow: WorkerRow
   ): Promise<{ is_deprecated: boolean }> {
     this.sendHeartbeatCallCount++;
-    return this.nextResult;
+    return Promise.resolve(this.nextResult);
   }
 
-  async onWorkerStopped(workerRow: WorkerRow): Promise<WorkerRow> {
+  onWorkerStopped(workerRow: WorkerRow): Promise<WorkerRow> {
     this.workerStopped = true;
-    return workerRow;
+    return Promise.resolve(workerRow);
   }
 }
 
@@ -55,12 +56,12 @@ class MockQueries extends Queries {
 class MockQueue<T extends Json> extends Queue<T> {
   constructor(queueName: string) {
     // Pass null as sql and a mock logger since we'll override safeCreate
-    super(null as any, queueName, { debug: () => {}, info: () => {}, error: () => {}, warn: () => {} } as any);
+    super(null as unknown as postgres.Sql, queueName, { debug: () => {}, info: () => {}, error: () => {}, warn: () => {} } as Logger);
   }
 
-  async safeCreate(): Promise<any> {
+  safeCreate(): Promise<postgres.Row[]> {
     // No-op for testing
-    return [];
+    return Promise.resolve([]);
   }
 }
 
@@ -197,7 +198,7 @@ Deno.test(
 
     // Try to transition to deprecated from created state
     assertRejects(
-      async () => {
+      () => {
         lifecycle.transitionToDeprecated();
       },
       TransitionError,
@@ -222,7 +223,7 @@ Deno.test(
     const lifecycle = new WorkerLifecycle(
       mockQueries,
       mockQueue,
-      testLogger as any,
+      testLogger,
       { heartbeatInterval: 0 } // No interval for testing
     );
 
