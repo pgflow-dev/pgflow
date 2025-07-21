@@ -22,13 +22,11 @@ Deno.test(
     // Create worker with message tracking
     const logger = createFakeLogger('deprecation-test');
     const worker = createQueueWorker(
-      async (message: unknown, _context: unknown) => {
+      async (message: { id: string }) => {
         console.log('Processing message:', message, typeof message);
-        // If message is a string, parse it
-        const msg = typeof message === 'string' ? JSON.parse(message) : message as { id: string };
         // Track that we processed this message
-        processedMessages.push(msg.id);
-        console.log(`Processed message ${msg.id}, total processed: ${processedMessages.length}`);
+        processedMessages.push(message.id);
+        console.log(`Processed message ${message.id}, total processed: ${processedMessages.length}`);
         // Simulate some work
         await delay(50);
       },
@@ -54,7 +52,7 @@ Deno.test(
     // Add first batch of messages
     const firstBatch = ['msg1', 'msg2', 'msg3'];
     for (const msgId of firstBatch) {
-      await sql`SELECT pgmq.send(${queueName}::text, ${JSON.stringify({ id: msgId })}::jsonb)`;
+      await sql`SELECT pgmq.send(${queueName}::text, ${sql.json({ id: msgId })}::jsonb)`;
     }
     
     // Wait for processing
@@ -85,7 +83,7 @@ Deno.test(
     // Add second batch of messages after deprecation
     const secondBatch = ['msg4', 'msg5', 'msg6'];
     for (const msgId of secondBatch) {
-      await sql`SELECT pgmq.send(${queueName}::text, ${JSON.stringify({ id: msgId })}::jsonb)`;
+      await sql`SELECT pgmq.send(${queueName}::text, ${sql.json({ id: msgId })}::jsonb)`;
     }
     console.log('Added second batch messages');
     
@@ -98,13 +96,13 @@ Deno.test(
     
     // Check both queue and archive tables
     const queueMessages = await sql`
-      SELECT msg_id, read_ct, message::text, 'queue' as source 
+      SELECT msg_id, read_ct, message, 'queue' as source 
       FROM ${sql(`pgmq.q_${queueName}`)}
       ORDER BY msg_id
     `;
     
     const archiveMessages = await sql`
-      SELECT msg_id, read_ct, message::text, 'archive' as source 
+      SELECT msg_id, read_ct, message, 'archive' as source 
       FROM ${sql(`pgmq.a_${queueName}`)}
       ORDER BY msg_id
     `;
@@ -114,18 +112,12 @@ Deno.test(
     
     // Check which messages from second batch are in the queue (unprocessed)
     const unreadMessages = queueMessages.filter((msg) => {
-      // Handle double-encoded JSON
-      const innerJson = JSON.parse(msg.message);
-      const payload = JSON.parse(innerJson);
-      return secondBatch.includes(payload.id);
+      return secondBatch.includes(msg.message.id);
     });
     
     // Check if any second batch messages were incorrectly processed (in archive)
     const incorrectlyProcessed = archiveMessages.filter((msg) => {
-      // Handle double-encoded JSON
-      const innerJson = JSON.parse(msg.message);
-      const payload = JSON.parse(innerJson);
-      return secondBatch.includes(payload.id);
+      return secondBatch.includes(msg.message.id);
     });
     
     assertEquals(incorrectlyProcessed.length, 0, 'No second batch messages should be in archive');
@@ -156,13 +148,11 @@ Deno.test(
     // Create worker that processes messages slowly
     const logger = createFakeLogger('deprecation-test-inflight');
     const worker = createQueueWorker(
-      async (message: unknown, _context: unknown) => {
-        // If message is a string, parse it
-        const msg = typeof message === 'string' ? JSON.parse(message) : message as { id: string };
-        processingStarted.add(msg.id);
+      async (message: { id: string }) => {
+        processingStarted.add(message.id);
         // Simulate slow processing
         await delay(2000); // 2 seconds to ensure deprecation happens during processing
-        processingCompleted.add(msg.id);
+        processingCompleted.add(message.id);
       },
       {
         sql,
@@ -187,7 +177,7 @@ Deno.test(
     // Add messages that will be in-flight when deprecation happens
     const inflightMessages = ['inflight1', 'inflight2', 'inflight3'];
     for (const msgId of inflightMessages) {
-      await sql`SELECT pgmq.send(${queueName}::text, ${JSON.stringify({ id: msgId })}::jsonb)`;
+      await sql`SELECT pgmq.send(${queueName}::text, ${sql.json({ id: msgId })}::jsonb)`;
     }
 
     // Wait for processing to start
@@ -207,7 +197,7 @@ Deno.test(
     // Add more messages after deprecation - these should NOT be processed
     const afterDeprecationMessages = ['after1', 'after2'];
     for (const msgId of afterDeprecationMessages) {
-      await sql`SELECT pgmq.send(${queueName}::text, ${JSON.stringify({ id: msgId })}::jsonb)`;
+      await sql`SELECT pgmq.send(${queueName}::text, ${sql.json({ id: msgId })}::jsonb)`;
     }
 
     // Wait for in-flight messages to complete
@@ -235,13 +225,13 @@ Deno.test(
     
     // Check both queue and archive for after-deprecation messages
     const queueMessages = await sql`
-      SELECT msg_id, read_ct, message::text, 'queue' as source 
+      SELECT msg_id, read_ct, message, 'queue' as source 
       FROM ${sql(`pgmq.q_${queueName}`)}
       ORDER BY msg_id
     `;
     
     const archiveMessages = await sql`
-      SELECT msg_id, read_ct, message::text, 'archive' as source 
+      SELECT msg_id, read_ct, message, 'archive' as source 
       FROM ${sql(`pgmq.a_${queueName}`)}
       ORDER BY msg_id
     `;
@@ -251,18 +241,12 @@ Deno.test(
     
     // Check if after-deprecation messages are in queue (should be)
     const unreadMessages = queueMessages.filter((msg) => {
-      // Handle double-encoded JSON
-      const innerJson = JSON.parse(msg.message);
-      const payload = JSON.parse(innerJson);
-      return afterDeprecationMessages.includes(payload.id);
+      return afterDeprecationMessages.includes(msg.message.id);
     });
     
     // Check if after-deprecation messages were processed (should not be)
     const incorrectlyProcessed = archiveMessages.filter((msg) => {
-      // Handle double-encoded JSON
-      const innerJson = JSON.parse(msg.message);
-      const payload = JSON.parse(innerJson);
-      return afterDeprecationMessages.includes(payload.id);
+      return afterDeprecationMessages.includes(msg.message.id);
     });
     
     console.log('After-deprecation in queue:', unreadMessages.length);
@@ -299,10 +283,8 @@ Deno.test(
     const logger2 = createFakeLogger('deprecation-worker2');
     
     const worker1 = createQueueWorker(
-      async (message: unknown, _context: unknown) => {
-        // If message is a string, parse it
-        const msg = typeof message === 'string' ? JSON.parse(message) : message as { id: string };
-        worker1Messages.push(msg.id);
+      async (message: { id: string }) => {
+        worker1Messages.push(message.id);
         await delay(100); // Simulate work
       },
       {
@@ -316,10 +298,8 @@ Deno.test(
     );
 
     const worker2 = createQueueWorker(
-      async (message: unknown, _context: unknown) => {
-        // If message is a string, parse it
-        const msg = typeof message === 'string' ? JSON.parse(message) : message as { id: string };
-        worker2Messages.push(msg.id);
+      async (message: { id: string }) => {
+        worker2Messages.push(message.id);
         await delay(100); // Simulate work
       },
       {
@@ -350,7 +330,7 @@ Deno.test(
     // Add messages - they should be distributed between workers
     const firstBatch = ['w1', 'w2', 'w3', 'w4', 'w5', 'w6'];
     for (const msgId of firstBatch) {
-      await sql`SELECT pgmq.send(${queueName}::text, ${JSON.stringify({ id: msgId })}::jsonb)`;
+      await sql`SELECT pgmq.send(${queueName}::text, ${sql.json({ id: msgId })}::jsonb)`;
     }
     
     // Wait for processing
@@ -379,7 +359,7 @@ Deno.test(
     // Add more messages after deprecation
     const secondBatch = ['d1', 'd2', 'd3', 'd4'];
     for (const msgId of secondBatch) {
-      await sql`SELECT pgmq.send(${queueName}::text, ${JSON.stringify({ id: msgId })}::jsonb)`;
+      await sql`SELECT pgmq.send(${queueName}::text, ${sql.json({ id: msgId })}::jsonb)`;
     }
     
     // Wait longer to ensure workers would have polled if they were still active
@@ -399,13 +379,13 @@ Deno.test(
     
     // Check both queue and archive tables
     const queueMessages = await sql`
-      SELECT msg_id, read_ct, message::text, 'queue' as source 
+      SELECT msg_id, read_ct, message, 'queue' as source 
       FROM ${sql(`pgmq.q_${queueName}`)}
       ORDER BY msg_id
     `;
     
     const archiveMessages = await sql`
-      SELECT msg_id, read_ct, message::text, 'archive' as source 
+      SELECT msg_id, read_ct, message, 'archive' as source 
       FROM ${sql(`pgmq.a_${queueName}`)}
       ORDER BY msg_id
     `;
@@ -415,17 +395,11 @@ Deno.test(
     
     // Check where second batch messages ended up
     const unreadMessages = queueMessages.filter((msg) => {
-      // Handle double-encoded JSON
-      const innerJson = JSON.parse(msg.message);
-      const payload = JSON.parse(innerJson);
-      return secondBatch.includes(payload.id);
+      return secondBatch.includes(msg.message.id);
     });
     
     const processedSecondBatch = archiveMessages.filter((msg) => {
-      // Handle double-encoded JSON
-      const innerJson = JSON.parse(msg.message);
-      const payload = JSON.parse(innerJson);
-      return secondBatch.includes(payload.id);
+      return secondBatch.includes(msg.message.id);
     });
     
     console.log('Second batch in queue:', unreadMessages.length);
