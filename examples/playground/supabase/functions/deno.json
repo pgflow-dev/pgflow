@@ -5,6 +5,7 @@
     "@pgflow/edge-worker": "jsr:@pgflow/edge-worker@0.4.3",
     "@pgflow/edge-worker/_internal": "jsr:@pgflow/edge-worker@0.3.1/_internal",
     "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.49.4",
+    "@henrygd/queue": "jsr:@henrygd/queue@^1.0.7",
     "groq-sdk": "npm:groq-sdk@^0.20.1",
     "postgres": "npm:postgres@3.4.5",
     "sanitize-html": "npm:sanitize-html@^2.16.0",

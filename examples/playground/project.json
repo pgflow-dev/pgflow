@@ -45,6 +45,35 @@
         "cwd": "{projectRoot}",
         "command": "pnpm netlify deploy --dir=.netlify/dist --functions=.netlify/functions --prod"
       }
+    },
+    "sync-edge-deps": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "./scripts/sync-edge-deps.sh",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "start-functions:local": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["sync-edge-deps"],
+      "options": {
+        "command": "./scripts/supabase functions serve",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "watch-edge-deps": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm nx watch --projects=core,dsl,edge-worker -- pnpm nx sync-edge-deps playground",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "restore-production-deps": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "./scripts/restore-production-deps.sh",
+        "cwd": "{projectRoot}"
+      }
     }
   }
 }
