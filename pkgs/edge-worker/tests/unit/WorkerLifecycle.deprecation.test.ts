@@ -59,9 +59,17 @@ class MockQueue<T extends Json> extends Queue<T> {
     super(null as unknown as postgres.Sql, queueName, { debug: () => {}, info: () => {}, error: () => {}, warn: () => {} } as Logger);
   }
 
-  safeCreate(): Promise<postgres.Row[]> {
-    // No-op for testing
-    return Promise.resolve([]);
+  safeCreate(): Promise<postgres.RowList<postgres.Row[]>> {
+    // No-op for testing - return a mock RowList
+    const mockRowList = [] as postgres.Row[];
+    Object.assign(mockRowList, {
+      columns: [],
+      count: 0,
+      command: 'SELECT',
+      statement: { string: '', values: [] },
+      state: null
+    });
+    return Promise.resolve(mockRowList as postgres.RowList<postgres.Row[]>);
   }
 }
 
@@ -198,7 +206,7 @@ Deno.test(
 
     // Try to transition to deprecated from created state
     assertRejects(
-      () => {
+      async () => {
         lifecycle.transitionToDeprecated();
       },
       TransitionError,

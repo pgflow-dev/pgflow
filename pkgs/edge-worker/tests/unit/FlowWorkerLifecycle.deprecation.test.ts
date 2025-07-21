@@ -25,24 +25,24 @@ class MockQueries extends Queries {
   }
   
   onWorkerStarted(params: { workerId: string; edgeFunctionName: string; queueName: string }): Promise<WorkerRow> {
-    return {
+    return Promise.resolve({
       worker_id: params.workerId,
       queue_name: params.queueName,
       function_name: params.edgeFunctionName,
       started_at: new Date().toISOString(),
       deprecated_at: null,
       last_heartbeat_at: new Date().toISOString(),
-    };
+    });
   }
 
   sendHeartbeat(_workerRow: WorkerRow): Promise<{ is_deprecated: boolean }> {
     this.sendHeartbeatCallCount++;
-    return this.nextResult;
+    return Promise.resolve(this.nextResult);
   }
 
   onWorkerStopped(workerRow: WorkerRow): Promise<WorkerRow> {
     this.workerStopped = true;
-    return workerRow;
+    return Promise.resolve(workerRow);
   }
 }
 
@@ -164,7 +164,7 @@ Deno.test('FlowWorkerLifecycle - cannot transition to deprecated from non-runnin
 
   // Try to transition to deprecated from created state
   assertRejects(
-    () => {
+    async () => {
       lifecycle.transitionToDeprecated();
     },
     TransitionError,
