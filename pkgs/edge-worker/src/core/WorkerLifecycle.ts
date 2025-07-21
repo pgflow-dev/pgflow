@@ -1,4 +1,3 @@
-import { Heartbeat } from './Heartbeat.js';
 import type { Queries } from './Queries.js';
 import type { Queue } from '../queue/Queue.js';
 import type { ILifecycle, Json, WorkerBootstrap, WorkerRow } from './types.js';
@@ -7,21 +6,24 @@ import type { Logger } from '../platform/types.js';
 
 export interface LifecycleConfig {
   queueName: string;
+  heartbeatInterval?: number;
 }
 
 export class WorkerLifecycle<IMessage extends Json> implements ILifecycle {
   private workerState: WorkerState;
-  private heartbeat?: Heartbeat;
   private logger: Logger;
   private queries: Queries;
   private queue: Queue<IMessage>;
   private workerRow?: WorkerRow;
+  private heartbeatInterval: number;
+  private lastHeartbeat = 0;
 
-  constructor(queries: Queries, queue: Queue<IMessage>, logger: Logger) {
+  constructor(queries: Queries, queue: Queue<IMessage>, logger: Logger, config?: Partial<LifecycleConfig>) {
     this.queries = queries;
     this.queue = queue;
     this.logger = logger;
     this.workerState = new WorkerState(logger);
+    this.heartbeatInterval = config?.heartbeatInterval ?? 5000;
   }
 
   async acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void> {
@@ -34,8 +36,6 @@ export class WorkerLifecycle<IMessage extends Json> implements ILifecycle {
       queueName: this.queueName,
       ...workerBootstrap,
     });
-
-    this.heartbeat = new Heartbeat(5000, this.queries, this.workerRow, this.logger);
 
     this.workerState.transitionTo(States.Running);
   }
@@ -74,7 +74,21 @@ export class WorkerLifecycle<IMessage extends Json> implements ILifecycle {
   }
 
   async sendHeartbeat() {
-    await this.heartbeat?.send();
+    if (!this.workerRow) {
+      return;
+    }
+
+    const now = Date.now();
+    if (now - this.lastHeartbeat >= this.heartbeatInterval) {
+      const result = await this.queries.sendHeartbeat(this.workerRow);
+      this.logger.debug(result.is_deprecated ? 'DEPRECATED' : 'OK');
+      this.lastHeartbeat = now;
+      
+      if (result.is_deprecated && !this.isDeprecated) {
+        this.logger.info('Worker marked for deprecation, transitioning to deprecated state');
+        this.transitionToDeprecated();
+      }
+    }
   }
 
   get isRunning() {
@@ -91,5 +105,13 @@ export class WorkerLifecycle<IMessage extends Json> implements ILifecycle {
 
   transitionToStopping() {
     this.workerState.transitionTo(States.Stopping);
+  }
+
+  transitionToDeprecated() {
+    this.workerState.transitionTo(States.Deprecated);
+  }
+
+  get isDeprecated() {
+    return this.workerState.isDeprecated;
   }
 }

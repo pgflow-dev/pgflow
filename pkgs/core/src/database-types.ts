@@ -313,27 +313,27 @@ export type Database = {
       }
       workers: {
         Row: {
+          deprecated_at: string | null
           function_name: string
           last_heartbeat_at: string
           queue_name: string
           started_at: string
-          stopped_at: string | null
           worker_id: string
         }
         Insert: {
+          deprecated_at?: string | null
           function_name: string
           last_heartbeat_at?: string
           queue_name: string
           started_at?: string
-          stopped_at?: string | null
           worker_id: string
         }
         Update: {
+          deprecated_at?: string | null
           function_name?: string
           last_heartbeat_at?: string
           queue_name?: string
           started_at?: string
-          stopped_at?: string | null
           worker_id?: string
         }
         Relationships: []

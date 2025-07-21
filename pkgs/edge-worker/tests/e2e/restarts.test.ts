@@ -1,4 +1,4 @@
-import { sql } from '../sql.ts';
+import { withSql } from '../sql.ts';
 import { assertGreater, assertGreaterOrEqual } from 'jsr:@std/assert';
 import {
   fetchWorkers,
@@ -15,23 +15,23 @@ const WORKER_NAME = 'cpu_intensive';
 const MESSAGES_TO_SEND = 30;
 
 Deno.test('should spawn next worker when CPU clock limit hits', async () => {
-  await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
-  await sql`ALTER SEQUENCE test_seq RESTART WITH 1`;
-  try {
-    await sql`SELECT pgmq.drop_queue(${WORKER_NAME})`;
-  } catch {
-    // ignore
-  }
-  await sql`SELECT pgmq.create(${WORKER_NAME})`;
-  await sql`
-    DELETE FROM pgflow.workers
-    WHERE worker_id IN (
-      SELECT worker_id
-      FROM pgflow.inactive_workers
-    )`;
-  await startWorker(WORKER_NAME);
+  await withSql(async (sql) => {
+    await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
+    await sql`ALTER SEQUENCE test_seq RESTART WITH 1`;
+    try {
+      await sql`SELECT pgmq.drop_queue(${WORKER_NAME})`;
+    } catch {
+      // ignore
+    }
+    await sql`SELECT pgmq.create(${WORKER_NAME})`;
+    await sql`
+      DELETE FROM pgflow.workers
+      WHERE worker_id IN (
+        SELECT worker_id
+        FROM pgflow.inactive_workers
+      )`;
+    await startWorker(WORKER_NAME);
 
-  try {
     await sendBatch(MESSAGES_TO_SEND, WORKER_NAME);
     await waitForSeqToIncrementBy(MESSAGES_TO_SEND, {
       timeoutMs: 35000,
@@ -50,7 +50,5 @@ Deno.test('should spawn next worker when CPU clock limit hits', async () => {
       1,
       'expected worker to spawn another but there is only 1 worker'
     );
-  } finally {
-    await sql.end();
-  }
+  });
 });
