@@ -13,8 +13,7 @@ describe('Supabase Preset Flow', () => {
         // These should all be available with full types
         // without needing to annotate ctx
         void ctx.sql;
-        void ctx.anonSupabase;
-        void ctx.serviceSupabase;
+        void ctx.supabase;
         void ctx.env;
         void ctx.shutdownSignal;
         
@@ -37,8 +36,7 @@ describe('Supabase Preset Flow', () => {
       .step({ slug: 'process' }, async (input, ctx) => {
         // Should have all platform resources
         void ctx.sql;
-        void ctx.anonSupabase;
-        void ctx.serviceSupabase;
+        void ctx.supabase;
         
         // Plus custom resources
         ctx.logger.log('test');

@@ -25,7 +25,7 @@ Workers now pass a **context object** as a second parameter to all handlers, pro
 
 Previously, handlers relied on global singletons or manual resource initialization:
 
-```typescript del={2,3} ins="ctx" ins="ctx.sql" ins="ctx.serviceSupabase"
+```typescript del={2,3} ins="ctx" ins="ctx.sql" ins="ctx.supabase"
 // Before: Global resources that complicated testing and lifecycle management
 import { sql } from '../db.js';
 import { supabase } from '../supabase-client.js';
@@ -35,7 +35,7 @@ async function processPayment(input, ctx) {
   const [payment] = await ctx.sql`
     SELECT * FROM payments WHERE id = ${input.paymentId}
   `;
-  await ctx.serviceSupabase.from('audit_logs').insert({
+  await ctx.supabase.from('audit_logs').insert({
     action: 'payment_processed',
     payment_id: input.paymentId
   });
@@ -52,8 +52,7 @@ async function processPayment(input, ctx) {
 
 **Supabase resources**:
 - `sql` - PostgreSQL client (postgres.js)
-- `anonSupabase` - Client with anon key (respects RLS)
-- `serviceSupabase` - Client with service role (bypasses RLS)
+- `supabase` - Client with service role key (full database access)
 
 ## Key Benefits
 

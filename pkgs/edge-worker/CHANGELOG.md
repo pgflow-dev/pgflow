@@ -22,7 +22,7 @@
 
   // Flow step handler
   .step({ slug: 'process' }, async (input, context) => {
-    const result = await context.serviceSupabase.from('users').select();
+    const result = await context.supabase.from('users').select();
   })
   ```
 
@@ -36,8 +36,7 @@
   **Supabase platform resources**:
 
   - `context.sql` - PostgreSQL client (postgres.js)
-  - `context.anonSupabase` - Supabase client with anonymous key
-  - `context.serviceSupabase` - Supabase client with service role key
+  - `context.supabase` - Supabase client with service role key
 
   To use Supabase resources in flows, import from the Supabase preset:
 

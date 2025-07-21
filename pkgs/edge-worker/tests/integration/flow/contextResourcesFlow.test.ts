@@ -18,11 +18,7 @@ const ContextResourcesFlow = new Flow<{ testId: number }>({
     'context.shutdownSignal should be provided'
   );
   assertExists(context.sql, 'context.sql should be provided');
-  assertExists(context.anonSupabase, 'context.anonSupabase should be provided');
-  assertExists(
-    context.serviceSupabase,
-    'context.serviceSupabase should be provided'
-  );
+  assertExists(context.supabase, 'context.supabase should be provided');
   assertExists(context.rawMessage, 'context.rawMessage should be provided');
   assertExists(context.stepTask, 'context.stepTask should be provided');
 
@@ -34,14 +30,9 @@ const ContextResourcesFlow = new Flow<{ testId: number }>({
   );
   assertEquals(typeof context.sql, 'function', 'sql should be function');
   assertEquals(
-    typeof context.anonSupabase,
+    typeof context.supabase,
     'object',
-    'anonSupabase should be object'
-  );
-  assertEquals(
-    typeof context.serviceSupabase,
-    'object',
-    'serviceSupabase should be object'
+    'supabase should be object'
   );
   assertEquals(
     typeof context.rawMessage,

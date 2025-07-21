@@ -36,8 +36,7 @@ describe('Environment Type Validation', () => {
       .step({ slug: 'process' }, async (input, ctx) => {
         // Should have all platform resources
         void ctx.sql;
-        void ctx.anonSupabase;
-        void ctx.serviceSupabase;
+        void ctx.supabase;
         
         // Plus custom resources
         ctx.logger.log('test');

@@ -4,7 +4,7 @@ import type { Sql } from 'postgres';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { SupabaseResources } from '@pgflow/dsl/supabase';
 import { createSql } from '../core/sql-factory.js';
-import { createAnonSupabaseClient, createServiceSupabaseClient } from '../core/supabase-utils.js';
+import { createServiceSupabaseClient } from '../core/supabase-utils.js';
 import { createLoggingFactory } from './logging.js';
 
 // EdgeRuntime type declaration for Supabase Edge Functions
@@ -65,8 +65,7 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
     // Initialize platform resources once with validated env
     this._platformResources = {
       sql: createSql(this.validatedEnv),
-      anonSupabase: createAnonSupabaseClient(this.validatedEnv),
-      serviceSupabase: createServiceSupabaseClient(this.validatedEnv)
+      supabase: createServiceSupabaseClient(this.validatedEnv)
     };
   }
 
@@ -127,17 +126,10 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   }
 
   /**
-   * Get anonymous Supabase client - exposed for context creation
+   * Get Supabase client with service role key - exposed for context creation
    */
-  get anonSupabase(): SupabaseClient {
-    return this._platformResources.anonSupabase;
-  }
-
-  /**
-   * Get service Supabase client - exposed for context creation
-   */
-  get serviceSupabase(): SupabaseClient {
-    return this._platformResources.serviceSupabase;
+  get supabase(): SupabaseClient {
+    return this._platformResources.supabase;
   }
 
   /**
@@ -153,7 +145,6 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
     }
 
     const supabaseUrl = this.validatedEnv.SUPABASE_URL;
-    const supabaseAnonKey = this.validatedEnv.SUPABASE_ANON_KEY;
 
     this.logger.debug('Spawning a new Edge Function...');
 
@@ -162,7 +153,7 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
       {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${supabaseAnonKey}`,
+          Authorization: `Bearer ${this.validatedEnv.SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json',
         },
       }
@@ -240,7 +231,7 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   private assertSupabaseEnv(env: Record<string, string | undefined>): asserts env is SupabaseEnv {
     const required = [
       'SUPABASE_URL',
-      'SUPABASE_ANON_KEY', 
+      'SUPABASE_ANON_KEY',
       'SUPABASE_SERVICE_ROLE_KEY',
       'EDGE_WORKER_DB_URL',
       'SB_EXECUTION_ID'
