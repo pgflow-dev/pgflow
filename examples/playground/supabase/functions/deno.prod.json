@@ -2,7 +2,6 @@
   "imports": {
     "@pgflow/core": "npm:@pgflow/core@0.4.3",
     "@pgflow/dsl": "npm:@pgflow/dsl@0.4.3",
-    "@pgflow/dsl/supabase": "npm:@pgflow/dsl@0.4.3/supabase.js",
     "@pgflow/edge-worker": "jsr:@pgflow/edge-worker@0.4.3",
     "@pgflow/edge-worker/_internal": "jsr:@pgflow/edge-worker@0.3.1/_internal",
     "@henrygd/queue": "jsr:@henrygd/queue@^1.0.7",
