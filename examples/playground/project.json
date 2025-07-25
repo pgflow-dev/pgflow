@@ -49,10 +49,21 @@
     "sync-edge-deps": {
       "executor": "nx:run-commands",
       "dependsOn": [
-        { "projects": ["core", "dsl"], "target": "build" }
+        {
+          "projects": ["core", "dsl"],
+          "target": "build"
+        }
       ],
       "options": {
         "command": "./scripts/sync-edge-deps.sh",
+        "cwd": "examples/playground"
+      }
+    },
+    "start-functions": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["sync-edge-deps"],
+      "options": {
+        "command": "./scripts/supabase functions serve --import-map ./supabase/functions/import_map.local.json",
         "cwd": "examples/playground"
       }
     }

@@ -72,14 +72,38 @@ async function processBatchForFlow<TFlow extends AnyFlow>(
   );
 
   // Create execution controller for this flow
-  const executorFactory = (record: any, signal: AbortSignal) =>
-    new internal.flow.StepTaskExecutor(
+  const executorFactory = (
+    taskWithMessage: any, // StepTaskWithMessage<TFlow> - type not exported through internal API
+    signal: AbortSignal
+  ) => {
+    // Debug logging
+    logger.info('ExecutorFactory received:', {
+      hasMessage: !!taskWithMessage?.message,
+      hasTask: !!taskWithMessage?.task,
+      hasMsgId: !!taskWithMessage?.msg_id,
+      keys: taskWithMessage ? Object.keys(taskWithMessage) : [],
+      taskWithMessage: JSON.stringify(taskWithMessage)
+    });
+    
+    // Build context for StepTaskExecutor
+    const context = {
+      // Core platform resources
+      env: Deno.env.toObject(),
+      shutdownSignal: abortController.signal,
+      
+      // Step task execution context
+      rawMessage: taskWithMessage.message,
+      stepTask: taskWithMessage.task,
+    };
+    
+    return new internal.flow.StepTaskExecutor<TFlow>(
       flowDef,
-      record,
       pgflowClient,
       signal,
       loggingFactory.createLogger('StepTaskExecutor'),
+      context
     );
+  };
 
   const executionController = new internal.core.ExecutionController(
     executorFactory,

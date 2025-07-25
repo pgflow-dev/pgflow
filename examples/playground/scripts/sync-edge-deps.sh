@@ -71,8 +71,3 @@ if [ ! -f "$VENDOR_DIR/@pgflow/edge-worker/src/index.ts" ]; then
 fi
 
 echo "✅ Dependencies synced to $VENDOR_DIR"
-
-# Copy local deno config for development
-echo "📝 Activating local development config..."
-cp "$PLAYGROUND_DIR/supabase/functions/deno.local.json" "$PLAYGROUND_DIR/supabase/functions/deno.json"
-echo "✅ Local development mode activated"

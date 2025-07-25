@@ -28,27 +28,29 @@ During development, we need to use unpublished local versions of these packages,
 
 ## How It Works
 
-### Import Mapping
+### Import Mapping Strategy
 
-The `deno.json` file uses an import map to redirect package imports:
+We use different import configurations for production and local development:
 
-```json
-{
-  "importMap": "./import_map.json"
-}
+1. **Production** (`deno.json`):
+   - Contains imports pointing to published packages on npm/jsr
+   - This is what gets deployed to Supabase
+
+2. **Local Development** (`import_map.local.json`):
+   - Contains imports pointing to the local vendor directory
+   - Used via the `--import-map` flag which overrides `deno.json`
+
+### The --import-map Flag
+
+When you run `pnpm start-functions`, it executes:
+```bash
+supabase functions serve --import-map ./supabase/functions/import_map.local.json
 ```
 
-The `import_map.json` file maps package names to local vendor paths:
-
-```json
-{
-  "imports": {
-    "@pgflow/core": "./_vendor/@pgflow/core/index.js",
-    "@pgflow/dsl": "./_vendor/@pgflow/dsl/index.js",
-    "@pgflow/edge-worker": "./_vendor/@pgflow/edge-worker/index.ts"
-  }
-}
-```
+The `--import-map` flag **completely overrides** any imports defined in `deno.json`. This allows us to:
+- Keep production configuration as the default (safe for deployments)
+- Use local packages only when explicitly running with the flag
+- Avoid any git status pollution from modifying tracked files
 
 ### Vendor Directory
 
@@ -84,17 +86,15 @@ import { foo } from './bar.ts';
 pnpm nx sync-edge-deps playground
 ```
 
-### Switch to Production Mode
+### Test with Production Packages
 
 To test with published packages:
 
-1. Delete or rename `import_map.json`
-2. Copy `deno.prod.json` to `deno.json`
+```bash
+pnpm nx start-functions:prod playground
+```
 
-### Switch Back to Local Mode
-
-1. Restore `deno.json` to use import map
-2. Run sync script to regenerate vendor directory
+This will use the imports defined in `deno.json` (production packages) without any local overrides.
 
 ## Caveats and Limitations
 
@@ -172,12 +172,24 @@ chmod +x examples/playground/scripts/sync-edge-deps.sh
 
 ```
 supabase/functions/
-├── _vendor/                 # Generated - local packages (gitignored)
-├── import_map.json         # Import mappings for local development
-├── deno.json              # Uses import_map.json
-├── deno.prod.json         # Production config with registry URLs
-├── pgflow-cron-worker/    # Example edge function
+├── _vendor/                  # Generated - local packages (gitignored)
+├── import_map.local.json    # Import mappings for local development
+├── deno.json               # Production imports (npm/jsr packages)
+├── pgflow-cron-worker/     # Example edge function
 └── analyze_website_worker_*/ # Worker functions
 ```
+
+## How Import Resolution Works
+
+1. **Production Deployment**:
+   - Uses `deno.json` directly
+   - Imports resolve to npm/jsr registries
+   - No vendor directory needed
+
+2. **Local Development**:
+   - `pnpm start-functions` runs with `--import-map import_map.local.json`
+   - This flag **completely overrides** imports in `deno.json`
+   - Imports resolve to `_vendor/` directory
+   - Git status stays clean (no tracked files modified)
 
 This setup provides a seamless local development experience while maintaining compatibility with production deployments.
