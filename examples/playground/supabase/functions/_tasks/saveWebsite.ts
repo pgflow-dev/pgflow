@@ -12,7 +12,7 @@ export default async (
   websiteData: WebsiteData,
   supabase: SupabaseClient<Database>,
 ) => {
-  const { data } = await context.supabase
+  const { data } = await supabase
     .schema('public')
     .from('websites')
     .insert([websiteData])
