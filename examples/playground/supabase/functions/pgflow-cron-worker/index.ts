@@ -12,6 +12,9 @@ const flows = new Map<string, AnyFlow>([
   // Add more flows here as needed
 ]);
 
+// Create platform adapter to get access to platform resources
+const platformAdapter = internal.platform.createAdapter();
+
 // Initialize all components outside request handler
 const loggingFactory = internal.platform.createLoggingFactory();
 const workerId = crypto.randomUUID();
@@ -94,6 +97,9 @@ async function processBatchForFlow<TFlow extends AnyFlow>(
       // Step task execution context
       rawMessage: taskWithMessage.message,
       stepTask: taskWithMessage.task,
+      
+      // Platform-specific resources (Supabase)
+      ...platformAdapter.platformResources
     };
     
     return new internal.flow.StepTaskExecutor<TFlow>(
