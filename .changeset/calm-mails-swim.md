@@ -1,7 +1,6 @@
 ---
-'@pgflow/edge-worker': patch
-'@pgflow/website': patch
-'@pgflow/dsl': patch
+'@pgflow/edge-worker': minor
+'@pgflow/dsl': minor
 ---
 
 🚨 **BREAKING**: Remove `anonSupabase` and `serviceSupabase` from context, replaced with single `supabase` client (initialized with service role key)
