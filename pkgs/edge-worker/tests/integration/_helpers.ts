@@ -12,6 +12,7 @@ import { createServiceSupabaseClient } from '../../src/core/supabase-utils.ts';
 const DEFAULT_TEST_SUPABASE_ENV: SupabaseEnv = {
   EDGE_WORKER_DB_URL: 'postgresql://postgres:postgres@localhost:5432/postgres',
   SUPABASE_URL: 'https://test.supabase.co',
+  SUPABASE_ANON_KEY: 'test-anon-key',
   SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
   SB_EXECUTION_ID: 'test-execution-id',
 };
