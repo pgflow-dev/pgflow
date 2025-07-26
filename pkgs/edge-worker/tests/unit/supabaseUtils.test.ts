@@ -3,12 +3,6 @@ import {
   createServiceSupabaseClient
 } from '../../src/core/supabase-utils.ts';
 
-// Mock env for testing
-const mockEnvWithAllKeys = {
-  SUPABASE_URL: 'https://test.supabase.co',
-  SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
-};
-
 Deno.test('createServiceSupabaseClient - creates client with valid env', () => {
   const env = {
     SUPABASE_URL: 'https://test.supabase.co',
