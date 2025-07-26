@@ -9,9 +9,10 @@
 The dual-client approach was unnecessary complexity. Edge Functions run in a trusted environment with service role access, so a single client is sufficient.
 
 **Migration guide**:
+
 ```typescript
 // Before
-const { data } = await context.supabase.from('users').select();
+const { data } = await context.serviceSupabase.from('users').select();
 const { data: publicData } = await context.anonSupabase.from('posts').select();
 
 // After
@@ -20,7 +21,7 @@ const { data } = await context.supabase.from('users').select();
 ```
 
 ⚠️ **Breaking changes**:
-- Removed `SUPABASE_ANON_KEY` from required environment variables
+
 - Removed `anonSupabase` from context interface
 - Removed `serviceSupabase` from context interface
 - Added `supabase` field (initialized with service role key)
