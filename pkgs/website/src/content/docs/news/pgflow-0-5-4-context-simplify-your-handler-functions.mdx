@@ -19,13 +19,19 @@ cover:
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 
+<Aside type="caution" title="API Change in v0.5.5">
+  **Breaking Change**: Starting with pgflow v0.5.5, the context API has been simplified. The `anonSupabase` and `serviceSupabase` clients have been replaced with a single `supabase` client (initialized with service role key). 
+  
+  If you're using v0.5.5 or later, replace any usage of `ctx.anonSupabase` or `ctx.serviceSupabase` with `ctx.supabase`. For RLS-respecting queries, implement proper policies in your database.
+</Aside>
+
 Workers now pass a **context object** as a second parameter to all handlers, providing ready-to-use database connections, environment variables, and Supabase clients.
 
 ## The Problem We Solved
 
 Previously, handlers relied on global singletons or manual resource initialization:
 
-```typescript del={2,3} ins="ctx" ins="ctx.sql" ins="ctx.supabase"
+```typescript del={2,3} ins="ctx" ins="ctx.sql" ins="ctx.serviceSupabase"
 // Before: Global resources that complicated testing and lifecycle management
 import { sql } from '../db.js';
 import { supabase } from '../supabase-client.js';
@@ -35,7 +41,7 @@ async function processPayment(input, ctx) {
   const [payment] = await ctx.sql`
     SELECT * FROM payments WHERE id = ${input.paymentId}
   `;
-  await ctx.supabase.from('audit_logs').insert({
+  await ctx.serviceSupabase.from('audit_logs').insert({
     action: 'payment_processed',
     payment_id: input.paymentId
   });
@@ -52,7 +58,8 @@ async function processPayment(input, ctx) {
 
 **Supabase resources**:
 - `sql` - PostgreSQL client (postgres.js)
-- `supabase` - Client with service role key (full database access)
+- `anonSupabase` - Client with anon key (respects RLS)
+- `serviceSupabase` - Client with service role (bypasses RLS)
 
 ## Key Benefits
 
