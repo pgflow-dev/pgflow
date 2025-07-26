@@ -1,5 +1,13 @@
 # @pgflow/client
 
+## 0.6.0
+
+### Patch Changes
+
+- Updated dependencies [a67bf27]
+  - @pgflow/dsl@0.6.0
+  - @pgflow/core@0.6.0
+
 ## 0.5.4
 
 ### Patch Changes

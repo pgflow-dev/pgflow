@@ -1,5 +1,11 @@
 # pgflow
 
+## 0.6.0
+
+### Patch Changes
+
+- @pgflow/core@0.6.0
+
 ## 0.5.4
 
 ### Patch Changes
