@@ -10,7 +10,7 @@ import type { StepTaskRecord } from '../flow/types.js';
 
 /**
  * Context guaranteed by **any** concrete platform adapter
- * (`sql`, `anonSupabase`, … are filled in by that adapter).
+ * (`sql`, `supabase`, … are filled in by that adapter).
  */
 export type PlatformContext<
   TResources extends Record<string, unknown>

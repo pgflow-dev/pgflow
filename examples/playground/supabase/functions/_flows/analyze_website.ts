@@ -32,14 +32,14 @@ export default new Flow<Input>({
   })
   .step(
     { slug: 'saveToDb', dependsOn: ['summary', 'tags'] },
-    async (input, { serviceSupabase }) => {
+    async (input, { supabase }) => {
       const websiteData = {
         user_id: input.run.user_id,
         website_url: input.run.url,
         summary: input.summary,
         tags: input.tags,
       };
-      const { website } = await saveWebsite(websiteData, serviceSupabase);
+      const { website } = await saveWebsite(websiteData, supabase);
 
       return website;
     },

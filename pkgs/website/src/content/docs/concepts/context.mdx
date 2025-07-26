@@ -60,11 +60,11 @@ async function processUser(input: { userId: string }) {
 ```
 </TabItem>
 <TabItem label="After (Context)">
-```typescript ins="ctx: Context" "ctx.sql" "ctx.env" "ctx.anonSupabase"
+```typescript ins="ctx: Context" "ctx.sql" "ctx.env" "ctx.supabase"
 async function processUser(input: { userId: string }, ctx: Context) {
   const [user] = await ctx.sql`SELECT * FROM users WHERE id = ${input.userId}`;
   const apiKey = ctx.env.EXTERNAL_API_KEY;
-  const { data } = await ctx.anonSupabase.auth.getUser();
+  const { data } = await ctx.supabase.auth.getUser();
 
   return { user };
 }
@@ -74,14 +74,14 @@ async function processUser(input: { userId: string }, ctx: Context) {
 
 ### Complete Flow Example
 
-```typescript title="Using context in flows" ins="ctx" "ctx.sql" "ctx.env" "ctx.anonSupabase"
+```typescript title="Using context in flows" ins="ctx" "ctx.sql" "ctx.env" "ctx.supabase"
 const ProcessUserFlow = new Flow<{ userId: string }>({
   slug: 'process_user'
 })
   .step({ slug: 'validate' }, async (input, ctx) => {
     const [user] = await ctx.sql`SELECT * FROM users WHERE id = ${input.userId}`;
     const apiKey = ctx.env.EXTERNAL_API_KEY;
-    const { data } = await ctx.anonSupabase.auth.getUser();
+    const { data } = await ctx.supabase.auth.getUser();
 
     // ... process with resources
     return { user };
@@ -202,35 +202,28 @@ async function handler(input, ctx) {
 }
 ```
 
-### `anonSupabase`
+### `supabase`
 **Type:** `SupabaseClient`
 **Available:** Supabase platform
 
-Supabase client authenticated with the anonymous key. Use this for operations that respect Row Level Security (RLS) policies as if performed by an unauthenticated user.
+Supabase client authenticated with the service role key. This has full database access and bypasses RLS. Since Edge Functions run in a trusted environment, this is the only client you need.
 
-```typescript "ctx.anonSupabase"
+```typescript "ctx.supabase"
 // Step handler
-.step({ slug: 'fetch_posts' }, async (input, ctx) => {
-  const { data, error } = await ctx.anonSupabase
-    .from('public_posts')
-    .select('*')
-    .limit(10);
+.step({ slug: 'process_order' }, async (input, ctx) => {
+  const { data, error } = await ctx.supabase
+    .from('orders')
+    .update({ status: 'processing' })
+    .eq('id', input.orderId);
     
-  return { posts: data || [] };
+  return { order: data };
 })
 ```
 
-### `serviceSupabase`
-**Type:** `SupabaseClient`
-**Available:** Supabase platform
-
-Supabase client authenticated with the service role key. This bypasses RLS and has full database access. Use with caution and only for admin operations.
-
-```typescript "ctx.serviceSupabase" ins="// Service client bypasses RLS"
+```typescript "ctx.supabase"
 // Queue handler
 async function handler(input, ctx) {
-  // Service client bypasses RLS
-  const { data, error } = await ctx.serviceSupabase
+  const { data, error } = await ctx.supabase
     .from('users')
     .update({ verified: true })
     .eq('id', input.userId);
@@ -254,14 +247,14 @@ async function processOrder(input, { sql, env, rawMessage }) {
 }
 ```
 
-```typescript ins="{ sql, serviceSupabase, stepTask }"
+```typescript ins="{ sql, supabase, stepTask }"
 // Step handler - clean and focused
-.step({ slug: 'sync_data' }, async (input, { sql, serviceSupabase, stepTask }) => {
+.step({ slug: 'sync_data' }, async (input, { sql, supabase, stepTask }) => {
   console.log(`Syncing for run ${stepTask.run_id}`);
   
   const data = await sql`SELECT * FROM pending_sync WHERE user_id = ${input.userId}`;
   
-  const synced = await serviceSupabase
+  const synced = await supabase
     .from('synced_data')
     .upsert(data)
     .select();

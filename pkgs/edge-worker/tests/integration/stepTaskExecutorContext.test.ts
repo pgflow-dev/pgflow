@@ -90,8 +90,7 @@ Deno.test(
     assertEquals(receivedContext.sql, _sql);
     assertEquals(receivedContext.shutdownSignal, abortController.signal);
     assertExists(receivedContext.env);
-    assertExists(receivedContext.anonSupabase);
-    assertExists(receivedContext.serviceSupabase);
+    assertExists(receivedContext.supabase);
   })
 );
 
@@ -202,15 +201,13 @@ Deno.test(
   withTransaction(async (_sql) => {
     const abortController = new AbortController();
 
-    let anonClientExists = false;
-    let serviceClientExists = false;
+    let supabaseClientExists = false;
 
-    // Flow that checks Supabase clients
+    // Flow that checks Supabase client
     const SupabaseFlow = new Flow<Record<string, never>>({ slug: 'supabase_flow' }).step(
       { slug: 'check_clients' },
       (_input, context) => {
-        anonClientExists = context?.anonSupabase !== undefined;
-        serviceClientExists = context?.serviceSupabase !== undefined;
+        supabaseClientExists = context?.supabase !== undefined;
         return { checked: true };
       }
     );
@@ -254,8 +251,7 @@ Deno.test(
     await stepDef.handler(mockTask.input, context);
 
     // Verify Supabase clients are available
-    assertEquals(anonClientExists, true);
-    assertEquals(serviceClientExists, true);
+    assertEquals(supabaseClientExists, true);
   })
 );
 

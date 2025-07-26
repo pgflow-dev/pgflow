@@ -120,8 +120,7 @@ All platforms provide these core resources:
 When using the Supabase platform with EdgeWorker, additional resources are available:
 
 - **`context.sql`** - PostgreSQL client (postgres.js)
-- **`context.anonSupabase`** - Supabase client with anonymous key
-- **`context.serviceSupabase`** - Supabase client with service role key
+- **`context.supabase`** - Supabase client with service role key for full database access
 
 To use Supabase resources, import the `Flow` class from the Supabase preset:
 
@@ -132,7 +131,7 @@ const MyFlow = new Flow<{ userId: string }>({
   slug: 'my_flow',
 }).step({ slug: 'process' }, async (input, context) => {
   // TypeScript knows context includes Supabase resources
-  const { data } = await context.serviceSupabase
+  const { data } = await context.supabase
     .from('users')
     .select('*')
     .eq('id', input.userId);

@@ -7,7 +7,7 @@ import type {
   StepTaskWithMessage
 } from './context.js';
 import type { SupabaseEnv } from '@pgflow/dsl/supabase';
-import { createAnonSupabaseClient, createServiceSupabaseClient } from './supabase-utils.js';
+import { createServiceSupabaseClient } from './supabase-utils.js';
 
 /**
  * Creates a test context that mimics what SupabasePlatformAdapter provides.
@@ -21,15 +21,8 @@ export function createQueueWorkerContext<TPayload extends Json>(params: {
 }) {
   const { env, sql, abortSignal, rawMessage } = params;
 
-  // Create Supabase clients if env vars exist, otherwise create mocks
-  const anonSupabase = env.SUPABASE_URL && env.SUPABASE_ANON_KEY
-    ? createAnonSupabaseClient({
-        SUPABASE_URL: env.SUPABASE_URL,
-        SUPABASE_ANON_KEY: env.SUPABASE_ANON_KEY
-      })
-    : createMockSupabaseClient();
-
-  const serviceSupabase = env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY
+  // Create Supabase client if env vars exist, otherwise create mock
+  const supabase = env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY
     ? createServiceSupabaseClient({
         SUPABASE_URL: env.SUPABASE_URL,
         SUPABASE_SERVICE_ROLE_KEY: env.SUPABASE_SERVICE_ROLE_KEY
@@ -46,8 +39,7 @@ export function createQueueWorkerContext<TPayload extends Json>(params: {
     
     // Supabase-specific resources (always present in Phase 1)
     sql,
-    anonSupabase,
-    serviceSupabase
+    supabase
   };
 }
 
@@ -64,15 +56,8 @@ export function createFlowWorkerContext<TFlow extends AnyFlow = AnyFlow>(params:
 }) {
   const { env, sql, abortSignal, taskWithMessage } = params;
 
-  // Create Supabase clients if env vars exist, otherwise create mocks
-  const anonSupabase = env.SUPABASE_URL && env.SUPABASE_ANON_KEY
-    ? createAnonSupabaseClient({
-        SUPABASE_URL: env.SUPABASE_URL,
-        SUPABASE_ANON_KEY: env.SUPABASE_ANON_KEY
-      })
-    : createMockSupabaseClient();
-
-  const serviceSupabase = env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY
+  // Create Supabase client if env vars exist, otherwise create mock
+  const supabase = env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY
     ? createServiceSupabaseClient({
         SUPABASE_URL: env.SUPABASE_URL,
         SUPABASE_SERVICE_ROLE_KEY: env.SUPABASE_SERVICE_ROLE_KEY
@@ -94,8 +79,7 @@ export function createFlowWorkerContext<TFlow extends AnyFlow = AnyFlow>(params:
     
     // Supabase-specific resources (always present in Phase 1)
     sql,
-    anonSupabase,
-    serviceSupabase
+    supabase
   };
 }
 

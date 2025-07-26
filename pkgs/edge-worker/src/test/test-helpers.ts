@@ -9,7 +9,7 @@ import type {
   SupabaseStepTaskContext
 } from '../core/context.js';
 import type { StepTaskRecord } from '../flow/types.js';
-import { createAnonSupabaseClient, createServiceSupabaseClient } from '../core/supabase-utils.js';
+import { createServiceSupabaseClient } from '../core/supabase-utils.js';
 
 /**
  * Creates a full Supabase context for testing message handlers.
@@ -25,14 +25,10 @@ export function createSupabaseMessageContext<TPayload extends Json = Json>(param
 
   // Validate required environment variables
   const supabaseUrl = env.SUPABASE_URL;
-  const supabaseAnonKey = env.SUPABASE_ANON_KEY;
   const supabaseServiceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl) {
     throw new Error('SUPABASE_URL environment variable is required but not defined');
-  }
-  if (!supabaseAnonKey) {
-    throw new Error('SUPABASE_ANON_KEY environment variable is required but not defined');
   }
   if (!supabaseServiceRoleKey) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is required but not defined');
@@ -40,12 +36,7 @@ export function createSupabaseMessageContext<TPayload extends Json = Json>(param
 
   // In production, these would be validated at startup
   // For tests, we create them on demand
-  const anonSupabase = createAnonSupabaseClient({
-    SUPABASE_URL: supabaseUrl,
-    SUPABASE_ANON_KEY: supabaseAnonKey
-  });
-
-  const serviceSupabase = createServiceSupabaseClient({
+  const supabase = createServiceSupabaseClient({
     SUPABASE_URL: supabaseUrl,
     SUPABASE_SERVICE_ROLE_KEY: supabaseServiceRoleKey
   });
@@ -60,8 +51,7 @@ export function createSupabaseMessageContext<TPayload extends Json = Json>(param
     
     // Supabase-specific resources (always present)
     sql,
-    anonSupabase,
-    serviceSupabase
+    supabase
   };
 }
 
@@ -80,14 +70,10 @@ export function createSupabaseStepTaskContext<TFlow extends AnyFlow>(params: {
 
   // Validate required environment variables
   const supabaseUrl = env.SUPABASE_URL;
-  const supabaseAnonKey = env.SUPABASE_ANON_KEY;
   const supabaseServiceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl) {
     throw new Error('SUPABASE_URL environment variable is required but not defined');
-  }
-  if (!supabaseAnonKey) {
-    throw new Error('SUPABASE_ANON_KEY environment variable is required but not defined');
   }
   if (!supabaseServiceRoleKey) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is required but not defined');
@@ -95,12 +81,7 @@ export function createSupabaseStepTaskContext<TFlow extends AnyFlow>(params: {
 
   // In production, these would be validated at startup
   // For tests, we create them on demand
-  const anonSupabase = createAnonSupabaseClient({
-    SUPABASE_URL: supabaseUrl,
-    SUPABASE_ANON_KEY: supabaseAnonKey
-  });
-
-  const serviceSupabase = createServiceSupabaseClient({
+  const supabase = createServiceSupabaseClient({
     SUPABASE_URL: supabaseUrl,
     SUPABASE_SERVICE_ROLE_KEY: supabaseServiceRoleKey
   });
@@ -116,8 +97,7 @@ export function createSupabaseStepTaskContext<TFlow extends AnyFlow>(params: {
     
     // Supabase-specific resources (always present)
     sql,
-    anonSupabase,
-    serviceSupabase
+    supabase
   };
 }
 
@@ -136,8 +116,7 @@ export function createMockSupabaseClient(): SupabaseClient {
 export function createMockSupabaseResources(overrides?: Partial<SupabaseResources>): SupabaseResources {
   return {
     sql: {} as unknown as Sql,
-    anonSupabase: createMockSupabaseClient(),
-    serviceSupabase: createMockSupabaseClient(),
+    supabase: createMockSupabaseClient(),
     ...overrides
   };
 }

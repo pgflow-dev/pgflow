@@ -7,7 +7,7 @@ import type { postgres } from '../sql.ts';
 import { PgflowSqlClient } from '@pgflow/core';
 import type { PlatformAdapter, CreateWorkerFn } from '../../src/platform/types.ts';
 import type { SupabaseResources, SupabaseEnv } from '@pgflow/dsl/supabase';
-import { createAnonSupabaseClient, createServiceSupabaseClient } from '../../src/core/supabase-utils.ts';
+import { createServiceSupabaseClient } from '../../src/core/supabase-utils.ts';
 
 const DEFAULT_TEST_SUPABASE_ENV: SupabaseEnv = {
   EDGE_WORKER_DB_URL: 'postgresql://postgres:postgres@localhost:5432/postgres',
@@ -32,8 +32,7 @@ export function createTestPlatformAdapter(sql: postgres.Sql): PlatformAdapter<Su
 
   const platformResources: SupabaseResources = {
     sql,
-    anonSupabase: createAnonSupabaseClient(DEFAULT_TEST_SUPABASE_ENV),
-    serviceSupabase: createServiceSupabaseClient(DEFAULT_TEST_SUPABASE_ENV),
+    supabase: createServiceSupabaseClient(DEFAULT_TEST_SUPABASE_ENV),
   };
 
   return {

@@ -12,8 +12,8 @@ const myFlow = new Flow({ slug: 'supabase_example' })
     return { users };
   })
   .step({ slug: 'notify_admin' }, async (input, ctx) => {
-    // All Supabase resources available
-    const { data: _data, error } = await ctx.serviceSupabase
+    // Supabase client available with service role access
+    const { data: _data, error } = await ctx.supabase
       .from('admin_notifications')
       .insert({
         message: `Found ${input.query_users.users.length} active users`,
@@ -24,8 +24,8 @@ const myFlow = new Flow({ slug: 'supabase_example' })
     return { notified: true };
   })
   .step({ slug: 'public_update' }, async (input, ctx) => {
-    // Can use anon client for public operations
-    const { data: _data } = await ctx.anonSupabase
+    // Use the same client for all operations
+    const { data: _data } = await ctx.supabase
       .from('public_stats')
       .update({ last_user_count: input.query_users.users.length })
       .eq('id', 1);
