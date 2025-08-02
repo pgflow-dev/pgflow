@@ -1,6 +1,6 @@
 [build]
   base    = "examples/playground"
-  command = "pnpm nx build playground"
+  command = "pnpm build"
   publish = ".next"
 
 [[plugins]]
