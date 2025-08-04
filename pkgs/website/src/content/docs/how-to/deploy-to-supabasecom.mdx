@@ -32,6 +32,68 @@ Currently, deploying a new version **does not automatically terminate** the prev
 This behavior will be improved in future releases.
 </Aside>
 
+## Zero-Downtime Deployment Process
+
+### Understanding Worker Deprecation
+
+When you deploy a new version, old workers continue running until they hit resource limits (up to 150s on free tier, 400s on paid). This creates overlap where both versions process tasks simultaneously.
+
+pgflow provides worker deprecation to solve this - old workers can be marked as deprecated and will:
+- Stop accepting new work
+- Complete their current tasks
+
+Workers check their deprecation status every 5 seconds during heartbeat and automatically stop when `deprecated_at` is set.
+
+### Step-by-Step Deployment
+
+<Steps>
+
+1. **Deploy your new worker version**
+   
+   Update your worker code and deploy to Supabase:
+   
+   ```bash frame="none"
+   npx supabase functions deploy your-worker-name
+   ```
+
+2. **Start the new worker**
+   
+   Make an HTTP request to start the new worker instance:
+   
+   ```bash frame="none"
+   curl -X POST "https://your-project.supabase.co/functions/v1/your-worker-name" \
+     -H "Authorization: Bearer YOUR_ANON_KEY"
+   ```
+
+3. **Deprecate old workers**
+   
+   Mark old workers for graceful shutdown:
+   
+   ```sql
+   UPDATE pgflow.workers 
+   SET deprecated_at = NOW() 
+   WHERE function_name = 'your-worker-name'
+     AND deprecated_at IS NULL;
+   ```
+
+4. **Monitor the transition**
+   
+   Watch workers gracefully shut down (takes ~5-10 seconds):
+   
+   ```sql
+   SELECT 
+     function_name,
+     COUNT(*) FILTER (WHERE deprecated_at IS NULL) as active_workers,
+     COUNT(*) FILTER (WHERE deprecated_at IS NOT NULL) as deprecated_workers
+   FROM pgflow.workers
+   WHERE last_heartbeat_at > now() - interval '6 seconds'
+   GROUP BY function_name;
+   ```
+
+</Steps>
+
+This process ensures immediate cutover to your new code while allowing in-flight tasks to complete gracefully.
+
 ## Starting Workers
 
 Just like in local development, workers are started with a simple HTTP request.
