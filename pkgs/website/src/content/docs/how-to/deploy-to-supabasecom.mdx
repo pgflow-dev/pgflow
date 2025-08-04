@@ -8,7 +8,7 @@ sidebar:
 import { Aside, Steps } from "@astrojs/starlight/components";
 import NotProductionReady from '../../../components/NotProductionReady.astro';
 
-This guide walks through deploying Edge Workers to Supabase.com. The process currently involves a few manual steps to ensure smooth transitions - using pgflow's deprecation feature to stop old workers from accepting new work when deploying updates.
+pgflow workers are just regular Supabase Edge Functions running pgflow code. You deploy them exactly like any other Edge Function, with one extra step - deprecating old workers to stop processing new tasks.
 
 ## Deployment Steps
 
