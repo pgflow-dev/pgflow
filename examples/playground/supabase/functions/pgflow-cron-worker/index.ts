@@ -41,13 +41,9 @@ const workerRow = await queries.onWorkerStarted({
   edgeFunctionName: 'pgflow-cron-worker',
 });
 
-// Create heartbeat instance
-const heartbeat = new internal.core.Heartbeat(
-  4000, // Send heartbeat every 4 seconds
-  queries,
-  workerRow,
-  loggingFactory.createLogger('Heartbeat'),
-);
+// Track heartbeat timing
+let lastHeartbeat = 0;
+const heartbeatInterval = 4000; // Send heartbeat every 4 seconds
 
 // Function to process a batch for a specific flow
 async function processBatchForFlow<TFlow extends AnyFlow>(
@@ -143,10 +139,26 @@ async function processBatchForFlow<TFlow extends AnyFlow>(
   });
 }
 
+// Helper function to send heartbeat
+async function sendHeartbeat() {
+  const now = Date.now();
+  if (now - lastHeartbeat >= heartbeatInterval) {
+    const result = await queries.sendHeartbeat(workerRow);
+    logger.debug(result.is_deprecated ? 'DEPRECATED' : 'OK');
+    lastHeartbeat = now;
+    
+    if (result.is_deprecated) {
+      logger.warn('Worker marked for deprecation');
+      // In a cron worker, we might want to handle this differently
+      // For now, just log the warning
+    }
+  }
+}
+
 serve(async (req) => {
   try {
     // Send heartbeat
-    await heartbeat.send();
+    await sendHeartbeat();
 
     const body = await req.json();
     const { flow_slug, batch_size, max_concurrent, cron_interval_seconds } =
@@ -214,7 +226,7 @@ serve(async (req) => {
       logger.info(`Starting batch iteration ${iterations}`);
 
       // Send heartbeat before each batch
-      await heartbeat.send();
+      await sendHeartbeat();
 
       await processBatchForFlow(flow, flow_slug, batch_size, max_concurrent);
       totalProcessed++;

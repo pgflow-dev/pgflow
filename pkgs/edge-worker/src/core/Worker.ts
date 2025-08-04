@@ -46,6 +46,12 @@ export class Worker {
           // Continue execution - a failed heartbeat shouldn't stop processing
         }
 
+        // Check if deprecated after heartbeat
+        if (!this.isMainLoopActive) {
+          this.logger.info('Worker deprecated, exiting main loop');
+          break;
+        }
+
         try {
           await this.batchProcessor.processBatch();
         } catch (error: unknown) {

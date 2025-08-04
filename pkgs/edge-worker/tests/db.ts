@@ -13,7 +13,7 @@ function createSql(dbUrl: string) {
 export function withTransaction(
   callback: (sql: postgres.Sql) => Promise<unknown>
 ) {
-  const dbUrl = `postgresql://postgres:postgres@localhost:5432/postgres`;
+  const dbUrl = `postgresql://postgres:postgres@127.0.0.1:5432/postgres`;
   const localSql = createSql(dbUrl);
 
   return async () => {
@@ -59,7 +59,7 @@ export function withTransaction(
 export function withPgNoTransaction(
   callback: (sql: postgres.Sql) => Promise<unknown>
 ) {
-  const dbUrl = 'postgresql://postgres:postgres@localhost:5432/postgres';
+  const dbUrl = 'postgresql://postgres:postgres@127.0.0.1:5432/postgres';
   const sql = createSql(dbUrl);
 
   return async () => {
