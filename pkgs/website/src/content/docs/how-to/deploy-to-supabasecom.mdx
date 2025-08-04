@@ -8,80 +8,40 @@ sidebar:
 import { Aside, Steps } from "@astrojs/starlight/components";
 import NotProductionReady from '../../../components/NotProductionReady.astro';
 
-This guide explains the current process for deploying and maintaining workers in hosted environment.
+This guide walks through deploying Edge Workers to Supabase.com. The process currently involves a few manual steps to ensure smooth transitions - using pgflow's deprecation feature to stop old workers from accepting new work when deploying updates.
 
-<NotProductionReady />
-
-:::note
-Running Edge Worker on Supabase.com currently requires a few additional setup steps.
-Thanks to ongoing collaboration with the Supabase team, these requirements will be simplified in future releases.
-:::
-
-## Deploying workers
-
-Workers are just regular Edge Functions that run for few minutes and auto-respawn
-when CPU or Wall clock limits are reached (read more on those [Limits | Supabase Docs](https://supabase.com/docs/guides/functions/limits)).
-
-Deploying new version is straightforward - you just update worker code
-and call `npx supabase functions deploy worker-name` to deploy it.
-
-When deploying a new version of your worker, be aware of the following:
-
-<Aside type="caution" title="Version Management">
-Currently, deploying a new version **does not automatically terminate** the previous version.
-This behavior will be improved in future releases.
-</Aside>
-
-## Zero-Downtime Deployment Process
-
-### Understanding Worker Deprecation
-
-When you deploy a new version, old workers continue running until they hit resource limits (up to 150s on free tier, 400s on paid). This creates overlap where both versions process tasks simultaneously.
-
-pgflow provides worker deprecation to solve this - old workers can be marked as deprecated and will:
-- Stop accepting new work
-- Complete their current tasks
-
-Workers check their deprecation status every 5 seconds during heartbeat and automatically stop when `deprecated_at` is set.
-
-### Step-by-Step Deployment
+## Deployment Steps
 
 <Steps>
 
 1. **Deploy your new worker version**
-   
-   Update your worker code and deploy to Supabase:
-   
+
    ```bash frame="none"
    npx supabase functions deploy your-worker-name
    ```
 
 2. **Start the new worker**
-   
-   Make an HTTP request to start the new worker instance:
-   
+
+   Make sure your flow migrations are already applied before starting:
+
    ```bash frame="none"
    curl -X POST "https://your-project.supabase.co/functions/v1/your-worker-name" \
      -H "Authorization: Bearer YOUR_ANON_KEY"
    ```
 
 3. **Deprecate old workers**
-   
-   Mark old workers for graceful shutdown:
-   
+
    ```sql
-   UPDATE pgflow.workers 
-   SET deprecated_at = NOW() 
+   UPDATE pgflow.workers
+   SET deprecated_at = NOW()
    WHERE function_name = 'your-worker-name'
      AND deprecated_at IS NULL;
    ```
 
-4. **Monitor the transition**
-   
-   Watch workers gracefully shut down (takes ~5-10 seconds):
-   
+4. **Monitor the transition** (optional)
+
    ```sql
-   SELECT 
+   SELECT
      function_name,
      COUNT(*) FILTER (WHERE deprecated_at IS NULL) as active_workers,
      COUNT(*) FILTER (WHERE deprecated_at IS NOT NULL) as deprecated_workers
@@ -92,7 +52,25 @@ Workers check their deprecation status every 5 seconds during heartbeat and auto
 
 </Steps>
 
-This process ensures immediate cutover to your new code while allowing in-flight tasks to complete gracefully.
+<details>
+<summary>Why worker deprecation is needed</summary>
+
+When you deploy a new version, old workers continue running until they hit resource limits (up to 150s on free tier, 400s on paid). This creates overlap where both versions process tasks simultaneously.
+
+Worker deprecation solves this - deprecated workers stop accepting new work and complete their current tasks. Workers check their deprecation status every 5 seconds during heartbeat.
+
+</details>
+
+<details>
+<summary>Getting your Authorization header</summary>
+
+You need your project's ANON key for the Authorization header. Find it in your [Supabase Dashboard](https://supabase.com/dashboard) under Settings > API.
+
+See Supabase docs: [Invoking remote functions](https://supabase.com/docs/guides/functions/deploy#invoking-remote-functions)
+
+</details>
+
+<NotProductionReady />
 
 ## Starting Workers
 
@@ -104,11 +82,7 @@ After the initial request, the worker will auto-respawn if terminated.
 
 ## Stopping Workers
 
-Currently, there's no built-in way to gracefully stop a running worker.
-You need to remove it from the Supabase Dashboard and wait for its CPU or clock limits to be reached
-for it to stop.
-
-**This will change in future releases.**
+To stop workers gracefully, use the deprecation mechanism described in the [deployment steps](#deployment-steps) above. Deprecated workers will stop accepting new work and complete their current tasks before shutting down.
 
 ## Ensuring Worker Availability
 
