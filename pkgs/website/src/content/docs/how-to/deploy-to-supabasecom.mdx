@@ -10,27 +10,18 @@ import NotProductionReady from '../../../components/NotProductionReady.astro';
 
 pgflow workers are just regular Supabase Edge Functions running pgflow code. You deploy them exactly like any other Edge Function, with one extra step - deprecating old workers to stop processing new tasks.
 
-## Deployment Steps
+<NotProductionReady />
+
+## Quick Deployment
 
 <Steps>
 
-1. **Deploy your new worker version**
-
+1. **Deploy new version**
    ```bash frame="none"
    npx supabase functions deploy your-worker-name
    ```
 
-2. **Start the new worker**
-
-   Make sure your flow migrations are already applied before starting:
-
-   ```bash frame="none"
-   curl -X POST "https://your-project.supabase.co/functions/v1/your-worker-name" \
-     -H "Authorization: Bearer YOUR_ANON_KEY"
-   ```
-
-3. **Deprecate old workers**
-
+2. **Deprecate old workers**
    ```sql
    UPDATE pgflow.workers
    SET deprecated_at = NOW()
@@ -38,47 +29,50 @@ pgflow workers are just regular Supabase Edge Functions running pgflow code. You
      AND deprecated_at IS NULL;
    ```
 
-4. **Monitor the transition** (optional)
-
-   ```sql
-   SELECT
-     function_name,
-     COUNT(*) FILTER (WHERE deprecated_at IS NULL) as active_workers,
-     COUNT(*) FILTER (WHERE deprecated_at IS NOT NULL) as deprecated_workers
-   FROM pgflow.workers
-   WHERE last_heartbeat_at > now() - interval '6 seconds'
-   GROUP BY function_name;
+3. **Start new worker**
+   ```bash frame="none"
+   curl -X POST "https://your-project.supabase.co/functions/v1/your-worker-name" \
+     -H "Authorization: Bearer YOUR_ANON_KEY"
    ```
 
 </Steps>
 
-<details>
-<summary>Why worker deprecation is needed</summary>
+## Deployment Details
+
+### Why Worker Deprecation
 
 When you deploy a new version, old workers continue running until they hit resource limits (up to 150s on free tier, 400s on paid). This creates overlap where both versions process tasks simultaneously.
 
 Worker deprecation solves this - deprecated workers stop accepting new work and complete their current tasks. Workers check their deprecation status every 5 seconds during heartbeat.
 
-</details>
-
-<details>
-<summary>Getting your Authorization header</summary>
+### Getting Your ANON Key
 
 You need your project's ANON key for the Authorization header. Find it in your [Supabase Dashboard](https://supabase.com/dashboard) under Settings > API.
 
 See Supabase docs: [Invoking remote functions](https://supabase.com/docs/guides/functions/deploy#invoking-remote-functions)
 
-</details>
+### Monitoring Workers
 
-<details>
-<summary>Keeping workers running with pg_cron</summary>
+Check active and deprecated workers during deployment:
+
+```sql
+SELECT
+  function_name,
+  COUNT(*) FILTER (WHERE deprecated_at IS NULL) as active_workers,
+  COUNT(*) FILTER (WHERE deprecated_at IS NOT NULL) as deprecated_workers
+FROM pgflow.workers
+WHERE last_heartbeat_at > now() - interval '6 seconds'
+GROUP BY function_name;
+```
+
+### Keeping Workers Running
 
 Workers auto-respawn when terminated, but for extra reliability you can use pg_cron to ping your worker every 5 seconds:
 
 ```sql
 SELECT cron.schedule(
   'ping-worker',
-  '*/5 * * * * *',
+  '5 seconds',
   $$
   SELECT net.http_post(
     url := 'https://your-project.supabase.co/functions/v1/your-worker-name',
@@ -89,7 +83,3 @@ SELECT cron.schedule(
 ```
 
 See [Supabase cron guide](https://supabase.com/docs/guides/cron/quickstart#invoke-supabase-edge-function-every-30-seconds) for details.
-
-</details>
-
-<NotProductionReady />
