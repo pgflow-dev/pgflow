@@ -8,7 +8,7 @@ sidebar:
 import { Aside, Steps } from "@astrojs/starlight/components";
 import NotProductionReady from '../../../components/NotProductionReady.astro';
 
-pgflow workers are just regular Supabase Edge Functions running pgflow code. You deploy them exactly like any other Edge Function, with one extra step - deprecating old workers to stop processing new tasks.
+pgflow workers are regular Supabase Edge Functions. Deploy them like any Edge Function, plus deprecate old workers to prevent version overlap.
 
 <NotProductionReady />
 
@@ -16,17 +16,18 @@ pgflow workers are just regular Supabase Edge Functions running pgflow code. You
 
 <Steps>
 
-1. **Deploy new version**
-   ```bash frame="none"
-   npx supabase functions deploy your-worker-name
-   ```
-
-2. **Deprecate old workers**
+1. **Deprecate old workers**
    ```sql
    UPDATE pgflow.workers
    SET deprecated_at = NOW()
    WHERE function_name = 'your-worker-name'
      AND deprecated_at IS NULL;
+   ```
+   This stops old workers from polling for new tasks while they finish current work.
+
+2. **Deploy new version**
+   ```bash frame="none"
+   npx supabase functions deploy your-worker-name
    ```
 
 3. **Start new worker**
@@ -41,19 +42,17 @@ pgflow workers are just regular Supabase Edge Functions running pgflow code. You
 
 ### Why Worker Deprecation
 
-When you deploy a new version, old workers continue running until they hit resource limits (up to 150s on free tier, 400s on paid). This creates overlap where both versions process tasks simultaneously.
+Without deprecation, old workers run for up to 150s (free tier) or 400s (paid) after deployment, causing both versions to process tasks simultaneously.
 
-Worker deprecation solves this - deprecated workers stop accepting new work and complete their current tasks. Workers check their deprecation status every 5 seconds during heartbeat.
+Deprecation fixes this: workers check their status every 5 seconds and immediately stop polling for new tasks when deprecated, while finishing current work.
 
 ### Getting Your ANON Key
 
-You need your project's ANON key for the Authorization header. Find it in your [Supabase Dashboard](https://supabase.com/dashboard) under Settings > API.
-
-See Supabase docs: [Invoking remote functions](https://supabase.com/docs/guides/functions/deploy#invoking-remote-functions)
+Find your ANON key in [Supabase Dashboard](https://supabase.com/dashboard) → Settings → API → `anon` `public` key.
 
 ### Monitoring Workers
 
-Check active and deprecated workers during deployment:
+Track deployment progress with this query:
 
 ```sql
 SELECT
@@ -67,7 +66,7 @@ GROUP BY function_name;
 
 ### Keeping Workers Running
 
-Workers auto-respawn when terminated, but for extra reliability you can use pg_cron to ping your worker every 5 seconds:
+Workers auto-respawn when terminated. For extra reliability, schedule a ping every 5 seconds:
 
 ```sql
 SELECT cron.schedule(
