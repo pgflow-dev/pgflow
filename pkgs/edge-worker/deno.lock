@@ -4,12 +4,15 @@
     "specifiers": {
       "jsr:@deno-library/progress": "jsr:@deno-library/progress@1.5.1",
       "jsr:@henrygd/queue@^1.0.7": "jsr:@henrygd/queue@1.0.7",
+      "jsr:@std/assert@^0.224.0": "jsr:@std/assert@0.224.0",
+      "jsr:@std/async@^0.224.0": "jsr:@std/async@0.224.2",
       "jsr:@std/fmt@1.0.3": "jsr:@std/fmt@1.0.3",
+      "jsr:@std/fmt@^0.224.0": "jsr:@std/fmt@0.224.0",
+      "jsr:@std/internal@^0.224.0": "jsr:@std/internal@0.224.0",
       "jsr:@std/io@0.225.0": "jsr:@std/io@0.225.0",
       "jsr:@std/io@^0.225.0": "jsr:@std/io@0.225.0",
       "npm:@henrygd/queue@^1.0.7": "npm:@henrygd/queue@1.0.7",
-      "npm:@pgflow/core@0.6.0": "npm:@pgflow/core@0.6.0",
-      "npm:@pgflow/dsl@0.6.0": "npm:@pgflow/dsl@0.6.0",
+      "npm:@supabase/supabase-js@^2.39.0": "npm:@supabase/supabase-js@2.55.0",
       "npm:@supabase/supabase-js@^2.47.10": "npm:@supabase/supabase-js@2.55.0",
       "npm:@types/deno@^2.2.0": "npm:@types/deno@2.3.0",
       "npm:@types/node@~18.16.20": "npm:@types/node@18.16.20",
@@ -27,8 +30,27 @@
       "@henrygd/queue@1.0.7": {
         "integrity": "98cade132744bb420957c5413393f76eb8ba7261826f026c8a89a562b8fa2961"
       },
+      "@std/assert@0.224.0": {
+        "integrity": "8643233ec7aec38a940a8264a6e3eed9bfa44e7a71cc6b3c8874213ff401967f",
+        "dependencies": [
+          "jsr:@std/fmt@^0.224.0",
+          "jsr:@std/internal@^0.224.0"
+        ]
+      },
+      "@std/async@0.224.2": {
+        "integrity": "4d277d6e165df43d5e061ba0ef3edfddb8e8d558f5b920e3e6b1d2614b44d074"
+      },
+      "@std/fmt@0.224.0": {
+        "integrity": "e20e9a2312a8b5393272c26191c0a68eda8d2c4b08b046bad1673148f1d69851"
+      },
       "@std/fmt@1.0.3": {
         "integrity": "97765c16aa32245ff4e2204ecf7d8562496a3cb8592340a80e7e554e0bb9149f"
+      },
+      "@std/internal@0.224.0": {
+        "integrity": "afc50644f9cdf4495eeb80523a8f6d27226b4b36c45c7c195dfccad4b8509291",
+        "dependencies": [
+          "jsr:@std/fmt@^0.224.0"
+        ]
       },
       "@std/io@0.225.0": {
         "integrity": "c1db7c5e5a231629b32d64b9a53139445b2ca640d828c26bf23e1c55f8c079b3"
@@ -44,17 +66,6 @@
         "dependencies": {
           "minipass": "minipass@7.1.2"
         }
-      },
-      "@pgflow/core@0.6.0": {
-        "integrity": "sha512-/6/V7eIqhKr0KkTAvdhx35PvQo9JSfsziLPfsqrvKHSRs0jArWCvzFbHZvcokcqMOAUKMVr7NQinx/MrjK7a0g==",
-        "dependencies": {
-          "@pgflow/dsl": "@pgflow/dsl@0.6.0",
-          "postgres": "postgres@3.4.5"
-        }
-      },
-      "@pgflow/dsl@0.6.0": {
-        "integrity": "sha512-Z4D3zNGQo3NW6B1kokXNI6psPbhb9BoJAvuJXMk1tYa1dJKSetra68kkhC8HzamhXQSkhcxiqCG/xKNxPO6H5A==",
-        "dependencies": {}
       },
       "@supabase/auth-js@2.71.1": {
         "integrity": "sha512-mMIQHBRc+SKpZFRB2qtupuzulaUhFYupNyxqDj5Jp/LyPvcWvjaJzZzObv6URtL/O6lPxkanASnotGtNpS3H2Q==",
@@ -575,8 +586,12 @@
   "workspace": {
     "dependencies": [
       "jsr:@henrygd/queue@^1.0.7",
-      "npm:@pgflow/core@0.6.0",
-      "npm:@pgflow/dsl@0.6.0",
+      "jsr:@std/assert@^0.224.0",
+      "jsr:@std/async@^0.224.0",
+      "jsr:@std/log@^0.224.13",
+      "jsr:@std/testing@^0.224.0",
+      "npm:@supabase/supabase-js@^2.39.0",
+      "npm:@teidesu/deno-types@1.42.4",
       "npm:postgres@3.4.5"
     ],
     "packageJson": {
