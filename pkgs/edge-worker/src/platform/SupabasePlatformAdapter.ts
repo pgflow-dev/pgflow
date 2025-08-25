@@ -7,12 +7,8 @@ import { createSql } from '../core/sql-factory.js';
 import { createServiceSupabaseClient } from '../core/supabase-utils.js';
 import { createLoggingFactory } from './logging.js';
 
-// EdgeRuntime type declaration for Supabase Edge Functions
-declare global {
-  const EdgeRuntime: {
-    waitUntil(promise: Promise<unknown>): void;
-  } | undefined;
-}
+// EdgeRuntime is available globally in Supabase Edge Functions
+// Using type assertions to avoid JSR's global declaration restrictions
 
 /**
  * Supabase-specific environment variables
@@ -192,11 +188,12 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
    * by passing a promise that never resolves.
    */
   private extendLifetimeOfEdgeFunction(): void {
-    // EdgeRuntime is only available in the actual Supabase Edge Runtime, not in tests
-    if (typeof EdgeRuntime !== 'undefined') {
-      const promiseThatNeverResolves = new Promise(() => {});
-      EdgeRuntime.waitUntil(promiseThatNeverResolves);
-    }
+    // EdgeRuntime is available in Supabase Edge Functions runtime
+    const EdgeRuntime = (globalThis as { EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } }).EdgeRuntime;
+    const promiseThatNeverResolves = new Promise(() => {
+      // Intentionally empty - this promise never resolves to extend function lifetime
+    });
+    EdgeRuntime.waitUntil(promiseThatNeverResolves);
   }
 
   private setupStartupHandler(createWorkerFn: CreateWorkerFn): void {

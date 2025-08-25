@@ -29,13 +29,24 @@
         "check": "local"
       }
     },
-    "lint": {
+    "lint:deno": {
       "executor": "@axhxrx/nx-deno:lint",
       "local": true,
       "options": {
         "denoConfig": "pkgs/edge-worker/deno.test.json",
         "ignore": "pkgs/edge-worker/supabase/functions/_dist/"
       }
+    },
+    "lint:jsr": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "command": "npx eslint 'src/**/*.ts' --rule 'no-restricted-syntax: [\"error\", {\"selector\": \"TSModuleDeclaration[global=true]\", \"message\": \"JSR forbids global type augmentation (declare global). This will cause JSR publish to fail.\"}]'"
+      }
+    },
+    "lint": {
+      "executor": "nx:noop",
+      "dependsOn": ["lint:deno", "lint:jsr"]
     },
     "supabase:start": {
       "executor": "nx:run-commands",
