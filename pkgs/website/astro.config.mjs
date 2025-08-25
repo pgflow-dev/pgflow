@@ -71,7 +71,10 @@ export default defineConfig({
   },
 
   integrations: [
-    react(),
+    react({
+      include: ['**/components/**/*.tsx'],
+      exclude: ['**/pages/**/*']
+    }),
     starlight({
       favicon: '/favicons/favicon.ico',
       head: [
@@ -308,5 +311,10 @@ export default defineConfig({
     }),
   ],
 
-  adapter: cloudflare(),
+  adapter: cloudflare({
+    mode: 'directory',
+    platformProxy: {
+      enabled: false
+    }
+  }),
 });
