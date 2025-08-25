@@ -12,6 +12,9 @@ const flows = new Map<string, AnyFlow>([
   // Add more flows here as needed
 ]);
 
+// Create platform adapter to get access to platform resources
+const platformAdapter = internal.platform.createAdapter();
+
 // Initialize all components outside request handler
 const loggingFactory = internal.platform.createLoggingFactory();
 const workerId = crypto.randomUUID();
@@ -38,13 +41,9 @@ const workerRow = await queries.onWorkerStarted({
   edgeFunctionName: 'pgflow-cron-worker',
 });
 
-// Create heartbeat instance
-const heartbeat = new internal.core.Heartbeat(
-  4000, // Send heartbeat every 4 seconds
-  queries,
-  workerRow,
-  loggingFactory.createLogger('Heartbeat'),
-);
+// Track heartbeat timing
+let lastHeartbeat = 0;
+const heartbeatInterval = 4000; // Send heartbeat every 4 seconds
 
 // Function to process a batch for a specific flow
 async function processBatchForFlow<TFlow extends AnyFlow>(
@@ -72,14 +71,41 @@ async function processBatchForFlow<TFlow extends AnyFlow>(
   );
 
   // Create execution controller for this flow
-  const executorFactory = (record: any, signal: AbortSignal) =>
-    new internal.flow.StepTaskExecutor(
+  const executorFactory = (
+    taskWithMessage: any, // StepTaskWithMessage<TFlow> - type not exported through internal API
+    signal: AbortSignal
+  ) => {
+    // Debug logging
+    logger.info('ExecutorFactory received:', {
+      hasMessage: !!taskWithMessage?.message,
+      hasTask: !!taskWithMessage?.task,
+      hasMsgId: !!taskWithMessage?.msg_id,
+      keys: taskWithMessage ? Object.keys(taskWithMessage) : [],
+      taskWithMessage: JSON.stringify(taskWithMessage)
+    });
+    
+    // Build context for StepTaskExecutor
+    const context = {
+      // Core platform resources
+      env: Deno.env.toObject(),
+      shutdownSignal: abortController.signal,
+      
+      // Step task execution context
+      rawMessage: taskWithMessage.message,
+      stepTask: taskWithMessage.task,
+      
+      // Platform-specific resources (Supabase)
+      ...platformAdapter.platformResources
+    };
+    
+    return new internal.flow.StepTaskExecutor<TFlow>(
       flowDef,
-      record,
       pgflowClient,
       signal,
       loggingFactory.createLogger('StepTaskExecutor'),
+      context
     );
+  };
 
   const executionController = new internal.core.ExecutionController(
     executorFactory,
@@ -113,10 +139,26 @@ async function processBatchForFlow<TFlow extends AnyFlow>(
   });
 }
 
+// Helper function to send heartbeat
+async function sendHeartbeat() {
+  const now = Date.now();
+  if (now - lastHeartbeat >= heartbeatInterval) {
+    const result = await queries.sendHeartbeat(workerRow);
+    logger.debug(result.is_deprecated ? 'DEPRECATED' : 'OK');
+    lastHeartbeat = now;
+    
+    if (result.is_deprecated) {
+      logger.warn('Worker marked for deprecation');
+      // In a cron worker, we might want to handle this differently
+      // For now, just log the warning
+    }
+  }
+}
+
 serve(async (req) => {
   try {
     // Send heartbeat
-    await heartbeat.send();
+    await sendHeartbeat();
 
     const body = await req.json();
     const { flow_slug, batch_size, max_concurrent, cron_interval_seconds } =
@@ -184,7 +226,7 @@ serve(async (req) => {
       logger.info(`Starting batch iteration ${iterations}`);
 
       // Send heartbeat before each batch
-      await heartbeat.send();
+      await sendHeartbeat();
 
       await processBatchForFlow(flow, flow_slug, batch_size, max_concurrent);
       totalProcessed++;

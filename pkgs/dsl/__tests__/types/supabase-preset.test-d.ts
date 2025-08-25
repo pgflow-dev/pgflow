@@ -27,8 +27,7 @@ describe('Supabase Flow Type Tests', () => {
       (input, context) => {
         // Should have all Supabase platform resources
         expectTypeOf(context.sql).toEqualTypeOf<Sql>();
-        expectTypeOf(context.anonSupabase).toEqualTypeOf<SupabaseClient>();
-        expectTypeOf(context.serviceSupabase).toEqualTypeOf<SupabaseClient>();
+        expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
 
         // Should still have base context
         expectTypeOf(context.env).toMatchTypeOf<SupabaseEnv>();
@@ -81,8 +80,7 @@ describe('Supabase Flow Type Tests', () => {
         (input, context: Context<{ redis: CustomRedis }>) => {
           // Should have all Supabase platform resources
           expectTypeOf(context.sql).toEqualTypeOf<Sql>();
-          expectTypeOf(context.anonSupabase).toEqualTypeOf<SupabaseClient>();
-          expectTypeOf(context.serviceSupabase).toEqualTypeOf<SupabaseClient>();
+          expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
 
           // Should have custom resource from handler annotation
           expectTypeOf(context.redis).toEqualTypeOf<CustomRedis>();
@@ -126,8 +124,7 @@ describe('Supabase Flow Type Tests', () => {
     }).step({ slug: 'fetch_user' }, (input, context) => {
       // Should have Supabase platform resources
       expectTypeOf(context.sql).toEqualTypeOf<Sql>();
-      expectTypeOf(context.anonSupabase).toEqualTypeOf<SupabaseClient>();
-      expectTypeOf(context.serviceSupabase).toEqualTypeOf<SupabaseClient>();
+      expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
 
       // Should have explicit custom context
       expectTypeOf(context.cache).toEqualTypeOf<CustomRedis>();
@@ -159,7 +156,7 @@ describe('Supabase Flow Type Tests', () => {
       .step({ slug: 'process' }, (input, context) => {
         // Has Supabase platform resources
         expectTypeOf(context.sql).toEqualTypeOf<Sql>();
-        expectTypeOf(context.serviceSupabase).toEqualTypeOf<SupabaseClient>();
+        expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
 
         // Has explicit context
         expectTypeOf(context.logger).toEqualTypeOf<{
@@ -173,7 +170,7 @@ describe('Supabase Flow Type Tests', () => {
         (input, context: Context<{ ai: CustomAI }>) => {
           // Should have Supabase platform resources
           expectTypeOf(context.sql).toEqualTypeOf<Sql>();
-          expectTypeOf(context.anonSupabase).toEqualTypeOf<SupabaseClient>();
+          expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
 
           // Should have both explicit and inferred context
           expectTypeOf(context.logger).toEqualTypeOf<{
@@ -199,8 +196,7 @@ describe('Supabase Flow Type Tests', () => {
     // Verify the SupabaseResources interface has correct structure
     expectTypeOf<SupabaseResources>().toEqualTypeOf<{
       sql: Sql;
-      anonSupabase: SupabaseClient;
-      serviceSupabase: SupabaseClient;
+      supabase: SupabaseClient;
     }>();
   });
 
@@ -235,7 +231,7 @@ describe('Supabase Flow Type Tests', () => {
 
         // Should still have all accumulated context
         expectTypeOf(context.sql).toEqualTypeOf<Sql>();
-        expectTypeOf(context.anonSupabase).toEqualTypeOf<SupabaseClient>();
+        expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
         expectTypeOf(context.factor).toEqualTypeOf<number>();
 
         return { formatted: `Result: ${input.multiply.result}` };
@@ -279,7 +275,7 @@ describe('Supabase Flow Type Tests', () => {
       .step({ slug: 'step3' }, (input, context) => {
         // Should have Supabase platform resources without explicit typing
         expectTypeOf(context.sql).toEqualTypeOf<Sql>();
-        expectTypeOf(context.serviceSupabase).toEqualTypeOf<SupabaseClient>();
+        expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
 
         // Should have accumulated context from previous steps
         expectTypeOf(context.step1Resource).toEqualTypeOf<string>();

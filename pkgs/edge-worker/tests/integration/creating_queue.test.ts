@@ -62,7 +62,7 @@ Deno.test(
             SELECT COUNT(*) as count 
             FROM pgflow.workers 
             WHERE function_name = 'test' 
-              AND stopped_at IS NULL
+              AND deprecated_at IS NULL
           `;
           return workers[0].count > 0;
         },

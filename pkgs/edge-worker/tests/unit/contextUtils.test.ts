@@ -68,9 +68,8 @@ Deno.test('createSupabaseMessageContext - creates context with all Supabase reso
   assertEquals(context.shutdownSignal, mockAbortSignal);
   assertEquals(context.rawMessage, mockMessage);
   
-  // Supabase clients should always be present
-  assertExists(context.anonSupabase);
-  assertExists(context.serviceSupabase);
+  // Supabase client should always be present
+  assertExists(context.supabase);
 });
 
 Deno.test('createTestMessageContext - allows custom resources for testing', () => {
@@ -112,9 +111,8 @@ Deno.test('createSupabaseStepTaskContext - creates context with step task', () =
   assertEquals(context.stepTask, mockStepTask);
   assertEquals(context.rawMessage, mockStepMessage);
   
-  // Supabase clients should always be present
-  assertExists(context.anonSupabase);
-  assertExists(context.serviceSupabase);
+  // Supabase client should always be present
+  assertExists(context.supabase);
 });
 
 Deno.test('context - rawMessage is accessible', () => {
@@ -135,9 +133,8 @@ Deno.test('test helpers - mock resources work correctly', () => {
   });
   
   assertExists(mockResources.sql);
-  assertExists(mockResources.anonSupabase);
-  assertExists(mockResources.serviceSupabase);
+  assertExists(mockResources.supabase);
   
-  // Mock clients should have basic structure
-  assertExists(mockResources.anonSupabase.from);
+  // Mock client should have basic structure
+  assertExists(mockResources.supabase.from);
 });

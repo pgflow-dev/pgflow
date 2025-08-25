@@ -39,6 +39,28 @@ Deno.test('WorkerState - valid state transitions', () => {
   assertEquals(state.current, States.Stopped);
 });
 
+Deno.test('WorkerState - valid deprecation transitions', () => {
+  const state = new WorkerState(logger);
+
+  // Get to Running state first
+  state.transitionTo(States.Starting);
+  state.transitionTo(States.Running);
+
+  // Running -> Deprecated
+  state.transitionTo(States.Deprecated);
+  assertEquals(state.current, States.Deprecated);
+  assertEquals(state.isDeprecated, true);
+  assertEquals(state.isRunning, false);
+
+  // Deprecated -> Stopping
+  state.transitionTo(States.Stopping);
+  assertEquals(state.current, States.Stopping);
+
+  // Stopping -> Stopped
+  state.transitionTo(States.Stopped);
+  assertEquals(state.current, States.Stopped);
+});
+
 Deno.test('WorkerState - invalid state transitions should throw', () => {
   const state = new WorkerState(logger);
 
@@ -79,5 +101,7 @@ Deno.test('WorkerState - state getters', () => {
   assertEquals(state.isCreated, true);
   assertEquals(state.isStarting, false);
   assertEquals(state.isRunning, false);
+  assertEquals(state.isDeprecated, false);
   assertEquals(state.isStopping, false);
+  assertEquals(state.isStopped, false);
 });

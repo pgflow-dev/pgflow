@@ -1,0 +1,68 @@
+---
+draft: false
+title: 'pgflow 0.6.0: Worker Deprecation and Context Changes'
+description: 'Deployments without version overlap using worker deprecation, plus breaking changes to the context object for cleaner handler functions.'
+date: 2025-08-06
+authors:
+  - jumski
+tags:
+  - release
+  - edge-worker
+  - deployment
+  - context
+  - breaking-change
+featured: true
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+pgflow 0.6.0 introduces worker deprecation for deployments without version overlap and simplifies the context object with breaking changes.
+
+## Worker Deprecation
+
+Deploy new workers without version overlap. Deprecated workers stop accepting new tasks while finishing current work.
+
+```sql
+-- Deprecate old workers before starting new ones
+UPDATE pgflow.workers 
+SET deprecated_at = NOW() 
+WHERE function_name = 'your-worker-name'
+  AND deprecated_at IS NULL;
+```
+
+Workers detect deprecation within 5 seconds via heartbeat and gracefully stop polling. The [deployment guide](/how-to/deploy-to-supabasecom/) has been simplified with a single safe deployment sequence.
+
+## Breaking Context Changes
+
+The context object is now cleaner and more consistent:
+
+<Aside type="caution" title="Breaking Changes">
+- Removed: `context.anonSupabase` 
+- Renamed: `context.serviceSupabase` → `context.supabase`
+</Aside>
+
+**Before (0.5.x):**
+```typescript
+async function handler(input, context) {
+  const { data } = await context.serviceSupabase
+    .from('users')
+    .select('*');
+}
+```
+
+**After (0.6.0):**
+```typescript
+async function handler(input, context) {
+  const { data } = await context.supabase
+    .from('users')
+    .select('*');
+}
+```
+
+## Migration
+
+1. Update context usage: `context.serviceSupabase` → `context.supabase`
+2. Remove any `context.anonSupabase` usage
+3. Use [worker deprecation](/how-to/deploy-to-supabasecom/) for smooth deployments
+
+The service role client is now the primary Supabase interface, simplifying database operations in handler functions.

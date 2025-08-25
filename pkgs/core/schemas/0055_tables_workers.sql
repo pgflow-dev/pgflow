@@ -5,7 +5,7 @@ create table if not exists pgflow.workers (
   queue_name text not null,
   function_name text not null,
   started_at timestamptz not null default now(),
-  stopped_at timestamptz,
+  deprecated_at timestamptz,
   last_heartbeat_at timestamptz not null default now()
 );
 

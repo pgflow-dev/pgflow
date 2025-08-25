@@ -10,6 +10,9 @@ export enum States {
   /** The worker is processing messages. */
   Running = 'running',
 
+  /** The worker has been marked for deprecation and will stop polling for new work. */
+  Deprecated = 'deprecated',
+
   /** The worker stopped processing messages but is still releasing resources. */
   Stopping = 'stopping',
 
@@ -21,7 +24,8 @@ export enum States {
 export const Transitions: Record<States, States[]> = {
   [States.Created]: [States.Starting],
   [States.Starting]: [States.Running],
-  [States.Running]: [States.Stopping],
+  [States.Running]: [States.Deprecated, States.Stopping],
+  [States.Deprecated]: [States.Stopping],
   [States.Stopping]: [States.Stopped],
   [States.Stopped]: [], // Terminal state - no valid transitions from here
 };
@@ -61,6 +65,10 @@ export class WorkerState {
 
   get isStopping() {
     return this.state === States.Stopping;
+  }
+
+  get isDeprecated() {
+    return this.state === States.Deprecated;
   }
 
   get isStopped() {

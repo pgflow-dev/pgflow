@@ -16,7 +16,7 @@ describe('Flow Compatibility Type Tests', () => {
       .step({ slug: 'query' }, (_input, _ctx: Context<{ sql: Sql }>) => {
         return { result: 'data' };
       })
-      .step({ slug: 'auth' }, (_input, _ctx: Context<{ anonSupabase: SupabaseClient }>) => {
+      .step({ slug: 'auth' }, (_input, _ctx: Context<{ supabase: SupabaseClient }>) => {
         return { authenticated: true };
       });
 
@@ -53,7 +53,7 @@ describe('Flow Compatibility Type Tests', () => {
       })
       .step({ slug: 'store' }, (_input, _ctx: Context<{ 
         sql: Sql,
-        serviceSupabase: SupabaseClient 
+        supabase: SupabaseClient 
       }>) => {
         return { stored: true };
       });

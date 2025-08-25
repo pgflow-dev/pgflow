@@ -2,15 +2,8 @@
   "name": "playground",
   "private": true,
   "scripts": {
-    "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "start-supabase": "./scripts/supabase start",
-    "stop-supabase": "./scripts/supabase stop",
-    "restart-supabase": "npm run stop-supabase && npm run start-supabase",
-    "start-functions": "./scripts/supabase functions serve",
-    "start-workers": "for workerIndex in 0 1; do curl -X POST http://127.0.0.1:54321/functions/v1/analyze_website_worker_$workerIndex; done",
-    "gen-types": "./scripts/supabase gen types --local --schema public --schema pgflow > supabase/functions/database-types.d.ts"
+    "start": "next start"
   },
   "dependencies": {
     "@pgflow/client": "workspace:*",
@@ -22,30 +15,29 @@
     "@radix-ui/react-slot": "^1.1.0",
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "2.49.4",
+    "@types/react": "19.1.9",
+    "@types/react-dom": "19.0.2",
+    "@types/uuid": "10.0.0",
     "autoprefixer": "10.4.20",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.9.2",
     "lucide-react": "^0.468.0",
-    "next": "latest",
+    "nanoevents": "7.0.1",
+    "next": "15.0.3",
     "next-plausible": "^3.12.4",
     "next-themes": "^0.4.3",
-    "prettier": "^3.3.3",
-    "react": "19.0.0",
-    "react-dom": "19.0.0"
-  },
-  "devDependencies": {
-    "@nx/eslint-plugin": "^20.8.1",
-    "@types/node": "22.10.2",
-    "@types/react": "^19.0.2",
-    "@types/react-dom": "19.0.2",
-    "eslint": "^9.26.0",
-    "netlify-cli": "^22.1.3",
     "postcss": "8.4.49",
+    "postgres": "3.4.5",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "sharp": "0.32.6",
     "supabase": "2.21.1",
-    "tailwind-merge": "^2.5.2",
+    "tailwind-merge": "2.6.0",
     "tailwindcss": "3.4.17",
-    "tailwindcss-animate": "^1.0.7",
-    "typescript": "5.7.2"
+    "tailwindcss-animate": "1.0.7",
+    "terser": "5.43.1",
+    "typescript": "5.8.3",
+    "uuid": "9.0.1"
   }
 }

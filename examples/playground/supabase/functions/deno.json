@@ -1,9 +1,11 @@
 {
   "imports": {
-    "@pgflow/core": "npm:@pgflow/core@0.4.3",
-    "@pgflow/dsl": "npm:@pgflow/dsl@0.4.3",
-    "@pgflow/edge-worker": "jsr:@pgflow/edge-worker@0.4.3",
-    "@pgflow/edge-worker/_internal": "jsr:@pgflow/edge-worker@0.3.1/_internal",
+    "@pgflow/core": "npm:@pgflow/core@0.5.4",
+    "@pgflow/dsl": "npm:@pgflow/dsl@0.5.4",
+    "@pgflow/dsl/supabase": "npm:@pgflow/dsl@0.5.4/supabase.js",
+    "@pgflow/edge-worker": "jsr:@pgflow/edge-worker@0.5.4",
+    "@pgflow/edge-worker/_internal": "jsr:@pgflow/edge-worker@0.5.4/_internal",
+    "@henrygd/queue": "jsr:@henrygd/queue@^1.0.7",
     "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.49.4",
     "groq-sdk": "npm:groq-sdk@^0.20.1",
     "postgres": "npm:postgres@3.4.5",

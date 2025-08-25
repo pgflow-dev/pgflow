@@ -39,22 +39,12 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "dist/.next/types/**/*.ts",
-    "dist/types/**/*.ts",
     "next-env.d.ts",
-    "../../examples/playground/.next/.next/types/**/*.ts"
+    "../../examples/playground/.next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
     "supabase/functions/**/*.ts",
     "supabase/functions/**/*.d.ts"
-  ],
-  "references": [
-    {
-      "path": "../../pkgs/dsl"
-    },
-    {
-      "path": "../../pkgs/client"
-    }
   ]
 }

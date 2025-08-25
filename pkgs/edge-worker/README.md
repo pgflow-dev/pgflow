@@ -39,7 +39,7 @@ import { EdgeWorker } from 'jsr:@pgflow/edge-worker';
 // Start a worker that processes messages from the 'tasks' queue
 EdgeWorker.start(async (payload, context) => {
   console.log('Processing message:', payload);
-  
+
   // Access platform resources through context
   const result = await context.sql`
     INSERT INTO processed_tasks (data) 
@@ -63,18 +63,18 @@ import { Flow } from 'jsr:@pgflow/dsl/supabase';
 
 // Define a flow using Supabase preset for Supabase resources
 const AnalyzeWebsite = new Flow<{ url: string }>({
-  slug: 'analyze_website'
+  slug: 'analyze_website',
 })
   .step({ slug: 'fetch' }, async (input, context) => {
     // Access Supabase resources through context
     const response = await fetch(input.run.url, {
-      signal: context.shutdownSignal
+      signal: context.shutdownSignal,
     });
     return { html: await response.text() };
   })
   .step({ slug: 'save' }, async (input, context) => {
-    // Use service role Supabase client from context
-    const { data } = await context.serviceSupabase
+    // Use Supabase client from context
+    const { data } = await context.supabase
       .from('websites')
       .insert({ url: input.run.url, html: input.fetch.html })
       .select()
@@ -122,8 +122,7 @@ These resources are provided regardless of platform:
 When running on Supabase (the default), these additional resources are available:
 
 - **`sql`** - PostgreSQL client (`postgres.Sql`) for database queries
-- **`anonSupabase`** - Supabase client (`SupabaseClient`) with anonymous key
-- **`serviceSupabase`** - Supabase client (`SupabaseClient`) with service role key
+- **`supabase`** - Supabase client (`SupabaseClient`) with service role key for full database access
 
 ### Required Environment Variables
 
@@ -131,11 +130,14 @@ The Supabase platform adapter requires these environment variables:
 
 - `EDGE_WORKER_DB_URL` - PostgreSQL connection string (automatically set by Supabase)
 - `SUPABASE_URL` - Your Supabase project URL (automatically set)
-- `SUPABASE_ANON_KEY` - Anonymous/public key (automatically set)
+- `SUPABASE_ANON_KEY` - Anonymous key (automatically set, available for autocomplete)
 - `SUPABASE_SERVICE_ROLE_KEY` - Service role key (automatically set)
 - `SB_EXECUTION_ID` - Execution ID for the Edge Function (automatically set)
 
 All these variables are automatically populated by Supabase Edge Functions runtime.
+
+> [!NOTE]
+> While `SUPABASE_ANON_KEY` is required in the environment, the edge worker only uses the service role key for creating the Supabase client.
 
 ### Using Context in Handlers
 
@@ -147,18 +149,18 @@ EdgeWorker.start(async (payload, context) => {
     // Use SQL client
     await context.sql`UPDATE tasks SET processed = true WHERE id = ${payload.id}`;
   }
-  
+
   // Handle graceful shutdown
   if (context.shutdownSignal.aborted) {
     return { status: 'aborted' };
   }
-  
+
   // Use Supabase client
-  const { data } = await context.serviceSupabase
+  const { data } = await context.supabase
     .from('results')
     .insert({ task_id: payload.id })
     .select();
-    
+
   return data;
 });
 ```
@@ -170,12 +172,14 @@ When defining flows that use Supabase resources, import `Flow` from the Supabase
 ```typescript
 import { Flow } from 'jsr:@pgflow/dsl/supabase';
 
-const MyFlow = new Flow<InputType>({ slug: 'my_flow' })
-  .step({ slug: 'process' }, async (input, context) => {
+const MyFlow = new Flow<InputType>({ slug: 'my_flow' }).step(
+  { slug: 'process' },
+  async (input, context) => {
     // TypeScript knows context includes all Supabase resources
     const users = await context.sql`SELECT * FROM users`;
     return users;
-  });
+  }
+);
 ```
 
 > [!NOTE]
@@ -200,6 +204,7 @@ For manual end-to-end testing of edge-worker features, we maintain example edge 
 - **[Retry Demo](./supabase/functions/retry-demo/README.md)** - Demonstrates exponential backoff retry mechanism
 
 To run a manual test:
+
 1. Start Supabase: `pnpm nx supabase:start edge-worker`
 2. Follow the instructions in the specific test's README
 

@@ -9,8 +9,8 @@ const validFlow = new Flow({ slug: 'valid_flow' })
     const result = await ctx.sql`SELECT * FROM users`;
     return { users: result };
   })
-  .step({ slug: 'notify' }, (_input, _ctx: { serviceSupabase: SupabaseClient }) => {
-    // Use service role client for admin operations
+  .step({ slug: 'notify' }, (_input, _ctx: { supabase: SupabaseClient }) => {
+    // Use Supabase client for operations
     return { notified: true };
   });
 

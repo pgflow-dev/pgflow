@@ -19,6 +19,12 @@ cover:
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 
+<Aside type="caution" title="API Change in v0.6.0">
+  **Breaking Change**: Starting with pgflow v0.6.0, the context API has been simplified. The `anonSupabase` and `serviceSupabase` clients have been replaced with a single `supabase` client (initialized with service role key).
+
+  If you're using v0.6.0 or later, replace any usage of `ctx.anonSupabase` or `ctx.serviceSupabase` with `ctx.supabase`.
+</Aside>
+
 Workers now pass a **context object** as a second parameter to all handlers, providing ready-to-use database connections, environment variables, and Supabase clients.
 
 ## The Problem We Solved

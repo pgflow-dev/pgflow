@@ -162,16 +162,14 @@ Deno.test(
 
     const abortController = new AbortController();
 
-    let anonClientExists = false;
-    let serviceClientExists = false;
+    let supabaseClientExists = false;
 
-    // Handler that checks Supabase clients - TypeScript infers the exact type
+    // Handler that checks Supabase client - TypeScript infers the exact type
     const handler = (
       _payload: { test: string },
       context?: ReturnType<typeof createQueueWorkerContext<{ test: string }>>
     ) => {
-      anonClientExists = context?.anonSupabase !== undefined;
-      serviceClientExists = context?.serviceSupabase !== undefined;
+      supabaseClientExists = context?.supabase !== undefined;
     };
 
     // Create context with Supabase env vars
@@ -185,8 +183,7 @@ Deno.test(
     // Mock handler call with context
     await handler(mockMessage.message!, context);
 
-    // Verify Supabase clients are available
-    assertEquals(anonClientExists, true);
-    assertEquals(serviceClientExists, true);
+    // Verify Supabase client is available
+    assertEquals(supabaseClientExists, true);
   })
 );

@@ -1,4 +1,4 @@
-import { sql } from '../sql.ts';
+import { withSql, createSql } from '../sql.ts';
 import {
   waitFor,
   sendBatch,
@@ -13,27 +13,32 @@ const WORKER_NAME = 'max_concurrency';
 Deno.test(
   'worker can handle tens of thousands of jobs queued at once',
   async () => {
-    await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
-    await sql`ALTER SEQUENCE test_seq RESTART WITH 1`;
-    await sql`SELECT pgmq.create(${WORKER_NAME})`;
-    await sql`SELECT pgmq.drop_queue(${WORKER_NAME})`;
-    await sql`SELECT pgmq.create(${WORKER_NAME})`;
-    await startWorker(WORKER_NAME);
-    await waitFor(
-      async () => {
-        const [{ worker_count }] = await sql`
-        SELECT COUNT(*)::integer AS worker_count
-        FROM pgflow.active_workers
-        WHERE function_name = ${WORKER_NAME}
-      `;
+    await withSql(async (sql) => {
+      await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
+      await sql`ALTER SEQUENCE test_seq RESTART WITH 1`;
+      await sql`SELECT pgmq.create(${WORKER_NAME})`;
+      await sql`SELECT pgmq.drop_queue(${WORKER_NAME})`;
+      await sql`SELECT pgmq.create(${WORKER_NAME})`;
+      await startWorker(WORKER_NAME);
+      await waitFor(
+        async () => {
+          const tempSql = createSql();
+          try {
+            const [{ worker_count }] = await tempSql`
+            SELECT COUNT(*)::integer AS worker_count
+            FROM pgflow.active_workers
+            WHERE function_name = ${WORKER_NAME}
+          `;
 
-        log('worker_count', worker_count);
-        return worker_count === 1;
-      },
-      { description: 'Waiting for exacly one worker' }
-    );
+            log('worker_count', worker_count);
+            return worker_count === 1;
+          } finally {
+            await tempSql.end();
+          }
+        },
+        { description: 'Waiting for exacly one worker' }
+      );
 
-    try {
       // worker sleeps for 1s for each message
       // se we will expect roughly 1 message per second
       const startTime = Date.now();
@@ -53,8 +58,6 @@ Deno.test(
       log('');
       log(`Total time:`, totalMs);
       log(`msgs/second:`, msgsPerSecond);
-    } finally {
-      await sql.end();
-    }
+    });
   }
 );
