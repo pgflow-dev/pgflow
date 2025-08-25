@@ -10,6 +10,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 
 import cloudflare from '@astrojs/cloudflare';
+import react from '@astrojs/react';
 
 const GITHUB_REPO_URL = 'https://github.com/pgflow-dev/pgflow';
 const DISCORD_INVITE_URL = 'https://pgflow.dev/discord/';
@@ -69,6 +70,7 @@ export default defineConfig({
   },
 
   integrations: [
+    react(),
     starlight({
       favicon: '/favicons/favicon.ico',
       head: [
