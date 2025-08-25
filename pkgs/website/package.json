@@ -15,12 +15,7 @@
     "build": "astro check && astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "gen-diagram": "mmdc --backgroundColor='#121a19' --theme neutral --output public/analyze_website.svg < m.mermaid",
-    "supabase:start": "supabase start",
-    "supabase:stop": "supabase stop",
-    "supabase:status": "supabase status",
-    "supabase:studio": "supabase studio",
-    "dev:full": "supabase start && astro dev"
+    "gen-diagram": "mmdc --backgroundColor='#121a19' --theme neutral --output public/analyze_website.svg < m.mermaid"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.4",

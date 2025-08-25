@@ -49,6 +49,52 @@
         "cwd": "pkgs/website",
         "command": "wrangler pages deploy dist --branch=${CLOUDFLARE_BRANCH:-preview-local}"
       }
+    },
+    "supabase:start": {
+      "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
+      "options": {
+        "cwd": "pkgs/website",
+        "command": "supabase start"
+      }
+    },
+    "supabase:stop": {
+      "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
+      "options": {
+        "cwd": "pkgs/website",
+        "command": "supabase stop --no-backup"
+      }
+    },
+    "supabase:status": {
+      "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
+      "options": {
+        "cwd": "pkgs/website",
+        "command": "supabase status"
+      }
+    },
+    "supabase:studio": {
+      "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
+      "options": {
+        "cwd": "pkgs/website",
+        "command": "supabase studio"
+      }
+    },
+    "dev:full": {
+      "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
+      "dependsOn": ["supabase:start"],
+      "options": {
+        "cwd": "pkgs/website",
+        "command": "astro dev"
+      }
     }
   }
 }
