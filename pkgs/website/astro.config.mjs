@@ -40,15 +40,13 @@ export default defineConfig({
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
+        // Safety net: use edge-safe React renderer if SSR bundle is generated
+        ...(process.env.NODE_ENV === 'production' && {
+          'react-dom/server': 'react-dom/server.edge',
+        }),
       },
     },
     envPrefix: ['VITE_'],
-    // Safety net: use edge-safe React renderer if SSR bundle is generated
-    define: {
-      ...(process.env.NODE_ENV === 'production' && {
-        'react-dom/server': 'react-dom/server.edge',
-      }),
-    },
   },
 
   redirects: {
