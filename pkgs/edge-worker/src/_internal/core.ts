@@ -1,6 +1,5 @@
 export { BatchProcessor } from '../core/BatchProcessor.js';
 export { ExecutionController } from '../core/ExecutionController.js';
-export { Heartbeat } from '../core/Heartbeat.js';
 export { Queries } from '../core/Queries.js';
 export { Worker } from '../core/Worker.js';
 export { WorkerLifecycle } from '../core/WorkerLifecycle.js';
