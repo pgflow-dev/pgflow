@@ -9,7 +9,6 @@ import starlightLlmsTxt from 'starlight-llms-txt';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
-import cloudflare from '@astrojs/cloudflare';
 import react from '@astrojs/react';
 
 const GITHUB_REPO_URL = 'https://github.com/pgflow-dev/pgflow';
@@ -29,6 +28,9 @@ export default defineConfig({
   site: `https://${DOMAIN_NAME}`,
   trailingSlash: 'always',
 
+  // Static output for Cloudflare Pages - no SSR, no Workers bundle
+  output: 'static',
+
   build: {
     // prevents problems with trailing slash redirects (SEO issue)
     format: 'directory',
@@ -41,6 +43,12 @@ export default defineConfig({
       },
     },
     envPrefix: ['VITE_'],
+    // Safety net: use edge-safe React renderer if SSR bundle is generated
+    define: {
+      ...(process.env.NODE_ENV === 'production' && {
+        'react-dom/server': 'react-dom/server.edge',
+      }),
+    },
   },
 
   redirects: {
@@ -73,7 +81,10 @@ export default defineConfig({
   integrations: [
     react({
       include: ['**/components/**/*.tsx'],
-      exclude: ['**/pages/**/*']
+      exclude: ['**/pages/**/*'],
+      experimentalReactChildren: true,
+      // Disable React streaming = smaller client bundle, no SSR helpers
+      experimentalDisableStreaming: true,
     }),
     starlight({
       favicon: '/favicons/favicon.ico',
@@ -311,10 +322,5 @@ export default defineConfig({
     }),
   ],
 
-  adapter: cloudflare({
-    mode: 'directory',
-    platformProxy: {
-      enabled: false
-    }
-  }),
+  // No adapter needed for static output - Cloudflare Pages serves dist/ automatically
 });
