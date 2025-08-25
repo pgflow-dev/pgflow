@@ -15,7 +15,12 @@
     "build": "astro check && astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "gen-diagram": "mmdc --backgroundColor='#121a19' --theme neutral --output public/analyze_website.svg < m.mermaid"
+    "gen-diagram": "mmdc --backgroundColor='#121a19' --theme neutral --output public/analyze_website.svg < m.mermaid",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "supabase:studio": "supabase studio",
+    "dev:full": "supabase start && astro dev"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.4",
@@ -39,6 +44,7 @@
   },
   "devDependencies": {
     "prettier-plugin-astro": "^0.14.1",
+    "supabase": "^2.34.3",
     "wrangler": "^4.20.3"
   }
 }
