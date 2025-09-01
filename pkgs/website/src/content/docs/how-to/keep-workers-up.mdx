@@ -1,5 +1,5 @@
 ---
-title: Keep Workers Up in Production
+title: Keep Workers Up
 description: Set up pg_cron safety net to automatically restart workers and prevent uncontrolled spawning on Supabase.com
 sidebar:
   order: 115
@@ -33,7 +33,7 @@ This approach checks existing worker counts before spawning new ones:
      $$
      SELECT net.http_post(
        url := 'https://your-project.supabase.co/functions/v1/your-worker-name',
-       headers := jsonb_build_object('Authorization', 'Bearer YOUR_ACTUAL_ANON_KEY_HERE')
+       headers := jsonb_build_object('Authorization', 'Bearer YOUR_ANON_KEY')
      ) AS request_id
      WHERE (
        SELECT COUNT(DISTINCT worker_id) FROM pgflow.workers
@@ -69,7 +69,7 @@ This approach checks existing worker counts before spawning new ones:
 ### Function Name Matching
 Match your Edge Function's name:
 ```sql
-WHERE function_name = 'your-custom-worker'  -- Replace with actual function name
+WHERE function_name = 'your-worker-name'  -- Replace with actual function name
 ```
 
 ### Heartbeat Timing
