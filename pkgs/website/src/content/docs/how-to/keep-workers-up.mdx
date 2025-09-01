@@ -17,7 +17,7 @@ Set up a pg_cron safety net that checks worker status and only starts new worker
 
 ## The Problem
 
-Edge Workers may fail to respawn if they hit execution time limits before sending restart requests. Manual safety nets can cause Supabase's Edge Runtime to spawn multiple workers simultaneously, leading to unpredictable costs.
+Edge Workers normally auto-respawn by sending their own HTTP requests. In rare cases during high load, workers may fail to respawn if they hit execution time limits before sending restart requests. Basic safety nets can cause Supabase's Edge Runtime to spawn multiple workers simultaneously, leading to unpredictable costs.
 
 ## Smart Safety Net Solution
 
@@ -44,51 +44,19 @@ This approach checks existing worker counts before spawning new ones:
    );
    ```
 
-2. **Configure worker limits**
-   
-   Adjust the worker count threshold based on your needs:
-   - `< 1`: Ensures exactly one worker (strictest)
-   - `< 2`: Allows up to 2 workers for redundancy
-
-3. **Monitor the safety net**
-   ```sql
-   SELECT 
-     function_name,
-     COUNT(*) FILTER (WHERE deprecated_at IS NULL) as active_workers,
-     last_heartbeat_at
-   FROM pgflow.workers
-   WHERE last_heartbeat_at > now() - interval '6 seconds'
-   GROUP BY function_name, last_heartbeat_at
-   ORDER BY last_heartbeat_at DESC;
-   ```
-
 </Steps>
 
-## Configuration Options
+## Cron Frequency Options
 
-### Function Name Matching
-Match your Edge Function's name:
+Adjust the check interval based on your priorities:
 ```sql
-WHERE function_name = 'your-worker-name'  -- Replace with actual function name
+'10 seconds'  -- Fast recovery, higher quota usage
+'30 seconds'  -- Good balance (recommended)
+'60 seconds'  -- Slower recovery, minimal quota usage
 ```
 
-### Heartbeat Timing
-Adjust based on your worker's responsiveness:
-```sql
-WHERE last_heartbeat_at > NOW() - INTERVAL '90 seconds'  -- More lenient
-WHERE last_heartbeat_at > NOW() - INTERVAL '30 seconds'  -- Stricter
-```
-
-### Cron Frequency
-Balance responsiveness with resource usage:
-```sql
-'5 seconds'   -- Minimum safe interval (matches heartbeat frequency)
-'15 seconds'  -- Good balance of responsiveness and efficiency  
-'30 seconds'  -- Less frequent checks
-```
-
-<Aside type="caution" title="Minimum Interval">
-Never set intervals below 5 seconds since workers send heartbeats every 5 seconds. Faster intervals won't detect failures any quicker.
+<Aside type="tip" title="Frequency Trade-offs">
+More frequent checks mean faster worker recovery but consume more HTTP requests and egress quota. Less frequent checks save quota but workers may stay down longer if they fail.
 </Aside>
 
 ## Stopping the Safety Net
