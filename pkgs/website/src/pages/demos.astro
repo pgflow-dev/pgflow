@@ -1,0 +1,43 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { AuthDemo } from '../components/AuthDemo';
+---
+
+<StarlightPage
+  frontmatter={{
+    title: "pgflow Demos",
+    description: "Interactive demonstrations of pgflow functionality with authenticated examples.",
+    editUrl: false,
+    sidebar: { hidden: true },
+    tableOfContents: false,
+    lastUpdated: false,
+    topic: 'pgflow'
+  }}
+>
+  <div class="demos-container">
+    <h1>pgflow Demos</h1>
+
+    <p>
+      This page showcases interactive pgflow demonstrations. Authentication is handled automatically
+      using anonymous Supabase auth to enable authenticated showcase examples.
+    </p>
+
+    <div class="auth-wrapper">
+      <h2>Authentication Status</h2>
+      <AuthDemo showDetails={true} client:load />
+    </div>
+  </div>
+</StarlightPage>
+
+<style>
+  .demos-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  .auth-wrapper {
+    margin-top: 2rem;
+  }
+
+</style>

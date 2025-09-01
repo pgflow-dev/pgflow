@@ -12,13 +12,6 @@ pgflow workers are regular Supabase Edge Functions. Deploy them like any Edge Fu
 
 <NotProductionReady />
 
-## Prerequisites
-
-Before deploying, ensure you have:
-- pgflow installed and configured in your Supabase project
-- Database connection string prepared (see [Prepare DB Connection String](/how-to/prepare-db-string/))
-- `EDGE_WORKER_DB_URL` environment variable set to your pooled connection string (transaction mode)
-
 ## Quick Deployment
 
 <Steps>
@@ -42,6 +35,16 @@ Before deploying, ensure you have:
    curl -X POST "https://your-project.supabase.co/functions/v1/your-worker-name" \
      -H "Authorization: Bearer YOUR_ANON_KEY"
    ```
+
+4. **Keep workers up**
+   
+   [Set up the pg_cron safety net](/how-to/keep-workers-up/) for reliable production operation.
+   
+   <Aside type="danger" title="Don't Skip the Safety Net">
+   **Your workers will eventually stop working without a safety net.** This is especially critical for production deployments where workflow reliability matters.
+
+   The safety net takes 2 minutes to set up and prevents hours of debugging why workflows stopped running. [Configure it now →](/how-to/keep-workers-up/)
+   </Aside>
 
 </Steps>
 
@@ -71,21 +74,3 @@ WHERE last_heartbeat_at > now() - interval '6 seconds'
 GROUP BY function_name;
 ```
 
-### Keeping Workers Running
-
-Workers auto-respawn when terminated. For extra reliability, schedule a ping every 5 seconds:
-
-```sql
-SELECT cron.schedule(
-  'ping-worker',
-  '5 seconds',
-  $$
-  SELECT net.http_post(
-    url := 'https://your-project.supabase.co/functions/v1/your-worker-name',
-    headers := jsonb_build_object('Authorization', 'Bearer YOUR_ANON_KEY')
-  ) AS request_id;
-  $$
-);
-```
-
-See [Supabase cron guide](https://supabase.com/docs/guides/cron/quickstart#invoke-supabase-edge-function-every-30-seconds) for details.

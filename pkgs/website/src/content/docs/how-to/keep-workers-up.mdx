@@ -1,0 +1,71 @@
+---
+title: Keep Workers Up
+description: Set up pg_cron safety net to automatically restart workers and prevent uncontrolled spawning on Supabase.com
+sidebar:
+  order: 115
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+Set up a pg_cron safety net that checks worker status and only starts new workers when needed, preventing cost overruns from uncontrolled spawning.
+
+<Aside type="caution" title="Prerequisites">
+- Deployed Edge Worker function on Supabase.com
+- pg_cron extension enabled in your Supabase project
+- Your project's ANON key (from Supabase Dashboard → Settings → API)
+</Aside>
+
+## The Problem
+
+Edge Workers normally auto-respawn by sending their own HTTP requests. In rare cases during high load, workers may fail to respawn if they hit execution time limits before sending restart requests. Basic safety nets can cause Supabase's Edge Runtime to spawn multiple workers simultaneously, leading to unpredictable costs.
+
+## Smart Safety Net Solution
+
+This approach checks existing worker counts before spawning new ones:
+
+<Steps>
+
+1. **Create the safety net cron job**
+   ```sql
+   SELECT cron.schedule(
+     'worker-safety-net',
+     '10 seconds',
+     $$
+     SELECT net.http_post(
+       url := 'https://your-project.supabase.co/functions/v1/your-worker-name',
+       headers := jsonb_build_object('Authorization', 'Bearer YOUR_ANON_KEY')
+     ) AS request_id
+     WHERE (
+       SELECT COUNT(DISTINCT worker_id) FROM pgflow.workers
+       WHERE function_name = 'your-worker-name' 
+         AND last_heartbeat_at > NOW() - INTERVAL '2 min'
+     ) < 2;
+     $$
+   );
+   ```
+
+</Steps>
+
+## Cron Frequency Options
+
+Adjust the check interval based on your priorities:
+```sql
+'10 seconds'  -- Fast recovery, higher quota usage
+'30 seconds'  -- Good balance (recommended)
+'60 seconds'  -- Slower recovery, minimal quota usage
+```
+
+<Aside type="tip" title="Frequency Trade-offs">
+More frequent checks mean faster worker recovery but consume more HTTP requests and egress quota. Less frequent checks save quota but workers may stay down longer if they fail.
+</Aside>
+
+## Stopping the Safety Net
+
+To disable the safety net:
+```sql
+SELECT cron.unschedule('worker-safety-net');
+```
+
+<Aside type="tip" title="Cost Control">
+This approach provides predictable costs since you control exactly how many workers run, unlike basic safety nets that can spawn unlimited instances.
+</Aside>

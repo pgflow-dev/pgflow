@@ -305,7 +305,7 @@ Maximum number of tasks to fetch in a single poll operation. Larger batches are 
 How long to wait for tasks during each poll cycle. Shorter durations ensure more responsive task pickup.
 
 <Aside type="caution">
-Keep `maxPollSeconds` at 2 seconds or lower for flow workers to ensure proper heartbeat intervals.
+Keep `maxPollSeconds` below the heartbeat interval (5 seconds) for flow workers to ensure proper heartbeat timing.
 </Aside>
 
 ### `pollIntervalMs`
