@@ -1,0 +1,103 @@
+---
+title: Keep Workers Up in Production
+description: Set up pg_cron safety net to automatically restart workers and prevent uncontrolled spawning on Supabase.com
+sidebar:
+  order: 115
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+Set up a pg_cron safety net that checks worker status and only starts new workers when needed, preventing cost overruns from uncontrolled spawning.
+
+<Aside type="caution" title="Prerequisites">
+- Deployed Edge Worker function on Supabase.com
+- pg_cron extension enabled in your Supabase project
+- Your project's ANON key (from Supabase Dashboard → Settings → API)
+</Aside>
+
+## The Problem
+
+Edge Workers may fail to respawn if they hit execution time limits before sending restart requests. Manual safety nets can cause Supabase's Edge Runtime to spawn multiple workers simultaneously, leading to unpredictable costs.
+
+## Smart Safety Net Solution
+
+This approach checks existing worker counts before spawning new ones:
+
+<Steps>
+
+1. **Create the safety net cron job**
+   ```sql
+   SELECT cron.schedule(
+     'worker-safety-net',
+     '10 seconds',
+     $$
+     SELECT net.http_post(
+       url := 'https://your-project.supabase.co/functions/v1/your-worker-name',
+       headers := jsonb_build_object('Authorization', 'Bearer YOUR_ACTUAL_ANON_KEY_HERE')
+     ) AS request_id
+     WHERE (
+       SELECT COUNT(DISTINCT worker_id) FROM pgflow.workers
+       WHERE function_name = 'your-worker-name' 
+         AND last_heartbeat_at > NOW() - INTERVAL '2 min'
+     ) < 2;
+     $$
+   );
+   ```
+
+2. **Configure worker limits**
+   
+   Adjust the worker count threshold based on your needs:
+   - `< 1`: Ensures exactly one worker (strictest)
+   - `< 2`: Allows up to 2 workers for redundancy
+
+3. **Monitor the safety net**
+   ```sql
+   SELECT 
+     function_name,
+     COUNT(*) FILTER (WHERE deprecated_at IS NULL) as active_workers,
+     last_heartbeat_at
+   FROM pgflow.workers
+   WHERE last_heartbeat_at > now() - interval '6 seconds'
+   GROUP BY function_name, last_heartbeat_at
+   ORDER BY last_heartbeat_at DESC;
+   ```
+
+</Steps>
+
+## Configuration Options
+
+### Function Name Matching
+Match your Edge Function's name:
+```sql
+WHERE function_name = 'your-custom-worker'  -- Replace with actual function name
+```
+
+### Heartbeat Timing
+Adjust based on your worker's responsiveness:
+```sql
+WHERE last_heartbeat_at > NOW() - INTERVAL '90 seconds'  -- More lenient
+WHERE last_heartbeat_at > NOW() - INTERVAL '30 seconds'  -- Stricter
+```
+
+### Cron Frequency
+Balance responsiveness with resource usage:
+```sql
+'5 seconds'   -- Minimum safe interval (matches heartbeat frequency)
+'15 seconds'  -- Good balance of responsiveness and efficiency  
+'30 seconds'  -- Less frequent checks
+```
+
+<Aside type="caution" title="Minimum Interval">
+Never set intervals below 5 seconds since workers send heartbeats every 5 seconds. Faster intervals won't detect failures any quicker.
+</Aside>
+
+## Stopping the Safety Net
+
+To disable the safety net:
+```sql
+SELECT cron.unschedule('worker-safety-net');
+```
+
+<Aside type="tip" title="Cost Control">
+This approach provides predictable costs since you control exactly how many workers run, unlike basic safety nets that can spawn unlimited instances.
+</Aside>
