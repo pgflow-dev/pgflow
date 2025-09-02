@@ -4,12 +4,12 @@ description: Postgres-First Workflow Orchestration - All in SQL
 template: splash
 hero:
   title: Run reliable AI Workflows and Background Jobs directly in Supabase
-  tagline: With pgflow, you can seamlessly run workflows directly in Supabase, ensuring reliability and visibility without adding extra infrastructure.
+  tagline: No more duct-taping pg_cron to Edge Functions. Real workflow orchestration with retries, monitoring, and type safety.
   image:
     dark: ../../assets/pgflow-logo-dark.svg
     light: ../../assets/pgflow-logo-light.svg
   actions:
-    - text: Get Started
+    - text: Create Your First Workflow
       link: /getting-started/install-pgflow/
       icon: right-arrow
       variant: primary
@@ -20,7 +20,7 @@ hero:
 editUrl: false
 ---
 
-import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 import TestimonialCarousel from '../../components/TestimonialCarousel.astro';
 
 <div class="quickstart-section">
@@ -33,15 +33,15 @@ npx pgflow@latest install
 
 </div>
 
-## Why pgflow Exists
-
-While Supabase provides the essential building blocks, pgflow brings enhanced orchestration for advanced workflow management.
-
-#### Developers Instantly Got It
+## What Developers Are Saying
 
 *Real comments after seeing early demos*
 
 <TestimonialCarousel />
+
+## Why pgflow Exists
+
+While Supabase provides the essential building blocks, pgflow brings enhanced orchestration for advanced workflow management.
 
 ### Have you run into any of these situations?
 
@@ -69,11 +69,39 @@ As apps grow, a little extra coordination can save a lot of engineering time. pg
 
 </CardGrid>
 
-### How pgflow Helps:
+## Type-safe DAG workflows in TypeScript
 
-pgflow works in harmony with Supabase's tools, simplifying orchestration and enabling a more cohesive workflow.
+Define parallel, type-safe DAG workflows effortlessly:
 
-Eliminate manual orchestration with Postgres‑native workflows, zero extra servers, and built‑in reliability
+```typescript
+new Flow<{ url: string }>({ slug: 'analyze_website' })
+  .step(
+    { slug: 'website' },
+    async (input) => await scrapeWebsite(input.run.url)
+  )
+  .step(
+    { slug: 'summary', dependsOn: ['website'] },
+    async (input) => await summarizeWithAI(input.website.content)
+  )
+  .step(
+    { slug: 'tags', dependsOn: ['website'] },
+    async (input) => await extractTags(input.website.content)
+  )
+  .step(
+    { slug: 'saveToDb', dependsOn: ['summary', 'tags'] },
+    async ({ run, summary, tags }) =>
+      await saveWebsite({
+        user_id: run.user_id,
+        website_url: run.url,
+        summary,
+        tags,
+      })
+  );
+```
+
+## How pgflow Works
+
+pgflow eliminates manual orchestration with Postgres-native workflows, zero extra servers, and built-in reliability
 
 <CardGrid>
   <Card title="Postgres-Native Orchestration" icon="approve-check">
@@ -99,74 +127,25 @@ Eliminate manual orchestration with Postgres‑native workflows, zero extra serv
 - **Background Jobs:** Handle emails, file processing, and scheduled tasks with full visibility
 - **Data Pipelines:** Extract, transform, and load data across systems without losing track of progress
 
-## A complete workflow engine built on Postgres
+## Complete Workflow Engine Built on Postgres
 
-pgflow is a workflow orchestration system with its core state management in your database, combining:
+pgflow combines the best of workflow orchestration with the reliability of Postgres:
 
 <CardGrid>
   <Card title="SQL Core" icon="star">
-    Manage workflow state and transitions natively in Postgres with full ACID compliance
+    All workflow state and transitions managed natively in Postgres with full ACID compliance. Single source of truth for definitions, execution history, and monitoring.
   </Card>
+  
   <Card title="TypeScript DSL" icon="seti:typescript">
-    Type-safe workflows with automatic inference and end-to-end compile-time safety.
+    Type-safe workflow definitions with automatic inference. Full IDE autocompletion and compile-time safety for your entire workflow DAG.
   </Card>
+  
   <Card title="Edge Worker" icon="rocket">
-    Auto-respawning, continuously running worker for low latency, reliable task execution.
+    Auto-respawning workers with at-least-once delivery, automatic retries, timeouts, and dead-letter handling. Deploy as Supabase Edge Functions with zero config.
   </Card>
-  <Card title="CLI Tools" icon="seti:powershell">
-    One-command setup: quickly deploy pgflow with automatic DB migrations.
-  </Card>
-</CardGrid>
-
-## Type-safe DAG workflows in TypeScript
-
-Define parallel, type-safe DAG workflows effortlessly.
-
-```typescript
-new Flow<{ url: string }>({
-  slug: 'analyze_website',
-})
-  .step(
-    { slug: 'website' },
-    async (input) => await scrapeWebsite(input.run.url)
-  )
-  .step(
-    { slug: 'summary', dependsOn: ['website'] },
-    async (input) => await summarizeWithAI(input.website.content)
-  )
-  .step(
-    { slug: 'tags', dependsOn: ['website'] },
-    async (input) => await extractTags(input.website.content)
-  )
-  .step(
-    { slug: 'saveToDb', dependsOn: ['summary', 'tags'] },
-    async ({ run, summary, tags }) =>
-      await saveWebsite({
-        user_id: run.user_id,
-        website_url: run.url,
-        summary,
-        tags,
-      })
-  );
-```
-
-## End-to-end workflow orchestration
-
-<CardGrid>
-  <Card title="Single source of truth" icon="open-book">
-    All workflow definitions, state, and execution history stored in your Postgres database-simplifying monitoring and debugging.
-  </Card>
-
-  <Card title="Reliable task processing" icon="rocket">
-    Automatic retries, timeouts, at-least-once delivery and dead-letter handling built directly into your database.
-  </Card>
-
-  <Card title="Supabase-native" icon="puzzle">
-    Deploy as Edge Functions with automatic restarts and zero-config integration with your existing Supabase project.
-  </Card>
-
-  <Card title="Developer experience" icon="approve-check">
-    Full type inference between workflow steps with IDE autocompletion and compile-time safety for your entire workflow DAG.
+  
+  <Card title="One-Command Setup" icon="seti:powershell">
+    Install pgflow with a single command. Automatic database migrations, Supabase configuration, and worker deployment.
   </Card>
 </CardGrid>
 
@@ -180,6 +159,28 @@ Create and run workflows with a straightforward process:
 1. **Trigger workflows from your app or SQL**
 
 The execution system handles the rest-scheduling steps when dependencies complete, retrying failed tasks, and aggregating results automatically.
+
+## Frequently Asked Questions
+
+<Aside type="note" title="Do I need a Supabase account?">
+  Yes, pgflow is designed specifically for Supabase projects. You can start with a free Supabase account.
+</Aside>
+
+<Aside type="note" title="Can I use pgflow in production?">
+  Yes! The core engine is stable and ready for real workloads. As with any infrastructure component, we recommend testing your specific workflows thoroughly. <a href="https://www.pgflow.dev/discord/">Join our Discord</a> to connect with other users and share experiences.
+</Aside>
+
+<Aside type="note" title="How does pricing work?">
+  pgflow itself is open source and free. You only pay for your Supabase usage (database, Edge Functions, etc.).
+</Aside>
+
+<Aside type="note" title="Can I use it with existing Postgres?">
+  pgflow requires specific Supabase features (Edge Functions, pgmq). It's designed to work within the Supabase ecosystem.
+</Aside>
+
+<Aside type="note" title="What's the difference from Temporal/Airflow?">
+  Unlike traditional workflow engines, pgflow runs entirely inside your Postgres database with zero external infrastructure. Everything is SQL-native.
+</Aside>
 
 ## Ready to get started?
 

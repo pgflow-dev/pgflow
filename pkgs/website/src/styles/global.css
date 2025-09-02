@@ -87,6 +87,28 @@ svg .secondary {
   }
 }
 
+/* HERO QUICKSTART */
+.hero-quickstart {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  color: var(--sl-color-gray-3);
+}
+
+.hero-quickstart .quickstart-label {
+  color: var(--sl-color-gray-4);
+  margin-right: 0.5rem;
+}
+
+.hero-quickstart code {
+  background: var(--sl-color-gray-6);
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.25rem;
+  font-size: 0.95rem;
+  color: var(--sl-color-accent);
+  font-weight: 500;
+}
+
 /* QUICKSTART SECTION */
 .quickstart-section {
   margin: 8px auto 28px;
