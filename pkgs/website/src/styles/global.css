@@ -258,8 +258,7 @@ svg .secondary {
   font-weight: bold;
   font-size: 1rem;
   z-index: 1000;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  animation: gentle-nudge 6s infinite;
+  transition: transform 0.4s ease, box-shadow 0.2s ease;
 }
 
 /* Force white text in both light and dark modes */
@@ -276,20 +275,27 @@ svg .secondary {
 }
 
 .hire-sticker:hover {
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.05);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
   text-decoration: none;
   color: #ffffff !important;
+  transition: transform 0.4s ease, box-shadow 0.2s ease;
 }
 
-/* Gentle shake animation every 6 seconds */
-@keyframes gentle-nudge {
-  0%, 92% { transform: rotate(0deg); }
-  1% { transform: rotate(-4deg); }
-  3% { transform: rotate(4deg); }
-  5% { transform: rotate(-2deg); }
-  7% { transform: rotate(1deg); }
-  8% { transform: rotate(0deg); }
+/* One-time attention nudge - more dramatic since it only happens once */
+.hire-sticker.nudge {
+  animation: attention-nudge 0.8s ease-in-out;
+}
+
+@keyframes attention-nudge {
+  0% { transform: rotate(0deg) scale(1); }
+  15% { transform: rotate(-6deg) scale(1.05); }
+  30% { transform: rotate(6deg) scale(1.05); }
+  45% { transform: rotate(-4deg) scale(1.02); }
+  60% { transform: rotate(4deg) scale(1.02); }
+  75% { transform: rotate(-2deg) scale(1.01); }
+  90% { transform: rotate(1deg) scale(1); }
+  100% { transform: rotate(0deg) scale(1); }
 }
 
 /* Hide on small screens */
