@@ -12,6 +12,9 @@ tags:
   - context
   - breaking-change
 featured: true
+cover:
+  alt: 'pgflow 0.6.0 worker deprecation and context changes cover image'
+  image: '../../../assets/cover-images/pgflow-0-6-0-worker-deprecation-and-context-changes.png'
 ---
 
 import { Aside } from "@astrojs/starlight/components";
@@ -24,8 +27,8 @@ Deploy new workers without version overlap. Deprecated workers stop accepting ne
 
 ```sql
 -- Deprecate old workers before starting new ones
-UPDATE pgflow.workers 
-SET deprecated_at = NOW() 
+UPDATE pgflow.workers
+SET deprecated_at = NOW()
 WHERE function_name = 'your-worker-name'
   AND deprecated_at IS NULL;
 ```
@@ -37,7 +40,7 @@ Workers detect deprecation within 5 seconds via heartbeat and gracefully stop po
 The context object is now cleaner and more consistent:
 
 <Aside type="caution" title="Breaking Changes">
-- Removed: `context.anonSupabase` 
+- Removed: `context.anonSupabase`
 - Renamed: `context.serviceSupabase` → `context.supabase`
 </Aside>
 
