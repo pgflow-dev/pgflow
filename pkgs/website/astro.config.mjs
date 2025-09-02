@@ -130,6 +130,29 @@ export default defineConfig({
             content: 'website',
           },
         },
+        {
+          tag: 'script',
+          content: `
+            document.addEventListener('DOMContentLoaded', function() {
+              if (!window.location.pathname.startsWith('/hire')) {
+                const sticker = document.createElement('a');
+                sticker.href = '/hire/';
+                sticker.className = 'hire-sticker';
+                sticker.textContent = 'Hire Author';
+                document.body.appendChild(sticker);
+                
+                // Trigger one-time attention nudge after 5 seconds
+                setTimeout(function() {
+                  sticker.classList.add('nudge');
+                  // Remove the class after animation completes
+                  setTimeout(function() {
+                    sticker.classList.remove('nudge');
+                  }, 800);
+                }, 5000);
+              }
+            });
+          `,
+        },
       ],
       plugins: [
         starlightBlog({
@@ -159,6 +182,7 @@ export default defineConfig({
             'how-to/update-flow-options',
             'faq',
             'news/**',
+            'hire/**',
           ],
           promote: [
             'getting-started/install-pgflow',
@@ -186,11 +210,16 @@ export default defineConfig({
         starlightSidebarTopics(
           [
             {
+              label: 'Hire the Author',
+              icon: 'email',
+              link: '/hire/',
+              id: 'hire',
+            },
+            {
               label: 'News',
               icon: 'pen',
               link: '/news/',
               id: 'news',
-              badge: { text: 'NEW!', variant: 'tip' },
               items: [
                 {
                   label: 'All Posts',
@@ -276,10 +305,10 @@ export default defineConfig({
             },
           ],
           {
-            exclude: [],
+            exclude: ['/hire', '/demos'],
             topics: {
               news: ['/news', '/news/**/*']
-            }
+            },
           }
         ),
       ],
