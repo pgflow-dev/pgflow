@@ -130,6 +130,20 @@ export default defineConfig({
             content: 'website',
           },
         },
+        {
+          tag: 'script',
+          content: `
+            document.addEventListener('DOMContentLoaded', function() {
+              if (!window.location.pathname.startsWith('/hire')) {
+                const sticker = document.createElement('a');
+                sticker.href = '/hire/';
+                sticker.className = 'hire-sticker';
+                sticker.textContent = 'Hire Author';
+                document.body.appendChild(sticker);
+              }
+            });
+          `,
+        },
       ],
       plugins: [
         starlightBlog({

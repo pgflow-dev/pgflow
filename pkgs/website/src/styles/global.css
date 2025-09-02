@@ -241,3 +241,61 @@ svg .secondary {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+/* ============================================
+   HIRE AUTHOR FLOATING STICKER
+   ============================================ */
+
+.hire-sticker {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--sl-color-accent);
+  color: #ffffff !important;
+  padding: 12px 16px;
+  border-radius: 25px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 1rem;
+  z-index: 1000;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  animation: gentle-nudge 6s infinite;
+}
+
+/* Force white text in both light and dark modes */
+:root .hire-sticker,
+:root[data-theme='light'] .hire-sticker,
+:root[data-theme='dark'] .hire-sticker {
+  color: #ffffff !important;
+}
+
+.hire-sticker::before {
+  content: '🤝';
+  font-size: 1.2em;
+  margin-right: 0.5em;
+}
+
+.hire-sticker:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  text-decoration: none;
+  color: #ffffff !important;
+}
+
+/* Gentle shake animation every 6 seconds */
+@keyframes gentle-nudge {
+  0%, 92% { transform: rotate(0deg); }
+  1% { transform: rotate(-4deg); }
+  3% { transform: rotate(4deg); }
+  5% { transform: rotate(-2deg); }
+  7% { transform: rotate(1deg); }
+  8% { transform: rotate(0deg); }
+}
+
+/* Hide on small screens */
+@media (max-width: 768px) {
+  .hire-sticker {
+    display: none;
+  }
+}
+
