@@ -159,6 +159,7 @@ export default defineConfig({
             'how-to/update-flow-options',
             'faq',
             'news/**',
+            'hire/**',
           ],
           promote: [
             'getting-started/install-pgflow',
@@ -186,11 +187,16 @@ export default defineConfig({
         starlightSidebarTopics(
           [
             {
+              label: 'Hire the Author',
+              icon: 'email',
+              link: '/hire/',
+              id: 'hire',
+            },
+            {
               label: 'News',
               icon: 'pen',
               link: '/news/',
               id: 'news',
-              badge: { text: 'NEW!', variant: 'tip' },
               items: [
                 {
                   label: 'All Posts',
@@ -276,10 +282,10 @@ export default defineConfig({
             },
           ],
           {
-            exclude: [],
+            exclude: ['/hire', '/demos'],
             topics: {
               news: ['/news', '/news/**/*']
-            }
+            },
           }
         ),
       ],
