@@ -7,7 +7,7 @@ sidebar:
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 
-Set up a pg_cron safety net that checks worker status and only starts new workers when needed, preventing cost overruns from uncontrolled spawning.
+Set up a pg_cron safety net that checks worker status and only starts new workers when needed, making workers spawning more predictable.
 
 <Aside type="caution" title="Prerequisites">
 - Deployed Edge Worker function on Supabase.com
@@ -26,18 +26,21 @@ This approach checks existing worker counts before spawning new ones:
 <Steps>
 
 1. **Create the safety net cron job**
+
+   Remember to change `<your-worker-name>` to name of your worker's Edge Function and `<YOUR_ANON_KEY>` to match your project's ANON key.
+
    ```sql
    SELECT cron.schedule(
-     'worker-safety-net',
+     'watchdog--<your-worker-name>',
      '10 seconds',
      $$
      SELECT net.http_post(
-       url := 'https://your-project.supabase.co/functions/v1/your-worker-name',
-       headers := jsonb_build_object('Authorization', 'Bearer YOUR_ANON_KEY')
+       url := 'https://your-project.supabase.co/functions/v1/<your-worker-name>',
+       headers := jsonb_build_object('Authorization', 'Bearer <YOUR_ANON_KEY>')
      ) AS request_id
      WHERE (
        SELECT COUNT(DISTINCT worker_id) FROM pgflow.workers
-       WHERE function_name = 'your-worker-name' 
+       WHERE function_name = 'your-worker-name'
          AND last_heartbeat_at > NOW() - INTERVAL '2 min'
      ) < 2;
      $$
@@ -63,9 +66,5 @@ More frequent checks mean faster worker recovery but consume more HTTP requests 
 
 To disable the safety net:
 ```sql
-SELECT cron.unschedule('worker-safety-net');
+SELECT cron.unschedule('watchdog--<worker-safety-net>');
 ```
-
-<Aside type="tip" title="Cost Control">
-This approach provides predictable costs since you control exactly how many workers run, unlike basic safety nets that can spawn unlimited instances.
-</Aside>
