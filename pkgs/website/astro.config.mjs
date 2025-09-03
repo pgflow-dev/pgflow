@@ -140,7 +140,7 @@ export default defineConfig({
                 sticker.className = 'hire-sticker';
                 sticker.textContent = 'Hire Author';
                 document.body.appendChild(sticker);
-                
+
                 // Trigger one-time attention nudge after 5 seconds
                 setTimeout(function() {
                   sticker.classList.add('nudge');
@@ -209,12 +209,6 @@ export default defineConfig({
         starlightLinksValidator({ exclude: ['http://localhost*'] }),
         starlightSidebarTopics(
           [
-            {
-              label: 'Hire the Author',
-              icon: 'email',
-              link: '/hire/',
-              id: 'hire',
-            },
             {
               label: 'News',
               icon: 'pen',
