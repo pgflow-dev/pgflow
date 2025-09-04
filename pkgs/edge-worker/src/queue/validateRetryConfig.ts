@@ -24,10 +24,6 @@ export function validateRetryConfig(config: RetryConfig): void {
   if (config.limit < 0) {
     throw new Error('limit must be greater than or equal to 0');
   }
-  // Prevent overflow in Math.pow(2, limit-1)
-  if (config.limit > 50) {
-    throw new Error('limit must not exceed 50');
-  }
 
   // Validate baseDelay
   if (!Number.isInteger(config.baseDelay)) {
@@ -48,6 +44,11 @@ export function validateRetryConfig(config: RetryConfig): void {
       throw new Error('maxDelay is only valid for exponential strategy');
     }
   } else if (config.strategy === 'exponential') {
+    // Prevent overflow in Math.pow(2, limit-1)
+    if (config.limit > 50) {
+      throw new Error('For exponential strategy, limit must not exceed 50 to prevent calculation overflow');
+    }
+    
     // Validate maxDelay if provided
     if (config.maxDelay !== undefined) {
       if (!Number.isInteger(config.maxDelay)) {
