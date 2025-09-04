@@ -398,6 +398,6 @@ async function batchHandler(payload, { workerConfig }) {
 ```
 
 <Aside type="note">
-The `workerConfig` object is immutable (frozen) to prevent handlers from modifying configuration values that could affect other message executions. It reflects the final resolved configuration with all defaults applied. The SQL connection object is excluded since it cannot be safely cloned and frozen.
+The `workerConfig` object is immutable (frozen) to prevent handlers from modifying configuration values that could affect other message executions. It reflects the final resolved configuration with all defaults applied, so you can safely access any field without undefined checks. The SQL connection object is excluded since it cannot be safely cloned and frozen.
 </Aside>
 
