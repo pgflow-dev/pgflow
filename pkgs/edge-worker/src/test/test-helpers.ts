@@ -10,6 +10,8 @@ import type {
 } from '../core/context.js';
 import type { StepTaskRecord } from '../flow/types.js';
 import { createServiceSupabaseClient } from '../core/supabase-utils.js';
+import { createContextSafeConfig } from '../core/context.js';
+import type { QueueWorkerConfig, FlowWorkerConfig } from '../core/workerConfigTypes.js';
 
 /**
  * Creates a full Supabase context for testing message handlers.
@@ -20,8 +22,9 @@ export function createSupabaseMessageContext<TPayload extends Json = Json>(param
   sql: Sql;
   abortSignal: AbortSignal;
   rawMessage: PgmqMessageRecord<TPayload>;
+  workerConfig?: Readonly<Omit<QueueWorkerConfig, 'sql'>>;
 }): SupabaseMessageContext<TPayload> {
-  const { env, sql, abortSignal, rawMessage } = params;
+  const { env, sql, abortSignal, rawMessage, workerConfig } = params;
 
   // Validate required environment variables
   const supabaseUrl = env.SUPABASE_URL;
@@ -41,6 +44,15 @@ export function createSupabaseMessageContext<TPayload extends Json = Json>(param
     SUPABASE_SERVICE_ROLE_KEY: supabaseServiceRoleKey
   });
 
+  // Provide a safe, frozen workerConfig (default or provided)
+  const defaultWorkerConfig = createContextSafeConfig(
+    (workerConfig ?? {
+      queueName: 'test-queue',
+      maxConcurrent: 10,
+      retry: { strategy: 'fixed' as const, limit: 3, baseDelay: 1 }
+    }) as QueueWorkerConfig
+  );
+
   return {
     // Core platform resources
     env,
@@ -48,6 +60,7 @@ export function createSupabaseMessageContext<TPayload extends Json = Json>(param
     
     // Message execution context
     rawMessage,
+    workerConfig: defaultWorkerConfig,
     
     // Supabase-specific resources (always present)
     sql,
@@ -65,8 +78,9 @@ export function createSupabaseStepTaskContext<TFlow extends AnyFlow>(params: {
   abortSignal: AbortSignal;
   stepTask: StepTaskRecord<TFlow>;
   rawMessage: PgmqMessageRecord<AllStepInputs<TFlow>>;
+  workerConfig?: Readonly<Omit<FlowWorkerConfig, 'sql'>>;
 }): SupabaseStepTaskContext<TFlow> {
-  const { env, sql, abortSignal, stepTask, rawMessage } = params;
+  const { env, sql, abortSignal, stepTask, rawMessage, workerConfig } = params;
 
   // Validate required environment variables
   const supabaseUrl = env.SUPABASE_URL;
@@ -86,6 +100,17 @@ export function createSupabaseStepTaskContext<TFlow extends AnyFlow>(params: {
     SUPABASE_SERVICE_ROLE_KEY: supabaseServiceRoleKey
   });
 
+  // Provide a safe, frozen workerConfig (default or provided)
+  const defaultWorkerConfig = createContextSafeConfig(
+    (workerConfig ?? {
+      maxConcurrent: 10,
+      batchSize: 10,
+      visibilityTimeout: 2,
+      maxPollSeconds: 2,
+      pollIntervalMs: 100
+    }) as FlowWorkerConfig
+  );
+
   return {
     // Core platform resources
     env,
@@ -94,6 +119,7 @@ export function createSupabaseStepTaskContext<TFlow extends AnyFlow>(params: {
     // Step task execution context
     rawMessage,
     stepTask,
+    workerConfig: defaultWorkerConfig,
     
     // Supabase-specific resources (always present)
     sql,

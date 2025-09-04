@@ -178,6 +178,78 @@ const MyFlow = new Flow({ slug: 'my_flow' })
   });
 ```
 
+### `workerConfig`
+**Type:** `Readonly<ResolvedQueueWorkerConfig>` or `Readonly<ResolvedFlowWorkerConfig>`
+**Available:** Always
+
+The resolved worker configuration for the current worker instance. This is immutable and provides access to all worker settings including retry policies, concurrency limits, and timeouts. The configuration excludes the SQL connection object since it cannot be safely cloned and frozen.
+
+All optional configuration values have been resolved with their defaults applied, so you can safely access any field without checking for `undefined`.
+
+```typescript
+// Resolved queue worker configuration (all defaults applied)
+interface ResolvedQueueWorkerConfig {
+  queueName: string;          // Name of the queue being processed
+  maxConcurrent: number;      // Maximum concurrent tasks  
+  retry: RetryConfig;         // Retry strategy configuration
+  visibilityTimeout: number;  // Message visibility timeout in seconds
+  batchSize: number;          // Batch size for polling messages
+  maxPollSeconds: number;     // Maximum polling duration
+  pollIntervalMs: number;     // Polling interval in milliseconds
+  maxPgConnections: number;   // Database connection pool size
+  connectionString: string;   // Database connection string (may be empty)
+  env: Record<string, string | undefined>;  // Environment variables
+}
+
+// Resolved flow worker configuration (all defaults applied)
+interface ResolvedFlowWorkerConfig {
+  maxConcurrent: number;      // Maximum concurrent tasks
+  batchSize: number;          // Batch size for polling messages
+  visibilityTimeout: number;  // Message visibility timeout in seconds
+  maxPollSeconds: number;     // Maximum polling duration
+  pollIntervalMs: number;     // Polling interval in milliseconds
+  maxPgConnections: number;   // Database connection pool size
+  connectionString?: string;  // Database connection string (optional)
+  env: Record<string, string | undefined>;  // Environment variables
+}
+```
+
+The most common use case is detecting when a message is on its final retry attempt:
+
+```typescript "ctx.workerConfig" "ctx.rawMessage" ".read_ct" ".retry.limit"
+// Queue handler - detect final retry attempt
+async function processOrder(input, ctx) {
+  const isLastRetry = ctx.rawMessage.read_ct >= ctx.workerConfig.retry.limit;
+  
+  if (isLastRetry) {
+    // Send alert or fallback action before final failure
+    await sendFailureAlert(input.orderId, ctx.workerConfig.queueName);
+  }
+  
+  return processOrderLogic(input);
+}
+```
+
+```typescript "ctx.workerConfig" ".visibilityTimeout"
+// Flow handler - access worker configuration  
+.step({ slug: 'api_call' }, async (input, ctx) => {
+  // Use worker's visibility timeout to set safe API timeout
+  const safeTimeout = (ctx.workerConfig.visibilityTimeout - 2) * 1000; // 2s buffer
+  
+  console.log(`Using ${safeTimeout}ms timeout based on worker visibility timeout`);
+  
+  const response = await fetch(input.url, {
+    signal: AbortSignal.timeout(safeTimeout)
+  });
+  
+  return await response.json();
+})
+```
+
+<Aside type="note">
+The `workerConfig` object is deeply frozen to prevent handlers from modifying configuration values that could affect other message executions. It represents the final resolved configuration with all defaults applied, not the original user input. Since all defaults have been resolved, you can safely access any field without undefined checks.
+</Aside>
+
 ## Supabase Resources
 
 These resources are available when using the Supabase platform adapter.

@@ -342,6 +342,10 @@ See the [retry configuration](#retry) section above for details.
 
 Maximum number of retry attempts for failed message processing before marking the message as dead.
 
+## Accessing Configuration in Handlers
+
+Your handler functions can access the resolved worker configuration through the context object. For detailed information about available configuration options and usage patterns, see [Context](/concepts/context/).
+
 ## Next Steps
 
 - [Update pgflow](/getting-started/update-pgflow/) - Keep your pgflow installation up to date with the latest features and bug fixes
