@@ -342,3 +342,62 @@ See the [retry configuration](#retry) section above for details.
 
 Maximum number of retry attempts for failed message processing before marking the message as dead.
 
+## Accessing Configuration in Handlers
+
+Your handler functions can access the resolved worker configuration through the context object. This is useful for:
+
+- Detecting final retry attempts by comparing `context.rawMessage.read_ct` with `context.workerConfig.retry.limit`
+- Adjusting processing behavior based on concurrency settings
+- Accessing queue names and other configuration values
+
+### Configuration in Context
+
+The `workerConfig` object in the context contains all resolved configuration values with defaults applied:
+
+```typescript
+async function myHandler(payload, context) {
+  // Access any configuration value
+  const queueName = context.workerConfig.queueName;
+  const maxRetries = context.workerConfig.retry.limit;
+  const currentAttempt = context.rawMessage.read_ct;
+  
+  // Detect if this is the final retry attempt
+  const isLastRetry = currentAttempt >= maxRetries;
+  
+  if (isLastRetry) {
+    // Send alert before final failure
+    console.log(`Final retry attempt for message ${context.rawMessage.msg_id}`);
+    await sendFailureAlert(payload, queueName);
+  }
+  
+  // Process the message
+  return processMessage(payload);
+}
+```
+
+### Common Use Cases
+
+**Detecting Final Retry Attempts:**
+```typescript
+async function handler(payload, { workerConfig, rawMessage }) {
+  if (rawMessage.read_ct >= workerConfig.retry.limit) {
+    // This is the last attempt - take special action
+    await logCriticalFailure(payload);
+  }
+  
+  return processPayload(payload);
+}
+```
+
+**Adjusting Processing Based on Worker Capacity:**
+```typescript
+async function batchHandler(payload, { workerConfig }) {
+  const batchSize = Math.floor(workerConfig.maxConcurrent / 2);
+  return processBatch(payload.items, { maxParallel: batchSize });
+}
+```
+
+<Aside type="note">
+The `workerConfig` object is immutable (frozen) to prevent handlers from modifying configuration values that could affect other message executions. It reflects the final resolved configuration with all defaults applied. The SQL connection object is excluded since it cannot be safely cloned and frozen.
+</Aside>
+

@@ -314,6 +314,69 @@ Keep `maxPollSeconds` below the heartbeat interval (5 seconds) for flow workers 
 
 How frequently (in milliseconds) to check the database for new tasks during the poll cycle.
 
+## Accessing Worker Configuration in Handlers
+
+Your flow step handlers can access the resolved worker configuration through the context object. This is useful for:
+
+- Adjusting processing behavior based on worker capacity
+- Implementing dynamic batching based on concurrency settings
+- Accessing configuration values for logging and monitoring
+
+### Configuration in Context
+
+The `workerConfig` object in the context contains all resolved flow worker configuration values with defaults applied:
+
+```typescript
+const MyFlow = new Flow({ slug: 'example_flow' })
+  .step({ slug: 'external_api_call' }, async (input, context) => {
+    // Access worker configuration to set appropriate timeout
+    const visibilityTimeout = context.workerConfig.visibilityTimeout;
+    const pollInterval = context.workerConfig.pollIntervalMs;
+    
+    // Set API timeout to 80% of visibility timeout to ensure task completes before timeout
+    const apiTimeout = Math.floor(visibilityTimeout * 0.8 * 1000);
+    
+    console.log(`Using ${apiTimeout}ms timeout based on ${visibilityTimeout}s visibility`);
+    
+    const response = await fetch(input.apiUrl, {
+      signal: AbortSignal.timeout(apiTimeout),
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    return await response.json();
+  });
+```
+
+### Common Use Cases for Flow Workers
+
+**Timeout-Aware Processing:**
+```typescript
+.step({ slug: 'long_running_task' }, async (input, { workerConfig }) => {
+  const visibilityTimeout = workerConfig.visibilityTimeout * 1000; // Convert to ms
+  const safeTimeout = Math.floor(visibilityTimeout * 0.9); // Use 90% of visibility timeout
+  
+  // Process with timeout to prevent worker timeout
+  return await processWithTimeout(input.data, safeTimeout);
+})
+```
+
+**Polling-Aware Batch Processing:**
+```typescript
+.step({ slug: 'batch_process' }, async (input, { workerConfig }) => {
+  const { batchSize, pollIntervalMs } = workerConfig;
+  
+  // Adjust processing chunk size based on worker's batch configuration
+  const chunkSize = Math.max(1, Math.floor(batchSize / 2));
+  
+  console.log(`Processing in chunks of ${chunkSize} (worker batch: ${batchSize})`);
+  return await processInChunks(input.items, chunkSize);
+})
+```
+
+<Aside type="note">
+The `workerConfig` object is immutable (frozen) to prevent handlers from modifying configuration values that could affect other task executions. It reflects the final resolved configuration with all defaults applied. The SQL connection object is excluded since it cannot be safely cloned and frozen.
+</Aside>
+
 ## Complete Examples
 
 These examples show how flow/step configuration and worker configuration work together in real scenarios.
