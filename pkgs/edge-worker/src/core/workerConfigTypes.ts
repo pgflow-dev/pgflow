@@ -136,6 +136,11 @@ export type QueueWorkerConfig = {
 };
 
 /**
+ * Resolved queue configuration with all defaults applied and deprecated fields excluded
+ */
+export type ResolvedQueueWorkerConfig = Required<Omit<QueueWorkerConfig, 'retryDelay' | 'retryLimit'>>;
+
+/**
  * Configuration for the flow worker with two-phase polling
  */
 export type FlowWorkerConfig = {
@@ -191,4 +196,12 @@ export type FlowWorkerConfig = {
    * @internal
    */
   env?: Record<string, string | undefined>;
+};
+
+/**
+ * Resolved flow configuration with all defaults applied
+ */
+export type ResolvedFlowWorkerConfig = Required<Omit<FlowWorkerConfig, 'connectionString' | 'env'>> & {
+  connectionString: string | undefined;
+  env: Record<string, string | undefined>;
 };

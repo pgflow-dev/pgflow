@@ -13,7 +13,7 @@ import { WorkerLifecycle } from '../core/WorkerLifecycle.js';
 import { BatchProcessor } from '../core/BatchProcessor.js';
 import type { Logger, PlatformAdapter } from '../platform/types.js';
 import { validateRetryConfig } from './validateRetryConfig.js';
-import type { RetryConfig, QueueWorkerConfig } from '../core/workerConfigTypes.js';
+import type { RetryConfig, QueueWorkerConfig, ResolvedQueueWorkerConfig, ExponentialRetryConfig } from '../core/workerConfigTypes.js';
 
 // Re-export types from workerConfigTypes to maintain backward compatibility
 export type {
@@ -22,6 +22,63 @@ export type {
   RetryConfig,
   QueueWorkerConfig
 } from '../core/workerConfigTypes.js';
+
+// Default configuration constants
+const DEFAULT_QUEUE_CONFIG = {
+  queueName: 'tasks',
+  maxConcurrent: 10,
+  maxPgConnections: 4,
+  maxPollSeconds: 5,
+  pollIntervalMs: 200,
+  visibilityTimeout: 10,
+  batchSize: 10,
+} as const;
+
+const DEFAULT_RETRY_CONFIG: ExponentialRetryConfig = {
+  strategy: 'exponential',
+  limit: 5,
+  baseDelay: 3,
+  maxDelay: 300,
+};
+
+/**
+ * Normalizes queue worker configuration by applying all defaults and handling deprecated fields
+ */
+function normalizeQueueConfig(config: QueueWorkerConfig, sql: postgres.Sql): ResolvedQueueWorkerConfig {
+  // Handle legacy retry configuration
+  let retryConfig = config.retry;
+  
+  // Check if both new and legacy config are provided
+  if (retryConfig && (config.retryDelay !== undefined || config.retryLimit !== undefined)) {
+    // Warning already logged in the main function
+  } else if (!retryConfig && (config.retryDelay !== undefined || config.retryLimit !== undefined)) {
+    // Convert legacy to new format
+    retryConfig = {
+      strategy: 'fixed' as const,
+      limit: config.retryLimit ?? 5,
+      baseDelay: config.retryDelay ?? 3,
+    };
+  }
+  
+  // Default retry config if none provided
+  if (!retryConfig) {
+    retryConfig = DEFAULT_RETRY_CONFIG;
+  }
+  
+  // Validate the final retry config
+  validateRetryConfig(retryConfig);
+
+  // Apply all defaults in one place (excluding deprecated fields)
+  return {
+    connectionString: '',
+    ...DEFAULT_QUEUE_CONFIG,
+    ...config,
+    retry: retryConfig,
+    sql,
+    env: config.env || {}
+    // Note: retryDelay and retryLimit are intentionally excluded as they're deprecated
+  };
+}
 
 /**
  * Calculates the delay before the next retry attempt based on the retry strategy
@@ -61,38 +118,16 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
 
   // Create component-specific loggers
   const logger = createLogger('QueueWorker');
-  logger.info(`Creating queue worker for ${config.queueName || 'tasks'}`);
 
-  // Handle legacy retry configuration
-  let retryConfig = config.retry;
-  
-  // Check if both new and legacy config are provided
-  if (retryConfig && (config.retryDelay !== undefined || config.retryLimit !== undefined)) {
+  // Handle legacy retry configuration warnings
+  if (config.retry && (config.retryDelay !== undefined || config.retryLimit !== undefined)) {
     logger.warn(
       'Both "retry" and legacy "retryDelay/retryLimit" were supplied - ignoring legacy values',
-      { retry: retryConfig, retryDelay: config.retryDelay, retryLimit: config.retryLimit }
+      { retry: config.retry, retryDelay: config.retryDelay, retryLimit: config.retryLimit }
     );
-  } else if (!retryConfig && (config.retryDelay !== undefined || config.retryLimit !== undefined)) {
+  } else if (!config.retry && (config.retryDelay !== undefined || config.retryLimit !== undefined)) {
     logger.warn('retryLimit and retryDelay are deprecated. Use retry config instead.');
-    retryConfig = {
-      strategy: 'fixed' as const,
-      limit: config.retryLimit ?? 5,
-      baseDelay: config.retryDelay ?? 3,
-    };
   }
-  
-  // Default retry config if none provided
-  if (!retryConfig) {
-    retryConfig = {
-      strategy: 'exponential' as const,
-      limit: 5,
-      baseDelay: 3,
-      maxDelay: 300,
-    };
-  }
-  
-  // Validate the final retry config
-  validateRetryConfig(retryConfig);
 
   // Use platform's shutdown signal
   const abortSignal = platformAdapter.shutdownSignal;
@@ -101,13 +136,18 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
   const sql =
     config.sql ||
     postgres(config.connectionString || '', {
-      max: config.maxPgConnections,
+      max: config.maxPgConnections ?? DEFAULT_QUEUE_CONFIG.maxPgConnections,
       prepare: false,
     });
 
+  // Normalize config with all defaults applied ONCE
+  const resolvedConfig = normalizeQueueConfig(config, sql);
+  
+  logger.info(`Creating queue worker for ${resolvedConfig.queueName}`);
+
   const queue = new Queue<TPayload>(
     sql,
-    config.queueName || 'tasks',
+    resolvedConfig.queueName,
     createLogger('Queue')
   );
 
@@ -118,21 +158,6 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
     queue,
     createLogger('WorkerLifecycle')
   );
-
-  // Build complete resolved config ONCE with all defaults applied
-  const resolvedConfig: QueueWorkerConfig = {
-    connectionString: config.connectionString || '',
-    queueName: config.queueName || 'tasks',
-    maxConcurrent: config.maxConcurrent || 10,
-    maxPgConnections: config.maxPgConnections || 4,
-    maxPollSeconds: config.maxPollSeconds || 5,
-    pollIntervalMs: config.pollIntervalMs || 200,
-    visibilityTimeout: config.visibilityTimeout || 10,
-    batchSize: config.batchSize || 10,
-    retry: retryConfig,
-    sql: sql,
-    env: config.env || {}
-  };
 
   // Create frozen worker config ONCE for reuse across all message executions
   const frozenWorkerConfig = createContextSafeConfig(resolvedConfig);
@@ -156,7 +181,7 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
       queue,
       handler,
       signal,
-      retryConfig,
+      resolvedConfig.retry,
       calculateRetryDelay,
       createLogger('MessageExecutor'),
       context
@@ -167,10 +192,10 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
     queue,
     abortSignal,
     {
-      batchSize: config.batchSize || config.maxConcurrent || 10,
-      maxPollSeconds: config.maxPollSeconds || 5,
-      pollIntervalMs: config.pollIntervalMs || 200,
-      visibilityTimeout: config.visibilityTimeout || 10,
+      batchSize: resolvedConfig.batchSize,
+      maxPollSeconds: resolvedConfig.maxPollSeconds,
+      pollIntervalMs: resolvedConfig.pollIntervalMs,
+      visibilityTimeout: resolvedConfig.visibilityTimeout,
     },
     createLogger('ReadWithPollPoller')
   );
@@ -179,7 +204,7 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
     executorFactory,
     abortSignal,
     {
-      maxConcurrent: config.maxConcurrent || 10,
+      maxConcurrent: resolvedConfig.maxConcurrent,
     },
     createLogger('ExecutionController')
   );

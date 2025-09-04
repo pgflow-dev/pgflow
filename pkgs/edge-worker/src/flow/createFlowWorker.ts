@@ -12,10 +12,33 @@ import { Worker } from '../core/Worker.js';
 import postgres from 'postgres';
 import { FlowWorkerLifecycle } from './FlowWorkerLifecycle.js';
 import { BatchProcessor } from '../core/BatchProcessor.js';
-import type { FlowWorkerConfig } from '../core/workerConfigTypes.js';
+import type { FlowWorkerConfig, ResolvedFlowWorkerConfig } from '../core/workerConfigTypes.js';
 
 // Re-export type from workerConfigTypes to maintain backward compatibility
 export type { FlowWorkerConfig } from '../core/workerConfigTypes.js';
+
+// Default configuration constants
+const DEFAULT_FLOW_CONFIG = {
+  maxConcurrent: 10,
+  maxPgConnections: 4,
+  batchSize: 10,
+  visibilityTimeout: 2,
+  maxPollSeconds: 2,
+  pollIntervalMs: 100,
+} as const;
+
+/**
+ * Normalizes flow worker configuration by applying all defaults
+ */
+function normalizeFlowConfig(config: FlowWorkerConfig, sql: postgres.Sql, platformEnv: Record<string, string | undefined>): ResolvedFlowWorkerConfig {
+  return {
+    ...DEFAULT_FLOW_CONFIG,
+    ...config,
+    sql,
+    env: platformEnv,
+    connectionString: config.connectionString
+  };
+}
 
 /**
  * Creates a new Worker instance for processing flow tasks using the two-phase polling approach.
@@ -47,9 +70,12 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
   const sql =
     config.sql ||
     postgres(config.connectionString!, {
-      max: config.maxPgConnections,
+      max: config.maxPgConnections ?? DEFAULT_FLOW_CONFIG.maxPgConnections,
       prepare: false,
     });
+
+  // Normalize config with all defaults applied ONCE
+  const resolvedConfig = normalizeFlowConfig(config, sql, platformAdapter.env);
 
   // Create the pgflow adapter
   const pgflowAdapter = new PgflowSqlClient<TFlow>(sql);
@@ -65,19 +91,6 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
     flow,
     createLogger('FlowWorkerLifecycle')
   );
-
-  // Build complete resolved config ONCE with all defaults applied
-  const resolvedConfig: FlowWorkerConfig = {
-    maxConcurrent: config.maxConcurrent ?? 10,
-    connectionString: config.connectionString,
-    sql,
-    maxPgConnections: config.maxPgConnections ?? 4,
-    batchSize: config.batchSize ?? 10,
-    visibilityTimeout: config.visibilityTimeout ?? 2,
-    maxPollSeconds: config.maxPollSeconds ?? 2,
-    pollIntervalMs: config.pollIntervalMs ?? 100,
-    env: config.env ?? platformAdapter.env,
-  };
 
   // Create frozen worker config ONCE for reuse across all task executions
   const frozenWorkerConfig = createContextSafeConfig(resolvedConfig);

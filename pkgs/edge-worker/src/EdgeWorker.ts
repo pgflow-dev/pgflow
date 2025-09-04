@@ -148,15 +148,9 @@ export class EdgeWorker {
     // First, create the adapter
     this.platform = await createAdapter();
 
-    // Apply default values to the config
+    // Add platform-specific values to the config
     const workerConfig: QueueWorkerConfig = {
       ...config,
-      queueName: config.queueName || 'tasks',
-      maxConcurrent: config.maxConcurrent ?? 10,
-      maxPgConnections: config.maxPgConnections ?? 4,
-      maxPollSeconds: config.maxPollSeconds ?? 5,
-      pollIntervalMs: config.pollIntervalMs ?? 200,
-      visibilityTimeout: config.visibilityTimeout ?? 10,
       connectionString:
         config.connectionString || this.platform.connectionString,
       env: this.platform.env,
@@ -202,14 +196,9 @@ export class EdgeWorker {
     // First, create the adapter
     this.platform = await createAdapter();
 
-    // Apply default values to the config
+    // Add platform-specific values to the config
     const workerConfig: FlowWorkerConfig = {
       ...config,
-      maxConcurrent: config.maxConcurrent ?? 10,
-      maxPgConnections: config.maxPgConnections ?? 4,
-      batchSize: config.batchSize ?? 10,
-      maxPollSeconds: config.maxPollSeconds ?? 2,
-      pollIntervalMs: config.pollIntervalMs ?? 100,
       connectionString:
         config.connectionString || this.platform.connectionString,
     };
