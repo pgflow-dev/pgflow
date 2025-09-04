@@ -165,4 +165,34 @@ Deno.test('validateRetryConfig - retry config validation', async (t) => {
       baseDelay: 3,
     });
   });
+
+  await t.step('should allow fixed strategy with very high retry limits', () => {
+    // Should not throw - fixed strategy has no mathematical overflow issues
+    validateRetryConfig({
+      strategy: 'fixed',
+      limit: 100000,
+      baseDelay: 10,
+    });
+  });
+
+  await t.step('should throw for exponential strategy with limit > 50', () => {
+    assertThrows(
+      () => validateRetryConfig({
+        strategy: 'exponential',
+        limit: 51,
+        baseDelay: 1,
+      }),
+      Error,
+      'For exponential strategy, limit must not exceed 50 to prevent calculation overflow'
+    );
+  });
+
+  await t.step('should allow exponential strategy with limit = 50', () => {
+    // Should not throw - exactly at the limit
+    validateRetryConfig({
+      strategy: 'exponential',
+      limit: 50,
+      baseDelay: 1,
+    });
+  });
 });
