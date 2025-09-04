@@ -13,12 +13,6 @@ import type { MessageHandlerFn } from './queue/types.js';
 import type { AnyFlow } from '@pgflow/dsl';
 import type { CompatibleFlow } from './types/flowCompatibility.js';
 
-/**
- * Configuration options for the EdgeWorker.
- */
-export type EdgeWorkerConfig =
-  | Omit<QueueWorkerConfig, 'sql'>
-  | Omit<FlowWorkerConfig, 'sql'>;
 
 /**
  * EdgeWorker is the main entry point for creating and starting edge workers.
@@ -88,17 +82,17 @@ export class EdgeWorker {
     TFlow extends AnyFlow = AnyFlow
   >(
     handlerOrFlow: MessageHandlerFn<TPayload> | TFlow,
-    config: EdgeWorkerConfig = {}
+    config?: Omit<QueueWorkerConfig, 'sql'> | Omit<FlowWorkerConfig, 'sql'>
   ): Promise<void> {
     if (typeof handlerOrFlow === 'function') {
       await this.startQueueWorker(
         handlerOrFlow as MessageHandlerFn<TPayload>,
-        config as QueueWorkerConfig
+        config || {}
       );
     } else {
       await this.startFlowWorker(
         handlerOrFlow as TFlow,
-        config as FlowWorkerConfig
+        config || {}
       );
     }
   }
