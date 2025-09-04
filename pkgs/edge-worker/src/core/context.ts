@@ -60,10 +60,10 @@ import { deepClone, deepFreeze } from './deepUtils.js';
  * Creates a context-safe version of worker config by excluding sql connection,
  * deep cloning, and deep freezing the result to prevent modification by handlers
  */
-export function createContextSafeConfig<T extends { sql?: any }>(
+export function createContextSafeConfig<T extends { sql?: unknown }>(
   config: T
 ): Readonly<Omit<T, 'sql'>> {
-  const { sql, ...safeConfig } = config;
+  const { sql: _sql, ...safeConfig } = config;
   const clonedConfig = deepClone(safeConfig);
   return deepFreeze(clonedConfig) as Readonly<Omit<T, 'sql'>>;
 }

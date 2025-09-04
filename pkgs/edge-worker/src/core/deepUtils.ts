@@ -32,7 +32,7 @@ export function deepFreeze<T>(obj: T): T {
 
   // Freeze properties before freezing self
   for (const name of propNames) {
-    const value = (obj as any)[name];
+    const value = (obj as Record<PropertyKey, unknown>)[name];
 
     if ((value && typeof value === 'object') || typeof value === 'function') {
       deepFreeze(value);

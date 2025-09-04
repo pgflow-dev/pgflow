@@ -47,22 +47,22 @@ Deno.test('deepFreeze - prevents nested modifications', () => {
   
   // Top level frozen
   assertThrows(() => {
-    (frozen as any).newProp = 'test';
+    (frozen as Record<string, unknown>).newProp = 'test';
   }, TypeError);
   
   // Nested object frozen
   assertThrows(() => {
-    (frozen.retry as any).limit = 999;
+    (frozen.retry as Record<string, unknown>).limit = 999;
   }, TypeError);
   
   // Array items frozen
   assertThrows(() => {
-    (frozen.array[0] as any).item = 'modified';
+    (frozen.array[0] as Record<string, unknown>).item = 'modified';
   }, TypeError);
   
   // Array itself frozen
   assertThrows(() => {
-    (frozen.array as any).push({ item: 'new' });
+    (frozen.array as Array<unknown>).push({ item: 'new' });
   }, TypeError);
 });
 
@@ -77,6 +77,6 @@ Deno.test('deepFreeze - handles functions', () => {
   
   // Object is frozen
   assertThrows(() => {
-    (frozen as any).newProp = 'test';
+    (frozen as Record<string, unknown>).newProp = 'test';
   }, TypeError);
 });

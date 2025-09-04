@@ -4,7 +4,7 @@ import { createContextSafeConfig } from '../../src/core/context.ts';
 import type { PgmqMessageRecord } from '../../src/queue/types.ts';
 
 Deno.test('createContextSafeConfig excludes sql field and freezes result', () => {
-  const mockSql = {} as any;
+  const mockSql = {} as unknown;
   const config: QueueWorkerConfig = {
     queueName: 'test-queue',
     maxConcurrent: 5,
@@ -24,7 +24,7 @@ Deno.test('createContextSafeConfig excludes sql field and freezes result', () =>
   
   // Should be frozen
   assertThrows(() => {
-    (safeConfig as any).queueName = 'modified';
+    (safeConfig as Record<string, unknown>).queueName = 'modified';
   }, TypeError);
 });
 
@@ -43,8 +43,8 @@ Deno.test('Queue worker context includes workerConfig for GitHub issue use case'
     maxConcurrent: 5,
   };
 
-  let receivedContext: any;
-  const handler = async (payload: any, context: any) => {
+  let receivedContext: typeof context;
+  const handler = (_payload: {test: string}, context: typeof context) => {
     receivedContext = context;
   };
 
@@ -82,7 +82,7 @@ Deno.test('Queue worker config immutability prevents handler modifications', asy
     retry: { strategy: 'fixed', limit: 3, baseDelay: 2 },
   };
 
-  const handler = async (payload: any, context: any) => {
+  const handler = (_payload: unknown, context: typeof context) => {
     // Handler attempts to modify config - should throw
     assertThrows(() => {
       context.workerConfig.queueName = 'hacked';
@@ -110,8 +110,8 @@ Deno.test('Flow worker context includes workerConfig', async () => {
     visibilityTimeout: 15,
   };
 
-  let receivedContext: any;
-  const handler = async (input: any, context: any) => {
+  let receivedContext: typeof context;
+  const handler = (_input: unknown, context: typeof context) => {
     receivedContext = context;
   };
 

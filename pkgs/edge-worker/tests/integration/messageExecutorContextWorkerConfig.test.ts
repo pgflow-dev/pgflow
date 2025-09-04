@@ -1,7 +1,5 @@
 import { assertEquals, assertThrows } from '@std/assert';
-import { Queue } from '../../src/queue/Queue.ts';
 import { withTransaction } from '../db.ts';
-import { createFakeLogger } from '../fakes.ts';
 import type { PgmqMessageRecord } from '../../src/queue/types.ts';
 import type { QueueWorkerConfig } from '../../src/core/workerConfigTypes.ts';
 import { createQueueWorkerContext } from '../../src/core/supabase-test-utils.ts';
@@ -25,8 +23,8 @@ Deno.test(
       retry: { strategy: 'exponential', limit: 4, baseDelay: 1 },
     };
 
-    let receivedWorkerConfig: any;
-    const handler = async (payload: any, context: any) => {
+    let receivedWorkerConfig: QueueWorkerConfig;
+    const handler = (_payload: {test: string}, context: ReturnType<typeof createQueueWorkerContext>) => {
       receivedWorkerConfig = context.workerConfig;
     };
 
