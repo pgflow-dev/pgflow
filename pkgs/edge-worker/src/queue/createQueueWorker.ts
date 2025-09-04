@@ -6,63 +6,22 @@ import { ReadWithPollPoller } from './ReadWithPollPoller.js';
 import type { Json } from '../core/types.js';
 import type { PgmqMessageRecord, MessageHandlerFn } from './types.js';
 import type { MessageHandlerContext } from '../core/context.js';
+import { createContextSafeConfig } from '../core/context.js';
 import { Worker } from '../core/Worker.js';
 import postgres from 'postgres';
 import { WorkerLifecycle } from '../core/WorkerLifecycle.js';
 import { BatchProcessor } from '../core/BatchProcessor.js';
 import type { Logger, PlatformAdapter } from '../platform/types.js';
 import { validateRetryConfig } from './validateRetryConfig.js';
+import type { RetryConfig, QueueWorkerConfig } from '../core/workerConfigTypes.js';
 
-/**
- * Fixed retry strategy configuration
- */
-export interface FixedRetryConfig {
-  /**
-   * Use fixed delay between retries
-   */
-  strategy: 'fixed';
-
-  /**
-   * Maximum number of retry attempts
-   */
-  limit: number;
-
-  /**
-   * Fixed delay in seconds between retries
-   */
-  baseDelay: number;
-}
-
-/**
- * Exponential backoff retry strategy configuration
- */
-export interface ExponentialRetryConfig {
-  /**
-   * Use exponential backoff between retries
-   */
-  strategy: 'exponential';
-
-  /**
-   * Maximum number of retry attempts
-   */
-  limit: number;
-
-  /**
-   * Base delay in seconds (initial delay for exponential backoff)
-   */
-  baseDelay: number;
-
-  /**
-   * Maximum delay in seconds for exponential backoff
-   * @default 300
-   */
-  maxDelay?: number;
-}
-
-/**
- * Retry configuration for message processing
- */
-export type RetryConfig = FixedRetryConfig | ExponentialRetryConfig;
+// Re-export types from workerConfigTypes to maintain backward compatibility
+export type {
+  FixedRetryConfig,
+  ExponentialRetryConfig,
+  RetryConfig,
+  QueueWorkerConfig
+} from '../core/workerConfigTypes.js';
 
 /**
  * Calculates the delay before the next retry attempt based on the retry strategy
@@ -82,89 +41,6 @@ export function calculateRetryDelay(attempt: number, config: RetryConfig): numbe
   }
 }
 
-/**
- * Configuration for the queue worker
- */
-export type QueueWorkerConfig = {
-  /**
-   * PostgreSQL connection string.
-   * If not provided, it will be read from the EDGE_WORKER_DB_URL environment variable.
-   */
-  connectionString?: string;
-
-  /**
-   * Name of the queue to poll for messages
-   * @default 'tasks'
-   */
-  queueName?: string;
-
-  /**
-   * How many tasks are processed at the same time
-   * @default 10
-   */
-  maxConcurrent?: number;
-
-  /**
-   * How many connections to the database are opened
-   * @default 4
-   */
-  maxPgConnections?: number;
-
-  /**
-   * In-worker polling interval in seconds
-   * @default 5
-   */
-  maxPollSeconds?: number;
-
-  /**
-   * In-database polling interval in milliseconds
-   * @default 200
-   */
-  pollIntervalMs?: number;
-
-  /**
-   * Retry configuration for failed messages
-   */
-  retry?: RetryConfig;
-
-  /**
-   * How long to wait before retrying a failed job in seconds
-   * @deprecated Use retry.baseDelay with retry.strategy = 'fixed' instead
-   * @default 5
-   */
-  retryDelay?: number;
-
-  /**
-   * How many times to retry a failed job
-   * @deprecated Use retry.limit instead
-   * @default 5
-   */
-  retryLimit?: number;
-
-  /**
-   * How long a job is invisible after reading in seconds.
-   * If not successful, will reappear after this time.
-   * @default 10
-   */
-  visibilityTimeout?: number;
-
-  /**
-   * Batch size for polling messages
-   * @default 10
-   */
-  batchSize?: number;
-
-  /**
-   * Optional SQL client instance
-   */
-  sql?: postgres.Sql;
-
-  /**
-   * Environment variables for context
-   * @internal
-   */
-  env?: Record<string, string | undefined>;
-};
 
 /**
  * Creates a new Worker instance for processing queue messages.
@@ -243,6 +119,24 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
     createLogger('WorkerLifecycle')
   );
 
+  // Build complete resolved config ONCE with all defaults applied
+  const resolvedConfig: QueueWorkerConfig = {
+    connectionString: config.connectionString || '',
+    queueName: config.queueName || 'tasks',
+    maxConcurrent: config.maxConcurrent || 10,
+    maxPgConnections: config.maxPgConnections || 4,
+    maxPollSeconds: config.maxPollSeconds || 5,
+    pollIntervalMs: config.pollIntervalMs || 200,
+    visibilityTimeout: config.visibilityTimeout || 10,
+    batchSize: config.batchSize || 10,
+    retry: retryConfig,
+    sql: sql,
+    env: config.env || {}
+  };
+
+  // Create frozen worker config ONCE for reuse across all message executions
+  const frozenWorkerConfig = createContextSafeConfig(resolvedConfig);
+
   const executorFactory = (record: QueueMessage, signal: AbortSignal) => {
     // Build context directly using platform resources
     const context: MessageHandlerContext<TPayload, TResources> = {
@@ -252,6 +146,7 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
       
       // Message execution context
       rawMessage: record,
+      workerConfig: frozenWorkerConfig, // Reuse cached frozen config
       
       // Platform-specific resources (generic)
       ...platformAdapter.platformResources

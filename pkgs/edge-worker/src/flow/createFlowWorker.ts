@@ -7,68 +7,15 @@ import { Queries } from '../core/Queries.js';
 import type { IExecutor } from '../core/types.js';
 import type { Logger, PlatformAdapter } from '../platform/types.js';
 import type { StepTaskWithMessage } from '../core/context.js';
+import { createContextSafeConfig } from '../core/context.js';
 import { Worker } from '../core/Worker.js';
 import postgres from 'postgres';
 import { FlowWorkerLifecycle } from './FlowWorkerLifecycle.js';
 import { BatchProcessor } from '../core/BatchProcessor.js';
+import type { FlowWorkerConfig } from '../core/workerConfigTypes.js';
 
-/**
- * Configuration for the flow worker with two-phase polling
- */
-export type FlowWorkerConfig = {
-  /**
-   * How many tasks are processed at the same time
-   * @default 10
-   */
-  maxConcurrent?: number;
-
-  /**
-   * PostgreSQL connection string.
-   * If not provided, it will be read from the EDGE_WORKER_DB_URL environment variable.
-   */
-  connectionString?: string;
-
-  /**
-   * Optional SQL client instance
-   */
-  sql?: postgres.Sql;
-
-  /**
-   * How many connections to the database are opened
-   * @default 4
-   */
-  maxPgConnections?: number;
-
-  /**
-   * Batch size for polling messages
-   * @default 10
-   */
-  batchSize?: number;
-
-  /**
-   * Visibility timeout for messages in seconds
-   * @default 2
-   */
-  visibilityTimeout?: number;
-
-  /**
-   * In-worker polling interval in seconds
-   * @default 2
-   */
-  maxPollSeconds?: number;
-
-  /**
-   * In-database polling interval in milliseconds
-   * @default 100
-   */
-  pollIntervalMs?: number;
-
-  /**
-   * Environment variables for context
-   * @internal
-   */
-  env?: Record<string, string | undefined>;
-};
+// Re-export type from workerConfigTypes to maintain backward compatibility
+export type { FlowWorkerConfig } from '../core/workerConfigTypes.js';
 
 /**
  * Creates a new Worker instance for processing flow tasks using the two-phase polling approach.
@@ -119,13 +66,29 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
     createLogger('FlowWorkerLifecycle')
   );
 
+  // Build complete resolved config ONCE with all defaults applied
+  const resolvedConfig: FlowWorkerConfig = {
+    maxConcurrent: config.maxConcurrent ?? 10,
+    connectionString: config.connectionString,
+    sql,
+    maxPgConnections: config.maxPgConnections ?? 4,
+    batchSize: config.batchSize ?? 10,
+    visibilityTimeout: config.visibilityTimeout ?? 2,
+    maxPollSeconds: config.maxPollSeconds ?? 2,
+    pollIntervalMs: config.pollIntervalMs ?? 100,
+    env: config.env ?? platformAdapter.env,
+  };
+
+  // Create frozen worker config ONCE for reuse across all task executions
+  const frozenWorkerConfig = createContextSafeConfig(resolvedConfig);
+
   // Create StepTaskPoller with two-phase approach
   const pollerConfig: StepTaskPollerConfig = {
-    batchSize: config.batchSize || 10,
+    batchSize: resolvedConfig.batchSize,
     queueName: flow.slug,
-    visibilityTimeout: config.visibilityTimeout || 2,
-    maxPollSeconds: config.maxPollSeconds || 2,
-    pollIntervalMs: config.pollIntervalMs || 100,
+    visibilityTimeout: resolvedConfig.visibilityTimeout,
+    maxPollSeconds: resolvedConfig.maxPollSeconds,
+    pollIntervalMs: resolvedConfig.pollIntervalMs,
   };
   // TODO: Pass workerId supplier to defer access until after startup
   const poller = new StepTaskPoller<TFlow>(
@@ -150,6 +113,7 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
       // Step task execution context
       rawMessage: taskWithMessage.message,
       stepTask: taskWithMessage.task,
+      workerConfig: frozenWorkerConfig, // Reuse cached frozen config
       
       // Platform-specific resources (generic)
       ...platformAdapter.platformResources
@@ -169,7 +133,7 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
     executorFactory,
     abortSignal,
     {
-      maxConcurrent: config.maxConcurrent || 10,
+      maxConcurrent: resolvedConfig.maxConcurrent,
     },
     createLogger('ExecutionController')
   );
