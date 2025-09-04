@@ -23,7 +23,7 @@ Deno.test(
       retry: { strategy: 'exponential', limit: 4, baseDelay: 1 },
     };
 
-    let receivedWorkerConfig: QueueWorkerConfig;
+    let receivedWorkerConfig: QueueWorkerConfig | undefined;
     const handler = (_payload: {test: string}, context: ReturnType<typeof createQueueWorkerContext>) => {
       receivedWorkerConfig = context.workerConfig;
     };
@@ -53,8 +53,17 @@ Deno.test(
     await handler(mockMessage.message, context);
     
     // Verify worker config is present and correct
+    if (!receivedWorkerConfig) {
+      throw new Error('Expected receivedWorkerConfig to be defined');
+    }
+    
     assertEquals(receivedWorkerConfig.queueName, 'test-config-queue');
     assertEquals(receivedWorkerConfig.maxConcurrent, 7); 
+    
+    if (!receivedWorkerConfig.retry) {
+      throw new Error('Expected receivedWorkerConfig.retry to be defined');
+    }
+    
     assertEquals(receivedWorkerConfig.retry.limit, 4);
     assertEquals(receivedWorkerConfig.retry.strategy, 'exponential');
     
@@ -63,7 +72,7 @@ Deno.test(
     
     // Verify it's immutable
     assertThrows(() => {
-      receivedWorkerConfig.maxConcurrent = 999;
+      (receivedWorkerConfig as Record<string, unknown>).maxConcurrent = 999;
     }, TypeError);
   })
 );

@@ -2,9 +2,10 @@ import { assertEquals, assertThrows } from '@std/assert';
 import type { QueueWorkerConfig, FlowWorkerConfig } from '../../src/core/workerConfigTypes.ts';
 import { createContextSafeConfig } from '../../src/core/context.ts';
 import type { PgmqMessageRecord } from '../../src/queue/types.ts';
+import type { Sql } from 'postgres';
 
 Deno.test('createContextSafeConfig excludes sql field and freezes result', () => {
-  const mockSql = {} as unknown;
+  const mockSql = {} as Sql<Record<string, never>>;
   const config: QueueWorkerConfig = {
     queueName: 'test-queue',
     maxConcurrent: 5,
@@ -43,11 +44,6 @@ Deno.test('Queue worker context includes workerConfig for GitHub issue use case'
     maxConcurrent: 5,
   };
 
-  let receivedContext: typeof context;
-  const handler = (_payload: {test: string}, context: typeof context) => {
-    receivedContext = context;
-  };
-
   // Simulate context creation  
   const context = {
     env: {},
@@ -56,14 +52,22 @@ Deno.test('Queue worker context includes workerConfig for GitHub issue use case'
     workerConfig: createContextSafeConfig(mockConfig),
   };
 
+  type ContextType = typeof context;
+  let receivedContext: ContextType | undefined;
+  const handler = (_payload: {test: string}, context: ContextType) => {
+    receivedContext = context;
+  };
+
   await handler(mockMessage.message, context);
   
   // Verify config is accessible
+  if (!receivedContext) throw new Error('receivedContext should be assigned');
   assertEquals(receivedContext.workerConfig.queueName, 'test-queue');
-  assertEquals(receivedContext.workerConfig.retry.limit, 3);
+  assertEquals(receivedContext.workerConfig.retry?.limit, 3);
   assertEquals(receivedContext.rawMessage.read_ct, 2);
   
   // Test the GitHub issue use case - detecting last retry
+  if (!receivedContext.workerConfig.retry) throw new Error('retry config should exist');
   const isLastRetry = receivedContext.rawMessage.read_ct >= receivedContext.workerConfig.retry.limit;
   assertEquals(isLastRetry, false); // 2 < 3, not last retry yet
   
@@ -72,6 +76,7 @@ Deno.test('Queue worker context includes workerConfig for GitHub issue use case'
   const lastRetryContext = { ...context, rawMessage: lastRetryMessage };
   await handler(lastRetryMessage.message, lastRetryContext);
   
+  if (!receivedContext.workerConfig.retry) throw new Error('retry config should exist');
   const isActuallyLastRetry = receivedContext.rawMessage.read_ct >= receivedContext.workerConfig.retry.limit;
   assertEquals(isActuallyLastRetry, true); // 3 >= 3, this is the last retry
 });
@@ -82,22 +87,23 @@ Deno.test('Queue worker config immutability prevents handler modifications', asy
     retry: { strategy: 'fixed', limit: 3, baseDelay: 2 },
   };
 
-  const handler = (_payload: unknown, context: typeof context) => {
-    // Handler attempts to modify config - should throw
-    assertThrows(() => {
-      context.workerConfig.queueName = 'hacked';
-    }, TypeError, 'Cannot assign to read only property');
-    
-    assertThrows(() => {
-      context.workerConfig.retry.limit = 999;
-    }, TypeError, 'Cannot assign to read only property'); 
-  };
-
   const context = {
     env: {},
     shutdownSignal: new AbortController().signal,
     rawMessage: { msg_id: 1, read_ct: 1, message: {} },
     workerConfig: createContextSafeConfig(mockConfig),
+  };
+
+  type ContextType = typeof context;
+  const handler = (_payload: unknown, context: ContextType) => {
+    // Handler attempts to modify config - should throw
+    assertThrows(() => {
+      (context.workerConfig as Record<string, unknown>).queueName = 'hacked';
+    }, TypeError, 'Cannot assign to read only property');
+    
+    assertThrows(() => {
+      (context.workerConfig.retry as unknown as Record<string, unknown>).limit = 999;
+    }, TypeError, 'Cannot assign to read only property'); 
   };
 
   await handler({}, context);
@@ -110,11 +116,6 @@ Deno.test('Flow worker context includes workerConfig', async () => {
     visibilityTimeout: 15,
   };
 
-  let receivedContext: typeof context;
-  const handler = (_input: unknown, context: typeof context) => {
-    receivedContext = context;
-  };
-
   const context = {
     env: {},
     shutdownSignal: new AbortController().signal,
@@ -123,15 +124,22 @@ Deno.test('Flow worker context includes workerConfig', async () => {
     workerConfig: createContextSafeConfig(mockConfig),
   };
 
+  type ContextType = typeof context;
+  let receivedContext: ContextType | undefined;
+  const handler = (_input: unknown, context: ContextType) => {
+    receivedContext = context;
+  };
+
   await handler({}, context);
   
+  if (!receivedContext) throw new Error('receivedContext should be assigned');
   assertEquals(receivedContext.workerConfig.maxConcurrent, 10);
   assertEquals(receivedContext.workerConfig.batchSize, 5);
   assertEquals(receivedContext.workerConfig.visibilityTimeout, 15);
   
   // Should be immutable
   assertThrows(() => {
-    receivedContext.workerConfig.maxConcurrent = 999;
+    (receivedContext!.workerConfig as Record<string, unknown>).maxConcurrent = 999;
   }, TypeError);
 });
 
