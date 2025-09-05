@@ -13,12 +13,6 @@ import type { MessageHandlerFn } from './queue/types.js';
 import type { AnyFlow } from '@pgflow/dsl';
 import type { CompatibleFlow } from './types/flowCompatibility.js';
 
-/**
- * Configuration options for the EdgeWorker.
- */
-export type EdgeWorkerConfig =
-  | Omit<QueueWorkerConfig, 'sql'>
-  | Omit<FlowWorkerConfig, 'sql'>;
 
 /**
  * EdgeWorker is the main entry point for creating and starting edge workers.
@@ -88,17 +82,17 @@ export class EdgeWorker {
     TFlow extends AnyFlow = AnyFlow
   >(
     handlerOrFlow: MessageHandlerFn<TPayload> | TFlow,
-    config: EdgeWorkerConfig = {}
-  ): Promise<void> {
+    config?: Omit<QueueWorkerConfig, 'sql'> | Omit<FlowWorkerConfig, 'sql'>
+  ): Promise<PlatformAdapter> {
     if (typeof handlerOrFlow === 'function') {
-      await this.startQueueWorker(
+      return await this.startQueueWorker(
         handlerOrFlow as MessageHandlerFn<TPayload>,
-        config as QueueWorkerConfig
+        config
       );
     } else {
-      await this.startFlowWorker(
+      return await this.startFlowWorker(
         handlerOrFlow as TFlow,
-        config as FlowWorkerConfig
+        config
       );
     }
   }
@@ -142,21 +136,15 @@ export class EdgeWorker {
   static async startQueueWorker<TPayload extends Json = Json>(
     handler: MessageHandlerFn<TPayload>,
     config: QueueWorkerConfig = {}
-  ) {
+  ): Promise<PlatformAdapter> {
     this.ensureFirstCall();
 
     // First, create the adapter
     this.platform = await createAdapter();
 
-    // Apply default values to the config
+    // Add platform-specific values to the config
     const workerConfig: QueueWorkerConfig = {
       ...config,
-      queueName: config.queueName || 'tasks',
-      maxConcurrent: config.maxConcurrent ?? 10,
-      maxPgConnections: config.maxPgConnections ?? 4,
-      maxPollSeconds: config.maxPollSeconds ?? 5,
-      pollIntervalMs: config.pollIntervalMs ?? 200,
-      visibilityTimeout: config.visibilityTimeout ?? 10,
       connectionString:
         config.connectionString || this.platform.connectionString,
       env: this.platform.env,
@@ -165,6 +153,8 @@ export class EdgeWorker {
     await this.platform.startWorker((createLoggerFn) => {
       return createQueueWorker(handler, workerConfig, createLoggerFn, this.platform);
     });
+
+    return this.platform;
   }
 
   /**
@@ -196,20 +186,15 @@ export class EdgeWorker {
   static async startFlowWorker<TFlow extends AnyFlow>(
     flow: CompatibleFlow<TFlow>,
     config: FlowWorkerConfig = {}
-  ) {
+  ): Promise<PlatformAdapter> {
     this.ensureFirstCall();
 
     // First, create the adapter
     this.platform = await createAdapter();
 
-    // Apply default values to the config
+    // Add platform-specific values to the config
     const workerConfig: FlowWorkerConfig = {
       ...config,
-      maxConcurrent: config.maxConcurrent ?? 10,
-      maxPgConnections: config.maxPgConnections ?? 4,
-      batchSize: config.batchSize ?? 10,
-      maxPollSeconds: config.maxPollSeconds ?? 2,
-      pollIntervalMs: config.pollIntervalMs ?? 100,
       connectionString:
         config.connectionString || this.platform.connectionString,
     };
@@ -217,6 +202,8 @@ export class EdgeWorker {
     await this.platform.startWorker((createLoggerFn) => {
       return createFlowWorker(flow, workerConfig, createLoggerFn, this.platform);
     });
+
+    return this.platform;
   }
 
   /**

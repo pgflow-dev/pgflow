@@ -6,63 +6,79 @@ import { ReadWithPollPoller } from './ReadWithPollPoller.js';
 import type { Json } from '../core/types.js';
 import type { PgmqMessageRecord, MessageHandlerFn } from './types.js';
 import type { MessageHandlerContext } from '../core/context.js';
+import { createContextSafeConfig } from '../core/context.js';
 import { Worker } from '../core/Worker.js';
 import postgres from 'postgres';
 import { WorkerLifecycle } from '../core/WorkerLifecycle.js';
 import { BatchProcessor } from '../core/BatchProcessor.js';
 import type { Logger, PlatformAdapter } from '../platform/types.js';
 import { validateRetryConfig } from './validateRetryConfig.js';
+import type { RetryConfig, QueueWorkerConfig, ResolvedQueueWorkerConfig, ExponentialRetryConfig } from '../core/workerConfigTypes.js';
+
+// Re-export types from workerConfigTypes to maintain backward compatibility
+export type {
+  FixedRetryConfig,
+  ExponentialRetryConfig,
+  RetryConfig,
+  QueueWorkerConfig
+} from '../core/workerConfigTypes.js';
+
+// Default configuration constants
+const DEFAULT_QUEUE_CONFIG = {
+  queueName: 'tasks',
+  maxConcurrent: 10,
+  maxPgConnections: 4,
+  maxPollSeconds: 5,
+  pollIntervalMs: 200,
+  visibilityTimeout: 10,
+  batchSize: 10,
+} as const;
+
+const DEFAULT_RETRY_CONFIG: ExponentialRetryConfig = {
+  strategy: 'exponential',
+  limit: 5,
+  baseDelay: 3,
+  maxDelay: 300,
+};
 
 /**
- * Fixed retry strategy configuration
+ * Normalizes queue worker configuration by applying all defaults and handling deprecated fields
  */
-export interface FixedRetryConfig {
-  /**
-   * Use fixed delay between retries
-   */
-  strategy: 'fixed';
+function normalizeQueueConfig(config: QueueWorkerConfig, sql: postgres.Sql): ResolvedQueueWorkerConfig {
+  // Handle legacy retry configuration
+  let retryConfig = config.retry;
+  
+  // Check if both new and legacy config are provided
+  if (retryConfig && (config.retryDelay !== undefined || config.retryLimit !== undefined)) {
+    // Warning already logged in the main function
+  } else if (!retryConfig && (config.retryDelay !== undefined || config.retryLimit !== undefined)) {
+    // Convert legacy to new format
+    retryConfig = {
+      strategy: 'fixed' as const,
+      limit: config.retryLimit ?? 5,
+      baseDelay: config.retryDelay ?? 3,
+    };
+  }
+  
+  // Default retry config if none provided
+  if (!retryConfig) {
+    retryConfig = DEFAULT_RETRY_CONFIG;
+  }
+  
+  // Validate the final retry config
+  validateRetryConfig(retryConfig);
 
-  /**
-   * Maximum number of retry attempts
-   */
-  limit: number;
-
-  /**
-   * Fixed delay in seconds between retries
-   */
-  baseDelay: number;
+  // Strip deprecated fields before merging
+  const { retryDelay: _rd, retryLimit: _rl, ...rest } = config;
+  return {
+    connectionString: '',
+    ...DEFAULT_QUEUE_CONFIG,
+    ...rest,
+    retry: retryConfig,
+    sql,
+    env: rest.env ?? {}
+  };
 }
-
-/**
- * Exponential backoff retry strategy configuration
- */
-export interface ExponentialRetryConfig {
-  /**
-   * Use exponential backoff between retries
-   */
-  strategy: 'exponential';
-
-  /**
-   * Maximum number of retry attempts
-   */
-  limit: number;
-
-  /**
-   * Base delay in seconds (initial delay for exponential backoff)
-   */
-  baseDelay: number;
-
-  /**
-   * Maximum delay in seconds for exponential backoff
-   * @default 300
-   */
-  maxDelay?: number;
-}
-
-/**
- * Retry configuration for message processing
- */
-export type RetryConfig = FixedRetryConfig | ExponentialRetryConfig;
 
 /**
  * Calculates the delay before the next retry attempt based on the retry strategy
@@ -82,89 +98,6 @@ export function calculateRetryDelay(attempt: number, config: RetryConfig): numbe
   }
 }
 
-/**
- * Configuration for the queue worker
- */
-export type QueueWorkerConfig = {
-  /**
-   * PostgreSQL connection string.
-   * If not provided, it will be read from the EDGE_WORKER_DB_URL environment variable.
-   */
-  connectionString?: string;
-
-  /**
-   * Name of the queue to poll for messages
-   * @default 'tasks'
-   */
-  queueName?: string;
-
-  /**
-   * How many tasks are processed at the same time
-   * @default 10
-   */
-  maxConcurrent?: number;
-
-  /**
-   * How many connections to the database are opened
-   * @default 4
-   */
-  maxPgConnections?: number;
-
-  /**
-   * In-worker polling interval in seconds
-   * @default 5
-   */
-  maxPollSeconds?: number;
-
-  /**
-   * In-database polling interval in milliseconds
-   * @default 200
-   */
-  pollIntervalMs?: number;
-
-  /**
-   * Retry configuration for failed messages
-   */
-  retry?: RetryConfig;
-
-  /**
-   * How long to wait before retrying a failed job in seconds
-   * @deprecated Use retry.baseDelay with retry.strategy = 'fixed' instead
-   * @default 5
-   */
-  retryDelay?: number;
-
-  /**
-   * How many times to retry a failed job
-   * @deprecated Use retry.limit instead
-   * @default 5
-   */
-  retryLimit?: number;
-
-  /**
-   * How long a job is invisible after reading in seconds.
-   * If not successful, will reappear after this time.
-   * @default 10
-   */
-  visibilityTimeout?: number;
-
-  /**
-   * Batch size for polling messages
-   * @default 10
-   */
-  batchSize?: number;
-
-  /**
-   * Optional SQL client instance
-   */
-  sql?: postgres.Sql;
-
-  /**
-   * Environment variables for context
-   * @internal
-   */
-  env?: Record<string, string | undefined>;
-};
 
 /**
  * Creates a new Worker instance for processing queue messages.
@@ -185,38 +118,16 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
 
   // Create component-specific loggers
   const logger = createLogger('QueueWorker');
-  logger.info(`Creating queue worker for ${config.queueName || 'tasks'}`);
 
-  // Handle legacy retry configuration
-  let retryConfig = config.retry;
-  
-  // Check if both new and legacy config are provided
-  if (retryConfig && (config.retryDelay !== undefined || config.retryLimit !== undefined)) {
+  // Handle legacy retry configuration warnings
+  if (config.retry && (config.retryDelay !== undefined || config.retryLimit !== undefined)) {
     logger.warn(
       'Both "retry" and legacy "retryDelay/retryLimit" were supplied - ignoring legacy values',
-      { retry: retryConfig, retryDelay: config.retryDelay, retryLimit: config.retryLimit }
+      { retry: config.retry, retryDelay: config.retryDelay, retryLimit: config.retryLimit }
     );
-  } else if (!retryConfig && (config.retryDelay !== undefined || config.retryLimit !== undefined)) {
+  } else if (!config.retry && (config.retryDelay !== undefined || config.retryLimit !== undefined)) {
     logger.warn('retryLimit and retryDelay are deprecated. Use retry config instead.');
-    retryConfig = {
-      strategy: 'fixed' as const,
-      limit: config.retryLimit ?? 5,
-      baseDelay: config.retryDelay ?? 3,
-    };
   }
-  
-  // Default retry config if none provided
-  if (!retryConfig) {
-    retryConfig = {
-      strategy: 'exponential' as const,
-      limit: 5,
-      baseDelay: 3,
-      maxDelay: 300,
-    };
-  }
-  
-  // Validate the final retry config
-  validateRetryConfig(retryConfig);
 
   // Use platform's shutdown signal
   const abortSignal = platformAdapter.shutdownSignal;
@@ -225,13 +136,18 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
   const sql =
     config.sql ||
     postgres(config.connectionString || '', {
-      max: config.maxPgConnections,
+      max: config.maxPgConnections ?? DEFAULT_QUEUE_CONFIG.maxPgConnections,
       prepare: false,
     });
 
+  // Normalize config with all defaults applied ONCE
+  const resolvedConfig = normalizeQueueConfig(config, sql);
+  
+  logger.info(`Creating queue worker for ${resolvedConfig.queueName}`);
+
   const queue = new Queue<TPayload>(
     sql,
-    config.queueName || 'tasks',
+    resolvedConfig.queueName,
     createLogger('Queue')
   );
 
@@ -243,6 +159,9 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
     createLogger('WorkerLifecycle')
   );
 
+  // Create frozen worker config ONCE for reuse across all message executions
+  const frozenWorkerConfig = createContextSafeConfig(resolvedConfig);
+
   const executorFactory = (record: QueueMessage, signal: AbortSignal) => {
     // Build context directly using platform resources
     const context: MessageHandlerContext<TPayload, TResources> = {
@@ -252,6 +171,7 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
       
       // Message execution context
       rawMessage: record,
+      workerConfig: frozenWorkerConfig, // Reuse cached frozen config
       
       // Platform-specific resources (generic)
       ...platformAdapter.platformResources
@@ -261,7 +181,7 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
       queue,
       handler,
       signal,
-      retryConfig,
+      resolvedConfig.retry,
       calculateRetryDelay,
       createLogger('MessageExecutor'),
       context
@@ -272,10 +192,10 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
     queue,
     abortSignal,
     {
-      batchSize: config.batchSize || config.maxConcurrent || 10,
-      maxPollSeconds: config.maxPollSeconds || 5,
-      pollIntervalMs: config.pollIntervalMs || 200,
-      visibilityTimeout: config.visibilityTimeout || 10,
+      batchSize: resolvedConfig.batchSize,
+      maxPollSeconds: resolvedConfig.maxPollSeconds,
+      pollIntervalMs: resolvedConfig.pollIntervalMs,
+      visibilityTimeout: resolvedConfig.visibilityTimeout,
     },
     createLogger('ReadWithPollPoller')
   );
@@ -284,7 +204,7 @@ export function createQueueWorker<TPayload extends Json, TResources extends Reco
     executorFactory,
     abortSignal,
     {
-      maxConcurrent: config.maxConcurrent || 10,
+      maxConcurrent: resolvedConfig.maxConcurrent,
     },
     createLogger('ExecutionController')
   );

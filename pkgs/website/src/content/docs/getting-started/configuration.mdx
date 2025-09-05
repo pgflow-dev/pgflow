@@ -314,6 +314,10 @@ Keep `maxPollSeconds` below the heartbeat interval (5 seconds) for flow workers 
 
 How frequently (in milliseconds) to check the database for new tasks during the poll cycle.
 
+## Accessing Worker Configuration in Handlers
+
+Your flow step handlers can access the resolved worker configuration through the context object. For detailed information about available configuration options and usage patterns, see [Context](/concepts/context/).
+
 ## Complete Examples
 
 These examples show how flow/step configuration and worker configuration work together in real scenarios.

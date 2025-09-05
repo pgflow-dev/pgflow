@@ -6,6 +6,8 @@ import type { PgmqMessageRecord } from '../queue/types.js';
 import type { 
   StepTaskWithMessage
 } from './context.js';
+import { createContextSafeConfig } from './context.js';
+import type { QueueWorkerConfig, FlowWorkerConfig } from './workerConfigTypes.js';
 import type { SupabaseEnv } from '@pgflow/dsl/supabase';
 import { createServiceSupabaseClient } from './supabase-utils.js';
 
@@ -18,8 +20,9 @@ export function createQueueWorkerContext<TPayload extends Json>(params: {
   sql: Sql;
   abortSignal: AbortSignal;
   rawMessage: PgmqMessageRecord<TPayload>;
+  workerConfig?: Readonly<Omit<QueueWorkerConfig, 'sql'>>;
 }) {
-  const { env, sql, abortSignal, rawMessage } = params;
+  const { env, sql, abortSignal, rawMessage, workerConfig } = params;
 
   // Create Supabase client if env vars exist, otherwise create mock
   const supabase = env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY
@@ -36,6 +39,7 @@ export function createQueueWorkerContext<TPayload extends Json>(params: {
     
     // Message execution context
     rawMessage,
+    ...(workerConfig && { workerConfig: createContextSafeConfig(workerConfig) }),
     
     // Supabase-specific resources (always present in Phase 1)
     sql,
@@ -53,8 +57,9 @@ export function createFlowWorkerContext<TFlow extends AnyFlow = AnyFlow>(params:
   sql: Sql;
   abortSignal: AbortSignal;
   taskWithMessage?: StepTaskWithMessage<TFlow>;
+  workerConfig?: Readonly<Omit<FlowWorkerConfig, 'sql'>>;
 }) {
-  const { env, sql, abortSignal, taskWithMessage } = params;
+  const { env, sql, abortSignal, taskWithMessage, workerConfig } = params;
 
   // Create Supabase client if env vars exist, otherwise create mock
   const supabase = env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY
@@ -76,6 +81,7 @@ export function createFlowWorkerContext<TFlow extends AnyFlow = AnyFlow>(params:
     // Step task execution context
     rawMessage: taskWithMessage.message,
     stepTask: taskWithMessage.task,
+    ...(workerConfig && { workerConfig: createContextSafeConfig(workerConfig) }),
     
     // Supabase-specific resources (always present in Phase 1)
     sql,
