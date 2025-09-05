@@ -10,7 +10,7 @@ import type {
 } from '../core/context.js';
 import type { StepTaskRecord } from '../flow/types.js';
 import { createServiceSupabaseClient } from '../core/supabase-utils.js';
-import { deepFreeze } from '../core/deepUtils.js';
+import { createContextSafeConfig } from '../core/context.js';
 import type { QueueWorkerConfig, FlowWorkerConfig } from '../core/workerConfigTypes.js';
 
 /**
@@ -44,13 +44,13 @@ export function createSupabaseMessageContext<TPayload extends Json = Json>(param
     SUPABASE_SERVICE_ROLE_KEY: supabaseServiceRoleKey
   });
 
-  // Always provide frozen workerConfig (both default and provided are frozen consistently)
-  const defaultWorkerConfig = deepFreeze(
-    workerConfig ?? {
+  // Provide a safe, frozen workerConfig (default or provided)
+  const defaultWorkerConfig = createContextSafeConfig(
+    (workerConfig ?? {
       queueName: 'test-queue',
       maxConcurrent: 10,
       retry: { strategy: 'fixed' as const, limit: 3, baseDelay: 1 }
-    }
+    }) as QueueWorkerConfig
   );
 
   return {
@@ -100,15 +100,15 @@ export function createSupabaseStepTaskContext<TFlow extends AnyFlow>(params: {
     SUPABASE_SERVICE_ROLE_KEY: supabaseServiceRoleKey
   });
 
-  // Always provide frozen workerConfig (both default and provided are frozen consistently)
-  const defaultWorkerConfig = deepFreeze(
-    workerConfig ?? {
+  // Provide a safe, frozen workerConfig (default or provided)
+  const defaultWorkerConfig = createContextSafeConfig(
+    (workerConfig ?? {
       maxConcurrent: 10,
       batchSize: 10,
       visibilityTimeout: 2,
       maxPollSeconds: 2,
       pollIntervalMs: 100
-    }
+    }) as FlowWorkerConfig
   );
 
   return {
