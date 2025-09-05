@@ -1,5 +1,12 @@
 # @pgflow/example-flows
 
+## 0.6.1
+
+### Patch Changes
+
+- @pgflow/core@0.6.1
+- @pgflow/dsl@0.6.1
+
 ## 0.6.0
 
 ### Patch Changes
