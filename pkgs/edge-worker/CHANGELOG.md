@@ -1,5 +1,25 @@
 # @pgflow/edge-worker
 
+## 0.6.1
+
+### Patch Changes
+
+- ac8a858: Add workerConfig to handler execution context
+
+  Handlers can now access worker configuration through `context.workerConfig` to make intelligent decisions based on retry limits, concurrency settings, and other worker parameters. The config is deeply frozen to prevent accidental modifications while remaining mutable by the worker itself for future features.
+
+  Key improvements:
+
+  - Added `workerConfig` to MessageExecution and StepTaskExecution contexts
+  - Config is cached and frozen once at startup for optimal performance
+  - Reorganized configuration handling with cleaner factory methods
+  - Simplified EdgeWorker API by removing unnecessary union types
+  - Environment variables always sourced from platform (users cannot override)
+
+- 51b41f2: Fix retry config validation to only enforce limit <= 50 for exponential strategy, allowing higher limits for fixed strategy
+  - @pgflow/core@0.6.1
+  - @pgflow/dsl@0.6.1
+
 ## 0.6.0
 
 ### Minor Changes
