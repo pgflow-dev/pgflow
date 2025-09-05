@@ -10,17 +10,14 @@ export function deepClone<T>(obj: T): T {
     return new Date(obj.getTime()) as T;
   }
 
-  if (Array.isArray(obj)) {
-    return obj.map(item => deepClone(item)) as T;
+  const source = obj as Record<PropertyKey, unknown>;
+  const target = Array.isArray(obj) ? [] as unknown[] : {} as Record<PropertyKey, unknown>;
+  
+  for (const key of Reflect.ownKeys(source)) {
+    (target as Record<PropertyKey, unknown>)[key] = deepClone(source[key]);
   }
-
-  const cloned = {} as T;
-  for (const key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      cloned[key] = deepClone(obj[key]);
-    }
-  }
-  return cloned;
+  
+  return target as T;
 }
 
 /**
