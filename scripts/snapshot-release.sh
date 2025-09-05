@@ -11,9 +11,39 @@ command -v jq >/dev/null || { echo "jq is required"; exit 1; }
 }
 
 # ------------------------------------------------------------------
-# 1. Resolve snapshot tag
+# 1. Parse arguments and resolve snapshot tag
 # ------------------------------------------------------------------
-TAG=${1:-}                      # first arg or empty
+NO_CLEANUP=false
+TAG=""
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --no-cleanup)
+      NO_CLEANUP=true
+      shift
+      ;;
+    --dry-run)
+      echo "Dry run mode not implemented yet"
+      exit 1
+      ;;
+    --help)
+      echo "Usage: $0 [tag] [--no-cleanup] [--help]"
+      echo "  tag: Custom snapshot tag (default: branch name)"
+      echo "  --no-cleanup: Don't restore files after publishing"
+      exit 0
+      ;;
+    *)
+      if [[ -z "$TAG" ]]; then
+        TAG="$1"
+      else
+        echo "Unknown argument: $1"
+        exit 1
+      fi
+      shift
+      ;;
+  esac
+done
 if [[ -z $TAG ]]; then
   BRANCH=$(git rev-parse --abbrev-ref HEAD)
   if [[ $BRANCH != "main" && $BRANCH != "HEAD" ]]; then
@@ -30,11 +60,16 @@ SHA=$(git rev-parse --short HEAD)
 SNAPSHOT="$TAG-$TS-$SHA"        # 0.0.0-TAG-TIMESTAMP-SHA will be added by changesets
 
 # ------------------------------------------------------------------
-# 2. Clean-up on exit (always keep branch clean)
+# 2. Clean-up on exit (unless disabled)
 # ------------------------------------------------------------------
-trap 'git restore --source=HEAD --worktree --staged \
-      "**/package.json" "**/jsr.json" pnpm-lock.yaml \
-      .changeset/pre.json 2>/dev/null || true' EXIT
+if [[ "$NO_CLEANUP" != "true" ]]; then
+  trap 'git restore --source=HEAD --worktree --staged \
+        "**/package.json" "**/jsr.json" pnpm-lock.yaml \
+        .changeset/pre.json 2>/dev/null || true' EXIT
+  echo "Auto-cleanup enabled. Use --no-cleanup to disable."
+else
+  echo "Auto-cleanup disabled. You'll need to clean up manually."
+fi
 
 # ------------------------------------------------------------------
 # 3. Create versions
@@ -45,10 +80,11 @@ pnpm changeset version --snapshot "$SNAPSHOT"
 # ------------------------------------------------------------------
 # 4. Collect list of packages only once
 # ------------------------------------------------------------------
+# After changeset version, the actual version includes 0.0.0- prefix
+ACTUAL_VERSION_PATTERN="0\.0\.0-.*$SNAPSHOT"
 mapfile -t PKGS < <(
   find pkgs -name package.json -not -path "*/node_modules/*" -print0 |
-  xargs -0 jq -r '.name + "@" + .version' |
-  grep "$SNAPSHOT\$"                 # only packages with this snapshot version
+  xargs -0 jq -r 'select(.version | test("^0\\.0\\.0-.*")) | .name + "@" + .version'
 )
 
 [[ ${#PKGS[@]} -eq 0 ]] && { echo "Nothing to publish, aborting"; exit 1; }
