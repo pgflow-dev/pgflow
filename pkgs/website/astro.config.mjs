@@ -251,7 +251,6 @@ export default defineConfig({
                 },
                 {
                   label: 'CONCEPTS',
-                  badge: { text: 'NEW!', variant: 'tip' },
                   collapsed: true,
                   autogenerate: { directory: 'concepts/' },
                 },
@@ -301,7 +300,7 @@ export default defineConfig({
           {
             exclude: ['/hire', '/demos'],
             topics: {
-              news: ['/news', '/news/**/*']
+              news: ['/news', '/news/**/*'],
             },
           }
         ),

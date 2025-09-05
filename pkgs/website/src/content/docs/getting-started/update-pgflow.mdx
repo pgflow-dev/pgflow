@@ -1,0 +1,203 @@
+---
+title: Update pgflow
+description: Complete guide to updating pgflow packages and applying new migrations in your Supabase project
+sidebar:
+  order: 55
+  badge:
+    text: New
+    variant: tip
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+This guide explains how to update pgflow to the latest version, including package updates and database migrations. pgflow updates involve two main components that need to be updated together.
+
+<Aside type="caution" title="Unified Versioning">
+pgflow uses changesets for version management, which means all packages are versioned together. When you update one pgflow package, all others should be updated to the same version to maintain compatibility.
+</Aside>
+
+## What needs to be updated?
+
+When updating pgflow, you need to update two types of packages:
+
+1. **npm packages** - CLI, core libraries, client, and DSL packages
+2. **JSR package** - The Edge Worker package (published to JSR registry)
+3. **Database migrations** - Schema and function updates
+
+## Update Process
+
+### 1. Update npm packages
+
+Update all pgflow npm packages to the latest version:
+
+```bash frame="none"
+npm update @pgflow/cli @pgflow/core @pgflow/client @pgflow/dsl @pgflow/example-flows
+```
+
+Or if using yarn:
+
+```bash frame="none"
+yarn upgrade @pgflow/cli @pgflow/core @pgflow/client @pgflow/dsl @pgflow/example-flows
+```
+
+Or if using pnpm:
+
+```bash frame="none"
+pnpm update @pgflow/cli @pgflow/core @pgflow/client @pgflow/dsl @pgflow/example-flows
+```
+
+### 2. Update Edge Worker (JSR package)
+
+Update the Edge Worker package in your JSR imports. In your Edge Function files, update the import:
+
+```typescript
+// Before
+import { EdgeWorkerWithPgflow } from "jsr:@pgflow/edge-worker@^0.5.0";
+
+// After (replace with latest version)
+import { EdgeWorkerWithPgflow } from "jsr:@pgflow/edge-worker@^0.6.0";
+```
+
+### 3. Run pgflow install to update migrations
+
+**Always run the install command after updating packages** to check for and apply new database migrations:
+
+```bash frame="none"
+npx pgflow@latest install
+```
+
+<Aside type="caution" title="Use @latest">
+Always use `npx pgflow@latest install` to ensure you're running the install command from the latest version. This guarantees you get any new migrations that were added in the update.
+</Aside>
+
+The install command will:
+- Detect any new migrations that need to be installed
+- Copy new migrations with timestamps that place them after your existing migrations
+- Skip migrations that are already installed
+- Show you exactly which migrations will be added before proceeding
+
+### 4. Apply configuration changes (if needed)
+
+If the installer made configuration changes, restart your Supabase instance:
+
+```bash frame="none"
+npx supabase stop
+npx supabase start
+```
+
+### 5. Apply new migrations
+
+Apply the new migrations to your database:
+
+```bash frame="none"
+npx supabase migrations up
+```
+
+## Understanding Migration Timestamps
+
+pgflow uses a simple but effective migration system to ensure migrations are applied correctly:
+
+<Aside type="note" title="How Migration Prefixing Works">
+pgflow uses a simple but effective trick with two timestamps: it keeps the original timestamp in the filename so it can search for already-installed migrations in your folder, while prefixing with a new timestamp that ensures the migration appears as the newest in your Supabase migrations folder. This prevents Supabase from complaining about applying migrations with timestamps older than already-applied ones.
+
+For example, a pgflow migration `20250429164909_pgflow_initial.sql` might be installed as `20250430000010_20250429164909_pgflow_initial.sql` in your project.
+</Aside>
+
+### Migration Naming Convention
+
+pgflow migrations follow this naming pattern when installed:
+
+```
+[NEW_TIMESTAMP]_[ORIGINAL_TIMESTAMP]_[ORIGINAL_NAME].sql
+```
+
+Where:
+- `NEW_TIMESTAMP` - Generated timestamp that makes this the newest migration in your folder
+- `ORIGINAL_TIMESTAMP` - The original pgflow migration timestamp
+- `ORIGINAL_NAME` - The original migration file name
+
+The original timestamp allows pgflow to search for and detect which migrations have already been installed, while the new timestamp prefix ensures Supabase can apply the migration without timestamp ordering errors.
+
+## Troubleshooting Updates
+
+### No migrations to install
+
+If `pgflow install` reports "All pgflow migrations are already in place", this means:
+- You already have the latest migrations installed
+- No database schema updates are needed for this version
+- You can proceed with using the updated packages
+
+### Version mismatches
+
+If you encounter issues after updating, verify all packages are on the same version:
+
+```bash frame="none"
+npm list | grep pgflow
+```
+
+All pgflow packages should show the same version number.
+
+### Migration conflicts
+
+If you encounter migration conflicts:
+
+1. Check if you have custom migrations that conflict with pgflow schema
+2. Review the migration files in `supabase/migrations/` for any obvious conflicts
+3. Consider using the [manual installation approach](/how-to/manual-installation/) for more granular control
+
+## Best Practices
+
+<Aside type="tip" title="Recommended Update Workflow">
+1. Update packages first
+2. Always run `npx pgflow@latest install` after updating
+3. Review what migrations will be installed before confirming
+4. Test your flows after updating to ensure compatibility
+5. Keep all pgflow packages on the same version
+</Aside>
+
+### When to update
+
+<Aside type="note" title="Pre-1.0 Versioning">
+Until pgflow reaches 1.0 (production-ready), we use a modified versioning scheme:
+- **Patch releases (0.5.1 → 0.5.2)** - Bug fixes and small backward-compatible features
+- **Minor releases (0.5.0 → 0.6.0)** - Breaking changes and major updates
+- **Major release (0.x.x → 1.x.x)** - Production-ready milestone
+</Aside>
+
+- **Patch releases** - Safe to update immediately, include bug fixes and small backward-compatible improvements
+- **Minor releases** - Review changelog carefully as these may contain breaking changes
+- **Major release to 1.0** - Production-ready milestone, will include comprehensive migration guide
+
+### Staying informed
+
+- Check the [pgflow releases page](https://github.com/pgflow-dev/pgflow/releases) for release notes
+- Review changelog files for detailed changes
+- Test updates in a development environment first
+
+## Development vs Production
+
+### Development Environment
+
+In development, you can update frequently to take advantage of new features and bug fixes:
+
+```bash frame="none"
+npm update @pgflow/cli @pgflow/core @pgflow/client @pgflow/dsl
+npx pgflow@latest install -y  # Auto-confirm for faster development
+npx supabase migrations up
+```
+
+### Production Environment
+
+For production updates, follow a more careful approach:
+
+1. Test the update in a staging environment first
+2. Review all new migrations carefully
+3. Plan for any necessary downtime
+4. Keep backups of your database before applying migrations
+5. Monitor your workflows after updating
+
+<Aside type="caution" title="Production Considerations">
+Always test pgflow updates in a non-production environment first. While pgflow migrations are designed to be safe, any database schema change carries inherent risks in production systems.
+</Aside>
+
+Your pgflow installation is now updated with the latest features, bug fixes, and database schema improvements!
