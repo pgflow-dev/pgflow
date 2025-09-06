@@ -217,34 +217,19 @@ interface ResolvedFlowWorkerConfig {
 The most common use case is detecting when a message is on its final retry attempt:
 
 ```typescript "ctx.workerConfig" "ctx.rawMessage" ".read_ct" ".retry.limit"
-// Queue handler - detect final retry attempt
-async function processOrder(input, ctx) {
-  const isLastRetry = ctx.rawMessage.read_ct >= ctx.workerConfig.retry.limit;
+async function sendEmail(input, ctx) {
+  const isLastAttempt = ctx.rawMessage.read_ct >= ctx.workerConfig.retry.limit;
   
-  if (isLastRetry) {
-    // Send alert or fallback action before final failure
-    await sendFailureAlert(input.orderId, ctx.workerConfig.queueName);
+  if (isLastAttempt) {
+    // Use fallback email service on final attempt
+    return await sendWithFallbackProvider(input.to, input.subject, input.body);
   }
   
-  return processOrderLogic(input);
+  // Use primary email service for regular attempts
+  return await sendWithPrimaryProvider(input.to, input.subject, input.body);
 }
 ```
 
-```typescript "ctx.workerConfig" ".visibilityTimeout"
-// Flow handler - access worker configuration  
-.step({ slug: 'api_call' }, async (input, ctx) => {
-  // Use worker's visibility timeout to set safe API timeout
-  const safeTimeout = (ctx.workerConfig.visibilityTimeout - 2) * 1000; // 2s buffer
-  
-  console.log(`Using ${safeTimeout}ms timeout based on worker visibility timeout`);
-  
-  const response = await fetch(input.url, {
-    signal: AbortSignal.timeout(safeTimeout)
-  });
-  
-  return await response.json();
-})
-```
 
 <Aside type="note">
 The `workerConfig` object is deeply frozen to prevent handlers from modifying configuration values that could affect other message executions. It represents the final resolved configuration with all defaults applied, not the original user input. Since all defaults have been resolved, you can safely access any field without undefined checks.

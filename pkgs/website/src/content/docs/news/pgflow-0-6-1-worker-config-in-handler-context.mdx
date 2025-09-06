@@ -1,0 +1,50 @@
+---
+draft: false
+title: 'pgflow 0.6.1: Worker Configuration in Handler Context'
+description: 'Handlers can now access worker configuration through context.workerConfig for intelligent decision-making based on retry limits, concurrency settings, and other worker parameters.'
+date: 2025-09-05
+authors:
+  - jumski
+tags:
+  - release
+  - edge-worker
+  - context
+  - configuration
+featured: true
+cover:
+  alt: 'pgflow 0.6.1 worker config in handler context cover image'
+  image: '../../../assets/cover-images/pgflow-0-6-1-worker-config-in-handler-context.png'
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+pgflow 0.6.1 adds `workerConfig` to the handler execution context, enabling intelligent decision-making based on worker configuration.
+
+## Worker Configuration in Context
+
+Handlers now have access to the complete worker configuration through `context.workerConfig` ([#200](https://github.com/pgflow-dev/pgflow/issues/200)). This enables smarter handlers that can adapt their behavior based on retry limits, concurrency settings, timeouts, and other worker parameters.
+
+```typescript
+async function sendEmail(input, context) {
+  const isLastAttempt = context.rawMessage.read_ct >= context.workerConfig.retry.limit;
+  
+  if (isLastAttempt) {
+    // Use fallback email service on final attempt
+    return await sendWithFallbackProvider(input.to, input.subject, input.body);
+  }
+  
+  // Use primary email service for regular attempts
+  return await sendWithPrimaryProvider(input.to, input.subject, input.body);
+}
+```
+
+See the [context documentation](/concepts/context/#workerconfig) for complete details on available configuration properties and additional examples.
+
+
+## Bug Fix
+
+This release also fixes retry strategy validation to only enforce the 50-limit cap for exponential retry strategy, allowing higher limits for fixed strategy when needed ([#199](https://github.com/pgflow-dev/pgflow/issues/199)).
+
+## Updating to 0.6.1
+
+Follow our [update guide](/getting-started/update-pgflow/) for step-by-step upgrade instructions.

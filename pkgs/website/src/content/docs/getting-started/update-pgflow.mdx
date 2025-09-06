@@ -13,12 +13,12 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 This guide explains how to update pgflow to the latest version, including package updates and database migrations. pgflow updates involve two main components that need to be updated together.
 
 <Aside type="caution" title="Unified Versioning">
-pgflow uses changesets for version management, which means all packages are versioned together. When you update one pgflow package, all others should be updated to the same version to maintain compatibility.
+All pgflow packages (npm and jsr) are versioned together. When you update one pgflow package, all others should be updated to the same version to maintain compatibility.
 </Aside>
 
 ## What needs to be updated?
 
-When updating pgflow, you need to update two types of packages:
+When updating pgflow, you need to update:
 
 1. **npm packages** - CLI, core libraries, client, and DSL packages
 2. **JSR package** - The Edge Worker package (published to JSR registry)
@@ -31,19 +31,19 @@ When updating pgflow, you need to update two types of packages:
 Update all pgflow npm packages to the latest version:
 
 ```bash frame="none"
-npm update @pgflow/cli @pgflow/core @pgflow/client @pgflow/dsl @pgflow/example-flows
+npm update @pgflow/client # or @pgflow/dsl, @pgflow/core etc.
 ```
 
 Or if using yarn:
 
 ```bash frame="none"
-yarn upgrade @pgflow/cli @pgflow/core @pgflow/client @pgflow/dsl @pgflow/example-flows
+yarn upgrade @pgflow/client # or @pgflow/dsl, @pgflow/core etc.
 ```
 
 Or if using pnpm:
 
 ```bash frame="none"
-pnpm update @pgflow/cli @pgflow/core @pgflow/client @pgflow/dsl @pgflow/example-flows
+pnpm update @pgflow/client # or @pgflow/dsl, @pgflow/core etc.
 ```
 
 ### 2. Update Edge Worker (JSR package)
@@ -52,10 +52,10 @@ Update the Edge Worker package in your JSR imports. In your Edge Function files,
 
 ```typescript
 // Before
-import { EdgeWorkerWithPgflow } from "jsr:@pgflow/edge-worker@^0.5.0";
+import { EdgeWorker } from "jsr:@pgflow/edge-worker@^0.5.0";
 
 // After (replace with latest version)
-import { EdgeWorkerWithPgflow } from "jsr:@pgflow/edge-worker@^0.6.0";
+import { EdgeWorker } from "jsr:@pgflow/edge-worker@^0.6.0";
 ```
 
 ### 3. Run pgflow install to update migrations
@@ -98,7 +98,7 @@ npx supabase migrations up
 pgflow uses a simple but effective migration system to ensure migrations are applied correctly:
 
 <Aside type="note" title="How Migration Prefixing Works">
-pgflow uses a simple but effective trick with two timestamps: it keeps the original timestamp in the filename so it can search for already-installed migrations in your folder, while prefixing with a new timestamp that ensures the migration appears as the newest in your Supabase migrations folder. This prevents Supabase from complaining about applying migrations with timestamps older than already-applied ones.
+pgflow uses a simple but effective trick with two timestamps: it keeps the original filename in the migration it creates in your project, so it can search for already-installed migrations, while prefixing with a new timestamp that ensures the migration appears as the newest in your Supabase migrations folder. This prevents Supabase from complaining about applying migrations with timestamps older than already-applied ones.
 
 For example, a pgflow migration `20250429164909_pgflow_initial.sql` might be installed as `20250430000010_20250429164909_pgflow_initial.sql` in your project.
 </Aside>
