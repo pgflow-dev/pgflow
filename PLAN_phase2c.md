@@ -62,8 +62,8 @@ export class TaskExecutor<TFlow extends AnyFlow> {
           flow_slug,
           step_slug, 
           task_index,
-          item_type: typeof input.item,
-          has_run_input: 'run' in input
+          item_type: typeof input,
+          item_value: input
         });
       } else {
         this.logger.debug(`Executing regular task for step ${step_slug}`, {
@@ -73,13 +73,19 @@ export class TaskExecutor<TFlow extends AnyFlow> {
         });
       }
 
-      // Execute handler (same for both regular and map tasks)
+      // Execute handler - input structure differs for map vs regular tasks
+      // For map tasks: SQL provides just the array element, worker provides context
+      // For regular tasks: SQL provides full input object, worker provides same context
       const result = await handler(input, context);
       
       // Validate result is JSON-serializable
       if (!this.isJsonSerializable(result)) {
         throw new Error(`Handler ${step_slug} returned non-JSON-serializable result`);
       }
+
+      // TODO: Add input type validation for map tasks
+      // Should validate that map task inputs are actually array elements as expected
+      // For now, relying on TypeScript compile-time checks and SQL layer validation
 
       return {
         success: true,
@@ -110,14 +116,15 @@ export class TaskExecutor<TFlow extends AnyFlow> {
 
   /**
    * Type guard to identify map task input structure
+   * For map tasks, SQL provides just the individual array element (not wrapped in object)
    */
-  private isMapTaskInput(input: any): input is { run: any; item: any } {
+  private isMapTaskInput(input: any): boolean {
+    // Map tasks receive the raw array element directly from SQL
+    // Regular tasks receive objects like { run: {...}, dep1: {...}, dep2: {...} }
     return (
-      typeof input === 'object' &&
-      input !== null &&
-      'run' in input &&
-      'item' in input &&
-      Object.keys(input).length === 2
+      typeof input !== 'object' || 
+      input === null ||
+      !('run' in input)
     );
   }
 

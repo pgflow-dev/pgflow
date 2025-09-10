@@ -29,30 +29,32 @@ Building on the proven patterns from Phase 1's `.array()` method:
 /**
  * Add a map step to the flow for parallel processing of array elements
  * 
- * Map steps take each element of an array dependency and process them in parallel,
- * then aggregate the results back into an ordered array based on the original array indices.
+ * Map steps can either:
+ * 1. Map over the flow input (when TFlowInput is Array<T> and no array specified)
+ * 2. Map over another step's array output (when array: 'stepSlug' is specified)
+ * 
+ * The handler receives just the individual item, not the full context.
  * 
  * @template Slug - The unique identifier for this step
- * @template ArraySlug - The slug of the array step this map depends on
- * @template THandler - The handler function that processes individual array elements
- * @param opts - Step configuration including slug, array dependency, and runtime options  
- * @param handler - Function that processes individual array elements
+ * @template ArraySlug - Optional: The slug of the array step to map over
+ * @template THandler - The handler function that processes individual items
+ * @param opts - Step configuration including slug, optional array, and runtime options  
+ * @param handler - Function that processes individual items (item, context) => result
  * @returns A new Flow instance with the map step added
  */
 map<
   Slug extends string,
-  ArraySlug extends Extract<keyof Steps, string>,
+  ArraySlug extends Extract<keyof Steps, string> | undefined = undefined,
   THandler extends (
-    input: Simplify<{
-      run: TFlowInput;
-      item: ArrayElementType<Steps[ArraySlug]>;
-    }>,
+    item: ArraySlug extends string 
+      ? ArrayElementType<Steps[ArraySlug]>
+      : ArrayElementType<TFlowInput>,
     context: BaseContext & TContext
   ) => Json | Promise<Json>
 >(
   opts: Simplify<{
     slug: Slug;
-    array: ArraySlug; // Explicit array dependency
+    array?: ArraySlug; // Optional: if not specified, maps over flow input
     queue?: string | false; // Optional queue routing (Phase 3 infrastructure)
   } & StepRuntimeOptions>,
   handler: THandler
@@ -60,13 +62,13 @@ map<
   TFlowInput,
   TContext & BaseContext & ExtractHandlerContext<THandler>,
   Steps & { [K in Slug]: Array<AwaitedReturn<THandler>> },
-  StepDependencies & { [K in Slug]: [ArraySlug] }
+  StepDependencies & { [K in Slug]: ArraySlug extends string ? [ArraySlug] : [] }
 > {
   type RetType = Array<AwaitedReturn<THandler>>;
   type NewSteps = MergeObjects<Steps, { [K in Slug]: RetType }>;
   type NewDependencies = MergeObjects<
     StepDependencies,
-    { [K in Slug]: [ArraySlug] }
+    { [K in Slug]: ArraySlug extends string ? [ArraySlug] : [] }
   >;
 
   const slug = opts.slug as Slug;
@@ -78,10 +80,18 @@ map<
     throw new Error(`Step "${slug}" already exists in flow "${this.slug}"`);
   }
 
-  // Validate array dependency exists
-  const arraySlug = opts.array;
-  if (!this.stepDefinitions[arraySlug as string]) {
-    throw new Error(`Map step "${slug}" depends on undefined array step "${arraySlug}"`);
+  // Determine dependencies: array param translates to single dependency
+  const dependencies = opts.array ? [opts.array] : [];
+  
+  // Validate array dependency if specified
+  if (opts.array && !this.stepDefinitions[opts.array as string]) {
+    throw new Error(`Map step "${slug}" depends on undefined array step "${opts.array}"`);
+  }
+  
+  // For root maps (no array specified), validate flow input is array
+  if (!opts.array) {
+    // This validation would happen at compile time via TypeScript,
+    // but we can add runtime check in compileFlow
   }
 
   // Extract RuntimeOptions from opts (excluding map-specific options)
@@ -98,11 +108,11 @@ map<
   // Create step definition with map-specific metadata
   const newStepDefinition: MapStepDefinition<TFlowInput, RetType, BaseContext & TContext> = {
     slug,
-    handler: handler as any, // Type assertion needed due to complex generic constraints
-    dependencies: [arraySlug as string],
+    handler, // Fixed: Remove unnecessary type assertion
+    dependencies: opts.array ? [opts.array] : [], // Fixed: Handle undefined arraySlug for root maps
     options,
     stepType: 'map', // NEW: Mark as map step for compilation
-    arrayDependency: arraySlug as string, // NEW: Store explicit array dependency
+    arrayDependency: opts.array || null, // Fixed: Handle undefined arraySlug for root maps
   };
 
   const newStepDefinitions = {
@@ -173,16 +183,29 @@ const flow = new Flow<{ userId: string }>({ slug: 'user_processing' })
     { id: 1, name: 'Alice', role: 'admin' },
     { id: 2, name: 'Bob', role: 'user' }
   ])
-  .map({ slug: 'enriched_users', array: 'users' }, ({ run, item }) => {
+  .map({ slug: 'enriched_users', array: 'users' }, (item) => {
     // item is correctly inferred as: { id: number; name: string; role: string }
-    // run is correctly inferred as: { userId: string }
+    // No run context in map handler - just the item
     return {
       ...item,
-      belongsToUser: item.id.toString() === run.userId,
       processedAt: Date.now()
     };
   })
-  .step({ slug: 'summary', dependsOn: ['enriched_users'] }, ({ enriched_users }) => {
+
+// Example: Root map over flow input
+const rootMapFlow = new Flow<Array<number>>({ slug: 'process_numbers' })
+  .map({ slug: 'doubled' }, (num) => {
+    // num is correctly inferred as: number
+    return num * 2;
+  })
+  .step({ slug: 'summary', dependsOn: ['doubled'] }, ({ doubled }) => {
+    // doubled is correctly inferred as: Array<number>
+    return { sum: doubled.reduce((a, b) => a + b, 0) };
+  });
+
+const flow2 = new Flow<{ userId: string }>({ slug: 'user_processing' })
+  .array({ slug: 'users' }, ({ run }) => fetchUsers(run.userId))
+  .map({ slug: 'enriched_users', array: 'users' }, (item) => {
     // enriched_users is correctly inferred as: Array<{
     //   id: number; 
     //   name: string; 
@@ -221,20 +244,18 @@ export function compileFlow<TFlow extends AnyFlow>(
   for (const stepSlug of flow.stepOrder) {
     const stepDef = flow.getStepDefinition(stepSlug);
     
-    if (isMapStepDefinition(stepDef)) {
-      // Map step compilation
-      stepCreationStatements.push(
-        `SELECT pgflow.add_step(${escapeLiteral(flow.slug)}, ${escapeLiteral(stepSlug)}, 'map', ARRAY[${escapeLiteral(stepDef.arrayDependency)}]${compileRuntimeOptions(stepDef.options)});`
-      );
-    } else {
-      // Regular step compilation (existing logic)
-      const dependencies = stepDef.dependencies.length > 0 
-        ? `ARRAY[${stepDef.dependencies.map(dep => escapeLiteral(dep)).join(', ')}]`
-        : 'ARRAY[]::TEXT[]';
-        
-      stepCreationStatements.push(
-        `SELECT pgflow.add_step(${escapeLiteral(flow.slug)}, ${escapeLiteral(stepSlug)}, 'single', ${dependencies}${compileRuntimeOptions(stepDef.options)});`
-      );
+    // Determine step type based on metadata or handler analysis
+    const stepType = isMapStepDefinition(stepDef) ? 'map' : 'single';
+    
+    // Dependencies are already in stepDef.dependencies
+    // For map steps: either [] (root map) or [arraySlug] (dependent map)
+    const dependencies = stepDef.dependencies.length > 0 
+      ? `ARRAY[${stepDef.dependencies.map(dep => escapeLiteral(dep)).join(', ')}]`
+      : 'ARRAY[]::TEXT[]';
+      
+    stepCreationStatements.push(
+      `SELECT pgflow.add_step(${escapeLiteral(flow.slug)}, ${escapeLiteral(stepSlug)}, '${stepType}', ${dependencies}${compileRuntimeOptions(stepDef.options)});`
+    );
     }
   }
 
@@ -288,11 +309,11 @@ function compileStepHandler<TFlow extends AnyFlow>(
   const handlerName = `${flow.slug}_${stepSlug}`;
   
   if (isMapStepDefinition(stepDef)) {
-    // Map step handler compilation
+    // Map step handler compilation - SQL provides just the item, worker adds context
     return `
-export const ${handlerName} = async (input: { run: any; item: any }, context: any) => {
+export const ${handlerName} = async (item: any, context: any) => {
   const handler = ${stepDef.handler.toString()};
-  return await handler(input, context);
+  return await handler(item, context);
 };`;
   } else {
     // Regular step handler compilation (existing logic)
