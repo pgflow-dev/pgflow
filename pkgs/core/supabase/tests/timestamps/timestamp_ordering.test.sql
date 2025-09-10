@@ -7,7 +7,12 @@ select pgflow.create_flow('success_flow');
 select pgflow.add_step('success_flow', 'success_step');
 
 select pgflow.create_flow('failure_flow');
-select pgflow.add_step('failure_flow', 'failure_step', 0);
+select pgflow.add_step(
+  flow_slug => 'failure_flow',
+  step_slug => 'failure_step',
+  deps_slugs => '{}',
+  max_attempts => 0
+);
 
 select pgflow.create_flow('dependent_flow');
 select pgflow.add_step('dependent_flow', 'root_step');
