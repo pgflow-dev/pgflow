@@ -1,438 +1,339 @@
-# pgflow MVP Phase 1: `.array()` DSL Method Implementation Plan
+# Map Infrastructure (SQL Core)
 
-## Executive Summary
+## Implementation Status
 
-Phase 1 delivers immediate value through type-safe array creation while maintaining zero risk to existing functionality. This phase focuses exclusively on the DSL layer, adding a `.array()` method that provides semantic clarity and compile-time validation for array-returning handlers while functioning as sugar over the existing `.step()` method.
+### Sequential Child PR Plan
 
-**Key Benefits:**
-- **Immediate type safety**: TypeScript enforces `Array<T>` return types at compile time
-- **Zero breaking changes**: Purely additive functionality, no schema modifications
-- **Full feature parity**: Complete compatibility with existing step features
-- **Foundation for future phases**: Enables testing and validation of array workflows
+- [x] **PR #207: Add .array() to DSL** - `feature-map-and-array`
+  - TypeScript DSL enhancement for array creation
+  - Foundation for map step functionality
+- [x] **PR #208: Foundation - Schema & add_step()** - `09-10-feat_add_map_step_type_in_sql` (CURRENT PR)
 
-## Technical Overview
+  - Schema changes (initial_tasks, remaining_tasks, constraints)
+  - add_step() function with map step validation
+  - Basic tests for map step creation
 
-### Design Philosophy
+- [ ] **PR #209: Root Map Support** - `09-11-root-map-support`
 
-The `.array()` method follows pgflow's core principle of "simplest implementation that works":
+  - Enhanced start_flow() for root map validation and count setting
+  - Tests for root map scenarios
 
-1. **Sugar over `.step()`** - Reuses 100% of existing validation, dependency management, and execution logic
-2. **Compile-time validation** - TypeScript constraints enforce array returns without runtime overhead
-3. **Semantic clarity** - Clear intent when creating array-producing steps
-4. **Zero runtime cost** - No additional validation, wrapping, or transformation
+- [ ] **PR #210: Task Spawning** - `09-12-task-spawning`
 
-### Implementation Strategy
+  - Enhanced start_ready_steps() for N task generation
+  - Empty array auto-completion
+  - Tests for batch task creation
 
-**Pure TypeScript Enhancement:**
-- Add `.array()` method to the `Flow` class that delegates to existing `.step()` method
-- Use TypeScript generic constraints to enforce `Array<T>` return types
-- Leverage existing type system for input/output inference and dependency validation
+- [ ] **PR #211: Array Element Extraction** - `09-13-array-extraction`
 
-**Current Architecture Compatibility:**
-```typescript
-// Current .step() usage
-.step({ slug: 'items' }, ({ run }) => fetchItemsAsArray(run.userId))
+  - Enhanced start_tasks() for map input extraction
+  - Support for root and dependent maps
+  - Tests for element extraction
 
-// New .array() usage - semantically clearer, type-enforced
-.array({ slug: 'items' }, ({ run }) => fetchItemsAsArray(run.userId))
+- [ ] **PR #212: Dependent Map Support** - `09-14-dependent-map`
+
+  - Enhanced complete_task() for map dependency handling
+  - Array validation and count propagation
+  - Tests for dependency scenarios
+
+- [ ] **PR #213: Output Aggregation** - `09-15-output-aggregation`
+
+  - Enhanced maybe_complete_run() for array aggregation
+  - Ordered output collection
+  - Tests for aggregation
+
+- [ ] **PR #214: Integration Tests** - `09-16-integration-tests`
+  - End-to-end test suite
+  - Edge case coverage
+  - Performance validation
+
+## Overview
+
+This implementation establishes the SQL-level foundation for map step functionality, building on PR #207's completed `.array()` method. It focuses exclusively on the database schema and SQL Core layer, providing the infrastructure needed for parallel task spawning, execution, and result aggregation.
+
+**Dependencies**: PR #207 (`.array()` method) must be completed  
+**Milestone**: Can create map steps and spawn/complete tasks via direct SQL calls
+
+## Core Value Proposition
+
+- **Parallel Task Spawning**: Map steps spawn N tasks based on array dependency length
+- **Task Counting Infrastructure**: Robust task counting with complete set of invariants
+- **Result Aggregation**: Ordered collection of task results into final array output
+- **Empty Array Handling**: Auto-completion for zero-task scenarios
+
+## Hybrid Strategy: "Fresh Data" vs "Dumb Spawning"
+
+The implementation uses a hybrid approach that separates **"count determination"** from **"task spawning"** for optimal performance and maintainability.
+
+### Key Principle
+
+**Determine task counts where data is naturally available, spawn tasks where it's most efficient.**
+
+### Fresh Data Functions
+
+Functions that have access to fresh array data handle validation and count setting:
+
+- **`start_flow()`**: Has fresh `runs.input` → validate and set `initial_tasks` for root maps
+- **`complete_task()`**: Has fresh `output` → validate and set `initial_tasks` for dependent maps
+
+### Dumb Functions
+
+Functions that use pre-computed counts without JSON parsing:
+
+- **`start_ready_steps()`**: Copies `initial_tasks → remaining_tasks` and spawns N tasks efficiently
+- **`start_tasks()`**: Extracts array elements using `task_index`
+- **`maybe_complete_run()`**: Aggregates results into ordered arrays
+
+### Benefits
+
+1. **Minimal JSON Parsing**: Array parsing happens exactly twice - once in each "fresh data" function
+2. **Performance Predictable**: No duplicate work or re-reading large arrays
+3. **Clean Separation**: Each function has focused responsibility
+4. **Atomic Operations**: Count setting happens under existing locks
+
+## Implementation Components
+
+The implementation is split across multiple PRs as shown in the Sequential Child PR Plan above. Each PR builds on the previous one to deliver complete map step functionality.
+
+## Database Schema Changes
+
+### Migration Strategy
+
+Using Atlas migrations with the established pkgs/core/scripts workflow:
+
+#### Initial Migration Generation
+
+```bash
+# Navigate to pkgs/core directory
+cd pkgs/core
+
+# First update schema files in pkgs/core/schemas/, then generate migration
+./scripts/atlas-migrate-diff add_map_step_type
+
+# Review generated migration file, then apply and verify
+pnpm nx verify-migrations core
 ```
 
-## Detailed Technical Implementation
+#### Regenerating Migration After Schema Updates
 
-### Method Signature Design
+```bash
+# 1. Decide on migration name
+migration_name=add_map_step_type
 
-**Location:** `/home/jumski/Code/pgflow-dev/pgflow/worktrees/review-fanout-steps-plan/pkgs/dsl/src/dsl.ts`
+# 1. Remove the previous version of the migration file
+git rm -f supabase/migrations/*_pgflow_${migration_name}.sql
 
-```typescript
-// Add to Flow class after existing .step() method (around line 411)
-array<
-  Slug extends string,
-  THandler extends (
-    input: StepInput<this, Deps>,
-    context: BaseContext & TContext  
-  ) => Array<Json> | Promise<Array<Json>>,
-  Deps extends Extract<keyof Steps, string> = never
->(
-  opts: Simplify<{ slug: Slug; dependsOn?: Deps[] } & StepRuntimeOptions>,
-  handler: THandler
-): Flow<
-  TFlowInput, 
-  TContext & BaseContext & ExtractHandlerContext<THandler>, 
-  Steps & { [K in Slug]: AwaitedReturn<THandler> }, 
-  StepDependencies & { [K in Slug]: Deps[] }
-> {
-  // Delegate to existing .step() method for maximum code reuse
-  return this.step(opts, handler);
-}
+# 2. Reset the Atlas hash to allow regeneration
+./scripts/atlas-migrate-hash --yes
+
+# 3. reset database state to pre-migration
+pnpm nx supabase:reset core
+
+# 4. Update schema files in pkgs/core/schemas/ as needed (or if already updated, skip this step)
+
+# 5. generate the migration with the same name
+./scripts/atlas-migrate-diff ${migration_name}
+
+# 6. verify the migration
+pnpm nx verify-migrations core
 ```
 
-### Type Constraint Strategy
+**Key Points:**
 
-**Core Constraint:**
-```typescript
-THandler extends (...args: any[]) => Array<Json> | Promise<Array<Json>>
-```
+- START WITH REMOVING PREVIOUS MIGRATION FILE BEFORE REGENERATING TO AVOID CONFLICTS !!!!
+- Always use the same migration name (`add_map_step_type`) for the entire PR
+- do not include `pgflow_` prefix when genrating migration - it is included by atlas-migrate-diff automatically
+- Reset Atlas hash before regeneration to allow the same name to be used
+- This maintains a single, comprehensive migration per PR
 
-This constraint ensures:
-- **Compile-time validation**: TypeScript will reject non-array returns
-- **Promise support**: Async handlers returning `Promise<Array<T>>` work correctly
-- **Element type inference**: TypeScript extracts `T` from `Array<T>` for downstream steps
+### Schema Updates (DONE)
 
-**Error Examples:**
-```typescript
-// ✅ Valid - TypeScript accepts
-.array({ slug: 'items' }, () => [1, 2, 3])
-.array({ slug: 'async_items' }, async () => [{ id: 1 }, { id: 2 }])
+#### 1. Enable Map Step Type (DONE)
 
-// ❌ Invalid - TypeScript rejects at compile time
-.array({ slug: 'invalid' }, () => 42)           // number
-.array({ slug: 'invalid2' }, () => "string")     // string  
-.array({ slug: 'invalid3' }, async () => null)   // Promise<null>
-```
+**File**: `pkgs/core/schemas/0050_tables_definitions.sql`
 
-### Integration Points
+- Updated constraint to allow 'map' step type
 
-**Full Feature Support:**
-- **Dependencies**: `dependsOn` parameter works identically to `.step()`
-- **Runtime Options**: `maxAttempts`, `baseDelay`, `timeout`, `startDelay` all supported
-- **Validation**: Leverages existing `validateSlug()` and `validateRuntimeOptions()`
-- **Error Handling**: Same error messages and patterns as `.step()`
+#### 2. Remove Single Task Constraint (DONE)
 
-**Type System Integration:**
-- **Input Construction**: Uses existing `StepInput<this, Deps>` utility type for clean, maintainable input type construction
-- **Output Inference**: Leverages existing `AwaitedReturn<THandler>` utility  
-- **Dependency Validation**: Reuses existing compile-time dependency constraints
-- **Utility Type Usage**: Follows pgflow's pattern of using well-designed utility types rather than manual generic construction
+**File**: `pkgs/core/schemas/0060_tables_runtime.sql`
 
-## Comprehensive Testing Strategy
+- Removed `only_single_task_per_step` constraint
 
-### Test File Structure
+#### 3. Add Initial Tasks Column and Update Remaining Tasks (DONE)
 
-```
-pkgs/dsl/__tests__/
-├── runtime/
-│   └── array-method.test.ts          # Runtime behavior validation
-├── types/
-│   └── array-method.test-d.ts        # Compile-time type validation
-└── integration/
-    └── array-integration.test.ts     # End-to-end workflow testing
-```
+**File**: `pkgs/core/schemas/0060_tables_runtime.sql`
 
-### Runtime Tests Implementation
+- Added `initial_tasks` column with DEFAULT 1
+- Made `remaining_tasks` nullable
+- Added `remaining_tasks_state_consistency` constraint
 
-**File:** `/home/jumski/Code/pgflow-dev/pgflow/worktrees/review-fanout-steps-plan/pkgs/dsl/__tests__/runtime/array-method.test.ts`
+## Function Changes
 
-**Test Categories:**
+### 1. `add_step()` - Map Step Creation (DONE)
 
-1. **Basic Functionality**
-   - Handler registration and retrieval
-   - Identical behavior to `.step()` for array handlers
-   - Proper step definition creation
+**File**: `pkgs/core/schemas/0100_function_add_step.sql`
 
-2. **Options Support**  
-   - All `StepRuntimeOptions` (maxAttempts, baseDelay, timeout, startDelay)
-   - Dependency specification with `dependsOn`
-   - Options validation and storage
+**Completed Changes:**
 
-3. **Validation Integration**
-   - Slug validation via `validateSlug()` calls
-   - Runtime options validation via `validateRuntimeOptions()` calls
-   - Error propagation from validation functions
+- Added `step_type TEXT DEFAULT 'single'` parameter
+- Added validation for map steps (max 1 dependency)
+- Function now stores step_type in database
 
-4. **Integration Workflows**
-   - Steps depending on array steps
-   - Array steps depending on other steps  
-   - Multi-level dependency chains
+### 2. `start_flow()` - Root Map Count Setting (TODO: PR #209)
 
-**Key Test Cases:**
-```typescript
-describe('.array() method', () => {
-  describe('basic functionality', () => {
-    it('adds an array step with correct handler', () => {
-      const handler = () => [1, 2, 3];
-      const flow = new Flow({ slug: 'test' }).array({ slug: 'items' }, handler);
-      expect(flow.getStepDefinition('items').handler).toBe(handler);
-    });
+**File**: `pkgs/core/schemas/0100_function_start_flow.sql`
 
-    it('behaves identically to .step() for array-returning handlers', () => {
-      const handler = () => [{ id: 1 }, { id: 2 }];
-      const arrayFlow = new Flow({ slug: 'test' }).array({ slug: 'items' }, handler);
-      const stepFlow = new Flow({ slug: 'test' }).step({ slug: 'items' }, handler);
-      
-      expect(arrayFlow.getStepDefinition('items')).toEqual(stepFlow.getStepDefinition('items'));
-    });
-  });
+**Required Changes:**
 
-  describe('integration', () => {
-    it('allows steps to depend on array steps', async () => {
-      const flow = new Flow<{ count: number }>({ slug: 'test' })
-        .array({ slug: 'items' }, ({ run }) => Array(run.count).fill(0).map((_, i) => i))
-        .step({ slug: 'sum', dependsOn: ['items'] }, ({ items }) => 
-          items.reduce((sum, item) => sum + item, 0)
-        );
+- Detect root map steps (step_type='map' AND deps_count=0)
+- Validate that `runs.input` is an array for root maps
+- Set `initial_tasks = jsonb_array_length(input)` for root maps
+- Fail with clear error if input is not array for root map
 
-      const itemsHandler = flow.getStepDefinition('items').handler;
-      const sumHandler = flow.getStepDefinition('sum').handler;
+### 3. `complete_task()` - Dependent Map Count Setting (TODO: PR #212)
 
-      const itemsResult = await itemsHandler({ run: { count: 5 } });
-      const sumResult = await sumHandler({ run: { count: 5 }, items: itemsResult });
+**File**: `pkgs/core/schemas/0100_function_complete_task.sql`
 
-      expect(itemsResult).toEqual([0, 1, 2, 3, 4]);
-      expect(sumResult).toBe(10);
-    });
-  });
-});
-```
+**Required Changes:**
 
-### Type Tests Implementation
+- Detect map dependents when a step completes
+- For single→map: validate output is array, set `initial_tasks = array_length`
+- For map→map: count completed tasks, set `initial_tasks = task_count`
+- Fail with clear error if dependency output is not array when needed
 
-**File:** `/home/jumski/Code/pgflow-dev/pgflow/worktrees/review-fanout-steps-plan/pkgs/dsl/__tests__/types/array-method.test-d.ts`
+### 4. `start_ready_steps()` - Task Spawning (TODO: PR #210)
 
-**Test Categories:**
+**File**: `pkgs/core/schemas/0100_function_start_ready_steps.sql`
 
-1. **Return Type Enforcement**
-   - Accept valid array returns (sync/async)
-   - Reject non-array returns with `@ts-expect-error`
-   - Handle complex nested array types
+**Required Changes:**
 
-2. **Type Inference**
-   - Correct element type extraction from `Array<T>`
-   - Proper input type construction for dependent steps
-   - Complex nested object array handling
+- Generate N tasks using `generate_series(0, initial_tasks-1)` for map steps
+- Handle empty arrays: direct transition to 'completed' when initial_tasks=0
+- Send appropriate realtime events (step:started or step:completed)
+- Insert multiple step_tasks records with proper task_index values
 
-3. **Dependency Validation**
-   - Compile-time dependency validation
-   - Prevent access to non-dependencies
-   - Multi-level dependency type checking
+**Key Decision - Empty Array Handling:**
 
-**Key Type Test Cases:**
-```typescript
-describe('.array() type constraints', () => {
-  describe('return type enforcement', () => {
-    it('should accept handlers that return arrays', () => {
-      new Flow<{}>({ slug: 'test' })
-        .array({ slug: 'numbers' }, () => [1, 2, 3])
-        .array({ slug: 'objects' }, () => [{ id: 1 }, { id: 2 }])
-        .array({ slug: 'async' }, async () => ['a', 'b', 'c']);
-    });
+- Transition directly `created` → `completed` for initial_tasks=0
+- Send single `step:completed` event with `output: []`
 
-    it('should reject handlers that return non-arrays', () => {
-      new Flow<{}>({ slug: 'test' })
-        // @ts-expect-error - should reject non-array return
-        .array({ slug: 'invalid' }, () => 42)
-        // @ts-expect-error - should reject string return  
-        .array({ slug: 'invalid2' }, () => 'not an array');
-    });
-  });
+### 5. `start_tasks()` - Array Element Extraction (TODO: PR #211)
 
-  describe('type inference', () => {
-    it('should provide correct input types for dependent steps', () => {
-      new Flow<{ count: number }>({ slug: 'test' })
-        .array({ slug: 'items' }, ({ run }) => Array(run.count).fill(0))
-        .step({ slug: 'process', dependsOn: ['items'] }, (input) => {
-          expectTypeOf(input).toMatchTypeOf<{
-            run: { count: number };
-            items: number[];
-          }>();
-          return input.items.length;
-        });
-    });
-  });
-});
-```
+**File**: `pkgs/core/schemas/0120_function_start_tasks.sql`
 
-## Implementation Timeline
+**Required Changes:**
 
-### Day-by-Day Breakdown
+- Extract array elements based on task_index for map steps
+- Root maps: extract from `runs.input[task_index]`
+- Dependent maps: extract from aggregated dependency output
+- Single steps: unchanged behavior (keep existing logic)
 
-**Day 1: API Design & Type Tests**
-- Morning: Design method signature and type constraints
-- Afternoon: Implement comprehensive type tests (`array-method.test-d.ts`)
-- Outcome: Compile-time API validation complete
+### 6. `maybe_complete_run()` - Output Aggregation (TODO: PR #213)
 
-**Day 2: Core Implementation**
-- Morning: Implement `.array()` method in `dsl.ts`
-- Afternoon: Basic runtime tests passing
-- Outcome: Method functional with basic validation
+**File**: `pkgs/core/schemas/0100_function_maybe_complete_run.sql`
 
-**Day 3: Comprehensive Testing**
-- Morning: Complete runtime test suite (`array-method.test.ts`)
-- Afternoon: Integration tests and edge cases
-- Outcome: Full test coverage achieved
+**Required Changes:**
 
-**Day 4: Integration & Validation**  
-- Morning: End-to-end integration testing
-- Afternoon: Cross-validation with existing test suite
-- Outcome: Zero breaking changes confirmed
+- Aggregate map step outputs into arrays ordered by `task_index`
+- Single steps: unchanged (single output value)
+- Maintain run output structure: `{step1: output1, mapStep: [item1, item2, ...]}`
 
-**Day 5: Documentation & Polish**
-- Morning: Code documentation and examples
-- Afternoon: Performance validation and final review
-- Outcome: Phase 1 complete and ready for use
+## Testing Strategy
+
+### Tests by PR
+
+**PR #208 (DONE):**
+
+- map_step_creation.test.sql
+- step_type_validation.test.sql
+- map_dependency_limit.test.sql
+- map_step_with_no_deps.test.sql
+
+**PR #209-214:** Each PR will include its own comprehensive test suite covering:
+
+- Function-specific tests
+- Edge cases and error handling
+- Integration with existing functionality
+
+**PR #214:** Final integration test suite covering end-to-end workflows
+
+## Edge Cases Handled
+
+### 1. Empty Arrays
+
+- Root maps: detected in `start_flow()`, `remaining_tasks = 0` → auto-complete in `start_ready_steps()`
+- Dependent maps: `remaining_tasks = 0` set in `complete_task()` → auto-complete in `start_ready_steps()`
+
+### 2. Array Validation
+
+- Root maps: validate `runs.input` is array in `start_flow()`
+- Dependent maps: validate dependency output is array in `complete_task()`
+- Both: fail fast with clear error messages
+
+### 3. Map→Map Dependencies
+
+- Parent map has N completed tasks
+- Child map gets `initial_tasks = N` (count of parent tasks)
+- Each child task reads from aggregated parent array using `task_index`
+- Simple aggregation approach (no optimization needed for MVP)
+
+### 4. Non-Map Dependents of Maps
+
+- Single step depending on map step gets aggregated array
+- Built on-demand in `start_tasks()`: `jsonb_agg(output ORDER BY task_index)`
+- Preserves array ordering
+
+### 5. Failure Semantics
+
+- Array validation failures: immediately fail step with clear error
+- Individual task failures: follow normal retry → task fail → step fail → run fail
+- Empty arrays: auto-complete successfully (not failures)
+
+## Performance Optimizations
+
+1. **Minimal JSON Parsing**: Array parsing happens exactly twice - once in each "fresh data" function
+2. **Batch Operations**: Use `generate_series()` for efficient task creation
+3. **Atomic Updates**: Leverage existing locks and transactions
+4. **On-Demand Aggregation**: Only aggregate when needed for non-map dependents
+5. **Simple Aggregation**: Map→map uses consistent aggregation approach for clarity
 
 ## Success Criteria
 
-### Primary Success Metrics
+### Functional Requirements
 
-1. **✅ Compile-time Type Safety**
-   - `.array()` method rejects non-array handlers with clear TypeScript errors
-   - Type inference works correctly for array element types
-   - Dependent steps receive properly typed array inputs
+1. ✅ **Map Step Creation**: `add_step` accepts `step_type='map'` parameter
+2. ✅ **Dynamic Task Spawning**: Map steps spawn N tasks based on array length
+3. ✅ **Empty Array Handling**: Zero-length arrays auto-complete with `[]` output
+4. ✅ **Result Aggregation**: Task outputs aggregated in task_index order
+5. ✅ **Task Count Propagation**: Map dependents get correct task counts
 
-2. **✅ Runtime Equivalence**
-   - `.array()` method produces identical step definitions to `.step()` for array handlers
-   - All existing step features work identically (dependencies, options, validation)
-   - Error messages and validation behavior unchanged
+### Data Integrity Requirements
 
-3. **✅ Feature Completeness**
-   - Full support for `StepRuntimeOptions` (maxAttempts, baseDelay, timeout, startDelay)
-   - Complete dependency system integration (`dependsOn` parameter)
-   - Proper integration with existing validation utilities
+1. ✅ **Consistent State Transitions**: Task counts maintained correctly
+2. ✅ **Ordered Aggregation**: Results maintain task_index ordering
 
-4. **✅ Zero Breaking Changes**
-   - All existing flows continue working unchanged
-   - No modifications to schema, SQL functions, or worker logic
-   - Backward compatibility guaranteed
+### Performance Requirements
 
-### Technical Validation
+1. ✅ **Batch Operations**: Task spawning uses efficient generate_series approach
 
-**Type System Tests:**
-- 100% pass rate for type tests (`vitest typecheck`)
-- No TypeScript compilation errors
-- Proper type inference in complex scenarios
+### Testing Requirements
 
-**Runtime Tests:**
-- 100% test coverage for new functionality
-- All existing DSL tests continue passing
-- Integration tests validate end-to-end workflows
+1. ✅ **Invariant Testing**: Task counting constraints thoroughly tested
+2. ✅ **Edge Case Coverage**: Empty arrays, large arrays, error scenarios
+3. ✅ **Integration Testing**: Multi-step workflows validated
 
-**Performance Validation:**
-- No measurable impact on compilation time
-- Zero runtime overhead compared to `.step()` method
-- Memory usage unchanged
-
-## Risk Analysis & Mitigation
+## Risk Mitigation
 
 ### Identified Risks
 
-**1. Type System Complexity**
-- **Risk**: Complex generic constraints may cause TypeScript performance issues
-- **Mitigation**: Use proven patterns from existing `.step()` method implementation
-- **Fallback**: Simplify constraints if performance issues arise
+**Risk 1: Performance Impact**
 
-**2. Breaking Changes** 
-- **Risk**: Unintended modifications to existing functionality
-- **Mitigation**: Delegate everything to `.step()` method - zero new logic paths
-- **Validation**: Comprehensive regression testing
+- **Mitigation**: Efficient SQL patterns (generate_series, batch operations)
+- **Testing**: Performance validation with large arrays (1000+ elements)
 
-**3. Incomplete Feature Parity**
-- **Risk**: Missing support for existing step features
-- **Mitigation**: Use identical options interface and parameter validation
-- **Testing**: Direct comparison tests between `.array()` and `.step()`
+**Risk 2: Empty Array Edge Cases**
 
-### Mitigation Strategies
-
-**Incremental Implementation:**
-1. Type tests first - validate API design before implementation
-2. Minimal implementation - just enough to pass type tests
-3. Progressive enhancement - add runtime validation incrementally
-4. Regression testing - ensure no existing functionality breaks
-
-**Rollback Plan:**
-- Single method addition - easy to remove if issues arise
-- No schema changes - zero database impact
-- Feature flag potential - could be conditionally enabled
-
-## Deliverables
-
-### Code Changes
-
-**Primary Implementation:**
-1. `/home/jumski/Code/pgflow-dev/pgflow/worktrees/review-fanout-steps-plan/pkgs/dsl/src/dsl.ts`
-   - Add `.array()` method to `Flow` class (approximately 15 lines)
-
-**Test Suite:**
-2. `/home/jumski/Code/pgflow-dev/pgflow/worktrees/review-fanout-steps-plan/pkgs/dsl/__tests__/runtime/array-method.test.ts`
-   - Comprehensive runtime behavior tests (~200 lines)
-
-3. `/home/jumski/Code/pgflow-dev/pgflow/worktrees/review-fanout-steps-plan/pkgs/dsl/__tests__/types/array-method.test-d.ts`
-   - Complete type validation test suite (~150 lines)
-
-**Integration Testing:**
-4. `/home/jumski/Code/pgflow-dev/pgflow/worktrees/review-fanout-steps-plan/pkgs/dsl/__tests__/integration/array-integration.test.ts`
-   - End-to-end workflow validation (~100 lines)
-
-### Documentation
-
-**Code Documentation:**
-- JSDoc comments for the `.array()` method
-- Type parameter documentation
-- Usage examples in comments
-
-**No External Documentation Required:**
-- Phase 1 is purely additive to existing API
-- Full documentation planned for Phase 4 when complete
-
-### Validation Artifacts
-
-**Test Reports:**
-- Runtime test results showing 100% pass rate
-- Type test results confirming compile-time validation
-- Coverage reports demonstrating complete test coverage
-
-**Compatibility Validation:**
-- Existing test suite results (no regressions)
-- Performance benchmarks (no degradation)
-- Memory usage analysis (no increase)
-
-## Future Phase Integration
-
-### Phase 2 Preparation
-
-The `.array()` method implementation provides the foundation for Phase 2 queue routing:
-
-**Queue Parameter Addition:**
-```typescript
-// Phase 1 (current)
-.array({ slug: 'items' }, handler)
-
-// Phase 2 (future) - extending options interface
-.array({ slug: 'items', queue: 'data_processor' }, handler)
-.array({ slug: 'manual_items', queue: false }, handler)
-```
-
-**Implementation Strategy:**
-- Options interface extension (non-breaking)
-- Parameter forwarding to `.step()` method
-- Zero changes to core `.array()` logic
-
-### Phase 4 Integration
-
-The type system foundation enables seamless `.map()` method integration:
-
-**Type Inference Chain:**
-```typescript
-// Array step creates foundation
-.array({ slug: 'items' }, () => [1, 2, 3, 4, 5])
-
-// Map method leverages existing type inference  
-.map({ slug: 'doubled', array: 'items' }, (item) => item * 2)
-//    ^^^^ item is correctly inferred as 'number'
-```
-
-**Architectural Benefits:**
-- Array type information already captured in type system
-- Element type extraction patterns established
-- Dependency validation framework proven
-
-## Conclusion
-
-Phase 1 delivers immediate, tangible value through compile-time type safety while establishing the architectural foundation for pgflow's parallel processing capabilities. The implementation maintains pgflow's core philosophy of simplicity and PostgreSQL-native execution while providing developers with enhanced tooling and confidence.
-
-**Key Achievements:**
-- **Zero Risk**: No schema changes, no breaking changes
-- **Immediate Value**: Type safety and semantic clarity from day one  
-- **Solid Foundation**: Enables confident progression to subsequent phases
-- **MVP Philosophy**: Simplest implementation that works, avoiding premature optimization
-
-This phase successfully bridges the gap between pgflow's current capabilities and its parallel processing vision, delivering user value while maintaining the project's commitment to simplicity and reliability.
+- **Mitigation**: Explicit auto-completion logic and dedicated testing
+- **Testing**: Comprehensive empty array scenario coverage
+- **Validation**: End-to-end empty array workflow testing
