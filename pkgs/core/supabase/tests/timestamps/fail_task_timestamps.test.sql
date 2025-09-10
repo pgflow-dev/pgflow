@@ -4,7 +4,13 @@ select pgflow_tests.reset_db();
 
 -- SETUP
 select pgflow.create_flow('with_retry');
-select pgflow.add_step('with_retry', 'first', 0, 0);
+select pgflow.add_step(
+  flow_slug => 'with_retry',
+  step_slug => 'first',
+  deps_slugs => '{}',
+  max_attempts => 0,
+  base_delay => 0
+);
 select pgflow.start_flow('with_retry', '{"test": true}'::JSONB);
 
 -- max_attempts is 0, so failing once should mark the task as failed
