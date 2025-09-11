@@ -19,6 +19,10 @@ Set up a pg_cron safety net that checks worker status and only starts new worker
 
 Edge Workers normally auto-respawn by sending their own HTTP requests. In rare cases during high load, workers may fail to respawn if they hit execution time limits before sending restart requests. Basic safety nets can cause Supabase's Edge Runtime to spawn multiple workers simultaneously, leading to unpredictable costs.
 
+<Aside type="tip">
+You can [disable auto-respawn](/how-to/disable-worker-auto-respawn/) if you want full control over worker lifecycle through pg_cron.
+</Aside>
+
 ## Smart Safety Net Solution
 
 This approach checks existing worker counts before spawning new ones:
