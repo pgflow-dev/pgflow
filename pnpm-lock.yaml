@@ -60,6 +60,9 @@ importers:
       '@vitest/ui':
         specifier: ^1.3.1
         version: 1.6.1(vitest@1.3.1)
+      '@withgraphite/graphite-cli':
+        specifier: ^1.6.8
+        version: 1.6.8
       esbuild:
         specifier: ^0.19.2
         version: 0.19.12
@@ -9500,6 +9503,15 @@ packages:
       '@whatwg-node/fetch': 0.10.9
       '@whatwg-node/promise-helpers': 1.3.2
       tslib: 2.8.1
+
+  /@withgraphite/graphite-cli@1.6.8:
+    resolution: {integrity: sha512-ifi4dc9jocSp3A01twJ1WoQgsfVtBGJr7upt8P+7Vo2s+FrexSf+4UytdiUa1F0dj3BuXy7DWyPXPZrzmWPQkg==}
+    engines: {node: '>=16'}
+    hasBin: true
+    requiresBuild: true
+    dependencies:
+      semver: 7.7.2
+    dev: true
 
   /@xhmikosr/archive-type@6.0.1:
     resolution: {integrity: sha512-PB3NeJL8xARZt52yDBupK0dNPn8uIVQDe15qNehUpoeeLWCZyAOam4vGXnoZGz2N9D1VXtjievJuCsXam2TmbQ==}

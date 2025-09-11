@@ -1,19 +1,10 @@
-## Character Usage Guidelines
+# Character Guidelines
 
-**IMPORTANT**: Never use the following characters in documentation or code comments. Always use the alternatives listed below:
+**NEVER use these characters** in docs/comments:
+- Em-dash (—) → Use hyphen (-)
+- Curly quotes ("" '') → Use straight quotes ("" ')
+- Curly apostrophe (') → Use straight apostrophe (')
+- Ellipsis (…) → Use three periods (...)
+- Non-breaking space → Use regular space
 
-- **Em-dash (—)**: Use hyphen (-) instead
-- **Curly quotes ("" '')**: Use straight quotes ("" '') instead
-- **Right single quote/curly apostrophe (')**: Use straight apostrophe (') instead
-- **Ellipsis character (…)**: Use three periods (...) instead
-- **Non-breaking space**: Use regular space instead
-
-This ensures compatibility across different editors and environments.
-
-### Quick Fix Command
-
-To replace all these characters in a file, use this script:
-
-```bash
-./scripts/replace-special-chars.sh <file_path>
-```
+**Fix script**: `./scripts/replace-special-chars.sh <file_path>`
