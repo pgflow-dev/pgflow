@@ -27,7 +27,7 @@ create table pgflow.step_states (
   step_slug text not null,
   status text not null default 'created',
   remaining_tasks int null,  -- NULL = not started, >0 = active countdown
-  initial_tasks int default 1 check (initial_tasks >= 0),  -- Planned task count: 1 for singles, N for maps
+  initial_tasks int not null default 1 check (initial_tasks >= 0),  -- Planned task count: 1 for singles, N for maps
   remaining_deps int not null default 0 check (remaining_deps >= 0),
   error_message text,
   created_at timestamptz not null default now(),

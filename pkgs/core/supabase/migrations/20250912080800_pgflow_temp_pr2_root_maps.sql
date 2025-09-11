@@ -1,13 +1,7 @@
-create or replace function pgflow.start_flow(
-  flow_slug TEXT,
-  input JSONB,
-  run_id UUID default null
-)
-returns setof PGFLOW.RUNS
-language plpgsql
-set search_path to ''
-volatile
-as $$
+-- Modify "step_states" table
+ALTER TABLE "pgflow"."step_states" ALTER COLUMN "initial_tasks" SET NOT NULL;
+-- Modify "start_flow" function
+CREATE OR REPLACE FUNCTION "pgflow"."start_flow" ("flow_slug" text, "input" jsonb, "run_id" uuid DEFAULT NULL::uuid) RETURNS SETOF "pgflow"."runs" LANGUAGE plpgsql SET "search_path" = '' AS $$
 declare
   v_created_run pgflow.runs%ROWTYPE;
   v_root_map_count int;
