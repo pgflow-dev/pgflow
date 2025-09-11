@@ -1,0 +1,65 @@
+---
+title: Disable Worker Auto-Respawn
+description: How to disable automatic worker respawning in Supabase Edge Functions
+sidebar:
+  order: 116
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+<Aside type="caution" title="Temporary Feature">
+This is a temporary solution using environment variables. In future versions, this may be replaced with a proper configuration option.
+</Aside>
+
+By default, pgflow Edge Workers automatically spawn a new instance when shutting down to ensure continuous processing. You can disable this behavior if you're using external orchestration like pg_cron.
+
+## Disabling Auto-Respawn
+
+### For Local Development
+
+Add to your `supabase/functions/.env` file:
+
+```diff
+# supabase/functions/.env
+EDGE_WORKER_DB_URL=postgres://...
+EDGE_WORKER_LOG_LEVEL=info
++EDGE_WORKER_DISABLE_AUTO_RESPAWN=true
+```
+
+### For Production (Supabase Dashboard)
+
+1. Go to your project's Edge Functions settings
+2. Find your worker function
+3. Add the environment variable:
+   - Key: `EDGE_WORKER_DISABLE_AUTO_RESPAWN`
+   - Value: `true`
+
+## When to Use This
+
+Disable auto-respawn when:
+
+- You're using pg_cron to schedule worker restarts
+- You want manual control over worker lifecycle
+- You're debugging shutdown behavior
+- You need to prevent duplicate workers
+
+## Example with pg_cron
+
+If you're using pg_cron to restart workers periodically:
+
+```sql
+-- Schedule worker restart every hour
+SELECT cron.schedule(
+  'restart-edge-worker',
+  '0 * * * *',  -- Every hour
+  $$
+  -- Your restart logic here
+  $$
+);
+```
+
+With auto-respawn disabled, only pg_cron controls when new workers start.
+
+<Aside type="note">
+Without auto-respawn, ensure you have another mechanism (like pg_cron) to restart workers, otherwise processing will stop when the worker shuts down.
+</Aside>
