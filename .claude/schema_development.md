@@ -78,11 +78,37 @@ pnpm nx verify-migrations core
 pnpm nx test:pgtap core
 ```
 
+## Working with Stacked PRs (Graphite)
+
+When developing features across multiple stacked PRs, use temporary migrations:
+
+### Each PR in Stack
+Follow normal development workflow (see above), but when generating migrations:
+```bash
+# Use TEMP_ prefix for non-final migrations
+./scripts/atlas-migrate-diff TEMP_feature_part_1  # Will create *_pgflow_TEMP_*.sql
+```
+
+### Before Merging to Main (Top PR Only)
+```bash
+# Remove ALL temp migrations
+git rm -f supabase/migrations/*_pgflow_{TEMP,temp}_*.sql
+
+# Regenerate as final migration (follow "Regenerating Migrations" section above)
+./scripts/atlas-migrate-diff actual_feature_name  # No TEMP_ prefix
+```
+
+### Why?
+- Each PR passes CI independently
+- Single clean migration ships to users
+- CI automatically blocks TEMP_/temp_ migrations from main
+
 ## Best Practices
 
 **Development**: Edit schemas/*.sql first, psql iteration, test incrementally, TDD
 **Migrations**: Generate only (never hand-write), one per PR, descriptive names, test thoroughly, commit with schemas
-**Avoid**: Manual migration edits, forgetting to remove old migration, skipping hash reset, failing tests, mixing changes
+**Temp Migrations**: Use TEMP_ prefix for stacked PRs, remove before final merge, CI enforces this
+**Avoid**: Manual migration edits, forgetting to remove old migration, skipping hash reset, failing tests, mixing changes, merging temp migrations to main
 
 ## Troubleshooting
 
