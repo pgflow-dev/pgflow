@@ -1,0 +1,40 @@
+name: Prevent Temporary Migrations on Main
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  block-temp-migrations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check for temporary migrations
+        run: |
+          # Check for any temp migrations (both TEMP and temp)
+          shopt -s nullglob
+          temp_migrations=(pkgs/core/supabase/migrations/*_pgflow_TEMP_*.sql pkgs/core/supabase/migrations/*_pgflow_temp_*.sql)
+          
+          if [ ${#temp_migrations[@]} -gt 0 ]; then
+            echo "::error::❌ Temporary migrations found! These cannot be merged to main."
+            echo -e "\033[31m"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "❌ TEMPORARY MIGRATIONS DETECTED - CANNOT MERGE TO MAIN"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
+            echo "Found temporary migrations:"
+            printf '  • %s\n' "${temp_migrations[@]}"
+            echo ""
+            echo "TO FIX: Remove temp migrations and generate final migration:"
+            echo ""
+            echo "  git rm -f pkgs/core/supabase/migrations/*_pgflow_TEMP_*.sql"
+            echo "  git rm -f pkgs/core/supabase/migrations/*_pgflow_temp_*.sql"
+            echo "  cd pkgs/core"
+            echo "  ./scripts/atlas-migrate-hash --yes"
+            echo "  ./scripts/atlas-migrate-diff your_feature_name"
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo -e "\033[0m"
+            exit 1
+          fi
+          echo "✅ No temporary migrations found"
