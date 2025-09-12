@@ -18,11 +18,18 @@
   - Enhanced start_flow() for root map validation and count setting
   - Tests for root map scenarios
 
-- [ ] **Task Spawning**
+- [x] **PR #210: Task Spawning** - `09-12-task-spawning` (COMPLETED)
 
   - Enhanced start_ready_steps() for N task generation
   - Empty array auto-completion
   - Tests for batch task creation
+
+- [ ] **Cascade Complete Taskless Steps**
+
+  - Extract taskless completion from start_ready_steps()
+  - Add cascade capability for chains of taskless steps  
+  - Generic solution for all initial_tasks=0 steps
+  - See PLAN_cascade_complete_taskless_steps.md for details
 
 - [ ] **Array Element Extraction**
 
@@ -46,6 +53,14 @@
   - End-to-end test suite
   - Edge case coverage
   - Performance validation
+
+- [ ] **Performance Benchmarking Suite**
+  - Dedicated benchmark functions separate from tests
+  - Measure task spawning at various scales (100, 1K, 10K, 100K elements)
+  - Track performance metrics: spawn time, memory usage, queue throughput
+  - Non-blocking CI workflow that posts results as PR comment
+  - Runs independently from test suite to avoid timeouts
+  - Provides visibility without blocking merges
 
 ## Overview
 
