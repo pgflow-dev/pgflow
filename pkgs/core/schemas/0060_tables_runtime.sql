@@ -26,7 +26,8 @@ create table pgflow.step_states (
   run_id uuid not null references pgflow.runs (run_id),
   step_slug text not null,
   status text not null default 'created',
-  remaining_tasks int not null default 1 check (remaining_tasks >= 0),
+  remaining_tasks int null,  -- NULL = not started, >0 = active countdown
+  initial_tasks int default 1 check (initial_tasks >= 0),  -- Planned task count: 1 for singles, N for maps
   remaining_deps int not null default 0 check (remaining_deps >= 0),
   error_message text,
   created_at timestamptz not null default now(),
@@ -38,6 +39,10 @@ create table pgflow.step_states (
   references pgflow.steps (flow_slug, step_slug),
   constraint status_is_valid check (status in ('created', 'started', 'completed', 'failed')),
   constraint status_and_remaining_tasks_match check (status != 'completed' or remaining_tasks = 0),
+  -- Add constraint to ensure remaining_tasks is only set when step has started
+  constraint remaining_tasks_state_consistency check (
+    remaining_tasks is null or status != 'created'
+  ),
   constraint completed_at_or_failed_at check (not (completed_at is not null and failed_at is not null)),
   constraint started_at_is_after_created_at check (started_at is null or started_at >= created_at),
   constraint completed_at_is_after_started_at check (completed_at is null or completed_at >= started_at),
@@ -76,7 +81,6 @@ create table pgflow.step_tasks (
   constraint output_valid_only_for_completed check (
     output is null or status = 'completed'
   ),
-  constraint only_single_task_per_step check (task_index = 0),
   constraint attempts_count_nonnegative check (attempts_count >= 0),
   constraint completed_at_or_failed_at check (not (completed_at is not null and failed_at is not null)),
   constraint completed_at_is_after_queued_at check (completed_at is null or completed_at >= queued_at),

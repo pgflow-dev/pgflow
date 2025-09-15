@@ -127,8 +127,9 @@ export type Database = {
           error_message: string | null
           failed_at: string | null
           flow_slug: string
+          initial_tasks: number | null
           remaining_deps: number
-          remaining_tasks: number
+          remaining_tasks: number | null
           run_id: string
           started_at: string | null
           status: string
@@ -140,8 +141,9 @@ export type Database = {
           error_message?: string | null
           failed_at?: string | null
           flow_slug: string
+          initial_tasks?: number | null
           remaining_deps?: number
-          remaining_tasks?: number
+          remaining_tasks?: number | null
           run_id: string
           started_at?: string | null
           status?: string
@@ -153,8 +155,9 @@ export type Database = {
           error_message?: string | null
           failed_at?: string | null
           flow_slug?: string
+          initial_tasks?: number | null
           remaining_deps?: number
-          remaining_tasks?: number
+          remaining_tasks?: number | null
           run_id?: string
           started_at?: string | null
           status?: string
@@ -344,24 +347,16 @@ export type Database = {
     }
     Functions: {
       add_step: {
-        Args:
-          | {
-              flow_slug: string
-              step_slug: string
-              deps_slugs: string[]
-              max_attempts?: number
-              base_delay?: number
-              timeout?: number
-              start_delay?: number
-            }
-          | {
-              flow_slug: string
-              step_slug: string
-              max_attempts?: number
-              base_delay?: number
-              timeout?: number
-              start_delay?: number
-            }
+        Args: {
+          flow_slug: string
+          step_slug: string
+          deps_slugs?: string[]
+          max_attempts?: number
+          base_delay?: number
+          timeout?: number
+          start_delay?: number
+          step_type?: string
+        }
         Returns: {
           created_at: string
           deps_count: number
