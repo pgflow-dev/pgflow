@@ -13,17 +13,8 @@ select pgflow.add_step(
   step_type => 'map'
 );
 
--- Start a flow with an array input of 3 items
-insert into pgflow.runs (flow_slug, status, input)
-values ('test_map_queue', 'started', '["a", "b", "c"]'::jsonb)
-returning run_id as test_run_id \gset
-
--- Initialize step state
-insert into pgflow.step_states (flow_slug, run_id, step_slug, initial_tasks, remaining_deps)
-values ('test_map_queue', :'test_run_id', 'map_step', 3, 0);
-
--- Call start_ready_steps
-select pgflow.start_ready_steps(:'test_run_id');
+-- Start flow with array input - this will handle everything including calling start_ready_steps
+select run_id as test_run_id from pgflow.start_flow('test_map_queue', '["a", "b", "c"]'::jsonb) \gset
 
 -- Check messages in the queue
 with messages as (
@@ -81,17 +72,8 @@ select pgflow.add_step(
   start_delay => 5  -- 5 second delay
 );
 
--- Start flow
-insert into pgflow.runs (flow_slug, status, input)
-values ('test_delayed_map', 'started', '[1, 2]'::jsonb)
-returning run_id as delayed_run_id \gset
-
--- Initialize step state
-insert into pgflow.step_states (flow_slug, run_id, step_slug, initial_tasks, remaining_deps)
-values ('test_delayed_map', :'delayed_run_id', 'delayed_map', 2, 0);
-
--- Call start_ready_steps
-select pgflow.start_ready_steps(:'delayed_run_id');
+-- Start flow with array input - this will handle everything
+select run_id as delayed_run_id from pgflow.start_flow('test_delayed_map', '[1, 2]'::jsonb) \gset
 
 -- Verify messages are scheduled with delay
 select is(

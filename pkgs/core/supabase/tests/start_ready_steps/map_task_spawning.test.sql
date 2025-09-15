@@ -13,17 +13,8 @@ select pgflow.add_step(
   step_type => 'map'
 );
 
--- Start a flow with an array input of 3 items
-insert into pgflow.runs (flow_slug, status, input)
-values ('test_map_spawning', 'started', '[1, 2, 3]'::jsonb)
-returning run_id as test_run_id \gset
-
--- Initialize step states (simulating what start_flow does)
-insert into pgflow.step_states (flow_slug, run_id, step_slug, initial_tasks, remaining_deps)
-values ('test_map_spawning', :'test_run_id', 'map_step', 3, 0);
-
--- Call start_ready_steps to spawn tasks
-select pgflow.start_ready_steps(:'test_run_id');
+-- Start flow with array input - this will initialize step_states properly
+select run_id as test_run_id from pgflow.start_flow('test_map_spawning', '[1, 2, 3]'::jsonb) \gset
 
 -- Verify step status changed to 'started'
 select is(
@@ -69,32 +60,29 @@ select is(
 -- Test: Single step still spawns only 1 task
 select diag('Testing single step spawns only 1 task');
 
--- Add a single step
+-- Create a new flow with a single root step for this test
+select pgflow.create_flow('test_single_spawning');
 select pgflow.add_step(
-  flow_slug => 'test_map_spawning',
+  flow_slug => 'test_single_spawning',
   step_slug => 'single_step',
   step_type => 'single'
 );
 
--- Initialize single step state
-insert into pgflow.step_states (flow_slug, run_id, step_slug, initial_tasks, remaining_deps)
-values ('test_map_spawning', :'test_run_id', 'single_step', 1, 0);
-
--- Call start_ready_steps again
-select pgflow.start_ready_steps(:'test_run_id');
+-- Start flow with any input
+select run_id as single_run_id from pgflow.start_flow('test_single_spawning', '{}'::jsonb) \gset
 
 -- Verify single step spawns only 1 task
 select is(
-  (select count(*) from pgflow.step_tasks 
-   where run_id = :'test_run_id' and step_slug = 'single_step'),
+  (select count(*) from pgflow.step_tasks
+   where run_id = :'single_run_id' and step_slug = 'single_step'),
   1::bigint,
   'Single step should create only 1 task'
 );
 
 -- Verify single step task has task_index = 0
 select is(
-  (select task_index from pgflow.step_tasks 
-   where run_id = :'test_run_id' and step_slug = 'single_step'),
+  (select task_index from pgflow.step_tasks
+   where run_id = :'single_run_id' and step_slug = 'single_step'),
   0,
   'Single step task should have task_index = 0'
 );
@@ -110,17 +98,8 @@ select pgflow.add_step(
   step_type => 'map'
 );
 
--- Start flow with empty array
-insert into pgflow.runs (flow_slug, status, input)
-values ('test_empty_map', 'started', '[]'::jsonb)
-returning run_id as empty_run_id \gset
-
--- Initialize step state with initial_tasks = 0
-insert into pgflow.step_states (flow_slug, run_id, step_slug, initial_tasks, remaining_deps)
-values ('test_empty_map', :'empty_run_id', 'empty_map_step', 0, 0);
-
--- Call start_ready_steps
-select pgflow.start_ready_steps(:'empty_run_id');
+-- Start flow with empty array - this will handle everything
+select run_id as empty_run_id from pgflow.start_flow('test_empty_map', '[]'::jsonb) \gset
 
 -- Verify step went directly to 'completed' status
 select is(
