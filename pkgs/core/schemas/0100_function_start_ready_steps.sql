@@ -3,6 +3,8 @@ returns void
 language plpgsql
 set search_path to ''
 as $$
+declare
+  v_dummy int;
 begin
 RAISE NOTICE 'start_ready_steps called for run_id: %', start_ready_steps.run_id;
 RAISE NOTICE 'Ready steps: %', (
@@ -76,47 +78,37 @@ sent_messages AS (
   CROSS JOIN LATERAL unnest(mb.task_indices) WITH ORDINALITY AS task_indices(task_index, idx_ord)
   CROSS JOIN LATERAL pgmq.send_batch(mb.flow_slug, mb.messages, mb.delay) WITH ORDINALITY AS msg_ids(msg_id, msg_ord)
   WHERE task_indices.idx_ord = msg_ids.msg_ord
-),
-
-broadcast_events AS (
-  SELECT
-    started_step.*,
-    realtime.send(
-      jsonb_build_object(
-        'event_type', 'step:started',
-        'run_id', started_step.run_id,
-        'step_slug', started_step.step_slug,
-        'status', 'started',
-        'started_at', started_step.started_at,
-        'remaining_tasks', started_step.remaining_tasks,
-        'remaining_deps', started_step.remaining_deps
-      ),
-      concat('step:', started_step.step_slug, ':started'),
-      concat('pgflow:run:', started_step.run_id),
-      false
-    ) as event_id
-  FROM started_step_states AS started_step
-),
-
--- Insert all generated tasks with their respective task_index values
-inserted_tasks AS (
-  INSERT INTO pgflow.step_tasks (flow_slug, run_id, step_slug, task_index, message_id)
-  SELECT
-    sent_messages.flow_slug,
-    sent_messages.run_id,
-    sent_messages.step_slug,
-    sent_messages.task_index,
-    sent_messages.msg_id
-  FROM sent_messages
-  RETURNING *
 )
 
--- Force execution of broadcast_events by selecting from both
-SELECT COUNT(*) FROM (
-  SELECT 1 FROM inserted_tasks
-  UNION ALL
-  SELECT 1 FROM broadcast_events
-) AS combined;
+-- Insert all generated tasks with their respective task_index values
+INSERT INTO pgflow.step_tasks (flow_slug, run_id, step_slug, task_index, message_id)
+SELECT
+  sent_messages.flow_slug,
+  sent_messages.run_id,
+  sent_messages.step_slug,
+  sent_messages.task_index,
+  sent_messages.msg_id
+FROM sent_messages;
+
+-- Send broadcast events for all started steps
+PERFORM realtime.send(
+  jsonb_build_object(
+    'event_type', 'step:started',
+    'run_id', started_step.run_id,
+    'step_slug', started_step.step_slug,
+    'status', 'started',
+    'started_at', started_step.started_at,
+    'remaining_tasks', started_step.remaining_tasks,
+    'remaining_deps', started_step.remaining_deps
+  ),
+  concat('step:', started_step.step_slug, ':started'),
+  concat('pgflow:run:', started_step.run_id),
+  false
+)
+FROM pgflow.step_states AS started_step
+WHERE started_step.run_id = start_ready_steps.run_id
+  AND started_step.status = 'started'
+  AND started_step.started_at >= now() - interval '1 second';
 
 end;
 $$;
