@@ -1,5 +1,7 @@
 # Map Infrastructure (SQL Core)
 
+**NOTE: This PLAN.md file should be removed in the final PR once all map infrastructure is complete.**
+
 ## Implementation Status
 
 ### Sequential Child PR Plan
@@ -7,42 +9,40 @@
 - [x] **PR #207: Add .array() to DSL** - `feature-map-and-array`
   - TypeScript DSL enhancement for array creation
   - Foundation for map step functionality
-- [x] **PR #208: Foundation - Schema & add_step()** - `09-10-feat_add_map_step_type_in_sql` (CURRENT PR)
-
+- [x] **PR #208: Foundation - Schema & add_step()** - `09-10-feat_add_map_step_type_in_sql`
   - Schema changes (initial_tasks, remaining_tasks, constraints)
   - add_step() function with map step validation
   - Basic tests for map step creation
-
-- [ ] **PR #209: Root Map Support** - `09-11-root-map-support`
+- [x] **PR #209: Root Map Support** - `09-11-root-map-support` (COMPLETED)
 
   - Enhanced start_flow() for root map validation and count setting
   - Tests for root map scenarios
 
-- [ ] **PR #210: Task Spawning** - `09-12-task-spawning`
+- [ ] **Task Spawning**
 
   - Enhanced start_ready_steps() for N task generation
   - Empty array auto-completion
   - Tests for batch task creation
 
-- [ ] **PR #211: Array Element Extraction** - `09-13-array-extraction`
+- [ ] **Array Element Extraction**
 
   - Enhanced start_tasks() for map input extraction
   - Support for root and dependent maps
   - Tests for element extraction
 
-- [ ] **PR #212: Dependent Map Support** - `09-14-dependent-map`
+- [ ] **Dependent Map Support**
 
   - Enhanced complete_task() for map dependency handling
   - Array validation and count propagation
   - Tests for dependency scenarios
 
-- [ ] **PR #213: Output Aggregation** - `09-15-output-aggregation`
+- [ ] **Output Aggregation**
 
   - Enhanced maybe_complete_run() for array aggregation
   - Ordered output collection
   - Tests for aggregation
 
-- [ ] **PR #214: Integration Tests** - `09-16-integration-tests`
+- [ ] **Integration Tests**
   - End-to-end test suite
   - Edge case coverage
   - Performance validation
@@ -97,54 +97,9 @@ The implementation is split across multiple PRs as shown in the Sequential Child
 
 ## Database Schema Changes
 
-### Migration Strategy
+For detailed schema development workflow, migration generation, and regeneration instructions, see:
 
-Using Atlas migrations with the established pkgs/core/scripts workflow:
-
-#### Initial Migration Generation
-
-```bash
-# Navigate to pkgs/core directory
-cd pkgs/core
-
-# First update schema files in pkgs/core/schemas/, then generate migration
-./scripts/atlas-migrate-diff add_map_step_type
-
-# Review generated migration file, then apply and verify
-pnpm nx verify-migrations core
-```
-
-#### Regenerating Migration After Schema Updates
-
-```bash
-# 1. Decide on migration name
-migration_name=add_map_step_type
-
-# 1. Remove the previous version of the migration file
-git rm -f supabase/migrations/*_pgflow_${migration_name}.sql
-
-# 2. Reset the Atlas hash to allow regeneration
-./scripts/atlas-migrate-hash --yes
-
-# 3. reset database state to pre-migration
-pnpm nx supabase:reset core
-
-# 4. Update schema files in pkgs/core/schemas/ as needed (or if already updated, skip this step)
-
-# 5. generate the migration with the same name
-./scripts/atlas-migrate-diff ${migration_name}
-
-# 6. verify the migration
-pnpm nx verify-migrations core
-```
-
-**Key Points:**
-
-- START WITH REMOVING PREVIOUS MIGRATION FILE BEFORE REGENERATING TO AVOID CONFLICTS !!!!
-- Always use the same migration name (`add_map_step_type`) for the entire PR
-- do not include `pgflow_` prefix when genrating migration - it is included by atlas-migrate-diff automatically
-- Reset Atlas hash before regeneration to allow the same name to be used
-- This maintains a single, comprehensive migration per PR
+- `.claude/schema_development.md` - Concise workflow guide
 
 ### Schema Updates (DONE)
 
@@ -180,7 +135,7 @@ pnpm nx verify-migrations core
 - Added validation for map steps (max 1 dependency)
 - Function now stores step_type in database
 
-### 2. `start_flow()` - Root Map Count Setting (TODO: PR #209)
+### 2. `start_flow()` - Root Map Count Setting (CURRENT PR)
 
 **File**: `pkgs/core/schemas/0100_function_start_flow.sql`
 
@@ -191,7 +146,7 @@ pnpm nx verify-migrations core
 - Set `initial_tasks = jsonb_array_length(input)` for root maps
 - Fail with clear error if input is not array for root map
 
-### 3. `complete_task()` - Dependent Map Count Setting (TODO: PR #212)
+### 3. `complete_task()` - Dependent Map Count Setting (TODO)
 
 **File**: `pkgs/core/schemas/0100_function_complete_task.sql`
 
@@ -202,7 +157,7 @@ pnpm nx verify-migrations core
 - For map→map: count completed tasks, set `initial_tasks = task_count`
 - Fail with clear error if dependency output is not array when needed
 
-### 4. `start_ready_steps()` - Task Spawning (TODO: PR #210)
+### 4. `start_ready_steps()` - Task Spawning (TODO)
 
 **File**: `pkgs/core/schemas/0100_function_start_ready_steps.sql`
 
@@ -218,7 +173,7 @@ pnpm nx verify-migrations core
 - Transition directly `created` → `completed` for initial_tasks=0
 - Send single `step:completed` event with `output: []`
 
-### 5. `start_tasks()` - Array Element Extraction (TODO: PR #211)
+### 5. `start_tasks()` - Array Element Extraction (TODO)
 
 **File**: `pkgs/core/schemas/0120_function_start_tasks.sql`
 
@@ -229,7 +184,7 @@ pnpm nx verify-migrations core
 - Dependent maps: extract from aggregated dependency output
 - Single steps: unchanged behavior (keep existing logic)
 
-### 6. `maybe_complete_run()` - Output Aggregation (TODO: PR #213)
+### 6. `maybe_complete_run()` - Output Aggregation (TODO)
 
 **File**: `pkgs/core/schemas/0100_function_maybe_complete_run.sql`
 
@@ -250,13 +205,26 @@ pnpm nx verify-migrations core
 - map_dependency_limit.test.sql
 - map_step_with_no_deps.test.sql
 
-**PR #209-214:** Each PR will include its own comprehensive test suite covering:
+**PR #209 (CURRENT):**
+
+- root_map_array_validation.test.sql
+- root_map_initial_tasks.test.sql
+- mixed_step_types.test.sql
+- multiple_root_maps.test.sql
+- null_input_validation.test.sql
+- large_array_handling.test.sql
+- nested_array_handling.test.sql
+- mixed_type_arrays.test.sql
+- invalid_json_types.test.sql
+- flow_only_maps.test.sql
+
+**Subsequent PRs:** Each will include its own comprehensive test suite covering:
 
 - Function-specific tests
 - Edge cases and error handling
 - Integration with existing functionality
 
-**PR #214:** Final integration test suite covering end-to-end workflows
+**Final PR:** Integration test suite covering end-to-end workflows
 
 ## Edge Cases Handled
 
