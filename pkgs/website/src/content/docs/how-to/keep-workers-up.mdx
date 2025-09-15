@@ -41,7 +41,7 @@ This approach checks existing worker counts before spawning new ones:
      WHERE (
        SELECT COUNT(DISTINCT worker_id) FROM pgflow.workers
        WHERE function_name = 'your-worker-name'
-         AND last_heartbeat_at > NOW() - INTERVAL '2 min'
+         AND last_heartbeat_at > NOW() - make_interval(secs => 6)
      ) < 2;
      $$
    );
