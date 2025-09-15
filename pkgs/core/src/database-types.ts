@@ -374,6 +374,10 @@ export type Database = {
         Args: { base_delay: number; attempts_count: number }
         Returns: number
       }
+      cascade_complete_taskless_steps: {
+        Args: { run_id: string }
+        Returns: number
+      }
       complete_task: {
         Args: {
           run_id: string

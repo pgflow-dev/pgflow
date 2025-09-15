@@ -70,11 +70,19 @@ dependent_steps_lock AS (
 ),
 -- Update all dependent steps
 dependent_steps_update AS (
-  UPDATE pgflow.step_states
-  SET remaining_deps = pgflow.step_states.remaining_deps - 1
-  FROM dependent_steps
-  WHERE pgflow.step_states.run_id = complete_task.run_id
-    AND pgflow.step_states.step_slug = dependent_steps.dependent_step_slug
+  UPDATE pgflow.step_states ss
+  SET remaining_deps = ss.remaining_deps - 1,
+      -- For map dependents of single steps producing arrays, set initial_tasks
+      initial_tasks = CASE
+        WHEN s.step_type = 'map' AND jsonb_typeof(complete_task.output) = 'array'
+        THEN jsonb_array_length(complete_task.output)
+        ELSE ss.initial_tasks
+      END
+  FROM dependent_steps ds, pgflow.steps s
+  WHERE ss.run_id = complete_task.run_id
+    AND ss.step_slug = ds.dependent_step_slug
+    AND s.flow_slug = ss.flow_slug
+    AND s.step_slug = ss.step_slug
 )
 -- Only decrement remaining_steps, don't update status
 UPDATE pgflow.runs
@@ -89,6 +97,9 @@ WHERE pgflow.step_states.run_id = complete_task.run_id AND pgflow.step_states.st
 
 -- Send broadcast event for step completed if the step is completed
 IF v_step_state.status = 'completed' THEN
+  -- Step just completed, cascade any ready taskless steps
+  PERFORM pgflow.cascade_complete_taskless_steps(complete_task.run_id);
+
   PERFORM realtime.send(
     jsonb_build_object(
       'event_type', 'step:completed',
