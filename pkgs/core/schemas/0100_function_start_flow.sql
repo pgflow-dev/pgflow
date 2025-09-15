@@ -93,7 +93,12 @@ PERFORM realtime.send(
   false
 );
 
+-- First cascade complete any taskless steps, then start ready steps
+PERFORM pgflow.cascade_complete_taskless_steps(v_created_run.run_id);
 PERFORM pgflow.start_ready_steps(v_created_run.run_id);
+
+-- Check if the run is already complete (all taskless flow)
+PERFORM pgflow.maybe_complete_run(v_created_run.run_id);
 
 RETURN QUERY SELECT * FROM pgflow.runs where pgflow.runs.run_id = v_created_run.run_id;
 

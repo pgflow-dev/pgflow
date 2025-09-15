@@ -105,7 +105,7 @@ This reduces cascade calls from 10,000 (every task) to 1 (when step completes)!
 
 ### The Cascade Function
 
-Use a simple loop that completes all ready taskless steps:
+Use a simple loop that completes all ready taskless steps with safety measures:
 
 ```sql
 CREATE OR REPLACE FUNCTION pgflow.cascade_complete_taskless_steps(run_id uuid)
@@ -115,8 +115,16 @@ AS $$
 DECLARE
   v_total_completed int := 0;
   v_iteration_completed int;
+  v_iterations int := 0;
+  v_max_iterations int := 50;  -- Safety limit matching worst-case analysis
 BEGIN
   LOOP
+    -- Safety counter to prevent infinite loops
+    v_iterations := v_iterations + 1;
+    IF v_iterations > v_max_iterations THEN
+      RAISE EXCEPTION 'Cascade loop exceeded safety limit of % iterations', v_max_iterations;
+    END IF;
+
     WITH completed AS (
       UPDATE pgflow.step_states
       SET status = 'completed',
@@ -133,24 +141,25 @@ BEGIN
       UPDATE pgflow.step_states ss
       SET remaining_deps = ss.remaining_deps - 1
       FROM completed c
-      JOIN pgflow.deps d ON d.flow_slug = c.flow_slug 
+      JOIN pgflow.deps d ON d.flow_slug = c.flow_slug
                          AND d.dep_slug = c.step_slug
-      WHERE ss.run_id = c.run_id 
+      WHERE ss.run_id = c.run_id
         AND ss.step_slug = d.step_slug
     ),
     -- Send realtime events and update run count...
     SELECT COUNT(*) INTO v_iteration_completed FROM completed;
-    
+
     EXIT WHEN v_iteration_completed = 0;
     v_total_completed := v_total_completed + v_iteration_completed;
   END LOOP;
-  
+
   RETURN v_total_completed;
 END;
 $$;
 ```
 
 **Performance**: 50 iterations once per step completion is acceptable
+**Safety**: Hard iteration limit prevents infinite loops from logic errors
 
 ### Integration Points
 

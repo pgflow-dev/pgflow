@@ -1,69 +1,28 @@
 create or replace function pgflow.start_ready_steps(run_id uuid)
 returns void
-language sql
+language plpgsql
 set search_path to ''
 as $$
+begin
+RAISE NOTICE 'start_ready_steps called for run_id: %', start_ready_steps.run_id;
+RAISE NOTICE 'Ready steps: %', (
+  SELECT string_agg(step_slug, ', ')
+  FROM pgflow.step_states ss
+  WHERE ss.run_id = start_ready_steps.run_id
+    AND ss.status = 'created'
+    AND ss.remaining_deps = 0
+    AND ss.initial_tasks > 0
+);
 
--- First handle empty array map steps (initial_tasks = 0) - direct transition to completed
-WITH empty_map_steps AS (
-  SELECT step_state.*
-  FROM pgflow.step_states AS step_state
-  JOIN pgflow.steps AS step 
-    ON step.flow_slug = step_state.flow_slug 
-    AND step.step_slug = step_state.step_slug
-  WHERE step_state.run_id = start_ready_steps.run_id
-    AND step_state.status = 'created'
-    AND step_state.remaining_deps = 0
-    AND step.step_type = 'map'
-    AND step_state.initial_tasks = 0
-  ORDER BY step_state.step_slug
-  FOR UPDATE OF step_state
-),
-completed_empty_steps AS (
-  UPDATE pgflow.step_states
-  SET status = 'completed',
-      started_at = now(),
-      completed_at = now(),
-      remaining_tasks = 0
-  FROM empty_map_steps
-  WHERE pgflow.step_states.run_id = start_ready_steps.run_id
-    AND pgflow.step_states.step_slug = empty_map_steps.step_slug
-  RETURNING pgflow.step_states.*
-),
-broadcast_empty_completed AS (
-  SELECT 
-    realtime.send(
-      jsonb_build_object(
-        'event_type', 'step:completed',
-        'run_id', completed_step.run_id,
-        'step_slug', completed_step.step_slug,
-        'status', 'completed',
-        'started_at', completed_step.started_at,
-        'completed_at', completed_step.completed_at,
-        'remaining_tasks', 0,
-        'remaining_deps', 0,
-        'output', '[]'::jsonb
-      ),
-      concat('step:', completed_step.step_slug, ':completed'),
-      concat('pgflow:run:', completed_step.run_id),
-      false
-    )
-  FROM completed_empty_steps AS completed_step
-),
-
--- Now handle non-empty steps (both single and map with initial_tasks > 0)
-ready_steps AS (
+-- Handle all ready steps that have tasks to spawn (initial_tasks > 0)
+-- Empty map steps (initial_tasks = 0) are now handled by cascade_complete_taskless_steps
+WITH ready_steps AS (
   SELECT *
   FROM pgflow.step_states AS step_state
   WHERE step_state.run_id = start_ready_steps.run_id
     AND step_state.status = 'created'
     AND step_state.remaining_deps = 0
-    -- Exclude empty map steps already handled
-    AND NOT EXISTS (
-      SELECT 1 FROM empty_map_steps 
-      WHERE empty_map_steps.run_id = step_state.run_id 
-        AND empty_map_steps.step_slug = step_state.step_slug
-    )
+    AND step_state.initial_tasks > 0  -- Only handle steps with tasks to spawn
   ORDER BY step_state.step_slug
   FOR UPDATE
 ),
@@ -98,8 +57,8 @@ message_batches AS (
     ) AS messages,
     array_agg(task_idx.task_index ORDER BY task_idx.task_index) AS task_indices
   FROM started_step_states AS started_step
-  JOIN pgflow.steps AS step 
-    ON step.flow_slug = started_step.flow_slug 
+  JOIN pgflow.steps AS step
+    ON step.flow_slug = started_step.flow_slug
     AND step.step_slug = started_step.step_slug
   -- Generate task indices from 0 to initial_tasks-1
   CROSS JOIN LATERAL generate_series(0, started_step.initial_tasks - 1) AS task_idx(task_index)
@@ -120,7 +79,8 @@ sent_messages AS (
 ),
 
 broadcast_events AS (
-  SELECT 
+  SELECT
+    started_step.*,
     realtime.send(
       jsonb_build_object(
         'event_type', 'step:started',
@@ -134,18 +94,29 @@ broadcast_events AS (
       concat('step:', started_step.step_slug, ':started'),
       concat('pgflow:run:', started_step.run_id),
       false
-    )
+    ) as event_id
   FROM started_step_states AS started_step
-)
+),
 
 -- Insert all generated tasks with their respective task_index values
-INSERT INTO pgflow.step_tasks (flow_slug, run_id, step_slug, task_index, message_id)
-SELECT
-  sent_messages.flow_slug,
-  sent_messages.run_id,
-  sent_messages.step_slug,
-  sent_messages.task_index,
-  sent_messages.msg_id
-FROM sent_messages;
+inserted_tasks AS (
+  INSERT INTO pgflow.step_tasks (flow_slug, run_id, step_slug, task_index, message_id)
+  SELECT
+    sent_messages.flow_slug,
+    sent_messages.run_id,
+    sent_messages.step_slug,
+    sent_messages.task_index,
+    sent_messages.msg_id
+  FROM sent_messages
+  RETURNING *
+)
 
+-- Force execution of broadcast_events by selecting from both
+SELECT COUNT(*) FROM (
+  SELECT 1 FROM inserted_tasks
+  UNION ALL
+  SELECT 1 FROM broadcast_events
+) AS combined;
+
+end;
 $$;
