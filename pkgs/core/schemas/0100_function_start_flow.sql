@@ -13,7 +13,9 @@ declare
   v_root_map_count int;
 begin
 
--- Check for root map steps and validate input
+-- ==========================================
+-- VALIDATION: Root map array input
+-- ==========================================
 WITH root_maps AS (
   SELECT step_slug
   FROM pgflow.steps
@@ -37,12 +39,17 @@ IF v_root_map_count > 0 THEN
   END IF;
 END IF;
 
+-- ==========================================
+-- MAIN CTE CHAIN: Create run and step states
+-- ==========================================
 WITH
+  -- ---------- Gather flow metadata ----------
   flow_steps AS (
     SELECT steps.flow_slug, steps.step_slug, steps.step_type, steps.deps_count
     FROM pgflow.steps
     WHERE steps.flow_slug = start_flow.flow_slug
   ),
+  -- ---------- Create run record ----------
   created_run AS (
     INSERT INTO pgflow.runs (run_id, flow_slug, input, remaining_steps)
     VALUES (
@@ -53,6 +60,8 @@ WITH
     )
     RETURNING *
   ),
+  -- ---------- Create step states ----------
+  -- Sets initial_tasks: known for root maps, NULL for dependent maps
   created_step_states AS (
     INSERT INTO pgflow.step_states (flow_slug, run_id, step_slug, remaining_deps, initial_tasks)
     SELECT
@@ -60,24 +69,32 @@ WITH
       (SELECT created_run.run_id FROM created_run),
       fs.step_slug,
       fs.deps_count,
-      -- For root map steps (map with no deps), set initial_tasks to array length
-      -- For all other steps, set initial_tasks to 1
-      CASE 
-        WHEN fs.step_type = 'map' AND fs.deps_count = 0 THEN 
-          CASE 
-            WHEN jsonb_typeof(start_flow.input) = 'array' THEN 
+      -- Updated logic for initial_tasks:
+      CASE
+        WHEN fs.step_type = 'map' AND fs.deps_count = 0 THEN
+          -- Root map: get array length from input
+          CASE
+            WHEN jsonb_typeof(start_flow.input) = 'array' THEN
               jsonb_array_length(start_flow.input)
-            ELSE 
+            ELSE
               1
           END
-        ELSE 
+        WHEN fs.step_type = 'map' AND fs.deps_count > 0 THEN
+          -- Dependent map: unknown until dependencies complete
+          NULL
+        ELSE
+          -- Single steps: always 1 task
           1
       END
     FROM flow_steps fs
   )
 SELECT * FROM created_run INTO v_created_run;
 
--- Send broadcast event for run started
+-- ==========================================
+-- POST-CREATION ACTIONS
+-- ==========================================
+
+-- ---------- Broadcast run:started event ----------
 PERFORM realtime.send(
   jsonb_build_object(
     'event_type', 'run:started',
@@ -93,9 +110,12 @@ PERFORM realtime.send(
   false
 );
 
--- Complete any taskless steps that are ready (e.g., empty array maps)
+-- ---------- Complete taskless steps ----------
+-- Handle empty array maps that should auto-complete
 PERFORM pgflow.cascade_complete_taskless_steps(v_created_run.run_id);
 
+-- ---------- Start initial steps ----------
+-- Start root steps (those with no dependencies)
 PERFORM pgflow.start_ready_steps(v_created_run.run_id);
 
 RETURN QUERY SELECT * FROM pgflow.runs where pgflow.runs.run_id = v_created_run.run_id;

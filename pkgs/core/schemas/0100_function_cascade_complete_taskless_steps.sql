@@ -8,15 +8,23 @@ DECLARE
   v_iterations int := 0;
   v_max_iterations int := 50;
 BEGIN
+  -- ==========================================
+  -- ITERATIVE CASCADE COMPLETION
+  -- ==========================================
+  -- Completes taskless steps in waves until none remain
   LOOP
-    -- Safety counter to prevent infinite loops
+    -- ---------- Safety check ----------
     v_iterations := v_iterations + 1;
     IF v_iterations > v_max_iterations THEN
       RAISE EXCEPTION 'Cascade loop exceeded safety limit of % iterations', v_max_iterations;
     END IF;
 
+    -- ==========================================
+    -- COMPLETE READY TASKLESS STEPS
+    -- ==========================================
     WITH completed AS (
-      -- Complete all ready taskless steps in topological order
+      -- ---------- Complete taskless steps ----------
+      -- Steps with initial_tasks=0 and no remaining deps
       UPDATE pgflow.step_states ss
       SET status = 'completed',
           started_at = now(),
@@ -32,19 +40,20 @@ BEGIN
       -- Process in topological order to ensure proper cascade
       RETURNING ss.*
     ),
+    -- ---------- Update dependent steps ----------
+    -- Propagate completion and empty arrays to dependents
     dep_updates AS (
-      -- Update remaining_deps and initial_tasks for dependents of completed steps
       UPDATE pgflow.step_states ss
       SET remaining_deps = ss.remaining_deps - dep_count.count,
           -- If the dependent is a map step and its dependency completed with 0 tasks,
           -- set its initial_tasks to 0 as well
           initial_tasks = CASE
             WHEN s.step_type = 'map' AND dep_count.has_zero_tasks
-            THEN 0
-            ELSE ss.initial_tasks
+            THEN 0  -- Empty array propagation
+            ELSE ss.initial_tasks  -- Keep existing value (including NULL)
           END
       FROM (
-        -- Count how many completed steps are dependencies of each dependent
+        -- Aggregate dependency updates per dependent step
         SELECT
           d.flow_slug,
           d.step_slug as dependent_slug,
@@ -62,8 +71,8 @@ BEGIN
         AND s.flow_slug = ss.flow_slug
         AND s.step_slug = ss.step_slug
     ),
+    -- ---------- Update run counters ----------
     run_updates AS (
-      -- Update run's remaining_steps count
       UPDATE pgflow.runs r
       SET remaining_steps = r.remaining_steps - c.completed_count,
           status = CASE
@@ -80,9 +89,10 @@ BEGIN
       WHERE r.run_id = cascade_complete_taskless_steps.run_id
         AND c.completed_count > 0
     )
+    -- ---------- Check iteration results ----------
     SELECT COUNT(*) INTO v_iteration_completed FROM completed;
 
-    EXIT WHEN v_iteration_completed = 0;
+    EXIT WHEN v_iteration_completed = 0;  -- No more steps to complete
     v_total_completed := v_total_completed + v_iteration_completed;
   END LOOP;
 

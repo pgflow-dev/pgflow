@@ -127,7 +127,7 @@ export type Database = {
           error_message: string | null
           failed_at: string | null
           flow_slug: string
-          initial_tasks: number
+          initial_tasks: number | null
           remaining_deps: number
           remaining_tasks: number | null
           run_id: string
@@ -141,7 +141,7 @@ export type Database = {
           error_message?: string | null
           failed_at?: string | null
           flow_slug: string
-          initial_tasks?: number
+          initial_tasks?: number | null
           remaining_deps?: number
           remaining_tasks?: number | null
           run_id: string
@@ -155,7 +155,7 @@ export type Database = {
           error_message?: string | null
           failed_at?: string | null
           flow_slug?: string
-          initial_tasks?: number
+          initial_tasks?: number | null
           remaining_deps?: number
           remaining_tasks?: number | null
           run_id?: string
