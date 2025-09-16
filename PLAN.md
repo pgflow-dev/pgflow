@@ -7,44 +7,8 @@
 - ✅ **WORKING**: Empty array maps (taskless) cascade and complete correctly
 - ✅ **WORKING**: Task spawning creates N tasks with correct indices
 - ✅ **WORKING**: Dependency count propagation for map steps
-- ❌ **MISSING**: Array element extraction - tasks get full array instead of individual items
+- ✅ **WORKING**: Array element extraction - tasks get full array instead of individual items
 - ❌ **MISSING**: Output aggregation - no way to combine map task outputs for dependents
-
-### What Needs to Be Done
-
-1. **Array Element Extraction in `start_tasks()`**
-
-   - Each map task must receive `array[task_index]` not the entire array
-   - Requires modifying the input assembly logic to use `jsonb_array_element()`
-
-2. **Output Aggregation When Map Completes**
-   - When all map tasks finish, aggregate outputs: `jsonb_agg(output ORDER BY task_index)`
-   - Store this somewhere accessible to dependent steps
-   - Options: Add column to step_states, compute on-demand, or temporary storage
-
-### Example: What Should Happen (But Doesn't)
-
-```sql
--- Given a flow: normalStep -> mapStep -> finalStep
-
--- 1. normalStep completes with output:
-'["apple", "banana", "cherry"]'
-
--- 2. mapStep should spawn 3 tasks:
--- Task 0 receives: {"normalStep": "apple"} ← NOT WORKING (gets full array)
--- Task 1 receives: {"normalStep": "banana"} ← NOT WORKING (gets full array)
--- Task 2 receives: {"normalStep": "cherry"} ← NOT WORKING (gets full array)
-
--- 3. Each task processes and outputs:
--- Task 0 outputs: {"processed": "APPLE"}
--- Task 1 outputs: {"processed": "BANANA"}
--- Task 2 outputs: {"processed": "CHERRY"}
-
--- 4. When mapStep completes, aggregate outputs:
-'[{"processed": "APPLE"}, {"processed": "BANANA"}, {"processed": "CHERRY"}]' ← NOT WORKING
-
--- 5. finalStep receives the aggregated array as input
-```
 
 ## Implementation Status
 
@@ -83,25 +47,27 @@
   - All taskless cascade tests passing (7/7 test files)
 
 - [x] **PR #212: Dependent Map Count Propagation**
+
   - Enhanced complete_task() sets initial_tasks for dependent maps
   - Array validation and count propagation working
   - Cascade handles taskless dependent maps
 
 - [x] **PR #213: NULL for Unknown initial_tasks** - `09-16-make-initial-tasks-nullable`
+
   - Changed initial_tasks from "1 as placeholder" to NULL for dependent map steps
   - Benefits: Semantic correctness (NULL = unknown, not "1 task")
   - Implemented: Schema change to allow NULL, updated all SQL functions
   - Added validation for non-array and NULL outputs to map steps
   - Comprehensive tests for NULL behavior and error cases
 
-#### ❌ Remaining Work
-
-- [ ] **Array Element Distribution** (CRITICAL - BLOCKS REAL MAP USAGE)
+- [x] **PR #216: Array Element Distribution** (CRITICAL - BLOCKS REAL MAP USAGE)
 
   - Enhanced start_tasks() to distribute array elements to map tasks
   - Each map task receives its specific array element based on task_index
   - Handles both root maps (from run input) and dependent maps (from step outputs)
   - Tests with actual array data processing
+
+#### ❌ Remaining Work
 
 - [ ] **Output Aggregation** (CRITICAL - BLOCKS MAP OUTPUT CONSUMPTION)
 
