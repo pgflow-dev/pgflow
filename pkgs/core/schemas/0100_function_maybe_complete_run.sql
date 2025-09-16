@@ -7,9 +7,12 @@ as $$
 declare
   v_completed_run pgflow.runs%ROWTYPE;
 begin
-  -- Update run status to completed and set output when there are no remaining steps
+  -- ==========================================
+  -- CHECK AND COMPLETE RUN IF FINISHED
+  -- ==========================================
   WITH run_output AS (
-    -- Get outputs from final steps (steps that are not dependencies for other steps)
+    -- ---------- Gather outputs from leaf steps ----------
+    -- Leaf steps = steps with no dependents
     SELECT jsonb_object_agg(st.step_slug, st.output) as final_output
     FROM pgflow.step_tasks st
     JOIN pgflow.step_states ss ON ss.run_id = st.run_id AND ss.step_slug = st.step_slug
@@ -23,6 +26,7 @@ begin
           AND d.dep_slug = ss.step_slug
       )
   )
+  -- ---------- Complete run if all steps done ----------
   UPDATE pgflow.runs
   SET
     status = 'completed',
@@ -33,7 +37,9 @@ begin
     AND pgflow.runs.status != 'completed'
   RETURNING * INTO v_completed_run;
 
-  -- Only send broadcast if run was completed
+  -- ==========================================
+  -- BROADCAST COMPLETION EVENT
+  -- ==========================================
   IF v_completed_run.run_id IS NOT NULL THEN
     PERFORM realtime.send(
       jsonb_build_object(

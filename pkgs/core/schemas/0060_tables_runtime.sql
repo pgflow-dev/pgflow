@@ -27,7 +27,7 @@ create table pgflow.step_states (
   step_slug text not null,
   status text not null default 'created',
   remaining_tasks int null,  -- NULL = not started, >0 = active countdown
-  initial_tasks int not null default 1 check (initial_tasks >= 0),  -- Planned task count: 1 for singles, N for maps
+  initial_tasks int null check (initial_tasks is null or initial_tasks >= 0),
   remaining_deps int not null default 0 check (remaining_deps >= 0),
   error_message text,
   created_at timestamptz not null default now(),
@@ -42,6 +42,9 @@ create table pgflow.step_states (
   -- Add constraint to ensure remaining_tasks is only set when step has started
   constraint remaining_tasks_state_consistency check (
     remaining_tasks is null or status != 'created'
+  ),
+  constraint initial_tasks_known_when_started check (
+    status != 'started' or initial_tasks is not null
   ),
   constraint completed_at_or_failed_at check (not (completed_at is not null and failed_at is not null)),
   constraint started_at_is_after_created_at check (started_at is null or started_at >= created_at),
