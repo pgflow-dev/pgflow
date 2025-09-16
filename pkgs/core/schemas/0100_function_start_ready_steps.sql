@@ -3,8 +3,10 @@ returns void
 language sql
 set search_path to ''
 as $$
-
--- First handle empty array map steps (initial_tasks = 0) - direct transition to completed
+-- ==========================================
+-- HANDLE EMPTY ARRAY MAPS (initial_tasks = 0)
+-- ==========================================
+-- These complete immediately without spawning tasks
 WITH empty_map_steps AS (
   SELECT step_state.*
   FROM pgflow.step_states AS step_state
@@ -19,6 +21,7 @@ WITH empty_map_steps AS (
   ORDER BY step_state.step_slug
   FOR UPDATE OF step_state
 ),
+-- ---------- Complete empty map steps ----------
 completed_empty_steps AS (
   UPDATE pgflow.step_states
   SET status = 'completed',
@@ -30,6 +33,7 @@ completed_empty_steps AS (
     AND pgflow.step_states.step_slug = empty_map_steps.step_slug
   RETURNING pgflow.step_states.*
 ),
+-- ---------- Broadcast completion events ----------
 broadcast_empty_completed AS (
   SELECT 
     realtime.send(
@@ -51,22 +55,29 @@ broadcast_empty_completed AS (
   FROM completed_empty_steps AS completed_step
 ),
 
--- Now handle non-empty steps (both single and map with initial_tasks > 0)
+-- ==========================================
+-- HANDLE NORMAL STEPS (initial_tasks > 0)
+-- ==========================================
+-- ---------- Find ready steps ----------
+-- Steps with no remaining deps and known task count
 ready_steps AS (
   SELECT *
   FROM pgflow.step_states AS step_state
   WHERE step_state.run_id = start_ready_steps.run_id
     AND step_state.status = 'created'
     AND step_state.remaining_deps = 0
+    AND step_state.initial_tasks IS NOT NULL  -- NEW: Cannot start with unknown count
+    AND step_state.initial_tasks > 0  -- Don't start taskless steps
     -- Exclude empty map steps already handled
     AND NOT EXISTS (
-      SELECT 1 FROM empty_map_steps 
-      WHERE empty_map_steps.run_id = step_state.run_id 
+      SELECT 1 FROM empty_map_steps
+      WHERE empty_map_steps.run_id = step_state.run_id
         AND empty_map_steps.step_slug = step_state.step_slug
     )
   ORDER BY step_state.step_slug
   FOR UPDATE
 ),
+-- ---------- Mark steps as started ----------
 started_step_states AS (
   UPDATE pgflow.step_states
   SET status = 'started',
@@ -78,10 +89,12 @@ started_step_states AS (
   RETURNING pgflow.step_states.*
 ),
 
--- Generate tasks based on initial_tasks count
--- For single steps: initial_tasks = 1, so generate_series(0, 0) = single task with index 0
--- For map steps: initial_tasks = N, so generate_series(0, N-1) = N tasks with indices 0..N-1
--- Group messages by step for batch sending
+-- ==========================================
+-- TASK GENERATION AND QUEUE MESSAGES
+-- ==========================================
+-- ---------- Generate tasks and batch messages ----------
+-- Single steps: 1 task (index 0)
+-- Map steps: N tasks (indices 0..N-1)
 message_batches AS (
   SELECT
     started_step.flow_slug,
@@ -105,7 +118,8 @@ message_batches AS (
   CROSS JOIN LATERAL generate_series(0, started_step.initial_tasks - 1) AS task_idx(task_index)
   GROUP BY started_step.flow_slug, started_step.run_id, started_step.step_slug, step.opt_start_delay
 ),
--- Send messages in batch for better performance with large arrays
+-- ---------- Send messages to queue ----------
+-- Uses batch sending for performance with large arrays
 sent_messages AS (
   SELECT
     mb.flow_slug,
@@ -119,6 +133,7 @@ sent_messages AS (
   WHERE task_indices.idx_ord = msg_ids.msg_ord
 ),
 
+-- ---------- Broadcast step:started events ----------
 broadcast_events AS (
   SELECT 
     realtime.send(
@@ -138,7 +153,9 @@ broadcast_events AS (
   FROM started_step_states AS started_step
 )
 
--- Insert all generated tasks with their respective task_index values
+-- ==========================================
+-- RECORD TASKS IN DATABASE
+-- ==========================================
 INSERT INTO pgflow.step_tasks (flow_slug, run_id, step_slug, task_index, message_id)
 SELECT
   sent_messages.flow_slug,
