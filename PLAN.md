@@ -2,13 +2,21 @@
 
 **NOTE: This PLAN.md file should be removed in the final PR once all map infrastructure is complete.**
 
-### Current State
+### Features
 
-- ✅ **WORKING**: Empty array maps (taskless) cascade and complete correctly
-- ✅ **WORKING**: Task spawning creates N tasks with correct indices
-- ✅ **WORKING**: Dependency count propagation for map steps
-- ✅ **WORKING**: Array element extraction - tasks get full array instead of individual items
-- ❌ **MISSING**: Output aggregation - no way to combine map task outputs for dependents
+- ✅ **DONE**: Empty array maps (taskless) cascade and complete correctly
+- ✅ **DONE**: Task spawning creates N tasks with correct indices
+- ✅ **DONE**: Dependency count propagation for map steps
+- ✅ **DONE**: Array element extraction - tasks receive individual array elements
+- ✅ **DONE**: Output aggregation - inline implementation aggregates map task outputs for dependents
+- ⏳ **NEXT**: DSL support for `.map()` for defining map steps
+
+### Chores
+
+- ⏳ **WAITING**: Integration tests for map steps
+- ⏳ **WAITING**: Consolidated migration for map steps
+- ⏳ **WAITING**: Documentation for map steps
+- ⏳ **WAITING**: Graphite stack merge for map steps
 
 ## Implementation Status
 
@@ -67,16 +75,15 @@
   - Handles both root maps (from run input) and dependent maps (from step outputs)
   - Tests with actual array data processing
 
+- [x] **PR #217: Output Aggregation** - `09-17-add-map-step-output-aggregation` (THIS PR)
+
+  - Inline aggregation implementation in complete_task, start_tasks, maybe_complete_run
+  - Full test coverage (17 tests) for all aggregation scenarios
+  - Handles NULL preservation, empty arrays, order preservation
+  - Validates non-array outputs to map steps fail correctly
+  - Fixed broadcast aggregation to send full array not individual task output
+
 #### ❌ Remaining Work
-
-- [ ] **Output Aggregation** (CRITICAL - BLOCKS MAP OUTPUT CONSUMPTION)
-
-  - Aggregate map task outputs when step completes
-  - Store aggregated output for dependent steps to consume
-  - Maintain task_index ordering in aggregated arrays
-  - Tests for aggregation with actual map task outputs
-  - **IMPORTANT**: Must add test for map->map NULL propagation when this is implemented
-  - **IMPORTANT**: Must handle non-array outputs to map steps (should fail the run)
 
 - [ ] **DSL Support for .map() Step Type**
 
@@ -92,6 +99,30 @@
     - Runtime validation of array dependencies
     - Type safety for input/output types
     - Compile-time enforcement of single dependency rule
+
+- [ ] **Fix Orphaned Messages on Run Failure**
+
+  - Archive all pending messages when run fails
+  - Handle map sibling tasks specially
+  - Fix type constraint violations to fail immediately without retries
+  - See detailed plan: [PLAN_orphaned_messages.md](./PLAN_orphaned_messages.md)
+  - Critical for production: prevents queue performance degradation
+  - Tests already written (stashed) that document the problem
+
+- [ ] **Performance Optimization: step_states.output Column**
+
+  - Migrate from inline aggregation to storing outputs in step_states
+  - See detailed plan: [PLAN_step_output.md](./PLAN_step_output.md)
+  - Benefits:
+    - Eliminate redundant aggregation queries
+    - 30-70% performance improvement for map chains
+    - Cleaner architecture with single source of truth
+  - Implementation:
+    - Add output column to step_states table
+    - Update complete_task to populate output on completion
+    - Simplify consumers (start_tasks, maybe_complete_run, broadcasts)
+    - Update all aggregation tests (~17 files)
+  - **Note**: This is an optimization that should be done after core functionality is stable
 
 - [ ] **Integration Tests**
 

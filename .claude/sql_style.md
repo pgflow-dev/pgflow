@@ -19,3 +19,4 @@ Always qualify columns and arguments:
 
 ## Keyword Arguments
 Use `param => "value"` NOT `param := "value"`
+- Note on aliasing tables: when writing SQL functions and working with dependencies/dependents and steps and states, I want you to build your aliases such that you use parent/child prefixes and _step (for pgflow.steps) or _state (for pgflow.step_states) suffixes accordingly. dep should mean a row in pgflow.deps, not a parent dependency. do not use dep to indicate a row from steps or step_states.

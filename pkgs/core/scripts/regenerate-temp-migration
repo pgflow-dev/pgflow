@@ -1,0 +1,180 @@
+#!/bin/bash
+set -euo pipefail
+
+# Colors for pretty output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m' # No Color
+
+# Check for --yes flag
+if [ "${1:-}" == "--yes" ]; then
+    SKIP_CONFIRM=true
+else
+    SKIP_CONFIRM=false
+fi
+
+# Trap Ctrl-C (SIGINT) and exit gracefully
+trap 'echo -e "\n${YELLOW}⚠${NC}  Operation cancelled by user (Ctrl-C)"; exit 130' INT
+
+# Function to print colored headers
+print_header() {
+    echo -e "\n${CYAN}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${CYAN}${BOLD}  $1${NC}"
+    echo -e "${CYAN}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+}
+
+# Function to print info messages
+print_info() {
+    echo -e "${BLUE}ℹ${NC}  $1"
+}
+
+# Function to print success messages
+print_success() {
+    echo -e "${GREEN}✓${NC}  $1"
+}
+
+# Function to print error messages
+print_error() {
+    echo -e "${RED}✗${NC}  $1"
+}
+
+# Function to print warning messages
+print_warning() {
+    echo -e "${YELLOW}⚠${NC}  $1"
+}
+
+# Function to ask for confirmation
+confirm() {
+    local prompt="$1"
+    local response
+    echo -e -n "${YELLOW}${prompt} [y/N]: ${NC}"
+    read -r response
+    case "$response" in
+        [yY][eE][sS]|[yY])
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+# Get the script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MIGRATIONS_DIR="${SCRIPT_DIR}/../supabase/migrations"
+
+print_header "pgflow Temporary Migration Regenerator"
+
+# Step 1: Find the newest migration containing "pgflow_temp_"
+print_info "Searching for newest temporary migration..."
+
+# Find all migrations with pgflow_temp_ and get the newest one
+NEWEST_MIGRATION=$(ls -1 "${MIGRATIONS_DIR}"/*pgflow_temp_*.sql 2>/dev/null | sort -r | head -n1 || true)
+
+if [[ -z "$NEWEST_MIGRATION" ]]; then
+    print_error "No migration file containing 'pgflow_temp_' found in ${MIGRATIONS_DIR}"
+    exit 1
+fi
+
+MIGRATION_BASENAME=$(basename "$NEWEST_MIGRATION")
+print_success "Found migration: ${BOLD}${MIGRATION_BASENAME}${NC}"
+
+# Extract the name part after pgflow_temp_ and before .sql
+# Example: 20250917115352_pgflow_temp_handle_map_output_aggregation.sql
+# Should give us: temp_handle_map_output_aggregation
+TEMP_NAME=""
+if [[ "$MIGRATION_BASENAME" =~ pgflow_temp_(.+)\.sql$ ]]; then
+    TEMP_NAME="temp_${BASH_REMATCH[1]}"
+else
+    print_error "Could not extract name from migration file: $MIGRATION_BASENAME"
+    exit 1
+fi
+
+print_info "Extracted migration name: ${BOLD}${TEMP_NAME}${NC}"
+
+# Show what will be done
+echo
+print_header "This script will perform the following actions:"
+echo -e "  1. ${RED}Remove${NC} migration: ${MIGRATION_BASENAME}"
+echo -e "  2. ${BLUE}Rehash${NC} migrations using atlas-migrate-hash"
+echo -e "  3. ${GREEN}Generate${NC} new migration: ${TEMP_NAME}"
+echo -e "  4. ${CYAN}Verify${NC} the migration by running:"
+echo -e "     • pnpm nx verify-migrations core"
+echo -e "     • pnpm nx gen-types core"
+echo -e "     • pnpm nx test:pgtap core"
+
+echo
+if [ "$SKIP_CONFIRM" != "true" ]; then
+    if ! confirm "Do you want to proceed?"; then
+        print_warning "Operation cancelled by user"
+        exit 0
+    fi
+else
+    print_info "Skipping confirmation (--yes flag provided)"
+fi
+
+# Step 2: Remove the migration
+print_header "Step 1: Removing temporary migration"
+print_info "Removing: ${MIGRATION_BASENAME}"
+rm "$NEWEST_MIGRATION"
+print_success "Migration removed"
+
+# Step 3: Rehash migrations
+print_header "Step 2: Rehashing migrations"
+print_info "Running atlas-migrate-hash..."
+cd "${SCRIPT_DIR}/.."
+./scripts/atlas-migrate-hash --yes
+print_success "Migrations rehashed"
+
+# Step 4: Generate new migration
+print_header "Step 3: Generating new migration"
+print_info "Running atlas-migrate-diff with name: ${BOLD}${TEMP_NAME}${NC}"
+./scripts/atlas-migrate-diff "$TEMP_NAME"
+print_success "New migration generated"
+
+# Step 5: Verify the migration
+print_header "Step 4: Verifying migration"
+
+# 5a: Verify migrations
+echo
+print_info "Running migration verification..."
+if pnpm nx verify-migrations core; then
+    print_success "Migration verification passed"
+else
+    print_error "Migration verification failed"
+    exit 1
+fi
+
+# 5b: Generate types
+echo
+print_info "Generating types..."
+if pnpm nx gen-types core; then
+    print_success "Type generation completed"
+else
+    print_error "Type generation failed"
+    exit 1
+fi
+
+# 5c: Run tests
+echo
+print_info "Running pgTAP tests..."
+if pnpm nx test:pgtap core; then
+    print_success "All tests passed"
+else
+    print_error "Tests failed"
+    exit 1
+fi
+
+print_header "Migration Regeneration Complete! 🎉"
+print_success "Successfully regenerated migration: ${BOLD}${TEMP_NAME}${NC}"
+echo
+
+# Show the new migration file
+NEW_MIGRATION=$(ls -1 "${MIGRATIONS_DIR}"/*"${TEMP_NAME}".sql 2>/dev/null | head -n1 || true)
+if [[ -n "$NEW_MIGRATION" ]]; then
+    print_info "New migration file: ${BOLD}$(basename "$NEW_MIGRATION")${NC}"
+fi
