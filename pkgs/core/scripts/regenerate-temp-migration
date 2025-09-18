@@ -69,7 +69,36 @@ MIGRATIONS_DIR="${SCRIPT_DIR}/../supabase/migrations"
 
 print_header "pgflow Temporary Migration Regenerator"
 
-# Step 1: Find the newest migration containing "pgflow_temp_"
+# Step 1: Check if schemas are already synced
+print_info "Checking if schemas are in sync..."
+
+# Run atlas-verify-schemas-synced and capture its exit code
+set +e  # Temporarily disable exit on error
+"${SCRIPT_DIR}/atlas-verify-schemas-synced" > /dev/null 2>&1
+SYNC_STATUS=$?
+set -e  # Re-enable exit on error
+
+if [ $SYNC_STATUS -eq 0 ]; then
+    print_success "Schemas are already in sync!"
+    echo
+    print_info "No migration regeneration needed. The schemas in the database"
+    print_info "already match what's defined in the schema files."
+    echo
+    print_info "This typically means:"
+    print_info "  • The temporary migration was already applied successfully"
+    print_info "  • All schema changes are captured in existing migrations"
+    print_info "  • No new changes have been made to schema files"
+    echo
+    print_info "If you've made changes to schema files, they should appear"
+    print_info "after running 'pnpm nx verify-schemas-synced core'."
+    echo
+    exit 0
+fi
+
+print_warning "Schemas are not in sync, proceeding with regeneration..."
+echo
+
+# Step 2: Find the newest migration containing "pgflow_temp_"
 print_info "Searching for newest temporary migration..."
 
 # Find all migrations with pgflow_temp_ and get the newest one
@@ -99,10 +128,11 @@ print_info "Extracted migration name: ${BOLD}${TEMP_NAME}${NC}"
 # Show what will be done
 echo
 print_header "This script will perform the following actions:"
-echo -e "  1. ${RED}Remove${NC} migration: ${MIGRATION_BASENAME}"
-echo -e "  2. ${BLUE}Rehash${NC} migrations using atlas-migrate-hash"
-echo -e "  3. ${GREEN}Generate${NC} new migration: ${TEMP_NAME}"
-echo -e "  4. ${CYAN}Verify${NC} the migration by running:"
+echo -e "  1. ${YELLOW}Check${NC} if schemas are already in sync"
+echo -e "  2. ${RED}Remove${NC} migration: ${MIGRATION_BASENAME}"
+echo -e "  3. ${BLUE}Rehash${NC} migrations using atlas-migrate-hash"
+echo -e "  4. ${GREEN}Generate${NC} new migration: ${TEMP_NAME}"
+echo -e "  5. ${CYAN}Verify${NC} the migration by running:"
 echo -e "     • pnpm nx verify-migrations core"
 echo -e "     • pnpm nx gen-types core"
 echo -e "     • pnpm nx test:pgtap core"
@@ -117,27 +147,27 @@ else
     print_info "Skipping confirmation (--yes flag provided)"
 fi
 
-# Step 2: Remove the migration
-print_header "Step 1: Removing temporary migration"
+# Step 3: Remove the migration
+print_header "Step 2: Removing temporary migration"
 print_info "Removing: ${MIGRATION_BASENAME}"
 rm "$NEWEST_MIGRATION"
 print_success "Migration removed"
 
-# Step 3: Rehash migrations
-print_header "Step 2: Rehashing migrations"
+# Step 4: Rehash migrations
+print_header "Step 3: Rehashing migrations"
 print_info "Running atlas-migrate-hash..."
 cd "${SCRIPT_DIR}/.."
 ./scripts/atlas-migrate-hash --yes
 print_success "Migrations rehashed"
 
-# Step 4: Generate new migration
-print_header "Step 3: Generating new migration"
+# Step 5: Generate new migration
+print_header "Step 4: Generating new migration"
 print_info "Running atlas-migrate-diff with name: ${BOLD}${TEMP_NAME}${NC}"
 ./scripts/atlas-migrate-diff "$TEMP_NAME"
 print_success "New migration generated"
 
-# Step 5: Verify the migration
-print_header "Step 4: Verifying migration"
+# Step 6: Verify the migration
+print_header "Step 5: Verifying migration"
 
 # 5a: Verify migrations
 echo
