@@ -231,10 +231,16 @@ The system handles failures by:
    - Preventing processing until the visibility timeout expires
 3. When retries are exhausted:
    - Marking the task as 'failed'
+   - Storing the task output (even for failed tasks)
    - Marking the step as 'failed'
    - Marking the run as 'failed'
    - Archiving the message in PGMQ
-   - Notifying workers to abort pending tasks (future feature)
+   - **Archiving all queued messages for the failed run** (preventing orphaned messages)
+4. Additional failure handling:
+   - **No retries on already-failed runs** - tasks are immediately marked as failed
+   - **Graceful type constraint violations** - handled without exceptions when single steps feed map steps
+   - **Stores invalid output on type violations** - captures the output that caused the violation for debugging
+   - **Performance-optimized message archiving** using indexed queries
 
 #### Retries and Timeouts
 

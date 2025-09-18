@@ -1,5 +1,5 @@
 begin;
-select plan(3);
+select plan(8);
 select pgflow_tests.reset_db();
 
 -- Test: Non-array output to dependent map should fail the run
@@ -42,8 +42,8 @@ WITH task AS (
 )
 SELECT step_slug FROM task;
 
--- Test: complete_task should RAISE EXCEPTION for non-array output to map
-select throws_ok(
+-- Test: complete_task should handle type violation gracefully (no exception)
+select lives_ok(
   $$
   WITH task_info AS (
     SELECT run_id, step_slug, task_index
@@ -59,9 +59,47 @@ select throws_ok(
     '{"not": "an array"}'::jsonb
   ) FROM task_info
   $$,
-  'P0001',  -- RAISE EXCEPTION error code
-  'Map step map_consumer expects array input but dependency producer produced object (output: {"not": "an array"})',
-  'complete_task should fail when non-array is passed to dependent map'
+  'complete_task should handle type violation gracefully without throwing exception'
+);
+
+-- Test: Producer task should be marked as failed with error message
+select is(
+  (select status from pgflow.step_tasks
+   where flow_slug = 'non_array_test' and step_slug = 'producer'),
+  'failed'::text,
+  'Producer task should be marked as failed'
+);
+
+-- Test: Producer task should have appropriate error message
+select ok(
+  (select error_message ILIKE '%TYPE_VIOLATION%' from pgflow.step_tasks
+   where flow_slug = 'non_array_test' and step_slug = 'producer'),
+  'Producer task should have type constraint error message'
+);
+
+-- Test: Producer task should store the invalid output despite failing
+select is(
+  (select output from pgflow.step_tasks
+   where flow_slug = 'non_array_test' and step_slug = 'producer'),
+  '{"not": "an array"}'::jsonb,
+  'Producer task should store the output that caused the type violation'
+);
+
+-- Test: Run should be marked as failed
+select is(
+  (select status from pgflow.runs
+   where flow_slug = 'non_array_test' limit 1),
+  'failed'::text,
+  'Run should be marked as failed after type constraint violation'
+);
+
+-- Test: Messages should be archived
+select cmp_ok(
+  (select count(*) from pgmq.a_non_array_test
+   where message->>'step_slug' = 'producer'),
+  '>',
+  0::bigint,
+  'Failed task messages should be archived'
 );
 
 -- Test: Map initial_tasks should remain NULL after failed transaction

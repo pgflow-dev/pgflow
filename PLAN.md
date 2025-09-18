@@ -10,7 +10,7 @@
 - ✅ **DONE**: Array element extraction - tasks receive individual array elements
 - ✅ **DONE**: Output aggregation - inline implementation aggregates map task outputs for dependents
 - ✅ **DONE**: DSL support for `.map()` for defining map steps with compile-time duplicate detection
-- ⏳ **TODO**: Fix orphaned messages on run failure
+- ✅ **DONE**: Fix orphaned messages on run failure
 - ⏳ **TODO**: Performance optimization with step_states.output column
 
 ### Chores
@@ -106,18 +106,28 @@
   - Updated DSL README with .map() documentation
   - Created detailed changeset
 
+- [x] **PR #219: Fix Orphaned Messages on Run Failure** - `09-18-fix-orphaned-messages-on-fail` ✅ COMPLETED
+
+  - Archives all queued messages when run fails (prevents orphaned messages)
+  - Handles type constraint violations gracefully without exceptions
+  - Added guards to prevent any mutations on failed runs:
+    - complete_task returns unchanged
+    - start_ready_steps exits early
+    - cascade_complete_taskless_steps returns 0
+  - Added performance index for efficient message archiving
+  - Tests unstashed and passing (archive_sibling_map_tasks, archive_messages_on_type_constraint_failure)
+  - Updated core README with failure handling mentions
+  - **Critical fix: prevents queue performance degradation in production**
+
 #### ❌ Remaining Work (Priority Order)
 
-- [ ] **Priority 1: Fix Orphaned Messages on Run Failure** 🚨 CRITICAL
+- [ ] **Integration Tests**
 
-  - Archive all pending messages when run fails
-  - Handle map sibling tasks specially
-  - Fix type constraint violations to fail immediately without retries
-  - See detailed plan: [PLAN_orphaned_messages.md](./PLAN_orphaned_messages.md)
-  - **Critical for production: prevents queue performance degradation**
-  - Tests already written (stashed) that document the problem
+  - End-to-end workflows with real array data
+  - Basic happy path coverage
+  - This should be minimal and added to the Edge Worker integration test suite for now
 
-- [ ] **Priority 2: Performance Optimization - step_states.output Column**
+- [ ] **Performance Optimization - step_states.output Column**
 
   - Migrate from inline aggregation to storing outputs in step_states
   - See detailed plan: [PLAN_step_output.md](./PLAN_step_output.md)
@@ -132,43 +142,33 @@
     - Update all aggregation tests (~17 files)
   - **Note**: This is an optimization that should be done after core functionality is stable
 
-- [ ] **Priority 3: Integration Tests**
+- [ ] **Update `pkgs/core/README.md`**
 
-  - End-to-end workflows with real array data
-  - Basic happy path coverage
-  - This should be minimal and added to the Edge Worker integration test suite for now
+  - Add new section describing the step types
+  - Describe single step briefly, focus on describing map step type and how it differs
+  - Make sure to mention that maps are constrained to have exactly one dependency
+  - Show multiple cases of inputs -> task creation
+  - Explain edge cases (empty array propagation, invalid array input)
+  - Explain root map vs dependent map and how it gets handled and what restrictions those apply on the Flow input
+  - Explain cascade completion of taskless steps and its limitations
 
-- [ ] **Priority 4: Update core README**
+- [ ] **Add docs page**
 
-  - `pkgs/core/README.md`
+  - put it into `pkgs/website/src/content/docs/concepts/array-and-map-steps.mdx`
+  - describe the DSL and how the map works and why we need it
+  - show example usage of root map
+  - show example usage of dependent map
+  - focus mostly on how to use it, instead of how it works under the hood
+  - link to the README's for more details
 
-    - Add new section describing the step types
-    - Describe single step briefly, focus on describing map step type and how it differs
-    - Make sure to mention that maps are constrained to have exactly one dependency
-    - Show multiple cases of inputs -> task creation
-    - Explain edge cases (empty array propagation, invalid array input)
-    - Explain root map vs dependent map and how it gets handled and what restrictions those apply on the Flow input
-    - Explain cascade completion of taskless steps and its limitations
-
-- [ ] **Priority 5: Add docs page**
-
-  - **Add basic docs page**
-
-    - put it into `pkgs/website/src/content/docs/concepts/array-and-map-steps.mdx`
-    - describe the DSL and how the map works and why we need it
-    - show example usage of root map
-    - show example usage of dependent map
-    - focus mostly on how to use it, instead of how it works under the hood
-    - link to the README's for more details
-
-- [ ] **Priority 6: Migration Consolidation** (Do this last before merge!)
+- [ ] **Migration Consolidation**
 
   - Remove all temporary/incremental migrations from feature branches
   - Generate a single consolidated migration for the entire map infrastructure
   - Ensure clean migration path from current production schema
   - If NULL improvement is done, include it in the consolidated migration
 
-- [ ] **Priority 7: Graphite Stack Merge**
+- [ ] **Graphite Stack Merge**
 
   - Configure Graphite merge queue for the complete PR stack
   - Ensure all PRs in sequence can be merged together
