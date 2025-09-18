@@ -12,13 +12,35 @@ as $$
 declare
   v_step_state pgflow.step_states%ROWTYPE;
   v_dependent_map_slug text;
+  v_run_record pgflow.runs%ROWTYPE;
+  v_step_record pgflow.step_states%ROWTYPE;
 begin
 
 -- ==========================================
--- VALIDATION: Array output for dependent maps
+-- GUARD: No mutations on failed runs
 -- ==========================================
--- Must happen BEFORE acquiring locks to fail fast without holding resources
--- Only validate for single steps - map steps produce scalars that get aggregated
+IF EXISTS (SELECT 1 FROM pgflow.runs WHERE pgflow.runs.run_id = complete_task.run_id AND pgflow.runs.status = 'failed') THEN
+  RETURN QUERY SELECT * FROM pgflow.step_tasks
+    WHERE pgflow.step_tasks.run_id = complete_task.run_id
+      AND pgflow.step_tasks.step_slug = complete_task.step_slug
+      AND pgflow.step_tasks.task_index = complete_task.task_index;
+  RETURN;
+END IF;
+
+-- ==========================================
+-- LOCK ACQUISITION AND TYPE VALIDATION
+-- ==========================================
+-- Acquire locks first to prevent race conditions
+SELECT * INTO v_run_record FROM pgflow.runs
+WHERE pgflow.runs.run_id = complete_task.run_id
+FOR UPDATE;
+
+SELECT * INTO v_step_record FROM pgflow.step_states
+WHERE pgflow.step_states.run_id = complete_task.run_id
+  AND pgflow.step_states.step_slug = complete_task.step_slug
+FOR UPDATE;
+
+-- Check for type violations AFTER acquiring locks
 SELECT child_step.step_slug INTO v_dependent_map_slug
 FROM pgflow.deps dependency
 JOIN pgflow.steps child_step ON child_step.flow_slug = dependency.flow_slug
@@ -28,7 +50,7 @@ JOIN pgflow.steps parent_step ON parent_step.flow_slug = dependency.flow_slug
 JOIN pgflow.step_states child_state ON child_state.flow_slug = child_step.flow_slug
                                     AND child_state.step_slug = child_step.step_slug
 WHERE dependency.dep_slug = complete_task.step_slug  -- parent is the completing step
-  AND dependency.flow_slug = (SELECT r.flow_slug FROM pgflow.runs r WHERE r.run_id = complete_task.run_id)
+  AND dependency.flow_slug = v_run_record.flow_slug
   AND parent_step.step_type = 'single'  -- Only validate single steps
   AND child_step.step_type = 'map'
   AND child_state.run_id = complete_task.run_id
@@ -36,31 +58,69 @@ WHERE dependency.dep_slug = complete_task.step_slug  -- parent is the completing
   AND (complete_task.output IS NULL OR jsonb_typeof(complete_task.output) != 'array')
 LIMIT 1;
 
+-- Handle type violation if detected
 IF v_dependent_map_slug IS NOT NULL THEN
-  RAISE EXCEPTION 'Map step % expects array input but dependency % produced % (output: %)',
-    v_dependent_map_slug,
-    complete_task.step_slug,
-    CASE WHEN complete_task.output IS NULL THEN 'null' ELSE jsonb_typeof(complete_task.output) END,
-    complete_task.output;
+  -- Mark run as failed immediately
+  UPDATE pgflow.runs
+  SET status = 'failed',
+      failed_at = now()
+  WHERE pgflow.runs.run_id = complete_task.run_id;
+
+  -- Archive all active messages (both queued and started) to prevent orphaned messages
+  PERFORM pgmq.archive(
+    v_run_record.flow_slug,
+    array_agg(st.message_id)
+  )
+  FROM pgflow.step_tasks st
+  WHERE st.run_id = complete_task.run_id
+    AND st.status IN ('queued', 'started')
+    AND st.message_id IS NOT NULL
+  HAVING count(*) > 0;  -- Only call archive if there are messages to archive
+
+  -- Mark current task as failed and store the output
+  UPDATE pgflow.step_tasks
+  SET status = 'failed',
+      failed_at = now(),
+      output = complete_task.output,  -- Store the output that caused the violation
+      error_message = '[TYPE_VIOLATION] Produced ' ||
+                     CASE WHEN complete_task.output IS NULL THEN 'null'
+                          ELSE jsonb_typeof(complete_task.output) END ||
+                     ' instead of array'
+  WHERE pgflow.step_tasks.run_id = complete_task.run_id
+    AND pgflow.step_tasks.step_slug = complete_task.step_slug
+    AND pgflow.step_tasks.task_index = complete_task.task_index;
+
+  -- Mark step state as failed
+  UPDATE pgflow.step_states
+  SET status = 'failed',
+      failed_at = now(),
+      error_message = '[TYPE_VIOLATION] Map step ' || v_dependent_map_slug ||
+                     ' expects array input but dependency ' || complete_task.step_slug ||
+                     ' produced ' || CASE WHEN complete_task.output IS NULL THEN 'null'
+                                         ELSE jsonb_typeof(complete_task.output) END
+  WHERE pgflow.step_states.run_id = complete_task.run_id
+    AND pgflow.step_states.step_slug = complete_task.step_slug;
+
+  -- Archive the current task's message (it was started, now failed)
+  PERFORM pgmq.archive(
+    v_run_record.flow_slug,
+    st.message_id  -- Single message, use scalar form
+  )
+  FROM pgflow.step_tasks st
+  WHERE st.run_id = complete_task.run_id
+    AND st.step_slug = complete_task.step_slug
+    AND st.task_index = complete_task.task_index
+    AND st.message_id IS NOT NULL;
+
+  -- Return empty result
+  RETURN QUERY SELECT * FROM pgflow.step_tasks WHERE false;
+  RETURN;
 END IF;
 
 -- ==========================================
 -- MAIN CTE CHAIN: Update task and propagate changes
 -- ==========================================
 WITH
--- ---------- Lock acquisition ----------
--- Acquire locks in consistent order (run -> step) to prevent deadlocks
-run_lock AS (
-  SELECT * FROM pgflow.runs
-  WHERE pgflow.runs.run_id = complete_task.run_id
-  FOR UPDATE
-),
-step_lock AS (
-  SELECT * FROM pgflow.step_states
-  WHERE pgflow.step_states.run_id = complete_task.run_id
-    AND pgflow.step_states.step_slug = complete_task.step_slug
-  FOR UPDATE
-),
 -- ---------- Task completion ----------
 -- Update the task record with completion status and output
 task AS (

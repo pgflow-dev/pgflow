@@ -14,6 +14,35 @@ DECLARE
   v_step_failed boolean;
 begin
 
+-- If run is already failed, no retries allowed
+IF EXISTS (SELECT 1 FROM pgflow.runs WHERE pgflow.runs.run_id = fail_task.run_id AND pgflow.runs.status = 'failed') THEN
+  UPDATE pgflow.step_tasks
+  SET status = 'failed',
+      failed_at = now(),
+      error_message = fail_task.error_message
+  WHERE pgflow.step_tasks.run_id = fail_task.run_id
+    AND pgflow.step_tasks.step_slug = fail_task.step_slug
+    AND pgflow.step_tasks.task_index = fail_task.task_index
+    AND pgflow.step_tasks.status = 'started';
+
+  -- Archive the task's message
+  PERFORM pgmq.archive(r.flow_slug, ARRAY_AGG(st.message_id))
+  FROM pgflow.step_tasks st
+  JOIN pgflow.runs r ON st.run_id = r.run_id
+  WHERE st.run_id = fail_task.run_id
+    AND st.step_slug = fail_task.step_slug
+    AND st.task_index = fail_task.task_index
+    AND st.message_id IS NOT NULL
+  GROUP BY r.flow_slug
+  HAVING COUNT(st.message_id) > 0;
+
+  RETURN QUERY SELECT * FROM pgflow.step_tasks
+  WHERE pgflow.step_tasks.run_id = fail_task.run_id
+    AND pgflow.step_tasks.step_slug = fail_task.step_slug
+    AND pgflow.step_tasks.task_index = fail_task.task_index;
+  RETURN;
+END IF;
+
 WITH run_lock AS (
   SELECT * FROM pgflow.runs
   WHERE pgflow.runs.run_id = fail_task.run_id
@@ -140,6 +169,18 @@ IF v_run_failed THEN
   END;
 END IF;
 
+-- Archive all active messages (both queued and started) when run fails
+IF v_run_failed THEN
+  PERFORM pgmq.archive(r.flow_slug, ARRAY_AGG(st.message_id))
+  FROM pgflow.step_tasks st
+  JOIN pgflow.runs r ON st.run_id = r.run_id
+  WHERE st.run_id = fail_task.run_id
+    AND st.status IN ('queued', 'started')
+    AND st.message_id IS NOT NULL
+  GROUP BY r.flow_slug
+  HAVING COUNT(st.message_id) > 0;
+END IF;
+
 -- For queued tasks: delay the message for retry with exponential backoff
 PERFORM (
   WITH retry_config AS (
@@ -169,20 +210,16 @@ PERFORM (
 );
 
 -- For failed tasks: archive the message
-PERFORM (
-  WITH failed_tasks AS (
-    SELECT r.flow_slug, st.message_id
-    FROM pgflow.step_tasks st
-    JOIN pgflow.runs r ON st.run_id = r.run_id
-    WHERE st.run_id = fail_task.run_id
-      AND st.step_slug = fail_task.step_slug
-      AND st.task_index = fail_task.task_index
-      AND st.status = 'failed'
-  )
-  SELECT pgmq.archive(ft.flow_slug, ft.message_id)
-  FROM failed_tasks ft
-  WHERE EXISTS (SELECT 1 FROM failed_tasks)
-);
+PERFORM pgmq.archive(r.flow_slug, ARRAY_AGG(st.message_id))
+FROM pgflow.step_tasks st
+JOIN pgflow.runs r ON st.run_id = r.run_id
+WHERE st.run_id = fail_task.run_id
+  AND st.step_slug = fail_task.step_slug
+  AND st.task_index = fail_task.task_index
+  AND st.status = 'failed'
+  AND st.message_id IS NOT NULL
+GROUP BY r.flow_slug
+HAVING COUNT(st.message_id) > 0;
 
 return query select *
 from pgflow.step_tasks st
