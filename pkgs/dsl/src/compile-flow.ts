@@ -26,8 +26,14 @@ export function compileFlow(flow: AnyFlow): string[] {
       depsClause = `, ARRAY[${depsArray}]`;
     }
 
+    // Add step_type parameter for map steps
+    let stepTypeClause = '';
+    if (step.stepType === 'map') {
+      stepTypeClause = `, step_type => 'map'`;
+    }
+
     statements.push(
-      `SELECT pgflow.add_step('${flow.slug}', '${step.slug}'${depsClause}${stepOptions});`
+      `SELECT pgflow.add_step('${flow.slug}', '${step.slug}'${depsClause}${stepOptions}${stepTypeClause});`
     );
   }
 
