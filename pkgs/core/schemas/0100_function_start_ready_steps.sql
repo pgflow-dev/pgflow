@@ -1,8 +1,16 @@
 create or replace function pgflow.start_ready_steps(run_id uuid)
 returns void
-language sql
+language plpgsql
 set search_path to ''
 as $$
+begin
+-- ==========================================
+-- GUARD: No mutations on failed runs
+-- ==========================================
+IF EXISTS (SELECT 1 FROM pgflow.runs WHERE pgflow.runs.run_id = start_ready_steps.run_id AND pgflow.runs.status = 'failed') THEN
+  RETURN;
+END IF;
+
 -- ==========================================
 -- HANDLE EMPTY ARRAY MAPS (initial_tasks = 0)
 -- ==========================================
@@ -165,4 +173,5 @@ SELECT
   sent_messages.msg_id
 FROM sent_messages;
 
+end;
 $$;
