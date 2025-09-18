@@ -73,6 +73,78 @@ This design ensures:
 - Data doesn't need to be manually forwarded through intermediate steps
 - Steps can combine original input with processed data from previous steps
 
+### Step Methods
+
+The Flow DSL provides three methods for defining steps in your workflow:
+
+#### `.step()` - Regular Steps
+
+The standard method for adding steps to a flow. Each step processes input and returns output.
+
+```typescript
+.step(
+  { slug: 'process', dependsOn: ['previous'] },
+  async (input) => {
+    // Access input.run and input.previous
+    return { result: 'processed' };
+  }
+)
+```
+
+#### `.array()` - Array-Returning Steps
+
+A semantic wrapper around `.step()` that provides type enforcement for steps that return arrays. Useful for data fetching or collection steps.
+
+```typescript
+.array(
+  { slug: 'fetch_items' },
+  async () => [1, 2, 3, 4, 5]
+)
+```
+
+#### `.map()` - Array Processing Steps
+
+Processes arrays element-by-element, similar to JavaScript's `Array.map()`. The handler receives individual items instead of the full input object.
+
+```typescript
+// Root map - processes flow input array
+new Flow<string[]>({ slug: 'process_strings' })
+  .map({ slug: 'uppercase' }, (item) => item.toUpperCase());
+
+// Dependent map - processes another step's output
+new Flow<{}>({ slug: 'data_pipeline' })
+  .array({ slug: 'numbers' }, () => [1, 2, 3])
+  .map({ slug: 'double', array: 'numbers' }, (n) => n * 2)
+  .map({ slug: 'square', array: 'double' }, (n) => n * n);
+```
+
+**Key differences from regular steps:**
+- Uses `array:` instead of `dependsOn:` for specifying the single array dependency
+- Handler signature is `(item, context) => result` instead of `(input, context) => result`
+- Return type is always an array
+- Generates SQL with `step_type => 'map'` parameter for pgflow's map processing
+
+**Type Safety:**
+The `.map()` method provides full TypeScript type inference for array elements:
+
+```typescript
+type User = { id: number; name: string };
+
+new Flow<{}>({ slug: 'user_flow' })
+  .array({ slug: 'users' }, (): User[] => [
+    { id: 1, name: 'Alice' },
+    { id: 2, name: 'Bob' }
+  ])
+  .map({ slug: 'greet', array: 'users' }, (user) => {
+    // TypeScript knows user is of type User
+    return `Hello, ${user.name} (ID: ${user.id})`;
+  });
+```
+
+**Limitations:**
+- Can only depend on a single array-returning step
+- TypeScript may not track type transformations between chained maps (use type assertions if needed)
+
 ### Context Object
 
 Step handlers can optionally receive a second parameter - the **context object** - which provides access to platform resources and runtime information.
@@ -113,6 +185,11 @@ All platforms provide these core resources:
     input: StepInput<TFlow, StepSlug>; // <-- this is handler 'input'
     msg_id: number;
   }
+  ```
+- **`context.workerConfig`** - Resolved worker configuration with all defaults applied
+  ```typescript
+  // Provides access to worker settings like retry limits
+  const isLastAttempt = context.rawMessage.read_ct >= context.workerConfig.retry.limit;
   ```
 
 #### Supabase Platform Resources
