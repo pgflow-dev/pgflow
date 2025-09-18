@@ -9,14 +9,17 @@
 - ✅ **DONE**: Dependency count propagation for map steps
 - ✅ **DONE**: Array element extraction - tasks receive individual array elements
 - ✅ **DONE**: Output aggregation - inline implementation aggregates map task outputs for dependents
-- ⏳ **NEXT**: DSL support for `.map()` for defining map steps
+- ✅ **DONE**: DSL support for `.map()` for defining map steps with compile-time duplicate detection
+- ⏳ **TODO**: Fix orphaned messages on run failure
+- ⏳ **TODO**: Performance optimization with step_states.output column
 
 ### Chores
 
-- ⏳ **WAITING**: Integration tests for map steps
-- ⏳ **WAITING**: Consolidated migration for map steps
-- ⏳ **WAITING**: Documentation for map steps
-- ⏳ **WAITING**: Graphite stack merge for map steps
+- ⏳ **TODO**: Integration tests for map steps
+- ⏳ **TODO**: Update core README
+- ⏳ **TODO**: Add docs page for array and map steps
+- ⏳ **TODO**: Migration consolidation
+- ⏳ **TODO**: Graphite stack merge
 
 ## Implementation Status
 
@@ -83,33 +86,38 @@
   - Validates non-array outputs to map steps fail correctly
   - Fixed broadcast aggregation to send full array not individual task output
 
-#### ❌ Remaining Work
+- [x] **PR #218: DSL Support for .map() Step Type** - `09-18-add-map-support-to-dsl` ✅ COMPLETED
 
-- [ ] **DSL Support for .map() Step Type**
-
-  - Add `.map()` method to Flow DSL for defining map steps
+  - Added `.map()` method to Flow DSL for defining map steps
   - Constraints:
     - Locked to exactly one dependency (enforced at compile time)
     - Dependency must return an array (type-checked)
   - Syntax design:
     - Dependent maps: `flow.map({ slug: 'stepName', array: 'arrayReturningStep' }, handler)`
-    - Root maps: Decide between `{ array: 'run' }` or omitting array property
+    - Root maps: Omit array property
   - Return type always inferred as array
   - Comprehensive tests:
     - Runtime validation of array dependencies
     - Type safety for input/output types
     - Compile-time enforcement of single dependency rule
+  - Fixed complex TypeScript type inference issue with overloads
+  - Added compile-time duplicate slug detection across all DSL methods
+  - Fixed all linting errors (replaced `{}` with `Record<string, never>`)
+  - Updated DSL README with .map() documentation
+  - Created detailed changeset
 
-- [ ] **Fix Orphaned Messages on Run Failure**
+#### ❌ Remaining Work (Priority Order)
+
+- [ ] **Priority 1: Fix Orphaned Messages on Run Failure** 🚨 CRITICAL
 
   - Archive all pending messages when run fails
   - Handle map sibling tasks specially
   - Fix type constraint violations to fail immediately without retries
   - See detailed plan: [PLAN_orphaned_messages.md](./PLAN_orphaned_messages.md)
-  - Critical for production: prevents queue performance degradation
+  - **Critical for production: prevents queue performance degradation**
   - Tests already written (stashed) that document the problem
 
-- [ ] **Performance Optimization: step_states.output Column**
+- [ ] **Priority 2: Performance Optimization - step_states.output Column**
 
   - Migrate from inline aggregation to storing outputs in step_states
   - See detailed plan: [PLAN_step_output.md](./PLAN_step_output.md)
@@ -124,20 +132,13 @@
     - Update all aggregation tests (~17 files)
   - **Note**: This is an optimization that should be done after core functionality is stable
 
-- [ ] **Integration Tests**
+- [ ] **Priority 3: Integration Tests**
 
   - End-to-end workflows with real array data
   - Basic happy path coverage
   - This should be minimal and added to the Edge Worker integration test suite for now
 
-- [ ] **Migration Consolidation**
-
-  - Remove all temporary/incremental migrations from feature branches
-  - Generate a single consolidated migration for the entire map infrastructure
-  - Ensure clean migration path from current production schema
-  - If NULL improvement is done, include it in the consolidated migration
-
-- [ ] **Update README's** and **Docs**
+- [ ] **Priority 4: Update core README**
 
   - `pkgs/core/README.md`
 
@@ -149,12 +150,7 @@
     - Explain root map vs dependent map and how it gets handled and what restrictions those apply on the Flow input
     - Explain cascade completion of taskless steps and its limitations
 
-  - `pkgs/dsl/README.md`
-
-    - Briefly describe the new `.array()` and `.map()` methods
-    - Mention `.array` is mostly sugar, and `.map` is the new step type
-    - Link to `pkgs/core/README.md` sections for more explanation about map steps
-    - Make sure to mention that maps are constrained to have exactly one dependency
+- [ ] **Priority 5: Add docs page**
 
   - **Add basic docs page**
 
@@ -165,7 +161,14 @@
     - focus mostly on how to use it, instead of how it works under the hood
     - link to the README's for more details
 
-- [ ] **Graphite Stack Merge**
+- [ ] **Priority 6: Migration Consolidation** (Do this last before merge!)
+
+  - Remove all temporary/incremental migrations from feature branches
+  - Generate a single consolidated migration for the entire map infrastructure
+  - Ensure clean migration path from current production schema
+  - If NULL improvement is done, include it in the consolidated migration
+
+- [ ] **Priority 7: Graphite Stack Merge**
 
   - Configure Graphite merge queue for the complete PR stack
   - Ensure all PRs in sequence can be merged together

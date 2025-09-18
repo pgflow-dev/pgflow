@@ -144,7 +144,7 @@ describe('.array() method type constraints', () => {
 
   describe('context inference', () => {
     it('should preserve context inference for array methods', () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const flow = new Flow<{ id: number }>({ slug: 'test' })
         .array({ slug: 'fetch_data' }, (input, context: { api: { get: (id: number) => Promise<any> } }) => {
           expectTypeOf(context.api).toEqualTypeOf<{ get: (id: number) => Promise<any> }>();
@@ -156,7 +156,7 @@ describe('.array() method type constraints', () => {
 
       // ExtractFlowContext should include the api context
       type FlowContext = ExtractFlowContext<typeof flow>;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       expectTypeOf<FlowContext>().toMatchTypeOf<{
         env: Record<string, string | undefined>;
         shutdownSignal: AbortSignal;

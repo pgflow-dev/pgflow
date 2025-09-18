@@ -23,6 +23,8 @@
       "Bash(grep:*)",
       "Bash(ls:*)",
       "Bash(mkdir:*)",
+      "Bash(npx tsc:*)",
+      "Bash(pnpm tsc:*)",
       "Bash(pnpm eslint:*)",
       "Bash(pnpm nx build:*)",
       "Bash(pnpm nx lint:*)",
