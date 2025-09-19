@@ -27,6 +27,7 @@ export type StepTaskRecord<TFlow extends AnyFlow> = {
     flow_slug: string;
     run_id: string;
     step_slug: StepSlug;
+    task_index: number;
     input: Simplify<StepInput<TFlow, StepSlug>>;
     msg_id: number;
   };
@@ -36,7 +37,7 @@ export type StepTaskRecord<TFlow extends AnyFlow> = {
  * Composite key that is enough to find a particular step task
  * Contains only the minimum fields needed to identify a task
  */
-export type StepTaskKey = Pick<StepTaskRecord<AnyFlow>, 'run_id' | 'step_slug'>;
+export type StepTaskKey = Pick<StepTaskRecord<AnyFlow>, 'run_id' | 'step_slug' | 'task_index'>;
 
 
 

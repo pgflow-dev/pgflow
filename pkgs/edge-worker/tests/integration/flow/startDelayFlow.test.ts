@@ -4,6 +4,7 @@ import { Flow } from '@pgflow/dsl';
 import { waitFor } from '../../e2e/_helpers.ts';
 import { delay } from '@std/async';
 import { startFlow, startWorker } from '../_helpers.ts';
+import { waitForRunCompletion, getStepStates, getStepTasks, getRunOutput } from './_testHelpers.ts';
 
 // Test flow with root step delay
 const RootStepDelayFlow = new Flow<{ message: string }>({ 
@@ -14,8 +15,8 @@ const RootStepDelayFlow = new Flow<{ message: string }>({
   .step({ 
     slug: 'delayedRoot',
     startDelay: 2  // 2 second delay
-  }, (input) => {
-    console.log('Executing delayedRoot step');
+  }, async (input) => {
+    await delay(1);
     return `Delayed: ${input.run.message}`;
   });
 
@@ -25,16 +26,16 @@ const NormalStepDelayFlow = new Flow<{ value: number }>({
 })
   .step({ 
     slug: 'immediate' 
-  }, (input) => {
-    console.log('Executing immediate step');
+  }, async (input) => {
+    await delay(1);
     return input.run.value * 2;
   })
   .step({ 
     slug: 'delayed',
     dependsOn: ['immediate'],
     startDelay: 3  // 3 second delay after immediate completes
-  }, (input) => {
-    console.log('Executing delayed step');
+  }, async (input) => {
+    await delay(1);
     return (input.immediate as number) + 10;
   });
 
@@ -45,24 +46,24 @@ const CascadedDelayFlow = new Flow<{ start: string }>({
   .step({ 
     slug: 'first',
     startDelay: 1  // 1 second delay
-  }, (input) => {
-    console.log('Executing first step');
+  }, async (input) => {
+    await delay(1);
     return `${input.run.start}->first`;
   })
   .step({ 
     slug: 'second',
     dependsOn: ['first'],
     startDelay: 2  // 2 second delay after first completes
-  }, (input) => {
-    console.log('Executing second step');
+  }, async (input) => {
+    await delay(1);
     return `${input.first}->second`;
   })
   .step({ 
     slug: 'third',
     dependsOn: ['second'],
     startDelay: 1  // 1 second delay after second completes
-  }, (input) => {
-    console.log('Executing third step');
+  }, async (input) => {
+    await delay(1);
     return `${input.second}->third`;
   });
 
@@ -102,24 +103,11 @@ Deno.test(
       assertEquals(initialTask.status, 'queued', 'Task should be queued with delay');
 
       // Wait for completion
-      const polledRun = await waitFor(
-        async () => {
-          const [run] = await sql`
-            SELECT * FROM pgflow.runs WHERE run_id = ${flowRun.run_id};
-          `;
-          return run.status === 'completed' ? run : false;
-        },
-        {
-          pollIntervalMs: 200,
-          timeoutMs: 10000,
-          description: `root step delay flow to complete`,
-        }
-      );
+      const polledRun = await waitForRunCompletion(sql, flowRun.run_id);
 
       const endTime = Date.now();
       const duration = (endTime - startTime) / 1000;
 
-      console.log(`Flow completed in ${duration}s`);
       assert(duration >= 2, 'Flow should take at least 2 seconds due to startDelay');
       
       // Verify output
@@ -159,11 +147,7 @@ Deno.test(
       await delay(1000);
 
       // Check that immediate step is completed but delayed step is still queued
-      const stepStates = await sql`
-        SELECT step_slug, status FROM pgflow.step_states 
-        WHERE run_id = ${flowRun.run_id}
-        ORDER BY step_slug;
-      `;
+      const stepStates = await getStepStates(sql, flowRun.run_id);
 
       const immediateState = stepStates.find(s => s.step_slug === 'immediate');
       const delayedState = stepStates.find(s => s.step_slug === 'delayed');
@@ -172,31 +156,16 @@ Deno.test(
       assertEquals(delayedState?.status, 'started', 'Delayed step should be started (waiting)');
 
       // Check task status
-      const [delayedTask] = await sql`
-        SELECT status FROM pgflow.step_tasks 
-        WHERE run_id = ${flowRun.run_id} AND step_slug = 'delayed';
-      `;
+      const delayedTasks = await getStepTasks(sql, flowRun.run_id, 'delayed');
+      const delayedTask = delayedTasks[0];
       assertEquals(delayedTask.status, 'queued', 'Delayed task should still be queued');
 
       // Wait for completion
-      const polledRun = await waitFor(
-        async () => {
-          const [run] = await sql`
-            SELECT * FROM pgflow.runs WHERE run_id = ${flowRun.run_id};
-          `;
-          return run.status === 'completed' ? run : false;
-        },
-        {
-          pollIntervalMs: 200,
-          timeoutMs: 10000,
-          description: `normal step delay flow to complete`,
-        }
-      );
+      const polledRun = await waitForRunCompletion(sql, flowRun.run_id);
 
       const endTime = Date.now();
       const duration = (endTime - startTime) / 1000;
 
-      console.log(`Flow completed in ${duration}s`);
       assert(duration >= 3, 'Flow should take at least 3 seconds due to delayed step');
       
       // Verify output - only the last step's output is returned
@@ -249,7 +218,6 @@ Deno.test(
           for (const state of stepStates) {
             if (state.status === 'completed' && !stepCompletionTimes[state.step_slug]) {
               stepCompletionTimes[state.step_slug] = Date.now();
-              console.log(`Step ${state.step_slug} completed at ${(Date.now() - startTime) / 1000}s`);
             }
           }
 
@@ -268,8 +236,6 @@ Deno.test(
       const endTime = Date.now();
       const totalDuration = (endTime - startTime) / 1000;
 
-      console.log(`Flow completed in ${totalDuration}s`);
-      
       // Verify timing
       // - First step: 1s delay
       // - Second step: starts after first completes + 2s delay
@@ -289,10 +255,8 @@ Deno.test(
       }
 
       // Verify final output - only the last step's output is returned
-      const [finalRun] = await sql`
-        SELECT output FROM pgflow.runs WHERE run_id = ${flowRun.run_id};
-      `;
-      
+      const finalRun = await getRunOutput(sql, flowRun.run_id);
+
       assertEquals(
         finalRun.output,
         { 
@@ -320,9 +284,9 @@ Deno.test(
       .step({ 
         slug: 'retryStep',
         startDelay: 3
-      }, (_input) => {
+      }, async (_input) => {
         attemptCount++;
-        console.log(`Attempt ${attemptCount}`);
+        await delay(1);
         if (attemptCount === 1) {
           throw new Error('First attempt fails');
         }
@@ -348,35 +312,22 @@ Deno.test(
       await delay(4000);
 
       // Check that first attempt has failed
-      const [firstAttemptTask] = await sql`
-        SELECT status, attempts_count, error_message FROM pgflow.step_tasks 
+      const firstAttemptTasks = await sql`
+        SELECT status, attempts_count, error_message FROM pgflow.step_tasks
         WHERE run_id = ${flowRun.run_id} AND step_slug = 'retryStep';
       `;
+      const firstAttemptTask = firstAttemptTasks[0];
       
       assertEquals(firstAttemptTask.status, 'queued', 'Task should be queued for retry');
       assert(firstAttemptTask.attempts_count >= 1, 'Should have at least one attempt');
       assert(firstAttemptTask.error_message?.includes('First attempt fails'), 'Should have error message');
 
       // Wait for completion
-      const polledRun = await waitFor(
-        async () => {
-          const [run] = await sql`
-            SELECT * FROM pgflow.runs WHERE run_id = ${flowRun.run_id};
-          `;
-          return run.status === 'completed' ? run : false;
-        },
-        {
-          pollIntervalMs: 200,
-          timeoutMs: 10000,
-          description: `retry flow to complete`,
-        }
-      );
+      const polledRun = await waitForRunCompletion(sql, flowRun.run_id);
 
       const endTime = Date.now();
       const duration = (endTime - startTime) / 1000;
 
-      console.log(`Flow completed in ${duration}s`);
-      
       // Verify timing: initial delay (3s) + retry delay (1s baseDelay)
       assert(duration >= 4, 'Flow should take at least 4 seconds (3s initial + 1s retry)');
       assert(duration < 7, 'Flow should not re-apply startDelay on retry');
