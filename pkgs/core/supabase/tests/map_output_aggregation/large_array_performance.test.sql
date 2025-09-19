@@ -75,21 +75,17 @@ select is(
 do $$
 declare
   v_run_id uuid;
-  v_task pgflow.step_task_record;
   v_start_time timestamp;
   v_duration interval;
 begin
   select run_id into v_run_id from pgflow.runs limit 1;
 
-  -- Get consumer task
-  select * into v_task from pgflow.step_tasks
-  where run_id = v_run_id and step_slug = 'consumer' and status = 'started';
-
-  -- Complete it
+  -- The consumer task was already started in the previous test assertion (line 69)
+  -- We just need to complete it
   perform pgflow.complete_task(
-    v_task.run_id,
-    v_task.step_slug,
-    0,
+    v_run_id,
+    'consumer',
+    0,  -- consumer is a single task, so task_index is 0
     jsonb_build_object('processed', 100)
   );
 
