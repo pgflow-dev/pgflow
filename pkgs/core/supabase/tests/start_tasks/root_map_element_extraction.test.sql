@@ -43,37 +43,37 @@ where run_id = :'run_id' and step_slug = 'root_map' and task_index = 1 \gset
 select message_id as msg_id_2 from pgflow.step_tasks
 where run_id = :'run_id' and step_slug = 'root_map' and task_index = 2 \gset
 
--- TEST: Call start_tasks for task 0 and verify it receives "apple"
+-- TEST: Call start_tasks for task 0 and verify input and task_index
 select is(
-  (select input from pgflow.start_tasks(
+  (select row(input, task_index) from pgflow.start_tasks(
     'root_map_flow',
     ARRAY[:'msg_id_0'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
   )),
-  '"apple"'::jsonb,
-  'Task 0 should receive first array element (apple)'
+  row('"apple"'::jsonb, 0),
+  'Task 0 should receive first array element (apple) with task_index = 0'
 );
 
--- TEST: Call start_tasks for task 1 and verify it receives "banana"
+-- TEST: Call start_tasks for task 1 and verify input and task_index
 select is(
-  (select input from pgflow.start_tasks(
+  (select row(input, task_index) from pgflow.start_tasks(
     'root_map_flow',
     ARRAY[:'msg_id_1'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
   )),
-  '"banana"'::jsonb,
-  'Task 1 should receive second array element (banana)'
+  row('"banana"'::jsonb, 1),
+  'Task 1 should receive second array element (banana) with task_index = 1'
 );
 
--- TEST: Call start_tasks for task 2 and verify it receives "cherry"
+-- TEST: Call start_tasks for task 2 and verify input and task_index
 select is(
-  (select input from pgflow.start_tasks(
+  (select row(input, task_index) from pgflow.start_tasks(
     'root_map_flow',
     ARRAY[:'msg_id_2'::bigint],
     '11111111-1111-1111-1111-111111111111'::uuid
   )),
-  '"cherry"'::jsonb,
-  'Task 2 should receive third array element (cherry)'
+  row('"cherry"'::jsonb, 2),
+  'Task 2 should receive third array element (cherry) with task_index = 2'
 );
 
 -- Verify all tasks got started
