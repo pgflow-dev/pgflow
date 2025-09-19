@@ -69,7 +69,9 @@ function normalizeQueueConfig(config: QueueWorkerConfig, sql: postgres.Sql): Res
   validateRetryConfig(retryConfig);
 
   // Strip deprecated fields before merging
-  const { retryDelay: _rd, retryLimit: _rl, ...rest } = config;
+  const { retryDelay, retryLimit, ...rest } = config;
+  void retryDelay;
+  void retryLimit;
   return {
     connectionString: '',
     ...DEFAULT_QUEUE_CONFIG,

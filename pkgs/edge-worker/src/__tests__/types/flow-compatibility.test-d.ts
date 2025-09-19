@@ -1,22 +1,14 @@
 import { describe, it } from 'vitest';
-import { Flow, type Context } from '@pgflow/dsl';
+import { Flow } from '@pgflow/dsl';
 import { EdgeWorker } from '../../EdgeWorker.js';
-import type { Sql } from 'postgres';
-import type { SupabaseClient } from '@supabase/supabase-js';
-
-// Mock types for testing
-interface TestRedis {
-  get: (key: string) => Promise<string | null>;
-  set: (key: string, value: string) => Promise<void>;
-}
 
 describe('Flow Compatibility Type Tests', () => {
   it('should accept flows that only use platform resources', () => {
     const flow = new Flow({ slug: 'platform_only' })
-      .step({ slug: 'query' }, (_input, _ctx: Context<{ sql: Sql }>) => {
+      .step({ slug: 'query' }, () => {
         return { result: 'data' };
       })
-      .step({ slug: 'auth' }, (_input, _ctx: Context<{ supabase: SupabaseClient }>) => {
+      .step({ slug: 'auth' }, () => {
         return { authenticated: true };
       });
 
@@ -38,7 +30,7 @@ describe('Flow Compatibility Type Tests', () => {
 
   it('should reject flows that require non-platform resources', () => {
     const flow = new Flow({ slug: 'custom_resource' })
-      .step({ slug: 'cache' }, (_input, _ctx: Context<{ redis: TestRedis }>) => {
+      .step({ slug: 'cache' }, () => {
         return { cached: true };
       });
 
@@ -48,13 +40,10 @@ describe('Flow Compatibility Type Tests', () => {
 
   it('should work with mixed platform resources', () => {
     const flow = new Flow({ slug: 'mixed_platform' })
-      .step({ slug: 'query' }, (_input, _ctx: Context<{ sql: Sql }>) => {
+      .step({ slug: 'query' }, () => {
         return { data: [] };
       })
-      .step({ slug: 'store' }, (_input, _ctx: Context<{ 
-        sql: Sql,
-        supabase: SupabaseClient 
-      }>) => {
+      .step({ slug: 'store' }, () => {
         return { stored: true };
       });
 

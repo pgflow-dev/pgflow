@@ -55,6 +55,7 @@ Deno.test(
       msg_id: 123,
       run_id: 'test-run-id',
       step_slug: 'test_step',
+      task_index: 0,
       input: { run: { data: 'test data' } },
     };
 
@@ -116,6 +117,7 @@ Deno.test(
       msg_id: 456,
       run_id: 'legacy_run_id',
       step_slug: 'legacy_step',
+      task_index: 0,
       input: { run: { value: 42 } },
     };
 
@@ -168,6 +170,7 @@ Deno.test(
       msg_id: 789,
       run_id: 'raw_run_id',
       step_slug: 'check_raw',
+      task_index: 0,
       input: { run: {} },
     };
 
@@ -227,6 +230,7 @@ Deno.test(
       msg_id: 999,
       run_id: 'supabase_run_id',
       step_slug: 'check_clients',
+      task_index: 0,
       input: { run: {} },
     };
 
@@ -307,6 +311,7 @@ Deno.test(
       msg_id: 456,
       run_id: 'complex_run',
       step_slug: 'fetch_data',
+      task_index: 0,
       input: { run: { id: 123 } },
     };
 

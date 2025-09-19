@@ -56,7 +56,7 @@ export class PgflowSqlClient<TFlow extends AnyFlow>
       SELECT pgflow.complete_task(
         run_id => ${stepTask.run_id}::uuid,
         step_slug => ${stepTask.step_slug}::text,
-        task_index => ${0}::int,
+        task_index => ${stepTask.task_index}::int,
         output => ${this.sql.json(output || null)}::jsonb
       );
     `;
@@ -74,7 +74,7 @@ export class PgflowSqlClient<TFlow extends AnyFlow>
       SELECT pgflow.fail_task(
         run_id => ${stepTask.run_id}::uuid,
         step_slug => ${stepTask.step_slug}::text,
-        task_index => ${0}::int,
+        task_index => ${stepTask.task_index}::int,
         error_message => ${errorString}::text
       );
     `;
