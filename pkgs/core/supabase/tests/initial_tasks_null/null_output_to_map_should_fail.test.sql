@@ -1,5 +1,5 @@
 begin;
-select plan(3);
+select plan(7);
 select pgflow_tests.reset_db();
 
 -- Test: NULL output to dependent map should fail
@@ -42,8 +42,8 @@ WITH task AS (
 )
 SELECT step_slug FROM task;
 
--- Test: complete_task should RAISE EXCEPTION for NULL output to map
-select throws_ilike(
+-- Test: complete_task should handle NULL output gracefully (no exception)
+select lives_ok(
   $$
   WITH task_info AS (
     SELECT run_id, step_slug, task_index
@@ -59,8 +59,38 @@ select throws_ilike(
     NULL::jsonb  -- Passing literal NULL!
   ) FROM task_info
   $$,
-  '%Map step map_consumer expects array input but dependency producer produced null%',
-  'complete_task should fail when NULL is passed to dependent map'
+  'complete_task should handle NULL output gracefully without throwing exception'
+);
+
+-- Test: Producer task should be marked as failed
+select is(
+  (select status from pgflow.step_tasks
+   where flow_slug = 'null_output_test' and step_slug = 'producer'),
+  'failed'::text,
+  'Producer task should be marked as failed'
+);
+
+-- Test: Producer task should have appropriate error message
+select ok(
+  (select error_message ILIKE '%TYPE_VIOLATION%' from pgflow.step_tasks
+   where flow_slug = 'null_output_test' and step_slug = 'producer'),
+  'Producer task should have type constraint error message'
+);
+
+-- Test: Producer task should store NULL output
+select is(
+  (select output from pgflow.step_tasks
+   where flow_slug = 'null_output_test' and step_slug = 'producer'),
+  NULL::jsonb,
+  'Producer task should store the NULL output that caused the type violation'
+);
+
+-- Test: Run should be marked as failed
+select is(
+  (select status from pgflow.runs
+   where flow_slug = 'null_output_test' limit 1),
+  'failed'::text,
+  'Run should be marked as failed after type constraint violation'
 );
 
 -- Test: Map initial_tasks should remain NULL after failed transaction
