@@ -1,5 +1,5 @@
 begin;
-select plan(4);
+select plan(5);
 select pgflow_tests.reset_db();
 
 select pgflow.create_flow('multi_flow');
@@ -50,6 +50,13 @@ select is(
   (select count(distinct last_worker_id)::int from pgflow.step_tasks where status = 'started'),
   1,
   'All tasks should have same worker ID'
+);
+
+-- TEST: All single tasks should have task_index = 0
+select ok(
+  (select bool_and(task_index = 0) from pgflow.step_tasks
+   where flow_slug = 'multi_flow'),
+  'All single tasks should have task_index = 0'
 );
 
 select finish();
