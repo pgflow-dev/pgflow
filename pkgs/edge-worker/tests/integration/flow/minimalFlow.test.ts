@@ -1,10 +1,17 @@
 import { assert, assertEquals } from '@std/assert';
 import { withPgNoTransaction } from '../../db.ts';
 import { Flow } from '@pgflow/dsl';
-import { waitFor } from '../../e2e/_helpers.ts';
 import { delay } from '@std/async';
-import type { Json } from '@pgflow/core';
 import { startFlow, startWorker } from '../_helpers.ts';
+import {
+  waitForRunCompletion,
+  createSimpleFlow,
+  getStepStates,
+  getStepTasks,
+  getRunOutput,
+  assertAllStepsCompleted,
+  assertAllTasksCompleted,
+} from './_testHelpers.ts';
 
 // Define a minimal flow with two steps:
 // 1. Convert a number to a string
@@ -35,91 +42,39 @@ Deno.test(
     });
 
     try {
-      await sql`select pgflow.create_flow('test_minimal_flow');`;
-      await sql`select pgflow.add_step('test_minimal_flow', 'toStringStep');`;
-      await sql`select pgflow.add_step('test_minimal_flow', 'wrapInArrayStep', deps_slugs => ARRAY['toStringStep']::text[]);`;
+      // Setup: Create flow with two dependent steps
+      await createSimpleFlow(sql, 'test_minimal_flow', [
+        { slug: 'toStringStep', deps: [] },
+        { slug: 'wrapInArrayStep', deps: ['toStringStep'] },
+      ]);
 
-      // Start a flow run with input value 42
+      // Execute: Start flow with input value 42
       const flowRun = await startFlow(sql, MinimalFlow, 42);
+      const polledRun = await waitForRunCompletion(sql, flowRun.run_id);
 
-      let i = 0;
-      // Wait for the run to complete with a timeout
-      const polledRun = await waitFor(
-        async () => {
-          // Check run status
-          const [run] = await sql`
-            SELECT * FROM pgflow.runs WHERE run_id = ${flowRun.run_id};
-          `;
-
-          i += 1;
-          console.log(`Run ${i}`, run);
-
-          if (run.status != 'completed' && run.status != 'failed') {
-            return false;
-          }
-
-          return run;
-        },
-        {
-          pollIntervalMs: 500,
-          timeoutMs: 5000,
-          description: `flow run ${flowRun.run_id} to be 'completed'`,
-        }
-      );
-
-      console.log('Polled run', polledRun);
-
+      // Verify: Run completed successfully
       assert(polledRun.status === 'completed', 'Run should be completed');
 
-      // Verify step_states are all completed
-      const stepStates = await sql<{ step_slug: string; status: string }[]>`
-        SELECT step_slug, status FROM pgflow.step_states
-        WHERE run_id = ${flowRun.run_id}
-        ORDER BY step_slug;
-      `;
+      // Verify: All steps completed
+      const stepStates = await getStepStates(sql, flowRun.run_id);
+      assertEquals(stepStates.length, 2, 'Should have 2 step states');
+      assertAllStepsCompleted(stepStates);
 
-      console.log('Step states:', stepStates);
-      assertEquals(
-        stepStates.map((s) => s.status),
-        ['completed', 'completed'],
-        'All step states should be completed'
-      );
+      // Verify: All tasks completed
+      const stepTasks = await getStepTasks(sql, flowRun.run_id);
+      assertEquals(stepTasks.length, 2, 'Should have 2 step tasks');
+      assertAllTasksCompleted(stepTasks);
 
-      // Verify step_tasks are all succeeded
-      const stepTasks = await sql<
-        { step_slug: string; status: string; output: Json }[]
-      >`
-        SELECT step_slug, status, output FROM pgflow.step_tasks
-        WHERE run_id = ${flowRun.run_id}
-        ORDER BY step_slug;
-      `;
-
-      console.log('Step tasks:', stepTasks);
-      assertEquals(
-        stepTasks.map((s) => s.status),
-        ['completed', 'completed'],
-        'All step tasks should be succeeded'
-      );
-
-      // Verify run is succeeded
-      const [finalRun] = await sql<{ status: string; output: unknown }[]>`
-        SELECT status, output FROM pgflow.runs WHERE run_id = ${flowRun.run_id};
-      `;
-
-      console.log('Final run:', finalRun);
-      assertEquals(finalRun.status, 'completed', 'Run should be succeeded');
-
-      // Verify run output matches expected ["42"]
+      // Verify: Final output matches expected ["42"]
+      const finalRun = await getRunOutput(sql, flowRun.run_id);
+      assertEquals(finalRun.status, 'completed', 'Run should be completed');
       assertEquals(
         finalRun.output,
         { wrapInArrayStep: ['42'] },
         'Run output should match expected value'
       );
     } finally {
-      console.log('Stopping worker');
-      // Stop the worker
       await worker.stop();
-      console.log('Worker stopped');
     }
   })
 );

@@ -69,7 +69,7 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
 
   const sql =
     config.sql ||
-    postgres(config.connectionString!, {
+    postgres(config.connectionString as string, {
       max: config.maxPgConnections ?? DEFAULT_FLOW_CONFIG.maxPgConnections,
       prepare: false,
     });

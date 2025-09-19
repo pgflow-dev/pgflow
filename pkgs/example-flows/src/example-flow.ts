@@ -33,6 +33,7 @@ export const stepTaskRecord: StepTaskRecord<typeof ExampleFlow> = {
   flow_slug: 'example_flow',
   run_id: '123',
   step_slug: 'normalStep',
+  task_index: 0,
   input: {
     run: { value: 23 },
     rootStep: { doubledValue: 23 },

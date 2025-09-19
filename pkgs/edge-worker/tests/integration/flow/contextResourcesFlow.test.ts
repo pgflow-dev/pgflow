@@ -1,9 +1,9 @@
 import { assert, assertEquals, assertExists } from '@std/assert';
 import { withPgNoTransaction } from '../../db.ts';
 import { Flow } from '@pgflow/dsl/supabase';
-import { waitFor } from '../../e2e/_helpers.ts';
 import { delay } from '@std/async';
 import { startFlow, startWorker } from '../_helpers.ts';
+import { waitForRunCompletion, createSimpleFlow } from './_testHelpers.ts';
 
 // Define a flow that tests ONLY the essential context resources provided by EdgeWorker
 const ContextResourcesFlow = new Flow<{ testId: number }>({
@@ -63,35 +63,17 @@ Deno.test(
     });
 
     try {
-      // Create flow and steps in database
-      await sql`select pgflow.create_flow('test_context_resources_flow');`;
-      await sql`select pgflow.add_step('test_context_resources_flow', 'verifyContextResources');`;
+      // Setup: Create flow with single step that verifies context
+      await createSimpleFlow(sql, 'test_context_resources_flow', [
+        { slug: 'verifyContextResources', deps: [] },
+      ]);
 
-      // Start a flow run with test input
+      // Execute: Start flow and wait for completion
       const testId = Math.floor(Math.random() * 1000);
       const flowRun = await startFlow(sql, ContextResourcesFlow, { testId });
+      const polledRun = await waitForRunCompletion(sql, flowRun.run_id);
 
-      // Wait for the run to complete
-      const polledRun = await waitFor(
-        async () => {
-          const [run] = await sql`
-            SELECT * FROM pgflow.runs WHERE run_id = ${flowRun.run_id};
-          `;
-
-          if (run.status != 'completed' && run.status != 'failed') {
-            return false;
-          }
-
-          return run;
-        },
-        {
-          pollIntervalMs: 500,
-          timeoutMs: 5000,
-          description: `context resources flow run ${flowRun.run_id} to complete`,
-        }
-      );
-
-      // Verify the run completed successfully - this confirms that all context assertions passed
+      // Verify: Run completed (context assertions passed in handler)
       assertEquals(
         polledRun.status,
         'completed',
