@@ -91,9 +91,8 @@ if [[ -z $TAG ]]; then
 fi
 
 # Generate version components
-TS=$(date +%Y%m%d%H%M%S)
 SHA=$(git rev-parse --short HEAD)
-SNAPSHOT="$TAG-$TS-$SHA"
+SNAPSHOT="$TAG-$SHA"  # Pass tag with SHA to changeset (it will add timestamp)
 
 # ------------------------------------------------------------------
 # Set up cleanup trap (unless disabled)
@@ -114,11 +113,11 @@ fi
 echo ""
 echo -e "${BOLD}📦 Snapshot Release${NC}"
 echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BOLD}Version:${NC} ${GREEN}0.0.0-$SNAPSHOT${NC}"
+echo -e "${BOLD}Version template:${NC} ${GREEN}0.0.0-$SNAPSHOT-<timestamp>${NC}"
 echo ""
 echo -e "  ${BOLD}Tag:${NC}       $TAG"
-echo -e "  ${BOLD}Timestamp:${NC} $TS"
 echo -e "  ${BOLD}Commit:${NC}    $SHA"
+echo -e "  ${YELLOW}Note:${NC} Changeset will add timestamp automatically"
 echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
@@ -255,7 +254,7 @@ echo ""
 echo -e "${BOLD}Publishing to npm...${NC}"
 NPM_OUTPUT=$(pnpm exec changeset publish --tag snapshot 2>&1)
 echo "$NPM_OUTPUT"
-if echo "$NPM_OUTPUT" | grep -q "Published" ; then
+if echo "$NPM_OUTPUT" | grep -qi "published" ; then
   echo -e "${GREEN}✓ npm packages published${NC}"
 else
   echo -e "${RED}✗ npm publish may have failed - check output above${NC}"
