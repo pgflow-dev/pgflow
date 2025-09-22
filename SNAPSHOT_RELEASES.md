@@ -2,19 +2,24 @@
 
 > Temporary test versions for PR testing. Version format: `0.0.0-{tag}-{timestamp}-{sha}`
 
-## Quick Start
-
-**Prerequisites:** You need at least one changeset for packages to publish.
+## 🎯 Quick Cheatsheet
 
 ```bash
-# First, create a changeset
-pnpm changeset
+# Most common usage - just copy & paste:
+pnpm exec changeset                        # 1. Create changeset (select packages)
+./scripts/snapshot-release.sh my-feature   # 2. Publish snapshot (asks for confirmation)
 
-# Then create snapshot
-./scripts/snapshot-release.sh              # Uses branch name as tag
-./scripts/snapshot-release.sh my-feature   # Custom tag
-./scripts/snapshot-release.sh --dry-run    # Preview only
+# Other options:
+./scripts/snapshot-release.sh              # Use branch name as tag
+./scripts/snapshot-release.sh --dry-run    # Preview only, no publishing
+./scripts/snapshot-release.sh --yes        # Skip confirmation (for CI)
 ```
+
+**That's it!** The script handles everything else - versions, publishing, cleanup.
+
+## Prerequisites
+
+You need at least one changeset for packages to publish. If you forget, the script will remind you.
 
 <details>
 <summary>💡 Why snapshots instead of prerelease mode?</summary>
@@ -30,25 +35,18 @@ pnpm changeset
 
 ## Installation
 
-Snapshots are published with exact versions. Always install using the full version:
+The script outputs exact install commands at the end - just copy and paste!
 
-### NPM Packages
+Example output:
 ```bash
 npm install @pgflow/core@0.0.0-my-feature-20240101120000-abc1234
 npm install @pgflow/cli@0.0.0-my-feature-20240101120000-abc1234
 npm install @pgflow/client@0.0.0-my-feature-20240101120000-abc1234
 npm install @pgflow/dsl@0.0.0-my-feature-20240101120000-abc1234
-```
 
-### JSR Package (Edge Worker)
-```bash
-deno add @pgflow/edge-worker@0.0.0-my-feature-20240101120000-abc1234
-# Or in import map:
-"@pgflow/edge-worker": "jsr:@pgflow/edge-worker@0.0.0-my-feature-20240101120000-abc1234"
+# For Deno/Supabase Edge Functions:
+import { EdgeWorker } from "jsr:@pgflow/edge-worker@0.0.0-my-feature-20240101120000-abc1234"
 ```
-
-> [!TIP]
-> The script outputs exact install commands - just copy and paste!
 
 > [!NOTE]
 > npm packages are published with dist-tag "snapshot" to protect the "latest" tag.
@@ -64,22 +62,24 @@ Main script for creating snapshot releases locally or in CI.
 | Flag | Description | Default |
 |------|-------------|---------|
 | `[tag]` | Custom snapshot tag | Branch name |
-| `--dry-run` | Preview without publishing | false |
-| `--allow-uncommitted-changesets` | Allow uncommitted changeset files | false |
+| `--dry-run` | Preview only, don't publish | false |
+| `--yes`, `-y` | Skip confirmation prompt | false |
+| `--no-cleanup` | Don't restore files after publishing | false |
 | `--help` | Show usage | - |
 
 **Examples:**
 ```bash
-./scripts/snapshot-release.sh              # Uses branch name
-./scripts/snapshot-release.sh my-feature   # Custom tag
-./scripts/snapshot-release.sh --dry-run    # Preview only
-./scripts/snapshot-release.sh --allow-uncommitted-changesets  # Allow dirty changesets
+./scripts/snapshot-release.sh              # Uses branch name, asks for confirmation
+./scripts/snapshot-release.sh my-feature   # Custom tag, asks for confirmation
+./scripts/snapshot-release.sh my-feature --dry-run  # Preview only, no publishing
+./scripts/snapshot-release.sh my-feature --yes      # Skip confirmation
 ```
 
 **Output:**
-- Shows all packages being published with exact versions
-- Prints ready-to-use install commands
-- Creates JSON output at `/tmp/snapshot-release-output.json` for CI integration
+- Shows formatted version breakdown with timestamp and commit SHA
+- Lists all packages being published with exact versions
+- Interactive confirmation prompt before publishing (unless --yes)
+- Prints ready-to-use install commands with colored output
 - Uses "snapshot" dist-tag to protect "latest" (but you always install by version)
 
 ### `snapshot-release-ci.sh`
@@ -128,7 +128,7 @@ CI-specific wrapper that auto-detects environment and generates PR comments.
 
 Snapshot releases require changesets to work. Create one first:
 ```bash
-pnpm changeset  # Select packages and describe changes
+pnpm exec changeset  # Select packages and describe changes
 ```
 </details>
 
@@ -143,11 +143,9 @@ pnpm add -D @changesets/cli
 <details>
 <summary>🛑 "You have uncommitted changes"</summary>
 
-For general uncommitted changes: Answer "y" to continue anyway.
-
-For uncommitted changesets specifically:
-- Commit them: `git add .changeset/*.md && git commit -m 'Add changeset'`
-- Or use: `--allow-uncommitted-changesets` flag
+Changesets will warn about uncommitted changes. You can:
+- Answer "y" to continue anyway (recommended for local testing)
+- Or commit your changes first: `git add . && git commit -m 'Your message'`
 </details>
 
 <details>

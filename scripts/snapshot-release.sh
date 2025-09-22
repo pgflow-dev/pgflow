@@ -6,18 +6,83 @@ cd "$ROOT"
 
 # Quick check for requirements
 command -v jq >/dev/null || { echo "jq is required"; exit 1; }
-[[ ${BASH_VERSINFO[0]} -lt 4 ]] && { 
-  echo "Bash 4+ required (macOS: brew install bash)"; exit 1; 
+[[ ${BASH_VERSINFO[0]} -lt 4 ]] && {
+  echo "Bash 4+ required (macOS: brew install bash)"; exit 1;
 }
 
 # ------------------------------------------------------------------
-# 1. Resolve snapshot tag
+# Color variables for output formatting
 # ------------------------------------------------------------------
-TAG=${1:-}                      # first arg or empty
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+RED='\033[0;31m'
+BOLD='\033[1m'
+NC='\033[0m' # No Color
+
+# ------------------------------------------------------------------
+# Parse arguments
+# ------------------------------------------------------------------
+TAG=""
+DRY_RUN=false
+SKIP_CONFIRMATION=false
+NO_CLEANUP=false
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --dry-run)
+      DRY_RUN=true
+      shift
+      ;;
+    --yes|-y)
+      SKIP_CONFIRMATION=true
+      shift
+      ;;
+    --no-cleanup)
+      NO_CLEANUP=true
+      shift
+      ;;
+    --help)
+      echo "Usage: $0 [tag] [--dry-run] [--yes] [--no-cleanup]"
+      echo ""
+      echo "Create and publish snapshot releases for testing"
+      echo ""
+      echo "Arguments:"
+      echo "  tag              Custom snapshot tag (default: branch name)"
+      echo ""
+      echo "Options:"
+      echo "  --dry-run        Preview only, don't publish"
+      echo "  --yes, -y        Skip confirmation prompt"
+      echo "  --no-cleanup     Don't restore files after publishing"
+      echo "  --help           Show this help message"
+      echo ""
+      echo "Examples:"
+      echo "  $0                     # Use branch name as tag"
+      echo "  $0 my-feature          # Custom tag"
+      echo "  $0 my-feature --dry-run  # Preview only"
+      echo "  $0 my-feature --yes    # Skip confirmation"
+      exit 0
+      ;;
+    *)
+      if [[ -z "$TAG" ]]; then
+        TAG="$1"
+      else
+        echo -e "${RED}Error: Unknown argument '$1'${NC}"
+        echo "Run with --help for usage"
+        exit 1
+      fi
+      shift
+      ;;
+  esac
+done
+
+# ------------------------------------------------------------------
+# Resolve snapshot tag if not provided
+# ------------------------------------------------------------------
 if [[ -z $TAG ]]; then
   BRANCH=$(git rev-parse --abbrev-ref HEAD)
   if [[ $BRANCH != "main" && $BRANCH != "HEAD" ]]; then
-    TAG=$(echo "$BRANCH" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9-' '-')
+    TAG=$(echo "$BRANCH" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9-' '-' | sed 's/-\+/-/g' | sed 's/^-//;s/-$//')
     # Handle edge case where tag becomes only dashes
     [[ $TAG =~ ^-+$ ]] && TAG=$(git rev-parse --short HEAD)
   else
@@ -25,59 +90,210 @@ if [[ -z $TAG ]]; then
   fi
 fi
 
+# Generate version components
 TS=$(date +%Y%m%d%H%M%S)
 SHA=$(git rev-parse --short HEAD)
-SNAPSHOT="$TAG-$TS-$SHA"        # 0.0.0-TAG-TIMESTAMP-SHA will be added by changesets
+SNAPSHOT="$TAG-$TS-$SHA"
 
 # ------------------------------------------------------------------
-# 2. Clean-up on exit (always keep branch clean)
+# Set up cleanup trap (unless disabled)
 # ------------------------------------------------------------------
-trap 'git restore --source=HEAD --worktree --staged \
-      "**/package.json" "**/jsr.json" pnpm-lock.yaml \
-      .changeset/pre.json 2>/dev/null || true' EXIT
-
-# ------------------------------------------------------------------
-# 3. Create versions
-# ------------------------------------------------------------------
-pnpm changeset version --snapshot "$SNAPSHOT"
-"$ROOT/scripts/update-jsr-json-version.sh"          # keep JSR versions in sync
-
-# ------------------------------------------------------------------
-# 4. Collect list of packages only once
-# ------------------------------------------------------------------
-mapfile -t PKGS < <(
-  find pkgs -name package.json -not -path "*/node_modules/*" -print0 |
-  xargs -0 jq -r '.name + "@" + .version' |
-  grep "$SNAPSHOT\$"                 # only packages with this snapshot version
-)
-
-[[ ${#PKGS[@]} -eq 0 ]] && { echo "Nothing to publish, aborting"; exit 1; }
-
-echo "Publishing the following packages:"
-printf '  %s\n' "${PKGS[@]}"
-
-# ------------------------------------------------------------------
-# 5. Publish – npm first, then JSR
-# ------------------------------------------------------------------
-pnpm changeset publish --tag snapshot
-
-if [[ -f pkgs/edge-worker/jsr.json ]]; then
-  ( cd pkgs/edge-worker && pnpm jsr publish --allow-slow-types --allow-dirty ) \
-    || echo "⚠️  JSR publish failed (continuing)"
+if [[ "$NO_CLEANUP" != "true" ]]; then
+  trap 'echo -e "\n${YELLOW}Cleaning up...${NC}" && \
+        git restore --source=HEAD --worktree --staged \
+        "**/package.json" "**/jsr.json" "**/CHANGELOG.md" 2>/dev/null || true; \
+        git restore --source=HEAD --worktree --staged \
+        pnpm-lock.yaml 2>/dev/null || true; \
+        git restore --source=HEAD --worktree --staged \
+        .changeset/pre.json 2>/dev/null || true' EXIT
 fi
 
 # ------------------------------------------------------------------
-# 6. Show ready-to-copy install commands
+# Display snapshot version info
 # ------------------------------------------------------------------
-echo -e "\nInstall snapshot versions with:"
-for P in "${PKGS[@]}"; do
-  [[ $P == "@pgflow/edge-worker"* ]] && continue
-  echo "npm install $P"
+echo ""
+echo -e "${BOLD}📦 Snapshot Release${NC}"
+echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${BOLD}Version:${NC} ${GREEN}0.0.0-$SNAPSHOT${NC}"
+echo ""
+echo -e "  ${BOLD}Tag:${NC}       $TAG"
+echo -e "  ${BOLD}Timestamp:${NC} $TS"
+echo -e "  ${BOLD}Commit:${NC}    $SHA"
+echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+
+# ------------------------------------------------------------------
+# Pre-flight check: Ensure working directory is clean
+# ------------------------------------------------------------------
+echo -e "${BOLD}Checking working directory...${NC}"
+
+# Check if any files we'll modify are dirty
+DIRTY_FILES=$(git status --porcelain 2>/dev/null | grep -E "^\s*M\s+(.*/)?(package\.json|jsr\.json|CHANGELOG\.md|pnpm-lock\.yaml)$" || true)
+
+if [[ -n "$DIRTY_FILES" ]]; then
+  echo -e "${RED}✗ Working directory has uncommitted changes${NC}"
+  echo ""
+  echo "The following files have uncommitted changes:"
+  echo "$DIRTY_FILES" | while read -r line; do
+    echo -e "  ${YELLOW}${line}${NC}"
+  done
+  echo ""
+  echo -e "${BOLD}Please commit or stash your changes first:${NC}"
+  echo -e "  ${BLUE}git add . && git commit -m 'Your message'${NC}"
+  echo -e "  ${BLUE}# or${NC}"
+  echo -e "  ${BLUE}git stash${NC}"
+  exit 1
+fi
+
+echo -e "${GREEN}✓ Working directory clean${NC}"
+echo ""
+
+# ------------------------------------------------------------------
+# Check for unreleased changesets
+# ------------------------------------------------------------------
+echo -e "${BOLD}Checking for changesets...${NC}"
+
+if ! pnpm exec changeset status 2>/dev/null | grep -q -E "(packages will be released|Packages to be bumped)" ; then
+  echo -e "${RED}✗ No unreleased changesets found${NC}"
+  echo ""
+  echo "Create a changeset first:"
+  echo -e "  ${BLUE}pnpm exec changeset${NC}"
+  exit 1
+fi
+echo -e "${GREEN}✓ Found unreleased changesets${NC}"
+echo ""
+
+# ------------------------------------------------------------------
+# Create snapshot versions
+# ------------------------------------------------------------------
+echo -e "${BOLD}Creating snapshot versions...${NC}"
+pnpm exec changeset version --snapshot "$SNAPSHOT" > /dev/null 2>&1
+"$ROOT/scripts/update-jsr-json-version.sh" > /dev/null 2>&1
+echo -e "${GREEN}✓ Versions updated${NC}"
+echo ""
+
+# ------------------------------------------------------------------
+# Collect packages to publish
+# ------------------------------------------------------------------
+echo -e "${BOLD}Packages to publish:${NC}"
+echo ""
+
+# Collect npm packages
+NPM_PKGS=()
+while IFS= read -r -d '' file; do
+  PKG_INFO=$(jq -r 'select(.version | test("^0\\.0\\.0-")) | .name + "@" + .version' "$file" 2>/dev/null)
+  if [[ -n "$PKG_INFO" ]]; then
+    NPM_PKGS+=("$PKG_INFO")
+    NAME=$(echo "$PKG_INFO" | cut -d'@' -f1-2)
+    VERSION=$(echo "$PKG_INFO" | rev | cut -d'@' -f1 | rev)
+    echo -e "  ${GREEN}✓${NC} ${BOLD}$NAME${NC}"
+    echo -e "    ${VERSION}"
+  fi
+done < <(find pkgs -name package.json -not -path "*/node_modules/*" -print0)
+
+# Check for JSR package (edge-worker)
+if [[ -f pkgs/edge-worker/jsr.json ]]; then
+  JSR_VERSION=$(jq -r '.version' pkgs/edge-worker/jsr.json)
+  if [[ "$JSR_VERSION" =~ ^0\.0\.0- ]]; then
+    echo -e "  ${GREEN}✓${NC} ${BOLD}@pgflow/edge-worker${NC} (JSR)"
+    echo -e "    ${JSR_VERSION}"
+  fi
+fi
+
+echo ""
+
+# Check if we have anything to publish
+if [[ ${#NPM_PKGS[@]} -eq 0 ]]; then
+  echo -e "${RED}No packages to publish${NC}"
+  echo "This might happen if changesets didn't create any versions."
+  exit 1
+fi
+
+# ------------------------------------------------------------------
+# Dry-run mode - exit here
+# ------------------------------------------------------------------
+if [[ "$DRY_RUN" == "true" ]]; then
+  echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${YELLOW}DRY RUN COMPLETE${NC} - No packages were published"
+  echo ""
+  echo -e "To publish for real, run without ${BOLD}--dry-run${NC}:"
+  echo -e "  ${BLUE}$0 $TAG${NC}"
+  exit 0
+fi
+
+# ------------------------------------------------------------------
+# Confirmation prompt (unless --yes)
+# ------------------------------------------------------------------
+if [[ "$SKIP_CONFIRMATION" != "true" ]]; then
+  echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${BOLD}Ready to publish these packages?${NC}"
+  echo ""
+  echo -e "This will publish to:"
+  echo -e "  • npm registry with ${BOLD}snapshot${NC} tag"
+  if [[ -f pkgs/edge-worker/jsr.json ]]; then
+    echo -e "  • JSR registry"
+  fi
+  echo ""
+  read -p "Publish? (y/N) " -n 1 -r
+  echo ""
+
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo -e "${YELLOW}Publishing cancelled${NC}"
+    exit 0
+  fi
+fi
+
+# ------------------------------------------------------------------
+# Publish packages
+# ------------------------------------------------------------------
+echo ""
+echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${BOLD}Publishing packages...${NC}"
+echo ""
+
+# Publish to npm
+echo -e "${BOLD}Publishing to npm...${NC}"
+NPM_OUTPUT=$(pnpm exec changeset publish --tag snapshot 2>&1)
+echo "$NPM_OUTPUT"
+if echo "$NPM_OUTPUT" | grep -q "Published" ; then
+  echo -e "${GREEN}✓ npm packages published${NC}"
+else
+  echo -e "${RED}✗ npm publish may have failed - check output above${NC}"
+fi
+
+# Publish to JSR
+if [[ -f pkgs/edge-worker/jsr.json ]]; then
+  echo ""
+  echo -e "${BOLD}Publishing to JSR...${NC}"
+  if ( cd pkgs/edge-worker && pnpm jsr publish --allow-slow-types --allow-dirty ) ; then
+    echo -e "${GREEN}✓ JSR package published${NC}"
+  else
+    echo -e "${YELLOW}⚠ JSR publish failed${NC}"
+  fi
+fi
+
+# ------------------------------------------------------------------
+# Display installation instructions
+# ------------------------------------------------------------------
+echo ""
+echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${GREEN}✅ Snapshot release complete!${NC}"
+echo ""
+echo -e "${BOLD}Install with:${NC}"
+echo ""
+
+# NPM packages
+for PKG in "${NPM_PKGS[@]}"; do
+  [[ $PKG == "@pgflow/edge-worker"* ]] && continue
+  echo -e "${BLUE}npm install $PKG${NC}"
 done
 
+# JSR package
 if [[ -f pkgs/edge-worker/jsr.json ]]; then
-  EDGE_VER=$(jq -r '.version' pkgs/edge-worker/jsr.json)
+  JSR_VERSION=$(jq -r '.version' pkgs/edge-worker/jsr.json)
   echo ""
-  echo "# JSR (for Deno/Supabase Edge Functions):"
-  echo "import { EdgeWorker } from \"jsr:@pgflow/edge-worker@$EDGE_VER\""
+  echo -e "${BOLD}For Deno/Supabase Edge Functions:${NC}"
+  echo -e "${BLUE}import { EdgeWorker } from \"jsr:@pgflow/edge-worker@$JSR_VERSION\"${NC}"
 fi
+
+echo ""
