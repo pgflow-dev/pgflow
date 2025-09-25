@@ -24,16 +24,11 @@ NC='\033[0m' # No Color
 # Parse arguments
 # ------------------------------------------------------------------
 TAG=""
-DRY_RUN=false
 SKIP_CONFIRMATION=false
 NO_CLEANUP=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --dry-run)
-      DRY_RUN=true
-      shift
-      ;;
     --yes|-y)
       SKIP_CONFIRMATION=true
       shift
@@ -43,7 +38,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --help)
-      echo "Usage: $0 [tag] [--dry-run] [--yes] [--no-cleanup]"
+      echo "Usage: $0 [tag] [--yes] [--no-cleanup]"
       echo ""
       echo "Create and publish snapshot releases for testing"
       echo ""
@@ -51,7 +46,6 @@ while [[ $# -gt 0 ]]; do
       echo "  tag              Custom snapshot tag (default: branch name)"
       echo ""
       echo "Options:"
-      echo "  --dry-run        Preview only, don't publish"
       echo "  --yes, -y        Skip confirmation prompt"
       echo "  --no-cleanup     Don't restore files after publishing"
       echo "  --help           Show this help message"
@@ -59,7 +53,6 @@ while [[ $# -gt 0 ]]; do
       echo "Examples:"
       echo "  $0                     # Use branch name as tag"
       echo "  $0 my-feature          # Custom tag"
-      echo "  $0 my-feature --dry-run  # Preview only"
       echo "  $0 my-feature --yes    # Skip confirmation"
       exit 0
       ;;
@@ -104,7 +97,7 @@ if [[ "$NO_CLEANUP" != "true" ]]; then
         git restore --source=HEAD --worktree --staged \
         pnpm-lock.yaml 2>/dev/null || true; \
         git restore --source=HEAD --worktree --staged \
-        .changeset/pre.json 2>/dev/null || true' EXIT
+        .changeset/*.md .changeset/pre.json 2>/dev/null || true' EXIT
 fi
 
 # ------------------------------------------------------------------
@@ -208,38 +201,43 @@ if [[ ${#NPM_PKGS[@]} -eq 0 ]]; then
   exit 1
 fi
 
-# ------------------------------------------------------------------
-# Dry-run mode - exit here
-# ------------------------------------------------------------------
-if [[ "$DRY_RUN" == "true" ]]; then
-  echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-  echo -e "${YELLOW}DRY RUN COMPLETE${NC} - No packages were published"
-  echo ""
-  echo -e "To publish for real, run without ${BOLD}--dry-run${NC}:"
-  echo -e "  ${BLUE}$0 $TAG${NC}"
-  exit 0
-fi
 
 # ------------------------------------------------------------------
 # Confirmation prompt (unless --yes)
 # ------------------------------------------------------------------
 if [[ "$SKIP_CONFIRMATION" != "true" ]]; then
   echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-  echo -e "${BOLD}Ready to publish these packages?${NC}"
+  echo -e "${BOLD}Ready to build and publish these packages?${NC}"
   echo ""
-  echo -e "This will publish to:"
-  echo -e "  • npm registry with ${BOLD}snapshot${NC} tag"
+  echo -e "This will:"
+  echo -e "  1. Build all packages (${BLUE}pnpm nx run-many -t build${NC})"
+  echo -e "  2. Publish to npm registry with ${BOLD}snapshot${NC} tag"
   if [[ -f pkgs/edge-worker/jsr.json ]]; then
-    echo -e "  • JSR registry"
+    echo -e "  3. Publish edge-worker to JSR registry"
   fi
   echo ""
-  read -p "Publish? (y/N) " -n 1 -r
+  read -p "Continue? (y/N) " -n 1 -r
   echo ""
 
   if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo -e "${YELLOW}Publishing cancelled${NC}"
+    echo -e "${YELLOW}Cancelled${NC}"
     exit 0
   fi
+fi
+
+# ------------------------------------------------------------------
+# Build packages
+# ------------------------------------------------------------------
+echo ""
+echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${BOLD}Building packages...${NC}"
+echo ""
+
+if pnpm nx run-many -t build --exclude=playground ; then
+  echo -e "${GREEN}✓ Packages built successfully${NC}"
+else
+  echo -e "${RED}✗ Build failed${NC}"
+  exit 1
 fi
 
 # ------------------------------------------------------------------
