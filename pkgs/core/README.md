@@ -94,6 +94,106 @@ The SQL Core handles the workflow lifecycle through these key operations:
 
 <a href="./assets/flow-lifecycle.svg"><img src="./assets/flow-lifecycle.svg" alt="Flow Lifecycle" width="25%" height="25%"></a>
 
+## Step Types
+
+pgflow supports two fundamental step types that control how tasks are created and executed:
+
+### Single Steps (Default)
+
+Single steps are the standard step type where each step creates exactly one task when started. These steps process their input as a whole and return a single output value.
+
+```sql
+-- Regular single step definition
+SELECT pgflow.add_step('my_flow', 'process_data');
+```
+
+### Map Steps
+
+Map steps enable parallel processing of arrays by automatically creating multiple tasks - one for each array element. The system handles task distribution, parallel execution, and output aggregation transparently.
+
+```sql
+-- Map step definition (step_type => 'map')
+SELECT pgflow.add_step(
+  flow_slug => 'my_flow',
+  step_slug => 'process_items',
+  deps_slugs => ARRAY['fetch_items'],
+  step_type => 'map'
+);
+```
+
+#### Key Characteristics
+
+- **Multiple Task Creation**: The SQL core creates N tasks for a map step (one per array element), unlike single steps which create one task
+- **Element Distribution**: The SQL core distributes individual array elements to tasks based on `task_index`
+- **Output Aggregation**: The SQL core aggregates task outputs back into an array for dependent steps
+- **Constraint**: Map steps can have at most one dependency (which must return an array), or zero dependencies (then flow input must be an array)
+
+#### Map Step Execution Flow
+
+1. **Array Input Validation**: The SQL core validates that the input is an array
+2. **Task Creation**: The SQL core creates N tasks with indices 0 to N-1
+3. **Element Distribution**: The SQL core assigns `array[task_index]` as input to each task
+4. **Parallel Execution**: Edge workers execute tasks independently in parallel
+5. **Output Collection**: The SQL core aggregates outputs preserving array order
+6. **Dependent Activation**: The SQL core passes the aggregated array to dependent steps
+
+#### Root Map vs Dependent Map
+
+**Root Map Steps** process the flow's input array directly:
+```sql
+-- Root map: no dependencies, processes flow input
+SELECT pgflow.add_step(
+  flow_slug => 'batch_processor',
+  step_slug => 'process_each',
+  step_type => 'map'
+);
+
+-- Starting the flow with array input
+SELECT pgflow.start_flow(
+  flow_slug => 'batch_processor',
+  input => '[1, 2, 3, 4, 5]'::jsonb
+);
+```
+
+**Dependent Map Steps** process another step's array output:
+```sql
+-- Dependent map: processes the array from 'fetch_items'
+SELECT pgflow.add_step(
+  flow_slug => 'data_pipeline',
+  step_slug => 'transform_each',
+  deps_slugs => ARRAY['fetch_items'],
+  step_type => 'map'
+);
+```
+
+#### Edge Cases and Special Behaviors
+
+1. **Empty Array Cascade**: When a map step receives an empty array (`[]`):
+   - The SQL core completes it immediately without creating tasks
+   - The completed map step outputs an empty array
+   - Any dependent map steps also receive empty arrays and complete immediately
+   - This cascades through the entire chain of map steps in a single transaction
+   - Example: `[] → map1 → [] → map2 → [] → map3 → []` all complete together
+
+2. **NULL Values**: NULL array elements are preserved and distributed to their respective tasks
+
+3. **Non-Array Input**: The SQL core fails the step when input is not an array
+
+4. **Type Violations**: When a single step outputs non-array data to a map step, the SQL core fails the entire run (stores the invalid output for debugging, archives all queued messages, prevents orphaned tasks)
+
+#### Implementation Details
+
+Map steps utilize several database fields for state management:
+- `initial_tasks`: Number of tasks to create (NULL until array size is known)
+- `remaining_tasks`: Tracks incomplete tasks for the step
+- `task_index`: Identifies which array element each task processes
+- `step_type`: Column value 'map' triggers map behavior
+
+The aggregation process ensures:
+- **Order Preservation**: Task outputs maintain array element ordering
+- **NULL Handling**: NULL outputs are included in the aggregated array
+- **Atomicity**: Aggregation occurs within the same transaction as task completion
+
 ## Example flow and its life
 
 Let's walk through creating and running a workflow that fetches a website,
@@ -274,81 +374,17 @@ delay = base_delay * (2 ^ attempts_count)
 
 Timeouts are enforced by setting the message visibility timeout to the step's timeout value plus a small buffer. If a worker doesn't acknowledge completion or failure within this period, the task becomes visible again and can be retried.
 
-## TypeScript Flow DSL
+## Workflow Definition with TypeScript DSL
 
-> [!NOTE]
-> TypeScript Flow DSL is a Work In Progress and is not ready yet!
+The SQL Core is the DAG orchestration engine that handles dependency resolution, step state management, and task spawning. However, workflows are defined using the TypeScript Flow DSL, which compiles user intent into the SQL primitives that populate the definition tables (`flows`, `steps`, `deps`).
 
-### Overview
+See the [@pgflow/dsl package](../dsl/README.md) for complete documentation on:
+- Expressing workflows with type-safe method chaining
+- Step types (`.step()`, `.array()`, `.map()`)
+- Compilation to SQL migrations
+- Type inference and handler context
 
-While the SQL Core engine handles workflow definitions and state management, the primary way to define and work with your workflow logic is via the Flow DSL in TypeScript. This DSL offers a fluent API that makes it straightforward to outline the steps in your flow with full type safety.
-
-### Type Inference System
-
-The most powerful feature of the Flow DSL is its **automatic type inference system**:
-
-1. You only need to annotate the initial Flow input type
-2. The return type of each step is automatically inferred from your handler function
-3. These return types become available in the payload of dependent steps
-4. The TypeScript compiler builds a complete type graph matching your workflow DAG
-
-This means you get full IDE autocompletion and type checking throughout your workflow without manual type annotations.
-
-### Basic Example
-
-Here's an example that matches our website analysis workflow:
-
-```ts
-// Provide a type for the input of the Flow
-type Input = {
-  url: string;
-};
-
-const AnalyzeWebsite = new Flow<Input>({
-  slug: 'analyze_website',
-  maxAttempts: 3,
-  baseDelay: 5,
-  timeout: 10,
-})
-  .step(
-    { slug: 'website' },
-    async (input) => await scrapeWebsite(input.run.url)
-  )
-  .step(
-    { slug: 'sentiment', dependsOn: ['website'], timeout: 30, maxAttempts: 5 },
-    async (input) => await analyzeSentiment(input.website.content)
-  )
-  .step(
-    { slug: 'summary', dependsOn: ['website'] },
-    async (input) => await summarizeWithAI(input.website.content)
-  )
-  .step(
-    { slug: 'saveToDb', dependsOn: ['sentiment', 'summary'] },
-    async (input) =>
-      await saveToDb({
-        websiteUrl: input.run.url,
-        sentiment: input.sentiment.score,
-        summary: input.summary,
-      }).status
-  );
-```
-
-### How Payload Types Are Built
-
-The payload object for each step is constructed dynamically based on:
-
-1. **The `run` property**: Always contains the original workflow input
-2. **Dependency outputs**: Each dependency's output is available under a key matching the dependency's ID
-3. **DAG structure**: Only outputs from direct dependencies are included in the payload
-
-This means your step handlers receive exactly the data they need, properly typed, without any manual type declarations beyond the initial Flow input type.
-
-### Benefits of Automatic Type Inference
-
-- **Refactoring safety**: Change a step's output, and TypeScript will flag all dependent steps that need updates
-- **Discoverability**: IDE autocompletion shows exactly what data is available in each step
-- **Error prevention**: Catch typos and type mismatches at compile time, not runtime
-- **Documentation**: The types themselves serve as living documentation of your workflow's data flow
+The SQL Core executes these compiled definitions, managing when steps are ready, how many tasks to create (1 for single steps, N for map steps), and how to aggregate results.
 
 ## Data Flow
 
@@ -382,6 +418,46 @@ The `saveToDb` step depends on both `sentiment` and `summary`:
   "run": { "url": "https://example.com" },
   "sentiment": { "score": 0.85, "label": "positive" },
   "summary": "This website discusses various topics related to technology and innovation."
+}
+```
+
+### Map Step Handler Inputs
+
+Map step tasks receive a fundamentally different input structure than single step tasks. Instead of receiving an object with `run` and dependency keys, **map tasks receive only their assigned array element**:
+
+#### Example: Processing user IDs
+
+```json
+// Flow input (for root map) or dependency output:
+["user123", "user456", "user789"]
+
+// What each map task receives:
+// Task 0: "user123"
+// Task 1: "user456"
+// Task 2: "user789"
+
+// NOT this:
+// { "run": {...}, "dependency": [...] }
+```
+
+This means:
+- Map handlers process individual elements in isolation
+- Map handlers cannot access the original flow input (`run`)
+- Map handlers cannot access other dependencies
+- Map handlers focus solely on transforming their assigned element
+
+#### Map Step Outputs Become Arrays
+
+When a step depends on a map step, it receives the aggregated array output:
+
+```json
+// If 'process_users' is a map step that processed ["user1", "user2"]
+// and output [{"name": "Alice"}, {"name": "Bob"}]
+
+// A step depending on 'process_users' receives:
+{
+  "run": { /* original flow input */ },
+  "process_users": [{"name": "Alice"}, {"name": "Bob"}]  // Full array
 }
 ```
 

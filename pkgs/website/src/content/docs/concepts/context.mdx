@@ -162,19 +162,26 @@ interface StepTaskRecord<TFlow> {
   flow_slug: string;    // Slug identifier of the flow
   run_id: string;       // UUID of the current flow run
   step_slug: string;    // Slug identifier of the current step
+  task_index: number;   // Task index (0 for single steps, 0..N-1 for map steps)
   input: StepInput;     // Typed input for this specific step (inferred from flow)
   msg_id: number;       // pgmq message ID
 }
 ```
 
-```typescript "ctx.stepTask" ".step_slug" ".run_id" ".flow_slug" ".msg_id"
+```typescript "ctx.stepTask" ".step_slug" ".run_id" ".flow_slug" ".task_index" ".msg_id"
 const MyFlow = new Flow({ slug: 'my_flow' })
   .step({ slug: 'process' }, async (input, ctx) => {
     console.log(`Executing step: ${ctx.stepTask.step_slug}`);
     console.log(`For run: ${ctx.stepTask.run_id}`);
     console.log(`Flow: ${ctx.stepTask.flow_slug}`);
+    console.log(`Task index: ${ctx.stepTask.task_index}`); // 0 for single steps
     console.log(`Message ID: ${ctx.stepTask.msg_id}`);
     // ctx.stepTask.input is the same as the input parameter
+  })
+  .map({ slug: 'processItems', array: 'items' }, async (item, ctx) => {
+    // For map steps, task_index indicates which array element
+    console.log(`Processing item ${ctx.stepTask.task_index} of array`);
+    return processItem(item);
   });
 ```
 
