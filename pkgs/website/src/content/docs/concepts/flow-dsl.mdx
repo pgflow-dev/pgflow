@@ -109,6 +109,84 @@ The type system automatically:
 TypeScript provides full autocompletion for both `input.run` properties and dependency outputs, allowing you to confidently access data without runtime errors.
 :::
 
+## Step Methods
+
+The Flow DSL provides three methods for defining steps in your workflow:
+
+### `.step()` - Regular Steps
+
+The standard method for adding steps to a flow. Each step processes input and returns output.
+
+```typescript
+.step(
+  { slug: 'process', dependsOn: ['previous'] },
+  async (input) => {
+    // Access input.run and input.previous
+    return { result: 'processed' };
+  }
+)
+```
+
+### `.array()` - Array-Returning Steps
+
+A semantic wrapper around `.step()` that enforces array return types. Useful for data collection that will be processed by map steps.
+
+```typescript
+// Fetch an array of items
+.array(
+  { slug: 'fetch_items' },
+  async () => ['item1', 'item2', 'item3']
+)
+
+// With dependencies
+.array(
+  { slug: 'combine', dependsOn: ['source1', 'source2'] },
+  async (input) => [...input.source1, ...input.source2]
+)
+```
+
+### `.map()` - Parallel Array Processing
+
+Processes arrays element-by-element in parallel. Unlike regular steps, map handlers receive individual elements instead of the full input object.
+
+```typescript
+// Root map: processes flow input array directly
+new Flow<string[]>({ slug: 'batch_processor' })
+  .map(
+    { slug: 'uppercase' },  // No 'array' property
+    (item) => item.toUpperCase()
+  );
+
+// Dependent map: processes another step's array output
+new Flow<{}>({ slug: 'data_pipeline' })
+  .array({ slug: 'fetch_ids' }, () => ['id1', 'id2', 'id3'])
+  .map(
+    { slug: 'fetch_details', array: 'fetch_ids' },
+    async (id) => await fetchUserDetails(id)
+  )
+  .map(
+    { slug: 'enrich', array: 'fetch_details' },
+    async (user) => ({ ...user, enriched: true })
+  );
+```
+
+**Key Characteristics of Map Steps:**
+- **Parallel Execution**: Each array element spawns a separate task
+- **Different Handler Signature**: `(item) => result` instead of `(input) => result`
+- **Automatic Aggregation**: Outputs are collected back into an array
+- **Single Dependency**: Can only depend on one array source
+- **Two Modes**: Root map (processes flow input) or dependent map (processes step output)
+
+:::note[When to Use Map Steps]
+Use `.map()` when you need to:
+- Process multiple items independently in parallel
+- Transform each element of an array
+- Make batch API calls or database queries
+- Apply the same operation to a list of items
+
+For detailed information about how map steps work internally, see [Array and Map Steps](/concepts/array-and-map-steps/).
+:::
+
 ## Task Implementation
 
 The Flow DSL encourages a functional programming approach to tasks that are reusable across different flows.
