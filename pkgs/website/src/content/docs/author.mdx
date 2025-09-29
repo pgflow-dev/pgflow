@@ -1,0 +1,101 @@
+---
+title: Chat with Wojciech Majewski
+description: Creator of pgflow - dead-simple workflow orchestration for Supabase. 18+ years full stack experience, AI workflow specialist.
+template: splash
+hero:
+  title: Chat with the author
+  tagline: "Creator of pgflow - dead-simple workflow orchestration for Supabase.<br/>Build LLM chains, RAG pipelines, and AI workflows you can actually debug."
+  image:
+    file: ../../assets/jumski-avatar.jpg
+  actions:
+    - text: Discuss your use case
+      link: https://cal.com/pgflow/intro-15
+      icon: right-arrow
+      variant: primary
+    - text: hello@pgflow.dev
+      link: mailto:hello@pgflow.dev
+      variant: minimal
+      icon: email
+editUrl: false
+tableOfContents: false
+lastUpdated: false
+head:
+  - tag: style
+    content: |
+      .hero img {
+        border-radius: 50% !important;
+        animation: none !important;
+      }
+      .cta-section {
+        text-align: center;
+        margin: 2rem 0;
+      }
+---
+
+import { LinkButton, Card, CardGrid } from '@astrojs/starlight/components';
+
+## Hi, I'm Wojciech Majewski
+
+Creator of pgflow with 18+ years architecting production systems. I'm building workflow orchestration that lives entirely in your Supabase database - no external orchestrators or infrastructure.
+
+Currently working with teams to make their AI workflows observable, deterministic, and easy to reason about - all without leaving Supabase.
+
+### Why pgflow
+
+⚡ **\<100ms job startup** - Near-instant execution
+
+🔌 **Run from anywhere** - SQL (triggers, pg_cron), browser, or RPC
+
+📡 **Realtime progress tracking** - Live updates via websocket
+
+👁️ **Full observability** - Complete history in SQL tables
+
+✨ **No boilerplate** - Skip the cron/queues/Functions plumbing
+
+📦 **Zero new infrastructure** - Everything in Supabase
+
+## Let's explore
+
+<CardGrid>
+<Card title="pgflow for AI Workflows" icon="rocket">
+Evaluate if pgflow fits your LLM chains, RAG pipelines, or AI data processing. Get architectural guidance for production deployment.
+</Card>
+
+<Card title="Design Partnership" icon="puzzle">
+Shape pgflow's roadmap for your use case. Early adopters get dedicated support and priority feature development.
+</Card>
+
+<Card title="Supabase + AI Architecture" icon="seti:db">
+Beyond pgflow: Full-stack Supabase consulting for AI applications and database-first architectures.
+</Card>
+
+<Card title="Proof of Concept" icon="approve-check-circle">
+Build a working pgflow prototype for your specific use case. De-risk adoption with a real implementation.
+</Card>
+</CardGrid>
+
+## You're a perfect fit if you
+
+- Already use Supabase for your application
+- Have AI/LLM workloads that need orchestration
+- Want everything in PostgreSQL (no external services)
+- Need to see exactly where and why workflows fail
+- Understand this is early but powerful software
+
+## Availability
+
+Working with a select few teams on pgflow integration. Limited bandwidth for new projects.
+
+## Let's see if we're aligned
+
+15-minute technical discussion. We'll quickly figure out if pgflow fits your needs.
+
+<div class="cta-section">
+  <LinkButton href="https://cal.com/pgflow/intro-15" variant="primary" icon="right-arrow">
+    Discuss your use case
+  </LinkButton>
+
+  <LinkButton href="https://pgflow.dev/discord/" variant="minimal" icon="comment">
+    Join Discord
+  </LinkButton>
+</div>

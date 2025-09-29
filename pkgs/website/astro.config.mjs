@@ -50,8 +50,11 @@ export default defineConfig({
   },
 
   redirects: {
+    // Route rename
+    '/hire/': '/author/',
+
     // Existing redirects
-    '/edge-worker/how-to/run-on-hosted-supabase':
+    '/edge-worker/how-to/run-on-hosted-supabase/':
       '/how-to/deploy-to-supabasecom/',
     '/edge-worker/faq/': '/faq/',
     '/edge-worker/how-to/': '/faq/',
@@ -134,11 +137,11 @@ export default defineConfig({
           tag: 'script',
           content: `
             document.addEventListener('DOMContentLoaded', function() {
-              if (!window.location.pathname.startsWith('/hire')) {
+              if (!window.location.pathname.startsWith('/author')) {
                 const sticker = document.createElement('a');
-                sticker.href = '/hire/';
+                sticker.href = '/author/';
                 sticker.className = 'hire-sticker';
-                sticker.textContent = 'Hire Author';
+                sticker.textContent = 'Chat with Author';
                 document.body.appendChild(sticker);
 
                 // Trigger one-time attention nudge after 5 seconds
@@ -298,7 +301,7 @@ export default defineConfig({
             },
           ],
           {
-            exclude: ['/hire', '/demos'],
+            exclude: ['/author', '/demos'],
             topics: {
               news: ['/news', '/news/**/*'],
             },

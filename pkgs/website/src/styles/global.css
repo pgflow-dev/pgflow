@@ -269,7 +269,7 @@ svg .secondary {
 }
 
 .hire-sticker::before {
-  content: '🤝';
+  content: '👋';
   font-size: 1.2em;
   margin-right: 0.5em;
 }
