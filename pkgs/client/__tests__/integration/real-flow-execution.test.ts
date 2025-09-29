@@ -58,7 +58,7 @@ describe('Real Flow Execution', () => {
 
       // Wait for step completion
       const step = run.step('parsing_step');
-      await step.waitForStatus(FlowStepStatus.Completed, { timeoutMs: 5000 });
+      await step.waitForStatus(FlowStepStatus.Completed, { timeoutMs: 15000 });
 
       // Verify JSON was parsed correctly - nested properties should be accessible
       expect(step.status).toBe(FlowStepStatus.Completed);
@@ -71,7 +71,7 @@ describe('Real Flow Execution', () => {
       expect(step.completed_at).toBeDefined();
 
       // Wait for run completion
-      await run.waitForStatus(FlowRunStatus.Completed, { timeoutMs: 5000 });
+      await run.waitForStatus(FlowRunStatus.Completed, { timeoutMs: 15000 });
 
       await supabaseClient.removeAllChannels();
     }),

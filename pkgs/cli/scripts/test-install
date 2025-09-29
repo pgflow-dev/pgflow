@@ -2,34 +2,38 @@
 set -e
 
 # Script to test pgflow CLI install functionality
-# This simulates the test:e2e:install target from project.json
+# Uses a temp directory to avoid conflicts with other tests
 
 cd "$(dirname "$0")/.."
-ROOT_DIR=$(pwd)
+CLI_DIR=$(pwd)
+WORKSPACE_ROOT=$(cd "${CLI_DIR}/../.." && pwd)
 
 echo "🧪 Testing pgflow install functionality"
 
-# Clean up any existing supabase directory
-echo "🧹 Cleaning up old test directory"
-rm -rf supabase/
+# Create temp directory for testing
+TEST_DIR=$(mktemp -d)
+echo "📁 Created test directory: ${TEST_DIR}"
 
-# Initialize a fresh Supabase project
+# Cleanup function
+cleanup() {
+  echo "🧹 Cleaning up..."
+  rm -rf "${TEST_DIR}"
+}
+
+# Register cleanup on exit
+trap cleanup EXIT
+
+# Initialize a fresh Supabase project in temp directory
 echo "🏗️ Creating new Supabase project"
-npx -y supabase@latest init --force --with-vscode-settings --with-intellij-settings
+pnpm -C "${CLI_DIR}" exec supabase init --force --with-vscode-settings --with-intellij-settings --workdir "${TEST_DIR}"
 
 # Install pgflow with our CLI
 echo "📦 Installing pgflow with CLI"
-node dist/index.js install --supabase-path supabase/ --yes
+(cd "${CLI_DIR}" && PATH="${WORKSPACE_ROOT}/node_modules/.bin:$PATH" node dist/index.js install --supabase-path "${TEST_DIR}/supabase" --yes)
 
 # Verify installation succeeded
 echo "✅ Verifying pgflow installation"
-"$ROOT_DIR/scripts/assert-pgflow-installed"
+"${CLI_DIR}/scripts/assert-pgflow-installed" "${TEST_DIR}/supabase"
 
 # Show success message
 echo "✨ Installation test complete"
-
-# Optional: Test for duplicates by running install again
-if [ "$1" == "--test-duplicates" ]; then
-  echo "🔄 Testing duplicate installation prevention"
-  node dist/index.js install --supabase-path supabase/ --yes
-fi

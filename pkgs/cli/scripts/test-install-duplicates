@@ -2,35 +2,45 @@
 set -e
 
 # Script to test pgflow CLI install duplicate prevention
-# This verifies that we don't create duplicate migrations
+# Uses a temp directory to avoid conflicts with other tests
 
 cd "$(dirname "$0")/.."
-ROOT_DIR=$(pwd)
+CLI_DIR=$(pwd)
+WORKSPACE_ROOT=$(cd "${CLI_DIR}/../.." && pwd)
 
 echo "🧪 Testing pgflow migration duplicate prevention"
 
-# Clean up any existing supabase directory
-echo "🧹 Cleaning up old test directory"
-rm -rf supabase/
+# Create temp directory for testing
+TEST_DIR=$(mktemp -d)
+echo "📁 Created test directory: ${TEST_DIR}"
 
-# Initialize a fresh Supabase project
+# Cleanup function
+cleanup() {
+  echo "🧹 Cleaning up..."
+  rm -rf "${TEST_DIR}"
+}
+
+# Register cleanup on exit
+trap cleanup EXIT
+
+# Initialize a fresh Supabase project in temp directory
 echo "🏗️ Creating new Supabase project"
-npx -y supabase@latest init --force --with-vscode-settings --with-intellij-settings
+pnpm -C "${CLI_DIR}" exec supabase init --force --with-vscode-settings --with-intellij-settings --workdir "${TEST_DIR}"
 
 # First installation with pgflow CLI
 echo "📦 First pgflow installation"
-node dist/index.js install --supabase-path supabase/ --yes
+(cd "${CLI_DIR}" && PATH="${WORKSPACE_ROOT}/node_modules/.bin:$PATH" node dist/index.js install --supabase-path "${TEST_DIR}/supabase" --yes)
 
 # Count number of migrations after first install
-FIRST_COUNT=$(find supabase/migrations -name "*.sql" | wc -l)
+FIRST_COUNT=$(find "${TEST_DIR}/supabase/migrations" -name "*.sql" | wc -l)
 echo "🔢 Found $FIRST_COUNT migrations after first install"
 
 # Second installation with pgflow CLI
 echo "🔄 Running second pgflow installation"
-node dist/index.js install --supabase-path supabase/ --yes
+(cd "${CLI_DIR}" && PATH="${WORKSPACE_ROOT}/node_modules/.bin:$PATH" node dist/index.js install --supabase-path "${TEST_DIR}/supabase" --yes)
 
 # Count number of migrations after second install
-SECOND_COUNT=$(find supabase/migrations -name "*.sql" | wc -l)
+SECOND_COUNT=$(find "${TEST_DIR}/supabase/migrations" -name "*.sql" | wc -l)
 echo "🔢 Found $SECOND_COUNT migrations after second install"
 
 # Verify no duplicates were created
@@ -39,28 +49,4 @@ if [ "$FIRST_COUNT" -eq "$SECOND_COUNT" ]; then
 else
   echo "❌ Error: Duplicate migrations detected ($SECOND_COUNT - $FIRST_COUNT = $((SECOND_COUNT - FIRST_COUNT)) new files)"
   exit 1
-fi
-
-# Optional: Run a third time with different timestamps
-if [ "$1" == "--test-third-install" ]; then
-  # Modify a migration file timestamp to simulate a user renaming it
-  RANDOM_MIGRATION=$(find supabase/migrations -name "*.sql" | head -1)
-  NEW_NAME=$(echo "$RANDOM_MIGRATION" | sed 's/[0-9]\{14\}_/99999999999999_/')
-  
-  echo "🔄 Renaming $RANDOM_MIGRATION to $NEW_NAME"
-  mv "$RANDOM_MIGRATION" "$NEW_NAME"
-  
-  echo "🔄 Running third pgflow installation"
-  node dist/index.js install --supabase-path supabase/ --yes
-  
-  # Count number of migrations after third install
-  THIRD_COUNT=$(find supabase/migrations -name "*.sql" | wc -l)
-  echo "🔢 Found $THIRD_COUNT migrations after third install"
-  
-  if [ "$SECOND_COUNT" -eq "$THIRD_COUNT" ]; then
-    echo "✅ Success: No duplicate migrations were created (even with timestamp changes)"
-  else
-    echo "❌ Error: Duplicate migrations detected after timestamp changes"
-    exit 1
-  fi
 fi

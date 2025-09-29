@@ -1,2 +1,14 @@
-supabase/
+# Git ignore vendor directory but keep Supabase structure
+supabase/functions/_vendor/
+
+# Git ignore migrations (copied from core during sync-e2e-deps)
+supabase/migrations/*
+
+# Git ignore generated files
+supabase/.temp/
+supabase/.branches/
+
+# Keep everything else committed
+
 deno.lock
+supabase/seed.sql

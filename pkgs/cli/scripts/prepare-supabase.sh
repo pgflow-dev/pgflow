@@ -1,5 +1,5 @@
 #!/bin/bash
-# Prepares Supabase for edge-worker package by copying migrations and seed from core.
+# Prepares Supabase for cli package by copying migrations and seed from core.
 # Called automatically by scripts/supabase-start.sh before starting Supabase.
 
 set -e
@@ -7,7 +7,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PKG_DIR="$(dirname "$SCRIPT_DIR")"
 
-echo "Preparing Supabase for edge-worker..."
+echo "Preparing Supabase for cli..."
 mkdir -p "$PKG_DIR/supabase/migrations/"
 rm -f "$PKG_DIR/supabase/migrations/"*.sql "$PKG_DIR/supabase/seed.sql"
 cp "$PKG_DIR/../core/supabase/migrations/"*.sql "$PKG_DIR/supabase/migrations/"

@@ -62,9 +62,7 @@
       "cache": false,
       "options": {
         "cwd": "{projectRoot}",
-        "commands": [
-          "../../scripts/supabase-start-locked.sh ."
-        ],
+        "commands": ["../../scripts/supabase-start-locked.sh ."],
         "parallel": false
       }
     },
@@ -125,19 +123,6 @@
         "parallel": false
       }
     },
-    "supabase:functions-serve": {
-      "executor": "nx:run-commands",
-      "local": true,
-      "cache": false,
-      "options": {
-        "cwd": "{projectRoot}",
-        "commands": [
-          "../../scripts/supabase-start-locked.sh .",
-          "supabase functions serve --env-file supabase/functions/.env --no-verify-jwt"
-        ],
-        "parallel": false
-      }
-    },
     "db:ensure": {
       "executor": "nx:run-commands",
       "local": true,
@@ -175,56 +160,27 @@
         "parallel": false
       }
     },
-    "sync-e2e-deps": {
-      "executor": "nx:run-commands",
-      "dependsOn": ["^build"],
-      "local": true,
-      "inputs": ["^production"],
-      "options": {
-        "cwd": "pkgs/edge-worker",
-        "commands": ["./scripts/sync-e2e-deps.sh"],
-        "parallel": false
-      }
-    },
-    "prepare-e2e": {
-      "executor": "nx:run-commands",
-      "dependsOn": ["sync-e2e-deps", "^verify-migrations"],
-      "local": true,
-      "cache": false,
-      "options": {
-        "cwd": "{projectRoot}",
-        "commands": [
-          "mkdir -p supabase/migrations/",
-          "rm -f supabase/migrations/*.sql",
-          "cp ../core/supabase/migrations/*.sql supabase/migrations/",
-          "../../scripts/supabase-start-locked.sh ."
-        ],
-        "parallel": false
-      }
-    },
     "serve:functions:e2e": {
       "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
       "continuous": true,
-      "dependsOn": ["prepare-e2e"],
       "local": true,
       "cache": false,
       "options": {
         "cwd": "pkgs/edge-worker",
-        "commands": [
-          "supabase functions serve --env-file supabase/functions/.env --import-map supabase/functions/deno.json --no-verify-jwt"
-        ],
-        "parallel": false
+        "readyWhen": "Serving functions on http://",
+        "command": "../../scripts/supabase-start-locked.sh . && ./scripts/sync-e2e-deps.sh && supabase functions serve --env-file supabase/functions/.env --import-map supabase/functions/deno.json --no-verify-jwt"
       }
     },
-    "test:e2e": {
+    "e2e": {
       "executor": "nx:run-commands",
-      "dependsOn": ["prepare-e2e", "serve:functions:e2e"],
+      "dependsOn": ["serve:functions:e2e"],
       "local": true,
       "inputs": ["default", "^production"],
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
-          "timeout 30 bash -c 'echo \"Waiting for functions server (port 50321)...\"; until nc -z localhost 50321 2>/dev/null; do sleep 0.5; done; echo \" Ready!\"'",
+          "timeout 120 bash -c 'echo \"Waiting for functions server (port 50321)...\"; until nc -z localhost 50321 2>/dev/null; do sleep 0.5; done; echo \" Ready!\"' || (echo 'TIMEOUT: Functions server not available on port 50321 after 120s' && exit 1)",
           "deno test --config deno.test.json --allow-all --env=supabase/functions/.env tests/e2e/"
         ],
         "parallel": false

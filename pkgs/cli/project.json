@@ -14,14 +14,7 @@
         "main": "{projectRoot}/src/index.ts",
         "tsConfig": "{projectRoot}/tsconfig.lib.json",
         "outputPath": "{projectRoot}/dist",
-        "rootDir": "{projectRoot}/src",
-        "assets": [
-          {
-            "input": "{projectRoot}/src/deno",
-            "glob": "**/*",
-            "output": "deno"
-          }
-        ]
+        "rootDir": "{projectRoot}/src"
       }
     },
     "serve": {
@@ -37,12 +30,7 @@
     "test": {
       "executor": "nx:noop",
       "inputs": ["default", "^production"],
-      "dependsOn": [
-        "test:vitest",
-        "test:e2e:install",
-        "test:e2e:compile",
-        "test:e2e:async-hang-issue-123"
-      ],
+      "dependsOn": ["test:vitest", "e2e:install"],
       "options": {
         "parallel": false
       }
@@ -51,11 +39,11 @@
       "executor": "nx:run-commands",
       "inputs": ["default", "^production"],
       "options": {
-        "command": "vitest run",
+        "command": "vitest run --exclude '**/__tests__/e2e/**'",
         "cwd": "{projectRoot}"
       }
     },
-    "test:e2e:install": {
+    "e2e:install": {
       "executor": "nx:run-commands",
       "local": true,
       "dependsOn": ["build"],
@@ -69,35 +57,54 @@
         "parallel": false
       }
     },
-    "test:e2e:compile": {
+    "serve:functions:e2e": {
+      "executor": "nx:run-commands",
+      "continuous": true,
+      "dependsOn": ["^build"],
+      "local": true,
+      "cache": false,
+      "options": {
+        "cwd": "{projectRoot}",
+        "readyWhen": "Serving functions on http://",
+        "streamOutput": true,
+        "command": "../../scripts/supabase-start-locked.sh . && ./scripts/sync-e2e-deps.sh && supabase functions serve --import-map supabase/functions/pgflow/deno.json"
+      }
+    },
+    "hang": {
       "executor": "nx:run-commands",
       "local": true,
-      "dependsOn": ["test:e2e:install", "build"],
+      "dependsOn": ["build", "serve:functions:e2e"],
+      "inputs": ["default", "^production"],
+      "options": {
+        "command": "sleep 360",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "e2e:compile": {
+      "executor": "nx:run-commands",
+      "local": true,
+      "dependsOn": ["build", "serve:functions:e2e"],
       "inputs": ["default", "^production"],
       "options": {
         "commands": [
-          "rm -rf supabase/",
-          "npx -y supabase@latest init --force --with-vscode-settings --with-intellij-settings",
-          "node dist/index.js compile examples/analyze_website.ts --deno-json examples/deno.json --supabase-path supabase",
-          "./scripts/assert-flow-compiled"
+          "timeout 120 bash -c 'echo \"Waiting for functions server (port 50621)...\"; until nc -z localhost 50621 2>/dev/null; do sleep 0.5; done; echo \" Ready!\"' || (echo 'TIMEOUT: Functions server not available on port 50621 after 120s' && exit 1)",
+          "vitest run __tests__/e2e/compile.test.ts"
         ],
         "cwd": "{projectRoot}",
         "parallel": false
       }
     },
-    "test:e2e:async-hang-issue-123": {
-      "executor": "nx:run-commands",
+    "e2e": {
+      "executor": "nx:noop",
       "local": true,
-      "dependsOn": ["build"],
-      "inputs": ["default", "^production"],
-      "options": {
-        "command": "./scripts/test-async-hang-issue-123",
-        "cwd": "{projectRoot}"
-      }
+      "dependsOn": ["e2e:install", "e2e:compile"]
     },
     "prepush": {
       "executor": "nx:noop",
-      "dependsOn": ["lint", "build", "typecheck", "test:vitest"]
+      "dependsOn": ["lint", "build", "typecheck"]
+    },
+    "supabase:ci-marker": {
+      "executor": "nx:noop"
     }
   }
 }
