@@ -6,6 +6,9 @@ export { EdgeWorker } from './EdgeWorker.js';
 export { createFlowWorker } from './flow/createFlowWorker.js';
 export { FlowWorkerLifecycle } from './flow/FlowWorkerLifecycle.js';
 
+// Export ControlPlane for HTTP-based flow compilation
+export { ControlPlane } from './control-plane/index.js';
+
 // Export platform adapters
 export * from './platform/index.js';
 
@@ -23,6 +26,3 @@ export type {
   ILifecycle,
   IBatchProcessor,
 } from './core/types.js';
-
-// Export context types
-export type { Context } from './core/context.js';

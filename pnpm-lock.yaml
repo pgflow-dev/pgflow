@@ -93,6 +93,9 @@ importers:
       prettier:
         specifier: ^2.6.2
         version: 2.8.8
+      supabase:
+        specifier: ^2.34.3
+        version: 2.54.11
       tslib:
         specifier: ^2.3.0
         version: 2.8.1
@@ -273,9 +276,6 @@ importers:
       postgres:
         specifier: ^3.4.5
         version: 3.4.5
-      supabase:
-        specifier: ^2.34.3
-        version: 2.54.11
       terser:
         specifier: ^5.43.0
         version: 5.43.1
@@ -298,9 +298,6 @@ importers:
       '@types/node':
         specifier: ^22.14.1
         version: 22.19.0
-      supabase:
-        specifier: ^2.34.3
-        version: 2.54.11
 
   pkgs/dsl:
     devDependencies:
@@ -338,9 +335,6 @@ importers:
       '@types/node':
         specifier: ~18.16.20
         version: 18.16.20
-      supabase:
-        specifier: ^2.34.3
-        version: 2.54.11
 
   pkgs/example-flows:
     dependencies:

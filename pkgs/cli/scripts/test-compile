@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+set -e
+
+echo "🧪 Testing pgflow compile functionality"
+
+# Colors for output
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Store the CLI package directory (where pnpm workspace is)
+CLI_DIR=$(pwd)
+# Get the workspace root directory (two levels up from CLI_DIR)
+WORKSPACE_ROOT=$(cd "${CLI_DIR}/../.." && pwd)
+
+# Create temp directory for testing
+TEST_DIR=$(mktemp -d)
+echo -e "${BLUE}📁 Created test directory: ${TEST_DIR}${NC}"
+
+# Cleanup function
+cleanup() {
+  echo -e "${BLUE}🧹 Cleaning up...${NC}"
+  cd /
+  if [ -d "${TEST_DIR}/supabase" ]; then
+    pnpm -C "${CLI_DIR}" exec supabase stop --no-backup --workdir "${TEST_DIR}" || true
+  fi
+  rm -rf "${TEST_DIR}"
+}
+
+# Register cleanup on exit
+trap cleanup EXIT
+
+# Navigate to test directory
+cd "${TEST_DIR}"
+
+# 1. Initialize Supabase project
+echo -e "${BLUE}🏗️  Creating Supabase project${NC}"
+# Use --workdir to create supabase directory in TEST_DIR instead of current working directory
+pnpm -C "$CLI_DIR" exec supabase init --force --yes --with-intellij-settings --with-vscode-settings --workdir "${TEST_DIR}"
+
+# Verify supabase directory was created in the test directory
+if [ ! -d "${TEST_DIR}/supabase" ]; then
+  echo -e "${YELLOW}❌ Error: supabase directory not found at ${TEST_DIR}/supabase${NC}"
+  echo -e "${YELLOW}   supabase init may have created it in the wrong location${NC}"
+  exit 1
+fi
+echo -e "${GREEN}✓ Supabase directory created at ${TEST_DIR}/supabase${NC}"
+
+# 2. Run pgflow install to set up ControlPlane files
+echo -e "${BLUE}📦 Installing pgflow${NC}"
+(cd "${CLI_DIR}" && PATH="${WORKSPACE_ROOT}/node_modules/.bin:$PATH" node dist/index.js install -y --supabase-path "${TEST_DIR}/supabase")
+
+# 3. Create a test flow in flows.ts
+echo -e "${BLUE}✍️  Writing test flow to flows.ts${NC}"
+cat > "${TEST_DIR}/supabase/functions/pgflow/flows.ts" << 'EOF'
+import { Flow } from '@pgflow/dsl';
+
+// Simple test flow for e2e testing
+const TestFlow = new Flow({ slug: 'test_flow' })
+  .step({ slug: 'step1' }, () => ({ result: 'done' }));
+
+export const flows = [TestFlow];
+EOF
+
+# 4. Start Supabase (this starts edge functions too)
+echo -e "${BLUE}🚀 Starting Supabase (including edge functions)${NC}"
+pnpm -C "${CLI_DIR}" exec supabase start --workdir "${TEST_DIR}"
+
+# 5. Run pgflow compile with the new HTTP-based command
+echo -e "${BLUE}⚙️  Compiling flow via ControlPlane${NC}"
+# Run with PATH including node_modules/.bin so supabase binary is accessible
+(cd "${CLI_DIR}" && PATH="${WORKSPACE_ROOT}/node_modules/.bin:$PATH" node dist/index.js compile test_flow --supabase-path "${TEST_DIR}/supabase")
+
+# 6. Verify migration was created
+echo -e "${BLUE}✅ Verifying migration file${NC}"
+MIGRATION_COUNT=$(find "${TEST_DIR}/supabase/migrations" -name "*test_flow.sql" 2>/dev/null | wc -l)
+
+if [ "$MIGRATION_COUNT" -eq 0 ]; then
+  echo -e "${YELLOW}❌ Error: No migration file found${NC}"
+  exit 1
+fi
+
+if [ "$MIGRATION_COUNT" -gt 1 ]; then
+  echo -e "${YELLOW}❌ Error: Multiple migration files found${NC}"
+  exit 1
+fi
+
+MIGRATION_FILE=$(find "${TEST_DIR}/supabase/migrations" -name "*test_flow.sql" | head -1)
+echo -e "${GREEN}✓ Found migration: $(basename ${MIGRATION_FILE})${NC}"
+
+# 7. Verify migration contains expected SQL
+if ! grep -q "pgflow.create_flow('test_flow'" "${MIGRATION_FILE}"; then
+  echo -e "${YELLOW}❌ Error: Migration doesn't contain create_flow statement${NC}"
+  exit 1
+fi
+
+if ! grep -q "pgflow.add_step('test_flow', 'step1'" "${MIGRATION_FILE}"; then
+  echo -e "${YELLOW}❌ Error: Migration doesn't contain add_step statement${NC}"
+  exit 1
+fi
+
+echo -e "${GREEN}✓ Migration content is correct${NC}"
+
+# 8. Stop Supabase
+echo -e "${BLUE}🛑 Stopping Supabase${NC}"
+pnpm -C "${CLI_DIR}" exec supabase stop --no-backup --workdir "${TEST_DIR}"
+
+echo -e "${GREEN}✨ Compile test complete${NC}"
