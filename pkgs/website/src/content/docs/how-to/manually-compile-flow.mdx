@@ -1,0 +1,70 @@
+---
+title: Manually Compile Flow to SQL
+description: Generate SQL statements from Flow definitions without using the CLI
+sidebar:
+  order: 105
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+The `compileFlow` function converts Flow objects into SQL statements that can be executed directly in PostgreSQL. Use this when you need to inspect the generated SQL or integrate flow compilation into custom tooling.
+
+## Usage
+
+Import `compileFlow` from `@pgflow/dsl` and pass it a Flow object:
+
+```typescript
+import { Flow, compileFlow } from '@pgflow/dsl';
+
+type Input = {
+  url: string;
+};
+
+const MyFlow = new Flow<Input>({
+  slug: 'my_flow',
+  maxAttempts: 3,
+  timeout: 60,
+})
+  .step({ slug: 'fetch' }, (input) => input.run.url)
+  .step({ slug: 'process', dependsOn: ['fetch'] }, (input) => ({
+    url: input.run.url,
+    content: input.fetch,
+  }));
+
+const statements = compileFlow(MyFlow);
+// Returns: string[]
+```
+
+**Output (array of SQL statements):**
+```typescript
+[
+  "SELECT pgflow.create_flow('my_flow', max_attempts => 3, timeout => 60);",
+  "SELECT pgflow.add_step('my_flow', 'fetch');",
+  "SELECT pgflow.add_step('my_flow', 'process', ARRAY['fetch']);"
+]
+```
+
+## Executing the SQL
+
+The generated statements should be executed within a single transaction:
+
+```typescript
+import postgres from 'postgres';
+
+const sql = postgres('postgresql://...');
+const statements = compileFlow(MyFlow);
+
+await sql.begin(async (tx) => {
+  for (const statement of statements) {
+    await tx.unsafe(statement);
+  }
+});
+```
+
+<Aside type="caution">
+Always execute the statements within a transaction to ensure the flow is either fully created or not created at all. This prevents partial flow definitions if an error occurs.
+</Aside>
+
+<Aside type="note">
+The standard workflow uses `pgflow compile` to generate migration files instead of executing SQL directly. Manual compilation is useful for debugging, custom tooling, or understanding the SQL layer.
+</Aside>
