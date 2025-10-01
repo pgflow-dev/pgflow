@@ -36,6 +36,7 @@
       "Bash(pnpm vitest run:*)",
       "Bash(pnpm vitest:*)",
       "Bash(psql:*)",
+      "Bash(realpath:*)",
       "Bash(rg:*)",
       "Bash(scripts/ask-ai:*)",
       "Bash(scripts/run-test-with-colors:*)",
@@ -64,5 +65,9 @@
     "crawl4ai-sse",
     "nx-mcp",
     "sequentialthinking"
+  ],
+  "additionalDirectories": [
+    "~/SynologyDrive/Projects/pgflow/notes",
+    "/home/jumski/SynologyDrive/Projects/pgflow/notes"
   ]
 }
