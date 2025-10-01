@@ -1,19 +1,23 @@
 ---
 title: Prepare DB Connection URL
-description: How to handle special characters in passwords for Edge Worker connection strings
+description: How to configure database connection strings for production and local development
 sidebar:
   order: 120
 ---
 
 import { Aside } from "@astrojs/starlight/components";
 
-When setting up Edge Worker with a database password containing special characters, you must URL-encode these characters to avoid authentication errors like:
+Database connection strings differ for production and local development. Choose the section that matches your deployment context.
 
-```
-Error: SASL_SIGNATURE_MISMATCH: The server did not return the correct signature
-```
+<Aside type="note">
+PostgreSQL connection strings require URL-encoding special characters in passwords. Production uses your actual password (which may contain special characters), while local development uses a fixed simple password.
+</Aside>
 
-## Common Characters That Need Encoding
+## For Production (Supabase.com)
+
+Your production password likely contains special characters that need URL-encoding to avoid authentication errors.
+
+### Common Characters That Need Encoding
 
 Check if your password contains any of these characters that require encoding:
 
@@ -24,11 +28,25 @@ Check if your password contains any of these characters that require encoding:
 | `?` | `%3F` | `#` | `%23` |
 | `%` | `%25` | ` ` (space) | `%20` |
 
-[Full list at MDN Web Docs](https://developer.mozilla.org/en-US/docs/Glossary/Percent-encoding)
+[Full list at MDN Web Docs](https://developer.mozilla.org/en-docs/Glossary/Percent-encoding)
 
-## Quick Guide
+### Understanding Transaction Mode
 
-### 1. Encode Your Password
+pgflow uses **Transaction mode** connection pooling for production deployments. This is critical for serverless environments like Supabase Edge Functions.
+
+<Aside type="tip">
+  Transaction mode pooling is identified by port **6543** in the connection string.
+</Aside>
+
+**Why Transaction mode matters:**
+
+Postgres connections use the Postgres Wire Protocol (PWP) rather than HTTP. PWP acts like a WebSocket: once a connection is made, it stays open and active until the client disconnects.
+
+If too many connections are held by idle or greedy clients, other application servers won't be able to connect to your database. Transaction mode helps avoid this problem by allowing clients to access database connections only when running a query. This reduces the chances of hitting the maximum direct connection limit.
+
+Transaction mode gives the pooler permission to share direct connections among multiple clients, making it essential for serverless deployments where many workers may be active simultaneously.
+
+### Step 1: Encode Your Password
 
 Special characters (`@`, `&`, `:`, etc.) in passwords must be percent-encoded to be correctly interpreted in connection strings.
 
@@ -53,42 +71,85 @@ encoded_password=$(printf %s "my@complex&password!" | jq -sRr @uri)
 # Result: "my%40complex%26password%21"
 ```
 
-### 2. Construct Your Connection String
+### Step 2: Get and Prepare Connection String
 
-<Aside type="tip">
-  Only encode the password portion, not the entire URL.
+1. **Get Transaction Mode Connection String from Supabase Dashboard:**
+
+   Click the **Connect** button in the top navigation of your Supabase project dashboard:
+
+   <img src="/how-to/01-button.png" alt="Click the Connect button in Supabase dashboard" width="80%" />
+
+   In the dialog that opens, find the **Transaction pooler** section and copy the connection string:
+
+   <img src="/how-to/02-dburl.png" alt="Copy the Transaction pooler connection string" width="80%" />
+
+   <Aside type="note">
+   The Transaction pooler section is ideal for serverless applications like Edge Functions. The connection string will contain a `[YOUR-PASSWORD]` placeholder.
+   </Aside>
+
+2. **Replace the password placeholder with your encoded password:**
+
+   Original from dashboard (example - your values will differ):
+   ```
+   postgresql://postgres.abcdefghijklmnop:[YOUR-PASSWORD]@aws-0-us-west-1.pooler.supabase.com:6543/postgres
+   ```
+
+   After replacing with encoded password:
+   ```
+   postgresql://postgres.abcdefghijklmnop:my%40complex%26password%21@aws-0-us-west-1.pooler.supabase.com:6543/postgres
+   ```
+
+<Aside type="note">
+  The Transaction Mode connection string uses `postgres.[PROJECT-REF]` user format and port `6543` for the pooler. Your actual project reference and region will differ from the example above.
 </Aside>
 
+### Step 3: Set in Supabase Secrets
+
+Set the connection string as a secret using the Supabase CLI:
+
+```bash
+npx supabase secrets set EDGE_WORKER_DB_URL="postgresql://postgres.abcdefghijklmnop:my%40complex%26password%21@aws-0-us-west-1.pooler.supabase.com:6543/postgres"
 ```
-postgresql://username:ENCODED_PASSWORD@host:port/database
+
+Or via Supabase Dashboard:
+- Go to **Settings** → **Edge Functions** → **Manage secrets**
+- Add `EDGE_WORKER_DB_URL` with your connection string
+
+Verify it's set:
+```bash
+npx supabase secrets list | grep EDGE_WORKER_DB_URL
 ```
 
-Example:
-```
-postgresql://postgres.pooler-dev:my%40complex%26password%21@db.example.com:6543/postgres
-```
+<Aside type="caution">
+  Use your actual Transaction Mode connection string from Step 2, not the example above.
+</Aside>
 
-:::caution
-Because we are using a DB pool connection, the user in the connection string
-is `postgres.pooler-dev` not `postgres` and the port is `6543` not `5432`.
+## For Local Development
 
-For production, copy-paste a **Transaction Mode Connection String** from Supabase Dashboard
-:::
+When running pgflow locally with `supabase start`, use the Docker internal pooler connection.
 
-### 3. Add to Environment
+<Aside type="tip">
+  Local development uses the fixed password `postgres` (no special characters) - no encoding needed.
+</Aside>
 
-#### Local development:
+### Setup
+
+Create or update `supabase/functions/.env`:
 
 ```bash
 # supabase/functions/.env
-EDGE_WORKER_DB_URL="postgresql://postgres.pooler-dev:my%40complex%26password%21@db.example.com:6543/postgres"
+EDGE_WORKER_DB_URL="postgresql://postgres.pooler-dev:postgres@pooler:6543/postgres"
 ```
 
-#### Deployment:
+**Connection details:**
+- User: `postgres.pooler-dev`
+- Password: `postgres` (fixed, no encoding needed)
+- Host: `pooler` (Docker internal hostname)
+- Port: `6543` (Docker internal port)
 
-```bash
-npx supabase secrets set EDGE_WORKER_DB_URL="postgresql://postgres:my%40complex%26password%21@db.example.com:5432/postgres"
-```
+<Aside type="note">
+  This connection string is the same for all local pgflow installations. The `pooler` hostname and port `6543` refer to Docker internal networking.
+</Aside>
 
 ## Security Considerations
 

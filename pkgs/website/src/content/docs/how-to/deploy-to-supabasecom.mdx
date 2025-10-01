@@ -12,6 +12,33 @@ pgflow workers are regular Supabase Edge Functions. Deploy them like any Edge Fu
 
 <NotProductionReady />
 
+## Prerequisites (First-Time Setup)
+
+Before deploying workers to Supabase.com, ensure the following are configured:
+
+1. **Database connection configured**
+
+   Your `EDGE_WORKER_DB_URL` secret must be set up following the [Prepare DB Connection URL](/how-to/prepare-db-string/) guide.
+
+   This involves:
+   - Getting your Transaction Mode connection string from Supabase Dashboard
+   - URL-encoding your database password
+   - Replacing the password placeholder with the encoded password
+   - Setting the final string in Supabase Secrets
+
+   <Aside type="caution">
+   This must be configured before your first deployment. Workers cannot start without a valid database connection.
+   </Aside>
+
+   Verify it's set:
+   ```bash
+   npx supabase secrets list | grep EDGE_WORKER_DB_URL
+   ```
+
+2. **Worker function created**
+
+   Your Edge Function must be implemented at `supabase/functions/your-worker-name/index.ts`
+
 ## Quick Deployment
 
 <Steps>
