@@ -46,6 +46,7 @@ vitest.config.*.timestamp*
 
 .env*
 tsconfig.vitest-temp.json
+*.tsbuildinfo
 deno-dist/
 .nx-inputs
 .vscode

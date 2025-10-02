@@ -17,6 +17,8 @@ export type Json =
 export type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
 
 // Utility that unwraps Promise and keeps plain values unchanged
+// Note: `any[]` is required here for proper type inference in conditional types
+// `unknown[]` would be too restrictive and break type matching
 type AwaitedReturn<T> = T extends (...args: any[]) => Promise<infer R>
   ? R
   : T extends (...args: any[]) => infer R
@@ -64,14 +66,15 @@ export type AnyDeps = Record<string, string[]>;
 /**
  * Represents a Flow that has not steps nor deps defined yet
  */
-export type EmptyFlow = Flow<AnyInput, BaseContext, EmptySteps, EmptyDeps>;
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export type EmptyFlow = Flow<AnyInput, {}, EmptySteps, EmptyDeps>;
 
 /**
  * Represents any Flow with flexible input, context, steps, and dependencies.
  * This type is intentionally more permissive to allow for better type inference
  * in utility types like StepOutput.
  */
-export type AnyFlow = Flow<any, any, any, any>;
+export type AnyFlow = Flow<any, any, any, any, any>;
 
 // ========================
 // UTILITY TYPES (with proper constraints)
@@ -85,7 +88,8 @@ export type ExtractFlowInput<TFlow extends AnyFlow> = TFlow extends Flow<
   infer TI,
   infer _TC,
   infer _TS,
-  infer _TD
+  infer _TD,
+  infer _TEnv
 >
   ? TI
   : never;
@@ -106,7 +110,8 @@ export type ExtractFlowOutput<TFlow extends AnyFlow> = TFlow extends Flow<
   infer _TI,
   infer _TC,
   infer _TS,
-  infer _TD
+  infer _TD,
+  infer _TEnv
 >
   ? {
       [K in keyof ExtractFlowLeafSteps<TFlow> as K extends string
@@ -123,7 +128,8 @@ export type ExtractFlowSteps<TFlow extends AnyFlow> = TFlow extends Flow<
   infer _TI,
   infer _TC,
   infer TS,
-  infer _TD
+  infer _TD,
+  infer _TEnv
 >
   ? TS
   : never;
@@ -136,22 +142,40 @@ export type ExtractFlowDeps<TFlow extends AnyFlow> = TFlow extends Flow<
   infer _TI,
   infer _TC,
   infer _TS,
-  infer TD
+  infer TD,
+  infer _TEnv
 >
   ? TD
   : never;
 
 /**
- * Extracts the context type from a Flow
+ * Extracts the environment type from a Flow
  * @template TFlow - The Flow type to extract from
+ * Returns the TEnv type parameter
+ */
+export type ExtractFlowEnv<TFlow extends AnyFlow> = TFlow extends Flow<
+  infer _TI,
+  infer _TC,
+  infer _TS,
+  infer _TD,
+  infer TEnv
+>
+  ? TEnv
+  : never;
+
+/**
+ * Extracts the full handler context type from a Flow
+ * @template TFlow - The Flow type to extract from
+ * Returns FlowContext<TEnv> & TContext (the complete context handlers receive)
  */
 export type ExtractFlowContext<TFlow extends AnyFlow> = TFlow extends Flow<
   infer _TI,
   infer TC,
   infer _TS,
-  infer _TD
+  infer _TD,
+  infer TEnv
 >
-  ? TC
+  ? FlowContext<TEnv> & TC
   : never;
 
 /**
@@ -210,17 +234,48 @@ export interface RuntimeOptions {
   timeout?: number;
 }
 
-// Base context interface - what ALL platforms must provide
-export interface BaseContext {
-  env: Env & ValidEnv<UserEnv>;
-  shutdownSignal: AbortSignal;
+// Worker configuration exposed to handlers (read-only view)
+export interface WorkerConfig {
+  maxConcurrent: number;
+  maxPollSeconds: number;
+  pollIntervalMs: number;
+  batchSize: number;
+  visibilityTimeout: number;
 }
 
-// Generic context type that combines base with custom resources
-export type Context<T extends Record<string, unknown> = Record<string, never>> = BaseContext & T;
+// Message record interface (minimal contract - actual type defined in @pgflow/core)
+export interface MessageRecord {
+  msg_id: number;
+  read_ct: number;
+  enqueued_at: string;
+  vt: string;
+  message: Json;
+}
 
-// Helper type to extract context type from a handler function
-type ExtractHandlerContext<T> = T extends (input: any, context: infer C) => any ? C : never;
+// Step task record interface (minimal contract - actual type defined in @pgflow/core)
+export interface StepTaskRecord<TFlow extends AnyFlow> {
+  flow_slug: string;
+  run_id: string;
+  step_slug: string;
+  input: Json; // JSON-serializable input from database (JSONB column)
+  msg_id: number;
+}
+
+// Base context for queue workers (no stepTask)
+export interface BaseContext<TEnv extends Env = Env> {
+  env: TEnv & ValidEnv<UserEnv>;
+  shutdownSignal: AbortSignal;
+  rawMessage: MessageRecord;
+  workerConfig: Readonly<WorkerConfig>;
+}
+
+// Flow context extends base with stepTask
+export interface FlowContext<TEnv extends Env = Env> extends BaseContext<TEnv> {
+  stepTask: StepTaskRecord<AnyFlow>;
+}
+
+// Generic context type helper (uses FlowContext for flow handlers)
+export type Context<T extends Record<string, unknown> = Record<string, never>, TEnv extends Env = Env> = FlowContext<TEnv> & T;
 
 // Step runtime options interface that extends flow options with step-specific options
 export interface StepRuntimeOptions extends RuntimeOptions {
@@ -231,7 +286,7 @@ export interface StepRuntimeOptions extends RuntimeOptions {
 export interface StepDefinition<
   TInput extends AnyInput,
   TOutput extends AnyOutput,
-  TContext = BaseContext
+  TContext = FlowContext
 > {
   slug: string;
   handler: (input: TInput, context: TContext) => TOutput | Promise<TOutput>;
@@ -245,9 +300,11 @@ type MergeObjects<T1 extends object, T2 extends object> = T1 & T2;
 // Flow class definition
 export class Flow<
   TFlowInput extends AnyInput = AnyInput,
-  TContext = BaseContext, // Accumulated context requirements (starts with BaseContext)
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  TContext extends Record<string, unknown> = {}, // Accumulated custom context (FlowContext is always provided)
   Steps extends AnySteps = EmptySteps,
-  StepDependencies extends AnyDeps = EmptyDeps
+  StepDependencies extends AnyDeps = EmptyDeps,
+  TEnv extends Env = Env // Environment type (defaults to base Env)
 > {
   /**
    * Store step definitions with their proper types
@@ -324,7 +381,7 @@ export class Flow<
           [K in Deps]: K extends keyof Steps ? Steps[K] : never;
         }
       >,
-      context: BaseContext & TContext
+      context: FlowContext<TEnv> & TContext
     ) => any,
     Deps extends Extract<keyof Steps, string> = never
   >(
@@ -332,9 +389,10 @@ export class Flow<
     handler: THandler
   ): Flow<
     TFlowInput,
-    TContext & BaseContext & ExtractHandlerContext<THandler>,
+    TContext,
     Steps & { [K in Slug]: AwaitedReturn<THandler> },
-    StepDependencies & { [K in Slug]: Deps[] }
+    StepDependencies & { [K in Slug]: Deps[] },
+    TEnv
   > {
     type RetType = AwaitedReturn<THandler>;
     type NewSteps = MergeObjects<Steps, { [K in Slug]: RetType }>;
@@ -382,7 +440,7 @@ export class Flow<
         }
       >,
       RetType & Json,
-      BaseContext & TContext
+      FlowContext<TEnv> & TContext
     > = {
       slug,
       handler: handler as any, // Type assertion needed due to complex generic constraints
@@ -402,10 +460,10 @@ export class Flow<
     // We need to use type assertions here because TypeScript cannot track the exact relationship
     // between the specific step definition types and the generic Flow type parameters
     // This is safe because we're constructing the newStepDefinitions in a type-safe way above
-    return new Flow<TFlowInput, TContext & BaseContext & ExtractHandlerContext<THandler>, NewSteps, NewDependencies>(
+    return new Flow<TFlowInput, TContext, NewSteps, NewDependencies, TEnv>(
       { slug: this.slug, ...this.options },
       newStepDefinitions as Record<string, StepDefinition<AnyInput, AnyOutput>>,
       newStepOrder
-    ) as Flow<TFlowInput, TContext & BaseContext & ExtractHandlerContext<THandler>, NewSteps, NewDependencies>;
+    ) as Flow<TFlowInput, TContext, NewSteps, NewDependencies, TEnv>;
   }
 }

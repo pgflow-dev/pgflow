@@ -15,7 +15,7 @@ it('should correctly handle AnalyzeWebsite flow steps with proper types', () => 
   // Test website step handler type
   expectTypeOf(websiteStepDef.handler).toBeFunction();
   expectTypeOf(websiteStepDef.handler).parameters.toMatchTypeOf<
-    [{ run: { url: string } }]
+    [{ run: { url: string } }, any]
   >();
   expectTypeOf(websiteStepDef.handler).returns.toMatchTypeOf<
     Promise<{ content: string }> | { content: string }
@@ -24,7 +24,7 @@ it('should correctly handle AnalyzeWebsite flow steps with proper types', () => 
   // Test sentiment step handler type
   expectTypeOf(sentimentStepDef.handler).toBeFunction();
   expectTypeOf(sentimentStepDef.handler).parameters.toMatchTypeOf<
-    [{ run: { url: string }; website: { content: string } }]
+    [{ run: { url: string }; website: { content: string } }, any]
   >();
   expectTypeOf(sentimentStepDef.handler).returns.toMatchTypeOf<
     Promise<{ score: number }> | { score: number }
@@ -33,7 +33,7 @@ it('should correctly handle AnalyzeWebsite flow steps with proper types', () => 
   // Test summary step handler type
   expectTypeOf(summaryStepDef.handler).toBeFunction();
   expectTypeOf(summaryStepDef.handler).parameters.toMatchTypeOf<
-    [{ run: { url: string }; website: { content: string } }]
+    [{ run: { url: string }; website: { content: string } }, any]
   >();
   expectTypeOf(summaryStepDef.handler).returns.toMatchTypeOf<
     Promise<{ aiSummary: string }> | { aiSummary: string }
@@ -47,7 +47,8 @@ it('should correctly handle AnalyzeWebsite flow steps with proper types', () => 
         run: { url: string };
         sentiment: { score: number };
         summary: { aiSummary: string };
-      }
+      },
+      any
     ]
   >();
   expectTypeOf(saveToDbStepDef.handler).returns.toMatchTypeOf<
@@ -55,22 +56,26 @@ it('should correctly handle AnalyzeWebsite flow steps with proper types', () => 
   >();
 });
 
-it('allows to call handlers with matching inputs', () => {
-  websiteStepDef.handler({ run });
-  sentimentStepDef.handler({ run, website });
-  summaryStepDef.handler({ run, website });
-  saveToDbStepDef.handler({ run, summary, sentiment });
+it('allows to call handlers with matching inputs and context', () => {
+  // Handlers now require context parameter (FlowContext)
+  const mockContext = {} as any;
+  websiteStepDef.handler({ run }, mockContext);
+  sentimentStepDef.handler({ run, website }, mockContext);
+  summaryStepDef.handler({ run, website }, mockContext);
+  saveToDbStepDef.handler({ run, summary, sentiment }, mockContext);
 });
 it('does not allow to call with additional keys', () => {
-  // @ts-expect-error - no additional keys allowed
-  websiteStepDef.handler({ run, newKey: true });
+  const mockContext = {} as any;
 
   // @ts-expect-error - no additional keys allowed
-  sentimentStepDef.handler({ run, website, newKey: true });
+  websiteStepDef.handler({ run, newKey: true }, mockContext);
 
   // @ts-expect-error - no additional keys allowed
-  summaryStepDef.handler({ run, website, newKey: true });
+  sentimentStepDef.handler({ run, website, newKey: true }, mockContext);
 
   // @ts-expect-error - no additional keys allowed
-  saveToDbStepDef.handler({ run, summary, sentiment, newKey: true });
+  summaryStepDef.handler({ run, website, newKey: true }, mockContext);
+
+  // @ts-expect-error - no additional keys allowed
+  saveToDbStepDef.handler({ run, summary, sentiment, newKey: true }, mockContext);
 });

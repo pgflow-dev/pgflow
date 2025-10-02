@@ -326,7 +326,7 @@ importers:
         version: 3.4.5
     devDependencies:
       '@types/deno':
-        specifier: ^2.2.0
+        specifier: ^2.3.0
         version: 2.3.0
       '@types/node':
         specifier: ~18.16.20
@@ -11800,6 +11800,7 @@ packages:
     resolution: {integrity: sha512-pGjwhsmsp4kL2RTz08wcOlGN83otlqHeD/Z5T8GXZB+/YcpQ/dgo+lbU8ZsGxV0HIvqqxo9l7mqYwyYMD9bKDg==}
     engines: {node: '>=0.10'}
     hasBin: true
+    requiresBuild: true
     dev: true
 
   /detect-libc@2.0.4:
@@ -17273,6 +17274,7 @@ packages:
 
   /node-addon-api@7.1.1:
     resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==}
+    requiresBuild: true
     dev: true
 
   /node-domexception@1.0.0:

@@ -1,4 +1,4 @@
-import { Flow } from '@pgflow/dsl';
+import { Flow } from '@pgflow/dsl/supabase';
 import scrapeWebsite from '../_tasks/scrapeWebsite.ts';
 import summarizeWithAI from '../_tasks/summarizeWithAI.ts';
 import extractTags from '../_tasks/extractTags.ts';
@@ -18,11 +18,11 @@ export default new Flow<Input>({
 })
   .step(
     { slug: 'website' },
-    async (input) => await scrapeWebsite(input.run.url),
+    async (input) => await scrapeWebsite(input.run.url)
   )
   .step(
     { slug: 'summary', dependsOn: ['website'] },
-    async (input) => await summarizeWithAI(input.website.content),
+    async (input) => await summarizeWithAI(input.website.content)
   )
   .step({ slug: 'tags', dependsOn: ['website'] }, async (input) => {
     await simulateFailure(input.run.url);
@@ -42,5 +42,5 @@ export default new Flow<Input>({
       const { website } = await saveWebsite(websiteData, supabase);
 
       return website;
-    },
+    }
   );
