@@ -32,15 +32,27 @@ export function createQueueWorkerContext<TPayload extends Json>(params: {
       })
     : createMockSupabaseClient();
 
+  // Provide a safe, frozen workerConfig (default or provided)
+  const resolvedConfig = {
+    queueName: 'test-queue',
+    maxConcurrent: 10,
+    maxPollSeconds: 5,
+    pollIntervalMs: 200,
+    batchSize: 10,
+    visibilityTimeout: 30,
+    retry: { strategy: 'fixed' as const, limit: 3, baseDelay: 1 },
+    ...workerConfig
+  };
+
   return {
     // Core platform resources
     env,
     shutdownSignal: abortSignal,
-    
+
     // Message execution context
     rawMessage,
-    ...(workerConfig && { workerConfig: createContextSafeConfig(workerConfig) }),
-    
+    workerConfig: createContextSafeConfig(resolvedConfig),
+
     // Supabase-specific resources (always present in Phase 1)
     sql,
     supabase
@@ -73,16 +85,26 @@ export function createFlowWorkerContext<TFlow extends AnyFlow = AnyFlow>(params:
     throw new Error('Flow worker context requires taskWithMessage');
   }
 
+  // Provide a safe, frozen workerConfig (default or provided)
+  const resolvedConfig = {
+    maxConcurrent: 10,
+    batchSize: 10,
+    visibilityTimeout: 2,
+    maxPollSeconds: 2,
+    pollIntervalMs: 100,
+    ...workerConfig
+  };
+
   return {
     // Core platform resources
     env,
     shutdownSignal: abortSignal,
-    
+
     // Step task execution context
     rawMessage: taskWithMessage.message,
     stepTask: taskWithMessage.task,
-    ...(workerConfig && { workerConfig: createContextSafeConfig(workerConfig) }),
-    
+    workerConfig: createContextSafeConfig(resolvedConfig),
+
     // Supabase-specific resources (always present in Phase 1)
     sql,
     supabase

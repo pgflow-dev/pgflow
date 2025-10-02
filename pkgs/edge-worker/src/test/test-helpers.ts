@@ -45,23 +45,28 @@ export function createSupabaseMessageContext<TPayload extends Json = Json>(param
   });
 
   // Provide a safe, frozen workerConfig (default or provided)
-  const defaultWorkerConfig = createContextSafeConfig(
-    (workerConfig ?? {
-      queueName: 'test-queue',
-      maxConcurrent: 10,
-      retry: { strategy: 'fixed' as const, limit: 3, baseDelay: 1 }
-    }) as QueueWorkerConfig
-  );
+  const resolvedConfig = {
+    queueName: 'test-queue',
+    maxConcurrent: 10,
+    maxPollSeconds: 5,
+    pollIntervalMs: 200,
+    batchSize: 10,
+    visibilityTimeout: 30,
+    retry: { strategy: 'fixed' as const, limit: 3, baseDelay: 1 },
+    ...workerConfig
+  };
+
+  const defaultWorkerConfig = createContextSafeConfig(resolvedConfig);
 
   return {
     // Core platform resources
     env,
     shutdownSignal: abortSignal,
-    
+
     // Message execution context
     rawMessage,
     workerConfig: defaultWorkerConfig,
-    
+
     // Supabase-specific resources (always present)
     sql,
     supabase
@@ -101,26 +106,27 @@ export function createSupabaseStepTaskContext<TFlow extends AnyFlow>(params: {
   });
 
   // Provide a safe, frozen workerConfig (default or provided)
-  const defaultWorkerConfig = createContextSafeConfig(
-    (workerConfig ?? {
-      maxConcurrent: 10,
-      batchSize: 10,
-      visibilityTimeout: 2,
-      maxPollSeconds: 2,
-      pollIntervalMs: 100
-    }) as FlowWorkerConfig
-  );
+  const resolvedConfig = {
+    maxConcurrent: 10,
+    batchSize: 10,
+    visibilityTimeout: 2,
+    maxPollSeconds: 2,
+    pollIntervalMs: 100,
+    ...workerConfig
+  };
+
+  const defaultWorkerConfig = createContextSafeConfig(resolvedConfig);
 
   return {
     // Core platform resources
     env,
     shutdownSignal: abortSignal,
-    
+
     // Step task execution context
     rawMessage,
     stepTask,
     workerConfig: defaultWorkerConfig,
-    
+
     // Supabase-specific resources (always present)
     sql,
     supabase

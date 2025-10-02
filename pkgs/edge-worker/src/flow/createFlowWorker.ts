@@ -1,4 +1,4 @@
-import type { AnyFlow } from '@pgflow/dsl';
+import type { AnyFlow, FlowContext } from '@pgflow/dsl';
 import { ExecutionController } from '../core/ExecutionController.js';
 import { StepTaskPoller, type StepTaskPollerConfig } from './StepTaskPoller.js';
 import { StepTaskExecutor } from './StepTaskExecutor.js';
@@ -6,7 +6,7 @@ import { PgflowSqlClient } from '@pgflow/core';
 import { Queries } from '../core/Queries.js';
 import type { IExecutor } from '../core/types.js';
 import type { Logger, PlatformAdapter } from '../platform/types.js';
-import type { StepTaskWithMessage } from '../core/context.js';
+import type { StepTaskWithMessage, StepTaskHandlerContext } from '../core/context.js';
 import { createContextSafeConfig } from '../core/context.js';
 import { Worker } from '../core/Worker.js';
 import postgres from 'postgres';
@@ -118,26 +118,28 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
     signal: AbortSignal
   ): IExecutor => {
     // Build context directly using platform resources
-    const context = {
+    const context: FlowContext & TResources = {
       // Core platform resources
       env: platformAdapter.env,
       shutdownSignal: platformAdapter.shutdownSignal,
-      
+
       // Step task execution context
       rawMessage: taskWithMessage.message,
       stepTask: taskWithMessage.task,
       workerConfig: frozenWorkerConfig, // Reuse cached frozen config
-      
+
       // Platform-specific resources (generic)
       ...platformAdapter.platformResources
     };
-    
+
+    // Type assertion: FlowContext & TResources is compatible with StepTaskHandlerContext<TFlow>
+    // at runtime, but TypeScript needs help due to generic type variance
     return new StepTaskExecutor<TFlow>(
       flow,
       pgflowAdapter,
       signal,
       createLogger('StepTaskExecutor'),
-      context
+      context as StepTaskHandlerContext<TFlow>
     );
   };
 

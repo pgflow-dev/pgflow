@@ -175,6 +175,13 @@
         "commands": ["node scripts/performance-benchmark.mjs"],
         "parallel": false
       }
+    },
+    "test:types": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "tsc --project tsconfig.typecheck.json --noEmit"
+      }
     }
   }
 }

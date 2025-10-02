@@ -14,7 +14,6 @@
       "npm:@henrygd/queue@^1.0.7": "npm:@henrygd/queue@1.0.7",
       "npm:@supabase/supabase-js@^2.39.0": "npm:@supabase/supabase-js@2.55.0",
       "npm:@supabase/supabase-js@^2.47.10": "npm:@supabase/supabase-js@2.55.0",
-      "npm:@types/deno@^2.2.0": "npm:@types/deno@2.3.0",
       "npm:@types/node@~18.16.20": "npm:@types/node@18.16.20",
       "npm:postgres@3.4.5": "npm:postgres@3.4.5",
       "npm:supabase@2.21.1": "npm:supabase@2.21.1"
@@ -116,10 +115,6 @@
           "@supabase/realtime-js": "@supabase/realtime-js@2.15.1",
           "@supabase/storage-js": "@supabase/storage-js@2.10.5"
         }
-      },
-      "@types/deno@2.3.0": {
-        "integrity": "sha512-/4SyefQpKjwNKGkq9qG3Ln7MazfbWKvydyVFBnXzP5OQA4u1paoFtaOe1iHKycIWHHkhYag0lPxyheThV1ijzw==",
-        "dependencies": {}
       },
       "@types/node@18.16.19": {
         "integrity": "sha512-IXl7o+R9iti9eBW4Wg2hx1xQDig183jj7YLn8F7udNceyfkbn1ZxmzZXuak20gR40D7pIkIY1kYGx5VIGbaHKA==",
@@ -598,7 +593,7 @@
       "dependencies": [
         "npm:@henrygd/queue@^1.0.7",
         "npm:@supabase/supabase-js@^2.47.10",
-        "npm:@types/deno@^2.2.0",
+        "npm:@types/deno@^2.3.0",
         "npm:@types/node@~18.16.20",
         "npm:postgres@3.4.5",
         "npm:supabase@2.21.1"
