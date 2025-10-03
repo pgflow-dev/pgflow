@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { log, confirm, note } from '@clack/prompts';
-import * as TOML from 'toml-patch';
+import { parse as parseTOML, stringify as stringifyTOML } from 'smol-toml';
 import chalk from 'chalk';
 
 /**
@@ -21,7 +21,8 @@ type SupabaseConfig = {
 
 /**
  * Updates the config.toml file with necessary configurations for EdgeWorker
- * while preserving comments and formatting
+ *
+ * NOTE: Comments and custom formatting will be lost. A backup is always created.
  *
  * Makes the following changes:
  * 1. Enables the connection pooler
@@ -52,7 +53,15 @@ export async function updateConfigToml({
     }
 
     const configContent = fs.readFileSync(configPath, 'utf8');
-    const config = TOML.parse(configContent) as SupabaseConfig;
+
+    let config: SupabaseConfig;
+    try {
+      config = parseTOML(configContent) as SupabaseConfig;
+    } catch (parseError) {
+      const errorMsg = parseError instanceof Error ? parseError.message : String(parseError);
+      log.error(`Invalid TOML syntax in ${configPath}: ${errorMsg}`);
+      throw new Error(`Invalid TOML syntax in ${configPath}: ${errorMsg}`);
+    }
 
     const currentSettings = {
       poolerEnabled: config.db?.pooler?.enabled ?? false,
@@ -123,37 +132,24 @@ ${chalk.green('+ policy = "per_worker"')}`);
     updatedConfig.db.pooler.pool_mode = 'transaction';
     updatedConfig.edge_runtime.policy = 'per_worker';
 
-    // Apply TOML patch
-    let updatedContent = TOML.patch(configContent, updatedConfig, {
-      trailingComma: false,
-    });
+    // Stringify the updated config
+    // Note: This will not preserve comments from the original file
+    let updatedContent: string;
+    try {
+      updatedContent = stringifyTOML(updatedConfig);
+    } catch (stringifyError) {
+      const errorMsg = stringifyError instanceof Error ? stringifyError.message : String(stringifyError);
+      log.error(`Failed to generate TOML for ${configPath}: ${errorMsg}`);
+      throw new Error(`Failed to generate TOML for ${configPath}: ${errorMsg}`);
+    }
 
-    // Post-process to remove trailing commas from specific updated lines
-    // The toml-patch library sometimes adds unwanted trailing commas despite the trailingComma: false option.
-    // For example, it might transform:
-    //   [db.pooler]
-    //   enabled = false
-    // into:
-    //   [db.pooler]
-    //   enabled = true,  # <-- unwanted trailing comma
-    //
-    // These regex replacements target only the specific lines we're updating and remove any trailing commas
-    // while preserving any whitespace, comments, or newlines that follow.
-    updatedContent = updatedContent
-      // Fix db.pooler.enabled line - transforms "enabled = true," into "enabled = true"
-      .replace(/enabled = true,(\s*$|\s*#|\s*\n)/g, 'enabled = true$1')
-      .replace(
-        // Fix db.pooler.pool_mode line - transforms "pool_mode = "transaction"," into "pool_mode = "transaction""
-        /pool_mode = "transaction",(\s*$|\s*#|\s*\n)/g,
-        'pool_mode = "transaction"$1'
-      )
-      .replace(
-        // Fix edge_runtime.policy line - transforms "policy = "per_worker"," into "policy = "per_worker""
-        /policy = "per_worker",(\s*$|\s*#|\s*\n)/g,
-        'policy = "per_worker"$1'
-      );
-
-    fs.writeFileSync(configPath, updatedContent);
+    try {
+      fs.writeFileSync(configPath, updatedContent);
+    } catch (writeError) {
+      const errorMsg = writeError instanceof Error ? writeError.message : String(writeError);
+      log.error(`Failed to write ${configPath}: ${errorMsg}`);
+      throw new Error(`Failed to write ${configPath}: ${errorMsg}`);
+    }
 
     log.success('Supabase configuration updated successfully');
     return true;
