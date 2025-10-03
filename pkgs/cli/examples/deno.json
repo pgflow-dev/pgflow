@@ -1,4 +1,5 @@
 {
+  "nodeModulesDir": true,
   "imports": {
     "@pgflow/dsl": "npm:@pgflow/dsl"
   }

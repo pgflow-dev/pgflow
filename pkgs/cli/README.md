@@ -70,7 +70,7 @@ npx pgflow@latest compile supabase/functions/_flows/my_flow.ts
 
 Options:
 
-- `--deno-json <path>` - Path to custom deno.json with import map
+- `--deno-json <path>` - Path to custom deno.json configuration file
 - `--supabase-path <path>` - Path to custom Supabase directory
 
 The compiler will:
