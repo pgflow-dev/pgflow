@@ -17,8 +17,8 @@ const __dirname = path.dirname(__filename);
 function formatCommand(command: string, args: string[]): string {
   const cmd = chalk.cyan(command);
   const formattedArgs = args.map((arg) => {
-    // Highlight import map and file paths differently
-    if (arg.startsWith('--import-map=')) {
+    // Highlight config and file paths differently
+    if (arg.startsWith('--config=')) {
       const [flag, value] = arg.split('=');
       return `  ${chalk.yellow(flag)}=${chalk.green(value)}`;
     } else if (arg.startsWith('--')) {
@@ -56,7 +56,7 @@ export default (program: Command) => {
     .argument('<flowPath>', 'Path to the flow TypeScript file')
     .option(
       '--deno-json <denoJsonPath>',
-      'Path to deno.json with valid importMap'
+      'Path to deno.json configuration file'
     )
     .option('--supabase-path <supabasePath>', 'Path to the Supabase folder')
     .action(async (flowPath, options) => {
@@ -222,9 +222,9 @@ async function runDenoCompilation(
     // Build the command arguments array
     const args = ['run', '--allow-read', '--allow-net', '--allow-env'];
 
-    // Only add the import-map argument if denoJsonPath is provided and valid
+    // Only add the config argument if denoJsonPath is provided and valid
     if (denoJsonPath && typeof denoJsonPath === 'string') {
-      args.push(`--import-map=${denoJsonPath}`);
+      args.push(`--config=${denoJsonPath}`);
     }
 
     // Add the script path and flow path

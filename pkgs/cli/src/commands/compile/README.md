@@ -14,7 +14,7 @@ pgflow compile path/to/flow.ts --deno-json=path/to/deno.json
 
 ## Options
 
-- `--deno-json=path/to/deno.json`: (Required) Path to the deno.json file with a valid importMap that includes the pgflow DSL package.
+- `--deno-json=path/to/deno.json`: (Required) Path to the deno.json configuration file that includes the pgflow DSL package in its imports.
 
 ## Example
 
@@ -30,7 +30,7 @@ pgflow compile src/flows/analyze-website.ts --deno-json=deno.json
 
 - Deno must be installed on your system
 - The flow file must have a default export
-- The deno.json file must have a valid importMap that includes the pgflow DSL package
+- The deno.json file must include the pgflow DSL package in its imports
 
 ## Example deno.json
 
