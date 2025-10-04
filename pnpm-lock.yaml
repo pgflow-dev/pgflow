@@ -231,9 +231,9 @@ importers:
       commander:
         specifier: ^13.1.0
         version: 13.1.0
-      toml-patch:
-        specifier: ^0.2.3
-        version: 0.2.3
+      smol-toml:
+        specifier: ^1.4.2
+        version: 1.4.2
     devDependencies:
       '@types/node':
         specifier: ^22.14.1
@@ -20303,6 +20303,11 @@ packages:
     engines: {node: '>= 18'}
     dev: false
 
+  /smol-toml@1.4.2:
+    resolution: {integrity: sha512-rInDH6lCNiEyn3+hH8KVGFdbjc099j47+OSgbMrfDYX1CmXLfdKd7qi6IfcWj2wFxvSVkuI46M+wPGYfEOEj6g==}
+    engines: {node: '>= 18'}
+    dev: false
+
   /snake-case@3.0.4:
     resolution: {integrity: sha512-LAOh4z89bGQvl9pFfNF8V146i7o7/CqFPbqzYgP+yYzDIDeS9HaNFtXABamRW+AQzEVODcvE79ljJ+8a9YSdMg==}
     dependencies:
@@ -21278,10 +21283,6 @@ packages:
       '@tokenizer/token': 0.3.0
       ieee754: 1.2.1
     dev: true
-
-  /toml-patch@0.2.3:
-    resolution: {integrity: sha512-SQI/j7f2S/iQZmoWBWNUMTfVmPbhP3+YCqxB/q8iOjdnXBk29HDARHzjCazmwftZaylYuMSrTTrvJiESVyzJzw==}
-    dev: false
 
   /toml@3.0.0:
     resolution: {integrity: sha512-y/mWCZinnvxjTKYhJ+pYxwD0mRLVvOtdS2Awbgxln6iEnt4rk0yBxeSBHkGJcPucRiG0e55mwWp+g/05rsrd6w==}
