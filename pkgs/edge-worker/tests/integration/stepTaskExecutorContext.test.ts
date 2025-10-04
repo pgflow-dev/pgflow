@@ -1,5 +1,6 @@
 import { assertEquals, assertExists } from '@std/assert';
 import { Flow } from '@pgflow/dsl/supabase';
+import type { FlowContext } from '@pgflow/dsl';
 import type {
   SupabaseEnv,
   SupabasePlatformContext,
@@ -122,13 +123,27 @@ Deno.test(
     // Get the step handler
     const stepDef = LegacyFlow.getStepDefinition('legacy_step');
 
-    // Call legacy handler with mock context
-    const mockContext = { 
-      sql: _sql, 
-      env: {},
-      shutdownSignal: new AbortController().signal
+    // Create proper context for legacy handler test
+    const mockMessage = {
+      msg_id: 456,
+      read_ct: 1,
+      enqueued_at: '2024-01-01T00:00:00Z',
+      vt: '2024-01-01T00:01:00Z',
+      message: { run: { value: 42 } },
     };
-    const result = await stepDef.handler(mockTask.input, mockContext);
+
+    const context = createFlowWorkerContext({
+      env: DEFAULT_TEST_SUPABASE_ENV,
+      sql: _sql,
+      abortSignal: new AbortController().signal,
+      taskWithMessage: {
+        msg_id: 456,
+        message: mockMessage,
+        task: mockTask,
+      },
+    });
+
+    const result = await stepDef.handler(mockTask.input, context);
 
     // Verify handler worked correctly
     assertEquals(receivedInput, { run: { value: 42 } });
@@ -260,8 +275,8 @@ Deno.test(
   withTransaction(async (_sql) => {
     const abortController = new AbortController();
 
-    let step1Context: SupabasePlatformContext | undefined;
-    let step2Context: SupabasePlatformContext | undefined;
+    let step1Context: (FlowContext<SupabaseEnv> & SupabasePlatformContext) | undefined;
+    let step2Context: (FlowContext<SupabaseEnv> & SupabasePlatformContext) | undefined;
 
     // Complex flow with multiple steps using context
     const ComplexFlow = new Flow<{ id: number }>({ slug: 'complex_context_flow' })

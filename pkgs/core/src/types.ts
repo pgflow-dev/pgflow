@@ -36,7 +36,7 @@ export type StepTaskRecord<TFlow extends AnyFlow> = {
  * Composite key that is enough to find a particular step task
  * Contains only the minimum fields needed to identify a task
  */
-export type StepTaskKey = Pick<StepTaskRecord<any>, 'run_id' | 'step_slug'>;
+export type StepTaskKey = Pick<StepTaskRecord<AnyFlow>, 'run_id' | 'step_slug'>;
 
 
 

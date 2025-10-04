@@ -15,9 +15,9 @@ export async function cleanupFlow(
   // The queue name is the same as the flow slug
   try {
     await sql`SELECT pgmq.purge_queue(${flowSlug})`;
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Ignore error if queue doesn't exist (42P01 = undefined_table)
-    if (error.code !== '42P01') {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code !== '42P01') {
       throw error;
     }
   }
@@ -59,9 +59,9 @@ export async function purgeQueue(
 ): Promise<void> {
   try {
     await sql`SELECT pgmq.purge_queue(${flowSlug})`;
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Ignore error if queue doesn't exist (42P01 = undefined_table)
-    if (error.code !== '42P01') {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code !== '42P01') {
       throw error;
     }
   }

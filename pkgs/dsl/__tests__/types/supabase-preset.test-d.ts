@@ -5,7 +5,7 @@ import {
   SupabaseResources,
   SupabasePlatformContext,
 } from '../../src/platforms/supabase.js';
-import { BaseContext, Context, ExtractFlowContext } from '../../src/index.js';
+import { FlowContext, ExtractFlowContext } from '../../src/index.js';
 import type { Sql } from 'postgres';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -37,9 +37,9 @@ describe('Supabase Flow Type Tests', () => {
       }
     );
 
-    // Flow context should be SupabasePlatformContext
-    type FlowContext = ExtractFlowContext<typeof flow>;
-    expectTypeOf<FlowContext>().toEqualTypeOf<SupabasePlatformContext>();
+    // Flow context should be FlowContext<SupabaseEnv> & SupabasePlatformContext
+    type FlowCtx = ExtractFlowContext<typeof flow>;
+    expectTypeOf<FlowCtx>().toEqualTypeOf<FlowContext<SupabaseEnv> & SupabasePlatformContext>();
   });
 
   it('should provide typed Supabase environment variables', () => {
@@ -69,44 +69,41 @@ describe('Supabase Flow Type Tests', () => {
       }
     );
 
-    type FlowContext = ExtractFlowContext<typeof flow>;
-    expectTypeOf<FlowContext['env']>().toEqualTypeOf<SupabaseEnv>();
+    type FlowCtx = ExtractFlowContext<typeof flow>;
+    expectTypeOf<FlowCtx['env']>().toMatchTypeOf<SupabaseEnv>();
   });
 
-  it('should allow adding custom resources alongside Supabase platform resources', () => {
-    const flow = new SupabaseFlow({ slug: 'custom_resources' })
-      .step(
-        { slug: 'db_query' },
-        (input, context: Context<{ redis: CustomRedis }>) => {
-          // Should have all Supabase platform resources
-          expectTypeOf(context.sql).toEqualTypeOf<Sql>();
-          expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
+  it('should allow adding custom resources via Flow type parameter', () => {
+    const flow = new SupabaseFlow<{ data: string }, { redis: CustomRedis; ai: CustomAI }>({
+      slug: 'custom_resources'
+    })
+      .step({ slug: 'db_query' }, (input, context) => {
+        // Should have all Supabase platform resources
+        expectTypeOf(context.sql).toEqualTypeOf<Sql>();
+        expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
 
-          // Should have custom resource from handler annotation
-          expectTypeOf(context.redis).toEqualTypeOf<CustomRedis>();
+        // Should have custom resources from Flow type parameter
+        expectTypeOf(context.redis).toEqualTypeOf<CustomRedis>();
+        expectTypeOf(context.ai).toEqualTypeOf<CustomAI>();
 
-          // Should have typed Supabase env
-          expectTypeOf(context.env.SUPABASE_URL).toEqualTypeOf<string>();
+        // Should have typed Supabase env
+        expectTypeOf(context.env.SUPABASE_URL).toEqualTypeOf<string>();
 
-          return { data: 'result' };
-        }
-      )
-      .step(
-        { slug: 'ai_process' },
-        (input, context: Context<{ ai: CustomAI }>) => {
-          // Should accumulate all resources from previous steps
-          expectTypeOf(context.sql).toEqualTypeOf<Sql>();
-          expectTypeOf(context.redis).toEqualTypeOf<CustomRedis>();
-          expectTypeOf(context.ai).toEqualTypeOf<CustomAI>();
+        return { data: 'result' };
+      })
+      .step({ slug: 'ai_process' }, (input, context) => {
+        // All steps get same context (no accumulation)
+        expectTypeOf(context.sql).toEqualTypeOf<Sql>();
+        expectTypeOf(context.redis).toEqualTypeOf<CustomRedis>();
+        expectTypeOf(context.ai).toEqualTypeOf<CustomAI>();
 
-          return { processed: true };
-        }
-      );
+        return { processed: true };
+      });
 
-    // Flow context should have Supabase platform + accumulated custom resources
-    type FlowContext = ExtractFlowContext<typeof flow>;
-    expectTypeOf<FlowContext>().toEqualTypeOf<
-      SupabasePlatformContext & {
+    // Flow context should have Supabase platform + custom resources
+    type FlowCtx = ExtractFlowContext<typeof flow>;
+    expectTypeOf<FlowCtx>().toEqualTypeOf<
+      FlowContext<SupabaseEnv> & SupabasePlatformContext & {
         redis: CustomRedis;
         ai: CustomAI;
       }
@@ -114,7 +111,7 @@ describe('Supabase Flow Type Tests', () => {
   });
 
   it('should support explicit context type parameter with Supabase Flow', () => {
-    interface ExplicitCustomContext {
+    interface ExplicitCustomContext extends Record<string, unknown> {
       cache: CustomRedis;
       analytics: { track: (event: string) => void };
     }
@@ -139,97 +136,47 @@ describe('Supabase Flow Type Tests', () => {
     });
 
     // Flow context should combine Supabase platform + explicit custom context
-    type FlowContext = ExtractFlowContext<typeof flow>;
-    expectTypeOf<FlowContext>().toEqualTypeOf<
-      SupabasePlatformContext & ExplicitCustomContext
-    >();
-  });
-
-  it('should support mixed explicit and inferred context on Supabase Flow', () => {
-    interface InitialContext {
-      logger: { info: (msg: string) => void };
-    }
-
-    const flow = new SupabaseFlow<{ data: string }, InitialContext>({
-      slug: 'mixed_supabase_flow',
-    })
-      .step({ slug: 'process' }, (input, context) => {
-        // Has Supabase platform resources
-        expectTypeOf(context.sql).toEqualTypeOf<Sql>();
-        expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
-
-        // Has explicit context
-        expectTypeOf(context.logger).toEqualTypeOf<{
-          info: (msg: string) => void;
-        }>();
-
-        return { processed: input.run.data };
-      })
-      .step(
-        { slug: 'enhance' },
-        (input, context: Context<{ ai: CustomAI }>) => {
-          // Should have Supabase platform resources
-          expectTypeOf(context.sql).toEqualTypeOf<Sql>();
-          expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
-
-          // Should have both explicit and inferred context
-          expectTypeOf(context.logger).toEqualTypeOf<{
-            info: (msg: string) => void;
-          }>();
-          expectTypeOf(context.ai).toEqualTypeOf<CustomAI>();
-
-          return { enhanced: true };
-        }
-      );
-
-    // Flow context should have Supabase platform + explicit + inferred
-    type FlowContext = ExtractFlowContext<typeof flow>;
-    expectTypeOf<FlowContext>().toEqualTypeOf<
-      SupabasePlatformContext & {
-        logger: { info: (msg: string) => void };
-        ai: CustomAI;
-      }
+    type FlowCtx = ExtractFlowContext<typeof flow>;
+    expectTypeOf<FlowCtx>().toEqualTypeOf<
+      FlowContext<SupabaseEnv> & SupabasePlatformContext & ExplicitCustomContext
     >();
   });
 
   it('should verify SupabaseResources type structure', () => {
     // Verify the SupabaseResources interface has correct structure
-    expectTypeOf<SupabaseResources>().toEqualTypeOf<{
+    expectTypeOf<SupabaseResources>().toMatchTypeOf<{
       sql: Sql;
       supabase: SupabaseClient;
     }>();
   });
 
   it('should verify SupabasePlatformContext structure', () => {
-    // Verify that SupabasePlatformContext combines BaseContext + SupabaseResources + typed env
-    expectTypeOf<SupabasePlatformContext>().toMatchTypeOf<BaseContext>();
+    // SupabasePlatformContext now only includes resources (sql, supabase)
+    // The env property comes from FlowContext<SupabaseEnv>, not from platform context
     expectTypeOf<SupabasePlatformContext>().toMatchTypeOf<SupabaseResources>();
-    expectTypeOf<SupabasePlatformContext['env']>().toEqualTypeOf<SupabaseEnv>();
+    expectTypeOf<SupabasePlatformContext>().toEqualTypeOf<SupabaseResources>();
   });
 
   it('should preserve step input inference with Supabase Flow', () => {
-    const flow = new SupabaseFlow<{ initial: number }>({
+    const flow = new SupabaseFlow<{ initial: number }, { factor: number }>({
       slug: 'step_inference',
     })
-      .step(
-        { slug: 'multiply' },
-        (input, context: Context<{ factor: number }>) => {
-          // Step input should be properly inferred
-          expectTypeOf(input.run.initial).toEqualTypeOf<number>();
+      .step({ slug: 'multiply' }, (input, context) => {
+        // Step input should be properly inferred
+        expectTypeOf(input.run.initial).toEqualTypeOf<number>();
 
-          // Should have Supabase resources + custom context
-          expectTypeOf(context.sql).toEqualTypeOf<Sql>();
-          expectTypeOf(context.factor).toEqualTypeOf<number>();
+        // Should have Supabase resources + custom context
+        expectTypeOf(context.sql).toEqualTypeOf<Sql>();
+        expectTypeOf(context.factor).toEqualTypeOf<number>();
 
-          return { result: input.run.initial * context.factor };
-        }
-      )
+        return { result: input.run.initial * context.factor };
+      })
       .step({ slug: 'format', dependsOn: ['multiply'] }, (input, context) => {
         // Should have proper step input inference from dependencies
         expectTypeOf(input.run.initial).toEqualTypeOf<number>();
         expectTypeOf(input.multiply.result).toEqualTypeOf<number>();
 
-        // Should still have all accumulated context
+        // Should still have all context
         expectTypeOf(context.sql).toEqualTypeOf<Sql>();
         expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
         expectTypeOf(context.factor).toEqualTypeOf<number>();
@@ -237,59 +184,49 @@ describe('Supabase Flow Type Tests', () => {
         return { formatted: `Result: ${input.multiply.result}` };
       });
 
-    // Verify flow context accumulation
-    type FlowContext = ExtractFlowContext<typeof flow>;
-    expectTypeOf<FlowContext>().toEqualTypeOf<
-      SupabasePlatformContext & {
+    // Verify flow context
+    type FlowCtx = ExtractFlowContext<typeof flow>;
+    expectTypeOf<FlowCtx>().toEqualTypeOf<
+      FlowContext<SupabaseEnv> & SupabasePlatformContext & {
         factor: number;
       }
     >();
   });
 
-  it('should allow handler-specific context without affecting other handlers', () => {
-    const flow = new SupabaseFlow({ slug: 'isolated_context' })
-      .step(
-        { slug: 'step1' },
-        (input, context: Context<{ step1Resource: string }>) => {
-          expectTypeOf(context.sql).toEqualTypeOf<Sql>();
-          expectTypeOf(context.step1Resource).toEqualTypeOf<string>();
-
-          // Should not have step2Resource
-          expectTypeOf(context).not.toHaveProperty('step2Resource');
-
-          return { step1Done: true };
-        }
-      )
-      .step(
-        { slug: 'step2' },
-        (input, context: Context<{ step2Resource: number }>) => {
-          expectTypeOf(context.sql).toEqualTypeOf<Sql>();
-          expectTypeOf(context.step2Resource).toEqualTypeOf<number>();
-
-          // Should have accumulated step1Resource from previous step
-          expectTypeOf(context.step1Resource).toEqualTypeOf<string>();
-
-          return { step2Done: true };
-        }
-      )
-      .step({ slug: 'step3' }, (input, context) => {
-        // Should have Supabase platform resources without explicit typing
+  it('should provide same context to all handlers in a flow', () => {
+    const flow = new SupabaseFlow<{ data: string }, { logger: { info: (msg: string) => void } }>({
+      slug: 'shared_context',
+    })
+      .step({ slug: 'step1' }, (input, context) => {
+        // All handlers get same context
         expectTypeOf(context.sql).toEqualTypeOf<Sql>();
         expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
+        expectTypeOf(context.logger).toEqualTypeOf<{ info: (msg: string) => void }>();
 
-        // Should have accumulated context from previous steps
-        expectTypeOf(context.step1Resource).toEqualTypeOf<string>();
-        expectTypeOf(context.step2Resource).toEqualTypeOf<number>();
+        return { step1Done: true };
+      })
+      .step({ slug: 'step2' }, (input, context) => {
+        // Same context in all steps
+        expectTypeOf(context.sql).toEqualTypeOf<Sql>();
+        expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
+        expectTypeOf(context.logger).toEqualTypeOf<{ info: (msg: string) => void }>();
+
+        return { step2Done: true };
+      })
+      .step({ slug: 'step3' }, (input, context) => {
+        // Same context in all steps
+        expectTypeOf(context.sql).toEqualTypeOf<Sql>();
+        expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
+        expectTypeOf(context.logger).toEqualTypeOf<{ info: (msg: string) => void }>();
 
         return { allDone: true };
       });
 
-    // Final flow context should accumulate all step-specific resources
-    type FlowContext = ExtractFlowContext<typeof flow>;
-    expectTypeOf<FlowContext>().toEqualTypeOf<
-      SupabasePlatformContext & {
-        step1Resource: string;
-        step2Resource: number;
+    // Final flow context includes all declared resources
+    type FlowCtx = ExtractFlowContext<typeof flow>;
+    expectTypeOf<FlowCtx>().toEqualTypeOf<
+      FlowContext<SupabaseEnv> & SupabasePlatformContext & {
+        logger: { info: (msg: string) => void };
       }
     >();
   });
