@@ -3,8 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   Flow as CoreFlow,
   type AnyInput, type AnySteps, type AnyDeps,
-  EmptySteps, EmptyDeps, type Env, type UserEnv, type ValidEnv,
-  type AnyFlow, type Json, type BaseContext
+  EmptySteps, EmptyDeps, type Env
 } from '../index.js';
 
 /* ---------- 1. Resources ------------------------------------------- */
@@ -27,31 +26,22 @@ export interface SupabaseEnv extends Env {
 }
 
 /* ---------- 3. Platform context ------------------------------------ */
-export type SupabasePlatformContext =
-  BaseContext & SupabaseResources & {
-    env: SupabaseEnv & ValidEnv<UserEnv>;
-  };
+// Platform context provides only platform-specific resources (sql, supabase)
+// The env property is provided by FlowContext<TEnv> where TEnv defaults to SupabaseEnv
+// Runtime validation of Supabase-specific env vars happens in SupabasePlatformAdapter
+export type SupabasePlatformContext = SupabaseResources;
 
-/* ---------- 4. Execution contexts ---------------------------------- */
-export type SupabaseMessageContext<T extends Json = Json> =
-  SupabasePlatformContext & {
-    rawMessage: any; // Will be properly typed by edge-worker
-  };
-
-export type SupabaseStepTaskContext<F extends AnyFlow = AnyFlow> =
-  SupabasePlatformContext & {
-    rawMessage: any; // Will be properly typed by edge-worker
-    stepTask: any;   // Will be properly typed by edge-worker
-  };
-
-/* ---------- 5. pre-wired Flow helper -------------------------------- */
+/* ---------- 4. pre-wired Flow helper -------------------------------- */
 export class Flow<
   I extends AnyInput = AnyInput,
-  ExtraCtx extends Record<string, unknown> = Record<string, never>,
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  CustomCtx extends Record<string, unknown> = {},
   S extends AnySteps = EmptySteps,
   D extends AnyDeps   = EmptyDeps,
+  TEnv extends Env = SupabaseEnv  // Default to SupabaseEnv for platform-specific autocomplete
 > extends CoreFlow<
   I,
-  SupabasePlatformContext & ExtraCtx,   // <── full ctx in handlers
-  S, D
+  SupabasePlatformContext & CustomCtx,
+  S, D,
+  TEnv
 > {}

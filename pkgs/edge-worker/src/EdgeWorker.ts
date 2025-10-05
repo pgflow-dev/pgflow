@@ -12,6 +12,7 @@ import type { PlatformAdapter } from './platform/types.js';
 import type { MessageHandlerFn } from './queue/types.js';
 import type { AnyFlow } from '@pgflow/dsl';
 import type { CompatibleFlow } from './types/flowCompatibility.js';
+import type { CurrentPlatformResources } from './types/currentPlatform.js';
 
 
 /**
@@ -44,7 +45,7 @@ import type { CompatibleFlow } from './types/flowCompatibility.js';
  * ```
  */
 export class EdgeWorker {
-  private static platform: PlatformAdapter | null = null;
+  private static platform: PlatformAdapter<CurrentPlatformResources> | null = null;
   private static wasCalled = false;
 
   /**
@@ -56,7 +57,7 @@ export class EdgeWorker {
   static async start<TPayload extends Json = Json>(
     handler: MessageHandlerFn<TPayload>,
     config?: Omit<QueueWorkerConfig, 'sql'>
-  ): Promise<PlatformAdapter>;
+  ): Promise<PlatformAdapter<CurrentPlatformResources>>;
 
   /**
    * Start the EdgeWorker with a flow instance.
@@ -67,7 +68,7 @@ export class EdgeWorker {
   static async start<TFlow extends AnyFlow>(
     flow: CompatibleFlow<TFlow>,
     config?: Omit<FlowWorkerConfig, 'sql'>
-  ): Promise<PlatformAdapter>;
+  ): Promise<PlatformAdapter<CurrentPlatformResources>>;
 
   /**
    * Implementation of the start method that handles both function and flow cases.
@@ -83,7 +84,7 @@ export class EdgeWorker {
   >(
     handlerOrFlow: MessageHandlerFn<TPayload> | TFlow,
     config?: Omit<QueueWorkerConfig, 'sql'> | Omit<FlowWorkerConfig, 'sql'>
-  ): Promise<PlatformAdapter> {
+  ): Promise<PlatformAdapter<CurrentPlatformResources>> {
     if (typeof handlerOrFlow === 'function') {
       return await this.startQueueWorker(
         handlerOrFlow as MessageHandlerFn<TPayload>,
@@ -91,7 +92,7 @@ export class EdgeWorker {
       );
     } else {
       return await this.startFlowWorker(
-        handlerOrFlow as TFlow,
+        handlerOrFlow as CompatibleFlow<TFlow>,
         config
       );
     }
@@ -136,25 +137,26 @@ export class EdgeWorker {
   static async startQueueWorker<TPayload extends Json = Json>(
     handler: MessageHandlerFn<TPayload>,
     config: QueueWorkerConfig = {}
-  ): Promise<PlatformAdapter> {
+  ): Promise<PlatformAdapter<CurrentPlatformResources>> {
     this.ensureFirstCall();
 
-    // First, create the adapter
-    this.platform = await createAdapter();
+    // Create the adapter (use local const for type safety in callbacks)
+    const platform = await createAdapter();
+    this.platform = platform;
 
     // Add platform-specific values to the config
     const workerConfig: QueueWorkerConfig = {
       ...config,
       connectionString:
-        config.connectionString || this.platform.connectionString,
-      env: this.platform.env,
+        config.connectionString || platform.connectionString,
+      env: platform.env,
     };
 
-    await this.platform.startWorker((createLoggerFn) => {
-      return createQueueWorker(handler, workerConfig, createLoggerFn, this.platform);
+    await platform.startWorker((createLoggerFn) => {
+      return createQueueWorker(handler, workerConfig, createLoggerFn, platform);
     });
 
-    return this.platform;
+    return platform;
   }
 
   /**
@@ -186,24 +188,25 @@ export class EdgeWorker {
   static async startFlowWorker<TFlow extends AnyFlow>(
     flow: CompatibleFlow<TFlow>,
     config: FlowWorkerConfig = {}
-  ): Promise<PlatformAdapter> {
+  ): Promise<PlatformAdapter<CurrentPlatformResources>> {
     this.ensureFirstCall();
 
-    // First, create the adapter
-    this.platform = await createAdapter();
+    // Create the adapter (use local const for type safety in callbacks)
+    const platform = await createAdapter();
+    this.platform = platform;
 
     // Add platform-specific values to the config
     const workerConfig: FlowWorkerConfig = {
       ...config,
       connectionString:
-        config.connectionString || this.platform.connectionString,
+        config.connectionString || platform.connectionString,
     };
 
-    await this.platform.startWorker((createLoggerFn) => {
-      return createFlowWorker(flow, workerConfig, createLoggerFn, this.platform);
+    await platform.startWorker((createLoggerFn) => {
+      return createFlowWorker(flow, workerConfig, createLoggerFn, platform);
     });
 
-    return this.platform;
+    return platform;
   }
 
   /**

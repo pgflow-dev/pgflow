@@ -16,10 +16,10 @@ it('should correctly type step handlers when using getStepDefinition', () => {
 
   const root_a = TestFlow.getStepDefinition('root_a');
 
-  // Test root_a handler type
+  // Test root_a handler type - handlers now have 2 parameters (input, context)
   expectTypeOf(root_a.handler).toBeFunction();
   expectTypeOf(root_a.handler).parameters.toMatchTypeOf<
-    [{ run: { url: string } }]
+    [{ run: { url: string } }, any]
   >();
   expectTypeOf(root_a.handler).returns.toMatchTypeOf<
     string | Promise<string>
@@ -29,7 +29,7 @@ it('should correctly type step handlers when using getStepDefinition', () => {
   const root_b = TestFlow.getStepDefinition('root_b');
   expectTypeOf(root_b.handler).toBeFunction();
   expectTypeOf(root_b.handler).parameters.toMatchTypeOf<
-    [{ run: { url: string } }]
+    [{ run: { url: string } }, any]
   >();
   expectTypeOf(root_b.handler).returns.toMatchTypeOf<
     number | Promise<number>
@@ -44,7 +44,8 @@ it('should correctly type step handlers when using getStepDefinition', () => {
         run: { url: string };
         root_a: string;
         root_b: number;
-      }
+      },
+      any
     ]
   >();
   expectTypeOf(merge.handler).returns.toMatchTypeOf<

@@ -11,7 +11,7 @@ const myFlow = new Flow({ slug: 'supabase_example' })
     const users = await ctx.sql`SELECT * FROM users WHERE active = true`;
     return { users };
   })
-  .step({ slug: 'notify_admin' }, async (input, ctx) => {
+  .step({ slug: 'notify_admin', dependsOn: ['query_users'] }, async (input, ctx) => {
     // Supabase client available with service role access
     const { data: _data, error } = await ctx.supabase
       .from('admin_notifications')
@@ -23,7 +23,7 @@ const myFlow = new Flow({ slug: 'supabase_example' })
     if (error) throw error;
     return { notified: true };
   })
-  .step({ slug: 'public_update' }, async (input, ctx) => {
+  .step({ slug: 'public_update', dependsOn: ['query_users'] }, async (input, ctx) => {
     // Use the same client for all operations
     const { data: _data } = await ctx.supabase
       .from('public_stats')

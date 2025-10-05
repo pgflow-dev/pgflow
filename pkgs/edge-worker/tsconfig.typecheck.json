@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "lib": ["ESNext", "DOM"],
+    "types": [
+      "@types/deno",
+      "vitest/globals",
+      "vitest/importMeta",
+      "vite/client",
+      "vitest"
+    ]
+  },
+  "include": [
+    "src/__tests__/**/*.test-d.ts",
+    "src/__tests__/**/*.spec-d.ts"
+  ]
+}
