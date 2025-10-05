@@ -34,12 +34,20 @@
     "test": {
       "executor": "nx:noop",
       "dependsOn": [
+        "test:vitest",
         "test:e2e:install",
         "test:e2e:install:duplicates",
         "test:e2e:compile"
       ],
       "options": {
         "parallel": false
+      }
+    },
+    "test:vitest": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest run",
+        "cwd": "{projectRoot}"
       }
     },
     "test:e2e:install": {
