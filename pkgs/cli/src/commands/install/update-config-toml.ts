@@ -52,7 +52,14 @@ export async function updateConfigToml({
     }
 
     const configContent = fs.readFileSync(configPath, 'utf8');
-    const config = TOML.parse(configContent) as SupabaseConfig;
+    let config: SupabaseConfig;
+    try {
+      config = TOML.parse(configContent) as SupabaseConfig;
+    } catch (parseError) {
+      const errorMsg = parseError instanceof Error ? parseError.message : String(parseError);
+      log.error(`Invalid TOML syntax in ${configPath}: ${errorMsg}`);
+      throw new Error(`Invalid TOML syntax in ${configPath}: ${errorMsg}`);
+    }
 
     const currentSettings = {
       poolerEnabled: config.db?.pooler?.enabled ?? false,
