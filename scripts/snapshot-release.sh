@@ -97,7 +97,8 @@ if [[ "$NO_CLEANUP" != "true" ]]; then
         git restore --source=HEAD --worktree --staged \
         pnpm-lock.yaml 2>/dev/null || true; \
         git restore --source=HEAD --worktree --staged \
-        .changeset/*.md .changeset/pre.json 2>/dev/null || true' EXIT
+        .changeset/pre.json 2>/dev/null || true; \
+        git clean -fd .changeset 2>/dev/null || true' EXIT
 fi
 
 # ------------------------------------------------------------------
@@ -145,13 +146,26 @@ echo ""
 # ------------------------------------------------------------------
 echo -e "${BOLD}Checking for changesets...${NC}"
 
-if ! pnpm exec changeset status 2>/dev/null | grep -q -E "(packages will be released|Packages to be bumped)" ; then
-  echo -e "${RED}✗ No unreleased changesets found${NC}"
+# Check for changeset files (either committed or uncommitted)
+CHANGESET_FILES=$(find .changeset -name "*.md" -not -name "README.md" 2>/dev/null || true)
+
+if [[ -z "$CHANGESET_FILES" ]]; then
+  echo -e "${RED}✗ No changeset files found${NC}"
   echo ""
   echo "Create a changeset first:"
   echo -e "  ${BLUE}pnpm exec changeset${NC}"
   exit 1
 fi
+
+# Verify changesets will create versions
+if ! pnpm exec changeset status 2>/dev/null | grep -q -E "(packages will be released|Packages to be bumped)" ; then
+  echo -e "${RED}✗ No packages to release from changesets${NC}"
+  echo ""
+  echo "Changeset files found but no packages will be bumped."
+  echo "This might mean changesets are already released."
+  exit 1
+fi
+
 echo -e "${GREEN}✓ Found unreleased changesets${NC}"
 echo ""
 

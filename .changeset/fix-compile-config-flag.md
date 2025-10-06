@@ -1,5 +1,5 @@
 ---
-'@pgflow/cli': patch
+'pgflow': patch
 ---
 
 Fix: Use --config instead of --import-map for Deno compilation
