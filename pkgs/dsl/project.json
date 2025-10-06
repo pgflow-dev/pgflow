@@ -25,7 +25,7 @@
         "parallel": false
       }
     },
-    "test": {
+    "test:vitest": {
       "executor": "@nx/vite:test",
       "dependsOn": ["build"],
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
@@ -38,8 +38,12 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
-        "command": "tsc --project tsconfig.typecheck.json --noEmit"
+        "command": "bash ../../scripts/typecheck-strict.sh"
       }
+    },
+    "test": {
+      "executor": "nx:noop",
+      "dependsOn": ["test:vitest", "test:types"]
     }
   }
 }

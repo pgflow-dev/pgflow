@@ -165,28 +165,15 @@
       }
     },
     "test": {
-      "dependsOn": ["test:types:all", "test:unit", "test:integration"]
+      "dependsOn": ["test:types", "test:unit", "test:integration"]
     },
-    "test:types:tsc": {
-      "executor": "nx:run-commands",
-      "options": {
-        "cwd": "{projectRoot}",
-        "command": "tsc --project tsconfig.typecheck.json --noEmit"
-      }
-    },
-    "test:types:examples": {
+    "test:types": {
       "executor": "nx:run-commands",
       "dependsOn": ["^build"],
       "options": {
         "cwd": "{projectRoot}",
-        "command": "deno check --config deno.test.json src/examples/*.ts"
+        "command": "deno check --config deno.test.json src/examples/*.example.ts tests/types/*.test-d.ts"
       }
-    },
-    "test:types": {
-      "dependsOn": ["test:types:tsc", "test:types:examples"]
-    },
-    "test:types:all": {
-      "dependsOn": ["test:types"]
     }
   },
   "tags": []

@@ -159,7 +159,7 @@
         "parallel": false
       }
     },
-    "test": {
+    "test:vitest": {
       "executor": "nx:run-commands",
       "local": true,
       "dependsOn": ["db:ensure", "build"],
@@ -168,6 +168,10 @@
         "commands": ["vitest run __tests__/"],
         "parallel": false
       }
+    },
+    "test": {
+      "executor": "nx:noop",
+      "dependsOn": ["test:vitest", "test:types"]
     },
     "benchmark": {
       "executor": "nx:run-commands",
@@ -183,7 +187,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
-        "command": "tsc --project tsconfig.typecheck.json --noEmit"
+        "command": "bash ../../scripts/typecheck-strict.sh"
       }
     }
   }

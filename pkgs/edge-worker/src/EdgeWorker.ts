@@ -10,8 +10,7 @@ import {
 import { createAdapter } from './platform/createAdapter.js';
 import type { PlatformAdapter } from './platform/types.js';
 import type { MessageHandlerFn } from './queue/types.js';
-import type { AnyFlow } from '@pgflow/dsl';
-import type { CompatibleFlow } from './types/flowCompatibility.js';
+import type { AnyFlow, CompatibleFlow } from '@pgflow/dsl';
 import type { CurrentPlatformResources } from './types/currentPlatform.js';
 
 
@@ -66,7 +65,7 @@ export class EdgeWorker {
    * @param config - Configuration options for the flow worker
    */
   static async start<TFlow extends AnyFlow>(
-    flow: CompatibleFlow<TFlow>,
+    flow: CompatibleFlow<TFlow, CurrentPlatformResources>,
     config?: Omit<FlowWorkerConfig, 'sql'>
   ): Promise<PlatformAdapter<CurrentPlatformResources>>;
 
@@ -92,7 +91,7 @@ export class EdgeWorker {
       );
     } else {
       return await this.startFlowWorker(
-        handlerOrFlow as CompatibleFlow<TFlow>,
+        handlerOrFlow as CompatibleFlow<TFlow, CurrentPlatformResources>,
         config
       );
     }
@@ -186,7 +185,7 @@ export class EdgeWorker {
    * ```
    */
   static async startFlowWorker<TFlow extends AnyFlow>(
-    flow: CompatibleFlow<TFlow>,
+    flow: CompatibleFlow<TFlow, CurrentPlatformResources>,
     config: FlowWorkerConfig = {}
   ): Promise<PlatformAdapter<CurrentPlatformResources>> {
     this.ensureFirstCall();
