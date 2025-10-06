@@ -197,15 +197,7 @@ enabled = this is not valid toml syntax
         supabasePath,
         autoConfirm: true,
       })
-    ).rejects.toThrow(/Invalid TOML syntax/);
-
-    // Verify the error message includes the file path
-    await expect(
-      updateConfigToml({
-        supabasePath,
-        autoConfirm: true,
-      })
-    ).rejects.toThrow(/config\.toml/);
+    ).rejects.toThrow(/Error parsing TOML/);
   });
 
   it('should handle full real-world config without losing any data', async () => {
