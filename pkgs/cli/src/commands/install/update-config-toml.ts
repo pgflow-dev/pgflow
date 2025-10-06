@@ -135,31 +135,6 @@ ${chalk.green('+ policy = "per_worker"')}`);
       trailingComma: false,
     });
 
-    // Post-process to remove trailing commas from specific updated lines
-    // The toml-patch library sometimes adds unwanted trailing commas despite the trailingComma: false option.
-    // For example, it might transform:
-    //   [db.pooler]
-    //   enabled = false
-    // into:
-    //   [db.pooler]
-    //   enabled = true,  # <-- unwanted trailing comma
-    //
-    // These regex replacements target only the specific lines we're updating and remove any trailing commas
-    // while preserving any whitespace, comments, or newlines that follow.
-    updatedContent = updatedContent
-      // Fix db.pooler.enabled line - transforms "enabled = true," into "enabled = true"
-      .replace(/enabled = true,(\s*$|\s*#|\s*\n)/g, 'enabled = true$1')
-      .replace(
-        // Fix db.pooler.pool_mode line - transforms "pool_mode = "transaction"," into "pool_mode = "transaction""
-        /pool_mode = "transaction",(\s*$|\s*#|\s*\n)/g,
-        'pool_mode = "transaction"$1'
-      )
-      .replace(
-        // Fix edge_runtime.policy line - transforms "policy = "per_worker"," into "policy = "per_worker""
-        /policy = "per_worker",(\s*$|\s*#|\s*\n)/g,
-        'policy = "per_worker"$1'
-      );
-
     fs.writeFileSync(configPath, updatedContent);
 
     log.success('Supabase configuration updated successfully');
