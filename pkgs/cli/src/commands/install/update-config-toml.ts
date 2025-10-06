@@ -130,12 +130,24 @@ ${chalk.green('+ policy = "per_worker"')}`);
     updatedConfig.db.pooler.pool_mode = 'transaction';
     updatedConfig.edge_runtime.policy = 'per_worker';
 
-    // Apply TOML patch
-    let updatedContent = TOML.patch(configContent, updatedConfig, {
-      trailingComma: false,
-    });
+    let updatedContent: string;
+    try {
+      updatedContent = TOML.patch(configContent, updatedConfig, {
+        trailingComma: false,
+      });
+    } catch (stringifyError) {
+      const errorMsg = stringifyError instanceof Error ? stringifyError.message : String(stringifyError);
+      log.error(`Failed to generate TOML for ${configPath}: ${errorMsg}`);
+      throw new Error(`Failed to generate TOML for ${configPath}: ${errorMsg}`);
+    }
 
-    fs.writeFileSync(configPath, updatedContent);
+    try {
+      fs.writeFileSync(configPath, updatedContent);
+    } catch (writeError) {
+      const errorMsg = writeError instanceof Error ? writeError.message : String(writeError);
+      log.error(`Failed to write ${configPath}: ${errorMsg}`);
+      throw new Error(`Failed to write ${configPath}: ${errorMsg}`);
+    }
 
     log.success('Supabase configuration updated successfully');
     return true;
