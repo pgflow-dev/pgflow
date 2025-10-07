@@ -292,6 +292,7 @@ export interface StepDefinition<
   handler: (input: TInput, context: TContext) => TOutput | Promise<TOutput>;
   dependencies: string[];
   options: StepRuntimeOptions;
+  stepType?: 'single' | 'map';
 }
 
 // Utility type to merge two object types and preserve required properties
@@ -385,7 +386,7 @@ export class Flow<
     ) => any,
     Deps extends Extract<keyof Steps, string> = never
   >(
-    opts: Simplify<{ slug: Slug; dependsOn?: Deps[] } & StepRuntimeOptions>,
+    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn?: Deps[] } & StepRuntimeOptions>,
     handler: THandler
   ): Flow<
     TFlowInput,
@@ -469,10 +470,10 @@ export class Flow<
 
   /**
    * Add an array-returning step to the flow with compile-time type safety
-   * 
+   *
    * This method provides semantic clarity and type enforcement for steps that return arrays,
    * while maintaining full compatibility with the existing step system by delegating to `.step()`.
-   * 
+   *
    * @template Slug - The unique identifier for this step
    * @template THandler - The handler function that must return an array or Promise<array>
    * @template Deps - The step dependencies (must be existing step slugs)
@@ -494,7 +495,7 @@ export class Flow<
     ) => Array<Json> | Promise<Array<Json>>,
     Deps extends Extract<keyof Steps, string> = never
   >(
-    opts: Simplify<{ slug: Slug; dependsOn?: Deps[] } & StepRuntimeOptions>,
+    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn?: Deps[] } & StepRuntimeOptions>,
     handler: THandler
   ): Flow<
     TFlowInput,
@@ -505,5 +506,103 @@ export class Flow<
   > {
     // Delegate to existing .step() method for maximum code reuse
     return this.step(opts, handler);
+  }
+
+  /**
+   * Add a map step to the flow that processes arrays element by element
+   *
+   * Map steps apply a handler function to each element of an array, producing
+   * a new array with the transformed elements. The handler receives individual
+   * array elements, not the full input object.
+   *
+   * @param opts - Step configuration including slug and optional array dependency
+   * @param handler - Function that processes individual array elements
+   * @returns A new Flow instance with the map step added
+   */
+  // Overload for root map
+  map<Slug extends string, THandler>(
+    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug } & StepRuntimeOptions>,
+    handler: TFlowInput extends readonly (infer Item)[]
+      ? THandler & ((item: Item, context: BaseContext & TContext) => Json | Promise<Json>)
+      : never
+  ): Flow<
+    TFlowInput,
+    TContext & BaseContext,
+    Steps & { [K in Slug]: Awaited<ReturnType<THandler & ((item: any, context: any) => any)>>[] },
+    StepDependencies & { [K in Slug]: [] }
+  >;
+
+  // Overload for dependent map
+  map<Slug extends string, TArrayDep extends Extract<keyof Steps, string>, THandler>(
+    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; array: TArrayDep } & StepRuntimeOptions>,
+    handler: Steps[TArrayDep] extends readonly (infer Item)[]
+      ? THandler & ((item: Item, context: BaseContext & TContext) => Json | Promise<Json>)
+      : never
+  ): Flow<
+    TFlowInput,
+    TContext & BaseContext,
+    Steps & { [K in Slug]: Awaited<ReturnType<THandler & ((item: any, context: any) => any)>>[] },
+    StepDependencies & { [K in Slug]: [TArrayDep] }
+  >;
+
+  // Implementation
+  map(opts: any, handler: any): any {
+    const slug = opts.slug;
+
+    // Validate the step slug
+    validateSlug(slug);
+
+    if (this.stepDefinitions[slug]) {
+      throw new Error(`Step "${slug}" already exists in flow "${this.slug}"`);
+    }
+
+    // Determine dependencies based on whether array is specified
+    let dependencies: string[] = [];
+    const arrayDep = (opts as any).array;
+    if (arrayDep) {
+      // Dependent map - validate single dependency exists and returns array
+      if (!this.stepDefinitions[arrayDep]) {
+        throw new Error(`Step "${slug}" depends on undefined step "${arrayDep}"`);
+      }
+      dependencies = [arrayDep];
+    } else {
+      // Root map - flow input must be an array (type system enforces this)
+      dependencies = [];
+    }
+
+    // Extract runtime options
+    const options: StepRuntimeOptions = {};
+    if (opts.maxAttempts !== undefined) options.maxAttempts = opts.maxAttempts;
+    if (opts.baseDelay !== undefined) options.baseDelay = opts.baseDelay;
+    if (opts.timeout !== undefined) options.timeout = opts.timeout;
+    if (opts.startDelay !== undefined) options.startDelay = opts.startDelay;
+
+    // Validate runtime options
+    validateRuntimeOptions(options, { optional: true });
+
+    // Create the map step definition with stepType
+    // Note: We use AnyInput/AnyOutput here because the actual types are handled at the type level via overloads
+    const newStepDefinition: StepDefinition<AnyInput, AnyOutput, BaseContext & TContext> = {
+      slug,
+      handler: handler as any, // Type assertion needed due to complex generic constraints
+      dependencies,
+      options,
+      stepType: 'map', // Mark this as a map step
+    };
+
+    const newStepDefinitions = {
+      ...this.stepDefinitions,
+      [slug]: newStepDefinition,
+    };
+
+    // Create a new stepOrder array with the new slug appended
+    const newStepOrder = [...this.stepOrder, slug];
+
+    // Create and return new Flow instance with updated types
+    return new Flow(
+      { slug: this.slug, ...this.options },
+      newStepDefinitions as Record<string, StepDefinition<AnyInput, AnyOutput>>,
+      newStepOrder
+    ) as any; // Type assertion handled by overloads
   }
 }
