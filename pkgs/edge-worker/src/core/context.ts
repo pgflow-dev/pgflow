@@ -63,7 +63,8 @@ import { deepClone, deepFreeze } from './deepUtils.js';
 export function createContextSafeConfig<T extends Record<string, unknown>>(
   config: T
 ): Readonly<T extends { sql: unknown } ? Omit<T, 'sql'> : T> {
-  const { sql: _sql, ...safeConfig } = config as T & { sql?: unknown };
+  const { sql, ...safeConfig } = config as T & { sql?: unknown };
+  void sql;
   const clonedConfig = deepClone(safeConfig);
   return deepFreeze(clonedConfig) as Readonly<T extends { sql: unknown } ? Omit<T, 'sql'> : T>;
 }
