@@ -59,6 +59,9 @@ ADD CONSTRAINT output_only_when_completed CHECK (
 2. **Map steps**: Store aggregated array ordered by task_index
 3. **Taskless steps**: Store empty array `[]` for map steps, NULL for single steps
 4. **Storage location**: Step output belongs at step level, not task level
+5. **Failed steps**: Do NOT store output at step level (only completed steps have step output)
+   - Individual failed tasks still store their output for debugging
+   - This includes type violation failures where task output is preserved
 
 ## Implementation Changes
 
@@ -188,7 +191,8 @@ SET status = 'completed',
    - Add: Verify output remains NULL until all tasks complete
 
 10. **`tests/map_output_aggregation/failed_task_handling.test.sql`**
-    - Add: Verify output remains NULL when step fails
+    - Add: Verify step output remains NULL when step fails
+    - Add: Verify individual task outputs are still preserved for debugging
 
 11. **`tests/map_output_aggregation/map_initial_tasks_timing.test.sql`**
     - No changes needed (focuses on timing)
@@ -230,6 +234,8 @@ SET status = 'completed',
    ```sql
    -- Verify output is NULL for non-completed steps
    -- Check constraint prevents setting output on non-completed steps
+   -- Verify failed steps have NULL output at step level
+   -- Verify failed tasks still preserve their output for debugging
    ```
 
 4. **`tests/step_output/taskless_step_outputs.test.sql`**
@@ -242,6 +248,13 @@ SET status = 'completed',
    ```sql
    -- Verify NULL task outputs are preserved in aggregation
    -- Map with [null, {data}, null] -> step_states.output has all three
+   ```
+
+6. **`tests/step_output/failed_task_output_preservation.test.sql`**
+   ```sql
+   -- Verify failed tasks store their output (including type violations)
+   -- Verify step output remains NULL when step fails
+   -- Test both regular failures and type constraint violations
    ```
 
 #### Tests to Remove/Update

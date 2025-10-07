@@ -82,7 +82,7 @@ create table pgflow.step_tasks (
     status in ('queued', 'started', 'completed', 'failed')
   ),
   constraint output_valid_only_for_completed check (
-    output is null or status = 'completed'
+    output is null or status in ('completed', 'failed')
   ),
   constraint attempts_count_nonnegative check (attempts_count >= 0),
   constraint completed_at_or_failed_at check (not (completed_at is not null and failed_at is not null)),
