@@ -93,6 +93,9 @@ PERFORM realtime.send(
   false
 );
 
+-- Complete any taskless steps that are ready (e.g., empty array maps)
+PERFORM pgflow.cascade_complete_taskless_steps(v_created_run.run_id);
+
 PERFORM pgflow.start_ready_steps(v_created_run.run_id);
 
 RETURN QUERY SELECT * FROM pgflow.runs where pgflow.runs.run_id = v_created_run.run_id;

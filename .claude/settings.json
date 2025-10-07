@@ -4,6 +4,7 @@
       "Bash(./scripts/atlas-migrate-diff:*)",
       "Bash(./scripts/atlas-migrate-hash:*)",
       "Bash(./scripts/run-test-with-colors:*)",
+      "Bash(PGPASSWORD=postgres psql -h 127.0.0.1 -p 50422 -U postgres -d postgres -c:*)",
       "Bash(bin/run-test-with-colors:*)",
       "Bash(cat:*)",
       "Bash(cd:*)",
@@ -52,7 +53,8 @@
       "mcp__nx-mcp__nx_docs",
       "mcp__nx-mcp__nx_project_details",
       "mcp__nx-mcp__nx_workspace",
-      "mcp__nx-mcp__nx_workspace_path"
+      "mcp__nx-mcp__nx_workspace_path",
+      "mcp__sequentialthinking__sequentialthinking"
     ],
     "deny": []
   },
