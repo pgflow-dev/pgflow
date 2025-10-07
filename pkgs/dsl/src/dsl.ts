@@ -466,4 +466,44 @@ export class Flow<
       newStepOrder
     ) as Flow<TFlowInput, TContext, NewSteps, NewDependencies, TEnv>;
   }
+
+  /**
+   * Add an array-returning step to the flow with compile-time type safety
+   * 
+   * This method provides semantic clarity and type enforcement for steps that return arrays,
+   * while maintaining full compatibility with the existing step system by delegating to `.step()`.
+   * 
+   * @template Slug - The unique identifier for this step
+   * @template THandler - The handler function that must return an array or Promise<array>
+   * @template Deps - The step dependencies (must be existing step slugs)
+   * @param opts - Step configuration including slug, dependencies, and runtime options
+   * @param handler - Function that processes input and returns an array
+   * @returns A new Flow instance with the array step added
+   */
+  array<
+    Slug extends string,
+    THandler extends (
+      input: Simplify<
+        {
+          run: TFlowInput;
+        } & {
+          [K in Deps]: K extends keyof Steps ? Steps[K] : never;
+        }
+      >,
+      context: BaseContext & TContext
+    ) => Array<Json> | Promise<Array<Json>>,
+    Deps extends Extract<keyof Steps, string> = never
+  >(
+    opts: Simplify<{ slug: Slug; dependsOn?: Deps[] } & StepRuntimeOptions>,
+    handler: THandler
+  ): Flow<
+    TFlowInput,
+    TContext,
+    Steps & { [K in Slug]: AwaitedReturn<THandler> },
+    StepDependencies & { [K in Slug]: Deps[] },
+    TEnv
+  > {
+    // Delegate to existing .step() method for maximum code reuse
+    return this.step(opts, handler);
+  }
 }
