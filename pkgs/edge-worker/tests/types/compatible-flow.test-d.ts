@@ -1,5 +1,5 @@
 import { Flow as SupabaseFlow } from '@pgflow/dsl/supabase';
-import { EdgeWorker } from '../EdgeWorker.js';
+import { EdgeWorker } from '../../src/EdgeWorker.js';
 import type { Json } from '@pgflow/dsl';
 
 // Example 1: Flow using only platform resources - should work

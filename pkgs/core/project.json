@@ -194,7 +194,7 @@
     },
     "test": {
       "executor": "nx:noop",
-      "dependsOn": ["test:pgtap", "test:vitest"]
+      "dependsOn": ["test:pgtap", "test:vitest", "test:types"]
     },
     "test:pgtap": {
       "executor": "nx:run-commands",
@@ -267,7 +267,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
-        "command": "tsc --project tsconfig.typecheck.json --noEmit"
+        "command": "bash ../../scripts/typecheck-strict.sh"
       }
     }
   }

@@ -179,6 +179,37 @@ export type ExtractFlowContext<TFlow extends AnyFlow> = TFlow extends Flow<
   : never;
 
 /**
+ * Type guard that ensures a flow's context requirements can be satisfied
+ * by the resources provided by the platform and optional user resources.
+ *
+ * A flow is compatible if the provided platform and user resources can satisfy
+ * all the context requirements declared by the flow.
+ *
+ * @template F - The Flow type to check for compatibility
+ * @template PlatformResources - Resources provided by the execution platform (e.g., Supabase resources)
+ * @template UserResources - Additional user-provided resources (default: empty)
+ *
+ * @example
+ * ```typescript
+ * // In a platform worker:
+ * type SupabaseCompatibleFlow<F extends AnyFlow> = CompatibleFlow<F, SupabaseResources>;
+ *
+ * // Usage:
+ * function startWorker<F extends AnyFlow>(flow: SupabaseCompatibleFlow<F>) {
+ *   // flow is guaranteed to be compatible with Supabase platform
+ * }
+ * ```
+ */
+export type CompatibleFlow<
+  F extends AnyFlow,
+  PlatformResources extends Record<string, unknown>,
+  UserResources extends Record<string, unknown> = Record<string, never>
+> =
+  (FlowContext<ExtractFlowEnv<F>> & PlatformResources & UserResources) extends ExtractFlowContext<F>
+    ? F
+    : never;
+
+/**
  * Extracts the dependencies type from a Flow
  * @template TFlow - The Flow type to extract from
  */
@@ -528,7 +559,7 @@ export class Flow<
   ): Flow<
     TFlowInput,
     TContext & BaseContext,
-    Steps & { [K in Slug]: Awaited<ReturnType<THandler & ((item: any, context: any) => any)>>[] },
+    Steps & { [K in Slug]: AwaitedReturn<THandler>[] },
     StepDependencies & { [K in Slug]: [] }
   >;
 
@@ -541,7 +572,7 @@ export class Flow<
   ): Flow<
     TFlowInput,
     TContext & BaseContext,
-    Steps & { [K in Slug]: Awaited<ReturnType<THandler & ((item: any, context: any) => any)>>[] },
+    Steps & { [K in Slug]: AwaitedReturn<THandler>[] },
     StepDependencies & { [K in Slug]: [TArrayDep] }
   >;
 
