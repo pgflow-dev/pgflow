@@ -56,12 +56,12 @@ select is(
   'Second root map should have initial_tasks = 4'
 );
 
--- TEST: Dependent map should have initial_tasks = 1 (will be updated when map_one completes)
+-- TEST: Dependent map should have initial_tasks = NULL (will be updated when map_one completes)
 select is(
-  (select initial_tasks from pgflow.step_states 
+  (select initial_tasks from pgflow.step_states
    where step_slug = 'map_three' limit 1),
-  1,
-  'Dependent map should have initial_tasks = 1 initially (will be updated later)'
+  NULL::integer,
+  'Dependent map should have initial_tasks = NULL initially (will be updated when dependency completes)'
 );
 
 -- TEST: All steps should have correct status

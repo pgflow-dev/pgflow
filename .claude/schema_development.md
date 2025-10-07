@@ -110,6 +110,21 @@ git rm -f supabase/migrations/*_pgflow_{TEMP,temp}_*.sql
 **Temp Migrations**: Use TEMP_ prefix for stacked PRs, remove before final merge, CI enforces this
 **Avoid**: Manual migration edits, forgetting to remove old migration, skipping hash reset, failing tests, mixing changes, merging temp migrations to main
 
+### Performance-First SQL Design
+
+**Use Section Comments Instead of Helper Functions**: Keep complex functions monolithic for performance. Use clear section comments:
+
+```sql
+-- ==========================================
+-- MAIN SECTION: Description
+-- ==========================================
+WITH
+-- ---------- Subsection ----------
+cte_name AS (...)
+```
+
+Avoids function call overhead, preserves CTE optimization, simpler atomicity.
+
 ## Troubleshooting
 
 ### Migration name exists

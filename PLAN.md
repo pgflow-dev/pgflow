@@ -87,6 +87,13 @@
   - Array validation and count propagation working
   - Cascade handles taskless dependent maps
 
+- [x] **PR #213: NULL for Unknown initial_tasks** - `09-16-make-initial-tasks-nullable`
+  - Changed initial_tasks from "1 as placeholder" to NULL for dependent map steps
+  - Benefits: Semantic correctness (NULL = unknown, not "1 task")
+  - Implemented: Schema change to allow NULL, updated all SQL functions
+  - Added validation for non-array and NULL outputs to map steps
+  - Comprehensive tests for NULL behavior and error cases
+
 #### ❌ Remaining Work
 
 - [ ] **Array Element Distribution** (CRITICAL - BLOCKS REAL MAP USAGE)
@@ -102,6 +109,8 @@
   - Store aggregated output for dependent steps to consume
   - Maintain task_index ordering in aggregated arrays
   - Tests for aggregation with actual map task outputs
+  - **IMPORTANT**: Must add test for map->map NULL propagation when this is implemented
+  - **IMPORTANT**: Must handle non-array outputs to map steps (should fail the run)
 
 - [ ] **DSL Support for .map() Step Type**
 
@@ -124,22 +133,40 @@
   - Basic happy path coverage
   - This should be minimal and added to the Edge Worker integration test suite for now
 
-- [ ] **Semantic Improvement: NULL for Unknown initial_tasks** (OPTIONAL - Can be deferred)
-
-  - Change initial_tasks from "1 as placeholder" to NULL for dependent map steps
-  - Benefits: Semantic correctness (NULL = unknown, not "1 task")
-  - Scope: Schema change to allow NULL, update 5+ SQL functions
-  - See detailed plan in `pkgs/core/PLAN_use_null_for_map_initial_tasks.md`
-  - **Note**: This is a semantic improvement only - current approach works functionally
-  - **Warning**: If deferred, new tests for Array Distribution and Output Aggregation will
-    assume initial_tasks = 1 for dependent maps, making this change harder later
-
 - [ ] **Migration Consolidation**
 
   - Remove all temporary/incremental migrations from feature branches
   - Generate a single consolidated migration for the entire map infrastructure
   - Ensure clean migration path from current production schema
   - If NULL improvement is done, include it in the consolidated migration
+
+- [ ] **Update README's** and **Docs**
+
+  - `pkgs/core/README.md`
+
+    - Add new section describing the step types
+    - Describe single step briefly, focus on describing map step type and how it differs
+    - Make sure to mention that maps are constrained to have exactly one dependency
+    - Show multiple cases of inputs -> task creation
+    - Explain edge cases (empty array propagation, invalid array input)
+    - Explain root map vs dependent map and how it gets handled and what restrictions those apply on the Flow input
+    - Explain cascade completion of taskless steps and its limitations
+
+  - `pkgs/dsl/README.md`
+
+    - Briefly describe the new `.array()` and `.map()` methods
+    - Mention `.array` is mostly sugar, and `.map` is the new step type
+    - Link to `pkgs/core/README.md` sections for more explanation about map steps
+    - Make sure to mention that maps are constrained to have exactly one dependency
+
+  - **Add basic docs page**
+
+    - put it into `pkgs/website/src/content/docs/concepts/array-and-map-steps.mdx`
+    - describe the DSL and how the map works and why we need it
+    - show example usage of root map
+    - show example usage of dependent map
+    - focus mostly on how to use it, instead of how it works under the hood
+    - link to the README's for more details
 
 - [ ] **Graphite Stack Merge**
 
