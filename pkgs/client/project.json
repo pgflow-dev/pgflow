@@ -21,6 +21,7 @@
     "build:lib": {
       "executor": "@nx/vite:build",
       "outputs": ["{options.outputPath}"],
+      "dependsOn": ["^build"],
       "options": {
         "outputPath": "pkgs/client/dist",
         "configFile": "pkgs/client/vite.config.ts"
@@ -29,6 +30,7 @@
     "build:browser": {
       "executor": "@nx/vite:build",
       "outputs": ["{options.outputPath}"],
+      "dependsOn": ["^build"],
       "options": {
         "outputPath": "pkgs/client/dist",
         "configFile": "pkgs/client/vite.browser.config.ts"
@@ -36,6 +38,7 @@
     },
     "typecheck": {
       "executor": "@nx/js:tsc",
+      "dependsOn": ["^build"],
       "options": {
         "noEmit": true,
         "tsConfig": "pkgs/client/tsconfig.lib.json",

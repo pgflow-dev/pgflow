@@ -18,15 +18,21 @@ begin
 -- VALIDATION: Array output for dependent maps
 -- ==========================================
 -- Must happen BEFORE acquiring locks to fail fast without holding resources
-SELECT ds.step_slug INTO v_dependent_map_slug
-FROM pgflow.deps d
-JOIN pgflow.steps ds ON ds.flow_slug = d.flow_slug AND ds.step_slug = d.step_slug
-JOIN pgflow.step_states ss ON ss.flow_slug = ds.flow_slug AND ss.step_slug = ds.step_slug
-WHERE d.dep_slug = complete_task.step_slug
-  AND d.flow_slug = (SELECT r.flow_slug FROM pgflow.runs r WHERE r.run_id = complete_task.run_id)
-  AND ds.step_type = 'map'
-  AND ss.run_id = complete_task.run_id
-  AND ss.initial_tasks IS NULL
+-- Only validate for single steps - map steps produce scalars that get aggregated
+SELECT child_step.step_slug INTO v_dependent_map_slug
+FROM pgflow.deps dependency
+JOIN pgflow.steps child_step ON child_step.flow_slug = dependency.flow_slug
+                             AND child_step.step_slug = dependency.step_slug
+JOIN pgflow.steps parent_step ON parent_step.flow_slug = dependency.flow_slug
+                              AND parent_step.step_slug = dependency.dep_slug
+JOIN pgflow.step_states child_state ON child_state.flow_slug = child_step.flow_slug
+                                    AND child_state.step_slug = child_step.step_slug
+WHERE dependency.dep_slug = complete_task.step_slug  -- parent is the completing step
+  AND dependency.flow_slug = (SELECT r.flow_slug FROM pgflow.runs r WHERE r.run_id = complete_task.run_id)
+  AND parent_step.step_type = 'single'  -- Only validate single steps
+  AND child_step.step_type = 'map'
+  AND child_state.run_id = complete_task.run_id
+  AND child_state.initial_tasks IS NULL
   AND (complete_task.output IS NULL OR jsonb_typeof(complete_task.output) != 'array')
 LIMIT 1;
 
@@ -89,41 +95,63 @@ step_state AS (
   RETURNING pgflow.step_states.*
 ),
 -- ---------- Dependency resolution ----------
--- Find all steps that depend on the completed step (only if step completed)
-dependent_steps AS (
-  SELECT d.step_slug AS dependent_step_slug
-  FROM pgflow.deps d
-  JOIN step_state s ON s.status = 'completed' AND d.flow_slug = s.flow_slug
-  WHERE d.dep_slug = complete_task.step_slug
-  ORDER BY d.step_slug  -- Ensure consistent ordering
+-- Find all child steps that depend on the completed parent step (only if parent completed)
+child_steps AS (
+  SELECT deps.step_slug AS child_step_slug
+  FROM pgflow.deps deps
+  JOIN step_state parent_state ON parent_state.status = 'completed' AND deps.flow_slug = parent_state.flow_slug
+  WHERE deps.dep_slug = complete_task.step_slug  -- dep_slug is the parent, step_slug is the child
+  ORDER BY deps.step_slug  -- Ensure consistent ordering
 ),
--- ---------- Lock dependent steps ----------
--- Acquire locks on all dependent steps before updating them
-dependent_steps_lock AS (
+-- ---------- Lock child steps ----------
+-- Acquire locks on all child steps before updating them
+child_steps_lock AS (
   SELECT * FROM pgflow.step_states
   WHERE pgflow.step_states.run_id = complete_task.run_id
-    AND pgflow.step_states.step_slug IN (SELECT dependent_step_slug FROM dependent_steps)
+    AND pgflow.step_states.step_slug IN (SELECT child_step_slug FROM child_steps)
   FOR UPDATE
 ),
--- ---------- Update dependent steps ----------
+-- ---------- Update child steps ----------
 -- Decrement remaining_deps and resolve NULL initial_tasks for map steps
-dependent_steps_update AS (
-  UPDATE pgflow.step_states ss
-  SET remaining_deps = ss.remaining_deps - 1,
-      -- Resolve NULL initial_tasks for dependent map steps
-      -- This is where dependent maps learn their array size from upstream
+child_steps_update AS (
+  UPDATE pgflow.step_states child_state
+  SET remaining_deps = child_state.remaining_deps - 1,
+      -- Resolve NULL initial_tasks for child map steps
+      -- This is where child maps learn their array size from the parent
+      -- This CTE only runs when the parent step is complete (see child_steps JOIN)
       initial_tasks = CASE
-        WHEN s.step_type = 'map' AND ss.initial_tasks IS NULL
-             AND complete_task.output IS NOT NULL
-             AND jsonb_typeof(complete_task.output) = 'array' THEN
-          jsonb_array_length(complete_task.output)
-        ELSE ss.initial_tasks  -- Keep existing value (including NULL)
+        WHEN child_step.step_type = 'map' AND child_state.initial_tasks IS NULL THEN
+          CASE
+            WHEN parent_step.step_type = 'map' THEN
+              -- Map->map: Count all completed tasks from parent map
+              -- We add 1 because the current task is being completed in this transaction
+              -- but isn't yet visible as 'completed' in the step_tasks table
+              -- TODO: Refactor to use future column step_states.total_tasks
+              -- Would eliminate the COUNT query and just use parent_state.total_tasks
+              (SELECT COUNT(*)::int + 1
+               FROM pgflow.step_tasks parent_tasks
+               WHERE parent_tasks.run_id = complete_task.run_id
+                 AND parent_tasks.step_slug = complete_task.step_slug
+                 AND parent_tasks.status = 'completed'
+                 AND parent_tasks.task_index != complete_task.task_index)
+            ELSE
+              -- Single->map: Use output array length (single steps complete immediately)
+              CASE
+                WHEN complete_task.output IS NOT NULL
+                     AND jsonb_typeof(complete_task.output) = 'array' THEN
+                  jsonb_array_length(complete_task.output)
+                ELSE NULL  -- Keep NULL if not an array
+              END
+          END
+        ELSE child_state.initial_tasks  -- Keep existing value (including NULL)
       END
-  FROM dependent_steps ds, pgflow.steps s
-  WHERE ss.run_id = complete_task.run_id
-    AND ss.step_slug = ds.dependent_step_slug
-    AND s.flow_slug = ss.flow_slug
-    AND s.step_slug = ss.step_slug
+  FROM child_steps children
+  JOIN pgflow.steps child_step ON child_step.flow_slug = (SELECT r.flow_slug FROM pgflow.runs r WHERE r.run_id = complete_task.run_id)
+                               AND child_step.step_slug = children.child_step_slug
+  JOIN pgflow.steps parent_step ON parent_step.flow_slug = (SELECT r.flow_slug FROM pgflow.runs r WHERE r.run_id = complete_task.run_id)
+                                AND parent_step.step_slug = complete_task.step_slug
+  WHERE child_state.run_id = complete_task.run_id
+    AND child_state.step_slug = children.child_step_slug
 )
 -- ---------- Update run remaining_steps ----------
 -- Decrement the run's remaining_steps counter if step completed
@@ -147,13 +175,27 @@ IF v_step_state.status = 'completed' THEN
   PERFORM pgflow.cascade_complete_taskless_steps(complete_task.run_id);
 
   -- Broadcast step:completed event
+  -- For map steps, aggregate all task outputs; for single steps, use the task output
   PERFORM realtime.send(
     jsonb_build_object(
       'event_type', 'step:completed',
       'run_id', complete_task.run_id,
       'step_slug', complete_task.step_slug,
       'status', 'completed',
-      'output', complete_task.output,
+      'output', CASE
+        WHEN (SELECT s.step_type FROM pgflow.steps s
+              WHERE s.flow_slug = v_step_state.flow_slug
+                AND s.step_slug = complete_task.step_slug) = 'map' THEN
+          -- Aggregate all task outputs for map steps
+          (SELECT COALESCE(jsonb_agg(st.output ORDER BY st.task_index), '[]'::jsonb)
+           FROM pgflow.step_tasks st
+           WHERE st.run_id = complete_task.run_id
+             AND st.step_slug = complete_task.step_slug
+             AND st.status = 'completed')
+        ELSE
+          -- Single step: use the individual task output
+          complete_task.output
+      END,
       'completed_at', v_step_state.completed_at
     ),
     concat('step:', complete_task.step_slug, ':completed'),
