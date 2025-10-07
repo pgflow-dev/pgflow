@@ -1,9 +1,5 @@
-create or replace function pgflow.start_ready_steps(run_id uuid)
-returns void
-language sql
-set search_path to ''
-as $$
-
+-- Modify "start_ready_steps" function
+CREATE OR REPLACE FUNCTION "pgflow"."start_ready_steps" ("run_id" uuid) RETURNS void LANGUAGE sql SET "search_path" = '' AS $$
 -- First handle empty array map steps (initial_tasks = 0) - direct transition to completed
 WITH empty_map_steps AS (
   SELECT step_state.*
@@ -147,5 +143,4 @@ SELECT
   sent_messages.task_index,
   sent_messages.msg_id
 FROM sent_messages;
-
 $$;
