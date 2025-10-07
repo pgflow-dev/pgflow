@@ -1,14 +1,8 @@
-create or replace function pgflow.start_tasks(
-  flow_slug text,
-  msg_ids bigint [],
-  worker_id uuid
-)
-returns setof pgflow.step_task_record
-volatile
-set search_path to ''
-language sql
-as $$
-  with tasks as (
+-- Modify "step_task_record" composite type
+ALTER TYPE "pgflow"."step_task_record" ADD ATTRIBUTE "task_index" integer;
+-- Modify "start_tasks" function
+CREATE OR REPLACE FUNCTION "pgflow"."start_tasks" ("flow_slug" text, "msg_ids" bigint[], "worker_id" uuid) RETURNS SETOF "pgflow"."step_task_record" LANGUAGE sql SET "search_path" = '' AS $$
+with tasks as (
     select
       task.flow_slug,
       task.run_id,

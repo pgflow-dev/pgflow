@@ -1,5 +1,5 @@
 begin;
-select plan(6);
+select plan(7);
 select pgflow_tests.reset_db();
 
 select pgflow.create_flow('simple');
@@ -9,22 +9,32 @@ select pgflow.start_flow('simple', '"hello"'::jsonb);
 -- Ensure worker exists
 select pgflow_tests.ensure_worker('simple');
 
--- Read messages from queue
+-- Read messages from queue and start task
 with msgs as (
   select * from pgflow.read_with_poll('simple', 10, 5, 1, 50) limit 1
 ),
 msg_ids as (
   select array_agg(msg_id) as ids from msgs
-)
--- TEST: start_tasks returns tasks for valid message IDs
-select is(
-  (select count(*)::int from pgflow.start_tasks(
+),
+started_tasks as (
+  select * from pgflow.start_tasks(
     'simple',
     (select ids from msg_ids),
     '11111111-1111-1111-1111-111111111111'::uuid
-  )),
+  )
+)
+-- TEST: start_tasks returns tasks for valid message IDs
+select is(
+  (select count(*)::int from started_tasks),
   1,
   'start_tasks should return one task for valid message ID'
+);
+
+-- TEST: Task has task_index = 0 (checking from step_tasks table since already started)
+select is(
+  (select task_index from pgflow.step_tasks where step_slug = 'task'),
+  0,
+  'Single task should have task_index = 0'
 );
 
 -- TEST: Task status should be 'started' after start_tasks

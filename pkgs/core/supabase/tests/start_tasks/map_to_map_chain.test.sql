@@ -57,6 +57,7 @@ select is(
   'First map task 0 should receive element 1'
 );
 
+
 select is(
   (select input from pgflow.start_tasks(
     'map_chain_flow',
@@ -66,6 +67,7 @@ select is(
   '2'::jsonb,
   'First map task 1 should receive element 2'
 );
+
 
 -- NOTE: Can't complete first map tasks with non-array output because
 -- complete_task validates that map steps must output arrays
