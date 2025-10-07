@@ -29,12 +29,13 @@ WITH
     RETURNING *
   ),
   created_step_states AS (
-    INSERT INTO pgflow.step_states (flow_slug, run_id, step_slug, remaining_deps)
+    INSERT INTO pgflow.step_states (flow_slug, run_id, step_slug, remaining_deps, initial_tasks)
     SELECT
       fs.flow_slug,
       (SELECT created_run.run_id FROM created_run),
       fs.step_slug,
-      fs.deps_count
+      fs.deps_count,
+      1  -- For now, all steps get initial_tasks = 1 (single steps)
     FROM flow_steps fs
   )
 SELECT * FROM created_run INTO v_created_run;

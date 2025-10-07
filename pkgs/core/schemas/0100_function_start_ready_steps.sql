@@ -16,7 +16,8 @@ WITH ready_steps AS (
 started_step_states AS (
   UPDATE pgflow.step_states
   SET status = 'started',
-      started_at = now()
+      started_at = now(),
+      remaining_tasks = ready_steps.initial_tasks  -- Copy initial_tasks to remaining_tasks when starting
   FROM ready_steps
   WHERE pgflow.step_states.run_id = start_ready_steps.run_id
     AND pgflow.step_states.step_slug = ready_steps.step_slug
@@ -51,7 +52,7 @@ broadcast_events AS (
         'step_slug', started_step.step_slug,
         'status', 'started',
         'started_at', started_step.started_at,
-        'remaining_tasks', 1,
+        'remaining_tasks', started_step.remaining_tasks,
         'remaining_deps', started_step.remaining_deps
       ),
       concat('step:', started_step.step_slug, ':started'),
