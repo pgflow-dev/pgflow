@@ -1,5 +1,5 @@
 ---
-'@pgflow/core': patch
+'@pgflow/core': minor
 ---
 
 Add map step type infrastructure in SQL core

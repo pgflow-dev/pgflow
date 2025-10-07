@@ -118,6 +118,10 @@ PERFORM pgflow.cascade_complete_taskless_steps(v_created_run.run_id);
 -- Start root steps (those with no dependencies)
 PERFORM pgflow.start_ready_steps(v_created_run.run_id);
 
+-- ---------- Check for run completion ----------
+-- If cascade completed all steps (zero-task flows), finalize the run
+PERFORM pgflow.maybe_complete_run(v_created_run.run_id);
+
 RETURN QUERY SELECT * FROM pgflow.runs where pgflow.runs.run_id = v_created_run.run_id;
 
 end;

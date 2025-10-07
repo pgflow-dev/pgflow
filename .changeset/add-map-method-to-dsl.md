@@ -1,5 +1,5 @@
 ---
-'@pgflow/dsl': patch
+'@pgflow/dsl': minor
 ---
 
 Add `.map()` method to Flow DSL for defining map-type steps

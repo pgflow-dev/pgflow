@@ -72,19 +72,10 @@ BEGIN
         AND s.step_slug = ss.step_slug
     ),
     -- ---------- Update run counters ----------
+    -- Only decrement remaining_steps; let maybe_complete_run handle finalization
     run_updates AS (
       UPDATE pgflow.runs r
-      SET remaining_steps = r.remaining_steps - c.completed_count,
-          status = CASE
-            WHEN r.remaining_steps - c.completed_count = 0
-            THEN 'completed'
-            ELSE r.status
-          END,
-          completed_at = CASE
-            WHEN r.remaining_steps - c.completed_count = 0
-            THEN now()
-            ELSE r.completed_at
-          END
+      SET remaining_steps = r.remaining_steps - c.completed_count
       FROM (SELECT COUNT(*) AS completed_count FROM completed) c
       WHERE r.run_id = cascade_complete_taskless_steps.run_id
         AND c.completed_count > 0
