@@ -93,35 +93,71 @@ The standard method for adding steps to a flow. Each step processes input and re
 
 #### `.array()` - Array-Returning Steps
 
-A semantic wrapper around `.step()` that provides type enforcement for steps that return arrays. Useful for data fetching or collection steps.
+A semantic wrapper around `.step()` that provides type enforcement for steps that return arrays. Useful for data fetching or collection steps that will be processed by map steps.
 
 ```typescript
+// Fetch an array of items to be processed
 .array(
   { slug: 'fetch_items' },
   async () => [1, 2, 3, 4, 5]
 )
+
+// With dependencies - combining data from multiple sources
+.array(
+  { slug: 'combine_results', dependsOn: ['source1', 'source2'] },
+  async (input) => [...input.source1, ...input.source2]
+)
 ```
+
+**Key Points:**
+- Return type is enforced to be an array at compile time
+- Commonly used as input for subsequent map steps
+- Can depend on other steps just like regular steps
 
 #### `.map()` - Array Processing Steps
 
 Processes arrays element-by-element, similar to JavaScript's `Array.map()`. The handler receives individual items instead of the full input object.
 
-```typescript
-// Root map - processes flow input array
-new Flow<string[]>({ slug: 'process_strings' })
-  .map({ slug: 'uppercase' }, (item) => item.toUpperCase());
+**Two Modes of Operation:**
 
-// Dependent map - processes another step's output
+1. **Root Map** (no `array:` property): Processes the flow's input array directly
+   - The flow input MUST be an array when using root maps
+   - Omitting the `array:` property tells pgflow to use the flow input
+
+2. **Dependent Map** (with `array:` property): Processes another step's array output
+   - The `array:` property specifies which step's output to process
+   - That step must return an array
+
+```typescript
+// ROOT MAP - No array: property means use flow input
+// Flow input MUST be an array (e.g., ["hello", "world"])
+new Flow<string[]>({ slug: 'process_strings' })
+  .map(
+    { slug: 'uppercase' }, // No array: property!
+    (item) => item.toUpperCase()
+  );
+// Each string in the input array gets uppercased in parallel
+
+// DEPENDENT MAP - array: property specifies the source step
 new Flow<{}>({ slug: 'data_pipeline' })
   .array({ slug: 'numbers' }, () => [1, 2, 3])
-  .map({ slug: 'double', array: 'numbers' }, (n) => n * 2)
-  .map({ slug: 'square', array: 'double' }, (n) => n * n);
+  .map(
+    { slug: 'double', array: 'numbers' }, // Processes 'numbers' output
+    (n) => n * 2
+  )
+  .map(
+    { slug: 'square', array: 'double' }, // Chains from 'double'
+    (n) => n * n
+  );
+// Results: numbers: [1,2,3] → double: [2,4,6] → square: [4,16,36]
 ```
 
 **Key differences from regular steps:**
-- Uses `array:` instead of `dependsOn:` for specifying the single array dependency
+- Uses `array:` to specify dependency (not `dependsOn:`)
+- When `array:` is omitted, uses flow input array (root map)
 - Handler signature is `(item, context) => result` instead of `(input, context) => result`
 - Return type is always an array
+- Map steps can have at most one dependency (the array source)
 - Generates SQL with `step_type => 'map'` parameter for pgflow's map processing
 
 **Type Safety:**
@@ -141,9 +177,39 @@ new Flow<{}>({ slug: 'user_flow' })
   });
 ```
 
+**Common Patterns:**
+
+```typescript
+// Batch processing - process multiple items in parallel
+new Flow<number[]>({ slug: 'batch_processor' })
+  .map({ slug: 'validate' }, (item) => {
+    if (item < 0) throw new Error('Invalid item');
+    return item;
+  })
+  .map({ slug: 'process', array: 'validate' }, async (item) => {
+    // Each item processed in its own task
+    return await expensiveOperation(item);
+  });
+
+// Data transformation pipeline
+new Flow<{}>({ slug: 'etl_pipeline' })
+  .step({ slug: 'fetch_urls' }, () => ['url1', 'url2', 'url3'])
+  .map({ slug: 'scrape', array: 'fetch_urls' }, async (url) => {
+    return await fetchContent(url);
+  })
+  .map({ slug: 'extract', array: 'scrape' }, (html) => {
+    return extractData(html);
+  })
+  .step({ slug: 'aggregate', dependsOn: ['extract'] }, (input) => {
+    // input.extract is the aggregated array from all map tasks
+    return consolidateResults(input.extract);
+  });
+```
+
 **Limitations:**
 - Can only depend on a single array-returning step
 - TypeScript may not track type transformations between chained maps (use type assertions if needed)
+- Root maps require the entire flow input to be an array
 
 ### Context Object
 
