@@ -37,6 +37,8 @@ Layer cheat-sheet:
 | **SQL Core** | Owns all **state** & orchestration logic | A handful of Postgres tables + functions |
 | **Worker** | Executes user code, then **reports back** | Edge Function by default (but can be anything) |
 
+Each layer is independent and focused: The DSL is a convenience layer that mixes flow definitions with handler types. SQL Core manages the state machine for each step, orchestrating based on dependencies without knowing how handlers execute. Workers are stateless - they execute handlers without needing to understand workflows or step relationships.
+
 <Aside type="tip" title="Swap the Worker if you like">
 Edge Worker is just a convenience wrapper.
 Any process that can coordinate with the SQL Core (call `read_with_poll`, `start_tasks`, then `complete_task` / `fail_task`) will work.
@@ -78,14 +80,16 @@ created → started → completed
 
 ### How workers execute steps
 
+Steps execute via **tasks** - units of function execution. For regular steps, this is a simple 1:1 relationship you can ignore. However, map steps create one task per array element, making tasks a user-visible concept for understanding performance and retry behavior. See [Map Steps](/concepts/map-steps/) for details.
+
 Behind the scenes, when a step becomes ready, workers handle the execution through a simple 3-call sequence:
 
-1. `read_with_poll` → locks queue messages  
-2. `start_tasks` → marks task started, builds input  
+1. `read_with_poll` → locks queue messages
+2. `start_tasks` → marks task started, builds input
 3. `complete_task/fail_task` → finishes task, moves step forward
 
 <Aside type="note" title="Implementation detail">
-If you're just calling `start_flow()` and checking results, you don't need to know about this coordination. It's handled automatically by pgflow's SQL Core.
+For regular steps, if you're just calling `start_flow()` and checking results, you don't need to know about this coordination. It's handled automatically by pgflow's SQL Core.
 </Aside>
 
 :::note[Looks just like "queue-of-queues"]

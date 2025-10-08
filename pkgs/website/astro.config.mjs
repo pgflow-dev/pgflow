@@ -53,6 +53,9 @@ export default defineConfig({
     // Route rename
     '/hire/': '/author/',
 
+    // Page rename redirects
+    '/concepts/array-and-map-steps/': '/concepts/map-steps/',
+
     // Existing redirects
     '/edge-worker/how-to/run-on-hosted-supabase/':
       '/how-to/deploy-to-supabasecom/',
