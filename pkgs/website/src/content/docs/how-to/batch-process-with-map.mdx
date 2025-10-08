@@ -5,346 +5,118 @@ sidebar:
   order: 35
 ---
 
-import { Aside, Steps } from "@astrojs/starlight/components";
+import { Aside } from "@astrojs/starlight/components";
 
-This guide shows practical patterns for using map steps to process collections of data in parallel, from simple transformations to complex batch operations.
+Map steps automatically spawn one task per array element, enabling parallel processing of variable-length collections. The key insight: **the array length determines task count at runtime** - whether processing 5 items or 5,000, the flow structure remains the same.
 
-## Processing a List of URLs
+## Root Maps: Process Flow Input Arrays
 
-A common use case is fetching and processing multiple web pages in parallel.
-
-### Basic URL Processing
+When the flow input is an array, use a root map (no `array` property) to process each element:
 
 ```typescript
-import { Flow } from '@pgflow/dsl/supabase';
-
-const ScrapeMultipleUrls = new Flow<string[]>({  // Flow input must be array for root map
-  slug: 'scrape_multiple_urls',
-  maxAttempts: 3,
-})
-  .map(
-    { slug: 'scrapedPages' },
-    async (url) => await scrapeWebpage(url)
-  )
-  .step(
-    { slug: 'summary', dependsOn: ['scrapedPages'] },
-    (input) => summarizeResults(input.scrapedPages)
+// Processes N URLs in parallel, where N is determined at runtime
+const ScrapeUrls = new Flow<string[]>({ slug: 'scrape_urls' })
+  .map({ slug: 'pages' }, (url) => scrapeWebpage(url))
+  .step({ slug: 'summary', dependsOn: ['pages'] }, (input) =>
+    summarizeResults(input.pages)
   );
 
-// Usage (SQL):
-SELECT pgflow.start_flow(
-  flow_slug => 'scrape_multiple_urls',
-  input => '["https://example.com", "https://example.org", "https://example.net"]'::jsonb
-);
+// Start with 3 URLs -> spawns 3 tasks
+// Start with 100 URLs -> spawns 100 tasks
 ```
 
+## Dependent Maps: Process Step Output Arrays
 
-## Batch API Calls
-
-Make multiple API calls in parallel while respecting rate limits.
-
-### Simple Batch API Calls
+When a step returns an array, downstream maps process those elements:
 
 ```typescript
-const BatchApiCalls = new Flow<string[]>({  // Array input for root map
-  slug: 'batch_api_calls',
-})
-  .map(
-    { slug: 'userData' },
-    async (userId) => await fetchUserData(userId)
-  )
-  .step(
-    { slug: 'summary', dependsOn: ['userData'] },
-    (input) => generateUserReport(input.userData)
+// Variable-length pipeline: runtime determines how many items to process
+const DataPipeline = new Flow<{ source: string }>({ slug: 'data_pipeline' })
+  .step({ slug: 'rows' }, (input) => fetchCSV(input.run.source))  // Returns N rows
+  .map({ slug: 'validated', array: 'rows' }, (row) => validateRow(row))  // N tasks
+  .map({ slug: 'enriched', array: 'validated' }, (row) => enrichRow(row))  // N tasks
+  .step({ slug: 'results', dependsOn: ['enriched'] }, (input) =>
+    saveToDatabase(input.enriched)
   );
 ```
 
+## Chained Maps: Multi-Stage Processing
 
-## Data Transformation Pipeline
-
-Transform and validate data collections efficiently.
-
-### CSV Processing Pipeline
+Chain maps to transform data through multiple stages, each operating on the full array in parallel:
 
 ```typescript
-const CsvProcessor = new Flow<{ csvUrl: string }>({
-  slug: 'csv_processor',
-})
-  .step(
-    { slug: 'csvRows' },
-    async (input) => await fetchAndParseCSV(input.run.csvUrl)
+// Each map stage processes all items in parallel
+const ImagePipeline = new Flow({ slug: 'image_pipeline' })
+  .step({ slug: 'urls' }, () => getImageUrls())
+  .map({ slug: 'downloaded', array: 'urls' }, (url) => downloadImage(url))
+  .map({ slug: 'resized', array: 'downloaded' }, (img) => resizeImage(img))
+  .map({ slug: 'uploaded', array: 'resized' }, (img) => uploadToS3(img));
+```
+
+## Fan-Out Pattern: Runtime Array Expansion
+
+Create arrays dynamically based on input, then process elements in parallel:
+
+```typescript
+// Single input expands into variable number of parallel operations
+const NotifyUsers = new Flow<{ segmentId: string }>({ slug: 'notify_users' })
+  .step({ slug: 'users' }, (input) =>
+    getUsersInSegment(input.run.segmentId)  // Could return 10, 100, or 1000 users
   )
-  .map(
-    { slug: 'validatedRows', array: 'csvRows' },
-    (row) => validateRow(row)
-  )
-  .map(
-    { slug: 'processedRows', array: 'validatedRows' },
-    (row) => transformIfValid(row)
-  )
-  .step(
-    { slug: 'saveResults', dependsOn: ['processedRows'] },
-    async (input, context) => await saveProcessedData(input.processedRows, context)
+  .map({ slug: 'sent', array: 'users' }, (user) => sendEmail(user))
+  .step({ slug: 'report', dependsOn: ['sent'] }, (input) =>
+    generateReport(input.sent)
   );
 ```
 
-## Combining Results with Aggregation
+<Aside type="tip">
+The array length is unknown until runtime. The same flow definition handles both small batches (5 items) and large ones (5,000 items) without modification.
+</Aside>
 
-Process items individually then aggregate results for analysis.
+## Including Flow Context in Map Tasks
 
-### Statistical Analysis
+Map handlers only receive individual elements. To access flow input, enrich array elements first:
 
 ```typescript
-const StatisticalAnalysis = new Flow<{ experimentId: string }>({
-  slug: 'statistical_analysis',
-})
-  .step({ slug: 'samples' }, async (input, context) => {
-    // Fetch measurements from database
-    const { data } = await context.supabase
-      .from('measurements')
-      .select('*')
-      .eq('experiment_id', input.run.experimentId);
-    return data;
-  })
-  .map(
-    { slug: 'analyzedSamples', array: 'samples' },
-    (sample) => analyzeSample(sample)
+// Problem: Map can't access input.run
+const Problem = new Flow<{ apiKey: string, ids: string[] }>({ slug: 'problem' })
+  .map({ slug: 'data' }, (id) => fetchData(id, ???));  // No access to apiKey
+
+// Solution: Bundle context into array elements
+const Solution = new Flow<{ apiKey: string, ids: string[] }>({ slug: 'solution' })
+  .array({ slug: 'items' }, (input) =>
+    input.run.ids.map(id => ({ id, apiKey: input.run.apiKey }))
   )
-  .step(
-    { slug: 'saveStatistics', dependsOn: ['analyzedSamples'] },
-    async (input, context) => {
-      const stats = calculateStatistics(input.analyzedSamples);
-
-      // Save analysis results to database
-      await context.supabase
-        .from('experiment_statistics')
-        .insert({
-          experiment_id: input.run.experimentId,
-          stats,
-          analyzed_at: new Date().toISOString()
-        });
-
-      return stats;
-    }
+  .map({ slug: 'data', array: 'items' }, (item) =>
+    fetchData(item.id, item.apiKey)
   );
 ```
 
-### Notification Batching
+## Empty Arrays Cascade Automatically
+
+Empty arrays complete immediately and propagate through dependent maps:
 
 ```typescript
-const NotificationBatcher = new Flow<{}>({
-  slug: 'notification_batcher',
-})
-  .step({ slug: 'recipients' }, async (input, context) => {
-    const { data } = await context.supabase
-      .from('users')
-      .select('id, email, preferences')
-      .eq('notifications_enabled', true);
-    return data;
-  })
-  .map(
-    { slug: 'sendNotifications', array: 'recipients' },
-    async (user) => {
-      try {
-        // Send email notification
-        await sendEmail({
-          to: user.email,
-          subject: 'Weekly Update',
-          template: 'weekly_update',
-          data: { userId: user.id }
-        });
-
-        return {
-          userId: user.id,
-          success: true,
-          sentAt: new Date().toISOString()
-        };
-      } catch (error) {
-        return {
-          userId: user.id,
-          success: false,
-          error: error.message
-        };
-      }
-    }
-  )
-  .step(
-    { slug: 'updateStatus', dependsOn: ['sendNotifications'] },
-    async (input, context) => {
-      const results = input.sendNotifications;
-
-      // Update last notification timestamp for successful sends
-      const successful = results.filter(r => r.success);
-      if (successful.length > 0) {
-        await context.supabase
-          .from('users')
-          .update({ last_notification: new Date().toISOString() })
-          .in('id', successful.map(r => r.userId));
-      }
-
-      // Log failures
-      const failed = results.filter(r => !r.success);
-      if (failed.length > 0) {
-        await context.supabase
-          .from('notification_failures')
-          .insert(failed);
-      }
-
-      return {
-        sent: successful.length,
-        failed: failed.length,
-        total: results.length
-      };
-    }
-  );
-```
-
-## Debugging Map Steps
-
-When debugging map steps, you need to understand how individual tasks behave.
-
-### Logging Individual Task Progress
-
-```typescript
-const DebugFlow = new Flow<{ items: string[] }>({
-  slug: 'debug_flow',
-})
-  .map(
-    { slug: 'processWithLogging' },
-    async (item, context) => {
-      const taskIndex = context.stepTask.task_index;
-
-      console.log(`Task ${taskIndex}: Starting to process "${item}"`);
-
-      try {
-        const result = await processItem(item);
-        console.log(`Task ${taskIndex}: Successfully processed "${item}"`);
-        return { success: true, item, result };
-      } catch (error) {
-        console.error(`Task ${taskIndex}: Failed to process "${item}":`, error);
-        return { success: false, item, error: error.message };
-      }
-    }
-  );
-```
-
-### Checking Task Execution Order
-
-Remember that map tasks execute in parallel but outputs are aggregated in order:
-
-```typescript
-const OrderTest = new Flow<{ items: number[] }>({
-  slug: 'order_test',
-})
-  .map(
-    { slug: 'processWithDelay' },
-    async (item, context) => {
-      // Longer delay for lower indices to test order preservation
-      const delay = (10 - item) * 100;
-      await new Promise(resolve => setTimeout(resolve, delay));
-
-      return {
-        item,
-        taskIndex: context.stepTask.task_index,
-        processedAt: new Date().toISOString()
-      };
-    }
-  )
-  .step(
-    { slug: 'verifyOrder', dependsOn: ['processWithDelay'] },
-    (input) => {
-      // Output array maintains original order despite different completion times
-      const inOrder = input.processWithDelay
-        .every((result, index) => result.taskIndex === index);
-
-      return {
-        orderMaintained: inOrder,
-        results: input.processWithDelay
-      };
-    }
-  );
-```
-
-## Common Gotchas and Solutions
-
-### Passing Additional Context
-
-Since map handlers only receive individual elements, you need to include context in the array:
-
-```typescript
-// Problem: Need configuration in map handler
-const ProblemFlow = new Flow<{ apiKey: string, ids: string[] }>({
-  slug: 'problem_flow',
-})
-  .map({ slug: 'fetch' }, async (id) => {
-    // Can't access input.run.apiKey here!
-    return await fetchWithKey(id, ???);  // No access to apiKey
-  });
-
-// Solution: Enrich array elements first
-const SolutionFlow = new Flow<{ apiKey: string, ids: string[] }>({
-  slug: 'solution_flow',
-})
-  .step(
-    { slug: 'prepareItems' },
-    (input) => {
-      // Include needed context in each element
-      return input.run.ids.map(id => ({
-        id,
-        apiKey: input.run.apiKey
-      }));
-    }
-  )
-  .map(
-    { slug: 'fetch', array: 'prepareItems' },
-    async (item) => {
-      // Now we have access to both id and apiKey
-      return await fetchWithKey(item.id, item.apiKey);
-    }
-  );
-```
-
-### Handling Empty Arrays
-
-Empty arrays cascade through map steps automatically:
-
-```typescript
-const EmptyHandling = new Flow<{}>({
-  slug: 'empty_handling',
-})
-  .step({ slug: 'maybeEmpty' }, async () => {
-    const results = await fetchData();
-    return results || [];  // Might return []
-  })
-  .map(
-    { slug: 'process', array: 'maybeEmpty' },
-    (item) => processItem(item)
-  )
-  .step(
-    { slug: 'handleResults', dependsOn: ['process'] },
-    (input) => {
-      if (input.process.length === 0) {
-        return { message: 'No items to process' };
-      }
-      return { processed: input.process.length };
-    }
+const HandleEmpty = new Flow({ slug: 'handle_empty' })
+  .step({ slug: 'items' }, () => fetchItems())  // Might return []
+  .map({ slug: 'processed', array: 'items' }, (item) => processItem(item))  // Skips if empty
+  .step({ slug: 'result', dependsOn: ['processed'] }, (input) =>
+    input.processed.length === 0
+      ? { message: 'No items' }
+      : { count: input.processed.length }
   );
 ```
 
 ## Summary
 
-Map steps provide powerful parallel processing capabilities for pgflow workflows:
+Map steps provide variable-length parallel processing:
 
-- **URL Processing**: Fetch and process multiple web pages concurrently
-- **API Batching**: Make parallel API calls with rate limiting
-- **Data Pipelines**: Transform and validate collections efficiently
-- **Result Aggregation**: Process individually, analyze collectively
+- **Root maps**: Process flow input arrays (array length unknown until flow starts)
+- **Dependent maps**: Process step output arrays (array length determined by upstream step)
+- **Chained maps**: Multi-stage transformations across full arrays
+- **Context bundling**: Enrich elements with flow input when needed
+- **Empty handling**: Zero-length arrays complete instantly and cascade
 
-Remember to:
-- Include necessary context in array elements
-- Handle errors gracefully at the individual task level
-- Consider rate limits and resource constraints
-- Use chunking for very large arrays
-- Monitor task execution for debugging
+The same flow structure adapts to any array size at runtime - from single items to thousands.
 
-For more details on how map steps work internally, see the [Array and Map Steps](/concepts/array-and-map-steps/) concepts guide.
+For detailed internals, see [Array and Map Steps](/concepts/array-and-map-steps/).
