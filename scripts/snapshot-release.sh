@@ -47,7 +47,7 @@ while [[ $# -gt 0 ]]; do
       echo ""
       echo "Options:"
       echo "  --yes, -y        Skip confirmation prompt"
-      echo "  --no-cleanup     Don't restore files after publishing"
+      echo "  --no-cleanup     Keep modified files after successful publish"
       echo "  --help           Show this help message"
       echo ""
       echo "Examples:"
@@ -87,19 +87,19 @@ fi
 SHA=$(git rev-parse --short HEAD)
 SNAPSHOT="$TAG-$SHA"  # Pass tag with SHA to changeset (it will add timestamp)
 
-# ------------------------------------------------------------------
-# Set up cleanup trap (unless disabled)
-# ------------------------------------------------------------------
-if [[ "$NO_CLEANUP" != "true" ]]; then
-  trap 'echo -e "\n${YELLOW}Cleaning up...${NC}" && \
-        git restore --source=HEAD --worktree --staged \
-        "**/package.json" "**/jsr.json" "**/CHANGELOG.md" 2>/dev/null || true; \
-        git restore --source=HEAD --worktree --staged \
-        pnpm-lock.yaml 2>/dev/null || true; \
-        git restore --source=HEAD --worktree --staged \
-        .changeset/pre.json 2>/dev/null || true; \
-        git clean -fd .changeset 2>/dev/null || true' EXIT
-fi
+# Cleanup function (to be called after successful publish)
+cleanup_snapshot_files() {
+  echo ""
+  echo -e "${YELLOW}Cleaning up snapshot files...${NC}"
+  git restore --source=HEAD --worktree --staged \
+    "**/package.json" "**/jsr.json" "**/CHANGELOG.md" 2>/dev/null || true
+  git restore --source=HEAD --worktree --staged \
+    pnpm-lock.yaml 2>/dev/null || true
+  git restore --source=HEAD --worktree --staged \
+    .changeset/pre.json 2>/dev/null || true
+  git clean -fd .changeset 2>/dev/null || true
+  echo -e "${GREEN}✓ Cleanup complete${NC}"
+}
 
 # ------------------------------------------------------------------
 # Display snapshot version info
@@ -184,10 +184,12 @@ echo ""
 echo -e "${BOLD}Packages to publish:${NC}"
 echo ""
 
-# Collect npm packages
+# Collect npm packages (only those matching current snapshot tag)
 NPM_PKGS=()
 while IFS= read -r -d '' file; do
-  PKG_INFO=$(jq -r 'select(.version | test("^0\\.0\\.0-")) | .name + "@" + .version' "$file" 2>/dev/null)
+  PKG_INFO=$(jq -r --arg snapshot "$SNAPSHOT" \
+    'select(.version | test("^0\\.0\\.0-" + $snapshot)) | .name + "@" + .version' \
+    "$file" 2>/dev/null)
   if [[ -n "$PKG_INFO" ]]; then
     NPM_PKGS+=("$PKG_INFO")
     NAME=$(echo "$PKG_INFO" | cut -d'@' -f1-2)
@@ -200,7 +202,7 @@ done < <(find pkgs -name package.json -not -path "*/node_modules/*" -print0)
 # Check for JSR package (edge-worker)
 if [[ -f pkgs/edge-worker/jsr.json ]]; then
   JSR_VERSION=$(jq -r '.version' pkgs/edge-worker/jsr.json)
-  if [[ "$JSR_VERSION" =~ ^0\.0\.0- ]]; then
+  if [[ "$JSR_VERSION" =~ ^0\.0\.0-${SNAPSHOT} ]]; then
     echo -e "  ${GREEN}✓${NC} ${BOLD}@pgflow/edge-worker${NC} (JSR)"
     echo -e "    ${JSR_VERSION}"
   fi
@@ -262,14 +264,19 @@ echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━�
 echo -e "${BOLD}Publishing packages...${NC}"
 echo ""
 
+# Track publish success
+NPM_SUCCESS=false
+JSR_SUCCESS=true  # Default true (only set false if JSR package exists and fails)
+
 # Publish to npm
 echo -e "${BOLD}Publishing to npm...${NC}"
 NPM_OUTPUT=$(pnpm exec changeset publish --tag snapshot 2>&1)
 echo "$NPM_OUTPUT"
 if echo "$NPM_OUTPUT" | grep -qi "published" ; then
   echo -e "${GREEN}✓ npm packages published${NC}"
+  NPM_SUCCESS=true
 else
-  echo -e "${RED}✗ npm publish may have failed - check output above${NC}"
+  echo -e "${RED}✗ npm publish failed - check output above${NC}"
 fi
 
 # Publish to JSR
@@ -279,8 +286,25 @@ if [[ -f pkgs/edge-worker/jsr.json ]]; then
   if ( cd pkgs/edge-worker && pnpm jsr publish --allow-slow-types --allow-dirty ) ; then
     echo -e "${GREEN}✓ JSR package published${NC}"
   else
-    echo -e "${YELLOW}⚠ JSR publish failed${NC}"
+    echo -e "${RED}✗ JSR publish failed${NC}"
+    JSR_SUCCESS=false
   fi
+fi
+
+# ------------------------------------------------------------------
+# Cleanup snapshot files (only if publish succeeded)
+# ------------------------------------------------------------------
+if [[ "$NPM_SUCCESS" == "true" ]] && [[ "$JSR_SUCCESS" == "true" ]]; then
+  if [[ "$NO_CLEANUP" != "true" ]]; then
+    cleanup_snapshot_files
+  fi
+else
+  echo ""
+  echo -e "${RED}✗ Publishing failed - keeping files for debugging${NC}"
+  echo -e "${YELLOW}Run the following to clean up manually:${NC}"
+  echo -e "${BLUE}git restore --source=HEAD --worktree --staged \"**/package.json\" \"**/jsr.json\" \"**/CHANGELOG.md\" pnpm-lock.yaml .changeset/pre.json${NC}"
+  echo -e "${BLUE}git clean -fd .changeset${NC}"
+  exit 1
 fi
 
 # ------------------------------------------------------------------
