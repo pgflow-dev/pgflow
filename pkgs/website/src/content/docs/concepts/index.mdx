@@ -7,7 +7,11 @@ sidebar:
 
 import { LinkCard, CardGrid } from '@astrojs/starlight/components';
 
-This section contains explanatory documentation that helps you understand the "why" behind pgflow's design decisions, architecture, and approach to workflow orchestration.
+pgflow is built on a few key concepts: **flows** are workflow definitions, **runs** are executions of those flows. Each flow has **steps** that can depend on other steps - a step waits for its dependencies to complete and gets access to their outputs.
+
+Steps execute through **tasks** (the actual units of work) - regular steps have 1 task, but map steps create one task per array element for parallel processing.
+
+Dive deeper:
 
 <CardGrid>
   <LinkCard
@@ -21,8 +25,8 @@ This section contains explanatory documentation that helps you understand the "w
     href="/concepts/flow-dsl/"
   />
   <LinkCard
-    title="Array and Map Steps"
+    title="Map Steps"
     description="Understanding parallel array processing with map steps in pgflow workflows"
-    href="/concepts/array-and-map-steps/"
+    href="/concepts/map-steps/"
   />
 </CardGrid>
