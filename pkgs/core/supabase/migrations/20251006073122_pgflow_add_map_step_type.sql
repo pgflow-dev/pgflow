@@ -1,5 +1,12 @@
 -- Modify "step_task_record" composite type
 ALTER TYPE "pgflow"."step_task_record" ADD ATTRIBUTE "task_index" integer;
+-- MANUAL DATA MIGRATION: Prepare existing data for new constraint
+-- This UPDATE must run BEFORE the new constraint is added to avoid failures
+-- The new constraint "remaining_tasks_state_consistency" requires that
+-- remaining_tasks is NULL when status = 'created'
+UPDATE "pgflow"."step_states"
+SET "remaining_tasks" = NULL
+WHERE "status" = 'created';
 -- Modify "step_states" table
 ALTER TABLE "pgflow"."step_states" DROP CONSTRAINT "step_states_remaining_tasks_check", ADD CONSTRAINT "initial_tasks_known_when_started" CHECK ((status <> 'started'::text) OR (initial_tasks IS NOT NULL)), ADD CONSTRAINT "remaining_tasks_state_consistency" CHECK ((remaining_tasks IS NULL) OR (status <> 'created'::text)), ADD CONSTRAINT "step_states_initial_tasks_check" CHECK ((initial_tasks IS NULL) OR (initial_tasks >= 0)), ALTER COLUMN "remaining_tasks" DROP NOT NULL, ALTER COLUMN "remaining_tasks" DROP DEFAULT, ADD COLUMN "initial_tasks" integer NULL;
 -- Modify "step_tasks" table
