@@ -290,7 +290,7 @@ echo ""
 echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${GREEN}✅ Snapshot release complete!${NC}"
 echo ""
-echo -e "${BOLD}Install with:${NC}"
+echo -e "${BOLD}Install with npm:${NC}"
 echo ""
 
 # NPM packages
@@ -306,5 +306,43 @@ if [[ -f pkgs/edge-worker/jsr.json ]]; then
   echo -e "${BOLD}For Deno/Supabase Edge Functions:${NC}"
   echo -e "${BLUE}import { EdgeWorker } from \"jsr:@pgflow/edge-worker@$JSR_VERSION\"${NC}"
 fi
+
+# Deno import map
+echo ""
+echo -e "${BOLD}Or add to deno.json imports:${NC}"
+echo ""
+echo -e "${BLUE}{"
+echo -e "  \"imports\": {"
+
+# Extract versions for deno.json
+DSL_VERSION=""
+CORE_VERSION=""
+for PKG in "${NPM_PKGS[@]}"; do
+  if [[ $PKG == "@pgflow/dsl@"* ]]; then
+    DSL_VERSION=$(echo "$PKG" | rev | cut -d'@' -f1 | rev)
+  elif [[ $PKG == "@pgflow/core@"* ]]; then
+    CORE_VERSION=$(echo "$PKG" | rev | cut -d'@' -f1 | rev)
+  fi
+done
+
+# Show edge-worker (JSR)
+if [[ -f pkgs/edge-worker/jsr.json ]]; then
+  JSR_VERSION=$(jq -r '.version' pkgs/edge-worker/jsr.json)
+  echo -e "    \"@pgflow/edge-worker\": \"jsr:@pgflow/edge-worker@$JSR_VERSION\","
+fi
+
+# Show dsl and dsl/supabase (npm)
+if [[ -n "$DSL_VERSION" ]]; then
+  echo -e "    \"@pgflow/dsl\": \"npm:@pgflow/dsl@$DSL_VERSION\","
+  echo -e "    \"@pgflow/dsl/supabase\": \"npm:@pgflow/dsl@$DSL_VERSION/supabase\","
+fi
+
+# Show core (npm) - no trailing comma on last entry
+if [[ -n "$CORE_VERSION" ]]; then
+  echo -e "    \"@pgflow/core\": \"npm:@pgflow/core@$CORE_VERSION\""
+fi
+
+echo -e "  }"
+echo -e "}${NC}"
 
 echo ""
