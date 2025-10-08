@@ -4,24 +4,41 @@
 
 Add map step type infrastructure in SQL core
 
-## 🚨🚨🚨 CRITICAL MIGRATION WARNING 🚨🚨🚨
+> [!WARNING]
+> **This migration includes automatic data migration**
+>
+> The migration will automatically update existing `step_states` rows to satisfy new constraints. This should complete without issues due to strict check constraints enforced in previous versions.
 
-**THIS MIGRATION REQUIRES MANUAL DATA UPDATE BEFORE DEPLOYMENT!**
+> [!TIP]
+> **Optional: Verify before deploying to production**
+>
+> If you have existing production data and want to verify the migration will succeed cleanly, run this **read-only check query** (does not modify data) in **Supabase Studio** against your **production database**:
+>
+> 1. Open Supabase Studio → SQL Editor
+> 2. Copy contents of `pkgs/core/queries/PRE_MIGRATION_CHECK_20251006073122.sql`
+> 3. Execute against your production database (not local dev!)
+> 4. Review results
+>
+> **Expected output for successful migration:**
+> ```
+> type                  | identifier                | details
+> ----------------------|---------------------------|---------------------------
+> ISSUE_1_AUTO_FIXED    | run=abc12345 step=load    | status=created remaining_tasks=1 → will set to NULL
+> ISSUE_2_AUTO_FIXED    | run=def67890 step=process | status=started → will set initial_tasks=1
+> INFO_SUMMARY          | total_step_states=42      | created=5 started=2 completed=30 failed=5
+> ```
+>
+> **Interpretation:**
+> - ✅ Only `ISSUE_1_AUTO_FIXED`, `ISSUE_2_AUTO_FIXED`, and `INFO_SUMMARY` rows? **Safe to migrate**
+> - 🆘 Unexpected issues or errors? Copy output and share on Discord for help
+>
+> **Note:** This check only returns results indicating correctness or problems - it does not modify any data. Only useful for production databases with existing runs.
 
-The migration adds a new constraint `remaining_tasks_state_consistency` that will **FAIL ON EXISTING DATA** if not handled properly.
+**Automatic data updates:**
+- Sets `initial_tasks = 1` for all existing steps (correct for pre-map-step schema)
+- Sets `remaining_tasks = NULL` for 'created' status steps (new semantics)
 
-### Required Data Migration:
-
-Before applying this migration to any environment with existing data, you MUST include:
-
-```sql
--- CRITICAL: Update existing step_states to satisfy new constraint
-UPDATE pgflow.step_states 
-SET remaining_tasks = NULL 
-WHERE status = 'created';
-```
-
-**Without this update, the migration WILL FAIL in production!** The new constraint requires that `remaining_tasks` can only be set when `status != 'created'`.
+No manual intervention required.
 
 ---
 

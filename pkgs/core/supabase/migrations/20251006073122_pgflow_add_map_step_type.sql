@@ -1,14 +1,31 @@
 -- Modify "step_task_record" composite type
 ALTER TYPE "pgflow"."step_task_record" ADD ATTRIBUTE "task_index" integer;
--- MANUAL DATA MIGRATION: Prepare existing data for new constraint
--- This UPDATE must run BEFORE the new constraint is added to avoid failures
--- The new constraint "remaining_tasks_state_consistency" requires that
--- remaining_tasks is NULL when status = 'created'
+-- Modify "step_states" table - Step 1: Drop old constraint and NOT NULL
+ALTER TABLE "pgflow"."step_states"
+  DROP CONSTRAINT "step_states_remaining_tasks_check",
+  ALTER COLUMN "remaining_tasks" DROP NOT NULL,
+  ALTER COLUMN "remaining_tasks" DROP DEFAULT,
+  ADD COLUMN "initial_tasks" integer NULL;
+-- AUTOMATIC DATA MIGRATION: Prepare existing data for new constraints
+-- This runs AFTER dropping NOT NULL but BEFORE adding new constraints
+-- All old steps had exactly 1 task (enforced by old only_single_task_per_step constraint)
+
+-- Backfill initial_tasks = 1 for all existing steps
+-- (Old schema enforced exactly 1 task per step, so all steps had initial_tasks=1)
+UPDATE "pgflow"."step_states"
+SET "initial_tasks" = 1
+WHERE "initial_tasks" IS NULL;
+
+-- Set remaining_tasks to NULL for 'created' status
+-- (New semantics: NULL = not started, old semantics: 1 = not started)
 UPDATE "pgflow"."step_states"
 SET "remaining_tasks" = NULL
-WHERE "status" = 'created';
--- Modify "step_states" table
-ALTER TABLE "pgflow"."step_states" DROP CONSTRAINT "step_states_remaining_tasks_check", ADD CONSTRAINT "initial_tasks_known_when_started" CHECK ((status <> 'started'::text) OR (initial_tasks IS NOT NULL)), ADD CONSTRAINT "remaining_tasks_state_consistency" CHECK ((remaining_tasks IS NULL) OR (status <> 'created'::text)), ADD CONSTRAINT "step_states_initial_tasks_check" CHECK ((initial_tasks IS NULL) OR (initial_tasks >= 0)), ALTER COLUMN "remaining_tasks" DROP NOT NULL, ALTER COLUMN "remaining_tasks" DROP DEFAULT, ADD COLUMN "initial_tasks" integer NULL;
+WHERE "status" = 'created' AND "remaining_tasks" IS NOT NULL;
+-- Modify "step_states" table - Step 2: Add new constraints
+ALTER TABLE "pgflow"."step_states"
+  ADD CONSTRAINT "initial_tasks_known_when_started" CHECK ((status <> 'started'::text) OR (initial_tasks IS NOT NULL)),
+  ADD CONSTRAINT "remaining_tasks_state_consistency" CHECK ((remaining_tasks IS NULL) OR (status <> 'created'::text)),
+  ADD CONSTRAINT "step_states_initial_tasks_check" CHECK ((initial_tasks IS NULL) OR (initial_tasks >= 0));
 -- Modify "step_tasks" table
 ALTER TABLE "pgflow"."step_tasks" DROP CONSTRAINT "only_single_task_per_step", DROP CONSTRAINT "output_valid_only_for_completed", ADD CONSTRAINT "output_valid_only_for_completed" CHECK ((output IS NULL) OR (status = ANY (ARRAY['completed'::text, 'failed'::text])));
 -- Modify "steps" table
