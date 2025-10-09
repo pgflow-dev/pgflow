@@ -509,7 +509,7 @@ export class Flow<
    * @template THandler - The handler function that must return an array or Promise<array>
    * @template Deps - The step dependencies (must be existing step slugs)
    * @param opts - Step configuration including slug, dependencies, and runtime options
-   * @param handler - Function that processes input and returns an array
+   * @param handler - Function that processes input and returns an array (null/undefined rejected)
    * @returns A new Flow instance with the array step added
    */
   array<
@@ -523,7 +523,7 @@ export class Flow<
         }
       >,
       context: BaseContext & TContext
-    ) => Array<Json> | Promise<Array<Json>>,
+    ) => readonly any[] | Promise<readonly any[]>,
     Deps extends Extract<keyof Steps, string> = never
   >(
     opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn?: Deps[] } & StepRuntimeOptions>,
@@ -551,11 +551,14 @@ export class Flow<
    * @returns A new Flow instance with the map step added
    */
   // Overload for root map
-  map<Slug extends string, THandler>(
-    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug } & StepRuntimeOptions>,
-    handler: TFlowInput extends readonly (infer Item)[]
-      ? THandler & ((item: Item, context: BaseContext & TContext) => Json | Promise<Json>)
+  map<
+    Slug extends string,
+    THandler extends TFlowInput extends readonly (infer Item)[]
+      ? (item: Item, context: BaseContext & TContext) => Json | Promise<Json>
       : never
+  >(
+    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug } & StepRuntimeOptions>,
+    handler: THandler
   ): Flow<
     TFlowInput,
     TContext & BaseContext,
@@ -564,11 +567,15 @@ export class Flow<
   >;
 
   // Overload for dependent map
-  map<Slug extends string, TArrayDep extends Extract<keyof Steps, string>, THandler>(
-    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; array: TArrayDep } & StepRuntimeOptions>,
-    handler: Steps[TArrayDep] extends readonly (infer Item)[]
-      ? THandler & ((item: Item, context: BaseContext & TContext) => Json | Promise<Json>)
+  map<
+    Slug extends string,
+    TArrayDep extends Extract<keyof Steps, string>,
+    THandler extends Steps[TArrayDep] extends readonly (infer Item)[]
+      ? (item: Item, context: BaseContext & TContext) => Json | Promise<Json>
       : never
+  >(
+    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; array: TArrayDep } & StepRuntimeOptions>,
+    handler: THandler
   ): Flow<
     TFlowInput,
     TContext & BaseContext,

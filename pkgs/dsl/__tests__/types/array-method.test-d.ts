@@ -20,10 +20,31 @@ describe('.array() method type constraints', () => {
     });
 
     it('should reject handlers that return non-arrays', () => {
-      new Flow<Record<string, never>>({ slug: 'test' })
+      const flow = new Flow<Record<string, never>>({ slug: 'test' });
+
+      // Test that these handlers are NOT assignable to array handler type
+      type ArrayHandler = (input: { run: Record<string, never> }, context: any) => Array<any> | Promise<Array<any>>;
+
+      const invalidNumber = () => 42;
+      expectTypeOf(invalidNumber).not.toMatchTypeOf<ArrayHandler>();
+
+      const invalidString = () => 'not an array';
+      expectTypeOf(invalidString).not.toMatchTypeOf<ArrayHandler>();
+
+      const invalidObject = () => ({ not: 'array' });
+      expectTypeOf(invalidObject).not.toMatchTypeOf<ArrayHandler>();
+
+      const invalidNull = () => null;
+      expectTypeOf(invalidNull).not.toMatchTypeOf<ArrayHandler>();
+
+      const invalidUndefined = () => undefined;
+      expectTypeOf(invalidUndefined).not.toMatchTypeOf<ArrayHandler>();
+
+      // Keep the runtime tests with @ts-expect-error for actual type enforcement
+      new Flow<Record<string, never>>({ slug: 'test2' })
         // @ts-expect-error - should reject number return
         .array({ slug: 'invalid_number' }, () => 42)
-        // @ts-expect-error - should reject string return  
+        // @ts-expect-error - should reject string return
         .array({ slug: 'invalid_string' }, () => 'not an array')
         // @ts-expect-error - should reject object return
         .array({ slug: 'invalid_object' }, () => ({ not: 'array' }))

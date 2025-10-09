@@ -1,0 +1,44 @@
+name: Type Testing Health Check
+
+# Run on every push/PR to ensure type testing infrastructure always works
+# Cost: ~1-2 seconds per run
+# Benefit: Never ship broken type validation
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - 'release/**'
+
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    name: Verify Type Testing Infrastructure
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Type Testing Health Check
+        run: pnpm nx test:types:health dsl
+
+      - name: Report Results
+        if: failure()
+        run: |
+          echo "::error::Type testing infrastructure is broken!"
+          echo "This means type tests may not be catching bugs."
+          echo "Check the health check output above for details."

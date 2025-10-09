@@ -270,12 +270,24 @@
       },
       "cache": true
     },
-    "test:types": {
+    "test:types:vitest": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "pnpm vitest --typecheck.only --run"
+      }
+    },
+    "test:types:strict": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
-        "command": "bash ../../scripts/typecheck-strict.sh"
+        "command": "bash ../../scripts/typecheck-ts2578.sh"
       }
+    },
+    "test:types": {
+      "executor": "nx:noop",
+      "dependsOn": ["test:types:vitest", "test:types:strict"]
     }
   }
 }

@@ -235,10 +235,8 @@ export class FlowStep<
         break;
 
       default: {
-        // Exhaustiveness check - should never happen with proper types
-        // @ts-expect-error Intentional exhaustiveness check
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const _exhaustivenessCheck: never = event;
+        // Exhaustiveness check - ensures all event statuses are handled
+        event satisfies never;
         return false;
       }
     }
