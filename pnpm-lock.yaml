@@ -222,6 +222,9 @@ importers:
       '@commander-js/extra-typings':
         specifier: ^13.1.0
         version: 13.1.0(commander@13.1.0)
+      '@decimalturn/toml-patch':
+        specifier: 0.3.7
+        version: 0.3.7
       '@pgflow/core':
         specifier: workspace:*
         version: link:../core
@@ -231,9 +234,6 @@ importers:
       commander:
         specifier: ^13.1.0
         version: 13.1.0
-      smol-toml:
-        specifier: ^1.4.2
-        version: 1.4.2
     devDependencies:
       '@types/node':
         specifier: ^22.14.1
@@ -2416,6 +2416,10 @@ packages:
       enabled: 2.0.0
       kuler: 2.0.0
     dev: true
+
+  /@decimalturn/toml-patch@0.3.7:
+    resolution: {integrity: sha512-AzBw8XGOfTASzpypq3E0M/jW9/XGz9h879SuEYvzsB8f3xSUvYLABkoDgbLq7jsLCNrxqyRd10Ffxu/ndkMZaw==}
+    dev: false
 
   /@dependents/detective-less@5.0.1:
     resolution: {integrity: sha512-Y6+WUMsTFWE5jb20IFP4YGa5IrGY/+a/FbOSjDF/wz9gepU2hwCYSXRHP/vPwBvwcY3SVMASt4yXxbXNXigmZQ==}
@@ -20302,11 +20306,6 @@ packages:
 
   /smol-toml@1.4.1:
     resolution: {integrity: sha512-CxdwHXyYTONGHThDbq5XdwbFsuY4wlClRGejfE2NtwUtiHYsP1QtNsHb/hnj31jKYSchztJsaA8pSQoVzkfCFg==}
-    engines: {node: '>= 18'}
-    dev: false
-
-  /smol-toml@1.4.2:
-    resolution: {integrity: sha512-rInDH6lCNiEyn3+hH8KVGFdbjc099j47+OSgbMrfDYX1CmXLfdKd7qi6IfcWj2wFxvSVkuI46M+wPGYfEOEj6g==}
     engines: {node: '>= 18'}
     dev: false
 

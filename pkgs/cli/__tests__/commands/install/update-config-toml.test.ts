@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { parse as parseTOML, stringify as stringifyTOML } from 'smol-toml';
+import { parse as parseTOML, stringify as stringifyTOML } from '@decimalturn/toml-patch';
 import { updateConfigToml } from '../../../src/commands/install/update-config-toml';
 
 describe('updateConfigToml', () => {
@@ -59,7 +59,7 @@ redirect_uri = "http://localhost:54321/auth/v1/callback"
     console.log('---');
 
     // First, verify the output is valid TOML that can be parsed
-    let parsedConfig;
+    let parsedConfig: any;
     expect(() => {
       parsedConfig = parseTOML(updatedContent);
     }).not.toThrow();
@@ -134,7 +134,7 @@ enabled = true
     const updatedContent = fs.readFileSync(configPath, 'utf8');
 
     // First verify the TOML is valid and parseable
-    let parsedConfig;
+    let parsedConfig: any;
     expect(() => {
       parsedConfig = parseTOML(updatedContent);
     }).not.toThrow();

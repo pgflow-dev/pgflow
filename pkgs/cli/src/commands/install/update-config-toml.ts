@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { log, confirm, note } from '@clack/prompts';
-import { parse as parseTOML, stringify as stringifyTOML } from 'smol-toml';
+import * as TOML from '@decimalturn/toml-patch';
 import chalk from 'chalk';
 
 /**
@@ -21,8 +21,7 @@ type SupabaseConfig = {
 
 /**
  * Updates the config.toml file with necessary configurations for EdgeWorker
- *
- * NOTE: Comments and custom formatting will be lost. A backup is always created.
+ * while preserving comments and formatting
  *
  * Makes the following changes:
  * 1. Enables the connection pooler
@@ -53,10 +52,9 @@ export async function updateConfigToml({
     }
 
     const configContent = fs.readFileSync(configPath, 'utf8');
-
     let config: SupabaseConfig;
     try {
-      config = parseTOML(configContent) as SupabaseConfig;
+      config = TOML.parse(configContent) as SupabaseConfig;
     } catch (parseError) {
       const errorMsg = parseError instanceof Error ? parseError.message : String(parseError);
       log.error(`Invalid TOML syntax in ${configPath}: ${errorMsg}`);
@@ -132,11 +130,11 @@ ${chalk.green('+ policy = "per_worker"')}`);
     updatedConfig.db.pooler.pool_mode = 'transaction';
     updatedConfig.edge_runtime.policy = 'per_worker';
 
-    // Stringify the updated config
-    // Note: This will not preserve comments from the original file
     let updatedContent: string;
     try {
-      updatedContent = stringifyTOML(updatedConfig);
+      updatedContent = TOML.patch(configContent, updatedConfig, {
+        trailingComma: false,
+      });
     } catch (stringifyError) {
       const errorMsg = stringifyError instanceof Error ? stringifyError.message : String(stringifyError);
       log.error(`Failed to generate TOML for ${configPath}: ${errorMsg}`);
