@@ -1,0 +1,34 @@
+---
+title: How it works?
+description: Discover how Edge Worker enhances Supabase Background Tasks with retries, concurrency control, and automatic scaling while ensuring zero message loss.
+banner:
+  content: |
+    This guide is for the queue-only version of Edge Worker. Main docs are <a href="/get-started/">here</a>
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+**Edge Worker** is a task queue worker that gets messages from a queue and calls user functions with their payload.
+
+[![](https://mermaid.ink/img/pako:eNplkcFugzAMhl8lyrl9AQ47VLBxqdSqlZAGHEziASokyEkmTaXvvoR0o1VziGL_n_9Y9pULLZEnvFItwdSxc1op5o9xTUxU_OQmaMAgy2SL7N0pYXutTMUjGU5WlItYaLog1VFAJSv14paCXdweyw8f-2MZLnZ06LBelXxXRk_DztAM-Gp9KA-kpRP-W7bdvs3Ga4aNaAy0OC_WdzD4B4IQVsLMvvkIZMUiA4mu_8ZHYjW5MxNp4dUnKC9zUHJA-h9R_VQTG-sQyDYINlTs-IaPSCP00q_gGvCK2w5HP53EPyXQJczp5jlwVp9-lOCJJYcbTtq13V_gJgkW0x78lEeefMFgfHYC9an1GqPsraZ9XPiy99svlAqmtA?type=png)](https://mermaid.live/edit#pako:eNplkcFugzAMhl8lyrl9AQ47VLBxqdSqlZAGHEziASokyEkmTaXvvoR0o1VziGL_n_9Y9pULLZEnvFItwdSxc1op5o9xTUxU_OQmaMAgy2SL7N0pYXutTMUjGU5WlItYaLog1VFAJSv14paCXdweyw8f-2MZLnZ06LBelXxXRk_DztAM-Gp9KA-kpRP-W7bdvs3Ga4aNaAy0OC_WdzD4B4IQVsLMvvkIZMUiA4mu_8ZHYjW5MxNp4dUnKC9zUHJA-h9R_VQTG-sQyDYINlTs-IaPSCP00q_gGvCK2w5HP53EPyXQJczp5jlwVp9-lOCJJYcbTtq13V_gJgkW0x78lEeefMFgfHYC9an1GqPsraZ9XPiy99svlAqmtA)
+
+### Features
+
+Under the hood, it wraps [Supabase Background Tasks](https://supabase.com/docs/guides/functions/background-tasks) and adds a lot of useful features:
+
+- retries with delays
+- concurrency control
+- observability (heartbeats, logging)
+- horizontal scaling (by deploying multiple edge functions for the same queue)
+
+### CPU/clock limits
+
+Edge Worker treats Edge Function termination due to CPU/clock limits
+as an expected occurrence and includes extra measures to handle it as part of
+normal operations:
+
+- stops polling as soon as the soft limit is reached
+- makes extra effort to gracefully abort pending tasks with abort signals
+- uses PGMQ's visibility timeout to ensure **no message is ever lost**
+- **spawns new instances** automatically for **continuous operations**
+- pings the database with **heartbeats** to ensure the worker's health

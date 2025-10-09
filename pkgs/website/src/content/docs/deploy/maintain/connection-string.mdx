@@ -1,0 +1,85 @@
+---
+title: Connection String Encoding
+description: How to URL-encode special characters in database passwords
+sidebar:
+  order: 120
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+If your database password contains special characters, you must URL-encode them to avoid authentication errors like:
+
+```
+Error: SASL_SIGNATURE_MISMATCH: The server did not return the correct signature
+```
+
+## Common Characters That Need Encoding
+
+Check if your password contains any of these characters that require encoding:
+
+| Character | Encoding | Character | Encoding |
+|-----------|----------|-----------|----------|
+| `@` | `%40` | `&` | `%26` |
+| `:` | `%3A` | `/` | `%2F` |
+| `?` | `%3F` | `#` | `%23` |
+| `%` | `%25` | ` ` (space) | `%20` |
+
+[Full list at MDN Web Docs](https://developer.mozilla.org/en-US/docs/Glossary/Percent-encoding)
+
+## Encoding Your Password
+
+Special characters (`@`, `&`, `:`, etc.) in passwords must be percent-encoded to be correctly interpreted in connection strings.
+
+Use one of these methods:
+
+```javascript
+// JavaScript
+const encodedPassword = encodeURIComponent("my@complex&password!");
+// Result: "my%40complex%26password%21"
+```
+
+```python
+# Python
+import urllib.parse
+encoded_password = urllib.parse.quote("my@complex&password!")
+# Result: "my%40complex%26password%21"
+```
+
+```bash
+# Linux (requires jq)
+encoded_password=$(printf %s "my@complex&password!" | jq -sRr @uri)
+# Result: "my%40complex%26password%21"
+```
+
+## Using Encoded Password
+
+<Aside type="tip">
+  Only encode the password portion, not the entire URL.
+</Aside>
+
+When you have your encoded password, insert it into your connection string:
+
+```
+postgresql://username:ENCODED_PASSWORD@host:port/database
+```
+
+Example with encoded password:
+```
+postgresql://postgres.pooler-dev:my%40complex%26password%21@db.example.com:6543/postgres
+```
+
+Use this encoded connection string when:
+- Setting the `EDGE_WORKER_DB_URL` secret for production deployment
+- Configuring local development environment variables
+
+For deployment instructions, see [Deploy Your First Flow](/deploy/supabase/deploy-first-flow/).
+
+## Security Considerations
+
+:::caution[Password Security]
+When working with database passwords:
+- **Never** paste your database password into untrusted websites for encoding
+- **Avoid** sharing your database password with third-party services
+- **Don't** commit your database password to Git repositories
+- Use environment variables and secrets management tools instead
+:::

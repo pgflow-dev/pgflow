@@ -1,0 +1,66 @@
+---
+title: Organize Flows code
+description: Learn how to structure your pgflow codebase for maintainability and reusability
+sidebar:
+  order: 20
+---
+
+import { Aside, Steps, CardGrid, LinkCard } from "@astrojs/starlight/components";
+import { FileTree } from '@astrojs/starlight/components';
+
+This guide outlines best practices for organizing your pgflow codebase to improve maintainability, reusability, and clarity.
+
+## How to structure your code
+
+The [getting started tutorial](/get-started/flows/create-flow/) teaches organizing flows and tasks in underscore-prefixed folders, following Supabase's pattern for shared code:
+
+```bash frame="none"
+mkdir -p supabase/functions/_flows supabase/functions/_tasks
+```
+
+<FileTree>
+- supabase
+  - functions
+    - _flows
+      - analyze_website.ts
+    - _tasks
+      - scrapeWebsite.ts
+      - summarizeWithAI.ts
+      - extractTags.ts
+      - saveWebsite.ts
+    - analyze_website_worker
+      - index.ts
+      - deno.json
+</FileTree>
+
+This structure enables:
+
+- Sharing tasks across multiple flows
+- Running multiple workers for the same flow (horizontal scaling)
+- Clear separation of workflow definitions from execution
+- Standard Supabase pattern for shared code
+
+## Learn more
+
+<CardGrid>
+  <LinkCard
+    title="Create Reusable Tasks"
+    href="/build/authoring/create-reusable-tasks/"
+    description="How to design task functions that work well across multiple flows"
+  />
+  <LinkCard
+    title="Naming workflow steps"
+    href="/concepts/flows/naming-steps/"
+    description="Best practices for naming steps in your workflows"
+  />
+</CardGrid>
+
+## Examples
+
+<CardGrid>
+  <LinkCard
+    title="AI Web Scraper Tutorial"
+    href="/tutorials/ai-web-scraper/"
+    description="See the shared structure pattern in action with a complete real-world example"
+  />
+</CardGrid>

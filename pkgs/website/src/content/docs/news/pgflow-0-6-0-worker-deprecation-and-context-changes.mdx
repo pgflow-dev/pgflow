@@ -33,7 +33,7 @@ WHERE function_name = 'your-worker-name'
   AND deprecated_at IS NULL;
 ```
 
-Workers detect deprecation within 5 seconds via heartbeat and gracefully stop polling. The [deployment guide](/how-to/deploy-to-supabasecom/) has been simplified with a single safe deployment sequence.
+Workers detect deprecation within 5 seconds via heartbeat and gracefully stop polling. The [deployment guide](/deploy/supabase/update-deployed-flows/) has been simplified with a single safe deployment sequence.
 
 ## Breaking Context Changes
 
@@ -66,6 +66,6 @@ async function handler(input, context) {
 
 1. Update context usage: `context.serviceSupabase` → `context.supabase`
 2. Remove any `context.anonSupabase` usage
-3. Use [worker deprecation](/how-to/deploy-to-supabasecom/) for smooth deployments
+3. Use [worker deprecation](/deploy/supabase/update-deployed-flows/) for smooth deployments
 
 The service role client is now the primary Supabase interface, simplifying database operations in handler functions.
