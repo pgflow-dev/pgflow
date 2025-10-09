@@ -1,0 +1,39 @@
+---
+title: Monitor workers health
+description: Learn how to monitor Edge Worker with logging and heartbeat tracking. Configure log levels and track worker status using built-in SQL views.
+sidebar:
+  order: 4
+---
+
+## Logging
+
+Edge Worker logs various events to the console. You can change the log level
+by setting `EDGE_WORKER_LOG_LEVEL` environment variable:
+
+```bash
+// supabase/functions/.env
+EDGE_WORKER_LOG_LEVEL=debug
+```
+
+Available log levels are:
+
+- `debug`
+- `info`
+- `error`
+- (more will come)
+
+By default, Edge Worker's log level is `info`.
+
+## Heartbeats
+
+Edge Worker sends heartbeats every 5 seconds and updates `last_heartbeat_at` column in `pgflow.workers` table.
+
+### List of active workers
+
+In order to get a list of active workers, we need to fetch those that have pinged in the last 6 seconds (+1s to account for delays):
+
+```sql frame="none"
+SELECT *
+FROM pgflow.workers
+WHERE last_heartbeat_at > now() - make_interval(secs => 6)
+```

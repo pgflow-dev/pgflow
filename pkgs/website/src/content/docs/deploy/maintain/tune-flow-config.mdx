@@ -1,0 +1,83 @@
+---
+title: Tune Deployed Flows
+description: Adjust retry behavior and timeouts for production flows without recompiling
+sidebar:
+  order: 60
+---
+
+import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
+import NotProductionReady from '@/components/NotProductionReady.astro';
+
+After deploying flows to production, you may need to adjust retry behavior, timeouts, or delays based on real-world performance. This guide shows how to tune these runtime configuration options without recompiling or redeploying.
+
+For structural changes like adding steps or changing dependencies, create a new flow version instead (see [Version Your Flows](/build/version-flows/)).
+
+:::tip[Configuration Reference]
+For complete documentation of all available options, defaults, and examples, see the [Configuration Reference](/reference/configuration/configuration/#step-execution-options).
+:::
+
+## What Can Be Updated
+
+You can safely modify these runtime options for existing flows without creating a new version:
+
+| DSL Option | Database Column | Default | Reference |
+| ---------- | --------------- | ------- | --------- |
+| `maxAttempts` | `opt_max_attempts` | `3` | [maxAttempts](/reference/configuration/configuration/#maxattempts) |
+| `baseDelay` | `opt_base_delay` | `1` | [baseDelay](/reference/configuration/configuration/#basedelay) |
+| `timeout` | `opt_timeout` | `60` | [timeout](/reference/configuration/configuration/#timeout) |
+| `startDelay` | `opt_start_delay` | `0` | [startDelay](/reference/configuration/configuration/#startdelay) |
+
+pgflow uses a two-level configuration approach where flow-level options set defaults and step-level options override them. Note that `startDelay` is step-level only.
+
+## Updating Options Manually
+
+Since the compiler doesn't support updating existing flows, you must manually update options in the database:
+
+### Flow Level (Affects All Steps)
+```sql
+UPDATE pgflow.flows
+SET opt_max_attempts = 5, opt_timeout = 10, opt_base_delay = 2
+WHERE flow_slug = 'your_flow_slug';
+```
+
+### Step Level (Overrides Flow Defaults)
+```sql
+UPDATE pgflow.steps
+SET opt_max_attempts = 3, opt_timeout = 30, opt_start_delay = 5
+WHERE flow_slug = 'your_flow_slug' AND step_slug = 'your_step_slug';
+```
+
+## Example: Increasing Retries for API Calls
+
+A common scenario is adjusting retry behavior after observing production issues:
+
+```sql
+-- Check current settings
+SELECT step_slug, opt_max_attempts, opt_timeout
+FROM pgflow.steps
+WHERE flow_slug = 'analyze_website';
+
+-- Update API call step to retry more
+UPDATE pgflow.steps
+SET opt_max_attempts = 5, opt_timeout = 120
+WHERE flow_slug = 'analyze_website' AND step_slug = 'website';
+```
+
+<Aside type="caution">
+After updating options in the database, remember to update your flow definition code to keep them in sync. Otherwise, the next time you recompile and deploy migrations, your manual changes will be overwritten.
+</Aside>
+
+## Learn More
+
+<CardGrid>
+  <LinkCard
+    title="Configuration Reference"
+    href="/reference/configuration/configuration/"
+    description="Complete documentation of all configuration options, defaults, and behavior"
+  />
+  <LinkCard
+    title="Version Your Flows"
+    href="/build/version-flows/"
+    description="When to create a new version instead of tuning config"
+  />
+</CardGrid>

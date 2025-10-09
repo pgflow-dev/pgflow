@@ -1,0 +1,160 @@
+---
+title: Context Object
+description: Understanding how pgflow provides platform resources to handlers through context
+sidebar:
+  order: 3
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+The context object is pgflow's mechanism for providing handlers with access to platform resources like database connections, environment variables, and service clients. Instead of each handler creating its own connections, pgflow manages these resources centrally and injects them through a standardized context parameter.
+
+:::tip[API Reference]
+For complete documentation of all context properties, see the [Context API Reference](/reference/apis/context/).
+:::
+
+:::note[Future: Custom Resources]
+The context system is designed to be extensible. Future versions are planned to support custom resources, allowing you to add your own services (Redis, Stripe, etc.) to the context object while maintaining full type safety.
+:::
+
+## Why Context Exists
+
+Before context, handlers faced several challenges:
+
+1. **Resource Management** - Each handler needed to create its own database connections and clients
+2. **Configuration Access** - No standardized way to access environment variables
+3. **Boilerplate Code** - Repeated connection setup in every handler
+4. **Resource Leaks** - Risk of not properly closing connections
+5. **Testing Complexity** - Difficult to mock resources for testing
+
+The context object solves these problems by providing pre-configured, managed resources that handlers can use immediately.
+
+## Core Principles
+
+Context follows pgflow's design philosophy:
+
+1. **Zero Configuration** - Resources are ready to use without setup
+2. **Type Safety** - Full TypeScript support with proper inference
+3. **Pre-configured Resources** - Platform adapter provides established connections
+4. **Platform Agnostic** - Context interface can adapt to different platforms
+5. **Backward Compatible** - Existing single-parameter handlers continue to work
+
+## How Context Works
+
+When pgflow executes a handler, it passes two parameters:
+
+### Before vs After
+
+<Tabs>
+<TabItem label="Before (Global Resources)">
+```typescript del="import { sql }" del="import { supabase }"
+import { sql } from '../db.js';
+import { supabase } from '../supabase-client.js';
+
+async function processUser(input: { userId: string }) {
+  const [user] = await sql`SELECT * FROM users WHERE id = ${input.userId}`;
+  const apiKey = process.env.EXTERNAL_API_KEY;
+  const { data } = await supabase.auth.getUser();
+
+  return { user };
+}
+```
+</TabItem>
+<TabItem label="After (Context)">
+```typescript ins="ctx: Context" "ctx.sql" "ctx.env" "ctx.supabase"
+async function processUser(input: { userId: string }, ctx: Context) {
+  const [user] = await ctx.sql`SELECT * FROM users WHERE id = ${input.userId}`;
+  const apiKey = ctx.env.EXTERNAL_API_KEY;
+  const { data } = await ctx.supabase.auth.getUser();
+
+  return { user };
+}
+```
+</TabItem>
+</Tabs>
+
+### Complete Flow Example
+
+```typescript title="Using context in flows" ins="ctx" "ctx.sql" "ctx.env" "ctx.supabase"
+const ProcessUserFlow = new Flow<{ userId: string }>({
+  slug: 'process_user'
+})
+  .step({ slug: 'validate' }, async (input, ctx) => {
+    const [user] = await ctx.sql`SELECT * FROM users WHERE id = ${input.userId}`;
+    const apiKey = ctx.env.EXTERNAL_API_KEY;
+    const { data } = await ctx.supabase.auth.getUser();
+
+    // ... process with resources
+    return { user };
+  });
+```
+
+<Aside type="note">
+  The context parameter is optional. Handlers that don't need platform resources can omit it for backward compatibility.
+</Aside>
+
+## Available Resources
+
+The context object provides access to different resources depending on your platform:
+
+**Core Resources** (always available):
+- `env` - Environment variables
+- `shutdownSignal` - Worker shutdown signal for graceful cleanup
+- `rawMessage` - Original pgmq message with metadata
+- `stepTask` - Flow task details (flow handlers only)
+- `workerConfig` - Resolved worker configuration
+
+**Supabase Platform**:
+- `sql` - PostgreSQL client (postgres.js)
+- `supabase` - Supabase client with service role
+
+See the [Context API Reference](/reference/apis/context/) for complete documentation of each property.
+
+## Using Destructuring for Cleaner Code
+
+While examples in this documentation use `ctx.` for clarity, destructuring often makes your code more readable:
+
+```typescript ins="{ sql, env, rawMessage }"
+// Queue handler - destructure only what you need
+async function processOrder(input, { sql, env, rawMessage }) {
+  console.log(`Processing order ${rawMessage.msg_id}`);
+  
+  const [order] = await sql`
+    SELECT * FROM orders WHERE id = ${input.orderId}
+  `;
+  
+  await sendNotification(order, env.NOTIFICATION_API_KEY);
+}
+```
+
+```typescript ins="{ sql, supabase, stepTask }"
+// Step handler - clean and focused
+.step({ slug: 'sync_data' }, async (input, { sql, supabase, stepTask }) => {
+  console.log(`Syncing for run ${stepTask.run_id}`);
+  
+  const data = await sql`SELECT * FROM pending_sync WHERE user_id = ${input.userId}`;
+  
+  const synced = await supabase
+    .from('synced_data')
+    .upsert(data)
+    .select();
+    
+  return { syncedCount: synced.data.length };
+})
+```
+
+<Aside type="tip">
+  Destructuring makes it immediately clear which resources a handler depends on, improving code readability and testability.
+</Aside>
+
+## Summary
+
+The context object streamlines handler development by:
+
+- Providing ready-to-use platform resources
+- Eliminating connection boilerplate
+- Centralizing resource access through platform adapter
+- Maintaining type safety throughout
+- Supporting gradual migration of existing code
+
+Context embodies pgflow's philosophy of being **robust yet simple** - handlers get powerful capabilities without complexity.

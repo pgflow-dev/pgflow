@@ -1,0 +1,95 @@
+---
+title: Naming workflow steps effectively
+description: Best practices for naming steps in your pgflow flows
+sidebar:
+  order: 4
+---
+
+Step naming is an important design decision that affects workflow readability and maintainability. After analyzing multiple pgflow projects, these patterns have proven effective.
+
+## Recommended approach: Hybrid naming
+
+Ask yourself: **"What matters more - the returned data or that the action happened?"**
+
+- Use **nouns** when downstream steps process the returned data meaningfully
+- Use **verb-noun** when the side effect is the primary purpose, even if data is returned
+
+### Result-focused naming (nouns)
+
+```ts
+// These steps produce data that other steps consume
+.step({ slug: "website" }, ...)  // Returns website content
+.step({ slug: "summary", dependsOn: ["website"] }, ...)  // Returns summary text
+.map({ slug: "userProfiles", array: "userIds" }, ...)  // Returns user profile objects
+```
+
+### Action-focused naming (verb-noun)
+
+```ts
+// These steps are primarily about their side effects
+.step({ slug: "saveToDb", dependsOn: ["summary"] }, ...)  // Side effect: database write
+.map({ slug: "sendEmails", array: "users" }, ...)  // Side effect: emails sent
+.map({ slug: "resizeImages", array: "images" }, ...)  // Action: transformation
+```
+
+## Why this works well
+
+1. **Result-focused steps** with noun names create intuitive property access:
+   ```ts
+   // Natural to access data
+   ({ website, userProfiles }) => {
+     return analyzeData(website.content, userProfiles);
+   }
+   ```
+
+2. **Action-focused steps** with verb names clearly communicate their purpose:
+   ```ts
+   // Clear that this is about the action, not the return value
+   .step({ slug: "notifyAdmins" }, async () => {
+     await sendSlackMessage("Process complete");
+     return { notified: true };  // Simple confirmation
+   })
+   ```
+
+3. The distinction helps readers quickly understand whether a step exists to:
+   - **Produce data** for the workflow (noun)
+   - **Perform an action** with side effects (verb-noun)
+
+## The nuance: Many steps do both
+
+Most real-world steps both perform actions AND return data. The naming should reflect the **primary purpose**:
+
+```ts
+// Primary purpose: Send notifications (side effect)
+// The success/failure data is just metadata about the action
+.map({ slug: "sendNotifications" }, async (user) => {
+  const sent = await sendEmail(user);
+  return { userId: user.id, sent, timestamp: Date.now() };
+})
+.step({ slug: "updateDatabase", dependsOn: ["sendNotifications"] }, (input) => {
+  // Even though we use the results, the primary goal was sending
+  const successful = input.sendNotifications.filter(r => r.sent);
+  await markUsersNotified(successful);
+});
+
+// Primary purpose: Get user profiles (data)
+// The API call is just how we get the data
+.map({ slug: "userProfiles" }, async (userId) => {
+  return await fetchUserProfile(userId);  // Side effect: API call
+})
+.step({ slug: "analyze", dependsOn: ["userProfiles"] }, (input) => {
+  // We care about the profile data, not that an API was called
+  return analyzeProfiles(input.userProfiles);
+});
+```
+
+## Use camelCase for step slugs
+
+```ts
+.step({ slug: "websiteContent" }, ...)   // Correct
+.step({ slug: "website_content" }, ...)  // Avoid
+```
+
+Step slugs are used as identifiers in TypeScript and must match exactly when referenced in dependency arrays. Following JavaScript conventions with camelCase helps maintain consistency.
+
+While this guide recommends the hybrid pattern, the most important thing is consistency within your project. Document the chosen convention and apply it throughout the codebase.

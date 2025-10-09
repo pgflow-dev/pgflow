@@ -1,0 +1,84 @@
+---
+title: Delete Flow and its Data
+description: Completely remove a flow and all its data during development
+sidebar:
+  order: 55
+next:
+  link: /deploy/
+  label: Operate
+---
+
+import { Aside, Code, CardGrid, LinkCard } from "@astrojs/starlight/components";
+import deleteFlowFunctionCode from '@/../../core/supabase/tests/_shared/delete_flow_and_data.sql.raw?raw';
+
+During development, you may want to completely remove a flow and all its data to start fresh. This operation is destructive and should **only be used in development environments**.
+
+<Aside type="danger" title="Data Loss Warning">
+This permanently deletes all flow data including:
+- All run history
+- All queued and archived messages
+- All task outputs
+- All flow definitions
+
+**Never use this in production.** Use [versioned flows](/build/version-flows/) instead (e.g., `my_flow_v1`, `my_flow_v2`) to safely deploy changes while maintaining complete flow history.
+</Aside>
+
+## When to Use This
+
+Use this function when you need to:
+- Make breaking changes during development
+- Clean up test data between iterations
+- Start fresh after experimenting with flow structure
+
+## Using the Delete Function
+
+The delete function accepts a flow slug parameter and removes all associated data:
+
+```sql
+pgflow.delete_flow_and_data(flow_slug TEXT)
+```
+
+Example usage in local development:
+```sql
+-- Delete a specific flow and all its data
+SELECT pgflow.delete_flow_and_data('analyze_website');
+```
+
+This deletes the flow definition, all runs, queued messages, and task outputs for the specified flow.
+
+## Installing the Function
+
+<Aside type="caution" title="Manual Installation Required">
+This function is not included in default pgflow migrations to prevent accidental deployment to production. It has been thoroughly unit tested, but you must manually add it to your development database using the SQL in the [Delete Function](#the-delete-function) section below.
+</Aside>
+
+Install by running the SQL directly in your database using `psql` or Supabase Studio.
+
+## The Delete Function
+
+Run this SQL to install the delete function:
+
+<Code lang="sql" code={deleteFlowFunctionCode} />
+
+## After Deleting
+
+Once you've deleted the flow:
+
+1. You can compile and deploy a fresh version without conflicts
+2. The flow slug becomes available for reuse
+3. All historical data is permanently lost
+
+## See Also
+
+<CardGrid>
+  <LinkCard
+    title="Version your flows"
+    description="Safe flow updates for production"
+    href="/build/version-flows/"
+  />
+  <LinkCard
+    title="Tune deployed flows"
+    description="Adjust production flow settings"
+    href="/deploy/maintain/tune-flow-config/"
+  />
+</CardGrid>

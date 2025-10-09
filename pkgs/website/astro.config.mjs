@@ -56,30 +56,97 @@ export default defineConfig({
     // Page rename redirects
     '/concepts/array-and-map-steps/': '/concepts/map-steps/',
 
-    // Existing redirects
+    // Get Started reorganization
+    '/get-started/': '/get-started/installation/',
+    '/getting-started/': '/get-started/',
+    '/getting-started/install-pgflow/': '/get-started/installation/',
+    '/getting-started/create-first-flow/': '/get-started/flows/create-flow/',
+    '/getting-started/compile-to-sql/': '/get-started/flows/compile-flow/',
+    '/getting-started/run-flow/': '/get-started/flows/run-flow/',
+    '/getting-started/update-pgflow/': '/deploy/maintain/update-pgflow/',
+    '/getting-started/configuration/': '/reference/configuration/configuration/',
+
+    // Edge Worker reorganization
+    '/edge-worker/getting-started/create-first-worker/':
+      '/get-started/background-jobs/create-worker/',
+    '/edge-worker/getting-started/install-edge-worker/':
+      '/get-started/installation/',
     '/edge-worker/how-to/run-on-hosted-supabase/':
-      '/how-to/deploy-to-supabasecom/',
-    '/edge-worker/faq/': '/faq/',
-    '/edge-worker/how-to/': '/faq/',
+      '/deploy/supabase/deploy-first-flow/',
+    '/edge-worker/faq/': '/get-started/faq/',
+    '/edge-worker/how-to/': '/get-started/faq/',
     '/edge-worker/how-to/deploy-to-supabasecom/':
-      '/how-to/deploy-to-supabasecom/',
-    '/edge-worker/how-to/prepare-db-string/': '/how-to/prepare-db-string/',
+      '/deploy/supabase/deploy-first-flow/',
+    '/edge-worker/how-to/prepare-db-string/': '/deploy/maintain/connection-string/',
 
-    // File rename redirects
-    '/how-to/version-your-flows/': '/how-to/version-flows/',
+    // FAQ move
+    '/faq/': '/get-started/faq/',
 
-    // New redirects for reorganization
-    '/explanations/': '/concepts/',
-    '/explanations/flow-dsl/': '/concepts/flow-dsl/',
+    // How-to → Develop/Operate reorganization
+    '/how-to/': '/build/',
+    '/how-to/batch-process-with-map/': '/build/authoring/process-arrays-in-parallel/',
+    '/how-to/create-reusable-tasks/': '/build/authoring/create-reusable-tasks/',
+    '/how-to/monitor-flow-execution/': '/deploy/observe/monitor-execution/',
+    '/how-to/naming-steps/': '/concepts/flows/naming-steps/',
+    '/how-to/organize-flows-code/': '/build/authoring/organize-flow-code/',
+    '/how-to/version-flows/': '/build/version-flows/',
+    '/how-to/version-your-flows/': '/build/version-flows/',
+    '/develop/manage/version-flows/': '/build/version-flows/',
+    '/how-to/update-flow-options/': '/deploy/maintain/tune-flow-config/',
+    '/develop/config-tuning/update-flow-options/': '/deploy/maintain/tune-flow-config/',
+    '/develop/manage/update-flow-options/': '/deploy/maintain/tune-flow-config/',
+    '/how-to/delete-flow-and-data/': '/build/delete-flows/',
+    '/develop/manage/delete-flows/': '/build/delete-flows/',
+    '/how-to/manually-compile-flow/': '/reference/apis/compile-api/',
+    '/how-to/deploy-to-supabasecom/': '/deploy/supabase/deploy-first-flow/',
+    '/how-to/keep-workers-up/': '/deploy/supabase/keep-workers-running/',
+    '/operate/deploy/deploy-to-supabase/': '/deploy/supabase/update-deployed-flows/',
+    '/how-to/prepare-db-string/': '/deploy/maintain/connection-string/',
+    '/how-to/prune-old-records/': '/deploy/maintain/prune-records/',
+    '/how-to/manual-installation/': '/reference/apis/manual-installation/',
+
+    // Develop → Build, Operate → Deploy rename
+    '/develop/': '/build/',
+    '/develop/authoring/create-reusable-tasks/': '/build/authoring/create-reusable-tasks/',
+    '/develop/authoring/organize-flow-code/': '/build/authoring/organize-flow-code/',
+    '/develop/authoring/process-arrays-in-parallel/': '/build/authoring/process-arrays-in-parallel/',
+    '/develop/version-flows/': '/build/version-flows/',
+    '/develop/delete-flows/': '/build/delete-flows/',
+    '/operate/': '/deploy/',
+    '/operate/deploy/deploy-first-flow/': '/deploy/supabase/deploy-first-flow/',
+    '/operate/deploy/keep-workers-running/': '/deploy/supabase/keep-workers-running/',
+    '/operate/deploy/update-deployed-flows/': '/deploy/supabase/update-deployed-flows/',
+    '/operate/observe/monitor-execution/': '/deploy/observe/monitor-execution/',
+    '/operate/observe/monitor-workers-health/': '/deploy/observe/monitor-workers-health/',
+    '/operate/maintain/connection-string/': '/deploy/maintain/connection-string/',
+    '/operate/maintain/prune-records/': '/deploy/maintain/prune-records/',
+    '/operate/maintain/tune-flow-config/': '/deploy/maintain/tune-flow-config/',
+    '/operate/maintain/update-pgflow/': '/deploy/maintain/update-pgflow/',
+
+    // Explanations to Concepts/Comparisons
+    '/explanations/': '/concepts/overview/',
+    '/explanations/flow-dsl/': '/concepts/flows/understanding-flows/',
     '/explanations/comparison-to-dbos/': '/comparisons/dbos/',
     '/explanations/comparison-to-inngest/': '/comparisons/inngest/',
     '/explanations/comparison-to-trigger-dev/': '/comparisons/trigger/',
 
-    // Redirects for comparisons to vs rename
-    '/comparisons/': '/vs/',
-    '/comparisons/dbos/': '/vs/dbos/',
-    '/comparisons/inngest/': '/vs/inngest/',
-    '/comparisons/trigger/': '/vs/trigger/',
+    // Comparisons rename (vs → comparisons)
+    '/vs/': '/comparisons/',
+    '/vs/dbos/': '/comparisons/dbos/',
+    '/vs/inngest/': '/comparisons/inngest/',
+    '/vs/trigger/': '/comparisons/trigger/',
+
+    // Edge Worker → Reference/Queue Worker
+    '/edge-worker/getting-started/configuration/': '/reference/queue-worker/configuration/',
+    '/edge-worker/how-it-works/': '/reference/queue-worker/how-it-works/',
+    '/edge-worker/getting-started/observability/': '/deploy/observe/monitor-workers-health/',
+
+    // Concepts reorganization
+    '/concepts/': '/concepts/overview/',
+    '/concepts/flow-dsl/': '/concepts/flows/understanding-flows/',
+    '/concepts/map-steps/': '/concepts/flows/map-steps/',
+    '/concepts/context/': '/concepts/flows/context/',
+    '/concepts/how-pgflow-works/': '/concepts/architecture/how-pgflow-works/',
   },
 
   integrations: [
@@ -184,130 +251,171 @@ export default defineConfig({
             'index',
             '**/index',
             'tutorials/ai-web-scraper/*',
-            'how-to/naming-steps',
-            'how-to/update-flow-options',
-            'faq',
+            'concepts/flows/naming-steps',
+            'deploy/maintain/tune-flow-config',
+            'get-started/faq',
             'news/**',
             'hire/**',
           ],
           promote: [
-            'getting-started/install-pgflow',
-            'getting-started/create-first-flow',
-            'getting-started/compile-to-sql',
-            'getting-started/run-flow',
-            'concepts/how-pgflow-works',
-            'concepts/flow-dsl',
-            'how-to/create-reusable-tasks',
-            'how-to/monitor-flow-execution',
-            'how-to/version-flows',
-            'how-to/organize-flows-code',
+            'get-started/installation',
+            'get-started/flows/create-flow',
+            'get-started/flows/compile-flow',
+            'get-started/flows/run-flow',
+            'concepts/architecture/how-pgflow-works',
+            'concepts/flows/understanding-flows',
+            'build/authoring/create-reusable-tasks',
+            'deploy/observe/monitor-execution',
+            'build/version-flows',
+            'build/authoring/organize-flow-code',
           ],
           demote: [
             'edge-worker/*',
-            'vs/*',
-            'how-to/deploy-to-supabasecom',
-            'how-to/manual-installation',
-            'how-to/prepare-db-string',
-            'how-to/prune-old-records',
-            'how-to/delete-flow-and-data',
+            'reference/queue-worker/*',
+            'comparisons/*',
+            'deploy/supabase/deploy-first-flow',
+            'deploy/supabase/update-deployed-flows',
+            'reference/apis/manual-installation',
+            'deploy/maintain/connection-string',
+            'deploy/maintain/prune-records',
+            'build/delete-flows',
+            'project-status',
           ],
         }),
         starlightLinksValidator({ exclude: ['http://localhost*'] }),
         starlightSidebarTopics(
           [
             {
-              label: 'News',
-              icon: 'pen',
-              link: '/news/',
-              id: 'news',
+              label: 'Get Started',
+              icon: 'rocket',
+              link: '/get-started/installation/',
+              id: 'get-started',
               items: [
+                { label: 'Installation', link: '/get-started/installation/' },
                 {
-                  label: 'All Posts',
-                  link: '/news/',
+                  label: 'Flows',
+                  autogenerate: { directory: 'get-started/flows/' },
+                },
+                {
+                  label: 'Background Jobs',
+                  autogenerate: { directory: 'get-started/background-jobs/' },
+                },
+                { label: 'FAQ', link: '/get-started/faq/' },
+                { label: 'Project Status', link: '/project-status/' },
+              ],
+            },
+            {
+              label: 'Build',
+              icon: 'pencil',
+              link: '/build/',
+              id: 'build',
+              items: [
+                { label: 'Overview', link: '/build/' },
+                {
+                  label: 'Authoring',
+                  autogenerate: { directory: 'build/authoring/' },
+                },
+                { label: 'Version flows', link: '/build/version-flows/' },
+                { label: 'Delete flows', link: '/build/delete-flows/' },
+              ],
+            },
+            {
+              label: 'Deploy',
+              icon: 'cloud-download',
+              link: '/deploy/',
+              id: 'deploy',
+              items: [
+                { label: 'Overview', link: '/deploy/' },
+                {
+                  label: 'Supabase',
+                  autogenerate: { directory: 'deploy/supabase/' },
+                },
+                {
+                  label: 'Observe',
+                  autogenerate: { directory: 'deploy/observe/' },
+                },
+                {
+                  label: 'Maintain',
+                  autogenerate: { directory: 'deploy/maintain/' },
                 },
               ],
             },
             {
-              label: 'pgflow',
+              label: 'Concepts',
+              icon: 'puzzle',
+              link: '/concepts/',
+              id: 'concepts',
+              items: [
+                { label: 'Overview', link: '/concepts/overview/' },
+                {
+                  label: 'Architecture',
+                  autogenerate: { directory: 'concepts/architecture/' },
+                },
+                {
+                  label: 'Defining Flows',
+                  autogenerate: { directory: 'concepts/flows/' },
+                },
+              ],
+            },
+            {
+              label: 'Reference',
+              icon: 'document',
+              link: '/reference/',
+              id: 'reference',
+              items: [
+                { label: 'Overview', link: '/reference/' },
+                {
+                  label: 'Configuration',
+                  autogenerate: { directory: 'reference/configuration/' },
+                },
+                {
+                  label: 'APIs',
+                  autogenerate: { directory: 'reference/apis/' },
+                },
+                {
+                  label: 'Queue Worker',
+                  autogenerate: { directory: 'reference/queue-worker/' },
+                },
+              ],
+            },
+            {
+              label: 'Tutorials',
               icon: 'open-book',
-              link: '/getting-started/install-pgflow/',
-              id: 'pgflow',
+              link: '/tutorials/',
+              id: 'tutorials',
               items: [
                 {
-                  label: 'START HERE',
-                  autogenerate: { directory: 'getting-started/' },
-                },
-                {
-                  label: 'TUTORIALS',
-                  collapsed: true,
-                  items: [
-                    {
-                      label: 'AI Web Scraper',
-                      autogenerate: {
-                        directory: 'tutorials/ai-web-scraper/',
-                        collapsed: true,
-                      },
-                    },
-                  ],
-                },
-                {
-                  label: 'HOW TO',
-                  collapsed: true,
-                  autogenerate: { directory: 'how-to/' },
-                },
-                {
-                  label: 'CONCEPTS',
-                  collapsed: true,
-                  autogenerate: { directory: 'concepts/' },
-                },
-                {
-                  label: 'COMPARISONS',
-                  collapsed: true,
-                  autogenerate: { directory: 'vs/' },
-                },
-                {
-                  label: 'FAQ - Common Questions',
-                  link: '/faq/',
+                  label: 'AI Web Scraper',
+                  autogenerate: {
+                    directory: 'tutorials/ai-web-scraper/',
+                  },
                 },
               ],
             },
             {
-              label: 'Edge Worker',
-              icon: 'open-book',
-              link: '/edge-worker/how-it-works/',
-              id: 'edge-worker',
+              label: 'Comparisons',
+              icon: 'random',
+              link: '/comparisons/',
+              id: 'comparisons',
               items: [
-                { label: 'How it works?', link: '/edge-worker/how-it-works/' },
-                {
-                  label: 'Getting started',
-                  autogenerate: { directory: 'edge-worker/getting-started/' },
-                },
-                {
-                  label: 'How To',
-                  items: [
-                    {
-                      label: 'Deploy to Supabase.com',
-                      link: '/how-to/deploy-to-supabasecom/',
-                    },
-                    {
-                      label: 'Prepare DB Connection String',
-                      link: '/how-to/prepare-db-string/',
-                    },
-                  ],
-                },
+                { label: 'Overview', link: '/comparisons/' },
+                { label: 'DBOS', link: '/comparisons/dbos/' },
+                { label: 'Inngest', link: '/comparisons/inngest/' },
+                { label: 'Trigger.dev', link: '/comparisons/trigger/' },
               ],
-            },
-            {
-              label: 'Found a bug?',
-              icon: 'github',
-              link: 'https://github.com/pgflow-dev/pgflow/issues/new',
             },
           ],
           {
-            exclude: ['/author', '/demos'],
-            topics: {
-              news: ['/news', '/news/**/*'],
-            },
+            exclude: [
+              '/author',
+              '/demos',
+              '/news',
+              '/news/**',
+              '/edge-worker',
+              '/edge-worker/**',
+              '/project-status',
+            ],
+            topics: {},
           }
         ),
       ],

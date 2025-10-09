@@ -1,0 +1,94 @@
+---
+title: Version flows
+description: Update flows without breaking running jobs
+sidebar:
+  order: 50
+---
+
+import { CardGrid, LinkCard, Steps, FileTree } from '@astrojs/starlight/components';
+
+When you need to update a flow's structure or add new steps, create a new flow version with a unique slug. This approach keeps existing runs safe while allowing you to deploy new functionality.
+
+## Flow immutability
+
+Flows are immutable by design. Once registered in the database, their structure cannot be modified to protect running workflows and maintain data integrity.
+
+Changing flow shape requires a new flow definition with a unique `flow_slug`. Use `pgflow compile` to generate the proper migration.
+
+:::danger[Prohibited Changes]
+Never modify these in an existing flow:
+- Step slugs
+- Dependencies between steps
+- Adding or removing steps
+- Altering the flow's input type structure
+
+They break active runs and corrupt data.
+:::
+
+## Safe vs. breaking changes
+
+| Safe (No New Version Needed) | Breaking (Requires New Version) |
+| ------------ | --------------- |
+| ✅ Modifying step handler code | ❌ Adding/removing steps |
+| ✅ Adjusting retry parameters | ❌ Changing step dependencies |
+| ✅ Updating timeout values | ❌ Modifying input/output types |
+| ✅ Bug fixes within handlers | ❌ Changing step slug names |
+
+## Create a new version
+
+Put the new flow in its own file with a versioned slug.
+
+<FileTree>
+- supabase/functions/
+  - _tasks/
+    - fetchUserData.ts
+    - sendEmail.ts
+  - _flows/
+    - greet_user.ts
+    - **greet_user_v2.ts**     // 👈 new
+</FileTree>
+
+<Steps>
+
+1. **Create new flow file**
+
+   ```typescript
+   // supabase/functions/_flows/greet_user_v2.ts
+   export default new Flow<Input>({
+     slug: 'greet_user_v2',
+     // ...new configuration and step definitions
+   })
+   ```
+
+2. **Compile it**
+
+   [Compile the new flow to SQL](/get-started/flows/compile-flow/) which generates a migration file:
+
+   ```bash frame="none"
+   npx pgflow@latest compile supabase/functions/_flows/greet_user_v2.ts
+   ```
+
+3. **Run migration**
+
+   ```bash frame="none"
+   npx supabase migrations up --local
+   ```
+
+</Steps>
+
+Old version stays live; new one is separate.
+
+## See Also
+
+<CardGrid>
+  <LinkCard
+    title="Delete flow and its data"
+    description="Development cleanup"
+    href="/build/delete-flows/"
+  />
+  <LinkCard
+    title="Tune deployed flows"
+    description="Adjust production flow settings"
+    href="/deploy/maintain/tune-flow-config/"
+  />
+</CardGrid>

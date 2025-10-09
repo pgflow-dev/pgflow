@@ -72,7 +72,7 @@ Build four focused functions that each do one thing well:
 | `extractTags.ts` | AI tags |
 | `saveToDb.ts` | Saves to database |
 
-Put these in `supabase/functions/_tasks` (see [organizing flows code](/how-to/organize-flows-code/) for project structure):
+Put these in `supabase/functions/_tasks` (see [organizing flows code](/build/authoring/organize-flow-code/) for project structure):
 
 ### Web Scraping
 
@@ -254,7 +254,7 @@ Uses service role key for direct database access. Both URL and key are auto-avai
 
 ## Step 3 - Define flow
 
-Connect tasks into a workflow using pgflow's [TypeScript DSL](/concepts/flow-dsl/) (`supabase/functions/_flows/analyze_website.ts`):
+Connect tasks into a workflow using pgflow's [TypeScript DSL](/concepts/flows/understanding-flows/) (`supabase/functions/_flows/analyze_website.ts`):
 
 ```typescript
 // supabase/functions/_flows/analyze_website.ts
@@ -299,7 +299,7 @@ Summary and tags execute simultaneously since both only need website content - c
 
 ## Step 4 - Compile & migrate
 
-Turn your TypeScript flow into SQL using pgflow's [compiler](/getting-started/compile-to-sql/):
+Turn your TypeScript flow into SQL using pgflow's [compiler](/get-started/flows/compile-flow/):
 
 <Steps>
 1. Compile TypeScript to SQL:
@@ -326,10 +326,10 @@ Turn your TypeScript flow into SQL using pgflow's [compiler](/getting-started/co
    ```
 </Steps>
 
-The DSL compiler extracts your flow's shape (steps, dependencies) and generates SQL that inserts it into the database. **The database's flow definition determines what runs and when.** The TypeScript DSL also wires up step handlers so the Edge Worker knows which function to invoke for each step. Learn more about [how pgflow works](/concepts/how-pgflow-works/).
+The DSL compiler extracts your flow's shape (steps, dependencies) and generates SQL that inserts it into the database. **The database's flow definition determines what runs and when.** The TypeScript DSL also wires up step handlers so the Edge Worker knows which function to invoke for each step. Learn more about [how pgflow works](/concepts/architecture/how-pgflow-works/).
 
 :::danger[Adding or removing steps]
-Changing steps requires a new flow with unique `slug`. This is a core design decision in pgflow to ensure idempotency and data integrity. See [versioning](/how-to/version-flows/) for best practices. While local development experience will be improved in future releases, for now you can [delete a flow and its data](/how-to/delete-flow-and-data/) to start fresh during development.
+Changing steps requires a new flow with unique `slug`. This is a core design decision in pgflow to ensure idempotency and data integrity. See [versioning](/build/version-flows/) for best practices. While local development experience will be improved in future releases, for now you can [delete a flow and its data](/build/delete-flows/) to start fresh during development.
 :::
 
 ---
@@ -375,7 +375,7 @@ Start the services (make sure `supabase start` is already running):
 
 2. In a new terminal, start the worker:
    ```bash frame="none"
-   curl -X POST http://127.0.0.1:54321/functions/v1/analyze_website_worker
+   curl http://127.0.0.1:54321/functions/v1/analyze_website_worker
    ```
 
    :::note[How the worker runs]
@@ -424,7 +424,7 @@ Check flow status anytime:
 SELECT * FROM pgflow.runs WHERE flow_slug = 'analyzeWebsite'
 ```
 
-See more in [Monitor flow execution](/how-to/monitor-flow-execution/) documentation page
+See more in [Monitor flow execution](/deploy/observe/monitor-execution/) documentation page
 :::
 
 ---
@@ -461,7 +461,7 @@ If you'd like to review or compare your code with reference implementation, chec
 
 </details>
 
-For debugging, see [Monitor flow execution](/how-to/monitor-flow-execution/).
+For debugging, see [Monitor flow execution](/deploy/observe/monitor-execution/).
 
 ---
 

@@ -1,0 +1,110 @@
+---
+title: Deploy Your First Flow
+description: Step-by-step guide to deploying pgflow workers to Supabase.com production for the first time
+sidebar:
+  order: 100
+banner:
+  content: |
+    pgflow is in public beta. <a href="/project-status/">See project status</a> for production readiness details.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+This guide walks you through deploying your pgflow workers to Supabase.com production for the first time.
+
+<Aside type="caution" title="Prerequisites">
+Before deploying to production:
+- You have a working local development environment
+- Your flows are compiled and tested locally
+- You have a Supabase project (free or paid tier)
+</Aside>
+
+## Get Your Database Connection String
+
+Your workers need to connect to the production database:
+
+1. Open [Supabase Dashboard](https://supabase.com/dashboard)
+2. Navigate to **Settings** → **Database**
+3. Scroll to **Connection String** section
+4. Copy the **Transaction Mode** connection string (uses connection pooler)
+
+The connection string looks like:
+```
+postgresql://postgres.pooler-yourproject:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres
+```
+
+:::tip[Why Transaction Mode?]
+Transaction Mode uses connection pooling (port 6543), which is required for Edge Functions. The pooler efficiently manages database connections in serverless environments.
+:::
+
+<Aside type="note" title="Special Characters in Password">
+If your password contains special characters (`@`, `&`, `:`, etc.), you'll need to URL-encode it. See [Connection String Encoding](/deploy/maintain/connection-string/) for details.
+</Aside>
+
+## Set Database Secret
+
+Workers access the database through the `EDGE_WORKER_DB_URL` environment variable. Set it as a Supabase secret:
+
+```bash frame="none"
+npx supabase secrets set EDGE_WORKER_DB_URL="postgresql://postgres.pooler-yourproject:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
+```
+
+Replace `[YOUR-PASSWORD]` with your actual database password from the connection string.
+
+:::caution[Keep Your Password Secure]
+- Never commit passwords to git
+- Never share passwords in public channels
+- Use the encoded password if it contains special characters
+:::
+
+## Deploy Your Worker
+
+Deploy your Edge Function to Supabase:
+
+```bash frame="none"
+npx supabase functions deploy your-worker-name
+```
+
+Replace `your-worker-name` with your actual worker function name (e.g., `flow-worker`).
+
+This uploads your worker code and makes it available at:
+```
+https://your-project.supabase.co/functions/v1/your-worker-name
+```
+
+## Start Your Worker
+
+Workers don't start automatically after deployment. Start it with a POST request:
+
+```bash frame="none"
+curl "https://your-project.supabase.co/functions/v1/your-worker-name" \
+  -H "Authorization: Bearer YOUR_ANON_KEY"
+```
+
+**Finding your ANON key:**
+1. Open [Supabase Dashboard](https://supabase.com/dashboard)
+2. Navigate to **Settings** → **API**
+3. Copy the `anon` `public` key
+
+The worker starts polling for tasks and continues running until it's stopped or times out.
+
+## Set Up the Safety Net
+
+Edge Functions eventually stop due to platform limits or errors. Set up a pg_cron job to automatically restart workers when they stop.
+
+[Follow the safety net setup guide →](/deploy/supabase/keep-workers-running/)
+
+<Aside type="danger" title="Don't Skip This Step">
+**Your workers will eventually stop without a safety net.** This is especially critical for production where workflow reliability matters.
+
+The safety net takes 2 minutes to set up and prevents hours of debugging why workflows stopped running.
+</Aside>
+
+## Next Steps
+
+Your first flow is now deployed and running in production!
+
+When you need to update your flows:
+- [Update Deployed Flows](/deploy/supabase/update-deployed-flows/) - Learn the deprecation workflow for safe updates
+- [Monitor Execution](/deploy/observe/monitor-execution/) - Track flow runs and debug issues
+- [Monitor Workers Health](/deploy/observe/monitor-workers-health/) - Ensure workers stay healthy

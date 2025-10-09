@@ -1,0 +1,80 @@
+---
+title: Update Deployed Flows
+description: Safe workflow for deploying flow updates to production using worker deprecation
+sidebar:
+  order: 110
+banner:
+  content: |
+    pgflow is in public beta. <a href="/project-status/">See project status</a> for production readiness details.
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+When updating flows that are already deployed to production, use the deprecation workflow to prevent old and new worker versions from processing tasks simultaneously.
+
+<Aside type="note" title="First Time Deployment?">
+If you haven't deployed to production yet, see [Deploy Your First Flow](/deploy/supabase/deploy-first-flow/) for initial setup instructions.
+</Aside>
+
+## Update Workflow
+
+<Steps>
+
+1. **Deprecate old workers**
+   ```sql
+   UPDATE pgflow.workers
+   SET deprecated_at = NOW()
+   WHERE function_name = 'your-worker-name'
+     AND deprecated_at IS NULL;
+   ```
+   This stops old workers from polling for new tasks while they finish current work.
+
+2. **Deploy new version**
+   ```bash frame="none"
+   npx supabase functions deploy your-worker-name
+   ```
+
+3. **Start new worker**
+   ```bash frame="none"
+   curl "https://your-project.supabase.co/functions/v1/your-worker-name" \
+     -H "Authorization: Bearer YOUR_ANON_KEY"
+   ```
+
+4. **Keep workers up**
+   
+   [Set up the pg_cron safety net](/deploy/supabase/keep-workers-running/) for reliable production operation.
+   
+   <Aside type="danger" title="Don't Skip the Safety Net">
+   **Your workers will eventually stop working without a safety net.** This is especially critical for production deployments where workflow reliability matters.
+
+   The safety net takes 2 minutes to set up and prevents hours of debugging why workflows stopped running. [Configure it now →](/deploy/supabase/keep-workers-running/)
+   </Aside>
+
+</Steps>
+
+## Deployment Details
+
+### Why Worker Deprecation
+
+Without deprecation, old workers run for up to 150s (free tier) or 400s (paid) after deployment, causing both versions to process tasks simultaneously.
+
+Deprecation fixes this: workers check their status every 5 seconds and immediately stop polling for new tasks when deprecated, while finishing current work.
+
+### Getting Your ANON Key
+
+Find your ANON key in [Supabase Dashboard](https://supabase.com/dashboard) → Settings → API → `anon` `public` key.
+
+### Monitoring Workers
+
+Track deployment progress with this query:
+
+```sql
+SELECT
+  function_name,
+  COUNT(*) FILTER (WHERE deprecated_at IS NULL) as active_workers,
+  COUNT(*) FILTER (WHERE deprecated_at IS NOT NULL) as deprecated_workers
+FROM pgflow.workers
+WHERE last_heartbeat_at > now() - interval '6 seconds'
+GROUP BY function_name;
+```
+
