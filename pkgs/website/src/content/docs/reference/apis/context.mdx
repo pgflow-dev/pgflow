@@ -1,0 +1,212 @@
+---
+title: Context API Reference
+description: Complete reference for all properties available in the handler context object
+sidebar:
+  order: 10
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Complete reference documentation for all properties available in the context object passed to handlers.
+
+:::note[Understanding Context]
+For an explanation of what context is and how to use it, see [Context Object](/concepts/flows/context/).
+:::
+
+## Core Resources
+
+These resources are always available regardless of the platform adapter being used.
+
+### `env`
+**Type:** `Record<string, string | undefined>`
+**Available:** Always
+
+Environment variables from the runtime environment. The exact variables depend on your platform and deployment configuration.
+
+```typescript "ctx.env"
+async function handler(input, ctx) {
+  const apiKey = ctx.env.API_KEY;
+  const endpoint = ctx.env.SERVICE_ENDPOINT;
+}
+```
+
+### `shutdownSignal`
+**Type:** `AbortSignal`
+**Available:** Always
+
+An AbortSignal that triggers when the worker is shutting down. Use this to gracefully handle long-running operations and ensure clean shutdown.
+
+```typescript "ctx.shutdownSignal"
+.step({ slug: 'fetch_data' }, async (input, ctx) => {
+  // Automatically cancels if worker shuts down
+  const response = await fetch('https://api.example.com/data', {
+    signal: ctx.shutdownSignal,
+    method: 'POST',
+    body: JSON.stringify(input)
+  });
+
+  return response.json();
+})
+```
+
+### `rawMessage`
+**Type:** `PgmqMessageRecord<T>`
+**Available:** Always
+
+The original message from the pgmq queue, containing metadata like message ID, read count, and enqueued timestamp. Useful for debugging and advanced queue operations.
+
+```typescript
+interface PgmqMessageRecord<T> {
+  msg_id: number;       // Unique message ID from pgmq
+  read_ct: number;      // How many times this message has been read
+  enqueued_at: string;  // ISO timestamp when message was enqueued
+  vt: string;           // ISO timestamp for visibility timeout
+  message: T;           // The actual payload
+}
+```
+
+```typescript "ctx.rawMessage" ".msg_id" ".read_ct" ".enqueued_at"
+async function handler(input, ctx) {
+  console.log(`Processing message ${ctx.rawMessage.msg_id}`);
+  console.log(`Attempt ${ctx.rawMessage.read_ct} of this message`);
+  console.log(`Enqueued at ${ctx.rawMessage.enqueued_at}`);
+}
+```
+
+### `stepTask`
+**Type:** `StepTaskRecord<TFlow>`
+**Available:** Flow handlers only
+
+Details about the current step task being executed. This is a strongly-typed record that provides the essential task identification along with the typed input for the specific step. Only available in flow step handlers, not in queue workers.
+
+```typescript
+interface StepTaskRecord<TFlow> {
+  flow_slug: string;    // Slug identifier of the flow
+  run_id: string;       // UUID of the current flow run
+  step_slug: string;    // Slug identifier of the current step
+  task_index: number;   // Task index (0 for single steps, 0..N-1 for map steps)
+  input: StepInput;     // Typed input for this specific step (inferred from flow)
+  msg_id: number;       // pgmq message ID
+}
+```
+
+```typescript "ctx.stepTask" ".step_slug" ".run_id" ".flow_slug" ".task_index" ".msg_id"
+const MyFlow = new Flow({ slug: 'my_flow' })
+  .step({ slug: 'process' }, async (input, ctx) => {
+    console.log(`Executing step: ${ctx.stepTask.step_slug}`);
+    console.log(`For run: ${ctx.stepTask.run_id}`);
+    console.log(`Flow: ${ctx.stepTask.flow_slug}`);
+    console.log(`Task index: ${ctx.stepTask.task_index}`); // 0 for single steps
+    console.log(`Message ID: ${ctx.stepTask.msg_id}`);
+    // ctx.stepTask.input is the same as the input parameter
+  })
+  .map({ slug: 'processItems', array: 'items' }, async (item, ctx) => {
+    // For map steps, task_index indicates which array element
+    console.log(`Processing item ${ctx.stepTask.task_index} of array`);
+    return processItem(item);
+  });
+```
+
+### `workerConfig`
+**Type:** `Readonly<ResolvedQueueWorkerConfig>` or `Readonly<ResolvedFlowWorkerConfig>`
+**Available:** Always
+
+The resolved worker configuration for the current worker instance. This is immutable and provides access to all worker settings including retry policies, concurrency limits, and timeouts. The configuration excludes the SQL connection object since it cannot be safely cloned and frozen.
+
+All optional configuration values have been resolved with their defaults applied, so you can safely access any field without checking for `undefined`.
+
+```typescript
+// Resolved queue worker configuration (all defaults applied)
+// Excludes 'sql' field (cannot be frozen) and deprecated 'retryDelay'/'retryLimit' fields
+interface ResolvedQueueWorkerConfig {
+  queueName: string;          // Name of the queue being processed
+  maxConcurrent: number;      // Maximum concurrent tasks
+  retry: RetryConfig;         // Retry strategy configuration
+  visibilityTimeout: number;  // Message visibility timeout in seconds
+  batchSize: number;          // Batch size for polling messages
+  maxPollSeconds: number;     // Maximum polling duration
+  pollIntervalMs: number;     // Polling interval in milliseconds
+  maxPgConnections: number;   // Database connection pool size
+  connectionString: string;   // Database connection string
+  env: Record<string, string | undefined>;  // Environment variables
+}
+
+// Resolved flow worker configuration (all defaults applied)
+// Excludes 'sql' field (cannot be frozen)
+interface ResolvedFlowWorkerConfig {
+  maxConcurrent: number;      // Maximum concurrent tasks
+  batchSize: number;          // Batch size for polling messages
+  visibilityTimeout: number;  // Message visibility timeout in seconds
+  maxPollSeconds: number;     // Maximum polling duration
+  pollIntervalMs: number;     // Polling interval in milliseconds
+  maxPgConnections: number;   // Database connection pool size
+  connectionString: string | undefined;  // Database connection string (optional)
+  env: Record<string, string | undefined>;  // Environment variables
+}
+```
+
+The most common use case is detecting when a message is on its final retry attempt:
+
+```typescript "ctx.workerConfig" "ctx.rawMessage" ".read_ct" ".retry.limit"
+async function sendEmail(input, ctx) {
+  const isLastAttempt = ctx.rawMessage.read_ct >= ctx.workerConfig.retry.limit;
+
+  if (isLastAttempt) {
+    // Use fallback email service on final attempt
+    return await sendWithFallbackProvider(input.to, input.subject, input.body);
+  }
+
+  // Use primary email service for regular attempts
+  return await sendWithPrimaryProvider(input.to, input.subject, input.body);
+}
+```
+
+<Aside type="note">
+The `workerConfig` object is deeply frozen to prevent handlers from modifying configuration values that could affect other message executions. It represents the final resolved configuration with all defaults applied, not the original user input. Since all defaults have been resolved, you can safely access any field without undefined checks.
+</Aside>
+
+## Supabase Resources
+
+These resources are available when using the Supabase platform adapter.
+
+### `sql`
+**Type:** `postgres.Sql`
+**Available:** Supabase platform
+
+A configured PostgreSQL client from the postgres.js library, ready for executing SQL queries against your database.
+
+```typescript "ctx.sql"
+async function handler(input, ctx) {
+  const users = await ctx.sql`
+    SELECT * FROM users
+    WHERE created_at > ${input.since}
+  `;
+  return { userCount: users.length };
+}
+```
+
+### `supabase`
+**Type:** `SupabaseClient`
+**Available:** Supabase platform
+
+Supabase client authenticated with the service role key. This has full database access and bypasses RLS. Since Edge Functions run in a trusted environment, this is the only client you need.
+
+```typescript "ctx.supabase"
+.step({ slug: 'process_order' }, async (input, ctx) => {
+  const { data, error } = await ctx.supabase
+    .from('orders')
+    .update({ status: 'processing' })
+    .eq('id', input.orderId);
+
+  return { order: data };
+})
+```
+
+```typescript "ctx.supabase"
+async function handler(input, ctx) {
+  const { data, error } = await ctx.supabase
+    .from('users')
+    .update({ verified: true })
+    .eq('id', input.userId);
+}
+```

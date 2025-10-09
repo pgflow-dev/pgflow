@@ -1,0 +1,48 @@
+---
+title: Reference
+description: Technical specifications, API documentation, and configuration options for pgflow
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Find precise technical information about pgflow's APIs, configuration options, and internal components.
+
+## Configuration
+
+<CardGrid>
+  <LinkCard
+    title="Configuration"
+    href="/reference/configuration/configuration/"
+    description="Complete reference for flow options, step options, and worker configuration settings"
+  />
+</CardGrid>
+
+## APIs
+
+<CardGrid>
+  <LinkCard
+    title="Compile API"
+    href="/reference/apis/compile-api/"
+    description="Generate SQL statements from Flow definitions programmatically"
+  />
+  <LinkCard
+    title="Manual installation"
+    href="/reference/apis/manual-installation/"
+    description="Install pgflow without the CLI using manual SQL execution"
+  />
+</CardGrid>
+
+## Queue Worker
+
+<CardGrid>
+  <LinkCard
+    title="Configuration"
+    href="/reference/queue-worker/configuration/"
+    description="Configuration options for using Edge Worker in queue-only mode"
+  />
+  <LinkCard
+    title="How it works"
+    href="/reference/queue-worker/how-it-works/"
+    description="Internal implementation details of the Edge Worker task queue system"
+  />
+</CardGrid>
