@@ -1,5 +1,16 @@
 # @pgflow/client
 
+## 0.7.0
+
+### Patch Changes
+
+- Updated dependencies [524db03]
+- Updated dependencies [524db03]
+- Updated dependencies [524db03]
+- Updated dependencies [524db03]
+  - @pgflow/dsl@0.7.0
+  - @pgflow/core@0.7.0
+
 ## 0.6.1
 
 ### Patch Changes
