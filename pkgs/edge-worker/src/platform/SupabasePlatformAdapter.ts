@@ -24,6 +24,7 @@ interface SupabaseEnv extends Record<string, string | undefined> {
   EDGE_WORKER_DB_URL: string;
   SB_EXECUTION_ID: string;
   EDGE_WORKER_LOG_LEVEL?: string;
+  EDGE_WORKER_DISABLE_AUTO_RESPAWN?: string;
 }
 
 /**
@@ -176,10 +177,21 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
     globalThis.onbeforeunload = async () => {
       this.logger.debug('Shutting down...');
 
-      if (this.worker) {
-        await this.spawnNewEdgeFunction();
+      // Early return if no worker to respawn
+      if (!this.worker) {
+        await this.stopWorker();
+        return;
       }
 
+      // Check if auto-respawn is disabled
+      if (this.validatedEnv.EDGE_WORKER_DISABLE_AUTO_RESPAWN === 'true') {
+        this.logger.debug('Auto-respawn disabled via EDGE_WORKER_DISABLE_AUTO_RESPAWN');
+        await this.stopWorker();
+        return;
+      }
+
+      // Default behavior: spawn new function before stopping
+      await this.spawnNewEdgeFunction();
       await this.stopWorker();
     };
   }
