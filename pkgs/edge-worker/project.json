@@ -132,6 +132,7 @@
       "dependsOn": ["db:ensure", "^build"],
       "executor": "nx:run-commands",
       "local": true,
+      "inputs": ["default", "^production"],
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
@@ -144,6 +145,7 @@
       "dependsOn": ["db:ensure", "^build"],
       "executor": "nx:run-commands",
       "local": true,
+      "inputs": ["default", "^production"],
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
@@ -156,6 +158,7 @@
       "executor": "nx:run-commands",
       "dependsOn": ["db:ensure", "^build"],
       "local": true,
+      "inputs": ["default", "^production"],
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [

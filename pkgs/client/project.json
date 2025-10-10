@@ -144,6 +144,7 @@
       "executor": "nx:run-commands",
       "local": true,
       "dependsOn": ["db:ensure", "build"],
+      "inputs": ["default", "^production"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["vitest run __tests__/integration/"],
@@ -153,6 +154,7 @@
     "test:unit": {
       "executor": "nx:run-commands",
       "dependsOn": ["build"],
+      "inputs": ["default", "^production"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["vitest run __tests__/"],
@@ -163,6 +165,7 @@
       "executor": "nx:run-commands",
       "local": true,
       "dependsOn": ["db:ensure", "build"],
+      "inputs": ["default", "^production"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["vitest run __tests__/"],
@@ -177,6 +180,7 @@
       "executor": "nx:run-commands",
       "local": true,
       "dependsOn": ["db:ensure", "build"],
+      "inputs": ["default", "^production"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["node scripts/performance-benchmark.mjs"],
