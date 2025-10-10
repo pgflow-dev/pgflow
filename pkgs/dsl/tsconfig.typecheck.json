@@ -17,5 +17,8 @@
   "include": [
     "__tests__/**/*.test-d.ts",
     "__tests__/**/*.spec-d.ts"
+  ],
+  "exclude": [
+    "__tests__/**/__health__.test-d.ts"
   ]
 }
