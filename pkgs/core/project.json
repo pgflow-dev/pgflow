@@ -19,7 +19,11 @@
     "migrationVerificationCache": [
       "{projectRoot}/.nx-inputs/verify-migrations.txt"
     ],
-    "databaseTypes": ["{projectRoot}/src/database-types.ts"]
+    "databaseTypes": ["{projectRoot}/src/database-types.ts"],
+    "pgtapTests": [
+      "{projectRoot}/supabase/tests/**/*.sql",
+      "{projectRoot}/scripts/run-test-with-colors"
+    ]
   },
   "targets": {
     "dump-realtime-schema": {
@@ -200,6 +204,8 @@
       "executor": "nx:run-commands",
       "local": true,
       "dependsOn": ["verify-migrations", "supabase:ensure-started"],
+      "inputs": ["schemas", "migrations", "pgtapTests"],
+      "cache": true,
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["scripts/run-test-with-colors"],
@@ -220,11 +226,12 @@
       "executor": "nx:run-commands",
       "local": true,
       "dependsOn": ["verify-migrations", "supabase:ensure-started"],
+      "inputs": ["schemas", "migrations", "pgtapTests"],
+      "cache": false,
       "options": {
         "cwd": "{projectRoot}",
         "command": "scripts/watch-test"
-      },
-      "cache": false
+      }
     },
     "gen-types": {
       "executor": "nx:run-commands",
