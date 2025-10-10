@@ -21,10 +21,10 @@
   "dependencies": {
     "@clack/prompts": "^0.10.1",
     "@commander-js/extra-typings": "^13.1.0",
+    "@decimalturn/toml-patch": "0.3.7",
     "@pgflow/core": "workspace:*",
     "chalk": "^5.4.1",
-    "commander": "^13.1.0",
-    "smol-toml": "^1.4.2"
+    "commander": "^13.1.0"
   },
   "publishConfig": {
     "access": "public"
