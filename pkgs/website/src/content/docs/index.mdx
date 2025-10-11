@@ -1,10 +1,10 @@
 ---
 title: pgflow
-description: Dead-simple workflow orchestration for Supabase. Build AI workflows you can actually debug with <100ms startup and full observability.
+description: Dead-simple workflow orchestration for Supabase. Build AI workflows you can actually debug with \<100ms startup and full observability.
 template: splash
 hero:
   title: Dead-simple workflow orchestration for Supabase
-  tagline: AI workflows you can actually debug.<br/>Build LLM chains, RAG pipelines, and AI workflows with zero external services.
+  tagline: AI workflows you can actually debug.<br/>Build reliable LLM chains and RAG pipelines with zero external services.
   image:
     dark: ../../assets/pgflow-logo-dark.svg
     light: ../../assets/pgflow-logo-light.svg
@@ -18,9 +18,81 @@ hero:
       icon: information
       variant: minimal
 editUrl: false
+head:
+  - tag: 'script'
+    content: |
+      const matchHeights = () => {
+        requestAnimationFrame(() => {
+          const columns = document.querySelectorAll('.comparison-column');
+          if (columns.length !== 2) return;
+
+          const leftColumn = columns[0];
+          const rightColumn = columns[1];
+          const leftScrollable = leftColumn.querySelector('.scrollable-content');
+
+          if (!leftScrollable || !rightColumn) return;
+
+          // Get the target height from right column
+          const targetHeight = rightColumn.getBoundingClientRect().height;
+
+          // Get all children of left column before scrollable
+          let fixedHeight = 0;
+          for (const child of leftColumn.children) {
+            if (child === leftScrollable) break;
+            const rect = child.getBoundingClientRect();
+            fixedHeight += rect.height;
+          }
+
+          // Calculate available space for scrollable content
+          const availableHeight = targetHeight - fixedHeight;
+
+          // Set with a reasonable minimum
+          leftScrollable.style.maxHeight = Math.max(300, availableHeight) + 'px';
+        });
+      };
+
+      const handleScrollIndicator = () => {
+        const scrollable = document.querySelector('.scrollable-content');
+        const indicator = document.querySelector('.scroll-indicator');
+
+        if (!scrollable || !indicator) return;
+
+        const handleScroll = () => {
+          const scrollTop = scrollable.scrollTop;
+          const scrollHeight = scrollable.scrollHeight;
+          const clientHeight = scrollable.clientHeight;
+          const scrolledToBottom = scrollTop + clientHeight >= scrollHeight - 50;
+
+          indicator.style.opacity = scrolledToBottom ? '0' : '1';
+        };
+
+        scrollable.addEventListener('scroll', handleScroll);
+        handleScroll();
+      };
+
+      let resizeTimeout;
+      const debouncedMatchHeights = () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(matchHeights, 100);
+      };
+
+      const init = () => {
+        matchHeights();
+        handleScrollIndicator();
+        window.addEventListener('resize', debouncedMatchHeights);
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+
+      // Run again after images/fonts load
+      window.addEventListener('load', matchHeights);
 ---
 
-import { Card, CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkCard, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import TestimonialCarousel from '../../components/TestimonialCarousel.astro';
 
 <div class="quickstart-section">
@@ -36,8 +108,8 @@ npx pgflow@latest install
 ## Why pgflow
 
 <CardGrid>
-  <Card title="⚡ < 100ms job startup">
-    Jobs start near-instantly with 100ms polling. No waiting minutes for cron jobs - your workflows begin executing immediately when triggered.
+  <Card title="⚡ <100ms job startup">
+    Jobs start near-instantly with \<100ms polling. No waiting minutes for cron jobs - your workflows begin executing immediately when triggered.
   </Card>
 
   <Card title="🔌 Run from anywhere">
@@ -67,64 +139,522 @@ npx pgflow@latest install
 
 <TestimonialCarousel />
 
-## Type-safe DAG workflows in TypeScript
+## How pgflow Makes Supabase More Powerful
 
-Define parallel, type-safe DAG workflows effortlessly:
+Supabase gives you powerful primitives: Postgres, Edge Functions and Queues. pgflow orchestrates these into reliable workflows without the manual wiring.
 
-```typescript
-new Flow<{ url: string }>({ slug: 'analyze_website' })
-  .step(
-    { slug: 'website' },
-    async (input) => await scrapeWebsite(input.run.url)
-  )
-  .step(
-    { slug: 'summary', dependsOn: ['website'] },
-    async (input) => await summarizeWithAI(input.website.content)
-  )
-  .step(
-    { slug: 'tags', dependsOn: ['website'] },
-    async (input) => await extractTags(input.website.content)
-  )
-  .step(
-    { slug: 'saveToDb', dependsOn: ['summary', 'tags'] },
-    async ({ run, summary, tags }) =>
-      await saveWebsite({
-        user_id: run.user_id,
-        website_url: run.url,
-        summary,
-        tags,
-      })
-  );
+Here's a 2-step workflow (**scrape a website**, then **analyze it with AI**) built both ways on Supabase:
+
+<div class="comparison-container">
+
+<div class="comparison-column">
+
+### 🛠️ Manual Setup
+
+Building workflows with Supabase's primitives requires setting up queues, scheduling cron jobs, creating Edge Functions, and manually coordinating between steps.
+
+<div class="comparison-highlights">
+🔧 Queue boilerplate in every function
+
+⏰ Slow cron-based polling
+
+🔗 Manual queue wiring between steps
+</div>
+
+<div class="scrollable-content">
+
+<div class="scroll-indicator">
+  <span>↓</span>
+</div>
+
+**1. Set up queues**
+```sql
+SELECT pgmq.create('scrape_queue');
+SELECT pgmq.create('analyze_queue');
 ```
 
-## Perfect for teams who
+**2. Scrape processor Edge Function**
+```typescript
+import { serve } from 'std/http/server.ts';
+import { scrapeWebsite } from './scraper.ts';
 
-- Build AI applications on Supabase
-- Need workflow orchestration without external services
-- Want to debug exactly where workflows fail
-- Value type safety and instant startup times
-- Understand this is early but powerful software
+serve(async () => {
+  const supabase = createClient(/*...*/);
 
-## How it works
+  // Read one message from scrape queue
+  const { data: messages } = await supabase.rpc(
+    'pgmq_read',
+    {
+      queue_name: 'scrape_queue',
+      vt: 30, // 30 second visibility timeout
+      qty: 1
+    }
+  );
 
-1. **Define** workflows in TypeScript with full type safety
-2. **Compile** to SQL migrations with automatic dependencies
-3. **Deploy** as Supabase Edge Functions
-4. **Trigger** from SQL, browser, or scheduled jobs
+  if (!messages?.[0]) {
+    return new Response('No messages', { status: 200 });
+  }
 
-Everything runs within your Supabase project - no external orchestrators or infrastructure.
+  const { msg_id, message } = messages[0];
+  const { url } = message;
+
+  try {
+    // Scrape the website
+    const content = await scrapeWebsite(url);
+
+    // Store intermediate result
+    await supabase
+      .from('articles')
+      .upsert({ url, content });
+
+    // Send to analysis queue
+    await supabase.rpc('pgmq_send', {
+      queue_name: 'analyze_queue',
+      msg: { url, content }
+    });
+
+    // Delete from scrape queue
+    await supabase.rpc('pgmq_delete', {
+      queue_name: 'scrape_queue',
+      msg_id
+    });
+
+  } catch (error) {
+    console.error('Scrape failed:', error);
+    // Message becomes visible again after timeout
+  }
+
+  return new Response('OK');
+});
+```
+
+**3. Analysis processor Edge Function**
+
+```typescript
+import { serve } from 'std/http/server.ts';
+import { analyzeContent } from './analyzer.ts';
+
+serve(async () => {
+  const supabase = createClient(/*...*/);
+
+  // Read one message from analyze queue
+  const { data: messages } = await supabase.rpc(
+    'pgmq_read',
+    {
+      queue_name: 'analyze_queue',
+      vt: 30,
+      qty: 1
+    }
+  );
+
+  if (!messages?.[0]) {
+    return new Response('No messages', { status: 200 });
+  }
+
+  const { msg_id, message } = messages[0];
+  const { url, content } = message;
+
+  try {
+    // Analyze with AI
+    const analysis = await analyzeContent(content);
+
+    // Store final result
+    await supabase
+      .from('articles')
+      .update({ analysis })
+      .eq('url', url);
+
+    // Delete from analyze queue
+    await supabase.rpc('pgmq_delete', {
+      queue_name: 'analyze_queue',
+      msg_id
+    });
+
+  } catch (error) {
+    console.error('Analysis failed:', error);
+    // Message becomes visible again after timeout
+  }
+
+  return new Response('OK');
+});
+```
+
+**4. Schedule processors**
+```sql
+-- Scrape processor runs every 15 seconds
+SELECT cron.schedule(
+  'scrape-processor',
+  '*/15 * * * * *',
+  $$SELECT net.http_post(
+    url := 'https://your-project.supabase.co/functions/v1/scrape-processor'
+  )$$
+);
+
+-- Analysis processor runs every 15 seconds
+SELECT cron.schedule(
+  'analysis-processor',
+  '*/15 * * * * *',
+  $$SELECT net.http_post(
+    url := 'https://your-project.supabase.co/functions/v1/analysis-processor'
+  )$$
+);
+```
+
+**5. Trigger workflow**
+
+```typescript
+// Add URL to scrape queue
+await supabase.rpc('pgmq_send', {
+  queue_name: 'scrape_queue',
+  msg: { url: 'https://example.com' }
+});
+```
+
+</div>
+
+</div>
+
+<div class="comparison-column">
+
+### ⚡ With pgflow
+
+pgflow handles all the orchestration behind the scenes. Just define your workflow steps and trigger them - queuing, retries, and coordination happen automatically.
+
+<div class="comparison-highlights">
+✅ Focus on business logic only
+
+✅ Near-instant job startup
+
+✅ Automatic step coordination
+</div>
+
+**1. Define workflow**
+```typescript
+import { Flow } from 'npm:@pgflow/dsl';
+
+new Flow<{ url: string }>({ slug: 'analyze_article' })
+  .step('scrape', (input) => scrapeWebsite(input.run.url))
+  .step('analyze', async (input) => {
+    const analysis = await analyzeContent(input.scrape);
+
+    await supabase.from('articles').insert({
+      url: input.run.url,
+      content: input.scrape,
+      analysis
+    });
+
+    return analysis;
+  });
+```
+
+**2. Compile and migrate**
+```bash frame="none"
+npx pgflow compile flow.ts
+npx supabase migrations up
+```
+
+**3. Setup worker in Edge Function**
+```typescript
+import AnalyzeWebsite from 'flow.ts';
+import { EdgeWorker } from 'jsr:@pgflow/edge-worker';
+
+EdgeWorker.start(AnalyzeWebsite);
+```
+
+**4. Start worker**
+```bash frame="none"
+curl http://localhost:54321/functions/v1/analyze_article_worker
+```
+
+**5. Trigger workflow**
+```sql
+SELECT pgflow.start_flow('analyze_article', '{
+  "url": "https://example.com"
+}'::jsonb);
+```
+
+
+
+</div>
+
+</div>
+
+### What pgflow handles for you
+
+<CardGrid>
+  <Card title="🔒 Type safety across steps">
+    Full TypeScript inference means step outputs become typed inputs. Catch data shape mismatches at compile time, not in production.
+  </Card>
+
+  <Card title="🔄 Automatic retries">
+    Built-in retry logic with exponential backoff. Configure max attempts and delays per step without writing any retry code.
+  </Card>
+
+  <Card title="⚙️ Concurrency control">
+    Configure how many tasks run in parallel. Control resource usage and rate limits with simple configuration.
+  </Card>
+
+  <Card title="⚡ Parallel array processing">
+    Process arrays in parallel with independent retries per item. Perfect for API calls - if one fails, only that item retries while others continue.
+  </Card>
+
+  <Card title="💾 Step output persistence">
+    All step outputs stored in the database. Access results from any previous step or run for debugging and analysis.
+  </Card>
+
+  <Card title="📋 Declarative workflow definition">
+    Define what your workflow does, not how to execute it. pgflow handles all the orchestration mechanics.
+  </Card>
+</CardGrid>
+
+<div style="text-align: center; margin: 4rem 0 5rem;">
 
 ## Ready to get started?
 
-<CardGrid>
+</div>
+
+<div style="max-width: 450px; margin: 0 auto;" class="cta-card">
   <LinkCard
-    title="Check Demo app"
-    href="https://pgflow-demo.netlify.app/"
-    description="Try out the app that uses pgflow under the hood"
-  />
-  <LinkCard
-    title="Install pgflow"
+    title="🚀 Install pgflow"
     href="/get-started/installation/"
-    description="Install pgflow into your Supabase project in a few minutes"
+    description="Five minutes to your first workflow.
+Zero boilerplate required."
   />
-</CardGrid>
+</div>
+
+<style>{`
+  .cta-card {
+    transform: scale(1.35);
+    margin-top: 3rem;
+  }
+
+  @media (max-width: 768px) {
+    .cta-card {
+      transform: scale(1);
+      max-width: 100%;
+      margin-top: 2rem;
+      padding: 0 1rem;
+    }
+  }
+
+  .cta-card .sl-link-card {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--sl-color-accent-high) 6.4%, transparent) 0%, color-mix(in srgb, var(--sl-color-accent-high) 2.4%, transparent) 100%);
+    box-shadow: 0 0 40px color-mix(in srgb, var(--sl-color-accent-high) 5%, transparent), 0 4px 20px color-mix(in srgb, var(--sl-color-accent-high) 3%, transparent);
+    border: 1px solid color-mix(in srgb, var(--sl-color-accent-high) 16%, transparent);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-card .sl-link-card p {
+    white-space: pre-line;
+  }
+
+  .cta-card .sl-link-card::before {
+    content: '';
+    position: absolute;
+    top: 1px;
+    left: -100%;
+    right: 1px;
+    bottom: 1px;
+    width: calc(100% - 2px);
+    height: calc(100% - 2px);
+    background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.004) 48%,
+      rgba(255, 255, 255, 0.008) 50%,
+      rgba(255, 255, 255, 0.004) 52%,
+      transparent 100%
+    );
+    transition: left 0.25s ease;
+    z-index: 1;
+  }
+
+  .cta-card .sl-link-card:hover {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--sl-color-accent-high) 7.5%, transparent) 0%, color-mix(in srgb, var(--sl-color-accent-high) 3%, transparent) 100%);
+    box-shadow: 0 0 60px color-mix(in srgb, var(--sl-color-accent-high) 8%, transparent), 0 4px 30px color-mix(in srgb, var(--sl-color-accent-high) 5%, transparent);
+  }
+
+  .cta-card .sl-link-card:hover::before {
+    left: 100%;
+    transition: left 0.5s ease;
+  }
+
+  .comparison-highlights {
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.8;
+    margin: 1rem 0;
+  }
+
+  .comparison-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin: 2rem 0;
+    align-items: start;
+  }
+
+  @media (max-width: 1024px) {
+    .comparison-container {
+      grid-template-columns: 1fr;
+      gap: 3rem;
+    }
+
+    .scroll-indicator {
+      display: none;
+    }
+
+    .scrollable-content {
+      max-height: none !important;
+      overflow-y: visible !important;
+    }
+
+    .comparison-column pre {
+      max-width: 100%;
+    }
+  }
+
+  .comparison-column {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin: 0;
+  }
+
+  .comparison-column > h3 {
+    margin-top: 0 !important;
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+    color: var(--sl-color-text-accent);
+    padding: 0 0 0.5rem;
+    border-bottom: 2px solid var(--sl-color-gray-5);
+    flex-shrink: 0;
+  }
+
+  .comparison-column .sl-heading-wrapper.level-h3 {
+    margin-bottom: 2rem !important;
+  }
+
+  .comparison-column > h3 + * p:first-child {
+    margin-top: 0 !important;
+  }
+
+  .scrollable-content {
+    overflow-y: auto;
+    max-height: 700px; /* Fallback before JS loads */
+    flex: 1;
+    min-height: 0;
+    position: relative;
+  }
+
+  .scrollable-content > *:not(.scroll-indicator):first-of-type,
+  .comparison-column > *:nth-child(2) {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  .scroll-indicator {
+    position: sticky;
+    float: right;
+    top: 1.5rem;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: fit-content;
+    margin-right: 1rem;
+    margin-bottom: -2.5rem;
+    pointer-events: none;
+    animation: bounce 2s ease-in-out infinite;
+    transition: opacity 0.3s ease;
+    z-index: 10;
+  }
+
+  .scroll-indicator span {
+    width: 2.25rem;
+    height: 2.25rem;
+    background: var(--sl-color-accent-high);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    color: var(--sl-color-black);
+    box-shadow: 0 2px 10px rgba(0, 123, 110, 0.45), 0 0 20px rgba(0, 123, 110, 0.35);
+    font-weight: bold;
+  }
+
+  .scroll-indicator::before {
+    content: 'Scroll';
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--sl-color-white);
+    background: var(--sl-color-gray-5);
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-1rem);
+    }
+  }
+
+  .scrollable-content {
+    scrollbar-width: thin;
+    scrollbar-color: var(--sl-color-accent) var(--sl-color-gray-5);
+    overflow-y: scroll;
+  }
+
+  .scrollable-content::-webkit-scrollbar {
+    width: 14px;
+  }
+
+  .scrollable-content::-webkit-scrollbar-track {
+    background: var(--sl-color-gray-5);
+    border-radius: 8px;
+    border: 1px solid var(--sl-color-gray-4);
+  }
+
+  .scrollable-content::-webkit-scrollbar-thumb {
+    background: var(--sl-color-accent);
+    border-radius: 8px;
+    border: 2px solid var(--sl-color-gray-5);
+  }
+
+  .scrollable-content::-webkit-scrollbar-thumb:hover {
+    background: var(--sl-color-accent-high);
+  }
+
+  .comparison-column h4,
+  .comparison-column strong {
+    color: var(--sl-color-white);
+    font-size: 0.95rem;
+  }
+
+  .comparison-column ul {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin-top: 0.5rem;
+  }
+
+  .comparison-column pre {
+    overflow-y: hidden !important;
+    overflow-x: hidden !important;
+  }
+
+  .comparison-column pre::-webkit-scrollbar {
+    display: none;
+  }
+
+  .comparison-column pre code {
+    overflow: hidden !important;
+  }
+`}</style>
