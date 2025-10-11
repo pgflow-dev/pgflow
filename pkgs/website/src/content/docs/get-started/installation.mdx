@@ -1,0 +1,75 @@
+---
+title: Install pgflow
+description: Quick setup guide for pgflow on Supabase. Set up the workflow engine in your project with a simple npx command.
+sidebar:
+  order: 10
+prev: false
+next: false
+---
+
+import { Aside, Steps, LinkButton } from "@astrojs/starlight/components";
+import { FileTree } from '@astrojs/starlight/components';
+
+Let's set up pgflow in your Supabase project. This setup needs to be done only once per project.
+
+<Aside type="caution" title="Prerequisites">
+- Supabase CLI version **2.0.2** or higher (check with `supabase -v`)
+- A local Supabase project set up
+- [Deno version **1.45.2 or higher**](https://github.com/denoland/deno/releases/tag/v1.45.2) (2.x also supported, required for flow compilation)
+
+
+If you haven't installed the CLI yet or need to upgrade, see Supabase's [installation guide](https://supabase.com/docs/guides/cli).
+</Aside>
+
+<Steps>
+
+1. ### Install pgflow
+
+   Run the installer with npx:
+
+   ```bash frame="none"
+   npx pgflow@latest install
+   ```
+
+   Want to understand what's happening? See the [manual installation guide](/reference/apis/manual-installation/).
+
+2. ### Apply configuration changes
+
+   Restart your Supabase instance to apply the configuration changes:
+
+   ```bash frame="none"
+   npx supabase stop
+   npx supabase start
+   ```
+
+3. ### Apply migrations
+
+   Apply the migrations to create the pgflow schema and tables:
+
+   ```bash frame="none"
+   npx supabase migrations up
+   ```
+
+</Steps>
+
+Your Supabase project now has everything needed to create and run workflows with pgflow!
+
+## Next Steps
+
+import { Card } from '@astrojs/starlight/components';
+
+<Card title="Build Multi-Step Workflows" icon="rocket">
+  Coordinate multiple steps with dependencies, data flow between steps, and real-time progress tracking. Perfect for AI pipelines, data processing, and complex automation.
+
+  <LinkButton href="/get-started/flows/create-flow/" variant="primary" icon="rocket">
+    Create your first flow
+  </LinkButton>
+</Card>
+
+<Card title="Need simple background jobs?">
+  For single-step tasks without orchestration - just reliable task queue processing on Supabase with retries and observability.
+
+  <LinkButton href="/get-started/background-jobs/create-worker/" variant="minimal" icon="right-arrow">
+    Use background jobs
+  </LinkButton>
+</Card>

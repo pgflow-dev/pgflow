@@ -1,0 +1,92 @@
+---
+title: Create your first flow
+description: Learn how to define a flow using pgflow's TypeScript DSL
+sidebar:
+  order: 20
+---
+
+import { Aside, Steps, Tabs, TabItem, CardGrid, LinkCard } from "@astrojs/starlight/components";
+import { FileTree } from '@astrojs/starlight/components';
+
+Now that pgflow is installed, let's create a simple greeting flow that demonstrates the core concepts.
+
+<Aside type="caution" title="Prerequisites">
+- Completed the [pgflow installation](/get-started/installation/)
+- Basic understanding of TypeScript
+</Aside>
+
+## Creating a Simple Greeting Flow
+
+Our flow will:
+
+<Steps>
+
+1. Take a person's **first name** and **last name** as input
+2. Format a **full name**
+3. Create a personalized **greeting**
+
+</Steps>
+
+<Steps>
+
+1. ### Set up your project structure
+
+   First, create a directory for your flow:
+
+   ```bash frame="none"
+   mkdir -p supabase/functions/_flows
+   ```
+
+   <FileTree>
+   - supabase
+     - functions
+       - _flows
+         - greet_user.ts
+   </FileTree>
+
+2. ### Create the flow definition
+
+   Create a file called `supabase/functions/_flows/greet_user.ts` with this content:
+
+   ```typescript title="supabase/functions/_flows/greet_user.ts"
+   import { Flow } from 'npm:@pgflow/dsl';
+
+   type Input = {
+     first_name: string;
+     last_name: string;
+   };
+
+   export default new Flow<Input>({
+     slug: 'greet_user',
+   })
+     .step(
+       { slug: 'full_name' },
+       (input) => `${input.run.first_name} ${input.run.last_name}`
+     )
+     .step(
+       { slug: 'greeting', dependsOn: ['full_name'] },
+       (input) => `Hello, ${input.full_name}!`
+     );
+   ```
+
+</Steps>
+
+:::note[Key Concepts]
+- **input.run**: Contains the original flow input, accessible in every step
+- **step slugs**: Unique identifiers for each step
+- **dependsOn**: Specifies which steps must complete before a step can run
+- **JSON serialization**: All inputs and outputs must be JSON-serializable
+
+<CardGrid>
+  <LinkCard
+    title="How pgflow works"
+    href="/concepts/architecture/how-pgflow-works/"
+    description="Learn how pgflow executes workflows behind the scenes"
+  />
+  <LinkCard
+    title="Understanding flows"
+    href="/concepts/flows/understanding-flows/"
+    description="Learn how flows work, from syntax to execution"
+  />
+</CardGrid>
+:::

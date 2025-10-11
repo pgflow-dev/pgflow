@@ -1,0 +1,99 @@
+---
+title: Create your first worker
+description: Build a web scraping worker with EdgeWorker in minutes. Step-by-step tutorial to process queues on top of Supabase Background Tasks in a reliable way
+sidebar:
+  order: 2
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+import { FileTree } from '@astrojs/starlight/components';
+
+We will create a simple **web scraping worker** that listens for URLs to scrape,
+fetches the content, and logs the results.
+
+Web scraping is a perfect use case for task queue workers,
+because of built in retries and ability to fetch websites in parallel.
+
+Setting it up is straightforward and takes just a few minutes.
+
+<Aside type="caution" title="Requirements">
+Before starting, please read the [Install Edge Worker](/get-started/installation/) guide.
+</Aside>
+
+<Steps>
+
+
+1. ### Create your worker
+
+    First, create a new Edge Function using the Supabase CLI. Then, replace its content with this code:
+
+    ```typescript
+    import { EdgeWorker } from "jsr:@pgflow/edge-worker";
+
+    EdgeWorker.start(async (payload: { url: string }) => {
+      const response = await fetch(payload.url);
+
+      console.log("Scraped website!", {
+        url: payload.url,
+        status: response.status,
+      });
+    });
+    ```
+
+1. ### Start Edge Runtime
+
+    Start the Edge Runtime with the following command:
+
+    ```bash frame="none"
+    npx supabase functions serve
+    ```
+
+    This makes Supabase listen for incoming HTTP requests, but does not start
+    your worker yet.
+
+    :::note[Restarting Edge Runtime]
+    You must stop and start the Edge Runtime every time you make changes
+    to your workers because of the `per_worker` policy.
+    :::
+
+1. ### Start your worker
+
+    Start the worker by sending an HTTP request to your new Edge Function
+    (replace `<function-name>` with your function name):
+
+    ```bash frame="none"
+    curl http://localhost:54321/functions/v1/<function-name>
+    ```
+
+    This will boot a new instance and start your worker:
+
+		```bash frame="none"
+    [Info] worker_id=<uuid> [WorkerLifecycle] Ensuring queue 'tasks' exists...
+		```
+
+4. ### Process your first message
+
+    Your worker is now polling for messages on the `tasks` queue (which was automatically created during startup).
+
+    Send a test message:
+
+    ```sql frame="none"
+    SELECT pgmq.send(
+      queue_name => 'tasks',
+      msg => '{"url": "https://example.com"}'::jsonb
+    );
+    ```
+
+    The message will be processed immediately and you should see the following output:
+
+    ```bash frame="none"
+    [Info] worker_id=<uuid> [ExecutionController] Scheduling execution of task 1
+
+    [Info] Scraped website! { url: "https://example.com", status: 200 }
+    ```
+
+    <Aside title="Queue Name">
+      By default, your worker uses a queue named `tasks`. You can change this by setting the `queueName` option in worker configuration - useful when running multiple workers or integrating with existing queues.
+    </Aside>
+
+</Steps>
