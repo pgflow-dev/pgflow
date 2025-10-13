@@ -4,26 +4,27 @@ import Default from '@astrojs/starlight/components/Hero.astro';
 import HeroWithSlot from './HeroWithSlot.astro';
 import LandingPageCodeExamples from './LandingPageCodeExamples.mdx';
 import PgflowLandingPageCodeExamples from './PgflowLandingPageCodeExamples.mdx';
+import SVGDAGAnimation from './SVGDAGAnimation.astro';
 
-const isHomepage = Astro.props.id === '';
-const isPgflowLanding = Astro.props.id === 'pgflow/new-landing';
+// Component overrides receive props via Astro.locals.starlightRoute
+const route = Astro.locals.starlightRoute;
+const isHomepage = !route.id || route.id === '';
+const isPgflowLanding = route.id === 'pgflow/new-landing';
 ---
 
 {
 isHomepage ? (
-<HeroWithSlot {...Astro.props}>
-  <div class="glow-box">
-  <LandingPageCodeExamples/>
-  </div>
+<HeroWithSlot>
+  <SVGDAGAnimation />
 </HeroWithSlot>
 ) : isPgflowLanding ? (
-<HeroWithSlot {...Astro.props}>
+<HeroWithSlot>
   <div class="">
   <PgflowLandingPageCodeExamples/>
   </div>
 </HeroWithSlot>
 ) : (
-<Default {...Astro.props}/>
+<Default />
 )
 }
 

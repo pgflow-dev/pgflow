@@ -5,9 +5,6 @@ template: splash
 hero:
   title: Dead-simple workflow orchestration for Supabase
   tagline: AI workflows you can actually debug.<br/>Build reliable LLM chains and RAG pipelines with zero external services.
-  image:
-    dark: ../../assets/pgflow-logo-dark.svg
-    light: ../../assets/pgflow-logo-light.svg
   actions:
     - text: Get Started
       link: /get-started/installation/
@@ -139,17 +136,17 @@ npx pgflow@latest install
 
 <TestimonialCarousel />
 
-## How pgflow Makes Supabase More Powerful
+## What pgflow Replaces
 
 Supabase gives you powerful primitives: Postgres, Edge Functions and Queues. pgflow orchestrates these into reliable workflows without the manual wiring.
 
-Here's a 2-step workflow (**scrape a website**, then **analyze it with AI**) built both ways on Supabase:
+Here's the same 2-step workflow (**scrape a website**, then **analyze it with AI**) - compare the code with and without pgflow:
 
 <div class="comparison-container">
 
 <div class="comparison-column">
 
-### 🛠️ Manual Setup
+### 🛠️ Without pgflow
 
 Building workflows with Supabase's primitives requires setting up queues, scheduling cron jobs, creating Edge Functions, and manually coordinating between steps.
 

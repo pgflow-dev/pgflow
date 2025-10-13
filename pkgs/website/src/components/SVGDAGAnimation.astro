@@ -1,0 +1,513 @@
+---
+interface Props {
+  showCaption?: boolean;
+}
+
+const { showCaption = true } = Astro.props;
+---
+
+<div class="hero-anim" id="flowDemo" data-anim-state="running"
+     aria-describedby="flowDemoCaption flowDemoDetails">
+  <div class="animation-wrapper">
+    <button id="flowDemoToggle"
+      type="button"
+      aria-controls="flowDemoSvg"
+      aria-pressed="true"
+      title="Pause animation"
+      class="anim-ctrl">Pause</button>
+
+    <div id="animation-container"></div>
+  </div>
+
+  {showCaption && (
+    <p id="flowDemoCaption" class="hero-anim-caption">
+      Parallel execution with automatic retry.
+      <a href="/concepts/how-pgflow-works/" class="anim-learn">How it works?</a>
+    </p>
+  )}
+
+  <p id="flowDemoDetails" class="sr-only">
+    Two tasks run in parallel. One fails and automatically retries. After both succeed, they trigger the final publish step.
+  </p>
+</div>
+
+<style is:global>
+  /* Screen-reader only utility */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Hero animation wrapper - no internal spacing */
+  .hero-anim {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Animation wrapper with button overlay */
+  .animation-wrapper {
+    position: relative;
+    width: 100%;
+  }
+
+  /* Pause/Restart control button - top right corner */
+  .anim-ctrl {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 10;
+    background: transparent;
+    border: 1px solid var(--sl-color-accent);
+    color: var(--sl-color-accent-high);
+    padding: 4px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.4;
+    transition: all 0.2s;
+    opacity: 0.7;
+  }
+
+  .anim-ctrl:hover {
+    opacity: 1;
+    background-color: var(--sl-color-accent-low);
+  }
+
+  .anim-ctrl:focus-visible {
+    outline: 2px solid var(--sl-color-accent);
+    outline-offset: 2px;
+  }
+
+  .anim-ctrl:active {
+    background-color: var(--sl-color-accent);
+    color: var(--sl-color-white);
+  }
+
+  #animation-container {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    position: relative;
+    overflow: visible;
+  }
+
+  /* Caption below animation - centered */
+  .hero-anim-caption {
+    font-size: 14px;
+    color: #a0b5b0;
+    margin: 12px 0 0 0;
+    text-align: center;
+  }
+
+  .hero-anim-caption strong {
+    color: #e0e8e5;
+  }
+
+  .anim-learn {
+    font-weight: 600;
+    color: #5b8def;
+    text-decoration: none;
+    margin-left: 8px;
+  }
+
+  .anim-learn:hover {
+    text-decoration: underline;
+  }
+
+
+  #dag-animation {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .node rect {
+    transition: fill 0.3s ease, stroke 0.3s ease, box-shadow 0.3s ease;
+    stroke-width: 2.5;
+  }
+
+  .node text {
+    fill: white;
+    font-size: 16px;
+    font-weight: 600;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    pointer-events: none;
+  }
+
+  /* Color scheme derived from website's teal accent (#007b6e)
+     Using HSL manipulation for systematic color derivation */
+
+  .node rect {
+    stroke-width: 2.5;
+    filter: drop-shadow(3px 4px 4px rgba(0, 0, 0, 0.25));
+  }
+
+  .node.pending rect {
+    /* Mid-tone gray-teal: works on both light and dark backgrounds */
+    fill: #3d524d;
+    stroke: #607b75;
+  }
+
+  .node.running rect {
+    /* Indigo-blue: AA text contrast 5.67:1 */
+    fill: #3b5bdb;
+    stroke: #5b8def; /* Lighter than fill */
+  }
+
+  .node.failed rect {
+    /* Darker coral: WCAG AA compliant */
+    fill: #c94a2e;
+    stroke: #f08060; /* Lighter than fill */
+  }
+
+  .node.retrying rect {
+    /* Lighter blue variant: AA text contrast 4.81:1 */
+    fill: #4460ff;
+    stroke: #7a91ff; /* Lighter than fill */
+    stroke-dasharray: 8 4;
+    animation: dashflow 1.2s linear infinite;
+  }
+
+  .node.success rect {
+    /* Emerald green: AA text contrast 5.33:1 */
+    fill: #177a51;
+    stroke: #20a56f; /* Lighter than fill */
+  }
+
+  @keyframes dashflow {
+    to {
+      stroke-dashoffset: -12;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .node.retrying rect {
+      animation: none;
+    }
+    .node.running rect,
+    .node.retrying rect {
+      filter: none;
+    }
+    /* Animation should start paused if user prefers reduced motion */
+    .hero-anim[data-anim-state="running"] {
+      animation-play-state: paused;
+    }
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .edge {
+    /* WCAG AA: 3.86:1 contrast vs #121a19 */
+    stroke: #607b75;
+    stroke-width: 2;
+    fill: none;
+    opacity: 0.6;
+  }
+
+  .edge.active {
+    /* WCAG AA: 4.81:1 contrast vs #121a19 */
+    stroke: #6b8c85;
+    stroke-width: 2.5;
+    opacity: 0.9;
+    stroke-dasharray: 8 4;
+    animation: dash-flow 1s linear infinite;
+  }
+
+  .edge.active.complete {
+    /* WCAG AA: 5.04:1 contrast vs #121a19 */
+    stroke: #1a9c64;
+    stroke-dasharray: none;
+    animation: none;
+  }
+
+  @keyframes dash-flow {
+    to {
+      stroke-dashoffset: -12;
+    }
+  }
+</style>
+
+<script is:inline>
+(function() {
+  // Animation state management
+  let timeoutIds = [];
+  let isPaused = false;
+  let svg = null;
+
+  function initAnimation() {
+    const container = document.getElementById('animation-container');
+    if (!container) {
+      requestAnimationFrame(initAnimation);
+      return;
+    }
+
+  // SVG structure
+  svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('id', 'flowDemoSvg');
+  svg.setAttribute('viewBox', '5 25 490 495');
+
+  // Node dimensions (bigger)
+  const nodeWidth = 185;
+  const nodeHeight = 60;
+
+  // Define nodes positions (x,y = center of node) - vertical layout with more spacing
+  const nodes = [
+    { id: 'fetchArticle', x: 250, y: 100, label: 'fetchArticle' },
+    { id: 'summarize', x: 140, y: 275, label: 'summarize' },
+    { id: 'extractKeywords', x: 360, y: 275, label: 'extractKeywords' },
+    { id: 'publish', x: 250, y: 450, label: 'publish' }
+  ];
+
+  // Define edges
+  const edges = [
+    { from: 'fetchArticle', to: 'summarize' },
+    { from: 'fetchArticle', to: 'extractKeywords' },
+    { from: 'summarize', to: 'publish' },
+    { from: 'extractKeywords', to: 'publish' }
+  ];
+
+  // Helper function to create smooth curved paths for vertical layout
+  function createVerticalPath(x1, y1, x2, y2) {
+    const path = [];
+    path.push('M ' + x1 + ' ' + y1); // Start
+
+    // Calculate control points for smooth bezier curve
+    const midY = (y1 + y2) / 2;
+
+    // For vertical flows, use cubic bezier for smooth curves
+    // Control point 1: below start point
+    const cp1x = x1;
+    const cp1y = midY;
+
+    // Control point 2: above end point
+    const cp2x = x2;
+    const cp2y = midY;
+
+    // Cubic bezier curve
+    path.push('C ' + cp1x + ' ' + cp1y + ', ' + cp2x + ' ' + cp2y + ', ' + x2 + ' ' + y2);
+
+    return path.join(' ');
+  }
+
+  // Draw edges (for vertical layout, connect bottom of source to top of target)
+  edges.forEach(edge => {
+    const fromNode = nodes.find(n => n.id === edge.from);
+    const toNode = nodes.find(n => n.id === edge.to);
+
+    // Start from bottom center of source node
+    const x1 = fromNode.x;
+    const y1 = fromNode.y + nodeHeight / 2;
+
+    // End at top center of target node
+    const x2 = toNode.x;
+    const y2 = toNode.y - nodeHeight / 2;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('class', 'edge');
+    path.setAttribute('data-edge', edge.from + '-' + edge.to);
+    path.setAttribute('d', createVerticalPath(x1, y1, x2, y2));
+    svg.appendChild(path);
+  });
+
+  // Status emoji
+  const statusEmoji = {
+    pending: '⋯',     // horizontal ellipsis for waiting
+    running: '▶',     // play icon for in progress
+    retrying: '↻',    // circled arrow for retry attempt
+    success: '✓',     // checkmark
+    failed: '✗'       // cross
+  };
+
+  // Draw nodes
+  nodes.forEach(node => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('class', 'node pending');
+    g.setAttribute('data-node', node.id);
+
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', node.x - nodeWidth / 2);
+    rect.setAttribute('y', node.y - nodeHeight / 2);
+    rect.setAttribute('width', nodeWidth);
+    rect.setAttribute('height', nodeHeight);
+    rect.setAttribute('rx', 4);
+    rect.setAttribute('ry', 4);
+
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', node.x);
+    text.setAttribute('y', node.y);
+    text.setAttribute('data-label', node.label);
+    text.textContent = node.label + ' ' + statusEmoji.pending;
+
+    g.appendChild(rect);
+    g.appendChild(text);
+    svg.appendChild(g);
+  });
+
+  container.appendChild(svg);
+
+  // Animation helpers
+  function setState(nodeId, state) {
+    const node = svg.querySelector('[data-node="' + nodeId + '"]');
+    node.className.baseVal = 'node ' + state;
+
+    // Update text with appropriate emoji
+    const text = node.querySelector('text');
+    const label = text.getAttribute('data-label');
+    text.textContent = label + ' ' + statusEmoji[state];
+
+    // Activate outgoing edges when node succeeds
+    if (state === 'success') {
+      activateOutgoingEdges(nodeId);
+      updateIncomingEdges(nodeId);
+    }
+  }
+
+  function activateOutgoingEdges(nodeId) {
+    // Find all edges that start from this node
+    edges.forEach(edge => {
+      if (edge.from === nodeId) {
+        const edgePath = svg.querySelector('[data-edge="' + edge.from + '-' + edge.to + '"]');
+        if (edgePath) {
+          edgePath.classList.add('active');
+
+          // Check if target node is also successful
+          const targetNode = svg.querySelector('[data-node="' + edge.to + '"]');
+          if (targetNode && targetNode.className.baseVal.includes('success')) {
+            edgePath.classList.add('complete');
+          }
+        }
+      }
+    });
+  }
+
+  function updateIncomingEdges(nodeId) {
+    // When a node becomes successful, check all incoming edges
+    // and mark them as complete if their source is also successful
+    edges.forEach(edge => {
+      if (edge.to === nodeId) {
+        const edgePath = svg.querySelector('[data-edge="' + edge.from + '-' + edge.to + '"]');
+        const sourceNode = svg.querySelector('[data-node="' + edge.from + '"]');
+
+        if (edgePath && sourceNode && sourceNode.className.baseVal.includes('success')) {
+          edgePath.classList.add('complete');
+        }
+      }
+    });
+  }
+
+  // Animation timeline - optimized for hero section
+  const timeline = [
+    { time: 0, action: () => setState('fetchArticle', 'running') },
+    { time: 1320, action: () => setState('fetchArticle', 'success') },
+    { time: 1540, action: () => {
+      setState('summarize', 'running');
+      setState('extractKeywords', 'running');
+    }},
+    { time: 3080, action: () => setState('extractKeywords', 'success') },
+    { time: 4180, action: () => setState('summarize', 'failed') },
+    { time: 5500, action: () => setState('summarize', 'retrying') },
+    { time: 7040, action: () => setState('summarize', 'success') },
+    { time: 7260, action: () => setState('publish', 'running') },
+    { time: 9020, action: () => setState('publish', 'success') }
+  ];
+
+  function resetAnimation() {
+    // Reset all nodes to pending
+    setState('fetchArticle', 'pending');
+    setState('summarize', 'pending');
+    setState('extractKeywords', 'pending');
+    setState('publish', 'pending');
+
+    // Deactivate all edges
+    const allEdges = svg.querySelectorAll('.edge');
+    allEdges.forEach(edge => {
+      edge.classList.remove('active', 'complete');
+    });
+  }
+
+  function clearAllTimeouts() {
+    timeoutIds.forEach(id => clearTimeout(id));
+    timeoutIds = [];
+  }
+
+  function runAnimation() {
+    if (isPaused) return;
+
+    resetAnimation();
+    clearAllTimeouts();
+
+    timeline.forEach(({ time, action }) => {
+      const id = setTimeout(action, time);
+      timeoutIds.push(id);
+    });
+
+    // Loop after 11 seconds
+    const loopId = setTimeout(runAnimation, 11000);
+    timeoutIds.push(loopId);
+  }
+
+  function pauseAnimation() {
+    isPaused = true;
+    clearAllTimeouts();
+  }
+
+  function resumeAnimation() {
+    isPaused = false;
+    runAnimation();
+  }
+
+  // Check for reduced-motion preference
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Initialize toggle button
+  const toggle = document.getElementById('flowDemoToggle');
+
+  if (prefersReducedMotion) {
+    isPaused = true;
+    toggle.setAttribute('aria-pressed', 'false');
+    toggle.setAttribute('title', 'Restart animation');
+    toggle.textContent = 'Restart';
+  }
+
+  // Wire up toggle button
+  toggle.addEventListener('click', function() {
+    if (isPaused) {
+      resumeAnimation();
+      toggle.setAttribute('aria-pressed', 'true');
+      toggle.setAttribute('title', 'Pause animation');
+      toggle.textContent = 'Pause';
+    } else {
+      pauseAnimation();
+      toggle.setAttribute('aria-pressed', 'false');
+      toggle.setAttribute('title', 'Restart animation');
+      toggle.textContent = 'Restart';
+    }
+  });
+
+  // Start animation (unless paused by reduced-motion preference)
+  if (!isPaused) {
+    runAnimation();
+  }
+  }
+
+  initAnimation();
+})();
+</script>
