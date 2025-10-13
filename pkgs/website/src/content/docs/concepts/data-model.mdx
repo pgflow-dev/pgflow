@@ -1,0 +1,124 @@
+---
+title: Data Model
+description: Understanding pgflow's database schema design and table relationships
+sidebar:
+  order: 30
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+pgflow's data model separates workflow definitions from runtime execution state. Workflow orchestration uses PostgreSQL tables and functions in the `pgflow` schema for transparent, queryable behavior.
+
+## Schema Design Principles
+
+### 🏷️ Slugs as Identifiers
+
+Flows and steps are identified by slugs - simple text identifiers like `'analyze_website'` or `'fetch_data'`. Slugs must be valid identifiers (alphanumeric plus underscores, max 128 characters) and serve as natural, readable keys throughout the system.
+
+### 🔑 Composite Keys with Denormalization
+
+The schema uses composite primary and foreign keys that include denormalized slug values:
+
+```sql
+-- Definition tables
+flows:       (flow_slug)
+steps:       (flow_slug, step_slug)
+deps:        (flow_slug, dep_slug, step_slug)
+
+-- Runtime tables
+runs:        (run_id) + denormalized flow_slug
+step_states: (run_id, step_slug) + denormalized flow_slug
+step_tasks:  (run_id, step_slug, task_index) + denormalized flow_slug
+```
+
+Denormalized slugs simplify queries - no joins needed:
+
+```sql
+-- Get all tasks for a specific step across all runs
+SELECT * FROM pgflow.step_tasks
+WHERE flow_slug = 'my_flow' AND step_slug = 'my_step';
+```
+
+## Two Categories of Tables
+
+The schema organizes tables into two distinct categories that serve different purposes in the workflow lifecycle. All tables live in the `pgflow` schema.
+
+### Static Definition Tables
+
+These tables store the workflow structure - the "blueprint" of what workflows exist and how they connect:
+
+**`flows`** - Workflow identity and global configuration
+- Contains `max_attempts`, `base_delay`, `timeout`
+- Each flow has a unique slug
+
+**`steps`** - DAG nodes with step type (`single` or `map`)
+- Can override flow-level options
+- Must be added in topological order
+
+🔗 **`deps`** - DAG edges defining step dependencies
+- Determines execution order and data flow
+
+Populated during deployment through migrations. Change only when workflow definitions change.
+
+### Runtime State Tables
+
+These tables track the execution state of workflow instances:
+
+**`runs`** - Execution instances of flows
+- Tracks run status (`started`, `completed`, `failed`)
+- Stores input and aggregated outputs
+- Maintains `remaining_steps` counter for completion detection
+
+**`step_states`** - State of individual steps within a run
+- Tracks step status (`created`, `started`, `completed`, `failed`)
+- For map steps, tracks `initial_tasks` and `remaining_tasks` counts
+- Stores aggregated output when step completes
+
+**`step_tasks`** - Units of work for steps
+- Single steps create 1 task, map steps create N tasks
+- Each task has retry counter and attempts tracking
+- Contains `task_index` for map task array elements
+- Stores individual outputs for aggregation
+
+Created and modified during execution. Each run creates new records tracking progress from start to completion.
+
+## Schema Visualization
+
+The relationships between these tables form the complete pgflow data model:
+
+<a href="/diagrams/schema.svg" target="_blank">
+  <img src="/diagrams/schema.svg" alt="Schema ERD Diagram" width="600" />
+</a>
+
+## How the Categories Work Together
+
+The separation between definition and runtime tables enables several key capabilities:
+
+🔒 **Separation of Concerns** - Definition tables read-only during execution, runtime tables query without affecting definitions, multiple runs execute concurrently
+
+👁️ **Observability** - All execution state in queryable SQL tables (`step_states`, `step_tasks`), no hidden state or external coordination
+
+⚡ **ACID Guarantees** - All state transitions in transactions, dependencies and task spawning atomic, no race conditions
+
+## Task Creation Patterns
+
+The relationship between steps and tasks depends on the step type:
+
+| Step Type | Tasks Created | Task Index | Input Received |
+|-----------|---------------|------------|----------------|
+| `single` | Exactly 1 | N/A | Full input with dependencies |
+| `map` | N (one per array element) | 0 to N-1 | Individual array element |
+
+This design handles both single-task steps and parallel fanout through the same execution model.
+
+## State Transitions and Counters
+
+🏃 **Run-level tracking**
+- `remaining_steps` starts at total step count, decrements on completion
+- When zero, run marked complete and outputs aggregated
+
+🔸 **Step-level tracking** (map steps only)
+- `initial_tasks` set when array size known
+- `remaining_tasks` decrements as tasks complete
+- When zero, outputs aggregated into array
+

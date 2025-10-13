@@ -1,0 +1,127 @@
+---
+title: Configuration Patterns
+description: Common configuration patterns for different scenarios - API integrations, local processing, and multi-day workflows.
+sidebar:
+  order: 25
+---
+
+import { CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+This guide shows configuration patterns for common scenarios when authoring flows. Choose the pattern that matches your use case and adapt the values to your needs.
+
+For detailed information about each configuration option, see the [Step Execution Options](/reference/configuration/step-execution/) reference.
+
+## High-Reliability API Integration
+
+For flows that interact with external APIs that may be temporarily unavailable:
+
+```typescript
+new Flow({
+  slug: 'sync_external_data',
+  maxAttempts: 7,     // More retries for transient failures
+  baseDelay: 10,      // Start with 10s, reaching ~20 minutes by attempt 7
+})
+```
+
+**Why these values:**
+- External APIs often have temporary issues (rate limits, network problems, service degradation)
+- Longer initial delay (10s) avoids hammering a struggling service
+- Many retry attempts (7) give plenty of time for transient issues to resolve
+
+## Fast Local Processing
+
+For flows that process data locally and should fail fast:
+
+```typescript
+new Flow({
+  slug: 'process_upload',
+  maxAttempts: 2,     // Fail fast - only 1 retry
+  baseDelay: 1,       // Minimal delay between attempts
+})
+```
+
+**Why these values:**
+- Local processing failures are usually permanent (bad data, logic errors)
+- Quick retry (1s) to catch transient database hiccups
+- Few attempts (2) since repeated failures indicate a real problem
+
+## Mixed Workload
+
+When different steps have different reliability requirements:
+
+```typescript
+new Flow({
+  slug: 'data_pipeline',
+  maxAttempts: 3,     // Sensible defaults
+  baseDelay: 1,
+})
+  .step({
+    slug: 'validate_input',
+    maxAttempts: 1,   // No retries - validation should not fail
+  }, validateHandler)
+  .step({
+    slug: 'fetch_external',
+    maxAttempts: 5,   // External API might be flaky
+    baseDelay: 10,    // Longer delays for external service
+  }, fetchHandler)
+  .step({
+    slug: 'save_results',
+    // Use flow defaults
+  }, saveHandler)
+```
+
+**Why this approach:**
+- Set reasonable flow-level defaults
+- Override only where needed
+- Validation steps need no retries (fail immediately on bad input)
+- External API steps need more retries and longer delays
+- Simple database operations use defaults
+
+## Multi-Day Workflow
+
+For workflows that span multiple days with scheduled follow-ups:
+
+```typescript
+new Flow({
+  slug: 'user_onboarding',
+  maxAttempts: 3,
+  baseDelay: 1,
+})
+  .step({
+    slug: 'send_welcome_email',
+    // Executes immediately
+  }, sendWelcomeHandler)
+  .step({
+    slug: 'send_day_3_tips',
+    startDelay: 259200,  // 3 days (3 * 24 * 60 * 60)
+  }, sendTipsHandler)
+  .step({
+    slug: 'send_week_review',
+    startDelay: 604800,  // 7 days after previous step
+  }, sendReviewHandler)
+```
+
+**Why this approach:**
+- Use `startDelay` for scheduled delays
+- Each step waits relative to when its dependencies complete
+- Standard retry behavior for handling email service issues
+
+## Learn More
+
+<CardGrid>
+  <LinkCard
+    title="Step Execution Options"
+    href="/reference/configuration/step-execution/"
+    description="Complete reference for all configuration options and their defaults"
+  />
+  <LinkCard
+    title="Worker Configuration"
+    href="/reference/configuration/worker/"
+    description="Configure EdgeWorker concurrency and polling behavior"
+  />
+  <LinkCard
+    title="Tune Deployed Flows"
+    href="/deploy/tune-flow-config/"
+    description="Adjust configuration for production flows without redeploying"
+  />
+</CardGrid>
