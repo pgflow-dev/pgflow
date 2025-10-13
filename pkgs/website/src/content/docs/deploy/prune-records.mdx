@@ -12,7 +12,7 @@ import pruningFunctionCode from '@/../../core/supabase/tests/_shared/prune_data_
 As your workflows accumulate, pgflow tables gather historical data. While valuable for auditing, keeping this data indefinitely can impact performance and storage costs.
 
 <Aside type="danger" title="DANGER: This function is destructive and irreversible">
-**Read this entire page carefully before using this function.** Incorrect usage can delete data before tasks have a chance to execute, especially when using [startDelay](/reference/configuration/configuration/#startdelay).
+**Read this entire page carefully before using this function.** Incorrect usage can delete data before tasks have a chance to execute, especially when using [startDelay](/reference/configuration/step-execution/#startdelay).
 
 **This function deletes BOTH completed AND failed runs.** There is no way to preserve failed runs for longer investigation periods.
 </Aside>
@@ -36,7 +36,7 @@ When a run (completed or failed) is older than the retention period, **ALL** ass
 </Aside>
 
 <Aside type="danger" title="CRITICAL: Retention period vs startDelay">
-If you use [startDelay](/reference/configuration/configuration/#startdelay) on any steps, your retention period **MUST be longer** than your longest delay.
+If you use [startDelay](/reference/configuration/step-execution/#startdelay) on any steps, your retention period **MUST be longer** than your longest delay.
 
 **Example of what goes wrong:**
 - Step has `startDelay='60 days'` (e.g., "send reminder in 60 days")

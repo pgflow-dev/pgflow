@@ -1,0 +1,208 @@
+---
+title: Step Execution Options
+description: Configure retry behavior, timeouts, and error handling for workflow steps. Set defaults at flow level, override per step.
+sidebar:
+  order: 20
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+These settings are defined in your TypeScript flow code and compiled into SQL migrations. They control how individual steps are executed, delayed, and retried. Set defaults at the flow level, override for specific steps. Step-level options are `null` by default, inheriting from flow-level settings.
+
+<Aside type="tip">
+After deployment, you can update these settings without recompiling your flow. See [Tune Deployed Flows](/deploy/tune-flow-config/) for details.
+</Aside>
+
+## Default Configuration
+
+```typescript
+new Flow({
+  slug: 'my_flow',
+  maxAttempts: 3,    // max retry attempts before marking as failed
+  baseDelay: 1,      // initial retry delay in seconds
+  timeout: 60        // visibility timeout in seconds
+  // Note: startDelay is step-level only, not available as a default at flow level
+})
+```
+
+## `maxAttempts`
+**Type:** `number`
+**Default:** `3`
+
+The maximum number of times a task will be attempted before being marked as permanently failed.
+
+```ts
+// Flow level
+new Flow({ slug: 'my_flow', maxAttempts: 5 })
+
+// Step level (overrides flow default)
+.step({ slug: 'my_step', maxAttempts: 7 }, handler)
+```
+
+## `baseDelay`
+**Type:** `number`
+**Default:** `1`
+
+The initial delay (in seconds) before the first retry. pgflow uses exponential backoff, so subsequent retries will have increasingly longer delays.
+
+```ts
+// Flow level
+new Flow({ slug: 'my_flow', baseDelay: 2 })
+
+// Step level (overrides flow default)
+.step({ slug: 'my_step', baseDelay: 10 }, handler)
+```
+
+## `timeout`
+**Type:** `number`
+**Default:** `60`
+
+The visibility timeout (in seconds) - how long a task remains invisible to other workers while being processed.
+
+<Aside type="caution" title="Timeout and Task Processing">
+Set `timeout` higher than your task's maximum processing time.
+  <details>
+  <summary>
+  Here's why:
+  </summary>
+  - When a worker picks up a task, it becomes invisible for `timeout` seconds
+  - If processing takes longer than `timeout`, the task becomes visible again
+  - Other workers can then pick up and process the same task
+  - This leads to duplicate processing
+  - For example: with `timeout: 30` and a task that takes 45 seconds, the task could be processed twice
+  </details>
+
+Currently, pgflow uses timeout only for visibility. In the future, the Edge Worker will also use it to terminate tasks that exceed their timeout.
+</Aside>
+
+```ts
+// Flow level
+new Flow({ slug: 'my_flow', timeout: 120 })
+
+// Step level (overrides flow default)
+.step({ slug: 'my_step', timeout: 300 }, handler)
+```
+
+## `startDelay`
+**Type:** `number`
+**Default:** `0`
+
+Initial delay (in seconds) before task execution.
+
+<Aside type="caution" title="Step-level only">
+Unlike other options, `startDelay` cannot be set at the flow level.
+<details>
+<summary>
+Why no flow-level default?
+</summary>
+
+Flow-level `startDelay` would create confusing cascading delays in DAG execution:
+
+```
+With flow-level startDelay: 10s
+
+Time 0:   Flow starts
+Time 10:  Step A starts (waits 10s)
+Time 15:  Step A completes
+Time 25:  Step B starts (waits 10s after A completes)
+Time 30:  Step B completes
+Time 40:  Step C starts (waits 10s after B completes)
+```
+
+This results in 40+ seconds of delays, not the expected 10s.
+
+**Better alternatives:**
+- **Need uniform delays?** Use a constant as shown below
+- **Rate limiting?** Use worker's `maxConcurrent` setting
+- **Debug delays?** Add only to specific steps you're debugging
+- **Compliance delays?** Make them explicit on relevant steps
+</details>
+
+To apply the same delay to multiple steps, use a constant:
+
+```typescript
+const RATE_LIMIT_DELAY = 2;
+flow
+  .step({ slug: "api_call_1", startDelay: RATE_LIMIT_DELAY }, handler1)
+  .step({ slug: "api_call_2", startDelay: RATE_LIMIT_DELAY }, handler2)
+```
+</Aside>
+
+## Configuration Examples
+
+### Flow with Defaults Only
+
+When all steps can use the same configuration:
+
+```typescript
+new Flow({
+  slug: 'my_flow',
+  maxAttempts: 3,    // Default for all steps
+  baseDelay: 1,      // Default for all steps
+  timeout: 60        // Default for all steps
+})
+  .step({ slug: 'step1' }, handler1)  // Uses flow defaults
+  .step({ slug: 'step2' }, handler2)  // Uses flow defaults
+```
+
+### Mixed Configuration
+
+Override flow defaults for specific steps that need different behavior:
+
+```typescript
+new Flow({
+  slug: 'analyze_data',
+  maxAttempts: 3,    // Flow defaults
+  baseDelay: 1,
+  timeout: 60
+})
+  .step({
+    slug: 'fetch_data',
+    // Uses all flow defaults
+  }, fetchHandler)
+  .step({
+    slug: 'process_data',
+    maxAttempts: 5,    // Override: more retries
+    timeout: 300       // Override: needs more time
+    // baseDelay uses flow default (1)
+  }, processHandler)
+  .step({
+    slug: 'call_api',
+    baseDelay: 10,     // Override: longer initial delay
+    // maxAttempts and timeout use flow defaults
+  }, apiHandler)
+```
+
+## Retry Behavior
+
+pgflow uses **exponential backoff** for retries. The delay between attempts is calculated as:
+
+```
+delay = baseDelay * 2^attemptCount
+```
+
+<Aside type="note">
+Unlike the Edge Worker's queue-only mode which supports a `maxDelay` cap, pgflow's retry delays are not capped yet. Delays will continue to double with each attempt, at most `maxAttempts`-times, after which the step and flow are failed permanently
+</Aside>
+
+### Retry Delay Examples
+
+Here's how retry delays grow with different base delays:
+
+| Attempt | Delay (baseDelay: 2s) | Delay (baseDelay: 5s) | Delay (baseDelay: 10s) |
+|---------|----------------------|----------------------|------------------------|
+| 1       | 2s                   | 5s                   | 10s                    |
+| 2       | 4s                   | 10s                  | 20s                    |
+| 3       | 8s                   | 20s                  | 40s                    |
+| 4       | 16s                  | 40s                  | 80s                    |
+| 5       | 32s                  | 80s                  | 160s                   |
+| 6       | 64s                  | 160s                 | 320s                   |
+| 7       | 128s                 | 320s                 | 640s                   |
+
+### When Tasks Fail Permanently
+
+A task is marked as permanently failed when:
+- It has been attempted `maxAttempts` times
+- Each attempt resulted in an error
+- The task status changes from `queued` to `failed`
+- The error message from the last attempt is stored

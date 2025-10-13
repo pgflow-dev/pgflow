@@ -2,7 +2,7 @@
 title: Context Object
 description: Understanding how pgflow provides platform resources to handlers through context
 sidebar:
-  order: 3
+  order: 60
 ---
 
 import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
@@ -10,7 +10,7 @@ import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 The context object is pgflow's mechanism for providing handlers with access to platform resources like database connections, environment variables, and service clients. Instead of each handler creating its own connections, pgflow manages these resources centrally and injects them through a standardized context parameter.
 
 :::tip[API Reference]
-For complete documentation of all context properties, see the [Context API Reference](/reference/apis/context/).
+For complete documentation of all context properties, see the [Context API Reference](/reference/context/).
 :::
 
 :::note[Future: Custom Resources]
@@ -108,7 +108,7 @@ The context object provides access to different resources depending on your plat
 - `sql` - PostgreSQL client (postgres.js)
 - `supabase` - Supabase client with service role
 
-See the [Context API Reference](/reference/apis/context/) for complete documentation of each property.
+See the [Context API Reference](/reference/context/) for complete documentation of each property.
 
 ## Using Destructuring for Cleaner Code
 

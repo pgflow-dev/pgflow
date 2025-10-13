@@ -11,9 +11,19 @@ Find precise technical information about pgflow's APIs, configuration options, a
 
 <CardGrid>
   <LinkCard
-    title="Configuration"
-    href="/reference/configuration/configuration/"
-    description="Complete reference for flow options, step options, and worker configuration settings"
+    title="Overview"
+    href="/reference/configuration/"
+    description="Learn how pgflow configuration is structured and when to use each option"
+  />
+  <LinkCard
+    title="Step Execution Options"
+    href="/reference/configuration/step-execution/"
+    description="Configure retry behavior, timeouts, and error handling for workflow steps"
+  />
+  <LinkCard
+    title="Worker Configuration"
+    href="/reference/configuration/worker/"
+    description="Runtime settings for EdgeWorker including concurrency and database connections"
   />
 </CardGrid>
 
@@ -21,13 +31,18 @@ Find precise technical information about pgflow's APIs, configuration options, a
 
 <CardGrid>
   <LinkCard
+    title="Context API Reference"
+    href="/reference/context/"
+    description="Complete reference for all properties available in the handler context object"
+  />
+  <LinkCard
     title="Compile API"
-    href="/reference/apis/compile-api/"
+    href="/reference/compile-api/"
     description="Generate SQL statements from Flow definitions programmatically"
   />
   <LinkCard
     title="Manual installation"
-    href="/reference/apis/manual-installation/"
+    href="/reference/manual-installation/"
     description="Install pgflow without the CLI using manual SQL execution"
   />
 </CardGrid>

@@ -25,11 +25,6 @@ Learn how to deploy pgflow to production, monitor workflow execution, and mainta
     href="/deploy/supabase/keep-workers-running/"
     description="Set up automated monitoring to ensure workers stay operational"
   />
-  <LinkCard
-    title="Connection string encoding"
-    href="/deploy/maintain/connection-string/"
-    description="URL-encode special characters in database passwords"
-  />
 </CardGrid>
 
 ## Observe
@@ -37,12 +32,12 @@ Learn how to deploy pgflow to production, monitor workflow execution, and mainta
 <CardGrid>
   <LinkCard
     title="Monitor flow execution"
-    href="/deploy/observe/monitor-execution/"
+    href="/deploy/monitor-execution/"
     description="Track workflow runs, step progress, and task status using SQL queries"
   />
   <LinkCard
     title="Monitor workers health"
-    href="/deploy/observe/monitor-workers-health/"
+    href="/deploy/monitor-workers-health/"
     description="Check worker heartbeats and operational status"
   />
 </CardGrid>
@@ -51,18 +46,23 @@ Learn how to deploy pgflow to production, monitor workflow execution, and mainta
 
 <CardGrid>
   <LinkCard
+    title="Connection string encoding"
+    href="/deploy/connection-string/"
+    description="URL-encode special characters in database passwords"
+  />
+  <LinkCard
     title="Update pgflow"
-    href="/deploy/maintain/update-pgflow/"
+    href="/deploy/update-pgflow/"
     description="Safely upgrade pgflow to newer versions"
   />
   <LinkCard
     title="Tune deployed flows"
-    href="/deploy/maintain/tune-flow-config/"
+    href="/deploy/tune-flow-config/"
     description="Adjust retry behavior and timeouts for production flows"
   />
   <LinkCard
     title="Prune records"
-    href="/deploy/maintain/prune-records/"
+    href="/deploy/prune-records/"
     description="Clean up old workflow execution data to manage database size"
   />
 </CardGrid>
