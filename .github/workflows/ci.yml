@@ -44,11 +44,14 @@ jobs:
       - name: Set Nx SHAs for affected commands
         uses: nrwl/nx-set-shas@v4
 
+      - name: Verify NX_BASE and NX_HEAD are set
+        run: echo "BASE=$NX_BASE HEAD=$NX_HEAD"
+
       - name: Quality gate (lint + typecheck + test)
-        run: pnpm nx affected -t lint typecheck test --parallel --configuration=production
+        run: pnpm nx affected -t lint typecheck test --parallel --configuration=production --base="$NX_BASE" --head="$NX_HEAD"
 
       - name: Build all affected projects (except playground)
-        run: pnpm nx affected -t build --configuration=production --parallel --exclude=playground
+        run: pnpm nx affected -t build --configuration=production --parallel --exclude=playground --base="$NX_BASE" --head="$NX_HEAD"
 
 
 # ────────────────────────────────── 2. DEPLOY PLAYGROUND ───────────────────────────
@@ -112,11 +115,14 @@ jobs:
 
       - name: Set Nx SHAs for affected commands
         uses: nrwl/nx-set-shas@v4
-      
+
+      - name: Verify NX_BASE and NX_HEAD are set
+        run: echo "BASE=$NX_BASE HEAD=$NX_HEAD"
+
       - name: Check if website is affected
         id: check-affected
         run: |
-          if pnpm nx show projects --affected -t build | grep -q "^website$"; then
+          if pnpm nx show projects --affected -t build --base="$NX_BASE" --head="$NX_HEAD" | grep -q "^website$"; then
             echo "affected=true" >> $GITHUB_OUTPUT
             echo "Website is affected by changes"
           else

@@ -11,7 +11,7 @@ export type Json =
   | boolean
   | null
   | Json[]
-  | { [key: string]: Json | undefined };
+  | { [key: string]: Json };
 
 // Used to flatten the types of a union of objects for readability
 export type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};

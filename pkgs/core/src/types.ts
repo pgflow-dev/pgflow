@@ -4,16 +4,11 @@ import type {
   Simplify,
   AnyFlow,
   ExtractFlowInput,
+  Json,
 } from '@pgflow/dsl';
 import type { Database } from './database-types.js';
 
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[];
+export type { Json };
 
 /**
  * Record representing a task from pgflow.start_tasks

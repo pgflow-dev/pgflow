@@ -7,11 +7,16 @@
   "targets": {
     "build": {
       "executor": "nx:noop",
+      "inputs": ["production", "^production"],
       "outputs": ["{projectRoot}/dist"],
-      "dependsOn": ["build:lib", "build:browser", "verify-exports"]
+      "dependsOn": ["^build", "build:lib", "build:browser", "verify-exports"]
     },
     "verify-exports": {
       "executor": "nx:run-commands",
+      "inputs": [
+        "{projectRoot}/scripts/verify-exports.js",
+        "{projectRoot}/package.json"
+      ],
       "options": {
         "cwd": "{projectRoot}",
         "command": "pnpm run verify-exports"
@@ -22,6 +27,7 @@
       "executor": "@nx/vite:build",
       "outputs": ["{options.outputPath}"],
       "dependsOn": ["^build"],
+      "inputs": ["production", "^production"],
       "options": {
         "outputPath": "pkgs/client/dist",
         "configFile": "pkgs/client/vite.config.ts"
@@ -31,6 +37,7 @@
       "executor": "@nx/vite:build",
       "outputs": ["{options.outputPath}"],
       "dependsOn": ["^build"],
+      "inputs": ["production", "^production"],
       "options": {
         "outputPath": "pkgs/client/dist",
         "configFile": "pkgs/client/vite.browser.config.ts"
@@ -39,6 +46,7 @@
     "typecheck": {
       "executor": "@nx/js:tsc",
       "dependsOn": ["^build"],
+      "inputs": ["default", "^production"],
       "options": {
         "noEmit": true,
         "tsConfig": "pkgs/client/tsconfig.lib.json",
@@ -48,7 +56,7 @@
     },
     "lint": {
       "executor": "@nx/eslint:lint",
-      "inputs": ["default"]
+      "inputs": ["default", "^production"]
     },
     "supabase:ensure-started": {
       "executor": "nx:run-commands",
@@ -96,6 +104,14 @@
       "executor": "nx:run-commands",
       "local": true,
       "dependsOn": ["^verify-migrations"],
+      "inputs": [
+        "{workspaceRoot}/pkgs/core/supabase/migrations/**/*.sql",
+        "{workspaceRoot}/pkgs/core/supabase/seed.sql"
+      ],
+      "outputs": [
+        "{projectRoot}/supabase/migrations",
+        "{projectRoot}/supabase/seed.sql"
+      ],
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
@@ -157,7 +173,7 @@
       "inputs": ["default", "^production"],
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["vitest run __tests__/"],
+        "commands": ["vitest run __tests__/ --exclude __tests__/integration/"],
         "parallel": false
       }
     },
@@ -174,6 +190,7 @@
     },
     "test": {
       "executor": "nx:noop",
+      "inputs": ["default", "^production"],
       "dependsOn": ["test:vitest", "test:types"]
     },
     "benchmark": {
@@ -189,7 +206,9 @@
     },
     "test:types:vitest": {
       "executor": "nx:run-commands",
+      "cache": true,
       "dependsOn": ["build"],
+      "inputs": ["default", "^production"],
       "options": {
         "cwd": "{projectRoot}",
         "command": "pnpm vitest --typecheck.only --run"
@@ -197,6 +216,9 @@
     },
     "test:types:strict": {
       "executor": "nx:run-commands",
+      "cache": true,
+      "dependsOn": ["build"],
+      "inputs": ["default", "^production"],
       "options": {
         "cwd": "{projectRoot}",
         "command": "bash ../../scripts/typecheck-ts2578.sh"
