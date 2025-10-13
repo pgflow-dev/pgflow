@@ -1,122 +1,205 @@
 ---
 title: How pgflow Works
-description: A gentle, 10-minute introduction to pgflow's layered architecture, state model, and execution cycle
+description: A gentle introduction to pgflow's execution model, state machine, and workflow lifecycle
 sidebar:
   order: 20
 ---
 
-import { Aside } from "@astrojs/starlight/components";
+import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
+import SVGDAGAnimation from "../../../components/SVGDAGAnimation.astro";
+import JoinCommunity from "../../../components/JoinCommunity.astro";
 
-pgflow is deliberately simple: a handful of SQL tables and functions that compose into a full workflow engine with **Postgres as the single source of truth**.
+## What You Just Saw
 
-This page walks you through the mental model in three parts plus a concrete example:
+<div class="animation-explainer">
+  <div class="explainer-text">
 
-1. The familiar pattern at pgflow's core
-2. Three layers and their responsibilities
-3. Step state machine
-4. Concrete example bringing it together
+The animation demonstrates three key workflow behaviors:
+
+**🔀 Parallel execution** - `summarize` and `extractKeywords` start immediately after `fetchArticle` completes.
+
+**🔄 Automatic retry** - When `summarize` fails, pgflow retries automatically.
+
+**🔗 Dependency coordination** - `publish` waits for both steps to complete.
+
+  </div>
+
+  <div class="explainer-animation">
+    <SVGDAGAnimation showCaption={false} />
+  </div>
+</div>
+
+<style>{`
+  .animation-explainer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+    margin: 2rem 0;
+  }
+
+  .explainer-text {
+    text-align: justify;
+  }
+
+  .explainer-animation {
+    position: sticky;
+    top: 2rem;
+    margin-top: -1rem;
+  }
+
+  @media (max-width: 1024px) {
+    .animation-explainer {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+
+    .explainer-text {
+      text-align: left;
+    }
+
+    .explainer-animation {
+      position: relative;
+      top: 0;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+  }
+`}</style>
 
 ---
 
-## 1. The Familiar Pattern
+## How pgflow Makes This Possible
 
-If you've written queue processing code, this will feel familiar:
+At its core, pgflow does two things:
 
-```typescript
-job = dequeue()
-process(job)
-enqueue(next_job)
-```
+1. 🧠 **Figures out** which steps are ready based on dependencies
+2. 📤 **Pushes tasks** into queues for workers to execute
 
-pgflow is built on this pattern. The SQL Core handles the orchestration so each step naturally triggers the next one based on dependencies.
+Workers pull from these queues and run your functions.
 
-This simple pattern becomes powerful when orchestrated across a DAG - that's what pgflow does.
+<Aside type="note" title="Key Separation">
+**pgflow** handles orchestration (what to run, when)
 
----
-
-## 2. Three Layers
-
-<img src="/diagrams/three-layers.svg" alt="Three layers of pgflow architecture: TypeScript DSL, SQL Core, and Worker" width="90%" />
-
-| Layer | What it does | Lives where |
-|-------|--------------|-------------|
-| **TypeScript DSL** | Describe flow shape with type inference | Your repo |
-| **SQL Core** | Owns all state and orchestration logic | Postgres tables and functions |
-| **Worker** | Executes user code, reports results | Edge Function (or any runtime) |
-
-Each layer has one job:
-
-- **DSL**: Lets you define flows in TypeScript with full type safety
-- **SQL Core**: Manages state transitions and determines what runs when
-- **Worker**: Executes handlers and updates state
-
-All state lives in Postgres tables, giving you ACID guarantees and full observability through SQL queries.
-
-<Aside type="tip" title="Swap the Worker if you like">
-Any process that can call the SQL Core functions works. Use Edge Functions, Lambda, or your own runtime - pgflow doesn't care.
+**You** handle business logic (how to process data)
 </Aside>
 
 ---
 
-## 3. Step State Machine
+## From Code to Execution
 
-A workflow run finishes when every step reaches a terminal status. Each step follows this lifecycle:
+🔨 **Build-time**: Write workflows in TypeScript, compile to SQL migrations
 
-```
-created → started → completed
-                  ↘ failed
-```
+⚡ **Run-time**: Postgres orchestrates (determines what runs when), workers execute your functions
 
-- **created**: Dependencies not yet met
-- **started**: Dependencies complete, now executing
-- **completed/failed**: Finished
-
-The SQL Core tracks these states and spawns tasks for steps whose dependencies are met. Workers execute the tasks and report back, advancing the state machine.
+All workflow state lives in Postgres tables - giving you full observability.
 
 ---
 
-## 4. Concrete Example
+## Writing a Flow Like This
 
-Here's a simple two-step flow:
+Workflows are built by chaining `.step()` calls. Each step has a unique **slug** (identifier) and declares which steps it **dependsOn**:
 
 ```typescript
-type Input = { first: string; last: string };
+new Flow<Input>({ slug: "process_article" })
+  .step({ slug: "fetchArticle" }, fn)
+  .step({ slug: "summarize", dependsOn: ["fetchArticle"] }, fn)
+  .step({ slug: "extractKeywords", dependsOn: ["fetchArticle"] }, fn)
+  .step({ slug: "publish", dependsOn: ["summarize", "extractKeywords"] }, fn);
+```
 
-new Flow<Input>({ slug: "greet_user" })
+pgflow uses dependencies to figure out execution order and parallelism. Steps with the same dependencies run in parallel. Return values become available as `input.<slug>` to dependent steps.
+
+<details>
+<summary>See full code</summary>
+
+```typescript "input.run" "dependsOn: [\"fetchArticle\"]" "input.fetchArticle" "dependsOn: [\"summarize\", \"extractKeywords\"]" "input.summarize" "input.extractKeywords"
+type Input = { url: string };
+
+new Flow<Input>({ slug: "process_article" })
   .step(
-    { slug: "full_name" },
-    (input) => `${input.run.first} ${input.run.last}`
+    { slug: "fetchArticle" },
+    async (input) => {
+      const response = await fetch(input.run.url);
+      return response.text();
+    }
   )
   .step(
-    { slug: "greeting", dependsOn: ["full_name"] },
-    (input) => `Hello, ${input.full_name}!`
+    { slug: "summarize", dependsOn: ["fetchArticle"] },
+    async (input) => {
+      return await openai.summarize(input.fetchArticle);
+    }
+  )
+  .step(
+    { slug: "extractKeywords", dependsOn: ["fetchArticle"] },
+    async (input) => {
+      return await openai.extractKeywords(input.fetchArticle);
+    }
+  )
+  .step(
+    { slug: "publish", dependsOn: ["summarize", "extractKeywords"] },
+    async (input) => {
+      await db.insert({
+        summary: input.summarize,
+        keywords: input.extractKeywords
+      });
+    }
   );
 ```
 
-The compiler generates migration SQL:
+</details>
 
-```sql
-SELECT pgflow.create_flow('greet_user');
-SELECT pgflow.add_step('greet_user', 'full_name');
-SELECT pgflow.add_step('greet_user', 'greeting', ARRAY['full_name']);
+## Deploy as Edge Function
+
+No **Deno.serve** boilerplate - three lines sets up a [persistent](/reference/queue-worker/how-it-works/) worker:
+
+```typescript
+import { EdgeWorker } from "jsr:@pgflow/edge-worker";
+import ProcessArticle from './process_article.ts';
+
+EdgeWorker.start(ProcessArticle);
 ```
 
-When you start a run:
-1. `full_name` step becomes `created` (no dependencies)
-2. Worker picks it up, executes, marks `completed`
-3. `greeting` step becomes ready (dependency met)
-4. Worker executes it with `input.full_name` available
-5. Run completes
+## Start Your Flow
 
-All state transitions happen in Postgres. Query `pgflow.step_states` to see exactly where each step is.
+Trigger a run from SQL:
+
+```sql
+SELECT pgflow.start_flow(
+  flow_slug => 'process_article',
+  input => '{"url": "https://example.com"}'::jsonb
+);
+```
+
+Since it's a SQL function, call it anywhere: schedule with `pg_cron`, use in db triggers, within transactions, from your app via Supabase RPC, or use the pgflow client for realtime updates.
 
 ---
 
-## Recap
+That's it - dependencies determine execution order, pgflow handles parallelism and retries, all state lives in Postgres.
 
-1. **Familiar pattern**: pgflow builds on the dequeue/process/enqueue pattern you already know
-2. **Three layers**: DSL for authoring, SQL Core for orchestration, Worker for execution
-3. **State machine**: Steps transition from created → started → completed/failed
-4. **Everything in Postgres**: All state is queryable SQL, giving you complete observability
+## Learn More
 
-You now have the mental model needed for the rest of the docs.
+<CardGrid>
+  <LinkCard
+    title="Install pgflow"
+    href="/get-started/installation/"
+    description="Set up pgflow in your Supabase project with one command"
+  />
+  <LinkCard
+    title="Create your first flow"
+    href="/get-started/flows/create-flow/"
+    description="Build a simple workflow to see how steps connect"
+  />
+  <LinkCard
+    title="Monitor Execution"
+    href="/deploy/monitor-execution/"
+    description="Query step states, view execution timeline, troubleshoot failures"
+  />
+  <LinkCard
+    title="Architecture"
+    href="/concepts/architecture/"
+    description="Deep dive into three-layer separation and design philosophy"
+  />
+</CardGrid>
+
+<JoinCommunity />

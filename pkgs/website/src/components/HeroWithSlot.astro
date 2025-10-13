@@ -1,13 +1,11 @@
 ---
 // import { PAGE_TITLE_ID } from '../constants';
 const PAGE_TITLE_ID = '_top';
-import type { Props } from '@astrojs/starlight/props';
 import { LinkButton } from '@astrojs/starlight/components';
 
-// Get hero data from Starlight props
-const { title, tagline, actions = [] } = (Astro.props as Props).entry?.data?.hero || {};
-// Fallback to page title if hero title is not set
-const heroTitle = title || (Astro.props as Props).entry?.data?.title;
+// Access page data the same way Starlight's default Hero does
+const { data } = Astro.locals.starlightRoute.entry;
+const { title = data.title, tagline, actions = [] } = data.hero || {};
 ---
 
 <div class="hero">
@@ -42,12 +40,13 @@ const heroTitle = title || (Astro.props as Props).entry?.data?.title;
 		align-items: center;
 		gap: 1rem;
 		padding-bottom: 1rem;
+		padding-top: 0.5rem;
 	}
 
 	.hero > img,
 	.hero > .hero-html {
 		object-fit: contain;
-		width: min(70%, 20rem);
+		width: min(85.5%, 33.25rem);
 		height: auto;
 		margin-inline: auto;
 	order: 2;
@@ -94,11 +93,12 @@ const heroTitle = title || (Astro.props as Props).entry?.data?.title;
 		.hero {
 			grid-template-columns: 4fr 5fr;
 			gap: 3%;
-			padding-block: clamp(2.5rem, calc(1rem + 10vmin), 10rem);
+			padding-block: clamp(1.5rem, calc(0.5rem + 8vmin), 8rem);
 		}
 
 		.hero > .hero-html {
-			width: min(100%, 25rem);
+			width: 95%;
+			max-width: 42.75rem;
 		}
 
 		.stack {
