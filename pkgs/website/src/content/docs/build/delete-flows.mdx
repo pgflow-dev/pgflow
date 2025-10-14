@@ -11,7 +11,7 @@ next:
 import { Aside, Code, CardGrid, LinkCard } from "@astrojs/starlight/components";
 import deleteFlowFunctionCode from '@/../../core/supabase/tests/_shared/delete_flow_and_data.sql.raw?raw';
 
-During development, you may want to completely remove a flow and all its data to start fresh. This operation is destructive and should **only be used in development environments**.
+During development, you may want to completely remove a flow and all its data to make breaking changes, clean up test data, or start fresh after experimenting. This operation is destructive and should **only be used in development environments**.
 
 <Aside type="danger" title="Data Loss Warning">
 This permanently deletes all flow data including:
@@ -22,13 +22,6 @@ This permanently deletes all flow data including:
 
 **Never use this in production.** Use [versioned flows](/build/version-flows/) instead (e.g., `my_flow_v1`, `my_flow_v2`) to safely deploy changes while maintaining complete flow history.
 </Aside>
-
-## When to Use This
-
-Use this function when you need to:
-- Make breaking changes during development
-- Clean up test data between iterations
-- Start fresh after experimenting with flow structure
 
 ## Using the Delete Function
 

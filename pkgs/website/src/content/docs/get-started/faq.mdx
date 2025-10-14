@@ -5,94 +5,98 @@ sidebar:
   order: 9999
 ---
 
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+## What are the two Edge Worker modes?
+
+**Short Answer:** Edge Worker supports two modes: **background jobs** (simple task processing) and **flows** (multi-step workflows with dependencies).
+
+Edge Worker can run in two distinct modes depending on what you pass to `EdgeWorker.start()`:
+
+**Background Jobs Mode** - For simple, independent tasks:
+```typescript
+EdgeWorker.start(async (payload) => {
+  // Your task handler
+});
+```
+
+In this mode, Edge Worker polls a queue (default: `tasks`) and processes messages independently. Perfect for simple background jobs like sending emails, processing uploads, or web scraping.
+
+**Flow Mode** - For multi-step workflows:
+```typescript
+import MyFlow from './_flows/my_flow.ts';
+EdgeWorker.start(MyFlow);
+```
+
+In this mode, Edge Worker processes tasks for a specific workflow, handling step dependencies, data flow between steps, and automatic coordination. The queue name matches your flow slug.
+
+<details>
+<summary>Read more about choosing the right mode</summary>
+
+**Background Jobs:** Single-step tasks without dependencies (sending notifications, processing webhooks, image resizing)
+
+**Flows:** Multi-step processes with dependencies, data flow between steps, parallel execution (AI pipelines, data transformations, business workflows)
+
+**Configuration:** Both modes share the same Edge Worker options. Background jobs use `queueName` option (default: `tasks`), flows use the flow slug as queue name.
+
+**🤔 Hard to decide?** Consider flows if your "single step" has multiple distinct operations that could fail independently, or you might add steps later. Handler functions are reusable between modes - start with background jobs and migrate to flows when needed.
+
+</details>
+
 ## Will running Edge Worker 24/7 affect my billing?
 
-Short Answer: **Not really**
+**Short Answer:** It depends on your workload
 
-Edge Worker should not affect your Supabase billing in any significant way,
-because Supabase charges for Edge Function invocations and data transfer,
-and Edge Worker does not do lot of invocations and data transfer depends
-on how many messages you process.
+Edge Worker consumes:
+- **Invocations:** One invocation to start, then processes messages continuously until CPU/clock limits terminate the function. Automatically self-respawns (and can be additionally respawned by [pg_cron safety net](/deploy/supabase/keep-workers-running/) if configured).
+- **Egress:** Message data transferred during processing. Varies based on message size and count.
 
-:::note
-Check official [Pricing](https://supabase.com/pricing) page for more details.
-:::
+This is more efficient than invoking Edge Functions per-message or per-batch via pg_cron, which would require one invocation per batch.
 
-<details>
-<summary>Read more details about invocations and data transfer</summary>
+Actual costs depend on message volume, message size, and worker stability. Monitor your usage in [Supabase Dashboard](https://supabase.com/dashboard) and review [Supabase Pricing](https://supabase.com/pricing) to understand limits and costs.
 
-### Effect on Invocations
+## Can one Edge Worker process multiple queues or flows?
 
-Edge Worker lives in a regular Edge Function and function must be called with
-HTTP request to start it.
+**Short Answer:** No - one Edge Worker processes one queue
 
-Worker will also do that HTTP request to respawn itself.
-It does that when it detects that CPU or Clock soft limits were reached.
+Each Edge Worker instance is bound to a single queue:
+- **Background jobs mode:** Queue name set via `queueName` configuration (default: `tasks`)
+- **Flow mode:** Queue name automatically matches the flow slug
 
-But even if your Worker would process hundreds of jobs per second for the whole
-month without a stop and exceed limits every 6 seconds,
-it will still not exceed the invocation limits of the Free Tier, which is set to 500.000 per month.
+**Scaling options:**
+- **Multiple workers on same queue:** Deploy multiple Edge Workers pointing to the same queue for increased throughput
+- **Multiple queues:** Deploy separate Edge Workers - one per queue
 
-### Effect on Data Transfer
+## How do I prevent one tenant from monopolizing the queue?
 
-The bandwidth used by a worker depends mostly on how many and how big messages
-it will get from the queue.
+**Short Answer:** You can't - fair processing is not implemented yet
 
-Just polling without returning any messages eats a tiny amount of bandwidth,
-but should be negligible compared to retrieving actual data.
+Fair processing is not currently implemented in Edge Worker.
 
-Currently, Supabase offers 5GB of bandwidth per month in the Free Tier.
-</details>
+Need this? Let's chat on [Discord](https://pgflow.dev/discord/) - there are ideas for workarounds to explore.
 
-## Can I dynamically set queue name per request?
+## Can I force a new Edge Worker to spawn by calling the function again?
 
-Short Answer: **No, it's not supported**
+**Short Answer:** Not reliably
 
-Edge Worker only supports one queue per worker. Each Edge Function can be configured
-with a single queue name, but cannot vary it at runtime based on the incoming request.
-
-<details>
-<summary>Read more details about this limitation</summary>
-
-### Why only one queue per worker?
-
-- It simplifies the worker internals and debugging.
-- The Edge Functions environment is ephemeral and limited, so handling multiple queues in one worker is not recommended.
-- You can create additional workers for separate queues if needed.
-</details>
-
-## How do I handle concurrency for multiple tenants?
-
-Short Answer: **Use multiple queues or multiple workers**
-
-If you want to process tasks for different tenants without interference, you can
-partition them by having more than one queue, each with its own worker (or multiple
-workers) to increase throughput.
-
-<details>
-<summary>Read more about multiple queues and workers</summary>
-
-### Multiple queue strategy
-
-- Deploy a dedicated worker for each queue, e.g. `{ queueName: 'tasks-tenant1' }`.
-- Send tenant-specific messages to the appropriate queue.
-- This way, each tenant's workload is isolated and won't block others.
-
-</details>
-
-## Can I force a new worker to spawn by calling the function again?
-
-Short Answer: **Not reliably**
-
-Spawning new worker instances is managed by the Supabase platform, and simply invoking
-the same Edge Function again doesn't guarantee a new worker is started.
+Spawning new Edge Worker instances is managed by the Supabase platform, and simply invoking
+the same Edge Function again doesn't guarantee a new Edge Worker is started.
 
 <details>
 <summary>Read more about the Supabase load balancer</summary>
 
-### Why can't I control worker creation?
+### Why can't I control Edge Worker creation?
 
-- Workers are managed by an API gateway that decides when to start new instances based on load and availability.
-- Sending multiple HTTP requests to the same Edge Function will not necessarily create new workers.
-- For concurrency or throughput, run multiple Edge Functions or workers, each configured separately.
+- Edge Workers are managed by an API gateway that decides when to start new instances based on load and availability.
+- Sending multiple HTTP requests to the same Edge Function will not necessarily create new Edge Workers.
+- For concurrency or throughput, run multiple Edge Functions with Edge Workers, each configured separately.
 </details>
+
+## Related Documentation
+
+<CardGrid>
+  <LinkCard title="Create your first worker" href="/get-started/background-jobs/create-worker/" />
+  <LinkCard title="Run your Flow" href="/get-started/flows/run-flow/" />
+  <LinkCard title="Worker Configuration" href="/reference/configuration/worker/" />
+  <LinkCard title="Supabase Pricing" href="https://supabase.com/pricing" />
+</CardGrid>

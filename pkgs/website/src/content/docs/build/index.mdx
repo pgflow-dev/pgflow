@@ -1,11 +1,11 @@
 ---
 title: Build
-description: Learn how to build and author pgflow workflows
+description: Learn how to build and author pgflow flows
 ---
 
 import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-Now that you've created your first flow, learn how to structure your code, integrate workflows in applications, and manage your workflows.
+Now that you've created your first flow, learn how to structure your code, integrate flows in applications, and manage your flows.
 
 ## Writing Flows
 
@@ -16,9 +16,14 @@ Now that you've created your first flow, learn how to structure your code, integ
     description="Structure your flows and tasks for maintainability and reusability"
   />
   <LinkCard
-    title="Configuration patterns"
-    href="/build/configuration-patterns/"
-    description="Common configuration patterns for different scenarios"
+    title="Configuring retries"
+    href="/build/configuring-retries/"
+    description="Configure retry policies for different step reliability requirements"
+  />
+  <LinkCard
+    title="Delaying steps"
+    href="/build/delaying-steps/"
+    description="Schedule steps to run after specified delays for multi-day flows"
   />
   <LinkCard
     title="Create reusable tasks"
@@ -48,17 +53,17 @@ Now that you've created your first flow, learn how to structure your code, integ
   <LinkCard
     title="Supabase RPC"
     href="/build/starting-flows/supabase-rpc/"
-    description="Simple RPC calls for fire-and-forget workflow triggering"
+    description="Simple RPC calls for fire-and-forget flow triggering"
   />
   <LinkCard
     title="pg_cron"
     href="/build/starting-flows/pg-cron/"
-    description="Run workflows on a recurring schedule with cron expressions"
+    description="Run flows on a recurring schedule with cron expressions"
   />
   <LinkCard
     title="Database Triggers"
     href="/build/starting-flows/database-triggers/"
-    description="Automatically start workflows when database records change"
+    description="Automatically start flows when database records change"
   />
 </CardGrid>
 

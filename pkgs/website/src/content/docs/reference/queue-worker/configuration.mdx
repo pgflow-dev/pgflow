@@ -1,11 +1,11 @@
 ---
 title: Configuration
-description: Learn how to configure EdgeWorker with options for configuring Supabase Queues, message processing, polling behavior, and retries. Includes defaults and best practices.
+description: Learn how to configure Edge Worker with options for configuring Supabase Queues, message processing, polling behavior, and retries. Includes defaults and best practices.
 sidebar:
   order: 3
 banner:
   content: |
-    This guide is for the queue-only version of Edge Worker. Main docs are <a href="/get-started/">here</a>
+    This guide is for <a href="/get-started/faq/#what-are-the-two-edge-worker-modes">Background Jobs Mode</a>. Main docs are <a href="/get-started/">here</a>
 ---
 
 import { Aside, Steps, Badge } from "@astrojs/starlight/components";
@@ -344,7 +344,7 @@ Maximum number of retry attempts for failed message processing before marking th
 
 ## Accessing Configuration in Handlers
 
-Your handler functions can access the resolved worker configuration through the context object. For detailed information about available configuration options and usage patterns, see [Context](/concepts/context-object/).
+Your handler functions can access the resolved worker configuration through the context object. For detailed information about available configuration options and usage patterns, see [`workerConfig`](/reference/context/#workerconfig).
 
 ## Next Steps
 

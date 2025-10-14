@@ -1,0 +1,17 @@
+---
+// Security setup warning component for client-facing workflow methods
+import { Aside } from '@astrojs/starlight/components';
+---
+
+<Aside type="caution" title="Security Setup Required">
+  <p><strong>pgflow ships with ZERO database permissions for client roles.</strong> Before using this method from client applications, you must:</p>
+
+  <ul>
+    <li>Expose the <code>pgflow</code> schema in your PostgREST configuration</li>
+    <li>Configure database permissions for <code>anon</code> or <code>authenticated</code> roles</li>
+  </ul>
+
+  <p>See the <a href="/reference/permissions/">Permissions reference</a> for complete setup instructions.</p>
+
+  <p><em>Note: Edge worker uses service role by default and does not require this setup.</em></p>
+</Aside>

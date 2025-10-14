@@ -222,7 +222,41 @@ When a step outputs non-array data to a map step:
 
 ## Limitations and Considerations
 
-Map steps can only specify one array source - use either the `array` property or `dependsOn`, not both.
+Map steps have a single dependency specified via the `array` property (or the flow input for root maps). Map steps **cannot use the `dependsOn` property**.
+
+If your map handler needs data from other steps or must wait for additional dependencies, use an array step to compose and enrich the data first:
+
+```typescript
+// Get config and items from separate steps
+.step({ slug: 'config' }, () => ({ apiKey: 'secret' }))
+.array({ slug: 'items' }, () => ['item1', 'item2'])
+
+// Array step enriches items with config data
+.array(
+  {
+    slug: 'enrichedItems',
+    dependsOn: ['items', 'config']  // Array steps CAN use dependsOn
+  },
+  (input) => {
+    // Enrich each item with the config data it needs
+    return input.items.map(item => ({
+      item,
+      apiKey: input.config.apiKey
+    }));
+  }
+)
+
+// Map step processes the enriched array
+.map(
+  { slug: 'processItems', array: 'enrichedItems' },  // Only 'array', no 'dependsOn'
+  async (enriched) => {
+    // Handler receives enriched object with both item and apiKey
+    return await processItem(enriched.item, enriched.apiKey);
+  }
+)
+```
+
+This pattern keeps map steps focused on parallel processing while array steps handle dependency coordination and data composition.
 
 :::tip[Best Practices]
 **Use map steps when:**

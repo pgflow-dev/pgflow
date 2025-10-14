@@ -13,10 +13,14 @@ pgflow workflows can be started from multiple places. Choose the approach that b
 
 | Approach | Use When | Real-Time Updates | Complexity |
 |----------|----------|-------------------|------------|
-| [TypeScript Client](#typescript-client) | Building apps that show live progress to users | ✅ Yes | Medium |
-| [Supabase RPC](#supabase-rpc) | Simple fire-and-forget triggers from code | ❌ No | Low |
-| [pg_cron](#scheduled-tasks) | Running recurring tasks on a schedule | ❌ No | Low |
-| [Database Triggers](#event-driven) | Reacting automatically to data changes | ❌ No | Medium |
+| [TypeScript Client](#typescript-client) | Building apps that show live progress to users | ✅ Built-in | Medium |
+| [Supabase RPC](#supabase-rpc) | Simple fire-and-forget triggers from code | ⚠️ Via Client | Low |
+| [pg_cron](#scheduled-tasks) | Running recurring tasks on a schedule | ⚠️ Via Client | Low |
+| [Database Triggers](#event-driven) | Reacting automatically to data changes | ⚠️ Via Client | Medium |
+
+:::tip
+Flows started by **any method** can be monitored in real-time using the [TypeScript Client's `getRun()` method](/build/starting-flows/typescript-client/#retrieving-existing-runs). Only the TypeScript Client provides built-in real-time monitoring when starting flows.
+:::
 
 ## TypeScript Client
 
@@ -31,6 +35,7 @@ Use `@pgflow/client` when building applications that need to stream real-time pr
 ```typescript
 import { PgflowClient } from '@pgflow/client';
 
+const pgflow = new PgflowClient(supabase);
 const run = await pgflow.startFlow('process_video', { url });
 run.on('*', (event) => console.log(event.status));
 await run.waitForStatus('completed');
@@ -38,16 +43,14 @@ await run.waitForStatus('completed');
 
 ## Supabase RPC
 
-Use RPC calls when you just need to trigger workflows without real-time updates.
+Use [RPC calls](https://supabase.com/docs/reference/javascript/rpc) when you just need to trigger workflows without real-time updates.
 
 **Best for:**
-- Background jobs triggered from user actions
 - Fire-and-forget workflows
-- Simple integrations without real-time needs
-- Lightweight triggering from TypeScript
+- Simple background jobs
 
 ```typescript
-await supabase.rpc('pgflow.start_flow', {
+await supabase.schema('pgflow').rpc('start_flow', {
   flow_slug: 'send_email',
   input: { to: 'user@example.com' }
 });
@@ -55,7 +58,7 @@ await supabase.rpc('pgflow.start_flow', {
 
 ## Scheduled Tasks
 
-Use pg_cron to run workflows on a recurring schedule.
+Use [pg_cron](https://supabase.com/docs/guides/cron) to run workflows on a recurring schedule.
 
 **Best for:**
 - Periodic data syncing
@@ -78,14 +81,30 @@ Use database triggers to automatically start workflows when data changes.
 **Best for:**
 - Processing new records automatically
 - Reacting to data changes
-- Event-driven architecture
-- Immediate workflow triggering
 
 ```sql
-CREATE TRIGGER process_new_orders
+-- Trigger function starts a workflow for each new order
+CREATE FUNCTION process_new_orders()
+RETURNS TRIGGER AS $$
+BEGIN
+  PERFORM pgflow.start_flow(
+    flow_slug => 'process_order',
+    input => jsonb_build_object(
+      'order_id', new_orders.id,
+      'customer_id', new_orders.customer_id
+    )
+  )
+  FROM new_orders;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger fires once per INSERT statement
+CREATE TRIGGER on_order_created
   AFTER INSERT ON orders
+  REFERENCING NEW TABLE AS new_orders
   FOR EACH STATEMENT
-  EXECUTE FUNCTION start_order_processing();
+  EXECUTE FUNCTION process_new_orders();
 ```
 
 ## Detailed Guides

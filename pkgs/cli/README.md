@@ -1,4 +1,4 @@
-# @pgflow/cli
+# pgflow CLI
 
 The Command Line Interface for pgflow - a PostgreSQL-native workflow engine.
 
@@ -7,7 +7,7 @@ The Command Line Interface for pgflow - a PostgreSQL-native workflow engine.
 
 ## Overview
 
-`@pgflow/cli` provides essential tools for setting up, managing, and deploying pgflow workflows in your Supabase environment. The CLI handles:
+This package provides essential tools for setting up, managing, and deploying pgflow workflows in your Supabase environment. The CLI handles:
 
 - Installing pgflow in your Supabase project
 - Compiling TypeScript workflow definitions into SQL migrations

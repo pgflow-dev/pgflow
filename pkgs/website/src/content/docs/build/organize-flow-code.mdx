@@ -1,5 +1,5 @@
 ---
-title: Organize Flows code
+title: Organize Flow code
 description: Learn how to structure your pgflow codebase for maintainability and reusability
 sidebar:
   order: 20
@@ -12,7 +12,7 @@ This guide outlines best practices for organizing your pgflow codebase to improv
 
 ## How to structure your code
 
-The [getting started tutorial](/get-started/flows/create-flow/) teaches organizing flows and tasks in underscore-prefixed folders, following Supabase's pattern for shared code:
+Following the pattern from [Create Flow](/get-started/flows/create-flow/), organize flows and tasks in underscore-prefixed folders using Supabase's pattern for shared code:
 
 ```bash frame="none"
 mkdir -p supabase/functions/_flows supabase/functions/_tasks
@@ -37,7 +37,7 @@ This structure enables:
 
 - Sharing tasks across multiple flows
 - Running multiple workers for the same flow (horizontal scaling)
-- Clear separation of workflow definitions from execution
+- Clear separation of flow definitions from execution
 - Standard Supabase pattern for shared code
 
 ## Learn more
@@ -49,9 +49,9 @@ This structure enables:
     description="How to design task functions that work well across multiple flows"
   />
   <LinkCard
-    title="Naming workflow steps"
+    title="Naming flow steps"
     href="/concepts/naming-steps/"
-    description="Best practices for naming steps in your workflows"
+    description="Best practices for naming steps in your flows"
   />
 </CardGrid>
 

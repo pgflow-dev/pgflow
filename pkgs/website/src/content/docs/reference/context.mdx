@@ -77,7 +77,7 @@ async function handler(input, ctx) {
 **Type:** `StepTaskRecord<TFlow>`
 **Available:** Flow handlers only
 
-Details about the current step task being executed. This is a strongly-typed record that provides the essential task identification along with the typed input for the specific step. Only available in flow step handlers, not in queue workers.
+Details about the current step task being executed. This is a strongly-typed record that provides the essential task identification along with the typed input for the specific step. Only available in flow step handlers, not in [Background Jobs Mode](/get-started/faq/#what-are-the-two-edge-worker-modes).
 
 ```typescript
 interface StepTaskRecord<TFlow> {
@@ -111,7 +111,7 @@ const MyFlow = new Flow({ slug: 'my_flow' })
 **Type:** `Readonly<ResolvedQueueWorkerConfig>` or `Readonly<ResolvedFlowWorkerConfig>`
 **Available:** Always
 
-The resolved worker configuration for the current worker instance. This is immutable and provides access to all worker settings including retry policies, concurrency limits, and timeouts. The configuration excludes the SQL connection object since it cannot be safely cloned and frozen.
+The resolved worker configuration for the current worker instance. This is immutable and provides access to all worker settings including concurrency limits, timeouts, and retry policies ([Background Jobs Mode](/get-started/faq/#what-are-the-two-edge-worker-modes) only). The configuration excludes the SQL connection object since it cannot be safely cloned and frozen.
 
 All optional configuration values have been resolved with their defaults applied, so you can safely access any field without checking for `undefined`.
 
@@ -121,7 +121,7 @@ All optional configuration values have been resolved with their defaults applied
 interface ResolvedQueueWorkerConfig {
   queueName: string;          // Name of the queue being processed
   maxConcurrent: number;      // Maximum concurrent tasks
-  retry: RetryConfig;         // Retry strategy configuration
+  retry: RetryConfig;         // Retry strategy configuration (queue workers only)
   visibilityTimeout: number;  // Message visibility timeout in seconds
   batchSize: number;          // Batch size for polling messages
   maxPollSeconds: number;     // Maximum polling duration
@@ -144,6 +144,12 @@ interface ResolvedFlowWorkerConfig {
   env: Record<string, string | undefined>;  // Environment variables
 }
 ```
+
+<Aside type="note">
+The `retry` field is only present for Queue Workers ([Background Jobs Mode](/get-started/faq/#what-are-the-two-edge-worker-modes)). Flow workers use step-level retry configuration defined in the flow DSL.
+
+For details on retry strategies (exponential vs fixed), see [Queue Worker Retry Configuration](/reference/queue-worker/configuration/#retry).
+</Aside>
 
 The most common use case is detecting when a message is on its final retry attempt:
 

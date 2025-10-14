@@ -60,9 +60,17 @@ export default defineConfig({
     '/get-started/': '/get-started/installation/',
     '/getting-started/': '/get-started/',
     '/getting-started/install-pgflow/': '/get-started/installation/',
+
+    // IMPORTANT: The following redirects are referenced in pgflow package
+    // DO NOT REMOVE - These URLs are hardcoded in CLI output messages:
+    // - pkgs/cli/src/commands/install/index.ts:115
+    // - pkgs/cli/src/commands/compile/index.ts:180
+    // - pkgs/cli/src/commands/compile/index.ts:195
     '/getting-started/create-first-flow/': '/get-started/flows/create-flow/',
     '/getting-started/compile-to-sql/': '/get-started/flows/compile-flow/',
     '/getting-started/run-flow/': '/get-started/flows/run-flow/',
+    // END CLI-referenced redirects
+
     '/getting-started/update-pgflow/': '/deploy/update-pgflow/',
     '/getting-started/configuration/': '/reference/configuration/',
 
@@ -100,24 +108,30 @@ export default defineConfig({
     '/how-to/manually-compile-flow/': '/reference/compile-api/',
     '/how-to/deploy-to-supabasecom/': '/deploy/supabase/deploy-first-flow/',
     '/how-to/keep-workers-up/': '/deploy/supabase/keep-workers-running/',
-    '/operate/deploy/deploy-to-supabase/': '/deploy/supabase/update-deployed-flows/',
+    '/operate/deploy/deploy-to-supabase/':
+      '/deploy/supabase/update-deployed-flows/',
     '/how-to/prepare-db-string/': '/deploy/connection-string/',
     '/how-to/prune-old-records/': '/deploy/prune-records/',
     '/how-to/manual-installation/': '/reference/manual-installation/',
 
     // Develop → Build, Operate → Deploy rename
     '/develop/': '/build/',
-    '/develop/authoring/create-reusable-tasks/': '/build/create-reusable-tasks/',
+    '/develop/authoring/create-reusable-tasks/':
+      '/build/create-reusable-tasks/',
     '/develop/authoring/organize-flow-code/': '/build/organize-flow-code/',
-    '/develop/authoring/process-arrays-in-parallel/': '/build/process-arrays-in-parallel/',
+    '/develop/authoring/process-arrays-in-parallel/':
+      '/build/process-arrays-in-parallel/',
     '/develop/version-flows/': '/build/version-flows/',
     '/develop/delete-flows/': '/build/delete-flows/',
     '/operate/': '/deploy/',
     '/operate/deploy/deploy-first-flow/': '/deploy/supabase/deploy-first-flow/',
-    '/operate/deploy/keep-workers-running/': '/deploy/supabase/keep-workers-running/',
-    '/operate/deploy/update-deployed-flows/': '/deploy/supabase/update-deployed-flows/',
+    '/operate/deploy/keep-workers-running/':
+      '/deploy/supabase/keep-workers-running/',
+    '/operate/deploy/update-deployed-flows/':
+      '/deploy/supabase/update-deployed-flows/',
     '/operate/observe/monitor-execution/': '/deploy/monitor-execution/',
-    '/operate/observe/monitor-workers-health/': '/deploy/monitor-workers-health/',
+    '/operate/observe/monitor-workers-health/':
+      '/deploy/monitor-workers-health/',
     '/operate/maintain/connection-string/': '/deploy/connection-string/',
     '/operate/maintain/prune-records/': '/deploy/prune-records/',
     '/operate/maintain/tune-flow-config/': '/deploy/tune-flow-config/',
@@ -137,25 +151,31 @@ export default defineConfig({
     '/vs/trigger/': '/comparisons/trigger/',
 
     // Edge Worker → Reference/Queue Worker
-    '/edge-worker/getting-started/configuration/': '/reference/queue-worker/configuration/',
+    '/edge-worker/getting-started/configuration/':
+      '/reference/queue-worker/configuration/',
     '/edge-worker/how-it-works/': '/reference/queue-worker/how-it-works/',
-    '/edge-worker/getting-started/observability/': '/deploy/monitor-workers-health/',
+    '/edge-worker/getting-started/observability/':
+      '/deploy/monitor-workers-health/',
 
     // Concepts reorganization
     '/concepts/': '/concepts/overview/',
     '/concepts/flow-dsl/': '/concepts/understanding-flows/',
-    '/concepts/array-and-map-steps/': '/concepts/map-steps/',
     '/concepts/context/': '/concepts/context-object/',
 
     // URL Flattening - Build section
     '/build/authoring/organize-flow-code/': '/build/organize-flow-code/',
-    '/build/authoring/configuration-patterns/': '/build/configuration-patterns/',
+    '/build/authoring/configuration-patterns/': '/build/configuring-retries/',
+    '/build/configuration-patterns/': '/build/configuring-retries/',
+    '/build/retry-and-delay-patterns/': '/build/configuring-retries/',
+    '/build/retry-patterns/': '/build/configuring-retries/',
     '/build/authoring/create-reusable-tasks/': '/build/create-reusable-tasks/',
-    '/build/authoring/process-arrays-in-parallel/': '/build/process-arrays-in-parallel/',
+    '/build/authoring/process-arrays-in-parallel/':
+      '/build/process-arrays-in-parallel/',
 
     // URL Flattening - Deploy section
     '/deploy/observe/monitor-execution/': '/deploy/monitor-execution/',
-    '/deploy/observe/monitor-workers-health/': '/deploy/monitor-workers-health/',
+    '/deploy/observe/monitor-workers-health/':
+      '/deploy/monitor-workers-health/',
     '/deploy/maintain/connection-string/': '/deploy/connection-string/',
     '/deploy/maintain/prune-records/': '/deploy/prune-records/',
     '/deploy/maintain/tune-flow-config/': '/deploy/tune-flow-config/',
@@ -284,6 +304,8 @@ export default defineConfig({
             'get-started/faq',
             'news/**',
             'hire/**',
+            'build/configuring-retries',
+            'build/delaying-steps',
           ],
           promote: [
             'get-started/installation',
@@ -343,10 +365,26 @@ export default defineConfig({
                 {
                   label: 'Writing Flows',
                   items: [
-                    { label: 'Organize flow code', link: '/build/organize-flow-code/' },
-                    { label: 'Configuration patterns', link: '/build/configuration-patterns/' },
-                    { label: 'Create reusable tasks', link: '/build/create-reusable-tasks/' },
-                    { label: 'Process arrays in parallel', link: '/build/process-arrays-in-parallel/' },
+                    {
+                      label: 'Organize flow code',
+                      link: '/build/organize-flow-code/',
+                    },
+                    {
+                      label: 'Configuring retries',
+                      link: '/build/configuring-retries/',
+                    },
+                    {
+                      label: 'Delaying steps',
+                      link: '/build/delaying-steps/',
+                    },
+                    {
+                      label: 'Create reusable tasks',
+                      link: '/build/create-reusable-tasks/',
+                    },
+                    {
+                      label: 'Process arrays in parallel',
+                      link: '/build/process-arrays-in-parallel/',
+                    },
                   ],
                 },
                 {
@@ -376,16 +414,28 @@ export default defineConfig({
                 {
                   label: 'Observe',
                   items: [
-                    { label: 'Monitor flow execution', link: '/deploy/monitor-execution/' },
-                    { label: 'Monitor workers health', link: '/deploy/monitor-workers-health/' },
+                    {
+                      label: 'Monitor flow execution',
+                      link: '/deploy/monitor-execution/',
+                    },
+                    {
+                      label: 'Monitor workers health',
+                      link: '/deploy/monitor-workers-health/',
+                    },
                   ],
                 },
                 {
                   label: 'Maintain',
                   items: [
-                    { label: 'Connection string encoding', link: '/deploy/connection-string/' },
+                    {
+                      label: 'Connection string encoding',
+                      link: '/deploy/connection-string/',
+                    },
                     { label: 'Prune records', link: '/deploy/prune-records/' },
-                    { label: 'Tune deployed flows', link: '/deploy/tune-flow-config/' },
+                    {
+                      label: 'Tune deployed flows',
+                      link: '/deploy/tune-flow-config/',
+                    },
                     { label: 'Update pgflow', link: '/deploy/update-pgflow/' },
                   ],
                 },
@@ -401,17 +451,29 @@ export default defineConfig({
                 {
                   label: 'Architecture',
                   items: [
-                    { label: 'How pgflow works', link: '/concepts/how-pgflow-works/' },
-                    { label: 'Three-layer architecture', link: '/concepts/three-layer-architecture/' },
+                    {
+                      label: 'How pgflow works',
+                      link: '/concepts/how-pgflow-works/',
+                    },
+                    {
+                      label: 'Three-layer architecture',
+                      link: '/concepts/three-layer-architecture/',
+                    },
                     { label: 'Data model', link: '/concepts/data-model/' },
                   ],
                 },
                 {
                   label: 'Defining Flows',
                   items: [
-                    { label: 'Understanding flows', link: '/concepts/understanding-flows/' },
+                    {
+                      label: 'Understanding flows',
+                      link: '/concepts/understanding-flows/',
+                    },
                     { label: 'Map steps', link: '/concepts/map-steps/' },
-                    { label: 'Context object', link: '/concepts/context-object/' },
+                    {
+                      label: 'Context object',
+                      link: '/concepts/context-object/',
+                    },
                     { label: 'Naming steps', link: '/concepts/naming-steps/' },
                   ],
                 },
@@ -425,16 +487,28 @@ export default defineConfig({
               items: [
                 { label: 'Overview', link: '/reference/' },
                 {
+                  label: 'Security',
+                  items: [
+                    { label: 'Permissions', link: '/reference/permissions/' },
+                  ],
+                },
+                {
                   label: 'Configuration',
                   autogenerate: { directory: 'reference/configuration/' },
                 },
                 {
                   label: 'APIs',
                   items: [
-                    { label: '@pgflow/client API', link: '/reference/pgflow-client/' },
+                    {
+                      label: '@pgflow/client API',
+                      link: '/reference/pgflow-client/',
+                    },
                     { label: 'Context API', link: '/reference/context/' },
                     { label: 'Compile API', link: '/reference/compile-api/' },
-                    { label: 'Manual installation', link: '/reference/manual-installation/' },
+                    {
+                      label: 'Manual installation',
+                      link: '/reference/manual-installation/',
+                    },
                   ],
                 },
                 {

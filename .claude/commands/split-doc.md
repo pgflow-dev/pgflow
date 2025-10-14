@@ -9,9 +9,32 @@ Target document:
 $ARGUMENTS
 </target>
 
-## Core Principle
+## Core Principles
 
 **MVP mindset:** Split only when necessary. Each resulting page should have a clear, single purpose aligned with Diataxis framework.
+
+**⚠️ CRITICAL: NO NEW CONTENT CREATION ⚠️**
+
+This command is for **SPLITTING**, not rewriting or creating new content.
+
+**ONLY allowed additions:**
+- **Brief intro paragraphs** - Minimal context for each split file (1-2 sentences max)
+- **Link cards** - Navigation between split docs using `<LinkCard>` or `<CardGrid>`
+- **Aside blocks** - Cross-references linking split docs to each other:
+  ```markdown
+  :::note[Optional Title]
+  Content here
+  :::
+  ```
+  Available types: `note`, `tip`, `caution`, `danger`
+
+**FORBIDDEN:**
+- Rewriting or expanding existing content
+- Adding new explanations, examples, or sections
+- Creating new technical content
+- Elaborating on concepts beyond what exists in original
+
+**The goal:** Distribute existing content into focused files, not create a better version.
 
 ## Process
 
@@ -125,7 +148,7 @@ Present split strategy:
 **Internal links to update:** [estimated count]
 ```
 
-WAIT for user confirmation or adjustment.
+**WAIT for user confirmation or adjustment.**
 
 ### Step 3: Map Content Distribution
 
@@ -151,279 +174,56 @@ For each section in the original document, determine destination:
 - Prerequisites → duplicated where relevant
 ```
 
-### Step 4: Create New Files
+### Step 4: Execute Split with Task Agent
 
-For each new file in the split:
+**Launch a general-purpose task agent to perform the split execution.**
 
-1. **Create proper frontmatter**
-```yaml
----
-title: [Clear, focused title]
-description: [One-line description]
-sidebar:
-  order: [number]
----
-```
+Present the task summary to the user before launching:
 
-2. **Add necessary imports**
-```typescript
-import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
-```
-
-3. **Write file-specific introduction**
-   - Oriented to this file's specific focus
-   - Links to related split files if part of series
-
-4. **Include relevant content from original**
-   - Copy sections as mapped
-   - Adapt transitions between sections
-   - Add cross-references to other split files
-
-5. **Add navigation aids**
-   - "Part of [topic] series" callout if applicable
-   - "Next/Previous" links for sequential content
-   - "Learn More" section with LinkCards
-
-**Example structure for split file:**
 ```markdown
----
-title: [Focused Title]
-description: [One-line description]
----
+## Task Agent Instructions
 
-import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+I'm launching a task agent to execute the split with these instructions:
 
-[Brief introduction focused on this specific topic]
+**Context:**
+- Original file: [path]
+- Split strategy: [strategy name from Step 2]
+- Content distribution: [reference to Step 3 map]
+- Files to create: [count]
 
-<Aside type="tip">
-This is part of the [Topic] series. See also:
-- [Part 1: Topic A](/path/to/part-1/)
-- [Part 3: Topic C](/path/to/part-3/)
-</Aside>
+**Agent will:**
+1. Read NOMENCLATURE_GUIDE.md for terminology standards
+2. Read DOCS_GUIDE.md for all formatting and style guidelines
+3. Create [count] new split files following the content distribution map
+4. Handle original file per strategy ([keep/delete/rename])
+5. Update internal links across documentation
+6. Add redirects to astro.config.mjs
+7. Apply style guidelines (character fixes, naming conventions)
+8. Verify build passes
+9. Prepare commit message
 
-## [Section 1]
-
-[Content from original, adapted]
-
-## [Section 2]
-
-[Content from original, adapted]
-
-## Learn More
-
-<CardGrid>
-  <LinkCard title="[Related Topic 1]" href="/path/to/related/" />
-  <LinkCard title="[Related Topic 2]" href="/path/to/related/" />
-</CardGrid>
+**Critical constraints for agent:**
+- ⚠️ NO NEW CONTENT - Only split existing content, don't rewrite or expand
+- Copy exact wording from original document
+- Add ONLY: brief intros (1-2 sentences), link cards, :::note blocks for navigation
+- Use :::note[Title] syntax (not <Aside> component)
+- All internal links must have trailing slashes
+- Follow all DOCS_GUIDE.md patterns for components and structure
 ```
 
-### Step 5: Handle Original File
+**Launching agent...**
 
-**If keeping as index/overview:**
-- Reduce to high-level overview
-- Add CardGrid with links to all split pages
-- Keep essential context and navigation
-
-**If deleting:**
-- Ensure all content distributed to new files
-- Prepare redirect (next step)
-
-**If renaming:**
-- Use git mv to preserve history
-- Becomes one of the split pages
-
-### Step 6: Update Internal Links
-
-Search for all files linking to the original document:
-```bash
-grep -r "[original-path]" pkgs/website/src/content/docs/ --include="*.mdx"
-```
-
-For each linking file:
-1. **Determine which split page is most relevant**
-2. **Update link to point to correct split page**
-3. **Update link text if needed for clarity**
-
-Example:
-```markdown
-# Before
-See [Understanding Flows](/concepts/flows/) for more details.
-
-# After (if link referenced section now in flows-basics.mdx)
-See [Understanding Flow Basics](/concepts/flows/flows-basics/) for more details.
-```
-
-### Step 7: Add Redirects
-
-Add redirect entries to `pkgs/website/astro.config.mjs`:
-
-**If original file deleted:**
-```javascript
-redirects: {
-  // Split: understanding-flows into basics/advanced
-  '/concepts/flows/': '/concepts/flows/flows-basics/', // Default to basics
-}
-```
-
-**If original file kept as index:**
-```javascript
-// No redirect needed if keeping same path
-// Or redirect if moving to new location:
-redirects: {
-  '/concepts/flows/understanding-flows/': '/concepts/flows/', // Now index
-}
-```
-
-**Anchor redirects (if needed):**
-```javascript
-redirects: {
-  // If specific sections had popular anchor links
-  '/concepts/flows/#advanced': '/concepts/flows/flows-advanced/',
-}
-```
-
-### Step 8: Update Navigation (if needed)
-
-Check sidebar configuration in `pkgs/website/astro.config.mjs`:
-
-**If using autogenerate:**
-- Verify autogenerate will pick up new structure correctly
-- Adjust sidebar.order in frontmatter if needed for proper ordering
-
-**If manually configured:**
-- Update sidebar entries to reflect new structure
-- Consider adding a collapsed group for split pages
-
-Example:
-```javascript
-{
-  label: 'Flows',
-  items: [
-    // Before: single item
-    // 'concepts/flows/understanding-flows'
-
-    // After: split items with group
-    {
-      label: 'Understanding Flows',
-      collapsed: false,
-      items: [
-        'concepts/flows/flows-basics',
-        'concepts/flows/flows-advanced',
-      ]
-    }
-  ]
-}
-```
-
-### Step 9: Apply Style Guidelines
-
-For all new files, ensure compliance:
-
-**Character guidelines:**
-- Use straight quotes ("" '') NOT curly quotes
-- Use hyphens (-) NOT em-dashes (—)
-- Use straight apostrophes (') NOT curly apostrophes (')
-
-**Naming convention:**
-- Always lowercase: "pgflow"
-
-**Links:**
-- Trailing slashes on all internal links
-- Absolute paths
-
-**Voice:**
-- Impersonal for technical descriptions
-- "you" only when directly instructing
-
-Run style fixes on all new files:
-```bash
-./scripts/replace-special-chars.sh [file]
-```
-
-### Step 10: Verify Split
-
-Run these checks:
-
-1. **All new files created:**
-```bash
-ls -la pkgs/website/src/content/docs/[new-path]/
-```
-
-2. **All content accounted for:**
-- Review original file
-- Verify each section went to correct new file
-- Check nothing was lost
-
-3. **Links updated:**
-```bash
-# Should return only expected results (if any)
-grep -r "[original-path]" pkgs/website/src/content/docs/ --include="*.mdx"
-```
-
-4. **Redirects added:**
-```bash
-grep "[original-path]" pkgs/website/astro.config.mjs
-```
-
-5. **Build passes:**
-```bash
-pnpm nx build website
-```
-
-6. **Navigation works:**
-- Check sidebar rendering
-- Verify order and grouping
-- Test links between split pages
-
-Present verification results:
-```markdown
-## Verification Results
-
-✓ [count] new files created
-✓ All content distributed
-✓ [count] internal links updated
-✓ [count] redirects added
-✓ Build passes
-✓ Navigation verified
-
-**New structure:**
-```
-[tree output showing final structure]
-```
-```
-
-### Step 11: Create Commit
-
-Prepare structured commit message:
-```
-refactor(docs): split [original-filename] into focused pages
-
-Split [original-path] into [count] focused pages:
-- [new-file-1]: [Brief description]
-- [new-file-2]: [Brief description]
-...
-
-Changes:
-- Create [count] new documentation pages
-- Update [count] internal links
-- Add [count] redirects
-- [Kept/Deleted] original file as [purpose]
-
-Reason: [Brief explanation - e.g., "Diataxis compliance", "Reduce cognitive load", "Better progressive disclosure"]
-
-🤖 Generated with Claude Code
-Co-Authored-By: Claude <noreply@anthropic.com>
-```
-
-Present commit message to user.
-
-If approved, create commit:
-```bash
-git add -A && git commit -m "$(cat <<'EOF'
-[commit message here]
-EOF
-)"
-```
+Use the Task tool with subagent_type "general-purpose" and provide:
+- Full context from Steps 1-3
+- Content distribution map
+- Instructions to read guide files (NOMENCLATURE_GUIDE.md for brief intros, DOCS_GUIDE.md for formatting)
+- NO NEW CONTENT constraint emphasis
+- Instructions to report back with:
+  - Files created
+  - Links updated
+  - Redirects added
+  - Build verification status
+  - Proposed commit message
 
 ## Common Split Patterns
 
@@ -514,10 +314,13 @@ Redirect: '/tutorials/build-application/': '/tutorials/build-application/part-1-
 
 ## Important Reminders
 
+- **NO NEW CONTENT** - Only split existing content, don't rewrite or expand
 - **Preserve content** - Don't lose information in the split
+- **Copy, don't rewrite** - Keep exact wording from original document
+- **Minimal additions** - Only brief intros and navigation aids (link cards, `:::note` blocks)
 - **Maintain accuracy** - Verify technical details after splitting
-- **Add navigation** - Users need to find related content
-- **Cross-reference** - Link split pages together
+- **Add navigation** - Users need to find related content using link cards and aside blocks
+- **Cross-reference** - Link split pages together using `:::note[Title]` syntax
 - **Test thoroughly** - Build, links, redirects, navigation
 - **Diataxis first** - Content type violations are primary split reason
 - **Clear commits** - Explain why split was needed
@@ -566,15 +369,10 @@ Redirect: '/tutorials/build-application/': '/tutorials/build-application/part-1-
 - Update package-specific configuration
 - More complex redirect handling
 
-## Output
+## Output Format
 
-Use these tools:
-1. **Write** - Create new split files
-2. **Edit** - Update links, redirects, navigation
-3. **Bash** - For git operations, verification
-4. **Grep** - Find references to update
+After the task agent completes, present results to the user:
 
-Present clear summary:
 ```markdown
 ## Split Complete: [original-filename]
 
@@ -591,5 +389,5 @@ Present clear summary:
 ✓ Navigation updated
 ✓ Build verification passed
 
-**Commit created** - ready to review and push
+**Next:** Review the changes and create commit if satisfied.
 ```

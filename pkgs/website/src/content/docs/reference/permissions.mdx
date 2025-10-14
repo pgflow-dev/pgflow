@@ -1,0 +1,103 @@
+---
+title: Permissions
+description: Database permission requirements for pgflow client access, Edge Workers, and security configuration.
+sidebar:
+  order: 2
+---
+
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Database permission requirements for enabling client applications and Edge Workers to interact with pgflow.
+
+## Default State
+
+**pgflow ships with ZERO database permissions and does not provide built-in access controls.** After installation, no users can access pgflow tables or functions. You are responsible for securing access.
+
+You must explicitly grant permissions before using:
+- [TypeScript Client](/build/starting-flows/typescript-client/) from browsers or applications
+- [Supabase RPC](/build/starting-flows/supabase-rpc/) from client code
+- Any client-side flow starting methods
+
+## Requirements for Client Access
+
+:::danger[PROCEED ONLY IF YOU KNOW WHAT YOU ARE DOING]
+**The following steps grant BROAD permissions to ALL authenticated users:**
+- Start ANY flow
+- View ANY run (if they know the run_id)
+- See ALL flow definitions
+
+**These permissions are ONLY suitable for applications where all authenticated users should have full access to all flows.** This includes:
+- Local development environments
+- Internal tools with trusted authenticated users
+- Prototypes and MVPs
+:::
+
+To use pgflow from client applications, you need to:
+
+1. **Expose the pgflow schema** via PostgREST (adds all pgflow tables to your API)
+2. **Grant permissions** to authenticated users (see below)
+
+### Step 1: Expose pgflow Schema
+
+Add `pgflow` to your exposed schemas in `supabase/config.toml`:
+
+```diff title="supabase/config.toml"
+[api]
+- schemas = ["public", "graphql_public"]
++ schemas = ["public", "graphql_public", "pgflow"]
+extra_search_path = ["public", "extensions"]
+```
+
+Or configure via Supabase Dashboard: **Settings → API → Data API Settings → Exposed schemas**
+
+### Step 2: Grant Minimal Permissions
+
+Create a new migration to grant permissions:
+
+```bash
+supabase migration new grant_pgflow_permissions
+```
+
+Add the following SQL to the migration file:
+
+```sql
+-- 1. Schema access (required for any pgflow access)
+GRANT USAGE ON SCHEMA pgflow TO authenticated;
+
+-- 2. Function access for client operations
+GRANT EXECUTE ON FUNCTION pgflow.start_flow_with_states(text, jsonb, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION pgflow.get_run_with_states(uuid) TO authenticated;
+
+-- 3. Read access to flow definitions
+GRANT SELECT ON TABLE pgflow.flows TO authenticated;
+GRANT SELECT ON TABLE pgflow.steps TO authenticated;
+```
+
+Apply the migration:
+
+```bash
+supabase migration up
+```
+
+## Custom Security
+
+**This limitation primarily affects the [TypeScript Client](/build/starting-flows/typescript-client/)**, which calls pgflow functions directly.
+
+With **[Supabase RPC](/build/starting-flows/supabase-rpc/)**, you have full control - wrap `pgflow.start_flow` in your own database functions to implement custom permissions and security logic.
+
+In a future release, pgflow will support **custom start functions** for the TypeScript Client, allowing you to implement authorization logic at the database level.
+
+## Learn More
+
+<CardGrid>
+  <LinkCard
+    title="TypeScript Client"
+    href="/build/starting-flows/typescript-client/"
+    description="Start and monitor flows from TypeScript applications"
+  />
+  <LinkCard
+    title="Supabase RPC"
+    href="/build/starting-flows/supabase-rpc/"
+    description="Start flows using Supabase RPC calls"
+  />
+</CardGrid>

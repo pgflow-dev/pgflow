@@ -28,6 +28,9 @@ Key features:
 npm install @pgflow/client
 ```
 
+> [!NOTE]
+> Real-time updates use Supabase broadcast channels. Ensure real-time is enabled in your Supabase project.
+
 ## Quick Start
 
 ```typescript

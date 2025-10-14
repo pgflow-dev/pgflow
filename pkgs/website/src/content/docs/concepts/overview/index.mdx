@@ -7,7 +7,7 @@ sidebar:
 
 import { LinkCard, CardGrid } from '@astrojs/starlight/components';
 
-pgflow is built on a few key concepts: **flows** are workflow definitions, **runs** are executions of those flows. Each flow has **steps** that can depend on other steps - a step waits for its dependencies to complete and gets access to their outputs.
+pgflow is built on a few key concepts: **flows** are flow definitions, **runs** are executions of those flows. Each flow has **steps** that can depend on other steps - a step waits for its dependencies to complete and gets access to their outputs.
 
 Steps execute through **tasks** (the actual units of work) - regular steps have 1 task, but map steps create one task per array element for parallel processing.
 

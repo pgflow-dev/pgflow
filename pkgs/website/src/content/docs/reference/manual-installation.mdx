@@ -121,9 +121,9 @@ npx supabase start
 
 When following these steps, the installation sets up:
 
-- `worker` schema with tables for worker management and message queuing
-- `pgflow` schema with tables for workflows and execution state
-- SQL functions for worker lifecycle management and workflow operations
+- `pgflow` schema with tables for flows, execution state, and worker management
+- `pgmq` schema for message queuing
+- SQL functions for worker lifecycle management and flow operations
 
 The same migrations and configuration are used for both Edge Worker and pgflow, as pgflow builds on top of Edge Worker's functionality.
 

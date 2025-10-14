@@ -1,6 +1,6 @@
 ---
 title: Step Execution Options
-description: Configure retry behavior, timeouts, and error handling for workflow steps. Set defaults at flow level, override per step.
+description: Configure retry behavior, timeouts, and error handling for flow steps. Set defaults at flow level, override per step.
 sidebar:
   order: 20
 ---
@@ -182,7 +182,7 @@ delay = baseDelay * 2^attemptCount
 ```
 
 <Aside type="note">
-Unlike the Edge Worker's queue-only mode which supports a `maxDelay` cap, pgflow's retry delays are not capped yet. Delays will continue to double with each attempt, at most `maxAttempts`-times, after which the step and flow are failed permanently
+Unlike [Background Jobs Mode](/get-started/faq/#what-are-the-two-edge-worker-modes) which supports a `maxDelay` cap, Flow Mode retry delays are not capped yet. Delays will continue to double with each attempt, at most `maxAttempts`-times, after which the step and flow are failed permanently
 </Aside>
 
 ### Retry Delay Examples

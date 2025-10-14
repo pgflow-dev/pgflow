@@ -1,12 +1,14 @@
 ---
 interface Props {
   showCaption?: boolean;
+  large?: boolean;
 }
 
-const { showCaption = true } = Astro.props;
+const { showCaption = true, large = false } = Astro.props;
 ---
 
 <div class="hero-anim" id="flowDemo" data-anim-state="running"
+     data-large={large}
      aria-describedby="flowDemoCaption flowDemoDetails">
   <div class="animation-wrapper">
     <button id="flowDemoToggle"
@@ -58,10 +60,10 @@ const { showCaption = true } = Astro.props;
     width: 100%;
   }
 
-  /* Pause/Restart control button - top right corner */
+  /* Pause/Restart control button - bottom right corner */
   .anim-ctrl {
     position: absolute;
-    top: 12px;
+    bottom: 12px;
     right: 12px;
     z-index: 10;
     background: transparent;
@@ -145,6 +147,11 @@ const { showCaption = true } = Astro.props;
     pointer-events: none;
   }
 
+  /* Larger variant */
+  .hero-anim[data-large="true"] .node text {
+    font-size: 20px;
+  }
+
   /* Color scheme derived from website's teal accent (#007b6e)
      Using HSL manipulation for systematic color derivation */
 
@@ -217,15 +224,16 @@ const { showCaption = true } = Astro.props;
   .edge {
     /* WCAG AA: 3.86:1 contrast vs #121a19 */
     stroke: #607b75;
-    stroke-width: 2;
+    stroke-width: 2.5;
     fill: none;
     opacity: 0.6;
+    stroke-dasharray: 8 4;
   }
 
   .edge.active {
     /* WCAG AA: 4.81:1 contrast vs #121a19 */
     stroke: #6b8c85;
-    stroke-width: 2.5;
+    stroke-width: 3;
     opacity: 0.9;
     stroke-dasharray: 8 4;
     animation: dash-flow 1s linear infinite;
@@ -259,20 +267,24 @@ const { showCaption = true } = Astro.props;
       return;
     }
 
+  // Check if large variant
+  const heroAnim = document.getElementById('flowDemo');
+  const isLarge = heroAnim && heroAnim.getAttribute('data-large') === 'true';
+
   // SVG structure
   svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('id', 'flowDemoSvg');
   svg.setAttribute('viewBox', '5 25 490 495');
 
-  // Node dimensions (bigger)
-  const nodeWidth = 185;
-  const nodeHeight = 60;
+  // Node dimensions - adjust based on variant
+  const nodeWidth = isLarge ? 220 : 185;
+  const nodeHeight = isLarge ? 70 : 60;
 
   // Define nodes positions (x,y = center of node) - vertical layout with more spacing
   const nodes = [
     { id: 'fetchArticle', x: 250, y: 100, label: 'fetchArticle' },
-    { id: 'summarize', x: 140, y: 275, label: 'summarize' },
-    { id: 'extractKeywords', x: 360, y: 275, label: 'extractKeywords' },
+    { id: 'summarize', x: isLarge ? 120 : 140, y: 275, label: 'summarize' },
+    { id: 'extractKeywords', x: isLarge ? 380 : 360, y: 275, label: 'extractKeywords' },
     { id: 'publish', x: 250, y: 450, label: 'publish' }
   ];
 
