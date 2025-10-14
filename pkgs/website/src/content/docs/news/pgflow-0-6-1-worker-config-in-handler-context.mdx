@@ -10,7 +10,6 @@ tags:
   - edge-worker
   - context
   - configuration
-featured: true
 cover:
   alt: 'pgflow 0.6.1 worker config in handler context cover image'
   image: '../../../assets/cover-images/pgflow-0-6-1-worker-config-in-handler-context.png'
@@ -27,12 +26,12 @@ Handlers now have access to the complete worker configuration through `context.w
 ```typescript
 async function sendEmail(input, context) {
   const isLastAttempt = context.rawMessage.read_ct >= context.workerConfig.retry.limit;
-  
+
   if (isLastAttempt) {
     // Use fallback email service on final attempt
     return await sendWithFallbackProvider(input.to, input.subject, input.body);
   }
-  
+
   // Use primary email service for regular attempts
   return await sendWithPrimaryProvider(input.to, input.subject, input.body);
 }

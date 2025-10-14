@@ -376,5 +376,6 @@ See [BUILD_AND_RELEASE.md](./BUILD_AND_RELEASE.md#browser-via-cdn) for full CDN 
 For more detailed documentation, visit:
 
 - [pgflow Documentation](https://pgflow.dev)
-- [Client Library Guide](https://pgflow.dev/how-to/monitor-flow-execution)
+- [Start Flows from TypeScript Client](https://pgflow.dev/build/starting-flows/typescript-client/)
+- [Client API Reference](https://pgflow.dev/reference/pgflow-client/)
 

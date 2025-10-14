@@ -168,6 +168,9 @@ export default defineConfig({
     '/concepts/flows/context/': '/concepts/context-object/',
     '/concepts/flows/naming-steps/': '/concepts/naming-steps/',
 
+    // Architecture page rename
+    '/concepts/architecture/': '/concepts/three-layer-architecture/',
+
     // URL Flattening - Reference section
     '/reference/apis/context/': '/reference/context/',
     '/reference/apis/compile-api/': '/reference/compile-api/',
@@ -347,6 +350,10 @@ export default defineConfig({
                   ],
                 },
                 {
+                  label: 'Starting Flows',
+                  autogenerate: { directory: 'build/starting-flows/' },
+                },
+                {
                   label: 'Flow Management',
                   items: [
                     { label: 'Version flows', link: '/build/version-flows/' },
@@ -395,7 +402,7 @@ export default defineConfig({
                   label: 'Architecture',
                   items: [
                     { label: 'How pgflow works', link: '/concepts/how-pgflow-works/' },
-                    { label: 'Architecture', link: '/concepts/architecture/' },
+                    { label: 'Three-layer architecture', link: '/concepts/three-layer-architecture/' },
                     { label: 'Data model', link: '/concepts/data-model/' },
                   ],
                 },
@@ -424,6 +431,7 @@ export default defineConfig({
                 {
                   label: 'APIs',
                   items: [
+                    { label: '@pgflow/client API', link: '/reference/pgflow-client/' },
                     { label: 'Context API', link: '/reference/context/' },
                     { label: 'Compile API', link: '/reference/compile-api/' },
                     { label: 'Manual installation', link: '/reference/manual-installation/' },

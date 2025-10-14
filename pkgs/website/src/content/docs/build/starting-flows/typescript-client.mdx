@@ -1,0 +1,302 @@
+---
+title: TypeScript Client
+description: Start workflows from TypeScript applications and stream real-time progress updates using the pgflow client.
+sidebar:
+  order: 2
+---
+
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+This guide shows how to use `@pgflow/client` to start pgflow workflows from TypeScript applications (browsers, Node.js, Deno, React Native) and stream real-time progress updates.
+
+<Aside type="note">
+Real-time updates use Supabase broadcast channels. Ensure real-time is enabled in your Supabase project.
+</Aside>
+
+<Aside type="tip">
+For SQL-based monitoring and debugging, see [Monitor flow execution](/deploy/monitor-execution/).
+
+For simpler RPC calls without real-time, see [Start Flows with Supabase RPC](/build/starting-flows/supabase-rpc/).
+</Aside>
+
+## Setup
+
+Install the client and initialize it with your Supabase client:
+
+```typescript
+import { createClient } from '@supabase/supabase-js';
+import { PgflowClient, FlowRunStatus } from '@pgflow/client';
+
+const supabase = createClient(
+  'https://your-project.supabase.co',
+  'your-anon-key'
+);
+
+const pgflow = new PgflowClient(supabase);
+```
+
+## Starting and Waiting for Workflows
+
+The simplest pattern is to start a workflow and wait for it to complete:
+
+```typescript
+// Start the workflow
+const run = await pgflow.startFlow('analyze_website', {
+  url: 'https://example.com',
+});
+
+console.log(`Started workflow: ${run.run_id}`);
+
+// Wait for completion
+const completed = await run.waitForStatus(FlowRunStatus.Completed, {
+  timeoutMs: 30000, // 30 second timeout
+});
+
+console.log('Analysis complete:', completed.output);
+```
+
+## Handling Success or Failure
+
+Wait for any terminal status to handle both success and failure cases:
+
+```typescript
+const run = await pgflow.startFlow('process_data', { file: 'data.csv' });
+
+// Wait for either completed or failed
+const terminal = await run.waitForStatus([
+  FlowRunStatus.Completed,
+  FlowRunStatus.Failed,
+]);
+
+if (terminal.status === FlowRunStatus.Completed) {
+  console.log('Success:', terminal.output);
+} else {
+  console.error('Failed:', terminal.error_message);
+}
+```
+
+## Monitoring Individual Steps
+
+Track the progress of specific steps within a workflow:
+
+```typescript
+const run = await pgflow.startFlow('data_pipeline', { source: 'api' });
+
+// Monitor the extraction step
+const extractStep = run.step('extract_data');
+await extractStep.waitForStatus(FlowStepStatus.Completed);
+console.log('Extraction complete:', extractStep.output);
+
+// Monitor the transformation step
+const transformStep = run.step('transform_data');
+await transformStep.waitForStatus(FlowStepStatus.Completed);
+console.log('Transformation complete:', transformStep.output);
+```
+
+## Real-Time Event Subscriptions
+
+Subscribe to events for live progress updates without polling:
+
+```typescript
+const run = await pgflow.startFlow('long_running_job', { task: 'process' });
+
+// Listen to all run events
+run.on('*', (event) => {
+  console.log(`Status changed to: ${event.status}`);
+});
+
+// Listen to specific events
+run.on('completed', (event) => {
+  console.log('Job completed:', event.output);
+});
+
+run.on('failed', (event) => {
+  console.error('Job failed:', event.error_message);
+});
+
+// Unsubscribe when done
+const unsubscribe = run.on('completed', handler);
+// Later...
+unsubscribe();
+```
+
+## Step-Level Events
+
+Monitor progress of individual steps in real-time:
+
+```typescript
+const run = await pgflow.startFlow('multi_step_flow', { data: 'input' });
+
+const step = run.step('critical_step');
+
+step.on('started', (event) => {
+  console.log(`Step started at: ${event.started_at}`);
+});
+
+step.on('completed', (event) => {
+  console.log('Step output:', event.output);
+});
+
+step.on('failed', (event) => {
+  console.error('Step error:', event.error_message);
+});
+```
+
+## Monitoring Multiple Steps in Parallel
+
+Track several steps concurrently:
+
+```typescript
+const run = await pgflow.startFlow('parallel_pipeline', { input: 'data' });
+
+// Wait for multiple steps to complete
+const stepSlugs = ['process_a', 'process_b', 'process_c'];
+const stepPromises = stepSlugs.map((slug) =>
+  run.step(slug).waitForStatus(FlowStepStatus.Completed)
+);
+
+// All steps complete
+await Promise.all(stepPromises);
+console.log('All parallel steps finished');
+
+// Or race for the first completion
+const firstComplete = await Promise.race(stepPromises);
+console.log('First step completed:', firstComplete.step_slug);
+```
+
+## Error Handling Patterns
+
+Implement robust error handling with retries or alerts:
+
+```typescript
+async function runWorkflowWithRetry(flow_slug: string, input: object, maxRetries = 3) {
+  let attempt = 0;
+
+  while (attempt < maxRetries) {
+    try {
+      const run = await pgflow.startFlow(flow_slug, input);
+
+      const result = await run.waitForStatus([
+        FlowRunStatus.Completed,
+        FlowRunStatus.Failed,
+      ], {
+        timeoutMs: 60000,
+      });
+
+      if (result.status === FlowRunStatus.Completed) {
+        return result.output;
+      }
+
+      // Log failure and retry
+      console.error(`Attempt ${attempt + 1} failed: ${result.error_message}`);
+      attempt++;
+
+    } catch (error) {
+      console.error(`Attempt ${attempt + 1} error:`, error);
+      attempt++;
+    }
+  }
+
+  throw new Error(`Workflow failed after ${maxRetries} attempts`);
+}
+```
+
+## Resource Cleanup
+
+Clean up subscriptions when workflows complete:
+
+```typescript
+const run = await pgflow.startFlow('cleanup_example', { data: 'test' });
+
+// Auto-cleanup on completion
+run.on('*', (event) => {
+  if (event.status === 'completed' || event.status === 'failed') {
+    pgflow.dispose(run.run_id);
+  }
+});
+
+// Or cleanup after waiting
+await run.waitForStatus(FlowRunStatus.Completed);
+pgflow.dispose(run.run_id);
+
+// Cleanup all runs when shutting down
+process.on('SIGTERM', () => {
+  pgflow.disposeAll();
+});
+```
+
+<Aside type="caution">
+Always dispose of runs to prevent memory leaks from active subscriptions.
+</Aside>
+
+## Type Safety with Flow Definitions
+
+When using with `@pgflow/dsl`, get full type inference:
+
+```typescript
+import { Flow } from '@pgflow/dsl';
+
+// Define your flow
+const AnalyzeWebsite = new Flow<{ url: string }>({ slug: 'analyze_website' })
+  .step({ slug: 'scrape' }, async (input) => ({
+    content: 'html...',
+    title: 'Page Title'
+  }))
+  .step({ slug: 'analyze' }, async (input) => ({
+    sentiment: 0.8,
+    keywords: ['typescript', 'postgres']
+  }));
+
+// Type-safe client usage
+const run = await pgflow.startFlow<typeof AnalyzeWebsite>(
+  AnalyzeWebsite.slug,
+  { url: 'https://example.com' } // TypeScript validates this
+);
+
+// Typed step access
+const scrapeStep = run.step('scrape'); // TypeScript knows this step exists
+
+// Typed output
+await run.waitForStatus(FlowRunStatus.Completed);
+console.log(run.output); // TypeScript knows the output structure
+```
+
+## Retrieving Existing Runs
+
+Access workflow runs that were started elsewhere:
+
+```typescript
+// Get a run by ID
+const run = await pgflow.getRun('550e8400-e29b-41d4-a716-446655440000');
+
+if (run) {
+  console.log('Found run:', run.status);
+
+  // Continue monitoring
+  if (run.status === FlowRunStatus.Started) {
+    await run.waitForStatus(FlowRunStatus.Completed);
+  }
+} else {
+  console.log('Run not found');
+}
+```
+
+## Learn More
+
+<CardGrid>
+  <LinkCard
+    title="@pgflow/client API Reference"
+    href="/reference/pgflow-client/"
+    description="Complete API documentation for PgflowClient, FlowRun, and FlowStep"
+  />
+  <LinkCard
+    title="Flow Definition with DSL"
+    href="/get-started/flows/create-flow/"
+    description="Learn how to define type-safe workflows"
+  />
+  <LinkCard
+    title="Deploy Your First Flow"
+    href="/deploy/supabase/deploy-first-flow/"
+    description="Deploy pgflow workers to Supabase.com production"
+  />
+</CardGrid>
