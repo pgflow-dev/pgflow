@@ -137,6 +137,12 @@ WHERE ss.run_id = 'your-run-id-here'
 AND ss.status = 'failed';
 ```
 
+<Aside type="tip" title="Starting from TypeScript">
+To start workflows from TypeScript applications and stream real-time progress updates, see [Start Flows from TypeScript Client](/build/starting-flows/typescript-client/).
+
+This page focuses on SQL-based monitoring for debugging and operations.
+</Aside>
+
 <Aside type="tip" title="Flow Visualization">
 Applications typically create dashboards to visualize flows and their execution status.
 
@@ -168,6 +174,7 @@ GROUP BY steps.step_slug;
 ## Next steps
 
 <CardGrid>
+  <LinkCard title="Start Flows from TypeScript Client" href="/build/starting-flows/typescript-client/" description="Start workflows from TypeScript apps and stream real-time progress updates"/>
   <LinkCard title="Organize Flows code" href="/build/organize-flow-code/" description="Learn how to structure your pgflow code for maintainability and reusability"/>
   <LinkCard title="Tune deployed flows" href="/deploy/tune-flow-config/" description="Adjust retry behavior and timeouts for production flows"/>
   <LinkCard title="Version your Flows" href="/build/version-flows/" description="Learn how to safely update your flows without breaking existing runs"/>

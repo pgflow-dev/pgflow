@@ -9,8 +9,6 @@ import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
 import SVGDAGAnimation from "../../../components/SVGDAGAnimation.astro";
 import JoinCommunity from "../../../components/JoinCommunity.astro";
 
-## What You Just Saw
-
 <div class="animation-explainer">
   <div class="explainer-text">
 
@@ -35,11 +33,6 @@ The animation demonstrates three key workflow behaviors:
     grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
     align-items: start;
-    margin: 2rem 0;
-  }
-
-  .explainer-text {
-    text-align: justify;
   }
 
   .explainer-animation {
@@ -61,8 +54,10 @@ The animation demonstrates three key workflow behaviors:
     .explainer-animation {
       position: relative;
       top: 0;
-      max-width: 500px;
-      margin: 0 auto;
+      max-width: 100%;
+      width: 100%;
+      margin: 0;
+      overflow: hidden;
     }
   }
 `}</style>
@@ -196,8 +191,8 @@ That's it - dependencies determine execution order, pgflow handles parallelism a
     description="Query step states, view execution timeline, troubleshoot failures"
   />
   <LinkCard
-    title="Architecture"
-    href="/concepts/architecture/"
+    title="Three-layer architecture"
+    href="/concepts/three-layer-architecture/"
     description="Deep dive into three-layer separation and design philosophy"
   />
 </CardGrid>

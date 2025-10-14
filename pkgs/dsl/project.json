@@ -38,9 +38,7 @@
     },
     "test:types:vitest": {
       "executor": "nx:run-commands",
-      "cache": true,
       "dependsOn": ["build"],
-      "inputs": ["default", "^production"],
       "options": {
         "cwd": "{projectRoot}",
         "command": "pnpm vitest --typecheck.only --run"
@@ -48,9 +46,7 @@
     },
     "test:types:strict": {
       "executor": "nx:run-commands",
-      "cache": true,
-      "dependsOn": ["^build"],
-      "inputs": ["default", "^production"],
+      "dependsOn": ["build"],
       "options": {
         "cwd": "{projectRoot}",
         "command": "bash ../../scripts/typecheck-ts2578.sh"

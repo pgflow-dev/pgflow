@@ -1,0 +1,196 @@
+---
+draft: false
+title: 'pgflow 0.7.0: Public Beta with Map Steps and Documentation Redesign'
+description: 'pgflow enters public beta with parallel array processing, redesigned docs, and enhanced developer experience'
+date: 2025-10-14
+authors:
+  - jumski
+tags:
+  - release
+  - map-steps
+  - documentation
+  - public-beta
+  - core
+  - dsl
+  - cli
+featured: true
+cover:
+  alt: 'Cyberpunk workflow engine with glowing teal circuits processing parallel data streams'
+  image: '../../../assets/cover-images/pgflow-0-7-0-public-beta-map-steps-and-documentation-redesign.png'
+---
+
+import { Aside, Code } from "@astrojs/starlight/components";
+import preMigrationCheck from '../../../../../core/queries/PRE_MIGRATION_CHECK_20251006073122.sql?raw';
+
+pgflow 0.7.0 is here - a major milestone and long-awaited release that brings parallel array processing,
+production-ready stability, and a complete documentation redesign.
+
+## pgflow Enters Public Beta
+
+pgflow has transitioned from alpha to **public beta**. Core functionality is stable and reliable,
+with early adopters already running pgflow in production environments.
+
+This milestone reflects months of testing, bug fixes, and real-world usage feedback. The SQL Core,
+DSL, and Edge Worker components have proven robust across different workloads and deployment scenarios.
+
+See the [project status page](/project-status/) for production recommendations and known limitations.
+
+## Documentation Restructure and New Landing Page
+
+The entire documentation has been reorganized from a feature-based structure to a
+**user-journey-based structure**, making it easier to find what you need at each stage of using pgflow.
+
+import docsBefore from '../../../assets/news-images/pgflow-0-7-0-public-beta-map-steps-and-documentation-redesign/docs-before.png';
+import docsAfter from '../../../assets/news-images/pgflow-0-7-0-public-beta-map-steps-and-documentation-redesign/docs-after.png';
+
+| Before | After |
+|--------|-------|
+| <img src={docsBefore.src} alt="Documentation structure before reorganization" /> | <img src={docsAfter.src} alt="Documentation structure after reorganization" /> |
+
+### New Documentation Sections
+
+**[Build](/build/)** - Everything related to authoring workflows:
+- Four comprehensive guides for starting flows (TypeScript client, Supabase RPC, pg_cron, database triggers)
+- Practical patterns for organizing code and processing arrays
+- Flow management (versioning, deletion)
+
+**[Deploy](/deploy/)** - Production deployment and operations:
+- Supabase-specific deployment guides
+- Monitoring workflow execution and worker health
+- Maintenance tasks (updates, tuning, data pruning)
+
+**[Concepts](/concepts/)** - Deeper understanding:
+- Expanded with detailed guides on map steps, context object, data model
+- New overview page organizing concepts by topic
+- Visual explanations with diagrams and examples
+
+**[Reference](/reference/)** - Technical specifications:
+- Complete API documentation for the TypeScript client
+- Workflow context object reference
+- Configuration options and environment variables
+- Manual installation procedures
+
+### Transformed Landing Page
+
+The homepage now features:
+- **Animated DAG visualization** in the hero, showing pgflow's workflow execution in action
+- **Before/after comparison** with scrollable code examples demonstrating "Without pgflow" vs "With pgflow"
+- Interactive showcase of what pgflow handles for you
+
+Visit [pgflow.dev](https://www.pgflow.dev/) to explore the new experience.
+
+## Map Steps
+
+Map steps enable parallel array processing by automatically creating multiple tasks - one for each array element.
+
+```typescript
+import { Flow } from '@pgflow/dsl/supabase';
+
+const BatchProcessor = new Flow<string[]>({
+  slug: 'batch_processor',
+  maxAttempts: 3,
+})
+  .map(
+    { slug: 'processUrls' },
+    async (url) => {
+      // Each URL gets its own task with independent retry
+      return await scrapeWebpage(url);
+    }
+  );
+```
+
+**Why this matters:**
+
+When processing 100 URLs, if URL #47 fails, only that specific task retries - the other 99 continue
+processing. With a regular step, one failure would retry all 100 URLs.
+
+This independent retry isolation makes workflows more efficient and resilient. Each task has its own
+retry counter, timeout, and execution context.
+
+Map steps handle edge cases automatically:
+- Empty arrays complete immediately without creating tasks
+- Type violations fail gracefully with stored output for debugging
+- Results maintain array order regardless of completion sequence
+
+Learn more: [Map Steps](/concepts/map-steps/) and [Process Arrays in Parallel](/build/process-arrays-in-parallel/)
+
+## Array Steps
+
+The new `.array()` method provides compile-time type safety for array-returning handlers:
+
+```typescript
+// Enforces array return type at compile time
+flow.array({ slug: 'items' }, () => [1, 2, 3]);  // Valid
+
+flow.array({ slug: 'invalid' }, () => 42);  // Compile error
+```
+
+Array steps are a semantic wrapper that makes intent clear and moves type errors from `.map()` to `.array()`. When a map step depends on a regular step that doesn't return an array, the compiler catches it too - `.array()` just makes the error location more precise and the code intention explicit.
+
+## Developer Experience Improvements
+
+Several CLI and tooling enhancements improve the development workflow:
+
+**Full deno.json Support** - The `pgflow compile` command now uses Deno's `--config` flag instead of
+`--import-map`, enabling full deno.json support including `nodeModulesDir`, `compilerOptions`, and
+unstable features.
+
+**Fixed config.toml Corruption** - The CLI no longer corrupts `config.toml` files with minimal configurations. This was fixed by switching to a maintained fork of toml-patch (`@decimalturn/toml-patch`) that properly handles edge cases.
+
+**Better Type Inference** - Improved DSL type inference for `.array()` and `.map()` methods, providing
+more accurate TypeScript completions and error messages.
+
+<details>
+<summary>Additional improvements</summary>
+
+- Fixed data pruning foreign key constraint bug preventing cleanup operations
+- Added comprehensive integration tests for flows with map steps
+- Enhanced type testing infrastructure with strict mode validation
+- Improved pre-migration check clarity with better error messages
+
+</details>
+
+## Upgrading to 0.7.0
+
+<Aside type="caution" title="Important: Data Migration Included">
+This release includes automatic data migration that modifies existing `step_states` rows to satisfy
+new constraints for map step support.
+</Aside>
+
+**Recommended: Verify Before Production Upgrade**
+
+If you have existing production data, run this read-only verification query in Supabase Studio before upgrading:
+
+<details>
+<summary>⚠️ Pre-Migration Check Query (click to expand) ⚠️</summary>
+
+<Code code={preMigrationCheck} lang="sql" title="PRE_MIGRATION_CHECK_20251006073122.sql" />
+
+**Expected output for successful migration:**
+
+```
+type                       | identifier                | details
+---------------------------|---------------------------|------------------------------------------
+DATA_BACKFILL_STARTED      | run=def67890 step=process | initial_tasks will be set to 1 (...)
+DATA_BACKFILL_COMPLETED    | Found 100 completed steps | initial_tasks will be set to 1 (...)
+INFO_SUMMARY               | total_step_states=114     | created=0 started=1 completed=113 failed=0
+```
+
+- ✅ Only `DATA_BACKFILL_*` and `INFO_SUMMARY` rows? Safe to migrate
+- ⚠️ These are expected data migrations handled automatically
+- 🆘 Unexpected rows or errors? Share output on Discord for help
+
+</details>
+
+**Optional: Test Locally First**
+
+For production environments, you can test the migration locally with a copy of your production data before applying it to production. This helps verify the migration with your specific data and estimate migration duration. PostgreSQL migrations are atomic - if any part fails, the entire migration rolls back automatically.
+
+The migration automatically updates existing data. No manual intervention required.
+
+See the [update guide](/deploy/update-pgflow/) for step-by-step upgrade instructions.
+
+---
+
+**Questions or issues with the upgrade?** Join our [Discord community](https://www.pgflow.dev/discord/)
+or [open an issue on GitHub](https://github.com/pgflow-dev/pgflow/issues).
