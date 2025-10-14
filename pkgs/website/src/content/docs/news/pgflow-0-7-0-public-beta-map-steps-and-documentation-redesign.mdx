@@ -49,24 +49,24 @@ import docsAfter from '../../../assets/news-images/pgflow-0-7-0-public-beta-map-
 
 ### New Documentation Sections
 
-**[Build](/build/)** - Everything related to authoring workflows:
+**[Build](/build/)** - Everything related to authoring flows:
 - Four comprehensive guides for starting flows (TypeScript client, Supabase RPC, pg_cron, database triggers)
 - Practical patterns for organizing code and processing arrays
 - Flow management (versioning, deletion)
 
 **[Deploy](/deploy/)** - Production deployment and operations:
 - Supabase-specific deployment guides
-- Monitoring workflow execution and worker health
+- Monitoring flow execution and worker health
 - Maintenance tasks (updates, tuning, data pruning)
 
-**[Concepts](/concepts/)** - Deeper understanding:
+**[Concepts](/concepts/overview/)** - Deeper understanding:
 - Expanded with detailed guides on map steps, context object, data model
 - New overview page organizing concepts by topic
 - Visual explanations with diagrams and examples
 
 **[Reference](/reference/)** - Technical specifications:
 - Complete API documentation for the TypeScript client
-- Workflow context object reference
+- Flow context object reference
 - Configuration options and environment variables
 - Manual installation procedures
 
@@ -104,7 +104,7 @@ const BatchProcessor = new Flow<string[]>({
 When processing 100 URLs, if URL #47 fails, only that specific task retries - the other 99 continue
 processing. With a regular step, one failure would retry all 100 URLs.
 
-This independent retry isolation makes workflows more efficient and resilient. Each task has its own
+This independent retry isolation makes flows more efficient and resilient. Each task has its own
 retry counter, timeout, and execution context.
 
 Map steps handle edge cases automatically:

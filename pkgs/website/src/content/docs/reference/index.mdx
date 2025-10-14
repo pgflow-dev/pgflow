@@ -7,6 +7,16 @@ import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 Find precise technical information about pgflow's APIs, configuration options, and internal components.
 
+## Security
+
+<CardGrid>
+  <LinkCard
+    title="Permissions"
+    href="/reference/permissions/"
+    description="Database permission requirements for client access, Edge Workers, and security configuration"
+  />
+</CardGrid>
+
 ## Configuration
 
 <CardGrid>
@@ -18,12 +28,12 @@ Find precise technical information about pgflow's APIs, configuration options, a
   <LinkCard
     title="Step Execution Options"
     href="/reference/configuration/step-execution/"
-    description="Configure retry behavior, timeouts, and error handling for workflow steps"
+    description="Configure retry behavior, timeouts, and error handling for flow steps"
   />
   <LinkCard
     title="Worker Configuration"
     href="/reference/configuration/worker/"
-    description="Runtime settings for EdgeWorker including concurrency and database connections"
+    description="Runtime settings for Edge Worker including concurrency and database connections"
   />
 </CardGrid>
 
@@ -33,7 +43,7 @@ Find precise technical information about pgflow's APIs, configuration options, a
   <LinkCard
     title="@pgflow/client API"
     href="/reference/pgflow-client/"
-    description="TypeScript client for starting workflows and streaming real-time progress"
+    description="TypeScript client for starting flows and streaming real-time progress"
   />
   <LinkCard
     title="Context API Reference"

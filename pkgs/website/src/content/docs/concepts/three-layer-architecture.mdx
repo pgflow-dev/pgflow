@@ -15,7 +15,7 @@ pgflow separates concerns across three distinct layers. Each layer operates at a
 
 The diagram shows two key distinctions:
 
-**Build-time** - Write workflows in TypeScript, compile to SQL migrations
+**Build-time** - Write flows in TypeScript, compile to SQL migrations
 
 **Run-time** - Postgres orchestrates (SQL Core), workers execute your functions (Worker)
 
@@ -25,7 +25,7 @@ Each layer has a distinct responsibility:
 
 | Layer | Thinks about | Lives where |
 |-------|--------------|-------------|
-| **DSL** | "User wants to fanout over array, compile to step definitions" | Your repo |
+| **DSL** | "Process array items in parallel with independent retries per item" | Your repo |
 | **SQL Core** | "This step is ready, spawn N tasks, aggregate results" | Postgres functions |
 | **Worker** | "Execute this handler with input, return output or error" | Edge Function (or any runtime) |
 
@@ -35,10 +35,10 @@ The key insight: each layer solves problems at its own abstraction level without
 
 ## DSL layer - User intent
 
-**Problem domain:** How do users express workflows naturally?
+**Problem domain:** How do users express flows naturally?
 
 The TypeScript DSL provides:
-- Type-safe method chaining (`.step()`, `.array()`, `.fanout()`)
+- Type-safe method chaining (`.step()`, `.array()`, `.map()`)
 - Pattern recognition for complex workflows
 - Compilation from high-level concepts to DAG primitives
 - Full type inference across step dependencies
@@ -50,16 +50,16 @@ The TypeScript DSL provides:
 new Flow<Input>({ slug: "process_users" })
   .step({ slug: "fetch_users" }, fetchUsers)
   .array({ slug: "users_array" }, (input) => input.fetch_users)
-  .fanout({ slug: "send_email" }, sendEmail)
+  .map({ slug: "send_email" }, sendEmail)
 ```
 
-The DSL knows this is a fanout pattern and generates the appropriate step definitions. It doesn't know or care how the SQL Core will spawn tasks or how workers will execute them.
+The DSL knows this is a map pattern and generates the appropriate step definitions. It doesn't know or care how the SQL Core will spawn tasks or how workers will execute them.
 
 ---
 
 ## SQL Core layer - Workflow orchestration
 
-**Problem domain:** How do workflows execute reliably?
+**Problem domain:** How do flows execute reliably?
 
 The SQL Core handles:
 - Dependency resolution (which steps are ready)
@@ -76,10 +76,10 @@ The SQL Core sees step definitions with clear semantics:
 - `step_type='map'` means spawn N tasks from dependency array
 - Dependencies met = ready to spawn tasks
 
-It executes these primitives reliably without needing to understand that the DSL created them from a `.fanout()` method.
+It executes these primitives reliably without needing to understand that the DSL created them from a `.map()` method.
 
 <Aside type="note" title="State in SQL">
-All workflow state lives in Postgres tables. Query `pgflow.step_states` to see exactly where each step is. See [Data Model](/concepts/data-model/) for schema details.
+All flow state lives in Postgres tables. Query `pgflow.step_states` to see exactly where each step is. See [Data Model](/concepts/data-model/) for schema details.
 </Aside>
 
 ---
@@ -94,7 +94,7 @@ The Worker handles:
 - Error handling and reporting
 - Task-level retry logic
 
-**What it doesn't think about:** Where tasks come from, what depends on them, or workflow context
+**What it doesn't think about:** Where tasks come from, what depends on them, or flow context
 
 **Example:**
 The worker receives a task with:
@@ -105,10 +105,10 @@ The worker receives a task with:
 }
 ```
 
-It executes the handler, returns the result or error. It doesn't know this task is part of a fanout, or that other tasks exist, or what step this belongs to.
+It executes the handler, returns the result or error. It doesn't know this task is part of a map step, or that other tasks exist, or what step this belongs to.
 
 <Aside type="tip" title="Swap the Worker">
-Any process that can call SQL Core functions works - Edge Functions, Lambda, or your own runtime. The Worker is the only layer you might replace.
+The Worker is the first execution runtime implemented for pgflow. More execution runtimes coming.
 </Aside>
 
 ---
@@ -140,7 +140,7 @@ Each layer provides reliable primitives for the layer above:
 
 **SQL Core → Worker**
 - SQL Core spawns tasks when dependencies are met
-- Worker doesn't track dependencies or workflow state
+- Worker doesn't track dependencies or flow state
 - Contract: task with handler function, input data, retry config
 
 **Worker → SQL Core**
@@ -151,30 +151,6 @@ Each layer provides reliable primitives for the layer above:
 <Aside type="note" title="No Abstraction Leakage">
 Higher layers never need to understand lower layer implementation details. The DSL doesn't know about pgmq queues. The SQL Core doesn't know about TypeScript types. The Worker doesn't know about step dependencies.
 </Aside>
-
----
-
-## Benefits of layer separation
-
-### 🧠 Cognitive Load Management
-Each layer has a bounded problem space. Worker engineers think about reliable task execution. SQL Core engineers think about DAG orchestration algorithms. DSL engineers think about user experience and type systems.
-
-### 🔄 Independent Evolution
-- Add new DSL syntax using existing SQL Core primitives
-- Optimize SQL Core execution without breaking DSL compilation
-- Improve Worker performance without affecting workflow logic
-
-### 🧪 Testing and Reasoning
-Each abstraction level can be validated in isolation:
-- Test SQL Core step behaviors independently of DSL syntax
-- Test DSL compilation without running actual workflows
-- Validate Worker execution without workflow context
-
-### 🔗 Composability
-Lower layers provide predictable building blocks:
-- `step_type='array'` always validates array outputs
-- `step_type='map'` always spawns N tasks
-- Workers always execute handlers independently
 
 ---
 

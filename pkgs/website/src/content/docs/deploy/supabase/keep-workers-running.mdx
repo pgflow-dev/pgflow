@@ -40,9 +40,9 @@ This approach checks existing worker counts before spawning new ones:
      ) AS request_id
      WHERE (
        SELECT COUNT(DISTINCT worker_id) FROM pgflow.workers
-       WHERE function_name = 'your-worker-name'
+       WHERE function_name = '<your-worker-name>'
          AND last_heartbeat_at > NOW() - make_interval(secs => 6)
-     ) < 2;
+     ) < 1;
      $$
    );
    ```
@@ -66,5 +66,5 @@ More frequent checks mean faster worker recovery but consume more HTTP requests 
 
 To disable the safety net:
 ```sql
-SELECT cron.unschedule('watchdog--<worker-safety-net>');
+SELECT cron.unschedule('watchdog--<your-worker-name>');
 ```

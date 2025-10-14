@@ -9,10 +9,12 @@ import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
 import SVGDAGAnimation from "../../../components/SVGDAGAnimation.astro";
 import JoinCommunity from "../../../components/JoinCommunity.astro";
 
+pgflow runs **multi-step workflows** (flows) on Supabase with automatic **parallelization**, **retries**, and **dependency tracking**. This page shows how it works.
+
 <div class="animation-explainer">
   <div class="explainer-text">
 
-The animation demonstrates three key workflow behaviors:
+This flow demonstrates three key behaviors:
 
 **🔀 Parallel execution** - `summarize` and `extractKeywords` start immediately after `fetchArticle` completes.
 
@@ -23,7 +25,7 @@ The animation demonstrates three key workflow behaviors:
   </div>
 
   <div class="explainer-animation">
-    <SVGDAGAnimation showCaption={false} />
+    <SVGDAGAnimation showCaption={false} large={true} />
   </div>
 </div>
 
@@ -64,6 +66,8 @@ The animation demonstrates three key workflow behaviors:
 
 ---
 
+Now let's understand what happens under the hood.
+
 ## How pgflow Makes This Possible
 
 At its core, pgflow does two things:
@@ -91,7 +95,7 @@ All workflow state lives in Postgres tables - giving you full observability.
 
 ---
 
-## Writing a Flow Like This
+## Defining the Workflow
 
 Workflows are built by chaining `.step()` calls. Each step has a unique **slug** (identifier) and declares which steps it **dependsOn**:
 

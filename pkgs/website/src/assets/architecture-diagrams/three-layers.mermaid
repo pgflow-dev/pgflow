@@ -1,13 +1,17 @@
-graph TD
-    subgraph "Build-time"
-      DSL[TypeScript DSL]
-      DSL -->|npx pgflow compile| SQL[SQL migration]
-    end
-    subgraph "Run-time (inside Postgres)"
-      CORE["SQL Core"]
-    end
-    subgraph "Run-time (outside Postgres)"
-      WORKER["Edge Worker"]
-    end
-    SQL --> CORE
-    WORKER -->|poll for work & report results| CORE
+graph TB
+    DSL["DSL Layer<br/>User Intent"]
+    CORE["SQL Core<br/>Workflow Orchestration"]
+    WORKER["Worker<br/>Task Execution"]
+
+    DSL -->|"Step definitions"| CORE
+    DSL -.->|"Handler functions"| WORKER
+    CORE -->|"Tasks"| WORKER
+    WORKER -->|"Results"| CORE
+
+    classDef dslStyle fill:#2d4a3e,stroke:#4a7c5d,stroke-width:3px,color:#e0e0e0,font-size:16px
+    classDef coreStyle fill:#3d3a52,stroke:#5d5a7c,stroke-width:3px,color:#e0e0e0,font-size:16px
+    classDef workerStyle fill:#4a3c2d,stroke:#7c6a4a,stroke-width:3px,color:#e0e0e0,font-size:16px
+
+    class DSL dslStyle
+    class CORE coreStyle
+    class WORKER workerStyle

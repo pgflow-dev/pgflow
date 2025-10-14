@@ -51,169 +51,118 @@ Reasoning: [Why this category]
 Suggested Location: pkgs/website/src/content/docs/[path]/[filename].mdx
 ```
 
-WAIT for user confirmation or correction.
+**WAIT for user confirmation or correction.**
 
-### Step 2: Create Document Structure
+### Step 2: Preview Document Structure
 
-Based on the confirmed content type, create a document following these patterns:
+Based on the confirmed content type, show the user which template structure will be used:
 
 **For TUTORIALS:**
 ```markdown
----
-title: [Clear, action-oriented title]
-description: [One-line description]
-sidebar:
-  order: [number]
----
-
-import { Aside, Steps } from '@astrojs/starlight/components';
-
-[1-2 sentence introduction]
-
-<Aside type="caution">
-**Prerequisites**
-- Prerequisite 1
-- Prerequisite 2
-</Aside>
-
-## 1. [First Step]
-
-[Brief explanation]
-
-[Code example with frame="none" for commands]
-
-[Expected outcome]
-
-## 2. [Second Step]
-
-...
-
-## Next Steps
-
-[Links to related content using LinkCard]
+- Frontmatter with title/description
+- Brief introduction (1-2 sentences)
+- Prerequisites in :::caution block
+- Sequential steps using <Steps> component
+- Code examples with frame="none" for bash
+- Next Steps section with LinkCards
 ```
 
 **For HOW-TO GUIDES:**
 ```markdown
----
-title: [Problem-focused title]
-description: [One-line description]
----
-
-import { Aside, LinkCard } from '@astrojs/starlight/components';
-
-[Problem statement - what this solves]
-
-## Solution
-
-[Direct instructions]
-
-[Code examples with highlighting]
-
-## Learn More
-
-[Links to related concepts and tutorials]
+- Frontmatter with title/description
+- Problem statement opening
+- Direct solution sections
+- Multiple pattern examples
+- Learn More section with LinkCards
 ```
 
 **For EXPLANATIONS:**
 ```markdown
----
-title: [Concept name]
-description: [One-line description]
----
-
-[Conceptual overview]
-
-## [Major Concept 1]
-
-[Explanation with diagrams if helpful]
-
-## [Major Concept 2]
-
-...
-
-## Summary
-
-[Recap key points]
+- Frontmatter with title/description
+- Conceptual overview
+- Progressive narrative (simple → complex)
+- Mental models and "why" sections
+- Cross-references to related concepts
 ```
 
 **For REFERENCE:**
 ```markdown
----
-title: [API/Config name]
-description: [One-line description]
----
-
-[Minimal introduction]
-
-## [Section Name]
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| ... | ... | ... | ... |
-
-[Tables and lists only, no examples]
+- Frontmatter with title/description
+- Minimal introduction
+- Tables for parameters/options
+- Type definitions
+- Terse descriptions (no elaboration)
 ```
 
-### Step 3: Apply Style Guidelines
+Present structure overview and confirm with user before proceeding.
 
-Ensure the document follows ALL these rules:
+### Step 3: Create Document with Task Agent
 
-**Character Guidelines:**
-- Use straight quotes ("" '') NOT curly quotes
-- Use hyphens (-) NOT em-dashes (—)
-- Use straight apostrophes (') NOT curly apostrophes (')
-- Use three periods (...) NOT ellipsis (…)
-- Use regular spaces NOT non-breaking spaces
+**Launch a general-purpose task agent to create the document.**
 
-**Voice and Perspective:**
-- Use impersonal language for technical descriptions ("pgflow does X")
-- Use "you" ONLY when directly instructing the reader
-- NEVER use "we", "our", "let's" in technical descriptions
-- Exception: "you" is okay in tutorials
+Present the task summary to the user before launching:
 
-**Naming Convention:**
-- Always lowercase: "pgflow" (NEVER PgFlow, pgFlow, PGFlow)
-- Exception: PascalCase in class names (Pgflow)
+```markdown
+## Task Agent Instructions
 
-**Code Examples:**
-- Use `frame="none"` for bash commands
-- Add title attribute for context: `title="filename.ts"`
-- Highlight important lines: `{1-3,5}` or `"highlightedTerm"`
-- Include TypeScript type annotations
-- Keep examples focused and concise
+I'm launching a task agent to create the documentation with these instructions:
 
-**Links:**
-- Always use trailing slashes: `/path/to/page/`
-- Use absolute paths for internal links
-- Use descriptive link text, not "click here"
+**Context:**
+- Content type: [TUTORIAL/HOW-TO/EXPLANATION/REFERENCE]
+- File location: pkgs/website/src/content/docs/[path]/[filename].mdx
+- User request: [original request]
 
-**Frontmatter:**
-- Always include title and description
-- Use sidebar.order for positioning if needed
-- Keep descriptions concise (one line)
+**Agent will:**
+1. Read NOMENCLATURE_GUIDE.md for terminology standards
+2. Read ARCHITECTURE_GUIDE.md for architectural accuracy
+3. Read DOCS_GUIDE.md for all formatting, style, and component patterns
+4. Create complete document following the [content type] template
+5. Apply all style guidelines (characters, naming, voice, links)
+6. Ensure Diataxis compliance for [content type]
+7. Use appropriate components (:::note syntax, LinkCards, Steps, etc.)
+8. Present draft for review
 
-### Step 4: Write the Document
+**Critical requirements:**
+- Follow DOCS_GUIDE.md patterns exactly
+- Use :::note[Title] syntax (not <Aside> component)
+- All internal links must have trailing slashes
+- Use "pgflow" (lowercase) throughout
+- Match tone to content type (instructional vs explanatory)
+- Include proper frontmatter with sidebar.order if needed
+```
 
-Create the complete document following all guidelines above.
+**Launching agent...**
 
-Present the document to the user for review.
-
-### Step 5: Create the File
-
-Once approved, write the file to the determined location.
+Use the Task tool with subagent_type "general-purpose" and provide:
+- Content type from Step 1
+- File location
+- User's original request
+- Instructions to read all guide files (NOMENCLATURE_GUIDE.md, ARCHITECTURE_GUIDE.md, DOCS_GUIDE.md)
+- Instructions to present complete draft before writing file
+- Reminder to follow all guide patterns for terminology, architecture, and formatting
 
 ## Important Reminders
 
-- **Single purpose**: One content type per document
-- **No mixed content**: Don't mix tutorial + explanation + reference
+- **Diataxis compliance**: Strict adherence to content type patterns
+- **Single purpose**: One content type per document - don't mix tutorial + explanation + reference
 - **Cross-reference**: Link to related content instead of duplicating
 - **MVP mindset**: Focus on core value, avoid over-complexity
-- **Code examples**: Always real-world, working examples
-- **Diataxis compliance**: Strict adherence to content type patterns
+- **Follow DOCS_GUIDE.md**: All formatting, components, and style rules are defined there
 
-## Output
+## Output Format
 
-Write to: `pkgs/website/src/content/docs/[determined-path]`
+After the task agent completes, present results to the user:
 
-Confirm file creation and suggest any related updates needed (navigation, redirects, etc.)
+```markdown
+## Document Created: [filename]
+
+**File location:** `pkgs/website/src/content/docs/[path]/[filename].mdx`
+**Content type:** [TUTORIAL/HOW-TO/EXPLANATION/REFERENCE]
+**Lines:** [count]
+
+**Next steps:**
+- Review the content for accuracy
+- Build the website to verify: `pnpm nx build website`
+- Update navigation if needed (astro.config.mjs)
+- Create commit if satisfied
+```

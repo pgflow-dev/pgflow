@@ -1,78 +1,113 @@
 ---
 title: Create Reusable Tasks
-description: Learn how to design and implement reusable task functions for pgflow workflows
+description: Build task functions that work across multiple flows
 sidebar:
   order: 30
 ---
 
 import { Aside, Steps, CardGrid, LinkCard } from "@astrojs/starlight/components";
 
-This guide explains best practices for creating reusable task functions that can be composed into pgflow workflows.
+To create task functions that can be used across multiple flows without tight coupling to specific flow structures.
 
-## Design Principles
 
-Tasks in pgflow follow functional programming principles. A well-designed task function should:
+## Steps
 
-1. **Accept only what it needs** - Take specific parameters (strings, numbers, objects), not the entire flow input object
-2. **Return JSON-serializable data** - Use primitives, plain objects, and arrays. Convert dates to ISO strings
-3. **Be testable in isolation** - Should work independently without coupling to flow structure
-4. **Have no knowledge of flow structure** - Should not depend on step names or overall flow architecture
-5. **Document clearly** - Specify input/output types and include examples when helpful
-6. **Handle errors gracefully** - Provide meaningful error messages and consider retry strategies
+<Steps>
 
-### Example: Good vs Poor Task Design
+1. **Define task parameters**
 
-```typescript {1-5} add="content: string" add="input.website.content"
-// Good: Task accepts direct content parameter
-async function summarizeContent(content: string) {
-  // Process the content directly
-  return { summary: "Processed summary..." };
-}
+   Identify exactly what data the task needs to function. Accept specific parameters, not entire context objects:
 
-// In your flow:
-.step(
-  { slug: 'summary', dependsOn: ['website'] },
-  async (input) => await summarizeContent(input.website.content)
-)
-```
+   ```typescript add="userId: string" del="input: { user: { id: string }"
+   // ✅ Accept specific parameters
+   async function fetchUserProfile(userId: string) {
+     const response = await fetch(`https://api.example.com/users/${userId}`);
+     return response.json();
+   }
 
-### Example: Poor Task Design
+   // ❌ Don't accept entire input object
+   async function fetchUserProfile(input: { user: { id: string }) {
+     const response = await fetch(`https://api.example.com/users/${input.user.id}`);
+     return response.json();
+   }
+   ```
 
-```typescript {1-5} del="input: { website: { content: string } }" del="summarizeWebsite(input)"
-// Bad: Task expects specific step structure
-async function summarizeWebsite(input: { website: { content: string } }) {
-  // Tightly coupled to previous step name and structure
-  return { summary: "Processed summary..." };
-}
+2. **Return JSON-serializable data**
 
-// In your flow:
-.step(
-  { slug: 'summary', dependsOn: ['website'] },
-  async (input) => await summarizeWebsite(input) // Passing entire input object
-)
-```
+   Return primitives, plain objects, or arrays. Convert dates to ISO strings:
 
-## Learn more
+   ```typescript ".toISOString()"
+   async function fetchUserProfile(userId: string) {
+     const response = await fetch(`https://api.example.com/users/${userId}`);
+     const user = await response.json();
+     return {
+       id: user.id,
+       name: user.name,
+       email: user.email,
+       createdAt: new Date(user.created_at).toISOString() // Convert to ISO string
+     };
+   }
+   ```
+
+3. **Use step handlers as adapters**
+
+   Let the flow's step handler extract needed data from the flow context:
+
+   ```typescript "input.run.userId"
+   async function fetchUserProfile(userId: string) {
+     const response = await fetch(`https://api.example.com/users/${userId}`);
+     return response.json();
+   }
+
+   // Flow uses handler to adapt context to task parameters
+   new Flow<{ userId: string }>({ slug: 'user_flow' })
+     .step({ slug: 'profile' }, async (input) =>
+       await fetchUserProfile(input.run.userId)
+     )
+   ```
+
+4. **Test in isolation**
+
+   Verify the task works independently of any flow:
+
+   ```typescript
+   // tasks/fetchUserProfile.test.ts
+   import { assertEquals } from "jsr:@std/assert";
+   import { fetchUserProfile } from "./fetchUserProfile.ts";
+
+   Deno.test("fetches user profile", async () => {
+     const result = await fetchUserProfile("user_123", "test-key");
+
+     assertEquals(result.id, "user_123");
+     assertEquals(result.name, "Alice Johnson");
+     assertEquals(result.email, "alice@example.com");
+     assertEquals(result.createdAt, "2024-01-15T10:30:00.000Z");
+   });
+   ```
+
+</Steps>
+
+## Learn More
 
 <CardGrid>
   <LinkCard
-    title="Organize Flows code"
+    title="Organize Flow Code"
     href="/build/organize-flow-code/"
-    description="Learn where to put your task files and how to structure your codebase"
+    description="Learn where to put your task files and structure your codebase"
   />
   <LinkCard
-    title="Naming workflow steps"
-    href="/concepts/naming-steps/"
-    description="Best practices for naming steps that use your tasks"
+    title="Context Object"
+    href="/concepts/context-object/"
+    description="Understanding the context parameter available to handlers"
   />
 </CardGrid>
 
-## See it in action
+## See it in Action
 
 <CardGrid>
   <LinkCard
     title="AI Web Scraper Tutorial"
     href="/tutorials/ai-web-scraper/"
-    description="Complete example showing reusable tasks in a real-world workflow"
+    description="Complete example showing reusable tasks in a real-world flow"
   />
 </CardGrid>

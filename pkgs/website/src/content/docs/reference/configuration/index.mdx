@@ -23,7 +23,7 @@ This page provides an overview of pgflow configuration. Use the links below to a
   />
   <LinkCard
     title="Worker Configuration"
-    description="Runtime settings for EdgeWorker including concurrency, database connections, and polling behavior."
+    description="Runtime settings for Edge Worker including concurrency, database connections, and polling behavior."
     href="/reference/configuration/worker/"
   />
 </CardGrid>
@@ -44,9 +44,14 @@ new Flow({ slug: 'my_flow' })
 
 <CardGrid>
   <LinkCard
-    title="Configuration Patterns"
-    description="Common configuration patterns for different scenarios - API integrations, local processing, and more."
-    href="/build/configuration-patterns/"
+    title="Configuring Retries"
+    description="Configure retry policies for different step reliability requirements."
+    href="/build/configuring-retries/"
+  />
+  <LinkCard
+    title="Delaying Steps"
+    description="Schedule steps to run after specified delays for multi-day workflows."
+    href="/build/delaying-steps/"
   />
   <LinkCard
     title="Tune Deployed Flows"

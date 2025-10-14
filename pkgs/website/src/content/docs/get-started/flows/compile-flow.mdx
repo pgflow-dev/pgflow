@@ -9,6 +9,13 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 
 Now that we've defined our flow, we need to register it in the database. pgflow provides a CLI tool that compiles your TypeScript flow definition into SQL migrations that can be applied to your Supabase database.
 
+<Aside type="caution" title="Prerequisites">
+Before continuing, make sure you have:
+- Completed the [flow definition](/get-started/flows/create-flow/) from the previous step
+- The Supabase CLI installed and configured
+- [Deno version **1.45.2 or higher**](https://github.com/denoland/deno/releases/tag/v1.45.2) (2.x also supported) - required for flow compilation
+</Aside>
+
 ## What is compilation?
 
 pgflow compiles your TypeScript flow definition into SQL migrations that register the flow in your database.
@@ -23,13 +30,6 @@ pgflow compiles your TypeScript flow definition into SQL migrations that registe
 </Steps>
 
 The runtime executes flows based on their database representation, not the TypeScript code directly.
-
-<Aside type="caution" title="Prerequisites">
-Before continuing, make sure you have:
-- Completed the [flow definition](/get-started/flows/create-flow/) from the previous step
-- The Supabase CLI installed and configured
-- [Deno version **1.45.2 or higher**](https://github.com/denoland/deno/releases/tag/v1.45.2) (2.x also supported) - required for flow compilation
-</Aside>
 
 <Steps>
 
@@ -77,6 +77,10 @@ Before continuing, make sure you have:
    ```
 
    This SQL representation is what the pgflow runtime system uses to execute your workflow.
+
+   :::tip[Step Configuration]
+   This is a simple example showing basic step registration. Steps can also be configured with retry behavior, timeouts, and delays. See [Step Execution Options](/reference/configuration/step-execution/) for all available configuration options.
+   :::
 
 3. ### Apply the migration
 

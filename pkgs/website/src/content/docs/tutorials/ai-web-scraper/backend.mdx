@@ -72,7 +72,7 @@ Build four focused functions that each do one thing well:
 | `extractTags.ts` | AI tags |
 | `saveToDb.ts` | Saves to database |
 
-Put these in `supabase/functions/_tasks` (see [organizing flows code](/build/organize-flow-code/) for project structure):
+Put these in `supabase/functions/_tasks` (see [organizing flow code](/build/organize-flow-code/) for project structure):
 
 ### Web Scraping
 
@@ -307,10 +307,10 @@ Turn your TypeScript flow into SQL using pgflow's [compiler](/get-started/flows/
    npx pgflow@latest compile supabase/functions/_flows/analyze_website.ts
    # Generates supabase/migrations/<timestamp>_analyze_website.sql
    ```
-   
+
    <details>
      <summary>Using import maps or custom `deno.json`?</summary>
-     
+
      You can use `--deno-json` flag to point at your `deno.json` file:
      ```bash
      npx pgflow@latest compile \

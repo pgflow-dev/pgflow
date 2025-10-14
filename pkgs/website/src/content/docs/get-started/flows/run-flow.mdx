@@ -1,6 +1,6 @@
 ---
 title: Run your Flow
-description: Learn how to start a pgflow worker, trigger your workflow, and monitor execution progress
+description: Learn how to start a pgflow worker, trigger your flow, and monitor execution progress
 sidebar:
   order: 40
 next:
@@ -10,9 +10,9 @@ next:
 
 import { Aside, Steps, Tabs, CardGrid, LinkCard, FileTree } from "@astrojs/starlight/components";
 
-Now that you've defined and compiled your workflow, it's time to execute it!
+Now that you've defined and compiled your flow, it's time to execute it!
 
-In this guide, we'll set up an Edge Worker to process your workflow tasks, trigger your first flow, and observe its execution.
+In this guide, we'll set up an Edge Worker to process your flow tasks, trigger your first flow, and observe its execution.
 
 <Aside type="caution" title="Prerequisites">
 Before starting, make sure you have completed:
@@ -24,7 +24,7 @@ Before starting, make sure you have completed:
 
 1. ### Create a worker function
 
-   Create a new Edge Function that will process tasks for your workflow:
+   Create a new Edge Function that will process tasks for your flow:
 
    ```bash frame="none"
    npx supabase functions new greet_user_worker
@@ -103,7 +103,7 @@ Before starting, make sure you have completed:
 
    1. Open Supabase Studio in your browser (typically at http://localhost:54323)
    2. Navigate to the **SQL Editor**
-   3. Execute this SQL to start your workflow:
+   3. Execute this SQL to start your flow:
 
    ```sql
    SELECT * FROM pgflow.start_flow(
@@ -157,21 +157,21 @@ Before starting, make sure you have completed:
   <LinkCard
     title="How pgflow works"
     href="/concepts/how-pgflow-works/"
-    description="Understand how pgflow executes workflows behind the scenes"
+    description="Understand how pgflow executes flows behind the scenes"
   />
   <LinkCard
     title="Ship to Supabase"
     href="/deploy/supabase/deploy-first-flow/"
-    description="Deploy your workflows to production on Supabase's hosted platform"
+    description="Deploy your flows to production on Supabase's hosted platform"
   />
   <LinkCard
     title="Make flows resilient"
     href="/reference/configuration/step-execution/"
-    description="Configure retry behavior, timeouts, and error handling for your workflows"
+    description="Configure retry behavior, timeouts, and error handling for your flows"
   />
   <LinkCard
     title="Observe runs with SQL"
     href="/deploy/monitor-execution/"
-    description="Learn how to monitor and debug your workflow execution with SQL queries"
+    description="Learn how to monitor and debug your flow execution with SQL queries"
   />
 </CardGrid>

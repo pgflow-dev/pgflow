@@ -42,11 +42,6 @@ GRANT EXECUTE ON FUNCTION pgflow.get_run_with_states(uuid) TO authenticated;
 -- 3. Read access to flow definitions
 GRANT SELECT ON TABLE pgflow.flows TO authenticated;
 GRANT SELECT ON TABLE pgflow.steps TO authenticated;
-
--- 4. Service role needs full access (for Edge Workers)
-GRANT ALL ON ALL TABLES IN SCHEMA pgflow TO service_role;
-GRANT ALL ON ALL ROUTINES IN SCHEMA pgflow TO service_role;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA pgflow TO service_role;
 ```
 
 This is suitable for development and trusted environments only.

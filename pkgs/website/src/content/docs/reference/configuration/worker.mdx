@@ -1,13 +1,13 @@
 ---
 title: Worker Configuration
-description: Runtime settings for EdgeWorker including concurrency, database connections, and polling behavior.
+description: Runtime settings for Edge Worker including concurrency, database connections, and polling behavior.
 sidebar:
   order: 30
 ---
 
 import { Aside } from "@astrojs/starlight/components";
 
-These settings control how the EdgeWorker processes tasks from your flows. They're passed when starting the worker and affect performance and resource utilization.
+These settings control how the Edge Worker processes tasks from your flows. They're passed when starting the worker and affect performance and resource utilization.
 
 <Aside type="note">
 Worker configuration requires redeploying your Edge Function to change, while flow/step configuration can be updated on the fly with SQL queries. See [Tune Deployed Flows](/deploy/tune-flow-config/) for details on updating configuration without redeployment.
@@ -15,7 +15,7 @@ Worker configuration requires redeploying your Edge Function to change, while fl
 
 ## Default Worker Configuration
 
-When using pgflow with EdgeWorker, configure the worker's behavior:
+When using pgflow with Edge Worker, configure the worker's behavior:
 
 ```typescript
 import { EdgeWorker } from '@pgflow/edge-worker';
@@ -69,11 +69,11 @@ How frequently (in milliseconds) to check the database for new tasks during the 
 
 ## Accessing Worker Configuration in Handlers
 
-Your flow step handlers can access the resolved worker configuration through the context object. For detailed information about available configuration options and usage patterns, see [Context](/concepts/context-object/).
+Your flow step handlers can access the resolved worker configuration through the context object. For detailed information about available configuration options and usage patterns, see [`workerConfig`](/reference/context/#workerconfig).
 
-## Queue Worker Differences
+## Background Jobs Mode Differences
 
-When using EdgeWorker in queue-only mode (without pgflow orchestration), there are a few key differences:
+When using Edge Worker in [Background Jobs Mode](/get-started/faq/#what-are-the-two-edge-worker-modes) (without pgflow orchestration), there are a few key differences:
 
 - **No flow/step configuration**: Queue workers don't have `maxAttempts`, `baseDelay`, `timeout`, or `startDelay` options in the flow definition. Instead, these are configured directly in the worker options.
 - **`queueName` option**: Queue workers can specify a custom queue name (default is `tasks`), while flow workers automatically use the flow slug as the queue name.

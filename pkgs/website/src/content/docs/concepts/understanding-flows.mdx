@@ -7,7 +7,7 @@ sidebar:
 
 import { Aside } from "@astrojs/starlight/components";
 
-pgflow's TypeScript DSL lets you define workflows by describing what steps you need and how they connect. You specify the structure - which steps exist, what data they need, and which steps depend on others. Each step includes a function that does the actual work.
+pgflow's TypeScript DSL lets you define flows by describing what steps you need and how they connect. You specify the structure - which steps exist, what data they need, and which steps depend on others. Each step includes a function that does the actual work.
 
 ## Flow Definition Philosophy
 
@@ -37,7 +37,7 @@ In pgflow, **every step receives a unified `input` object** with two critical pa
 1. **`input.run`** - The original flow input, available to ALL steps
 2. **`input.{stepName}`** - Outputs from any dependency steps
 
-:::important[The input.run Field]
+:::note[The input.run Field]
 Every step has access to the complete flow input via `input.run`, ensuring:
 - Original flow parameters are accessible throughout the flow
 - Data doesn't need to be manually forwarded through intermediate steps

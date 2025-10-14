@@ -1,0 +1,79 @@
+---
+title: Configuring Retries
+description: Configure retry policies for different step reliability requirements.
+sidebar:
+  order: 25
+---
+
+import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+Configure retry behavior based on step reliability characteristics. Set conservative flow-level defaults and override per-step as needed.
+
+<Aside type="tip">
+For scheduling delays between steps, see [Delaying Steps](/build/delaying-steps/).
+</Aside>
+
+For detailed information about each configuration option, see the [Step Execution Options](/reference/configuration/step-execution/) reference.
+
+## Guiding Principle
+
+**Set conservative flow-level defaults, override per-step as needed.**
+
+Most flows contain a mix of operations - some reliable (database writes), some flaky (external APIs), some that should fail fast (validation). Rather than applying aggressive retry policies to all steps, start with sensible defaults and override specific steps based on their failure characteristics.
+
+## Recommended: Per-Step Configuration
+
+When different steps have different reliability requirements:
+
+```typescript
+new Flow({
+  slug: 'data_pipeline',
+  maxAttempts: 3,     // Sensible defaults
+  baseDelay: 1,
+})
+  .step({
+    slug: 'validate_input',
+    maxAttempts: 1,   // No retries - validation should not fail
+  }, validateHandler)
+  .step({
+    slug: 'fetch_external',
+    maxAttempts: 5,   // External API might be flaky
+    baseDelay: 10,    // Longer delays for external service
+  }, fetchHandler)
+  .step({
+    slug: 'save_results',
+    // Use flow defaults
+  }, saveHandler)
+```
+
+**Why this approach:**
+- Set reasonable flow-level defaults
+- Override only where needed
+- Validation steps need no retries (fail immediately on bad input)
+- External API steps need more retries and longer delays
+- Simple database operations use defaults
+
+## Learn More
+
+<CardGrid>
+  <LinkCard
+    title="Step Execution Options"
+    href="/reference/configuration/step-execution/"
+    description="Complete reference for all configuration options and their defaults"
+  />
+  <LinkCard
+    title="Delaying Steps"
+    href="/build/delaying-steps/"
+    description="Schedule steps to run after specified delays"
+  />
+  <LinkCard
+    title="Worker Configuration"
+    href="/reference/configuration/worker/"
+    description="Configure Edge Worker concurrency and polling behavior"
+  />
+  <LinkCard
+    title="Tune Deployed Flows"
+    href="/deploy/tune-flow-config/"
+    description="Adjust configuration for production flows without redeploying"
+  />
+</CardGrid>
