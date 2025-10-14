@@ -9,6 +9,7 @@
     "build": {
       "executor": "@nx/js:tsc",
       "outputs": ["{options.outputPath}"],
+      "inputs": ["production", "^production"],
       "options": {
         "main": "{projectRoot}/src/index.ts",
         "tsConfig": "{projectRoot}/tsconfig.lib.json",
@@ -25,18 +26,20 @@
     },
     "serve": {
       "executor": "nx:run-commands",
+      "cache": false,
+      "local": true,
       "dependsOn": ["build"],
       "options": {
-        "command": "tsx src/index.ts",
+        "command": "node dist/index.js",
         "cwd": "{projectRoot}"
       }
     },
     "test": {
       "executor": "nx:noop",
+      "inputs": ["default", "^production"],
       "dependsOn": [
         "test:vitest",
         "test:e2e:install",
-        "test:e2e:install:duplicates",
         "test:e2e:compile",
         "test:e2e:async-hang-issue-123"
       ],
@@ -46,6 +49,7 @@
     },
     "test:vitest": {
       "executor": "nx:run-commands",
+      "inputs": ["default", "^production"],
       "options": {
         "command": "vitest run",
         "cwd": "{projectRoot}"
@@ -55,6 +59,7 @@
       "executor": "nx:run-commands",
       "local": true,
       "dependsOn": ["build"],
+      "inputs": ["default", "^production"],
       "options": {
         "commands": [
           "./scripts/test-install",
@@ -68,6 +73,7 @@
       "executor": "nx:run-commands",
       "local": true,
       "dependsOn": ["test:e2e:install", "build"],
+      "inputs": ["default", "^production"],
       "options": {
         "commands": [
           "rm -rf supabase/",
@@ -83,6 +89,7 @@
       "executor": "nx:run-commands",
       "local": true,
       "dependsOn": ["build"],
+      "inputs": ["default", "^production"],
       "options": {
         "command": "./scripts/test-async-hang-issue-123",
         "cwd": "{projectRoot}"

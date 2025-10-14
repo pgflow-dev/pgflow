@@ -8,6 +8,7 @@
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",
+      "inputs": ["production", "^production"],
       "options": {
         "outputPath": "pkgs/dsl/dist",
         "main": "pkgs/dsl/src/index.ts",
@@ -28,6 +29,7 @@
     "test:vitest": {
       "executor": "@nx/vite:test",
       "dependsOn": ["build"],
+      "inputs": ["default", "^production"],
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "passWithNoTests": true,
@@ -36,6 +38,9 @@
     },
     "test:types:vitest": {
       "executor": "nx:run-commands",
+      "cache": true,
+      "dependsOn": ["build"],
+      "inputs": ["default", "^production"],
       "options": {
         "cwd": "{projectRoot}",
         "command": "pnpm vitest --typecheck.only --run"
@@ -43,6 +48,9 @@
     },
     "test:types:strict": {
       "executor": "nx:run-commands",
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["default", "^production"],
       "options": {
         "cwd": "{projectRoot}",
         "command": "bash ../../scripts/typecheck-ts2578.sh"
@@ -61,6 +69,7 @@
     },
     "test": {
       "executor": "nx:noop",
+      "inputs": ["default", "^production"],
       "dependsOn": ["test:vitest", "test:types"]
     }
   }

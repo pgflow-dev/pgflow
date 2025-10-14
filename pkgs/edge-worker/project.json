@@ -6,7 +6,7 @@
   "targets": {
     "build": {
       "executor": "nx:noop",
-      "dependsOn": []
+      "dependsOn": ["^build"]
     },
     "_build_disabled": {
       "executor": "@nx/js:tsc",
@@ -31,7 +31,9 @@
     },
     "lint:deno": {
       "executor": "@axhxrx/nx-deno:lint",
+      "cache": true,
       "local": true,
+      "inputs": ["default", "{projectRoot}/deno.test.json"],
       "options": {
         "denoConfig": "pkgs/edge-worker/deno.test.json",
         "ignore": "pkgs/edge-worker/supabase/functions/_dist/"
@@ -39,6 +41,9 @@
     },
     "lint:jsr": {
       "executor": "nx:run-commands",
+      "cache": true,
+      "local": true,
+      "inputs": ["{projectRoot}/src/**/*.ts"],
       "options": {
         "cwd": "pkgs/edge-worker",
         "command": "npx eslint 'src/**/*.ts' --rule 'no-restricted-syntax: [\"error\", {\"selector\": \"TSModuleDeclaration[global=true]\", \"message\": \"JSR forbids global type augmentation (declare global). This will cause JSR publish to fail.\"}]'"
@@ -89,10 +94,15 @@
       }
     },
     "supabase:reset": {
-      "dependsOn": ["supabase:prepare"],
+      "dependsOn": ["^verify-migrations"],
       "executor": "nx:run-commands",
       "local": true,
       "cache": false,
+      "inputs": [
+        "{workspaceRoot}/pkgs/core/supabase/migrations/**/*.sql",
+        "{projectRoot}/sql/**/*.sql",
+        "^production"
+      ],
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
@@ -122,6 +132,11 @@
       "executor": "nx:run-commands",
       "local": true,
       "dependsOn": ["^verify-migrations", "^dump-realtime-schema"],
+      "inputs": [
+        "default",
+        "^production",
+        "{projectRoot}/scripts/ensure-db"
+      ],
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": ["./scripts/ensure-db"],
@@ -168,11 +183,14 @@
       }
     },
     "test": {
+      "inputs": ["default", "^production"],
       "dependsOn": ["test:types", "test:unit", "test:integration"]
     },
     "test:types": {
       "executor": "nx:run-commands",
+      "cache": true,
       "dependsOn": ["^build"],
+      "inputs": ["default", "^production"],
       "options": {
         "cwd": "{projectRoot}",
         "command": "deno check --config deno.test.json src/examples/*.example.ts tests/types/*.test-d.ts"

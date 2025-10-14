@@ -9,6 +9,7 @@
     "build": {
       "executor": "@nx/js:tsc",
       "outputs": ["{options.outputPath}"],
+      "inputs": ["default", "^production"],
       "options": {
         "outputPath": "pkgs/example-flows/dist",
         "main": "pkgs/example-flows/src/index.ts",

@@ -7,6 +7,10 @@
   "targets": {
     "build": {
       "executor": "nx:run-commands",
+      "inputs": [
+        "default",
+        "^production"
+      ],
       "outputs": ["{options.outputPath}"],
       "options": {
         "cwd": "pkgs/website",
@@ -36,7 +40,10 @@
     },
     "deploy": {
       "executor": "nx:run-commands",
+      "cache": false,
+      "local": true,
       "dependsOn": ["build", "ensure-ci-environment"],
+      "inputs": ["{projectRoot}/wrangler.toml"],
       "options": {
         "cwd": "pkgs/website",
         "command": "wrangler pages deploy dist --branch=main"
@@ -44,7 +51,10 @@
     },
     "deploy:preview": {
       "executor": "nx:run-commands",
+      "cache": false,
+      "local": true,
       "dependsOn": ["build"],
+      "inputs": ["{projectRoot}/wrangler.toml"],
       "options": {
         "cwd": "pkgs/website",
         "command": "wrangler pages deploy dist --branch=${CLOUDFLARE_BRANCH:-preview-local}"

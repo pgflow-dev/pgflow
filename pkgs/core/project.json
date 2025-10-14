@@ -8,8 +8,7 @@
     "schemas": ["{projectRoot}/schemas/**/*.sql"],
     "migrations": ["{projectRoot}/supabase/migrations/**/*.sql"],
     "atlasSetup": [
-      "{projectRoot}/atlas.hcl",
-      "{projectRoot}/Dockerfile.atlas",
+      "{projectRoot}/atlas/atlas.hcl",
       "{projectRoot}/supabase/migrations/atlas.sum",
       "{projectRoot}/scripts/atlas-verify-schemas-synced"
     ],
@@ -75,7 +74,7 @@
     },
     "build": {
       "executor": "@nx/js:tsc",
-      "inputs": ["default", "databaseTypes"],
+      "inputs": ["production", "databaseTypes", "^production"],
       "options": {
         "outputPath": "pkgs/core/dist",
         "main": "pkgs/core/src/index.ts",
@@ -93,6 +92,9 @@
     },
     "jsr:publish": {
       "executor": "nx:run-commands",
+      "cache": false,
+      "local": true,
+      "dependsOn": ["build"],
       "outputs": ["{workspaceRoot}/pkgs/core/"],
       "options": {
         "cwd": "pkgs/core",
@@ -103,18 +105,18 @@
     "lint:sqruff": {
       "executor": "nx:run-commands",
       "local": true,
+      "inputs": ["schemas", "sqruffConfig"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
           "sqruff --config=../../.sqruff lint --parsing-errors schemas/"
         ],
-        "inputs": ["schemas", "sqruffConfig"],
         "parallel": false
       }
     },
     "lint:eslint": {
       "executor": "@nx/eslint:lint",
-      "inputs": ["default"]
+      "inputs": ["default", "^production"]
     },
     "lint": {
       "executor": "nx:noop",
@@ -124,12 +126,12 @@
     "fix-sql": {
       "executor": "nx:run-commands",
       "local": true,
+      "inputs": ["schemas", "sqruffConfig"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
           "sqruff --config=../../.sqruff fix --force --parsing-errors schemas/"
         ],
-        "inputs": ["schemas", "sqruffConfig"],
         "parallel": false
       }
     },
@@ -198,6 +200,7 @@
     },
     "test": {
       "executor": "nx:noop",
+      "inputs": ["default", "^production", "schemas", "migrations", "pgtapTests", "databaseTypes"],
       "dependsOn": ["test:pgtap", "test:vitest", "test:types"]
     },
     "test:pgtap": {
@@ -214,8 +217,8 @@
     },
     "test:vitest": {
       "executor": "@nx/vite:test",
-      "dependsOn": ["^build", "build", "verify-gen-types"],
-      "inputs": ["default", "databaseTypes"],
+      "dependsOn": ["build", "verify-gen-types"],
+      "inputs": ["default", "databaseTypes", "^production"],
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "passWithNoTests": true,
@@ -272,7 +275,9 @@
     },
     "test:types:vitest": {
       "executor": "nx:run-commands",
+      "cache": true,
       "dependsOn": ["build"],
+      "inputs": ["default", "^production"],
       "options": {
         "cwd": "{projectRoot}",
         "command": "pnpm vitest --typecheck.only --run"
@@ -280,6 +285,9 @@
     },
     "test:types:strict": {
       "executor": "nx:run-commands",
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["default", "^production"],
       "options": {
         "cwd": "{projectRoot}",
         "command": "bash ../../scripts/typecheck-ts2578.sh"
