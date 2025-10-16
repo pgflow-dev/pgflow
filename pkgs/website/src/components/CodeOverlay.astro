@@ -1,0 +1,490 @@
+---
+// CodeOverlay.astro - Manages the code reveal overlay with scroll animation
+---
+
+<div class="code-overlay">
+  <div class="overlay-content">
+    <div class="overlay-title">200+ lines of boilerplate</div>
+    <div class="overlay-list">
+      🔧 Queue setup & configuration<br/>
+      🔄 Worker management & polling<br/>
+      📦 Message handling & state tracking<br/>
+      ❌ Error handling & retries<br/>
+      🔗 Manual step coordination
+    </div>
+    <button class="reveal-button sl-button-primary" aria-label="Reveal 250+ lines of traditional code">
+      Click to review code ↓
+    </button>
+  </div>
+</div>
+
+<style>
+  /* Code overlay styles */
+  .code-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(
+      ellipse at center,
+      color-mix(in srgb, var(--sl-color-gray-6) 75%, transparent) 0%,
+      color-mix(in srgb, var(--sl-color-gray-6) 50%, transparent) 50%,
+      color-mix(in srgb, var(--sl-color-gray-6) 30%, transparent) 100%
+    );
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    transition: opacity 0.3s ease;
+  }
+
+  .code-overlay.hidden {
+    display: none;
+  }
+
+  .overlay-content {
+    text-align: center;
+    padding: 2.5rem;
+    max-width: 480px;
+  }
+
+  .overlay-title {
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--sl-color-text);
+    margin-bottom: 1.5rem;
+    text-shadow: 0 4px 20px var(--sl-color-bg),
+                 0 2px 12px var(--sl-color-bg),
+                 0 1px 6px var(--sl-color-bg),
+                 0 0 40px rgba(0, 123, 110, 0.6);
+  }
+
+  .overlay-list {
+    font-size: 1.15rem;
+    line-height: 2.4;
+    color: var(--sl-color-text);
+    margin-bottom: 2rem;
+    text-align: left;
+    text-shadow: 0 4px 20px var(--sl-color-bg),
+                 0 2px 12px var(--sl-color-bg),
+                 0 1px 6px var(--sl-color-bg),
+                 0 0 40px rgba(0, 123, 110, 0.6);
+  }
+
+  /* Base button styling following Starlight's pattern */
+  .reveal-button.sl-button-primary {
+    align-items: center;
+    background: var(--sl-color-text-accent);
+    border: 1px solid var(--sl-color-text-accent);
+    border-radius: 999rem;
+    color: var(--sl-color-black);
+    cursor: pointer;
+    display: inline-flex;
+    font-size: var(--sl-text-base);
+    font-weight: 600;
+    gap: 0.5em;
+    line-height: 1.1875;
+    outline-offset: 0.25rem;
+    padding: 0.9375rem 1.25rem;
+    text-decoration: none;
+
+    /* Glow and animation effects */
+    box-shadow: 0 8px 32px rgba(0, 123, 110, 0.6),
+                0 0 60px rgba(0, 123, 110, 0.4);
+    animation: pulse-glow 2s ease-in-out infinite;
+    position: relative;
+    overflow: hidden;
+    pointer-events: auto;
+
+    /* Smooth transitions */
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 8px 32px rgba(0, 123, 110, 0.6),
+                  0 0 60px rgba(0, 123, 110, 0.4);
+    }
+    50% {
+      box-shadow: 0 8px 40px rgba(0, 123, 110, 0.8),
+                  0 0 80px rgba(0, 123, 110, 0.6);
+    }
+  }
+
+  .reveal-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: -1;
+  }
+
+  .reveal-button.sl-button-primary:hover {
+    color: var(--sl-color-black);
+    transform: scale(1.08);
+    box-shadow: 0 12px 48px rgba(0, 123, 110, 0.7),
+                0 0 80px rgba(0, 123, 110, 0.6);
+    animation: none;
+  }
+
+  .reveal-button:hover::before {
+    transform: translate(-50%, -50%) scale(2.5);
+  }
+
+  .reveal-button.sl-button-primary:active {
+    transform: scale(1.02);
+  }
+
+  /* Scroll to top button - positioned relative to scrollable-content */
+  :global(.scroll-top-button) {
+    display: none;
+    position: absolute;
+    bottom: 0.5rem;
+    right: 0.5rem;
+    background: var(--sl-color-accent-high);
+    color: var(--sl-color-black);
+    border: 1px solid var(--sl-color-gray-4);
+    padding: 0.4rem 0.7rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 100;
+    line-height: 1;
+    box-shadow: 0 4px 12px rgba(0, 123, 110, 0.4);
+  }
+
+  :global(.scroll-top-button:hover) {
+    background: var(--sl-color-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 123, 110, 0.5);
+  }
+
+  :global(.scroll-top-button:active) {
+    transform: translateY(0);
+  }
+
+  /* Reset overlay button - positioned relative to scrollable-content */
+  :global(.reset-overlay-button) {
+    display: none;
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: var(--sl-color-gray-5);
+    color: var(--sl-color-white);
+    border: 1px solid var(--sl-color-gray-4);
+    padding: 0.35rem 0.7rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+    line-height: 1;
+  }
+
+  :global(.reset-overlay-button:hover) {
+    background: var(--sl-color-gray-4);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  :global(.reset-overlay-button:active) {
+    transform: translateY(0);
+  }
+
+  /* Hide buttons when overlay is visible (not hidden) */
+  :global(.code-overlay:not(.hidden) ~ .reset-overlay-button) {
+    display: none;
+  }
+
+  :global(.code-overlay:not(.hidden) ~ .scroll-top-button) {
+    display: none;
+  }
+
+  /* Mobile: hide overlay and show full content */
+  @media (max-width: 1024px) {
+    .code-overlay {
+      display: none;
+    }
+
+    .reset-overlay-button {
+      display: none !important;
+    }
+
+    .scroll-top-button {
+      display: none !important;
+    }
+
+    :global(.scrollable-content) {
+      max-height: none !important;
+      overflow-y: visible !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .code-overlay,
+    .reveal-button,
+    .reveal-button::before,
+    .reset-overlay-button,
+    .scroll-top-button {
+      transition: none;
+      animation: none;
+    }
+  }
+
+  /* Scrollable content container - positioning context only */
+  :global(.scrollable-content) {
+    min-height: 0;
+    block-size: 100%; /* Resolve % height from parent wrapper */
+    position: relative; /* Positioning context for absolute buttons */
+    padding: 0;
+    overflow: hidden; /* Hide overflow on container */
+    display: flex;
+    flex-direction: column;
+    background: var(--sl-color-gray-6);
+    border: 1px solid var(--sl-color-gray-5);
+  }
+
+  /* Inner wrapper that actually scrolls - the 200+ lines scroll here */
+  :global(.scrollable-inner) {
+    flex: 1;
+    min-height: 0;
+    overflow: auto; /* The actual scroller */
+    padding: 0;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: var(--sl-color-accent) var(--sl-color-gray-5);
+  }
+
+  /* Remove borders from code blocks inside scrollable area since container has border */
+  :global(.scrollable-inner pre) {
+    border: none !important;
+  }
+
+  :global(.scrollable-content.scrollable-enabled .scrollable-inner::-webkit-scrollbar) {
+    width: 14px;
+  }
+
+  :global(.scrollable-content.scrollable-enabled .scrollable-inner::-webkit-scrollbar-track) {
+    background: var(--sl-color-gray-5);
+    border-radius: 8px;
+    border: 1px solid var(--sl-color-gray-4);
+  }
+
+  :global(.scrollable-content.scrollable-enabled .scrollable-inner::-webkit-scrollbar-thumb) {
+    background: var(--sl-color-accent);
+    border-radius: 8px;
+    border: 2px solid var(--sl-color-gray-5);
+  }
+
+  :global(.scrollable-content.scrollable-enabled .scrollable-inner::-webkit-scrollbar-thumb:hover) {
+    background: var(--sl-color-accent-high);
+  }
+
+  /* Add left padding only to section headers inside scrollable content */
+  :global(.scrollable-inner > p > strong) {
+    padding-left: 1rem;
+  }
+
+  :global(.scrollable-inner > *:first-of-type) {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+</style>
+
+<script>
+  // Global flag to track if auto-scroll animation is running
+  let isAutoScrolling = false;
+
+  const handleRevealButton = () => {
+    const button = document.querySelector('.reveal-button') as HTMLElement | null;
+    const overlay = document.querySelector('.code-overlay') as HTMLElement | null;
+    const scrollableContainer = document.querySelector('.scrollable-content') as HTMLElement | null;
+    const scrollableInner = document.querySelector('.scrollable-inner') as HTMLElement | null;
+
+    if (!button || !overlay || !scrollableContainer || !scrollableInner) return;
+
+    button.addEventListener('click', async () => {
+      const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+      // Helper to animate scroll with custom duration (cancellable on user interaction)
+      const animateScroll = (element: HTMLElement, targetScroll: number, duration: number) => {
+        return new Promise<void>((resolve) => {
+          const start = element.scrollTop;
+          const distance = targetScroll - start;
+          const startTime = performance.now();
+          let animationId: number | null = null;
+          let cancelled = false;
+
+          // Cancel animation if user manually scrolls
+          const cancelAnimation = () => {
+            cancelled = true;
+            isAutoScrolling = false;
+            if (animationId !== null) {
+              cancelAnimationFrame(animationId);
+            }
+            cleanup();
+            resolve();
+          };
+
+          // Listen for user scroll interactions
+          const handleWheel = () => cancelAnimation();
+          const handleTouch = () => cancelAnimation();
+          const handleClick = () => cancelAnimation();
+          const handleKeydown = (e: KeyboardEvent) => {
+            if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(e.key)) {
+              cancelAnimation();
+            }
+          };
+
+          element.addEventListener('wheel', handleWheel, { passive: true });
+          element.addEventListener('touchstart', handleTouch, { passive: true });
+          element.addEventListener('click', handleClick);
+          element.addEventListener('keydown', handleKeydown);
+
+          const cleanup = () => {
+            element.removeEventListener('wheel', handleWheel);
+            element.removeEventListener('touchstart', handleTouch);
+            element.removeEventListener('click', handleClick);
+            element.removeEventListener('keydown', handleKeydown);
+          };
+
+          const scroll = (currentTime: number) => {
+            if (cancelled) return;
+
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+
+            // Ease-in-out quadratic for gentle smoothing
+            const eased = progress < 0.5
+              ? 2 * progress * progress
+              : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+            element.scrollTop = start + distance * eased;
+
+            if (progress < 1) {
+              animationId = requestAnimationFrame(scroll);
+            } else {
+              cleanup();
+              isAutoScrolling = false;
+              resolve();
+            }
+          };
+
+          animationId = requestAnimationFrame(scroll);
+        });
+      };
+
+      // 1. Enable scrolling and start animation first
+      isAutoScrolling = true;
+      scrollableContainer.classList.add('scrollable-enabled');
+      const scrollPromise = animateScroll(scrollableInner, scrollableInner.scrollHeight, 3000);
+
+      // Small delay so scroll starts accelerating before overlay fades
+      await wait(100);
+
+      // 2. Fade out overlay while scroll is already in motion
+      overlay.style.opacity = '0';
+
+      // Wait for overlay fade, then hide it
+      await wait(300);
+      overlay.classList.add('hidden');
+
+      // 3. Wait for scroll to complete
+      await scrollPromise;
+
+      // 4. Show reset button after scroll completes
+      const resetButton = document.querySelector('.reset-overlay-button') as HTMLElement;
+      if (resetButton) {
+        resetButton.style.display = 'block';
+      }
+
+      // 5. Trigger scroll-to-top button visibility check now that animation is done
+      const scrollTopButton = document.querySelector('.scroll-top-button') as HTMLElement;
+      if (scrollTopButton && scrollableInner.scrollTop > 50) {
+        scrollTopButton.style.display = 'block';
+      }
+    });
+  };
+
+  const handleScrollTopButton = () => {
+    const button = document.querySelector('.scroll-top-button') as HTMLElement | null;
+    const scrollableInner = document.querySelector('.scrollable-inner') as HTMLElement | null;
+
+    if (!button || !scrollableInner) return;
+
+    // Show/hide button based on scroll position
+    const updateButtonVisibility = () => {
+      // Don't show button during auto-scroll animation
+      if (isAutoScrolling) {
+        button.style.display = 'none';
+        return;
+      }
+
+      if (scrollableInner.scrollTop > 50) {
+        button.style.display = 'block';
+      } else {
+        button.style.display = 'none';
+      }
+    };
+
+    // Listen to scroll events
+    scrollableInner.addEventListener('scroll', updateButtonVisibility);
+
+    button.addEventListener('click', () => {
+      scrollableInner.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  };
+
+  const handleResetButton = () => {
+    const button = document.querySelector('.reset-overlay-button') as HTMLElement | null;
+    const overlay = document.querySelector('.code-overlay') as HTMLElement | null;
+    const scrollableContainer = document.querySelector('.scrollable-content') as HTMLElement | null;
+    const scrollableInner = document.querySelector('.scrollable-inner') as HTMLElement | null;
+
+    if (!button || !overlay || !scrollableContainer || !scrollableInner) return;
+
+    button.addEventListener('click', () => {
+      const scrollTopButton = document.querySelector('.scroll-top-button') as HTMLElement | null;
+
+      // Reset to initial state
+      overlay.classList.remove('hidden');
+      overlay.style.opacity = '1';
+      scrollableContainer.classList.remove('scrollable-enabled');
+      scrollableInner.scrollTop = 0;
+      button.style.display = 'none';
+      if (scrollTopButton) {
+        scrollTopButton.style.display = 'none';
+      }
+    });
+  };
+
+  const init = () => {
+    // Reset scrollable content to top on page load
+    const scrollableInner = document.querySelector('.scrollable-inner') as HTMLElement | null;
+    if (scrollableInner) {
+      scrollableInner.scrollTop = 0;
+    }
+
+    handleRevealButton();
+    handleResetButton();
+    handleScrollTopButton();
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+</script>

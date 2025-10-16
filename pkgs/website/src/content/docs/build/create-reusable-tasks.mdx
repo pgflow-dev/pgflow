@@ -16,7 +16,7 @@ To create task functions that can be used across multiple flows without tight co
 
 1. **Define task parameters**
 
-   Identify exactly what data the task needs to function. Accept specific parameters, not entire context objects:
+   Identify exactly what data the task needs to function. Accept specific parameters, not entire input objects:
 
    ```typescript add="userId: string" del="input: { user: { id: string }"
    // ✅ Accept specific parameters
@@ -54,6 +54,7 @@ To create task functions that can be used across multiple flows without tight co
    Let the flow's step handler extract needed data from the flow context:
 
    ```typescript "input.run.userId"
+   // Your task function
    async function fetchUserProfile(userId: string) {
      const response = await fetch(`https://api.example.com/users/${userId}`);
      return response.json();

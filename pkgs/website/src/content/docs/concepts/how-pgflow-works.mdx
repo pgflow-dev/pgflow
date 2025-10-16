@@ -159,6 +159,10 @@ import ProcessArticle from './process_article.ts';
 EdgeWorker.start(ProcessArticle);
 ```
 
+<Aside type="note" title="Continuous Workers">
+pgflow workers use Supabase Background Tasks and add automatic respawning, continuous polling, and heartbeats for ease of use, continuity, observability, and \<100ms task startup. [How it works →](/reference/queue-worker/how-it-works/)
+</Aside>
+
 ## Start Your Flow
 
 Trigger a run from SQL:
