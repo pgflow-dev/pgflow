@@ -15,132 +15,11 @@ hero:
       icon: information
       variant: minimal
 editUrl: false
-head:
-  - tag: 'script'
-    content: |
-      const matchHeights = () => {
-        requestAnimationFrame(() => {
-          const columns = document.querySelectorAll('.comparison-column');
-          if (columns.length !== 2) return;
-
-          const leftColumn = columns[0];
-          const rightColumn = columns[1];
-          const leftScrollable = leftColumn.querySelector('.scrollable-content');
-
-          if (!leftScrollable || !rightColumn) return;
-
-          // Get the target height from right column
-          const targetHeight = rightColumn.getBoundingClientRect().height;
-
-          // Get all children of left column before scrollable
-          let fixedHeight = 0;
-          for (const child of leftColumn.children) {
-            if (child === leftScrollable) break;
-            const rect = child.getBoundingClientRect();
-            fixedHeight += rect.height;
-          }
-
-          // Calculate available space for scrollable content
-          const availableHeight = targetHeight - fixedHeight;
-
-          // Set with a reasonable minimum
-          leftScrollable.style.maxHeight = Math.max(300, availableHeight) + 'px';
-        });
-      };
-
-      const handleScrollIndicator = () => {
-        const scrollable = document.querySelector('.scrollable-content');
-        const indicator = document.querySelector('.scroll-indicator');
-
-        if (!scrollable || !indicator) return;
-
-        const handleScroll = () => {
-          const scrollTop = scrollable.scrollTop;
-          const scrollHeight = scrollable.scrollHeight;
-          const clientHeight = scrollable.clientHeight;
-          const scrolledToBottom = scrollTop + clientHeight >= scrollHeight - 50;
-
-          indicator.style.opacity = scrolledToBottom ? '0' : '1';
-        };
-
-        scrollable.addEventListener('scroll', handleScroll);
-        handleScroll();
-      };
-
-      let resizeTimeout;
-      const debouncedMatchHeights = () => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(matchHeights, 100);
-      };
-
-      const init = () => {
-        matchHeights();
-        handleScrollIndicator();
-        window.addEventListener('resize', debouncedMatchHeights);
-      };
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-      } else {
-        init();
-      }
-
-      // Run again after images/fonts load
-      window.addEventListener('load', matchHeights);
 ---
 
 import { Card, CardGrid, LinkCard, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import TestimonialCarousel from '../../components/TestimonialCarousel.astro';
-
-<div class="quickstart-section">
-
-```bash
-npx pgflow@latest install
-```
-
-<div class="quickstart-caption">Sets up pgflow in your Supabase project. <a href="/get-started/installation/">View full setup guide →</a></div>
-
-</div>
-
-## Why pgflow
-
-<CardGrid>
-  <Card title="⚡ <100ms job startup">
-    Jobs start near-instantly with \<100ms polling. No waiting minutes for cron jobs - your workflows begin executing immediately when triggered.
-  </Card>
-
-  <Card title="🔌 Run from anywhere">
-    Trigger workflows from database triggers, scheduled pg_cron jobs, browser clients, or RPC calls. Ultimate flexibility in how you start your workflows.
-  </Card>
-
-  <Card title="📡 Realtime progress tracking">
-    Watch your workflows execute in real-time via websocket updates. See each step complete as it happens, no polling required.
-  </Card>
-
-  <Card title="👁️ Full observability">
-    Every step, retry, and failure is stored in SQL tables. Query your workflow history with standard PostgreSQL - complete transparency into execution.
-  </Card>
-
-  <Card title="✨ No boilerplate">
-    Skip the tedious wiring of pg_cron to queues to Edge Functions. pgflow handles all the plumbing so you focus on business logic.
-  </Card>
-
-  <Card title="📦 Zero new infrastructure">
-    Everything runs in your existing Supabase project. No external services, no vendor dashboards, no additional infrastructure to manage.
-  </Card>
-</CardGrid>
-
-## What Developers Are Saying
-
-*Real comments after seeing early demos*
-
-<TestimonialCarousel />
-
-## What pgflow Replaces
-
-Supabase gives you powerful primitives: Postgres, Edge Functions and Queues. pgflow orchestrates these into reliable workflows without the manual wiring.
-
-Here's the same 2-step workflow (**scrape a website**, then **analyze it with AI**) - compare the code with and without pgflow:
+import CodeOverlay from '../../components/CodeOverlay.astro';
 
 <div class="comparison-container">
 
@@ -148,26 +27,27 @@ Here's the same 2-step workflow (**scrape a website**, then **analyze it with AI
 
 ### 🛠️ Without pgflow
 
-Building workflows with Supabase's primitives requires setting up queues, scheduling cron jobs, creating Edge Functions, and manually coordinating between steps.
-
-<div class="comparison-highlights">
-🔧 Queue boilerplate in every function
-
-⏰ Slow cron-based polling
-
-🔗 Manual queue wiring between steps
-</div>
+<div class="left-content-wrapper">
 
 <div class="scrollable-content">
 
-<div class="scroll-indicator">
-  <span>↓</span>
-</div>
+<CodeOverlay />
+
+<button class="reset-overlay-button" aria-label="Show overlay again">
+  ↻ Show overlay
+</button>
+
+<button class="scroll-top-button" aria-label="Scroll to top">
+  ↑
+</button>
+
+<div class="scrollable-inner">
 
 **1. Set up queues**
 ```sql
 SELECT pgmq.create('scrape_queue');
-SELECT pgmq.create('analyze_queue');
+SELECT pgmq.create('summarize_queue');
+SELECT pgmq.create('extract_keywords_queue');
 ```
 
 **2. Scrape processor Edge Function**
@@ -199,15 +79,22 @@ serve(async () => {
     // Scrape the website
     const content = await scrapeWebsite(url);
 
-    // Store intermediate result
-    await supabase
+    // Store in articles table (state tracking)
+    const { data: article } = await supabase
       .from('articles')
-      .upsert({ url, content });
+      .insert({ url, content })
+      .select()
+      .single();
 
-    // Send to analysis queue
+    // Send to BOTH parallel queues
     await supabase.rpc('pgmq_send', {
-      queue_name: 'analyze_queue',
-      msg: { url, content }
+      queue_name: 'summarize_queue',
+      msg: { url }
+    });
+
+    await supabase.rpc('pgmq_send', {
+      queue_name: 'extract_keywords_queue',
+      msg: { url }
     });
 
     // Delete from scrape queue
@@ -225,20 +112,20 @@ serve(async () => {
 });
 ```
 
-**3. Analysis processor Edge Function**
+**3. Summarize processor Edge Function**
 
 ```typescript
 import { serve } from 'std/http/server.ts';
-import { analyzeContent } from './analyzer.ts';
+import { summarizeContent } from './summarizer.ts';
 
 serve(async () => {
   const supabase = createClient(/*...*/);
 
-  // Read one message from analyze queue
+  // Read one message from summarize queue
   const { data: messages } = await supabase.rpc(
     'pgmq_read',
     {
-      queue_name: 'analyze_queue',
+      queue_name: 'summarize_queue',
       vt: 30,
       qty: 1
     }
@@ -249,26 +136,33 @@ serve(async () => {
   }
 
   const { msg_id, message } = messages[0];
-  const { url, content } = message;
+  const { url } = message;
 
   try {
-    // Analyze with AI
-    const analysis = await analyzeContent(content);
+    // Fetch article from state table
+    const { data: article } = await supabase
+      .from('articles')
+      .select('content')
+      .eq('url', url)
+      .single();
 
-    // Store final result
+    // Summarize content
+    const summary = await summarizeContent(article.content);
+
+    // Update state table with summary
     await supabase
       .from('articles')
-      .update({ analysis })
+      .update({ summary })
       .eq('url', url);
 
-    // Delete from analyze queue
+    // Delete from summarize queue
     await supabase.rpc('pgmq_delete', {
-      queue_name: 'analyze_queue',
+      queue_name: 'summarize_queue',
       msg_id
     });
 
   } catch (error) {
-    console.error('Analysis failed:', error);
+    console.error('Summarize failed:', error);
     // Message becomes visible again after timeout
   }
 
@@ -276,7 +170,82 @@ serve(async () => {
 });
 ```
 
-**4. Schedule processors**
+**4. Extract keywords processor Edge Function**
+
+```typescript
+import { serve } from 'std/http/server.ts';
+import { extractKeywords } from './extractor.ts';
+
+serve(async () => {
+  const supabase = createClient(/*...*/);
+
+  // Read one message from extract queue
+  const { data: messages } = await supabase.rpc(
+    'pgmq_read',
+    {
+      queue_name: 'extract_keywords_queue',
+      vt: 30,
+      qty: 1
+    }
+  );
+
+  if (!messages?.[0]) {
+    return new Response('No messages', { status: 200 });
+  }
+
+  const { msg_id, message } = messages[0];
+  const { url } = message;
+
+  try {
+    // Fetch article from state table
+    const { data: article } = await supabase
+      .from('articles')
+      .select('content')
+      .eq('url', url)
+      .single();
+
+    // Extract keywords
+    const keywords = await extractKeywords(article.content);
+
+    // Update state table with keywords
+    await supabase
+      .from('articles')
+      .update({ keywords })
+      .eq('url', url);
+
+    // Delete from extract queue
+    await supabase.rpc('pgmq_delete', {
+      queue_name: 'extract_keywords_queue',
+      msg_id
+    });
+
+  } catch (error) {
+    console.error('Extract failed:', error);
+    // Message becomes visible again after timeout
+  }
+
+  return new Response('OK');
+});
+```
+
+**5. Publish articles cron job**
+
+```sql
+-- Poll for completed articles and publish them
+SELECT cron.schedule(
+  'publish-articles',
+  '*/15 * * * * *',
+  $$
+    UPDATE articles
+    SET published = true
+    WHERE published = false
+      AND summary IS NOT NULL
+      AND keywords IS NOT NULL
+  $$
+);
+```
+
+**6. Schedule queue processors**
 ```sql
 -- Scrape processor runs every 15 seconds
 SELECT cron.schedule(
@@ -287,20 +256,29 @@ SELECT cron.schedule(
   )$$
 );
 
--- Analysis processor runs every 15 seconds
+-- Summarize processor runs every 15 seconds
 SELECT cron.schedule(
-  'analysis-processor',
+  'summarize-processor',
   '*/15 * * * * *',
   $$SELECT net.http_post(
-    url := 'https://your-project.supabase.co/functions/v1/analysis-processor'
+    url := 'https://your-project.supabase.co/functions/v1/summarize-processor'
+  )$$
+);
+
+-- Extract keywords processor runs every 15 seconds
+SELECT cron.schedule(
+  'extract-keywords-processor',
+  '*/15 * * * * *',
+  $$SELECT net.http_post(
+    url := 'https://your-project.supabase.co/functions/v1/extract-keywords-processor'
   )$$
 );
 ```
 
-**5. Trigger workflow**
+**7. Trigger workflow**
 
 ```typescript
-// Add URL to scrape queue
+// Add URL to scrape queue to start the workflow
 await supabase.rpc('pgmq_send', {
   queue_name: 'scrape_queue',
   msg: { url: 'https://example.com' }
@@ -311,98 +289,106 @@ await supabase.rpc('pgmq_send', {
 
 </div>
 
+</div>
+
+<div class="disclaimer-left disclaimer-mobile">
+  Based on Supabase's recommended pattern. <a href="https://supabase.com/blog/processing-large-jobs-with-edge-functions" target="_blank" rel="noopener">Read the full guide →</a>
+</div>
+
+</div>
+
 <div class="comparison-column">
 
 ### ⚡ With pgflow
 
-pgflow handles all the orchestration behind the scenes. Just define your workflow steps and trigger them - queuing, retries, and coordination happen automatically.
+<div class="right-content-wrapper">
 
-<div class="comparison-highlights">
-✅ Focus on business logic only
-
-✅ Near-instant job startup
-
-✅ Automatic step coordination
-</div>
-
-**1. Define workflow**
 ```typescript
 import { Flow } from 'npm:@pgflow/dsl';
 
-new Flow<{ url: string }>({ slug: 'analyze_article' })
-  .step('scrape', (input) => scrapeWebsite(input.run.url))
-  .step('analyze', async (input) => {
-    const analysis = await analyzeContent(input.scrape);
-
-    await supabase.from('articles').insert({
+new Flow<{ url: string }>({ slug: 'analyzeArticle' })
+  .step({ slug: 'scrape' },
+    (input) => scrapeWebsite(input.run.url)
+  )
+  .step({ slug: 'summarize', dependsOn: ['scrape'] },
+    (input) => summarizeContent(input.scrape)
+  )
+  .step({ slug: 'extractKeywords', dependsOn: ['scrape'] },
+    (input) => extractKeywords(input.scrape)
+  )
+  .step({ slug: 'publish', dependsOn: ['summarize', 'extractKeywords'] },
+    (input) => publishArticle({
       url: input.run.url,
       content: input.scrape,
-      analysis
-    });
-
-    return analysis;
-  });
+      summary: input.summarize,
+      keywords: input.extractKeywords
+    })
+  );
 ```
-
-**2. Compile and migrate**
-```bash frame="none"
-npx pgflow compile flow.ts
-npx supabase migrations up
-```
-
-**3. Setup worker in Edge Function**
-```typescript
-import AnalyzeWebsite from 'flow.ts';
-import { EdgeWorker } from 'jsr:@pgflow/edge-worker';
-
-EdgeWorker.start(AnalyzeWebsite);
-```
-
-**4. Start worker**
-```bash frame="none"
-curl http://localhost:54321/functions/v1/analyze_article_worker
-```
-
-**5. Trigger workflow**
-```sql
-SELECT pgflow.start_flow('analyze_article', '{
-  "url": "https://example.com"
-}'::jsonb);
-```
-
-
 
 </div>
 
 </div>
 
-### What pgflow handles for you
+</div>
+
+<div class="disclaimer-left disclaimer-desktop">
+  Based on Supabase's recommended pattern. <a href="https://supabase.com/blog/processing-large-jobs-with-edge-functions" target="_blank" rel="noopener">Read the full guide →</a>
+</div>
+
+<div class="comparison-note-wrapper">
+  <Aside type="tip" title="You write the business logic. pgflow handles everything else.">
+    Queue management, state tracking, dependency resolution, task coordination, and retries - **pgflow is the orchestration engine.**
+
+    [How pgflow works →](/concepts/how-pgflow-works/)
+
+    [Complete setup guide →](/get-started/installation/)
+  </Aside>
+</div>
+
+<div class="quickstart-section">
+
+```bash
+npx pgflow@latest install
+```
+
+<div class="quickstart-caption">Sets up pgflow in your Supabase project. <a href="/get-started/installation/">View full setup guide →</a></div>
+
+</div>
+
+## Why pgflow
 
 <CardGrid>
-  <Card title="🔒 Type safety across steps">
-    Full TypeScript inference means step outputs become typed inputs. Catch data shape mismatches at compile time, not in production.
+  <Card title="✨ No manual wiring">
+    Skip the tedious pg_cron → pgmq → Edge Function setup. No manual queue wiring, no archive code, no state table management. pgflow handles all the plumbing - you just define your workflow. [Learn more →](/get-started/installation/)
+  </Card>
+
+  <Card title="📦 Runs entirely in Supabase">
+    Everything in your existing Supabase project. No Bull, no Redis, no Temporal, no Railway. No external services, no vendor dashboards, no additional infrastructure to manage. [Learn more →](/concepts/how-pgflow-works/)
+  </Card>
+
+  <Card title="👁️ Build and test steps in isolation">
+    Create reusable task functions that test independently with Deno.test. All workflow state (runs, errors, outputs) lives in Postgres tables - query execution history and debug failures with standard SQL. [Learn more →](/build/create-reusable-tasks/)
   </Card>
 
   <Card title="🔄 Automatic retries">
-    Built-in retry logic with exponential backoff. Configure max attempts and delays per step without writing any retry code.
-  </Card>
-
-  <Card title="⚙️ Concurrency control">
-    Configure how many tasks run in parallel. Control resource usage and rate limits with simple configuration.
+    Built-in retry logic with exponential backoff for flaky AI APIs. When OpenAI times out or rate-limits, only that step retries - your workflow continues. Configure max attempts and delays per step, no retry code needed. [Learn more →](/build/configuring-retries/)
   </Card>
 
   <Card title="⚡ Parallel array processing">
-    Process arrays in parallel with independent retries per item. Perfect for API calls - if one fails, only that item retries while others continue.
+    Process arrays in parallel with independent retries per item. Batch 100 embeddings - if 3 fail, only those 3 retry while others continue. Perfect for AI workloads with unreliable APIs. [Learn more →](/build/process-arrays-in-parallel/)
   </Card>
 
-  <Card title="💾 Step output persistence">
-    All step outputs stored in the database. Access results from any previous step or run for debugging and analysis.
-  </Card>
-
-  <Card title="📋 Declarative workflow definition">
-    Define what your workflow does, not how to execute it. pgflow handles all the orchestration mechanics.
+  <Card title="🔌 Trigger from anywhere">
+    Start workflows from database triggers, scheduled pg_cron jobs, browser clients, or RPC calls. Ultimate flexibility in how you start your workflows. [Learn more →](/build/starting-flows/)
   </Card>
 </CardGrid>
+
+## What Developers Are Saying
+
+*Real comments after seeing early demos*
+
+<TestimonialCarousel />
 
 <div style="text-align: center; margin: 4rem 0 5rem;">
 
@@ -477,6 +463,11 @@ Zero boilerplate required."
     transition: left 0.5s ease;
   }
 
+  .quickstart-section {
+    margin-top: 6rem;
+    margin-bottom: 3rem;
+  }
+
   .comparison-highlights {
     font-size: 1.05rem;
     font-weight: 700;
@@ -484,12 +475,185 @@ Zero boilerplate required."
     margin: 1rem 0;
   }
 
+  /* Steps disclaimer */
+  .steps-disclaimer {
+    font-size: 0.9rem;
+    color: var(--sl-color-gray-3);
+    margin-top: 1rem;
+    font-style: italic;
+  }
+
+  /* Content wrappers */
+  .left-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    block-size: 100%; /* Create definite height chain from stretched grid row */
+  }
+
+  .right-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* Comparison disclaimers - left-aligned note about source pattern */
+  .comparison-disclaimers {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--sl-color-gray-3);
+    font-style: italic;
+  }
+
+  .disclaimer-left {
+    padding: 0;
+    margin: 0.5rem 0 0 0;
+    line-height: 1.5;
+    font-size: 0.9rem;
+    color: var(--sl-color-gray-3);
+    font-style: italic;
+    flex-shrink: 0;
+  }
+
+  .disclaimer-left a {
+    color: var(--sl-color-text-accent);
+    text-decoration: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--sl-color-accent-high) 30%, transparent);
+    transition: border-color 0.2s ease;
+  }
+
+  .disclaimer-left a:hover {
+    border-bottom-color: var(--sl-color-accent-high);
+  }
+
+  /* Hide mobile disclaimer on desktop */
+  .disclaimer-mobile {
+    display: none;
+  }
+
+  /* Show desktop disclaimer on desktop */
+  .disclaimer-desktop {
+    display: block;
+    margin-top: 0.5rem;
+  }
+
+  /* Comparison note wrapper - center and constrain width */
+  .comparison-note-wrapper {
+    max-width: 70%;
+    margin: 3.5rem auto 0 auto;
+  }
+
+  /* Custom styling for the comparison aside */
+  .comparison-note-wrapper .starlight-aside {
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--sl-color-accent-high) 4%, transparent) 0%,
+      color-mix(in srgb, var(--sl-color-accent-high) 1%, transparent) 100%
+    );
+    border-left: 3px solid color-mix(in srgb, var(--sl-color-accent-high) 50%, transparent);
+    padding: 1.25rem 1.5rem;
+  }
+
+  .comparison-note-wrapper .starlight-aside__title {
+    color: var(--sl-color-white);
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+  .comparison-note-wrapper .starlight-aside__content {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--sl-color-gray-2);
+  }
+
+  .comparison-note-wrapper .starlight-aside__content > p:first-child {
+    margin-top: 0;
+  }
+
+  .comparison-note-wrapper .starlight-aside__content > p:last-child {
+    margin-bottom: 0;
+  }
+
+  .comparison-note-wrapper .starlight-aside__content ul {
+    margin: 0.75rem 0;
+    padding-left: 1.5rem;
+  }
+
+  .comparison-note-wrapper .starlight-aside__content li {
+    margin: 0.5rem 0;
+  }
+
+  .comparison-note-wrapper .starlight-aside__content strong {
+    color: var(--sl-color-white);
+    font-weight: 600;
+  }
+
+  .comparison-note-wrapper .starlight-aside__content a {
+    color: var(--sl-color-text-accent);
+    text-decoration: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--sl-color-accent-high) 30%, transparent);
+    transition: border-color 0.2s ease;
+    font-weight: 500;
+  }
+
+  .comparison-note-wrapper .starlight-aside__content a:hover {
+    border-bottom-color: var(--sl-color-accent-high);
+  }
+
+  @media (max-width: 1024px) {
+    .comparison-note-wrapper {
+      max-width: 85%;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .comparison-note-wrapper {
+      max-width: 100%;
+    }
+
+    .comparison-note-wrapper .starlight-aside {
+      padding: 1rem 1.25rem;
+    }
+
+    .comparison-note-wrapper .starlight-aside__content {
+      font-size: 0.9rem;
+    }
+
+    /* Hide icon and reduce title font size on mobile */
+    .comparison-note-wrapper .starlight-aside__icon {
+      display: none;
+    }
+
+    .comparison-note-wrapper .starlight-aside__title {
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+  }
+
   .comparison-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 2rem;
-    margin: 2rem 0;
-    align-items: start;
+    margin: 2rem 0 0 0; /* Remove bottom margin */
+    align-items: stretch; /* Make both columns same height */
+  }
+
+  .comparison-column {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* CRITICAL: allows grid child to shrink */
+    padding: 0;
+    margin: 0;
+    position: relative;
+  }
+
+  /* KEY: Prevent left column from contributing its content size to grid row height */
+  .comparison-column:first-child {
+    contain: size; /* Exclude from intrinsic track sizing - row height comes from RIGHT column */
+    overflow: hidden; /* Allow internal scrolling */
   }
 
   @media (max-width: 1024px) {
@@ -498,26 +662,112 @@ Zero boilerplate required."
       gap: 3rem;
     }
 
-    .scroll-indicator {
-      display: none;
-    }
-
-    .scrollable-content {
-      max-height: none !important;
-      overflow-y: visible !important;
-    }
-
     .comparison-column pre {
       max-width: 100%;
     }
-  }
 
-  .comparison-column {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    padding: 0;
-    margin: 0;
+    /* Remove contain:size on mobile to make left column visible */
+    .comparison-column:first-child {
+      contain: none !important;
+      overflow: visible !important;
+    }
+
+    /* Remove height constraints on mobile */
+    .left-content-wrapper {
+      block-size: auto !important;
+      min-height: auto !important;
+    }
+
+    .right-content-wrapper {
+      min-height: auto !important;
+    }
+
+    /* Set fixed height for scrollable containers on mobile to match "with pgflow" height */
+    .scrollable-content {
+      display: flex !important;
+      flex-direction: column !important;
+      max-height: 400px !important;
+      height: 400px !important;
+      overflow: hidden !important;
+      border: 1px solid var(--sl-color-gray-5);
+      border-radius: 0;
+      padding: 0 !important;
+    }
+
+    .scrollable-inner {
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      flex: 1 !important;
+      -webkit-overflow-scrolling: touch;
+      padding: 0.5rem !important;
+      min-height: 0 !important;
+      max-height: none !important;
+    }
+
+    /* Remove padding from first element in scrollable inner */
+    .scrollable-inner > *:first-child {
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+    }
+
+    /* Keep overlay visible and interactive on mobile */
+    .code-overlay {
+      display: flex !important;
+      top: 2rem !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      height: auto !important;
+      pointer-events: auto !important;
+    }
+
+    .code-overlay.hidden {
+      pointer-events: none !important;
+    }
+
+    .code-overlay .overlay-content {
+      padding: 1rem;
+      max-width: 100%;
+    }
+
+    .code-overlay .overlay-title {
+      font-size: 1.5rem;
+    }
+
+    .code-overlay .overlay-list {
+      font-size: 0.95rem;
+      line-height: 2;
+      margin-bottom: 1rem;
+    }
+
+    .code-overlay .reveal-button {
+      font-size: 0.9rem !important;
+      padding: 0.7rem 1rem !important;
+    }
+
+    /* Keep buttons functional on mobile - initially hidden */
+    .reset-overlay-button {
+      display: none;
+      top: 0.3rem !important;
+    }
+
+    .scroll-top-button {
+      display: none;
+    }
+
+    /* Show reset button after overlay is dismissed on mobile */
+    .code-overlay.hidden ~ .reset-overlay-button {
+      display: block !important;
+    }
+
+    /* Show mobile disclaimer, hide desktop disclaimer */
+    .disclaimer-mobile {
+      display: block !important;
+    }
+
+    .disclaimer-desktop {
+      display: none !important;
+    }
   }
 
   .comparison-column > h3 {
@@ -538,96 +788,9 @@ Zero boilerplate required."
     margin-top: 0 !important;
   }
 
-  .scrollable-content {
-    overflow-y: auto;
-    max-height: 700px; /* Fallback before JS loads */
-    flex: 1;
-    min-height: 0;
-    position: relative;
-  }
-
-  .scrollable-content > *:not(.scroll-indicator):first-of-type,
   .comparison-column > *:nth-child(2) {
     margin-top: 0 !important;
     padding-top: 0 !important;
-  }
-
-  .scroll-indicator {
-    position: sticky;
-    float: right;
-    top: 1.5rem;
-    right: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    width: fit-content;
-    margin-right: 1rem;
-    margin-bottom: -2.5rem;
-    pointer-events: none;
-    animation: bounce 2s ease-in-out infinite;
-    transition: opacity 0.3s ease;
-    z-index: 10;
-  }
-
-  .scroll-indicator span {
-    width: 2.25rem;
-    height: 2.25rem;
-    background: var(--sl-color-accent-high);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.3rem;
-    color: var(--sl-color-black);
-    box-shadow: 0 2px 10px rgba(0, 123, 110, 0.45), 0 0 20px rgba(0, 123, 110, 0.35);
-    font-weight: bold;
-  }
-
-  .scroll-indicator::before {
-    content: 'Scroll';
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--sl-color-white);
-    background: var(--sl-color-gray-5);
-    padding: 0.25rem 0.5rem;
-    border-radius: 6px;
-    white-space: nowrap;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  }
-
-  @keyframes bounce {
-    0%, 100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-1rem);
-    }
-  }
-
-  .scrollable-content {
-    scrollbar-width: thin;
-    scrollbar-color: var(--sl-color-accent) var(--sl-color-gray-5);
-    overflow-y: scroll;
-  }
-
-  .scrollable-content::-webkit-scrollbar {
-    width: 14px;
-  }
-
-  .scrollable-content::-webkit-scrollbar-track {
-    background: var(--sl-color-gray-5);
-    border-radius: 8px;
-    border: 1px solid var(--sl-color-gray-4);
-  }
-
-  .scrollable-content::-webkit-scrollbar-thumb {
-    background: var(--sl-color-accent);
-    border-radius: 8px;
-    border: 2px solid var(--sl-color-gray-5);
-  }
-
-  .scrollable-content::-webkit-scrollbar-thumb:hover {
-    background: var(--sl-color-accent-high);
   }
 
   .comparison-column h4,
@@ -653,5 +816,37 @@ Zero boilerplate required."
 
   .comparison-column pre code {
     overflow: hidden !important;
+  }
+
+  /* Mobile responsiveness for code blocks */
+  @media (max-width: 768px) {
+    /* Smaller font for code blocks on mobile */
+    .comparison-column pre {
+      font-size: 0.7rem;
+    }
+
+    .comparison-column code {
+      font-size: 0.7rem;
+    }
+
+    /* Allow horizontal scrolling for code that's still too wide */
+    .comparison-column pre {
+      overflow-x: auto !important;
+    }
+
+    .comparison-column pre code {
+      overflow-x: auto !important;
+    }
+  }
+
+  @media (max-width: 480px) {
+    /* Even smaller font for very small screens */
+    .comparison-column pre {
+      font-size: 0.65rem;
+    }
+
+    .comparison-column code {
+      font-size: 0.65rem;
+    }
   }
 `}</style>
