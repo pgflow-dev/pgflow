@@ -1,0 +1,418 @@
+---
+title: Color & Theme Demo
+description: Comprehensive showcase of all colorful Starlight components and CSS variables
+draft: true
+sidebar:
+  order: 999
+---
+
+import { Aside, Card, CardGrid, Badge } from '@astrojs/starlight/components';
+
+This page demonstrates all the colorful components and design elements available in Starlight, helping to visualize theme colors and make adjustments to match the pgflow green aesthetic.
+
+## Aside Components - Side by Side Comparison
+
+<style>{`
+  .comparison-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin: 2rem 0;
+  }
+
+  @media (max-width: 768px) {
+    .comparison-container {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .comparison-column h3 {
+    margin-top: 0;
+    text-align: center;
+    color: var(--sl-color-accent);
+  }
+
+  /* Original Starlight default colors */
+  .original-colors {
+    --sl-color-blue-low: hsl(234, 54%, 20%);
+    --sl-color-blue: hsl(234, 100%, 60%);
+    --sl-color-blue-high: hsl(234, 100%, 87%);
+
+    --sl-color-purple-low: hsl(281, 39%, 22%);
+    --sl-color-purple: hsl(281, 82%, 63%);
+    --sl-color-purple-high: hsl(281, 82%, 89%);
+
+    --sl-color-orange-low: hsl(41, 39%, 22%);
+    --sl-color-orange: hsl(41, 82%, 63%);
+    --sl-color-orange-high: hsl(41, 82%, 87%);
+
+    --sl-color-red-low: hsl(339, 39%, 22%);
+    --sl-color-red: hsl(339, 82%, 63%);
+    --sl-color-red-high: hsl(339, 82%, 87%);
+  }
+`}</style>
+
+<div className="comparison-container">
+  <div className="comparison-column">
+    <h3>New Harmonized Colors</h3>
+
+    <Aside type="note" title="Note - Steel Blue">
+    Steel blue (220°, 65% sat) - vibrant and distinct.
+    </Aside>
+
+    <Aside type="tip" title="Tip - Magenta Purple">
+    Magenta-purple (280°, 55% sat) - stands out clearly.
+    </Aside>
+
+    <Aside type="caution" title="Caution - Warm Orange">
+    Warm orange (35°, 60% sat) - soft yet visible.
+    </Aside>
+
+    <Aside type="danger" title="Danger - Red Orange">
+    Red-orange (5°, 80% sat) - intense and urgent.
+    </Aside>
+  </div>
+
+  <div className="comparison-column original-colors">
+    <h3>Original Starlight Colors</h3>
+
+    <Aside type="note" title="Note - Original Blue">
+    Original blue (234°, 100% sat) - standard Starlight.
+    </Aside>
+
+    <Aside type="tip" title="Tip - Original Purple">
+    Original purple (281°, 82% sat) - standard Starlight.
+    </Aside>
+
+    <Aside type="caution" title="Caution - Original Orange">
+    Original orange (41°, 82% sat) - standard Starlight.
+    </Aside>
+
+    <Aside type="danger" title="Danger - Original Red">
+    Original red (339°, 82% sat) - standard Starlight.
+    </Aside>
+  </div>
+</div>
+
+## Cards & Card Grids (Accent Colors)
+
+<CardGrid>
+  <Card title="Basic Card" icon="rocket">
+    Cards use `--sl-color-accent` for borders and visual emphasis.
+  </Card>
+
+  <Card title="Card with Icon" icon="star">
+    Icons are colored with accent colors.
+  </Card>
+
+  <Card title="Information Card" icon="information">
+    Accent color creates visual harmony.
+  </Card>
+
+  <Card title="Settings Card" icon="setting">
+    Border and icon use accent theme.
+  </Card>
+</CardGrid>
+
+## Badges (Status Colors)
+
+- <Badge text="Default" variant="default" /> - Uses gray colors
+- <Badge text="Note" variant="note" /> - Uses blue (`--sl-color-blue`)
+- <Badge text="Tip" variant="tip" /> - Uses purple (`--sl-color-purple`)
+- <Badge text="Success" variant="success" /> - Uses green (`--sl-color-green`)
+- <Badge text="Caution" variant="caution" /> - Uses orange (`--sl-color-orange`)
+- <Badge text="Danger" variant="danger" /> - Uses red (`--sl-color-red`)
+
+## Blue Note Variations - Set 1: Sky Blue (204°)
+
+<style>{`
+  .note-set1-variant-1 {
+    --sl-color-blue-low: hsl(204, 45%, 18%);
+    --sl-color-blue: hsl(204, 65%, 55%);
+    --sl-color-blue-high: hsl(204, 70%, 75%);
+  }
+  .note-set1-variant-2 {
+    --sl-color-blue-low: hsl(204, 38%, 18%);
+    --sl-color-blue: hsl(204, 52%, 55%);
+    --sl-color-blue-high: hsl(204, 56%, 75%);
+  }
+  .note-set1-variant-3 {
+    --sl-color-blue-low: hsl(204, 32%, 18%);
+    --sl-color-blue: hsl(204, 42%, 55%);
+    --sl-color-blue-high: hsl(204, 46%, 75%);
+  }
+  .note-set1-variant-4 {
+    --sl-color-blue-low: hsl(204, 26%, 18%);
+    --sl-color-blue: hsl(204, 34%, 55%);
+    --sl-color-blue-high: hsl(204, 38%, 75%);
+  }
+`}</style>
+
+<div class="note-set1-variant-1">
+<Aside type="note" title="Set 1.1: Sky Blue (65% sat)">
+Vibrant sky blue - hue 204°, saturation 65%.
+</Aside>
+</div>
+
+<div class="note-set1-variant-2">
+<Aside type="note" title="Set 1.2: Soft Sky Blue (52% sat) - Current">
+Current color - softer sky blue at 52% saturation.
+</Aside>
+</div>
+
+<div class="note-set1-variant-3">
+<Aside type="note" title="Set 1.3: Pastel Sky Blue (42% sat)">
+Gentle pastel sky blue at 42% saturation.
+</Aside>
+</div>
+
+<div class="note-set1-variant-4">
+<Aside type="note" title="Set 1.4: Very Pastel Sky Blue (34% sat)">
+Very soft pastel sky blue at 34% saturation.
+</Aside>
+</div>
+
+## Blue Note Variations - Set 2: Cyan-Teal (184°)
+
+<style>{`
+  .note-set2-variant-1 {
+    --sl-color-blue-low: hsl(184, 45%, 18%);
+    --sl-color-blue: hsl(184, 65%, 55%);
+    --sl-color-blue-high: hsl(184, 70%, 75%);
+  }
+  .note-set2-variant-2 {
+    --sl-color-blue-low: hsl(184, 38%, 18%);
+    --sl-color-blue: hsl(184, 52%, 55%);
+    --sl-color-blue-high: hsl(184, 56%, 75%);
+  }
+  .note-set2-variant-3 {
+    --sl-color-blue-low: hsl(184, 32%, 18%);
+    --sl-color-blue: hsl(184, 42%, 55%);
+    --sl-color-blue-high: hsl(184, 46%, 75%);
+  }
+  .note-set2-variant-4 {
+    --sl-color-blue-low: hsl(184, 26%, 18%);
+    --sl-color-blue: hsl(184, 34%, 55%);
+    --sl-color-blue-high: hsl(184, 38%, 75%);
+  }
+`}</style>
+
+<div class="note-set2-variant-1">
+<Aside type="note" title="Set 2.1: Cyan-Teal (65% sat)">
+Vibrant cyan-teal - hue 184°, saturation 65%.
+</Aside>
+</div>
+
+<div class="note-set2-variant-2">
+<Aside type="note" title="Set 2.2: Soft Cyan-Teal (52% sat)">
+Soft cyan-teal at 52% saturation.
+</Aside>
+</div>
+
+<div class="note-set2-variant-3">
+<Aside type="note" title="Set 2.3: Pastel Cyan-Teal (42% sat)">
+Gentle pastel cyan-teal at 42% saturation.
+</Aside>
+</div>
+
+<div class="note-set2-variant-4">
+<Aside type="note" title="Set 2.4: Very Pastel Cyan-Teal (34% sat)">
+Very soft pastel cyan-teal at 34% saturation.
+</Aside>
+</div>
+
+## Blue Note Variations - Set 3: Azure Blue (214°)
+
+<style>{`
+  .note-set3-variant-1 {
+    --sl-color-blue-low: hsl(214, 45%, 18%);
+    --sl-color-blue: hsl(214, 65%, 55%);
+    --sl-color-blue-high: hsl(214, 70%, 75%);
+  }
+  .note-set3-variant-2 {
+    --sl-color-blue-low: hsl(214, 38%, 18%);
+    --sl-color-blue: hsl(214, 52%, 55%);
+    --sl-color-blue-high: hsl(214, 56%, 75%);
+  }
+  .note-set3-variant-3 {
+    --sl-color-blue-low: hsl(214, 32%, 18%);
+    --sl-color-blue: hsl(214, 42%, 55%);
+    --sl-color-blue-high: hsl(214, 46%, 75%);
+  }
+  .note-set3-variant-4 {
+    --sl-color-blue-low: hsl(214, 26%, 18%);
+    --sl-color-blue: hsl(214, 34%, 55%);
+    --sl-color-blue-high: hsl(214, 38%, 75%);
+  }
+`}</style>
+
+<div class="note-set3-variant-1">
+<Aside type="note" title="Set 3.1: Azure Blue (65% sat)">
+Vibrant azure blue - hue 214°, saturation 65%.
+</Aside>
+</div>
+
+<div class="note-set3-variant-2">
+<Aside type="note" title="Set 3.2: Soft Azure Blue (52% sat)">
+Soft azure blue at 52% saturation.
+</Aside>
+</div>
+
+<div class="note-set3-variant-3">
+<Aside type="note" title="Set 3.3: Pastel Azure Blue (42% sat)">
+Gentle pastel azure blue at 42% saturation.
+</Aside>
+</div>
+
+<div class="note-set3-variant-4">
+<Aside type="note" title="Set 3.4: Very Pastel Azure Blue (34% sat)">
+Very soft pastel azure blue at 34% saturation.
+</Aside>
+</div>
+
+## Blue Note Variations - Set 4: Steel Blue (220°)
+
+<style>{`
+  .note-set4-variant-1 {
+    --sl-color-blue-low: hsl(220, 45%, 18%);
+    --sl-color-blue: hsl(220, 65%, 55%);
+    --sl-color-blue-high: hsl(220, 70%, 75%);
+  }
+  .note-set4-variant-2 {
+    --sl-color-blue-low: hsl(220, 38%, 18%);
+    --sl-color-blue: hsl(220, 52%, 55%);
+    --sl-color-blue-high: hsl(220, 56%, 75%);
+  }
+  .note-set4-variant-3 {
+    --sl-color-blue-low: hsl(220, 32%, 18%);
+    --sl-color-blue: hsl(220, 42%, 55%);
+    --sl-color-blue-high: hsl(220, 46%, 75%);
+  }
+  .note-set4-variant-4 {
+    --sl-color-blue-low: hsl(220, 26%, 18%);
+    --sl-color-blue: hsl(220, 34%, 55%);
+    --sl-color-blue-high: hsl(220, 38%, 75%);
+  }
+`}</style>
+
+<div class="note-set4-variant-1">
+<Aside type="note" title="Set 4.1: Steel Blue (65% sat)">
+Vibrant steel blue - hue 220°, saturation 65%.
+</Aside>
+</div>
+
+<div class="note-set4-variant-2">
+<Aside type="note" title="Set 4.2: Soft Steel Blue (52% sat)">
+Soft steel blue at 52% saturation.
+</Aside>
+</div>
+
+<div class="note-set4-variant-3">
+<Aside type="note" title="Set 4.3: Pastel Steel Blue (42% sat)">
+Gentle pastel steel blue at 42% saturation.
+</Aside>
+</div>
+
+<div class="note-set4-variant-4">
+<Aside type="note" title="Set 4.4: Very Pastel Steel Blue (34% sat)">
+Very soft pastel steel blue at 34% saturation.
+</Aside>
+</div>
+
+## Orange Caution Variations
+
+<style>{`
+  .caution-variant-1 {
+    --sl-color-orange-low: hsl(45, 35%, 20%);
+    --sl-color-orange: hsl(45, 70%, 60%);
+    --sl-color-orange-high: hsl(45, 75%, 80%);
+  }
+  .caution-variant-2 {
+    --sl-color-orange-low: hsl(45, 45%, 20%);
+    --sl-color-orange: hsl(45, 78%, 62%);
+    --sl-color-orange-high: hsl(45, 82%, 82%);
+  }
+  .caution-variant-3 {
+    --sl-color-orange-low: hsl(35, 45%, 20%);
+    --sl-color-orange: hsl(35, 75%, 60%);
+    --sl-color-orange-high: hsl(35, 80%, 80%);
+  }
+  .caution-variant-4 {
+    --sl-color-orange-low: hsl(30, 50%, 20%);
+    --sl-color-orange: hsl(30, 80%, 60%);
+    --sl-color-orange-high: hsl(30, 85%, 80%);
+  }
+`}</style>
+
+<div class="caution-variant-1">
+<Aside type="caution" title="Variant 1: Amber (45°, 70% sat) - Current">
+Current color - muted amber/yellow tone.
+</Aside>
+</div>
+
+<div class="caution-variant-2">
+<Aside type="caution" title="Variant 2: Vibrant Amber (45°, 78% sat)">
+Same hue, more saturated - brighter, more eye-catching amber.
+</Aside>
+</div>
+
+<div class="caution-variant-3">
+<Aside type="caution" title="Variant 3: Warm Orange (35°, 75% sat)">
+Warmer hue - more orange, less yellow.
+</Aside>
+</div>
+
+<div class="caution-variant-4">
+<Aside type="caution" title="Variant 4: Rich Orange (30°, 80% sat)">
+Richer orange - bold and warm.
+</Aside>
+</div>
+
+## Red Danger Variations
+
+<style>{`
+  .danger-variant-1 {
+    --sl-color-red-low: hsl(10, 40%, 20%);
+    --sl-color-red: hsl(10, 70%, 60%);
+    --sl-color-red-high: hsl(10, 75%, 80%);
+  }
+  .danger-variant-2 {
+    --sl-color-red-low: hsl(10, 50%, 20%);
+    --sl-color-red: hsl(10, 78%, 62%);
+    --sl-color-red-high: hsl(10, 82%, 82%);
+  }
+  .danger-variant-3 {
+    --sl-color-red-low: hsl(5, 55%, 20%);
+    --sl-color-red: hsl(5, 80%, 60%);
+    --sl-color-red-high: hsl(5, 85%, 80%);
+  }
+  .danger-variant-4 {
+    --sl-color-red-low: hsl(0, 60%, 20%);
+    --sl-color-red: hsl(0, 82%, 60%);
+    --sl-color-red-high: hsl(0, 85%, 80%);
+  }
+`}</style>
+
+<div class="danger-variant-1">
+<Aside type="danger" title="Variant 1: Coral (10°, 70% sat) - Current">
+Current color - soft coral red.
+</Aside>
+</div>
+
+<div class="danger-variant-2">
+<Aside type="danger" title="Variant 2: Vibrant Coral (10°, 78% sat)">
+Same hue, more saturated - brighter coral.
+</Aside>
+</div>
+
+<div class="danger-variant-3">
+<Aside type="danger" title="Variant 3: Bright Red-Orange (5°, 80% sat)">
+Closer to true red - more intense.
+</Aside>
+</div>
+
+<div class="danger-variant-4">
+<Aside type="danger" title="Variant 4: Pure Red (0°, 82% sat)">
+True red - maximum intensity and urgency.
+</Aside>
+</div>

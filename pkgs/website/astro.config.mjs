@@ -304,7 +304,7 @@ export default defineConfig({
             },
           ],
           {
-            exclude: ['/author', '/demos'],
+            exclude: ['/author', '/demos', '/demo-colors'],
             topics: {
               news: ['/news', '/news/**/*'],
             },

@@ -305,3 +305,71 @@ svg .secondary {
   }
 }
 
+/* ============================================
+   HARMONIZED SEMANTIC COLORS FOR DEMO PAGE
+   ============================================ */
+
+/* These colors are designed to harmonize with the teal/green theme
+   by using analogous and complementary color relationships while
+   maintaining consistent saturation and lightness levels. */
+
+:root {
+  /* Blue (Info/Note) - Steel blue (distinct yet harmonious) */
+  --sl-hue-blue: 220;
+  --sl-color-blue-low: hsl(220, 45%, 18%);     /* Dark steel blue bg */
+  --sl-color-blue: hsl(220, 65%, 55%);         /* Steel blue */
+  --sl-color-blue-high: hsl(220, 70%, 90%);    /* Light steel blue */
+
+  /* Purple (Tip) - Soft magenta-purple (stands out while harmonizing with teal) */
+  --sl-hue-purple: 280;
+  --sl-color-purple-low: hsl(280, 40%, 20%);   /* Dark soft magenta-purple bg */
+  --sl-color-purple: hsl(280, 55%, 62%);       /* Soft magenta-purple */
+  --sl-color-purple-high: hsl(280, 58%, 90%);  /* Light soft magenta-purple */
+
+  /* Orange (Caution) - Soft warm orange (warmer, harmonious) */
+  --sl-hue-orange: 35;
+  --sl-color-orange-low: hsl(35, 38%, 22%);    /* Dark soft warm orange bg */
+  --sl-color-orange: hsl(35, 60%, 68%);        /* Soft warm orange */
+  --sl-color-orange-high: hsl(35, 65%, 92%);   /* Light soft warm orange */
+
+  /* Red (Danger) - Bright red-orange (more intense) */
+  --sl-hue-red: 5;
+  --sl-color-red-low: hsl(5, 55%, 20%);        /* Dark bright red-orange bg */
+  --sl-color-red: hsl(5, 80%, 60%);            /* Bright red-orange */
+  --sl-color-red-high: hsl(5, 85%, 90%);       /* Light bright red-orange */
+
+  /* Green (Success) - Aligned with primary theme (yellow-green) */
+  --sl-hue-green: 140;
+  --sl-color-green-low: hsl(140, 42%, 18%);    /* Dark green bg */
+  --sl-color-green: hsl(140, 60%, 50%);        /* Green */
+  --sl-color-green-high: hsl(140, 65%, 70%);   /* Light green */
+}
+
+/* Light mode adjustments for harmonized colors */
+:root[data-theme='light'] {
+  /* Blue (Info/Note) */
+  --sl-color-blue-high: hsl(220, 70%, 30%);    /* Dark steel blue text */
+  --sl-color-blue: hsl(220, 65%, 50%);         /* Steel blue */
+  --sl-color-blue-low: hsl(220, 60%, 92%);     /* Light steel blue bg */
+
+  /* Purple (Tip) */
+  --sl-color-purple-high: hsl(280, 58%, 32%);  /* Dark soft magenta-purple text */
+  --sl-color-purple: hsl(280, 55%, 58%);       /* Soft magenta-purple */
+  --sl-color-purple-low: hsl(280, 50%, 94%);   /* Light soft magenta-purple bg */
+
+  /* Orange (Caution) */
+  --sl-color-orange-high: hsl(35, 65%, 32%);   /* Dark soft warm orange text */
+  --sl-color-orange: hsl(35, 60%, 62%);        /* Soft warm orange */
+  --sl-color-orange-low: hsl(35, 58%, 94%);    /* Light soft warm orange bg */
+
+  /* Red (Danger) */
+  --sl-color-red-high: hsl(5, 85%, 35%);       /* Dark bright red-orange text */
+  --sl-color-red: hsl(5, 80%, 55%);            /* Bright red-orange */
+  --sl-color-red-low: hsl(5, 75%, 92%);        /* Light bright red-orange bg */
+
+  /* Green (Success) */
+  --sl-color-green-high: hsl(140, 65%, 25%);   /* Dark green text */
+  --sl-color-green: hsl(140, 60%, 45%);        /* Green */
+  --sl-color-green-low: hsl(140, 55%, 92%);    /* Light green bg */
+}
+
