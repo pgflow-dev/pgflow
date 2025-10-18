@@ -1,0 +1,352 @@
+---
+title: Configuration
+description: Learn how to configure EdgeWorker with options for configuring Supabase Queues, message processing, polling behavior, and retries. Includes defaults and best practices.
+sidebar:
+  order: 3
+banner:
+  content: |
+    This guide is for the queue-only version of Edge Worker. Main docs are <a href="/get-started/">here</a>
+---
+
+import { Aside, Steps, Badge } from "@astrojs/starlight/components";
+
+You can pass an optional configuration object as the second argument to `EdgeWorker.start()`
+to tweak the worker's behavior.
+
+<Aside title="Zero Configuration" type="tip">
+Edge Worker comes with sensible defaults for all configuration options.
+
+You only need to provide a handler function:
+
+```ts
+EdgeWorker.start(console.log);
+```
+</Aside>
+
+:::caution[Configuration Validation]
+Currently, configuration options are not validated at runtime. Please double-check your settings carefully.
+:::
+
+
+### Default configuration
+
+```typescript
+EdgeWorker.start(handler, {
+  // name of the queue to poll for messages
+  queueName: 'tasks',
+
+  // how many tasks are processed at the same time
+  maxConcurrent: 10,
+
+  // how many connections to the database are opened
+  maxPgConnections: 4,
+
+  // in-worker polling interval
+  maxPollSeconds: 5,
+
+  // in-database polling interval
+  pollIntervalMs: 200,
+
+  // retry configuration for failed messages
+  retry: {
+    strategy: 'exponential', // exponential backoff (default)
+    limit: 5,               // max retry attempts
+    baseDelay: 3,           // initial delay in seconds
+    maxDelay: 300,          // max delay cap in seconds
+  },
+
+  // how long a job is invisible after reading
+  // if not successful, will reappear after this time
+  visibilityTimeout: 10,
+});
+```
+
+## Queue configuration
+
+:::tip[You don't need to create queues manually]
+The worker will automatically create a logged, non-partitioned queue
+with configured name during startup if it does not exist.
+:::
+
+### `queueName`
+**Type:** `string`
+**Default:** `'tasks'`
+
+The name of the PGMQ queue to listen to for messages.
+
+```ts
+EdgeWorker.start(handler, {
+  queueName: 'my_custom_queue'
+});
+```
+
+## Message Processing
+
+### `visibilityTimeout`
+**Type:** `number`
+**Default:** `10`
+
+The duration (in seconds) that a message remains invisible to other consumers while being processed.
+
+<Aside title="Message Visibility and Processing" type="caution">
+Keep `visibilityTimeout` higher than your task's maximum processing time.
+  <details>
+  <summary>
+  Here's why:
+  </summary>
+  - When a worker picks up a message, it becomes invisible for `visibilityTimeout` seconds
+  - If processing takes longer than `visibilityTimeout`, the message becomes visible again
+  - Other workers can then pick up and process the same message
+  - This leads to duplicate processing of the same task
+  - For example: with `visibilityTimeout: 3` and a task that takes 5 seconds, the message could be processed twice
+  </details>
+</Aside>
+
+```ts
+EdgeWorker.start(handler, {
+  visibilityTimeout: 5 // message will re-appear in queue after 5 seconds if not processed
+});
+```
+
+### `maxConcurrent`
+**Type:** `number`
+**Default:** `10`
+
+This option limits concurrency - the maximum number of messages that can be processed at the same time.
+Increase for IO-heavy tasks (network or db calls), decrease for CPU-heavy tasks.
+
+```ts
+EdgeWorker.start(handler, {
+  maxConcurrent: 10 // Process up to 10 messages at once
+});
+```
+
+### `maxPgConnections`
+**Type:** `number`
+**Default:** `4`
+
+Maximum number of concurrent database connections.
+Increase for IO-heavy tasks (network or database operations), decrease for CPU-heavy tasks.
+
+```ts
+EdgeWorker.start(handler, {
+  maxPgConnections: 10 // Use up to 10 connections to the database
+});
+```
+
+## Polling Behavior
+
+### `maxPollSeconds`
+**Type:** `number`
+**Default:** `5`
+
+Amount of seconds to wait for a message to be available in the queue.
+
+:::caution[Polling and Worker Health]
+Keep `maxPollSeconds` at 5 seconds or lower.
+  <details>
+  <summary>
+  Here's why:
+  </summary>
+  - Heartbeats are sent once per main loop iteration
+  - Each iteration can take up to `maxPollSeconds` to complete
+  - Workers are considered inactive after 6 seconds without a heartbeat
+  - Therefore, `maxPollSeconds` must be lower than 5 seconds to account for any additional delays
+  </details>
+:::
+
+```ts
+EdgeWorker.start(handler, {
+  maxPollSeconds: 5 // Long-poll for 5 seconds waiting for a message
+});
+```
+
+### `pollIntervalMs`
+**Type:** `number`
+**Default:** `200`
+
+The interval (in milliseconds) between database polling attempts by `pgmq.read_with_poll`.
+The default value is suitable for most use cases.
+
+<Aside type="caution" title="Polling Intervals">
+Keep `pollIntervalMs` lower than `maxPollSeconds * 1000`.
+  <details>
+  <summary>
+  Here's why:
+  </summary>
+  - The worker polls the database every `pollIntervalMs` milliseconds
+  - This polling continues until `maxPollSeconds` is reached
+  - If `pollIntervalMs` is too high, the worker might exit after just one poll
+  - For example: with `maxPollSeconds: 5` and `pollIntervalMs: 6000`, only one poll would occur
+  </details>
+</Aside>
+
+
+```ts
+EdgeWorker.start(handler, {
+  pollIntervalMs: 300 // Poll every 300ms
+});
+```
+
+## Retries
+
+### `retry`
+**Type:** `RetryConfig`
+**Default:** `{ strategy: 'exponential', limit: 5, baseDelay: 3, maxDelay: 300 }`
+
+Configures how failed messages are retried. Edge Worker supports two retry strategies:
+
+- **`exponential`** (default): Delay doubles with each retry attempt
+- **`fixed`**: Constant delay between all retry attempts
+
+#### Retry Delay Comparison
+
+Here's how retry delays differ between strategies with the same base delay:
+
+| Attempt | Fixed (baseDelay: 5s) | Exponential (baseDelay: 5s) | Exponential (baseDelay: 5s, maxDelay: 60s) |
+|---------|----------------------|------------------------------|---------------------------------------------|
+| 1       | 5s                   | 5s                           | 5s                                          |
+| 2       | 5s                   | 10s                          | 10s                                         |
+| 3       | 5s                   | 20s                          | 20s                                         |
+| 4       | 5s                   | 40s                          | 40s                                         |
+| 5       | 5s                   | 80s                          | 60s (capped)                                |
+| 6       | 5s                   | 160s                         | 60s (capped)                                |
+| 7       | 5s                   | 320s                         | 60s (capped)                                |
+| 8       | 5s                   | 640s                         | 60s (capped)                                |
+
+#### Exponential Backoff Strategy
+
+**Type:**
+```typescript
+interface ExponentialRetryConfig {
+  strategy: 'exponential';
+  limit: number;      // Max retry attempts
+  baseDelay: number;  // Initial delay in seconds
+  maxDelay?: number;  // Maximum delay cap in seconds (default: 300)
+}
+```
+
+With exponential backoff, the delay between retries increases exponentially: `baseDelay * 2^(attempt-1)`. For example, with `baseDelay: 3`, the delays would be 3s, 6s, 12s, 24s, etc.
+
+```ts
+EdgeWorker.start(handler, {
+  retry: {
+    strategy: 'exponential',
+    limit: 5,        // max 5 retry attempts
+    baseDelay: 2,    // start with 2 second delay
+    maxDelay: 60,    // cap delays at 60 seconds
+  }
+});
+```
+
+<Aside type="tip" title="Exponential Backoff Benefits">
+Exponential backoff is the default strategy because it:
+- Reduces load on failing services by spacing out retries
+- Gives transient errors more time to resolve
+- Prevents thundering herd problems during outages
+
+This strategy provides better resilience and system stability compared to fixed delays.
+</Aside>
+
+#### Fixed Delay Strategy
+
+**Type:**
+```typescript
+interface FixedRetryConfig {
+  strategy: 'fixed';
+  limit: number;      // Max retry attempts
+  baseDelay: number;  // Constant delay between retries in seconds
+}
+```
+
+With fixed delay, the time between retries remains constant regardless of the attempt number.
+
+```ts
+EdgeWorker.start(handler, {
+  retry: {
+    strategy: 'fixed',
+    limit: 3,        // max 3 retry attempts
+    baseDelay: 10,   // always wait 10 seconds between retries
+  }
+});
+```
+
+#### Disabling Retries
+
+To disable retries entirely, set `limit` to 0:
+
+```ts
+EdgeWorker.start(handler, {
+  retry: {
+    strategy: 'fixed',  // Strategy doesn't matter when limit is 0
+    limit: 0,           // no retries
+    baseDelay: 0,
+  }
+});
+```
+
+### `retryDelay` <Badge text="deprecated" variant="caution" />
+**Type:** `number`
+**Default:** `5`
+
+:::caution[Deprecated]
+`retryDelay` is deprecated. Use the new `retry` configuration with `strategy: 'fixed'` instead:
+
+```ts
+// Old (deprecated)
+EdgeWorker.start(handler, {
+  retryDelay: 5,
+  retryLimit: 3,
+});
+
+// New (recommended)
+EdgeWorker.start(handler, {
+  retry: {
+    strategy: 'fixed',
+    limit: 3,
+    baseDelay: 5,
+  }
+});
+```
+
+See the [retry configuration](#retry) section above for details.
+:::
+
+Number of seconds to wait between retry attempts when using a fixed delay strategy.
+
+### `retryLimit` <Badge text="deprecated" variant="caution" />
+**Type:** `number`
+**Default:** `5`
+
+:::caution[Deprecated]
+`retryLimit` is deprecated. Use the new `retry.limit` configuration instead:
+
+```ts
+// Old (deprecated)
+EdgeWorker.start(handler, {
+  retryLimit: 5,
+});
+
+// New (recommended)
+EdgeWorker.start(handler, {
+  retry: {
+    strategy: 'exponential',
+    limit: 5,
+    baseDelay: 3,
+  }
+});
+```
+
+See the [retry configuration](#retry) section above for details.
+:::
+
+Maximum number of retry attempts for failed message processing before marking the message as dead.
+
+## Accessing Configuration in Handlers
+
+Your handler functions can access the resolved worker configuration through the context object. For detailed information about available configuration options and usage patterns, see [Context](/concepts/flows/context/).
+
+## Next Steps
+
+- [Update pgflow](/deploy/maintain/update-pgflow/) - Keep your pgflow installation up to date with the latest features and bug fixes
+

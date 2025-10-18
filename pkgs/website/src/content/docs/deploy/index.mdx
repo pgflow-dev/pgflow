@@ -1,0 +1,68 @@
+---
+title: Deploy
+description: Deploy, monitor, and maintain pgflow workflows in production
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Learn how to deploy pgflow to production, monitor workflow execution, and maintain your system over time.
+
+## Supabase
+
+<CardGrid>
+  <LinkCard
+    title="Deploy your first flow"
+    href="/deploy/supabase/deploy-first-flow/"
+    description="First-time deployment guide: connection string, secrets, and worker setup"
+  />
+  <LinkCard
+    title="Update deployed flows"
+    href="/deploy/supabase/update-deployed-flows/"
+    description="Safe workflow for deploying updates using worker deprecation"
+  />
+  <LinkCard
+    title="Keep workers running"
+    href="/deploy/supabase/keep-workers-running/"
+    description="Set up automated monitoring to ensure workers stay operational"
+  />
+  <LinkCard
+    title="Connection string encoding"
+    href="/deploy/maintain/connection-string/"
+    description="URL-encode special characters in database passwords"
+  />
+</CardGrid>
+
+## Observe
+
+<CardGrid>
+  <LinkCard
+    title="Monitor flow execution"
+    href="/deploy/observe/monitor-execution/"
+    description="Track workflow runs, step progress, and task status using SQL queries"
+  />
+  <LinkCard
+    title="Monitor workers health"
+    href="/deploy/observe/monitor-workers-health/"
+    description="Check worker heartbeats and operational status"
+  />
+</CardGrid>
+
+## Maintain
+
+<CardGrid>
+  <LinkCard
+    title="Update pgflow"
+    href="/deploy/maintain/update-pgflow/"
+    description="Safely upgrade pgflow to newer versions"
+  />
+  <LinkCard
+    title="Tune deployed flows"
+    href="/deploy/maintain/tune-flow-config/"
+    description="Adjust retry behavior and timeouts for production flows"
+  />
+  <LinkCard
+    title="Prune records"
+    href="/deploy/maintain/prune-records/"
+    description="Clean up old workflow execution data to manage database size"
+  />
+</CardGrid>

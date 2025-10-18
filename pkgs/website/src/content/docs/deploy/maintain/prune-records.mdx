@@ -1,0 +1,129 @@
+---
+title: Prune Old Data
+description: How to maintain your pgflow database by cleaning up old records
+sidebar:
+  order: 70
+---
+
+import { Aside, Steps, Code } from "@astrojs/starlight/components";
+import NotProductionReady from '@/components/NotProductionReady.astro';
+import pruningFunctionCode from '@/../../core/supabase/tests/_shared/prune_data_older_than.sql.raw?raw';
+
+As your workflows accumulate, pgflow tables gather historical data. While valuable for auditing, keeping this data indefinitely can impact performance and storage costs.
+
+<Aside type="danger" title="DANGER: This function is destructive and irreversible">
+**Read this entire page carefully before using this function.** Incorrect usage can delete data before tasks have a chance to execute, especially when using [startDelay](/reference/configuration/configuration/#startdelay).
+
+**This function deletes BOTH completed AND failed runs.** There is no way to preserve failed runs for longer investigation periods.
+</Aside>
+
+<Aside type="note" title="What gets pruned">
+When a run (completed or failed) is older than the retention period, **ALL** associated records are deleted, including:
+
+**Database records deleted:**
+- `pgflow.runs` - The run record itself
+- `pgflow.step_states` - ALL step states, regardless of status (created, started, completed, failed)
+- `pgflow.step_tasks` - ALL tasks, regardless of status (queued, started, completed, failed)
+- `pgflow.workers` - Inactive workers (based on last_heartbeat_at)
+
+**PGMQ messages deleted:**
+- Active queue messages (`pgmq.q_{flow_slug}`) - Including delayed/queued messages
+- Archived messages (`pgmq.a_{flow_slug}`) - Already completed/failed messages
+
+**What is NOT pruned:**
+- Runs that are still active (status='started'), regardless of age
+- Flow and step definitions (these are never pruned)
+</Aside>
+
+<Aside type="danger" title="CRITICAL: Retention period vs startDelay">
+If you use [startDelay](/reference/configuration/configuration/#startdelay) on any steps, your retention period **MUST be longer** than your longest delay.
+
+**Example of what goes wrong:**
+- Step has `startDelay='60 days'` (e.g., "send reminder in 60 days")
+- Run fails on day 1, leaving delayed task queued
+- Prune runs on day 30 with retention='30 days'
+- Task and message deleted on day 30
+- Message would have executed on day 60 → **Lost!**
+
+**Safe retention period:** `longest_startDelay + 30 days` (buffer for run completion)
+
+Example: If longest startDelay is 60 days, use at least 90-day retention.
+</Aside>
+
+## Using the Pruning Function
+
+pgflow includes a pruning function that accepts an INTERVAL parameter specifying how much data to keep:
+
+```sql
+pgflow.prune_data_older_than(retention_interval INTERVAL)
+```
+
+<Aside type="caution" title="Test on staging first">
+**Always test pruning on a staging environment first** to verify:
+- Retention period is appropriate for your workflows
+- No tasks with long start_delay will be affected
+- Database performance impact is acceptable
+
+This operation is **irreversible** - there is no undo or recovery.
+</Aside>
+
+Examples:
+```sql
+-- Keep 90 days of data (recommended default)
+SELECT pgflow.prune_data_older_than(make_interval(days => 90));
+
+-- Keep 30 days of data (only if no long start_delay)
+SELECT pgflow.prune_data_older_than(make_interval(days => 30));
+
+-- Keep 6 months of data using interval literals
+SELECT pgflow.prune_data_older_than(INTERVAL '6 months');
+
+-- Keep 1 year for compliance requirements
+SELECT pgflow.prune_data_older_than(INTERVAL '1 year');
+```
+
+<Aside type="caution">
+This function is not yet included in the default pgflow migrations as we're gathering feedback on optimal default configurations. It has been thoroughly unit tested, but you'll need to manually add it to your project as shown in the <a href="#the-pruning-function">Pruning Function</a> section below.
+</Aside>
+
+## Running periodically
+
+You can use pg_cron to schedule automated pruning.
+
+<Aside type="tip" title="Performance Impact">
+Run pruning during low-traffic periods. The operation can be resource-intensive for large datasets. Monitor database performance during first few runs to determine optimal schedule.
+</Aside>
+
+<Aside type="danger" title="Before automating">
+**Test the retention period manually first!** Only automate pruning after you've verified the retention period is safe for your workflows on staging.
+</Aside>
+
+### 1. Install the pruning function
+
+To install this function, run the [pruning function SQL](#the-pruning-function) directly in your database using psql or Supabase Studio.
+
+### 2. Setup pg_cron schedule
+
+Run it in Supabase Studio or include in a migration file:
+
+```sql
+-- Schedule weekly pruning (every Sunday at 2 AM)
+-- This keeps 90 days of data (adjust based on your needs)
+SELECT cron.schedule(
+  'pgflow-prune-weekly',
+  '0 2 * * 0', -- cron expression: minute hour day month weekday
+  $$SELECT pgflow.prune_data_older_than(make_interval(days => 90))$$
+);
+```
+
+##### Verify the scheduled job
+
+```sql
+SELECT * FROM cron.job;
+```
+
+## The Pruning Function
+
+Run this SQL to install the pruning function:
+
+<Code lang="sql" code={pruningFunctionCode} />

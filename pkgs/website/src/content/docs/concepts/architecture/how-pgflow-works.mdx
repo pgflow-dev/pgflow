@@ -1,0 +1,122 @@
+---
+title: How pgflow Works
+description: A gentle, 10-minute introduction to pgflow's layered architecture, state model, and execution cycle
+sidebar:
+  order: 2
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+pgflow is deliberately simple: a handful of SQL tables and functions that compose into a full workflow engine with **Postgres as the single source of truth**.
+
+This page walks you through the mental model in three parts plus a concrete example:
+
+1. The familiar pattern at pgflow's core
+2. Three layers and their responsibilities
+3. Step state machine
+4. Concrete example bringing it together
+
+---
+
+## 1. The Familiar Pattern
+
+If you've written queue processing code, this will feel familiar:
+
+```typescript
+job = dequeue()
+process(job)
+enqueue(next_job)
+```
+
+pgflow is built on this pattern. The SQL Core handles the orchestration so each step naturally triggers the next one based on dependencies.
+
+This simple pattern becomes powerful when orchestrated across a DAG - that's what pgflow does.
+
+---
+
+## 2. Three Layers
+
+<img src="/diagrams/three-layers.svg" alt="Three layers of pgflow architecture: TypeScript DSL, SQL Core, and Worker" width="90%" />
+
+| Layer | What it does | Lives where |
+|-------|--------------|-------------|
+| **TypeScript DSL** | Describe flow shape with type inference | Your repo |
+| **SQL Core** | Owns all state and orchestration logic | Postgres tables and functions |
+| **Worker** | Executes user code, reports results | Edge Function (or any runtime) |
+
+Each layer has one job:
+
+- **DSL**: Lets you define flows in TypeScript with full type safety
+- **SQL Core**: Manages state transitions and determines what runs when
+- **Worker**: Executes handlers and updates state
+
+All state lives in Postgres tables, giving you ACID guarantees and full observability through SQL queries.
+
+<Aside type="tip" title="Swap the Worker if you like">
+Any process that can call the SQL Core functions works. Use Edge Functions, Lambda, or your own runtime - pgflow doesn't care.
+</Aside>
+
+---
+
+## 3. Step State Machine
+
+A workflow run finishes when every step reaches a terminal status. Each step follows this lifecycle:
+
+```
+created → started → completed
+                  ↘ failed
+```
+
+- **created**: Dependencies not yet met
+- **started**: Dependencies complete, now executing
+- **completed/failed**: Finished
+
+The SQL Core tracks these states and spawns tasks for steps whose dependencies are met. Workers execute the tasks and report back, advancing the state machine.
+
+---
+
+## 4. Concrete Example
+
+Here's a simple two-step flow:
+
+```typescript
+type Input = { first: string; last: string };
+
+new Flow<Input>({ slug: "greet_user" })
+  .step(
+    { slug: "full_name" },
+    (input) => `${input.run.first} ${input.run.last}`
+  )
+  .step(
+    { slug: "greeting", dependsOn: ["full_name"] },
+    (input) => `Hello, ${input.full_name}!`
+  );
+```
+
+The compiler generates migration SQL:
+
+```sql
+SELECT pgflow.create_flow('greet_user');
+SELECT pgflow.add_step('greet_user', 'full_name');
+SELECT pgflow.add_step('greet_user', 'greeting', ARRAY['full_name']);
+```
+
+When you start a run:
+1. `full_name` step becomes `created` (no dependencies)
+2. Worker picks it up, executes, marks `completed`
+3. `greeting` step becomes ready (dependency met)
+4. Worker executes it with `input.full_name` available
+5. Run completes
+
+All state transitions happen in Postgres. Query `pgflow.step_states` to see exactly where each step is.
+
+---
+
+## Recap
+
+1. **Familiar pattern**: pgflow builds on the dequeue/process/enqueue pattern you already know
+2. **Three layers**: DSL for authoring, SQL Core for orchestration, Worker for execution
+3. **State machine**: Steps transition from created → started → completed/failed
+4. **Everything in Postgres**: All state is queryable SQL, giving you complete observability
+
+You now have the mental model needed for the rest of the docs.

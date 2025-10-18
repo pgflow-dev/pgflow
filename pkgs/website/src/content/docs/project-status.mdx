@@ -1,0 +1,47 @@
+---
+title: Project Status
+description: Current status and production readiness for pgflow
+---
+
+import { Card, CardGrid, Aside } from "@astrojs/starlight/components";
+
+## Public Beta
+
+pgflow is in **public beta** and being used in production by early adopters. Core functionality is stable and reliable.
+
+## Known Limitations & Active Work
+
+<CardGrid>
+  <Card title="Performance" icon="rocket">
+    Core operations are optimized with batching, proper indexing, and declarative SQL. However, **large-scale workloads** may reveal additional optimization opportunities. Start with your expected workload and scale as needed.
+  </Card>
+
+  <Card title="Developer Experience" icon="pencil">
+    Flow compilation is currently manual (`pgflow compile`). **Auto-compilation in workers** is in development to streamline the workflow and eliminate this step.
+  </Card>
+
+  <Card title="Worker Management" icon="setting">
+    Edge Functions have platform execution time limits. For production reliability, set up a **pg_cron job** to automatically restart workers when needed. See [deployment guide](/deploy/supabase/keep-workers-running/) for the simple 2-minute setup.
+  </Card>
+</CardGrid>
+
+## Production Recommendations
+
+<Aside type="tip">
+- Test thoroughly for your specific use case before going to production
+- Monitor workflow execution and worker health continuously
+- Start with moderate workloads and scale as you verify performance
+- Set up the worker safety net for reliable production operation
+- Have backup strategies for critical workflows and data
+- Join our community for support and to share experiences
+</Aside>
+
+## Getting Support
+
+- **Discord**: [Join our community](https://www.pgflow.dev/discord/) to share experiences and get help
+- **GitHub**: [Report bugs or request features](https://github.com/pgflow-dev/pgflow/issues)
+- **Documentation**: [Browse our guides](/get-started/installation/) for detailed information
+
+## Breaking Changes
+
+During beta, breaking changes may be introduced for critical fixes or significant improvements. All changes are documented in [release notes](https://github.com/pgflow-dev/pgflow/releases) with migration guides. See [updating pgflow](/deploy/maintain/update-pgflow/) for the update process.

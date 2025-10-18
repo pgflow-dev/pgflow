@@ -1,0 +1,78 @@
+---
+title: Create Reusable Tasks
+description: Learn how to design and implement reusable task functions for pgflow workflows
+sidebar:
+  order: 30
+---
+
+import { Aside, Steps, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+This guide explains best practices for creating reusable task functions that can be composed into pgflow workflows.
+
+## Design Principles
+
+Tasks in pgflow follow functional programming principles. A well-designed task function should:
+
+1. **Accept only what it needs** - Take specific parameters (strings, numbers, objects), not the entire flow input object
+2. **Return JSON-serializable data** - Use primitives, plain objects, and arrays. Convert dates to ISO strings
+3. **Be testable in isolation** - Should work independently without coupling to flow structure
+4. **Have no knowledge of flow structure** - Should not depend on step names or overall flow architecture
+5. **Document clearly** - Specify input/output types and include examples when helpful
+6. **Handle errors gracefully** - Provide meaningful error messages and consider retry strategies
+
+### Example: Good vs Poor Task Design
+
+```typescript {1-5} add="content: string" add="input.website.content"
+// Good: Task accepts direct content parameter
+async function summarizeContent(content: string) {
+  // Process the content directly
+  return { summary: "Processed summary..." };
+}
+
+// In your flow:
+.step(
+  { slug: 'summary', dependsOn: ['website'] },
+  async (input) => await summarizeContent(input.website.content)
+)
+```
+
+### Example: Poor Task Design
+
+```typescript {1-5} del="input: { website: { content: string } }" del="summarizeWebsite(input)"
+// Bad: Task expects specific step structure
+async function summarizeWebsite(input: { website: { content: string } }) {
+  // Tightly coupled to previous step name and structure
+  return { summary: "Processed summary..." };
+}
+
+// In your flow:
+.step(
+  { slug: 'summary', dependsOn: ['website'] },
+  async (input) => await summarizeWebsite(input) // Passing entire input object
+)
+```
+
+## Learn more
+
+<CardGrid>
+  <LinkCard
+    title="Organize Flows code"
+    href="/build/authoring/organize-flow-code/"
+    description="Learn where to put your task files and how to structure your codebase"
+  />
+  <LinkCard
+    title="Naming workflow steps"
+    href="/concepts/flows/naming-steps/"
+    description="Best practices for naming steps that use your tasks"
+  />
+</CardGrid>
+
+## See it in action
+
+<CardGrid>
+  <LinkCard
+    title="AI Web Scraper Tutorial"
+    href="/tutorials/ai-web-scraper/"
+    description="Complete example showing reusable tasks in a real-world workflow"
+  />
+</CardGrid>
