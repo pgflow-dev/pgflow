@@ -197,7 +197,7 @@ I'm launching a task agent to execute the split with these instructions:
 3. Create [count] new split files following the content distribution map
 4. Handle original file per strategy ([keep/delete/rename])
 5. Update internal links across documentation
-6. Add redirects to astro.config.mjs
+6. Add redirects to redirects.config.mjs
 7. Apply style guidelines (character fixes, naming conventions)
 8. Verify build passes
 9. Prepare commit message
