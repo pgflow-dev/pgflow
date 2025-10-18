@@ -1,0 +1,114 @@
+---
+title: Choose your approach
+description: Choose the right approach to start pgflow workflows - from TypeScript clients, Supabase RPC, scheduled tasks, or database triggers.
+sidebar:
+  order: 1
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+pgflow workflows can be started from multiple places. Choose the approach that best fits your use case.
+
+## Comparison
+
+| Approach | Use When | Real-Time Updates | Complexity |
+|----------|----------|-------------------|------------|
+| [TypeScript Client](#typescript-client) | Building apps that show live progress to users | ✅ Yes | Medium |
+| [Supabase RPC](#supabase-rpc) | Simple fire-and-forget triggers from code | ❌ No | Low |
+| [pg_cron](#scheduled-tasks) | Running recurring tasks on a schedule | ❌ No | Low |
+| [Database Triggers](#event-driven) | Reacting automatically to data changes | ❌ No | Medium |
+
+## TypeScript Client
+
+Use `@pgflow/client` when building applications that need to stream real-time progress updates to users.
+
+**Best for:**
+- AI generation progress bars
+- Multi-step workflow visualization
+- Interactive dashboards
+- Real-time status updates in browsers
+
+```typescript
+import { PgflowClient } from '@pgflow/client';
+
+const run = await pgflow.startFlow('process_video', { url });
+run.on('*', (event) => console.log(event.status));
+await run.waitForStatus('completed');
+```
+
+## Supabase RPC
+
+Use RPC calls when you just need to trigger workflows without real-time updates.
+
+**Best for:**
+- Background jobs triggered from user actions
+- Fire-and-forget workflows
+- Simple integrations without real-time needs
+- Lightweight triggering from TypeScript
+
+```typescript
+await supabase.rpc('pgflow.start_flow', {
+  flow_slug: 'send_email',
+  input: { to: 'user@example.com' }
+});
+```
+
+## Scheduled Tasks
+
+Use pg_cron to run workflows on a recurring schedule.
+
+**Best for:**
+- Periodic data syncing
+- Scheduled reports
+- Cleanup tasks
+- Time-based automation
+
+```sql
+SELECT cron.schedule(
+  'daily-sync',
+  '0 2 * * *',
+  $$ SELECT pgflow.start_flow('sync_data', '{}') $$
+);
+```
+
+## Event-Driven
+
+Use database triggers to automatically start workflows when data changes.
+
+**Best for:**
+- Processing new records automatically
+- Reacting to data changes
+- Event-driven architecture
+- Immediate workflow triggering
+
+```sql
+CREATE TRIGGER process_new_orders
+  AFTER INSERT ON orders
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION start_order_processing();
+```
+
+## Detailed Guides
+
+<CardGrid>
+  <LinkCard
+    title="TypeScript Client"
+    href="/build/starting-flows/typescript-client/"
+    description="Full client library with real-time streaming and event subscriptions"
+  />
+  <LinkCard
+    title="Supabase RPC"
+    href="/build/starting-flows/supabase-rpc/"
+    description="Simple RPC calls for fire-and-forget workflow triggering"
+  />
+  <LinkCard
+    title="pg_cron"
+    href="/build/starting-flows/pg-cron/"
+    description="Run workflows on a recurring schedule with cron expressions"
+  />
+  <LinkCard
+    title="Database Triggers"
+    href="/build/starting-flows/database-triggers/"
+    description="Automatically start workflows when database records change"
+  />
+</CardGrid>

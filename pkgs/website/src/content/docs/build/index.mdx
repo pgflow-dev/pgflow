@@ -5,7 +5,7 @@ description: Learn how to build and author pgflow workflows
 
 import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-Now that you've created your first flow, learn how to structure your code, iterate on your flows, and clean up during development.
+Now that you've created your first flow, learn how to structure your code, integrate workflows in applications, and manage your workflows.
 
 ## Writing Flows
 
@@ -29,6 +29,36 @@ Now that you've created your first flow, learn how to structure your code, itera
     title="Process arrays in parallel"
     href="/build/process-arrays-in-parallel/"
     description="Process arrays of data in parallel using map steps"
+  />
+</CardGrid>
+
+## Starting Flows
+
+<CardGrid>
+  <LinkCard
+    title="Choose your approach"
+    href="/build/starting-flows/"
+    description="Overview and comparison - choose the right approach for your use case"
+  />
+  <LinkCard
+    title="TypeScript Client"
+    href="/build/starting-flows/typescript-client/"
+    description="Full client library with real-time streaming and event subscriptions"
+  />
+  <LinkCard
+    title="Supabase RPC"
+    href="/build/starting-flows/supabase-rpc/"
+    description="Simple RPC calls for fire-and-forget workflow triggering"
+  />
+  <LinkCard
+    title="pg_cron"
+    href="/build/starting-flows/pg-cron/"
+    description="Run workflows on a recurring schedule with cron expressions"
+  />
+  <LinkCard
+    title="Database Triggers"
+    href="/build/starting-flows/database-triggers/"
+    description="Automatically start workflows when database records change"
   />
 </CardGrid>
 

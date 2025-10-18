@@ -1,5 +1,5 @@
 ---
-title: Architecture
+title: Three-layer architecture
 description: Understanding pgflow's three-layer architecture and separation of concerns
 sidebar:
   order: 25
@@ -19,7 +19,7 @@ The diagram shows two key distinctions:
 
 **Run-time** - Postgres orchestrates (SQL Core), workers execute your functions (Worker)
 
-## The Three Layers
+## Layer responsibilities
 
 Each layer has a distinct responsibility:
 
@@ -33,7 +33,7 @@ The key insight: each layer solves problems at its own abstraction level without
 
 ---
 
-## Layer 3: DSL (User Intent)
+## DSL layer - User intent
 
 **Problem domain:** How do users express workflows naturally?
 
@@ -57,7 +57,7 @@ The DSL knows this is a fanout pattern and generates the appropriate step defini
 
 ---
 
-## Layer 2: SQL Core (Orchestration)
+## SQL Core layer - Workflow orchestration
 
 **Problem domain:** How do workflows execute reliably?
 
@@ -84,7 +84,7 @@ All workflow state lives in Postgres tables. Query `pgflow.step_states` to see e
 
 ---
 
-## Layer 1: Worker (Task Execution)
+## Worker layer - Task execution
 
 **Problem domain:** How do tasks run safely?
 
@@ -113,7 +113,7 @@ Any process that can call SQL Core functions works - Edge Functions, Lambda, or 
 
 ---
 
-## The Familiar Pattern
+## The queue processing pattern
 
 If you've written queue processing code, pgflow's execution model will feel natural:
 
@@ -129,7 +129,7 @@ The SQL Core manages which tasks to enqueue, the Worker executes them, and Postg
 
 ---
 
-## How Layers Interact
+## Layer interactions
 
 Each layer provides reliable primitives for the layer above:
 
@@ -154,7 +154,7 @@ Higher layers never need to understand lower layer implementation details. The D
 
 ---
 
-## Why This Separation Matters
+## Benefits of layer separation
 
 ### 🧠 Cognitive Load Management
 Each layer has a bounded problem space. Worker engineers think about reliable task execution. SQL Core engineers think about DAG orchestration algorithms. DSL engineers think about user experience and type systems.

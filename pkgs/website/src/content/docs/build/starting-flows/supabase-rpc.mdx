@@ -1,0 +1,201 @@
+---
+title: Supabase RPC
+description: Start pgflow workflows using simple Supabase RPC calls from TypeScript without real-time features.
+sidebar:
+  order: 3
+---
+
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Use Supabase RPC to start pgflow workflows with simple function calls when you don't need real-time progress updates.
+
+<Aside type="tip">
+For real-time progress streaming and event subscriptions, use the [TypeScript Client](/build/starting-flows/typescript-client/) instead.
+</Aside>
+
+## When to Use This Approach
+
+- **Fire-and-forget workflows** - Trigger workflows without waiting for results
+- **Background jobs** - Process tasks that don't need user feedback
+- **Simple integrations** - Lightweight triggering without additional dependencies
+- **Server-side TypeScript** - Node.js, Deno, or Edge Functions
+
+## Basic Usage
+
+Start a workflow by calling the `pgflow.start_flow` function via RPC:
+
+```typescript
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  'https://your-project.supabase.co',
+  'your-anon-key'
+);
+
+// Start a workflow
+const { data, error } = await supabase.rpc('pgflow.start_flow', {
+  flow_slug: 'send_welcome_email',
+  input: {
+    email: 'user@example.com',
+    name: 'John Doe'
+  }
+});
+
+if (error) {
+  console.error('Failed to start workflow:', error);
+} else {
+  console.log('Workflow started with run_id:', data);
+}
+```
+
+## With Custom Run ID
+
+Provide a custom UUID for the workflow run:
+
+```typescript
+import { randomUUID } from 'crypto';
+
+const run_id = randomUUID();
+
+const { data, error } = await supabase.rpc('pgflow.start_flow', {
+  flow_slug: 'process_upload',
+  input: {
+    file_url: 'https://example.com/file.pdf'
+  },
+  run_id: run_id
+});
+
+// Store run_id for later status checks
+console.log('Started workflow:', run_id);
+```
+
+## Checking Workflow Status
+
+Poll the database to check workflow status when needed:
+
+```typescript
+async function getWorkflowStatus(run_id: string) {
+  const { data, error } = await supabase
+    .from('pgflow.runs')
+    .select('status, output, error_message')
+    .eq('run_id', run_id)
+    .single();
+
+  return data;
+}
+
+// Usage
+const run_id = '...';
+const status = await getWorkflowStatus(run_id);
+
+if (status.status === 'completed') {
+  console.log('Workflow result:', status.output);
+} else if (status.status === 'failed') {
+  console.error('Workflow failed:', status.error_message);
+}
+```
+
+## Polling for Completion
+
+Wait for a workflow to complete with simple polling:
+
+```typescript
+async function waitForCompletion(
+  run_id: string,
+  options = { timeout: 30000, interval: 1000 }
+) {
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < options.timeout) {
+    const status = await getWorkflowStatus(run_id);
+
+    if (status.status === 'completed') {
+      return status.output;
+    }
+
+    if (status.status === 'failed') {
+      throw new Error(`Workflow failed: ${status.error_message}`);
+    }
+
+    // Wait before next check
+    await new Promise(resolve => setTimeout(resolve, options.interval));
+  }
+
+  throw new Error('Workflow timeout');
+}
+
+// Usage
+const { data: run_id } = await supabase.rpc('pgflow.start_flow', {
+  flow_slug: 'analyze_data',
+  input: { dataset_id: '123' }
+});
+
+const result = await waitForCompletion(run_id);
+console.log('Analysis complete:', result);
+```
+
+## Error Handling
+
+Handle workflow execution errors properly:
+
+```typescript
+try {
+  const { data: run_id, error } = await supabase.rpc('pgflow.start_flow', {
+    flow_slug: 'risky_operation',
+    input: { data: 'test' }
+  });
+
+  if (error) {
+    throw new Error(`Failed to start workflow: ${error.message}`);
+  }
+
+  // Wait for result
+  const result = await waitForCompletion(run_id);
+  console.log('Success:', result);
+
+} catch (error) {
+  console.error('Workflow error:', error);
+  // Handle error (retry, alert, etc.)
+}
+```
+
+## Starting Multiple Workflows
+
+Trigger multiple workflows in parallel:
+
+```typescript
+const workflows = [
+  { flow_slug: 'process_image', input: { image_id: '1' } },
+  { flow_slug: 'process_image', input: { image_id: '2' } },
+  { flow_slug: 'process_image', input: { image_id: '3' } }
+];
+
+const promises = workflows.map(workflow =>
+  supabase.rpc('pgflow.start_flow', workflow)
+);
+
+const results = await Promise.all(promises);
+console.log('Started workflows:', results.map(r => r.data));
+```
+
+## Security Considerations
+
+<Aside type="caution">
+Ensure the `anon` or `authenticated` role has permission to execute `pgflow.start_flow`:
+
+```sql
+GRANT EXECUTE ON FUNCTION pgflow.start_flow TO anon;
+```
+
+See the [security documentation](https://github.com/pgflow-dev/pgflow/blob/main/pkgs/client/SECURITY.md) for details.
+</Aside>
+
+## Learn More
+
+<CardGrid>
+  <LinkCard
+    title="TypeScript Client"
+    href="/build/starting-flows/typescript-client/"
+    description="Use the full client library for real-time progress streaming"
+  />
+</CardGrid>

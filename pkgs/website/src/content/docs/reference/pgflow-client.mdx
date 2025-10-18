@@ -1,0 +1,329 @@
+---
+title: "@pgflow/client API"
+description: API reference for the pgflow TypeScript client library - PgflowClient, FlowRun, FlowStep classes, event types, and status enums.
+sidebar:
+  order: 10
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+TypeScript client library for starting pgflow workflows, monitoring execution, and handling real-time updates via Supabase.
+
+<Aside type="caution" title="Security Notice">
+pgflow does not handle security yet. You are responsible for securing access to schemas, tables, and functions.
+
+See the [security documentation](https://github.com/pgflow-dev/pgflow/blob/main/pkgs/client/SECURITY.md) for required permission grants.
+</Aside>
+
+## Installation
+
+```bash frame="none"
+npm install @pgflow/client
+```
+
+## Requirements
+
+- Supabase project with pgflow schema installed
+- Real-time enabled for live updates
+- Proper permissions for the `pgflow` schema
+- `pgflow` added to exposed schemas in Supabase configuration
+
+## PgflowClient
+
+Main client class for interacting with pgflow workflows.
+
+### Constructor
+
+```typescript
+new PgflowClient(supabase: SupabaseClient)
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `supabase` | `SupabaseClient` | Initialized Supabase client instance |
+
+### Methods
+
+#### `startFlow<TFlow>(flow_slug, input, run_id?)`
+
+Starts a new workflow execution.
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `flow_slug` | `string` | Yes | Flow identifier (must match a flow definition) |
+| `input` | `object` | Yes | Flow input data (must be JSON-serializable) |
+| `run_id` | `string` | No | Custom run identifier (UUID generated if not provided) |
+
+**Returns:** `Promise<FlowRun>`
+
+**Type Parameter:**
+- `TFlow` - Flow definition type for type-safe input/output (when using with `@pgflow/dsl`)
+
+---
+
+#### `getRun(run_id)`
+
+Retrieves an existing workflow run.
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `run_id` | `string` | Yes | Unique run identifier |
+
+**Returns:** `Promise<FlowRun | null>` - FlowRun instance or null if not found
+
+---
+
+#### `dispose(run_id)`
+
+Cleans up resources for a specific run (unsubscribes from real-time updates).
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `run_id` | `string` | Yes | Run identifier to dispose |
+
+**Returns:** `void`
+
+---
+
+#### `disposeAll()`
+
+Cleans up resources for all runs managed by this client instance.
+
+**Returns:** `void`
+
+## FlowRun
+
+Represents a single workflow execution instance.
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `run_id` | `string` | Unique run identifier |
+| `flow_slug` | `string` | Flow identifier |
+| `status` | `FlowRunStatus` | Current run status |
+| `input` | `object` | Flow input data |
+| `output` | `object \| null` | Flow output data (available when completed) |
+| `error_message` | `string \| null` | Error message (available when failed) |
+| `started_at` | `string \| null` | ISO timestamp when run started |
+| `completed_at` | `string \| null` | ISO timestamp when run completed or failed |
+
+### Methods
+
+#### `waitForStatus(status, options?)`
+
+Waits for the run to reach a specific status or one of multiple statuses.
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `status` | `FlowRunStatus \| FlowRunStatus[]` | Yes | Target status or array of statuses |
+| `options` | `object` | No | Wait options |
+| `options.timeoutMs` | `number` | No | Timeout in milliseconds |
+
+**Returns:** `Promise<FlowRun>` - Updated FlowRun instance
+
+**Throws:** `Error` if timeout is reached before status is achieved
+
+---
+
+#### `step(step_slug)`
+
+Accesses a specific step within the workflow run.
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `step_slug` | `string` | Yes | Step identifier |
+
+**Returns:** `FlowStep` - FlowStep instance for the specified step
+
+---
+
+#### `on(event, handler)`
+
+Subscribes to run-level events.
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `event` | `'started' \| 'completed' \| 'failed' \| '*'` | Yes | Event type to listen for |
+| `handler` | `(event: FlowRunEvent) => void` | Yes | Event handler function |
+
+**Returns:** `() => void` - Unsubscribe function
+
+**Event Payload:**
+
+```typescript
+interface FlowRunEvent {
+  run_id: string;
+  status: FlowRunStatus;
+  flow_slug: string;
+  input: object;
+  output: object | null;
+  error_message: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+}
+```
+
+## FlowStep
+
+Represents a single step within a workflow run.
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `step_slug` | `string` | Step identifier |
+| `status` | `FlowStepStatus` | Current step status |
+| `input` | `object \| null` | Step input data |
+| `output` | `object \| null` | Step output data (available when completed) |
+| `error_message` | `string \| null` | Error message (available when failed) |
+| `started_at` | `string \| null` | ISO timestamp when step started |
+| `completed_at` | `string \| null` | ISO timestamp when step completed or failed |
+
+### Methods
+
+#### `waitForStatus(status, options?)`
+
+Waits for the step to reach a specific status or one of multiple statuses.
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `status` | `FlowStepStatus \| FlowStepStatus[]` | Yes | Target status or array of statuses |
+| `options` | `object` | No | Wait options |
+| `options.timeoutMs` | `number` | No | Timeout in milliseconds |
+
+**Returns:** `Promise<FlowStep>` - Updated FlowStep instance
+
+**Throws:** `Error` if timeout is reached before status is achieved
+
+---
+
+#### `on(event, handler)`
+
+Subscribes to step-level events.
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `event` | `'started' \| 'completed' \| 'failed' \| '*'` | Yes | Event type to listen for |
+| `handler` | `(event: FlowStepEvent) => void` | Yes | Event handler function |
+
+**Returns:** `() => void` - Unsubscribe function
+
+**Event Payload:**
+
+```typescript
+interface FlowStepEvent {
+  run_id: string;
+  step_slug: string;
+  status: FlowStepStatus;
+  input: object | null;
+  output: object | null;
+  error_message: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+}
+```
+
+## Event Types
+
+### Run Events
+
+Subscribe to workflow-level status changes.
+
+| Event | Trigger | Payload |
+|-------|---------|---------|
+| `'started'` | Run begins execution | FlowRunEvent with status `'started'` |
+| `'completed'` | Run completes successfully | FlowRunEvent with status `'completed'` and `output` |
+| `'failed'` | Run fails | FlowRunEvent with status `'failed'` and `error_message` |
+| `'*'` | Any status change | FlowRunEvent with current status |
+
+### Step Events
+
+Subscribe to individual step status changes.
+
+| Event | Trigger | Payload |
+|-------|---------|---------|
+| `'started'` | Step begins execution | FlowStepEvent with status `'started'` |
+| `'completed'` | Step completes successfully | FlowStepEvent with status `'completed'` and `output` |
+| `'failed'` | Step fails | FlowStepEvent with status `'failed'` and `error_message` |
+| `'*'` | Any status change | FlowStepEvent with current status |
+
+## Status Enums
+
+### FlowRunStatus
+
+Workflow run states.
+
+| Value | Description |
+|-------|-------------|
+| `'created'` | Run created but not yet started |
+| `'started'` | Run is executing |
+| `'completed'` | Run completed successfully |
+| `'failed'` | Run failed with an error |
+
+### FlowStepStatus
+
+Individual step states.
+
+| Value | Description |
+|-------|-------------|
+| `'created'` | Step created but not yet started |
+| `'started'` | Step is executing |
+| `'completed'` | Step completed successfully |
+| `'failed'` | Step failed with an error |
+| `'skipped'` | Step was skipped (dependency failed) |
+
+## Type Safety
+
+When using with `@pgflow/dsl`, the client provides full type inference for flow inputs, outputs, and step access.
+
+```typescript
+import { Flow } from '@pgflow/dsl';
+
+const MyFlow = new Flow<{ url: string }>({ slug: 'my_flow' })
+  .step({ slug: 'step1' }, async (input) => ({ data: 'result' }));
+
+// Type-safe flow execution
+const run = await pgflow.startFlow<typeof MyFlow>(
+  MyFlow.slug,
+  { url: 'https://example.com' } // TypeScript validates this
+);
+
+// Type-safe step access
+const step = run.step('step1'); // TypeScript knows this step exists
+```
+
+## Browser Usage
+
+The client can be loaded via CDN for browser environments.
+
+```html
+<script src="https://unpkg.com/@pgflow/client"></script>
+<script>
+  const pgflow = window.pgflow.createClient(supabase);
+</script>
+```
+
+See the [build and release documentation](https://github.com/pgflow-dev/pgflow/blob/main/pkgs/client/BUILD_AND_RELEASE.md#browser-via-cdn) for CDN usage details.
+
+## Related Documentation
+
+- [Start Flows from TypeScript Client](/build/starting-flows/typescript-client/) - How-to guide for using the client
+- [Create Your First Flow](/get-started/flows/create-flow/) - Flow definition with DSL
+- [Deploy Your First Flow](/deploy/supabase/deploy-first-flow/) - Deployment setup
