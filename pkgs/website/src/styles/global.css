@@ -249,8 +249,8 @@ svg .secondary {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  background: var(--sl-color-accent);
-  color: #ffffff !important;
+  background: var(--sl-color-gray-4);
+  color: var(--sl-color-white) !important;
   padding: 12px 16px;
   border-radius: 25px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -265,7 +265,7 @@ svg .secondary {
 :root .hire-sticker,
 :root[data-theme='light'] .hire-sticker,
 :root[data-theme='dark'] .hire-sticker {
-  color: #ffffff !important;
+  color: var(--sl-color-white) !important;
 }
 
 .hire-sticker::before {
@@ -278,7 +278,7 @@ svg .secondary {
   transform: translateY(-2px) scale(1.05);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
   text-decoration: none;
-  color: #ffffff !important;
+  color: var(--sl-color-white) !important;
   transition: transform 0.4s ease, box-shadow 0.2s ease;
 }
 
