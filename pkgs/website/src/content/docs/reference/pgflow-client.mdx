@@ -5,9 +5,9 @@ sidebar:
   order: 10
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-TypeScript client library for starting pgflow workflows, monitoring execution, and handling real-time updates via Supabase.
+TypeScript client library for starting pgflow flows, monitoring execution, and handling real-time updates via Supabase.
 
 <Aside type="caution" title="Security Notice">
 pgflow does not handle security yet. You are responsible for securing access to schemas, tables, and functions.
@@ -30,7 +30,7 @@ npm install @pgflow/client
 
 ## PgflowClient
 
-Main client class for interacting with pgflow workflows.
+Main client class for interacting with pgflow flows.
 
 ### Constructor
 
@@ -46,7 +46,7 @@ new PgflowClient(supabase: SupabaseClient)
 
 #### `startFlow<TFlow>(flow_slug, input, run_id?)`
 
-Starts a new workflow execution.
+Starts a new flow execution.
 
 **Parameters:**
 
@@ -65,7 +65,7 @@ Starts a new workflow execution.
 
 #### `getRun(run_id)`
 
-Retrieves an existing workflow run.
+Retrieves an existing flow run.
 
 **Parameters:**
 
@@ -99,7 +99,7 @@ Cleans up resources for all runs managed by this client instance.
 
 ## FlowRun
 
-Represents a single workflow execution instance.
+Represents a single flow execution instance.
 
 ### Properties
 
@@ -111,8 +111,8 @@ Represents a single workflow execution instance.
 | `input` | `object` | Flow input data |
 | `output` | `object \| null` | Flow output data (available when completed) |
 | `error_message` | `string \| null` | Error message (available when failed) |
-| `started_at` | `string \| null` | ISO timestamp when run started |
-| `completed_at` | `string \| null` | ISO timestamp when run completed or failed |
+| `started_at` | `Date \| null` | Timestamp when run started |
+| `completed_at` | `Date \| null` | Timestamp when run completed or failed |
 
 ### Methods
 
@@ -136,7 +136,7 @@ Waits for the run to reach a specific status or one of multiple statuses.
 
 #### `step(step_slug)`
 
-Accesses a specific step within the workflow run.
+Accesses a specific step within the flow run.
 
 **Parameters:**
 
@@ -161,24 +161,48 @@ Subscribes to run-level events.
 
 **Returns:** `() => void` - Unsubscribe function
 
-**Event Payload:**
+**Event Payloads:**
+
+Flow run events are discriminated unions - each event type has different fields:
 
 ```typescript
-interface FlowRunEvent {
+// 'started' event
+{
+  event_type: 'run:started';
   run_id: string;
-  status: FlowRunStatus;
   flow_slug: string;
+  status: 'started';
   input: object;
-  output: object | null;
-  error_message: string | null;
-  started_at: string | null;
-  completed_at: string | null;
+  started_at: string;  // ISO timestamp
+  remaining_steps: number;
+}
+
+// 'completed' event
+{
+  event_type: 'run:completed';
+  run_id: string;
+  flow_slug: string;
+  status: 'completed';
+  output: object;
+  completed_at: string;  // ISO timestamp
+}
+
+// 'failed' event
+{
+  event_type: 'run:failed';
+  run_id: string;
+  flow_slug: string;
+  status: 'failed';
+  error_message: string;
+  failed_at: string;  // ISO timestamp
 }
 ```
 
+Note: Event timestamps are ISO strings. The corresponding FlowRun properties convert these to Date objects.
+
 ## FlowStep
 
-Represents a single step within a workflow run.
+Represents a single step within a flow run.
 
 ### Properties
 
@@ -186,11 +210,10 @@ Represents a single step within a workflow run.
 |----------|------|-------------|
 | `step_slug` | `string` | Step identifier |
 | `status` | `FlowStepStatus` | Current step status |
-| `input` | `object \| null` | Step input data |
 | `output` | `object \| null` | Step output data (available when completed) |
 | `error_message` | `string \| null` | Error message (available when failed) |
-| `started_at` | `string \| null` | ISO timestamp when step started |
-| `completed_at` | `string \| null` | ISO timestamp when step completed or failed |
+| `started_at` | `Date \| null` | Timestamp when step started |
+| `completed_at` | `Date \| null` | Timestamp when step completed or failed |
 
 ### Methods
 
@@ -225,26 +248,48 @@ Subscribes to step-level events.
 
 **Returns:** `() => void` - Unsubscribe function
 
-**Event Payload:**
+**Event Payloads:**
+
+Flow step events are discriminated unions - each event type has different fields:
 
 ```typescript
-interface FlowStepEvent {
+// 'started' event
+{
+  event_type: 'step:started';
   run_id: string;
   step_slug: string;
-  status: FlowStepStatus;
-  input: object | null;
-  output: object | null;
-  error_message: string | null;
-  started_at: string | null;
-  completed_at: string | null;
+  status: 'started';
+  started_at: string;  // ISO timestamp
+}
+
+// 'completed' event
+{
+  event_type: 'step:completed';
+  run_id: string;
+  step_slug: string;
+  status: 'completed';
+  output: object;
+  completed_at: string;  // ISO timestamp
+}
+
+// 'failed' event
+{
+  event_type: 'step:failed';
+  run_id: string;
+  step_slug: string;
+  status: 'failed';
+  error_message: string;
+  failed_at: string;  // ISO timestamp
 }
 ```
+
+Note: Event timestamps are ISO strings. The corresponding FlowStep properties convert these to Date objects.
 
 ## Event Types
 
 ### Run Events
 
-Subscribe to workflow-level status changes.
+Subscribe to flow-level status changes.
 
 | Event | Trigger | Payload |
 |-------|---------|---------|
@@ -268,11 +313,10 @@ Subscribe to individual step status changes.
 
 ### FlowRunStatus
 
-Workflow run states.
+Flow run states.
 
 | Value | Description |
 |-------|-------------|
-| `'created'` | Run created but not yet started |
 | `'started'` | Run is executing |
 | `'completed'` | Run completed successfully |
 | `'failed'` | Run failed with an error |
@@ -287,7 +331,6 @@ Individual step states.
 | `'started'` | Step is executing |
 | `'completed'` | Step completed successfully |
 | `'failed'` | Step failed with an error |
-| `'skipped'` | Step was skipped (dependency failed) |
 
 ## Type Safety
 
@@ -324,6 +367,20 @@ See the [build and release documentation](https://github.com/pgflow-dev/pgflow/b
 
 ## Related Documentation
 
-- [Start Flows from TypeScript Client](/build/starting-flows/typescript-client/) - How-to guide for using the client
-- [Create Your First Flow](/get-started/flows/create-flow/) - Flow definition with DSL
-- [Deploy Your First Flow](/deploy/supabase/deploy-first-flow/) - Deployment setup
+<CardGrid>
+  <LinkCard
+    title="TypeScript Client"
+    href="/build/starting-flows/typescript-client/"
+    description="Start workflows from TypeScript applications and stream real-time progress updates using the pgflow client"
+  />
+  <LinkCard
+    title="Create your first flow"
+    href="/get-started/flows/create-flow/"
+    description="Learn how to define a flow using pgflow's TypeScript DSL"
+  />
+  <LinkCard
+    title="Deploy Your First Flow"
+    href="/deploy/supabase/deploy-first-flow/"
+    description="Step-by-step guide to deploying pgflow workers to Supabase.com production for the first time"
+  />
+</CardGrid>

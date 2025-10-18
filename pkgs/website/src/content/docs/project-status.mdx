@@ -3,7 +3,8 @@ title: Project Status
 description: Current status and production readiness for pgflow
 ---
 
-import { Card, CardGrid, Aside } from "@astrojs/starlight/components";
+import { Card, CardGrid, LinkCard, Aside } from "@astrojs/starlight/components";
+import JoinCommunity from "@/components/JoinCommunity.astro";
 
 ## Public Beta
 
@@ -16,14 +17,18 @@ pgflow is in **public beta** and being used in production by early adopters. Cor
     Core operations are optimized with batching, proper indexing, and declarative SQL. However, **large-scale workloads** may reveal additional optimization opportunities. Start with your expected workload and scale as needed.
   </Card>
 
-  <Card title="Developer Experience" icon="pencil">
-    Flow compilation is currently manual (`pgflow compile`). **Auto-compilation in workers** is in development to streamline the workflow and eliminate this step.
-  </Card>
-
   <Card title="Worker Management" icon="setting">
     Edge Functions have platform execution time limits. For production reliability, set up a **pg_cron job** to automatically restart workers when needed. See [deployment guide](/deploy/supabase/keep-workers-running/) for the simple 2-minute setup.
   </Card>
+
+  <Card title="Fair Processing" icon="warning">
+    Fair processing across tenants is not currently implemented. One tenant can monopolize the queue if they have many pending tasks. If this is critical for your use case, join [Discord](https://pgflow.dev/discord/) to discuss potential workarounds.
+  </Card>
 </CardGrid>
+
+## Breaking Changes
+
+During beta, breaking changes may be introduced for critical fixes or significant improvements. All changes are documented in [release notes](https://github.com/pgflow-dev/pgflow/releases) with migration guides. See [updating pgflow](/deploy/update-pgflow/) for the update process.
 
 ## Production Recommendations
 
@@ -38,10 +43,9 @@ pgflow is in **public beta** and being used in production by early adopters. Cor
 
 ## Getting Support
 
-- **Discord**: [Join our community](https://www.pgflow.dev/discord/) to share experiences and get help
-- **GitHub**: [Report bugs or request features](https://github.com/pgflow-dev/pgflow/issues)
-- **Documentation**: [Browse our guides](/get-started/installation/) for detailed information
+<CardGrid>
+  <LinkCard title="GitHub Issues" href="https://github.com/pgflow-dev/pgflow/issues" description="Report bugs or request features" />
+  <LinkCard title="FAQ" href="/get-started/faq/" description="Common questions about Edge Worker functionality, usage, and billing" />
+</CardGrid>
 
-## Breaking Changes
-
-During beta, breaking changes may be introduced for critical fixes or significant improvements. All changes are documented in [release notes](https://github.com/pgflow-dev/pgflow/releases) with migration guides. See [updating pgflow](/deploy/update-pgflow/) for the update process.
+<JoinCommunity />

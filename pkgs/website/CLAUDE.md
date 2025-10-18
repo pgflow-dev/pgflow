@@ -62,7 +62,7 @@ This section compares pgflow to other workflow engines:
 This section provides guides for common tasks:
 
 - Monitor flow execution
-- Organize Flows code
+- Organize Flow code
 - Create Reusable Tasks
 - Update Flow Options
 - Version your flows

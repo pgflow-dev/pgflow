@@ -7,7 +7,7 @@ sidebar:
 
 import { Aside } from '@astrojs/starlight/components';
 
-pgflow's data model separates workflow definitions from runtime execution state. Workflow orchestration uses PostgreSQL tables and functions in the `pgflow` schema for transparent, queryable behavior.
+pgflow's data model separates flow definitions from runtime execution state. Flow orchestration uses PostgreSQL tables and functions in the `pgflow` schema for transparent, queryable behavior.
 
 ## Schema Design Principles
 
@@ -41,28 +41,30 @@ WHERE flow_slug = 'my_flow' AND step_slug = 'my_step';
 
 ## Two Categories of Tables
 
-The schema organizes tables into two distinct categories that serve different purposes in the workflow lifecycle. All tables live in the `pgflow` schema.
+The schema organizes tables into two distinct categories that serve different purposes in the flow lifecycle. All tables live in the `pgflow` schema.
 
 ### Static Definition Tables
 
-These tables store the workflow structure - the "blueprint" of what workflows exist and how they connect:
+These tables store the flow structure - the "blueprint" of what flows exist and how they connect:
 
-**`flows`** - Workflow identity and global configuration
-- Contains `max_attempts`, `base_delay`, `timeout`
+**`flows`** - Flow identity and global configuration
+- Contains `opt_max_attempts`, `opt_base_delay`, `opt_timeout`
 - Each flow has a unique slug
 
 **`steps`** - DAG nodes with step type (`single` or `map`)
+- `single`: Regular steps created with `.step()` or `.array()` DSL methods
+- `map`: Map steps created with `.map()` method for parallel array processing
 - Can override flow-level options
 - Must be added in topological order
 
 🔗 **`deps`** - DAG edges defining step dependencies
 - Determines execution order and data flow
 
-Populated during deployment through migrations. Change only when workflow definitions change.
+Populated during deployment through migrations. Change only when flow definitions change.
 
 ### Runtime State Tables
 
-These tables track the execution state of workflow instances:
+These tables track the execution state of flow instances:
 
 **`runs`** - Execution instances of flows
 - Tracks run status (`started`, `completed`, `failed`)
@@ -72,7 +74,7 @@ These tables track the execution state of workflow instances:
 **`step_states`** - State of individual steps within a run
 - Tracks step status (`created`, `started`, `completed`, `failed`)
 - For map steps, tracks `initial_tasks` and `remaining_tasks` counts
-- Stores aggregated output when step completes
+- Coordinates step-level completion and aggregation
 
 **`step_tasks`** - Units of work for steps
 - Single steps create 1 task, map steps create N tasks

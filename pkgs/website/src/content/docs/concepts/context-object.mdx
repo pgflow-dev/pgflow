@@ -14,7 +14,7 @@ For complete documentation of all context properties, see the [Context API Refer
 :::
 
 :::note[Future: Custom Resources]
-The context system is designed to be extensible. Future versions are planned to support custom resources, allowing you to add your own services (Redis, Stripe, etc.) to the context object while maintaining full type safety.
+The context system is designed to be extensible. Future versions will support custom resources through dependency injection - you'll define what resources your handlers need, then provide those resources when calling `EdgeWorker.start()`. This allows handlers to be tested in complete isolation with stubbed resources and input values, maintaining full type safety throughout.
 :::
 
 ## Why Context Exists
@@ -35,47 +35,58 @@ Context follows pgflow's design philosophy:
 
 1. **Zero Configuration** - Resources are ready to use without setup
 2. **Type Safety** - Full TypeScript support with proper inference
-3. **Pre-configured Resources** - Platform adapter provides established connections
+3. **Pre-configured Resources** - Depending on platform (Supabase only for now), established connections are provided
 4. **Platform Agnostic** - Context interface can adapt to different platforms
 5. **Backward Compatible** - Existing single-parameter handlers continue to work
 
 ## How Context Works
 
-When pgflow executes a handler, it passes two parameters:
+When pgflow executes a handler, it passes two parameters: the input object and the context object.
 
-### Before vs After
+### Before: Global Resources
 
-<Tabs>
-<TabItem label="Before (Global Resources)">
-```typescript del="import { sql }" del="import { supabase }"
+<Tabs syncKey="worker-mode">
+<TabItem label="Flows">
+```typescript del={2-3} "sql" "supabase" "Deno.env.get"
+import { Flow } from '@pgflow/dsl/supabase';
 import { sql } from '../db.js';
 import { supabase } from '../supabase-client.js';
 
-async function processUser(input: { userId: string }) {
-  const [user] = await sql`SELECT * FROM users WHERE id = ${input.userId}`;
-  const apiKey = process.env.EXTERNAL_API_KEY;
-  const { data } = await supabase.auth.getUser();
+const ProcessUserFlow = new Flow<{ userId: string }>({
+  slug: 'process_user'
+})
+  .step({ slug: 'validate' }, async (input) => {
+    const [user] = await sql`SELECT * FROM users WHERE id = ${input.userId}`;
+    const apiKey = Deno.env.get('EXTERNAL_API_KEY');
+    const { data } = await supabase.auth.getUser();
 
-  return { user };
-}
+    return { user };
+  });
 ```
 </TabItem>
-<TabItem label="After (Context)">
-```typescript ins="ctx: Context" "ctx.sql" "ctx.env" "ctx.supabase"
-async function processUser(input: { userId: string }, ctx: Context) {
-  const [user] = await ctx.sql`SELECT * FROM users WHERE id = ${input.userId}`;
-  const apiKey = ctx.env.EXTERNAL_API_KEY;
-  const { data } = await ctx.supabase.auth.getUser();
+<TabItem label="Background Jobs">
+```typescript del={1-2} "sql" "supabase" "Deno.env.get"
+import { sql } from '../db.js';
+import { supabase } from '../supabase-client.js';
 
-  return { user };
+async function processOrder(input: { orderId: string }) {
+  const [order] = await sql`SELECT * FROM orders WHERE id = ${input.orderId}`;
+  const apiKey = Deno.env.get('EXTERNAL_API_KEY');
+
+  await sendNotification(order, apiKey);
+  return { processed: true };
 }
 ```
 </TabItem>
 </Tabs>
 
-### Complete Flow Example
+### After: Using Context
 
-```typescript title="Using context in flows" ins="ctx" "ctx.sql" "ctx.env" "ctx.supabase"
+<Tabs syncKey="worker-mode">
+<TabItem label="Flows">
+```typescript ins="ctx" "ctx.sql" "ctx.env" "ctx.supabase"
+import { Flow } from '@pgflow/dsl/supabase';
+
 const ProcessUserFlow = new Flow<{ userId: string }>({
   slug: 'process_user'
 })
@@ -84,10 +95,23 @@ const ProcessUserFlow = new Flow<{ userId: string }>({
     const apiKey = ctx.env.EXTERNAL_API_KEY;
     const { data } = await ctx.supabase.auth.getUser();
 
-    // ... process with resources
     return { user };
   });
 ```
+</TabItem>
+<TabItem label="Background Jobs">
+```typescript ins="ctx" "ctx.sql" "ctx.env" "ctx.supabase"
+async function processOrder(input: { orderId: string }, ctx) {
+  const [order] = await ctx.sql`SELECT * FROM orders WHERE id = ${input.orderId}`;
+  const apiKey = ctx.env.EXTERNAL_API_KEY;
+  const { data } = await ctx.supabase.auth.getUser();
+
+  await sendNotification(order, apiKey);
+  return { processed: true };
+}
+```
+</TabItem>
+</Tabs>
 
 <Aside type="note">
   The context parameter is optional. Handlers that don't need platform resources can omit it for backward compatibility.
@@ -101,7 +125,7 @@ The context object provides access to different resources depending on your plat
 - `env` - Environment variables
 - `shutdownSignal` - Worker shutdown signal for graceful cleanup
 - `rawMessage` - Original pgmq message with metadata
-- `stepTask` - Flow task details (flow handlers only)
+- `stepTask` - Flow task details including `run_id`, `step_slug`, `flow_slug`, `task_index`, and typed `input` ([flow worker mode](/get-started/faq/#what-are-the-two-edge-worker-modes) only)
 - `workerConfig` - Resolved worker configuration
 
 **Supabase Platform**:
@@ -114,34 +138,39 @@ See the [Context API Reference](/reference/context/) for complete documentation 
 
 While examples in this documentation use `ctx.` for clarity, destructuring often makes your code more readable:
 
-```typescript ins="{ sql, env, rawMessage }"
-// Queue handler - destructure only what you need
-async function processOrder(input, { sql, env, rawMessage }) {
-  console.log(`Processing order ${rawMessage.msg_id}`);
-  
-  const [order] = await sql`
-    SELECT * FROM orders WHERE id = ${input.orderId}
-  `;
-  
-  await sendNotification(order, env.NOTIFICATION_API_KEY);
-}
-```
-
+<Tabs syncKey="worker-mode">
+<TabItem label="Flows">
 ```typescript ins="{ sql, supabase, stepTask }"
-// Step handler - clean and focused
+// Destructure only what you need
 .step({ slug: 'sync_data' }, async (input, { sql, supabase, stepTask }) => {
   console.log(`Syncing for run ${stepTask.run_id}`);
-  
+
   const data = await sql`SELECT * FROM pending_sync WHERE user_id = ${input.userId}`;
-  
+
   const synced = await supabase
     .from('synced_data')
     .upsert(data)
     .select();
-    
+
   return { syncedCount: synced.data.length };
 })
 ```
+</TabItem>
+<TabItem label="Background Jobs">
+```typescript ins="{ sql, env, rawMessage }"
+// Destructure only what you need
+async function processOrder(input, { sql, env, rawMessage }) {
+  console.log(`Processing order ${rawMessage.msg_id}`);
+
+  const [order] = await sql`
+    SELECT * FROM orders WHERE id = ${input.orderId}
+  `;
+
+  await sendNotification(order, env.NOTIFICATION_API_KEY);
+}
+```
+</TabItem>
+</Tabs>
 
 <Aside type="tip">
   Destructuring makes it immediately clear which resources a handler depends on, improving code readability and testability.
@@ -153,7 +182,7 @@ The context object streamlines handler development by:
 
 - Providing ready-to-use platform resources
 - Eliminating connection boilerplate
-- Centralizing resource access through platform adapter
+- Centralizing resource access depending on platform
 - Maintaining type safety throughout
 - Supporting gradual migration of existing code
 

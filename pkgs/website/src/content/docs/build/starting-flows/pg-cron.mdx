@@ -9,12 +9,11 @@ import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 Use pg_cron to run pgflow workflows on a recurring schedule for time-based automation tasks.
 
-## When to Use This Approach
-
-- **Periodic data syncing** - Sync data from external APIs hourly or daily
-- **Scheduled reports** - Generate and send reports on a schedule
-- **Cleanup tasks** - Remove old data or process pending items
-- **Batch processing** - Process accumulated data at specific times
+<Aside type="note">
+For complete pg_cron documentation including cron expression syntax, job management, and configuration options, see:
+- [Supabase pg_cron Guide](https://supabase.com/docs/guides/database/extensions/pg_cron)
+- [pg_cron GitHub Repository](https://github.com/citusdata/pg_cron)
+</Aside>
 
 ## Basic Usage
 
@@ -33,221 +32,31 @@ SELECT cron.schedule(
 );
 ```
 
-<Aside type="note">
-The cron expression `*/30 * * * *` means "every 30 minutes". See [Cron Expression Patterns](#cron-expression-patterns) for more examples.
-</Aside>
+## Processing Recent Records
 
-## Cron Expression Patterns
-
-Common scheduling patterns:
-
-| Pattern | Description | Example Use Case |
-|---------|-------------|------------------|
-| `* * * * *` | Every minute | Real-time monitoring |
-| `*/5 * * * *` | Every 5 minutes | Frequent data checks |
-| `0 * * * *` | Every hour | Hourly data sync |
-| `0 */6 * * *` | Every 6 hours | Periodic cleanup |
-| `0 2 * * *` | Daily at 2 AM | Nightly reports |
-| `0 0 * * 0` | Weekly on Sunday | Weekly summaries |
-| `0 0 1 * *` | Monthly on 1st | Monthly aggregations |
-
-<Aside type="tip">
-Use [crontab.guru](https://crontab.guru/) to test and understand cron expressions.
-</Aside>
-
-## Daily Scheduled Report
-
-Generate a report every day at 9 AM:
+Query your database and start workflows for matching records. This example processes all orders created in the last 24 hours:
 
 ```sql
 SELECT cron.schedule(
-  'daily-report',
-  '0 9 * * *',
+  'process-new-orders',
+  '0 2 * * *',  -- Daily at 2 AM
   $$
     SELECT pgflow.start_flow(
-      flow_slug => 'generate_daily_report',
+      flow_slug => 'process_order',
       input => jsonb_build_object(
-        'report_date', CURRENT_DATE::text
+        'order_id', order_id,
+        'customer_email', customer_email,
+        'total_amount', total_amount
       )
     )
+    FROM public.orders
+    WHERE created_at >= NOW() - INTERVAL '24 hours'
+      AND status = 'pending'
   $$
 );
 ```
 
-## Hourly Data Sync
-
-Sync data from an external API every hour:
-
-```sql
-SELECT cron.schedule(
-  'sync-external-data',
-  '0 * * * *',
-  $$
-    SELECT pgflow.start_flow(
-      flow_slug => 'sync_external_api',
-      input => jsonb_build_object(
-        'api_endpoint', 'https://api.example.com/data',
-        'last_sync', NOW()::text
-      )
-    )
-  $$
-);
-```
-
-## Cleanup Old Records
-
-Remove processed records every night at 3 AM:
-
-```sql
-SELECT cron.schedule(
-  'cleanup-old-records',
-  '0 3 * * *',
-  $$
-    SELECT pgflow.start_flow(
-      flow_slug => 'cleanup_processed_records',
-      input => jsonb_build_object(
-        'older_than_days', 30
-      )
-    )
-  $$
-);
-```
-
-## Dynamic Input Based on Time
-
-Pass current timestamp or date as input:
-
-```sql
-SELECT cron.schedule(
-  'process-daily-batch',
-  '0 0 * * *',
-  $$
-    SELECT pgflow.start_flow(
-      flow_slug => 'process_daily_batch',
-      input => jsonb_build_object(
-        'batch_date', CURRENT_DATE::text,
-        'timestamp', NOW()::text
-      )
-    )
-  $$
-);
-```
-
-## Managing Scheduled Jobs
-
-### List All Scheduled Jobs
-
-View all cron jobs:
-
-```sql
-SELECT * FROM cron.job;
-```
-
-### Update a Schedule
-
-Modify an existing schedule:
-
-```sql
-SELECT cron.alter_job(
-  job_id => (SELECT jobid FROM cron.job WHERE jobname = 'daily-report'),
-  schedule => '0 8 * * *'  -- Change to 8 AM
-);
-```
-
-### Disable a Schedule
-
-Temporarily disable a scheduled job:
-
-```sql
-SELECT cron.unschedule('daily-report');
-```
-
-### Re-enable a Schedule
-
-Re-schedule a disabled job:
-
-```sql
-SELECT cron.schedule(
-  'daily-report',
-  '0 9 * * *',
-  $$ SELECT pgflow.start_flow(...) $$
-);
-```
-
-## Monitoring Scheduled Workflows
-
-Check the status of workflows started by cron:
-
-```sql
-SELECT
-  run_id,
-  flow_slug,
-  status,
-  started_at,
-  completed_at
-FROM pgflow.runs
-WHERE flow_slug = 'collect_urls'
-ORDER BY started_at DESC
-LIMIT 10;
-```
-
-## Best Practices
-
-### Avoid Overlapping Executions
-
-Ensure workflows complete before the next scheduled run:
-
-```sql
--- Check average workflow duration
-SELECT
-  flow_slug,
-  AVG(EXTRACT(EPOCH FROM (completed_at - started_at))) as avg_duration_seconds
-FROM pgflow.runs
-WHERE flow_slug = 'sync_external_api'
-  AND status = 'completed'
-GROUP BY flow_slug;
-```
-
-If a workflow takes 10 minutes on average, schedule it at least 15 minutes apart.
-
-### Handle Failures
-
-Monitor failed scheduled workflows:
-
-```sql
-SELECT
-  run_id,
-  flow_slug,
-  error_message,
-  started_at
-FROM pgflow.runs
-WHERE status = 'failed'
-  AND started_at > NOW() - INTERVAL '24 hours'
-ORDER BY started_at DESC;
-```
-
-<Aside type="caution">
-pg_cron jobs run in the background. Failed workflows won't stop future scheduled runs. Monitor workflow failures separately.
-</Aside>
-
-### Timezone Considerations
-
-pg_cron uses the database server's timezone. Check your timezone:
-
-```sql
-SHOW timezone;
-```
-
-To schedule in a specific timezone, convert times appropriately:
-
-```sql
--- Schedule for 9 AM UTC (regardless of server timezone)
-SELECT cron.schedule(
-  'utc-job',
-  '0 9 * * *',
-  $$ SELECT pgflow.start_flow(...) $$
-);
-```
+This pattern starts one workflow for each matching row, passing the row's data as input to the workflow.
 
 ## Learn More
 
@@ -256,10 +65,5 @@ SELECT cron.schedule(
     title="Database Triggers"
     href="/build/starting-flows/database-triggers/"
     description="Start workflows automatically when data changes"
-  />
-  <LinkCard
-    title="pg_cron Documentation"
-    href="https://github.com/citusdata/pg_cron"
-    description="Official pg_cron extension documentation"
   />
 </CardGrid>

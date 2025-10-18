@@ -24,13 +24,14 @@ You need at least one changeset for packages to publish. If you forget, the scri
 <details>
 <summary>💡 Why snapshots instead of prerelease mode?</summary>
 
-| Snapshots | Prerelease Mode |
-|-----------|-----------------|
-| ✅ No state files | ❌ Manages pre.json |
-| ✅ No commits | ❌ Requires commits |
+| Snapshots             | Prerelease Mode               |
+| --------------------- | ----------------------------- |
+| ✅ No state files     | ❌ Manages pre.json           |
+| ✅ No commits         | ❌ Requires commits           |
 | ✅ Branch stays clean | ❌ Branch has version changes |
-| ✅ One command | ❌ Enter/exit commands |
-| ✅ Can't hit "latest" | ⚠️ Risk of "latest" publish |
+| ✅ One command        | ❌ Enter/exit commands        |
+| ✅ Can't hit "latest" | ⚠️ Risk of "latest" publish   |
+
 </details>
 
 ## Installation
@@ -38,9 +39,10 @@ You need at least one changeset for packages to publish. If you forget, the scri
 The script outputs exact install commands at the end - just copy and paste!
 
 Example output:
+
 ```bash
 npm install @pgflow/core@0.0.0-my-feature-20240101120000-abc1234
-npm install @pgflow/cli@0.0.0-my-feature-20240101120000-abc1234
+npm install pgflow@0.0.0-my-feature-20240101120000-abc1234
 npm install @pgflow/client@0.0.0-my-feature-20240101120000-abc1234
 npm install @pgflow/dsl@0.0.0-my-feature-20240101120000-abc1234
 
@@ -68,6 +70,7 @@ Main script for creating snapshot releases locally or in CI.
 | `--help` | Show usage | - |
 
 **Examples:**
+
 ```bash
 ./scripts/snapshot-release.sh              # Uses branch name, asks for confirmation
 ./scripts/snapshot-release.sh my-feature   # Custom tag, asks for confirmation
@@ -76,6 +79,7 @@ Main script for creating snapshot releases locally or in CI.
 ```
 
 **Output:**
+
 - Shows formatted version breakdown with timestamp and commit SHA
 - Lists all packages being published with exact versions
 - Interactive confirmation prompt before publishing (unless --yes)
@@ -87,12 +91,14 @@ Main script for creating snapshot releases locally or in CI.
 CI-specific wrapper that auto-detects environment and generates PR comments.
 
 **Features:**
+
 - 🔍 Auto-detects PR number/branch from CI environment
 - 📝 Generates installation instructions
 - 💬 Outputs to GitHub Actions summary
 - 🤖 Supports GitHub Actions, GitLab CI, CircleCI
 
 **Usage:**
+
 ```bash
 ./scripts/snapshot-release-ci.sh  # No arguments needed
 ```
@@ -111,11 +117,12 @@ CI-specific wrapper that auto-detects environment and generates PR comments.
    - Uses `git restore --source=HEAD` for reliable cleanup (falls back to `git checkout` for older git)
    - Branch always stays clean
    - Works in CI and locally
-</details>
+   </details>
 
 ## Best Practices
 
 > [!TIP]
+>
 > - Test with `--dry-run` first
 > - Use descriptive tags: `fix-auth`, `feature-api`
 > - Document snapshot version in PR description
@@ -127,9 +134,11 @@ CI-specific wrapper that auto-detects environment and generates PR comments.
 <summary>🛑 "No unreleased changesets found"</summary>
 
 Snapshot releases require changesets to work. Create one first:
+
 ```bash
 pnpm exec changeset  # Select packages and describe changes
 ```
+
 </details>
 
 <details>
@@ -138,12 +147,14 @@ pnpm exec changeset  # Select packages and describe changes
 ```bash
 pnpm add -D @changesets/cli
 ```
+
 </details>
 
 <details>
 <summary>🛑 "You have uncommitted changes"</summary>
 
 Changesets will warn about uncommitted changes. You can:
+
 - Answer "y" to continue anyway (recommended for local testing)
 - Or commit your changes first: `git add . && git commit -m 'Your message'`
 </details>

@@ -1,17 +1,17 @@
 ---
 title: Monitor flow execution
-description: Learn how to monitor and observe pgflow workflow execution using SQL queries
+description: Learn how to monitor and observe pgflow flow execution using SQL queries
 sidebar:
   order: 10
 ---
 
 import { Aside, Steps, Tabs, CardGrid, LinkCard, FileTree } from "@astrojs/starlight/components";
 
-This guide explains how to monitor your pgflow workflows during and after execution using SQL queries.
+This guide explains how to monitor your pgflow flows during and after execution using SQL queries.
 
-## View workflow run status
+## View flow run status
 
-To check the status of your workflow runs, query the `pgflow.runs` table:
+To check the status of your flow runs, query the `pgflow.runs` table:
 
 ```sql
 SELECT * FROM pgflow.runs
@@ -138,7 +138,7 @@ AND ss.status = 'failed';
 ```
 
 <Aside type="tip" title="Starting from TypeScript">
-To start workflows from TypeScript applications and stream real-time progress updates, see [Start Flows from TypeScript Client](/build/starting-flows/typescript-client/).
+To start flows from TypeScript applications and stream real-time progress updates, see [Start Flows from TypeScript Client](/build/starting-flows/typescript-client/).
 
 This page focuses on SQL-based monitoring for debugging and operations.
 </Aside>
@@ -146,7 +146,7 @@ This page focuses on SQL-based monitoring for debugging and operations.
 <Aside type="tip" title="Flow Visualization">
 Applications typically create dashboards to visualize flows and their execution status.
 
-pgflow stores all the information needed to build rich visualizations of your workflow execution, including:
+pgflow stores all the information needed to build rich visualizations of your flow execution, including:
 - Step dependencies
 - Execution times
 - Retry attempts
@@ -157,7 +157,7 @@ This data is available through SQL queries to the pgflow schema tables.
 
 ## View step dependencies
 
-To understand the structure of your workflow and the dependencies between steps:
+To understand the structure of your flow and the dependencies between steps:
 
 ```sql
 SELECT
@@ -174,8 +174,8 @@ GROUP BY steps.step_slug;
 ## Next steps
 
 <CardGrid>
-  <LinkCard title="Start Flows from TypeScript Client" href="/build/starting-flows/typescript-client/" description="Start workflows from TypeScript apps and stream real-time progress updates"/>
-  <LinkCard title="Organize Flows code" href="/build/organize-flow-code/" description="Learn how to structure your pgflow code for maintainability and reusability"/>
+  <LinkCard title="Start Flows from TypeScript Client" href="/build/starting-flows/typescript-client/" description="Start flows from TypeScript apps and stream real-time progress updates"/>
+  <LinkCard title="Organize Flow code" href="/build/organize-flow-code/" description="Learn how to structure your pgflow code for maintainability and reusability"/>
   <LinkCard title="Tune deployed flows" href="/deploy/tune-flow-config/" description="Adjust retry behavior and timeouts for production flows"/>
   <LinkCard title="Version your Flows" href="/build/version-flows/" description="Learn how to safely update your flows without breaking existing runs"/>
 </CardGrid>

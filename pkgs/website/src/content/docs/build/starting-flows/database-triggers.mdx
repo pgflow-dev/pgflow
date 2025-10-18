@@ -9,12 +9,9 @@ import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 Use database triggers to automatically start pgflow workflows when data changes, enabling event-driven architecture.
 
-## When to Use This Approach
-
-- **Process new records** - Start workflows for each newly inserted record
-- **React to updates** - Trigger workflows when specific columns change
-- **Event-driven architecture** - Respond immediately to data changes
-- **Audit and tracking** - Process changes automatically
+<Aside type="note">
+For complete PostgreSQL trigger documentation including trigger timing, events, and advanced patterns, see the [PostgreSQL Trigger Documentation](https://www.postgresql.org/docs/current/sql-createtrigger.html).
+</Aside>
 
 ## Basic Pattern
 
@@ -59,35 +56,6 @@ This pattern is more efficient than `FOR EACH ROW` because:
 - Better performance for bulk inserts
 </Aside>
 
-## Processing New Orders
-
-Start an order processing workflow for each new order:
-
-```sql
-CREATE OR REPLACE FUNCTION process_new_orders()
-RETURNS TRIGGER AS $$
-BEGIN
-  PERFORM pgflow.start_flow(
-    flow_slug => 'process_order',
-    input => jsonb_build_object(
-      'order_id', new_orders.id,
-      'customer_id', new_orders.customer_id,
-      'total', new_orders.total
-    )
-  )
-  FROM new_orders;
-
-  RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER on_order_created
-  AFTER INSERT ON orders
-  REFERENCING NEW TABLE AS new_orders
-  FOR EACH STATEMENT
-  EXECUTE FUNCTION process_new_orders();
-```
-
 ## Reacting to Status Changes
 
 Trigger workflows when order status changes to "shipped":
@@ -100,8 +68,8 @@ BEGIN
   PERFORM pgflow.start_flow(
     flow_slug => 'send_shipping_notification',
     input => jsonb_build_object(
-      'order_id', updated_orders.id,
-      'tracking_number', updated_orders.tracking_number
+      'orderId', updated_orders.id,
+      'trackingNumber', updated_orders.tracking_number
     )
   )
   FROM new_orders AS updated_orders
@@ -120,189 +88,11 @@ CREATE TRIGGER on_order_status_change
   EXECUTE FUNCTION on_order_shipped();
 ```
 
-## Conditional Processing
-
-Only start workflows when specific conditions are met:
-
-```sql
-CREATE OR REPLACE FUNCTION process_high_value_orders()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Only process orders over $1000
-  PERFORM pgflow.start_flow(
-    flow_slug => 'fraud_check',
-    input => jsonb_build_object(
-      'order_id', new_orders.id,
-      'amount', new_orders.total
-    )
-  )
-  FROM new_orders
-  WHERE new_orders.total > 1000;
-
-  RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER check_high_value_orders
-  AFTER INSERT ON orders
-  REFERENCING NEW TABLE AS new_orders
-  FOR EACH STATEMENT
-  EXECUTE FUNCTION process_high_value_orders();
-```
-
-## Handling Updates
-
-Process records that were updated:
-
-```sql
-CREATE OR REPLACE FUNCTION sync_user_profile_changes()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Sync updated profiles to external system
-  PERFORM pgflow.start_flow(
-    flow_slug => 'sync_profile',
-    input => jsonb_build_object(
-      'user_id', updated_users.id,
-      'email', updated_users.email,
-      'name', updated_users.name
-    )
-  )
-  FROM new_users AS updated_users;
-
-  RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER on_user_profile_updated
-  AFTER UPDATE ON users
-  REFERENCING NEW TABLE AS new_users
-  FOR EACH STATEMENT
-  EXECUTE FUNCTION sync_user_profile_changes();
-```
-
-## Preventing Infinite Loops
-
-Avoid triggers that update the same table:
-
-```sql
-CREATE OR REPLACE FUNCTION process_unprocessed_items()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Only process items that aren't already being processed
-  PERFORM pgflow.start_flow(
-    flow_slug => 'process_item',
-    input => jsonb_build_object('item_id', new_items.id)
-  )
-  FROM new_items
-  WHERE new_items.processing_status IS NULL;
-
-  -- Don't update the table here to avoid infinite loop
-  RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER on_new_items
-  AFTER INSERT ON items
-  REFERENCING NEW TABLE AS new_items
-  FOR EACH STATEMENT
-  EXECUTE FUNCTION process_unprocessed_items();
-```
-
 <Aside type="caution">
-Triggers that modify the same table they're attached to can cause infinite loops. Design workflows to update status separately.
+**Avoiding Infinite Loops**
+
+Triggers that modify the same table they're attached to can cause infinite loops. Design your workflows to update status in separate tables or use conditional logic to prevent re-triggering.
 </Aside>
-
-## Managing Triggers
-
-### List All Triggers
-
-View all triggers on a table:
-
-```sql
-SELECT
-  trigger_name,
-  event_manipulation,
-  action_timing,
-  action_statement
-FROM information_schema.triggers
-WHERE event_object_table = 'orders';
-```
-
-### Disable a Trigger
-
-Temporarily disable a trigger:
-
-```sql
-ALTER TABLE orders DISABLE TRIGGER on_new_orders;
-```
-
-### Enable a Trigger
-
-Re-enable a disabled trigger:
-
-```sql
-ALTER TABLE orders ENABLE TRIGGER on_new_orders;
-```
-
-### Drop a Trigger
-
-Permanently remove a trigger:
-
-```sql
-DROP TRIGGER IF EXISTS on_new_orders ON orders;
-```
-
-## Performance Considerations
-
-### Bulk Inserts
-
-The `FOR EACH STATEMENT` pattern handles bulk inserts efficiently:
-
-```sql
--- This INSERT triggers the function once, not 1000 times
-INSERT INTO orders (customer_id, total)
-SELECT customer_id, total
-FROM pending_orders
-LIMIT 1000;
-```
-
-### Trigger Timing
-
-Choose trigger timing based on your needs:
-
-| Timing | Use When |
-|--------|----------|
-| `AFTER INSERT` | Process new records after they're committed |
-| `AFTER UPDATE` | React to changes after they're saved |
-| `BEFORE INSERT` | Validate or modify data before insertion |
-
-<Aside type="tip">
-Use `AFTER` triggers for starting workflows since they fire after the transaction commits, ensuring data consistency.
-</Aside>
-
-### Avoiding Bottlenecks
-
-For high-volume tables, consider:
-- Filtering records in the trigger function (WHERE clauses)
-- Using pg_cron for batch processing instead
-- Implementing rate limiting in workflows
-
-## Monitoring Triggered Workflows
-
-Check workflows started by triggers:
-
-```sql
-SELECT
-  run_id,
-  flow_slug,
-  status,
-  input,
-  started_at
-FROM pgflow.runs
-WHERE flow_slug = 'process_article'
-  AND started_at > NOW() - INTERVAL '1 hour'
-ORDER BY started_at DESC;
-```
 
 ## Learn More
 
@@ -311,10 +101,5 @@ ORDER BY started_at DESC;
     title="Schedule Flows with pg_cron"
     href="/build/starting-flows/pg-cron/"
     description="Run workflows on a recurring schedule"
-  />
-  <LinkCard
-    title="PostgreSQL Triggers"
-    href="https://www.postgresql.org/docs/current/sql-createtrigger.html"
-    description="Official PostgreSQL trigger documentation"
   />
 </CardGrid>

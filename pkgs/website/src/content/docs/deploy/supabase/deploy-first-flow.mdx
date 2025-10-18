@@ -8,7 +8,7 @@ banner:
     pgflow is in public beta. <a href="/project-status/">See project status</a> for production readiness details.
 ---
 
-import { Aside } from "@astrojs/starlight/components";
+import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
 
 This guide walks you through deploying your pgflow workers to Supabase.com production for the first time.
 
@@ -33,7 +33,7 @@ The connection string looks like:
 postgresql://postgres.pooler-yourproject:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres
 ```
 
-:::tip[Why Transaction Mode?]
+:::note[Why Transaction Mode?]
 Transaction Mode uses connection pooling (port 6543), which is required for Edge Functions. The pooler efficiently manages database connections in serverless environments.
 :::
 
@@ -86,6 +86,10 @@ curl "https://your-project.supabase.co/functions/v1/your-worker-name" \
 2. Navigate to **Settings** → **API**
 3. Copy the `anon` `public` key
 
+:::note
+Production Edge Functions have JWT verification enabled by default.
+:::
+
 The worker starts polling for tasks and continues running until it's stopped or times out.
 
 ## Set Up the Safety Net
@@ -100,11 +104,10 @@ Edge Functions eventually stop due to platform limits or errors. Set up a pg_cro
 The safety net takes 2 minutes to set up and prevents hours of debugging why workflows stopped running.
 </Aside>
 
-## Next Steps
+## See Also
 
-Your first flow is now deployed and running in production!
-
-When you need to update your flows:
-- [Update Deployed Flows](/deploy/supabase/update-deployed-flows/) - Learn the deprecation workflow for safe updates
-- [Monitor Execution](/deploy/monitor-execution/) - Track flow runs and debug issues
-- [Monitor Workers Health](/deploy/monitor-workers-health/) - Ensure workers stay healthy
+<CardGrid>
+  <LinkCard title="Connection String Encoding" href="/deploy/connection-string/" description="Handle special characters in database passwords" />
+  <LinkCard title="Monitor Execution" href="/deploy/monitor-execution/" description="Track flow runs and debug issues" />
+  <LinkCard title="Monitor Workers Health" href="/deploy/monitor-workers-health/" description="Ensure workers stay healthy" />
+</CardGrid>

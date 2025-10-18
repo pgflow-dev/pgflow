@@ -5,17 +5,34 @@ sidebar:
   order: 120
 ---
 
-import { Aside } from "@astrojs/starlight/components";
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
 If your database password contains special characters, you must URL-encode them to avoid authentication errors like:
 
 ```
 Error: SASL_SIGNATURE_MISMATCH: The server did not return the correct signature
+Error: password authentication failed for user
 ```
+
+## Get Your Connection String
+
+Before encoding, get your connection string from Supabase:
+
+1. Open [Supabase Dashboard](https://supabase.com/dashboard)
+2. Navigate to **Settings** → **Database**
+3. Scroll to **Connection String** section
+4. Copy the **Transaction Mode** connection string (port 6543)
+
+The string looks like:
+```
+postgresql://postgres.pooler-yourproject:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres
+```
+
+Replace `[YOUR-PASSWORD]` with your actual database password from the dashboard (you may need to reveal it first).
 
 ## Common Characters That Need Encoding
 
-Check if your password contains any of these characters that require encoding:
+Check if your password contains any of these characters:
 
 | Character | Encoding | Character | Encoding |
 |-----------|----------|-----------|----------|
@@ -23,63 +40,108 @@ Check if your password contains any of these characters that require encoding:
 | `:` | `%3A` | `/` | `%2F` |
 | `?` | `%3F` | `#` | `%23` |
 | `%` | `%25` | ` ` (space) | `%20` |
+| `!` | `%21` | `=` | `%3D` |
 
-[Full list at MDN Web Docs](https://developer.mozilla.org/en-US/docs/Glossary/Percent-encoding)
+[Full encoding reference at MDN Web Docs](https://developer.mozilla.org/en-US/docs/Glossary/Percent-encoding)
 
-## Encoding Your Password
+## Encode Your Password
 
-Special characters (`@`, `&`, `:`, etc.) in passwords must be percent-encoded to be correctly interpreted in connection strings.
-
-Use one of these methods:
-
-```javascript
-// JavaScript
-const encodedPassword = encodeURIComponent("my@complex&password!");
-// Result: "my%40complex%26password%21"
-```
-
-```python
-# Python
-import urllib.parse
-encoded_password = urllib.parse.quote("my@complex&password!")
-# Result: "my%40complex%26password%21"
-```
-
-```bash
-# Linux (requires jq)
-encoded_password=$(printf %s "my@complex&password!" | jq -sRr @uri)
-# Result: "my%40complex%26password%21"
-```
-
-## Using Encoded Password
+Use the code examples below to encode your password **on your own machine**. These methods allow you to encode your credentials locally without sharing them with third-party services.
 
 <Aside type="tip">
-  Only encode the password portion, not the entire URL.
+Only encode the password portion, not the entire connection string.
 </Aside>
 
-When you have your encoded password, insert it into your connection string:
+<Tabs>
+  <TabItem label="JavaScript / Node.js">
+    ```javascript
+    const encodedPassword = encodeURIComponent("my@complex&password!");
+    console.log(encodedPassword);
+    // Output: my%40complex%26password%21
+    ```
+  </TabItem>
 
+  <TabItem label="Python">
+    ```python
+    import urllib.parse
+    encoded_password = urllib.parse.quote("my@complex&password!")
+    print(encoded_password)
+    # Output: my%40complex%26password%21
+    ```
+  </TabItem>
+
+  <TabItem label="Linux / macOS">
+    ```bash
+    # Requires jq
+    encoded_password=$(printf %s "my@complex&password!" | jq -sRr @uri)
+    echo $encoded_password
+    # Output: my%40complex%26password%21
+    ```
+  </TabItem>
+</Tabs>
+
+## Complete Example
+
+Here's a realistic example showing the full process:
+
+**Original password from Supabase Dashboard:**
 ```
-postgresql://username:ENCODED_PASSWORD@host:port/database
+P@ssw0rd!2024
 ```
 
-Example with encoded password:
+**Encode just the password:**
 ```
-postgresql://postgres.pooler-dev:my%40complex%26password%21@db.example.com:6543/postgres
+P%40ssw0rd%212024
 ```
 
-Use this encoded connection string when:
-- Setting the `EDGE_WORKER_DB_URL` secret for production deployment
-- Configuring local development environment variables
+**Original connection string:**
+```
+postgresql://postgres.pooler-yourproject:P@ssw0rd!2024@aws-0-us-east-1.pooler.supabase.com:6543/postgres
+```
 
-For deployment instructions, see [Deploy Your First Flow](/deploy/supabase/deploy-first-flow/).
+**Encoded connection string:**
+```
+postgresql://postgres.pooler-yourproject:P%40ssw0rd%212024@aws-0-us-east-1.pooler.supabase.com:6543/postgres
+```
+
+## Set as Supabase Secret
+
+Use the encoded connection string to set your database secret:
+
+```bash frame="none"
+npx supabase secrets set EDGE_WORKER_DB_URL="postgresql://postgres.pooler-yourproject:P%40ssw0rd%212024@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
+```
+
+Replace the hostname, project name, and encoded password with your actual values.
+
+<Aside type="note">
+For local development, add the encoded connection string to `supabase/functions/.env`:
+
+```bash
+EDGE_WORKER_DB_URL="postgresql://postgres.pooler-yourproject:P%40ssw0rd%212024@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
+```
+</Aside>
+
+## Verify It Works
+
+Test your connection by deploying and starting your worker:
+
+```bash frame="none"
+npx supabase functions deploy your-worker-name
+curl "https://your-project.supabase.co/functions/v1/your-worker-name" \
+  -H "Authorization: Bearer YOUR_ANON_KEY"
+```
+
+If you see worker logs without authentication errors, the encoding worked.
+
+For full deployment instructions, see [Deploy Your First Flow](/deploy/supabase/deploy-first-flow/).
 
 ## Security Considerations
 
-:::caution[Password Security]
+<Aside type="caution" title="Password Security">
 When working with database passwords:
 - **Never** paste your database password into untrusted websites for encoding
 - **Avoid** sharing your database password with third-party services
 - **Don't** commit your database password to Git repositories
 - Use environment variables and secrets management tools instead
-:::
+</Aside>

@@ -181,7 +181,7 @@ Until pgflow reaches 1.0 (production-ready), we use a modified versioning scheme
 In development, you can update frequently to take advantage of new features and bug fixes:
 
 ```bash frame="none"
-npm update @pgflow/cli @pgflow/core @pgflow/client @pgflow/dsl
+npm update pgflow @pgflow/core @pgflow/client @pgflow/dsl
 npx pgflow@latest install -y  # Auto-confirm for faster development
 npx supabase migrations up
 ```
@@ -194,7 +194,7 @@ For production updates, follow a more careful approach:
 2. Review all new migrations carefully
 3. Plan for any necessary downtime
 4. Keep backups of your database before applying migrations
-5. Monitor your workflows after updating
+5. Monitor your flows after updating
 
 <Aside type="caution" title="Production Considerations">
 Always test pgflow updates in a non-production environment first. While pgflow migrations are designed to be safe, any database schema change carries inherent risks in production systems.

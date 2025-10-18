@@ -1,0 +1,99 @@
+---
+title: Delaying Steps
+description: Schedule steps to run after specified delays for workflows that span hours or days.
+sidebar:
+  order: 26
+---
+
+import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+Use [`startDelay`](/reference/configuration/step-execution/#startdelay) to schedule steps for execution after a specified time period. Delays are relative to when the step's dependencies complete.
+
+<Aside type="tip">
+For retry configuration patterns, see [Configuring Retries](/build/configuring-retries/).
+</Aside>
+
+For detailed information about each configuration option, see the [Step Execution Options](/reference/configuration/step-execution/) reference.
+
+## When to Use
+
+Use `startDelay` for:
+
+- **Drip campaigns** - Follow-up emails or notifications over days or weeks
+- **Delayed notifications** - Remind users about incomplete actions after a waiting period
+- **Compliance delays** - Required processing periods (refund windows, cancellation periods)
+
+## How It Works
+
+When a step has `startDelay`, the step is marked as started immediately, but its tasks are sent to the queue with a delay. Workers won't pick up these tasks until the delay period passes. This uses pgmq's message delay feature under the hood.
+
+## Examples
+
+### Staggered Start Times
+
+Onboarding emails with different start delays (all are root steps with no dependencies):
+
+```typescript
+new Flow({
+  slug: 'user_onboarding',
+  maxAttempts: 3,
+  baseDelay: 1,
+})
+  .step({
+    slug: 'send_welcome_email',
+    // Executes immediately when flow starts
+  }, sendWelcomeHandler)
+  .step({
+    slug: 'send_day_3_tips',
+    startDelay: 259200,  // 3 days after flow starts
+  }, sendTipsHandler)
+  .step({
+    slug: 'send_week_review',
+    startDelay: 604800,  // 7 days after flow starts
+  }, sendReviewHandler)
+```
+
+### Delay After Dependency
+
+Wait period after a specific step completes:
+
+```typescript
+new Flow({
+  slug: 'trial_conversion',
+  maxAttempts: 3,
+  baseDelay: 1,
+})
+  .step({
+    slug: 'provision_trial',
+  }, provisionHandler)
+  .step({
+    slug: 'send_upgrade_reminder',
+    dependsOn: ['provision_trial'],
+    startDelay: 1209600,  // 14 days after trial provisioning completes
+  }, reminderHandler)
+```
+
+## Learn More
+
+<CardGrid>
+  <LinkCard
+    title="Step Execution Options"
+    href="/reference/configuration/step-execution/"
+    description="Complete reference for all configuration options and their defaults"
+  />
+  <LinkCard
+    title="Configuring Retries"
+    href="/build/configuring-retries/"
+    description="Configure retry policies for different reliability requirements"
+  />
+  <LinkCard
+    title="Worker Configuration"
+    href="/reference/configuration/worker/"
+    description="Configure Edge Worker concurrency and polling behavior"
+  />
+  <LinkCard
+    title="Tune Deployed Flows"
+    href="/deploy/tune-flow-config/"
+    description="Adjust configuration for production flows without redeploying"
+  />
+</CardGrid>
