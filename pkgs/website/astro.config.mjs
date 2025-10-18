@@ -152,15 +152,22 @@ export default defineConfig({
         starlightLlmsTxt({
           exclude: [
             'index',
-            '**/index',
+            // Navigation-only index files (pure CardGrid hubs with no unique content)
+            'build/index',
+            'concepts/index',
+            'deploy/index',
+            'reference/index',
+            'tutorials/index',
+            'comparisons/index',
+            // Tutorials (lengthy, patterns covered elsewhere)
             'tutorials/ai-web-scraper/*',
-            'concepts/naming-steps',
-            'deploy/tune-flow-config',
-            'get-started/faq',
+            // News/blog and non-technical content
             'news/**',
             'hire/**',
-            'build/configuring-retries',
-            'build/delaying-steps',
+            'author/**',
+            // Note: The following index files ARE included because they have valuable content:
+            // - build/starting-flows/index (comparison guide for starting flows)
+            // - reference/configuration/index (config philosophy and structure)
           ],
           promote: [
             'get-started/installation',
@@ -225,8 +232,12 @@ export default defineConfig({
                       link: '/build/organize-flow-code/',
                     },
                     {
-                      label: 'Configuring retries',
-                      link: '/build/configuring-retries/',
+                      label: 'Retrying steps',
+                      link: '/build/retrying-steps/',
+                    },
+                    {
+                      label: 'Validation steps',
+                      link: '/build/validation-steps/',
                     },
                     {
                       label: 'Delaying steps',

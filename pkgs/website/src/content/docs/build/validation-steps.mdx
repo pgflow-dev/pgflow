@@ -1,0 +1,87 @@
+---
+title: Validation Steps
+description: Use explicit validation steps to fail fast on invalid input
+sidebar:
+  order: 30
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Validation steps catch invalid input early, before expensive operations run. Structure them to fail fast with no retries.
+
+## Why Explicit Validation Steps?
+
+pgflow retries all exceptions based on `maxAttempts`. Without explicit validation, input errors waste retry attempts:
+
+```typescript
+// Without validation - wastes retry attempts on invalid input
+new Flow<{ email: string }>({ slug: 'sendEmail', maxAttempts: 5 })
+  .step(
+    { slug: 'send' },
+    async (input) => {
+      if (!input.run.email.includes('@')) {
+        throw new Error('Invalid email');  // Retries 5 times!
+      }
+      return await sendEmail(input.run.email);
+    }
+  )
+```
+
+With explicit validation, failures stop immediately:
+
+```typescript
+// With validation - fails immediately on invalid input
+new Flow<{ email: string }>({ slug: 'sendEmail' })
+  .step(
+    { slug: 'validInput', maxAttempts: 1 },
+    (input) => {
+      if (!input.run.email.includes('@')) {
+        throw new Error('Invalid email');
+      }
+      return input.run;
+    }
+  )
+  .step(
+    { slug: 'send', dependsOn: ['validInput'], maxAttempts: 5 },
+    async (input) => await sendEmail(input.validInput.email)
+  )
+```
+
+## Keep Validation Synchronous
+
+Validation steps should be fast, synchronous functions that check input format and structure. Avoid async operations like database queries or API calls - those belong in separate steps with appropriate retry configuration.
+
+```typescript
+// Good: Fast, synchronous validation
+.step(
+  { slug: 'validOrder', maxAttempts: 1 },
+  (input) => {
+    const { amount, items } = input.run;
+
+    if (amount <= 0) throw new Error('amount must be positive');
+    if (!items?.length) throw new Error('items cannot be empty');
+
+    return input.run;
+  }
+)
+
+// Bad: Async checks in validation
+.step(
+  { slug: 'validCustomer', maxAttempts: 1 },
+  async (input) => {
+    // Database lookups belong in separate steps with retries
+    const exists = await checkCustomerExists(input.run.customerId);
+    if (!exists) throw new Error('Customer not found');
+    return input.run;
+  }
+)
+```
+
+<Aside type="tip">
+Validation steps check **format and structure** (email format, positive numbers, array length). Existence checks and external validations belong in regular steps with retry configuration.
+</Aside>
+
+## See Also
+
+- [Retrying Steps](/build/retrying-steps/) - Understanding failure types and retry policies
+- [Context Object](/concepts/context-object/) - Accessing validated input in dependent steps
