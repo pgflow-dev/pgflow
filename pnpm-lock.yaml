@@ -388,6 +388,9 @@ importers:
       starlight-blog:
         specifier: ^0.24.0
         version: 0.24.0(@astrojs/starlight@0.34.8)(astro@5.12.4)
+      starlight-contextual-menu:
+        specifier: ^0.1.5
+        version: 0.1.5(astro@5.12.4)(starlight-markdown@0.1.5)
       starlight-links-validator:
         specifier: ^0.14.3
         version: 0.14.3(@astrojs/starlight@0.34.8)
@@ -20511,6 +20514,16 @@ packages:
       - supports-color
     dev: false
 
+  /starlight-contextual-menu@0.1.5(astro@5.12.4)(starlight-markdown@0.1.5):
+    resolution: {integrity: sha512-MYQ6eFDIBBnKrEh3XqR7RZ6YDJ641ADmrSjj93d+cVJGPvrCHrd6VYiKeehhczsrn6GqjaCCFAn4xUd69gcfcQ==}
+    peerDependencies:
+      astro: ^5.0.0
+      starlight-markdown: ^0.1.5
+    dependencies:
+      astro: 5.12.4(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(stylus@0.64.0)(typescript@5.8.3)
+      starlight-markdown: 0.1.5(astro@5.12.4)
+    dev: false
+
   /starlight-links-validator@0.14.3(@astrojs/starlight@0.34.8):
     resolution: {integrity: sha512-2CvQs0ZdIVExrEQ1bn0r2aFx4n+VSOb6vDWK+gTNb5N1c+nXJ7VjUbEsQhj+9Lb7XgY6Nxqz9JXUM9364hJ3ZA==}
     engines: {node: '>=18.17.1'}
@@ -20555,6 +20568,14 @@ packages:
       unist-util-remove: 4.0.0
     transitivePeerDependencies:
       - supports-color
+    dev: false
+
+  /starlight-markdown@0.1.5(astro@5.12.4):
+    resolution: {integrity: sha512-23LXRaZp7pyE+r/HP6rxHfwic8HfvUBT4EImECA6encs/eTtrF0Z+7svANofdtfbiNt31D5q26i03B6FtcSmGg==}
+    peerDependencies:
+      astro: ^5.0.0
+    dependencies:
+      astro: 5.12.4(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(stylus@0.64.0)(typescript@5.8.3)
     dev: false
 
   /starlight-sidebar-topics@0.6.0(@astrojs/starlight@0.34.8):
