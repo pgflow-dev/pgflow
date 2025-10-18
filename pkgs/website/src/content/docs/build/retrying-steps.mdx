@@ -1,5 +1,5 @@
 ---
-title: Configuring Retries
+title: Retrying Steps
 description: Configure retry policies for different step reliability requirements.
 sidebar:
   order: 25
@@ -14,6 +14,56 @@ For scheduling delays between steps, see [Delaying Steps](/build/delaying-steps/
 </Aside>
 
 For detailed information about each configuration option, see the [Step Execution Options](/reference/configuration/step-execution/) reference.
+
+## Understanding Failure Types
+
+Not all failures should retry. Understanding the difference helps you configure appropriate retry policies.
+
+### Transient Failures
+
+Temporary problems that might succeed on retry:
+- Network timeouts
+- Rate limiting (429 responses)
+- Temporary service unavailability (503 responses)
+- Database connection issues
+
+Configure with retries:
+```typescript
+.step({
+  slug: 'fetchExternalData',
+  maxAttempts: 5,   // Retry transient failures
+  baseDelay: 2,
+}, async (input) => await fetchFromAPI(input.run.url))
+```
+
+### Permanent Failures
+
+Problems that will never succeed on retry:
+- Invalid input format (malformed email, negative numbers)
+- Missing required fields
+- Business rule violations
+- Schema validation errors
+
+Configure without retries:
+```typescript
+.step({
+  slug: 'validInput',
+  maxAttempts: 1,   // No retries for validation
+}, (input) => {
+  if (!input.run.email) throw new Error('Email required');
+  return input.run;
+})
+```
+
+<Aside type="note">
+`maxAttempts: 1` means "run once, do not retry". If the step fails, it fails immediately without retry attempts.
+</Aside>
+
+<Aside type="caution" title="Current Limitation">
+pgflow does not distinguish between transient and permanent failures automatically. All exceptions trigger retry logic based on `maxAttempts`. Use `maxAttempts: 1` for steps that perform validation or other operations that should fail fast.
+</Aside>
+
+For detailed guidance on validation patterns, see [Validation Steps](/build/validation-steps/).
 
 ## Guiding Principle
 
@@ -56,6 +106,11 @@ new Flow({
 ## Learn More
 
 <CardGrid>
+  <LinkCard
+    title="Validation Steps"
+    href="/build/validation-steps/"
+    description="Use explicit validation steps to fail fast on invalid input"
+  />
   <LinkCard
     title="Step Execution Options"
     href="/reference/configuration/step-execution/"
