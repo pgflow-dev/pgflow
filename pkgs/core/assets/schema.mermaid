@@ -1,0 +1,65 @@
+erDiagram
+    flows ||--o{ steps : "has"
+    flows ||--o{ runs : "instantiates"
+
+    steps ||--o{ deps : "depends_on"
+    steps ||--o{ step_states : "state_of"
+
+    runs ||--o{ step_states : "contains"
+
+    step_states ||--o{ step_tasks : "spawns"
+
+    flows {
+        text flow_slug PK
+        int opt_max_attempts
+        int opt_base_delay
+        int opt_timeout
+    }
+
+    steps {
+        text flow_slug PK,FK
+        text step_slug PK
+        text step_type
+        int step_index
+        int deps_count
+        int opt_max_attempts
+        int opt_base_delay
+        int opt_timeout
+        int opt_start_delay
+    }
+
+    deps {
+        text flow_slug PK,FK
+        text dep_slug PK,FK
+        text step_slug PK,FK
+    }
+
+    runs {
+        uuid run_id PK
+        text flow_slug FK
+        text status
+        jsonb input
+        jsonb output
+        int remaining_steps
+    }
+
+    step_states {
+        text flow_slug FK
+        uuid run_id PK,FK
+        text step_slug PK,FK
+        text status
+        int remaining_tasks
+        int initial_tasks
+        int remaining_deps
+    }
+
+    step_tasks {
+        text flow_slug FK
+        uuid run_id PK,FK
+        text step_slug PK,FK
+        int task_index PK
+        bigint message_id
+        text status
+        int attempts_count
+        jsonb output
+    }

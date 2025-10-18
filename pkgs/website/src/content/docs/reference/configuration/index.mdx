@@ -1,0 +1,56 @@
+---
+title: Overview
+description: Learn how to configure pgflow with options for retry behavior, timeouts, and flow worker settings. Includes defaults and best practices.
+sidebar:
+  order: 10
+---
+
+import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+pgflow's configuration is divided into two distinct parts, each serving a different purpose in the workflow lifecycle.
+
+pgflow separates configuration into **task execution** settings (how individual steps are executed and retried) and **worker** settings (how the worker processes the entire flow). Task settings are stored in your database and control retry behavior, delays, and timeouts, while worker settings control concurrency, connections, and batching.
+
+<Aside type="note" title="Documentation Structure">
+This page provides an overview of pgflow configuration. Use the links below to access detailed documentation for each configuration area.
+</Aside>
+
+<CardGrid>
+  <LinkCard
+    title="Step Execution Options"
+    description="Configure retry behavior, timeouts, and error handling for your workflow steps. Set defaults at flow level, override per step."
+    href="/reference/configuration/step-execution/"
+  />
+  <LinkCard
+    title="Worker Configuration"
+    description="Runtime settings for EdgeWorker including concurrency, database connections, and polling behavior."
+    href="/reference/configuration/worker/"
+  />
+</CardGrid>
+
+<Aside title="Zero Configuration" type="tip">
+pgflow comes with sensible defaults for all configuration options.
+
+You only need to specify slugs for your flow and steps:
+
+```ts
+new Flow({ slug: 'my_flow' })
+  .step({ slug: 'step1' }, handler1)
+  .step({ slug: 'step2' }, handler2)
+```
+</Aside>
+
+## Related Guides
+
+<CardGrid>
+  <LinkCard
+    title="Configuration Patterns"
+    description="Common configuration patterns for different scenarios - API integrations, local processing, and more."
+    href="/build/configuration-patterns/"
+  />
+  <LinkCard
+    title="Tune Deployed Flows"
+    description="Adjust retry behavior and timeouts for production flows without recompiling."
+    href="/deploy/tune-flow-config/"
+  />
+</CardGrid>

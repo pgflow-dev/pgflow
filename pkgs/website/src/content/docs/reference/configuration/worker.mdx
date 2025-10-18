@@ -1,0 +1,82 @@
+---
+title: Worker Configuration
+description: Runtime settings for EdgeWorker including concurrency, database connections, and polling behavior.
+sidebar:
+  order: 30
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+These settings control how the EdgeWorker processes tasks from your flows. They're passed when starting the worker and affect performance and resource utilization.
+
+<Aside type="note">
+Worker configuration requires redeploying your Edge Function to change, while flow/step configuration can be updated on the fly with SQL queries. See [Tune Deployed Flows](/deploy/tune-flow-config/) for details on updating configuration without redeployment.
+</Aside>
+
+## Default Worker Configuration
+
+When using pgflow with EdgeWorker, configure the worker's behavior:
+
+```typescript
+import { EdgeWorker } from '@pgflow/edge-worker';
+import MyFlow from './flows/my_flow.ts';
+
+EdgeWorker.start(MyFlow, {
+  // Worker concurrency settings
+  maxConcurrent: 10,      // Process up to 10 tasks simultaneously
+  maxPgConnections: 4,    // Database connection pool size
+
+  // Polling configuration
+  batchSize: 10,          // Fetch up to 10 tasks per poll
+  maxPollSeconds: 2,      // Long-poll duration
+  pollIntervalMs: 100,    // Database polling frequency
+});
+```
+
+## `maxConcurrent`
+**Type:** `number`
+**Default:** `10`
+
+Maximum number of tasks that can be processed simultaneously. Increase for I/O-heavy tasks, decrease for CPU-heavy tasks.
+
+## `maxPgConnections`
+**Type:** `number`
+**Default:** `4`
+
+Size of the PostgreSQL connection pool. Should generally be less than `maxConcurrent` since not all tasks need a connection at all times.
+
+## `batchSize`
+**Type:** `number`
+**Default:** `10`
+
+Maximum number of tasks to fetch in a single poll operation. Larger batches are more efficient but may lead to uneven work distribution.
+
+## `maxPollSeconds`
+**Type:** `number`
+**Default:** `2`
+
+How long to wait for tasks during each poll cycle. Shorter durations ensure more responsive task pickup.
+
+<Aside type="caution">
+Keep `maxPollSeconds` below the heartbeat interval (5 seconds) for flow workers to ensure proper heartbeat timing.
+</Aside>
+
+## `pollIntervalMs`
+**Type:** `number`
+**Default:** `100`
+
+How frequently (in milliseconds) to check the database for new tasks during the poll cycle.
+
+## Accessing Worker Configuration in Handlers
+
+Your flow step handlers can access the resolved worker configuration through the context object. For detailed information about available configuration options and usage patterns, see [Context](/concepts/context-object/).
+
+## Queue Worker Differences
+
+When using EdgeWorker in queue-only mode (without pgflow orchestration), there are a few key differences:
+
+- **No flow/step configuration**: Queue workers don't have `maxAttempts`, `baseDelay`, `timeout`, or `startDelay` options in the flow definition. Instead, these are configured directly in the worker options.
+- **`queueName` option**: Queue workers can specify a custom queue name (default is `tasks`), while flow workers automatically use the flow slug as the queue name.
+- **Handler signature**: Queue workers receive a simple payload, while flow workers receive a context object with `input`, `run`, and previous step outputs.
+
+For complete queue worker configuration, see [Queue Worker Configuration](/reference/queue-worker/configuration/).

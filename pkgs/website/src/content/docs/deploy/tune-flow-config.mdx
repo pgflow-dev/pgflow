@@ -13,7 +13,7 @@ After deploying flows to production, you may need to adjust retry behavior, time
 For structural changes like adding steps or changing dependencies, create a new flow version instead (see [Version Your Flows](/build/version-flows/)).
 
 :::tip[Configuration Reference]
-For complete documentation of all available options, defaults, and examples, see the [Configuration Reference](/reference/configuration/configuration/#step-execution-options).
+For complete documentation of all available options, defaults, and examples, see the [Configuration Reference](/reference/configuration/step-execution/).
 :::
 
 ## What Can Be Updated
@@ -22,10 +22,10 @@ You can safely modify these runtime options for existing flows without creating 
 
 | DSL Option | Database Column | Default | Reference |
 | ---------- | --------------- | ------- | --------- |
-| `maxAttempts` | `opt_max_attempts` | `3` | [maxAttempts](/reference/configuration/configuration/#maxattempts) |
-| `baseDelay` | `opt_base_delay` | `1` | [baseDelay](/reference/configuration/configuration/#basedelay) |
-| `timeout` | `opt_timeout` | `60` | [timeout](/reference/configuration/configuration/#timeout) |
-| `startDelay` | `opt_start_delay` | `0` | [startDelay](/reference/configuration/configuration/#startdelay) |
+| `maxAttempts` | `opt_max_attempts` | `3` | [maxAttempts](/reference/configuration/step-execution/#maxattempts) |
+| `baseDelay` | `opt_base_delay` | `1` | [baseDelay](/reference/configuration/step-execution/#basedelay) |
+| `timeout` | `opt_timeout` | `60` | [timeout](/reference/configuration/step-execution/#timeout) |
+| `startDelay` | `opt_start_delay` | `0` | [startDelay](/reference/configuration/step-execution/#startdelay) |
 
 pgflow uses a two-level configuration approach where flow-level options set defaults and step-level options override them. Note that `startDelay` is step-level only.
 
@@ -72,7 +72,7 @@ After updating options in the database, remember to update your flow definition 
 <CardGrid>
   <LinkCard
     title="Configuration Reference"
-    href="/reference/configuration/configuration/"
+    href="/reference/configuration/"
     description="Complete documentation of all configuration options, defaults, and behavior"
   />
   <LinkCard

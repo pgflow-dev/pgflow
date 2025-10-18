@@ -10,7 +10,7 @@ import { Aside, Steps, CardGrid, LinkCard } from "@astrojs/starlight/components"
 This guide shows practical patterns for using map steps to process collections of data in parallel, from simple transformations to complex batch operations.
 
 :::note[New to map steps?]
-See [Map Steps](/concepts/flows/map-steps/) to understand how they work before diving into these patterns.
+See [Map Steps](/concepts/map-steps/) to understand how they work before diving into these patterns.
 :::
 
 ## Processing a List of URLs
@@ -114,7 +114,7 @@ const SolutionFlow = new Flow<{ apiKey: string, ids: string[] }>({
 This pattern applies whenever a map handler needs any data beyond the array elements themselves. Add a step before the map that enriches the array elements with whatever data the handler needs - whether that's the original flow input (`run`), outputs from other dependencies, or both.
 
 :::note[Debugging Map Tasks]
-When debugging map steps, use [`context.stepTask.task_index`](/reference/apis/context/#steptask) to identify which array element each task is processing.
+When debugging map steps, use [`context.stepTask.task_index`](/reference/context/#steptask) to identify which array element each task is processing.
 :::
 
 ## Common Gotchas and Solutions
@@ -164,12 +164,12 @@ const EmptyHandling = new Flow<{}>({
 <CardGrid>
   <LinkCard
     title="Map Steps"
-    href="/concepts/flows/map-steps/"
+    href="/concepts/map-steps/"
     description="Understand how map steps work internally, edge cases, and when to use them"
   />
   <LinkCard
     title="Create Reusable Tasks"
-    href="/build/authoring/create-reusable-tasks/"
+    href="/build/create-reusable-tasks/"
     description="Design task functions that work well in map steps and other workflows"
   />
 </CardGrid>
