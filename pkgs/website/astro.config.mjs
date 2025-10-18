@@ -395,6 +395,7 @@ export default defineConfig({
                   label: 'Architecture',
                   items: [
                     { label: 'How pgflow works', link: '/concepts/how-pgflow-works/' },
+                    { label: 'Architecture', link: '/concepts/architecture/' },
                     { label: 'Data model', link: '/concepts/data-model/' },
                   ],
                 },
