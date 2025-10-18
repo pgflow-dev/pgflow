@@ -6,6 +6,7 @@ import starlightLinksValidator from 'starlight-links-validator';
 import starlightSidebarTopics from 'starlight-sidebar-topics';
 import robotsTxt from 'astro-robots-txt';
 import starlightLlmsTxt from 'starlight-llms-txt';
+import starlightContextualMenu from 'starlight-contextual-menu';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
@@ -148,6 +149,9 @@ export default defineConfig({
           metrics: {
             readingTime: true,
           },
+        }),
+        starlightContextualMenu({
+          actions: ['copy', 'view', 'chatgpt', 'claude'],
         }),
         starlightLlmsTxt({
           exclude: [

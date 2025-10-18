@@ -13,7 +13,7 @@
       🔗 Manual step coordination
     </div>
     <button class="reveal-button sl-button-primary" aria-label="Reveal 250+ lines of traditional code">
-      Click to review code ↓
+      Show me the boilerplate code ↓
     </button>
   </div>
 </div>
@@ -55,10 +55,13 @@
     font-weight: 900;
     color: var(--sl-color-text);
     margin-bottom: 1.5rem;
-    text-shadow: 0 4px 20px var(--sl-color-bg),
+    text-shadow: 0 12px 60px var(--sl-color-bg),
+                 0 10px 50px var(--sl-color-bg),
+                 0 8px 40px var(--sl-color-bg),
+                 0 6px 30px var(--sl-color-bg),
+                 0 4px 20px var(--sl-color-bg),
                  0 2px 12px var(--sl-color-bg),
-                 0 1px 6px var(--sl-color-bg),
-                 0 0 40px rgba(0, 123, 110, 0.6);
+                 0 0 80px rgba(0, 123, 110, 1);
   }
 
   .overlay-list {
@@ -67,10 +70,14 @@
     color: var(--sl-color-text);
     margin-bottom: 2rem;
     text-align: left;
-    text-shadow: 0 4px 20px var(--sl-color-bg),
+    font-weight: 600;
+    text-shadow: 0 12px 60px var(--sl-color-bg),
+                 0 10px 50px var(--sl-color-bg),
+                 0 8px 40px var(--sl-color-bg),
+                 0 6px 30px var(--sl-color-bg),
+                 0 4px 20px var(--sl-color-bg),
                  0 2px 12px var(--sl-color-bg),
-                 0 1px 6px var(--sl-color-bg),
-                 0 0 40px rgba(0, 123, 110, 0.6);
+                 0 0 80px rgba(0, 123, 110, 1);
   }
 
   /* Base button styling following Starlight's pattern */
@@ -91,8 +98,8 @@
     text-decoration: none;
 
     /* Glow and animation effects */
-    box-shadow: 0 8px 32px rgba(0, 123, 110, 0.6),
-                0 0 60px rgba(0, 123, 110, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 123, 110, 0.4),
+                0 0 60px rgba(0, 123, 110, 0.25);
     animation: pulse-glow 2s ease-in-out infinite;
     position: relative;
     overflow: hidden;
@@ -105,12 +112,12 @@
 
   @keyframes pulse-glow {
     0%, 100% {
-      box-shadow: 0 8px 32px rgba(0, 123, 110, 0.6),
-                  0 0 60px rgba(0, 123, 110, 0.4);
+      box-shadow: 0 8px 32px rgba(0, 123, 110, 0.4),
+                  0 0 60px rgba(0, 123, 110, 0.25);
     }
     50% {
-      box-shadow: 0 8px 40px rgba(0, 123, 110, 0.8),
-                  0 0 80px rgba(0, 123, 110, 0.6);
+      box-shadow: 0 8px 40px rgba(0, 123, 110, 0.55),
+                  0 0 80px rgba(0, 123, 110, 0.4);
     }
   }
 
@@ -131,8 +138,8 @@
   .reveal-button.sl-button-primary:hover {
     color: var(--sl-color-black);
     transform: scale(1.08);
-    box-shadow: 0 12px 48px rgba(0, 123, 110, 0.7),
-                0 0 80px rgba(0, 123, 110, 0.6);
+    box-shadow: 0 8px 32px rgba(0, 123, 110, 0.4),
+                0 0 60px rgba(0, 123, 110, 0.25);
     animation: none;
   }
 
@@ -216,6 +223,12 @@
   @media (max-width: 1024px) {
     .code-overlay {
       display: none;
+    }
+
+    .reveal-button.sl-button-primary {
+      font-size: 0.9rem;
+      padding: 0.8rem 1rem;
+      margin-bottom: 2rem;
     }
 
     .reset-overlay-button {
