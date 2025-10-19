@@ -7,6 +7,7 @@ import starlightSidebarTopics from 'starlight-sidebar-topics';
 import robotsTxt from 'astro-robots-txt';
 import starlightLlmsTxt from 'starlight-llms-txt';
 import starlightContextualMenu from 'starlight-contextual-menu';
+import d2 from 'astro-d2';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
@@ -54,6 +55,7 @@ export default defineConfig({
   redirects,
 
   integrations: [
+    d2(),
     react({
       include: ['**/components/**/*.tsx'],
       exclude: ['**/pages/**/*'],

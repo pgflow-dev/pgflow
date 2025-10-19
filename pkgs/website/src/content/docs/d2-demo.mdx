@@ -1,0 +1,2185 @@
+---
+title: D2 Diagram Demo
+description: Demonstration of D2 diagram theming with Starlight color palette integration.
+sidebar:
+  hidden: true
+editUrl: false
+tableOfContents: false
+lastUpdated: false
+topic: pgflow
+---
+
+import D2 from '@/components/D2.astro';
+import testDiagram from '@/diagrams/test.d2?raw';
+
+## Theme Import Demo (Using D2 Import Syntax)
+
+This diagram demonstrates D2's **import feature** using the `...@path` syntax. Instead of repeating theme configuration in every diagram, you can:
+
+1. Define your theme once in a shared file (`src/assets/pgflow-theme.d2`)
+2. Import it in any D2 code block with a simple relative path
+
+**Key benefit:** Update theme colors in one place and all diagrams automatically use the new theme!
+
+```d2
+...@../../assets/pgflow-theme.d2
+
+direction: right
+
+# Simple workflow with imported theme - no custom styles!
+start: "Start"
+process: "Process"
+success: "Success"
+
+start -> process -> success
+```
+
+**How it works:** The `...@../../assets/pgflow-theme.d2` syntax tells D2 to import and merge the theme configuration from the specified file. No need for separate D2 files or components!
+
+## Simple Workflow Example (Using Custom Component)
+
+This diagram uses our custom `<D2>` component that **automatically injects the pgflow theme** - no theme configuration needed in your code!
+
+<D2 code={testDiagram} />
+
+**Key benefit:** Notice there's NO theme configuration in the diagram code above - the `<D2>` component (defined in `src/components/D2.astro`) automatically prepends the theme to every diagram!
+
+## Color Palette Demo (Dark Mode)
+
+This diagram demonstrates all available semantic colors from the website's CSS variables in a branching tree structure with 4 parallel lanes.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 0
+    dark-theme-overrides: {
+      # Dark mode canvas
+      N7: "#121a19"
+      # Edge colors
+      B1: "#495d59"
+      B2: "#495d59"
+    }
+  }
+}
+
+direction: down
+
+# Root node
+root: "Color Palette" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#007b6e"
+    stroke: "#00574d"
+    font-color: "#e7f0ee"
+  }
+}
+
+# Level 1: Teal variants (4 lanes start)
+teal_dark: "Teal Dark\n#003b34" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#003b34"
+    stroke: "#00574d"
+    font-color: "#a3d4cb"
+  }
+}
+
+teal_medium: "Teal Medium\n#00574d" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#00574d"
+    stroke: "#007b6e"
+    font-color: "#a3d4cb"
+  }
+}
+
+teal_base: "Teal Base\n#007b6e" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#007b6e"
+    stroke: "#00574d"
+    font-color: "#e7f0ee"
+  }
+}
+
+teal_light: "Teal Light\n#a3d4cb" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#a3d4cb"
+    stroke: "#007b6e"
+    font-color: "#003b34"
+  }
+}
+
+# Connections from root to level 1
+root -> teal_dark
+root -> teal_medium
+root -> teal_base
+root -> teal_light
+
+# Level 2: Blue variants
+blue_dark: "Blue Dark\n#1a2947" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#1a2947"
+    stroke: "#5c8dd6"
+    font-color: "#d4e3f7"
+  }
+}
+
+blue_medium: "Blue Medium\n#34578f" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#34578f"
+    stroke: "#5c8dd6"
+    font-color: "#d4e3f7"
+  }
+}
+
+blue_base: "Blue Base\n#5c8dd6" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#5c8dd6"
+    stroke: "#34578f"
+    font-color: "#ffffff"
+  }
+}
+
+blue_light: "Blue Light\n#d4e3f7" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#d4e3f7"
+    stroke: "#5c8dd6"
+    font-color: "#1a2947"
+  }
+}
+
+# Connections level 1 -> level 2
+teal_dark -> blue_dark
+teal_medium -> blue_medium
+teal_base -> blue_base
+teal_light -> blue_light
+
+# Level 3: Green variants
+green_dark: "Green Dark\n#1a4136" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#1a4136"
+    stroke: "#33cc7f"
+    font-color: "#99e6c0"
+  }
+}
+
+green_medium: "Green Medium\n#247056" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#247056"
+    stroke: "#33cc7f"
+    font-color: "#99e6c0"
+  }
+}
+
+green_base: "Green Base\n#33cc7f" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#33cc7f"
+    stroke: "#247056"
+    font-color: "#ffffff"
+  }
+}
+
+green_light: "Green Light\n#99e6c0" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#99e6c0"
+    stroke: "#33cc7f"
+    font-color: "#1a4136"
+  }
+}
+
+# Connections level 2 -> level 3
+blue_dark -> green_dark
+blue_medium -> green_medium
+blue_base -> green_base
+blue_light -> green_light
+
+# Level 4: Purple variants
+purple_dark: "Purple Dark\n#472952" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#472952"
+    stroke: "#b77ddb"
+    font-color: "#ead9f5"
+  }
+}
+
+purple_medium: "Purple Medium\n#805099" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#805099"
+    stroke: "#b77ddb"
+    font-color: "#ead9f5"
+  }
+}
+
+purple_base: "Purple Base\n#b77ddb" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#b77ddb"
+    stroke: "#805099"
+    font-color: "#ffffff"
+  }
+}
+
+purple_light: "Purple Light\n#ead9f5" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#ead9f5"
+    stroke: "#b77ddb"
+    font-color: "#472952"
+  }
+}
+
+# Connections level 3 -> level 4
+green_dark -> purple_dark
+green_medium -> purple_medium
+green_base -> purple_base
+green_light -> purple_light
+
+# Level 5: Orange variants
+orange_dark: "Orange Dark\n#4d3d2b" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#4d3d2b"
+    stroke: "#d9a66e"
+    font-color: "#f5e8d6"
+  }
+}
+
+orange_medium: "Orange Medium\n#a87c45" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#a87c45"
+    stroke: "#d9a66e"
+    font-color: "#f5e8d6"
+  }
+}
+
+orange_base: "Orange Base\n#d9a66e" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#d9a66e"
+    stroke: "#a87c45"
+    font-color: "#4d3d2b"
+  }
+}
+
+orange_light: "Orange Light\n#f5e8d6" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#f5e8d6"
+    stroke: "#d9a66e"
+    font-color: "#4d3d2b"
+  }
+}
+
+# Connections level 4 -> level 5
+purple_dark -> orange_dark
+purple_medium -> orange_medium
+purple_base -> orange_base
+purple_light -> orange_light
+
+# Level 6: Red variants
+red_dark: "Red Dark\n#4f1f1f" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#4f1f1f"
+    stroke: "#e85c5c"
+    font-color: "#f7d1d1"
+  }
+}
+
+red_medium: "Red Medium\n#a33636" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#a33636"
+    stroke: "#e85c5c"
+    font-color: "#f7d1d1"
+  }
+}
+
+red_base: "Red Base\n#e85c5c" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#e85c5c"
+    stroke: "#a33636"
+    font-color: "#ffffff"
+  }
+}
+
+red_light: "Red Light\n#f7d1d1" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#f7d1d1"
+    stroke: "#e85c5c"
+    font-color: "#4f1f1f"
+  }
+}
+
+# Connections level 5 -> level 6
+orange_dark -> red_dark
+orange_medium -> red_medium
+orange_base -> red_base
+orange_light -> red_light
+
+# Level 7: Gray variants
+gray_dark: "Gray Dark\n#182b28" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#182b28"
+    stroke: "#495d59"
+    font-color: "#c2cdca"
+  }
+}
+
+gray_medium: "Gray Medium\n#2a3d39" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#2a3d39"
+    stroke: "#495d59"
+    font-color: "#c2cdca"
+  }
+}
+
+gray_base: "Gray Base\n#495d59" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#495d59"
+    stroke: "#2a3d39"
+    font-color: "#e7f0ee"
+  }
+}
+
+gray_light: "Gray Light\n#92a8a3" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#92a8a3"
+    stroke: "#495d59"
+    font-color: "#182b28"
+  }
+}
+
+# Connections level 6 -> level 7
+red_dark -> gray_dark
+red_medium -> gray_medium
+red_base -> gray_base
+red_light -> gray_light
+```
+
+## Theme Selection: What We've Decided
+
+### Primary Node Colors (Default shapes)
+
+These are the main colors for regular nodes in your diagrams.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 0
+    dark-theme-overrides: {
+      N7: "#121a19"
+      B1: "#495d59"
+      B2: "#495d59"
+    }
+  }
+}
+
+direction: right
+
+teal_dark: "Teal Dark\n#003b34\n(Main Default)" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#003b34"
+    stroke: "#00574d"
+    font-color: "#a3d4cb"
+  }
+}
+
+teal_medium: "Teal Medium\n#00574d" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#00574d"
+    stroke: "#007b6e"
+    font-color: "#a3d4cb"
+  }
+}
+
+teal_base: "Teal Base\n#007b6e" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#007b6e"
+    stroke: "#00574d"
+    font-color: "#e7f0ee"
+  }
+}
+
+gray_dark: "Gray Dark\n#182b28" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#182b28"
+    stroke: "#495d59"
+    font-color: "#c2cdca"
+  }
+}
+
+gray_medium: "Gray Medium\n#2a3d39" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#2a3d39"
+    stroke: "#495d59"
+    font-color: "#c2cdca"
+  }
+}
+
+gray_base: "Gray Base\n#495d59" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#495d59"
+    stroke: "#2a3d39"
+    font-color: "#e7f0ee"
+  }
+}
+```
+
+### Semantic Colors (Special meanings)
+
+These colors will be used for nodes with specific meanings.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 0
+    dark-theme-overrides: {
+      N7: "#121a19"
+      B1: "#495d59"
+      B2: "#495d59"
+    }
+  }
+}
+
+direction: right
+
+success: "Success/Positive\nGreen Dark\n#1a4136" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#1a4136"
+    stroke: "#33cc7f"
+    font-color: "#99e6c0"
+  }
+}
+
+error: "Error/Danger\nRed Dark\n#4f1f1f" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#4f1f1f"
+    stroke: "#e85c5c"
+    font-color: "#f7d1d1"
+  }
+}
+
+warning: "Warning/Caution\nOrange Dark\n#4d3d2b" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#4d3d2b"
+    stroke: "#d9a66e"
+    font-color: "#f5e8d6"
+  }
+}
+
+info: "Info/Note\nBlue Dark\n#1a2947" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#1a2947"
+    stroke: "#5c8dd6"
+    font-color: "#d4e3f7"
+  }
+}
+
+highlight: "Special/Highlight\nPurple Dark\n#472952" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#472952"
+    stroke: "#b77ddb"
+    font-color: "#ead9f5"
+  }
+}
+```
+
+## Theme Selection: What We Need to Decide
+
+### Neutrals - Option A: Teal-Tinted Grays
+
+These neutrals have a slight teal/green tint that harmonizes with the primary theme colors.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 0
+    dark-theme-overrides: {
+      N7: "#121a19"
+      B1: "#495d59"
+      B2: "#495d59"
+    }
+  }
+}
+
+direction: right
+
+n1: "N1 (Lightest)\n#e7f0ee\nFor: Light text" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#e7f0ee"
+    stroke: "#495d59"
+    font-color: "#182b28"
+  }
+}
+
+n2: "N2\n#c2cdca\nFor: Borders" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#c2cdca"
+    stroke: "#495d59"
+    font-color: "#182b28"
+  }
+}
+
+n3: "N3\n#92a8a3\nFor: Medium text" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#92a8a3"
+    stroke: "#495d59"
+    font-color: "#182b28"
+  }
+}
+
+n4: "N4\n#495d59\nFor: Dark text" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#495d59"
+    stroke: "#2a3d39"
+    font-color: "#e7f0ee"
+  }
+}
+
+n5: "N5\n#2a3d39\nFor: Subtle fills" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#2a3d39"
+    stroke: "#495d59"
+    font-color: "#c2cdca"
+  }
+}
+
+n6: "N6\n#182b28\nFor: Dark fills" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#182b28"
+    stroke: "#495d59"
+    font-color: "#c2cdca"
+  }
+}
+
+n7: "N7 (Canvas)\n#121a19\nBackground" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#121a19"
+    stroke: "#495d59"
+    font-color: "#c2cdca"
+  }
+}
+```
+
+### Neutrals - Option B: Pure Neutral Grays
+
+These are more traditional neutral grays without tint - more subtle and less themed.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 0
+    dark-theme-overrides: {
+      N7: "#121a19"
+      B1: "#495d59"
+      B2: "#495d59"
+    }
+  }
+}
+
+direction: right
+
+n1_pure: "N1 (Lightest)\n#e8e8e8\nFor: Light text" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#e8e8e8"
+    stroke: "#495d59"
+    font-color: "#1a1a1a"
+  }
+}
+
+n2_pure: "N2\n#c4c4c4\nFor: Borders" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#c4c4c4"
+    stroke: "#495d59"
+    font-color: "#1a1a1a"
+  }
+}
+
+n3_pure: "N3\n#9a9a9a\nFor: Medium text" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#9a9a9a"
+    stroke: "#495d59"
+    font-color: "#1a1a1a"
+  }
+}
+
+n4_pure: "N4\n#5a5a5a\nFor: Dark text" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#5a5a5a"
+    stroke: "#2a2a2a"
+    font-color: "#e8e8e8"
+  }
+}
+
+n5_pure: "N5\n#3a3a3a\nFor: Subtle fills" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#3a3a3a"
+    stroke: "#5a5a5a"
+    font-color: "#c4c4c4"
+  }
+}
+
+n6_pure: "N6\n#252525\nFor: Dark fills" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#252525"
+    stroke: "#5a5a5a"
+    font-color: "#c4c4c4"
+  }
+}
+
+n7_pure: "N7 (Canvas)\n#121a19\nBackground" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#121a19"
+    stroke: "#5a5a5a"
+    font-color: "#c4c4c4"
+  }
+}
+```
+
+### Complete State Machine - Using Option A (Teal-Tinted Neutrals)
+
+This diagram shows how neutrals are used for background elements, borders, and secondary nodes.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 0
+    dark-theme-overrides: {
+      # Canvas background (N7)
+      N7: "#121a19"
+
+      # Neutrals for text and borders
+      N1: "#e7f0ee"
+      N2: "#c2cdca"
+      N3: "#92a8a3"
+      N4: "#495d59"
+      N5: "#2a3d39"
+      N6: "#182b28"
+
+      # Edge colors
+      B1: "#495d59"
+      B2: "#495d59"
+    }
+  }
+}
+
+direction: down
+
+# Main entry point - Primary teal
+start: "Start Workflow" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#003b34"
+    stroke: "#00574d"
+    font-color: "#e7f0ee"
+  }
+}
+
+# Input validation - Gray dark (N6 tint)
+validate: "Validate Input" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#182b28"
+    stroke: "#495d59"
+    font-color: "#c2cdca"
+  }
+}
+
+# Configuration check - Gray medium (N5 tint)
+configure: "Load Config" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#2a3d39"
+    stroke: "#495d59"
+    font-color: "#c2cdca"
+  }
+}
+
+# Authorization - Info blue
+authorize: "Authorize" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#1a2947"
+    stroke: "#5c8dd6"
+    font-color: "#d4e3f7"
+  }
+}
+
+# Primary processing - Teal medium
+process: "Process Data" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#00574d"
+    stroke: "#007b6e"
+    font-color: "#e7f0ee"
+  }
+}
+
+# Transform step - Teal base
+transform: "Transform" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#007b6e"
+    stroke: "#00574d"
+    font-color: "#e7f0ee"
+  }
+}
+
+# Quality check - Gray base (N4 tint)
+quality_check: "Quality Check" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#495d59"
+    stroke: "#2a3d39"
+    font-color: "#e7f0ee"
+  }
+}
+
+# Error state - Red dark
+error: "Error Handler" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#4f1f1f"
+    stroke: "#e85c5c"
+    font-color: "#f7d1d1"
+  }
+}
+
+# Warning state - Orange dark
+warning: "Needs Review" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#4d3d2b"
+    stroke: "#d9a66e"
+    font-color: "#f5e8d6"
+  }
+}
+
+# Retry logic - Purple highlight
+retry: "Retry Logic" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#472952"
+    stroke: "#b77ddb"
+    font-color: "#ead9f5"
+  }
+}
+
+# Success state - Green dark
+success: "Success!" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#1a4136"
+    stroke: "#33cc7f"
+    font-color: "#99e6c0"
+  }
+}
+
+# Notification - Light gray (N3 tint for less important)
+notify: "Send Notification" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#92a8a3"
+    stroke: "#495d59"
+    font-color: "#182b28"
+  }
+}
+
+# Cleanup - Very light gray (N2 tint for background tasks)
+cleanup: "Cleanup" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#c2cdca"
+    stroke: "#495d59"
+    font-color: "#182b28"
+  }
+}
+
+# Flow connections
+start -> validate
+validate -> configure
+configure -> authorize
+authorize -> process
+process -> transform
+transform -> quality_check
+quality_check -> success: "Pass"
+quality_check -> warning: "Minor issues"
+quality_check -> error: "Failed"
+warning -> retry
+error -> retry
+retry -> process: "Retry"
+retry -> error: "Max retries"
+success -> notify
+notify -> cleanup
+```
+
+### Complete State Machine - Using Option B (Pure Neutral Grays)
+
+Same diagram with pure gray neutrals for comparison.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 0
+    dark-theme-overrides: {
+      # Canvas background (N7)
+      N7: "#121a19"
+
+      # Pure neutral grays
+      N1: "#e8e8e8"
+      N2: "#c4c4c4"
+      N3: "#9a9a9a"
+      N4: "#5a5a5a"
+      N5: "#3a3a3a"
+      N6: "#252525"
+
+      # Edge colors
+      B1: "#495d59"
+      B2: "#495d59"
+    }
+  }
+}
+
+direction: down
+
+# Main entry point - Primary teal
+start: "Start Workflow" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#003b34"
+    stroke: "#00574d"
+    font-color: "#e8e8e8"
+  }
+}
+
+# Input validation - Gray dark (N6 pure)
+validate: "Validate Input" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#252525"
+    stroke: "#5a5a5a"
+    font-color: "#c4c4c4"
+  }
+}
+
+# Configuration check - Gray medium (N5 pure)
+configure: "Load Config" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#3a3a3a"
+    stroke: "#5a5a5a"
+    font-color: "#c4c4c4"
+  }
+}
+
+# Authorization - Info blue
+authorize: "Authorize" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#1a2947"
+    stroke: "#5c8dd6"
+    font-color: "#d4e3f7"
+  }
+}
+
+# Primary processing - Teal medium
+process: "Process Data" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#00574d"
+    stroke: "#007b6e"
+    font-color: "#e8e8e8"
+  }
+}
+
+# Transform step - Teal base
+transform: "Transform" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#007b6e"
+    stroke: "#00574d"
+    font-color: "#e8e8e8"
+  }
+}
+
+# Quality check - Gray base (N4 pure)
+quality_check: "Quality Check" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#5a5a5a"
+    stroke: "#3a3a3a"
+    font-color: "#e8e8e8"
+  }
+}
+
+# Error state - Red dark
+error: "Error Handler" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#4f1f1f"
+    stroke: "#e85c5c"
+    font-color: "#f7d1d1"
+  }
+}
+
+# Warning state - Orange dark
+warning: "Needs Review" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#4d3d2b"
+    stroke: "#d9a66e"
+    font-color: "#f5e8d6"
+  }
+}
+
+# Retry logic - Purple highlight
+retry: "Retry Logic" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#472952"
+    stroke: "#b77ddb"
+    font-color: "#ead9f5"
+  }
+}
+
+# Success state - Green dark
+success: "Success!" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#1a4136"
+    stroke: "#33cc7f"
+    font-color: "#99e6c0"
+  }
+}
+
+# Notification - Light gray (N3 pure for less important)
+notify: "Send Notification" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#9a9a9a"
+    stroke: "#5a5a5a"
+    font-color: "#1a1a1a"
+  }
+}
+
+# Cleanup - Very light gray (N2 pure for background tasks)
+cleanup: "Cleanup" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#c4c4c4"
+    stroke: "#5a5a5a"
+    font-color: "#1a1a1a"
+  }
+}
+
+# Flow connections
+start -> validate
+validate -> configure
+configure -> authorize
+authorize -> process
+process -> transform
+transform -> quality_check
+quality_check -> success: "Pass"
+quality_check -> warning: "Minor issues"
+quality_check -> error: "Failed"
+warning -> retry
+error -> retry
+retry -> process: "Retry"
+retry -> error: "Max retries"
+success -> notify
+notify -> cleanup
+```
+
+## Color Palette Demo (Light Mode)
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 0
+    theme-overrides: {
+      # Light mode canvas
+      N7: "#ffffff"
+      # Edge colors - using dark mode colors
+      B1: "#495d59"
+      B2: "#495d59"
+    }
+  }
+}
+
+direction: down
+
+# Root node
+root: "Color Palette" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#007b6e"
+    stroke: "#00574d"
+    font-color: "#ffffff"
+  }
+}
+
+# Level 1: Teal variants (4 lanes start)
+teal_dark: "Teal Dark\n#003b34" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#003b34"
+    stroke: "#00574d"
+    font-color: "#ffffff"
+  }
+}
+
+teal_medium: "Teal Medium\n#00574d" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#00574d"
+    stroke: "#003b34"
+    font-color: "#ffffff"
+  }
+}
+
+teal_base: "Teal Base\n#007b6e" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#007b6e"
+    stroke: "#00574d"
+    font-color: "#ffffff"
+  }
+}
+
+teal_light: "Teal Light\n#bce0d9" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#bce0d9"
+    stroke: "#00574d"
+    font-color: "#003b34"
+  }
+}
+
+# Connections from root to level 1
+root -> teal_dark
+root -> teal_medium
+root -> teal_base
+root -> teal_light
+
+# Level 2: Blue variants
+blue_dark: "Blue Dark\n#2d4f99" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#2d4f99"
+    stroke: "#4d7acc"
+    font-color: "#ffffff"
+  }
+}
+
+blue_medium: "Blue Medium\n#4d7acc" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#4d7acc"
+    stroke: "#2d4f99"
+    font-color: "#ffffff"
+  }
+}
+
+blue_base: "Blue Base\n#8faed9" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#8faed9"
+    stroke: "#4d7acc"
+    font-color: "#2d4f99"
+  }
+}
+
+blue_light: "Blue Light\n#e0eaf7" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#e0eaf7"
+    stroke: "#4d7acc"
+    font-color: "#2d4f99"
+  }
+}
+
+# Connections level 1 -> level 2
+teal_dark -> blue_dark
+teal_medium -> blue_medium
+teal_base -> blue_base
+teal_light -> blue_light
+
+# Level 3: Green variants
+green_dark: "Green Dark\n#1f7a54" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#1f7a54"
+    stroke: "#3db87a"
+    font-color: "#ffffff"
+  }
+}
+
+green_medium: "Green Medium\n#3db87a" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#3db87a"
+    stroke: "#1f7a54"
+    font-color: "#ffffff"
+  }
+}
+
+green_base: "Green Base\n#7dd9a8" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#7dd9a8"
+    stroke: "#3db87a"
+    font-color: "#1f7a54"
+  }
+}
+
+green_light: "Green Light\n#e6f7ee" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#e6f7ee"
+    stroke: "#3db87a"
+    font-color: "#1f7a54"
+  }
+}
+
+# Connections level 2 -> level 3
+blue_dark -> green_dark
+blue_medium -> green_medium
+blue_base -> green_base
+blue_light -> green_light
+
+# Level 4: Purple variants
+purple_dark: "Purple Dark\n#6e3a85" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#6e3a85"
+    stroke: "#a366bf"
+    font-color: "#ffffff"
+  }
+}
+
+purple_medium: "Purple Medium\n#a366bf" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#a366bf"
+    stroke: "#6e3a85"
+    font-color: "#ffffff"
+  }
+}
+
+purple_base: "Purple Base\n#d1aee0" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#d1aee0"
+    stroke: "#a366bf"
+    font-color: "#6e3a85"
+  }
+}
+
+purple_light: "Purple Light\n#f2e8f7" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#f2e8f7"
+    stroke: "#a366bf"
+    font-color: "#6e3a85"
+  }
+}
+
+# Connections level 3 -> level 4
+green_dark -> purple_dark
+green_medium -> purple_medium
+green_base -> purple_base
+green_light -> purple_light
+
+# Level 5: Orange variants
+orange_dark: "Orange Dark\n#995c2e" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#995c2e"
+    stroke: "#cc9366"
+    font-color: "#ffffff"
+  }
+}
+
+orange_medium: "Orange Medium\n#cc9366" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#cc9366"
+    stroke: "#995c2e"
+    font-color: "#ffffff"
+  }
+}
+
+orange_base: "Orange Base\n#e5c9a8" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#e5c9a8"
+    stroke: "#cc9366"
+    font-color: "#995c2e"
+  }
+}
+
+orange_light: "Orange Light\n#f5ede0" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#f5ede0"
+    stroke: "#cc9366"
+    font-color: "#995c2e"
+  }
+}
+
+# Connections level 4 -> level 5
+purple_dark -> orange_dark
+purple_medium -> orange_medium
+purple_base -> orange_base
+purple_light -> orange_light
+
+# Level 6: Red variants
+red_dark: "Red Dark\n#a12e2e" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#a12e2e"
+    stroke: "#d94d4d"
+    font-color: "#ffffff"
+  }
+}
+
+red_medium: "Red Medium\n#d94d4d" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#d94d4d"
+    stroke: "#a12e2e"
+    font-color: "#ffffff"
+  }
+}
+
+red_base: "Red Base\n#eba6a6" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#eba6a6"
+    stroke: "#d94d4d"
+    font-color: "#a12e2e"
+  }
+}
+
+red_light: "Red Light\n#f7dede" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#f7dede"
+    stroke: "#d94d4d"
+    font-color: "#a12e2e"
+  }
+}
+
+# Connections level 5 -> level 6
+orange_dark -> red_dark
+orange_medium -> red_medium
+orange_base -> red_base
+orange_light -> red_light
+
+# Level 7: Gray variants
+gray_dark: "Gray Dark\n#182b28" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#182b28"
+    stroke: "#2a3d39"
+    font-color: "#ffffff"
+  }
+}
+
+gray_medium: "Gray Medium\n#495d59" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#495d59"
+    stroke: "#2a3d39"
+    font-color: "#ffffff"
+  }
+}
+
+gray_base: "Gray Base\n#7c918d" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#7c918d"
+    stroke: "#495d59"
+    font-color: "#182b28"
+  }
+}
+
+gray_light: "Gray Light\n#e7f0ee" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#e7f0ee"
+    stroke: "#7c918d"
+    font-color: "#182b28"
+  }
+}
+
+# Connections level 6 -> level 7
+red_dark -> gray_dark
+red_medium -> gray_medium
+red_base -> gray_base
+red_light -> gray_light
+```
+
+## Theme Selection: What We've Decided
+
+### Primary Node Colors (Default shapes)
+
+These are the main colors for regular nodes in your diagrams.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 0
+    dark-theme-overrides: {
+      N7: "#121a19"
+      B1: "#495d59"
+      B2: "#495d59"
+    }
+  }
+}
+
+direction: right
+
+teal_dark: "Teal Dark\n#003b34\n(Main Default)" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#003b34"
+    stroke: "#00574d"
+    font-color: "#a3d4cb"
+  }
+}
+
+teal_medium: "Teal Medium\n#00574d" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#00574d"
+    stroke: "#007b6e"
+    font-color: "#a3d4cb"
+  }
+}
+
+teal_base: "Teal Base\n#007b6e" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#007b6e"
+    stroke: "#00574d"
+    font-color: "#e7f0ee"
+  }
+}
+
+gray_dark: "Gray Dark\n#182b28" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#182b28"
+    stroke: "#495d59"
+    font-color: "#c2cdca"
+  }
+}
+
+gray_medium: "Gray Medium\n#2a3d39" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#2a3d39"
+    stroke: "#495d59"
+    font-color: "#c2cdca"
+  }
+}
+
+gray_base: "Gray Base\n#495d59" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#495d59"
+    stroke: "#2a3d39"
+    font-color: "#e7f0ee"
+  }
+}
+```
+
+### Semantic Colors (Special meanings)
+
+These colors will be used for nodes with specific meanings.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 0
+    dark-theme-overrides: {
+      N7: "#121a19"
+      B1: "#495d59"
+      B2: "#495d59"
+    }
+  }
+}
+
+direction: right
+
+success: "Success/Positive\nGreen Dark\n#1a4136" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#1a4136"
+    stroke: "#33cc7f"
+    font-color: "#99e6c0"
+  }
+}
+
+error: "Error/Danger\nRed Dark\n#4f1f1f" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#4f1f1f"
+    stroke: "#e85c5c"
+    font-color: "#f7d1d1"
+  }
+}
+
+warning: "Warning/Caution\nOrange Dark\n#4d3d2b" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#4d3d2b"
+    stroke: "#d9a66e"
+    font-color: "#f5e8d6"
+  }
+}
+
+info: "Info/Note\nBlue Dark\n#1a2947" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#1a2947"
+    stroke: "#5c8dd6"
+    font-color: "#d4e3f7"
+  }
+}
+
+highlight: "Special/Highlight\nPurple Dark\n#472952" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#472952"
+    stroke: "#b77ddb"
+    font-color: "#ead9f5"
+  }
+}
+```
+
+## Theme Selection: What We Need to Decide
+
+### Neutrals - Option A: Teal-Tinted Grays
+
+These neutrals have a slight teal/green tint that harmonizes with the primary theme colors.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 0
+    dark-theme-overrides: {
+      N7: "#121a19"
+      B1: "#495d59"
+      B2: "#495d59"
+    }
+  }
+}
+
+direction: right
+
+n1: "N1 (Lightest)\n#e7f0ee\nFor: Light text" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#e7f0ee"
+    stroke: "#495d59"
+    font-color: "#182b28"
+  }
+}
+
+n2: "N2\n#c2cdca\nFor: Borders" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#c2cdca"
+    stroke: "#495d59"
+    font-color: "#182b28"
+  }
+}
+
+n3: "N3\n#92a8a3\nFor: Medium text" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#92a8a3"
+    stroke: "#495d59"
+    font-color: "#182b28"
+  }
+}
+
+n4: "N4\n#495d59\nFor: Dark text" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#495d59"
+    stroke: "#2a3d39"
+    font-color: "#e7f0ee"
+  }
+}
+
+n5: "N5\n#2a3d39\nFor: Subtle fills" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#2a3d39"
+    stroke: "#495d59"
+    font-color: "#c2cdca"
+  }
+}
+
+n6: "N6\n#182b28\nFor: Dark fills" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#182b28"
+    stroke: "#495d59"
+    font-color: "#c2cdca"
+  }
+}
+
+n7: "N7 (Canvas)\n#121a19\nBackground" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#121a19"
+    stroke: "#495d59"
+    font-color: "#c2cdca"
+  }
+}
+```
+
+### Neutrals - Option B: Pure Neutral Grays
+
+These are more traditional neutral grays without tint - more subtle and less themed.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 0
+    dark-theme-overrides: {
+      N7: "#121a19"
+      B1: "#495d59"
+      B2: "#495d59"
+    }
+  }
+}
+
+direction: right
+
+n1_pure: "N1 (Lightest)\n#e8e8e8\nFor: Light text" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#e8e8e8"
+    stroke: "#495d59"
+    font-color: "#1a1a1a"
+  }
+}
+
+n2_pure: "N2\n#c4c4c4\nFor: Borders" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#c4c4c4"
+    stroke: "#495d59"
+    font-color: "#1a1a1a"
+  }
+}
+
+n3_pure: "N3\n#9a9a9a\nFor: Medium text" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#9a9a9a"
+    stroke: "#495d59"
+    font-color: "#1a1a1a"
+  }
+}
+
+n4_pure: "N4\n#5a5a5a\nFor: Dark text" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#5a5a5a"
+    stroke: "#2a2a2a"
+    font-color: "#e8e8e8"
+  }
+}
+
+n5_pure: "N5\n#3a3a3a\nFor: Subtle fills" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#3a3a3a"
+    stroke: "#5a5a5a"
+    font-color: "#c4c4c4"
+  }
+}
+
+n6_pure: "N6\n#252525\nFor: Dark fills" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#252525"
+    stroke: "#5a5a5a"
+    font-color: "#c4c4c4"
+  }
+}
+
+n7_pure: "N7 (Canvas)\n#121a19\nBackground" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#121a19"
+    stroke: "#5a5a5a"
+    font-color: "#c4c4c4"
+  }
+}
+```
+
+### Complete State Machine - Using Option A (Teal-Tinted Neutrals)
+
+This diagram shows how neutrals are used for background elements, borders, and secondary nodes.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 0
+    dark-theme-overrides: {
+      # Canvas background (N7)
+      N7: "#121a19"
+
+      # Neutrals for text and borders
+      N1: "#e7f0ee"
+      N2: "#c2cdca"
+      N3: "#92a8a3"
+      N4: "#495d59"
+      N5: "#2a3d39"
+      N6: "#182b28"
+
+      # Edge colors
+      B1: "#495d59"
+      B2: "#495d59"
+    }
+  }
+}
+
+direction: down
+
+# Main entry point - Primary teal
+start: "Start Workflow" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#003b34"
+    stroke: "#00574d"
+    font-color: "#e7f0ee"
+  }
+}
+
+# Input validation - Gray dark (N6 tint)
+validate: "Validate Input" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#182b28"
+    stroke: "#495d59"
+    font-color: "#c2cdca"
+  }
+}
+
+# Configuration check - Gray medium (N5 tint)
+configure: "Load Config" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#2a3d39"
+    stroke: "#495d59"
+    font-color: "#c2cdca"
+  }
+}
+
+# Authorization - Info blue
+authorize: "Authorize" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#1a2947"
+    stroke: "#5c8dd6"
+    font-color: "#d4e3f7"
+  }
+}
+
+# Primary processing - Teal medium
+process: "Process Data" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#00574d"
+    stroke: "#007b6e"
+    font-color: "#e7f0ee"
+  }
+}
+
+# Transform step - Teal base
+transform: "Transform" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#007b6e"
+    stroke: "#00574d"
+    font-color: "#e7f0ee"
+  }
+}
+
+# Quality check - Gray base (N4 tint)
+quality_check: "Quality Check" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#495d59"
+    stroke: "#2a3d39"
+    font-color: "#e7f0ee"
+  }
+}
+
+# Error state - Red dark
+error: "Error Handler" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#4f1f1f"
+    stroke: "#e85c5c"
+    font-color: "#f7d1d1"
+  }
+}
+
+# Warning state - Orange dark
+warning: "Needs Review" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#4d3d2b"
+    stroke: "#d9a66e"
+    font-color: "#f5e8d6"
+  }
+}
+
+# Retry logic - Purple highlight
+retry: "Retry Logic" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#472952"
+    stroke: "#b77ddb"
+    font-color: "#ead9f5"
+  }
+}
+
+# Success state - Green dark
+success: "Success!" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#1a4136"
+    stroke: "#33cc7f"
+    font-color: "#99e6c0"
+  }
+}
+
+# Notification - Light gray (N3 tint for less important)
+notify: "Send Notification" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#92a8a3"
+    stroke: "#495d59"
+    font-color: "#182b28"
+  }
+}
+
+# Cleanup - Very light gray (N2 tint for background tasks)
+cleanup: "Cleanup" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#c2cdca"
+    stroke: "#495d59"
+    font-color: "#182b28"
+  }
+}
+
+# Flow connections
+start -> validate
+validate -> configure
+configure -> authorize
+authorize -> process
+process -> transform
+transform -> quality_check
+quality_check -> success: "Pass"
+quality_check -> warning: "Minor issues"
+quality_check -> error: "Failed"
+warning -> retry
+error -> retry
+retry -> process: "Retry"
+retry -> error: "Max retries"
+success -> notify
+notify -> cleanup
+```
+
+### Complete State Machine - Using Option B (Pure Neutral Grays)
+
+Same diagram with pure gray neutrals for comparison.
+
+```d2
+vars: {
+  d2-config: {
+    theme-id: 0
+    dark-theme-overrides: {
+      # Canvas background (N7)
+      N7: "#121a19"
+
+      # Pure neutral grays
+      N1: "#e8e8e8"
+      N2: "#c4c4c4"
+      N3: "#9a9a9a"
+      N4: "#5a5a5a"
+      N5: "#3a3a3a"
+      N6: "#252525"
+
+      # Edge colors
+      B1: "#495d59"
+      B2: "#495d59"
+    }
+  }
+}
+
+direction: down
+
+# Main entry point - Primary teal
+start: "Start Workflow" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#003b34"
+    stroke: "#00574d"
+    font-color: "#e8e8e8"
+  }
+}
+
+# Input validation - Gray dark (N6 pure)
+validate: "Validate Input" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#252525"
+    stroke: "#5a5a5a"
+    font-color: "#c4c4c4"
+  }
+}
+
+# Configuration check - Gray medium (N5 pure)
+configure: "Load Config" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#3a3a3a"
+    stroke: "#5a5a5a"
+    font-color: "#c4c4c4"
+  }
+}
+
+# Authorization - Info blue
+authorize: "Authorize" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#1a2947"
+    stroke: "#5c8dd6"
+    font-color: "#d4e3f7"
+  }
+}
+
+# Primary processing - Teal medium
+process: "Process Data" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#00574d"
+    stroke: "#007b6e"
+    font-color: "#e8e8e8"
+  }
+}
+
+# Transform step - Teal base
+transform: "Transform" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#007b6e"
+    stroke: "#00574d"
+    font-color: "#e8e8e8"
+  }
+}
+
+# Quality check - Gray base (N4 pure)
+quality_check: "Quality Check" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#5a5a5a"
+    stroke: "#3a3a3a"
+    font-color: "#e8e8e8"
+  }
+}
+
+# Error state - Red dark
+error: "Error Handler" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#4f1f1f"
+    stroke: "#e85c5c"
+    font-color: "#f7d1d1"
+  }
+}
+
+# Warning state - Orange dark
+warning: "Needs Review" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#4d3d2b"
+    stroke: "#d9a66e"
+    font-color: "#f5e8d6"
+  }
+}
+
+# Retry logic - Purple highlight
+retry: "Retry Logic" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#472952"
+    stroke: "#b77ddb"
+    font-color: "#ead9f5"
+  }
+}
+
+# Success state - Green dark
+success: "Success!" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#1a4136"
+    stroke: "#33cc7f"
+    font-color: "#99e6c0"
+  }
+}
+
+# Notification - Light gray (N3 pure for less important)
+notify: "Send Notification" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#9a9a9a"
+    stroke: "#5a5a5a"
+    font-color: "#1a1a1a"
+  }
+}
+
+# Cleanup - Very light gray (N2 pure for background tasks)
+cleanup: "Cleanup" {
+  shape: rectangle
+  style: {
+    border-radius: 8
+    fill: "#c4c4c4"
+    stroke: "#5a5a5a"
+    font-color: "#1a1a1a"
+  }
+}
+
+# Flow connections
+start -> validate
+validate -> configure
+configure -> authorize
+authorize -> process
+process -> transform
+transform -> quality_check
+quality_check -> success: "Pass"
+quality_check -> warning: "Minor issues"
+quality_check -> error: "Failed"
+warning -> retry
+error -> retry
+retry -> process: "Retry"
+retry -> error: "Max retries"
+success -> notify
+notify -> cleanup
+```

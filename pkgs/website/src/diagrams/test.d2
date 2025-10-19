@@ -1,0 +1,16 @@
+direction: down
+
+# Simple workflow - theme applied automatically!
+start: "Start Workflow"
+validate: "Validate Input"
+process: "Process Data"
+transform: "Transform Results"
+save: "Save to Database"
+success: "Complete"
+
+# Flow connections
+start -> validate
+validate -> process
+process -> transform
+transform -> save
+save -> success
