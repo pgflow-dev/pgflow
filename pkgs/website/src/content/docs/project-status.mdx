@@ -22,7 +22,7 @@ pgflow is in **public beta** and being used in production by early adopters. Cor
   </Card>
 
   <Card title="Fair Processing" icon="warning">
-    Fair processing across tenants is not currently implemented. One tenant can monopolize the queue if they have many pending tasks. If this is critical for your use case, join [Discord](https://pgflow.dev/discord/) to discuss potential workarounds.
+    Fair processing across flows is not currently implemented. A flow with many tasks (especially map steps processing large arrays) can fill the queue ahead of other flows. This is more noticeable with the introduction of map steps in 0.7.0. For multi-tenant or multi-flow scenarios where fairness is important, join [Discord](https://pgflow.dev/discord/) to discuss approaches and workarounds.
   </Card>
 </CardGrid>
 

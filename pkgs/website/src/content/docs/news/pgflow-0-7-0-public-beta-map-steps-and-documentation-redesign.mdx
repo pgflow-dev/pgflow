@@ -2,7 +2,7 @@
 draft: false
 title: 'pgflow 0.7.0: Public Beta with Map Steps and Documentation Redesign'
 description: 'pgflow enters public beta with parallel array processing, redesigned docs, and enhanced developer experience'
-date: 2025-10-14
+date: 2025-10-19
 authors:
   - jumski
 tags:
@@ -22,7 +22,7 @@ cover:
 import { Aside, Code } from "@astrojs/starlight/components";
 import preMigrationCheck from '../../../../../core/queries/PRE_MIGRATION_CHECK_20251006073122.sql?raw';
 
-pgflow 0.7.0 is here - a major milestone and long-awaited release that brings parallel array processing,
+pgflow 0.7.0 is here - a major milestone that brings parallel array processing,
 production-ready stability, and a complete documentation redesign.
 
 ## pgflow Enters Public Beta
@@ -34,50 +34,6 @@ This milestone reflects months of testing, bug fixes, and real-world usage feedb
 DSL, and Edge Worker components have proven robust across different workloads and deployment scenarios.
 
 See the [project status page](/project-status/) for production recommendations and known limitations.
-
-## Documentation Restructure and New Landing Page
-
-The entire documentation has been reorganized from a feature-based structure to a
-**user-journey-based structure**, making it easier to find what you need at each stage of using pgflow.
-
-import docsBefore from '../../../assets/news-images/pgflow-0-7-0-public-beta-map-steps-and-documentation-redesign/docs-before.png';
-import docsAfter from '../../../assets/news-images/pgflow-0-7-0-public-beta-map-steps-and-documentation-redesign/docs-after.png';
-
-| Before | After |
-|--------|-------|
-| <img src={docsBefore.src} alt="Documentation structure before reorganization" /> | <img src={docsAfter.src} alt="Documentation structure after reorganization" /> |
-
-### New Documentation Sections
-
-**[Build](/build/)** - Everything related to authoring flows:
-- Four comprehensive guides for starting flows (TypeScript client, Supabase RPC, pg_cron, database triggers)
-- Practical patterns for organizing code and processing arrays
-- Flow management (versioning, deletion)
-
-**[Deploy](/deploy/)** - Production deployment and operations:
-- Supabase-specific deployment guides
-- Monitoring flow execution and worker health
-- Maintenance tasks (updates, tuning, data pruning)
-
-**[Concepts](/concepts/)** - Deeper understanding:
-- Expanded with detailed guides on map steps, context object, data model
-- New overview page organizing concepts by topic
-- Visual explanations with diagrams and examples
-
-**[Reference](/reference/)** - Technical specifications:
-- Complete API documentation for the TypeScript client
-- Flow context object reference
-- Configuration options and environment variables
-- Manual installation procedures
-
-### Transformed Landing Page
-
-The homepage now features:
-- **Animated DAG visualization** in the hero, showing pgflow's workflow execution in action
-- **Before/after comparison** with scrollable code examples demonstrating "Without pgflow" vs "With pgflow"
-- Interactive showcase of what pgflow handles for you
-
-Visit [pgflow.dev](https://www.pgflow.dev/) to explore the new experience.
 
 ## Map Steps
 
@@ -127,26 +83,76 @@ flow.array({ slug: 'invalid' }, () => 42);  // Compile error
 
 Array steps are a semantic wrapper that makes intent clear and moves type errors from `.map()` to `.array()`. When a map step depends on a regular step that doesn't return an array, the compiler catches it too - `.array()` just makes the error location more precise and the code intention explicit.
 
+## Documentation Restructure and New Landing Page
+
+The entire documentation has been reorganized from a feature-based structure to a
+**user-journey-based structure**, making it easier to find what you need at each stage of using pgflow.
+
+import docsBefore from '../../../assets/news-images/pgflow-0-7-0-public-beta-map-steps-and-documentation-redesign/docs-before.png';
+import docsAfter from '../../../assets/news-images/pgflow-0-7-0-public-beta-map-steps-and-documentation-redesign/docs-after.png';
+
+| Before | After |
+|--------|-------|
+| <img src={docsBefore.src} alt="Documentation structure before reorganization" /> | <img src={docsAfter.src} alt="Documentation structure after reorganization" /> |
+
+### New Documentation Sections
+
+**[Build](/build/)** - Authoring flows with guides for starting flows, organizing code, processing arrays, and managing versions.
+
+**[Deploy](/deploy/)** - Production deployment on Supabase with monitoring, maintenance, and operational guides.
+
+**[Concepts](/concepts/)** - Understanding map steps, context object, data model, and architecture with visual explanations.
+
+**[Reference](/reference/)** - Technical specifications including API documentation, configuration options, and installation procedures.
+
+### Redesigned Landing Page
+
+The homepage has been completely rebuilt with clearer messaging, streamlined content, and interactive demonstrations:
+
+- **Animated DAG visualization** - Live workflow execution animation in the hero section
+- **Before/after code comparison** - Interactive side-by-side examples showing the transformation from complex orchestration code to simple pgflow workflows
+- **Simplified copy** - Rewritten and condensed messaging that gets to the point faster
+- **Better information hierarchy** - Reorganized sections to guide visitors from introduction to getting started
+
+Visit [pgflow.dev](https://www.pgflow.dev/) to explore the new experience.
+
 ## Developer Experience Improvements
 
 Several CLI and tooling enhancements improve the development workflow:
+
+import contextualMenuImage from '../../../assets/news-images/pgflow-0-7-0-public-beta-map-steps-and-documentation-redesign/contextual-menu.png';
+
+<div style="display: flex; gap: 1.5rem; align-items: start; margin-bottom: 1.5rem;">
+  <div style="flex: 1;">
+    <strong>Copy to Markdown on All Docs Pages</strong> - Every documentation page now includes contextual menu buttons to copy the page as markdown or open it directly in Claude Code or ChatGPT. This makes it effortless to paste documentation into LLMs for context-aware assistance.
+  </div>
+  <div style="flex: 1;">
+    <img src={contextualMenuImage.src} alt="Contextual menu showing copy to markdown and open in AI options" style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" />
+  </div>
+</div>
 
 **Full deno.json Support** - The `pgflow compile` command now uses Deno's `--config` flag instead of
 `--import-map`, enabling full deno.json support including `nodeModulesDir`, `compilerOptions`, and
 unstable features.
 
-**Fixed config.toml Corruption** - The CLI no longer corrupts `config.toml` files with minimal configurations. This was fixed by switching to a maintained fork of toml-patch (`@decimalturn/toml-patch`) that properly handles edge cases.
+**Fixed config.toml Corruption** - The CLI no longer corrupts `config.toml` files with minimal configurations. This was fixed by switching to a maintained fork of toml-patch (`@decimalturn/toml-patch`) that properly handles edge cases. Thanks to [@DecimalTurn](https://github.com/DecimalTurn) for maintaining the fork and contributing this fix.
 
 **Better Type Inference** - Improved DSL type inference for `.array()` and `.map()` methods, providing
 more accurate TypeScript completions and error messages.
 
+**Compile-time Duplicate Slug Detection** - The DSL now prevents duplicate step slugs at compile-time, catching configuration errors before deployment rather than at runtime.
+
+## Reliability Improvements
+
+**Enhanced Failure Handling** - When a run fails, pgflow now automatically archives all queued messages to prevent resource waste and orphaned tasks. Failed tasks store their output for debugging, including type constraint violations.
+
+**Fixed Data Pruning Bug** - Resolved a foreign key constraint issue that prevented cleanup operations from removing old workflow data.
+
 <details>
 <summary>Additional improvements</summary>
 
-- Fixed data pruning foreign key constraint bug preventing cleanup operations
 - Added comprehensive integration tests for flows with map steps
 - Enhanced type testing infrastructure with strict mode validation
-- Improved pre-migration check clarity with better error messages
 
 </details>
 
