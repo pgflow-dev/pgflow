@@ -270,6 +270,8 @@ This pattern keeps map steps focused on parallel processing while array steps ha
 - The overhead of multiple tasks isn't worth it for simple operations
 
 Map steps create N tasks with N database transactions - consider chunking for very large arrays (>1000 items).
+
+**Note on queue fairness:** Map steps processing large arrays can create many tasks at once, potentially filling the queue ahead of other flows. This is most relevant in multi-flow or multi-tenant scenarios. If queue fairness is important for your use case, consider chunking large arrays or reach out on [Discord](https://pgflow.dev/discord/) to discuss approaches.
 :::
 
 ## Summary
