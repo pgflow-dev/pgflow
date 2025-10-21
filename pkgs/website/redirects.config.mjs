@@ -62,6 +62,7 @@ export const redirects = {
   '/vs/dbos/': '/comparisons/dbos/',
   '/vs/inngest/': '/comparisons/inngest/',
   '/vs/trigger/': '/comparisons/trigger/',
+  '/comparisons/vercel-workflow/': '/comparisons/vercel-workflows/',
 
   // ============================================================================
   // MAIN BRANCH PATH MIGRATIONS (faq moved)
