@@ -411,6 +411,7 @@ export default defineConfig({
                 { label: 'DBOS', link: '/comparisons/dbos/' },
                 { label: 'Inngest', link: '/comparisons/inngest/' },
                 { label: 'Trigger.dev', link: '/comparisons/trigger/' },
+                { label: 'Vercel Workflows', link: '/comparisons/vercel-workflow/' },
               ],
             },
           ],
