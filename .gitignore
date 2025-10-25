@@ -53,6 +53,11 @@ deno-dist/
 
 **/.claude/settings.local.json
 
+# Notes symlink
+.notes
+.notes/.git
+.notes/.git/*
+
 # Output files
 *.out
 

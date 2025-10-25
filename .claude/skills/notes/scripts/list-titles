@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# list-titles - Extract titles from files or directories
+# Usage: list-titles [--with-dates] <file-or-dir> [<file-or-dir> ...]
+# Output: path | title [| modified | created]
+# Paths are resolved relative to $notes directory
+# --with-dates: Include modification and creation dates, sorted by mod time (oldest first)
+
+# Validate $notes environment variable
+if [ -z "${notes:-}" ]; then
+  echo "Error: \$notes environment variable not set" >&2
+  echo "Ensure direnv is installed and .envrc.local is configured" >&2
+  exit 1
+fi
+
+if [ ! -d "$notes" ]; then
+  echo "Error: \$notes does not point to a directory: $notes" >&2
+  exit 1
+fi
+
+if [ ! -r "$notes" ]; then
+  echo "Error: \$notes directory is not readable: $notes" >&2
+  exit 1
+fi
+
+# Parse flags
+with_dates=false
+args=()
+
+for arg in "$@"; do
+  case "$arg" in
+    --with-dates|-d)
+      with_dates=true
+      ;;
+    *)
+      args+=("$arg")
+      ;;
+  esac
+done
+
+if [ ${#args[@]} -eq 0 ]; then
+  echo "Usage: list-titles [--with-dates] <file-or-dir> [...]" >&2
+  echo "Example: list-titles features/ brewing/idea.md" >&2
+  echo "Example: list-titles --with-dates scratch/" >&2
+  echo "Paths are resolved relative to \$notes: $notes" >&2
+  exit 1
+fi
+
+# Convert seconds timestamp to relative time
+relative_time() {
+  local timestamp=$1
+  local now=$(date +%s)
+  local diff=$((now - timestamp))
+
+  if [ $diff -lt 0 ]; then
+    echo "future"
+    return
+  fi
+
+  local minutes=$((diff / 60))
+  local hours=$((diff / 3600))
+  local days=$((diff / 86400))
+  local weeks=$((diff / 604800))
+  local months=$((diff / 2592000))
+  local years=$((diff / 31536000))
+
+  if [ $years -gt 0 ]; then
+    echo "${years}y ago"
+  elif [ $months -gt 0 ]; then
+    echo "${months}mo ago"
+  elif [ $weeks -gt 0 ]; then
+    echo "${weeks}w ago"
+  elif [ $days -gt 0 ]; then
+    echo "${days}d ago"
+  elif [ $hours -gt 0 ]; then
+    echo "${hours}h ago"
+  elif [ $minutes -gt 0 ]; then
+    echo "${minutes}m ago"
+  else
+    echo "just now"
+  fi
+}
+
+extract_title() {
+  local file="$1"
+
+  # Extract H1 title from first line
+  local title=$(head -1 "$file" 2>/dev/null | sed 's/^# //' || echo "")
+
+  # If no title found, use filename
+  if [ -z "$title" ]; then
+    title=$(basename "$file" .md)
+  fi
+
+  if [ "$with_dates" = true ]; then
+    # Get modification time
+    local mod_time=$(stat -c %Y "$file" 2>/dev/null || echo "0")
+
+    # Get birth/creation time (fallback to mod time if not available)
+    local birth_time=$(stat -c %W "$file" 2>/dev/null || echo "0")
+    if [ "$birth_time" = "0" ] || [ "$birth_time" = "-" ]; then
+      birth_time=$mod_time
+    fi
+
+    # Format times
+    local mod_rel=$(relative_time "$mod_time")
+    local birth_rel=$(relative_time "$birth_time")
+
+    # Output with timestamp for sorting: timestamp|path|title|modified|created
+    echo "$mod_time|$file|$title|$mod_rel|$birth_rel"
+  else
+    # Output: path | title
+    echo "$file | $title"
+  fi
+}
+
+# Print header if with_dates
+if [ "$with_dates" = true ]; then
+  echo "# PATH | TITLE | MODIFIED | CREATED"
+fi
+
+# Collect all output
+output=$(
+  for arg in "${args[@]}"; do
+    # Resolve path relative to $notes
+    resolved_path="$notes/$arg"
+
+    if [ -d "$resolved_path" ]; then
+      # Directory: find all .md files
+      find "$resolved_path" -type f -name "*.md" | while IFS= read -r file; do
+        extract_title "$file"
+      done
+    elif [ -f "$resolved_path" ]; then
+      # File: process directly
+      extract_title "$resolved_path"
+    else
+      echo "Warning: '$resolved_path' not found (resolved from '$arg')" >&2
+    fi
+  done
+)
+
+if [ "$with_dates" = true ]; then
+  # Sort by modification time (oldest first), then format output
+  echo "$output" | sort -t'|' -k1 -n | cut -d'|' -f2- | awk -F'|' '{printf "%s | %s | %s | %s\n", $1, $2, $3, $4}'
+else
+  # Just output as-is
+  echo "$output"
+fi
