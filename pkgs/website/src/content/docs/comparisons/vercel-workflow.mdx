@@ -1,0 +1,140 @@
+---
+title: pgflow vs Vercel Workflows
+description: How pgflow compares to Vercel Workflows for workflow orchestration
+sidebar:
+  order: 5
+---
+
+## Features
+
+| Technical Criteria | pgflow | Vercel Workflows |
+|-----------------|--------|---------|
+| **Architecture Model** | Database-centric orchestration | Code-defined durable execution |
+| **Infrastructure Requirements** | Zero additional (just Supabase) | Vercel platform or self-hosted "Worlds" |
+| **Workflow Definition** | TypeScript DSL with explicit dependencies | TypeScript directives (`"use workflow"`, `"use step"`) |
+| **Supabase Integration** | Built-in | Can work together but requires bridging |
+| **Type System** | End-to-end type safety | Standard TypeScript typing |
+| **Failure Handling** | Automatic per-step retries | Automatic per-step retries with deterministic replay |
+| **Execution Structure** | Database-driven DAG | Sequential async/await with automatic suspension |
+| **State Management** | Input/output data stored in Postgres | Managed persistence layer (on Vercel) or custom storage |
+| **Time-based Operations** | Native step delays + Supabase pg_cron | Built-in sleep for minutes to months |
+| **Maturity Level** | Beta - used in production | Beta - in active development |
+| **Monitoring Tools** | SQL queries for visibility | Built-in dashboard on Vercel, CLI for self-hosted |
+| **Webhooks** | Can integrate via Supabase functions | Native webhook support with automatic URL generation |
+| **Event System** | No built-in event system | Hook-based event handling |
+| **Framework Requirements** | Framework-agnostic | Best with Next.js, experimental with others |
+
+Both systems provide reliable task execution with proper retries and error handling. The key difference is the orchestration model: database-driven DAG execution (pgflow) versus code-defined sequential execution with automatic suspension (Vercel Workflows).
+
+## When to Choose
+
+### pgflow
+- **Building on Supabase** - You need workflow orchestration directly within your Supabase stack
+- **Database-centric workflows** - Your system centers around PostgreSQL operations and explicit data dependencies
+- **Parallel data processing** - Your workflows involve processing data with multiple parallel paths
+- **SQL visibility** - You want workflow state directly queryable in your database
+- **Migration-based deployments** - You prefer deploying workflow changes via database migrations
+- **Zero infrastructure** - You want to avoid adding services beyond your Supabase project
+- **Platform flexibility** - You need to run on any infrastructure with Postgres
+
+### Vercel Workflows
+- **Building on Vercel** - You're already hosting on Vercel and want integrated workflows
+- **Procedural workflows** - Your processes follow sequential async/await patterns
+- **Long-duration pauses** - You need workflows that sleep for days or months without consuming resources
+- **Human-in-the-loop** - Your workflows require external approvals or webhook events to continue
+- **Familiar patterns** - You prefer writing standard async/await code without learning DAG concepts
+- **Managed infrastructure** - You prefer Vercel handling queue, storage, and execution infrastructure
+- **Next.js ecosystem** - You're building primarily with Next.js applications
+
+## Code Examples
+
+### pgflow
+
+pgflow puts **PostgreSQL at the center** of your workflow orchestration. Flows are defined in TypeScript but **compiled to SQL migrations** with all orchestration logic running **directly in the database**. The database decides when tasks are ready to execute based on explicit dependencies.
+
+```typescript
+// In pgflow, the database orchestrates the workflow
+new Flow<{ userId: string }>({
+  slug: 'userOnboarding',
+})
+  .step(
+    { slug: 'createUser' },
+    ({ run }) => ({ id: crypto.randomUUID(), email: run.userId })
+  )
+  .step(
+    { slug: 'sendWelcome', dependsOn: ['createUser'] },
+    ({ createUser }) => sendEmail(createUser.email, 'Welcome!')
+  )
+  .step(
+    { slug: 'sendCheckin', dependsOn: ['sendWelcome'], startDelay: 604800 },
+    ({ createUser }) => sendEmail(createUser.email, 'How are you doing?')
+  );
+```
+
+### Vercel Workflows
+
+Vercel Workflows uses **code-defined directives** to add durability to async functions. The `"use workflow"` directive marks a function as orchestrator, while `"use step"` marks functions that execute with full Node.js runtime. The framework handles suspension, resumption, and state persistence automatically.
+
+```typescript
+// In Vercel Workflows, directives add durability to async code
+import { sleep } from "workflow";
+
+export async function userOnboarding(userId: string) {
+  "use workflow";
+
+  // Each step executes with automatic retries
+  const user = await createUser(userId);
+  await sendWelcomeEmail(user);
+
+  // Pause for 7 days without consuming resources
+  await sleep("7 days");
+
+  await sendCheckInEmail(user);
+  return { userId: user.id, status: "onboarded" };
+}
+
+async function createUser(userId: string) {
+  "use step";
+  // Full Node.js access - use any npm package
+  return { id: crypto.randomUUID(), email: userId };
+}
+
+async function sendWelcomeEmail(user: { email: string }) {
+  "use step";
+  await sendEmail(user.email, "Welcome!");
+}
+
+async function sendCheckInEmail(user: { email: string }) {
+  "use step";
+  await sendEmail(user.email, "How are you doing?");
+}
+```
+
+## Similarities
+
+Both systems provide reliable execution of workflow tasks:
+
+- Both handle retries and error recovery
+- Both track execution state and progress
+- Both provide type safety
+- Both can delay step execution
+- Both store workflow state persistently
+- Both designed for serverless environments
+
+The difference is architectural:
+- pgflow: PostgreSQL orchestrates when steps run based on dependencies compiled from TypeScript DSL
+- Vercel Workflows: Runtime orchestrates steps sequentially using directives and automatic suspension
+
+## Integration with Supabase
+
+### pgflow
+- **Native integration** - Built specifically for Supabase ecosystem
+- **Zero infrastructure** - Uses Supabase Edge Functions and PostgreSQL
+- **Simple setup** - Single command (`npx pgflow install`) sets up all required components
+- **Direct database access** - All workflow state directly accessible in your Supabase database
+
+### Vercel Workflows
+- **Possible integration** - Can work alongside Supabase but not specifically designed for it
+- **Additional infrastructure** - Requires Vercel platform (managed) or custom "World" implementation (self-hosted)
+- **Separate platforms** - Coordinating between Vercel (frontend/workflows) and Supabase (database) adds complexity
+- **State storage separation** - Workflow state stored in Vercel's managed persistence, app data in Supabase
