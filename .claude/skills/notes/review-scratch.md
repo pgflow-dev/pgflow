@@ -14,13 +14,13 @@ Scratch contains quick captures written by the Memory skill. This workflow helps
 ### 1. List scratch items
 
 ```bash
-./.claude/skills/roadmap/scripts/list-titles "scratch/"
+./.claude/skills/notes/scripts/list-titles "scratch/"
 ```
 
 ### 2. Search for specific topics
 
 ```bash
-./.claude/skills/roadmap/scripts/search "subflow" "scratch/"
+./.claude/skills/notes/scripts/search "subflow" "scratch/"
 ```
 
 ### 3. Read promising items

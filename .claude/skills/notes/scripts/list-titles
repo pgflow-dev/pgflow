@@ -4,25 +4,14 @@ set -euo pipefail
 # list-titles - Extract titles from files or directories
 # Usage: list-titles [--with-dates] <file-or-dir> [<file-or-dir> ...]
 # Output: path | title [| modified | created]
-# Paths are resolved relative to $notes directory
+# Paths are resolved relative to .notes directory
 # --with-dates: Include modification and creation dates, sorted by mod time (oldest first)
 
-# Validate $notes environment variable
-if [ -z "${notes:-}" ]; then
-  echo "Error: \$notes environment variable not set" >&2
-  echo "Ensure direnv is installed and .envrc.local is configured" >&2
-  exit 1
-fi
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-if [ ! -d "$notes" ]; then
-  echo "Error: \$notes does not point to a directory: $notes" >&2
-  exit 1
-fi
-
-if [ ! -r "$notes" ]; then
-  echo "Error: \$notes directory is not readable: $notes" >&2
-  exit 1
-fi
+# Validate and get notes directory
+NOTES_DIR=$("$SCRIPT_DIR/echo-notes-dir.sh")
 
 # Parse flags
 with_dates=false
@@ -43,7 +32,7 @@ if [ ${#args[@]} -eq 0 ]; then
   echo "Usage: list-titles [--with-dates] <file-or-dir> [...]" >&2
   echo "Example: list-titles features/ brewing/idea.md" >&2
   echo "Example: list-titles --with-dates scratch/" >&2
-  echo "Paths are resolved relative to \$notes: $notes" >&2
+  echo "Paths are resolved relative to: $NOTES_DIR" >&2
   exit 1
 fi
 
@@ -123,8 +112,8 @@ fi
 # Collect all output
 output=$(
   for arg in "${args[@]}"; do
-    # Resolve path relative to $notes
-    resolved_path="$notes/$arg"
+    # Resolve path relative to NOTES_DIR
+    resolved_path="$NOTES_DIR/$arg"
 
     if [ -d "$resolved_path" ]; then
       # Directory: find all .md files

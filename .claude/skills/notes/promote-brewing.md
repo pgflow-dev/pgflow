@@ -20,7 +20,7 @@ Promote an idea when:
 
 ```bash
 # Move from scratch to brewing
-git -C "$notes" mv scratch/idea-name.md brewing/
+git -C ./.notes mv scratch/idea-name.md brewing/
 ```
 
 ### 2. Update the title (optional)
@@ -41,15 +41,15 @@ Add a few lines about:
 ### 4. Git commit
 
 ```bash
-git -C "$notes" add brewing/idea-name.md
-git -C "$notes" commit -m "Promote: idea-name to brewing"
+git -C ./.notes add brewing/idea-name.md
+git -C ./.notes commit -m "Promote: idea-name to brewing"
 ```
 
 ## Example
 
 ```bash
 # Move the file
-git -C "$notes" mv scratch/taskless-maps.md brewing/
+git -C ./.notes mv scratch/taskless-maps.md brewing/
 
 # File content (brewing/taskless-maps.md):
 # IDEA: Taskless Map Steps
@@ -65,8 +65,8 @@ git -C "$notes" mv scratch/taskless-maps.md brewing/
 # Question: How do dependents handle empty arrays?
 
 # Commit
-git -C "$notes" add brewing/taskless-maps.md
-git -C "$notes" commit -m "Promote: taskless-maps to brewing"
+git -C ./.notes add brewing/taskless-maps.md
+git -C ./.notes commit -m "Promote: taskless-maps to brewing"
 ```
 
 ## Key Principles

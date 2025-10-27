@@ -6,22 +6,11 @@ set -euo pipefail
 # Output: path | title
 # By default excludes archive/, unless search_path explicitly includes it
 
-# Validate $notes environment variable
-if [ -z "${notes:-}" ]; then
-  echo "Error: \$notes environment variable not set" >&2
-  echo "Ensure direnv is installed and .envrc.local is configured" >&2
-  exit 1
-fi
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-if [ ! -d "$notes" ]; then
-  echo "Error: \$notes does not point to a directory: $notes" >&2
-  exit 1
-fi
-
-if [ ! -r "$notes" ]; then
-  echo "Error: \$notes directory is not readable: $notes" >&2
-  exit 1
-fi
+# Validate and get notes directory
+NOTES_DIR=$("$SCRIPT_DIR/echo-notes-dir.sh")
 
 if [ $# -eq 0 ]; then
   echo "Usage: search <pattern> [search_path]" >&2
@@ -31,11 +20,11 @@ if [ $# -eq 0 ]; then
 fi
 
 pattern="$1"
-# If search_path provided, resolve it relative to $notes, otherwise use $notes
+# If search_path provided, resolve it relative to NOTES_DIR, otherwise use NOTES_DIR
 if [ $# -ge 2 ]; then
-  search_path="$notes/$2"
+  search_path="$NOTES_DIR/$2"
 else
-  search_path="$notes"
+  search_path="$NOTES_DIR"
 fi
 
 # Exclude archive by default unless explicitly searching in archive

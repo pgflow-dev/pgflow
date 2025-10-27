@@ -20,7 +20,7 @@ Create a feature spec when:
 
 ```bash
 # Move the file
-git -C "$notes" mv brewing/idea-name.md features/feature-name.md
+git -C ./.notes mv brewing/idea-name.md features/feature-name.md
 ```
 
 ### 2. Structure the spec
@@ -76,8 +76,8 @@ What problem does this solve? What value does it provide?
 ### 3. Commit the feature
 
 ```bash
-git -C "$notes" add features/feature-name.md
-git -C "$notes" commit -m "Add: feature spec for feature-name"
+git -C ./.notes add features/feature-name.md
+git -C ./.notes commit -m "Add: feature spec for feature-name"
 ```
 
 ### 4. Add to roadmap
@@ -97,14 +97,14 @@ Update roadmap.md with this feature's position:
 
 ```bash
 # Move from brewing
-git -C "$notes" mv brewing/manual-execution.md features/manual-execution.md
+git -C ./.notes mv brewing/manual-execution.md features/manual-execution.md
 
 # Edit to add full spec structure
 # (Add objective, prerequisites, implementation steps, etc.)
 
 # Commit
-git -C "$notes" add features/manual-execution.md
-git -C "$notes" commit -m "Add: feature spec for manual execution"
+git -C ./.notes add features/manual-execution.md
+git -C ./.notes commit -m "Add: feature spec for manual execution"
 ```
 
 ## Next Steps

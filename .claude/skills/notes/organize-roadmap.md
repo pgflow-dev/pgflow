@@ -93,8 +93,8 @@ Add to "Cross-Feature Constraints" section if:
 ### 4. Commit
 
 ```bash
-git -C "$notes" add roadmap.md
-git -C "$notes" commit -m "Update: roadmap reordering (moved X before Y)"
+git -C ./.notes add roadmap.md
+git -C ./.notes commit -m "Update: roadmap reordering (moved X before Y)"
 ```
 
 ## Key Principles
@@ -123,8 +123,8 @@ After (C is urgent):
 
 Git commit:
 ```bash
-git -C "$notes" add roadmap.md
-git -C "$notes" commit -m "Update: prioritize Feature C (customer blocker)"
+git -C ./.notes add roadmap.md
+git -C ./.notes commit -m "Update: prioritize Feature C (customer blocker)"
 ```
 
 ## Marking Complete

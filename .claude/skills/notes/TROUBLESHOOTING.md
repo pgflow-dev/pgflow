@@ -1,19 +1,16 @@
 # Troubleshooting
 
-## Scripts can't find $notes
+## .notes directory not found
 
-**Error:** `Error: $notes environment variable not set`
+**Error:** `ERROR: .notes directory not found at ./.notes`
 
 **Fix:**
 ```bash
-# Check if set
-echo $notes
+# Create symlink to your notes directory
+ln -s /path/to/your/notes-directory .notes
 
-# Set temporarily
-export notes="/path/to/notes"
-
-# Set permanently (add to ~/.bashrc or ~/.zshrc)
-echo 'export notes="/path/to/notes"' >> ~/.bashrc
+# Example:
+ln -s ~/Documents/pgflow-notes .notes
 ```
 
 ## Scripts not executable
@@ -22,7 +19,7 @@ echo 'export notes="/path/to/notes"' >> ~/.bashrc
 
 **Fix:**
 ```bash
-chmod +x .claude/skills/roadmap/scripts/*
+chmod +x .claude/skills/notes/scripts/*
 ```
 
 ## No search results
@@ -34,7 +31,7 @@ chmod +x .claude/skills/roadmap/scripts/*
 
 **Try:**
 - Broader pattern: `"feature"` instead of `"feature-x-implementation"`
-- Check directory: `ls "$notes/roadmaps/"`
+- Check directory: `ls ./.notes/`
 - Verify pattern syntax (regex)
 
 ## Git errors
@@ -43,7 +40,7 @@ chmod +x .claude/skills/roadmap/scripts/*
 
 **Fix:**
 ```bash
-cd "$notes"
+cd ./.notes
 git init
 git add .
 git commit -m "Initial commit"
