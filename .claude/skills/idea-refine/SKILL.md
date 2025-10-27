@@ -6,7 +6,7 @@ allowed-tools: Read, Edit, Bash, Grep, Glob
 
 # Idea Refinement
 
-**Notes directory:** !`test -d ./.notes && test -r ./.notes && test -w ./.notes && echo "./.notes" || echo "ERROR: ./.notes is not a valid readable/writable directory! Ask user to create the symlink."`
+**Notes directory:** !`./.claude/skills/notes/scripts/echo-notes-dir.sh`
 
 **Context:** @../notes/shared/directory.md @../notes/shared/conventions.md
 

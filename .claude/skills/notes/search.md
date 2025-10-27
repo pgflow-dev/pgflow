@@ -35,7 +35,7 @@ scripts/search "(feature|enhancement).?(worker|executor)"
 
 **Only when user requests:**
 ```bash
-scripts/search "pattern" "$notes/archive/"
+scripts/search "pattern" "archive/"
 ```
 
 User must explicitly say: "Search archive for X"
@@ -44,14 +44,14 @@ User must explicitly say: "Search archive for X"
 
 **When you know the location:**
 ```bash
-scripts/list-titles "$notes/scratch/"
-scripts/list-titles "$notes/brewing/"
-scripts/list-titles "$notes/features/"
+scripts/list-titles "scratch/"
+scripts/list-titles "brewing/"
+scripts/list-titles "features/"
 ```
 
 **Multiple locations:**
 ```bash
-scripts/list-titles "$notes/scratch/" "$notes/brewing/" "$notes/features/"
+scripts/list-titles "scratch/" "brewing/" "features/"
 ```
 
 **Output format:**

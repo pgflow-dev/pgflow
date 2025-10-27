@@ -1,6 +1,6 @@
 # Notes Directory Layout
 
-**Notes directory:** !`test -d ./.notes && test -r ./.notes && test -w ./.notes && echo "./.notes" || echo "ERROR: ./.notes is not a valid readable/writable directory! Ask user to create the symlink."`
+**Notes directory:** !`./.claude/skills/notes/scripts/echo-notes-dir.sh`
 
 ## Folder Structure
 
@@ -25,4 +25,4 @@
 
 - Always use `./.notes/` (relative to repo root)
 - Working directory (`$PWD`) must be repository root
-- Use relative paths for scripts: `./.claude/skills/roadmap/scripts/`
+- Use relative paths for scripts: `./.claude/skills/notes/scripts/`
