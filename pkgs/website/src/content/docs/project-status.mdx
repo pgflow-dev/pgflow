@@ -12,19 +12,21 @@ pgflow is in **public beta** and being used in production by early adopters. Cor
 
 ## Known Limitations & Active Work
 
-<CardGrid>
-  <Card title="Performance" icon="rocket">
-    Core operations are optimized with batching, proper indexing, and declarative SQL. However, **large-scale workloads** may reveal additional optimization opportunities. Start with your expected workload and scale as needed.
-  </Card>
+<Card title="Performance" icon="rocket">
+  Core operations are optimized with batching, proper indexing, and declarative SQL. However, **large-scale workloads** may reveal additional optimization opportunities. Start with your expected workload and scale as needed.
+</Card>
 
-  <Card title="Worker Management" icon="setting">
-    Edge Functions have platform execution time limits. For production reliability, set up a **pg_cron job** to automatically restart workers when needed. See [deployment guide](/deploy/supabase/keep-workers-running/) for the simple 2-minute setup.
-  </Card>
+<Card title="Worker Management" icon="setting">
+  Edge Functions have platform execution time limits. For production reliability, set up a **pg_cron job** to automatically restart workers when needed. See [deployment guide](/deploy/supabase/keep-workers-running/) for the simple 2-minute setup.
+</Card>
 
-  <Card title="Fair Processing" icon="warning">
-    Fair processing across flows is not currently implemented. A flow with many tasks (especially map steps processing large arrays) can fill the queue ahead of other flows. This is more noticeable with the introduction of map steps in 0.7.0. For multi-tenant or multi-flow scenarios where fairness is important, join [Discord](https://pgflow.dev/discord/) to discuss approaches and workarounds.
-  </Card>
-</CardGrid>
+<Card title="Fair Processing" icon="warning">
+  Fair processing across flows is not currently implemented. A flow with many tasks (especially map steps processing large arrays) can fill the queue ahead of other flows. This is more noticeable with the introduction of map steps in 0.7.0. For multi-tenant or multi-flow scenarios where fairness is important, join [Discord](https://pgflow.dev/discord/) to discuss approaches and workarounds.
+</Card>
+
+<Card title="Permissions" icon="approve-check">
+  pgflow ships with zero built-in permissions or access controls. [Database permissions](/reference/permissions/) must be manually configured when using the TypeScript Client or Supabase RPC from client applications. In a future release, pgflow will support custom start functions for the TypeScript Client, enabling authorization logic at the database level and supporting multi-tenant scenarios.
+</Card>
 
 ## Breaking Changes
 
