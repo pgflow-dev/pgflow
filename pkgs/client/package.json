@@ -1,6 +1,6 @@
 {
   "name": "@pgflow/client",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "type": "module",
   "scripts": {
     "verify-exports": "node scripts/verify-exports.js"
