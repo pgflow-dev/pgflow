@@ -1,0 +1,48 @@
+---
+draft: false
+title: 'pgflow 0.7.1: Fix pgmq 1.5.1 Version Conflict on New Supabase Projects'
+description: 'Fixes installation failures on new Supabase projects after pgmq upgrade'
+date: 2025-10-30
+authors:
+  - jumski
+tags:
+  - bugfix
+  - supabase
+  - pgmq
+featured: true
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+pgflow 0.7.1 fixes installation failures on fresh Supabase projects caused by pgmq version mismatch.
+
+<Aside type="note" title="Existing Projects Unaffected">
+If you already have pgflow installed, you're completely unaffected. This fix only impacts fresh installations on new Supabase projects. No action needed, no code changes, and no need to update to 0.7.1.
+</Aside>
+
+## The Bug
+
+Installing pgflow on new Supabase projects failed with:
+
+```
+ERROR: extension "pgmq" has no installation script nor update path for version "1.4.4" (SQLSTATE 22023)
+At statement: 2
+CREATE EXTENSION IF NOT EXISTS "pgmq" WITH SCHEMA "pgmq" VERSION "1.4.4"
+```
+
+## Why It Happened
+
+Supabase upgraded to pgmq 1.5.1 in Postgres 17.6.1.016+ ([supabase/postgres#1668](https://github.com/supabase/postgres/pull/1668)). pgflow's initial migration was pinned to version 1.4.4, which no longer exists in new Supabase instances.
+
+## The Fix
+
+Removed the version constraint from pgmq extension creation. pgflow now uses whatever pgmq version Supabase provides (1.4.4, 1.5.1, or newer).
+
+```diff lang="sql"
+-CREATE EXTENSION IF NOT EXISTS "pgmq" WITH SCHEMA "pgmq" VERSION "1.4.4";
++CREATE EXTENSION IF NOT EXISTS "pgmq" WITH SCHEMA "pgmq";
+```
+
+## Credits
+
+Thanks to [@kallebysantos](https://github.com/kallebysantos/) for reporting this issue!
