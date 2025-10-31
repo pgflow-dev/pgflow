@@ -1,5 +1,6 @@
 packages:
   - 'pkgs/*'
+  - 'apps/*'
   - '!pkgs/*/dist'
   - '!**/dist/**'
 
