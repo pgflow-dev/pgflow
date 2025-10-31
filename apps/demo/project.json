@@ -6,6 +6,7 @@
   "targets": {
     "dev": {
       "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
       "options": {
         "command": "vite dev",
         "cwd": "apps/demo"
@@ -33,6 +34,13 @@
       "options": {
         "command": "./scripts/sync-edge-deps.sh",
         "cwd": "apps/demo"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "deno test --allow-env --allow-net tests/",
+        "cwd": "apps/demo/supabase/functions/article_flow_worker"
       }
     }
   }
