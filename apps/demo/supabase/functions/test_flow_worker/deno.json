@@ -1,0 +1,15 @@
+{
+	"imports": {
+		"@pgflow/core": "../_vendor/@pgflow/core/index.ts",
+		"@pgflow/core/": "../_vendor/@pgflow/core/",
+		"@pgflow/dsl": "../_vendor/@pgflow/dsl/index.ts",
+		"@pgflow/dsl/": "../_vendor/@pgflow/dsl/",
+		"@pgflow/dsl/supabase": "../_vendor/@pgflow/dsl/src/supabase.ts",
+		"@pgflow/edge-worker": "../_vendor/@pgflow/edge-worker/index.ts",
+		"@pgflow/edge-worker/": "../_vendor/@pgflow/edge-worker/",
+		"@pgflow/edge-worker/_internal": "../_vendor/@pgflow/edge-worker/_internal.ts",
+		"postgres": "npm:postgres@3.4.5",
+		"@henrygd/queue": "jsr:@henrygd/queue@^1.0.7",
+		"@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.49.4"
+	}
+}

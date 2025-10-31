@@ -47,7 +47,7 @@ The implementation uses these branches (create as needed):
 | Phase   | Branch                         | What Gets Built                     | Done |
 | ------- | ------------------------------ | ----------------------------------- | ---- |
 | Phase 0 | `feat-demo-0-foundation`       | Fresh SvelteKit app + Nx setup      | [x]  |
-| Phase 1 | `feat-demo-1-vertical-slice`   | Client-side auth + end-to-end proof | [ ]  |
+| Phase 1 | `feat-demo-1-vertical-slice`   | Client-side auth + end-to-end proof | [x]  |
 | Phase 2 | `feat-demo-2-article-flow`     | 4-step flow + stores                | [ ]  |
 | Phase 3 | `feat-demo-3-dag-debug`        | DAG viz + Debug panel               | [ ]  |
 | Phase 4 | `feat-demo-4-code-explanation` | Code panel + clicks                 | [ ]  |
@@ -67,13 +67,36 @@ The implementation uses these branches (create as needed):
 
 **Then expand incrementally:**
 
-- Phase 2: 4-step flow + DAG/Debug visualizations
-- Phase 3: Interactive elements
-- Phase 4: Polish + deploy
+- Phase 2: 4-step flow + state management
+- Phase 3: DAG visualization + Debug panel
+- Phase 4: Code panel + interactions
+- Phase 5: Results + modals
+- Phase 6: Polish + deploy
 
 **Why?** Catches integration issues early. Everything after Phase 1 is UI.
 
-**Auth simplicity:** Client-side only! No server hooks, no session management, just `supabase.auth.signInAnonymously()` - perfect for public demos.
+**Auth simplicity:** Client-side only! No server hooks, no session management, just public anon key - perfect for public demos.
+
+---
+
+## 📝 Implementation Patterns
+
+**Every phase follows this pattern for Edge Functions:**
+
+1. **Create worker:** `npx -y supabase@latest functions new <flow_slug>_worker`
+2. **Flow lives with worker:** `functions/<flow_slug>_worker/<flow_slug>.ts`
+3. **Worker imports flow:** `import Flow from './<flow_slug>.ts'`
+4. **Deno import map:** `functions/<flow_slug>_worker/deno.json` with relative paths to `../_vendor/`
+5. **Configure in config.toml:**
+   ```toml
+   [functions.<flow_slug>_worker]
+   enabled = true
+   verify_jwt = false
+   import_map = "./functions/<flow_slug>_worker/deno.json"
+   entrypoint = "./functions/<flow_slug>_worker/index.ts"
+   ```
+
+**Critical:** `verify_jwt = false` allows public demo access without authentication.
 
 ---
 

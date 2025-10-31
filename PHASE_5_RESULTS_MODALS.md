@@ -91,9 +91,10 @@ Update layout structure:
 ```bash
 # Restart everything
 cd apps/demo
-supabase functions serve demo-worker
-
-# In another terminal (from root)
+npx -y supabase@latest start
+# In another terminal:
+npx -y supabase@latest functions serve article_flow_worker
+# In another terminal (from root):
 pnpm nx dev demo
 ```
 
