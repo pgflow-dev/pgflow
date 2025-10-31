@@ -19,7 +19,19 @@
 
 ## Tasks
 
-### 7. Create DAG Component
+### 1. Verify Dependencies
+
+Confirm `@xyflow/svelte` was installed in Phase 2:
+
+```bash
+ls apps/demo/node_modules/@xyflow/svelte
+```
+
+**If missing:** Run `cd apps/demo && pnpm add @xyflow/svelte && cd ../..`
+
+---
+
+### 2. Create DAG Component
 
 Create `apps/demo/src/lib/components/DAGVisualization.svelte`:
 
@@ -31,7 +43,7 @@ Use `@xyflow/svelte` to render 4 nodes:
 
 ---
 
-### 8. Create Debug Panel Component
+### 3. Create Debug Panel Component
 
 Create `apps/demo/src/lib/components/DebugPanel.svelte` with 3 sections:
 
@@ -43,7 +55,7 @@ Create `apps/demo/src/lib/components/DebugPanel.svelte` with 3 sections:
 
 ---
 
-### 9. Create Demo Page Layout
+### 4. Create Demo Page Layout
 
 Update `apps/demo/src/routes/+page.svelte`:
 
@@ -57,11 +69,11 @@ Update `apps/demo/src/routes/+page.svelte`:
 
 ---
 
-### 10. Add Brand Assets and Styles
+### 5. Add Brand Styles
 
-Copy logos from website to static folder:
+Verify logos were copied in Phase 2:
 ```bash
-cp pkgs/website/src/assets/pgflow-logo-*.svg apps/demo/static/
+ls apps/demo/static/pgflow-logo-*.svg
 ```
 
 Create `apps/demo/src/app.css` with pgflow brand colors:
@@ -74,7 +86,7 @@ Import styles in `apps/demo/src/routes/+layout.svelte`
 
 ---
 
-### 11. Test Complete Flow
+### 6. Test Complete Flow
 
 ```bash
 cd apps/demo

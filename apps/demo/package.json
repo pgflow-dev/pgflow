@@ -38,6 +38,9 @@
 	},
 	"dependencies": {
 		"@pgflow/client": "workspace:*",
-		"@supabase/supabase-js": "^2.78.0"
+		"@pgflow/dsl": "workspace:*",
+		"@supabase/supabase-js": "^2.78.0",
+		"@xyflow/svelte": "^1.4.1",
+		"shiki": "^3.14.0"
 	}
 }
