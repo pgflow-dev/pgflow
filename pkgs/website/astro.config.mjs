@@ -164,6 +164,7 @@ export default defineConfig({
             'tutorials/index',
             'comparisons/index',
             // Tutorials (lengthy, patterns covered elsewhere)
+            'tutorials/lovable/*',
             'tutorials/ai-web-scraper/*',
             // News/blog and non-technical content
             'news/**',
@@ -393,6 +394,12 @@ export default defineConfig({
               link: '/tutorials/',
               id: 'tutorials',
               items: [
+                {
+                  label: 'Build with Lovable',
+                  autogenerate: {
+                    directory: 'tutorials/lovable/',
+                  },
+                },
                 {
                   label: 'AI Web Scraper',
                   autogenerate: {

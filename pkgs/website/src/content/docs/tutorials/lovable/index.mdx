@@ -1,0 +1,127 @@
+---
+title: Build with pgflow on Lovable
+description: Create a real-time greeting workflow on Lovable using pgflow - no CLI required
+sidebar:
+  order: 2
+---
+
+import { Steps, Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { FileTree } from '@astrojs/starlight/components';
+
+**Build a real-time greeting workflow on Lovable with manual setup - no CLI required.**
+
+<div style="max-width: 600px; margin: 2rem auto;">
+  <img src="https://www.pgflow.dev/_astro/pgflow-logo-dark.BuQDBcad.svg" alt="pgflow logo" style="width: 100%; height: auto;" />
+</div>
+
+---
+
+:::note[About Lovable]
+[Lovable](https://lovable.dev) is an AI-powered app builder that runs on Supabase. Since Lovable has no CLI access, this tutorial uses a **manual installation approach** where SQL is executed through the Supabase Dashboard.
+:::
+
+This tutorial demonstrates how to use pgflow on Lovable by building a simple greeting workflow with real-time UI updates. You'll learn the manual setup process required for platforms without CLI access.
+
+:::note[Tech Stack]
+- **Lovable** - AI-powered app builder
+- **Supabase** - Managed database and Edge Functions
+- **pgflow** - Postgres-native workflow engine
+- **React** - Frontend UI with real-time updates
+:::
+
+## What you'll build
+
+You'll create a greeting workflow application that:
+
+<Steps>
+1. Takes first name and last name as input through a simple form
+2. Executes a two-step workflow:
+   - Step 1: Concatenates names into full name
+   - Step 2: Creates a personalized greeting
+3. Shows real-time progress as each step executes
+4. Displays step outputs and final results in the UI
+</Steps>
+
+**Key learning points:**
+- Manual pgflow installation without CLI
+- Creating compilation Edge Functions for flow definitions
+- Building real-time UIs with `@pgflow/client`
+- Lovable-specific workflow patterns
+
+## Project Structure
+
+<FileTree>
+- supabase/
+  - functions/
+    - _flows/
+      - greet_user.ts
+    - compile_greet_user/
+      - index.ts
+    - greet_user_worker/
+      - index.ts
+- src/
+  - components/
+    - GreetingFlow.tsx
+</FileTree>
+
+## Prerequisites
+
+:::caution[Before you begin]
+1. **Lovable account** - Sign up at [lovable.dev](https://lovable.dev)
+2. **Lovable project** - Create a new project (includes managed Supabase)
+3. **Basic React/TypeScript knowledge** - Helpful for understanding the code
+
+**Note:** Lovable provides a managed Supabase instance automatically. You'll have full access to Supabase Dashboard for running SQL commands.
+:::
+
+## Why manual installation?
+
+Lovable uses AI to generate code but doesn't provide direct CLI access. This means:
+
+- ❌ Cannot run `npx pgflow install`
+- ❌ Cannot run `npx pgflow compile`
+- ❌ Cannot run `supabase migration up`
+
+Instead, this tutorial shows you how to:
+
+- ✅ Download and execute migration SQL via Supabase Dashboard
+- ✅ Create a compilation Edge Function using `compileFlow()` API
+- ✅ Set environment variables as Supabase secrets
+- ✅ Use Lovable's AI to generate the React UI
+
+## Tutorial approach
+
+This tutorial is structured as **step-by-step prompts to give Lovable**, with explanations of what happens at each stage. Each prompt is crafted to work with Lovable's AI code generation while explaining the underlying pgflow concepts.
+
+:::tip[Using this tutorial]
+The prompts in this tutorial follow Lovable best practices:
+- **Context first** - Each prompt provides necessary background
+- **Explicit instructions** - Clear about what to create and what not to change
+- **Reference to docs** - Links to pgflow documentation for deeper understanding
+:::
+
+## Get started
+
+<CardGrid>
+  <LinkCard
+    title="Part 1: Setup and Backend"
+    description="Install pgflow, create flow definitions, and setup Edge Functions"
+    href="/tutorials/lovable/setup/"
+  />
+</CardGrid>
+
+## What you'll learn
+
+<Steps>
+1. How to manually install pgflow without CLI access
+2. How to use the Compile API to generate SQL from flow definitions
+3. How to create compilation Edge Functions
+4. How to work with Lovable's AI to build pgflow applications
+5. How to integrate real-time updates with `@pgflow/client`
+</Steps>
+
+---
+
+:::note[Help improve this tutorial]
+This is a new tutorial for a unique use case. If you encounter issues or have suggestions, please [open an issue](https://github.com/pgflow-dev/pgflow/issues) or join our [Discord community](https://discord.gg/pgflow).
+:::
