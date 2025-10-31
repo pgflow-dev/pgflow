@@ -4,6 +4,7 @@
 dist
 tmp
 out-tsc
+.svelte-kit
 
 # dependencies
 node_modules
