@@ -1,5 +1,6 @@
 packages:
   - 'pkgs/*'
+  - 'apps/*'
   - 'examples/playground'
   - '!pkgs/*/dist'
   - '!**/dist/**'
