@@ -26,6 +26,14 @@
         "cwd": "apps/demo"
       },
       "dependsOn": ["build"]
+    },
+    "sync-edge-deps": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["core:build", "dsl:build"],
+      "options": {
+        "command": "./scripts/sync-edge-deps.sh",
+        "cwd": "apps/demo"
+      }
     }
   }
 }

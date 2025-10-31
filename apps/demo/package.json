@@ -37,6 +37,7 @@
 		"vite": "^7.1.10"
 	},
 	"dependencies": {
+		"@pgflow/client": "workspace:*",
 		"@supabase/supabase-js": "^2.78.0"
 	}
 }

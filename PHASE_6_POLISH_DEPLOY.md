@@ -249,11 +249,16 @@ Test checklist:
 
 ### 12. Deploy Edge Functions to Supabase
 
+Deploy both workers to production:
+
 ```bash
 cd apps/demo
-supabase functions deploy demo-worker
-supabase secrets set JINA_API_KEY=your_actual_key
+npx -y supabase@latest functions deploy test_flow_worker
+npx -y supabase@latest functions deploy article_flow_worker
+npx -y supabase@latest secrets set JINA_API_KEY=your_actual_key
 ```
+
+**Note:** Both `test_flow_worker` and `article_flow_worker` need to be deployed for the demo to work.
 
 ---
 
