@@ -77,16 +77,21 @@ Import styles in `apps/demo/src/routes/+layout.svelte`
 ### 11. Test Complete Flow
 
 ```bash
-cd apps/demo && supabase start
-supabase functions serve demo-worker  # Another terminal
-pnpm nx dev demo  # From monorepo root
+cd apps/demo
+npx -y supabase@latest start
+# In another terminal:
+npx -y supabase@latest functions serve article_flow_worker
+# In another terminal (from monorepo root):
+pnpm nx dev demo
 ```
 
 Open http://localhost:5173/, click "Process Article", verify:
 - DAG nodes light up
-- Parallel execution visible (summarize + extractKeywords)
+- Parallel execution visible (summarize + extract_keywords)
 - Retry on summarize step (fails → succeeds)
 - Debug panel updates
+
+**Note:** Worker name is `article_flow_worker` (with underscore) matching the flow slug `article_flow`.
 
 ---
 
