@@ -100,7 +100,6 @@
       "cache": false,
       "inputs": [
         "{workspaceRoot}/pkgs/core/supabase/migrations/**/*.sql",
-        "{projectRoot}/sql/**/*.sql",
         "^production"
       ],
       "options": {
@@ -109,7 +108,6 @@
           "mkdir -p supabase/migrations/",
           "rm -f supabase/migrations/*.sql",
           "cp ../core/supabase/migrations/*.sql supabase/migrations/",
-          "cp sql/*_*.sql supabase/migrations/",
           "supabase db reset"
         ],
         "parallel": false
@@ -123,7 +121,7 @@
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
-          "supabase functions serve --env-file supabase/functions/.env"
+          "supabase functions serve --env-file supabase/functions/.env --no-verify-jwt"
         ],
         "parallel": false
       }
@@ -132,11 +130,7 @@
       "executor": "nx:run-commands",
       "local": true,
       "dependsOn": ["^verify-migrations", "^dump-realtime-schema"],
-      "inputs": [
-        "default",
-        "^production",
-        "{projectRoot}/scripts/ensure-db"
-      ],
+      "inputs": ["default", "^production", "{projectRoot}/scripts/ensure-db"],
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": ["./scripts/ensure-db"],
@@ -169,9 +163,34 @@
         "parallel": false
       }
     },
+    "sync-e2e-deps": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "local": true,
+      "inputs": ["^production"],
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "commands": ["./scripts/sync-e2e-deps.sh"],
+        "parallel": false
+      }
+    },
+    "serve:functions:e2e": {
+      "executor": "nx:run-commands",
+      "continuous": true,
+      "dependsOn": ["sync-e2e-deps", "supabase:start"],
+      "local": true,
+      "cache": false,
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "commands": [
+          "supabase functions serve --env-file supabase/functions/.env --import-map supabase/functions/deno.json --no-verify-jwt"
+        ],
+        "parallel": false
+      }
+    },
     "test:e2e": {
       "executor": "nx:run-commands",
-      "dependsOn": ["db:ensure", "^build"],
+      "dependsOn": ["supabase:reset", "serve:functions:e2e"],
       "local": true,
       "inputs": ["default", "^production"],
       "options": {

@@ -14,7 +14,13 @@ const WORKER_NAME = 'cpu_intensive';
 //       single message and amount of messages to send
 const MESSAGES_TO_SEND = 30;
 
-Deno.test('should spawn next worker when CPU clock limit hits', async () => {
+Deno.test(
+  {
+    name: 'should spawn next worker when CPU clock limit hits',
+    sanitizeOps: false, // Progress bar uses async writes that don't complete before test ends
+    sanitizeResources: false,
+  },
+  async () => {
   await withSql(async (sql) => {
     await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
     await sql`ALTER SEQUENCE test_seq RESTART WITH 1`;
@@ -26,10 +32,8 @@ Deno.test('should spawn next worker when CPU clock limit hits', async () => {
     await sql`SELECT pgmq.create(${WORKER_NAME})`;
     await sql`
       DELETE FROM pgflow.workers
-      WHERE worker_id IN (
-        SELECT worker_id
-        FROM pgflow.inactive_workers
-      )`;
+      WHERE last_heartbeat_at < NOW() - INTERVAL '6 seconds'
+    `;
     await startWorker(WORKER_NAME);
 
     await sendBatch(MESSAGES_TO_SEND, WORKER_NAME);

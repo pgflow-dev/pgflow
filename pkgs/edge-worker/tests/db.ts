@@ -1,4 +1,5 @@
 import postgres from 'postgres';
+import { integrationConfig } from './config.ts';
 
 function createSql(dbUrl: string) {
   return postgres(dbUrl, {
@@ -13,7 +14,7 @@ function createSql(dbUrl: string) {
 export function withTransaction(
   callback: (sql: postgres.Sql) => Promise<unknown>
 ) {
-  const dbUrl = `postgresql://postgres:postgres@127.0.0.1:5432/postgres`;
+  const dbUrl = integrationConfig.dbUrl;
   const localSql = createSql(dbUrl);
 
   return async () => {
@@ -59,7 +60,7 @@ export function withTransaction(
 export function withPgNoTransaction(
   callback: (sql: postgres.Sql) => Promise<unknown>
 ) {
-  const dbUrl = 'postgresql://postgres:postgres@127.0.0.1:5432/postgres';
+  const dbUrl = integrationConfig.dbUrl;
   const sql = createSql(dbUrl);
 
   return async () => {
