@@ -1,29 +1,22 @@
 <script lang="ts">
 	import { pgflow } from '$lib/supabase';
+	import { createPgflowState } from '$lib/stores/pgflow-state.svelte';
+	import type ArticleFlow from '../../supabase/functions/article_flow_worker/article_flow';
 
-	let status = $state<string>('idle');
-	let output = $state<string>('');
-	let events = $state<string[]>([]);
+	// Create a typed store for the article flow with all configuration
+	const pgflowState = createPgflowState<typeof ArticleFlow>(
+		pgflow,
+		'article_flow',
+		['fetch_article', 'summarize', 'extract_keywords', 'publish']
+	);
 
 	async function startTestFlow() {
-		status = 'starting...';
-		events = [];
-		output = '';
-
 		try {
-			const run = await pgflow.startFlow('test_flow', { message: 'World' });
-
-			run.on('*', (event) => {
-				events = [...events, JSON.stringify(event, null, 2)];
-				status = event.status || status;
-
-				if (event.status === 'completed' && event.output) {
-					output = JSON.stringify(event.output, null, 2);
-				}
+			await pgflowState.startFlow({
+				url: 'https://enaix.github.io/2025/10/30/developer-verification.html'
 			});
 		} catch (error) {
-			status = 'error';
-			output = error instanceof Error ? error.message : String(error);
+			console.error('Failed to start flow:', error);
 		}
 	}
 </script>
@@ -37,21 +30,31 @@
 
 	<div class="status">
 		<h2>Status</h2>
-		<p>{status}</p>
+		<p class="status-badge {pgflowState.status}">{pgflowState.status}</p>
+		{#if pgflowState.activeStep}
+			<p class="active-step">Active Step: {pgflowState.activeStep}</p>
+		{/if}
+		{#if pgflowState.error}
+			<p class="error-message">Error: {pgflowState.error}</p>
+		{/if}
 	</div>
 
-	{#if output}
+	{#if pgflowState.output}
 		<div class="output">
 			<h2>Output</h2>
-			<pre>{output}</pre>
+			<pre>{JSON.stringify(pgflowState.output, null, 2)}</pre>
 		</div>
 	{/if}
 
-	{#if events.length > 0}
+	{#if pgflowState.events.length > 0}
 		<div class="events">
-			<h2>Events</h2>
-			{#each events as event}
-				<pre>{event}</pre>
+			<h2>Events ({pgflowState.events.length})</h2>
+			{#each pgflowState.events as event}
+				<div class="event-item">
+					<span class="event-type">{event.event_type}</span>
+					<span class="event-time">{event.timestamp.toLocaleTimeString()}</span>
+					<pre>{JSON.stringify(event.data, null, 2)}</pre>
+				</div>
 			{/each}
 		</div>
 	{/if}
@@ -103,5 +106,77 @@
 		border-radius: 4px;
 		overflow-x: auto;
 		font-size: 0.9rem;
+	}
+
+	.status-badge {
+		display: inline-block;
+		padding: 0.25rem 0.75rem;
+		background: #e3f2fd;
+		border-radius: 4px;
+		font-weight: 500;
+		text-transform: uppercase;
+		font-size: 0.85rem;
+		transition: background-color 0.3s;
+	}
+
+	.status-badge.completed {
+		background: #c8e6c9;
+		color: #2e7d32;
+	}
+
+	.status-badge.failed,
+	.status-badge.error {
+		background: #ffcdd2;
+		color: #c62828;
+	}
+
+	.status-badge.starting,
+	.status-badge.started,
+	.status-badge.in_progress {
+		background: #fff9c4;
+		color: #f57f17;
+	}
+
+	.active-step {
+		color: #666;
+		font-style: italic;
+		margin-top: 0.5rem;
+	}
+
+	.error-message {
+		color: #c62828;
+		background: #ffebee;
+		padding: 0.5rem;
+		border-radius: 4px;
+		margin-top: 0.5rem;
+		border-left: 3px solid #c62828;
+	}
+
+	.event-item {
+		margin-bottom: 1rem;
+		padding: 0.5rem;
+		border-left: 3px solid #2196f3;
+		background: #fafafa;
+	}
+
+	.event-type {
+		display: inline-block;
+		padding: 0.125rem 0.5rem;
+		background: #2196f3;
+		color: white;
+		border-radius: 3px;
+		font-size: 0.75rem;
+		font-weight: 500;
+		margin-right: 0.5rem;
+	}
+
+	.event-time {
+		color: #666;
+		font-size: 0.85rem;
+	}
+
+	.event-item pre {
+		margin-top: 0.5rem;
+		margin-bottom: 0;
 	}
 </style>
