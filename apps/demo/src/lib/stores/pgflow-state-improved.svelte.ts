@@ -5,14 +5,15 @@ import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
  * Improved pgflow state management for Svelte 5
  *
  * Key improvements over original:
- * - Auto-discovers steps from FlowRun (no manual list)
+ * - Accepts step slugs for event subscription
  * - Wraps FlowRun instances instead of client
  * - Cleaner separation of concerns
  * - Follows documented pgflow patterns
  */
 export function createFlowState<TFlow extends AnyFlow>(
 	client: PgflowClient,
-	flowSlug: string
+	flowSlug: string,
+	stepSlugs: string[] = []
 ) {
 	// ✅ Reactive state
 	let run = $state<FlowRun<TFlow> | null>(null);
@@ -21,6 +22,7 @@ export function createFlowState<TFlow extends AnyFlow>(
 	let error = $state<string | null>(null);
 	let activeStep = $state<string | null>(null);
 	let events = $state<Array<{ event_type: string; timestamp: Date; data: any }>>([]);
+	let stepStatuses = $state<Record<string, string>>({});
 
 	// ✅ Non-reactive internals (function-scoped, effectively private)
 	const _client = $state.raw(client);
@@ -59,9 +61,6 @@ export function createFlowState<TFlow extends AnyFlow>(
 		output = flowRun.output;
 		error = flowRun.error_message;
 
-		// ✅ Auto-discover steps from run state
-		const stepSlugs = flowRun.stepStates?.map((s) => s.step_slug) || [];
-
 		// Set up run-level events
 		const unsubRun = flowRun.on('*', (event) => {
 			events = [
@@ -86,10 +85,12 @@ export function createFlowState<TFlow extends AnyFlow>(
 			_unsubscribers.push(unsubRun);
 		}
 
-		// Set up step-level events (auto-discovered)
+		// Set up step-level events
+		console.log('Setting up step event listeners for:', stepSlugs);
 		stepSlugs.forEach((stepSlug) => {
 			const step = flowRun.step(stepSlug);
 			const unsubStep = step.on('*', (event) => {
+				console.log(`Step event received for ${stepSlug}:`, event);
 				events = [
 					...events,
 					{
@@ -99,9 +100,14 @@ export function createFlowState<TFlow extends AnyFlow>(
 					}
 				];
 
+				// Track step status
+				stepStatuses = { ...stepStatuses, [stepSlug]: event.status };
+
 				if (event.status === 'in_progress' || event.status === 'started') {
+					console.log(`Setting activeStep to: ${stepSlug}`);
 					activeStep = stepSlug;
 				} else if (event.status === 'completed' && activeStep === stepSlug) {
+					console.log(`Clearing activeStep (was: ${stepSlug})`);
 					activeStep = null;
 				}
 			});
@@ -122,6 +128,7 @@ export function createFlowState<TFlow extends AnyFlow>(
 		error = null;
 		activeStep = null;
 		events = [];
+		stepStatuses = {};
 	}
 
 	/**
@@ -152,6 +159,9 @@ export function createFlowState<TFlow extends AnyFlow>(
 		get events() {
 			return events;
 		},
+		get stepStatuses() {
+			return stepStatuses;
+		},
 
 		// Methods
 		startFlow,
@@ -169,8 +179,12 @@ export function createFlowState<TFlow extends AnyFlow>(
  *   import { createFlowState } from '$lib/stores/pgflow-state-improved.svelte';
  *   import type ArticleFlow from './article_flow';
  *
- *   // Create state (no step list needed!)
- *   const flowState = createFlowState<typeof ArticleFlow>(pgflow, 'article_flow');
+ *   // Create state with step slugs for event subscription
+ *   const flowState = createFlowState<typeof ArticleFlow>(
+ *     pgflow,
+ *     'article_flow',
+ *     ['fetch_article', 'summarize', 'extract_keywords', 'publish']
+ *   );
  *
  *   async function start() {
  *     await flowState.startFlow({ url: 'https://example.com' });

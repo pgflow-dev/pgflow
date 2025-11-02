@@ -2,17 +2,27 @@
 	import { onDestroy } from 'svelte';
 	import { pgflow } from '$lib/supabase';
 	import { createFlowState } from '$lib/stores/pgflow-state-improved.svelte';
+	import DAGVisualization from '$lib/components/DAGVisualization.svelte';
+	import DebugPanel from '$lib/components/DebugPanel.svelte';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import { Badge } from '$lib/components/ui/badge';
 	import type ArticleFlow from '../../supabase/functions/article_flow_worker/article_flow';
 
-	// TODO: If we hit 3+ levels of prop drilling, switch to Context API
-	// Reversal cost: 20 minutes (just add setContext/getContext)
-	const flowState = createFlowState<typeof ArticleFlow>(pgflow, 'article_flow');
+	const flowState = createFlowState<typeof ArticleFlow>(
+		pgflow,
+		'article_flow',
+		['fetch_article', 'summarize', 'extract_keywords', 'publish']
+	);
 
-	async function startTestFlow() {
+	let url = $state('https://enaix.github.io/2025/10/30/developer-verification.html');
+
+	async function processArticle() {
 		try {
-			await flowState.startFlow({
-				url: 'https://enaix.github.io/2025/10/30/developer-verification.html'
-			});
+			const run = await flowState.startFlow({ url });
+			console.log('Flow started:', run);
+			console.log('Step states:', run?.stepStates);
 		} catch (error) {
 			console.error('Failed to start flow:', error);
 		}
@@ -20,164 +30,48 @@
 
 	// Automatic cleanup on unmount
 	onDestroy(() => flowState.dispose());
+
+	const isRunning = $derived(
+		flowState.status === 'starting' ||
+			flowState.status === 'started' ||
+			flowState.status === 'in_progress'
+	);
 </script>
 
-<div class="container">
-	<h1>pgflow Demo - Phase 1 Vertical Slice</h1>
-
-	<div class="controls">
-		<button onclick={startTestFlow}>Start Test Flow</button>
-	</div>
-
-	<div class="status">
-		<h2>Status</h2>
-		<p class="status-badge {flowState.status}">{flowState.status}</p>
-		{#if flowState.activeStep}
-			<p class="active-step">Active Step: {flowState.activeStep}</p>
-		{/if}
-		{#if flowState.error}
-			<p class="error-message">Error: {flowState.error}</p>
-		{/if}
-	</div>
-
-	{#if flowState.output}
-		<div class="output">
-			<h2>Output</h2>
-			<pre>{JSON.stringify(flowState.output, null, 2)}</pre>
+<div class="container mx-auto p-4 min-h-screen">
+	<header class="mb-4">
+		<h1 class="text-3xl font-bold mb-3">pgflow Demo - Phase 3: DAG + Debug</h1>
+		<div class="flex gap-3 items-center mb-4">
+			<Input
+				type="url"
+				bind:value={url}
+				placeholder="Enter article URL"
+				class="flex-1"
+			/>
+			<Button onclick={processArticle} disabled={isRunning}>
+				Process Article
+			</Button>
 		</div>
-	{/if}
+	</header>
 
-	{#if flowState.events.length > 0}
-		<div class="events">
-			<h2>Events ({flowState.events.length})</h2>
-			{#each flowState.events as event}
-				<div class="event-item">
-					<span class="event-type">{event.event_type}</span>
-					<span class="event-time">{event.timestamp.toLocaleTimeString()}</span>
-					<pre>{JSON.stringify(event.data, null, 2)}</pre>
-				</div>
-			{/each}
+	<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+		<div class="flex flex-col">
+			<Card>
+				<CardHeader class="pb-3">
+					<CardTitle class="text-sm">DAG Visualization</CardTitle>
+				</CardHeader>
+				<CardContent class="pt-0">
+					<DAGVisualization {flowState} />
+				</CardContent>
+			</Card>
 		</div>
-	{/if}
+
+		<div class="flex flex-col max-h-[calc(100vh-200px)]">
+			<Card class="h-full flex flex-col">
+				<CardContent class="flex-1 overflow-hidden py-4">
+					<DebugPanel {flowState} />
+				</CardContent>
+			</Card>
+		</div>
+	</div>
 </div>
-
-<style>
-	.container {
-		max-width: 800px;
-		margin: 2rem auto;
-		padding: 1rem;
-	}
-
-	h1 {
-		margin-bottom: 2rem;
-	}
-
-	.controls {
-		margin-bottom: 2rem;
-	}
-
-	button {
-		padding: 0.5rem 1rem;
-		font-size: 1rem;
-		cursor: pointer;
-		background: #4caf50;
-		color: white;
-		border: none;
-		border-radius: 4px;
-	}
-
-	button:hover {
-		background: #45a049;
-	}
-
-	.status,
-	.output,
-	.events {
-		margin-bottom: 2rem;
-	}
-
-	h2 {
-		font-size: 1.2rem;
-		margin-bottom: 0.5rem;
-	}
-
-	pre {
-		background: #f4f4f4;
-		padding: 1rem;
-		border-radius: 4px;
-		overflow-x: auto;
-		font-size: 0.9rem;
-	}
-
-	.status-badge {
-		display: inline-block;
-		padding: 0.25rem 0.75rem;
-		background: #e3f2fd;
-		border-radius: 4px;
-		font-weight: 500;
-		text-transform: uppercase;
-		font-size: 0.85rem;
-		transition: background-color 0.3s;
-	}
-
-	.status-badge.completed {
-		background: #c8e6c9;
-		color: #2e7d32;
-	}
-
-	.status-badge.failed,
-	.status-badge.error {
-		background: #ffcdd2;
-		color: #c62828;
-	}
-
-	.status-badge.starting,
-	.status-badge.started,
-	.status-badge.in_progress {
-		background: #fff9c4;
-		color: #f57f17;
-	}
-
-	.active-step {
-		color: #666;
-		font-style: italic;
-		margin-top: 0.5rem;
-	}
-
-	.error-message {
-		color: #c62828;
-		background: #ffebee;
-		padding: 0.5rem;
-		border-radius: 4px;
-		margin-top: 0.5rem;
-		border-left: 3px solid #c62828;
-	}
-
-	.event-item {
-		margin-bottom: 1rem;
-		padding: 0.5rem;
-		border-left: 3px solid #2196f3;
-		background: #fafafa;
-	}
-
-	.event-type {
-		display: inline-block;
-		padding: 0.125rem 0.5rem;
-		background: #2196f3;
-		color: white;
-		border-radius: 3px;
-		font-size: 0.75rem;
-		font-weight: 500;
-		margin-right: 0.5rem;
-	}
-
-	.event-time {
-		color: #666;
-		font-size: 0.85rem;
-	}
-
-	.event-item pre {
-		margin-top: 0.5rem;
-		margin-bottom: 0;
-	}
-</style>

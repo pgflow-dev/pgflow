@@ -15,6 +15,8 @@
 
 **Philosophy:** Build the observability foundation. UI can still be basic - focus on data flow and state management.
 
+**State Management:** Phase 2 already implemented `createFlowState()` which auto-discovers steps and manages all event subscriptions. Components receive `flowState` via props and access reactive state through getters.
+
 ---
 
 ## Tasks
@@ -38,8 +40,10 @@ Create `apps/demo/src/lib/components/DAGVisualization.svelte`:
 Use `@xyflow/svelte` to render 4 nodes:
 - **Layout:** fetchArticle (top) → parallel nodes (middle) → publish (bottom)
 - **Dynamic styling:** Active steps show pulsing animation
-- **State integration:** Use pgflowState store to determine node colors/states
+- **State integration:** Receive `flowState` via props to determine node colors/states
 - **Visual states:** pending (gray), running (pulsing green), completed (solid green), failed (red)
+
+**Props:** `{ flowState }` - the state object created by `createFlowState()`
 
 ---
 
@@ -51,7 +55,9 @@ Create `apps/demo/src/lib/components/DebugPanel.svelte` with 3 sections:
 2. **Step States** - Collapsible sections for each step showing status/output/errors
 3. **Event Stream** - Real-time log of all events with timestamps
 
-**Key pattern:** Use `run.on('*', handler)` to collect all events for the stream display
+**Props:** `{ flowState }` - the state object created by `createFlowState()`
+
+**Key pattern:** The `flowState.events` array already contains all events (collected automatically by `createFlowState`)
 
 ---
 
@@ -61,11 +67,25 @@ Update `apps/demo/src/routes/+page.svelte`:
 
 - Two-column layout: DAG (left) + Debug Panel (right)
 - URL input field + "Process Article" button
-- Start flow and update pgflowState on events
-- Subscribe to both run events and individual step events
-- Set `activeStep` when steps start executing
+- Pass `flowState` to both DAG and Debug Panel components as props
+- Flow state already created using `createFlowState<typeof ArticleFlow>(pgflow, 'article_flow')`
+- Event handling is automatic (handled inside `createFlowState`)
 
-**Note:** Remember to trigger reactivity by reassigning `pgflowState.run` after events
+**Key changes from current implementation:**
+```svelte
+<script lang="ts">
+  import DAGVisualization from '$lib/components/DAGVisualization.svelte';
+  import DebugPanel from '$lib/components/DebugPanel.svelte';
+  // ... existing flowState setup ...
+</script>
+
+<div class="two-column-layout">
+  <DAGVisualization {flowState} />
+  <DebugPanel {flowState} />
+</div>
+```
+
+**Note:** `createFlowState` already handles all event subscriptions and reactivity via getters
 
 ---
 
@@ -120,9 +140,10 @@ Open http://localhost:5173/, click "Process Article", verify:
 ## Troubleshooting
 
 - **DAG doesn't render:** Check Svelte Flow installed, browser console, CSS variables
-- **Steps don't update:** Check reactivity (`pgflowState.run = run` after events), event subscriptions
+- **Steps don't update:** Check that components access `flowState.status`, `flowState.activeStep` etc. (reactivity works via getters)
 - **No pulsing animation:** Check CSS keyframes, `--glow-color` variable
 - **Retry doesn't happen:** Check `maxAttempts: 3`, `attemptNumber === 1` check, Edge Function logs
+- **Props not reactive:** Ensure components use `flowState.property` (not destructuring) to maintain reactivity
 
 ---
 
