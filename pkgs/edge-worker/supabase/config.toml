@@ -18,7 +18,7 @@ max_client_conn = 250
 
 [db.seed]
 enabled = true
-sql_paths = ['./seed.sql']
+sql_paths = []
 
 [edge_runtime]
 enabled = true

@@ -11,7 +11,11 @@ const MESSAGES_TO_SEND = 20000;
 const WORKER_NAME = 'max_concurrency';
 
 Deno.test(
-  'worker can handle tens of thousands of jobs queued at once',
+  {
+    name: 'worker can handle tens of thousands of jobs queued at once',
+    sanitizeOps: false, // Progress bar uses async writes that don't complete before test ends
+    sanitizeResources: false,
+  },
   async () => {
     await withSql(async (sql) => {
       await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
@@ -26,8 +30,9 @@ Deno.test(
           try {
             const [{ worker_count }] = await tempSql`
             SELECT COUNT(*)::integer AS worker_count
-            FROM pgflow.active_workers
+            FROM pgflow.workers
             WHERE function_name = ${WORKER_NAME}
+              AND last_heartbeat_at >= NOW() - INTERVAL '6 seconds'
           `;
 
             log('worker_count', worker_count);

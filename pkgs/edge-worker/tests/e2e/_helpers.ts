@@ -2,6 +2,7 @@ import { createSql } from '../sql.ts';
 import { delay } from '@std/async';
 import ProgressBar from 'jsr:@deno-library/progress';
 import { dim } from 'https://deno.land/std@0.224.0/fmt/colors.ts';
+import { e2eConfig } from '../config.ts';
 
 interface WaitForOptions {
   pollIntervalMs?: number;
@@ -102,19 +103,23 @@ export async function waitForSeqToIncrementBy(
   const startVal = await seqLastValue(seqName);
   let lastVal = startVal;
 
-  return await waitFor(
-    async () => {
-      lastVal = await seqLastValue(seqName);
-      progress.render(lastVal);
-      const incrementedBy = lastVal - startVal;
+  try {
+    return await waitFor(
+      async () => {
+        lastVal = await seqLastValue(seqName);
+        progress.render(lastVal);
+        const incrementedBy = lastVal - startVal;
 
-      return incrementedBy >= value ? lastVal : false;
-    },
-    {
-      ...options,
-      description: `sequence ${seqName} to reach value ${value}`,
-    }
-  );
+        return incrementedBy >= value ? lastVal : false;
+      },
+      {
+        ...options,
+        description: `sequence ${seqName} to reach value ${value}`,
+      }
+    );
+  } finally {
+    progress.end();
+  }
 }
 
 export async function waitForActiveWorker() {
@@ -122,9 +127,27 @@ export async function waitForActiveWorker() {
     async () => {
       const sql = createSql();
       try {
-        const [{ has_active: hasActiveWorker }] =
-          await sql`SELECT count(*) > 0 AS has_active FROM pgflow.active_workers`;
-        log('waiting for active worker ', hasActiveWorker);
+        const workers = await sql`
+          SELECT worker_id, function_name, last_heartbeat_at, started_at
+          FROM pgflow.workers
+          ORDER BY started_at DESC
+          LIMIT 5
+        `;
+        log(
+          'workers in DB:',
+          workers.length,
+          workers.map((w) => ({
+            fn: w.function_name,
+            hb: w.last_heartbeat_at,
+            started: w.started_at,
+          }))
+        );
+
+        const [{ has_active: hasActiveWorker }] = await sql`
+            SELECT count(*) > 0 AS has_active
+            FROM pgflow.workers
+            WHERE last_heartbeat_at >= NOW() - INTERVAL '6 seconds'
+          `;
         return hasActiveWorker;
       } finally {
         await sql.end();
@@ -147,12 +170,75 @@ export async function fetchWorkers(functionName: string) {
 }
 
 export async function startWorker(workerName: string) {
-  const sql = createSql();
-  try {
-    await sql`SELECT pgflow.spawn(${workerName}::text)`;
-  } finally {
-    await sql.end();
+  log(`Starting worker: ${workerName}`);
+
+  // Trigger the edge function via HTTP request
+  const apiUrl = e2eConfig.apiUrl;
+  const url = `${apiUrl}/functions/v1/${workerName}`;
+
+  log(`Fetching ${url}`);
+
+  // Retry logic for server startup
+  let lastError: Error | null = null;
+  const maxRetries = 10;
+  const retryDelayMs = 1000;
+
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(url);
+
+      const body = await response.text();
+      log(
+        `Response: ${response.status} ${response.statusText}`,
+        body.substring(0, 200)
+      );
+
+      if (response.ok) {
+        await waitForActiveWorker();
+        log('worker spawned!');
+        return;
+      }
+
+      lastError = new Error(
+        `Failed to start worker ${workerName}: ${response.status} ${response.statusText}\n${body}`
+      );
+
+      // Retry on 404 (function not ready yet) or 502/503 (server starting)
+      if (
+        response.status === 404 ||
+        response.status === 502 ||
+        response.status === 503
+      ) {
+        log(
+          `Retry ${i + 1}/${maxRetries}: ${response.status} ${
+            response.statusText
+          }`
+        );
+        await delay(retryDelayMs);
+        continue;
+      }
+
+      // Other errors - fail immediately
+      throw lastError;
+    } catch (err) {
+      lastError = err as Error;
+      if (
+        err instanceof TypeError &&
+        err.message.includes('error sending request')
+      ) {
+        // Connection error - server not ready
+        log(`Retry ${i + 1}/${maxRetries}: Connection error`);
+        await delay(retryDelayMs);
+        continue;
+      }
+      throw err;
+    }
   }
-  await waitForActiveWorker();
-  log('worker spawned!');
+
+  throw (
+    lastError ||
+    new Error(
+      `Failed to start worker ${workerName} after ${maxRetries} retries`
+    )
+  );
 }

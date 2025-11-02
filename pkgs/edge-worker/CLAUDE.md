@@ -53,13 +53,34 @@ The Edge Worker:
 
 ## Testing
 
-The package has different test types:
+The package has three test types with different infrastructure requirements:
 
-- **Unit tests** (`tests/unit/`) - For testing isolated components
-- **Integration tests** (`tests/integration/`) - For testing integration with PostgreSQL
-- **E2E tests** (`tests/e2e/`) - For testing end-to-end workflows (not automated for now)
+- **Unit tests** (`tests/unit/`) - Testing isolated components
+  - No external dependencies required
 
-Tests use Deno's built-in testing framework. Database tests require Docker to run a PostgreSQL instance.
+- **Integration tests** (`tests/integration/`) - Testing integration with PostgreSQL
+  - Requires: Supabase database (via `db:ensure`)
+  - Runs in CI
+
+- **E2E tests** (`tests/e2e/`) - Testing end-to-end workflows with Edge Functions
+  - Requires: Supabase database + Edge Functions server (via `serve:functions:e2e`)
+  - Uses `continuous: true` in Nx to keep server running during tests
+  - Tests worker scaling behavior, CPU limits, and concurrency (20k+ messages)
+  - Takes 2+ minutes to complete
+  - Runs in CI as separate parallel job (only when edge-worker is affected)
+  - Run locally with: `pnpm nx test:e2e edge-worker`
+
+Tests use Deno's built-in testing framework. Database tests require Docker to run a PostgreSQL instance via Supabase CLI.
+
+### E2E Test Architecture
+
+E2E tests verify real Edge Function execution:
+1. `sync-e2e-deps` copies built packages (core, dsl, edge-worker) to `supabase/functions/_vendor`
+2. `serve:functions:e2e` starts Supabase Functions server in background (continuous task)
+3. Tests make HTTP requests to spawn workers and verify behavior
+4. Tests in `tests/e2e/`:
+   - `restarts.test.ts` - Worker auto-restart when CPU clock limit hits
+   - `performance.test.ts` - Processing thousands of queued messages concurrently
 
 ## Usage Examples
 
