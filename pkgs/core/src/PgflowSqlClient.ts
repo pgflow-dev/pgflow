@@ -26,7 +26,7 @@ export class PgflowSqlClient<TFlow extends AnyFlow>
   ): Promise<MessageRecord[]> {
     return await this.sql<MessageRecord[]>`
       SELECT *
-      FROM pgflow.read_with_poll(
+      FROM pgmq.read_with_poll(
         queue_name => ${queueName},
         vt => ${visibilityTimeout},
         qty => ${batchSize},

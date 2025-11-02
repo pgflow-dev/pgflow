@@ -34,6 +34,7 @@ const mockMessage: PgmqMessageRecord<{ test: string }> = {
   enqueued_at: '2024-01-01T00:00:00Z',
   vt: '2024-01-01T00:01:00Z',
   message: { test: 'data' },
+  headers: null,
 };
 
 // Mock pgmq message record with step input structure
@@ -43,6 +44,7 @@ const mockStepMessage: PgmqMessageRecord<{ run: { test: string } }> = {
   enqueued_at: '2024-01-01T00:00:00Z',
   vt: '2024-01-01T00:01:00Z',
   message: { run: { test: 'data' } },
+  headers: null,
 };
 
 // Mock step task (using generic typing)

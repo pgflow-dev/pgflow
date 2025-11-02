@@ -1,9 +1,6 @@
 begin;
 select plan(3);
 
--- Ensure partition exists for realtime.messages
-select pgflow_tests.create_realtime_partition();
-
 -- Reset database and create flow: A -> B -> C (all single steps)
 select pgflow_tests.reset_db();
 select pgflow.create_flow('single_cascade');

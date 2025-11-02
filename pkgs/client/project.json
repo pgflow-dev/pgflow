@@ -62,6 +62,7 @@
       "executor": "nx:run-commands",
       "local": true,
       "cache": false,
+      "dependsOn": ["supabase:prepare"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
@@ -147,7 +148,6 @@
         "commands": [
           "../../scripts/supabase-start-locked.sh .",
           "psql 'postgresql://postgres:postgres@localhost:50522/postgres' -c 'SELECT pgflow_tests.reset_db()'",
-          "psql 'postgresql://postgres:postgres@localhost:50522/postgres' -c 'SELECT pgflow_tests.create_realtime_partition()'",
           "vitest run __tests__/integration/"
         ],
         "parallel": false
@@ -173,7 +173,6 @@
         "commands": [
           "../../scripts/supabase-start-locked.sh .",
           "psql 'postgresql://postgres:postgres@localhost:50522/postgres' -c 'SELECT pgflow_tests.reset_db()'",
-          "psql 'postgresql://postgres:postgres@localhost:50522/postgres' -c 'SELECT pgflow_tests.create_realtime_partition()'",
           "vitest run __tests__/"
         ],
         "parallel": false
@@ -194,7 +193,6 @@
         "commands": [
           "../../scripts/supabase-start-locked.sh .",
           "psql 'postgresql://postgres:postgres@localhost:50522/postgres' -c 'SELECT pgflow_tests.reset_db()'",
-          "psql 'postgresql://postgres:postgres@localhost:50522/postgres' -c 'SELECT pgflow_tests.create_realtime_partition()'",
           "node scripts/performance-benchmark.mjs"
         ],
         "parallel": false
