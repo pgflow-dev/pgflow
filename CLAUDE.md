@@ -75,7 +75,6 @@ See @.claude/core/finding_answers.md for complete decision tree and examples.
 @.claude/core/packages.md
 @.claude/core/finding_answers.md
 @.claude/core/code_style.md
-@.claude/core/sql_style.md
 @.claude/core/testing_guidelines.md
 @.claude/core/build_test_commands.md
 @.claude/core/naming_convention.md

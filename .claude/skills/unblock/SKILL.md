@@ -1,7 +1,6 @@
 ---
 name: unblock
 description: Use when user says "unblock", "am I overthinking", "help me ship", "ship check". Diagnostic tool using Yes/No questions to identify if caution is justified or paranoia. Provides actionable prescriptions.
-allowed-tools: AskUserQuestion
 ---
 
 # unblock
