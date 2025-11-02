@@ -1,5 +1,5 @@
-# Use official PostgreSQL 15
-FROM postgres:15
+# Use official PostgreSQL 17
+FROM postgres:17
 
 # Set environment variables for postgres
 ENV POSTGRES_PASSWORD=postgres
@@ -10,20 +10,20 @@ RUN apt-get update && \
     apt-get install -y \
     build-essential \
     git \
-    postgresql-server-dev-15
+    postgresql-server-dev-17
 
 # Clone and install pgmq
-RUN mkdir -p /usr/share/postgresql/15/extension && \
+RUN mkdir -p /usr/share/postgresql/17/extension && \
     git clone https://github.com/tembo-io/pgmq.git /tmp/pgmq && \
     cd /tmp/pgmq/pgmq-extension && \
-    git checkout v1.4.4 && \
-    # Copy extension files manually to PostgreSQL 15 extensions directory
+    git checkout v1.5.1 && \
+    # Copy extension files manually to PostgreSQL 17 extensions directory
     make && \
-    cp pgmq.control /usr/share/postgresql/15/extension/ && \
-    cp sql/pgmq--*.sql /usr/share/postgresql/15/extension/
+    cp pgmq.control /usr/share/postgresql/17/extension/ && \
+    cp sql/pgmq--*.sql /usr/share/postgresql/17/extension/
 
 # Clean up
-RUN apt-get remove -y build-essential git postgresql-server-dev-15 && \
+RUN apt-get remove -y build-essential git postgresql-server-dev-17 && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/* /tmp/pgmq
 

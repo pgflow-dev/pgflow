@@ -1,8 +1,8 @@
 services:
   db:
-    image: jumski/postgres-15-pgmq:latest
-    # image: postgres:15.8-alpine
-    # image: supabase/postgres:15.8.1.020
+    image: jumski/postgres-17-pgmq:latest
+    # image: postgres:17-alpine
+    # image: supabase/postgres:17.x
     ports:
       - '5432:5432'
     volumes:

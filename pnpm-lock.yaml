@@ -299,8 +299,8 @@ importers:
         specifier: ^22.14.1
         version: 22.19.0
       supabase:
-        specifier: 2.21.1
-        version: 2.21.1
+        specifier: 2.54.11
+        version: 2.54.11
 
   pkgs/dsl:
     devDependencies:
