@@ -1,2 +1,2 @@
 #!/bin/bash
-docker push jumski/postgres-15-pgmq:latest
+docker push jumski/postgres-17-pgmq:latest

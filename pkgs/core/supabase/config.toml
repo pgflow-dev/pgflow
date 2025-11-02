@@ -3,7 +3,7 @@ project_id = "core"
 [db]
 port = 50422
 shadow_port = 50420
-major_version = 15
+major_version = 17
 
 # disable unused features
 [db.seed]

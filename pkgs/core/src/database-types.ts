@@ -348,6 +348,7 @@ export type Database = {
     Functions: {
       add_step: {
         Args: {
+          step_type?: string
           flow_slug: string
           step_slug: string
           deps_slugs?: string[]
@@ -355,7 +356,6 @@ export type Database = {
           base_delay?: number
           timeout?: number
           start_delay?: number
-          step_type?: string
         }
         Returns: {
           created_at: string
@@ -371,7 +371,7 @@ export type Database = {
         }
       }
       calculate_retry_delay: {
-        Args: { base_delay: number; attempts_count: number }
+        Args: { attempts_count: number; base_delay: number }
         Returns: number
       }
       cascade_complete_taskless_steps: {
@@ -404,10 +404,10 @@ export type Database = {
       }
       create_flow: {
         Args: {
+          timeout?: number
           flow_slug: string
           max_attempts?: number
           base_delay?: number
-          timeout?: number
         }
         Returns: {
           created_at: string
@@ -455,31 +455,31 @@ export type Database = {
       }
       poll_for_tasks: {
         Args: {
-          queue_name: string
           vt: number
-          qty: number
-          max_poll_seconds?: number
           poll_interval_ms?: number
+          max_poll_seconds?: number
+          qty: number
+          queue_name: string
         }
         Returns: Database["pgflow"]["CompositeTypes"]["step_task_record"][]
       }
       read_with_poll: {
         Args: {
+          qty: number
           queue_name: string
           vt: number
-          qty: number
+          conditional?: Json
           max_poll_seconds?: number
           poll_interval_ms?: number
-          conditional?: Json
         }
         Returns: Database["pgmq"]["CompositeTypes"]["message_record"][]
       }
       set_vt_batch: {
-        Args: { queue_name: string; msg_ids: number[]; vt_offsets: number[] }
+        Args: { vt_offsets: number[]; queue_name: string; msg_ids: number[] }
         Returns: Database["pgmq"]["CompositeTypes"]["message_record"][]
       }
       start_flow: {
-        Args: { flow_slug: string; input: Json; run_id?: string }
+        Args: { flow_slug: string; run_id?: string; input: Json }
         Returns: {
           completed_at: string | null
           failed_at: string | null
@@ -493,7 +493,7 @@ export type Database = {
         }[]
       }
       start_flow_with_states: {
-        Args: { flow_slug: string; input: Json; run_id?: string }
+        Args: { flow_slug: string; run_id?: string; input: Json }
         Returns: Json
       }
       start_ready_steps: {
@@ -501,7 +501,7 @@ export type Database = {
         Returns: undefined
       }
       start_tasks: {
-        Args: { flow_slug: string; msg_ids: number[]; worker_id: string }
+        Args: { worker_id: string; flow_slug: string; msg_ids: number[] }
         Returns: Database["pgflow"]["CompositeTypes"]["step_task_record"][]
       }
     }
@@ -569,16 +569,16 @@ export type Database = {
       }
       archive: {
         Args:
-          | { queue_name: string; msg_id: number }
-          | { queue_name: string; msg_ids: number[] }
+          | { msg_id: number; queue_name: string }
+          | { msg_ids: number[]; queue_name: string }
         Returns: boolean
       }
       convert_archive_partitioned: {
         Args: {
           table_name: string
-          partition_interval?: string
           retention_interval?: string
           leading_partition?: number
+          partition_interval?: string
         }
         Returns: undefined
       }
@@ -592,9 +592,9 @@ export type Database = {
       }
       create_partitioned: {
         Args: {
+          retention_interval?: string
           queue_name: string
           partition_interval?: string
-          retention_interval?: string
         }
         Returns: undefined
       }
@@ -604,7 +604,7 @@ export type Database = {
       }
       delete: {
         Args:
-          | { queue_name: string; msg_id: number }
+          | { msg_id: number; queue_name: string }
           | { queue_name: string; msg_ids: number[] }
         Returns: boolean
       }
@@ -617,7 +617,7 @@ export type Database = {
         Returns: boolean
       }
       format_table_name: {
-        Args: { queue_name: string; prefix: string }
+        Args: { prefix: string; queue_name: string }
         Returns: string
       }
       list_queues: {
@@ -641,29 +641,29 @@ export type Database = {
         Returns: number
       }
       read: {
-        Args: { queue_name: string; vt: number; qty: number }
+        Args: { queue_name: string; qty: number; vt: number }
         Returns: Database["pgmq"]["CompositeTypes"]["message_record"][]
       }
       read_with_poll: {
         Args: {
-          queue_name: string
-          vt: number
           qty: number
           max_poll_seconds?: number
           poll_interval_ms?: number
+          queue_name: string
+          vt: number
         }
         Returns: Database["pgmq"]["CompositeTypes"]["message_record"][]
       }
       send: {
-        Args: { queue_name: string; msg: Json; delay?: number }
+        Args: { delay?: number; msg: Json; queue_name: string }
         Returns: number[]
       }
       send_batch: {
-        Args: { queue_name: string; msgs: Json[]; delay?: number }
+        Args: { delay?: number; queue_name: string; msgs: Json[] }
         Returns: number[]
       }
       set_vt: {
-        Args: { queue_name: string; msg_id: number; vt: number }
+        Args: { queue_name: string; vt: number; msg_id: number }
         Returns: Database["pgmq"]["CompositeTypes"]["message_record"][]
       }
       validate_queue_name: {
