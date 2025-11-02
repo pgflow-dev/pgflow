@@ -1,5 +1,5 @@
 begin;
-select plan(6);
+select plan(7);
 select pgflow_tests.reset_db();
 
 -- Create a test queue
@@ -68,6 +68,16 @@ select is(
   (select count(*)::int from pgflow.set_vt_batch('return_queue', (select ids from msgs), ARRAY[30, 60]) where message ? 'msg'),
   2,
   'Message content should be preserved in returned records'
+);
+
+-- TEST: Returned records should have headers field as NULL (messages sent without headers)
+with msgs as (
+  select array_agg(msg_id order by msg_id) as ids from pgmq.q_return_queue
+)
+select is(
+  (select count(*)::int from pgflow.set_vt_batch('return_queue', (select ids from msgs), ARRAY[30, 60]) where headers is null),
+  2,
+  'Messages sent without headers should return NULL in headers field'
 );
 
 select finish();

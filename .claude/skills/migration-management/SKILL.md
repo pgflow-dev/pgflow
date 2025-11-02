@@ -65,9 +65,18 @@ cd pkgs/core
 ./scripts/atlas-migrate-diff your_feature_name  # NO pgflow_ prefix (auto-added)
 # Creates: supabase/migrations/TIMESTAMP_pgflow_your_feature_name.sql
 
+# ⚠️ CHECK: If changing function signatures, review the migration for CREATE OR REPLACE
+# See Troubleshooting section if you get "cannot change return type" errors
+
 pnpm nx verify-migrations core  # Validates migration + checks schemas synced
 pnpm nx gen-types core          # Regenerate TypeScript types
 pnpm nx test:pgtap core         # Verify everything works
+```
+
+**If you manually edit a migration** (e.g., to add DROP FUNCTION):
+```bash
+./scripts/atlas-migrate-hash --yes  # Regenerate checksums after manual edits
+pnpm nx verify-migrations core      # Then verify it works
 ```
 
 ### Naming Conventions
@@ -179,6 +188,33 @@ git commit -m "feat: consolidate step validation and error handling"
 - [ ] If stacked PR: Used `temp_` OR consolidated before main merge
 
 ## Troubleshooting
+
+### ⚠️ CRITICAL: Atlas Limitation with Function Signature Changes
+
+**Atlas DOES NOT detect function return type or parameter type changes!**
+
+If Atlas generates `CREATE OR REPLACE FUNCTION` and the function signature changed, the migration will fail with:
+```
+ERROR: cannot change return type of existing function
+```
+
+**Solution:** Manually edit the generated migration to add DROP first:
+```sql
+-- WRONG (Atlas generates this):
+CREATE OR REPLACE FUNCTION pgflow.my_func() RETURNS NEW_TYPE ...
+
+-- CORRECT (manually fix to):
+DROP FUNCTION IF EXISTS pgflow.my_func(param_types_here);
+CREATE FUNCTION pgflow.my_func() RETURNS NEW_TYPE ...
+```
+
+**When this happens:**
+- Changing `RETURNS SETOF type` to `RETURNS TABLE(...)`
+- Changing `RETURNS type1` to `RETURNS type2`
+- Changing parameter types
+- Adding/removing parameters
+
+**Always test migrations with `pnpm nx supabase:reset core` to catch this!**
 
 ### Migration name exists
 

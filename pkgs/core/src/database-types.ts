@@ -348,14 +348,14 @@ export type Database = {
     Functions: {
       add_step: {
         Args: {
-          step_type?: string
-          flow_slug: string
-          step_slug: string
-          deps_slugs?: string[]
-          max_attempts?: number
           base_delay?: number
-          timeout?: number
+          deps_slugs?: string[]
+          flow_slug: string
+          max_attempts?: number
           start_delay?: number
+          step_slug: string
+          step_type?: string
+          timeout?: number
         }
         Returns: {
           created_at: string
@@ -369,6 +369,12 @@ export type Database = {
           step_slug: string
           step_type: string
         }
+        SetofOptions: {
+          from: "*"
+          to: "steps"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       calculate_retry_delay: {
         Args: { attempts_count: number; base_delay: number }
@@ -380,10 +386,10 @@ export type Database = {
       }
       complete_task: {
         Args: {
+          output: Json
           run_id: string
           step_slug: string
           task_index: number
-          output: Json
         }
         Returns: {
           attempts_count: number
@@ -401,13 +407,19 @@ export type Database = {
           step_slug: string
           task_index: number
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "step_tasks"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       create_flow: {
         Args: {
-          timeout?: number
+          base_delay?: number
           flow_slug: string
           max_attempts?: number
-          base_delay?: number
+          timeout?: number
         }
         Returns: {
           created_at: string
@@ -416,13 +428,19 @@ export type Database = {
           opt_max_attempts: number
           opt_timeout: number
         }
+        SetofOptions: {
+          from: "*"
+          to: "flows"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       fail_task: {
         Args: {
+          error_message: string
           run_id: string
           step_slug: string
           task_index: number
-          error_message: string
         }
         Returns: {
           attempts_count: number
@@ -440,46 +458,45 @@ export type Database = {
           step_slug: string
           task_index: number
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "step_tasks"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
-      get_run_with_states: {
-        Args: { run_id: string }
-        Returns: Json
-      }
-      is_valid_slug: {
-        Args: { slug: string }
-        Returns: boolean
-      }
-      maybe_complete_run: {
-        Args: { run_id: string }
-        Returns: undefined
-      }
+      get_run_with_states: { Args: { run_id: string }; Returns: Json }
+      is_valid_slug: { Args: { slug: string }; Returns: boolean }
+      maybe_complete_run: { Args: { run_id: string }; Returns: undefined }
       poll_for_tasks: {
         Args: {
-          vt: number
-          poll_interval_ms?: number
           max_poll_seconds?: number
+          poll_interval_ms?: number
           qty: number
           queue_name: string
+          vt: number
         }
         Returns: Database["pgflow"]["CompositeTypes"]["step_task_record"][]
-      }
-      read_with_poll: {
-        Args: {
-          qty: number
-          queue_name: string
-          vt: number
-          conditional?: Json
-          max_poll_seconds?: number
-          poll_interval_ms?: number
+        SetofOptions: {
+          from: "*"
+          to: "step_task_record"
+          isOneToOne: false
+          isSetofReturn: true
         }
-        Returns: Database["pgmq"]["CompositeTypes"]["message_record"][]
       }
       set_vt_batch: {
-        Args: { vt_offsets: number[]; queue_name: string; msg_ids: number[] }
-        Returns: Database["pgmq"]["CompositeTypes"]["message_record"][]
+        Args: { msg_ids: number[]; queue_name: string; vt_offsets: number[] }
+        Returns: {
+          enqueued_at: string
+          headers: Json
+          message: Json
+          msg_id: number
+          read_ct: number
+          vt: string
+        }[]
       }
       start_flow: {
-        Args: { flow_slug: string; run_id?: string; input: Json }
+        Args: { flow_slug: string; input: Json; run_id?: string }
         Returns: {
           completed_at: string | null
           failed_at: string | null
@@ -491,18 +508,27 @@ export type Database = {
           started_at: string
           status: string
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "runs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       start_flow_with_states: {
-        Args: { flow_slug: string; run_id?: string; input: Json }
+        Args: { flow_slug: string; input: Json; run_id?: string }
         Returns: Json
       }
-      start_ready_steps: {
-        Args: { run_id: string }
-        Returns: undefined
-      }
+      start_ready_steps: { Args: { run_id: string }; Returns: undefined }
       start_tasks: {
-        Args: { worker_id: string; flow_slug: string; msg_ids: number[] }
+        Args: { flow_slug: string; msg_ids: number[]; worker_id: string }
         Returns: Database["pgflow"]["CompositeTypes"]["step_task_record"][]
+        SetofOptions: {
+          from: "*"
+          to: "step_task_record"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
     }
     Enums: {
@@ -547,129 +573,203 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      _belongs_to_pgmq: {
-        Args: { table_name: string }
-        Returns: boolean
-      }
-      _ensure_pg_partman_installed: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      _belongs_to_pgmq: { Args: { table_name: string }; Returns: boolean }
+      _ensure_pg_partman_installed: { Args: never; Returns: undefined }
+      _extension_exists: { Args: { extension_name: string }; Returns: boolean }
       _get_partition_col: {
         Args: { partition_interval: string }
         Returns: string
       }
-      _get_pg_partman_major_version: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      _get_pg_partman_schema: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      archive: {
-        Args:
-          | { msg_id: number; queue_name: string }
-          | { msg_ids: number[]; queue_name: string }
-        Returns: boolean
-      }
+      _get_pg_partman_major_version: { Args: never; Returns: number }
+      _get_pg_partman_schema: { Args: never; Returns: string }
+      archive:
+        | { Args: { msg_id: number; queue_name: string }; Returns: boolean }
+        | { Args: { msg_ids: number[]; queue_name: string }; Returns: number[] }
       convert_archive_partitioned: {
         Args: {
-          table_name: string
-          retention_interval?: string
           leading_partition?: number
           partition_interval?: string
+          retention_interval?: string
+          table_name: string
         }
         Returns: undefined
       }
-      create: {
-        Args: { queue_name: string }
-        Returns: undefined
-      }
+      create: { Args: { queue_name: string }; Returns: undefined }
       create_non_partitioned: {
         Args: { queue_name: string }
         Returns: undefined
       }
       create_partitioned: {
         Args: {
-          retention_interval?: string
-          queue_name: string
           partition_interval?: string
+          queue_name: string
+          retention_interval?: string
         }
         Returns: undefined
       }
-      create_unlogged: {
-        Args: { queue_name: string }
-        Returns: undefined
-      }
-      delete: {
-        Args:
-          | { msg_id: number; queue_name: string }
-          | { queue_name: string; msg_ids: number[] }
-        Returns: boolean
-      }
-      detach_archive: {
-        Args: { queue_name: string }
-        Returns: undefined
-      }
-      drop_queue: {
-        Args: { queue_name: string }
-        Returns: boolean
-      }
+      create_unlogged: { Args: { queue_name: string }; Returns: undefined }
+      delete:
+        | { Args: { msg_id: number; queue_name: string }; Returns: boolean }
+        | { Args: { msg_ids: number[]; queue_name: string }; Returns: number[] }
+      detach_archive: { Args: { queue_name: string }; Returns: undefined }
+      drop_queue:
+        | { Args: { queue_name: string }; Returns: boolean }
+        | {
+            Args: { partitioned: boolean; queue_name: string }
+            Returns: boolean
+          }
       format_table_name: {
         Args: { prefix: string; queue_name: string }
         Returns: string
       }
       list_queues: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: Database["pgmq"]["CompositeTypes"]["queue_record"][]
+        SetofOptions: {
+          from: "*"
+          to: "queue_record"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       metrics: {
         Args: { queue_name: string }
         Returns: Database["pgmq"]["CompositeTypes"]["metrics_result"]
+        SetofOptions: {
+          from: "*"
+          to: "metrics_result"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       metrics_all: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: Database["pgmq"]["CompositeTypes"]["metrics_result"][]
+        SetofOptions: {
+          from: "*"
+          to: "metrics_result"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       pop: {
         Args: { queue_name: string }
         Returns: Database["pgmq"]["CompositeTypes"]["message_record"][]
+        SetofOptions: {
+          from: "*"
+          to: "message_record"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
-      purge_queue: {
-        Args: { queue_name: string }
-        Returns: number
-      }
+      purge_queue: { Args: { queue_name: string }; Returns: number }
       read: {
-        Args: { queue_name: string; qty: number; vt: number }
-        Returns: Database["pgmq"]["CompositeTypes"]["message_record"][]
-      }
-      read_with_poll: {
         Args: {
+          conditional?: Json
           qty: number
-          max_poll_seconds?: number
-          poll_interval_ms?: number
           queue_name: string
           vt: number
         }
         Returns: Database["pgmq"]["CompositeTypes"]["message_record"][]
+        SetofOptions: {
+          from: "*"
+          to: "message_record"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
-      send: {
-        Args: { delay?: number; msg: Json; queue_name: string }
-        Returns: number[]
-      }
-      send_batch: {
-        Args: { delay?: number; queue_name: string; msgs: Json[] }
-        Returns: number[]
-      }
-      set_vt: {
-        Args: { queue_name: string; vt: number; msg_id: number }
+      read_with_poll: {
+        Args: {
+          conditional?: Json
+          max_poll_seconds?: number
+          poll_interval_ms?: number
+          qty: number
+          queue_name: string
+          vt: number
+        }
         Returns: Database["pgmq"]["CompositeTypes"]["message_record"][]
+        SetofOptions: {
+          from: "*"
+          to: "message_record"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
-      validate_queue_name: {
-        Args: { queue_name: string }
-        Returns: undefined
+      send:
+        | {
+            Args: {
+              delay: string
+              headers: Json
+              msg: Json
+              queue_name: string
+            }
+            Returns: number[]
+          }
+        | {
+            Args: { delay: string; msg: Json; queue_name: string }
+            Returns: number[]
+          }
+        | { Args: { msg: Json; queue_name: string }; Returns: number[] }
+        | {
+            Args: { delay: number; msg: Json; queue_name: string }
+            Returns: number[]
+          }
+        | {
+            Args: { headers: Json; msg: Json; queue_name: string }
+            Returns: number[]
+          }
+        | {
+            Args: {
+              delay: number
+              headers: Json
+              msg: Json
+              queue_name: string
+            }
+            Returns: number[]
+          }
+      send_batch:
+        | {
+            Args: {
+              delay: string
+              headers: Json[]
+              msgs: Json[]
+              queue_name: string
+            }
+            Returns: number[]
+          }
+        | {
+            Args: { delay: string; msgs: Json[]; queue_name: string }
+            Returns: number[]
+          }
+        | { Args: { msgs: Json[]; queue_name: string }; Returns: number[] }
+        | {
+            Args: { delay: number; msgs: Json[]; queue_name: string }
+            Returns: number[]
+          }
+        | {
+            Args: { headers: Json[]; msgs: Json[]; queue_name: string }
+            Returns: number[]
+          }
+        | {
+            Args: {
+              delay: number
+              headers: Json[]
+              msgs: Json[]
+              queue_name: string
+            }
+            Returns: number[]
+          }
+      set_vt: {
+        Args: { msg_id: number; queue_name: string; vt: number }
+        Returns: Database["pgmq"]["CompositeTypes"]["message_record"][]
+        SetofOptions: {
+          from: "*"
+          to: "message_record"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
+      validate_queue_name: { Args: { queue_name: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
@@ -681,6 +781,7 @@ export type Database = {
         enqueued_at: string | null
         vt: string | null
         message: Json | null
+        headers: Json | null
       }
       metrics_result: {
         queue_name: string | null
@@ -689,6 +790,7 @@ export type Database = {
         oldest_msg_age_sec: number | null
         total_messages: number | null
         scrape_time: string | null
+        queue_visible_length: number | null
       }
       queue_record: {
         queue_name: string | null
@@ -700,21 +802,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -732,14 +838,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -755,14 +863,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -778,14 +888,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -793,14 +905,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never

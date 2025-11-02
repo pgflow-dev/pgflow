@@ -1,9 +1,6 @@
 begin;
 select plan(6);
 
--- Ensure partition exists for realtime.messages
-select pgflow_tests.create_realtime_partition();
-
 -- Reset database and create flow: producer -> map1 -> map2
 select pgflow_tests.reset_db();
 select pgflow.create_flow('mixed_cascade');

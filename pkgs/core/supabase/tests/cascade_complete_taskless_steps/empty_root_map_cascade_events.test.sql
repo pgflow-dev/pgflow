@@ -1,9 +1,6 @@
 begin;
 select plan(4);
 
--- Ensure partition exists for realtime.messages
-select pgflow_tests.create_realtime_partition();
-
 -- Reset database and create flow with single root map step
 select pgflow_tests.reset_db();
 select pgflow.create_flow('empty_root_map');

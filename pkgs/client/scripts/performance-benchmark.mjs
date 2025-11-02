@@ -49,9 +49,6 @@ function getMemoryUsage() {
 }
 
 async function grantMinimalPgflowPermissions(sql) {
-  // Ensure realtime partition exists
-  try { await sql`SELECT pgflow_tests.create_realtime_partition()`; } catch { /* ignore errors */ }
-
   // Grant minimal permissions to service_role
   try { await sql`GRANT USAGE ON SCHEMA pgflow TO service_role`; } catch { /* ignore errors */ }
   try { await sql`GRANT EXECUTE ON FUNCTION pgflow.start_flow_with_states(text, jsonb, uuid) TO service_role`; } catch { /* ignore errors */ }

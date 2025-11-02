@@ -140,6 +140,7 @@ SELECT pgflow.add_step(
 #### Root Map vs Dependent Map
 
 **Root Map Steps** process the flow's input array directly:
+
 ```sql
 -- Root map: no dependencies, processes flow input
 SELECT pgflow.add_step(
@@ -156,6 +157,7 @@ SELECT pgflow.start_flow(
 ```
 
 **Dependent Map Steps** process another step's array output:
+
 ```sql
 -- Dependent map: processes the array from 'fetch_items'
 SELECT pgflow.add_step(
@@ -169,6 +171,7 @@ SELECT pgflow.add_step(
 #### Edge Cases and Special Behaviors
 
 1. **Empty Array Cascade**: When a map step receives an empty array (`[]`):
+
    - The SQL core completes it immediately without creating tasks
    - The completed map step outputs an empty array
    - Any dependent map steps also receive empty arrays and complete immediately
@@ -184,12 +187,14 @@ SELECT pgflow.add_step(
 #### Implementation Details
 
 Map steps utilize several database fields for state management:
+
 - `initial_tasks`: Number of tasks to create (NULL until array size is known)
 - `remaining_tasks`: Tracks incomplete tasks for the step
 - `task_index`: Identifies which array element each task processes
 - `step_type`: Column value 'map' triggers map behavior
 
 The aggregation process ensures:
+
 - **Order Preservation**: Task outputs maintain array element ordering
 - **NULL Handling**: NULL outputs are included in the aggregated array
 - **Atomicity**: Aggregation occurs within the same transaction as task completion
@@ -262,8 +267,9 @@ When a workflow starts:
 The Edge Worker uses a two-phase approach to retrieve and start tasks:
 
 **Phase 1 - Reserve Messages:**
+
 ```sql
-SELECT * FROM pgflow.read_with_poll(
+SELECT * FROM pgmq.read_with_poll(
   queue_name => 'analyze_website',
   vt => 60, -- visibility timeout in seconds
   qty => 5  -- maximum number of messages to fetch
@@ -271,6 +277,7 @@ SELECT * FROM pgflow.read_with_poll(
 ```
 
 **Phase 2 - Start Tasks:**
+
 ```sql
 SELECT * FROM pgflow.start_tasks(
   flow_slug => 'analyze_website',
@@ -379,6 +386,7 @@ Timeouts are enforced by setting the message visibility timeout to the step's ti
 The SQL Core is the DAG orchestration engine that handles dependency resolution, step state management, and task spawning. However, workflows are defined using the TypeScript Flow DSL, which compiles user intent into the SQL primitives that populate the definition tables (`flows`, `steps`, `deps`).
 
 See the [@pgflow/dsl package](../dsl/README.md) for complete documentation on:
+
 - Expressing workflows with type-safe method chaining
 - Step types (`.step()`, `.array()`, `.map()`)
 - Compilation to SQL migrations
@@ -441,6 +449,7 @@ Map step tasks receive a fundamentally different input structure than single ste
 ```
 
 This means:
+
 - Map handlers process individual elements in isolation
 - Map handlers cannot access the original flow input (`run`)
 - Map handlers cannot access other dependencies
@@ -456,8 +465,10 @@ When a step depends on a map step, it receives the aggregated array output:
 
 // A step depending on 'process_users' receives:
 {
-  "run": { /* original flow input */ },
-  "process_users": [{"name": "Alice"}, {"name": "Bob"}]  // Full array
+  "run": {
+    /* original flow input */
+  },
+  "process_users": [{ "name": "Alice" }, { "name": "Bob" }] // Full array
 }
 ```
 

@@ -1,5 +1,5 @@
 -- Add new schema named "pgflow"
-CREATE SCHEMA "pgflow";
+CREATE SCHEMA IF NOT EXISTS "pgflow";
 -- Add new schema named "pgmq"
 CREATE SCHEMA IF NOT EXISTS "pgmq";
 -- Create extension "pgmq"

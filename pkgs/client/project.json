@@ -62,6 +62,7 @@
       "executor": "nx:run-commands",
       "local": true,
       "cache": false,
+      "dependsOn": ["supabase:prepare"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": [

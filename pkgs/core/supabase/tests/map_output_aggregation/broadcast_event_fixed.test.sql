@@ -1,15 +1,12 @@
 begin;
 select plan(4);
 
+
 -- Test: Map step completion broadcast contains aggregated array
 -- This test verifies the broadcast fix is working correctly
 
 -- Setup
 select pgflow_tests.reset_db();
-
--- Ensure partition exists for realtime.messages
-select pgflow_tests.create_realtime_partition();
-
 select pgflow.create_flow('test_broadcast_fix', 10, 60, 3);
 select pgflow.add_step('test_broadcast_fix', 'map_step', '{}', null, null, null, null, 'map');
 select pgflow.add_step('test_broadcast_fix', 'consumer', array['map_step'], null, null, null, null, 'single');

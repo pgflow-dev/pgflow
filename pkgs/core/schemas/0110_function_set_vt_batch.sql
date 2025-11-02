@@ -15,7 +15,14 @@ create or replace function pgflow.set_vt_batch(
   msg_ids BIGINT [],
   vt_offsets INTEGER []
 )
-returns setof PGMQ.MESSAGE_RECORD
+returns table (
+  msg_id BIGINT,
+  read_ct INTEGER,
+  enqueued_at TIMESTAMP WITH TIME ZONE,
+  vt TIMESTAMP WITH TIME ZONE,
+  message JSONB,
+  headers JSONB
+)
 language plpgsql as
 $$
 DECLARE
@@ -50,7 +57,8 @@ BEGIN
                   q.read_ct,
                   q.enqueued_at,
                   q.vt,
-                  q.message
+                  q.message,
+                  q.headers
         $FMT$,
         qtable
     );
