@@ -50,6 +50,8 @@
       "Skill(scratch-review)",
       "Skill(idea-refine)",
       "Skill(notes-sync)",
+      "Skill(unblock)",
+      "AskUserQuestion",
       "WebSearch",
       "mcp__context7__get-library-docs",
       "mcp__context7__resolve-library-id",
