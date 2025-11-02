@@ -26,10 +26,8 @@ Deno.test('should spawn next worker when CPU clock limit hits', async () => {
     await sql`SELECT pgmq.create(${WORKER_NAME})`;
     await sql`
       DELETE FROM pgflow.workers
-      WHERE worker_id IN (
-        SELECT worker_id
-        FROM pgflow.inactive_workers
-      )`;
+      WHERE last_heartbeat_at < NOW() - INTERVAL '6 seconds'
+    `;
     await startWorker(WORKER_NAME);
 
     await sendBatch(MESSAGES_TO_SEND, WORKER_NAME);

@@ -1,6 +1,7 @@
 import postgres from 'postgres';
 
-const DB_URL = 'postgresql://postgres:postgres@127.0.0.1:5432/postgres';
+// Use the Supabase database (same as edge workers connect to)
+const DB_URL = Deno.env.get('DB_URL') || 'postgresql://postgres:postgres@127.0.0.1:50322/postgres';
 
 export function createSql() {
   return postgres(DB_URL, {

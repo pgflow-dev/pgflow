@@ -26,8 +26,9 @@ Deno.test(
           try {
             const [{ worker_count }] = await tempSql`
             SELECT COUNT(*)::integer AS worker_count
-            FROM pgflow.active_workers
+            FROM pgflow.workers
             WHERE function_name = ${WORKER_NAME}
+              AND last_heartbeat_at >= NOW() - INTERVAL '6 seconds'
           `;
 
             log('worker_count', worker_count);
