@@ -69,6 +69,8 @@ SELECT * FROM finish();
 ROLLBACK;
 ```
 
+**For test patterns and helpers**, see pgtap-testing skill.
+
 ### Step 2: Run Test (Should Fail)
 
 ```bash
