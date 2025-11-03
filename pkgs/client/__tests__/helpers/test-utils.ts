@@ -164,6 +164,9 @@ export function mockRpcCalls(
 
 /**
  * Helper to track events emitted on a callback
+ *
+ * This tracker focuses on data collection and queries only.
+ * For assertions, use the custom matchers (toHaveReceivedEvent, etc.)
  */
 export function createEventTracker<T extends { event_type: string }>() {
   const events: T[] = [];
@@ -172,16 +175,66 @@ export function createEventTracker<T extends { event_type: string }>() {
   });
 
   return {
+    // Core
     callback,
     events,
+
+    // Query methods - return data for further use
     getEventTypes: () => events.map((e) => e.event_type),
     getLastEvent: () => events[events.length - 1],
+    findByType: (type: string) => events.filter((e) => e.event_type === type),
+    countByType: (type: string) => events.filter((e) => e.event_type === type).length,
+    hasEventType: (type: string) => events.some((e) => e.event_type === type),
+    getFirstByType: (type: string) => events.find((e) => e.event_type === type),
+    getSequence: () => events.map((e) => e.event_type),
+
+    findByPayload: (matcher: Partial<T>) =>
+      events.filter((e) =>
+        Object.entries(matcher).every(([key, value]) => e[key as keyof T] === value)
+      ),
+
+    getEventsBetween: (startType: string, endType: string) => {
+      const startIndex = events.findIndex((e) => e.event_type === startType);
+      const endIndex = events.findIndex((e) => e.event_type === endType);
+
+      if (startIndex === -1 || endIndex === -1) {
+        return [];
+      }
+
+      return events.slice(startIndex + 1, endIndex);
+    },
+
+    // Utility
     clear: () => {
       events.length = 0;
       callback.mockClear();
     },
+
+    // Debug helpers
+    debug: () => {
+      console.log('=== Event Tracker Debug ===');
+      console.log(`Total events: ${events.length}`);
+      events.forEach((event, index) => {
+        console.log(`[${index}] ${event.event_type}:`, event);
+      });
+    },
+
+    getSummary: () => {
+      const typeCounts = events.reduce((acc, e) => {
+        acc[e.event_type] = (acc[e.event_type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      return {
+        total: events.length,
+        types: Object.keys(typeCounts).length,
+        breakdown: typeCounts,
+      };
+    },
   };
 }
+
+export type EventTracker<T extends { event_type: string }> = ReturnType<typeof createEventTracker<T>>;
 
 /**
  * Advances timers and flushes all pending microtasks

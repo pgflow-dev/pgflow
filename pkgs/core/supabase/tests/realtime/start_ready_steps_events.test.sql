@@ -1,7 +1,5 @@
 begin;
--- Note: Since the start_ready_steps function doesn't actually send the step:started events yet,
--- we'll test the overall flow to ensure appropriate events are still sent
-select plan(1);
+select plan(7);
 
 -- Ensure partition exists for realtime.messages
 select pgflow_tests.create_realtime_partition();
@@ -16,28 +14,57 @@ with flow as (
 )
 select run_id into temporary run_ids from flow;
 
--- Poll for the first task and complete it
--- This should trigger start_ready_steps internally for the 'second' step
-with task as (
-  select * from pgflow_tests.read_and_start('sequential', 1, 1)
-)
-select pgflow.complete_task(
-  (select run_id from task),
-  (select step_slug from task),
-  0,
-  '{"result": "success"}'::jsonb
-) into temporary completed_tasks;
+-- Test 1: Verify one step:started event exists for the root step
+select is(
+  pgflow_tests.count_realtime_events('step:started', (select run_id from run_ids), 'first'),
+  1::int,
+  'pgflow.start_ready_steps should send exactly one step:started event for root step'
+);
 
--- Since we know that step:started events aren't currently implemented, just verify
--- that at least the run:started event was sent
+-- Test 2: Verify step_slug in event payload
+select is(
+  (select payload->>'step_slug' from pgflow_tests.get_realtime_message('step:started', (select run_id from run_ids), 'first')),
+  'first',
+  'The step:started event should contain the correct step_slug'
+);
+
+-- Test 3: Verify status in event payload
+select is(
+  (select payload->>'status' from pgflow_tests.get_realtime_message('step:started', (select run_id from run_ids), 'first')),
+  'started',
+  'The step:started event should have status "started"'
+);
+
+-- Test 4: Verify started_at timestamp exists and is valid
 select ok(
-  pgflow_tests.count_realtime_events('run:started', (select run_id from run_ids)) = 1,
-  'The system should send a run:started event'
+  (select (payload->>'started_at')::timestamptz is not null
+   from pgflow_tests.get_realtime_message('step:started', (select run_id from run_ids), 'first')),
+  'The step:started event should include a started_at timestamp'
+);
+
+-- Test 5: Verify remaining_tasks in payload
+select ok(
+  (select (payload->>'remaining_tasks')::int > 0
+   from pgflow_tests.get_realtime_message('step:started', (select run_id from run_ids), 'first')),
+  'The step:started event should include remaining_tasks count'
+);
+
+-- Test 6: Verify event name formatting
+select is(
+  (select event from pgflow_tests.get_realtime_message('step:started', (select run_id from run_ids), 'first')),
+  'step:first:started',
+  'The step:started event should have the correct event name (step:<slug>:started)'
+);
+
+-- Test 7: Verify topic formatting
+select is(
+  (select topic from pgflow_tests.get_realtime_message('step:started', (select run_id from run_ids), 'first')),
+  concat('pgflow:run:', (select run_id from run_ids)),
+  'The step:started event should have the correct topic (pgflow:run:<run_id>)'
 );
 
 -- Clean up
 drop table if exists run_ids;
-drop table if exists completed_tasks;
 
 select finish();
 rollback;

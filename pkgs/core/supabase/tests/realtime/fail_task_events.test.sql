@@ -1,5 +1,5 @@
 begin;
-select plan(5);
+select plan(10);
 
 -- Ensure partition exists for realtime.messages
 select pgflow_tests.create_realtime_partition();
@@ -59,6 +59,41 @@ select is(
   pgflow_tests.count_realtime_events('run:completed', (select run_id from run_ids)),
   0::int,
   'pgflow.fail_task should NOT send any run:completed events when a run fails'
+);
+
+-- Test 6: Verify one step:failed event exists
+select is(
+  pgflow_tests.count_realtime_events('step:failed', (select run_id from run_ids), 'first'),
+  1::int,
+  'pgflow.fail_task should send a step:failed event when a step fails permanently'
+);
+
+-- Test 7: Verify step:failed event status
+select is(
+  (select payload->>'status' from pgflow_tests.get_realtime_message('step:failed', (select run_id from run_ids), 'first')),
+  'failed',
+  'The step:failed event should have status "failed"'
+);
+
+-- Test 8: Verify step:failed event contains error message
+select is(
+  (select payload->>'error_message' from pgflow_tests.get_realtime_message('step:failed', (select run_id from run_ids), 'first')),
+  'Test failure message',
+  'The step:failed event should contain the error message'
+);
+
+-- Test 9: Verify failed_at timestamp exists
+select ok(
+  (select (payload->>'failed_at')::timestamptz is not null
+   from pgflow_tests.get_realtime_message('step:failed', (select run_id from run_ids), 'first')),
+  'The step:failed event should include a failed_at timestamp'
+);
+
+-- Test 10: Verify event name formatting
+select is(
+  (select event from pgflow_tests.get_realtime_message('step:failed', (select run_id from run_ids), 'first')),
+  'step:first:failed',
+  'The step:failed event should have the correct event name (step:<slug>:failed)'
 );
 
 -- Clean up
