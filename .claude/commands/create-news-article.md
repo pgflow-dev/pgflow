@@ -2,6 +2,11 @@ You are tasked with creating a new news article for the pgflow website.
 
 ## Context
 
+Today's date (use this for article frontmatter):
+<today>
+!`date +%Y-%m-%d`
+</today>
+
 Recent conversation history and user arguments should guide the article creation.
 
 User arguments:
@@ -43,28 +48,43 @@ Review the recent conversation history and user arguments to understand:
 - Who the target audience is
 - What problem or question the article addresses
 
-### Step 2: Confirm Article Focus (via AskUserQuestion tool)
+### Step 2: Confirm Article Style and Focus (via AskUserQuestion tool)
 
-Analyze the context and infer what the article should focus on. Then use AskUserQuestion to confirm:
+Analyze the context and infer what type of article this should be. Then use AskUserQuestion to confirm:
 
-**Step 2.1**: Review conversation history and arguments to infer:
+**Step 2.1**: Determine article style/length based on context:
+```
+question: "What style of article should this be?"
+header: "Style"
+options:
+  - label: "Quick Update"
+    description: "Short announcement - bugfix, minor feature, or small improvement (500-800 words)"
+  - label: "Feature Article"
+    description: "Medium-depth coverage of new feature with examples and use cases (1000-1500 words)"
+  - label: "Release Announcement"
+    description: "Major version/update with breaking changes, migration guide, multiple features (1500-2500 words)"
+  - label: "Deep Dive"
+    description: "Technical exploration of concept, design decision, or architectural choice (2000+ words)"
+multiSelect: false
+```
+
+**Step 2.2**: Review conversation history and arguments to infer:
 - Main topic or angle
 - Scope of coverage
 - Key points to emphasize
 - Target audience
 
-**Step 2.2**: Use AskUserQuestion with inferred focus:
+**Step 2.3**: Use AskUserQuestion with inferred focus:
 ```
 question: "What should this article focus on?"
 header: "Focus"
 options:
   - [Inferred topic from context, e.g., "New feature X with use cases"]
   - [Alternative angle if applicable, e.g., "Breaking change Y and migration guide"]
-  - "Something else"
 multiSelect: false
 ```
 
-If scope or target audience is unclear, follow with:
+If target audience is unclear, follow with:
 ```
 question: "Who is the target audience?"
 header: "Audience"
@@ -77,12 +97,16 @@ multiSelect: false
 
 ### Step 3: Create Topics List (via AskUserQuestion tool)
 
+**CRITICAL: ALWAYS write the topics list to the screen FIRST before asking for confirmation.**
+
 Create a list of topics/points to cover in the article. Present it as an a/b/c/d list:
 
 a) First topic
 b) Second topic
 c) Third topic
 d) Fourth topic
+
+**Write this list in your message text BEFORE using AskUserQuestion.**
 
 Then use AskUserQuestion to confirm:
 ```
@@ -100,6 +124,8 @@ If "Needs changes", ask for specific edits in plain text, update the list, and a
 
 ### Step 4: Suggest Outline (via AskUserQuestion tool)
 
+**CRITICAL: ALWAYS write the full outline to the screen FIRST before asking for confirmation.**
+
 Create a high-level outline using H2 and H3 headings. Include placeholders for specific content types:
 - `<code snippet for X>`
 - `<warning about Y>`
@@ -107,7 +133,9 @@ Create a high-level outline using H2 and H3 headings. Include placeholders for s
 - `<comparison table>`
 - `<diagram/visual>`
 
-Present the outline, then use AskUserQuestion to confirm:
+**Write the complete outline in your message text BEFORE using AskUserQuestion.**
+
+Then use AskUserQuestion to confirm:
 ```
 question: "Does this outline structure work?"
 header: "Outline OK?"
@@ -123,7 +151,11 @@ If "Needs adjustments", ask for specific changes in plain text, update the outli
 
 ### Step 5: Suggest Title (via AskUserQuestion tool)
 
+**CRITICAL: ALWAYS write the title options to the screen FIRST before asking for confirmation.**
+
 Generate 2-3 concise, descriptive title options. Follow the pattern from existing articles (e.g., "pgflow 0.6.1: Worker Configuration in Handler Context").
+
+**Write all title options in your message text BEFORE using AskUserQuestion.**
 
 Use AskUserQuestion to select:
 ```
@@ -169,6 +201,10 @@ If "Yes", describe a scene that is:
 Reference colors by name (e.g., "deep teal background with light teal accents") without hex codes.
 
 Example: "A cyberpunk database server glowing with teal circuits, surrounded by flowing data streams in deep teal and light teal, against a near-black background with dark gray geometric patterns."
+
+**CRITICAL: ALWAYS write the full cover image description to the screen FIRST before asking for confirmation.**
+
+**Write the complete description in your message text BEFORE using AskUserQuestion.**
 
 Present the description and ask for confirmation using AskUserQuestion:
 ```
