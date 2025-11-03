@@ -12,12 +12,6 @@
       "{projectRoot}/supabase/migrations/atlas.sum",
       "{projectRoot}/scripts/atlas-verify-schemas-synced"
     ],
-    "atlasVerificationCache": [
-      "{projectRoot}/.nx-inputs/verify-schemas-synced.txt"
-    ],
-    "migrationVerificationCache": [
-      "{projectRoot}/.nx-inputs/verify-migrations.txt"
-    ],
     "databaseTypes": ["{projectRoot}/src/database-types.ts"],
     "pgtapTests": [
       "{projectRoot}/supabase/tests/**/*.sql",
@@ -43,8 +37,7 @@
       "inputs": [
         "schemas",
         "migrations",
-        "atlasSetup",
-        "atlasVerificationCache"
+        "atlasSetup"
       ],
       "outputs": ["{projectRoot}/.nx-inputs/verify-schemas-synced.txt"],
       "options": {
@@ -60,7 +53,7 @@
     "verify-migrations": {
       "executor": "nx:run-commands",
       "dependsOn": ["verify-schemas-synced", "supabase:ensure-started"],
-      "inputs": ["migrations", "migrationVerificationCache"],
+      "inputs": ["migrations"],
       "outputs": ["{projectRoot}/.nx-inputs/verify-migrations.txt"],
       "options": {
         "cwd": "{projectRoot}",

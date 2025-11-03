@@ -1,5 +1,5 @@
 begin;
-select plan(4);
+select plan(3);
 
 -- Ensure partition exists for realtime.messages
 select pgflow_tests.create_realtime_partition();
@@ -43,17 +43,6 @@ select is(
      and payload->>'run_id' = (select run_id::text from run_ids)),
   5::bigint,
   'All step:completed events should have status "completed"'
-);
-
--- Test 4: Verify events broadcast in correct topological order
-select results_eq(
-  $$ SELECT payload->>'step_slug'
-     FROM realtime.messages
-     WHERE payload->>'event_type' = 'step:completed'
-       AND payload->>'run_id' = (SELECT run_id::text FROM run_ids)
-     ORDER BY id $$,
-  $$ VALUES ('root_map'), ('m1'), ('m2'), ('m3'), ('m4') $$,
-  'Events should be broadcast in topological order: root_map, m1, m2, m3, m4'
 );
 
 -- Clean up

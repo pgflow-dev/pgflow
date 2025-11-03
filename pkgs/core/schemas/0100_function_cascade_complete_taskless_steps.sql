@@ -22,7 +22,20 @@ BEGIN
     -- ==========================================
     -- COMPLETE READY TASKLESS STEPS
     -- ==========================================
-    WITH completed AS (
+    WITH
+    -- ---------- Find steps to complete in topological order ----------
+    steps_to_complete AS (
+      SELECT ss.run_id, ss.step_slug
+      FROM pgflow.step_states ss
+      JOIN pgflow.steps s ON s.flow_slug = ss.flow_slug AND s.step_slug = ss.step_slug
+      WHERE ss.run_id = cascade_complete_taskless_steps.run_id
+        AND ss.status = 'created'
+        AND ss.remaining_deps = 0
+        AND ss.initial_tasks = 0
+      -- Process in topological order to ensure proper cascade
+      ORDER BY s.step_index
+    ),
+    completed AS (
       -- ---------- Complete taskless steps ----------
       -- Steps with initial_tasks=0 and no remaining deps
       UPDATE pgflow.step_states ss
@@ -30,15 +43,30 @@ BEGIN
           started_at = now(),
           completed_at = now(),
           remaining_tasks = 0
-      FROM pgflow.steps s
-      WHERE ss.run_id = cascade_complete_taskless_steps.run_id
-        AND ss.flow_slug = s.flow_slug
-        AND ss.step_slug = s.step_slug
-        AND ss.status = 'created'
-        AND ss.remaining_deps = 0
-        AND ss.initial_tasks = 0
-      -- Process in topological order to ensure proper cascade
-      RETURNING ss.*
+      FROM steps_to_complete stc
+      WHERE ss.run_id = stc.run_id
+        AND ss.step_slug = stc.step_slug
+      RETURNING
+        ss.*,
+        -- Broadcast step:completed event atomically with the UPDATE
+        -- Using RETURNING ensures this executes during row processing
+        -- and cannot be optimized away by the query planner
+        realtime.send(
+          jsonb_build_object(
+            'event_type', 'step:completed',
+            'run_id', ss.run_id,
+            'step_slug', ss.step_slug,
+            'status', 'completed',
+            'started_at', ss.started_at,
+            'completed_at', ss.completed_at,
+            'remaining_tasks', 0,
+            'remaining_deps', 0,
+            'output', '[]'::jsonb
+          ),
+          concat('step:', ss.step_slug, ':completed'),
+          concat('pgflow:run:', ss.run_id),
+          false
+        ) as _broadcast_result  -- Prefix with _ to indicate internal use only
     ),
     -- ---------- Update dependent steps ----------
     -- Propagate completion and empty arrays to dependents

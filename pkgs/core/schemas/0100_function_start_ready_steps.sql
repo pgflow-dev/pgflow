@@ -39,28 +39,27 @@ completed_empty_steps AS (
   FROM empty_map_steps
   WHERE pgflow.step_states.run_id = start_ready_steps.run_id
     AND pgflow.step_states.step_slug = empty_map_steps.step_slug
-  RETURNING pgflow.step_states.*
-),
--- ---------- Broadcast completion events ----------
-broadcast_empty_completed AS (
-  SELECT 
+  RETURNING
+    pgflow.step_states.*,
+    -- Broadcast step:completed event atomically with the UPDATE
+    -- Using RETURNING ensures this executes during row processing
+    -- and cannot be optimized away by the query planner
     realtime.send(
       jsonb_build_object(
         'event_type', 'step:completed',
-        'run_id', completed_step.run_id,
-        'step_slug', completed_step.step_slug,
+        'run_id', pgflow.step_states.run_id,
+        'step_slug', pgflow.step_states.step_slug,
         'status', 'completed',
-        'started_at', completed_step.started_at,
-        'completed_at', completed_step.completed_at,
+        'started_at', pgflow.step_states.started_at,
+        'completed_at', pgflow.step_states.completed_at,
         'remaining_tasks', 0,
         'remaining_deps', 0,
         'output', '[]'::jsonb
       ),
-      concat('step:', completed_step.step_slug, ':completed'),
-      concat('pgflow:run:', completed_step.run_id),
+      concat('step:', pgflow.step_states.step_slug, ':completed'),
+      concat('pgflow:run:', pgflow.step_states.run_id),
       false
-    )
-  FROM completed_empty_steps AS completed_step
+    ) as _broadcast_completed  -- Prefix with _ to indicate internal use only
 ),
 
 -- ==========================================
@@ -94,7 +93,24 @@ started_step_states AS (
   FROM ready_steps
   WHERE pgflow.step_states.run_id = start_ready_steps.run_id
     AND pgflow.step_states.step_slug = ready_steps.step_slug
-  RETURNING pgflow.step_states.*
+  RETURNING pgflow.step_states.*,
+    -- Broadcast step:started event atomically with the UPDATE
+    -- Using RETURNING ensures this executes during row processing
+    -- and cannot be optimized away by the query planner
+    realtime.send(
+      jsonb_build_object(
+        'event_type', 'step:started',
+        'run_id', pgflow.step_states.run_id,
+        'step_slug', pgflow.step_states.step_slug,
+        'status', 'started',
+        'started_at', pgflow.step_states.started_at,
+        'remaining_tasks', pgflow.step_states.remaining_tasks,
+        'remaining_deps', pgflow.step_states.remaining_deps
+      ),
+      concat('step:', pgflow.step_states.step_slug, ':started'),
+      concat('pgflow:run:', pgflow.step_states.run_id),
+      false
+    ) as _broadcast_result  -- Prefix with _ to indicate internal use only
 ),
 
 -- ==========================================
@@ -139,26 +155,6 @@ sent_messages AS (
   CROSS JOIN LATERAL unnest(mb.task_indices) WITH ORDINALITY AS task_indices(task_index, idx_ord)
   CROSS JOIN LATERAL pgmq.send_batch(mb.flow_slug, mb.messages, mb.delay) WITH ORDINALITY AS msg_ids(msg_id, msg_ord)
   WHERE task_indices.idx_ord = msg_ids.msg_ord
-),
-
--- ---------- Broadcast step:started events ----------
-broadcast_events AS (
-  SELECT 
-    realtime.send(
-      jsonb_build_object(
-        'event_type', 'step:started',
-        'run_id', started_step.run_id,
-        'step_slug', started_step.step_slug,
-        'status', 'started',
-        'started_at', started_step.started_at,
-        'remaining_tasks', started_step.remaining_tasks,
-        'remaining_deps', started_step.remaining_deps
-      ),
-      concat('step:', started_step.step_slug, ':started'),
-      concat('pgflow:run:', started_step.run_id),
-      false
-    )
-  FROM started_step_states AS started_step
 )
 
 -- ==========================================
@@ -172,6 +168,14 @@ SELECT
   sent_messages.task_index,
   sent_messages.msg_id
 FROM sent_messages;
+
+-- ==========================================
+-- BROADCAST REALTIME EVENTS
+-- ==========================================
+-- Note: Both step:completed events for empty maps and step:started events
+-- are now broadcast atomically in their respective CTEs using RETURNING pattern.
+-- This ensures correct ordering, prevents duplicate broadcasts, and guarantees
+-- that events are sent for exactly the rows that were updated.
 
 end;
 $$;

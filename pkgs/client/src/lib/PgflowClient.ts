@@ -1,7 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
-import type { RunRow } from '@pgflow/core';
 import { FlowRunStatus } from './types.js';
 import type { 
   IFlowClient, 
@@ -13,7 +12,7 @@ import type {
 } from './types.js';
 import { SupabaseBroadcastAdapter } from './SupabaseBroadcastAdapter.js';
 import { FlowRun } from './FlowRun.js';
-import { toTypedRunEvent, toTypedStepEvent, runRowToTypedEvent, stepStateRowToTypedEvent } from './eventAdapters.js';
+import { toTypedRunEvent, toTypedStepEvent } from './eventAdapters.js';
 
 /**
  * Client for interacting with pgflow
@@ -107,15 +106,15 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
       throw error;
     }
 
-    // Update the run state with the complete initial state snapshot
+    // Apply the run state snapshot (no events)
     if (data.run) {
-      run.updateState(runRowToTypedEvent<TSpecificFlow>(data.run));
+      run.applySnapshot(data.run);
     }
 
-    // Update step states from the initial snapshot
+    // Apply step state snapshots (no events)
     if (data.steps && Array.isArray(data.steps)) {
       for (const stepState of data.steps) {
-        run.step(stepState.step_slug).updateState(stepStateRowToTypedEvent<TSpecificFlow, any>(stepState));
+        run.step(stepState.step_slug).applySnapshot(stepState);
       }
     }
 
@@ -210,37 +209,37 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
         return null;
       }
       
-      // Create initial state for the flow run
-      // Use type assertion since RunRow doesn't include error_message field
-      const runData = run as unknown as (RunRow & { error_message?: string });
-      
       // Validate required fields
-      if (!runData.run_id || !runData.flow_slug || !runData.status) {
+      if (!run.run_id || !run.flow_slug || !run.status) {
         throw new Error('Invalid run data: missing required fields');
       }
-      
+
       // Validate status is a valid FlowRunStatus
       const validStatuses = Object.values(FlowRunStatus);
-      if (!validStatuses.includes(runData.status as FlowRunStatus)) {
-        throw new Error(`Invalid run data: invalid status '${runData.status}'`);
+      if (!validStatuses.includes(run.status as FlowRunStatus)) {
+        throw new Error(`Invalid run data: invalid status '${run.status}'`);
       }
-      
+
+      // Create flow run with minimal initial state
       const initialState: FlowRunState<TSpecificFlow> = {
-        run_id: runData.run_id,
-        flow_slug: runData.flow_slug,
-        status: runData.status as FlowRunStatus,
-        input: runData.input as ExtractFlowInput<TSpecificFlow>,
-        output: runData.output as any,
-        error: runData.error_message ? new Error(runData.error_message) : null,
-        error_message: runData.error_message || null,
-        started_at: runData.started_at ? new Date(runData.started_at) : null,
-        completed_at: runData.completed_at ? new Date(runData.completed_at) : null,
-        failed_at: runData.failed_at ? new Date(runData.failed_at) : null,
-        remaining_steps: runData.remaining_steps || 0,
+        run_id: run.run_id,
+        flow_slug: run.flow_slug,
+        status: run.status as FlowRunStatus,
+        input: run.input as ExtractFlowInput<TSpecificFlow>,
+        output: null,
+        error: null,
+        error_message: null,
+        started_at: null,
+        completed_at: null,
+        failed_at: null,
+        remaining_steps: 0,
       };
-      
+
       // Create the flow run instance
       const flowRun = new FlowRun<TSpecificFlow>(initialState);
+
+      // Apply the complete state from database snapshot
+      flowRun.applySnapshot(run);
       
       // Store the run
       this.#runs.set(run_id, flowRun);
@@ -248,16 +247,16 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
       // Set up subscription for run and step events
       await this.#realtimeAdapter.subscribeToRun(run_id);
       
-      // Initialize steps
+      // Initialize steps from snapshot
       if (steps && Array.isArray(steps)) {
         for (const stepState of steps) {
           // Validate step has required fields
           if (!stepState.step_slug || !stepState.status) {
             throw new Error('Invalid step data: missing required fields');
           }
-          
-          // Convert database step state to typed event
-          flowRun.step(stepState.step_slug).updateState(stepStateRowToTypedEvent<AnyFlow, any>(stepState));
+
+          // Apply snapshot state directly (no events)
+          flowRun.step(stepState.step_slug).applySnapshot(stepState);
         }
       }
       
