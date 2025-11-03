@@ -127,10 +127,11 @@ Waits for the run to reach a specific status or one of multiple statuses.
 | `status` | `FlowRunStatus \| FlowRunStatus[]` | Yes | Target status or array of statuses |
 | `options` | `object` | No | Wait options |
 | `options.timeoutMs` | `number` | No | Timeout in milliseconds |
+| `options.signal` | `AbortSignal` | No | Abort signal to cancel waiting |
 
 **Returns:** `Promise<FlowRun>` - Updated FlowRun instance
 
-**Throws:** `Error` if timeout is reached before status is achieved
+**Throws:** `Error` if timeout is reached or operation is aborted
 
 ---
 
@@ -228,10 +229,11 @@ Waits for the step to reach a specific status or one of multiple statuses.
 | `status` | `FlowStepStatus \| FlowStepStatus[]` | Yes | Target status or array of statuses |
 | `options` | `object` | No | Wait options |
 | `options.timeoutMs` | `number` | No | Timeout in milliseconds |
+| `options.signal` | `AbortSignal` | No | Abort signal to cancel waiting |
 
 **Returns:** `Promise<FlowStep>` - Updated FlowStep instance
 
-**Throws:** `Error` if timeout is reached before status is achieved
+**Throws:** `Error` if timeout is reached or operation is aborted
 
 ---
 
@@ -308,6 +310,10 @@ Subscribe to individual step status changes.
 | `'completed'` | Step completes successfully | FlowStepEvent with status `'completed'` and `output` |
 | `'failed'` | Step fails | FlowStepEvent with status `'failed'` and `error_message` |
 | `'*'` | Any status change | FlowStepEvent with current status |
+
+<Aside type="note" title="Empty Map Steps">
+Map steps with empty arrays skip the `'started'` event and emit only `'completed'`. This is expected behavior for steps with no work to perform.
+</Aside>
 
 ## Status Enums
 
