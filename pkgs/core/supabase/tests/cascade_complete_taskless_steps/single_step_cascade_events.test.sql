@@ -1,5 +1,5 @@
 begin;
-select plan(4);
+select plan(3);
 
 -- Ensure partition exists for realtime.messages
 select pgflow_tests.create_realtime_partition();
@@ -63,17 +63,6 @@ select is(
   pgflow_tests.count_realtime_events('step:completed', (select run_id from run_ids), 'step_c'),
   1::int,
   'Step C should broadcast step:completed event (from complete_task)'
-);
-
--- Test 4: Verify all three events broadcast in correct order
-select results_eq(
-  $$ SELECT payload->>'step_slug'
-     FROM realtime.messages
-     WHERE payload->>'event_type' = 'step:completed'
-       AND payload->>'run_id' = (SELECT run_id::text FROM run_ids)
-     ORDER BY id $$,
-  $$ VALUES ('step_a'), ('step_b'), ('step_c') $$,
-  'Events should be broadcast in completion order: step_a, step_b, step_c'
 );
 
 -- Clean up

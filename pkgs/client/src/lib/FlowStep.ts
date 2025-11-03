@@ -177,12 +177,30 @@ export class FlowStep<
   }
 
   /**
+   * Apply state from database snapshot (no events emitted)
+   * Used when initializing state from start_flow_with_states() or get_run_with_states()
+   *
+   * @internal This method is only intended for use by PgflowClient.
+   * Applications should not call this directly.
+   */
+  applySnapshot(row: import('@pgflow/core').StepStateRow): void {
+    // Direct state assignment from database row (no event conversion)
+    this.#state.status = row.status as FlowStepStatus;
+    this.#state.started_at = row.started_at ? new Date(row.started_at) : null;
+    this.#state.completed_at = row.completed_at ? new Date(row.completed_at) : null;
+    this.#state.failed_at = row.failed_at ? new Date(row.failed_at) : null;
+    this.#state.error_message = row.error_message;
+    this.#state.error = row.error_message ? new Error(row.error_message) : null;
+    // Note: output is not stored in step_states table, remains null
+  }
+
+  /**
    * Updates the step state based on an event
-   * 
+   *
    * @internal This method is only intended for use by FlowRun and tests.
    * Applications should not call this directly - state updates should come from
    * database events through the PgflowClient.
-   * 
+   *
    * TODO: After v1.0, make this method private and refactor tests to use PgflowClient
    * with event emission instead of direct state manipulation.
    */
