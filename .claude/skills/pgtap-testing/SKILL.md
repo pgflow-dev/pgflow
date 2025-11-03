@@ -1,6 +1,6 @@
 ---
 name: pgtap-testing
-description: Guide pgTAP test writing in pgflow. Use when user asks to write pgTAP test, add test for feature, test SQL function, or asks how to test database scenarios. Provides test patterns and helper functions.
+description: Guide pgTAP test writing in pgflow. Use when user asks to create tests, write tests, add tests, create test files, fix tests, improve tests, add missing tests, create realtime tests, write database tests, test SQL functions, test broadcast events, test realtime events, add test coverage, create step tests, create run tests, test pgflow functions, or asks how to test database scenarios. Provides test patterns, helper functions, and realtime event testing examples. Use for any pgTAP test creation or modification.
 ---
 
 # pgTAP Testing Guide

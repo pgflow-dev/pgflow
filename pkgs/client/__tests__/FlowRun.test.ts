@@ -50,23 +50,26 @@ describe('FlowRun', () => {
       });
 
       const startedEvent = createRunStartedEvent({ run_id: RUN_ID });
-      
+
       // Set up event tracking
       const allTracker = createEventTracker();
       const startedTracker = createEventTracker();
       run.on('*', allTracker.callback);
       run.on('started', startedTracker.callback);
-      
+
       // Attempt to update state (should be rejected due to same status)
       const result = run.updateState(toTypedRunEvent(startedEvent));
-      
+
       // Verify state update was rejected
       expect(result).toBe(false);
-      
-      // Verify no events were emitted
-      expect(allTracker.events).toHaveLength(0);
-      expect(startedTracker.events).toHaveLength(0);
-      
+
+      // Verify no events were emitted using comprehensive matchers
+      expect(allTracker).toHaveReceivedTotalEvents(0);
+      expect(startedTracker).toNotHaveReceivedEvent('run:started');
+      expect(allTracker).toNotHaveReceivedEvent('run:started');
+      expect(allTracker).toNotHaveReceivedEvent('run:completed');
+      expect(allTracker).toNotHaveReceivedEvent('run:failed');
+
       // Check state remains unchanged
       expect(run.status).toBe(FlowRunStatus.Started);
       expect(run.remaining_steps).toBe(2);
@@ -83,6 +86,12 @@ describe('FlowRun', () => {
         output: { result: 'success' },
       });
 
+      // Set up event tracking before state update
+      const allTracker = createEventTracker();
+      const completedTracker = createEventTracker();
+      run.on('*', allTracker.callback);
+      run.on('completed', completedTracker.callback);
+
       // Update state with completed event
       const result = run.updateState(toTypedRunEvent(completedEvent));
 
@@ -94,11 +103,23 @@ describe('FlowRun', () => {
       expect(run.completed_at).toBeInstanceOf(Date);
       expect(run.output).toEqual({ result: 'success' });
 
-      // Verify callbacks were called
-      const tracker = createEventTracker();
-      run.on('completed', tracker.callback);
-      run.updateState(toTypedRunEvent(completedEvent)); // Will be rejected as already completed
-      expect(tracker.events).toHaveLength(0);
+      // Verify events were emitted with comprehensive matchers
+      expect(allTracker).toHaveReceivedTotalEvents(1);
+      expect(completedTracker).toHaveReceivedEvent('run:completed');
+      expect(allTracker).toHaveReceivedEvent('run:completed', {
+        run_id: RUN_ID,
+        status: FlowRunStatus.Completed,
+        output: { result: 'success' },
+      });
+      expect(allTracker).toNotHaveReceivedEvent('run:failed');
+      expect(allTracker).toNotHaveReceivedEvent('run:started');
+
+      // Verify attempt to update again is rejected
+      const secondTracker = createEventTracker();
+      run.on('*', secondTracker.callback);
+      const secondResult = run.updateState(toTypedRunEvent(completedEvent));
+      expect(secondResult).toBe(false);
+      expect(secondTracker).toHaveReceivedTotalEvents(0);
     });
 
     test('handles failed event correctly', () => {
@@ -112,6 +133,12 @@ describe('FlowRun', () => {
         error_message: 'Something went wrong',
       });
 
+      // Set up event tracking before state update
+      const allTracker = createEventTracker();
+      const failedTracker = createEventTracker();
+      run.on('*', allTracker.callback);
+      run.on('failed', failedTracker.callback);
+
       // Update state with failed event
       const result = run.updateState(toTypedRunEvent(failedEvent));
 
@@ -124,6 +151,20 @@ describe('FlowRun', () => {
       expect(run.error_message).toBe('Something went wrong');
       expect(run.error).toBeInstanceOf(Error);
       expect(run.error?.message).toBe('Something went wrong');
+
+      // Verify events were emitted with comprehensive matchers and payload validation
+      expect(allTracker).toHaveReceivedTotalEvents(1);
+      expect(failedTracker).toHaveReceivedEvent('run:failed');
+      expect(allTracker).toHaveReceivedEvent('run:failed', {
+        run_id: RUN_ID,
+        status: FlowRunStatus.Failed,
+        error_message: 'Something went wrong',
+      });
+      expect(allTracker).toNotHaveReceivedEvent('run:completed');
+      expect(allTracker).toNotHaveReceivedEvent('run:started');
+
+      // Note: Broadcast events don't include error as Error instances
+      // They only have error_message as strings (already verified above)
     });
 
     test('handles events with missing fields gracefully', () => {
@@ -279,6 +320,160 @@ describe('FlowRun', () => {
 
       // Output should remain unchanged
       expect(run.output).toEqual({ result: 'success' });
+    });
+  });
+
+  describe('Run Event Lifecycles', () => {
+    test('happy path: started → completed with full event sequence', () => {
+      const run = createFlowRun({
+        run_id: RUN_ID,
+        remaining_steps: 1,
+      });
+
+      const tracker = createEventTracker();
+      run.on('*', tracker.callback);
+
+      // Simulate completed event (started already happened during creation)
+      const completedEvent = createRunCompletedEvent({
+        run_id: RUN_ID,
+        output: { final: 'result' },
+      });
+      run.updateState(toTypedRunEvent(completedEvent));
+
+      // Verify event sequence and counts
+      expect(tracker).toHaveReceivedTotalEvents(1);
+      expect(tracker).toHaveReceivedEventCount('run:completed', 1);
+      expect(tracker).toNotHaveReceivedEvent('run:failed');
+
+      // Verify payload completeness
+      expect(tracker).toHaveReceivedEvent('run:completed', {
+        run_id: RUN_ID,
+        status: FlowRunStatus.Completed,
+        output: { final: 'result' },
+      });
+    });
+
+    test('failure path: started → failed with no completed event', () => {
+      const run = createFlowRun({
+        run_id: RUN_ID,
+        remaining_steps: 1,
+      });
+
+      const tracker = createEventTracker();
+      run.on('*', tracker.callback);
+
+      // Simulate failed event
+      const failedEvent = createRunFailedEvent({
+        run_id: RUN_ID,
+        error_message: 'Task execution failed',
+      });
+      run.updateState(toTypedRunEvent(failedEvent));
+
+      // Verify event sequence - should have failed but NOT completed
+      expect(tracker).toHaveReceivedTotalEvents(1);
+      expect(tracker).toHaveReceivedEventCount('run:failed', 1);
+      expect(tracker).toNotHaveReceivedEvent('run:completed');
+
+      // Verify error payload
+      expect(tracker).toHaveReceivedEvent('run:failed', {
+        run_id: RUN_ID,
+        status: FlowRunStatus.Failed,
+        error_message: 'Task execution failed',
+      });
+    });
+
+    test('event ordering: terminal events come after started', () => {
+      // Create run in created state to test full lifecycle
+      const run = new FlowRun({
+        run_id: RUN_ID,
+        flow_slug: FLOW_SLUG,
+        status: FlowRunStatus.Started,
+        input: { foo: 'bar' } as any,
+        output: null,
+        error: null,
+        error_message: null,
+        started_at: new Date(),
+        completed_at: null,
+        failed_at: null,
+        remaining_steps: 1,
+      });
+
+      const tracker = createEventTracker();
+      run.on('*', tracker.callback);
+
+      // Emit a started event first
+      const startedEvent = createRunStartedEvent({ run_id: RUN_ID });
+      run.updateState(toTypedRunEvent(startedEvent)); // Will be rejected as already started
+
+      // Then completed
+      const completedEvent = createRunCompletedEvent({ run_id: RUN_ID });
+      run.updateState(toTypedRunEvent(completedEvent));
+
+      // We should only have completed (started was rejected)
+      expect(tracker).toHaveReceivedTotalEvents(1);
+      expect(tracker).toHaveReceivedEvent('run:completed');
+    });
+
+    test('comprehensive payload validation for completed events', () => {
+      const run = createFlowRun({
+        run_id: RUN_ID,
+        remaining_steps: 1,
+      });
+
+      const tracker = createEventTracker();
+      run.on('*', tracker.callback);
+
+      const output = {
+        data: [1, 2, 3],
+        metadata: { count: 3, processed: true },
+      };
+
+      const completedEvent = createRunCompletedEvent({
+        run_id: RUN_ID,
+        output,
+      });
+      run.updateState(toTypedRunEvent(completedEvent));
+
+      // Use matchers for comprehensive payload validation
+      expect(tracker).toHaveReceivedEventCount('run:completed', 1);
+      expect(tracker).toHaveReceivedEvent('run:completed', {
+        run_id: RUN_ID,
+        status: FlowRunStatus.Completed,
+        output,
+        // Note: completed events don't include error, error_message fields
+      });
+
+      // Note: Broadcast events have timestamps as ISO strings, not Date objects
+      // The event tracker stores them as-is (strings)
+    });
+
+    test('comprehensive payload validation for failed events', () => {
+      const run = createFlowRun({
+        run_id: RUN_ID,
+        remaining_steps: 1,
+      });
+
+      const tracker = createEventTracker();
+      run.on('*', tracker.callback);
+
+      const errorMessage = 'Network timeout after 30s';
+      const failedEvent = createRunFailedEvent({
+        run_id: RUN_ID,
+        error_message: errorMessage,
+      });
+      run.updateState(toTypedRunEvent(failedEvent));
+
+      // Use matchers for comprehensive payload validation
+      expect(tracker).toHaveReceivedEventCount('run:failed', 1);
+      expect(tracker).toHaveReceivedEvent('run:failed', {
+        run_id: RUN_ID,
+        status: FlowRunStatus.Failed,
+        error_message: errorMessage,
+        // Note: failed events don't include output field
+      });
+
+      // Note: Broadcast events don't include error as Error instances
+      // They only have error_message (string) and failed_at (ISO string), not Date objects
     });
   });
 
@@ -484,6 +679,122 @@ describe('FlowRun', () => {
       const result = await waitPromise;
       expect(result).toBe(run);
       expect(run.status).toBe(FlowRunStatus.Completed);
+    });
+
+    test('resolves when target status Failed is reached', async () => {
+      const run = createFlowRun({ run_id: RUN_ID });
+      const failedEvent = createRunFailedEvent({
+        run_id: RUN_ID,
+        error_message: 'Task execution failed',
+      });
+
+      // Create a promise that should resolve when the status is updated to Failed
+      const waitPromise = run.waitForStatus(FlowRunStatus.Failed);
+
+      // Update the status after a delay
+      setTimeout(() => {
+        run.updateState(toTypedRunEvent(failedEvent));
+      }, 1000);
+
+      // Advance timers to trigger the update
+      await advanceTimersAndFlush(1000);
+
+      // Wait for the promise to resolve
+      const result = await waitPromise;
+      expect(result).toBe(run);
+      expect(run.status).toBe(FlowRunStatus.Failed);
+      expect(run.error_message).toBe('Task execution failed');
+    });
+
+    test('waitForStatus(Failed) times out if failure does not occur', async () => {
+      const run = new FlowRun({
+        run_id: RUN_ID,
+        flow_slug: FLOW_SLUG,
+        status: FlowRunStatus.Started,
+        input: { foo: 'bar' } as any,
+        output: null,
+        error: null,
+        error_message: null,
+        started_at: new Date(),
+        completed_at: null,
+        failed_at: null,
+        remaining_steps: 1,
+      });
+
+      // Should timeout after 5000ms if run never fails
+      const waitPromise = run.waitForStatus(FlowRunStatus.Failed, {
+        timeoutMs: 5000,
+      });
+
+      // Immediately add catch handler to avoid unhandled rejection
+      const expectPromise = expect(waitPromise).rejects.toThrow(/Timeout waiting for run/);
+
+      // Advance timers past the timeout
+      await advanceTimersAndFlush(5001);
+
+      // Wait for the expectation to complete
+      await expectPromise;
+    });
+
+    test('waitForStatus(Failed) can be aborted with AbortSignal', async () => {
+      const run = new FlowRun({
+        run_id: RUN_ID,
+        flow_slug: FLOW_SLUG,
+        status: FlowRunStatus.Started,
+        input: { foo: 'bar' } as any,
+        output: null,
+        error: null,
+        error_message: null,
+        started_at: new Date(),
+        completed_at: null,
+        failed_at: null,
+        remaining_steps: 1,
+      });
+
+      // Create an abort controller
+      const controller = new AbortController();
+
+      // Create a promise that should be aborted
+      const waitPromise = run.waitForStatus(FlowRunStatus.Failed, {
+        signal: controller.signal,
+      });
+
+      // Immediately add catch handler to avoid unhandled rejection
+      const expectPromise = expect(waitPromise).rejects.toThrow(/Aborted waiting for run/);
+
+      // Abort the operation
+      setTimeout(() => {
+        controller.abort();
+      }, 1000);
+
+      // Advance timers to trigger the abort
+      await advanceTimersAndFlush(1000);
+
+      // Wait for the expectation to complete
+      await expectPromise;
+    });
+
+    test('waitForStatus(Failed) resolves if already in Failed status', async () => {
+      const run = new FlowRun({
+        run_id: RUN_ID,
+        flow_slug: FLOW_SLUG,
+        status: FlowRunStatus.Failed,
+        input: { foo: 'bar' } as any,
+        output: null,
+        error: new Error('Already failed'),
+        error_message: 'Already failed',
+        started_at: new Date(),
+        completed_at: null,
+        failed_at: new Date(),
+        remaining_steps: 1,
+      });
+
+      // Should resolve immediately since already in Failed status
+      const waitPromise = run.waitForStatus(FlowRunStatus.Failed);
+      const result = await waitPromise;
+
+      expect(result).toBe(run);
+      expect(run.status).toBe(FlowRunStatus.Failed);
     });
   });
 

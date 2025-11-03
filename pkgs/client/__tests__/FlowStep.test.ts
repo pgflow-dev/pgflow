@@ -46,6 +46,12 @@ describe('FlowStep', () => {
         step_slug: STEP_SLUG,
       });
 
+      // Set up event tracking
+      const allTracker = createEventTracker();
+      const startedTracker = createEventTracker();
+      step.on('*', allTracker.callback);
+      step.on('started', startedTracker.callback);
+
       // Update state and verify
       const result = step.updateState(startedEvent);
       expect(result).toBe(true);
@@ -53,6 +59,17 @@ describe('FlowStep', () => {
       // Check state was updated correctly
       expect(step.status).toBe(FlowStepStatus.Started);
       expect(step.started_at).toBeInstanceOf(Date);
+
+      // Verify events were emitted with comprehensive matchers
+      expect(allTracker).toHaveReceivedTotalEvents(1);
+      expect(startedTracker).toHaveReceivedEvent('step:started');
+      expect(allTracker).toHaveReceivedEvent('step:started', {
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        status: FlowStepStatus.Started,
+      });
+      expect(allTracker).toNotHaveReceivedEvent('step:completed');
+      expect(allTracker).toNotHaveReceivedEvent('step:failed');
     });
 
     test('handles completed event correctly', () => {
@@ -69,6 +86,12 @@ describe('FlowStep', () => {
         output: { step_result: 'success' },
       });
 
+      // Set up event tracking
+      const allTracker = createEventTracker();
+      const completedTracker = createEventTracker();
+      step.on('*', allTracker.callback);
+      step.on('completed', completedTracker.callback);
+
       // Update state and verify
       const result = step.updateState(completedEvent);
       expect(result).toBe(true);
@@ -77,6 +100,18 @@ describe('FlowStep', () => {
       expect(step.status).toBe(FlowStepStatus.Completed);
       expect(step.completed_at).toBeInstanceOf(Date);
       expect(step.output).toEqual({ step_result: 'success' });
+
+      // Verify events were emitted with comprehensive matchers and payload validation
+      expect(allTracker).toHaveReceivedTotalEvents(1);
+      expect(completedTracker).toHaveReceivedEvent('step:completed');
+      expect(allTracker).toHaveReceivedEvent('step:completed', {
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        status: FlowStepStatus.Completed,
+        output: { step_result: 'success' },
+      });
+      expect(allTracker).toNotHaveReceivedEvent('step:failed');
+      expect(allTracker).toNotHaveReceivedEvent('step:started');
     });
 
     test('handles failed event correctly', () => {
@@ -93,6 +128,12 @@ describe('FlowStep', () => {
         error_message: 'Step failed',
       });
 
+      // Set up event tracking
+      const allTracker = createEventTracker();
+      const failedTracker = createEventTracker();
+      step.on('*', allTracker.callback);
+      step.on('failed', failedTracker.callback);
+
       // Update state and verify
       const result = step.updateState(failedEvent);
       expect(result).toBe(true);
@@ -103,6 +144,21 @@ describe('FlowStep', () => {
       expect(step.error_message).toBe('Step failed');
       expect(step.error).toBeInstanceOf(Error);
       expect(step.error?.message).toBe('Step failed');
+
+      // Verify events were emitted with comprehensive matchers and payload validation
+      expect(allTracker).toHaveReceivedTotalEvents(1);
+      expect(failedTracker).toHaveReceivedEvent('step:failed');
+      expect(allTracker).toHaveReceivedEvent('step:failed', {
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        status: FlowStepStatus.Failed,
+        error_message: 'Step failed',
+      });
+      expect(allTracker).toNotHaveReceivedEvent('step:completed');
+      expect(allTracker).toNotHaveReceivedEvent('step:started');
+
+      // Note: Broadcast events don't include error as Error instances
+      // They only have error_message as strings (already verified above)
     });
 
     test('handles events with missing fields gracefully', () => {
@@ -266,6 +322,222 @@ describe('FlowStep', () => {
       
       // Output should remain unchanged
       expect(step.output).toEqual({ step_result: 'success' });
+    });
+  });
+
+  describe('Step Event Lifecycles', () => {
+    test('normal step: started → completed with full event sequence', () => {
+      const step = createFlowStep({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG as any,
+      });
+
+      const tracker = createEventTracker();
+      step.on('*', tracker.callback);
+
+      // Simulate started event
+      const startedEvent = createStepStartedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+      });
+      step.updateState(startedEvent);
+
+      // Simulate completed event
+      const completedEvent = createStepCompletedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        output: { result: 'done' },
+      });
+      step.updateState(completedEvent);
+
+      // Verify exact event sequence
+      expect(tracker).toHaveReceivedTotalEvents(2);
+      expect(tracker).toHaveReceivedEventSequence(['step:started', 'step:completed']);
+      expect(tracker).toHaveReceivedInOrder('step:started', 'step:completed');
+      expect(tracker).toNotHaveReceivedEvent('step:failed');
+
+      // Verify payload completeness
+      expect(tracker).toHaveReceivedEvent('step:started', {
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        status: FlowStepStatus.Started,
+      });
+      expect(tracker).toHaveReceivedEvent('step:completed', {
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        status: FlowStepStatus.Completed,
+        output: { result: 'done' },
+      });
+    });
+
+    test('normal step: started → failed with full event sequence', () => {
+      const step = createFlowStep({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG as any,
+      });
+
+      const tracker = createEventTracker();
+      step.on('*', tracker.callback);
+
+      // Simulate started event
+      const startedEvent = createStepStartedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+      });
+      step.updateState(startedEvent);
+
+      // Simulate failed event
+      const failedEvent = createStepFailedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        error_message: 'Handler threw exception',
+      });
+      step.updateState(failedEvent);
+
+      // Verify exact event sequence
+      expect(tracker).toHaveReceivedTotalEvents(2);
+      expect(tracker).toHaveReceivedEventSequence(['step:started', 'step:failed']);
+      expect(tracker).toHaveReceivedInOrder('step:started', 'step:failed');
+      expect(tracker).toNotHaveReceivedEvent('step:completed');
+
+      // Verify error payload
+      expect(tracker).toHaveReceivedEvent('step:failed', {
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        status: FlowStepStatus.Failed,
+        error_message: 'Handler threw exception',
+      });
+    });
+
+    test('empty map step: completed ONLY (no started event)', () => {
+      // Empty maps skip started and go straight to completed
+      const step = createFlowStep({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG as any,
+        status: FlowStepStatus.Created,
+      });
+
+      const tracker = createEventTracker();
+      step.on('*', tracker.callback);
+
+      // Simulate completed event without started (empty map behavior)
+      const completedEvent = createStepCompletedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        output: [], // Empty array output for empty map
+      });
+      step.updateState(completedEvent);
+
+      // Verify NO started event, only completed
+      expect(tracker).toHaveReceivedTotalEvents(1);
+      expect(tracker).toNotHaveReceivedEvent('step:started');
+      expect(tracker).toHaveReceivedEvent('step:completed');
+      expect(tracker).toHaveReceivedEventCount('step:completed', 1);
+
+      // Verify empty array output
+      expect(tracker).toHaveReceivedEvent('step:completed', {
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        status: FlowStepStatus.Completed,
+        output: [],
+      });
+    });
+
+    test('comprehensive payload validation for started events', () => {
+      const step = createFlowStep({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG as any,
+      });
+
+      const tracker = createEventTracker();
+      step.on('*', tracker.callback);
+
+      const startedEvent = createStepStartedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+      });
+      step.updateState(startedEvent);
+
+      // Use matchers for comprehensive payload validation
+      expect(tracker).toHaveReceivedEventCount('step:started', 1);
+      expect(tracker).toHaveReceivedEvent('step:started', {
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        status: FlowStepStatus.Started,
+        // Note: started events don't include completed_at, failed_at, output, error fields
+      });
+
+      // Note: Broadcast events have timestamps as ISO strings, not Date objects
+    });
+
+    test('comprehensive payload validation for completed events', () => {
+      const step = createFlowStep({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG as any,
+        status: FlowStepStatus.Started,
+        started_at: new Date(),
+      });
+
+      const tracker = createEventTracker();
+      step.on('*', tracker.callback);
+
+      const output = {
+        items: [1, 2, 3],
+        total: 3,
+        metadata: { processed: true },
+      };
+
+      const completedEvent = createStepCompletedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        output,
+      });
+      step.updateState(completedEvent);
+
+      // Use matchers for comprehensive payload validation
+      expect(tracker).toHaveReceivedEventCount('step:completed', 1);
+      expect(tracker).toHaveReceivedEvent('step:completed', {
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        status: FlowStepStatus.Completed,
+        output,
+        // Note: completed events don't include error, error_message fields
+      });
+
+      // Note: Broadcast events have timestamps as ISO strings, not Date objects
+    });
+
+    test('comprehensive payload validation for failed events', () => {
+      const step = createFlowStep({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG as any,
+        status: FlowStepStatus.Started,
+        started_at: new Date(),
+      });
+
+      const tracker = createEventTracker();
+      step.on('*', tracker.callback);
+
+      const errorMessage = 'Timeout: handler exceeded 30s limit';
+      const failedEvent = createStepFailedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        error_message: errorMessage,
+      });
+      step.updateState(failedEvent);
+
+      // Use matchers for comprehensive payload validation
+      expect(tracker).toHaveReceivedEventCount('step:failed', 1);
+      expect(tracker).toHaveReceivedEvent('step:failed', {
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        status: FlowStepStatus.Failed,
+        error_message: errorMessage,
+        // Note: failed events don't include output field
+      });
+
+      // Note: Broadcast events don't include error as Error instances
+      // They only have error_message (string) and failed_at (ISO string), not Date objects
     });
   });
 
@@ -496,6 +768,95 @@ describe('FlowStep', () => {
       
       const failedResult = await failedPromise;
       expect(failedResult.status).toBe(FlowStepStatus.Failed);
+    });
+
+    test('EDGE CASE: waitForStatus(Started) times out for empty map steps', async () => {
+      // Empty map steps skip 'started' and go straight to 'completed'
+      // This test documents that waiting for 'started' will timeout
+      const step = createFlowStep({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG as any,
+        status: FlowStepStatus.Created,
+      });
+
+      // Start waiting for 'started' status
+      const waitPromise = step.waitForStatus(FlowStepStatus.Started, { timeoutMs: 2000 });
+      const expectPromise = expect(waitPromise).rejects.toThrow(/Timeout waiting for step/);
+
+      // Simulate empty map: goes directly to completed WITHOUT started event
+      setTimeout(() => {
+        const completedEvent = createStepCompletedEvent({
+          run_id: RUN_ID,
+          step_slug: STEP_SLUG,
+          output: [], // Empty array indicates empty map
+        });
+        step.updateState(completedEvent);
+      }, 500);
+
+      await advanceTimersAndFlush(500);
+
+      // Step should be completed now
+      expect(step.status).toBe(FlowStepStatus.Completed);
+
+      // But waitForStatus(Started) should still timeout
+      await advanceTimersAndFlush(2000);
+      await expectPromise;
+    });
+
+    test('EDGE CASE: waitForStatus(Completed) succeeds immediately for empty maps', async () => {
+      // Empty map steps can go straight from Created to Completed
+      const step = createFlowStep({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG as any,
+        status: FlowStepStatus.Created,
+      });
+
+      // Start waiting for completed
+      const waitPromise = step.waitForStatus(FlowStepStatus.Completed, { timeoutMs: 5000 });
+
+      // Simulate empty map: goes directly to completed
+      setTimeout(() => {
+        const completedEvent = createStepCompletedEvent({
+          run_id: RUN_ID,
+          step_slug: STEP_SLUG,
+          output: [],
+        });
+        step.updateState(completedEvent);
+      }, 100);
+
+      await advanceTimersAndFlush(100);
+
+      // Should resolve successfully without ever seeing 'started'
+      const result = await waitPromise;
+      expect(result.status).toBe(FlowStepStatus.Completed);
+      expect(result.output).toEqual([]);
+    });
+
+    test('EDGE CASE: normal step waitForStatus(Started) works as expected', async () => {
+      // This test confirms normal steps DO send started events
+      const step = createFlowStep({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG as any,
+        status: FlowStepStatus.Created,
+      });
+
+      // Normal steps should successfully wait for 'started'
+      const waitPromise = step.waitForStatus(FlowStepStatus.Started, { timeoutMs: 5000 });
+
+      // Simulate normal step: sends started event
+      setTimeout(() => {
+        const startedEvent = createStepStartedEvent({
+          run_id: RUN_ID,
+          step_slug: STEP_SLUG,
+        });
+        step.updateState(startedEvent);
+      }, 100);
+
+      await advanceTimersAndFlush(100);
+
+      // Should resolve successfully
+      const result = await waitPromise;
+      expect(result.status).toBe(FlowStepStatus.Started);
     });
   });
 });

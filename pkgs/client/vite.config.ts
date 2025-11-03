@@ -50,6 +50,7 @@ export default defineConfig({
     include: [
       '__tests__/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
+    setupFiles: ['__tests__/setup.ts'],
     reporters: ['default'],
     coverage: {
       reportsDirectory: '../../coverage/pkgs/client',

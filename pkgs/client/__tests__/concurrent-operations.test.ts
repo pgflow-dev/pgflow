@@ -10,6 +10,7 @@ import {
   emitBroadcastEvent,
   mockSequentialUuids,
   setupConcurrentOperations,
+  createEventTracker,
 } from './helpers/test-utils';
 import {
   createStepStartedEvent,
@@ -151,22 +152,36 @@ describe('Concurrent Operations', () => {
       const run = await pgflowClient.getRun<typeof TestFlow>(RUN_ID);
       if (!run) throw new Error('Run not found');
 
-      // Track events on the run
-      const runEvents: string[] = [];
-      run.on('*', (event) => runEvents.push(event.event_type));
+      // Track events on the run with event tracker
+      const runTracker = createEventTracker();
+      run.on('*', runTracker.callback);
 
       // Emit completed event
-      const completedEvent = createRunCompletedEvent({ run_id: RUN_ID });
+      const output = { final: 'result' };
+      const completedEvent = createRunCompletedEvent({
+        run_id: RUN_ID,
+        output,
+      });
       emitBroadcastEvent(mocks, 'run:completed', completedEvent);
 
-      // Verify event was received
-      expect(runEvents).toEqual(['run:completed']);
+      // Verify event was received with comprehensive matchers
+      expect(runTracker).toHaveReceivedTotalEvents(1);
+      expect(runTracker).toHaveReceivedEventCount('run:completed', 1);
+      expect(runTracker).toHaveReceivedEvent('run:completed', {
+        run_id: RUN_ID,
+        status: FlowRunStatus.Completed,
+        output,
+      });
+      expect(runTracker).toNotHaveReceivedEvent('run:failed');
+      expect(runTracker).toNotHaveReceivedEvent('run:started');
+
+      // Verify run state was updated
       expect(run.status).toBe(FlowRunStatus.Completed);
+      expect(run.output).toEqual(output);
     });
 
     it('forwards step events through the client', async () => {
       const { client, mocks } = createMockClient();
-
 
       const pgflowClient = new PgflowClient(client);
 
@@ -184,25 +199,46 @@ describe('Concurrent Operations', () => {
 
       const step = run.step(STEP_SLUG as any);
 
-      // Track events on the step
-      const stepEvents: string[] = [];
-      step.on('*', (event) => stepEvents.push(event.event_type));
+      // Track events on the step with event tracker
+      const stepTracker = createEventTracker();
+      step.on('*', stepTracker.callback);
 
       // Get the broadcast handler and emit events
-      const startedEvent = createStepStartedEvent({ run_id: RUN_ID });
-      const completedEvent = createStepCompletedEvent({ run_id: RUN_ID });
-      
+      const startedEvent = createStepStartedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+      });
+      const output = { step_result: 'success' };
+      const completedEvent = createStepCompletedEvent({
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        output,
+      });
+
       emitBroadcastEvent(mocks, 'step:started', startedEvent);
       emitBroadcastEvent(mocks, 'step:completed', completedEvent);
 
-      // Verify events were received (step was already started, so only completed event is processed)
-      expect(stepEvents).toEqual(['step:completed']);
+      // Verify events were received with comprehensive matchers
+      // Note: step was already in 'started' state from stepStatesSample,
+      // so the started event is rejected and only completed is processed
+      expect(stepTracker).toHaveReceivedTotalEvents(1);
+      expect(stepTracker).toHaveReceivedEventCount('step:completed', 1);
+      expect(stepTracker).toHaveReceivedEvent('step:completed', {
+        run_id: RUN_ID,
+        step_slug: STEP_SLUG,
+        status: FlowStepStatus.Completed,
+        output,
+      });
+      expect(stepTracker).toNotHaveReceivedEvent('step:started');
+      expect(stepTracker).toNotHaveReceivedEvent('step:failed');
+
+      // Verify step state was updated
       expect(step.status).toBe(FlowStepStatus.Completed);
+      expect(step.output).toEqual(output);
     });
 
     it('ignores events with wrong run_id', async () => {
       const { client, mocks } = createMockClient();
-
 
       const pgflowClient = new PgflowClient(client);
 
@@ -218,17 +254,27 @@ describe('Concurrent Operations', () => {
       const run = await pgflowClient.getRun<typeof TestFlow>(RUN_ID);
       if (!run) throw new Error('Run not found');
 
-      // Track events
-      const events: string[] = [];
-      run.on('*', (event) => events.push(event.event_type));
+      // Track events with event tracker
+      const runTracker = createEventTracker();
+      run.on('*', runTracker.callback);
 
       // Emit event with different run_id
-      const wrongRunEvent = createRunCompletedEvent({ run_id: 'different-id' });
+      const wrongRunId = 'different-id-12345';
+      const wrongRunEvent = createRunCompletedEvent({
+        run_id: wrongRunId,
+        output: { should: 'be ignored' },
+      });
       emitBroadcastEvent(mocks, 'run:completed', wrongRunEvent);
 
-      // Should not receive event
-      expect(events).toEqual([]);
+      // Verify no events were received using comprehensive matchers
+      expect(runTracker).toHaveReceivedTotalEvents(0);
+      expect(runTracker).toNotHaveReceivedEvent('run:completed');
+      expect(runTracker).toNotHaveReceivedEvent('run:failed');
+      expect(runTracker).toNotHaveReceivedEvent('run:started');
+
+      // Verify run state remains unchanged
       expect(run.status).toBe(FlowRunStatus.Started);
+      expect(run.output).toBeNull();
     });
   });
 
