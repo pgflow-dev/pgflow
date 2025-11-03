@@ -17,6 +17,12 @@ Existing articles in the news directory:
 
 ## Multi-Step Process
 
+<critical>
+ALL user confirmations and choices MUST use AskUserQuestion tool.
+Interactive buttons prevent overthinking and force clear decisions.
+Never just "ask" in plain text - always use the tool.
+</critical>
+
 Follow these steps to create the article:
 
 ### Step 0: Analyze Existing Article Styles (PARALLEL)
@@ -37,27 +43,62 @@ Review the recent conversation history and user arguments to understand:
 - Who the target audience is
 - What problem or question the article addresses
 
-### Step 2: Confirm Article Focus
+### Step 2: Confirm Article Focus (via AskUserQuestion tool)
 
-Ensure you understand what the article should focus on. If you have any doubts about:
-- The main topic or angle
-- The scope of coverage
+Analyze the context and infer what the article should focus on. Then use AskUserQuestion to confirm:
+
+**Step 2.1**: Review conversation history and arguments to infer:
+- Main topic or angle
+- Scope of coverage
 - Key points to emphasize
+- Target audience
 
-Ask clarifying questions and wait for user confirmation before proceeding.
+**Step 2.2**: Use AskUserQuestion with inferred focus:
+```
+question: "What should this article focus on?"
+header: "Focus"
+options:
+  - [Inferred topic from context, e.g., "New feature X with use cases"]
+  - [Alternative angle if applicable, e.g., "Breaking change Y and migration guide"]
+  - "Something else"
+multiSelect: false
+```
 
-### Step 3: Create Topics List
+If scope or target audience is unclear, follow with:
+```
+question: "Who is the target audience?"
+header: "Audience"
+options:
+  - "New users getting started"
+  - "Existing users upgrading"
+  - "Advanced users seeking deep technical details"
+multiSelect: false
+```
 
-Create a list of topics/points to cover in the article. Present it as an a/b/c/d list for easy editing:
+### Step 3: Create Topics List (via AskUserQuestion tool)
+
+Create a list of topics/points to cover in the article. Present it as an a/b/c/d list:
 
 a) First topic
 b) Second topic
 c) Third topic
 d) Fourth topic
 
-Allow the user to provide feedback like "remove b and d" or "add X between a and c". Iterate until the user agrees with the list.
+Then use AskUserQuestion to confirm:
+```
+question: "Does this topics list cover everything?"
+header: "Topics OK?"
+options:
+  - label: "Yes, looks good"
+    description: "All necessary topics are covered"
+  - label: "Needs changes"
+    description: "Remove, add, or reorder topics"
+multiSelect: false
+```
 
-### Step 4: Suggest Outline
+If "Needs changes", ask for specific edits in plain text, update the list, and ask again until confirmed.
+
+### Step 4: Suggest Outline (via AskUserQuestion tool)
 
 Create a high-level outline using H2 and H3 headings. Include placeholders for specific content types:
 - `<code snippet for X>`
@@ -66,17 +107,57 @@ Create a high-level outline using H2 and H3 headings. Include placeholders for s
 - `<comparison table>`
 - `<diagram/visual>`
 
-Present the outline to the user for review and refinement.
+Present the outline, then use AskUserQuestion to confirm:
+```
+question: "Does this outline structure work?"
+header: "Outline OK?"
+options:
+  - label: "Yes, proceed"
+    description: "Structure and flow look good"
+  - label: "Needs adjustments"
+    description: "Reorganize, add, or remove sections"
+multiSelect: false
+```
 
-### Step 5: Suggest Title
+If "Needs adjustments", ask for specific changes in plain text, update the outline, and ask again until confirmed.
 
-Suggest a concise, descriptive title for the article. Follow the pattern from existing articles (e.g., "pgflow 0.6.1: Worker Configuration in Handler Context").
+### Step 5: Suggest Title (via AskUserQuestion tool)
 
-Iterate with the user until the title is confirmed.
+Generate 2-3 concise, descriptive title options. Follow the pattern from existing articles (e.g., "pgflow 0.6.1: Worker Configuration in Handler Context").
 
-### Step 6: Describe Cover Image (Optional)
+Use AskUserQuestion to select:
+```
+question: "Which title works best?"
+header: "Title"
+options:
+  - label: "Option 1"
+    description: "[First title suggestion]"
+  - label: "Option 2"
+    description: "[Second title suggestion]"
+  - label: "Option 3"
+    description: "[Third title suggestion]"
+  - label: "Custom"
+    description: "I'll provide my own title"
+multiSelect: false
+```
 
-If a cover image would enhance the article, describe a scene that is:
+If "Custom", accept user's title suggestion.
+
+### Step 6: Describe Cover Image (via AskUserQuestion tool)
+
+Use AskUserQuestion to decide if cover image is needed:
+```
+question: "Should this article have a cover image?"
+header: "Cover?"
+options:
+  - label: "Yes"
+    description: "Article would benefit from visual representation"
+  - label: "No"
+    description: "Skip cover image for now"
+multiSelect: false
+```
+
+If "Yes", describe a scene that is:
 - Cyberpunk-themed OR involves robots/automation/hackers
 - Uses colors from the dark mode palette:
   - Deep teal (accent-low): #002b26
@@ -85,13 +166,37 @@ If a cover image would enhance the article, describe a scene that is:
   - Dark gray: #182b28, #2a3d39
   - Near-black: #121a19
 
-You can reference these colors by name (e.g., "deep teal background with light teal accents") without specifying hex codes.
+Reference colors by name (e.g., "deep teal background with light teal accents") without hex codes.
 
 Example: "A cyberpunk database server glowing with teal circuits, surrounded by flowing data streams in deep teal and light teal, against a near-black background with dark gray geometric patterns."
 
-### Step 7: Write the Article
+Present the description and ask for confirmation using AskUserQuestion:
+```
+question: "Does this cover image description work?"
+header: "Image OK?"
+options:
+  - label: "Yes"
+    description: "Description captures the article theme"
+  - label: "Revise"
+    description: "Adjust the description"
+multiSelect: false
+```
 
-Write the article to `pkgs/website/src/content/docs/news/<slug>.mdx` where `<slug>` is derived from the title (lowercase, hyphenated).
+### Step 7: Write the Article (via AskUserQuestion tool)
+
+Before writing, confirm with the user:
+```
+question: "Ready to write the article?"
+header: "Write?"
+options:
+  - label: "Yes, write it"
+    description: "All planning confirmed, proceed with article creation"
+  - label: "Wait"
+    description: "Need to adjust something first"
+multiSelect: false
+```
+
+If "Yes, write it", write the article to `pkgs/website/src/content/docs/news/<slug>.mdx` where `<slug>` is derived from the title (lowercase, hyphenated).
 
 **Article Requirements:**
 
