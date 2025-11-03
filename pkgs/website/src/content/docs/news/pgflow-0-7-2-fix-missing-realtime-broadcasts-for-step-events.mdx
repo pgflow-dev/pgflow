@@ -1,0 +1,40 @@
+---
+draft: false
+title: 'pgflow 0.7.2: Fix Missing Realtime Broadcasts for Step Events'
+description: 'Critical fix for missing step:started and step:completed realtime events'
+date: 2025-01-04
+authors:
+  - jumski
+tags:
+  - bugfix
+  - realtime
+  - client
+  - core
+featured: true
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+pgflow 0.7.2 fixes missing realtime broadcasts that prevented clients from receiving `step:started` and `step:completed` events. PostgreSQL's query optimizer was eliminating CTEs containing `realtime.send()` calls because they weren't referenced by subsequent operations.
+
+## What's Fixed
+
+- `step:started` events now broadcast when steps begin executing
+- `step:completed` events now broadcast for empty map steps
+- `step:completed` events now broadcast for cascade completions
+- Client applySnapshot() methods added for proper initial state hydration without event emission
+
+## Additional Changes
+
+- Enhanced test coverage for realtime event lifecycles
+- Documentation updates for abort signal support and empty map step behavior
+
+## Upgrading
+
+<Aside type="note" title="Migration Required">
+This release includes database migrations. See the [update guide](/deploy/update-pgflow/) for instructions.
+</Aside>
+
+---
+
+**Questions or issues?** Join our [Discord community](https://www.pgflow.dev/discord/) or [open an issue on GitHub](https://github.com/pgflow-dev/pgflow/issues).

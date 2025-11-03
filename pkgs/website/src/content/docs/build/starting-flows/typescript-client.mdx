@@ -221,6 +221,46 @@ if (result.status === FlowRunStatus.Failed) {
 }
 ```
 
+## Canceling Wait Operations
+
+Use `AbortSignal` to cancel waiting operations when needed:
+
+```typescript
+const controller = new AbortController();
+
+// Start waiting with abort signal
+const waitPromise = run.waitForStatus(FlowRunStatus.Completed, {
+  timeoutMs: 60000,
+  signal: controller.signal,
+});
+
+// Cancel if user navigates away (browser example)
+window.addEventListener('beforeunload', () => {
+  controller.abort();
+});
+
+// Or cancel on user action
+document.getElementById('cancel-btn')?.addEventListener('click', () => {
+  controller.abort();
+});
+
+try {
+  await waitPromise;
+  console.log('Workflow completed:', run.output);
+} catch (error) {
+  if (error.message.includes('Aborted')) {
+    console.log('User canceled the operation');
+  } else {
+    throw error; // Re-throw other errors
+  }
+}
+```
+
+This is particularly useful in interactive applications where users might:
+- Navigate away before workflow completion
+- Cancel long-running operations
+- Switch between different workflows
+
 ## Resource Cleanup
 
 :::caution
