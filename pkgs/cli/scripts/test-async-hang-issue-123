@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 # Script to test if pgflow CLI compile hangs on flows with async functions
 # This reproduces issue #123: https://github.com/pgflow-dev/pgflow/issues/123
@@ -12,25 +12,27 @@ set -e
 cd "$(dirname "$0")/.."
 ROOT_DIR=$(pwd)
 
+# Create unique temp directory for this test
+TEST_DIR=$(mktemp -d)
+trap "rm -rf $TEST_DIR" EXIT
+
 echo "🧪 Testing async function compilation"
 echo "   Issue #123: https://github.com/pgflow-dev/pgflow/issues/123"
+echo "📁 Test directory: $TEST_DIR"
 echo ""
 
-# Clean up any existing output
-echo "🧹 Cleaning up old test directory"
-rm -rf supabase/
-
-# Initialize a fresh Supabase project
+# Initialize a fresh Supabase project in temp dir
+cd "$TEST_DIR"
 echo "🏗️ Creating new Supabase project"
-npx -y supabase@latest init --force --with-vscode-settings --with-intellij-settings
+pnpm --dir="$ROOT_DIR" supabase init --workdir "$TEST_DIR" --with-vscode-settings --with-intellij-settings
 
 # Install pgflow with our CLI
 echo "📦 Installing pgflow with CLI"
-node dist/index.js install --supabase-path supabase/ --yes
+node "$ROOT_DIR/dist/index.js" install --supabase-path supabase/ --yes
 
 # Try to compile the flow with async functions
 echo "🔧 Compiling flow with async functions"
-timeout 30s node dist/index.js compile examples/async-function-hang.ts --deno-json examples/deno.json --supabase-path supabase || {
+timeout 30s node "$ROOT_DIR/dist/index.js" compile "$ROOT_DIR/examples/async-function-hang.ts" --deno-json "$ROOT_DIR/examples/deno.json" --supabase-path supabase || {
   EXIT_CODE=$?
   if [ $EXIT_CODE -eq 124 ]; then
     echo "❌ FAILURE: Compilation hung and was killed by timeout (30s)"

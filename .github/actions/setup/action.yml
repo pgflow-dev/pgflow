@@ -1,6 +1,11 @@
 name: 'Setup pgflow workspace'
 description: 'Common setup steps for pgflow CI workflow (run after checkout)'
 
+inputs:
+  atlas-cloud-token:
+    description: 'Atlas Cloud token for schema verification'
+    required: false
+
 runs:
   using: 'composite'
   steps:
@@ -28,6 +33,20 @@ runs:
         cache: 'pnpm'
         cache-dependency-path: |
           **/pnpm-lock.yaml
+
+    - name: Setup Deno
+      uses: denoland/setup-deno@v2
+      with:
+        deno-version: '2.1.4'
+
+    - name: Install sqruff
+      uses: quarylabs/install-sqruff-cli-action@main
+
+    - name: Setup Atlas
+      if: inputs.atlas-cloud-token != ''
+      uses: ariga/setup-atlas@master
+      with:
+        cloud-token: ${{ inputs.atlas-cloud-token }}
 
     - name: Install dependencies
       shell: bash

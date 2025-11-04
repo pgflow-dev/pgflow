@@ -17,6 +17,7 @@
   "module": "./dist/index.js",
   "devDependencies": {
     "@types/node": "^22.14.1",
+    "supabase": "^2.34.3",
     "tsx": "^4.19.3"
   },
   "dependencies": {

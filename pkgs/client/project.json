@@ -58,19 +58,6 @@
       "executor": "@nx/eslint:lint",
       "inputs": ["default", "^production"]
     },
-    "supabase:ensure-started": {
-      "executor": "nx:run-commands",
-      "local": true,
-      "cache": false,
-      "dependsOn": ["supabase:prepare"],
-      "options": {
-        "cwd": "{projectRoot}",
-        "commands": [
-          "../../scripts/supabase-start-locked.sh ."
-        ],
-        "parallel": false
-      }
-    },
     "supabase:start": {
       "executor": "nx:run-commands",
       "local": true,
@@ -138,6 +125,31 @@
         "parallel": false
       }
     },
+    "db:ensure": {
+      "executor": "nx:run-commands",
+      "local": true,
+      "dependsOn": ["supabase:prepare"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          "../../scripts/supabase-start-locked.sh .",
+          "./scripts/ensure-db"
+        ],
+        "parallel": false
+      },
+      "inputs": [
+        "{projectRoot}/scripts/ensure-db",
+        "{workspaceRoot}/pkgs/core/supabase/migrations/**/*.sql",
+        "{workspaceRoot}/pkgs/core/supabase/seed.sql",
+        "{projectRoot}/supabase/config.toml",
+        "{projectRoot}/tests/helpers/db.ts",
+        "{projectRoot}/tests/helpers/permissions.ts"
+      ],
+      "outputs": [
+        "{projectRoot}/.nx-inputs/db-ready.txt"
+      ],
+      "cache": false
+    },
     "test:integration": {
       "executor": "nx:run-commands",
       "local": true,
@@ -181,7 +193,15 @@
     "test": {
       "executor": "nx:noop",
       "inputs": ["default", "^production"],
-      "dependsOn": ["test:vitest", "test:types"]
+      "dependsOn": ["test:unit", "test:types"]
+    },
+    "test:live": {
+      "executor": "nx:noop",
+      "inputs": ["default", "^production"],
+      "dependsOn": ["test:integration"],
+      "metadata": {
+        "description": "Tests requiring live infrastructure (Supabase)"
+      }
     },
     "benchmark": {
       "executor": "nx:run-commands",

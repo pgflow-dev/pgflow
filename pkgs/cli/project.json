@@ -37,14 +37,21 @@
     "test": {
       "executor": "nx:noop",
       "inputs": ["default", "^production"],
+      "dependsOn": ["test:vitest"]
+    },
+    "test:live": {
+      "executor": "nx:noop",
+      "inputs": ["default", "^production"],
       "dependsOn": [
-        "test:vitest",
         "test:e2e:install",
         "test:e2e:compile",
         "test:e2e:async-hang-issue-123"
       ],
       "options": {
         "parallel": false
+      },
+      "metadata": {
+        "description": "Tests requiring external tools (Supabase CLI)"
       }
     },
     "test:vitest": {
@@ -75,14 +82,8 @@
       "dependsOn": ["test:e2e:install", "build"],
       "inputs": ["default", "^production"],
       "options": {
-        "commands": [
-          "rm -rf supabase/",
-          "npx -y supabase@latest init --force --with-vscode-settings --with-intellij-settings",
-          "node dist/index.js compile examples/analyze_website.ts --deno-json examples/deno.json --supabase-path supabase",
-          "./scripts/assert-flow-compiled"
-        ],
-        "cwd": "{projectRoot}",
-        "parallel": false
+        "command": "./scripts/test-compile",
+        "cwd": "{projectRoot}"
       }
     },
     "test:e2e:async-hang-issue-123": {

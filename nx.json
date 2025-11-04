@@ -81,7 +81,23 @@
     "preview": {
       "dependsOn": ["^build"]
     },
-    "supabase:*": {
+    "supabase:start": {
+      "local": true,
+      "cache": false
+    },
+    "supabase:stop": {
+      "local": true,
+      "cache": false
+    },
+    "supabase:status": {
+      "local": true,
+      "cache": false
+    },
+    "supabase:reset": {
+      "local": true,
+      "cache": false
+    },
+    "supabase:restart": {
       "local": true,
       "cache": false
     },
@@ -95,8 +111,13 @@
       "local": true
     },
     "verify-*": {
-      "local": true,
       "cache": true
+    },
+    "db:verify": {
+      "cache": true
+    },
+    "test:live": {
+      "local": true
     },
     "dump-realtime-schema": {
       "local": true,

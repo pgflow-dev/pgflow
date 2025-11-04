@@ -74,6 +74,14 @@
       },
       "cache": true
     },
+    "db:verify": {
+      "executor": "nx:noop",
+      "dependsOn": ["verify-schemas-synced", "verify-migrations", "verify-gen-types"],
+      "cache": true,
+      "metadata": {
+        "description": "Run all database verification tasks"
+      }
+    },
     "build": {
       "executor": "@nx/js:tsc",
       "inputs": ["production", "databaseTypes", "^production"],
@@ -137,18 +145,6 @@
         "parallel": false
       }
     },
-    "supabase:ensure-started": {
-      "executor": "nx:run-commands",
-      "local": true,
-      "cache": false,
-      "options": {
-        "cwd": "{projectRoot}",
-        "commands": [
-          "../../scripts/supabase-start-locked.sh ."
-        ],
-        "parallel": false
-      }
-    },
     "supabase:start": {
       "executor": "nx:run-commands",
       "local": true,
@@ -204,8 +200,16 @@
     },
     "test": {
       "executor": "nx:noop",
-      "inputs": ["default", "^production", "schemas", "migrations", "pgtapTests", "databaseTypes"],
-      "dependsOn": ["test:pgtap", "test:vitest", "test:types"]
+      "inputs": ["default", "^production"],
+      "dependsOn": ["test:vitest", "test:types"]
+    },
+    "test:live": {
+      "executor": "nx:noop",
+      "inputs": ["schemas", "migrations", "pgtapTests"],
+      "dependsOn": ["test:pgtap"],
+      "metadata": {
+        "description": "Tests requiring live infrastructure (Supabase)"
+      }
     },
     "test:pgtap": {
       "executor": "nx:run-commands",
@@ -230,6 +234,21 @@
       "options": {
         "passWithNoTests": true,
         "reportsDirectory": "{workspaceRoot}/coverage/{projectRoot}"
+      }
+    },
+    "test:pgtap:watch": {
+      "executor": "nx:run-commands",
+      "local": true,
+      "dependsOn": ["verify-migrations"],
+      "inputs": ["schemas", "migrations", "pgtapTests"],
+      "cache": false,
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          "../../scripts/supabase-start-locked.sh .",
+          "scripts/watch-test"
+        ],
+        "parallel": false
       }
     },
     "gen-types": {
