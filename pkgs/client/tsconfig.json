@@ -3,6 +3,7 @@
   "compilerOptions": {},
   "files": [],
   "include": ["src/**/*"],
+  "exclude": ["dist"],
   "references": [
     {
       "path": "../dsl"
