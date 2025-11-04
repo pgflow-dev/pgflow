@@ -1,206 +1,210 @@
 <script lang="ts">
 	import type { createFlowState } from '$lib/stores/pgflow-state-improved.svelte';
-	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
-	import { Badge } from '$lib/components/ui/badge';
-	import { Button } from '$lib/components/ui/button';
+	import StatusBadge from '$lib/components/StatusBadge.svelte';
+	import { codeToHtml } from 'shiki';
 
 	interface Props {
 		flowState: ReturnType<typeof createFlowState>;
+		selectedStep?: string | null;
+		hoveredStep?: string | null;
 	}
 
-	let { flowState }: Props = $props();
+	let { flowState, selectedStep = null, hoveredStep = null }: Props = $props();
 
-	let eventStreamExpanded = $state(true);
-	let expandedSteps = $state<Set<string>>(new Set(['fetch_article']));
-	let expandedEvents = $state<Set<number>>(new Set());
+	let expandedEventIndices = $state<Set<number>>(new Set());
+	let highlightedEvents = $state<Map<number, string>>(new Map());
 
-	function toggleEventStream() {
-		eventStreamExpanded = !eventStreamExpanded;
-	}
+	async function toggleEvent(index: number, event: MouseEvent) {
+		// Stop propagation
+		event.stopPropagation();
 
-	function toggleStep(stepSlug: string) {
-		const newSet = new Set(expandedSteps);
-		if (newSet.has(stepSlug)) {
-			newSet.delete(stepSlug);
+		const wasExpanded = expandedEventIndices.has(index);
+
+		if (wasExpanded) {
+			// Collapse this event
+			expandedEventIndices = new Set();
 		} else {
-			newSet.add(stepSlug);
+			// Expand this event, collapse all others
+			expandedEventIndices = new Set([index]);
+
+			// Generate highlighted HTML if not already cached
+			if (!highlightedEvents.has(index)) {
+				const eventData = flowState.events[index].data;
+				const jsonString = JSON.stringify(eventData, null, 2);
+				const html = await codeToHtml(jsonString, {
+					lang: 'json',
+					theme: 'night-owl'
+				});
+				highlightedEvents.set(index, html);
+				// Trigger reactivity
+				highlightedEvents = new Map(highlightedEvents);
+			}
 		}
-		expandedSteps = newSet;
 	}
 
-	function toggleEvent(index: number) {
-		const newSet = new Set(expandedEvents);
-		if (newSet.has(index)) {
-			newSet.delete(index);
-		} else {
-			newSet.add(index);
+	// Clear cache when flow resets (events list becomes empty or significantly changes)
+	let lastEventCount = $state(0);
+	$effect(() => {
+		const currentEventCount = flowState.events.length;
+		// If events list was cleared or reduced significantly, clear the cache
+		if (currentEventCount === 0 || currentEventCount < lastEventCount - 5) {
+			highlightedEvents = new Map();
+			expandedEventIndices = new Set();
 		}
-		expandedEvents = newSet;
+		lastEventCount = currentEventCount;
+	});
+
+	// Get relative time from flow start
+	function formatRelativeTime(timestamp: Date, firstEventTimestamp: Date): string {
+		const diffMs = timestamp.getTime() - firstEventTimestamp.getTime();
+		const seconds = (diffMs / 1000).toFixed(3);
+		return `+${seconds}s`;
 	}
 
-	function formatTimestamp(timestamp: Date): string {
-		return timestamp.toLocaleTimeString('en-US', {
-			hour12: false,
-			hour: '2-digit',
-			minute: '2-digit',
-			second: '2-digit',
-			fractionalSecondDigits: 3
-		});
+	// Get display status from event_type (use the status part for badge coloring)
+	function getEventStatus(eventType: string): string {
+		return eventType.split(':')[1] || 'unknown';
 	}
 
-	function getStepStatus(stepSlug: string): string {
-		return flowState.stepStatuses[stepSlug] || 'pending';
+	// Get full event name for display
+	function getEventDisplayName(eventType: string): string {
+		return eventType;
 	}
 
-	function getStepOutput(stepSlug: string): any {
-		// Output will be in the events, find the completed event for this step
-		const completedEvent = flowState.events
-			.slice()
-			.reverse()
-			.find(
-				(e) =>
-					e.event_type === 'step:completed' && e.data?.step_slug === stepSlug
-			);
-		return completedEvent?.data?.output;
-	}
-
-	function getStepError(stepSlug: string): string | null {
-		// Error will be in the events, find the failed event for this step
-		const failedEvent = flowState.events
-			.slice()
-			.reverse()
-			.find(
-				(e) =>
-					e.event_type === 'step:failed' && e.data?.step_slug === stepSlug
-			);
-		return failedEvent?.data?.error_message || null;
-	}
-
-	function truncateOutput(output: any): string {
-		const str = typeof output === 'string' ? output : JSON.stringify(output, null, 2);
-		if (str.length > 200) {
-			return str.substring(0, 200) + '...';
-		}
-		return str;
-	}
-
-	const stepSlugs = ['fetch_article', 'summarize', 'extract_keywords', 'publish'];
-
-	function getStatusVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+	// Get color class for event name based on status
+	function getEventColor(eventType: string): string {
+		const status = getEventStatus(eventType);
 		switch (status) {
-			case 'completed':
-				return 'default';
-			case 'in_progress':
 			case 'started':
-				return 'secondary';
+				return 'text-[#5b8def]'; // blue (running)
+			case 'completed':
+				return 'text-[#20a56f]'; // green
 			case 'failed':
-				return 'destructive';
+				return 'text-[#f08060]'; // red
+			case 'created':
+				return 'text-[#607b75]'; // gray
 			default:
-				return 'outline';
+				return 'text-muted-foreground';
 		}
 	}
 </script>
 
-<div class="flex flex-col h-full">
-	<!-- Run Information - Sticky Header -->
-	<div class="sticky top-0 bg-card flex items-center justify-between text-xs pb-3 border-b">
-		<Badge variant="outline">{flowState.run?.flow_slug || 'article_flow'}</Badge>
-		<code class="text-muted-foreground font-mono">{flowState.run?.run_id?.substring(0, 8) || 'N/A'}...</code>
-		<Badge variant={getStatusVariant(flowState.status)}>{flowState.status}</Badge>
-	</div>
+<div class="flex flex-col h-full min-w-0">
+	{#if flowState.events.length > 0}
+		<!-- Table-like headers -->
+		<div class="flex items-center gap-2 px-3 py-1 border-b border-muted text-xs font-semibold text-muted-foreground">
+			<div class="w-[80px] text-left">TIME</div>
+			<div class="w-[140px] text-left">EVENT</div>
+			<div class="flex-1 text-left">STEP</div>
+			<div class="w-[32px]"></div> <!-- Space for expand arrow -->
+		</div>
+	{/if}
 
-	<div class="flex-1 overflow-y-auto pt-4 space-y-4">
+	<div class="flex-1 overflow-y-auto overflow-x-hidden space-y-1 min-w-0">
+		{#if flowState.events.length === 0}
+			<p class="text-sm text-muted-foreground text-center py-8">
+				No events yet. Start a flow to see events.
+			</p>
+		{:else}
+			{@const firstEventTimestamp = flowState.events[0]?.timestamp}
+			{#each flowState.events as event, index}
+				{@const eventType = event.event_type}
+				{@const stepSlug = event.data?.step_slug}
+				{@const eventDisplayName = getEventDisplayName(eventType)}
+				{@const eventColor = getEventColor(eventType)}
+				{@const isExpanded = expandedEventIndices.has(index)}
+				{@const isHighlighted = stepSlug && hoveredStep === stepSlug}
+				{@const isSelected = stepSlug && selectedStep === stepSlug}
 
-		<!-- Step States -->
-		<div class="space-y-2">
-		<h3 class="text-sm font-semibold">Step States</h3>
-		<div class="space-y-2">
-			{#each stepSlugs as stepSlug}
-				{@const status = getStepStatus(stepSlug)}
-				{@const output = getStepOutput(stepSlug)}
-				{@const error = getStepError(stepSlug)}
-				{@const isExpanded = expandedSteps.has(stepSlug)}
-
-				<div class="border-l-2 border-primary/20 pl-3">
+				<div
+					class="event-container border-l-2 border-muted pl-2 py-1 transition-all duration-200"
+					style="min-width: 0; max-width: 100%;"
+				>
 					<button
-						class="flex items-center justify-between w-full text-left py-1"
-						onclick={() => toggleStep(stepSlug)}
+						class="flex items-center gap-2 w-full text-left px-1 rounded transition-colors hover:bg-muted/20"
+						onclick={(e) => toggleEvent(index, e)}
 					>
-						<div class="flex items-center gap-2">
-							<span class="font-medium text-sm">{stepSlug}</span>
-							<Badge variant={getStatusVariant(status)} class="text-xs">{status}</Badge>
-						</div>
-						<span class="text-muted-foreground text-xs">{isExpanded ? '▼' : '▶'}</span>
+						<code class="w-[80px] text-base text-muted-foreground font-mono text-left"
+							>{formatRelativeTime(event.timestamp, firstEventTimestamp)}</code
+						>
+						<code class="w-[140px] text-base font-semibold font-mono {eventColor}">
+							{eventDisplayName}
+						</code>
+						{#if stepSlug}
+							<code
+								class="flex-1 text-base font-bold px-2 py-0.5 rounded font-mono transition-colors {isHighlighted
+									? 'bg-blue-400/20 text-blue-300'
+									: isSelected
+										? 'bg-blue-500/15 text-blue-400'
+										: 'bg-muted text-foreground'}"
+								>{stepSlug}</code
+							>
+						{:else}
+							<span class="flex-1 text-base font-medium text-muted-foreground">-</span>
+						{/if}
+						<span class="w-[32px] text-muted-foreground text-base text-left"
+							>{isExpanded ? '▼' : '▶'}</span
+						>
 					</button>
-
 					{#if isExpanded}
-						<div class="mt-2 space-y-2">
-							{#if error}
-								<div class="text-sm text-destructive bg-destructive/10 p-2 rounded">
-									<strong>Error:</strong>
-									{error}
-								</div>
-							{/if}
-							{#if output}
-								<div class="space-y-1">
-									<span class="text-xs text-muted-foreground">Output:</span>
-									<pre class="text-xs bg-muted p-2 rounded overflow-x-auto">{truncateOutput(output)}</pre>
-								</div>
-							{/if}
-						</div>
+						{@const highlightedHtml = highlightedEvents.get(index)}
+						{#if highlightedHtml}
+							<div class="event-payload-box mt-1">
+								{@html highlightedHtml}
+							</div>
+						{:else}
+							<pre class="event-payload-fallback text-sm bg-background/50 p-2 rounded overflow-x-auto max-h-32 mt-1">{JSON.stringify(event.data, null, 2)}</pre>
+						{/if}
 					{/if}
 				</div>
 			{/each}
-			</div>
-		</div>
-
-			<!-- Event Stream -->
-		<div class="flex-1 flex flex-col">
-			<button
-				class="flex items-center justify-between w-full text-left mb-2"
-				onclick={toggleEventStream}
-			>
-				<h3 class="text-sm font-semibold">📨 Event Stream</h3>
-				<span class="text-muted-foreground text-xs">{eventStreamExpanded ? '▼' : '▶'}</span>
-			</button>
-
-			{#if eventStreamExpanded}
-				<div class="flex-1 overflow-y-auto space-y-1">
-					{#if flowState.events.length === 0}
-						<p class="text-sm text-muted-foreground text-center py-8">
-							No events yet. Start a flow to see events.
-						</p>
-					{:else}
-						{#each flowState.events as event, index}
-							{@const eventType = event.event_type}
-							{@const stepSlug = event.data?.step_slug}
-							{@const variant = eventType.includes('failed')
-								? 'destructive'
-								: eventType.includes('completed')
-									? 'default'
-									: 'secondary'}
-							{@const isExpanded = expandedEvents.has(index)}
-
-							<div class="border-l-2 border-muted pl-2 py-1">
-								<button
-									class="flex items-center gap-2 w-full text-left hover:bg-muted/20 px-1 rounded"
-									onclick={() => toggleEvent(index)}
-								>
-									<code class="text-xs text-muted-foreground font-mono">{formatTimestamp(event.timestamp)}</code>
-									{#if stepSlug}
-										<span class="text-xs font-medium">{stepSlug}</span>
-									{/if}
-									<Badge {variant} class="text-xs">{eventType}</Badge>
-									<span class="text-muted-foreground text-xs ml-auto">{isExpanded ? '▼' : '▶'}</span>
-								</button>
-								{#if isExpanded}
-									<pre class="text-xs bg-background/50 p-2 rounded overflow-x-auto max-h-32 mt-1">{JSON.stringify(event.data, null, 2)}</pre>
-								{/if}
-							</div>
-						{/each}
-					{/if}
-				</div>
-			{/if}
-		</div>
+		{/if}
 	</div>
 </div>
+
+<style>
+	/* Event container */
+	.event-container {
+		border-radius: 4px;
+		min-width: 0;
+		width: 100%;
+		overflow: hidden;
+	}
+
+	/* Event payload syntax highlighting box */
+	.event-payload-box {
+		border-radius: 4px;
+		overflow-x: scroll;
+		overflow-y: auto;
+		max-width: 100%;
+		width: 100%;
+		min-width: 0;
+		max-height: 8rem;
+	}
+
+	.event-payload-box :global(pre) {
+		margin: 0 !important;
+		padding: 8px 10px !important;
+		background: #0d1117 !important;
+		border-radius: 4px;
+		font-size: 13px;
+		line-height: 1.5;
+		overflow: visible !important;
+	}
+
+	.event-payload-box :global(code) {
+		font-family: 'Fira Code', 'Monaco', 'Menlo', 'Courier New', monospace;
+		white-space: pre !important;
+		word-wrap: normal !important;
+		overflow-wrap: normal !important;
+		display: block !important;
+	}
+
+	/* Fallback pre element */
+	.event-payload-fallback {
+		max-width: 100%;
+		overflow-x: auto !important;
+		white-space: pre;
+		word-wrap: normal;
+	}
+</style>

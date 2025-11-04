@@ -97,7 +97,7 @@ class PgflowState<TFlow extends AnyFlow = AnyFlow> {
 			const unsubStep = step.on('*', (event) => {
 				this.#addEvent('step', { ...event, step_slug: stepSlug });
 
-				if (event.status === 'in_progress' || event.status === 'started') {
+				if (event.status === 'started') {
 					this.activeStep = stepSlug;
 				} else if (event.status === 'completed' && this.activeStep === stepSlug) {
 					this.activeStep = null;
