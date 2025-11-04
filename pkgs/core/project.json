@@ -22,18 +22,20 @@
     "dump-realtime-schema": {
       "executor": "nx:run-commands",
       "local": true,
-      "dependsOn": ["supabase:ensure-started"],
       "outputs": ["{projectRoot}/atlas/.supabase-baseline-schema.sql"],
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["scripts/atlas-dump-realtime-schema"],
+        "commands": [
+          "../../scripts/ensure-supabase.sh .",
+          "scripts/atlas-dump-realtime-schema"
+        ],
         "parallel": false
       },
       "cache": true
     },
     "verify-schemas-synced": {
       "executor": "nx:run-commands",
-      "dependsOn": ["dump-realtime-schema", "supabase:ensure-started"],
+      "dependsOn": ["dump-realtime-schema"],
       "inputs": [
         "schemas",
         "migrations",
@@ -43,6 +45,7 @@
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
+          "../../scripts/ensure-supabase.sh .",
           "mkdir -p .nx-inputs",
           "scripts/atlas-verify-schemas-synced > .nx-inputs/verify-schemas-synced.txt 2>&1 || (cat .nx-inputs/verify-schemas-synced.txt && exit 1)"
         ],
@@ -52,18 +55,27 @@
     },
     "verify-migrations": {
       "executor": "nx:run-commands",
-      "dependsOn": ["verify-schemas-synced", "supabase:ensure-started"],
+      "dependsOn": ["verify-schemas-synced"],
       "inputs": ["migrations"],
       "outputs": ["{projectRoot}/.nx-inputs/verify-migrations.txt"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
+          "../../scripts/ensure-supabase.sh .",
           "mkdir -p .nx-inputs",
           "supabase db reset > .nx-inputs/verify-migrations.txt 2>&1 || (cat .nx-inputs/verify-migrations.txt && exit 1)"
         ],
         "parallel": false
       },
       "cache": true
+    },
+    "db:verify": {
+      "executor": "nx:noop",
+      "dependsOn": ["verify-schemas-synced", "verify-migrations", "verify-gen-types"],
+      "cache": true,
+      "metadata": {
+        "description": "Run all database verification tasks"
+      }
     },
     "build": {
       "executor": "@nx/js:tsc",
@@ -128,18 +140,6 @@
         "parallel": false
       }
     },
-    "supabase:ensure-started": {
-      "executor": "nx:run-commands",
-      "local": true,
-      "cache": false,
-      "options": {
-        "cwd": "{projectRoot}",
-        "commands": [
-          "supabase status || (echo \"Starting Supabase...\" && supabase start)"
-        ],
-        "parallel": false
-      }
-    },
     "supabase:start": {
       "executor": "nx:run-commands",
       "local": true,
@@ -184,27 +184,40 @@
       "executor": "nx:run-commands",
       "local": true,
       "cache": false,
-      "dependsOn": ["supabase:ensure-started"],
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["supabase db reset"],
+        "commands": [
+          "../../scripts/ensure-supabase.sh .",
+          "supabase db reset"
+        ],
         "parallel": false
       }
     },
     "test": {
       "executor": "nx:noop",
-      "inputs": ["default", "^production", "schemas", "migrations", "pgtapTests", "databaseTypes"],
-      "dependsOn": ["test:pgtap", "test:vitest", "test:types"]
+      "inputs": ["default", "^production"],
+      "dependsOn": ["test:vitest", "test:types"]
+    },
+    "test:live": {
+      "executor": "nx:noop",
+      "inputs": ["schemas", "migrations", "pgtapTests"],
+      "dependsOn": ["test:pgtap"],
+      "metadata": {
+        "description": "Tests requiring live infrastructure (Supabase)"
+      }
     },
     "test:pgtap": {
       "executor": "nx:run-commands",
       "local": true,
-      "dependsOn": ["verify-migrations", "supabase:ensure-started"],
+      "dependsOn": ["verify-migrations"],
       "inputs": ["schemas", "migrations", "pgtapTests"],
       "cache": true,
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["scripts/run-test-with-colors"],
+        "commands": [
+          "../../scripts/ensure-supabase.sh .",
+          "scripts/run-test-with-colors"
+        ],
         "parallel": false
       }
     },
@@ -221,12 +234,16 @@
     "test:pgtap:watch": {
       "executor": "nx:run-commands",
       "local": true,
-      "dependsOn": ["verify-migrations", "supabase:ensure-started"],
+      "dependsOn": ["verify-migrations"],
       "inputs": ["schemas", "migrations", "pgtapTests"],
       "cache": false,
       "options": {
         "cwd": "{projectRoot}",
-        "command": "scripts/watch-test"
+        "commands": [
+          "../../scripts/ensure-supabase.sh .",
+          "scripts/watch-test"
+        ],
+        "parallel": false
       }
     },
     "gen-types": {
@@ -236,6 +253,7 @@
       "outputs": ["{projectRoot}/src/database-types.ts"],
       "options": {
         "commands": [
+          "../../scripts/ensure-supabase.sh .",
           "echo 'Generating database types...'",
           "supabase gen types --local --schema pgflow --schema pgmq > src/database-types.ts",
           "echo 'Verifying generated types...'",
@@ -255,6 +273,7 @@
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
+          "../../scripts/ensure-supabase.sh .",
           "mkdir -p .nx-inputs",
           "echo 'Verifying database types are up-to-date...'",
           "cp src/database-types.ts .nx-inputs/database-types.ts.backup",

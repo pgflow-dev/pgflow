@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 # Script to test pgflow CLI install functionality
 # This simulates the test:e2e:install target from project.json
@@ -7,19 +7,21 @@ set -e
 cd "$(dirname "$0")/.."
 ROOT_DIR=$(pwd)
 
+# Create unique temp directory for this test
+TEST_DIR=$(mktemp -d)
+trap "rm -rf $TEST_DIR" EXIT
+
 echo "🧪 Testing pgflow install functionality"
+echo "📁 Test directory: $TEST_DIR"
 
-# Clean up any existing supabase directory
-echo "🧹 Cleaning up old test directory"
-rm -rf supabase/
-
-# Initialize a fresh Supabase project
+# Initialize a fresh Supabase project in temp dir
+cd "$TEST_DIR"
 echo "🏗️ Creating new Supabase project"
-npx -y supabase@latest init --force --with-vscode-settings --with-intellij-settings
+pnpm --dir="$ROOT_DIR" supabase init --workdir "$TEST_DIR" --with-vscode-settings --with-intellij-settings
 
 # Install pgflow with our CLI
 echo "📦 Installing pgflow with CLI"
-node dist/index.js install --supabase-path supabase/ --yes
+node "$ROOT_DIR/dist/index.js" install --supabase-path supabase/ --yes
 
 # Verify installation succeeded
 echo "✅ Verifying pgflow installation"
@@ -31,5 +33,5 @@ echo "✨ Installation test complete"
 # Optional: Test for duplicates by running install again
 if [ "$1" == "--test-duplicates" ]; then
   echo "🔄 Testing duplicate installation prevention"
-  node dist/index.js install --supabase-path supabase/ --yes
+  node "$ROOT_DIR/dist/index.js" install --supabase-path supabase/ --yes
 fi

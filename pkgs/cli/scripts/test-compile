@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Script to test pgflow CLI compile functionality
+# This simulates the test:e2e:compile target from project.json
+
+cd "$(dirname "$0")/.."
+ROOT_DIR=$(pwd)
+
+# Create unique temp directory for this test
+TEST_DIR=$(mktemp -d)
+trap "rm -rf $TEST_DIR" EXIT
+
+echo "🧪 Testing pgflow compile functionality"
+echo "📁 Test directory: $TEST_DIR"
+
+# Initialize a fresh Supabase project in temp dir
+cd "$TEST_DIR"
+echo "🏗️ Creating new Supabase project"
+pnpm --dir="$ROOT_DIR" supabase init --with-vscode-settings --with-intellij-settings
+
+# Compile the flow
+echo "🔧 Compiling analyze_website flow"
+node "$ROOT_DIR/dist/index.js" compile "$ROOT_DIR/examples/analyze_website.ts" --deno-json "$ROOT_DIR/examples/deno.json" --supabase-path supabase
+
+# Verify compilation succeeded
+echo "✅ Verifying flow compilation"
+"$ROOT_DIR/scripts/assert-flow-compiled"
+
+# Show success message
+echo "✨ Compile test complete"
