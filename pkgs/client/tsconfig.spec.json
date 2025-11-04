@@ -25,6 +25,7 @@
     "src/**/*.spec.jsx",
     "src/**/*.d.ts"
   ],
+  "exclude": ["dist"],
   "references": [
     {
       "path": "./tsconfig.lib.json"
