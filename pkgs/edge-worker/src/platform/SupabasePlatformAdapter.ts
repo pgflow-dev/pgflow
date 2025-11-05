@@ -8,6 +8,12 @@ import { createServiceSupabaseClient } from '../core/supabase-utils.js';
 import { createLoggingFactory } from './logging.js';
 
 /**
+ * Worker start time - stored at module level to track when the Edge Function was loaded
+ * This is used for staleness detection in the /metadata endpoint
+ */
+const WORKER_START_TIME = new Date();
+
+/**
  * Supabase Edge Runtime type (without global augmentation to comply with JSR)
  */
 interface EdgeRuntimeType {
@@ -41,6 +47,7 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   private abortController: AbortController;
   private _platformResources: SupabaseResources;
   private validatedEnv: SupabaseEnv;
+  private flowMetadata: Record<string, { sql: string[] }> = {};
 
   // Logging factory with dynamic workerId support
   private loggingFactory = createLoggingFactory();
@@ -139,6 +146,14 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
     return this._platformResources;
   }
 
+  /**
+   * Set flow metadata for the /metadata endpoint
+   * This is used by EdgeWorker.startFlowWorker to register the flow
+   */
+  setFlowMetadata(flowMetadata: Record<string, { sql: string[] }>): void {
+    this.flowMetadata = flowMetadata;
+  }
+
   private async spawnNewEdgeFunction(): Promise<void> {
     if (!this.edgeFunctionName) {
       throw new Error('functionName cannot be null or empty');
@@ -201,6 +216,15 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
 
   private setupStartupHandler(createWorkerFn: CreateWorkerFn): void {
     Deno.serve({}, (req: Request) => {
+      const url = new URL(req.url);
+      const path = url.pathname;
+
+      // Handle /metadata endpoint - returns metadata without starting worker
+      if (path.endsWith('/metadata') && req.method === 'GET') {
+        return this.handleMetadataRequest();
+      }
+
+      // All other paths trigger worker startup
       this.logger.debug(`HTTP Request: ${this.edgeFunctionName}`);
 
       if (!this.worker) {
@@ -221,6 +245,40 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
       return new Response('ok', {
         headers: { 'Content-Type': 'application/json' },
       });
+    });
+  }
+
+  /**
+   * Handle GET /metadata endpoint
+   * Returns worker and flow metadata without starting the worker
+   */
+  private handleMetadataRequest(): Response {
+    // If worker not initialized yet, return 503
+    if (!this.worker) {
+      return new Response(
+        JSON.stringify({
+          error: 'worker_not_ready',
+          message: 'Worker is starting up, try again in a moment',
+        }),
+        {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Build metadata response
+    const metadata = {
+      worker: {
+        worker_id: this.validatedEnv.SB_EXECUTION_ID,
+        started_at: WORKER_START_TIME.toISOString(),
+      },
+      flows: this.flowMetadata,
+    };
+
+    return new Response(JSON.stringify(metadata), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 

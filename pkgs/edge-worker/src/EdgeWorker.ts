@@ -11,6 +11,7 @@ import { createAdapter } from './platform/createAdapter.js';
 import type { PlatformAdapter } from './platform/types.js';
 import type { MessageHandlerFn } from './queue/types.js';
 import type { AnyFlow, CompatibleFlow } from '@pgflow/dsl';
+import { compileFlow } from '@pgflow/dsl';
 import type { CurrentPlatformResources } from './types/currentPlatform.js';
 
 
@@ -193,6 +194,16 @@ export class EdgeWorker {
     // Create the adapter (use local const for type safety in callbacks)
     const platform = await createAdapter();
     this.platform = platform;
+
+    // Register flow metadata for /metadata endpoint (Phase 0)
+    // This allows the CLI to fetch compiled SQL via HTTP
+    if (platform.setFlowMetadata) {
+      const flowSlug = flow.slug;
+      const sql = compileFlow(flow);
+      platform.setFlowMetadata({
+        [flowSlug]: { sql },
+      });
+    }
 
     // Add platform-specific values to the config
     const workerConfig: FlowWorkerConfig = {
