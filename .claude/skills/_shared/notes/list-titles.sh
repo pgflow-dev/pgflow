@@ -104,11 +104,6 @@ extract_title() {
   fi
 }
 
-# Print header if with_dates
-if [ "$with_dates" = true ]; then
-  echo "# PATH | TITLE | MODIFIED | CREATED"
-fi
-
 # Collect all output
 output=$(
   for arg in "${args[@]}"; do
@@ -129,10 +124,17 @@ output=$(
   done
 )
 
+# Always output header first
 if [ "$with_dates" = true ]; then
-  # Sort by modification time (oldest first), then format output
-  echo "$output" | sort -t'|' -k1 -n | cut -d'|' -f2- | awk -F'|' '{printf "%s | %s | %s | %s\n", $1, $2, $3, $4}'
+  echo "PATH | TITLE | MODIFIED | CREATED"
+  # Output sorted results (if any)
+  if [ -n "$output" ]; then
+    echo "$output" | sort -t'|' -k1 -n | cut -d'|' -f2- | awk -F'|' '{printf "%s | %s | %s | %s\n", $1, $2, $3, $4}'
+  fi
 else
-  # Just output as-is
-  echo "$output"
+  echo "PATH | TITLE"
+  # Output results (if any)
+  if [ -n "$output" ]; then
+    echo "$output"
+  fi
 fi

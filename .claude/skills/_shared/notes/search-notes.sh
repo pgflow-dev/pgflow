@@ -35,7 +35,7 @@ else
 fi
 
 # Use ripgrep to find files matching pattern (case-insensitive, list files only)
-"${rg_cmd[@]}" 2>/dev/null | while IFS= read -r file; do
+results=$("${rg_cmd[@]}" 2>/dev/null | while IFS= read -r file; do
   # Extract H1 title from first line
   title=$(head -1 "$file" 2>/dev/null | sed 's/^# //' || echo "")
 
@@ -46,4 +46,12 @@ fi
 
   # Output: path | title
   echo "$file | $title"
-done
+done || true)
+
+# Always output header first
+echo "PATH | TITLE"
+
+# Output results (if any)
+if [ -n "$results" ]; then
+  echo "$results"
+fi
