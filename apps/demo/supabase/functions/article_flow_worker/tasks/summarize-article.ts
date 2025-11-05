@@ -3,7 +3,12 @@
  * Simulates failure on first attempt for demo purposes
  */
 
-export async function summarizeArticle(content: string) {
+export async function summarizeArticle(content: string, attemptNumber?: number) {
+	// Simulate failure on first attempt for retry demo
+	if (attemptNumber === 1) {
+		throw new Error('Simulated failure for retry demo');
+	}
+
 	// Try to use real LLM if API key is available
 	const groqApiKey = Deno.env.get('GROQ_API_KEY');
 	const openaiApiKey = Deno.env.get('OPENAI_API_KEY');

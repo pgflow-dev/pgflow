@@ -236,6 +236,13 @@
 		height: 100%;
 		border-radius: 4px;
 		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+	}
+
+	/* Ensure SvelteFlow fills container */
+	.dag-container :global(.svelte-flow) {
+		flex: 1;
 	}
 
 	/* Hide connection handles */

@@ -184,6 +184,9 @@ importers:
       prettier-plugin-svelte:
         specifier: ^3.4.0
         version: 3.4.0(prettier@3.6.2)(svelte@5.43.6)
+      supabase:
+        specifier: ^2.34.3
+        version: 2.54.11
       svelte:
         specifier: ^5.41.0
         version: 5.43.6
@@ -211,6 +214,9 @@ importers:
       vite:
         specifier: ^7.1.10
         version: 7.2.2(@types/node@20.19.24)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+      wrangler:
+        specifier: ^4.20.3
+        version: 4.46.0(@cloudflare/workers-types@4.20251109.0)
 
   pkgs/cli:
     dependencies:
@@ -15943,7 +15949,7 @@ snapshots:
       precinct: 12.2.0(supports-color@10.2.2)
       require-package-name: 2.0.1
       resolve: 2.0.0-next.5
-      semver: 7.7.2
+      semver: 7.7.3
       tmp-promise: 3.0.3
       toml: 3.0.0
       unixify: 1.0.0

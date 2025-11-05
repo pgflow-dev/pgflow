@@ -1,0 +1,14 @@
+name = "pgflow-demo"
+main = ".svelte-kit/cloudflare/index.js"
+compatibility_date = "2025-01-21"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+preview_urls = true
+
+[assets]
+directory = ".svelte-kit/cloudflare/public"
+binding = "ASSETS"
+
+[[routes]]
+pattern = "demo.pgflow.dev/*"
+zone_name = "pgflow.dev"

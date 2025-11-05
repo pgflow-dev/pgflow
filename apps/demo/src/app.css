@@ -6,8 +6,12 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html,
   body {
     @apply bg-background text-foreground;
+    overflow: hidden; /* Prevent page scroll */
+    height: 100vh;
+    max-height: 100vh;
   }
 }
 

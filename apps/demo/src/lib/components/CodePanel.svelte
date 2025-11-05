@@ -158,8 +158,10 @@
 				{@const blockHeight = (block.endLine - block.startLine + 1) * 1.5}
 				{@const blockTop = (block.startLine - 1) * 1.5}
 				{@const iconTop = blockTop + blockHeight / 2}
+				{@const isDimmed = selectedStep && block.stepSlug !== selectedStep}
 				<div
 					class="step-status-container"
+					class:status-dimmed={isDimmed}
 					data-step={block.stepSlug}
 					data-start-line={block.startLine}
 					style="top: calc({iconTop}em + 12px);"
@@ -184,6 +186,14 @@
 		position: relative;
 	}
 
+	/* Mobile: Smaller font, no border radius (touches edges) */
+	@media (max-width: 768px) {
+		.code-panel {
+			font-size: 11px;
+			border-radius: 0;
+		}
+	}
+
 	/* Override Shiki's default pre styling */
 	.code-panel :global(pre) {
 		margin: 0;
@@ -191,6 +201,13 @@
 		background: #0d1117 !important;
 		border-radius: 5px;
 		line-height: 1.5;
+	}
+
+	/* Mobile: Smaller padding */
+	@media (max-width: 768px) {
+		.code-panel :global(pre) {
+			padding: 8px 0;
+		}
 	}
 
 	.code-panel :global(code) {
@@ -203,6 +220,13 @@
 		width: 100%;
 		padding: 0 12px;
 		transition: background-color 0.2s ease;
+	}
+
+	/* Mobile: Smaller line padding */
+	@media (max-width: 768px) {
+		.code-panel :global(.line) {
+			padding: 0 8px;
+		}
 	}
 
 	/* Empty lines need content for background to show */
@@ -246,6 +270,19 @@
 		transform: translateY(-50%);
 		z-index: 10;
 		pointer-events: none;
-		transition: all 0.3s ease;
+		transition: opacity 200ms ease;
+	}
+
+	/* Mobile: Smaller status icons, closer to edge */
+	@media (max-width: 768px) {
+		.step-status-container {
+			right: 8px;
+			transform: translateY(-50%) scale(0.6);
+		}
+	}
+
+	/* Dimmed status icon (when another step is selected) */
+	.step-status-container.status-dimmed {
+		opacity: 0.4;
 	}
 </style>

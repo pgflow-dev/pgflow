@@ -43,14 +43,7 @@ export const FLOW_SECTIONS: Record<string, CodeSection> = {
 	publish: {
 		code: `  .step(
     { slug: 'publish', dependsOn: ['summarize', 'extract_keywords'] },
-    async (input, { supabase }) => {
-      const { data } = await supabase.insert({
-        summary: input.summarize,
-        keywords: input.extract_keywords
-      }).throwOnError();;
-
-      return data.id;
-    }
+    (input) => publishArticle(input.summarize, input.extract_keywords)
   );`
 	}
 };

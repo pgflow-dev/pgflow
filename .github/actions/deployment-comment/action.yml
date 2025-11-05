@@ -7,7 +7,7 @@ inputs:
     required: true
   preview-url:
     description: 'The preview deployment URL'
-    required: true
+    required: false
   production-url:
     description: 'The production deployment URL'
     required: true
