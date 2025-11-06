@@ -70,7 +70,6 @@ svg .secondary {
 }
 
 @keyframes breathing-glow {
-
   0%,
   100% {
     filter: drop-shadow(0 0 0 transparent);
@@ -403,9 +402,7 @@ svg .secondary {
   /* Light steel blue bg */
 
   /* Purple (Tip) */
-  --sl-color-purple-high: hsl(280,
-      58%,
-      32%);
+  --sl-color-purple-high: hsl(280, 58%, 32%);
   /* Dark soft magenta-purple text */
   --sl-color-purple: hsl(280, 55%, 58%);
   /* Soft magenta-purple */
