@@ -1,0 +1,248 @@
+---
+title: RAG Pipeline
+description: Build query transformation, retrieval, and reranking pipeline
+draft: true
+sidebar:
+  order: 3
+---
+
+Build a retrieval-augmented generation (RAG) pipeline with query transformation, vector search, and reranking.
+
+## Setup
+
+Install dependencies:
+
+```bash
+pnpm add ai @ai-sdk/openai cohere-ai
+```
+
+Enable pgvector:
+
+```sql
+create extension if not exists vector;
+```
+
+## Database Schema
+
+```sql
+create table documents (
+  id bigserial primary key,
+  content text not null,
+  embedding vector(1536)
+);
+
+-- Create index for faster similarity search
+create index on documents using ivfflat (embedding vector_cosine_ops);
+```
+
+## Task Functions
+
+**Transform query for better retrieval:**
+
+```typescript
+// supabase/functions/_tasks/transformQuery.ts
+import { openai } from '@ai-sdk/openai';
+import { generateText, Output } from 'ai';
+import { z } from 'zod';
+
+export default async function transformQuery(query: string) {
+  const { output } = await generateText({
+    model: openai('gpt-4o'),
+    output: Output.object({
+      schema: z.object({
+        enhanced: z.string(),
+        keywords: z.array(z.string()),
+      }),
+    }),
+    prompt: `Transform this search query to improve retrieval results:
+      "${query}"
+
+      Expand with synonyms, related terms, and clarify intent.`,
+  });
+
+  return output;
+}
+```
+
+**Retrieve documents using vector similarity:**
+
+```typescript
+// supabase/functions/_tasks/retrieveDocuments.ts
+import { createClient } from 'jsr:@supabase/supabase-js';
+import { openai } from '@ai-sdk/openai';
+import { embed } from 'ai';
+
+export default async function retrieveDocuments(input: {
+  query: string;
+  limit: number;
+}) {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing Supabase credentials');
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  const { embedding } = await embed({
+    model: openai.textEmbeddingModel('text-embedding-3-small'),
+    value: input.query,
+  });
+
+  const { data } = await supabase.rpc('match_documents', {
+    query_embedding: embedding,
+    match_threshold: 0.7,
+    match_count: input.limit,
+  });
+
+  return data || [];
+}
+```
+
+Add the matching function in a migration:
+
+```sql
+create or replace function match_documents(
+  query_embedding vector(1536),
+  match_threshold float,
+  match_count int
+)
+returns table (
+  id bigint,
+  content text,
+  similarity float
+)
+language sql stable
+as $$
+  select
+    documents.id,
+    documents.content,
+    1 - (documents.embedding <=> query_embedding) as similarity
+  from documents
+  where 1 - (documents.embedding <=> query_embedding) > match_threshold
+  order by documents.embedding <=> query_embedding
+  limit match_count;
+$$;
+```
+
+**Rerank results for relevance:**
+
+```typescript
+// supabase/functions/_tasks/rerankResults.ts
+import { CohereClient } from 'npm:cohere-ai';
+
+export default async function rerankResults(input: {
+  query: string;
+  documents: Array<{ id: number; content: string; similarity: number }>;
+}) {
+  const cohere = new CohereClient({
+    token: Deno.env.get('COHERE_API_KEY'),
+  });
+
+  const response = await cohere.rerank({
+    model: 'rerank-english-v3.0',
+    query: input.query,
+    documents: input.documents.map(doc => doc.content),
+    topN: 5,
+  });
+
+  return response.results.map(result => ({
+    ...input.documents[result.index],
+    relevanceScore: result.relevanceScore,
+  }));
+}
+```
+
+**Generate answer from context:**
+
+```typescript
+// supabase/functions/_tasks/generateAnswer.ts
+import { openai } from '@ai-sdk/openai';
+import { generateText } from 'ai';
+
+export default async function generateAnswer(input: {
+  query: string;
+  context: Array<{ content: string; relevanceScore: number }>;
+}) {
+  const contextText = input.context
+    .map((doc, i) => `[${i + 1}] ${doc.content}`)
+    .join('\n\n');
+
+  const { text } = await generateText({
+    model: openai('gpt-4o'),
+    prompt: `Answer the question using only the provided context.
+
+    Question: ${input.query}
+
+    Context:
+    ${contextText}
+
+    Answer:`,
+  });
+
+  return {
+    answer: text,
+    sources: input.context.map(doc => doc.content),
+  };
+}
+```
+
+## Flow Definition
+
+```typescript
+// supabase/functions/_flows/rag_search.ts
+import { Flow } from 'npm:@pgflow/dsl';
+import transformQuery from '../_tasks/transformQuery.ts';
+import retrieveDocuments from '../_tasks/retrieveDocuments.ts';
+import rerankResults from '../_tasks/rerankResults.ts';
+import generateAnswer from '../_tasks/generateAnswer.ts';
+
+type Input = { query: string };
+
+export default new Flow<Input>({ slug: 'ragSearch' })
+  .step({ slug: 'transform' }, ({ run }) =>
+    transformQuery(run.query)
+  )
+  .step({ slug: 'retrieve', dependsOn: ['transform'] }, ({ transform }) =>
+    retrieveDocuments({
+      query: transform.enhanced,
+      limit: 20,
+    })
+  )
+  .step({ slug: 'rerank', dependsOn: ['retrieve', 'transform'] }, ({ run, retrieve }) =>
+    rerankResults({
+      query: run.query,
+      documents: retrieve,
+    })
+  )
+  .step({ slug: 'answer', dependsOn: ['rerank'] }, ({ run, rerank }) =>
+    generateAnswer({
+      query: run.query,
+      context: rerank,
+    })
+  );
+```
+
+## Compile and Deploy
+
+```bash
+npx pgflow@latest compile supabase/functions/_flows/rag_search.ts
+npx supabase migrations up --local
+```
+
+## Usage
+
+```sql
+select * from pgflow.start_flow(
+  flow_slug => 'ragSearch',
+  input => '{"query": "How does PostgreSQL handle concurrency?"}'
+);
+
+-- Check results
+select output from pgflow.steps
+where flow_slug = 'ragSearch' and slug = 'answer'
+order by created_at desc limit 1;
+```
+
+The flow transforms the query to improve retrieval, performs vector search to find relevant documents, reranks them using Cohere's reranking model, and generates an answer using the top results as context.

@@ -1,0 +1,176 @@
+---
+title: Structured Output
+description: Extract type-safe structured data from AI models using Zod schemas
+draft: true
+sidebar:
+  order: 2
+---
+
+Use AI SDK with Zod schemas to extract structured, type-safe data from text.
+
+## Setup
+
+Install dependencies:
+
+```bash
+pnpm add ai @ai-sdk/openai zod
+```
+
+## Task Functions
+
+**Extract structured product data:**
+
+```typescript
+// supabase/functions/_tasks/extractProduct.ts
+import { openai } from '@ai-sdk/openai';
+import { generateObject } from 'ai';
+import { z } from 'zod';
+
+const productSchema = z.object({
+  name: z.string(),
+  price: z.number(),
+  category: z.string(),
+  features: z.array(z.string()),
+});
+
+export default async function extractProduct(text: string) {
+  const { object } = await generateObject({
+    model: openai('gpt-4o'),
+    schema: productSchema,
+    prompt: `Extract product information from: ${text}`,
+  });
+
+  return object;
+}
+```
+
+**Validate and enrich data:**
+
+```typescript
+// supabase/functions/_tasks/enrichProduct.ts
+import { openai } from '@ai-sdk/openai';
+import { generateText, Output } from 'ai';
+import { z } from 'zod';
+
+const enrichmentSchema = z.object({
+  tags: z.array(z.string()),
+  targetAudience: z.string(),
+  priceRange: z.enum(['budget', 'mid-range', 'premium']),
+});
+
+export default async function enrichProduct(product: {
+  name: string;
+  price: number;
+  category: string;
+  features: string[];
+}) {
+  const { output } = await generateText({
+    model: openai('gpt-4o'),
+    output: Output.object({ schema: enrichmentSchema }),
+    prompt: `Analyze this product and suggest tags, target audience, and price range:
+      Name: ${product.name}
+      Price: $${product.price}
+      Category: ${product.category}
+      Features: ${product.features.join(', ')}`,
+  });
+
+  return { ...product, ...output };
+}
+```
+
+**Save to database:**
+
+```typescript
+// supabase/functions/_tasks/saveProduct.ts
+import { createClient } from 'jsr:@supabase/supabase-js';
+
+export default async function saveProduct(product: {
+  name: string;
+  price: number;
+  category: string;
+  features: string[];
+  tags: string[];
+  targetAudience: string;
+  priceRange: string;
+}) {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing Supabase credentials');
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  const { data } = await supabase
+    .from('products')
+    .insert(product)
+    .select()
+    .single()
+    .throwOnError();
+
+  return data;
+}
+```
+
+## Flow Definition
+
+```typescript
+// supabase/functions/_flows/process_product.ts
+import { Flow } from 'npm:@pgflow/dsl';
+import extractProduct from '../_tasks/extractProduct.ts';
+import enrichProduct from '../_tasks/enrichProduct.ts';
+import saveProduct from '../_tasks/saveProduct.ts';
+
+type Input = { text: string };
+
+export default new Flow<Input>({ slug: 'processProduct' })
+  .step({ slug: 'extract' }, ({ run }) =>
+    extractProduct(run.text)
+  )
+  .step({ slug: 'enrich', dependsOn: ['extract'] }, ({ extract }) =>
+    enrichProduct(extract)
+  )
+  .step({ slug: 'save', dependsOn: ['enrich'] }, ({ enrich }) =>
+    saveProduct(enrich)
+  );
+```
+
+## Database Schema
+
+```sql
+create table products (
+  id bigserial primary key,
+  name text not null,
+  price numeric not null,
+  category text not null,
+  features text[] not null,
+  tags text[] not null,
+  target_audience text not null,
+  price_range text not null,
+  created_at timestamptz default now()
+);
+```
+
+## Compile and Deploy
+
+```bash
+npx pgflow@latest compile supabase/functions/_flows/process_product.ts
+npx supabase migrations up --local
+```
+
+## Usage
+
+```sql
+select * from pgflow.start_flow(
+  flow_slug => 'processProduct',
+  input => '{
+    "text": "The UltraBoost Pro is a high-performance running shoe priced at $180. Features include responsive cushioning, breathable mesh upper, and continental rubber outsole."
+  }'
+);
+
+-- Check results
+select * from products;
+```
+
+The flow extracts structured product data using `generateObject`, enriches it with additional metadata using `generateText` with `Output.object()`, and saves the result to the database. Zod schemas ensure type safety throughout the pipeline.

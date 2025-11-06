@@ -1,0 +1,17 @@
+---
+title: Overview
+description: Build production-ready RAG pipelines with pgflow and Postgres
+sidebar:
+  order: 1
+---
+
+Vector embeddings require a pipeline: detect changes, chunk content, call the API, store results, retry failures. Generating embeddings is easy. Keeping them in sync when content changes, handling API failures gracefully, and doing it all without blocking writes - that's the hard part.
+
+This series shows how pgflow moves RAG orchestration into Postgres.
+
+## The Series
+
+1. **[Automatic Embeddings](/tutorials/rag/automatic-embeddings/)** - Ingest, chunk, embed on INSERT
+1. **Keeping Fresh** - Handle updates and deletes (coming soon)
+1. **Advanced Retrieval** - Hypothetical Document Embeddings (HyDE), reranking , LLM augmented retrieval (coming soon)
+1. **Conversational RAG** - Chat with history (coming soon)
