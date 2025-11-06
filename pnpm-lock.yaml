@@ -387,8 +387,8 @@ importers:
         specifier: ^19.1.1
         version: 19.2.0(react@19.2.0)
       sharp:
-        specifier: ^0.32.6
-        version: 0.32.6
+        specifier: ^0.33.5
+        version: 0.33.5
       starlight-blog:
         specifier: ^0.24.0
         version: 0.24.3(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)))(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))

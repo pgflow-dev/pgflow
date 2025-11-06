@@ -35,8 +35,10 @@ export default new Flow<{ url: string }>({
 	})
 	.step({ slug: 'publish', dependsOn: ['summarize', 'extract_keywords'] }, async (input) => {
 		await sleep(1000);
-		return publishArticle({
-			summary: input.summarize,
-			keywords: input.extract_keywords
-		});
+		// Step handler acts as adapter - extracting specific fields from previous steps
+		return publishArticle(
+			input.summarize.summary,
+			input.summarize.sentiment,
+			input.extract_keywords.keywords
+		);
 	});

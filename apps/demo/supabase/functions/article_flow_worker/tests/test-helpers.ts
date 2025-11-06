@@ -27,11 +27,17 @@ Always write tests for your code.
 export const mockArticleUrl = 'https://example.com/article';
 
 // Mock fetch for testing
-export function createMockFetch(response: { ok: boolean; text?: string; status?: number; statusText?: string }) {
-  return () => Promise.resolve({
-    ok: response.ok,
-    status: response.status || 200,
-    statusText: response.statusText || 'OK',
-    text: () => Promise.resolve(response.text || ''),
-  } as Response);
+export function createMockFetch(response: {
+	ok: boolean;
+	text?: string;
+	status?: number;
+	statusText?: string;
+}) {
+	return () =>
+		Promise.resolve({
+			ok: response.ok,
+			status: response.status || 200,
+			statusText: response.statusText || 'OK',
+			text: () => Promise.resolve(response.text || '')
+		} as Response);
 }

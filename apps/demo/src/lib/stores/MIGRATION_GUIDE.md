@@ -15,31 +15,35 @@ The improved pattern fixes these key issues:
 ### Creating the Store
 
 **Before (Original):**
+
 ```typescript
 const pgflowState = createPgflowState<typeof ArticleFlow>(
-  pgflow,
-  'article_flow',
-  ['fetch_article', 'summarize', 'extract_keywords', 'publish'] // ❌ Manual list
+	pgflow,
+	'article_flow',
+	['fetch_article', 'summarize', 'extract_keywords', 'publish'] // ❌ Manual list
 );
 ```
 
 **After (Improved):**
+
 ```typescript
 const flowState = createFlowState<typeof ArticleFlow>(
-  pgflow,
-  'article_flow'
-  // ✅ Steps auto-discovered from run
+	pgflow,
+	'article_flow'
+	// ✅ Steps auto-discovered from run
 );
 ```
 
 ### Starting a Flow
 
 **Before:**
+
 ```typescript
 await pgflowState.startFlow({ url: 'https://example.com' });
 ```
 
 **After (Same):**
+
 ```typescript
 await flowState.startFlow({ url: 'https://example.com' });
 ```
@@ -47,25 +51,27 @@ await flowState.startFlow({ url: 'https://example.com' });
 ### Accessing State
 
 **Before:**
+
 ```svelte
-<p>Status: {pgflowState.status}</p>
-<p>Active: {pgflowState.activeStep}</p>
+<p>Status: {pgflowState.status}</p><p>Active: {pgflowState.activeStep}</p>
 ```
 
 **After (Same):**
+
 ```svelte
-<p>Status: {flowState.status}</p>
-<p>Active: {flowState.activeStep}</p>
+<p>Status: {flowState.status}</p><p>Active: {flowState.activeStep}</p>
 ```
 
 ### Cleanup
 
 **Before:**
+
 ```typescript
 pgflowState.dispose();
 ```
 
 **After (Same):**
+
 ```typescript
 flowState.dispose();
 ```
@@ -79,11 +85,12 @@ The improved version can also attach to existing runs:
 const existingRun = await pgflow.getRun('run-id');
 
 if (existingRun) {
-  flowState.attachRun(existingRun);
+	flowState.attachRun(existingRun);
 }
 ```
 
 This enables monitoring flows started by:
+
 - Supabase RPC
 - pg_cron
 - Database triggers
@@ -95,30 +102,31 @@ This enables monitoring flows started by:
 
 ```svelte
 <script lang="ts">
-  import { pgflow } from '$lib/supabase';
-  import { createPgflowState } from '$lib/stores/pgflow-state.svelte';
-  import type ArticleFlow from './article_flow';
+	import { pgflow } from '$lib/supabase';
+	import { createPgflowState } from '$lib/stores/pgflow-state.svelte';
+	import type ArticleFlow from './article_flow';
 
-  const pgflowState = createPgflowState<typeof ArticleFlow>(
-    pgflow,
-    'article_flow',
-    ['fetch_article', 'summarize', 'extract_keywords', 'publish']
-  );
+	const pgflowState = createPgflowState<typeof ArticleFlow>(pgflow, 'article_flow', [
+		'fetch_article',
+		'summarize',
+		'extract_keywords',
+		'publish'
+	]);
 
-  async function startTestFlow() {
-    try {
-      await pgflowState.startFlow({
-        url: 'https://enaix.github.io/2025/10/30/developer-verification.html'
-      });
-    } catch (error) {
-      console.error('Failed to start flow:', error);
-    }
-  }
+	async function startTestFlow() {
+		try {
+			await pgflowState.startFlow({
+				url: 'https://enaix.github.io/2025/10/30/developer-verification.html'
+			});
+		} catch (error) {
+			console.error('Failed to start flow:', error);
+		}
+	}
 </script>
 
 <p class="status-badge {pgflowState.status}">{pgflowState.status}</p>
 {#if pgflowState.activeStep}
-  <p class="active-step">Active Step: {pgflowState.activeStep}</p>
+	<p class="active-step">Active Step: {pgflowState.activeStep}</p>
 {/if}
 ```
 
@@ -126,31 +134,31 @@ This enables monitoring flows started by:
 
 ```svelte
 <script lang="ts">
-  import { pgflow } from '$lib/supabase';
-  import { createFlowState } from '$lib/stores/pgflow-state-improved.svelte';
-  import type ArticleFlow from './article_flow';
-  import { onDestroy } from 'svelte';
+	import { pgflow } from '$lib/supabase';
+	import { createFlowState } from '$lib/stores/pgflow-state-improved.svelte';
+	import type ArticleFlow from './article_flow';
+	import { onDestroy } from 'svelte';
 
-  // ✅ No step list needed
-  const flowState = createFlowState<typeof ArticleFlow>(pgflow, 'article_flow');
+	// ✅ No step list needed
+	const flowState = createFlowState<typeof ArticleFlow>(pgflow, 'article_flow');
 
-  async function startTestFlow() {
-    try {
-      await flowState.startFlow({
-        url: 'https://enaix.github.io/2025/10/30/developer-verification.html'
-      });
-    } catch (error) {
-      console.error('Failed to start flow:', error);
-    }
-  }
+	async function startTestFlow() {
+		try {
+			await flowState.startFlow({
+				url: 'https://enaix.github.io/2025/10/30/developer-verification.html'
+			});
+		} catch (error) {
+			console.error('Failed to start flow:', error);
+		}
+	}
 
-  // ✅ Automatic cleanup on unmount
-  onDestroy(() => flowState.dispose());
+	// ✅ Automatic cleanup on unmount
+	onDestroy(() => flowState.dispose());
 </script>
 
 <p class="status-badge {flowState.status}">{flowState.status}</p>
 {#if flowState.activeStep}
-  <p class="active-step">Active Step: {flowState.activeStep}</p>
+	<p class="active-step">Active Step: {flowState.activeStep}</p>
 {/if}
 ```
 
@@ -192,11 +200,13 @@ await state.startFlow(...);
 ### 2. Better Separation of Concerns
 
 **Original approach:**
+
 - Store wraps PgflowClient (a factory)
 - Mixes client operations with state management
 - Client is recreated for each flow type
 
 **Improved approach:**
+
 - Store wraps FlowRun (the reactive entity)
 - Client stays as documented: a factory for runs
 - Each flow type gets its own state instance
@@ -214,15 +224,16 @@ console.log(flowState.status);
 
 ## When to Use Each Pattern
 
-| Pattern | Use When |
-|---------|----------|
-| **createFlowState** | You need module-level state that can be shared |
-| **useFlowRun** | You need component-local state with auto-cleanup |
-| Original | You're migrating incrementally (keep using it) |
+| Pattern             | Use When                                         |
+| ------------------- | ------------------------------------------------ |
+| **createFlowState** | You need module-level state that can be shared   |
+| **useFlowRun**      | You need component-local state with auto-cleanup |
+| Original            | You're migrating incrementally (keep using it)   |
 
 ## Questions?
 
 The improved pattern is fully compatible with the original API surface, just:
+
 - Removes one parameter (step list)
 - Adds one method (`attachRun`)
 - Same reactive properties

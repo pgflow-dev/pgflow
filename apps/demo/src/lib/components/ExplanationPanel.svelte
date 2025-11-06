@@ -265,7 +265,7 @@
 									<Badge variant="secondary" class="text-xs">None</Badge>
 								{:else}
 									<div class="flex flex-col gap-1.5">
-										{#each currentStepInfo.dependsOn as dep}
+										{#each currentStepInfo.dependsOn as dep (dep)}
 											<button
 												class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left {isDepDimmed(
 													dep
@@ -290,7 +290,7 @@
 									<Badge variant="secondary" class="text-xs">None</Badge>
 								{:else}
 									<div class="flex flex-col gap-1.5">
-										{#each currentStepInfo.dependents as dep}
+										{#each currentStepInfo.dependents as dep (dep)}
 											<button
 												class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left {isDepDimmed(
 													dep
@@ -315,6 +315,7 @@
 							<div>
 								<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Input Type</div>
 								<div class="input-type-box">
+									<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 									{@html highlightedInputType}
 								</div>
 							</div>
@@ -323,6 +324,7 @@
 							<div>
 								<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Return Type</div>
 								<div class="return-type-box">
+									<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 									{@html highlightedReturnType}
 								</div>
 							</div>
@@ -341,6 +343,7 @@
 						<div>
 							<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Flow Input Type</div>
 							<div class="input-type-box">
+								<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 								{@html highlightedInputType}
 							</div>
 							<p class="text-muted-foreground text-xs mt-1.5">
@@ -353,7 +356,7 @@
 						<div>
 							<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Steps</div>
 							<div class="flex flex-col gap-1.5">
-								{#each flowInfo.steps as step}
+								{#each flowInfo.steps as step (step)}
 									<button
 										class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left {isDepDimmed(
 											step
@@ -377,6 +380,7 @@
 					<div class="pt-1">
 						<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Output</div>
 						<div class="output-box">
+							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 							{@html highlightedOutput}
 						</div>
 					</div>

@@ -1,6 +1,14 @@
 <script lang="ts">
 	import { Badge } from '$lib/components/ui/badge';
-	import { CheckCircle2, Play, XCircle, Clock, CircleCheck, PlayCircle, XOctagon, CircleAlert } from '@lucide/svelte';
+	import {
+		CheckCircle2,
+		Play,
+		XCircle,
+		Clock,
+		CircleCheck,
+		PlayCircle,
+		XOctagon
+	} from '@lucide/svelte';
 
 	interface Props {
 		status: 'created' | 'started' | 'completed' | 'failed' | string;
@@ -108,7 +116,10 @@
 
 {#if variant === 'badge'}
 	<Badge
-		class="{sizeClasses} text-white font-bold rounded-sm {statusInfo.bgColor} hover:{statusInfo.bgColor} {statusInfo.borderColor} {statusInfo.shouldPulse && !disablePulse ? 'badge-pulse' : ''}"
+		class="{sizeClasses} text-white font-bold rounded-sm {statusInfo.bgColor} hover:{statusInfo.bgColor} {statusInfo.borderColor} {statusInfo.shouldPulse &&
+		!disablePulse
+			? 'badge-pulse'
+			: ''}"
 	>
 		{#if showIcon}
 			<svelte:component this={statusInfo.icon} class="{iconSizeClasses} mr-1" />
@@ -120,7 +131,9 @@
 {:else if variant === 'icon-only'}
 	<svelte:component
 		this={statusInfo.icon}
-		class="{iconSizeClasses} {statusInfo.iconColor} {statusInfo.shouldPulse && !disablePulse ? 'icon-pulse' : ''}"
+		class="{iconSizeClasses} {statusInfo.iconColor} {statusInfo.shouldPulse && !disablePulse
+			? 'icon-pulse'
+			: ''}"
 	/>
 {/if}
 

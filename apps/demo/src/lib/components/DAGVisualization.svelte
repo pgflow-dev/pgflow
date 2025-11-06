@@ -51,7 +51,18 @@
 		'step-hovered': { stepSlug: string | null };
 	}>();
 
-	function handleNodeClick(event: any) {
+	interface FlowNode {
+		id: string;
+		[key: string]: unknown;
+	}
+
+	interface NodeEvent {
+		detail?: { node?: FlowNode };
+		node?: FlowNode;
+		id?: string;
+	}
+
+	function handleNodeClick(event: NodeEvent) {
 		// Svelte Flow may pass event differently depending on version
 		const node = event.detail?.node || event.node || event;
 		const stepSlug = node.id;
@@ -62,7 +73,7 @@
 		}
 	}
 
-	function handleNodePointerEnter({ node }: { node: any; event: PointerEvent }) {
+	function handleNodePointerEnter({ node }: { node: FlowNode; event: PointerEvent }) {
 		const stepSlug = node.id;
 		console.log('DAG node pointerenter:', stepSlug);
 		if (stepSlug) {
@@ -70,7 +81,7 @@
 		}
 	}
 
-	function handleNodePointerLeave({ node }: { node: any; event: PointerEvent }) {
+	function handleNodePointerLeave({ node }: { node: FlowNode; event: PointerEvent }) {
 		const stepSlug = node.id;
 		console.log('DAG node pointerleave:', stepSlug);
 		dispatch('step-hovered', { stepSlug: null });
@@ -205,7 +216,6 @@
 
 		return classes.join(' ');
 	}
-
 </script>
 
 <div class="dag-container dark" bind:this={containerElement}>
@@ -225,8 +235,7 @@
 			onnodeclick={handleNodeClick}
 			onnodepointerenter={handleNodePointerEnter}
 			onnodepointerleave={handleNodePointerLeave}
-		>
-		</SvelteFlow>
+		></SvelteFlow>
 	{/key}
 </div>
 
@@ -258,7 +267,10 @@
 		font-size: 14px;
 		font-weight: 600;
 		color: white;
-		transition: background 0.3s ease, border 0.3s ease, opacity 200ms ease;
+		transition:
+			background 0.3s ease,
+			border 0.3s ease,
+			opacity 200ms ease;
 		filter: drop-shadow(3px 4px 4px rgba(0, 0, 0, 0.25));
 	}
 

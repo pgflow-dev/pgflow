@@ -60,7 +60,7 @@
 			theme: 'night-owl',
 			transformers: [
 				{
-					line(node, line) {
+					line(node) {
 						// Add .line class to each line for click handling
 						node.properties.class = 'line';
 					}
@@ -118,7 +118,8 @@
 		// Explicitly track these dependencies
 		const currentSelectedStep = selectedStep;
 		const currentHoveredStep = hoveredStep;
-		const currentStepStatuses = flowState.stepStatuses;
+		// Ensure reactivity to step status changes by accessing it
+		void flowState.stepStatuses;
 
 		if (!codeContainer) return;
 
@@ -149,10 +150,11 @@
 
 <div class="code-panel-wrapper">
 	<div class="code-panel" bind:this={codeContainer}>
+		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 		{@html highlightedCode}
 
 		<!-- Step status icons overlaid on code blocks -->
-		{#each stepBlocks as block}
+		{#each stepBlocks as block (block.stepSlug)}
 			{@const stepStatus = getStepStatus(block.stepSlug)}
 			{#if stepStatus}
 				{@const blockHeight = (block.endLine - block.startLine + 1) * 1.5}
@@ -248,7 +250,9 @@
 
 	/* Ensure non-dimmed lines also transition smoothly */
 	.code-panel :global(.line) {
-		transition: opacity 200ms ease, background-color 200ms ease;
+		transition:
+			opacity 200ms ease,
+			background-color 200ms ease;
 	}
 
 	/* Hover state - opaque blue highlight */

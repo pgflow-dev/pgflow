@@ -70,9 +70,7 @@
 				{:else}
 					<!-- Post-run explanation -->
 					<div class="space-y-4">
-						<p class="text-base">
-							The flow just processed an article through multiple steps:
-						</p>
+						<p class="text-base">The flow just processed an article through multiple steps:</p>
 						<ul class="space-y-2 text-sm text-muted-foreground">
 							<li>
 								<strong class="text-foreground">Fetched</strong> the article content
@@ -87,14 +85,23 @@
 						<div class="exploration-guide">
 							<p class="text-base font-semibold mb-2">Try clicking on:</p>
 							<ul class="space-y-2 text-sm text-muted-foreground">
-								<li>👆 <strong class="text-foreground">Steps in the DAG</strong> to see their code and details</li>
-								<li>👆 <strong class="text-foreground">Code blocks</strong> to highlight specific steps</li>
-								<li>👆 <strong class="text-foreground">Events in the stream</strong> to see execution data</li>
+								<li>
+									👆 <strong class="text-foreground">Steps in the DAG</strong> to see their code and
+									details
+								</li>
+								<li>
+									👆 <strong class="text-foreground">Code blocks</strong> to highlight specific steps
+								</li>
+								<li>
+									👆 <strong class="text-foreground">Events in the stream</strong> to see execution data
+								</li>
 							</ul>
 						</div>
 
 						<div class="pt-4">
-							<Button onclick={onDismiss} class="w-full cursor-pointer" size="lg">Start Exploring</Button>
+							<Button onclick={onDismiss} class="w-full cursor-pointer" size="lg"
+								>Start Exploring</Button
+							>
 						</div>
 					</div>
 				{/if}
