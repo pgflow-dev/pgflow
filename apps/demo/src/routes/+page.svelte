@@ -186,87 +186,85 @@
 
 <div class="page-container">
 	<div class="page-content">
-		<!-- Header: Logo and Input (Desktop only) -->
-		<div class="header-section hidden md:flex">
-			<div class="flex items-center gap-3">
-				<img src="/pgflow-logo-dark.svg" alt="pgflow" class="h-12" />
-				<div>
-					<h1 class="text-lg font-bold">pgflow Demo</h1>
-					<p class="text-xs text-muted-foreground">Dead-simple workflow orchestration for Supabase</p>
-				</div>
-			</div>
-			<div class="flex gap-2 flex-1 max-w-md ml-auto">
-				<Input type="url" bind:value={url} placeholder="Enter article URL" class="flex-1" />
-				<Button
-					onclick={processArticle}
-					disabled={isRunning}
-					class={highlightButton ? 'button-pulse cursor-pointer' : 'cursor-pointer'}
-				>
-					Process Article
-				</Button>
-			</div>
-			{#if explanationVisible}
-				<Button
-					variant="outline"
-					onclick={clearSelection}
-					class="ml-3 cursor-pointer"
-				>
-					✕ Clear Selection
-				</Button>
-			{/if}
-		</div>
+		<!-- Main Grid Layout -->
+		<div class="grid gap-4 min-h-0 flex-1 main-layout">
 
-		<!-- Main Layout: Code + Event Stream (left) | DAG & Details (right) -->
-		<div class="main-layout">
-			<!-- Left Column: Code Panel (HERO) + Event Stream -->
-			<div class="left-column">
-				<div class="code-panel-container">
-					<CodePanel
-						{flowState}
-						{selectedStep}
-						{hoveredStep}
-						on:step-selected={handleStepSelected}
-						on:step-hovered={handleStepHovered}
-					/>
-				</div>
-
-				<!-- Event Stream (collapsible, bottom of left column) -->
-				{#if flowState.events.length > 0}
-					<div class="event-stream-section-left">
-						<Card class={eventStreamCollapsed ? 'collapsed' : 'expanded'}>
-							<CardHeader
-								class="pb-0 pt-3 flex-shrink-0 cursor-pointer hover:bg-accent/50 transition-colors"
-								onclick={toggleEventStream}
-							>
-								<div class="flex items-center justify-between">
-									<CardTitle class="text-sm">Event Stream</CardTitle>
-									<span class="text-xs text-muted-foreground">
-										{eventStreamCollapsed ? '▶' : '▼'} Click to {eventStreamCollapsed ? 'expand' : 'collapse'}
-									</span>
-								</div>
-							</CardHeader>
-							{#if !eventStreamCollapsed}
-								<CardContent class="event-stream-content py-2">
-									<DebugPanel
-										{flowState}
-										{selectedStep}
-										{hoveredStep}
-										on:step-selected={handleStepSelected}
-										on:step-hovered={handleStepHovered}
-									/>
-								</CardContent>
-							{/if}
-						</Card>
+			<!-- Header: Logo and Input (Desktop only) -->
+			<div class="hidden md:flex items-center gap-4 pb-3 border-b border-border" style="grid-area: header">
+				<div class="flex items-center gap-3">
+					<img src="/pgflow-logo-dark.svg" alt="pgflow" class="h-12" />
+					<div>
+						<h1 class="text-lg font-bold">pgflow Demo</h1>
+						<p class="text-xs text-muted-foreground">Dead-simple workflow orchestration for Supabase</p>
 					</div>
+				</div>
+				<div class="flex gap-2 flex-1 max-w-md ml-auto">
+					<Input type="url" bind:value={url} placeholder="Enter article URL" class="flex-1" />
+					<Button
+						onclick={processArticle}
+						disabled={isRunning}
+						class={highlightButton ? 'button-pulse cursor-pointer' : 'cursor-pointer'}
+					>
+						Process Article
+					</Button>
+				</div>
+				{#if explanationVisible}
+					<Button
+						variant="outline"
+						onclick={clearSelection}
+						class="ml-3 cursor-pointer"
+					>
+						✕ Clear Selection
+					</Button>
 				{/if}
 			</div>
 
-			<!-- Right Column: DAG (top) + Step Details (bottom) -->
-			<div class="right-column">
-				<!-- DAG Visualization (bigger) -->
-				<Card class="dag-card p-0 flex-shrink-0 hidden md:block">
-					<CardContent class="p-4">
-						<div class="h-[300px]">
+			<!-- Code Panel -->
+			<div class="overflow-hidden min-h-0" style="grid-area: code">
+				<CodePanel
+					{flowState}
+					{selectedStep}
+					{hoveredStep}
+					on:step-selected={handleStepSelected}
+					on:step-hovered={handleStepHovered}
+				/>
+			</div>
+
+			<!-- Event Stream (collapsible) -->
+			{#if flowState.events.length > 0}
+				<div class="overflow-hidden max-h-[35vh] md:block hidden" style="grid-area: events">
+					<Card class={eventStreamCollapsed ? 'h-12' : 'h-full flex flex-col'}>
+						<CardHeader
+							class="pb-0 pt-3 flex-shrink-0 cursor-pointer hover:bg-accent/50 transition-colors"
+							onclick={toggleEventStream}
+						>
+							<div class="flex items-center justify-between">
+								<CardTitle class="text-sm">Event Stream</CardTitle>
+								<span class="text-xs text-muted-foreground">
+									{eventStreamCollapsed ? '▶' : '▼'} Click to {eventStreamCollapsed ? 'expand' : 'collapse'}
+								</span>
+							</div>
+						</CardHeader>
+						{#if !eventStreamCollapsed}
+							<CardContent class="flex-1 overflow-auto py-2 min-h-0">
+								<DebugPanel
+									{flowState}
+									{selectedStep}
+									{hoveredStep}
+									on:step-selected={handleStepSelected}
+									on:step-hovered={handleStepHovered}
+								/>
+							</CardContent>
+						{/if}
+					</Card>
+				</div>
+			{/if}
+
+			<!-- DAG Visualization -->
+			<div class="overflow-hidden" style="grid-area: dag">
+				<Card class="h-full p-0">
+					<CardContent class="p-4 h-full">
+						<div class="h-full md:h-[300px]">
 							<DAGVisualization
 								{flowState}
 								{selectedStep}
@@ -277,100 +275,90 @@
 						</div>
 					</CardContent>
 				</Card>
+			</div>
 
-				<!-- Step Details Panel (fills remaining space) -->
-				<div class="flex-1 min-h-0 hidden md:block mt-3">
-					{#if explanationVisible}
-						<ExplanationPanel
-							{selectedStep}
-							{hoveredStep}
-							{flowState}
-							visible={true}
-							on:close={closeExplanation}
-							on:step-selected={handleStepSelected}
-							on:step-hovered={handleStepHovered}
-						/>
-					{:else}
-						<Card class="h-full welcome-guide">
-							<CardHeader>
-								<CardTitle class="text-base">Welcome to pgflow Interactive Demo</CardTitle>
-							</CardHeader>
-							<CardContent class="space-y-4 text-sm">
-								<div>
-									<h3 class="font-semibold mb-2 flex items-center gap-2">
-										<span class="text-lg">🎯</span> What You'll See
-									</h3>
-									<p class="text-muted-foreground leading-relaxed">
-										A real article processing workflow that fetches content, runs AI summarization and
-										keyword extraction in parallel, then publishes results—all orchestrated by pgflow.
-									</p>
-								</div>
-
-								<div>
-									<h3 class="font-semibold mb-2 flex items-center gap-2">
-										<span class="text-lg">🔍</span> How to Explore
-									</h3>
-									<div class="space-y-2 text-muted-foreground">
-										<div class="flex items-start gap-2">
-											<span class="text-primary font-mono text-xs bg-secondary px-2 py-0.5 rounded mt-0.5">Click</span>
-											<span>Steps in the code or DAG to see inputs, outputs, and dependencies</span>
-										</div>
-										<div class="flex items-start gap-2">
-											<span class="text-primary font-mono text-xs bg-secondary px-2 py-0.5 rounded mt-0.5">Click</span>
-											<span>"new Flow" to understand retry configuration and reliability settings</span>
-										</div>
-										<div class="flex items-start gap-2">
-											<span class="text-primary font-mono text-xs bg-secondary px-2 py-0.5 rounded mt-0.5">Watch</span>
-											<span>Event stream at bottom for real-time execution data</span>
-										</div>
-									</div>
-								</div>
-
-								<div>
-									<h3 class="font-semibold mb-2 flex items-center gap-2">
-										<span class="text-lg">⚡</span> Why pgflow?
-									</h3>
-									<ul class="space-y-1.5 text-muted-foreground">
-										<li class="flex items-start gap-2">
-											<span class="text-primary">•</span>
-											<span>Dead-simple TypeScript DSL—no complex YAML or config files</span>
-										</li>
-										<li class="flex items-start gap-2">
-											<span class="text-primary">•</span>
-											<span>Built-in retry logic and error handling</span>
-										</li>
-										<li class="flex items-start gap-2">
-											<span class="text-primary">•</span>
-											<span>Real-time observability with streaming events</span>
-										</li>
-										<li class="flex items-start gap-2">
-											<span class="text-primary">•</span>
-											<span>Native Postgres/Supabase—no external orchestrators</span>
-										</li>
-									</ul>
-								</div>
-
-								<div class="pt-2 border-t border-border">
-									<p class="text-muted-foreground text-xs text-center">
-										👆 Click any step in the code or DAG to get started
-									</p>
-								</div>
-							</CardContent>
-						</Card>
-					{/if}
-				</div>
-
-				<!-- Mobile: DAG below step details -->
-				<div class="md:hidden mobile-dag-container mt-3">
-					<DAGVisualization
-						{flowState}
+			<!-- Details Panel (Step Explanation or Welcome Guide) -->
+			<div class="overflow-auto min-h-0 hidden md:block" style="grid-area: details">
+				{#if explanationVisible}
+					<ExplanationPanel
 						{selectedStep}
 						{hoveredStep}
+						{flowState}
+						visible={true}
+						on:close={closeExplanation}
 						on:step-selected={handleStepSelected}
 						on:step-hovered={handleStepHovered}
 					/>
-				</div>
+				{:else}
+					<Card class="h-full welcome-guide">
+						<CardHeader>
+							<CardTitle class="text-base">Welcome to pgflow Interactive Demo</CardTitle>
+						</CardHeader>
+						<CardContent class="space-y-4 text-sm">
+							<div>
+								<h3 class="font-semibold mb-2 flex items-center gap-2">
+									<span class="text-lg">🎯</span> What You'll See
+								</h3>
+								<p class="text-muted-foreground leading-relaxed">
+									A real article processing workflow that fetches content, runs AI summarization and
+									keyword extraction in parallel, then publishes results—all orchestrated by pgflow.
+								</p>
+							</div>
+
+							<div>
+								<h3 class="font-semibold mb-2 flex items-center gap-2">
+									<span class="text-lg">🔍</span> How to Explore
+								</h3>
+								<div class="space-y-2 text-muted-foreground">
+									<div class="flex items-start gap-2">
+										<span class="text-primary font-mono text-xs bg-secondary px-2 py-0.5 rounded mt-0.5">Click</span>
+										<span>Steps in the code or DAG to see inputs, outputs, and dependencies</span>
+									</div>
+									<div class="flex items-start gap-2">
+										<span class="text-primary font-mono text-xs bg-secondary px-2 py-0.5 rounded mt-0.5">Click</span>
+										<span>"new Flow" to understand retry configuration and reliability settings</span>
+									</div>
+									<div class="flex items-start gap-2">
+										<span class="text-primary font-mono text-xs bg-secondary px-2 py-0.5 rounded mt-0.5">Watch</span>
+										<span>Event stream at bottom for real-time execution data</span>
+									</div>
+								</div>
+							</div>
+
+							<div>
+								<h3 class="font-semibold mb-2 flex items-center gap-2">
+									<span class="text-lg">⚡</span> Why pgflow?
+								</h3>
+								<ul class="space-y-1.5 text-muted-foreground">
+									<li class="flex items-start gap-2">
+										<span class="text-primary">•</span>
+										<span>Dead-simple TypeScript DSL—no complex YAML or config files</span>
+									</li>
+									<li class="flex items-start gap-2">
+										<span class="text-primary">•</span>
+										<span>Built-in retry logic and error handling</span>
+									</li>
+									<li class="flex items-start gap-2">
+										<span class="text-primary">•</span>
+										<span>Real-time observability with streaming events</span>
+									</li>
+									<li class="flex items-start gap-2">
+										<span class="text-primary">•</span>
+										<span>Native Postgres/Supabase—no external orchestrators</span>
+									</li>
+								</ul>
+							</div>
+
+							<div class="pt-2 border-t border-border">
+								<p class="text-muted-foreground text-xs text-center">
+									👆 Click any step in the code or DAG to get started
+								</p>
+							</div>
+						</CardContent>
+					</Card>
+				{/if}
 			</div>
+
 		</div>
 	</div>
 </div>
@@ -434,146 +422,43 @@
 		gap: 1rem;
 	}
 
-	/* Header section with logo and input */
-	.header-section {
-		flex-shrink: 0;
-		align-items: center;
-		gap: 1rem;
-		padding: 0.75rem 0;
-		border-bottom: 1px solid hsl(var(--border));
-		margin-bottom: 0.5rem;
-	}
-
-	/* Main layout: Code + Event Stream (left) | DAG & Details (right) */
+	/* CSS Grid Layout: Desktop (>1400px) - 2 columns */
 	.main-layout {
-		display: flex;
-		flex: 1;
-		min-height: 0;
-		gap: 1rem;
+		grid-template-areas:
+			"header  header"
+			"code    dag"
+			"code    details"
+			"events  details";
+		grid-template-columns: 1fr 520px;
+		grid-template-rows: auto 1fr auto auto;
 	}
 
-	.left-column {
-		flex: 1 1 auto;
-		min-width: 850px; /* Code panel needs generous space */
-		display: flex;
-		flex-direction: column;
-		overflow: hidden;
-		gap: 0.75rem;
-	}
-
-	.code-panel-container {
-		flex: 1;
-		min-height: 0;
-		overflow: hidden;
-	}
-
-	/* Event stream in left column (bottom) */
-	.event-stream-section-left {
-		flex-shrink: 0;
-		max-height: 35vh;
-		overflow: hidden;
-	}
-
-	.event-stream-section-left .collapsed {
-		max-height: 3rem;
-	}
-
-	.event-stream-section-left .expanded {
-		display: flex;
-		flex-direction: column;
-		max-height: 35vh;
-	}
-
-	.event-stream-section-left .expanded .event-stream-content {
-		flex: 1;
-		overflow: auto;
-		min-height: 0;
-	}
-
-	.right-column {
-		flex: 0 0 auto;
-		width: 520px;
-		min-width: 520px;
-		display: flex;
-		flex-direction: column;
-		min-height: 0;
-		overflow: hidden;
-	}
-
-	.dag-card {
-		flex-shrink: 0;
-	}
-
-	/* Tablet/Small Desktop (769px-1400px): Stack columns vertically */
+	/* Tablet (769px-1400px): Stack vertically */
 	@media (max-width: 1400px) and (min-width: 769px) {
 		.main-layout {
-			flex-direction: column;
-			gap: 1rem;
-		}
-
-		.left-column {
-			min-width: 0;
-			flex: 0 0 auto;
-			height: auto;
-			max-height: none; /* Remove height limit */
-		}
-
-		.code-panel-container {
-			height: 500px; /* Fixed height for code when stacked */
-		}
-
-		.event-stream-section-left {
-			max-height: 250px; /* Smaller event stream when stacked */
-		}
-
-		.event-stream-section-left .expanded {
-			max-height: 250px;
-		}
-
-		.right-column {
-			flex: 1;
-			width: 100%;
-			min-width: 0;
+			grid-template-areas:
+				"header"
+				"code"
+				"events"
+				"dag"
+				"details";
+			grid-template-columns: 1fr;
+			grid-template-rows: auto 500px auto auto 1fr;
 		}
 	}
 
-	/* Mobile: Single column, simplified layout */
+	/* Mobile (<768px): Simplified layout */
 	@media (max-width: 768px) {
 		.main-layout {
-			flex-direction: column;
-			gap: 0;
+			grid-template-areas:
+				"code"
+				"dag"
+				"details";
+			grid-template-columns: 1fr;
+			grid-template-rows: auto 220px 1fr;
 		}
-
-		.left-column {
-			flex: 0 0 auto;
-			height: auto;
-			min-width: 0;
-		}
-
-		.right-column {
-			flex: 1;
-			width: 100%;
-			min-width: 0;
-		}
-
-		.event-stream-section-left {
-			display: none; /* Hide on mobile */
-		}
-
-		.mobile-dag-container {
-			flex: 1;
-			min-height: 0;
-			background: #0d1117;
-			display: flex;
-			align-items: center; /* Center DAG vertically */
-			justify-content: center; /* Center DAG horizontally */
-		}
-
-		/* DAG component should have a fixed reasonable height on mobile */
-		.mobile-dag-container :global(.dag-container) {
-			height: 220px !important;
-			width: 100%;
-		}
+		/* Header becomes mobile sticky input (outside grid) */
+		/* Events hidden via Tailwind hidden class */
 	}
 
 	/* Welcome guide card styling */
