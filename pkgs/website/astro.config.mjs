@@ -399,6 +399,12 @@ export default defineConfig({
                     directory: 'tutorials/ai-web-scraper/',
                   },
                 },
+                {
+                  label: 'Use Cases',
+                  autogenerate: {
+                    directory: 'tutorials/use-cases/',
+                  },
+                },
               ],
             },
             {
