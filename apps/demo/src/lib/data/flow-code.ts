@@ -6,6 +6,7 @@
 
 interface CodeSection {
 	code: string;
+	mobileCode?: string; // Mobile-optimized version with line breaks
 	startLine?: number;
 	endLine?: number;
 }
@@ -18,32 +19,69 @@ export const FLOW_SECTIONS: Record<string, CodeSection> = {
 	flow_config: {
 		code: `new Flow<{ url: string }>({
   slug: 'article_flow',
-  maxAttempts: 3,  // Retry failed steps up to 3 times
-  timeout: 60      // Task visibility timeout
+  maxAttempts: 3
 })`
 	},
 	fetch_article: {
 		code: `  .step(
     { slug: 'fetch_article' },
     (input) => scrapeUrl(input.run.url)
+  )`,
+		mobileCode: `  .step(
+    { slug: 'fetch_article' },
+    (input) => scrapeUrl(
+      input.run.url
+    )
   )`
 	},
 	summarize: {
 		code: `  .step(
     { slug: 'summarize', dependsOn: ['fetch_article'] },
     (input) => summarize(schema, input.fetch_article.content)
+  )`,
+		mobileCode: `  .step(
+    {
+      slug: 'summarize',
+      dependsOn: ['fetch_article']
+    },
+    (input) => summarize(
+      schema,
+      input.fetch_article.content
+    )
   )`
 	},
 	extract_keywords: {
 		code: `  .step(
     { slug: 'extract_keywords', dependsOn: ['fetch_article'] },
     (input) => extractKeywords(input.fetch_article.content)
+  )`,
+		mobileCode: `  .step(
+    {
+      slug: 'extract_keywords',
+      dependsOn: ['fetch_article']
+    },
+    (input) => extractKeywords(
+      input.fetch_article.content
+    )
   )`
 	},
 	publish: {
 		code: `  .step(
     { slug: 'publish', dependsOn: ['summarize', 'extract_keywords'] },
     (input) => publishArticle(input.summarize, input.extract_keywords)
+  );`,
+		mobileCode: `  .step(
+    {
+      slug: 'publish',
+      dependsOn: [
+        'summarize',
+        'extract_keywords'
+      ]
+    },
+    (input) => publishArticle(
+      input.summarize,
+      input.extract_keywords
+    )
   );`
 	}
 };

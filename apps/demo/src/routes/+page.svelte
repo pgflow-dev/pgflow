@@ -26,7 +26,8 @@
 	let hoverTimeout: number | undefined;
 
 	// Welcome modal state
-	let showWelcome = $state(true);
+	const WELCOME_MODAL_ENABLED = true; // Set to true to enable welcome modal
+	let showWelcome = $state(WELCOME_MODAL_ENABLED);
 	let hasRunOnce = $state(false);
 	let highlightButton = $state(false);
 
@@ -74,18 +75,106 @@
 		}
 	}
 
+	function showPulseDots() {
+		setTimeout(() => {
+			const dots: HTMLElement[] = [];
+
+			// DAG nodes - center
+			let dagNodeCount = 0;
+			document.querySelectorAll('.dag-node').forEach((el) => {
+				const rect = el.getBoundingClientRect();
+				const dot = document.createElement('div');
+				dot.className = 'pulse-dot';
+
+				// DEBUG: Shift first dot to identify it
+				if (dagNodeCount === 0) {
+					dot.style.left = `${rect.left + rect.width / 2 + 50}px`;
+					dot.style.top = `${rect.top + rect.height / 2 + 10}px`;
+				} else {
+					dot.style.left = `${rect.left + rect.width / 2}px`;
+					dot.style.top = `${rect.top + rect.height / 2}px`;
+				}
+
+				document.body.appendChild(dot);
+				dots.push(dot);
+				dagNodeCount++;
+			});
+
+			// Code step blocks - check if status borders exist, otherwise create dots at step positions
+			const stepBlocks = document.querySelectorAll('.step-status-border');
+			const codePanel = document.querySelector('.code-panel');
+
+			if (stepBlocks.length > 0) {
+				// Status borders exist, place dots horizontally centered on screen, vertically in middle of block
+				stepBlocks.forEach((el) => {
+					const rect = el.getBoundingClientRect();
+					const dot = document.createElement('div');
+					dot.className = 'pulse-dot';
+					// Horizontally center on screen, vertically center in the block
+					dot.style.left = `${window.innerWidth / 2}px`;
+					dot.style.top = `${rect.top + rect.height / 2}px`;
+					document.body.appendChild(dot);
+					dots.push(dot);
+				});
+			} else if (codePanel) {
+				// No status borders yet, find all lines for each step and calculate middle
+				// Include flow_config and all step slugs
+				const allSlugs = ['flow_config', 'fetch_article', 'summarize', 'extract_keywords', 'publish'];
+
+				allSlugs.forEach((stepSlug) => {
+					// Find all lines of this step to calculate the middle
+					const stepLines = codePanel.querySelectorAll(`[data-step="${stepSlug}"]`);
+					if (stepLines.length > 0) {
+						const firstLine = stepLines[0];
+						const lastLine = stepLines[stepLines.length - 1];
+						const firstRect = firstLine.getBoundingClientRect();
+						const lastRect = lastLine.getBoundingClientRect();
+
+						// Only create dot if rects are valid (not 0,0)
+						if (firstRect.top > 0 && lastRect.bottom > 0) {
+							const dot = document.createElement('div');
+							dot.className = 'pulse-dot';
+							// Horizontally center on screen, vertically in middle of all step lines
+							dot.style.left = `${window.innerWidth / 2}px`;
+							dot.style.top = `${(firstRect.top + lastRect.bottom) / 2}px`;
+							document.body.appendChild(dot);
+							dots.push(dot);
+						}
+					}
+				});
+			}
+
+			// Event stream button (mobile) - only if it has events and is visible
+			const allButtons = Array.from(document.querySelectorAll('button'));
+			const eventsButton = allButtons.find((btn) => {
+				const text = btn.textContent?.trim() || '';
+				return text.startsWith('Events') && !btn.disabled;
+			});
+
+			if (eventsButton) {
+				const rect = eventsButton.getBoundingClientRect();
+				if (rect.width > 0 && rect.height > 0) {
+					const dot = document.createElement('div');
+					dot.className = 'pulse-dot';
+					// DEBUG: Shift this dot to identify it
+					dot.style.left = `${rect.left + rect.width / 2 + 50}px`;
+					dot.style.top = `${rect.top + rect.height / 2 + 10}px`;
+					document.body.appendChild(dot);
+					dots.push(dot);
+				}
+			}
+
+			// Remove dots after 3 seconds
+			setTimeout(() => {
+				dots.forEach((dot) => dot.remove());
+			}, 3000);
+		}, 300);
+	}
+
 	function handleDismissModal() {
 		showWelcome = false;
-		// After dismissing completion modal, briefly highlight the Process Article button
-		if (hasRunOnce) {
-			setTimeout(() => {
-				highlightButton = true;
-				// Remove highlight after animation completes
-				setTimeout(() => {
-					highlightButton = false;
-				}, 2000);
-			}, 300);
-		}
+		// Show pulsing dots on all clickable elements after any modal dismiss
+		showPulseDots();
 	}
 
 	function handleStepSelected(event: CustomEvent<{ stepSlug: string | null }>) {
@@ -159,6 +248,13 @@
 	function toggleEventStream() {
 		eventStreamCollapsed = !eventStreamCollapsed;
 	}
+
+	// Mobile events panel state
+	let mobileEventsVisible = $state(false);
+
+	function toggleMobileEvents() {
+		mobileEventsVisible = !mobileEventsVisible;
+	}
 </script>
 
 <WelcomeModal
@@ -168,37 +264,25 @@
 	onDismiss={handleDismissModal}
 />
 
-<!-- Sticky Contact CTA Banner -->
-<a
-	href="https://pgflow.dev/author/"
-	target="_blank"
-	rel="noopener noreferrer"
-	class="sticky top-0 z-50 block w-full contact-banner transition-all duration-200 shadow-md"
->
-	<div class="banner-content mx-auto py-2 px-4">
-		<p class="text-sm font-medium text-white text-center">
-			<span class="hidden md:inline">💬 Questions about pgflow? → Book a call or send an email</span
-			>
-			<span class="md:hidden">💬 Questions? Contact us</span>
-		</p>
-	</div>
-</a>
-
 <div class="page-container">
 	<div class="page-content">
 		<!-- Main Grid Layout -->
-		<div class="grid gap-4 min-h-0 flex-1 main-layout">
+		<div class="grid gap-0 min-h-0 flex-1 main-layout">
+			<!-- Header: Sticky across all breakpoints -->
+			<div
+				class="sticky top-0 z-50 bg-background border-b border-border flex items-center gap-2 md:gap-4 px-3 h-11"
+				style="grid-area: header"
+			>
+				<!-- Logo + branding -->
+				<a href="https://pgflow.dev" class="flex items-center gap-1.5 md:gap-2">
+					<img src="/pgflow-logo-dark.svg" alt="pgflow" class="h-5 md:h-8" />
+					<span class="text-xs md:text-sm font-semibold">pgflow</span>
+				</a>
 
-			<!-- Header: Logo and Input (Desktop only) -->
-			<div class="hidden md:flex items-center gap-4 pb-3 border-b border-border" style="grid-area: header">
-				<div class="flex items-center gap-3">
-					<img src="/pgflow-logo-dark.svg" alt="pgflow" class="h-12" />
-					<div>
-						<h1 class="text-lg font-bold">pgflow Demo</h1>
-						<p class="text-xs text-muted-foreground">Dead-simple workflow orchestration for Supabase</p>
-					</div>
-				</div>
-				<div class="flex gap-2 flex-1 max-w-md ml-auto">
+				<div class="flex-1"></div>
+
+				<!-- Desktop: URL input + buttons -->
+				<div class="hidden md:flex gap-2 flex-1 max-w-md ml-auto">
 					<Input type="url" bind:value={url} placeholder="Enter article URL" class="flex-1" />
 					<Button
 						onclick={processArticle}
@@ -212,11 +296,31 @@
 					<Button
 						variant="outline"
 						onclick={clearSelection}
-						class="ml-3 cursor-pointer"
+						class="ml-3 cursor-pointer hidden md:flex"
 					>
 						✕ Clear Selection
 					</Button>
 				{/if}
+
+				<!-- Mobile: Events + Process buttons -->
+				<Button
+					variant="ghost"
+					size="sm"
+					onclick={toggleMobileEvents}
+					disabled={!flowState.events.length}
+					class="md:hidden h-8 px-2 text-xs text-muted-foreground"
+				>
+					Events {flowState.events.length ? `(${flowState.events.length})` : ''}
+				</Button>
+
+				<Button
+					size="sm"
+					onclick={processArticle}
+					disabled={isRunning}
+					class="md:hidden h-8 px-3 text-xs {highlightButton ? 'button-pulse' : ''}"
+				>
+					Start
+				</Button>
 			</div>
 
 			<!-- Code Panel -->
@@ -230,6 +334,17 @@
 				/>
 			</div>
 
+			<!-- Mobile: Code-to-DAG connector -->
+			<div class="md:hidden bg-accent/30 border-y border-border" style="grid-area: info">
+				<div class="px-3 py-3 text-xs text-muted-foreground text-center">
+					<span class="text-foreground font-semibold">20 lines</span>
+					<span class="mx-2">→</span>
+					<span class="text-foreground font-semibold">4-step DAG</span>
+					<span class="mx-2">•</span>
+					<span>Parallel execution</span>
+				</div>
+			</div>
+
 			<!-- Event Stream (collapsible) -->
 			{#if flowState.events.length > 0}
 				<div class="overflow-hidden max-h-[35vh] md:block hidden" style="grid-area: events">
@@ -241,7 +356,9 @@
 							<div class="flex items-center justify-between">
 								<CardTitle class="text-sm">Event Stream</CardTitle>
 								<span class="text-xs text-muted-foreground">
-									{eventStreamCollapsed ? '▶' : '▼'} Click to {eventStreamCollapsed ? 'expand' : 'collapse'}
+									{eventStreamCollapsed ? '▶' : '▼'} Click to {eventStreamCollapsed
+										? 'expand'
+										: 'collapse'}
 								</span>
 							</div>
 						</CardHeader>
@@ -260,11 +377,23 @@
 				</div>
 			{/if}
 
-			<!-- DAG Visualization -->
-			<div class="overflow-hidden" style="grid-area: dag">
-				<Card class="h-full p-0">
+			<!-- Mobile: DAG only (explanation is overlay) | Desktop: DAG -->
+			<div class="overflow-hidden h-full" style="grid-area: dag">
+				<!-- Mobile: Always show DAG -->
+				<div class="md:hidden h-full flex flex-col">
+					<DAGVisualization
+						{flowState}
+						{selectedStep}
+						{hoveredStep}
+						on:step-selected={handleStepSelected}
+						on:step-hovered={handleStepHovered}
+					/>
+				</div>
+
+				<!-- Desktop: Always show DAG -->
+				<Card class="hidden md:block h-full p-0">
 					<CardContent class="p-4 h-full">
-						<div class="h-full md:h-[300px]">
+						<div class="h-[300px]">
 							<DAGVisualization
 								{flowState}
 								{selectedStep}
@@ -277,7 +406,7 @@
 				</Card>
 			</div>
 
-			<!-- Details Panel (Step Explanation or Welcome Guide) -->
+			<!-- Desktop: Details Panel (Step Explanation or Welcome Guide) -->
 			<div class="overflow-auto min-h-0 hidden md:block" style="grid-area: details">
 				{#if explanationVisible}
 					<ExplanationPanel
@@ -311,15 +440,26 @@
 								</h3>
 								<div class="space-y-2 text-muted-foreground">
 									<div class="flex items-start gap-2">
-										<span class="text-primary font-mono text-xs bg-secondary px-2 py-0.5 rounded mt-0.5">Click</span>
+										<span
+											class="text-primary font-mono text-xs bg-secondary px-2 py-0.5 rounded mt-0.5"
+											>Click</span
+										>
 										<span>Steps in the code or DAG to see inputs, outputs, and dependencies</span>
 									</div>
 									<div class="flex items-start gap-2">
-										<span class="text-primary font-mono text-xs bg-secondary px-2 py-0.5 rounded mt-0.5">Click</span>
-										<span>"new Flow" to understand retry configuration and reliability settings</span>
+										<span
+											class="text-primary font-mono text-xs bg-secondary px-2 py-0.5 rounded mt-0.5"
+											>Click</span
+										>
+										<span
+											>"new Flow" to understand retry configuration and reliability settings</span
+										>
 									</div>
 									<div class="flex items-start gap-2">
-										<span class="text-primary font-mono text-xs bg-secondary px-2 py-0.5 rounded mt-0.5">Watch</span>
+										<span
+											class="text-primary font-mono text-xs bg-secondary px-2 py-0.5 rounded mt-0.5"
+											>Watch</span
+										>
 										<span>Event stream at bottom for real-time execution data</span>
 									</div>
 								</div>
@@ -358,58 +498,81 @@
 					</Card>
 				{/if}
 			</div>
-
 		</div>
 	</div>
 </div>
 
-<!-- Mobile: Sticky bottom input + button -->
-<div class="mobile-sticky-input md:hidden bg-card border-t border-border">
-	<div class="flex gap-2 p-3">
-		<Input type="url" bind:value={url} placeholder="Enter article URL" class="flex-1" />
-		<Button
-			onclick={processArticle}
-			disabled={isRunning}
-			class={highlightButton ? 'button-pulse cursor-pointer' : 'cursor-pointer'}
-		>
-			Process
-		</Button>
-	</div>
-</div>
-
-<!-- Mobile: Bottom slide-up Explanation Panel -->
+<!-- Mobile: Explanation slide-up panel (covers everything except header) -->
 {#if explanationVisible}
-	<div class="mobile-explanation-overlay md:hidden" onclick={closeExplanation}></div>
-	<div class="mobile-explanation-panel md:hidden">
-		<ExplanationPanel
-			{selectedStep}
-			{hoveredStep}
-			{flowState}
-			visible={true}
-			on:close={closeExplanation}
-			on:step-selected={handleStepSelected}
-			on:step-hovered={handleStepHovered}
-		/>
+	<div class="fixed inset-0 bg-black/50 z-40 md:hidden" onclick={closeExplanation}></div>
+	<div class="fixed inset-x-0 top-11 bottom-0 bg-card z-50 md:hidden flex flex-col">
+		<!-- Code snippet for selected step or flow config (sticky) -->
+		{#if selectedStep}
+			<div
+				class="bg-[#0d1117] px-0 py-0 text-xs overflow-x-auto border-b border-border flex-shrink-0"
+			>
+				<CodePanel
+					{flowState}
+					{selectedStep}
+					hoveredStep={null}
+					on:step-selected={() => {}}
+					on:step-hovered={() => {}}
+				/>
+			</div>
+		{/if}
+
+		<!-- Explanation content (scrollable, no card wrapper) -->
+		<div class="overflow-auto flex-1">
+			<ExplanationPanel
+				{selectedStep}
+				{hoveredStep}
+				{flowState}
+				visible={true}
+				on:close={closeExplanation}
+				on:step-selected={handleStepSelected}
+				on:step-hovered={handleStepHovered}
+			/>
+		</div>
+	</div>
+{/if}
+
+<!-- Mobile: Events slide-up panel -->
+{#if mobileEventsVisible && flowState.events.length > 0}
+	<div class="fixed inset-0 bg-black/50 z-40 md:hidden" onclick={toggleMobileEvents}></div>
+	<div
+		class="fixed inset-x-0 bottom-0 bg-card max-h-[70vh] z-50 md:hidden rounded-t-xl shadow-2xl animate-slide-up"
+	>
+		<div class="flex items-center justify-between p-4 border-b">
+			<h3 class="font-semibold text-sm">Event Stream</h3>
+			<button onclick={toggleMobileEvents} class="text-muted-foreground">✕</button>
+		</div>
+		<div class="overflow-auto p-4 max-h-[calc(70vh-60px)]">
+			<DebugPanel
+				{flowState}
+				{selectedStep}
+				{hoveredStep}
+				on:step-selected={handleStepSelected}
+				on:step-hovered={handleStepHovered}
+			/>
+		</div>
 	</div>
 {/if}
 
 <style>
 	.page-container {
-		/* Calculate height: full viewport minus banner height (44px: 2*8px padding + 28px content) */
-		height: calc(100vh - 44px);
-		max-height: calc(100vh - 44px);
-		overflow: hidden; /* Prevent page scroll */
+		height: 100vh;
+		max-height: 100vh;
+		overflow: hidden;
 		padding: 1rem;
 		container-type: size;
 		display: flex;
 		justify-content: center;
 	}
 
-	/* Mobile: Remove padding, code touches edges */
+	/* Mobile: Remove padding */
 	@media (max-width: 768px) {
 		.page-container {
 			padding: 0;
-			height: calc(100vh - 44px); /* Ensure full height accounting for banner */
 		}
 	}
 
@@ -419,31 +582,38 @@
 		height: 100%;
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+	}
+
+	@media (min-width: 769px) {
+		.page-content {
+			gap: 1rem;
+		}
 	}
 
 	/* CSS Grid Layout: Desktop (>1400px) - 2 columns */
 	.main-layout {
 		grid-template-areas:
-			"header  header"
-			"code    dag"
-			"code    details"
-			"events  details";
+			'header  header'
+			'code    dag'
+			'code    details'
+			'events  details';
 		grid-template-columns: 1fr 520px;
 		grid-template-rows: auto 1fr auto auto;
+		gap: 1rem;
 	}
 
 	/* Tablet (769px-1400px): Stack vertically */
 	@media (max-width: 1400px) and (min-width: 769px) {
 		.main-layout {
 			grid-template-areas:
-				"header"
-				"code"
-				"events"
-				"dag"
-				"details";
+				'header'
+				'code'
+				'events'
+				'dag'
+				'details';
 			grid-template-columns: 1fr;
 			grid-template-rows: auto 500px auto auto 1fr;
+			gap: 1rem;
 		}
 	}
 
@@ -451,14 +621,16 @@
 	@media (max-width: 768px) {
 		.main-layout {
 			grid-template-areas:
-				"code"
-				"dag"
-				"details";
+				'header'
+				'code'
+				'info'
+				'dag';
 			grid-template-columns: 1fr;
-			grid-template-rows: auto 220px 1fr;
+			grid-template-rows: auto auto auto 1fr;
+			gap: 0;
 		}
-		/* Header becomes mobile sticky input (outside grid) */
-		/* Events hidden via Tailwind hidden class */
+		/* Events hidden in grid, shown in slide-up panel */
+		/* DAG takes remaining space (1fr) */
 	}
 
 	/* Welcome guide card styling */
@@ -500,35 +672,7 @@
 		}
 	}
 
-	/* Mobile: Bottom slide-up panel */
-	.mobile-explanation-overlay {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.5);
-		z-index: 100;
-		animation: fadeIn 0.2s ease-out;
-	}
-
-	.mobile-explanation-panel {
-		position: fixed;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		max-height: 70vh;
-		z-index: 101;
-		animation: slideUp 0.3s ease-out;
-		overflow: hidden;
-	}
-
-	@keyframes fadeIn {
-		from {
-			opacity: 0;
-		}
-		to {
-			opacity: 1;
-		}
-	}
-
+	/* Mobile: Slide-up animation for events panel */
 	@keyframes slideUp {
 		from {
 			transform: translateY(100%);
@@ -538,13 +682,37 @@
 		}
 	}
 
-	/* Mobile: Sticky input at bottom */
-	.mobile-sticky-input {
+	:global(.animate-slide-up) {
+		animation: slideUp 0.3s ease-out;
+	}
+
+	/* Pulsing dot indicator for clickable elements */
+	:global(.pulse-dot) {
 		position: fixed;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		z-index: 50;
-		box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+		width: 10px;
+		height: 10px;
+		background: rgba(255, 159, 28, 1);
+		border: 2px solid rgba(255, 255, 255, 0.9);
+		border-radius: 50%;
+		transform: translate(-50%, -50%);
+		pointer-events: none;
+		z-index: 9999;
+		animation: pulse-dot 1s ease-out 3;
+		box-shadow: 0 0 8px rgba(255, 159, 28, 0.8);
+	}
+
+	@keyframes pulse-dot {
+		0% {
+			box-shadow: 0 0 8px rgba(255, 159, 28, 0.8), 0 0 0 0 rgba(255, 159, 28, 0.7);
+			opacity: 1;
+		}
+		50% {
+			box-shadow: 0 0 12px rgba(255, 159, 28, 1), 0 0 0 16px rgba(255, 159, 28, 0);
+			opacity: 0.9;
+		}
+		100% {
+			box-shadow: 0 0 8px rgba(255, 159, 28, 0.8), 0 0 0 0 rgba(255, 159, 28, 0);
+			opacity: 1;
+		}
 	}
 </style>

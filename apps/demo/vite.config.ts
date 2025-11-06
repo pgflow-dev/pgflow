@@ -10,6 +10,6 @@ export default defineConfig({
 		// dev:remote: 0.0.0.0 via --host flag
 
 		// Hostnames for remote dev access (local network only)
-		allowedHosts: ['localhost', 'pc', 'laptop']
+		allowedHosts: ['localhost', 'pc', 'laptop', 'oriole-2']
 	}
 });

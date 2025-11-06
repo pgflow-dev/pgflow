@@ -19,7 +19,9 @@
 	}>();
 
 	let highlightedCode = $state('');
+	let highlightedSections = $state<Record<string, string>>({});
 	let codeContainer: HTMLElement | undefined = $state(undefined);
+	let isMobile = $state(false);
 
 	// Calculate step blocks (groups of lines) for status icon positioning
 	const stepBlocks = $derived.by(() => {
@@ -45,35 +47,69 @@
 			return null;
 		}
 
-		// If flow has started but this step has no status yet, show as created
+		// If flow has started but this step has no status yet, don't show indicator
 		if (!status) {
-			return 'created';
+			return null;
 		}
 
-		return status;
+		// Only show indicators for started and completed
+		if (status === 'started' || status === 'completed') {
+			return status;
+		}
+
+		return null;
 	}
 
 	onMount(async () => {
-		// Generate syntax highlighted HTML using Shiki
+		// Detect mobile
+		isMobile = window.innerWidth < 768;
+		window.addEventListener('resize', () => {
+			isMobile = window.innerWidth < 768;
+		});
+
+		// Generate syntax highlighted HTML for full code
 		highlightedCode = await codeToHtml(FLOW_CODE, {
 			lang: 'typescript',
 			theme: 'night-owl',
 			transformers: [
 				{
 					line(node) {
-						// Add .line class to each line for click handling
 						node.properties.class = 'line';
 					}
 				}
 			]
 		});
 
-		// Add click handlers to lines after rendering - need small delay
+		// Generate separate highlighted sections for mobile (use mobileCode if available)
+		for (const [slug, section] of Object.entries(FLOW_SECTIONS)) {
+			const codeToRender = section.mobileCode || section.code;
+			highlightedSections[slug] = await codeToHtml(codeToRender, {
+				lang: 'typescript',
+				theme: 'night-owl'
+			});
+		}
+
+		// Add click handlers to lines after rendering
+		setupClickHandlersDelayed();
+	});
+
+	function setupClickHandlersDelayed() {
 		setTimeout(() => {
 			if (codeContainer) {
 				setupClickHandlers();
 			}
 		}, 50);
+	}
+
+	// Re-setup handlers when view changes
+	$effect(() => {
+		const mobile = isMobile;
+		const selected = selectedStep;
+
+		// Setup handlers for full code view (desktop or mobile with no selection)
+		if (codeContainer && (!mobile || !selected || selected === 'flow_config')) {
+			setupClickHandlersDelayed();
+		}
 	});
 
 	function setupClickHandlers() {
@@ -92,23 +128,26 @@
 				(line as HTMLElement).style.cursor = 'pointer';
 
 				// Click handler
-				line.addEventListener('click', () => {
+				const clickHandler = () => {
 					console.log('CodePanel: Line clicked, stepSlug:', stepSlug);
 					// Clear hover state before navigating
 					dispatch('step-hovered', { stepSlug: null });
 
 					// All sections (including flow_config) dispatch their slug
 					dispatch('step-selected', { stepSlug });
-				});
+				};
+				line.addEventListener('click', clickHandler);
 
-				// Hover handlers - dispatch hover events
-				line.addEventListener('mouseenter', () => {
-					dispatch('step-hovered', { stepSlug });
-				});
+				// Hover handlers - dispatch hover events (desktop only)
+				if (!isMobile) {
+					line.addEventListener('mouseenter', () => {
+						dispatch('step-hovered', { stepSlug });
+					});
 
-				line.addEventListener('mouseleave', () => {
-					dispatch('step-hovered', { stepSlug: null });
-				});
+					line.addEventListener('mouseleave', () => {
+						dispatch('step-hovered', { stepSlug: null });
+					});
+				}
 			}
 		});
 	}
@@ -124,6 +163,7 @@
 		if (!codeContainer) return;
 
 		const lines = codeContainer.querySelectorAll('.line');
+
 		lines.forEach((line) => {
 			const stepSlug = (line as HTMLElement).getAttribute('data-step');
 			(line as HTMLElement).classList.remove('line-selected', 'line-hovered', 'line-dimmed');
@@ -149,30 +189,51 @@
 </script>
 
 <div class="code-panel-wrapper">
-	<div class="code-panel" bind:this={codeContainer}>
-		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-		{@html highlightedCode}
-
-		<!-- Step status icons overlaid on code blocks -->
-		{#each stepBlocks as block (block.stepSlug)}
-			{@const stepStatus = getStepStatus(block.stepSlug)}
-			{#if stepStatus}
-				{@const blockHeight = (block.endLine - block.startLine + 1) * 1.5}
-				{@const blockTop = (block.startLine - 1) * 1.5}
-				{@const iconTop = blockTop + blockHeight / 2}
-				{@const isDimmed = selectedStep && block.stepSlug !== selectedStep}
-				<div
-					class="step-status-container"
-					class:status-dimmed={isDimmed}
-					data-step={block.stepSlug}
-					data-start-line={block.startLine}
-					style="top: calc({iconTop}em + 12px);"
-				>
-					<StatusBadge status={stepStatus} variant="icon-only" size="xl" />
-				</div>
+	{#if isMobile && selectedStep}
+		<!-- Mobile: Show only selected section (including flow_config) -->
+		<div class="code-panel mobile-selected">
+			{#if highlightedSections[selectedStep]}
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+				{@html highlightedSections[selectedStep]}
 			{/if}
-		{/each}
-	</div>
+		</div>
+	{:else}
+		<!-- Desktop or no selection: Show full code -->
+		<div class="code-panel" bind:this={codeContainer}>
+			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+			{@html highlightedCode}
+
+			<!-- Step status indicators -->
+			{#each stepBlocks as block (block.stepSlug)}
+				{@const stepStatus = getStepStatus(block.stepSlug)}
+				{#if stepStatus}
+					{@const blockHeight = (block.endLine - block.startLine + 1) * 1.5}
+					{@const blockTop = (block.startLine - 1) * 1.5}
+					{@const iconTop = blockTop + blockHeight / 2}
+					{@const isDimmed = selectedStep && block.stepSlug !== selectedStep}
+
+					<!-- Desktop: Icon badge -->
+					<div
+						class="step-status-container hidden md:block"
+						class:status-dimmed={isDimmed}
+						data-step={block.stepSlug}
+						data-start-line={block.startLine}
+						style="top: calc({iconTop}em + 12px);"
+					>
+						<StatusBadge status={stepStatus} variant="icon-only" size="xl" />
+					</div>
+
+					<!-- Mobile: Vertical colored border -->
+					<div
+						class="step-status-border md:hidden status-{stepStatus}"
+						class:status-dimmed={isDimmed}
+						data-step={block.stepSlug}
+						style="top: calc({blockTop}em + 12px); height: calc({blockHeight}em);"
+					></div>
+				{/if}
+			{/each}
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -183,6 +244,11 @@
 	.code-panel {
 		overflow-x: auto;
 		border-radius: 5px;
+	}
+
+	.code-panel.mobile-selected {
+		/* Compact height when showing only selected step on mobile */
+		min-height: auto;
 		font-size: 15px;
 		background: #0d1117;
 		position: relative;
@@ -208,7 +274,7 @@
 	/* Mobile: Smaller padding */
 	@media (max-width: 768px) {
 		.code-panel :global(pre) {
-			padding: 8px 0;
+			padding: 16px 8px;
 		}
 	}
 
@@ -288,5 +354,28 @@
 	/* Dimmed status icon (when another step is selected) */
 	.step-status-container.status-dimmed {
 		opacity: 0.4;
+	}
+
+	/* Step status border (mobile - vertical bar) */
+	.step-status-border {
+		position: absolute;
+		left: 0;
+		width: 2px;
+		pointer-events: none;
+		transition: opacity 200ms ease;
+		opacity: 1;
+	}
+
+	/* Status colors for border based on step status */
+	.step-status-border.status-completed {
+		background: #10b981; /* Green */
+	}
+
+	.step-status-border.status-started {
+		background: #3b82f6; /* Blue */
+	}
+
+	.step-status-border.status-dimmed {
+		opacity: 0.3;
 	}
 </style>
