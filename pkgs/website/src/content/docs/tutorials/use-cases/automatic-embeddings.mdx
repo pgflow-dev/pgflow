@@ -1,0 +1,191 @@
+---
+title: Automatic Embeddings
+description: Generate embeddings automatically with database triggers and pgflow
+sidebar:
+  order: 1
+---
+
+Generate vector embeddings automatically when new content is added to the database.
+
+## Setup
+
+Install dependencies:
+
+```bash
+pnpm add ai @ai-sdk/openai
+```
+
+Enable pgvector extension in a migration:
+
+```sql
+create extension if not exists vector;
+```
+
+## Database Schema
+
+```sql
+create table documents (
+  id bigserial primary key,
+  content text not null,
+  created_at timestamptz default now()
+);
+
+create table document_chunks (
+  id bigserial primary key,
+  document_id bigint references documents(id) on delete cascade,
+  content text not null,
+  embedding vector(1536)
+);
+```
+
+## Task Functions
+
+**Split document into chunks:**
+
+```typescript
+// supabase/functions/_tasks/splitChunks.ts
+export default async function splitChunks(content: string) {
+  const chunks = content
+    .trim()
+    .split('.')
+    .filter(chunk => chunk.trim().length > 0)
+    .map(chunk => chunk.trim());
+
+  return chunks;
+}
+```
+
+**Generate embeddings for chunks:**
+
+```typescript
+// supabase/functions/_tasks/generateEmbeddings.ts
+import { openai } from '@ai-sdk/openai';
+import { embedMany } from 'ai';
+
+export default async function generateEmbeddings(chunks: string[]) {
+  const { embeddings } = await embedMany({
+    model: openai.textEmbeddingModel('text-embedding-3-small'),
+    values: chunks,
+  });
+
+  return chunks.map((chunk, i) => ({
+    content: chunk,
+    embedding: embeddings[i],
+  }));
+}
+```
+
+**Save chunks with embeddings:**
+
+```typescript
+// supabase/functions/_tasks/saveChunks.ts
+import { createClient } from 'jsr:@supabase/supabase-js';
+
+export default async function saveChunks(input: {
+  documentId: number;
+  chunks: Array<{ content: string; embedding: number[] }>;
+}) {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing Supabase credentials');
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  const rows = input.chunks.map(chunk => ({
+    document_id: input.documentId,
+    content: chunk.content,
+    embedding: JSON.stringify(chunk.embedding),
+  }));
+
+  const { data } = await supabase
+    .from('document_chunks')
+    .insert(rows)
+    .select()
+    .throwOnError();
+
+  return data;
+}
+```
+
+## Flow Definition
+
+```typescript
+// supabase/functions/_flows/generate_embeddings.ts
+import { Flow } from 'npm:@pgflow/dsl';
+import splitChunks from '../_tasks/splitChunks.ts';
+import generateEmbeddings from '../_tasks/generateEmbeddings.ts';
+import saveChunks from '../_tasks/saveChunks.ts';
+
+type Input = {
+  documentId: number;
+  content: string;
+};
+
+export default new Flow<Input>({ slug: 'generateEmbeddings' })
+  .step({ slug: 'split' }, ({ run }) =>
+    splitChunks(run.content)
+  )
+  .array({ slug: 'chunks', dependsOn: ['split'] }, ({ split }) =>
+    split
+  )
+  .map({ slug: 'embed', dependsOn: ['chunks'] }, ({ chunks }) =>
+    generateEmbeddings([chunks.item])
+  )
+  .step({ slug: 'save', dependsOn: ['embed'] }, ({ run, embed }) =>
+    saveChunks({
+      documentId: run.documentId,
+      chunks: embed.flat(),
+    })
+  );
+```
+
+The flow uses `.array()` to convert the chunks array into parallel tasks, then `.map()` to embed each chunk, and finally aggregates results to save all chunks at once.
+
+## Database Trigger
+
+```sql
+create or replace function trigger_embedding_flow()
+returns trigger as $$
+begin
+  perform pgflow.start_flow(
+    flow_slug => 'generateEmbeddings',
+    input => json_build_object(
+      'documentId', new.id,
+      'content', new.content
+    )
+  );
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger documents_embedding_trigger
+  after insert on documents
+  for each row
+  execute function trigger_embedding_flow();
+```
+
+## Compile and Deploy
+
+```bash
+npx pgflow@latest compile supabase/functions/_flows/generate_embeddings.ts
+npx supabase migrations up --local
+```
+
+## Usage
+
+Insert a document - embeddings generate automatically:
+
+```sql
+insert into documents (content) values (
+  'PostgreSQL is a powerful database. It supports extensions. pgvector enables vector search.'
+);
+
+-- Check chunks
+select id, content, embedding[1:5] as embedding_sample
+from document_chunks;
+```
+
+The trigger starts the flow automatically, which splits content into chunks, generates embeddings in parallel using `.map()`, and saves them to the database.
