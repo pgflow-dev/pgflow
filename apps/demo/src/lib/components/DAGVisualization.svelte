@@ -314,6 +314,7 @@
 		outline-offset: 2px !important;
 		box-shadow: 0 0 20px rgba(88, 166, 255, 0.4) !important;
 		cursor: pointer !important;
+		opacity: 1 !important; /* Ensure selected nodes are never dimmed */
 	}
 
 	@keyframes pulse {
