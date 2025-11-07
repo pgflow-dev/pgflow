@@ -167,6 +167,36 @@
 	function toggleMobileEvents() {
 		mobileEventsVisible = !mobileEventsVisible;
 	}
+
+	// Fix for mobile viewport height (address bar issue)
+	// Set actual viewport height as CSS custom property for browsers without dvh support
+	function setViewportHeight() {
+		// Use visualViewport if available (more accurate for mobile), otherwise window.innerHeight
+		const vh = window.visualViewport?.height || window.innerHeight;
+		document.documentElement.style.setProperty('--viewport-height', `${vh}px`);
+	}
+
+	// Set on mount and when viewport resizes (e.g., address bar show/hide)
+	if (typeof window !== 'undefined') {
+		setViewportHeight();
+
+		// Listen to visualViewport resize if available (better for mobile)
+		if (window.visualViewport) {
+			window.visualViewport.addEventListener('resize', setViewportHeight);
+		} else {
+			// Fallback to window resize
+			window.addEventListener('resize', setViewportHeight);
+		}
+
+		// Clean up on destroy
+		onDestroy(() => {
+			if (window.visualViewport) {
+				window.visualViewport.removeEventListener('resize', setViewportHeight);
+			} else {
+				window.removeEventListener('resize', setViewportHeight);
+			}
+		});
+	}
 </script>
 
 <WelcomeModal
@@ -246,16 +276,8 @@
 				/>
 			</div>
 
-			<!-- Mobile: Code-to-DAG connector -->
-			<div class="md:hidden bg-accent/30 border-y border-border" style="grid-area: info">
-				<div class="px-3 py-3 text-xs text-muted-foreground text-center">
-					<span class="text-foreground font-semibold">20 lines</span>
-					<span class="mx-2">→</span>
-					<span class="text-foreground font-semibold">4-step DAG</span>
-					<span class="mx-2">•</span>
-					<span>Parallel execution</span>
-				</div>
-			</div>
+			<!-- Mobile: Code-to-DAG connector - REMOVED to save vertical space -->
+			<!-- Info is now in onboarding modal and explanation panels -->
 
 			<!-- Event Stream (collapsible) -->
 			{#if flowState.events.length > 0}
@@ -304,7 +326,7 @@
 
 				<!-- Desktop: Always show DAG -->
 				<Card class="hidden md:block h-full p-0">
-					<CardContent class="p-4 h-full">
+					<CardContent class="p-2 h-full">
 						<div class="h-[300px]">
 							<DAGVisualization
 								{flowState}
@@ -472,8 +494,17 @@
 
 <style>
 	.page-container {
+		/* Mobile viewport height fix - cascade from least to most supported */
+		/* 1. Fallback for very old browsers */
 		height: 100vh;
 		max-height: 100vh;
+		/* 2. JS-calculated actual viewport (for browsers without dvh) */
+		height: var(--viewport-height, 100vh);
+		max-height: var(--viewport-height, 100vh);
+		/* 3. Modern dynamic viewport height (accounts for mobile UI automatically) */
+		height: 100dvh;
+		max-height: 100dvh;
+
 		overflow: hidden;
 		padding: 1rem;
 		container-type: size;
@@ -535,10 +566,9 @@
 			grid-template-areas:
 				'header'
 				'code'
-				'info'
 				'dag';
 			grid-template-columns: 1fr;
-			grid-template-rows: auto auto auto 1fr;
+			grid-template-rows: auto auto 1fr;
 			gap: 0;
 		}
 		/* Events hidden in grid, shown in slide-up panel */
