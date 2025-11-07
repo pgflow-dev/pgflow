@@ -8,9 +8,12 @@
 	import CodePanel from '$lib/components/CodePanel.svelte';
 	import ExplanationPanel from '$lib/components/ExplanationPanel.svelte';
 	import WelcomeModal from '$lib/components/WelcomeModal.svelte';
+	import PulseDot from '$lib/components/PulseDot.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import { Play, CheckCircle2 } from '@lucide/svelte';
+	import { codeToHtml } from 'shiki';
 	import type ArticleFlow from '../../supabase/functions/article_flow_worker/article_flow';
 
 	const flowState = createFlowState<typeof ArticleFlow>(pgflow, 'article_flow', [
@@ -93,7 +96,12 @@
 		const clickedStep = event.detail.stepSlug;
 		console.log('Main page: handleStepSelected called with:', clickedStep);
 
-		if (clickedStep === 'flow_config') {
+		if (clickedStep === null) {
+			// Explicit clear selection request
+			selectedStep = null;
+			showFlowExplanation = false;
+			console.log('Main page: Cleared selection');
+		} else if (clickedStep === 'flow_config') {
 			// Clicking flow config: select it and show flow explanation
 			if (selectedStep === 'flow_config') {
 				// Toggle off
@@ -102,6 +110,9 @@
 			} else {
 				selectedStep = 'flow_config';
 				showFlowExplanation = true;
+				// Close events panel when opening explanation
+				mobileEventsVisible = false;
+				mobileEventsContentVisible = false;
 			}
 			console.log('Main page: Flow config toggled, showFlowExplanation:', showFlowExplanation);
 		} else if (selectedStep === clickedStep) {
@@ -113,6 +124,9 @@
 			// Select a different step
 			selectedStep = clickedStep;
 			showFlowExplanation = false;
+			// Close events panel when opening explanation
+			mobileEventsVisible = false;
+			mobileEventsContentVisible = false;
 			console.log('Main page: Selected step:', selectedStep);
 		}
 	}
@@ -163,9 +177,151 @@
 
 	// Mobile events panel state
 	let mobileEventsVisible = $state(false);
+	let mobileEventsContentVisible = $state(false); // Delayed for animation
+	let eventsScrollContainer: HTMLDivElement | undefined;
+	let expandedEventIdx = $state<number | null>(null);
+	let highlightedEventJson = $state<Record<number, string>>({});
 
 	function toggleMobileEvents() {
-		mobileEventsVisible = !mobileEventsVisible;
+		if (!mobileEventsVisible) {
+			// Opening: show expanded content, then start height animation
+			mobileEventsContentVisible = true;
+			mobileEventsVisible = true;
+			// Close explanation panel when opening events
+			selectedStep = null;
+			showFlowExplanation = false;
+		} else {
+			// Closing: start height animation, hide expanded content after animation finishes
+			mobileEventsVisible = false;
+			setTimeout(() => {
+				mobileEventsContentVisible = false;
+			}, 300); // Match animation duration
+			// Reset expanded event when closing panel
+			expandedEventIdx = null;
+		}
+	}
+
+	async function toggleEventExpanded(idx: number, event: unknown) {
+		if (expandedEventIdx === idx) {
+			expandedEventIdx = null;
+		} else {
+			// Generate syntax-highlighted JSON if not already cached
+			if (!highlightedEventJson[idx]) {
+				const truncated = truncateDeep(event);
+				const jsonString = JSON.stringify(truncated, null, 2);
+				const html = await codeToHtml(jsonString, {
+					lang: 'json',
+					theme: 'night-owl'
+				});
+				highlightedEventJson = { ...highlightedEventJson, [idx]: html };
+			}
+			// Set expanded after HTML is ready
+			expandedEventIdx = idx;
+		}
+	}
+
+	// Truncate deep function (same as ExplanationPanel)
+	function truncateDeep(obj: unknown, maxLength = 80): unknown {
+		if (typeof obj === 'string') {
+			if (obj.length > maxLength) {
+				return `<long string: ${obj.length} chars>`;
+			}
+			return obj;
+		}
+		if (Array.isArray(obj)) {
+			return obj.map((item) => truncateDeep(item, maxLength));
+		}
+		if (obj !== null && typeof obj === 'object') {
+			const truncated: Record<string, unknown> = {};
+			for (const [key, value] of Object.entries(obj)) {
+				truncated[key] = truncateDeep(value, maxLength);
+			}
+			return truncated;
+		}
+		return obj;
+	}
+
+	// Auto-scroll events to right when new event arrives
+	$effect(() => {
+		if (flowState.events.length > 0 && eventsScrollContainer) {
+			eventsScrollContainer.scrollTo({
+				left: eventsScrollContainer.scrollWidth,
+				behavior: 'smooth'
+			});
+		}
+	});
+
+	// Helper to get short step name
+	function getShortStepName(stepSlug: string): string {
+		const shortNames: Record<string, string> = {
+			fetchArticle: 'fetch',
+			summarize: 'summ',
+			extractKeywords: 'kwrds',
+			publish: 'pub'
+		};
+		return shortNames[stepSlug] || stepSlug.slice(0, 5);
+	}
+
+	// Helper to get event badge info
+	function getEventBadgeInfo(event: {
+		event_type: string;
+		data?: { step_slug?: string; started_at?: string; completed_at?: string };
+		created_at?: string;
+	}): {
+		icon: typeof Play | typeof CheckCircle2;
+		color: string;
+		text: string;
+		timestamp: string | null;
+	} | null {
+		if (event.event_type === 'step:started' && event.data?.step_slug) {
+			return {
+				icon: Play,
+				color: 'blue',
+				text: getShortStepName(event.data.step_slug),
+				timestamp: event.data.started_at || event.created_at
+			};
+		}
+		if (event.event_type === 'step:completed' && event.data?.step_slug) {
+			return {
+				icon: CheckCircle2,
+				color: 'green',
+				text: getShortStepName(event.data.step_slug),
+				timestamp: event.data.completed_at || event.created_at
+			};
+		}
+		return null;
+	}
+
+	// Get displayable events (started/completed steps only)
+	const displayableEvents = $derived(
+		flowState.events
+			.map((e, idx) => ({ event: e, badge: getEventBadgeInfo(e), idx }))
+			.filter((e) => e.badge !== null)
+	);
+
+	// Format time delta from previous event or flow start (e.g., "+0.235s", "+1.450s")
+	function formatTimeDelta(
+		currentTimestamp: string,
+		previousTimestamp: string | null,
+		flowStartTimestamp: string | null
+	): string {
+		// If no previous event, calculate from flow start
+		if (!previousTimestamp && flowStartTimestamp) {
+			const current = new Date(currentTimestamp).getTime();
+			const flowStart = new Date(flowStartTimestamp).getTime();
+			const diffMs = current - flowStart;
+			const diffSec = (diffMs / 1000).toFixed(3);
+			return `+${diffSec}s`;
+		}
+
+		if (!previousTimestamp) return 'start';
+
+		const current = new Date(currentTimestamp).getTime();
+		const previous = new Date(previousTimestamp).getTime();
+		const diffMs = current - previous;
+		const diffSec = (diffMs / 1000).toFixed(3);
+
+		return `+${diffSec}s`;
 	}
 
 	// Fix for mobile viewport height (address bar issue)
@@ -216,10 +372,21 @@
 				style="grid-area: header"
 			>
 				<!-- Logo + branding -->
-				<a href="https://pgflow.dev" class="flex items-center gap-1.5 md:gap-2">
-					<img src="/pgflow-logo-dark.svg" alt="pgflow" class="h-5 md:h-8" />
-					<span class="text-xs md:text-sm font-semibold">pgflow</span>
-				</a>
+				<div class="flex items-center gap-2 md:gap-3">
+					<a href="https://pgflow.dev" class="flex items-center gap-1.5 md:gap-2">
+						<img src="/pgflow-logo-dark.svg" alt="pgflow" class="h-5 md:h-8" />
+						<span class="text-xs md:text-sm font-semibold">pgflow</span>
+					</a>
+					<span class="text-muted-foreground text-xs">|</span>
+					<a href="https://pgflow.dev" class="text-xs text-muted-foreground hover:text-foreground"
+						>Website</a
+					>
+					<span class="text-muted-foreground text-xs">|</span>
+					<a
+						href="https://github.com/pgflow-dev/pgflow"
+						class="text-xs text-muted-foreground hover:text-foreground">GitHub</a
+					>
+				</div>
 
 				<div class="flex-1"></div>
 
@@ -229,8 +396,11 @@
 					<Button
 						onclick={processArticle}
 						disabled={isRunning}
-						class={highlightButton ? 'button-pulse cursor-pointer' : 'cursor-pointer'}
+						class={highlightButton
+							? 'button-pulse cursor-pointer relative'
+							: 'cursor-pointer relative'}
 					>
+						<PulseDot />
 						Process Article
 					</Button>
 				</div>
@@ -244,23 +414,14 @@
 					</Button>
 				{/if}
 
-				<!-- Mobile: Events + Process buttons -->
-				<Button
-					variant="ghost"
-					size="sm"
-					onclick={toggleMobileEvents}
-					disabled={!flowState.events.length}
-					class="md:hidden h-8 px-2 text-xs text-muted-foreground"
-				>
-					Events {flowState.events.length ? `(${flowState.events.length})` : ''}
-				</Button>
-
+				<!-- Mobile: Process button only (events now in sticky bottom bar) -->
 				<Button
 					size="sm"
 					onclick={processArticle}
 					disabled={isRunning}
-					class="md:hidden h-8 px-3 text-xs {highlightButton ? 'button-pulse' : ''}"
+					class="md:hidden h-8 px-3 text-xs relative {highlightButton ? 'button-pulse' : ''}"
 				>
+					<PulseDot />
 					Start
 				</Button>
 			</div>
@@ -269,7 +430,7 @@
 			<div class="overflow-hidden min-h-0" style="grid-area: code">
 				<CodePanel
 					{flowState}
-					{selectedStep}
+					selectedStep={explanationVisible ? null : selectedStep}
 					{hoveredStep}
 					on:step-selected={handleStepSelected}
 					on:step-hovered={handleStepHovered}
@@ -284,9 +445,10 @@
 				<div class="overflow-hidden max-h-[35vh] md:block hidden" style="grid-area: events">
 					<Card class={eventStreamCollapsed ? 'h-12' : 'h-full flex flex-col'}>
 						<CardHeader
-							class="pb-0 pt-3 flex-shrink-0 cursor-pointer hover:bg-accent/50 transition-colors"
+							class="pb-0 pt-3 flex-shrink-0 cursor-pointer hover:bg-accent/50 transition-colors relative"
 							onclick={toggleEventStream}
 						>
+							<PulseDot />
 							<div class="flex items-center justify-between">
 								<CardTitle class="text-sm">Event Stream</CardTitle>
 								<span class="text-xs text-muted-foreground">
@@ -313,8 +475,8 @@
 
 			<!-- Mobile: DAG only (explanation is overlay) | Desktop: DAG -->
 			<div class="overflow-hidden h-full" style="grid-area: dag">
-				<!-- Mobile: Always show DAG -->
-				<div class="md:hidden h-full flex flex-col">
+				<!-- Mobile: Always show DAG (with bottom padding for events bar) -->
+				<div class="md:hidden h-full flex flex-col pb-12">
 					<DAGVisualization
 						{flowState}
 						{selectedStep}
@@ -345,7 +507,6 @@
 				{#if explanationVisible}
 					<ExplanationPanel
 						{selectedStep}
-						{hoveredStep}
 						{flowState}
 						visible={true}
 						on:close={closeExplanation}
@@ -437,57 +598,147 @@
 </div>
 
 <!-- Mobile: Explanation slide-up panel (covers everything except header) -->
-{#if explanationVisible}
-	<div class="fixed inset-0 bg-black/50 z-40 md:hidden" onclick={closeExplanation}></div>
-	<div class="fixed inset-x-0 top-11 bottom-0 bg-card z-50 md:hidden flex flex-col">
-		<!-- Code snippet for selected step or flow config (sticky) -->
-		{#if selectedStep}
-			<div
-				class="bg-[#0d1117] px-0 py-0 text-xs overflow-x-auto border-b border-border flex-shrink-0"
+<div
+	class="fixed inset-x-0 top-11 bottom-0 bg-card z-50 md:hidden flex flex-col overflow-hidden mobile-explanation-panel"
+	class:mobile-visible={explanationVisible}
+	onclick={(e) => {
+		// Only close if clicking the panel itself, not content inside
+		if (e.target === e.currentTarget) closeExplanation();
+	}}
+>
+	<!-- Code snippet for selected step or flow config (sticky) with close button -->
+	{#if selectedStep}
+		<div class="bg-[#0d1117] text-xs overflow-x-auto flex-shrink-0 relative">
+			<CodePanel
+				{flowState}
+				{selectedStep}
+				hoveredStep={null}
+				on:step-selected={handleStepSelected}
+				on:step-hovered={() => {}}
+			/>
+			<!-- Close button overlay on code -->
+			<button
+				onclick={closeExplanation}
+				class="absolute top-2 right-2 text-muted-foreground hover:text-foreground text-xl leading-none bg-[#0d1117]/80 rounded px-1.5 py-0.5 backdrop-blur-sm z-10"
+				>✕</button
 			>
-				<CodePanel
-					{flowState}
-					{selectedStep}
-					hoveredStep={null}
-					on:step-selected={() => {}}
-					on:step-hovered={() => {}}
-				/>
-			</div>
-		{/if}
-
-		<!-- Explanation content (scrollable, no card wrapper) -->
-		<div class="overflow-auto flex-1">
-			<ExplanationPanel
-				{selectedStep}
-				{hoveredStep}
-				{flowState}
-				visible={true}
-				on:close={closeExplanation}
-				on:step-selected={handleStepSelected}
-				on:step-hovered={handleStepHovered}
-			/>
 		</div>
+	{/if}
+
+	<!-- Explanation content (scrollable, no card wrapper, no mobile header) -->
+	<div class="overflow-auto flex-1">
+		<ExplanationPanel
+			{selectedStep}
+			{flowState}
+			visible={true}
+			showMobileHeader={false}
+			on:close={closeExplanation}
+			on:step-selected={handleStepSelected}
+			on:step-hovered={handleStepHovered}
+		/>
 	</div>
-{/if}
+</div>
 
-<!-- Mobile: Events slide-up panel -->
-{#if mobileEventsVisible && flowState.events.length > 0}
-	<div class="fixed inset-0 bg-black/50 z-40 md:hidden" onclick={toggleMobileEvents}></div>
+<!-- Mobile: Sticky bottom events bar -->
+{#if flowState.events.length > 0}
+	<!-- Backdrop for expanded state -->
 	<div
-		class="fixed inset-x-0 bottom-0 bg-card max-h-[70vh] z-50 md:hidden rounded-t-xl shadow-2xl animate-slide-up"
+		class="fixed inset-0 bg-black/50 z-40 md:hidden mobile-events-backdrop"
+		class:mobile-visible={mobileEventsVisible}
+		onclick={toggleMobileEvents}
+	></div>
+
+	<!-- Events bar container - transitions between collapsed and expanded -->
+	<div
+		class="fixed inset-x-0 bottom-0 z-50 md:hidden border-t border-border mobile-events-bar-container"
+		class:expanded={mobileEventsVisible}
 	>
-		<div class="flex items-center justify-between p-4 border-b">
-			<h3 class="font-semibold text-sm">Event Stream</h3>
-			<button onclick={toggleMobileEvents} class="text-muted-foreground">✕</button>
-		</div>
-		<div class="overflow-auto p-4 max-h-[calc(70vh-60px)]">
-			<DebugPanel
-				{flowState}
-				{selectedStep}
-				{hoveredStep}
-				on:step-selected={handleStepSelected}
-				on:step-hovered={handleStepHovered}
-			/>
+		<!-- Collapsed view: Horizontal event badges (whole bar is clickable) -->
+		<button
+			onclick={toggleMobileEvents}
+			class="flex items-center gap-2 px-3 py-2 h-12 w-full bg-card hover:bg-accent/30 transition-colors cursor-pointer"
+			style="display: {mobileEventsContentVisible ? 'none' : 'flex'}"
+		>
+			<div class="text-xs text-muted-foreground flex items-center gap-1 flex-shrink-0">
+				<span class="font-semibold">Events</span>
+				<span>({displayableEvents.length})</span>
+				<span class="text-[10px]">▲</span>
+			</div>
+			<div
+				class="flex-1 overflow-x-auto flex gap-1.5 event-badges-scroll pointer-events-none"
+				bind:this={eventsScrollContainer}
+			>
+				{#each displayableEvents as { badge, idx } (idx)}
+					{#if badge}
+						<div
+							class="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium flex-shrink-0 event-badge event-badge-{badge.color}"
+						>
+							<svelte:component this={badge.icon} class="w-3 h-3" />
+							<span>{badge.text}</span>
+						</div>
+					{/if}
+				{/each}
+			</div>
+		</button>
+
+		<!-- Expanded view: Full event list with badges -->
+		<div
+			class="h-full flex flex-col bg-[#252928]"
+			style="display: {mobileEventsContentVisible ? 'flex' : 'none'}"
+		>
+			<div
+				class="flex items-center justify-between px-3 py-2.5 border-b border-border/50 flex-shrink-0"
+			>
+				<h3 class="font-semibold text-sm">Event Stream ({displayableEvents.length})</h3>
+				<button onclick={toggleMobileEvents} class="text-muted-foreground text-lg">✕</button>
+			</div>
+			<div class="overflow-auto flex-1 py-2">
+				<div class="space-y-1.5 px-3">
+					{#each displayableEvents as { badge, event, idx }, i (idx)}
+						{#if badge}
+							<button
+								onclick={() => toggleEventExpanded(idx, event)}
+								class="w-full text-left rounded event-badge-row event-badge-{badge.color} cursor-pointer hover:opacity-80 transition-opacity"
+							>
+								<div class="flex items-center gap-2 px-3 py-2">
+									<svelte:component this={badge.icon} class="w-4 h-4 flex-shrink-0" />
+									<div class="flex-1 min-w-0">
+										<div class="font-medium text-sm">{event.data?.step_slug || 'Unknown'}</div>
+										<div class="text-xs opacity-70">
+											{event.event_type.replace('step:', '')}
+										</div>
+									</div>
+									<div class="flex items-center gap-2 flex-shrink-0">
+										{#if badge.timestamp}
+											<div class="text-xs opacity-70 font-mono text-muted-foreground">
+												{formatTimeDelta(
+													badge.timestamp,
+													i > 0 && displayableEvents[i - 1].badge?.timestamp
+														? displayableEvents[i - 1].badge.timestamp
+														: null,
+													flowState.run?.started_at || flowState.run?.created_at || null
+												)}
+											</div>
+										{/if}
+										<div class="text-xs opacity-50">
+											{expandedEventIdx === idx ? '▼' : '▶'}
+										</div>
+									</div>
+								</div>
+
+								{#if expandedEventIdx === idx && highlightedEventJson[idx]}
+									<div class="px-3 pb-2" onclick={(e) => e.stopPropagation()}>
+										<div class="event-json-display rounded overflow-x-auto">
+											<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+											{@html highlightedEventJson[idx]}
+										</div>
+									</div>
+								{/if}
+							</button>
+						{/if}
+					{/each}
+				</div>
+			</div>
 		</div>
 	</div>
 {/if}
@@ -626,5 +877,115 @@
 
 	:global(.animate-slide-up) {
 		animation: slideUp 0.3s ease-out;
+	}
+
+	/* Mobile explanation panel - slides up from below viewport */
+	@media (max-width: 768px) {
+		.mobile-explanation-panel {
+			transform: translateY(100%);
+			transition: transform 400ms cubic-bezier(0.4, 0, 0.2, 1);
+			will-change: transform;
+		}
+
+		.mobile-explanation-panel.mobile-visible {
+			transform: translateY(0);
+		}
+
+		/* Mobile events panel - slides up from below viewport */
+		.mobile-events-panel {
+			transform: translateY(100%);
+			transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+			will-change: transform;
+		}
+
+		.mobile-events-panel.mobile-visible {
+			transform: translateY(0);
+		}
+
+		/* Mobile events backdrop - fades in/out */
+		.mobile-events-backdrop {
+			opacity: 0;
+			transition: opacity 300ms ease;
+			pointer-events: none;
+		}
+
+		.mobile-events-backdrop.mobile-visible {
+			opacity: 1;
+			pointer-events: auto;
+		}
+
+		/* Mobile events sticky bar container */
+		.mobile-events-bar-container {
+			height: 48px; /* Collapsed height */
+			transition: height 300ms cubic-bezier(0.4, 0, 0.2, 1);
+			box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+			overflow: hidden;
+		}
+
+		.mobile-events-bar-container.expanded {
+			height: 70vh; /* Expanded height */
+		}
+
+		/* Event badges scroll container */
+		.event-badges-scroll {
+			scrollbar-width: none; /* Firefox */
+			-ms-overflow-style: none; /* IE/Edge */
+		}
+
+		.event-badges-scroll::-webkit-scrollbar {
+			display: none; /* Chrome/Safari */
+		}
+
+		/* Event badge colors (for collapsed bar) */
+		.event-badge-blue {
+			background-color: rgba(59, 91, 219, 0.15);
+			border: 1px solid rgba(91, 141, 239, 0.4);
+			color: #5b8def;
+		}
+
+		.event-badge-green {
+			background-color: rgba(23, 122, 81, 0.15);
+			border: 1px solid rgba(32, 165, 111, 0.4);
+			color: #20a56f;
+		}
+
+		/* Event badge rows (for expanded view) */
+		.event-badge-row {
+			border: 1px solid transparent;
+		}
+
+		.event-badge-row.event-badge-blue {
+			background-color: rgba(59, 91, 219, 0.2);
+			border-color: rgba(91, 141, 239, 0.5);
+			color: #7ba3f0;
+		}
+
+		.event-badge-row.event-badge-green {
+			background-color: rgba(23, 122, 81, 0.2);
+			border-color: rgba(32, 165, 111, 0.5);
+			color: #2ec184;
+		}
+
+		/* Event JSON display */
+		.event-json-display {
+			max-height: 300px;
+		}
+
+		.event-json-display :global(pre) {
+			margin: 0 !important;
+			padding: 8px 10px !important;
+			background: #0d1117 !important;
+			border-radius: 4px;
+			font-size: 10px;
+			line-height: 1.5;
+			display: table;
+			min-width: 100%;
+		}
+
+		.event-json-display :global(code) {
+			font-family: 'Fira Code', 'Monaco', 'Menlo', 'Courier New', monospace;
+			white-space: pre;
+			display: block;
+		}
 	}
 </style>

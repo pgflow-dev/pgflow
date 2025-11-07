@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { onMount, createEventDispatcher } from 'svelte';
+	import { onMount, onDestroy, createEventDispatcher } from 'svelte';
+	import { fade } from 'svelte/transition';
 	import { codeToHtml } from 'shiki';
 	import { FLOW_CODE, getStepFromLine, FLOW_SECTIONS } from '$lib/data/flow-code';
 	import type { createFlowState } from '$lib/stores/pgflow-state-improved.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import PulseDot from '$lib/components/PulseDot.svelte';
-	import MiniDAG from '$lib/components/MiniDAG.svelte';
 
 	interface Props {
 		flowState: ReturnType<typeof createFlowState>;
@@ -16,7 +16,7 @@
 	let { flowState, selectedStep, hoveredStep }: Props = $props();
 
 	const dispatch = createEventDispatcher<{
-		'step-selected': { stepSlug: string };
+		'step-selected': { stepSlug: string | null };
 		'step-hovered': { stepSlug: string | null };
 	}>();
 
@@ -25,6 +25,7 @@
 	let highlightedSectionsExpanded = $state<Record<string, string>>({});
 	let codeContainer: HTMLElement | undefined = $state(undefined);
 	let isMobile = $state(false);
+	let cleanupHandlers: (() => void) | undefined;
 
 	// Section order for mobile rendering
 	const SECTION_ORDER = ['flow_config', 'fetchArticle', 'summarize', 'extractKeywords', 'publish'];
@@ -126,10 +127,16 @@
 	function setupClickHandlersDelayed() {
 		setTimeout(() => {
 			if (codeContainer) {
-				setupClickHandlers();
+				cleanupHandlers = setupClickHandlers();
 			}
 		}, 50);
 	}
+
+	onDestroy(() => {
+		if (cleanupHandlers) {
+			cleanupHandlers();
+		}
+	});
 
 	// Re-setup handlers when view changes
 	$effect(() => {
@@ -144,6 +151,9 @@
 
 	function setupClickHandlers() {
 		if (!codeContainer) return;
+
+		// Store handlers for cleanup
+		const handlers: Array<{ element: Element; type: string; handler: EventListener }> = [];
 
 		// Find all line elements
 		const lines = codeContainer.querySelectorAll('.line');
@@ -167,19 +177,32 @@
 					dispatch('step-selected', { stepSlug });
 				};
 				line.addEventListener('click', clickHandler);
+				handlers.push({ element: line, type: 'click', handler: clickHandler });
 
 				// Hover handlers - dispatch hover events (desktop only)
 				if (!isMobile) {
-					line.addEventListener('mouseenter', () => {
+					const enterHandler = () => {
 						dispatch('step-hovered', { stepSlug });
-					});
-
-					line.addEventListener('mouseleave', () => {
+					};
+					const leaveHandler = () => {
 						dispatch('step-hovered', { stepSlug: null });
-					});
+					};
+
+					line.addEventListener('mouseenter', enterHandler);
+					line.addEventListener('mouseleave', leaveHandler);
+
+					handlers.push({ element: line, type: 'mouseenter', handler: enterHandler });
+					handlers.push({ element: line, type: 'mouseleave', handler: leaveHandler });
 				}
 			}
 		});
+
+		// Return cleanup function
+		return () => {
+			handlers.forEach(({ element, type, handler }) => {
+				element.removeEventListener(type, handler);
+			});
+		};
 	}
 
 	// Update line highlighting and borders based on step status, selected, and hovered steps
@@ -221,22 +244,32 @@
 <div class="code-panel-wrapper">
 	{#if isMobile && selectedStep}
 		<!-- Mobile: Show only selected section in explanation panel (expanded version) with optional mini DAG -->
-		<div class="mobile-code-container">
-			<div class="code-panel mobile-selected">
+		{#key selectedStep}
+			<div
+				class="code-panel mobile-selected"
+				in:fade={{ duration: 250 }}
+				out:fade={{ duration: 150 }}
+				onclick={(e) => {
+					// Handle clicks anywhere in code panel
+					e.stopPropagation();
+					dispatch('step-selected', { stepSlug: null });
+				}}
+				role="button"
+				tabindex="0"
+			>
 				{#if highlightedSectionsExpanded[selectedStep]}
 					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 					{@html highlightedSectionsExpanded[selectedStep]}
 				{/if}
 			</div>
-			{#if selectedStep !== 'flow_config'}
-				<div class="mini-dag-container">
-					<MiniDAG {selectedStep} />
-				</div>
-			{/if}
-		</div>
+		{/key}
 	{:else if isMobile}
 		<!-- Mobile: Show all sections as separate blocks -->
-		<div class="code-panel mobile-sections">
+		<div
+			class="code-panel mobile-sections"
+			in:fade={{ duration: 250 }}
+			out:fade={{ duration: 150 }}
+		>
 			{#each SECTION_ORDER as sectionSlug, index (sectionSlug)}
 				{@const stepStatus = getStepStatus(sectionSlug)}
 				{@const isDimmed = selectedStep && sectionSlug !== selectedStep}
@@ -305,19 +338,6 @@
 		position: relative;
 	}
 
-	.mobile-code-container {
-		display: flex;
-		gap: 12px;
-		align-items: center;
-	}
-
-	.mini-dag-container {
-		flex-shrink: 0;
-		width: 95px;
-		padding-right: 12px;
-		opacity: 0.7;
-	}
-
 	.code-panel {
 		overflow-x: auto;
 		border-radius: 5px;
@@ -325,11 +345,12 @@
 
 	.code-panel.mobile-selected {
 		/* Compact height when showing only selected step on mobile */
-		min-height: auto;
+		min-height: 120px;
 		font-size: 12px;
 		background: #0d1117;
 		position: relative;
 		flex: 1;
+		cursor: pointer;
 	}
 
 	.code-panel.mobile-selected :global(pre) {
@@ -344,6 +365,8 @@
 		/* Mobile: Container for separate section blocks */
 		font-size: 12px;
 		border-radius: 0;
+		will-change: opacity;
+		background: #0d1117;
 	}
 
 	/* Mobile: Smaller font, no border radius (touches edges) */
@@ -408,6 +431,8 @@
 		border-radius: 5px;
 		line-height: 1.5;
 		font-size: 13px; /* Desktop default */
+		display: table;
+		min-width: 100%;
 	}
 
 	/* Mobile: Smaller padding */

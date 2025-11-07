@@ -1,4 +1,6 @@
 <script lang="ts">
+	import type { createFlowState } from '$lib/stores/pgflow-state-improved.svelte';
+
 	/**
 	 * Minimal DAG visualization for showing flow context
 	 * Based on SVGDAGAnimation.astro approach
@@ -6,9 +8,23 @@
 	 */
 	interface Props {
 		selectedStep: string | null;
+		flowState: ReturnType<typeof createFlowState>;
 	}
 
-	let { selectedStep }: Props = $props();
+	let { selectedStep, flowState }: Props = $props();
+
+	function isStepActive(stepSlug: string): boolean {
+		const status = flowState.stepStatuses[stepSlug];
+		return status === 'started';
+	}
+
+	function isStepCompleted(stepSlug: string): boolean {
+		return flowState.stepStatuses[stepSlug] === 'completed';
+	}
+
+	function isStepFailed(stepSlug: string): boolean {
+		return flowState.stepStatuses[stepSlug] === 'failed';
+	}
 
 	// Node dimensions (smaller for mini view)
 	const nodeWidth = 60;
@@ -74,20 +90,36 @@
 	});
 
 	function getNodeClass(nodeId: string): string {
-		return nodeId === selectedStep ? 'node selected' : 'node';
+		const classes = ['node'];
+
+		if (isStepActive(nodeId)) {
+			classes.push('node-active');
+		} else if (isStepCompleted(nodeId)) {
+			classes.push('node-completed');
+		} else if (isStepFailed(nodeId)) {
+			classes.push('node-failed');
+		} else {
+			classes.push('node-created');
+		}
+
+		if (nodeId === selectedStep) {
+			classes.push('node-selected');
+		}
+
+		return classes.join(' ');
 	}
 </script>
 
-<svg viewBox="0 0 120 120" class="mini-dag" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="-2 -2 124 134" class="mini-dag" xmlns="http://www.w3.org/2000/svg">
 	<!-- Edges -->
-	{#each edgePaths as edge}
+	{#each edgePaths as edge (edge?.id)}
 		{#if edge}
 			<path class="edge" d={edge.d} />
 		{/if}
 	{/each}
 
 	<!-- Nodes -->
-	{#each nodes as node}
+	{#each nodes as node (node.id)}
 		<g class={getNodeClass(node.id)}>
 			<rect
 				x={node.x - nodeWidth / 2}
@@ -117,22 +149,47 @@
 	}
 
 	.node rect {
+		transition:
+			fill 0.3s ease,
+			stroke 0.3s ease,
+			stroke-width 0.3s ease;
+	}
+
+	/* Node state colors - matching main DAG */
+	.node-created rect {
 		fill: #3d524d;
 		stroke: #607b75;
 		stroke-width: 1.5;
-		transition: fill 0.2s ease, stroke 0.2s ease;
 	}
 
-	.node.selected rect {
+	.node-active rect {
 		fill: #3b5bdb;
 		stroke: #5b8def;
-		stroke-width: 2;
+		stroke-width: 1.5;
+	}
+
+	.node-completed rect {
+		fill: #177a51;
+		stroke: #20a56f;
+		stroke-width: 1.5;
+	}
+
+	.node-failed rect {
+		fill: #c94a2e;
+		stroke: #f08060;
+		stroke-width: 1.5;
+	}
+
+	/* Selected node - thick blue outline */
+	.node-selected rect {
+		stroke: rgba(88, 166, 255, 0.9);
+		stroke-width: 3;
 	}
 
 	.node text {
 		fill: white;
-		font-size: 10px;
-		font-weight: 600;
+		font-size: 11px;
+		font-weight: 400;
 		text-anchor: middle;
 		dominant-baseline: middle;
 		pointer-events: none;
