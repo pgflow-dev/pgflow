@@ -20,7 +20,7 @@ The improved pattern fixes these key issues:
 const pgflowState = createPgflowState<typeof ArticleFlow>(
 	pgflow,
 	'article_flow',
-	['fetch_article', 'summarize', 'extract_keywords', 'publish'] // ❌ Manual list
+	['fetchArticle', 'summarize', 'extractKeywords', 'publish'] // ❌ Manual list
 );
 ```
 
@@ -107,9 +107,9 @@ This enables monitoring flows started by:
 	import type ArticleFlow from './article_flow';
 
 	const pgflowState = createPgflowState<typeof ArticleFlow>(pgflow, 'article_flow', [
-		'fetch_article',
+		'fetchArticle',
 		'summarize',
-		'extract_keywords',
+		'extractKeywords',
 		'publish'
 	]);
 

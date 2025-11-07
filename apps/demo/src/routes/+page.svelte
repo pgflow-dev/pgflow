@@ -14,9 +14,9 @@
 	import type ArticleFlow from '../../supabase/functions/article_flow_worker/article_flow';
 
 	const flowState = createFlowState<typeof ArticleFlow>(pgflow, 'article_flow', [
-		'fetch_article',
+		'fetchArticle',
 		'summarize',
-		'extract_keywords',
+		'extractKeywords',
 		'publish'
 	]);
 

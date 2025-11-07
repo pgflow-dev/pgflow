@@ -92,11 +92,11 @@
 	// Shifted up by 30px to center better in viewport
 	let nodes = $derived([
 		{
-			id: 'fetch_article',
+			id: 'fetchArticle',
 			type: 'default',
 			position: { x: 150, y: -30 },
-			data: { label: 'fetch_article' },
-			class: getNodeClass('fetch_article'),
+			data: { label: 'fetchArticle' },
+			class: getNodeClass('fetchArticle'),
 			draggable: false
 		},
 		{
@@ -108,11 +108,11 @@
 			draggable: false
 		},
 		{
-			id: 'extract_keywords',
+			id: 'extractKeywords',
 			type: 'default',
 			position: { x: 250, y: 51 },
-			data: { label: 'extract_keywords' },
-			class: getNodeClass('extract_keywords'),
+			data: { label: 'extractKeywords' },
+			class: getNodeClass('extractKeywords'),
 			draggable: false
 		},
 		{
@@ -128,17 +128,17 @@
 	let edges = $derived.by(() => [
 		{
 			id: 'e1',
-			source: 'fetch_article',
+			source: 'fetchArticle',
 			target: 'summarize',
-			animated: isEdgeActive('fetch_article', 'summarize'),
-			class: getEdgeClass('fetch_article', 'summarize')
+			animated: isEdgeActive('fetchArticle', 'summarize'),
+			class: getEdgeClass('fetchArticle', 'summarize')
 		},
 		{
 			id: 'e2',
-			source: 'fetch_article',
-			target: 'extract_keywords',
-			animated: isEdgeActive('fetch_article', 'extract_keywords'),
-			class: getEdgeClass('fetch_article', 'extract_keywords')
+			source: 'fetchArticle',
+			target: 'extractKeywords',
+			animated: isEdgeActive('fetchArticle', 'extractKeywords'),
+			class: getEdgeClass('fetchArticle', 'extractKeywords')
 		},
 		{
 			id: 'e3',
@@ -149,10 +149,10 @@
 		},
 		{
 			id: 'e4',
-			source: 'extract_keywords',
+			source: 'extractKeywords',
 			target: 'publish',
-			animated: isEdgeActive('extract_keywords', 'publish'),
-			class: getEdgeClass('extract_keywords', 'publish')
+			animated: isEdgeActive('extractKeywords', 'publish'),
+			class: getEdgeClass('extractKeywords', 'publish')
 		}
 	]);
 

@@ -161,7 +161,7 @@ class PgflowState<TFlow extends AnyFlow = AnyFlow> {
  * const articleFlowState = createPgflowState<typeof ArticleFlow>(
  *   pgflowClient,
  *   'article_flow',
- *   ['fetch_article', 'summarize', 'extract_keywords', 'publish']
+ *   ['fetchArticle', 'summarize', 'extractKeywords', 'publish']
  * );
  *
  * // Start the flow
