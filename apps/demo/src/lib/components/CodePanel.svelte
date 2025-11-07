@@ -4,6 +4,7 @@
 	import { FLOW_CODE, getStepFromLine, FLOW_SECTIONS } from '$lib/data/flow-code';
 	import type { createFlowState } from '$lib/stores/pgflow-state-improved.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
+	import PulseDot from '$lib/components/PulseDot.svelte';
 
 	interface Props {
 		flowState: ReturnType<typeof createFlowState>;
@@ -20,8 +21,12 @@
 
 	let highlightedCode = $state('');
 	let highlightedSections = $state<Record<string, string>>({});
+	let highlightedSectionsExpanded = $state<Record<string, string>>({});
 	let codeContainer: HTMLElement | undefined = $state(undefined);
 	let isMobile = $state(false);
+
+	// Section order for mobile rendering
+	const SECTION_ORDER = ['flow_config', 'fetch_article', 'summarize', 'extract_keywords', 'publish'];
 
 	// Calculate step blocks (groups of lines) for status icon positioning
 	const stepBlocks = $derived.by(() => {
@@ -80,10 +85,17 @@
 			]
 		});
 
-		// Generate separate highlighted sections for mobile (use mobileCode if available)
+		// Generate separate highlighted sections
 		for (const [slug, section] of Object.entries(FLOW_SECTIONS)) {
-			const codeToRender = section.mobileCode || section.code;
-			highlightedSections[slug] = await codeToHtml(codeToRender, {
+			// Compact code for main mobile panel
+			highlightedSections[slug] = await codeToHtml(section.code, {
+				lang: 'typescript',
+				theme: 'night-owl'
+			});
+
+			// Expanded code for explanation panel (mobile-selected)
+			const expandedCode = section.mobileCode || section.code;
+			highlightedSectionsExpanded[slug] = await codeToHtml(expandedCode, {
 				lang: 'typescript',
 				theme: 'night-owl'
 			});
@@ -190,15 +202,50 @@
 
 <div class="code-panel-wrapper">
 	{#if isMobile && selectedStep}
-		<!-- Mobile: Show only selected section (including flow_config) -->
+		<!-- Mobile: Show only selected section in explanation panel (expanded version) -->
 		<div class="code-panel mobile-selected">
-			{#if highlightedSections[selectedStep]}
+			{#if highlightedSectionsExpanded[selectedStep]}
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-				{@html highlightedSections[selectedStep]}
+				{@html highlightedSectionsExpanded[selectedStep]}
 			{/if}
 		</div>
+	{:else if isMobile}
+		<!-- Mobile: Show all sections as separate blocks -->
+		<div class="code-panel mobile-sections">
+			{#each SECTION_ORDER as sectionSlug, index (sectionSlug)}
+				{@const stepStatus = getStepStatus(sectionSlug)}
+				{@const isDimmed = selectedStep && sectionSlug !== selectedStep}
+				{@const isFirst = index === 0}
+				{@const isLast = index === SECTION_ORDER.length - 1}
+				<div
+					class="code-section"
+					class:section-dimmed={isDimmed}
+					class:section-selected={selectedStep === sectionSlug}
+					class:section-first={isFirst}
+					class:section-last={isLast}
+					data-step={sectionSlug}
+					onclick={() => dispatch('step-selected', { stepSlug: sectionSlug })}
+					role="button"
+					tabindex="0"
+				>
+					<!-- Status indicator: left border -->
+					{#if stepStatus}
+						<div class="section-status-border status-{stepStatus}"></div>
+					{/if}
+
+					<!-- Pulse dot (centered) -->
+					<div class="pulse-dot-container">
+						<PulseDot />
+					</div>
+
+					<!-- Code content -->
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+					{@html highlightedSections[sectionSlug]}
+				</div>
+			{/each}
+		</div>
 	{:else}
-		<!-- Desktop or no selection: Show full code -->
+		<!-- Desktop: Show full code (unchanged) -->
 		<div class="code-panel" bind:this={codeContainer}>
 			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 			{@html highlightedCode}
@@ -222,14 +269,6 @@
 					>
 						<StatusBadge status={stepStatus} variant="icon-only" size="xl" />
 					</div>
-
-					<!-- Mobile: Vertical colored border -->
-					<div
-						class="step-status-border md:hidden status-{stepStatus}"
-						class:status-dimmed={isDimmed}
-						data-step={block.stepSlug}
-						style="top: calc({blockTop}em + 12px); height: calc({blockHeight}em);"
-					></div>
 				{/if}
 			{/each}
 		</div>
@@ -249,9 +288,15 @@
 	.code-panel.mobile-selected {
 		/* Compact height when showing only selected step on mobile */
 		min-height: auto;
-		font-size: 15px;
+		font-size: 13px;
 		background: #0d1117;
 		position: relative;
+	}
+
+	.code-panel.mobile-sections {
+		/* Mobile: Container for separate section blocks */
+		font-size: 11px;
+		border-radius: 0;
 	}
 
 	/* Mobile: Smaller font, no border radius (touches edges) */
@@ -260,6 +305,52 @@
 			font-size: 11px;
 			border-radius: 0;
 		}
+	}
+
+	/* Mobile: Individual code section */
+	.code-section {
+		position: relative;
+		cursor: pointer;
+		transition:
+			opacity 200ms ease,
+			background-color 200ms ease;
+	}
+
+	.code-section.section-dimmed {
+		opacity: 0.4;
+	}
+
+	.code-section.section-selected {
+		background-color: rgba(88, 166, 255, 0.22);
+		opacity: 1;
+	}
+
+	/* Status border for mobile sections */
+	.section-status-border {
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0;
+		width: 2px;
+		pointer-events: none;
+	}
+
+	.section-status-border.status-completed {
+		background: #10b981; /* Green */
+	}
+
+	.section-status-border.status-started {
+		background: #3b82f6; /* Blue */
+	}
+
+	/* Pulse dot container - centers the dot */
+	.pulse-dot-container {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		pointer-events: none;
+		z-index: 10;
 	}
 
 	/* Override Shiki's default pre styling */
@@ -276,6 +367,31 @@
 		.code-panel :global(pre) {
 			padding: 16px 8px;
 		}
+	}
+
+	/* Mobile sections: Seamless styling */
+	.mobile-sections .code-section :global(pre) {
+		margin: 0;
+		padding: 16px 8px;
+		background: #0d1117 !important;
+		border-radius: 0;
+		line-height: 1.5;
+	}
+
+	/* First section: keep top padding, remove bottom */
+	.mobile-sections .code-section.section-first :global(pre) {
+		padding-bottom: 0;
+	}
+
+	/* Middle sections: remove all vertical padding */
+	.mobile-sections .code-section:not(.section-first):not(.section-last) :global(pre) {
+		padding-top: 0;
+		padding-bottom: 0;
+	}
+
+	/* Last section: keep bottom padding, remove top */
+	.mobile-sections .code-section.section-last :global(pre) {
+		padding-top: 0;
 	}
 
 	.code-panel :global(code) {

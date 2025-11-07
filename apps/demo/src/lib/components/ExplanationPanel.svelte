@@ -34,11 +34,6 @@
 		dispatch('step-hovered', { stepSlug });
 	}
 
-	// Check if a dependency button should be dimmed (when hovering something else)
-	function isDepDimmed(depSlug: string): boolean {
-		return hoveredStep !== null && hoveredStep !== depSlug;
-	}
-
 	// Flow-level metadata for explanation
 	const flowInfo = {
 		name: 'article_flow',
@@ -317,11 +312,7 @@
 								<div class="flex flex-col gap-1.5">
 									{#each currentStepInfo.dependsOn as dep (dep)}
 										<button
-											class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left {isDepDimmed(
-												dep
-											)
-												? 'opacity-30'
-												: 'opacity-100'}"
+											class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left"
 											onclick={(e) => handleDependencyClick(dep, e)}
 											onmouseenter={() => handleDependencyHover(dep)}
 											onmouseleave={() => handleDependencyHover(null)}
@@ -342,11 +333,7 @@
 								<div class="flex flex-col gap-1.5">
 									{#each currentStepInfo.dependents as dep (dep)}
 										<button
-											class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left {isDepDimmed(
-												dep
-											)
-												? 'opacity-30'
-												: 'opacity-100'}"
+											class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left"
 											onclick={(e) => handleDependencyClick(dep, e)}
 											onmouseenter={() => handleDependencyHover(dep)}
 											onmouseleave={() => handleDependencyHover(null)}
@@ -423,11 +410,7 @@
 						<div class="flex flex-col gap-1.5">
 							{#each flowInfo.steps as step (step)}
 								<button
-									class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left {isDepDimmed(
-										step
-									)
-										? 'opacity-30'
-										: 'opacity-100'}"
+									class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left"
 									onclick={(e) => handleDependencyClick(step, e)}
 									onmouseenter={() => handleDependencyHover(step)}
 									onmouseleave={() => handleDependencyHover(null)}

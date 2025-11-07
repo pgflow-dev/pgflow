@@ -2,6 +2,7 @@
 	import { onDestroy } from 'svelte';
 	import { pgflow } from '$lib/supabase';
 	import { createFlowState } from '$lib/stores/pgflow-state-improved.svelte';
+	import { pulseDots } from '$lib/stores/pulse-dots.svelte';
 	import DAGVisualization from '$lib/components/DAGVisualization.svelte';
 	import DebugPanel from '$lib/components/DebugPanel.svelte';
 	import CodePanel from '$lib/components/CodePanel.svelte';
@@ -76,98 +77,9 @@
 	}
 
 	function showPulseDots() {
+		// Simple trigger - all mounted PulseDot components will pulse
 		setTimeout(() => {
-			const dots: HTMLElement[] = [];
-
-			// DAG nodes - center
-			let dagNodeCount = 0;
-			document.querySelectorAll('.dag-node').forEach((el) => {
-				const rect = el.getBoundingClientRect();
-				const dot = document.createElement('div');
-				dot.className = 'pulse-dot';
-
-				// DEBUG: Shift first dot to identify it
-				if (dagNodeCount === 0) {
-					dot.style.left = `${rect.left + rect.width / 2 + 50}px`;
-					dot.style.top = `${rect.top + rect.height / 2 + 10}px`;
-				} else {
-					dot.style.left = `${rect.left + rect.width / 2}px`;
-					dot.style.top = `${rect.top + rect.height / 2}px`;
-				}
-
-				document.body.appendChild(dot);
-				dots.push(dot);
-				dagNodeCount++;
-			});
-
-			// Code step blocks - check if status borders exist, otherwise create dots at step positions
-			const stepBlocks = document.querySelectorAll('.step-status-border');
-			const codePanel = document.querySelector('.code-panel');
-
-			if (stepBlocks.length > 0) {
-				// Status borders exist, place dots horizontally centered on screen, vertically in middle of block
-				stepBlocks.forEach((el) => {
-					const rect = el.getBoundingClientRect();
-					const dot = document.createElement('div');
-					dot.className = 'pulse-dot';
-					// Horizontally center on screen, vertically center in the block
-					dot.style.left = `${window.innerWidth / 2}px`;
-					dot.style.top = `${rect.top + rect.height / 2}px`;
-					document.body.appendChild(dot);
-					dots.push(dot);
-				});
-			} else if (codePanel) {
-				// No status borders yet, find all lines for each step and calculate middle
-				// Include flow_config and all step slugs
-				const allSlugs = ['flow_config', 'fetch_article', 'summarize', 'extract_keywords', 'publish'];
-
-				allSlugs.forEach((stepSlug) => {
-					// Find all lines of this step to calculate the middle
-					const stepLines = codePanel.querySelectorAll(`[data-step="${stepSlug}"]`);
-					if (stepLines.length > 0) {
-						const firstLine = stepLines[0];
-						const lastLine = stepLines[stepLines.length - 1];
-						const firstRect = firstLine.getBoundingClientRect();
-						const lastRect = lastLine.getBoundingClientRect();
-
-						// Only create dot if rects are valid (not 0,0)
-						if (firstRect.top > 0 && lastRect.bottom > 0) {
-							const dot = document.createElement('div');
-							dot.className = 'pulse-dot';
-							// Horizontally center on screen, vertically in middle of all step lines
-							dot.style.left = `${window.innerWidth / 2}px`;
-							dot.style.top = `${(firstRect.top + lastRect.bottom) / 2}px`;
-							document.body.appendChild(dot);
-							dots.push(dot);
-						}
-					}
-				});
-			}
-
-			// Event stream button (mobile) - only if it has events and is visible
-			const allButtons = Array.from(document.querySelectorAll('button'));
-			const eventsButton = allButtons.find((btn) => {
-				const text = btn.textContent?.trim() || '';
-				return text.startsWith('Events') && !btn.disabled;
-			});
-
-			if (eventsButton) {
-				const rect = eventsButton.getBoundingClientRect();
-				if (rect.width > 0 && rect.height > 0) {
-					const dot = document.createElement('div');
-					dot.className = 'pulse-dot';
-					// DEBUG: Shift this dot to identify it
-					dot.style.left = `${rect.left + rect.width / 2 + 50}px`;
-					dot.style.top = `${rect.top + rect.height / 2 + 10}px`;
-					document.body.appendChild(dot);
-					dots.push(dot);
-				}
-			}
-
-			// Remove dots after 3 seconds
-			setTimeout(() => {
-				dots.forEach((dot) => dot.remove());
-			}, 3000);
+			pulseDots.trigger();
 		}, 300);
 	}
 
@@ -684,35 +596,5 @@
 
 	:global(.animate-slide-up) {
 		animation: slideUp 0.3s ease-out;
-	}
-
-	/* Pulsing dot indicator for clickable elements */
-	:global(.pulse-dot) {
-		position: fixed;
-		width: 10px;
-		height: 10px;
-		background: rgba(255, 159, 28, 1);
-		border: 2px solid rgba(255, 255, 255, 0.9);
-		border-radius: 50%;
-		transform: translate(-50%, -50%);
-		pointer-events: none;
-		z-index: 9999;
-		animation: pulse-dot 1s ease-out 3;
-		box-shadow: 0 0 8px rgba(255, 159, 28, 0.8);
-	}
-
-	@keyframes pulse-dot {
-		0% {
-			box-shadow: 0 0 8px rgba(255, 159, 28, 0.8), 0 0 0 0 rgba(255, 159, 28, 0.7);
-			opacity: 1;
-		}
-		50% {
-			box-shadow: 0 0 12px rgba(255, 159, 28, 1), 0 0 0 16px rgba(255, 159, 28, 0);
-			opacity: 0.9;
-		}
-		100% {
-			box-shadow: 0 0 8px rgba(255, 159, 28, 0.8), 0 0 0 0 rgba(255, 159, 28, 0);
-			opacity: 1;
-		}
 	}
 </style>
