@@ -9,7 +9,13 @@
       "executor": "nx:run-commands",
       "inputs": [
         "default",
-        "^production"
+        "^production",
+        {
+          "env": "VITE_SUPABASE_URL"
+        },
+        {
+          "env": "VITE_SUPABASE_ANON_KEY"
+        }
       ],
       "outputs": ["{options.outputPath}"],
       "options": {

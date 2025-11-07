@@ -185,16 +185,13 @@ jobs:
   deploy-demo:
     needs: [build-and-test, edge-worker-e2e]
     runs-on: ubuntu-latest
-    # Only run on main branch pushes (production) - skip PRs for now
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    environment: production
+    environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
     env:
       NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      # Hardcoded for testing - these are public values
-      VITE_SUPABASE_URL: https://bsgbmmbmlmcmdnheuwmt.supabase.co
-      VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzZ2JtbWJtbG1jbWRuaGV1d210Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzNDA2NzIsImV4cCI6MjA3NzkxNjY3Mn0.Uoy8iqxycrqd4b6LPMMXWWSYrP1BDRMrJVgM2_vtl6o
+      VITE_SUPABASE_URL: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_URL || secrets.DEMO_PRODUCTION_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY || secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -208,19 +205,7 @@ jobs:
       - name: Verify NX_BASE and NX_HEAD are set
         run: echo "BASE=$NX_BASE HEAD=$NX_HEAD"
 
-      - name: Check if demo is affected
-        id: check-affected
-        run: |
-          if pnpm nx show projects --affected -t build --base="$NX_BASE" --head="$NX_HEAD" | grep -q "^demo$"; then
-            echo "affected=true" >> $GITHUB_OUTPUT
-            echo "Demo is affected by changes"
-          else
-            echo "affected=false" >> $GITHUB_OUTPUT
-            echo "Demo is not affected by changes - skipping deployment"
-          fi
-
       - name: Validate Supabase environment variables
-        if: steps.check-affected.outputs.affected == 'true'
         run: |
           if [ -z "$VITE_SUPABASE_URL" ]; then
             echo "❌ Error: VITE_SUPABASE_URL is not set"
@@ -239,18 +224,22 @@ jobs:
           fi
           echo "✅ Supabase environment variables are valid"
 
-      - name: Deploy demo to production
+      - name: Deploy demo
         id: deploy-demo
-        if: steps.check-affected.outputs.affected == 'true'
+        env:
+          PREVIEW_NAME: pr-${{ github.event.pull_request.number }}
         run: |
-          echo "Deploying demo to production (demo.pgflow.dev)..."
-          pnpm nx run demo:deploy --skip-nx-cache
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            pnpm nx affected -t deploy:preview --projects=demo --base="$NX_BASE" --head="$NX_HEAD"
+          else
+            pnpm nx affected -t deploy --projects=demo --base="$NX_BASE" --head="$NX_HEAD"
+          fi
 
       - name: Post deployment comment
-        if: always()
+        if: success()
         uses: ./.github/actions/deployment-comment
         with:
           project-name: Demo
+          preview-url: https://pr-${{ github.event.pull_request.number }}-pgflow-demo.jumski.workers.dev
           production-url: https://demo.pgflow.dev
-          # No preview URL - we only deploy production from main branch
 
