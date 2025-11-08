@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { createFlowState } from '$lib/stores/pgflow-state-improved.svelte';
+	import type { createFlowState } from '$lib/stores/pgflow-state.svelte';
 
 	/**
 	 * Minimal DAG visualization for showing flow context
@@ -14,16 +14,18 @@
 	let { selectedStep, flowState }: Props = $props();
 
 	function isStepActive(stepSlug: string): boolean {
-		const status = flowState.stepStatuses[stepSlug];
-		return status === 'started';
+		// Use reactive step() method from runState
+		return flowState.step(stepSlug).status === 'started';
 	}
 
 	function isStepCompleted(stepSlug: string): boolean {
-		return flowState.stepStatuses[stepSlug] === 'completed';
+		// Use reactive step() method from runState
+		return flowState.step(stepSlug).status === 'completed';
 	}
 
 	function isStepFailed(stepSlug: string): boolean {
-		return flowState.stepStatuses[stepSlug] === 'failed';
+		// Use reactive step() method from runState
+		return flowState.step(stepSlug).status === 'failed';
 	}
 
 	// Node dimensions (smaller for mini view)

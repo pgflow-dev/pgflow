@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { createFlowState } from '$lib/stores/pgflow-state-improved.svelte';
+	import type { createFlowState } from '$lib/stores/pgflow-state.svelte';
 	import { codeToHtml } from 'shiki';
 	import { SvelteMap } from 'svelte/reactivity';
 
@@ -45,7 +45,7 @@
 	// Clear cache when flow resets (events list becomes empty or significantly changes)
 	let lastEventCount = $state(0);
 	$effect(() => {
-		const currentEventCount = flowState.events.length;
+		const currentEventCount = flowState.timeline.length;
 		// If events list was cleared or reduced significantly, clear the cache
 		if (currentEventCount === 0 || currentEventCount < lastEventCount - 5) {
 			highlightedEvents = new SvelteMap();
@@ -54,21 +54,9 @@
 		lastEventCount = currentEventCount;
 	});
 
-	// Get relative time from flow start
-	function formatRelativeTime(timestamp: Date, firstEventTimestamp: Date): string {
-		const diffMs = timestamp.getTime() - firstEventTimestamp.getTime();
-		const seconds = (diffMs / 1000).toFixed(3);
-		return `+${seconds}s`;
-	}
-
 	// Get display status from event_type (use the status part for badge coloring)
 	function getEventStatus(eventType: string): string {
 		return eventType.split(':')[1] || 'unknown';
-	}
-
-	// Get full event name for display
-	function getEventDisplayName(eventType: string): string {
-		return eventType;
 	}
 
 	// Get color class for event name based on status
@@ -87,15 +75,16 @@
 				return 'text-muted-foreground';
 		}
 	}
+
 </script>
 
 <div class="flex flex-col h-full min-w-0">
-	{#if flowState.events.length > 0}
+	{#if flowState.timeline.length > 0}
 		<!-- Table-like headers -->
 		<div
 			class="flex items-center gap-2 px-3 py-1 border-b border-muted text-xs font-semibold text-muted-foreground"
 		>
-			<div class="w-[80px] text-left">TIME</div>
+			<div class="w-[120px] text-left">TIME</div>
 			<div class="w-[140px] text-left">EVENT</div>
 			<div class="flex-1 text-left">STEP</div>
 			<div class="w-[32px]"></div>
@@ -104,16 +93,14 @@
 	{/if}
 
 	<div class="flex-1 overflow-y-auto overflow-x-hidden space-y-1 min-w-0">
-		{#if flowState.events.length === 0}
+		{#if flowState.timeline.length === 0}
 			<p class="text-sm text-muted-foreground text-center py-8">
 				No events yet. Start a flow to see events.
 			</p>
 		{:else}
-			{@const firstEventTimestamp = flowState.events[0]?.timestamp}
-			{#each flowState.events as event, index (index)}
+			{#each flowState.timeline as event, index (index)}
 				{@const eventType = event.event_type}
-				{@const stepSlug = event.data?.step_slug}
-				{@const eventDisplayName = getEventDisplayName(eventType)}
+				{@const stepSlug = event.step_slug}
 				{@const eventColor = getEventColor(eventType)}
 				{@const isExpanded = expandedEventIndices.has(index)}
 				{@const isHighlighted = stepSlug && hoveredStep === stepSlug}
@@ -127,11 +114,18 @@
 						class="flex items-center gap-2 w-full text-left px-1 rounded transition-colors hover:bg-muted/20"
 						onclick={(e) => toggleEvent(index, e)}
 					>
-						<code class="w-[80px] text-base text-muted-foreground font-mono text-left"
-							>{formatRelativeTime(event.timestamp, firstEventTimestamp)}</code
-						>
+						<div class="w-[120px] flex flex-col text-left">
+							<code class="text-base text-muted-foreground font-mono"
+								>{event.cumulativeDisplay}</code
+							>
+							{#if event.deltaMs > 0}
+								<code class="text-xs text-muted-foreground/70 font-mono"
+									>{event.deltaDisplay}</code
+								>
+							{/if}
+						</div>
 						<code class="w-[140px] text-base font-semibold font-mono {eventColor}">
-							{eventDisplayName}
+							{eventType}
 						</code>
 						{#if stepSlug}
 							<code

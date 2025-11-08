@@ -3,7 +3,7 @@
 	import { fade } from 'svelte/transition';
 	import { codeToHtml } from 'shiki';
 	import { FLOW_CODE, getStepFromLine, FLOW_SECTIONS } from '$lib/data/flow-code';
-	import type { createFlowState } from '$lib/stores/pgflow-state-improved.svelte';
+	import type { createFlowState } from '$lib/stores/pgflow-state.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import PulseDot from '$lib/components/PulseDot.svelte';
 
@@ -61,7 +61,8 @@
 
 	// Helper to get status for a step badge
 	function getStepStatus(stepSlug: string): string | null {
-		const status = flowState.stepStatuses[stepSlug];
+		// Use reactive step() method from runState
+		const status = flowState.step(stepSlug).status;
 		const hasFlowStarted = flowState.status !== 'idle';
 
 		// Don't show badge if flow hasn't started yet
@@ -70,7 +71,7 @@
 		}
 
 		// If flow has started but this step has no status yet, don't show indicator
-		if (!status) {
+		if (!status || status === 'created') {
 			return null;
 		}
 
@@ -210,8 +211,8 @@
 		// Explicitly track these dependencies
 		const currentSelectedStep = selectedStep;
 		const currentHoveredStep = hoveredStep;
-		// Ensure reactivity to step status changes by accessing it
-		void flowState.stepStatuses;
+		// Ensure reactivity to step status changes by accessing flowState.run
+		void flowState.run;
 
 		if (!codeContainer) return;
 

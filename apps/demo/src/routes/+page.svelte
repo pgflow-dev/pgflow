@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import { pgflow } from '$lib/supabase';
-	import { createFlowState } from '$lib/stores/pgflow-state-improved.svelte';
+	import { createFlowState } from '$lib/stores/pgflow-state.svelte';
 	import { pulseDots } from '$lib/stores/pulse-dots.svelte';
 	import DAGVisualization from '$lib/components/DAGVisualization.svelte';
 	import DebugPanel from '$lib/components/DebugPanel.svelte';
@@ -243,7 +243,7 @@
 
 	// Auto-scroll events to right when new event arrives
 	$effect(() => {
-		if (flowState.events.length > 0 && eventsScrollContainer) {
+		if (flowState.timeline.length > 0 && eventsScrollContainer) {
 			eventsScrollContainer.scrollTo({
 				left: eventsScrollContainer.scrollWidth,
 				behavior: 'smooth'
@@ -265,28 +265,24 @@
 	// Helper to get event badge info
 	function getEventBadgeInfo(event: {
 		event_type: string;
-		data?: { step_slug?: string; started_at?: string; completed_at?: string };
-		created_at?: string;
+		step_slug?: string;
 	}): {
 		icon: typeof Play | typeof CheckCircle2;
 		color: string;
 		text: string;
-		timestamp: string | null;
 	} | null {
-		if (event.event_type === 'step:started' && event.data?.step_slug) {
+		if (event.event_type === 'step:started' && event.step_slug) {
 			return {
 				icon: Play,
 				color: 'blue',
-				text: getShortStepName(event.data.step_slug),
-				timestamp: event.data.started_at || event.created_at
+				text: getShortStepName(event.step_slug)
 			};
 		}
-		if (event.event_type === 'step:completed' && event.data?.step_slug) {
+		if (event.event_type === 'step:completed' && event.step_slug) {
 			return {
 				icon: CheckCircle2,
 				color: 'green',
-				text: getShortStepName(event.data.step_slug),
-				timestamp: event.data.completed_at || event.created_at
+				text: getShortStepName(event.step_slug)
 			};
 		}
 		return null;
@@ -294,35 +290,11 @@
 
 	// Get displayable events (started/completed steps only)
 	const displayableEvents = $derived(
-		flowState.events
+		flowState.timeline
 			.map((e, idx) => ({ event: e, badge: getEventBadgeInfo(e), idx }))
 			.filter((e) => e.badge !== null)
 	);
 
-	// Format time delta from previous event or flow start (e.g., "+0.235s", "+1.450s")
-	function formatTimeDelta(
-		currentTimestamp: string,
-		previousTimestamp: string | null,
-		flowStartTimestamp: string | null
-	): string {
-		// If no previous event, calculate from flow start
-		if (!previousTimestamp && flowStartTimestamp) {
-			const current = new Date(currentTimestamp).getTime();
-			const flowStart = new Date(flowStartTimestamp).getTime();
-			const diffMs = current - flowStart;
-			const diffSec = (diffMs / 1000).toFixed(3);
-			return `+${diffSec}s`;
-		}
-
-		if (!previousTimestamp) return 'start';
-
-		const current = new Date(currentTimestamp).getTime();
-		const previous = new Date(previousTimestamp).getTime();
-		const diffMs = current - previous;
-		const diffSec = (diffMs / 1000).toFixed(3);
-
-		return `+${diffSec}s`;
-	}
 
 	// Fix for mobile viewport height (address bar issue)
 	// Set actual viewport height as CSS custom property for browsers without dvh support
@@ -640,7 +612,7 @@
 </div>
 
 <!-- Mobile: Sticky bottom events bar -->
-{#if flowState.events.length > 0}
+{#if flowState.timeline.length > 0}
 	<!-- Backdrop for expanded state -->
 	<div
 		class="fixed inset-0 bg-black/50 z-40 md:hidden mobile-events-backdrop"
@@ -703,23 +675,15 @@
 								<div class="flex items-center gap-2 px-3 py-2">
 									<svelte:component this={badge.icon} class="w-4 h-4 flex-shrink-0" />
 									<div class="flex-1 min-w-0">
-										<div class="font-medium text-sm">{event.data?.step_slug || 'Unknown'}</div>
+										<div class="font-medium text-sm">{event.step_slug || 'Unknown'}</div>
 										<div class="text-xs opacity-70">
 											{event.event_type.replace('step:', '')}
 										</div>
 									</div>
 									<div class="flex items-center gap-2 flex-shrink-0">
-										{#if badge.timestamp}
-											<div class="text-xs opacity-70 font-mono text-muted-foreground">
-												{formatTimeDelta(
-													badge.timestamp,
-													i > 0 && displayableEvents[i - 1].badge?.timestamp
-														? displayableEvents[i - 1].badge.timestamp
-														: null,
-													flowState.run?.started_at || flowState.run?.created_at || null
-												)}
-											</div>
-										{/if}
+										<div class="text-xs opacity-70 font-mono text-muted-foreground">
+											{event.deltaDisplay}
+										</div>
 										<div class="text-xs opacity-50">
 											{expandedEventIdx === idx ? '▼' : '▶'}
 										</div>

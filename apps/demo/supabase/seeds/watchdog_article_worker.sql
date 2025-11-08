@@ -1,13 +1,13 @@
 -- Remove existing job if it exists to prevent duplicates
-SELECT cron.unschedule(jobname)
-FROM cron.job
-WHERE jobname = 'watchdog--article_flow_worker';
+select cron.unschedule(jobname)
+from cron.job
+where jobname = 'watchdog--article_flow_worker';
 
 -- Create cron job to keep article_flow_worker running
 -- Checks every 5 seconds if worker is alive and spawns new one if needed
-SELECT cron.schedule(
+select cron.schedule(
   'watchdog--article_flow_worker',
-  '5 seconds',
+  '2 seconds',
   $$
   SELECT net.http_post(
     url := 'http://host.docker.internal:54321/functions/v1/article_flow_worker',

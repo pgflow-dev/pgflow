@@ -1,184 +1,374 @@
 import type { FlowRun, PgflowClient } from '@pgflow/client';
 import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
-import { SvelteMap, SvelteDate } from 'svelte/reactivity';
+import { SvelteDate } from 'svelte/reactivity';
 
 interface FlowEvent {
 	event_type: string;
-	timestamp: Date;
+	timestamp: Date; // When event was received/created locally (client time)
+	occurred_at?: Date; // Actual event time from broadcast payload (server time)
 	data: Record<string, unknown>;
+	step_slug?: string; // For step events
 }
 
-interface PgflowStateConfig {
-	client: PgflowClient;
-	flowSlug: string;
-	stepSlugs: string[];
+interface TimelineEvent extends FlowEvent {
+	cumulativeMs: number; // Milliseconds from first event
+	deltaMs: number; // Milliseconds from previous event
+	cumulativeDisplay: string; // Formatted cumulative time (e.g., "0:01.234")
+	deltaDisplay: string; // Formatted delta time (e.g., "+1.234s")
 }
 
 /**
- * Svelte 5 runes-based state management for pgflow
- *
- * Best practices applied:
- * - $state for reactive data
- * - $state.raw for non-reactive objects (client, config)
- * - $derived for computed values
- * - Proper cleanup via dispose()
+ * Format milliseconds as human-readable time
+ * Examples: "0:00.000", "0:01.234", "1:23.456"
  */
-class PgflowState<TFlow extends AnyFlow = AnyFlow> {
-	// ✅ Reactive state - these trigger UI updates
-	run = $state<FlowRun<TFlow> | null>(null);
-	activeStep = $state<string | null>(null);
-	status = $state<string>('idle');
-	output = $state<unknown>(null);
-	events = $state<FlowEvent[]>([]);
-	error = $state<string | null>(null);
+function formatMs(ms: number): string {
+	if (ms < 0) return '0:00.000';
 
-	// ✅ Non-reactive objects - don't need deep tracking
-	#client = $state.raw<PgflowClient>(null!);
-	#flowSlug = $state.raw<string>('');
-	#stepSlugs = $state.raw<string[]>([]);
-	#unsubscribers = $state.raw<Array<() => void>>([]);
+	const totalSeconds = Math.floor(ms / 1000);
+	const minutes = Math.floor(totalSeconds / 60);
+	const seconds = totalSeconds % 60;
+	const milliseconds = Math.floor(ms % 1000);
 
-	constructor(config: PgflowStateConfig) {
-		this.#client = config.client;
-		this.#flowSlug = config.flowSlug;
-		this.#stepSlugs = config.stepSlugs;
+	return `${minutes}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
+}
+
+/**
+ * Format delta time with + prefix and simplified display
+ * Examples: "+0ms", "+123ms", "+1.234s"
+ */
+function formatDelta(ms: number): string {
+	if (ms < 1000) {
+		return `+${Math.floor(ms)}ms`;
 	}
 
-	// ✅ Derived state - automatically recomputes when dependencies change
-	steps = $derived(() => {
-		if (!this.run) return new SvelteMap();
+	const seconds = (ms / 1000).toFixed(3);
+	return `+${seconds}s`;
+}
 
-		const stepMap = new SvelteMap();
-		if (this.run.stepStates) {
-			this.run.stepStates.forEach((stepState) => {
-				stepMap.set(stepState.stepSlug, stepState);
-			});
-		}
+/**
+ * Improved pgflow state management for Svelte 5
+ *
+ * Returns a reactive "runState" that mirrors FlowRun's API but with reactive properties.
+ * Key improvements:
+ * - step() method returns reactive step properties (status, output, etc.)
+ * - Delegates to FlowRun/FlowStep as single source of truth (no duplicate state)
+ * - Intuitive API that matches FlowRun structure
+ * - All step properties are automatically reactive
+ * - Prevents common reactivity bugs
+ */
+export function createFlowState<TFlow extends AnyFlow>(
+	client: PgflowClient,
+	flowSlug: string,
+	stepSlugs: string[] = []
+) {
+	// ✅ Reactive state
+	let run = $state<FlowRun<TFlow> | null>(null);
+	let status = $state<string>('idle');
+	let output = $state<unknown>(null);
+	let error = $state<string | null>(null);
+	let activeStep = $state<string | null>(null);
+	let events = $state<FlowEvent[]>([]);
 
-		return stepMap;
-	});
+	// Version counter to trigger reactivity when FlowRun/FlowStep state changes
+	// Increment this whenever events update the underlying FlowRun state
+	let stateVersion = $state(0);
 
-	async startFlow(input: ExtractFlowInput<TFlow>) {
-		this.clear();
-		this.status = 'starting';
+	// ✅ Non-reactive internals (function-scoped, effectively private)
+	const _client = $state.raw(client);
+	const _flowSlug = $state.raw(flowSlug);
+	const _unsubscribers = $state.raw<Array<() => void>>([]);
+
+	// Debug: Track all broadcast events
+	const _debugEvents = $state.raw<Array<{ type: string; time: Date }>>([]);
+
+	/**
+	 * Start a new flow run
+	 */
+	async function startFlow(input: ExtractFlowInput<TFlow>) {
+		clear();
+		status = 'starting';
 
 		try {
-			const run = await this.#client.startFlow<TFlow>(this.#flowSlug, input);
-			this.#setupRun(run);
-			return run;
-		} catch (error) {
-			this.status = 'error';
-			this.error = error instanceof Error ? error.message : String(error);
-			throw error;
+			const flowRun = await _client.startFlow<TFlow>(_flowSlug, input);
+			_setupRun(flowRun);
+			return flowRun;
+		} catch (err) {
+			status = 'error';
+			error = err instanceof Error ? err.message : String(err);
+			throw err;
 		}
 	}
 
-	#setupRun(run: FlowRun<TFlow>) {
-		this.run = run;
-		this.status = 'started';
-		this.events = [];
-		this.output = null;
-		this.error = null;
+	/**
+	 * Attach to an existing flow run (e.g., from getRun)
+	 */
+	function attachRun(flowRun: FlowRun<TFlow>) {
+		clear();
+		_setupRun(flowRun);
+	}
 
-		// Set up run-level event listeners
-		const unsubRun = run.on('*', (event) => {
-			this.#addEvent('run', event);
-			this.status = event.status || this.status;
+	function _setupRun(flowRun: FlowRun<TFlow>) {
+		run = flowRun;
+		status = flowRun.status;
+		output = flowRun.output;
+		error = flowRun.error_message;
 
-			if (event.status === 'completed' && event.output) {
-				this.output = event.output;
-			} else if (event.status === 'failed') {
-				this.status = 'failed';
-				this.error = event.error_message || 'Flow failed';
+		// Check for any currently active steps
+		let foundActiveStep: string | null = null;
+		stepSlugs.forEach((stepSlug) => {
+			const step = flowRun.step(stepSlug);
+
+			if (!foundActiveStep && step.status === 'started') {
+				foundActiveStep = stepSlug;
 			}
 		});
 
-		// Store unsubscriber if available
-		if (typeof unsubRun === 'function') {
-			this.#unsubscribers.push(unsubRun);
+		if (foundActiveStep) {
+			activeStep = foundActiveStep;
 		}
 
-		// Set up step-level event listeners
-		this.#stepSlugs.forEach((stepSlug) => {
-			const step = run.step(stepSlug);
+		// Set up run-level events
+		const unsubRun = flowRun.on('*', (event) => {
+			const now = new SvelteDate();
+			const occurredAt =
+				event.status === 'started' && 'started_at' in event
+					? new Date(event.started_at)
+					: event.status === 'completed' && 'completed_at' in event
+						? new Date(event.completed_at)
+						: event.status === 'failed' && 'failed_at' in event
+							? new Date(event.failed_at)
+							: undefined;
+
+			// DEBUG: Log broadcast event
+			const debugEventType = `run:${event.status}`;
+			_debugEvents.push({ type: debugEventType, time: now });
+			console.log('[EVENT]', debugEventType, event);
+
+			events = [
+				...events,
+				{
+					event_type: `run:${event.status}`,
+					timestamp: now,
+					occurred_at: occurredAt,
+					data: event as Record<string, unknown>
+				}
+			];
+
+			status = event.status;
+
+			if (event.status === 'completed' && event.output) {
+				output = event.output;
+				// DEBUG: Log summary of all events received
+				console.log('[EVENTS SUMMARY]', {
+					total: _debugEvents.length,
+					events: _debugEvents.map((e) => e.type)
+				});
+			} else if (event.status === 'failed') {
+				error = event.error_message || 'Flow failed';
+			}
+		});
+
+		if (typeof unsubRun === 'function') {
+			_unsubscribers.push(unsubRun);
+		}
+
+		// Set up step-level events
+		console.log('Setting up step event listeners for:', stepSlugs);
+		stepSlugs.forEach((stepSlug) => {
+			const step = flowRun.step(stepSlug);
 			const unsubStep = step.on('*', (event) => {
-				this.#addEvent('step', { ...event, step_slug: stepSlug });
+				const now = new SvelteDate();
+				const occurredAt =
+					event.status === 'started' && 'started_at' in event
+						? new Date(event.started_at)
+						: event.status === 'completed' && 'completed_at' in event
+							? new Date(event.completed_at)
+							: event.status === 'failed' && 'failed_at' in event
+								? new Date(event.failed_at)
+								: undefined;
+
+				// DEBUG: Log broadcast event
+				const debugEventType = `step:${event.status} (${stepSlug})`;
+				_debugEvents.push({ type: debugEventType, time: now });
+				console.log('[EVENT]', debugEventType, event);
+
+				events = [
+					...events,
+					{
+						event_type: `step:${event.status}`,
+						timestamp: now,
+						occurred_at: occurredAt,
+						step_slug: stepSlug,
+						data: { ...(event as Record<string, unknown>), step_slug: stepSlug }
+					}
+				];
+
+				// Increment version to trigger reactivity in step() getters
+				// FlowRun/FlowStep already updated their state before emitting event
+				stateVersion++;
 
 				if (event.status === 'started') {
-					this.activeStep = stepSlug;
-				} else if (event.status === 'completed' && this.activeStep === stepSlug) {
-					this.activeStep = null;
+					console.log(`Setting activeStep to: ${stepSlug}`);
+					activeStep = stepSlug;
+				} else if (event.status === 'completed' && activeStep === stepSlug) {
+					console.log(`Clearing activeStep (was: ${stepSlug})`);
+					activeStep = null;
 				}
 			});
 
 			if (typeof unsubStep === 'function') {
-				this.#unsubscribers.push(unsubStep);
+				_unsubscribers.push(unsubStep);
 			}
 		});
 	}
 
-	#addEvent(type: 'run' | 'step', data: Record<string, unknown>) {
-		this.events = [
-			...this.events,
-			{
-				event_type:
-					type === 'run'
-						? `run:${(data as { status: string }).status}`
-						: `step:${(data as { status: string }).status}`,
-				timestamp: new SvelteDate(),
-				data
-			}
-		];
-	}
+	function clear() {
+		_unsubscribers.forEach((unsub) => unsub());
+		_unsubscribers.length = 0;
 
-	clear() {
-		this.run = null;
-		this.activeStep = null;
-		this.status = 'idle';
-		this.output = null;
-		this.error = null;
-		this.events = [];
+		run = null;
+		status = 'idle';
+		output = null;
+		error = null;
+		activeStep = null;
+		events = [];
+		stateVersion = 0;
+		_debugEvents.length = 0;
 	}
 
 	/**
-	 * Clean up event subscriptions
-	 * Call this when the component unmounts or when switching flows
+	 * Get reactive step state
+	 * Returns an object with reactive getters that delegate to FlowRun.step()
+	 * This is a thin reactive wrapper - FlowRun/FlowStep maintain the actual state
 	 */
-	dispose() {
-		this.#unsubscribers.forEach((unsub) => unsub());
-		this.#unsubscribers = [];
-		this.clear();
+	function step(stepSlug: string) {
+		return {
+			get status() {
+				// Track stateVersion for reactivity
+				stateVersion;
+				return run?.step(stepSlug).status || 'created';
+			},
+			get output() {
+				// Track stateVersion for reactivity
+				stateVersion;
+				return run?.step(stepSlug).output;
+			},
+			get error() {
+				// Track stateVersion for reactivity
+				stateVersion;
+				return run?.step(stepSlug).error_message;
+			},
+			get started_at() {
+				// Track stateVersion for reactivity
+				stateVersion;
+				return run?.step(stepSlug).started_at;
+			},
+			get completed_at() {
+				// Track stateVersion for reactivity
+				stateVersion;
+				return run?.step(stepSlug).completed_at;
+			},
+			get failed_at() {
+				// Track stateVersion for reactivity
+				stateVersion;
+				return run?.step(stepSlug).failed_at;
+			}
+		};
 	}
+
+	/**
+	 * Clean up subscriptions
+	 * Call when done with the flow or on component unmount
+	 */
+	function dispose() {
+		clear();
+	}
+
+	// Return runState that mirrors FlowRun API with reactive properties
+	return {
+		// Reactive state (using getters for proper reactivity)
+		get run() {
+			return run;
+		},
+		get status() {
+			return status;
+		},
+		get output() {
+			return output;
+		},
+		get error() {
+			return error;
+		},
+		get activeStep() {
+			return activeStep;
+		},
+		get events() {
+			return events;
+		},
+		get timeline(): TimelineEvent[] {
+			if (!events.length) return [];
+
+			const firstTime = events[0].timestamp.getTime();
+
+			return events.map((event, i) => {
+				const cumulative = event.timestamp.getTime() - firstTime;
+				const delta = i > 0 ? event.timestamp.getTime() - events[i - 1].timestamp.getTime() : 0;
+
+				return {
+					...event,
+					cumulativeMs: cumulative,
+					deltaMs: delta,
+					cumulativeDisplay: formatMs(cumulative),
+					deltaDisplay: formatDelta(delta)
+				};
+			});
+		},
+
+		// DEBUG: Expose debug events for inspection
+		get debugEvents() {
+			return _debugEvents;
+		},
+
+		// Reactive step access - mirrors FlowRun.step() API
+		step,
+
+		// Methods
+		startFlow,
+		attachRun,
+		dispose
+	};
 }
 
 /**
- * Factory function to create a typed pgflow state instance
+ * Example usage:
  *
- * @example
- * ```ts
- * import type ArticleFlow from './article_flow';
+ * ```svelte
+ * <script lang="ts">
+ *   import { pgflow } from '$lib/supabase';
+ *   import { createFlowState } from '$lib/stores/pgflow-state.svelte';
+ *   import type ArticleFlow from './article_flow';
  *
- * const articleFlowState = createPgflowState<typeof ArticleFlow>(
- *   pgflowClient,
- *   'article_flow',
- *   ['fetchArticle', 'summarize', 'extractKeywords', 'publish']
- * );
+ *   // Create runState with step slugs for event subscription
+ *   const runState = createFlowState<typeof ArticleFlow>(
+ *     pgflow,
+ *     'article_flow',
+ *     ['fetchArticle', 'summarize', 'extractKeywords', 'publish']
+ *   );
  *
- * // Start the flow
- * await articleFlowState.startFlow({ url: 'https://example.com' });
+ *   async function start() {
+ *     await runState.startFlow({ url: 'https://example.com' });
+ *   }
  *
- * // Clean up when done
- * articleFlowState.dispose();
+ *   // Cleanup on unmount
+ *   onDestroy(() => runState.dispose());
+ * </script>
+ *
+ * <!-- Access run-level state -->
+ * <p>Status: {runState.status}</p>
+ * <p>Active Step: {runState.activeStep}</p>
+ *
+ * <!-- Access step-level state (all reactive!) -->
+ * <p>Fetch status: {runState.step('fetchArticle').status}</p>
+ * <p>Fetch output: {runState.step('fetchArticle').output}</p>
  * ```
  */
-export function createPgflowState<TFlow extends AnyFlow>(
-	client: PgflowClient,
-	flowSlug: string,
-	stepSlugs: string[]
-) {
-	return new PgflowState<TFlow>({
-		client,
-		flowSlug,
-		stepSlugs
-	});
-}
