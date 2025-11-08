@@ -94,14 +94,17 @@ const duplicatedTestimonials = [...testimonials, ...testimonials];
     gap: 2rem;
     animation: scroll-left 120s linear infinite;
     width: fit-content;
+    /* Performance optimizations */
+    will-change: transform;
+    transform: translateZ(0); /* Force GPU acceleration */
   }
 
   @keyframes scroll-left {
     0% {
-      transform: translateX(0);
+      transform: translate3d(0, 0, 0);
     }
     100% {
-      transform: translateX(-50%);
+      transform: translate3d(-50%, 0, 0);
     }
   }
 
@@ -109,14 +112,11 @@ const duplicatedTestimonials = [...testimonials, ...testimonials];
     min-width: 400px;
     max-width: 400px;
     padding: 1.5rem;
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--sl-color-accent-high) 4%, transparent) 0%,
-      color-mix(in srgb, var(--sl-color-accent-high) 1%, transparent) 100%
-    );
-    border: 1px solid color-mix(in srgb, var(--sl-color-accent-high) 16%, transparent);
+    /* Simplified gradient for better performance */
+    background: rgba(0, 123, 110, 0.04);
+    border: 1px solid rgba(0, 123, 110, 0.16);
     border-radius: 8px;
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--sl-color-accent-high) 3%, transparent);
+    box-shadow: 0 4px 12px rgba(0, 123, 110, 0.03);
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
@@ -179,6 +179,14 @@ const duplicatedTestimonials = [...testimonials, ...testimonials];
 
     .testimonial-message {
       font-size: 0.9rem;
+    }
+  }
+
+  /* Disable animation for users who prefer reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .testimonial-track {
+      animation: none !important;
+      will-change: auto !important;
     }
   }
 </style>

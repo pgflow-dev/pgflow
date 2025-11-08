@@ -37,7 +37,7 @@
     align-items: center;
     justify-content: center;
     z-index: 5;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.2s ease;
   }
 
   .code-overlay.hidden {
@@ -55,13 +55,9 @@
     font-weight: 900;
     color: var(--sl-color-text);
     margin-bottom: 1.5rem;
-    text-shadow: 0 12px 60px var(--sl-color-bg),
-                 0 10px 50px var(--sl-color-bg),
-                 0 8px 40px var(--sl-color-bg),
-                 0 6px 30px var(--sl-color-bg),
-                 0 4px 20px var(--sl-color-bg),
-                 0 2px 12px var(--sl-color-bg),
-                 0 0 80px rgba(0, 123, 110, 1);
+    /* Simplified text-shadow for better performance */
+    text-shadow: 0 2px 20px rgba(0, 123, 110, 0.8),
+                 0 4px 40px var(--sl-color-bg);
   }
 
   .overlay-list {
@@ -71,13 +67,9 @@
     margin-bottom: 2rem;
     text-align: left;
     font-weight: 600;
-    text-shadow: 0 12px 60px var(--sl-color-bg),
-                 0 10px 50px var(--sl-color-bg),
-                 0 8px 40px var(--sl-color-bg),
-                 0 6px 30px var(--sl-color-bg),
-                 0 4px 20px var(--sl-color-bg),
-                 0 2px 12px var(--sl-color-bg),
-                 0 0 80px rgba(0, 123, 110, 1);
+    /* Simplified text-shadow for better performance */
+    text-shadow: 0 2px 20px rgba(0, 123, 110, 0.8),
+                 0 4px 40px var(--sl-color-bg);
   }
 
   /* Base button styling following Starlight's pattern */
@@ -97,28 +89,16 @@
     padding: 0.9375rem 1.25rem;
     text-decoration: none;
 
-    /* Glow and animation effects */
+    /* Static glow effect - no continuous animation for better performance */
     box-shadow: 0 8px 32px rgba(0, 123, 110, 0.4),
-                0 0 60px rgba(0, 123, 110, 0.25);
-    animation: pulse-glow 2s ease-in-out infinite;
+                0 0 40px rgba(0, 123, 110, 0.2);
     position: relative;
     overflow: hidden;
     pointer-events: auto;
 
     /* Smooth transitions */
-    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-                box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  @keyframes pulse-glow {
-    0%, 100% {
-      box-shadow: 0 8px 32px rgba(0, 123, 110, 0.4),
-                  0 0 60px rgba(0, 123, 110, 0.25);
-    }
-    50% {
-      box-shadow: 0 8px 40px rgba(0, 123, 110, 0.55),
-                  0 0 80px rgba(0, 123, 110, 0.4);
-    }
+    transition: transform 0.3s ease,
+                box-shadow 0.3s ease;
   }
 
   .reveal-button::before {
@@ -137,10 +117,9 @@
 
   .reveal-button.sl-button-primary:hover {
     color: var(--sl-color-black);
-    transform: scale(1.08);
-    box-shadow: 0 8px 32px rgba(0, 123, 110, 0.4),
-                0 0 60px rgba(0, 123, 110, 0.25);
-    animation: none;
+    transform: scale(1.05);
+    box-shadow: 0 8px 40px rgba(0, 123, 110, 0.5),
+                0 0 50px rgba(0, 123, 110, 0.3);
   }
 
   .reveal-button:hover::before {
@@ -251,8 +230,8 @@
     .reveal-button::before,
     .reset-overlay-button,
     .scroll-top-button {
-      transition: none;
-      animation: none;
+      transition: none !important;
+      animation: none !important;
     }
   }
 
@@ -275,7 +254,6 @@
     min-height: 0;
     overflow: auto; /* The actual scroller */
     padding: 0;
-    scroll-behavior: smooth;
     scrollbar-width: thin;
     scrollbar-color: var(--sl-color-accent) var(--sl-color-gray-5);
   }
@@ -324,10 +302,7 @@
     }
   }
 
-  // Global flag to track if auto-scroll animation is running
-  let isAutoScrolling = false;
-
-  // Flag to track if programmatic scroll is happening (auto-scroll or scroll-to-top)
+  // Flag to track if programmatic scroll is happening (scroll-to-top button)
   let isProgrammaticScroll = false;
 
   // Flag to track if manual scroll event has been sent (only send once)
@@ -341,111 +316,45 @@
 
     if (!button || !overlay || !scrollableContainer || !scrollableInner) return;
 
-    button.addEventListener('click', async () => {
+    button.addEventListener('click', () => {
       // Track custom event in Plausible
       if (typeof window.plausible !== 'undefined') {
         window.plausible('home:reveal-code');
       }
 
-      const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-      // Helper to animate scroll with custom duration (cancellable on user interaction)
-      const animateScroll = (element: HTMLElement, targetScroll: number, duration: number) => {
-        return new Promise<void>((resolve) => {
-          const start = element.scrollTop;
-          const distance = targetScroll - start;
-          const startTime = performance.now();
-          let animationId: number | null = null;
-          let cancelled = false;
-
-          // Cancel animation if user manually scrolls
-          const cancelAnimation = () => {
-            cancelled = true;
-            isAutoScrolling = false;
-            if (animationId !== null) {
-              cancelAnimationFrame(animationId);
-            }
-            cleanup();
-            resolve();
-          };
-
-          // Listen for user scroll interactions
-          const handleWheel = () => cancelAnimation();
-          const handleTouch = () => cancelAnimation();
-          const handleClick = () => cancelAnimation();
-          const handleKeydown = (e: KeyboardEvent) => {
-            if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(e.key)) {
-              cancelAnimation();
-            }
-          };
-
-          element.addEventListener('wheel', handleWheel, { passive: true });
-          element.addEventListener('touchstart', handleTouch, { passive: true });
-          element.addEventListener('click', handleClick);
-          element.addEventListener('keydown', handleKeydown);
-
-          const cleanup = () => {
-            element.removeEventListener('wheel', handleWheel);
-            element.removeEventListener('touchstart', handleTouch);
-            element.removeEventListener('click', handleClick);
-            element.removeEventListener('keydown', handleKeydown);
-          };
-
-          const scroll = (currentTime: number) => {
-            if (cancelled) return;
-
-            const elapsed = currentTime - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-
-            // Ease-in-out quadratic for gentle smoothing
-            const eased = progress < 0.5
-              ? 2 * progress * progress
-              : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-
-            element.scrollTop = start + distance * eased;
-
-            if (progress < 1) {
-              animationId = requestAnimationFrame(scroll);
-            } else {
-              cleanup();
-              isAutoScrolling = false;
-              resolve();
-            }
-          };
-
-          animationId = requestAnimationFrame(scroll);
-        });
-      };
-
-      // 1. Enable scrolling and start animation first
-      isAutoScrolling = true;
       scrollableContainer.classList.add('scrollable-enabled');
-      const scrollPromise = animateScroll(scrollableInner, scrollableInner.scrollHeight, 3000);
-
-      // Small delay so scroll starts accelerating before overlay fades
-      await wait(100);
-
-      // 2. Fade out overlay while scroll is already in motion
       overlay.style.opacity = '0';
 
-      // Wait for overlay fade, then hide it
-      await wait(300);
-      overlay.classList.add('hidden');
+      // Custom 3-second scroll animation
+      const startScroll = scrollableInner.scrollTop;
+      const targetScroll = scrollableInner.scrollHeight;
+      const distance = targetScroll - startScroll;
+      const duration = 3000; // 3 seconds
+      const startTime = performance.now();
 
-      // 3. Wait for scroll to complete
-      await scrollPromise;
-
-      // 4. Show reset button after scroll completes
-      const resetButton = document.querySelector('.reset-overlay-button') as HTMLElement;
-      if (resetButton) {
-        resetButton.style.display = 'block';
+      function easeOutCubic(t: number) {
+        return 1 - Math.pow(1 - t, 3);
       }
 
-      // 5. Trigger scroll-to-top button visibility check now that animation is done
-      const scrollTopButton = document.querySelector('.scroll-top-button') as HTMLElement;
-      if (scrollTopButton && scrollableInner.scrollTop > 50) {
-        scrollTopButton.style.display = 'block';
+      function animateScroll(currentTime: number) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easedProgress = easeOutCubic(progress);
+
+        scrollableInner.scrollTop = startScroll + (distance * easedProgress);
+
+        if (progress < 1) {
+          requestAnimationFrame(animateScroll);
+        }
       }
+
+      requestAnimationFrame(animateScroll);
+
+      setTimeout(() => overlay.classList.add('hidden'), 200);
+      setTimeout(() => {
+        const resetButton = document.querySelector('.reset-overlay-button') as HTMLElement;
+        if (resetButton) resetButton.style.display = 'block';
+      }, 2000);
     });
   };
 
@@ -457,12 +366,6 @@
 
     // Show/hide button based on scroll position
     const updateButtonVisibility = () => {
-      // Don't show button during auto-scroll animation
-      if (isAutoScrolling) {
-        button.style.display = 'none';
-        return;
-      }
-
       // Track manual scroll event (only once, and only if not programmatic)
       if (!hasTrackedManualScroll && !isProgrammaticScroll) {
         hasTrackedManualScroll = true;

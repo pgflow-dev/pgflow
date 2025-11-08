@@ -20,6 +20,7 @@ editUrl: false
 import { Card, CardGrid, LinkCard, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import TestimonialCarousel from '../../components/TestimonialCarousel.astro';
 import CodeOverlay from '../../components/CodeOverlay.astro';
+import SlowScroll from '../../components/SlowScroll.astro';
 
 <div class="comparison-container">
 
@@ -422,7 +423,7 @@ Zero boilerplate required."
 
   .cta-card .sl-link-card {
     background: linear-gradient(135deg, color-mix(in srgb, var(--sl-color-accent-high) 6.4%, transparent) 0%, color-mix(in srgb, var(--sl-color-accent-high) 2.4%, transparent) 100%);
-    box-shadow: 0 0 40px color-mix(in srgb, var(--sl-color-accent-high) 5%, transparent), 0 4px 20px color-mix(in srgb, var(--sl-color-accent-high) 3%, transparent);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--sl-color-accent-high) 5%, transparent), 0 4px 12px color-mix(in srgb, var(--sl-color-accent-high) 3%, transparent);
     border: 1px solid color-mix(in srgb, var(--sl-color-accent-high) 16%, transparent);
     transition: all 0.3s ease;
     position: relative;
@@ -433,34 +434,11 @@ Zero boilerplate required."
     white-space: pre-line;
   }
 
-  .cta-card .sl-link-card::before {
-    content: '';
-    position: absolute;
-    top: 1px;
-    left: -100%;
-    right: 1px;
-    bottom: 1px;
-    width: calc(100% - 2px);
-    height: calc(100% - 2px);
-    background: linear-gradient(90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.004) 48%,
-      rgba(255, 255, 255, 0.008) 50%,
-      rgba(255, 255, 255, 0.004) 52%,
-      transparent 100%
-    );
-    transition: left 0.25s ease;
-    z-index: 1;
-  }
-
+  /* Removed continuous shine animation for better performance */
   .cta-card .sl-link-card:hover {
     background: linear-gradient(135deg, color-mix(in srgb, var(--sl-color-accent-high) 7.5%, transparent) 0%, color-mix(in srgb, var(--sl-color-accent-high) 3%, transparent) 100%);
-    box-shadow: 0 0 60px color-mix(in srgb, var(--sl-color-accent-high) 8%, transparent), 0 4px 30px color-mix(in srgb, var(--sl-color-accent-high) 5%, transparent);
-  }
-
-  .cta-card .sl-link-card:hover::before {
-    left: 100%;
-    transition: left 0.5s ease;
+    box-shadow: 0 0 30px color-mix(in srgb, var(--sl-color-accent-high) 8%, transparent), 0 4px 18px color-mix(in srgb, var(--sl-color-accent-high) 5%, transparent);
+    transform: translateY(-2px);
   }
 
   .quickstart-section {
@@ -818,6 +796,7 @@ Zero boilerplate required."
     overflow: hidden !important;
   }
 
+
   /* Mobile responsiveness for code blocks */
   @media (max-width: 768px) {
     /* Smaller font for code blocks on mobile */
@@ -850,3 +829,6 @@ Zero boilerplate required."
     }
   }
 `}</style>
+
+<SlowScroll />
+
