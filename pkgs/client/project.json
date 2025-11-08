@@ -58,18 +58,6 @@
       "executor": "@nx/eslint:lint",
       "inputs": ["default", "^production"]
     },
-    "supabase:ensure-started": {
-      "executor": "nx:run-commands",
-      "local": true,
-      "cache": false,
-      "options": {
-        "cwd": "{projectRoot}",
-        "commands": [
-          "supabase status || (echo \"Starting Supabase...\" && supabase start)"
-        ],
-        "parallel": false
-      }
-    },
     "supabase:start": {
       "executor": "nx:run-commands",
       "local": true,
@@ -137,10 +125,13 @@
     "db:ensure": {
       "executor": "nx:run-commands",
       "local": true,
-      "dependsOn": ["supabase:ensure-started", "supabase:prepare"],
+      "dependsOn": ["supabase:prepare"],
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["./scripts/ensure-db"],
+        "commands": [
+          "../../scripts/ensure-supabase.sh .",
+          "./scripts/ensure-db"
+        ],
         "parallel": false
       },
       "inputs": [
@@ -154,7 +145,7 @@
       "outputs": [
         "{projectRoot}/.nx-inputs/db-ready.txt"
       ],
-      "cache": true
+      "cache": false
     },
     "test:integration": {
       "executor": "nx:run-commands",
@@ -173,7 +164,7 @@
       "inputs": ["default", "^production"],
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["vitest run __tests__/ --exclude __tests__/integration/"],
+        "commands": ["vitest run __tests__ --exclude='**/integration/**'"],
         "parallel": false
       }
     },
@@ -191,7 +182,15 @@
     "test": {
       "executor": "nx:noop",
       "inputs": ["default", "^production"],
-      "dependsOn": ["test:vitest", "test:types"]
+      "dependsOn": ["test:unit", "test:types"]
+    },
+    "test:live": {
+      "executor": "nx:noop",
+      "inputs": ["default", "^production"],
+      "dependsOn": ["test:integration"],
+      "metadata": {
+        "description": "Tests requiring live infrastructure (Supabase)"
+      }
     },
     "benchmark": {
       "executor": "nx:run-commands",

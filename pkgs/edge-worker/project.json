@@ -45,7 +45,7 @@
       "local": true,
       "inputs": ["{projectRoot}/src/**/*.ts"],
       "options": {
-        "cwd": "pkgs/edge-worker",
+        "cwd": "{projectRoot}",
         "command": "npx eslint 'src/**/*.ts' --rule 'no-restricted-syntax: [\"error\", {\"selector\": \"TSModuleDeclaration[global=true]\", \"message\": \"JSR forbids global type augmentation (declare global). This will cause JSR publish to fail.\"}]'"
       }
     },
@@ -58,7 +58,7 @@
       "local": true,
       "cache": false,
       "options": {
-        "cwd": "pkgs/edge-worker",
+        "cwd": "{projectRoot}",
         "commands": ["supabase start"],
         "parallel": false
       }
@@ -68,7 +68,7 @@
       "local": true,
       "cache": false,
       "options": {
-        "cwd": "pkgs/edge-worker",
+        "cwd": "{projectRoot}",
         "commands": ["supabase stop --no-backup"],
         "parallel": false
       }
@@ -78,7 +78,7 @@
       "local": true,
       "cache": false,
       "options": {
-        "cwd": "pkgs/edge-worker",
+        "cwd": "{projectRoot}",
         "commands": ["supabase status"],
         "parallel": false
       }
@@ -88,7 +88,7 @@
       "local": true,
       "cache": false,
       "options": {
-        "cwd": "pkgs/edge-worker",
+        "cwd": "{projectRoot}",
         "commands": ["supabase stop --no-backup", "supabase start"],
         "parallel": false
       }
@@ -103,8 +103,9 @@
         "^production"
       ],
       "options": {
-        "cwd": "pkgs/edge-worker",
+        "cwd": "{projectRoot}",
         "commands": [
+          "../../scripts/ensure-supabase.sh .",
           "mkdir -p supabase/migrations/",
           "rm -f supabase/migrations/*.sql",
           "cp ../core/supabase/migrations/*.sql supabase/migrations/",
@@ -119,7 +120,7 @@
       "local": true,
       "cache": false,
       "options": {
-        "cwd": "pkgs/edge-worker",
+        "cwd": "{projectRoot}",
         "commands": [
           "supabase functions serve --env-file supabase/functions/.env --no-verify-jwt"
         ],
@@ -132,7 +133,7 @@
       "dependsOn": ["^verify-migrations", "^dump-realtime-schema"],
       "inputs": ["default", "^production", "{projectRoot}/scripts/ensure-db"],
       "options": {
-        "cwd": "pkgs/edge-worker",
+        "cwd": "{projectRoot}",
         "commands": ["./scripts/ensure-db"],
         "parallel": false
       }
@@ -143,7 +144,7 @@
       "local": true,
       "inputs": ["default", "^production"],
       "options": {
-        "cwd": "pkgs/edge-worker",
+        "cwd": "{projectRoot}",
         "commands": [
           "deno test --config deno.test.json --allow-all --env=supabase/functions/.env tests/unit/"
         ],
@@ -156,7 +157,7 @@
       "local": true,
       "inputs": ["default", "^production"],
       "options": {
-        "cwd": "pkgs/edge-worker",
+        "cwd": "{projectRoot}",
         "commands": [
           "deno test --config deno.test.json --allow-all --env=supabase/functions/.env tests/integration/"
         ],
@@ -169,7 +170,7 @@
       "local": true,
       "inputs": ["^production"],
       "options": {
-        "cwd": "pkgs/edge-worker",
+        "cwd": "{projectRoot}",
         "commands": ["./scripts/sync-e2e-deps.sh"],
         "parallel": false
       }
@@ -181,7 +182,7 @@
       "local": true,
       "cache": false,
       "options": {
-        "cwd": "pkgs/edge-worker",
+        "cwd": "{projectRoot}",
         "commands": [
           "supabase functions serve --env-file supabase/functions/.env --import-map supabase/functions/deno.json --no-verify-jwt"
         ],
@@ -190,12 +191,13 @@
     },
     "test:e2e": {
       "executor": "nx:run-commands",
-      "dependsOn": ["supabase:reset", "serve:functions:e2e"],
+      "dependsOn": ["supabase:reset", "sync-e2e-deps"],
       "local": true,
       "inputs": ["default", "^production"],
       "options": {
-        "cwd": "pkgs/edge-worker",
+        "cwd": "{projectRoot}",
         "commands": [
+          "../../scripts/ensure-supabase.sh .",
           "deno test --config deno.test.json --allow-all --env=supabase/functions/.env tests/e2e/"
         ],
         "parallel": false
@@ -203,7 +205,15 @@
     },
     "test": {
       "inputs": ["default", "^production"],
-      "dependsOn": ["test:types", "test:unit", "test:integration"]
+      "dependsOn": ["test:types"]
+    },
+    "test:live": {
+      "executor": "nx:noop",
+      "inputs": ["default", "^production"],
+      "dependsOn": ["test:unit", "test:integration", "test:e2e"],
+      "metadata": {
+        "description": "Tests requiring live infrastructure (Docker Compose + Supabase Edge Functions)"
+      }
     },
     "test:types": {
       "executor": "nx:run-commands",
