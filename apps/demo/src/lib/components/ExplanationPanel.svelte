@@ -376,9 +376,9 @@
 							</div>
 						</details>
 
-						<!-- Step-level view: 2-column on desktop, single column on mobile -->
-						<div class="grid md:grid-cols-2 grid-cols-1 gap-4 smooth-content-transition">
-							<!-- Left Column: Dependencies (auto-layout with wrap) -->
+						<!-- Step-level view: Single column stacked layout -->
+						<div class="space-y-4 smooth-content-transition">
+							<!-- Dependencies (auto-layout with wrap) -->
 							<div class="flex flex-wrap gap-3 smooth-content-transition">
 								<!-- Waits for (only show if has dependencies) -->
 								{#if currentStepInfo.dependsOn.length > 0}
@@ -443,42 +443,32 @@
 								{/if}
 							</div>
 
-							<!-- Right Column: Actual Runtime Data -->
-							<div class="space-y-3">
-								<!-- Actual Input -->
-								<div>
-									<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Input</div>
-									{#if highlightedInput}
-										<div class="input-type-box">
-											<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-											{@html highlightedInput}
-										</div>
-									{:else if flowState.status === 'idle'}
+							<!-- Actual Input -->
+							<div>
+								<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Input</div>
+								{#if highlightedInput}
+									<div class="input-type-box">
+										<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+										{@html highlightedInput}
+									</div>
+								{:else if flowState.status === 'idle'}
+									<div
+										class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
+									>
+										<Play class="w-3.5 h-3.5" />
+										<span>Run the workflow to see input</span>
+									</div>
+								{:else if currentStepInfo && currentStepInfo.dependsOn.length > 0}
+									{@const incompleteDeps = currentStepInfo.dependsOn.filter(
+										(dep) => getStepStatus(dep) !== 'completed'
+									)}
+									{#if incompleteDeps.length > 0}
 										<div
 											class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
 										>
-											<Play class="w-3.5 h-3.5" />
-											<span>Run the workflow to see input</span>
+											<Clock class="w-3.5 h-3.5" />
+											<span>Waiting for {incompleteDeps.join(', ')} to complete</span>
 										</div>
-									{:else if currentStepInfo && currentStepInfo.dependsOn.length > 0}
-										{@const incompleteDeps = currentStepInfo.dependsOn.filter(
-											(dep) => getStepStatus(dep) !== 'completed'
-										)}
-										{#if incompleteDeps.length > 0}
-											<div
-												class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
-											>
-												<Clock class="w-3.5 h-3.5" />
-												<span>Waiting for {incompleteDeps.join(', ')} to complete</span>
-											</div>
-										{:else}
-											<div
-												class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
-											>
-												<Clock class="w-3.5 h-3.5" />
-												<span>Waiting for step to start</span>
-											</div>
-										{/if}
 									{:else}
 										<div
 											class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
@@ -487,39 +477,46 @@
 											<span>Waiting for step to start</span>
 										</div>
 									{/if}
-								</div>
+								{:else}
+									<div
+										class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
+									>
+										<Clock class="w-3.5 h-3.5" />
+										<span>Waiting for step to start</span>
+									</div>
+								{/if}
+							</div>
 
-								<!-- Actual Output -->
-								<div>
-									<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Output</div>
-									{#if highlightedOutput}
-										<div class="output-box">
-											<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-											{@html highlightedOutput}
-										</div>
-									{:else if flowState.status === 'idle'}
-										<div
-											class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
-										>
-											<Play class="w-3.5 h-3.5" />
-											<span>Run the workflow to see output</span>
-										</div>
-									{:else if stepStatus === 'started'}
-										<div
-											class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
-										>
-											<Hourglass class="w-3.5 h-3.5" />
-											<span>Step is running...</span>
-										</div>
-									{:else}
-										<div
-											class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
-										>
-											<Clock class="w-3.5 h-3.5" />
-											<span>Waiting for step to complete</span>
-										</div>
-									{/if}
-								</div>
+							<!-- Actual Output -->
+							<div>
+								<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Output</div>
+								{#if highlightedOutput}
+									<div class="output-box">
+										<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+										{@html highlightedOutput}
+									</div>
+								{:else if flowState.status === 'idle'}
+									<div
+										class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
+									>
+										<Play class="w-3.5 h-3.5" />
+										<span>Run the workflow to see output</span>
+									</div>
+								{:else if stepStatus === 'started'}
+									<div
+										class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
+									>
+										<Hourglass class="w-3.5 h-3.5" />
+										<span>Step is running...</span>
+									</div>
+								{:else}
+									<div
+										class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
+									>
+										<Clock class="w-3.5 h-3.5" />
+										<span>Waiting for step to complete</span>
+									</div>
+								{/if}
 							</div>
 						</div>
 					</div>

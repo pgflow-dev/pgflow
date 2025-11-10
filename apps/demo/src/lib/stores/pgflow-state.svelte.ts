@@ -132,11 +132,11 @@ export function createFlowState<TFlow extends AnyFlow>(
 			const now = new SvelteDate();
 			const occurredAt =
 				event.status === 'started' && 'started_at' in event
-					? new Date(event.started_at)
+					? new SvelteDate(event.started_at)
 					: event.status === 'completed' && 'completed_at' in event
-						? new Date(event.completed_at)
+						? new SvelteDate(event.completed_at)
 						: event.status === 'failed' && 'failed_at' in event
-							? new Date(event.failed_at)
+							? new SvelteDate(event.failed_at)
 							: undefined;
 
 			// DEBUG: Log broadcast event
@@ -180,11 +180,11 @@ export function createFlowState<TFlow extends AnyFlow>(
 				const now = new SvelteDate();
 				const occurredAt =
 					event.status === 'started' && 'started_at' in event
-						? new Date(event.started_at)
+						? new SvelteDate(event.started_at)
 						: event.status === 'completed' && 'completed_at' in event
-							? new Date(event.completed_at)
+							? new SvelteDate(event.completed_at)
 							: event.status === 'failed' && 'failed_at' in event
-								? new Date(event.failed_at)
+								? new SvelteDate(event.failed_at)
 								: undefined;
 
 				// DEBUG: Log broadcast event
@@ -245,32 +245,32 @@ export function createFlowState<TFlow extends AnyFlow>(
 		return {
 			get status() {
 				// Track stateVersion for reactivity
-				stateVersion;
+				void stateVersion;
 				return run?.step(stepSlug).status || 'created';
 			},
 			get output() {
 				// Track stateVersion for reactivity
-				stateVersion;
+				void stateVersion;
 				return run?.step(stepSlug).output;
 			},
 			get error() {
 				// Track stateVersion for reactivity
-				stateVersion;
+				void stateVersion;
 				return run?.step(stepSlug).error_message;
 			},
 			get started_at() {
 				// Track stateVersion for reactivity
-				stateVersion;
+				void stateVersion;
 				return run?.step(stepSlug).started_at;
 			},
 			get completed_at() {
 				// Track stateVersion for reactivity
-				stateVersion;
+				void stateVersion;
 				return run?.step(stepSlug).completed_at;
 			},
 			get failed_at() {
 				// Track stateVersion for reactivity
-				stateVersion;
+				void stateVersion;
 				return run?.step(stepSlug).failed_at;
 			}
 		};

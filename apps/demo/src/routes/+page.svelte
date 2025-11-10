@@ -4,15 +4,15 @@
 	import { createFlowState } from '$lib/stores/pgflow-state.svelte';
 	import { pulseDots } from '$lib/stores/pulse-dots.svelte';
 	import DAGVisualization from '$lib/components/DAGVisualization.svelte';
-	import DebugPanel from '$lib/components/DebugPanel.svelte';
+	import EventsPanel from '$lib/components/EventsPanel.svelte';
 	import CodePanel from '$lib/components/CodePanel.svelte';
 	import ExplanationPanel from '$lib/components/ExplanationPanel.svelte';
 	import WelcomeModal from '$lib/components/WelcomeModal.svelte';
 	import PulseDot from '$lib/components/PulseDot.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
-	import { Play, CheckCircle2 } from '@lucide/svelte';
+	import { Card } from '$lib/components/ui/card';
+	import { Play, CheckCircle2, Code, GitBranch, Radio } from '@lucide/svelte';
 	import { codeToHtml } from 'shiki';
 	import type ArticleFlow from '../../supabase/functions/article_flow_worker/article_flow';
 
@@ -168,13 +168,6 @@
 
 	const isRunning = $derived(flowState.status === 'starting' || flowState.status === 'started');
 
-	// Event stream collapsed state
-	let eventStreamCollapsed = $state(false);
-
-	function toggleEventStream() {
-		eventStreamCollapsed = !eventStreamCollapsed;
-	}
-
 	// Mobile events panel state
 	let mobileEventsVisible = $state(false);
 	let mobileEventsContentVisible = $state(false); // Delayed for animation
@@ -263,10 +256,7 @@
 	}
 
 	// Helper to get event badge info
-	function getEventBadgeInfo(event: {
-		event_type: string;
-		step_slug?: string;
-	}): {
+	function getEventBadgeInfo(event: { event_type: string; step_slug?: string }): {
 		icon: typeof Play | typeof CheckCircle2;
 		color: string;
 		text: string;
@@ -294,7 +284,6 @@
 			.map((e, idx) => ({ event: e, badge: getEventBadgeInfo(e), idx }))
 			.filter((e) => e.badge !== null)
 	);
-
 
 	// Fix for mobile viewport height (address bar issue)
 	// Set actual viewport height as CSS custom property for browsers without dvh support
@@ -340,13 +329,13 @@
 		<div class="grid gap-0 min-h-0 flex-1 main-layout">
 			<!-- Header: Sticky across all breakpoints -->
 			<div
-				class="sticky top-0 z-50 bg-background border-b border-border flex items-center gap-2 md:gap-4 px-3 h-11"
+				class="sticky top-0 z-50 bg-background border-b border-border flex items-center gap-2 md:gap-4 px-3 h-10"
 				style="grid-area: header"
 			>
 				<!-- Logo + branding -->
 				<div class="flex items-center gap-2 md:gap-3">
 					<a href="https://pgflow.dev" class="flex items-center gap-1.5 md:gap-2">
-						<img src="/pgflow-logo-dark.svg" alt="pgflow" class="h-5 md:h-8" />
+						<img src="/pgflow-logo-dark.svg" alt="pgflow" class="h-5 md:h-6" />
 						<span class="text-xs md:text-sm font-semibold">pgflow</span>
 					</a>
 					<span class="text-muted-foreground text-xs">|</span>
@@ -360,10 +349,24 @@
 					>
 				</div>
 
-				<div class="flex-1"></div>
+				<!-- Center: Clear Selection button -->
+				{#if explanationVisible}
+					<div class="flex-1 flex items-center justify-center">
+						<Button
+							variant="outline"
+							size="sm"
+							onclick={clearSelection}
+							class="cursor-pointer hidden md:flex h-7 text-xs"
+						>
+							✕ Clear Selection
+						</Button>
+					</div>
+				{:else}
+					<div class="flex-1"></div>
+				{/if}
 
 				<!-- Desktop: URL input + buttons -->
-				<div class="hidden md:flex gap-2 flex-1 max-w-md ml-auto">
+				<div class="hidden md:flex items-center gap-2 flex-1">
 					<Input type="url" bind:value={url} placeholder="Enter article URL" class="flex-1" />
 					<Button
 						onclick={processArticle}
@@ -376,15 +379,6 @@
 						Process Article
 					</Button>
 				</div>
-				{#if explanationVisible}
-					<Button
-						variant="outline"
-						onclick={clearSelection}
-						class="ml-3 cursor-pointer hidden md:flex"
-					>
-						✕ Clear Selection
-					</Button>
-				{/if}
 
 				<!-- Mobile: Process button only (events now in sticky bottom bar) -->
 				<Button
@@ -402,81 +396,51 @@
 			<div class="overflow-hidden min-h-0" style="grid-area: code">
 				<CodePanel
 					{flowState}
-					selectedStep={explanationVisible ? null : selectedStep}
+					{selectedStep}
 					{hoveredStep}
 					on:step-selected={handleStepSelected}
 					on:step-hovered={handleStepHovered}
 				/>
 			</div>
 
-			<!-- Mobile: Code-to-DAG connector - REMOVED to save vertical space -->
-			<!-- Info is now in onboarding modal and explanation panels -->
-
-			<!-- Event Stream (collapsible) -->
-			{#if flowState.events.length > 0}
-				<div class="overflow-hidden max-h-[35vh] md:block hidden" style="grid-area: events">
-					<Card class={eventStreamCollapsed ? 'h-12' : 'h-full flex flex-col'}>
-						<CardHeader
-							class="pb-0 pt-3 flex-shrink-0 cursor-pointer hover:bg-accent/50 transition-colors relative"
-							onclick={toggleEventStream}
-						>
-							<PulseDot />
-							<div class="flex items-center justify-between">
-								<CardTitle class="text-sm">Event Stream</CardTitle>
-								<span class="text-xs text-muted-foreground">
-									{eventStreamCollapsed ? '▶' : '▼'} Click to {eventStreamCollapsed
-										? 'expand'
-										: 'collapse'}
-								</span>
-							</div>
-						</CardHeader>
-						{#if !eventStreamCollapsed}
-							<CardContent class="flex-1 overflow-auto py-2 min-h-0">
-								<DebugPanel
-									{flowState}
-									{selectedStep}
-									{hoveredStep}
-									on:step-selected={handleStepSelected}
-									on:step-hovered={handleStepHovered}
-								/>
-							</CardContent>
-						{/if}
-					</Card>
-				</div>
-			{/if}
-
-			<!-- Mobile: DAG only (explanation is overlay) | Desktop: DAG -->
-			<div class="overflow-hidden h-full" style="grid-area: dag">
-				<!-- Mobile: Always show DAG (with bottom padding for events bar) -->
-				<div class="md:hidden h-full flex flex-col pb-12">
-					<DAGVisualization
-						{flowState}
-						{selectedStep}
-						{hoveredStep}
-						on:step-selected={handleStepSelected}
-						on:step-hovered={handleStepHovered}
-					/>
-				</div>
-
-				<!-- Desktop: Always show DAG -->
-				<Card class="hidden md:block h-full p-0">
-					<CardContent class="p-2 h-full">
-						<div class="h-[300px]">
-							<DAGVisualization
-								{flowState}
-								{selectedStep}
-								{hoveredStep}
-								on:step-selected={handleStepSelected}
-								on:step-hovered={handleStepHovered}
-							/>
-						</div>
-					</CardContent>
-				</Card>
+			<!-- Mobile: DAG only (explanation is overlay) -->
+			<div class="md:hidden overflow-hidden h-full pb-12" style="grid-area: dag">
+				<DAGVisualization
+					{flowState}
+					{selectedStep}
+					{hoveredStep}
+					on:step-selected={handleStepSelected}
+					on:step-hovered={handleStepHovered}
+				/>
 			</div>
 
-			<!-- Desktop: Details Panel (Step Explanation or Welcome Guide) -->
-			<div class="overflow-auto min-h-0 hidden md:block" style="grid-area: details">
-				{#if explanationVisible}
+			<!-- Desktop: Right Column (DAG + Events stacked) -->
+			<div class="hidden md:flex flex-col gap-4 overflow-hidden" style="grid-area: right-column">
+				<!-- DAG -->
+				<Card class="flex p-0 flex-shrink-0 overflow-hidden" style="height: 240px;">
+					<div class="flex-1 dag-zoom-container">
+						<DAGVisualization
+							{flowState}
+							{selectedStep}
+							{hoveredStep}
+							on:step-selected={handleStepSelected}
+							on:step-hovered={handleStepHovered}
+						/>
+					</div>
+				</Card>
+
+				<!-- Events (grows to fill space) -->
+				<div class="flex-1 min-h-0 overflow-hidden">
+					<EventsPanel {flowState} />
+				</div>
+			</div>
+
+			<!-- Desktop: Explanation Panel (below code) -->
+			{#if explanationVisible}
+				<div
+					class="overflow-auto min-h-0 hidden md:block bg-card rounded-lg border border-border p-0"
+					style="grid-area: explanation"
+				>
 					<ExplanationPanel
 						{selectedStep}
 						{flowState}
@@ -485,86 +449,56 @@
 						on:step-selected={handleStepSelected}
 						on:step-hovered={handleStepHovered}
 					/>
-				{:else}
-					<Card class="h-full welcome-guide">
-						<CardHeader>
-							<CardTitle class="text-base">Welcome to pgflow Interactive Demo</CardTitle>
-						</CardHeader>
-						<CardContent class="space-y-4 text-sm">
-							<div>
-								<h3 class="font-semibold mb-2 flex items-center gap-2">
-									<span class="text-lg">🎯</span> What You'll See
-								</h3>
-								<p class="text-muted-foreground leading-relaxed">
-									A real article processing workflow that fetches content, runs AI summarization and
-									keyword extraction in parallel, then publishes results—all orchestrated by pgflow.
-								</p>
-							</div>
+				</div>
+			{:else}
+				<!-- Placeholder cheat sheet -->
+				<div
+					class="overflow-auto min-h-0 hidden md:flex flex-col items-center justify-center bg-card rounded-lg border border-border p-8 gap-6"
+					style="grid-area: explanation"
+				>
+					<div class="text-center max-w-2xl">
+						<h2 class="text-2xl font-bold mb-2 text-foreground">Interactive Flow Explorer</h2>
+						<p class="text-muted-foreground mb-8">
+							Click on any code block or DAG node to explore how steps work
+						</p>
+					</div>
 
+					<div class="grid grid-cols-3 gap-6 max-w-3xl">
+						<!-- Code interaction -->
+						<div class="flex flex-col items-center text-center gap-3">
+							<div class="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center">
+								<Code class="w-8 h-8 text-blue-400" />
+							</div>
 							<div>
-								<h3 class="font-semibold mb-2 flex items-center gap-2">
-									<span class="text-lg">🔍</span> How to Explore
-								</h3>
-								<div class="space-y-2 text-muted-foreground">
-									<div class="flex items-start gap-2">
-										<span
-											class="text-primary font-mono text-xs bg-secondary px-2 py-0.5 rounded mt-0.5"
-											>Click</span
-										>
-										<span>Steps in the code or DAG to see inputs, outputs, and dependencies</span>
-									</div>
-									<div class="flex items-start gap-2">
-										<span
-											class="text-primary font-mono text-xs bg-secondary px-2 py-0.5 rounded mt-0.5"
-											>Click</span
-										>
-										<span
-											>"new Flow" to understand retry configuration and reliability settings</span
-										>
-									</div>
-									<div class="flex items-start gap-2">
-										<span
-											class="text-primary font-mono text-xs bg-secondary px-2 py-0.5 rounded mt-0.5"
-											>Watch</span
-										>
-										<span>Event stream at bottom for real-time execution data</span>
-									</div>
-								</div>
+								<h3 class="font-semibold text-sm mb-1">Click Code</h3>
+								<p class="text-xs text-muted-foreground">Select a step to see its details</p>
 							</div>
+						</div>
 
+						<!-- DAG interaction -->
+						<div class="flex flex-col items-center text-center gap-3">
+							<div class="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
+								<GitBranch class="w-8 h-8 text-green-400" />
+							</div>
 							<div>
-								<h3 class="font-semibold mb-2 flex items-center gap-2">
-									<span class="text-lg">⚡</span> Why pgflow?
-								</h3>
-								<ul class="space-y-1.5 text-muted-foreground">
-									<li class="flex items-start gap-2">
-										<span class="text-primary">•</span>
-										<span>Dead-simple TypeScript DSL—no complex YAML or config files</span>
-									</li>
-									<li class="flex items-start gap-2">
-										<span class="text-primary">•</span>
-										<span>Built-in retry logic and error handling</span>
-									</li>
-									<li class="flex items-start gap-2">
-										<span class="text-primary">•</span>
-										<span>Real-time observability with streaming events</span>
-									</li>
-									<li class="flex items-start gap-2">
-										<span class="text-primary">•</span>
-										<span>Native Postgres/Supabase—no external orchestrators</span>
-									</li>
-								</ul>
+								<h3 class="font-semibold text-sm mb-1">Explore DAG</h3>
+								<p class="text-xs text-muted-foreground">Click nodes to see dependencies</p>
 							</div>
+						</div>
 
-							<div class="pt-2 border-t border-border">
-								<p class="text-muted-foreground text-xs text-center">
-									👆 Click any step in the code or DAG to get started
-								</p>
+						<!-- Watch execution -->
+						<div class="flex flex-col items-center text-center gap-3">
+							<div class="w-16 h-16 rounded-full bg-purple-500/20 flex items-center justify-center">
+								<Radio class="w-8 h-8 text-purple-400" />
 							</div>
-						</CardContent>
-					</Card>
-				{/if}
-			</div>
+							<div>
+								<h3 class="font-semibold text-sm mb-1">Watch Events</h3>
+								<p class="text-xs text-muted-foreground">Track execution in real-time</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			{/if}
 		</div>
 	</div>
 </div>
@@ -666,7 +600,7 @@
 			</div>
 			<div class="overflow-auto flex-1 py-2">
 				<div class="space-y-1.5 px-3">
-					{#each displayableEvents as { badge, event, idx }, i (idx)}
+					{#each displayableEvents as { badge, event, idx } (idx)}
 						{#if badge}
 							<button
 								onclick={() => toggleEventExpanded(idx, event)}
@@ -728,7 +662,7 @@
 	}
 
 	/* Mobile: Remove padding */
-	@media (max-width: 768px) {
+	@media (max-width: 767px) {
 		.page-container {
 			padding: 0;
 		}
@@ -748,35 +682,19 @@
 		}
 	}
 
-	/* CSS Grid Layout: Desktop (>1400px) - 2 columns */
+	/* CSS Grid Layout: Desktop (>=768px) - 2 columns */
 	.main-layout {
 		grid-template-areas:
-			'header  header'
-			'code    dag'
-			'code    details'
-			'events  details';
-		grid-template-columns: 1fr 520px;
-		grid-template-rows: auto 1fr auto auto;
+			'header       header'
+			'code         right-column'
+			'explanation  right-column';
+		grid-template-columns: 1fr 300px;
+		grid-template-rows: auto auto 1fr;
 		gap: 1rem;
 	}
 
-	/* Tablet (769px-1400px): Stack vertically */
-	@media (max-width: 1400px) and (min-width: 769px) {
-		.main-layout {
-			grid-template-areas:
-				'header'
-				'code'
-				'events'
-				'dag'
-				'details';
-			grid-template-columns: 1fr;
-			grid-template-rows: auto 500px auto auto 1fr;
-			gap: 1rem;
-		}
-	}
-
-	/* Mobile (<768px): Simplified layout */
-	@media (max-width: 768px) {
+	/* Mobile (<=767px): Simplified layout */
+	@media (max-width: 767px) {
 		.main-layout {
 			grid-template-areas:
 				'header'
@@ -790,27 +708,12 @@
 		/* DAG takes remaining space (1fr) */
 	}
 
-	/* Welcome guide card styling */
-	:global(.welcome-guide) {
-		overflow-y: auto;
-	}
-
-	:global(.welcome-guide h3) {
-		color: hsl(var(--foreground));
-	}
-
-	/* Contact banner using pgflow palette */
-	:global(.contact-banner) {
-		background: linear-gradient(135deg, #007b6e 0%, #9979d3 100%);
-	}
-
-	.banner-content {
-		width: 100%;
-		max-width: 1440px; /* Match page content max-width */
-	}
-
-	:global(.contact-banner:hover) {
-		background: linear-gradient(135deg, #00574d 0%, #7d5eb8 100%);
+	/* DAG zoom container - scale down for compact view */
+	.dag-zoom-container {
+		transform: scale(0.95);
+		transform-origin: center center;
+		display: flex;
+		flex: 1;
 	}
 
 	:global(.button-pulse) {
@@ -844,7 +747,7 @@
 	}
 
 	/* Mobile explanation panel - slides up from below viewport */
-	@media (max-width: 768px) {
+	@media (max-width: 767px) {
 		.mobile-explanation-panel {
 			transform: translateY(100%);
 			transition: transform 400ms cubic-bezier(0.4, 0, 0.2, 1);

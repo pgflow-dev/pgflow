@@ -44,6 +44,19 @@
 		return blocks;
 	});
 
+	// All code blocks (including flow_config) for pulse dot positioning
+	const allCodeBlocks = $derived.by(() => {
+		const blocks: Array<{ stepSlug: string; startLine: number; endLine: number }> = [];
+
+		for (const [stepSlug, section] of Object.entries(FLOW_SECTIONS)) {
+			if (section.startLine !== undefined && section.endLine !== undefined) {
+				blocks.push({ stepSlug, startLine: section.startLine, endLine: section.endLine });
+			}
+		}
+
+		return blocks;
+	});
+
 	// Helper to trim common leading whitespace from code
 	function trimLeadingWhitespace(code: string): string {
 		const lines = code.split('\n');
@@ -144,6 +157,12 @@
 		const mobile = isMobile;
 		const selected = selectedStep;
 
+		// Cleanup old handlers first
+		if (cleanupHandlers) {
+			cleanupHandlers();
+			cleanupHandlers = undefined;
+		}
+
 		// Setup handlers for full code view (desktop or mobile with no selection)
 		if (codeContainer && (!mobile || !selected || selected === 'flow_config')) {
 			setupClickHandlersDelayed();
@@ -151,13 +170,19 @@
 	});
 
 	function setupClickHandlers() {
-		if (!codeContainer) return;
+		if (!codeContainer) {
+			console.log('[CodePanel] setupClickHandlers: codeContainer not found');
+			return;
+		}
+
+		console.log('[CodePanel] Setting up click handlers');
 
 		// Store handlers for cleanup
 		const handlers: Array<{ element: Element; type: string; handler: EventListener }> = [];
 
 		// Find all line elements
 		const lines = codeContainer.querySelectorAll('.line');
+		console.log('[CodePanel] Found', lines.length, 'lines');
 		lines.forEach((line, index) => {
 			const lineNumber = index + 1;
 			const stepSlug = getStepFromLine(lineNumber);
@@ -170,7 +195,8 @@
 
 				// Click handler
 				const clickHandler = () => {
-					console.log('CodePanel: Line clicked, stepSlug:', stepSlug);
+					console.log('[CodePanel] Line clicked, stepSlug:', stepSlug);
+					console.log('[CodePanel] isMobile:', isMobile, 'selectedStep:', selectedStep);
 					// Clear hover state before navigating
 					dispatch('step-hovered', { stepSlug: null });
 
@@ -313,22 +339,46 @@
 			{#each stepBlocks as block (block.stepSlug)}
 				{@const stepStatus = getStepStatus(block.stepSlug)}
 				{#if stepStatus}
-					{@const blockHeight = (block.endLine - block.startLine + 1) * 1.5}
-					{@const blockTop = (block.startLine - 1) * 1.5}
-					{@const iconTop = blockTop + blockHeight / 2}
+					{@const lineHeightPx = 19.5}
+					{@const paddingTopPx = 12}
+					{@const numLines = block.endLine - block.startLine + 1}
+					{@const blockHeightPx = numLines * lineHeightPx}
+					{@const blockTopPx = (block.startLine - 1) * lineHeightPx + paddingTopPx}
+					{@const iconTopPx = blockTopPx + blockHeightPx / 2}
 					{@const isDimmed = selectedStep && block.stepSlug !== selectedStep}
 
-					<!-- Desktop: Icon badge -->
+					<!-- Tablet: Left border (like mobile) -->
 					<div
-						class="step-status-container hidden md:block"
+						class="step-status-border hidden md:block lg:hidden status-{stepStatus}"
+						class:status-dimmed={isDimmed}
+						style="top: {blockTopPx}px; height: {blockHeightPx}px;"
+					></div>
+
+					<!-- Desktop (large screens): Icon badge -->
+					<div
+						class="step-status-container hidden lg:block"
 						class:status-dimmed={isDimmed}
 						data-step={block.stepSlug}
 						data-start-line={block.startLine}
-						style="top: calc({iconTop}em + 12px);"
+						style="top: {iconTopPx}px;"
 					>
 						<StatusBadge status={stepStatus} variant="icon-only" size="xl" />
 					</div>
 				{/if}
+			{/each}
+
+			<!-- Pulse dots for all code blocks (including flow_config) -->
+			{#each allCodeBlocks as block (block.stepSlug)}
+				{@const lineHeightPx = 19.5}
+				{@const paddingTopPx = 12}
+				{@const numLines = block.endLine - block.startLine + 1}
+				{@const blockHeightPx = numLines * lineHeightPx}
+				{@const blockTopPx = (block.startLine - 1) * lineHeightPx + paddingTopPx}
+				{@const centerTopPx = blockTopPx + blockHeightPx / 2}
+
+				<div class="code-pulse-dot" style="top: {centerTopPx}px;">
+					<PulseDot />
+				</div>
 			{/each}
 		</div>
 	{/if}
@@ -371,7 +421,7 @@
 	}
 
 	/* Mobile: Smaller font, no border radius (touches edges) */
-	@media (max-width: 768px) {
+	@media (max-width: 767px) {
 		.code-panel {
 			font-size: 12px;
 			border-radius: 0;
@@ -437,7 +487,7 @@
 	}
 
 	/* Mobile: Smaller padding */
-	@media (max-width: 768px) {
+	@media (max-width: 767px) {
 		.code-panel :global(pre) {
 			padding: 16px 8px;
 		}
@@ -481,7 +531,7 @@
 	}
 
 	/* Mobile: Smaller line padding */
-	@media (max-width: 768px) {
+	@media (max-width: 767px) {
 		.code-panel :global(.line) {
 			padding: 0 8px;
 		}
@@ -534,7 +584,7 @@
 	}
 
 	/* Mobile: Smaller status icons, closer to edge */
-	@media (max-width: 768px) {
+	@media (max-width: 767px) {
 		.step-status-container {
 			right: 8px;
 			transform: translateY(-50%) scale(0.6);
@@ -544,6 +594,15 @@
 	/* Dimmed status icon (when another step is selected) */
 	.step-status-container.status-dimmed {
 		opacity: 0.4;
+	}
+
+	/* Pulse dot for code blocks */
+	.code-pulse-dot {
+		position: absolute;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		pointer-events: none;
+		z-index: 10;
 	}
 
 	/* Step status border (mobile - vertical bar) */
