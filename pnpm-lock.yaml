@@ -38,7 +38,13 @@ importers:
         version: 21.2.1(@babel/traverse@7.28.5)(nx@21.2.1)
       '@nx/next':
         specifier: 21.2.1
+<<<<<<< HEAD
         version: 21.2.1(@babel/core@7.28.5)(@babel/traverse@7.28.5)(@rspack/core@1.6.0(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@zkochan/js-yaml@0.0.7)(esbuild@0.19.12)(eslint@9.39.1(jiti@2.4.2))(lightningcss@1.30.2)(next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.93.3))(nx@21.2.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.8.3)(vue-template-compiler@2.7.16)(vue-tsc@1.8.27(typescript@5.8.3))(webpack@5.102.1(esbuild@0.19.12))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+        version: 21.2.1(@babel/core@7.28.5)(@babel/traverse@7.28.5)(@rspack/core@1.6.1(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@zkochan/js-yaml@0.0.7)(esbuild@0.19.12)(eslint@9.39.1(jiti@2.4.2))(next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.94.0))(nx@21.2.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.8.3)(vue-template-compiler@2.7.16)(vue-tsc@1.8.27(typescript@5.8.3))(webpack@5.102.1(esbuild@0.19.12))
+=======
+        version: 21.2.1(@babel/core@7.28.5)(@babel/traverse@7.28.5)(@rspack/core@1.6.1(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@zkochan/js-yaml@0.0.7)(esbuild@0.19.12)(eslint@9.39.1(jiti@2.4.2))(next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.93.3))(nx@21.2.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.8.3)(vue-template-compiler@2.7.16)(vue-tsc@1.8.27(typescript@5.8.3))(webpack@5.102.1(esbuild@0.19.12))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       '@nx/node':
         specifier: 21.2.1
         version: 21.2.1(@babel/traverse@7.28.5)(@types/node@18.16.20)(@zkochan/js-yaml@0.0.7)(babel-plugin-macros@3.1.0)(eslint@9.39.1(jiti@2.4.2))(nx@21.2.1)(ts-node@10.9.2(@types/node@18.16.20)(typescript@5.8.3))(typescript@5.8.3)
@@ -47,7 +53,13 @@ importers:
         version: 21.2.1(@babel/traverse@7.28.5)(@types/node@18.16.20)(@zkochan/js-yaml@0.0.7)(babel-plugin-macros@3.1.0)(eslint@9.39.1(jiti@2.4.2))(nx@21.2.1)(ts-node@10.9.2(@types/node@18.16.20)(typescript@5.8.3))(typescript@5.8.3)
       '@nx/vite':
         specifier: 21.2.1
+<<<<<<< HEAD
         version: 21.2.1(@babel/traverse@7.28.5)(nx@21.2.1)(typescript@5.8.3)(vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))(vitest@1.3.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+        version: 21.2.1(@babel/traverse@7.28.5)(nx@21.2.1)(typescript@5.8.3)(vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))(vitest@1.3.1)
+=======
+        version: 21.2.1(@babel/traverse@7.28.5)(nx@21.2.1)(typescript@5.8.3)(vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))(vitest@1.3.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       '@nx/web':
         specifier: 21.2.1
         version: 21.2.1(@babel/traverse@7.28.5)(nx@21.2.1)
@@ -101,15 +113,34 @@ importers:
         version: 8.34.1(eslint@9.39.1(jiti@2.4.2))(typescript@5.8.3)
       vite:
         specifier: 6.3.5
+<<<<<<< HEAD
         version: 6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+        version: 6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+=======
+        version: 6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       vite-plugin-dts:
         specifier: 4.5.4
+<<<<<<< HEAD
         version: 4.5.4(@types/node@18.16.20)(rollup@4.53.2)(typescript@5.8.3)(vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+        version: 4.5.4(@types/node@18.16.20)(rollup@4.53.2)(typescript@5.8.3)(vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))
+=======
+        version: 4.5.4(@types/node@18.16.20)(rollup@4.53.2)(typescript@5.8.3)(vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       vite-tsconfig-paths:
         specifier: ^5.1.4
+<<<<<<< HEAD
         version: 5.1.4(typescript@5.8.3)(vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+        version: 5.1.4(typescript@5.8.3)(vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))
+=======
+        version: 5.1.4(typescript@5.8.3)(vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       vitest:
         specifier: ^1.3.1
+<<<<<<< HEAD
         version: 1.3.1(@types/node@18.16.20)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)
 
   apps/demo:
@@ -217,6 +248,11 @@ importers:
       wrangler:
         specifier: ^4.20.3
         version: 4.46.0(@cloudflare/workers-types@4.20251109.0)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+        version: 1.3.1(@types/node@18.16.20)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)
+=======
+        version: 1.3.1(@types/node@18.16.20)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
 
   pkgs/cli:
     dependencies:
@@ -278,10 +314,22 @@ importers:
         version: 5.43.1
       vite-plugin-dts:
         specifier: ~3.8.1
+<<<<<<< HEAD
         version: 3.8.3(@types/node@22.19.0)(rollup@4.53.2)(typescript@5.9.3)(vite@7.2.2(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+        version: 3.8.3(@types/node@22.19.0)(rollup@4.53.2)(typescript@5.8.3)(vite@6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))
+=======
+        version: 3.8.3(@types/node@22.19.0)(rollup@4.53.2)(typescript@5.8.3)(vite@6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       vitest:
         specifier: 1.3.1
+<<<<<<< HEAD
         version: 1.3.1(@types/node@22.19.0)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+        version: 1.3.1(@types/node@22.19.0)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)
+=======
+        version: 1.3.1(@types/node@22.19.0)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
 
   pkgs/core:
     dependencies:
@@ -355,13 +403,31 @@ importers:
         version: 0.9.5(prettier-plugin-astro@0.14.1)(prettier@3.6.2)(typescript@5.9.3)
       '@astrojs/cloudflare':
         specifier: ^12.6.0
+<<<<<<< HEAD
         version: 12.6.10(@types/node@22.19.0)(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+        version: 12.6.10(@types/node@22.19.0)(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+=======
+        version: 12.6.10(@types/node@22.19.0)(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       '@astrojs/react':
         specifier: ^4.3.0
+<<<<<<< HEAD
         version: 4.4.2(@types/node@22.19.0)(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+        version: 4.4.2(@types/node@22.19.0)(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(jiti@2.4.2)(less@4.1.3)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+=======
+        version: 4.4.2(@types/node@22.19.0)(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(jiti@2.4.2)(less@4.1.3)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       '@astrojs/starlight':
         specifier: ^0.34.3
+<<<<<<< HEAD
         version: 0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+        version: 0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+=======
+        version: 0.34.8(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       '@supabase/supabase-js':
         specifier: ^2.56.0
         version: 2.81.0
@@ -373,10 +439,22 @@ importers:
         version: 19.2.2(@types/react@19.2.2)
       '@vercel/analytics':
         specifier: ^1.5.0
+<<<<<<< HEAD
         version: 1.5.0(@sveltejs/kit@2.48.4(@opentelemetry/api@1.8.0)(@sveltejs/vite-plugin-svelte@6.2.1(svelte@5.43.6)(vite@6.4.1(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)))(svelte@5.43.6)(vite@6.4.1(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)))(next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.94.0))(react@19.2.0)(svelte@5.43.6)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+        version: 1.5.0(next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.94.0))(react@19.2.0)
+=======
+        version: 1.5.0(next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.93.3))(react@19.2.0)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       astro:
         specifier: ^5.7.14
+<<<<<<< HEAD
         version: 5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+        version: 5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)
+=======
+        version: 5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       astro-robots-txt:
         specifier: ^1.0.0
         version: 1.0.0
@@ -391,19 +469,49 @@ importers:
         version: 0.33.5
       starlight-blog:
         specifier: ^0.24.0
+<<<<<<< HEAD
         version: 0.24.3(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)))(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+        version: 0.24.3(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)))(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+=======
+        version: 0.24.3(@astrojs/starlight@0.34.8(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)))(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       starlight-contextual-menu:
         specifier: ^0.1.5
+<<<<<<< HEAD
         version: 0.1.5(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))(starlight-markdown@0.1.5(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+        version: 0.1.5(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))(starlight-markdown@0.1.5(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)))
+=======
+        version: 0.1.5(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))(starlight-markdown@0.1.5(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       starlight-links-validator:
         specifier: ^0.14.3
+<<<<<<< HEAD
         version: 0.14.3(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+        version: 0.14.3(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)))
+=======
+        version: 0.14.3(@astrojs/starlight@0.34.8(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       starlight-llms-txt:
         specifier: ^0.4.1
+<<<<<<< HEAD
         version: 0.4.1(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)))(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+        version: 0.4.1(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)))(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+=======
+        version: 0.4.1(@astrojs/starlight@0.34.8(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)))(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       starlight-sidebar-topics:
         specifier: ^0.6.0
+<<<<<<< HEAD
         version: 0.6.2(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+        version: 0.6.2(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)))
+=======
+        version: 0.6.2(@astrojs/starlight@0.34.8(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       typescript:
         specifier: ^5.8.3
         version: 5.9.3
@@ -5164,20 +5272,20 @@ packages:
     resolution: {integrity: sha512-LOtTn+JgJvX8WfBVJtF08TGrdjuFzGJc4mkP8EdDI8ADbvO7kiexYep1o8dwnt0okb0jYclCDXF13xU7Ge4zSw==}
     engines: {node: '>=18.0.0'}
 
-  '@whatwg-node/fetch@0.10.13':
-    resolution: {integrity: sha512-b4PhJ+zYj4357zwk4TTuF2nEe0vVtOrwdsrNo5hL+u1ojXNhh1FgJ6pg1jzDlwlT4oBdzfSwaBwMCtFCsIWg8Q==}
+  '@whatwg-node/fetch@0.10.12':
+    resolution: {integrity: sha512-XmsCdDgQxbM8ha7xvIbDQyO/iES2ga0wQcM5sb+mugll1F+IzSshOMPK6n1TuqDDgjTwoU01mMa6oRhHWnpDcw==}
     engines: {node: '>=18.0.0'}
 
-  '@whatwg-node/node-fetch@0.8.4':
-    resolution: {integrity: sha512-AlKLc57loGoyYlrzDbejB9EeR+pfdJdGzbYnkEuZaGekFboBwzfVYVMsy88PMriqPI1ORpiGYGgSSWpx7a2sDA==}
+  '@whatwg-node/node-fetch@0.8.2':
+    resolution: {integrity: sha512-1PihEl0a8hm/AZD/LVRs1lEWCZCo2Q65Xm1goaHeqR314e+/Z7NI7YE10Yser8+2iZFGtv542IYr685o3aaZ/g==}
     engines: {node: '>=18.0.0'}
 
   '@whatwg-node/promise-helpers@1.3.2':
     resolution: {integrity: sha512-Nst5JdK47VIl9UcGwtv2Rcgyn5lWtZ0/mhRQ4G8NN2isxpq2TO30iqHzmwoJycjWuyUfg3GFXqP/gFHXeV57IA==}
     engines: {node: '>=16.0.0'}
 
-  '@whatwg-node/server@0.10.17':
-    resolution: {integrity: sha512-QxI+HQfJeI/UscFNCTcSri6nrHP25mtyAMbhEri7W2ctdb3EsorPuJz7IovSgNjvKVs73dg9Fmayewx1O2xOxA==}
+  '@whatwg-node/server@0.10.15':
+    resolution: {integrity: sha512-/BqffJYRIbX1HfNUZkPvtiSloC3QCvxAYC82g0uo3ruiJ44GOiCGH1q/XWF0/l5tWBvFsgX5VBA8l7IhQkCNfA==}
     engines: {node: '>=18.0.0'}
 
   '@withgraphite/graphite-cli@1.7.6':
@@ -5489,8 +5597,8 @@ packages:
   astro-robots-txt@1.0.0:
     resolution: {integrity: sha512-6JQSLid4gMhoWjOm85UHLkgrw0+hHIjnJVIUqxjU2D6feKlVyYukMNYjH44ZDZBK1P8hNxd33PgWlHzCASvedA==}
 
-  astro@5.15.5:
-    resolution: {integrity: sha512-A56u4H6gFHEb0yRHcGTOADBb7jmEwfDjQpkqVV/Z+ZWlu6mYuwCrIcOUtZjNno0chrRKmOeZWDofW23ql18y3w==}
+  astro@5.15.4:
+    resolution: {integrity: sha512-0g/68hLHEJZF2nYUcZM5O0kOnzCsCIf8eA9+0jfBAxp4ycujrIHRgIOdZCFKL9GoTsn8AypWbziypH5aEIF+aA==}
     engines: {node: 18.20.8 || ^20.3.0 || >=22.0.0, npm: '>=9.6.5', pnpm: '>=7.1.0'}
     hasBin: true
 
@@ -5721,11 +5829,17 @@ packages:
 
   browserslist@4.27.0:
     resolution: {integrity: sha512-AXVQwdhot1eqLihwasPElhX2tAZiBjWdJ9i/Zcj2S6QYIjkx62OKSfnobkriB81C3l4w0rVy3Nt4jaTBltYEpw==}
+<<<<<<< HEAD
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
     hasBin: true
 
   browserslist@4.28.0:
     resolution: {integrity: sha512-tbydkR/CxfMwelN0vwdP/pLkDwyAASZ+VfWm4EOwlB6SWhx1sYnWLqo8N5j0rAzPfzfRaxt0mM/4wPU/Su84RQ==}
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  browserslist@4.28.0:
+    resolution: {integrity: sha512-tbydkR/CxfMwelN0vwdP/pLkDwyAASZ+VfWm4EOwlB6SWhx1sYnWLqo8N5j0rAzPfzfRaxt0mM/4wPU/Su84RQ==}
+=======
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
     hasBin: true
 
@@ -10640,11 +10754,6 @@ packages:
     engines: {node: '>=14.0.0'}
     hasBin: true
 
-  sass@1.94.0:
-    resolution: {integrity: sha512-Dqh7SiYcaFtdv5Wvku6QgS5IGPm281L+ZtVD1U2FJa7Q0EFRlq8Z3sjYtz6gYObsYThUOz9ArwFqPZx+1azILQ==}
-    engines: {node: '>=14.0.0'}
-    hasBin: true
-
   sax@1.4.3:
     resolution: {integrity: sha512-yqYn1JhPczigF94DMS+shiDMjDowYO6y9+wB/4WgO0Y19jWYk0lQ4tuG5KI7kj4FTp1wxPj5IFfcrz/s1c3jjQ==}
 
@@ -12594,15 +12703,37 @@ snapshots:
       - prettier
       - prettier-plugin-astro
 
+<<<<<<< HEAD
   '@astrojs/cloudflare@12.6.10(@types/node@22.19.0)(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)':
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  '@astrojs/cloudflare@12.6.10(@types/node@22.19.0)(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)':
+=======
+  '@astrojs/cloudflare@12.6.10(@types/node@22.19.0)(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)':
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       '@astrojs/internal-helpers': 0.7.4
       '@astrojs/underscore-redirects': 1.0.0
+<<<<<<< HEAD
       '@cloudflare/workers-types': 4.20251014.0
       astro: 5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      '@cloudflare/workers-types': 4.20251109.0
+      astro: 5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)
+=======
+      '@cloudflare/workers-types': 4.20251109.0
+      astro: 5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       tinyglobby: 0.2.15
+<<<<<<< HEAD
       vite: 6.4.1(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
       wrangler: 4.41.0(@cloudflare/workers-types@4.20251014.0)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      vite: 6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+      wrangler: 4.41.0(@cloudflare/workers-types@4.20251109.0)
+=======
+      vite: 6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+      wrangler: 4.41.0(@cloudflare/workers-types@4.20251109.0)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     transitivePeerDependencies:
       - '@types/node'
       - bufferutil
@@ -12674,12 +12805,24 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+<<<<<<< HEAD
   '@astrojs/mdx@4.3.9(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))':
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  '@astrojs/mdx@4.3.10(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))':
+=======
+  '@astrojs/mdx@4.3.10(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))':
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       '@astrojs/markdown-remark': 6.3.8
       '@mdx-js/mdx': 3.1.1
       acorn: 8.15.0
+<<<<<<< HEAD
       astro: 5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      astro: 5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)
+=======
+      astro: 5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       es-module-lexer: 1.7.0
       estree-util-visit: 2.0.0
       hast-util-to-html: 9.0.5
@@ -12697,15 +12840,33 @@ snapshots:
     dependencies:
       prismjs: 1.30.0
 
+<<<<<<< HEAD
   '@astrojs/react@4.4.2(@types/node@22.19.0)(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)':
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  '@astrojs/react@4.4.2(@types/node@22.19.0)(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(jiti@2.4.2)(less@4.1.3)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)':
+=======
+  '@astrojs/react@4.4.2(@types/node@22.19.0)(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(jiti@2.4.2)(less@4.1.3)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)':
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       '@types/react': 19.2.2
       '@types/react-dom': 19.2.2(@types/react@19.2.2)
+<<<<<<< HEAD
       '@vitejs/plugin-react': 4.7.0(vite@6.4.1(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      '@vitejs/plugin-react': 4.7.0(vite@6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))
+=======
+      '@vitejs/plugin-react': 4.7.0(vite@6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
       ultrahtml: 1.6.0
+<<<<<<< HEAD
       vite: 6.4.1(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      vite: 6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+=======
+      vite: 6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -12731,17 +12892,37 @@ snapshots:
       stream-replace-string: 2.0.0
       zod: 3.25.76
 
+<<<<<<< HEAD
   '@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))':
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  '@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))':
+=======
+  '@astrojs/starlight@0.34.8(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))':
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       '@astrojs/markdown-remark': 6.3.8
+<<<<<<< HEAD
       '@astrojs/mdx': 4.3.9(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      '@astrojs/mdx': 4.3.10(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+=======
+      '@astrojs/mdx': 4.3.10(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       '@astrojs/sitemap': 3.6.0
       '@pagefind/default-ui': 1.4.0
       '@types/hast': 3.0.4
       '@types/js-yaml': 4.0.9
       '@types/mdast': 4.0.4
+<<<<<<< HEAD
       astro: 5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)
       astro-expressive-code: 0.41.3(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      astro: 5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)
+      astro-expressive-code: 0.41.3(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+=======
+      astro: 5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)
+      astro-expressive-code: 0.41.3(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       bcp-47: 2.1.0
       hast-util-from-html: 2.0.3
       hast-util-select: 6.0.4
@@ -12845,7 +13026,7 @@ snapshots:
     dependencies:
       '@babel/compat-data': 7.28.5
       '@babel/helper-validator-option': 7.27.1
-      browserslist: 4.28.0
+      browserslist: 4.27.0
       lru-cache: 5.1.1
       semver: 6.3.1
 
@@ -15377,7 +15558,13 @@ snapshots:
       - utf-8-validate
       - vue-tsc
 
+<<<<<<< HEAD
   '@module-federation/node@2.7.21(@rspack/core@1.6.0(@swc/helpers@0.5.17))(next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.93.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.8.3)(vue-tsc@1.8.27(typescript@5.8.3))(webpack@5.102.1(esbuild@0.19.12))':
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  '@module-federation/node@2.7.22(@rspack/core@1.6.1(@swc/helpers@0.5.17))(next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.94.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.8.3)(vue-tsc@1.8.27(typescript@5.8.3))(webpack@5.102.1(esbuild@0.19.12))':
+=======
+  '@module-federation/node@2.7.22(@rspack/core@1.6.1(@swc/helpers@0.5.17))(next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.93.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.8.3)(vue-tsc@1.8.27(typescript@5.8.3))(webpack@5.102.1(esbuild@0.19.12))':
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       '@module-federation/enhanced': 0.21.2(@rspack/core@1.6.0(@swc/helpers@0.5.17))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.8.3)(vue-tsc@1.8.27(typescript@5.8.3))(webpack@5.102.1(esbuild@0.19.12))
       '@module-federation/runtime': 0.21.2
@@ -15644,7 +15831,7 @@ snapshots:
 
   '@netlify/dev-utils@4.1.0':
     dependencies:
-      '@whatwg-node/server': 0.10.17
+      '@whatwg-node/server': 0.10.15
       ansis: 4.2.0
       chokidar: 4.0.3
       decache: 4.6.2
@@ -16183,8 +16370,16 @@ snapshots:
 
   '@nx/module-federation@21.2.1(@babel/traverse@7.28.5)(@swc/helpers@0.5.17)(esbuild@0.19.12)(next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.93.3))(nx@21.2.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.8.3)(vue-tsc@1.8.27(typescript@5.8.3))':
     dependencies:
+<<<<<<< HEAD
       '@module-federation/enhanced': 0.9.1(@rspack/core@1.6.0(@swc/helpers@0.5.17))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.8.3)(vue-tsc@1.8.27(typescript@5.8.3))(webpack@5.102.1(esbuild@0.19.12))
       '@module-federation/node': 2.7.21(@rspack/core@1.6.0(@swc/helpers@0.5.17))(next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.93.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.8.3)(vue-tsc@1.8.27(typescript@5.8.3))(webpack@5.102.1(esbuild@0.19.12))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      '@module-federation/enhanced': 0.9.1(@rspack/core@1.6.1(@swc/helpers@0.5.17))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.8.3)(vue-tsc@1.8.27(typescript@5.8.3))(webpack@5.102.1(esbuild@0.19.12))
+      '@module-federation/node': 2.7.22(@rspack/core@1.6.1(@swc/helpers@0.5.17))(next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.94.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.8.3)(vue-tsc@1.8.27(typescript@5.8.3))(webpack@5.102.1(esbuild@0.19.12))
+=======
+      '@module-federation/enhanced': 0.9.1(@rspack/core@1.6.1(@swc/helpers@0.5.17))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.8.3)(vue-tsc@1.8.27(typescript@5.8.3))(webpack@5.102.1(esbuild@0.19.12))
+      '@module-federation/node': 2.7.22(@rspack/core@1.6.1(@swc/helpers@0.5.17))(next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.93.3))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.8.3)(vue-tsc@1.8.27(typescript@5.8.3))(webpack@5.102.1(esbuild@0.19.12))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       '@module-federation/sdk': 0.9.1
       '@nx/devkit': 21.2.1(nx@21.2.1)
       '@nx/js': 21.2.1(@babel/traverse@7.28.5)(nx@21.2.1)
@@ -16215,7 +16410,13 @@ snapshots:
       - vue-tsc
       - webpack-cli
 
+<<<<<<< HEAD
   '@nx/next@21.2.1(@babel/core@7.28.5)(@babel/traverse@7.28.5)(@rspack/core@1.6.0(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@zkochan/js-yaml@0.0.7)(esbuild@0.19.12)(eslint@9.39.1(jiti@2.4.2))(lightningcss@1.30.2)(next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.93.3))(nx@21.2.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.8.3)(vue-template-compiler@2.7.16)(vue-tsc@1.8.27(typescript@5.8.3))(webpack@5.102.1(esbuild@0.19.12))':
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  '@nx/next@21.2.1(@babel/core@7.28.5)(@babel/traverse@7.28.5)(@rspack/core@1.6.1(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@zkochan/js-yaml@0.0.7)(esbuild@0.19.12)(eslint@9.39.1(jiti@2.4.2))(next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.94.0))(nx@21.2.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.8.3)(vue-template-compiler@2.7.16)(vue-tsc@1.8.27(typescript@5.8.3))(webpack@5.102.1(esbuild@0.19.12))':
+=======
+  '@nx/next@21.2.1(@babel/core@7.28.5)(@babel/traverse@7.28.5)(@rspack/core@1.6.1(@swc/helpers@0.5.17))(@swc/helpers@0.5.17)(@zkochan/js-yaml@0.0.7)(esbuild@0.19.12)(eslint@9.39.1(jiti@2.4.2))(next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.93.3))(nx@21.2.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.8.3)(vue-template-compiler@2.7.16)(vue-tsc@1.8.27(typescript@5.8.3))(webpack@5.102.1(esbuild@0.19.12))':
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       '@babel/plugin-proposal-decorators': 7.28.0(@babel/core@7.28.5)
       '@nx/devkit': 21.2.1(nx@21.2.1)
@@ -16412,7 +16613,13 @@ snapshots:
       - webpack
       - webpack-cli
 
+<<<<<<< HEAD
   '@nx/vite@21.2.1(@babel/traverse@7.28.5)(nx@21.2.1)(typescript@5.8.3)(vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))(vitest@1.3.1)':
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  '@nx/vite@21.2.1(@babel/traverse@7.28.5)(nx@21.2.1)(typescript@5.8.3)(vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))(vitest@1.3.1)':
+=======
+  '@nx/vite@21.2.1(@babel/traverse@7.28.5)(nx@21.2.1)(typescript@5.8.3)(vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))(vitest@1.3.1)':
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       '@nx/devkit': 21.2.1(nx@21.2.1)
       '@nx/js': 21.2.1(@babel/traverse@7.28.5)(nx@21.2.1)
@@ -16423,8 +16630,16 @@ snapshots:
       picomatch: 4.0.2
       semver: 7.7.3
       tsconfig-paths: 4.2.0
+<<<<<<< HEAD
       vite: 6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
       vitest: 1.3.1(@types/node@18.16.20)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      vite: 6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+      vitest: 1.3.1(@types/node@18.16.20)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)
+=======
+      vite: 6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+      vitest: 1.3.1(@types/node@18.16.20)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     transitivePeerDependencies:
       - '@babel/traverse'
       - '@swc-node/register'
@@ -16479,7 +16694,13 @@ snapshots:
       rxjs: 7.8.2
       sass: 1.93.3
       sass-embedded: 1.93.3
+<<<<<<< HEAD
       sass-loader: 16.0.6(@rspack/core@1.6.0(@swc/helpers@0.5.17))(sass-embedded@1.93.3)(sass@1.93.3)(webpack@5.99.9(esbuild@0.19.12))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      sass-loader: 16.0.6(@rspack/core@1.6.1(@swc/helpers@0.5.17))(sass-embedded@1.93.3)(sass@1.94.0)(webpack@5.99.9(esbuild@0.19.12))
+=======
+      sass-loader: 16.0.6(@rspack/core@1.6.1(@swc/helpers@0.5.17))(sass-embedded@1.93.3)(sass@1.93.3)(webpack@5.99.9(esbuild@0.19.12))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       source-map-loader: 5.0.0(webpack@5.99.9(esbuild@0.19.12))
       style-loader: 3.3.4(webpack@5.99.9(esbuild@0.19.12))
       stylus: 0.64.0
@@ -17996,10 +18217,22 @@ snapshots:
 
   '@ungap/structured-clone@1.3.0': {}
 
+<<<<<<< HEAD
   '@vercel/analytics@1.5.0(@sveltejs/kit@2.48.4(@opentelemetry/api@1.8.0)(@sveltejs/vite-plugin-svelte@6.2.1(svelte@5.43.6)(vite@6.4.1(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)))(svelte@5.43.6)(vite@6.4.1(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)))(next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.94.0))(react@19.2.0)(svelte@5.43.6)':
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  '@vercel/analytics@1.5.0(next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.94.0))(react@19.2.0)':
+=======
+  '@vercel/analytics@1.5.0(next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.93.3))(react@19.2.0)':
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     optionalDependencies:
+<<<<<<< HEAD
       '@sveltejs/kit': 2.48.4(@opentelemetry/api@1.8.0)(@sveltejs/vite-plugin-svelte@6.2.1(svelte@5.43.6)(vite@6.4.1(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)))(svelte@5.43.6)(vite@6.4.1(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))
       next: 15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.94.0)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      next: 15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.94.0)
+=======
+      next: 15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.93.3)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       react: 19.2.0
       svelte: 5.43.6
 
@@ -18022,7 +18255,13 @@ snapshots:
       - rollup
       - supports-color
 
+<<<<<<< HEAD
   '@vitejs/plugin-react@4.7.0(vite@6.4.1(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))':
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  '@vitejs/plugin-react@4.7.0(vite@6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))':
+=======
+  '@vitejs/plugin-react@4.7.0(vite@6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))':
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       '@babel/core': 7.28.5
       '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.28.5)
@@ -18030,7 +18269,13 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-beta.27
       '@types/babel__core': 7.20.5
       react-refresh: 0.17.0
+<<<<<<< HEAD
       vite: 6.4.1(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      vite: 6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+=======
+      vite: 6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     transitivePeerDependencies:
       - supports-color
 
@@ -18049,7 +18294,13 @@ snapshots:
       std-env: 3.10.0
       strip-literal: 2.1.1
       test-exclude: 6.0.0
+<<<<<<< HEAD
       vitest: 1.3.1(@types/node@18.16.20)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      vitest: 1.3.1(@types/node@18.16.20)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)
+=======
+      vitest: 1.3.1(@types/node@18.16.20)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     transitivePeerDependencies:
       - supports-color
 
@@ -18084,7 +18335,13 @@ snapshots:
       pathe: 1.1.2
       picocolors: 1.1.1
       sirv: 2.0.4
+<<<<<<< HEAD
       vitest: 1.3.1(@types/node@18.16.20)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      vitest: 1.3.1(@types/node@18.16.20)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)
+=======
+      vitest: 1.3.1(@types/node@18.16.20)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
 
   '@vitest/utils@1.3.1':
     dependencies:
@@ -18323,12 +18580,12 @@ snapshots:
       '@whatwg-node/promise-helpers': 1.3.2
       tslib: 2.8.1
 
-  '@whatwg-node/fetch@0.10.13':
+  '@whatwg-node/fetch@0.10.12':
     dependencies:
-      '@whatwg-node/node-fetch': 0.8.4
+      '@whatwg-node/node-fetch': 0.8.2
       urlpattern-polyfill: 10.1.0
 
-  '@whatwg-node/node-fetch@0.8.4':
+  '@whatwg-node/node-fetch@0.8.2':
     dependencies:
       '@fastify/busboy': 3.2.0
       '@whatwg-node/disposablestack': 0.0.6
@@ -18339,11 +18596,11 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@whatwg-node/server@0.10.17':
+  '@whatwg-node/server@0.10.15':
     dependencies:
       '@envelop/instrumentation': 1.0.0
       '@whatwg-node/disposablestack': 0.0.6
-      '@whatwg-node/fetch': 0.10.13
+      '@whatwg-node/fetch': 0.10.12
       '@whatwg-node/promise-helpers': 1.3.2
       tslib: 2.8.1
 
@@ -18665,9 +18922,21 @@ snapshots:
 
   astring@1.9.0: {}
 
+<<<<<<< HEAD
   astro-expressive-code@0.41.3(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  astro-expressive-code@0.41.3(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)):
+=======
+  astro-expressive-code@0.41.3(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
+<<<<<<< HEAD
       astro: 5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      astro: 5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)
+=======
+      astro: 5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       rehype-expressive-code: 0.41.3
 
   astro-remote@0.3.4:
@@ -18683,7 +18952,13 @@ snapshots:
       valid-filename: 4.0.0
       zod: 3.25.76
 
+<<<<<<< HEAD
   astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1):
+=======
+  astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       '@astrojs/compiler': 2.13.0
       '@astrojs/internal-helpers': 0.7.4
@@ -18739,8 +19014,16 @@ snapshots:
       unist-util-visit: 5.0.0
       unstorage: 1.17.2(@netlify/blobs@10.0.7)
       vfile: 6.0.3
+<<<<<<< HEAD
       vite: 6.4.1(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
       vitefu: 1.1.1(vite@6.4.1(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      vite: 6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+      vitefu: 1.1.1(vite@6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))
+=======
+      vite: 6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+      vitefu: 1.1.1(vite@6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       xxhash-wasm: 1.1.0
       yargs-parser: 21.1.1
       yocto-spinner: 0.2.3
@@ -18801,7 +19084,7 @@ snapshots:
 
   autoprefixer@10.4.20(postcss@8.4.49):
     dependencies:
-      browserslist: 4.28.0
+      browserslist: 4.27.0
       caniuse-lite: 1.0.30001754
       fraction.js: 4.3.7
       normalize-range: 0.1.2
@@ -19080,6 +19363,7 @@ snapshots:
       base64-js: 1.5.1
 
   browserslist@4.27.0:
+<<<<<<< HEAD
     dependencies:
       baseline-browser-mapping: 2.8.22
       caniuse-lite: 1.0.30001752
@@ -19088,12 +19372,16 @@ snapshots:
       update-browserslist-db: 1.1.4(browserslist@4.27.0)
 
   browserslist@4.28.0:
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  browserslist@4.28.0:
+=======
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       baseline-browser-mapping: 2.8.25
       caniuse-lite: 1.0.30001754
       electron-to-chromium: 1.5.249
       node-releases: 2.0.27
-      update-browserslist-db: 1.1.4(browserslist@4.28.0)
+      update-browserslist-db: 1.1.4(browserslist@4.27.0)
 
   bser@2.1.1:
     dependencies:
@@ -19176,7 +19464,7 @@ snapshots:
 
   caniuse-api@3.0.0:
     dependencies:
-      browserslist: 4.28.0
+      browserslist: 4.27.0
       caniuse-lite: 1.0.30001754
       lodash.memoize: 4.1.2
       lodash.uniq: 4.5.0
@@ -19507,7 +19795,7 @@ snapshots:
 
   core-js-compat@3.46.0:
     dependencies:
-      browserslist: 4.28.0
+      browserslist: 4.27.0
 
   core-util-is@1.0.3: {}
 
@@ -19634,7 +19922,7 @@ snapshots:
 
   cssnano-preset-default@6.1.2(postcss@8.4.49):
     dependencies:
-      browserslist: 4.28.0
+      browserslist: 4.27.0
       css-declaration-sorter: 7.3.0(postcss@8.4.49)
       cssnano-utils: 4.0.2(postcss@8.4.49)
       postcss: 8.4.49
@@ -23576,6 +23864,7 @@ snapshots:
   netlify-redirector@0.5.0: {}
 
   next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.93.3):
+<<<<<<< HEAD
     dependencies:
       '@next/env': 15.0.3
       '@swc/counter': 0.1.3
@@ -23603,6 +23892,10 @@ snapshots:
       - babel-plugin-macros
 
   next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.94.0):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  next@15.0.3(@babel/core@7.28.5)(@opentelemetry/api@1.8.0)(babel-plugin-macros@3.1.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(sass@1.94.0):
+=======
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       '@next/env': 15.0.3
       '@swc/counter': 0.1.3
@@ -23623,7 +23916,7 @@ snapshots:
       '@next/swc-win32-arm64-msvc': 15.0.3
       '@next/swc-win32-x64-msvc': 15.0.3
       '@opentelemetry/api': 1.8.0
-      sass: 1.94.0
+      sass: 1.93.3
       sharp: 0.33.5
     transitivePeerDependencies:
       - '@babel/core'
@@ -24233,7 +24526,7 @@ snapshots:
 
   postcss-colormin@6.1.0(postcss@8.4.49):
     dependencies:
-      browserslist: 4.28.0
+      browserslist: 4.27.0
       caniuse-api: 3.0.0
       colord: 2.9.3
       postcss: 8.4.49
@@ -24241,7 +24534,7 @@ snapshots:
 
   postcss-convert-values@6.1.0(postcss@8.4.49):
     dependencies:
-      browserslist: 4.28.0
+      browserslist: 4.27.0
       postcss: 8.4.49
       postcss-value-parser: 4.2.0
 
@@ -24292,7 +24585,7 @@ snapshots:
 
   postcss-merge-rules@6.1.1(postcss@8.4.49):
     dependencies:
-      browserslist: 4.28.0
+      browserslist: 4.27.0
       caniuse-api: 3.0.0
       cssnano-utils: 4.0.2(postcss@8.4.49)
       postcss: 8.4.49
@@ -24312,7 +24605,7 @@ snapshots:
 
   postcss-minify-params@6.1.0(postcss@8.4.49):
     dependencies:
-      browserslist: 4.28.0
+      browserslist: 4.27.0
       cssnano-utils: 4.0.2(postcss@8.4.49)
       postcss: 8.4.49
       postcss-value-parser: 4.2.0
@@ -24379,7 +24672,7 @@ snapshots:
 
   postcss-normalize-unicode@6.1.0(postcss@8.4.49):
     dependencies:
-      browserslist: 4.28.0
+      browserslist: 4.27.0
       postcss: 8.4.49
       postcss-value-parser: 4.2.0
 
@@ -24401,7 +24694,7 @@ snapshots:
 
   postcss-reduce-initial@6.1.0(postcss@8.4.49):
     dependencies:
-      browserslist: 4.28.0
+      browserslist: 4.27.0
       caniuse-api: 3.0.0
       postcss: 8.4.49
 
@@ -25195,11 +25488,24 @@ snapshots:
     dependencies:
       suf-log: 2.5.3
 
+<<<<<<< HEAD
   sass-loader@16.0.6(@rspack/core@1.6.0(@swc/helpers@0.5.17))(sass-embedded@1.93.3)(sass@1.93.3)(webpack@5.99.9(esbuild@0.19.12)):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  sass-loader@16.0.6(@rspack/core@1.6.1(@swc/helpers@0.5.17))(sass-embedded@1.93.3)(sass@1.94.0)(webpack@5.99.9(esbuild@0.19.12)):
+=======
+  sass-loader@16.0.6(@rspack/core@1.6.1(@swc/helpers@0.5.17))(sass-embedded@1.93.3)(sass@1.93.3)(webpack@5.99.9(esbuild@0.19.12)):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       neo-async: 2.6.2
     optionalDependencies:
+<<<<<<< HEAD
       '@rspack/core': 1.6.0(@swc/helpers@0.5.17)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      '@rspack/core': 1.6.1(@swc/helpers@0.5.17)
+      sass: 1.94.0
+=======
+      '@rspack/core': 1.6.1(@swc/helpers@0.5.17)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       sass: 1.93.3
       sass-embedded: 1.93.3
       webpack: 5.99.9(esbuild@0.19.12)
@@ -25211,6 +25517,7 @@ snapshots:
       source-map-js: 1.2.1
     optionalDependencies:
       '@parcel/watcher': 2.5.1
+<<<<<<< HEAD
 
   sass@1.94.0:
     dependencies:
@@ -25220,6 +25527,18 @@ snapshots:
     optionalDependencies:
       '@parcel/watcher': 2.5.1
     optional: true
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+    optional: true
+
+  sass@1.94.0:
+    dependencies:
+      chokidar: 4.0.3
+      immutable: 5.1.4
+      source-map-js: 1.2.1
+    optionalDependencies:
+      '@parcel/watcher': 2.5.1
+=======
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
 
   sax@1.4.3: {}
 
@@ -25612,12 +25931,30 @@ snapshots:
 
   stackframe@1.3.4: {}
 
+<<<<<<< HEAD
   starlight-blog@0.24.3(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)))(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  starlight-blog@0.24.3(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)))(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)):
+=======
+  starlight-blog@0.24.3(@astrojs/starlight@0.34.8(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)))(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       '@astrojs/markdown-remark': 6.3.8
+<<<<<<< HEAD
       '@astrojs/mdx': 4.3.9(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      '@astrojs/mdx': 4.3.10(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+=======
+      '@astrojs/mdx': 4.3.10(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       '@astrojs/rss': 4.0.13
+<<<<<<< HEAD
       '@astrojs/starlight': 0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      '@astrojs/starlight': 0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+=======
+      '@astrojs/starlight': 0.34.8(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       astro-remote: 0.3.4
       github-slugger: 2.0.0
       hast-util-from-html: 2.0.3
@@ -25633,14 +25970,40 @@ snapshots:
       - astro
       - supports-color
 
+<<<<<<< HEAD
   starlight-contextual-menu@0.1.5(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))(starlight-markdown@0.1.5(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  starlight-contextual-menu@0.1.5(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))(starlight-markdown@0.1.5(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))):
+=======
+  starlight-contextual-menu@0.1.5(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))(starlight-markdown@0.1.5(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
+<<<<<<< HEAD
       astro: 5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)
       starlight-markdown: 0.1.5(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      astro: 5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)
+      starlight-markdown: 0.1.5(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+=======
+      astro: 5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)
+      starlight-markdown: 0.1.5(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
 
+<<<<<<< HEAD
   starlight-links-validator@0.14.3(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  starlight-links-validator@0.14.3(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))):
+=======
+  starlight-links-validator@0.14.3(@astrojs/starlight@0.34.8(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
+<<<<<<< HEAD
       '@astrojs/starlight': 0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      '@astrojs/starlight': 0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+=======
+      '@astrojs/starlight': 0.34.8(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       '@types/picomatch': 3.0.2
       github-slugger: 2.0.0
       hast-util-from-html: 2.0.3
@@ -25654,13 +26017,33 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+<<<<<<< HEAD
   starlight-llms-txt@0.4.1(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)))(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  starlight-llms-txt@0.4.1(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)))(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)):
+=======
+  starlight-llms-txt@0.4.1(@astrojs/starlight@0.34.8(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)))(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
+<<<<<<< HEAD
       '@astrojs/mdx': 4.3.9(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))
       '@astrojs/starlight': 0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      '@astrojs/mdx': 4.3.10(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+      '@astrojs/starlight': 0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+=======
+      '@astrojs/mdx': 4.3.10(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+      '@astrojs/starlight': 0.34.8(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       '@types/hast': 3.0.4
       '@types/micromatch': 4.0.10
+<<<<<<< HEAD
       astro: 5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      astro: 5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)
+=======
+      astro: 5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       github-slugger: 2.0.0
       hast-util-select: 6.0.4
       micromatch: 4.0.8
@@ -25673,13 +26056,37 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+<<<<<<< HEAD
   starlight-markdown@0.1.5(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  starlight-markdown@0.1.5(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)):
+=======
+  starlight-markdown@0.1.5(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
+<<<<<<< HEAD
       astro: 5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      astro: 5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)
+=======
+      astro: 5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
 
+<<<<<<< HEAD
   starlight-sidebar-topics@0.6.2(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  starlight-sidebar-topics@0.6.2(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))):
+=======
+  starlight-sidebar-topics@0.6.2(@astrojs/starlight@0.34.8(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
+<<<<<<< HEAD
       '@astrojs/starlight': 0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      '@astrojs/starlight': 0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+=======
+      '@astrojs/starlight': 0.34.8(astro@5.15.4(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.8.3)(yaml@2.8.1))
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       picomatch: 4.0.3
 
   statuses@1.5.0: {}
@@ -25823,7 +26230,7 @@ snapshots:
 
   stylehacks@6.1.1(postcss@8.4.49):
     dependencies:
-      browserslist: 4.28.0
+      browserslist: 4.27.0
       postcss: 8.4.49
       postcss-selector-parser: 6.1.2
 
@@ -26521,14 +26928,19 @@ snapshots:
   upath@2.0.1: {}
 
   update-browserslist-db@1.1.4(browserslist@4.27.0):
+<<<<<<< HEAD
     dependencies:
       browserslist: 4.27.0
       escalade: 3.2.0
       picocolors: 1.1.1
 
   update-browserslist-db@1.1.4(browserslist@4.28.0):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  update-browserslist-db@1.1.4(browserslist@4.28.0):
+=======
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
-      browserslist: 4.28.0
+      browserslist: 4.27.0
       escalade: 3.2.0
       picocolors: 1.1.1
 
@@ -26612,13 +27024,25 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
+<<<<<<< HEAD
   vite-node@1.3.1(@types/node@18.16.20)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  vite-node@1.3.1(@types/node@18.16.20)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1):
+=======
+  vite-node@1.3.1(@types/node@18.16.20)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       cac: 6.7.14
       debug: 4.4.3(supports-color@10.2.2)
       pathe: 1.1.2
       picocolors: 1.1.1
+<<<<<<< HEAD
       vite: 5.4.21(@types/node@18.16.20)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      vite: 5.4.21(@types/node@18.16.20)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)
+=======
+      vite: 5.4.21(@types/node@18.16.20)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -26630,13 +27054,25 @@ snapshots:
       - supports-color
       - terser
 
+<<<<<<< HEAD
   vite-node@1.3.1(@types/node@22.19.0)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  vite-node@1.3.1(@types/node@22.19.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1):
+=======
+  vite-node@1.3.1(@types/node@22.19.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       cac: 6.7.14
       debug: 4.4.3(supports-color@10.2.2)
       pathe: 1.1.2
       picocolors: 1.1.1
+<<<<<<< HEAD
       vite: 5.4.21(@types/node@22.19.0)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      vite: 5.4.21(@types/node@22.19.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)
+=======
+      vite: 5.4.21(@types/node@22.19.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -26648,7 +27084,13 @@ snapshots:
       - supports-color
       - terser
 
+<<<<<<< HEAD
   vite-plugin-dts@3.8.3(@types/node@22.19.0)(rollup@4.53.2)(typescript@5.9.3)(vite@7.2.2(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  vite-plugin-dts@3.8.3(@types/node@22.19.0)(rollup@4.53.2)(typescript@5.8.3)(vite@6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)):
+=======
+  vite-plugin-dts@3.8.3(@types/node@22.19.0)(rollup@4.53.2)(typescript@5.8.3)(vite@6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       '@microsoft/api-extractor': 7.43.0(@types/node@22.19.0)
       '@rollup/pluginutils': 5.3.0(rollup@4.53.2)
@@ -26659,13 +27101,25 @@ snapshots:
       typescript: 5.9.3
       vue-tsc: 1.8.27(typescript@5.9.3)
     optionalDependencies:
+<<<<<<< HEAD
       vite: 7.2.2(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      vite: 6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+=======
+      vite: 6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     transitivePeerDependencies:
       - '@types/node'
       - rollup
       - supports-color
 
+<<<<<<< HEAD
   vite-plugin-dts@4.5.4(@types/node@18.16.20)(rollup@4.53.2)(typescript@5.8.3)(vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  vite-plugin-dts@4.5.4(@types/node@18.16.20)(rollup@4.53.2)(typescript@5.8.3)(vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)):
+=======
+  vite-plugin-dts@4.5.4(@types/node@18.16.20)(rollup@4.53.2)(typescript@5.8.3)(vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       '@microsoft/api-extractor': 7.53.3(@types/node@18.16.20)
       '@rollup/pluginutils': 5.3.0(rollup@4.53.2)
@@ -26678,24 +27132,48 @@ snapshots:
       magic-string: 0.30.21
       typescript: 5.8.3
     optionalDependencies:
+<<<<<<< HEAD
       vite: 6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      vite: 6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+=======
+      vite: 6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     transitivePeerDependencies:
       - '@types/node'
       - rollup
       - supports-color
 
+<<<<<<< HEAD
   vite-tsconfig-paths@5.1.4(typescript@5.8.3)(vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  vite-tsconfig-paths@5.1.4(typescript@5.8.3)(vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)):
+=======
+  vite-tsconfig-paths@5.1.4(typescript@5.8.3)(vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       debug: 4.4.3(supports-color@10.2.2)
       globrex: 0.1.2
       tsconfck: 3.1.6(typescript@5.8.3)
     optionalDependencies:
+<<<<<<< HEAD
       vite: 6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      vite: 6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+=======
+      vite: 6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     transitivePeerDependencies:
       - supports-color
       - typescript
 
+<<<<<<< HEAD
   vite@5.4.21(@types/node@18.16.20)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  vite@5.4.21(@types/node@18.16.20)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1):
+=======
+  vite@5.4.21(@types/node@18.16.20)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       esbuild: 0.21.5
       postcss: 8.4.49
@@ -26704,13 +27182,24 @@ snapshots:
       '@types/node': 18.16.20
       fsevents: 2.3.3
       less: 4.1.3
+<<<<<<< HEAD
       lightningcss: 1.30.2
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      sass: 1.94.0
+=======
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       sass: 1.93.3
       sass-embedded: 1.93.3
       stylus: 0.64.0
       terser: 5.43.1
 
+<<<<<<< HEAD
   vite@5.4.21(@types/node@22.19.0)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  vite@5.4.21(@types/node@22.19.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1):
+=======
+  vite@5.4.21(@types/node@22.19.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       esbuild: 0.21.5
       postcss: 8.4.49
@@ -26719,12 +27208,19 @@ snapshots:
       '@types/node': 22.19.0
       fsevents: 2.3.3
       less: 4.1.3
+<<<<<<< HEAD
       lightningcss: 1.30.2
       sass: 1.94.0
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      sass: 1.94.0
+=======
+      sass: 1.93.3
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       sass-embedded: 1.93.3
       stylus: 0.64.0
       terser: 5.43.1
 
+<<<<<<< HEAD
   vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1):
     dependencies:
       esbuild: 0.25.11
@@ -26768,6 +27264,11 @@ snapshots:
       yaml: 2.8.1
 
   vite@7.2.2(@types/node@20.19.24)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1):
+=======
+  vite@6.3.5(@types/node@18.16.20)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       esbuild: 0.25.12
       fdir: 6.5.0(picomatch@4.0.3)
@@ -26780,15 +27281,27 @@ snapshots:
       fsevents: 2.3.3
       jiti: 2.6.1
       less: 4.1.3
+<<<<<<< HEAD
       lightningcss: 1.30.2
       sass: 1.94.0
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      sass: 1.94.0
+=======
+      sass: 1.93.3
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       sass-embedded: 1.93.3
       stylus: 0.64.0
       terser: 5.43.1
       tsx: 4.20.6
       yaml: 2.8.1
 
+<<<<<<< HEAD
   vite@7.2.2(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  vite@6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1):
+=======
+  vite@6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       esbuild: 0.25.12
       fdir: 6.5.0(picomatch@4.0.3)
@@ -26801,8 +27314,14 @@ snapshots:
       fsevents: 2.3.3
       jiti: 2.6.1
       less: 4.1.3
+<<<<<<< HEAD
       lightningcss: 1.30.2
       sass: 1.94.0
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      sass: 1.94.0
+=======
+      sass: 1.93.3
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       sass-embedded: 1.93.3
       stylus: 0.64.0
       terser: 5.43.1
@@ -26810,15 +27329,33 @@ snapshots:
       yaml: 2.8.1
     optional: true
 
+<<<<<<< HEAD
   vitefu@1.1.1(vite@6.4.1(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  vitefu@1.1.1(vite@6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)):
+=======
+  vitefu@1.1.1(vite@6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     optionalDependencies:
+<<<<<<< HEAD
       vite: 6.4.1(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      vite: 6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+=======
+      vite: 6.4.1(@types/node@22.19.0)(jiti@2.4.2)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
 
+<<<<<<< HEAD
   vitefu@1.1.1(vite@7.2.2(@types/node@20.19.24)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)):
     optionalDependencies:
       vite: 7.2.2(@types/node@20.19.24)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
 
   vitest@1.3.1(@types/node@18.16.20)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  vitest@1.3.1(@types/node@18.16.20)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1):
+=======
+  vitest@1.3.1(@types/node@18.16.20)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       '@vitest/expect': 1.3.1
       '@vitest/runner': 1.3.1
@@ -26837,8 +27374,16 @@ snapshots:
       strip-literal: 2.1.1
       tinybench: 2.9.0
       tinypool: 0.8.4
+<<<<<<< HEAD
       vite: 5.4.21(@types/node@18.16.20)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)
       vite-node: 1.3.1(@types/node@18.16.20)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      vite: 5.4.21(@types/node@18.16.20)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)
+      vite-node: 1.3.1(@types/node@18.16.20)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)
+=======
+      vite: 5.4.21(@types/node@18.16.20)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)
+      vite-node: 1.3.1(@types/node@18.16.20)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 18.16.20
@@ -26854,7 +27399,13 @@ snapshots:
       - supports-color
       - terser
 
+<<<<<<< HEAD
   vitest@1.3.1(@types/node@22.19.0)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1):
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+  vitest@1.3.1(@types/node@22.19.0)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1):
+=======
+  vitest@1.3.1(@types/node@22.19.0)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1):
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
     dependencies:
       '@vitest/expect': 1.3.1
       '@vitest/runner': 1.3.1
@@ -26873,8 +27424,16 @@ snapshots:
       strip-literal: 2.1.1
       tinybench: 2.9.0
       tinypool: 0.8.4
+<<<<<<< HEAD
       vite: 5.4.21(@types/node@22.19.0)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)
       vite-node: 1.3.1(@types/node@22.19.0)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)
+||||||| parent of 1da476a1 (chore: add stabilization delay to client's startFlow)
+      vite: 5.4.21(@types/node@22.19.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)
+      vite-node: 1.3.1(@types/node@22.19.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)
+=======
+      vite: 5.4.21(@types/node@22.19.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)
+      vite-node: 1.3.1(@types/node@22.19.0)(less@4.1.3)(sass-embedded@1.93.3)(sass@1.93.3)(stylus@0.64.0)(terser@5.43.1)
+>>>>>>> 1da476a1 (chore: add stabilization delay to client's startFlow)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 22.19.0
@@ -27118,7 +27677,7 @@ snapshots:
       '@webassemblyjs/wasm-parser': 1.14.1
       acorn: 8.15.0
       acorn-import-phases: 1.0.4(acorn@8.15.0)
-      browserslist: 4.28.0
+      browserslist: 4.27.0
       chrome-trace-event: 1.0.4
       enhanced-resolve: 5.18.3
       es-module-lexer: 1.7.0
@@ -27149,7 +27708,7 @@ snapshots:
       '@webassemblyjs/wasm-edit': 1.14.1
       '@webassemblyjs/wasm-parser': 1.14.1
       acorn: 8.15.0
-      browserslist: 4.28.0
+      browserslist: 4.27.0
       chrome-trace-event: 1.0.4
       enhanced-resolve: 5.18.3
       es-module-lexer: 1.7.0
