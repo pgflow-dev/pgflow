@@ -317,8 +317,21 @@
 </style>
 
 <script>
+  // TypeScript declaration for Plausible
+  declare global {
+    interface Window {
+      plausible?: (event: string, options?: { props?: Record<string, string | number> }) => void;
+    }
+  }
+
   // Global flag to track if auto-scroll animation is running
   let isAutoScrolling = false;
+
+  // Flag to track if programmatic scroll is happening (auto-scroll or scroll-to-top)
+  let isProgrammaticScroll = false;
+
+  // Flag to track if manual scroll event has been sent (only send once)
+  let hasTrackedManualScroll = false;
 
   const handleRevealButton = () => {
     const button = document.querySelector('.reveal-button') as HTMLElement | null;
@@ -329,6 +342,11 @@
     if (!button || !overlay || !scrollableContainer || !scrollableInner) return;
 
     button.addEventListener('click', async () => {
+      // Track custom event in Plausible
+      if (typeof window.plausible !== 'undefined') {
+        window.plausible('home:reveal-code');
+      }
+
       const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
       // Helper to animate scroll with custom duration (cancellable on user interaction)
@@ -445,6 +463,14 @@
         return;
       }
 
+      // Track manual scroll event (only once, and only if not programmatic)
+      if (!hasTrackedManualScroll && !isProgrammaticScroll) {
+        hasTrackedManualScroll = true;
+        if (typeof window.plausible !== 'undefined') {
+          window.plausible('home:code-scroll');
+        }
+      }
+
       if (scrollableInner.scrollTop > 50) {
         button.style.display = 'block';
       } else {
@@ -456,7 +482,14 @@
     scrollableInner.addEventListener('scroll', updateButtonVisibility);
 
     button.addEventListener('click', () => {
+      // Mark as programmatic scroll to avoid tracking
+      isProgrammaticScroll = true;
       scrollableInner.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Reset flag after scroll completes
+      setTimeout(() => {
+        isProgrammaticScroll = false;
+      }, 1000);
     });
   };
 
@@ -480,6 +513,10 @@
       if (scrollTopButton) {
         scrollTopButton.style.display = 'none';
       }
+
+      // Note: hasTrackedManualScroll is NOT reset here
+      // This means we track manual scroll only once per page session,
+      // even if user reveals, resets, and reveals again
     });
   };
 
