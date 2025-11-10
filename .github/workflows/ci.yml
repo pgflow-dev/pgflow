@@ -152,6 +152,7 @@ jobs:
       NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      DEPLOYMENT_ENV: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
       VITE_SUPABASE_URL: ${{ github.event_name == 'pull_request' && secrets.WEBSITE_PREVIEW_SUPABASE_URL || secrets.WEBSITE_PRODUCTION_SUPABASE_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && secrets.WEBSITE_PREVIEW_SUPABASE_ANON_KEY || secrets.WEBSITE_PRODUCTION_SUPABASE_ANON_KEY }}
       PLAUSIBLE_PROXY_URL: ${{ secrets.WEBSITE_PLAUSIBLE_PROXY_URL }}
