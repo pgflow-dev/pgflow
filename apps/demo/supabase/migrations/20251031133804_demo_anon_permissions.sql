@@ -7,7 +7,9 @@ GRANT SELECT ON pgflow.flows TO anon;
 GRANT SELECT ON pgflow.runs TO anon;
 GRANT SELECT ON pgflow.steps TO anon;
 GRANT SELECT ON pgflow.step_states TO anon;
+GRANT SELECT ON pgflow.step_tasks TO anon;
 GRANT SELECT ON pgflow.deps TO anon;
+GRANT SELECT ON pgflow.workers TO anon;
 
 -- Enable real-time for anon role
 ALTER PUBLICATION supabase_realtime ADD TABLE pgflow.runs;
