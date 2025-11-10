@@ -17,7 +17,7 @@ const GITHUB_REPO_URL = 'https://github.com/pgflow-dev/pgflow';
 const DISCORD_INVITE_URL = 'https://pgflow.dev/discord/';
 const EMAIL_URL = 'mailto:hello@pgflow.dev';
 const PLAUSIBLE_PROXY = {
-  url: 'https://wispy-pond-c6f8.wojciech-majewski.workers.dev',
+  url: process.env.PLAUSIBLE_PROXY_URL || 'https://wispy-pond-c6f8.jumski.workers.dev',
   eventPath: '/data/event',
   scriptPath:
     '/assets/script.hash.outbound-links.pageview-props.tagged-events.js',
