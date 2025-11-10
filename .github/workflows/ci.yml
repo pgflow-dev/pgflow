@@ -154,6 +154,7 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       VITE_SUPABASE_URL: ${{ github.event_name == 'pull_request' && secrets.WEBSITE_PREVIEW_SUPABASE_URL || secrets.WEBSITE_PRODUCTION_SUPABASE_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && secrets.WEBSITE_PREVIEW_SUPABASE_ANON_KEY || secrets.WEBSITE_PRODUCTION_SUPABASE_ANON_KEY }}
+      PLAUSIBLE_PROXY_URL: ${{ secrets.WEBSITE_PLAUSIBLE_PROXY_URL }}
     steps:
       - uses: actions/checkout@v4
         with:
