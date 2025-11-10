@@ -16,6 +16,21 @@ import { redirects } from './redirects.config.mjs';
 const GITHUB_REPO_URL = 'https://github.com/pgflow-dev/pgflow';
 const DISCORD_INVITE_URL = 'https://pgflow.dev/discord/';
 const EMAIL_URL = 'mailto:hello@pgflow.dev';
+
+// Environment detection
+const DEPLOYMENT_ENV = process.env.DEPLOYMENT_ENV; // 'production' or 'preview' (optional)
+const isProduction = DEPLOYMENT_ENV === 'production';
+
+// Validate DEPLOYMENT_ENV if set
+if (DEPLOYMENT_ENV && DEPLOYMENT_ENV !== 'production' && DEPLOYMENT_ENV !== 'preview') {
+  throw new Error(`DEPLOYMENT_ENV must be either "production" or "preview", got: "${DEPLOYMENT_ENV}"`);
+}
+
+// Require Plausible proxy URL only for production
+if (isProduction && !process.env.PLAUSIBLE_PROXY_URL) {
+  throw new Error('PLAUSIBLE_PROXY_URL environment variable is required for production deployments');
+}
+
 const PLAUSIBLE_PROXY = {
   url: process.env.PLAUSIBLE_PROXY_URL || 'https://wispy-pond-c6f8.jumski.workers.dev',
   eventPath: '/data/event',
@@ -64,17 +79,12 @@ export default defineConfig({
     starlight({
       favicon: '/favicons/favicon.ico',
       head: [
-        // prevent robots from indexing the preview branches
-        // it can be determined by checking the appropriate env variable
-        // CF_PAGES_BRANCH != 'main'
+        // prevent robots from indexing the preview deployments
         {
           tag: 'meta',
           attrs: {
             name: 'robots',
-            content:
-              process.env.CF_PAGES_BRANCH === 'main'
-                ? 'index,follow'
-                : 'noindex,nofollow',
+            content: isProduction ? 'index,follow' : 'noindex,nofollow',
           },
         },
         {
@@ -464,8 +474,8 @@ export default defineConfig({
       policy: [
         {
           userAgent: '*',
-          allow: process.env.CF_PAGES_BRANCH === 'main' ? '/' : '',
-          disallow: process.env.CF_PAGES_BRANCH === 'main' ? '' : '/',
+          allow: isProduction ? '/' : '',
+          disallow: isProduction ? '' : '/',
         },
       ],
     }),
