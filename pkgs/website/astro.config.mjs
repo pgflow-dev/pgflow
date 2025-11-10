@@ -87,6 +87,10 @@ export default defineConfig({
           },
         },
         {
+          tag: 'script',
+          content: `window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) }`,
+        },
+        {
           tag: 'meta',
           attrs: {
             property: 'og:image',
