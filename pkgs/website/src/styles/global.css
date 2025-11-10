@@ -1,5 +1,6 @@
 /* Prevent horizontal overflow */
-html, body {
+html,
+body {
   overflow-x: hidden;
   max-width: 100vw;
 }
@@ -185,11 +186,11 @@ svg .secondary {
   .quickstart-section code {
     font-size: 1.1rem !important;
   }
-  
+
   .testimonial-item blockquote {
     font-size: 1rem;
   }
-  
+
   /* Hide carousel navigation arrows on mobile */
   .testimonial-nav-arrows {
     display: none;
@@ -209,15 +210,14 @@ svg .secondary {
   .quickstart-caption {
     font-size: 11px;
   }
-  
+
   .testimonial-item blockquote {
     font-size: 0.9rem;
   }
-  
+
   .testimonial-item cite {
     font-size: 0.8rem;
   }
-  
 }
 
 /* Responsive SVG images */
@@ -292,19 +292,42 @@ svg .secondary {
 }
 
 /* One-time attention nudge - more dramatic since it only happens once */
-.hire-sticker.nudge {
-  animation: attention-nudge 0.8s ease-in-out;
-}
+/* .hire-sticker.nudge { */
+/*   animation: attention-nudge 0.8s ease-in-out; */
+/* } */
 
 @keyframes attention-nudge {
-  0% { transform: rotate(0deg) scale(1); }
-  15% { transform: rotate(-6deg) scale(1.05); }
-  30% { transform: rotate(6deg) scale(1.05); }
-  45% { transform: rotate(-4deg) scale(1.02); }
-  60% { transform: rotate(4deg) scale(1.02); }
-  75% { transform: rotate(-2deg) scale(1.01); }
-  90% { transform: rotate(1deg) scale(1); }
-  100% { transform: rotate(0deg) scale(1); }
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+
+  15% {
+    transform: rotate(-6deg) scale(1.05);
+  }
+
+  30% {
+    transform: rotate(6deg) scale(1.05);
+  }
+
+  45% {
+    transform: rotate(-4deg) scale(1.02);
+  }
+
+  60% {
+    transform: rotate(4deg) scale(1.02);
+  }
+
+  75% {
+    transform: rotate(-2deg) scale(1.01);
+  }
+
+  90% {
+    transform: rotate(1deg) scale(1);
+  }
+
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
 }
 
 /* Hide on small screens */
@@ -325,60 +348,91 @@ svg .secondary {
 :root {
   /* Blue (Info/Note) - Steel blue (distinct yet harmonious) */
   --sl-hue-blue: 220;
-  --sl-color-blue-low: hsl(220, 45%, 18%);     /* Dark steel blue bg */
-  --sl-color-blue: hsl(220, 65%, 55%);         /* Steel blue */
-  --sl-color-blue-high: hsl(220, 70%, 90%);    /* Light steel blue */
+  --sl-color-blue-low: hsl(220, 45%, 18%);
+  /* Dark steel blue bg */
+  --sl-color-blue: hsl(220, 65%, 55%);
+  /* Steel blue */
+  --sl-color-blue-high: hsl(220, 70%, 90%);
+  /* Light steel blue */
 
   /* Purple (Tip) - Soft magenta-purple (stands out while harmonizing with teal) */
   --sl-hue-purple: 280;
-  --sl-color-purple-low: hsl(280, 40%, 20%);   /* Dark soft magenta-purple bg */
-  --sl-color-purple: hsl(280, 55%, 62%);       /* Soft magenta-purple */
-  --sl-color-purple-high: hsl(280, 58%, 90%);  /* Light soft magenta-purple */
+  --sl-color-purple-low: hsl(280, 40%, 20%);
+  /* Dark soft magenta-purple bg */
+  --sl-color-purple: hsl(280, 55%, 62%);
+  /* Soft magenta-purple */
+  --sl-color-purple-high: hsl(280, 58%, 90%);
+  /* Light soft magenta-purple */
 
   /* Orange (Caution) - Soft warm orange (warmer, harmonious) */
   --sl-hue-orange: 35;
-  --sl-color-orange-low: hsl(35, 38%, 22%);    /* Dark soft warm orange bg */
-  --sl-color-orange: hsl(35, 60%, 68%);        /* Soft warm orange */
-  --sl-color-orange-high: hsl(35, 65%, 92%);   /* Light soft warm orange */
+  --sl-color-orange-low: hsl(35, 38%, 22%);
+  /* Dark soft warm orange bg */
+  --sl-color-orange: hsl(35, 60%, 68%);
+  /* Soft warm orange */
+  --sl-color-orange-high: hsl(35, 65%, 92%);
+  /* Light soft warm orange */
 
   /* Red (Danger) - Bright red-orange (more intense) */
   --sl-hue-red: 5;
-  --sl-color-red-low: hsl(5, 55%, 20%);        /* Dark bright red-orange bg */
-  --sl-color-red: hsl(5, 80%, 60%);            /* Bright red-orange */
-  --sl-color-red-high: hsl(5, 85%, 90%);       /* Light bright red-orange */
+  --sl-color-red-low: hsl(5, 55%, 20%);
+  /* Dark bright red-orange bg */
+  --sl-color-red: hsl(5, 80%, 60%);
+  /* Bright red-orange */
+  --sl-color-red-high: hsl(5, 85%, 90%);
+  /* Light bright red-orange */
 
   /* Green (Success) - Aligned with primary theme (yellow-green) */
   --sl-hue-green: 140;
-  --sl-color-green-low: hsl(140, 42%, 18%);    /* Dark green bg */
-  --sl-color-green: hsl(140, 60%, 50%);        /* Green */
-  --sl-color-green-high: hsl(140, 65%, 70%);   /* Light green */
+  --sl-color-green-low: hsl(140, 42%, 18%);
+  /* Dark green bg */
+  --sl-color-green: hsl(140, 60%, 50%);
+  /* Green */
+  --sl-color-green-high: hsl(140, 65%, 70%);
+  /* Light green */
 }
 
 /* Light mode adjustments for harmonized colors */
 :root[data-theme='light'] {
   /* Blue (Info/Note) */
-  --sl-color-blue-high: hsl(220, 70%, 30%);    /* Dark steel blue text */
-  --sl-color-blue: hsl(220, 65%, 50%);         /* Steel blue */
-  --sl-color-blue-low: hsl(220, 60%, 92%);     /* Light steel blue bg */
+  --sl-color-blue-high: hsl(220, 70%, 30%);
+  /* Dark steel blue text */
+  --sl-color-blue: hsl(220, 65%, 50%);
+  /* Steel blue */
+  --sl-color-blue-low: hsl(220, 60%, 92%);
+  /* Light steel blue bg */
 
   /* Purple (Tip) */
-  --sl-color-purple-high: hsl(280, 58%, 32%);  /* Dark soft magenta-purple text */
-  --sl-color-purple: hsl(280, 55%, 58%);       /* Soft magenta-purple */
-  --sl-color-purple-low: hsl(280, 50%, 94%);   /* Light soft magenta-purple bg */
+  --sl-color-purple-high: hsl(280,
+      58%,
+      32%);
+  /* Dark soft magenta-purple text */
+  --sl-color-purple: hsl(280, 55%, 58%);
+  /* Soft magenta-purple */
+  --sl-color-purple-low: hsl(280, 50%, 94%);
+  /* Light soft magenta-purple bg */
 
   /* Orange (Caution) */
-  --sl-color-orange-high: hsl(35, 65%, 32%);   /* Dark soft warm orange text */
-  --sl-color-orange: hsl(35, 60%, 62%);        /* Soft warm orange */
-  --sl-color-orange-low: hsl(35, 58%, 94%);    /* Light soft warm orange bg */
+  --sl-color-orange-high: hsl(35, 65%, 32%);
+  /* Dark soft warm orange text */
+  --sl-color-orange: hsl(35, 60%, 62%);
+  /* Soft warm orange */
+  --sl-color-orange-low: hsl(35, 58%, 94%);
+  /* Light soft warm orange bg */
 
   /* Red (Danger) */
-  --sl-color-red-high: hsl(5, 85%, 35%);       /* Dark bright red-orange text */
-  --sl-color-red: hsl(5, 80%, 55%);            /* Bright red-orange */
-  --sl-color-red-low: hsl(5, 75%, 92%);        /* Light bright red-orange bg */
+  --sl-color-red-high: hsl(5, 85%, 35%);
+  /* Dark bright red-orange text */
+  --sl-color-red: hsl(5, 80%, 55%);
+  /* Bright red-orange */
+  --sl-color-red-low: hsl(5, 75%, 92%);
+  /* Light bright red-orange bg */
 
   /* Green (Success) */
-  --sl-color-green-high: hsl(140, 65%, 25%);   /* Dark green text */
-  --sl-color-green: hsl(140, 60%, 45%);        /* Green */
-  --sl-color-green-low: hsl(140, 55%, 92%);    /* Light green bg */
+  --sl-color-green-high: hsl(140, 65%, 25%);
+  /* Dark green text */
+  --sl-color-green: hsl(140, 60%, 45%);
+  /* Green */
+  --sl-color-green-low: hsl(140, 55%, 92%);
+  /* Light green bg */
 }
-
