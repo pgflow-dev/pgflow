@@ -15,6 +15,7 @@
 	import { Play, CheckCircle2, XCircle, Code, GitBranch, Radio, Loader2 } from '@lucide/svelte';
 	import { codeToHtml } from 'shiki';
 	import type ArticleFlow from '../../supabase/functions/article_flow_worker/article_flow';
+	import { track } from '$lib/analytics';
 
 	const flowState = createFlowState<typeof ArticleFlow>(pgflow, 'article_flow', [
 		'fetchArticle',
@@ -35,6 +36,11 @@
 	let hasRunOnce = $state(false);
 	let highlightButton = $state(false);
 
+	// Analytics tracking state
+	let flowStartTime: number | undefined;
+	let explanationOpenTime: number | undefined;
+	let eventsOpenTime: number | undefined;
+
 	// Show explanation panel when either a step is selected OR flow explanation is requested
 	const explanationVisible = $derived(selectedStep !== null || showFlowExplanation);
 
@@ -46,6 +52,16 @@
 
 	async function processArticle() {
 		console.log('[DEBUG] processArticle called, selectedStep before:', selectedStep);
+
+		// Track Flow Started
+		track('Flow Started', {
+			is_first_run: !hasRunOnce,
+			source: showWelcome ? 'welcome_modal' : 'header_button',
+			url_length: url.length
+		});
+
+		flowStartTime = Date.now();
+
 		try {
 			const run = await flowState.startFlow({ url });
 			console.log('Flow started:', run);
@@ -53,6 +69,11 @@
 			console.log('[DEBUG] processArticle finished, selectedStep after:', selectedStep);
 		} catch (error) {
 			console.error('Failed to start flow:', error);
+
+			// Track Flow Failed
+			track('Flow Failed', {
+				error_message: error instanceof Error ? error.message : String(error)
+			});
 		}
 	}
 
@@ -62,6 +83,15 @@
 			// Mark first run as complete (used for UI state tracking)
 			hasRunOnce = true;
 			// Don't show modal on completion - it breaks the flow of viewing results
+
+			// Track Flow Completed
+			if (flowStartTime) {
+				const duration = Math.round((Date.now() - flowStartTime) / 1000);
+				track('Flow Completed', {
+					duration_seconds: duration,
+					total_steps: 4
+				});
+			}
 		}
 	});
 
@@ -81,27 +111,34 @@
 			const firstFailedSlug = failedSteps[0];
 
 			if (firstFailedSlug && selectedStep !== firstFailedSlug) {
+				const previousSelection = selectedStep;
 				selectedStep = firstFailedSlug;
 				showFlowExplanation = false;
 				// Close mobile events panel if open (so explanation panel shows)
 				mobileEventsVisible = false;
 				mobileEventsContentVisible = false;
+
+				// Track Failed Step Auto Selected
+				track('Failed Step Auto Selected', {
+					step_slug: firstFailedSlug,
+					previous_selection: previousSelection || 'none'
+				});
 			}
 		}
 	});
 
 	function handleRunFromModal() {
-		if (!hasRunOnce) {
-			// First time - close modal and run
-			showWelcome = false;
-			setTimeout(() => {
-				processArticle();
-			}, 300);
-		} else {
-			// Running again - just close modal and run
-			showWelcome = false;
+		// Track Run Demo
+		track('Run Demo', {
+			source: 'welcome_modal',
+			is_first_run: !hasRunOnce
+		});
+
+		// Close modal and run
+		showWelcome = false;
+		setTimeout(() => {
 			processArticle();
-		}
+		}, 300);
 	}
 
 	function showPulseDots() {
@@ -112,32 +149,58 @@
 	}
 
 	function handleDismissModal() {
+		// Track Explore Code First
+		track('Explore Code First', {
+			dismissed_without_running: !hasRunOnce
+		});
+
 		showWelcome = false;
 		// Show pulsing dots on all clickable elements after any modal dismiss
 		showPulseDots();
 	}
 
-	function handleStepSelected(event: CustomEvent<{ stepSlug: string | null }>) {
+	function handleStepSelected(event: CustomEvent<{ stepSlug: string | null; source?: string }>) {
 		const clickedStep = event.detail.stepSlug;
-		console.log('Main page: handleStepSelected called with:', clickedStep);
+		const source = event.detail.source || 'unknown';
+		console.log('Main page: handleStepSelected called with:', clickedStep, 'source:', source);
 
 		if (clickedStep === null) {
 			// Explicit clear selection request
+			const previousStep = selectedStep;
 			selectedStep = null;
 			showFlowExplanation = false;
 			console.log('Main page: Cleared selection');
+
+			// Track Step Deselected
+			if (previousStep) {
+				track('Step Deselected', {
+					previous_step: previousStep,
+					method: 'clear_explicit'
+				});
+			}
 		} else if (clickedStep === 'flow_config') {
 			// Clicking flow config: select it and show flow explanation
 			if (selectedStep === 'flow_config') {
 				// Toggle off
 				selectedStep = null;
 				showFlowExplanation = false;
+
+				// Track Flow Config Deselected
+				track('Step Deselected', {
+					previous_step: 'flow_config',
+					method: 'toggle'
+				});
 			} else {
 				selectedStep = 'flow_config';
 				showFlowExplanation = true;
 				// Close events panel when opening explanation
 				mobileEventsVisible = false;
 				mobileEventsContentVisible = false;
+
+				// Track Flow Config Selected
+				track('Flow Config Selected', {
+					source: 'code'
+				});
 			}
 			console.log('Main page: Flow config toggled, showFlowExplanation:', showFlowExplanation);
 		} else if (selectedStep === clickedStep) {
@@ -145,14 +208,33 @@
 			selectedStep = null;
 			showFlowExplanation = false;
 			console.log('Main page: Toggled off - deselected step');
+
+			// Track Step Deselected
+			track('Step Deselected', {
+				previous_step: clickedStep,
+				method: 'toggle'
+			});
 		} else {
 			// Select a different step
+			const previousStep = selectedStep;
+			const stepSlugs = ['fetchArticle', 'summarize', 'extractKeywords', 'publish'];
+			const stepIndex = stepSlugs.indexOf(clickedStep);
+
 			selectedStep = clickedStep;
 			showFlowExplanation = false;
 			// Close events panel when opening explanation
 			mobileEventsVisible = false;
 			mobileEventsContentVisible = false;
 			console.log('Main page: Selected step:', selectedStep);
+
+			// Track Step Selected
+			track('Step Selected', {
+				step_slug: clickedStep,
+				step_status: flowState.step(clickedStep).status || 'unknown',
+				source,
+				step_position: stepIndex,
+				previous_step: previousStep || 'none'
+			});
 		}
 	}
 
@@ -179,14 +261,61 @@
 
 	function closeExplanation() {
 		// Closing explanation should clear both step selection and flow explanation
+		const previousStep = selectedStep;
 		selectedStep = null;
 		showFlowExplanation = false;
+
+		// Track Explanation Closed
+		if (previousStep || showFlowExplanation) {
+			const isMobileDevice = typeof window !== 'undefined' && window.innerWidth < 768;
+			track('Explanation Closed', {
+				step_slug: previousStep || 'flow_config',
+				device: isMobileDevice ? 'mobile' : 'desktop',
+				time_open_seconds: explanationOpenTime
+					? Math.round((Date.now() - explanationOpenTime) / 1000)
+					: 0
+			});
+		}
 	}
 
 	function clearSelection() {
+		const previousStep = selectedStep;
 		selectedStep = null;
 		showFlowExplanation = false;
+
+		// Track Clear Selection Clicked
+		if (previousStep) {
+			track('Clear Selection Clicked', {
+				previous_step: previousStep,
+				device: 'desktop'
+			});
+		}
 	}
+
+	// Track explanation panel opening
+	$effect(() => {
+		if (explanationVisible) {
+			explanationOpenTime = Date.now();
+			const isMobileDevice = typeof window !== 'undefined' && window.innerWidth < 768;
+
+			// Determine trigger
+			let trigger: string;
+			if (showFlowExplanation) {
+				trigger = 'flow_config';
+			} else {
+				// Check if this was auto-selected due to failure
+				const stepSlugs = ['fetchArticle', 'summarize', 'extractKeywords', 'publish'];
+				const failedSteps = stepSlugs.filter((slug) => flowState.step(slug).status === 'failed');
+				trigger = failedSteps.includes(selectedStep || '') ? 'auto_failed_step' : 'step_selected';
+			}
+
+			track('Explanation Opened', {
+				trigger,
+				step_slug: selectedStep || 'flow_config',
+				device: isMobileDevice ? 'mobile' : 'desktop'
+			});
+		}
+	});
 
 	// Automatic cleanup on unmount
 	onDestroy(() => flowState.dispose());
@@ -206,9 +335,18 @@
 			// Opening: show expanded content, then start height animation
 			mobileEventsContentVisible = true;
 			mobileEventsVisible = true;
+			eventsOpenTime = Date.now();
 			// Close explanation panel when opening events
 			selectedStep = null;
 			showFlowExplanation = false;
+
+			// Track Events Panel Opened
+			const stepSlugs = ['fetchArticle', 'summarize', 'extractKeywords', 'publish'];
+			const failedSteps = stepSlugs.filter((slug) => flowState.step(slug).status === 'failed');
+			track('Events Panel Opened', {
+				event_count: displayableEvents.length,
+				has_failed_events: failedSteps.length > 0
+			});
 		} else {
 			// Closing: start height animation, hide expanded content after animation finishes
 			mobileEventsVisible = false;
@@ -217,12 +355,28 @@
 			}, 300); // Match animation duration
 			// Reset expanded event when closing panel
 			expandedEventIdx = null;
+
+			// Track Events Panel Closed
+			if (eventsOpenTime) {
+				track('Events Panel Closed', {
+					time_open_seconds: Math.round((Date.now() - eventsOpenTime) / 1000),
+					events_expanded: expandedEventIdx !== null
+				});
+			}
 		}
 	}
 
 	async function toggleEventExpanded(idx: number, event: unknown) {
 		if (expandedEventIdx === idx) {
 			expandedEventIdx = null;
+
+			// Track Event Collapsed
+			const eventData = event as { event_type?: string; step_slug?: string };
+			track('Event Collapsed', {
+				event_type: eventData.event_type || 'unknown',
+				step_slug: eventData.step_slug || 'unknown',
+				device: isMobile ? 'mobile' : 'desktop'
+			});
 		} else {
 			// Generate syntax-highlighted JSON if not already cached
 			if (!highlightedEventJson[idx]) {
@@ -238,6 +392,15 @@
 			}
 			// Set expanded after HTML is ready
 			expandedEventIdx = idx;
+
+			// Track Event Expanded
+			const eventData = event as { event_type?: string; step_slug?: string };
+			track('Event Expanded', {
+				event_type: eventData.event_type || 'unknown',
+				step_slug: eventData.step_slug || 'unknown',
+				event_position: idx,
+				device: isMobile ? 'mobile' : 'desktop'
+			});
 		}
 	}
 
@@ -381,12 +544,7 @@
 	}
 </script>
 
-<WelcomeModal
-	visible={showWelcome}
-	hasRun={hasRunOnce}
-	onRunFlow={handleRunFromModal}
-	onDismiss={handleDismissModal}
-/>
+<WelcomeModal visible={showWelcome} onRunFlow={handleRunFromModal} onDismiss={handleDismissModal} />
 
 <div class="page-container">
 	<div class="page-content">
@@ -399,18 +557,27 @@
 			>
 				<!-- Logo + branding -->
 				<div class="flex items-center gap-2 md:gap-3">
-					<a href="https://pgflow.dev" class="flex items-center gap-1.5 md:gap-2">
+					<a
+						href="https://pgflow.dev"
+						class="flex items-center gap-1.5 md:gap-2"
+						onclick={() => track('Logo Clicked', { location: 'header' })}
+					>
 						<img src="/pgflow-logo-dark.svg" alt="pgflow" class="h-5 md:h-6" />
 						<span class="text-xs md:text-sm font-semibold">pgflow</span>
 					</a>
 					<span class="text-muted-foreground text-xs">|</span>
-					<a href="https://pgflow.dev" class="text-xs text-muted-foreground hover:text-foreground"
-						>Website</a
+					<a
+						href="https://pgflow.dev"
+						class="text-xs text-muted-foreground hover:text-foreground"
+						onclick={() =>
+							track('External Link Clicked', { destination: 'website', location: 'header' })}>Website</a
 					>
 					<span class="text-muted-foreground text-xs">|</span>
 					<a
 						href="https://github.com/pgflow-dev/pgflow"
-						class="text-xs text-muted-foreground hover:text-foreground">GitHub</a
+						class="text-xs text-muted-foreground hover:text-foreground"
+						onclick={() =>
+							track('External Link Clicked', { destination: 'github', location: 'header' })}>GitHub</a
 					>
 				</div>
 

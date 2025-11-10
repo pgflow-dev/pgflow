@@ -53,7 +53,7 @@
 	});
 
 	const dispatch = createEventDispatcher<{
-		'step-selected': { stepSlug: string };
+		'step-selected': { stepSlug: string; source?: string };
 		'step-hovered': { stepSlug: string | null };
 	}>();
 
@@ -75,7 +75,7 @@
 		if (stepSlug) {
 			// Clear hover state before navigating
 			dispatch('step-hovered', { stepSlug: null });
-			dispatch('step-selected', { stepSlug });
+			dispatch('step-selected', { stepSlug, source: 'dag' });
 		}
 	}
 
