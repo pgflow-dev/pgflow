@@ -6,7 +6,7 @@
 	import type { createFlowState } from '$lib/stores/pgflow-state.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import MiniDAG from '$lib/components/MiniDAG.svelte';
-	import { Clock, Workflow, Play, Hourglass } from '@lucide/svelte';
+	import { Clock, Workflow, Play, Hourglass, XCircle } from '@lucide/svelte';
 
 	interface Props {
 		selectedStep: string | null;
@@ -45,7 +45,7 @@
 			'Demonstrates parallel execution, automatic retries, and dependency management—all core pgflow features.',
 		reliabilityFeatures: [
 			{
-				setting: 'maxAttempts: 3',
+				setting: 'maxAttempts: 2',
 				explanation: 'Automatically retries failed steps up to 3 times before giving up'
 			}
 		],
@@ -157,6 +157,19 @@
 	let panelElement: HTMLElement | undefined = $state(undefined);
 	let highlightedInput = $state<string>('');
 	let highlightedOutput = $state<string>('');
+	let isMobile = $state(false);
+
+	// Detect mobile viewport
+	if (typeof window !== 'undefined') {
+		const mediaQuery = window.matchMedia('(max-width: 767px)');
+		isMobile = mediaQuery.matches;
+
+		const updateMobile = (e: MediaQueryListEvent) => {
+			isMobile = e.matches;
+		};
+
+		mediaQuery.addEventListener('change', updateMobile);
+	}
 
 	// Replace long strings with placeholders for mobile display
 	function truncateDeep(obj: unknown, maxLength = 80): unknown {
@@ -183,7 +196,9 @@
 	$effect(() => {
 		const input = stepInput;
 		if (input) {
-			const truncated = truncateDeep(input);
+			// Mobile: 50 chars, Desktop: 500 chars
+			const maxLength = isMobile ? 50 : 500;
+			const truncated = truncateDeep(input, maxLength);
 			const jsonString = JSON.stringify(truncated, null, 2);
 			codeToHtml(jsonString, {
 				lang: 'json',
@@ -200,7 +215,9 @@
 	$effect(() => {
 		const output = stepOutput;
 		if (output) {
-			const truncated = truncateDeep(output);
+			// Mobile: 50 chars, Desktop: 500 chars
+			const maxLength = isMobile ? 50 : 500;
+			const truncated = truncateDeep(output, maxLength);
 			const jsonString = JSON.stringify(truncated, null, 2);
 			codeToHtml(jsonString, {
 				lang: 'json',
@@ -234,6 +251,9 @@
 
 	// Get step output from reactive step() method
 	const stepOutput = $derived(selectedStep ? flowState.step(selectedStep).output : null);
+
+	// Get step error from reactive step() method
+	const stepError = $derived(selectedStep ? flowState.step(selectedStep).error : null);
 
 	// Get actual input for the selected step
 	const stepInput = $derived.by(() => {
@@ -338,7 +358,7 @@
 			</div>
 		{/if}
 
-		<div class="explanation-content text-sm p-4 space-y-3">
+		<div class="explanation-content text-sm p-4 pb-24 md:pb-4 space-y-3">
 			{#if currentStepInfo}
 				{#key selectedStep}
 					<div in:fade={{ duration: 300, delay: 150 }} out:fade={{ duration: 150 }}>
@@ -443,32 +463,53 @@
 								{/if}
 							</div>
 
-							<!-- Actual Input -->
-							<div>
-								<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Input</div>
-								{#if highlightedInput}
-									<div class="input-type-box">
-										<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-										{@html highlightedInput}
+							{#if stepStatus === 'failed' && stepError}
+								<!-- Error Message (shown instead of Input/Output when step fails) -->
+								<div>
+									<div class="font-semibold text-red-400 mb-1.5 text-sm flex items-center gap-2">
+										<XCircle class="w-4 h-4" />
+										Error
 									</div>
-								{:else if flowState.status === 'idle'}
-									<div
-										class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
-									>
-										<Play class="w-3.5 h-3.5" />
-										<span>Run the workflow to see input</span>
+									<div class="error-box">
+										<pre
+											class="text-sm text-red-200 whitespace-pre-wrap break-words m-0">{stepError}</pre>
 									</div>
-								{:else if currentStepInfo && currentStepInfo.dependsOn.length > 0}
-									{@const incompleteDeps = currentStepInfo.dependsOn.filter(
-										(dep) => getStepStatus(dep) !== 'completed'
-									)}
-									{#if incompleteDeps.length > 0}
+								</div>
+							{:else}
+								<!-- Actual Input -->
+								<div>
+									<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Input</div>
+									{#if highlightedInput}
+										<div class="input-type-box">
+											<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+											{@html highlightedInput}
+										</div>
+									{:else if flowState.status === 'idle'}
 										<div
 											class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
 										>
-											<Clock class="w-3.5 h-3.5" />
-											<span>Waiting for {incompleteDeps.join(', ')} to complete</span>
+											<Play class="w-3.5 h-3.5" />
+											<span>Run the workflow to see input</span>
 										</div>
+									{:else if currentStepInfo && currentStepInfo.dependsOn.length > 0}
+										{@const incompleteDeps = currentStepInfo.dependsOn.filter(
+											(dep) => getStepStatus(dep) !== 'completed'
+										)}
+										{#if incompleteDeps.length > 0}
+											<div
+												class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
+											>
+												<Clock class="w-3.5 h-3.5" />
+												<span>Waiting for {incompleteDeps.join(', ')} to complete</span>
+											</div>
+										{:else}
+											<div
+												class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
+											>
+												<Clock class="w-3.5 h-3.5" />
+												<span>Waiting for step to start</span>
+											</div>
+										{/if}
 									{:else}
 										<div
 											class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
@@ -477,93 +518,88 @@
 											<span>Waiting for step to start</span>
 										</div>
 									{/if}
-								{:else}
-									<div
-										class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
-									>
-										<Clock class="w-3.5 h-3.5" />
-										<span>Waiting for step to start</span>
-									</div>
-								{/if}
-							</div>
+								</div>
 
-							<!-- Actual Output -->
-							<div>
-								<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Output</div>
-								{#if highlightedOutput}
-									<div class="output-box">
-										<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-										{@html highlightedOutput}
-									</div>
-								{:else if flowState.status === 'idle'}
-									<div
-										class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
-									>
-										<Play class="w-3.5 h-3.5" />
-										<span>Run the workflow to see output</span>
-									</div>
-								{:else if stepStatus === 'started'}
-									<div
-										class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
-									>
-										<Hourglass class="w-3.5 h-3.5" />
-										<span>Step is running...</span>
-									</div>
-								{:else}
-									<div
-										class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
-									>
-										<Clock class="w-3.5 h-3.5" />
-										<span>Waiting for step to complete</span>
-									</div>
-								{/if}
-							</div>
+								<!-- Actual Output -->
+								<div>
+									<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Output</div>
+									{#if highlightedOutput}
+										<div class="output-box">
+											<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+											{@html highlightedOutput}
+										</div>
+									{:else if flowState.status === 'idle'}
+										<div
+											class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
+										>
+											<Play class="w-3.5 h-3.5" />
+											<span>Run the workflow to see output</span>
+										</div>
+									{:else if stepStatus === 'started'}
+										<div
+											class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
+										>
+											<Hourglass class="w-3.5 h-3.5" />
+											<span>Step is running...</span>
+										</div>
+									{:else}
+										<div
+											class="bg-secondary/30 rounded p-3 text-xs text-muted-foreground flex items-center justify-center gap-2"
+										>
+											<Clock class="w-3.5 h-3.5" />
+											<span>Waiting for step to complete</span>
+										</div>
+									{/if}
+								</div>
+							{/if}
 						</div>
 					</div>
 				{/key}
 			{:else}
 				<!-- Flow-level view -->
-				<div class="space-y-3">
+				<div class="space-y-4">
 					<!-- What it does -->
-					<div class="bg-accent/30 rounded-lg p-3 border border-accent">
-						<p class="text-sm text-foreground leading-relaxed mb-2">{flowInfo.description}</p>
-						<p class="text-xs text-muted-foreground">{flowInfo.whatItDoes}</p>
-					</div>
+					<p class="text-foreground leading-relaxed">
+						Processes web articles by fetching content, generating summaries and keywords in
+						parallel, then publishing the results. Demonstrates parallel execution, automatic
+						retries, and dependency management.
+					</p>
 
 					<!-- How orchestration works (collapsible) -->
-					<details class="flow-orchestration-explainer">
+					<details class="concept-explainer bg-background/50 border border-border rounded-lg" open>
 						<summary
-							class="font-semibold text-sm text-primary cursor-pointer hover:text-primary/80 flex items-center gap-2 mb-2"
+							class="font-semibold text-sm text-foreground cursor-pointer hover:bg-background/80 flex items-center gap-2 p-3 rounded-lg transition-colors"
 						>
-							<span>⚙️</span> How SQL Core orchestrates this flow
+							<span class="concept-caret">▸</span>
+							<span class="flex-1">How pgflow orchestrates this flow</span>
 						</summary>
-						<div
-							class="text-xs text-muted-foreground leading-relaxed bg-secondary/30 rounded p-3 space-y-2"
-						>
+						<div class="text-xs text-muted-foreground leading-relaxed px-3 pb-3 space-y-2">
 							<p>
-								When you call <code class="bg-muted px-1 rounded font-mono"
-									>start_flow('article_flow', {'{url}'})</code
-								>, SQL Core creates a run and initializes state rows for each step. Root steps (no
-								dependencies) get messages pushed to the queue immediately.
+								<code class="bg-muted px-1 rounded font-mono">start_flow()</code> creates a run and initializes
+								state for each step. Root steps (no dependencies) get tasks queued immediately.
 							</p>
 							<p>
-								As Workers execute handlers and call <code class="bg-muted px-1 rounded font-mono"
-									>complete_task()</code
-								>, SQL Core acknowledges completion, saves outputs, checks dependent steps, and
-								starts those with all dependencies satisfied. The run completes when
+								<strong>Edge Function worker</strong> polls the queue, calls
+								<code class="bg-muted px-1 rounded font-mono">start_tasks()</code> to reserve tasks,
+								executes handlers, then calls
+								<code class="bg-muted px-1 rounded font-mono">complete_task()</code> to save outputs.
+							</p>
+							<p>
+								<strong>SQL Core</strong> checks dependencies after each completion, creates tasks
+								for steps with all dependencies met, and marks the run complete when
 								<code class="bg-muted px-1 rounded font-mono">remaining_steps = 0</code>.
 							</p>
-							<p class="text-muted-foreground/80 italic">
-								This demo uses Supabase Realtime to broadcast graph state changes from SQL Core back
-								to the browser in real-time.
+							<p>
+								<strong>Supabase Realtime</strong> broadcasts state changes back to this UI for live
+								updates.
 							</p>
 						</div>
 					</details>
 
 					<!-- Reliability Features -->
 					<div>
-						<div class="font-semibold text-muted-foreground mb-1.5 text-sm flex items-center gap-2">
-							<span>🛡️</span> Reliability Configuration
+						<div class="font-semibold text-muted-foreground mb-1.5 text-sm">
+							Reliability Configuration
 						</div>
 						<div class="space-y-2">
 							{#each flowInfo.reliabilityFeatures as feature (feature.setting)}
@@ -757,6 +793,35 @@
 			height 0.3s ease-out,
 			min-height 0.3s ease-out,
 			max-height 0.3s ease-out;
+	}
+
+	/* Error box styling */
+	.error-box {
+		background: rgba(220, 38, 38, 0.15);
+		border: 1px solid rgba(239, 68, 68, 0.5);
+		border-radius: 6px;
+		padding: 12px 14px;
+		max-height: 400px;
+		overflow-y: auto;
+	}
+
+	.error-box::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+	}
+
+	.error-box::-webkit-scrollbar-track {
+		background: rgba(255, 255, 255, 0.05);
+		border-radius: 3px;
+	}
+
+	.error-box::-webkit-scrollbar-thumb {
+		background: rgba(239, 68, 68, 0.3);
+		border-radius: 3px;
+	}
+
+	.error-box::-webkit-scrollbar-thumb:hover {
+		background: rgba(239, 68, 68, 0.5);
 	}
 
 	/* Concept explainer caret rotation */

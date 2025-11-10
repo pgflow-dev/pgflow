@@ -14,7 +14,8 @@ function sleep(ms: number) {
 // Flow definition - clean and minimal
 export default new Flow<{ url: string }>({
 	slug: 'article_flow',
-	maxAttempts: 3
+	baseDelay: 1,
+	maxAttempts: 2
 })
 	.step({ slug: 'fetchArticle' }, async (input) => {
 		await sleep(SLEEP_MS);

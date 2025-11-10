@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { createFlowState } from '$lib/stores/pgflow-state.svelte';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
-	import { Play, CheckCircle2 } from '@lucide/svelte';
+	import { Play, CheckCircle2, XCircle } from '@lucide/svelte';
 	import { codeToHtml } from 'shiki';
 
 	interface Props {
@@ -12,6 +12,21 @@
 
 	let expandedEventIdx = $state<number | null>(null);
 	let highlightedEventJson = $state<Record<number, string>>({});
+	let isMobile = $state(false);
+
+	// Detect mobile viewport
+	if (typeof window !== 'undefined') {
+		const mediaQuery = window.matchMedia('(max-width: 767px)');
+		isMobile = mediaQuery.matches;
+
+		const updateMobile = (e: MediaQueryListEvent) => {
+			isMobile = e.matches;
+			// Clear cache when switching to force regeneration with new truncation
+			highlightedEventJson = {};
+		};
+
+		mediaQuery.addEventListener('change', updateMobile);
+	}
 
 	// Helper to get short step name
 	function getShortStepName(stepSlug: string): string {
@@ -26,7 +41,7 @@
 
 	// Helper to get event badge info
 	function getEventBadgeInfo(event: { event_type: string; step_slug?: string }): {
-		icon: typeof Play | typeof CheckCircle2;
+		icon: typeof Play | typeof CheckCircle2 | typeof XCircle;
 		color: string;
 		text: string;
 	} | null {
@@ -44,10 +59,17 @@
 				text: getShortStepName(event.step_slug)
 			};
 		}
+		if (event.event_type === 'step:failed' && event.step_slug) {
+			return {
+				icon: XCircle,
+				color: 'red',
+				text: getShortStepName(event.step_slug)
+			};
+		}
 		return null;
 	}
 
-	// Get displayable events (started/completed steps only)
+	// Get displayable events (started/completed/failed steps only)
 	const displayableEvents = $derived(
 		flowState.timeline
 			.map((e, idx) => ({ event: e, badge: getEventBadgeInfo(e), idx }))
@@ -81,7 +103,9 @@
 		} else {
 			// Generate syntax-highlighted JSON if not already cached
 			if (!highlightedEventJson[idx]) {
-				const truncated = truncateDeep(event);
+				// Mobile: 50 chars, Desktop: 500 chars
+				const maxLength = isMobile ? 50 : 500;
+				const truncated = truncateDeep(event, maxLength);
 				const jsonString = JSON.stringify(truncated, null, 2);
 				const html = await codeToHtml(jsonString, {
 					lang: 'json',
@@ -93,6 +117,19 @@
 			expandedEventIdx = idx;
 		}
 	}
+
+	// Auto-expand failed events
+	$effect(() => {
+		// Find the most recent failed event
+		const failedEvents = displayableEvents.filter((e) => e.event.event_type === 'step:failed');
+		if (failedEvents.length > 0) {
+			const mostRecentFailed = failedEvents[failedEvents.length - 1];
+			// Auto-expand it
+			if (expandedEventIdx !== mostRecentFailed.idx) {
+				toggleEventExpanded(mostRecentFailed.idx, mostRecentFailed.event);
+			}
+		}
+	});
 </script>
 
 <Card class="h-full flex flex-col">
@@ -164,6 +201,12 @@
 		background-color: rgba(23, 122, 81, 0.2);
 		border-color: rgba(32, 165, 111, 0.5);
 		color: #2ec184;
+	}
+
+	.event-badge-row.event-badge-red {
+		background-color: rgba(220, 38, 38, 0.2);
+		border-color: rgba(239, 68, 68, 0.5);
+		color: #f87171;
 	}
 
 	/* Event JSON display */
