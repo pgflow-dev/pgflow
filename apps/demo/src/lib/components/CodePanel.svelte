@@ -16,7 +16,7 @@
 	let { flowState, selectedStep, hoveredStep }: Props = $props();
 
 	const dispatch = createEventDispatcher<{
-		'step-selected': { stepSlug: string | null };
+		'step-selected': { stepSlug: string | null; source?: string };
 		'step-hovered': { stepSlug: string | null };
 	}>();
 
@@ -201,7 +201,7 @@
 					dispatch('step-hovered', { stepSlug: null });
 
 					// All sections (including flow_config) dispatch their slug
-					dispatch('step-selected', { stepSlug });
+					dispatch('step-selected', { stepSlug, source: 'code' });
 				};
 				line.addEventListener('click', clickHandler);
 				handlers.push({ element: line, type: 'click', handler: clickHandler });

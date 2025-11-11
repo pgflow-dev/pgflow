@@ -358,7 +358,7 @@
 			</div>
 		{/if}
 
-		<div class="explanation-content text-sm p-4 pb-24 md:pb-4 space-y-3">
+		<div class="explanation-content text-sm p-4 pb-18 md:pb-4 space-y-3">
 			{#if currentStepInfo}
 				{#key selectedStep}
 					<div in:fade={{ duration: 300, delay: 150 }} out:fade={{ duration: 150 }}>
