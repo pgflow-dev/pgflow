@@ -3,6 +3,7 @@
 	import { SvelteFlow } from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
 	import type { createFlowState } from '$lib/stores/pgflow-state-improved.svelte';
+	import DAGNode from './DAGNode.svelte';
 
 	interface Props {
 		flowState: ReturnType<typeof createFlowState>;
@@ -14,6 +15,11 @@
 
 	let containerElement: HTMLDivElement | undefined = $state(undefined);
 	let shouldFitView = $state(true);
+
+	// Custom node types with PulseDot
+	const nodeTypes = {
+		dagNode: DAGNode
+	};
 
 	// Re-center when container or window resizes
 	onMount(() => {
@@ -88,12 +94,12 @@
 	}
 
 	// Define the 4-step DAG structure - reactive to step states and selection
-	// Vertical spacing between nodes (81px between levels)
+	// Vertical spacing between nodes (110px between levels)
 	// Shifted up by 30px to center better in viewport
 	let nodes = $derived([
 		{
 			id: 'fetchArticle',
-			type: 'default',
+			type: 'dagNode',
 			position: { x: 150, y: -30 },
 			data: { label: 'fetchArticle' },
 			class: getNodeClass('fetchArticle'),
@@ -101,24 +107,24 @@
 		},
 		{
 			id: 'summarize',
-			type: 'default',
-			position: { x: 50, y: 51 },
+			type: 'dagNode',
+			position: { x: 50, y: 80 },
 			data: { label: 'summarize' },
 			class: getNodeClass('summarize'),
 			draggable: false
 		},
 		{
 			id: 'extractKeywords',
-			type: 'default',
-			position: { x: 250, y: 51 },
+			type: 'dagNode',
+			position: { x: 250, y: 80 },
 			data: { label: 'extractKeywords' },
 			class: getNodeClass('extractKeywords'),
 			draggable: false
 		},
 		{
 			id: 'publish',
-			type: 'default',
-			position: { x: 150, y: 132 },
+			type: 'dagNode',
+			position: { x: 150, y: 190 },
 			data: { label: 'publish' },
 			class: getNodeClass('publish'),
 			draggable: false
@@ -223,8 +229,9 @@
 		<SvelteFlow
 			{nodes}
 			{edges}
+			{nodeTypes}
 			fitView={shouldFitView}
-			fitViewOptions={{ padding: 0.1 }}
+			fitViewOptions={{ padding: 0.15 }}
 			panOnDrag={false}
 			zoomOnScroll={false}
 			zoomOnPinch={false}

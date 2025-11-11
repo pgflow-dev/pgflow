@@ -2,7 +2,7 @@ import { Flow } from '@pgflow/dsl';
 import { fetchArticle } from './tasks/fetch-article.ts';
 // import { summarizeArticle } from './tasks/summarize-article.ts';
 // import { extractKeywords } from './tasks/extract-keywords.ts';
-import { publishArticle } from './tasks/publish-article.ts';
+// import { publishArticle } from './tasks/publish-article.ts';
 
 const SLEEP_MS = 1000;
 
@@ -19,26 +19,21 @@ export default new Flow<{ url: string }>({
 		await sleep(SLEEP_MS);
 		return fetchArticle(input.run.url);
 	})
-	.step(
-		{ slug: 'summarize', dependsOn: ['fetchArticle'], baseDelay: 1 },
-		async (input, context) => {
-			const attemptNumber = context.rawMessage.read_ct;
+	.step({ slug: 'summarize', dependsOn: ['fetchArticle'], baseDelay: 1 }, async () => {
+		// Simulate failure on first attempt for retry demo
+		// if (context.rawMessage.read_ct === 1) {
+		// 	throw new Error('Simulated failure for retry demo');
+		// } else {
+		await sleep(SLEEP_MS);
+		// }
 
-			// Simulate failure on first attempt for retry demo
-			// if (attemptNumber === 1) {
-			// 	throw new Error('Simulated failure for retry demo');
-			// } else {
-			await sleep(SLEEP_MS);
-			// }
-
-			return 'DEBUG ARTICLE CONTENT'; //summarizeArticle(input.fetchArticle.content);
-		}
-	)
-	.step({ slug: 'extractKeywords', dependsOn: ['fetchArticle'] }, async (input) => {
+		return 'DEBUG ARTICLE CONTENT'; //summarizeArticle(input.fetchArticle.content);
+	})
+	.step({ slug: 'extractKeywords', dependsOn: ['fetchArticle'] }, async () => {
 		await sleep(SLEEP_MS);
 		return { keywords: ['ai', 'llm', 'agent'] }; //extractKeywords(input.fetchArticle.content);
 	})
-	.step({ slug: 'publish', dependsOn: ['summarize', 'extractKeywords'] }, async (input) => {
+	.step({ slug: 'publish', dependsOn: ['summarize', 'extractKeywords'] }, async () => {
 		await sleep(SLEEP_MS);
 		// Step handler acts as adapter - extracting specific fields from previous steps
 

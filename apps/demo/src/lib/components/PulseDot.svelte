@@ -3,48 +3,89 @@
 
 	// Component shows/hides based on global pulsing state
 	const visible = $derived(pulseDots.pulsing);
+	const exploding = $derived(pulseDots.exploding);
 </script>
 
 {#if visible}
-	<div class="pulse-dot"></div>
+	<div class="pulse-dot" class:exploding></div>
 {/if}
 
 <style>
 	.pulse-dot {
 		width: 10px;
 		height: 10px;
-		background: rgba(255, 159, 28, 1);
-		border: 2px solid rgba(255, 255, 255, 0.9);
+		background: rgba(255, 255, 255, 0.5);
+		border: 2px solid rgba(255, 255, 255, 0.6);
 		border-radius: 50%;
 		pointer-events: none;
-		animation: pulse-dot 1s ease-out 3;
-		box-shadow: 0 0 8px rgba(255, 159, 28, 0.8);
+		box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
 
 		/* Center in parent container */
 		position: absolute;
 		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
+
+		/* Normal pulsing while visible */
+		animation: pulse-normal 1s ease-out infinite;
 	}
 
-	@keyframes pulse-dot {
+	/* When exiting, switch to explosion animation */
+	.pulse-dot.exploding {
+		animation: pulse-explode 1s ease-out forwards;
+	}
+
+	/* Normal pulse animation - loops */
+	@keyframes pulse-normal {
 		0% {
 			box-shadow:
-				0 0 8px rgba(255, 159, 28, 0.8),
-				0 0 0 0 rgba(255, 159, 28, 0.7);
-			opacity: 1;
+				0 0 8px rgba(255, 255, 255, 0.5),
+				0 0 0 0 rgba(255, 255, 255, 0.5);
+			transform: translate(-50%, -50%) scale(1);
 		}
 		50% {
 			box-shadow:
-				0 0 12px rgba(255, 159, 28, 1),
-				0 0 0 16px rgba(255, 159, 28, 0);
-			opacity: 0.9;
+				0 0 12px rgba(255, 255, 255, 0.8),
+				0 0 0 16px rgba(255, 255, 255, 0.4);
+			transform: translate(-50%, -50%) scale(1.1);
 		}
 		100% {
 			box-shadow:
-				0 0 8px rgba(255, 159, 28, 0.8),
-				0 0 0 0 rgba(255, 159, 28, 0);
-			opacity: 1;
+				0 0 8px rgba(255, 255, 255, 0.5),
+				0 0 0 0 rgba(255, 255, 255, 0);
+			transform: translate(-50%, -50%) scale(1);
+		}
+	}
+
+	/* Explosion animation - one big pulse with fade out */
+	@keyframes pulse-explode {
+		0% {
+			box-shadow:
+				0 0 8px rgba(255, 255, 255, 0.5),
+				0 0 0 0 rgba(255, 255, 255, 0.5);
+			transform: translate(-50%, -50%) scale(1);
+			opacity: 0.6;
+		}
+		30% {
+			box-shadow:
+				0 0 16px rgba(255, 255, 255, 0.6),
+				0 0 0 16px rgba(255, 255, 255, 0.4);
+			transform: translate(-50%, -50%) scale(1.15);
+			opacity: 0.2;
+		}
+		60% {
+			box-shadow:
+				0 0 20px rgba(255, 255, 255, 0.4),
+				0 0 0 24px rgba(255, 255, 255, 0.2);
+			transform: translate(-50%, -50%) scale(1.35);
+			opacity: 0.1;
+		}
+		100% {
+			box-shadow:
+				0 0 24px rgba(255, 255, 255, 0),
+				0 0 0 32px rgba(255, 255, 255, 0);
+			transform: translate(-50%, -50%) scale(1.5);
+			opacity: 0;
 		}
 	}
 </style>
