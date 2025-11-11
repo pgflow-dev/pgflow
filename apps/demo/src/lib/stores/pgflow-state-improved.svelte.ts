@@ -259,7 +259,7 @@ export function createFlowState<TFlow extends AnyFlow>(
  *   const flowState = createFlowState<typeof ArticleFlow>(
  *     pgflow,
  *     'article_flow',
- *     ['fetch_article', 'summarize', 'extract_keywords', 'publish']
+ *     ['fetchArticle', 'summarize', 'extractKeywords', 'publish']
  *   );
  *
  *   async function start() {

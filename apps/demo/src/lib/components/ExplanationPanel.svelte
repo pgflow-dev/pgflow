@@ -51,31 +51,31 @@
 		inputType: `{
   url: string
 }`,
-		steps: ['fetch_article', 'summarize', 'extract_keywords', 'publish']
+		steps: ['fetchArticle', 'summarize', 'extractKeywords', 'publish']
 	};
 
 	// Step-level concept explanations (how pgflow works internally)
 	const stepConcepts: Record<string, string> = {
-		fetch_article:
+		fetchArticle:
 			"This is a root step with no dependencies. When start_flow() is called, SQL Core immediately " +
 			"pushes a message to the queue. The Worker polls, gets the message, executes the handler, " +
 			"and calls complete_task() with the return value. SQL Core acknowledges completion, saves the output, " +
 			"and checks which dependent steps now have all their dependencies satisfied.",
 
 		summarize:
-			"Depends on fetch_article. After fetch_article completes, SQL Core checks if this step's " +
-			"dependencies are met. Since fetch_article is the only dependency, this step becomes ready " +
-			"immediately. SQL Core pushes a message with the input payload (fetch_article's output). " +
+			"Depends on fetchArticle. After fetchArticle completes, SQL Core checks if this step's " +
+			"dependencies are met. Since fetchArticle is the only dependency, this step becomes ready " +
+			"immediately. SQL Core pushes a message with the input payload (fetchArticle's output). " +
 			"Worker polls, executes the handler, calls complete_task(). SQL Core acknowledges completion and saves output.",
 
-		extract_keywords:
-			"Also depends only on fetch_article, so it becomes ready at the same time as summarize. " +
+		extractKeywords:
+			"Also depends only on fetchArticle, so it becomes ready at the same time as summarize. " +
 			"Both messages hit the queue simultaneously - whichever Worker polls first starts execution. " +
 			"This is how pgflow achieves parallel execution: SQL Core identifies ready steps and pushes messages, " +
 			"Workers execute independently.",
 
 		publish:
-			"Depends on both summarize AND extract_keywords. This step remains blocked until both " +
+			"Depends on both summarize AND extractKeywords. This step remains blocked until both " +
 			"dependencies complete. After the second one finishes, complete_task() acknowledges completion, " +
 			"saves output, checks dependencies, and finds publish is now ready. SQL Core pushes the message " +
 			"with both outputs as input. After publish completes, no dependent steps remain - the run is marked completed."
@@ -94,13 +94,13 @@
 			returns: string;
 		}
 	> = {
-		fetch_article: {
-			name: 'fetch_article',
+		fetchArticle: {
+			name: 'fetchArticle',
 			displayName: 'Fetch Article',
 			whatItDoes:
 				'Fetches article content from the provided URL using r.jina.ai. Returns both the article text and title for downstream processing.',
 			dependsOn: [],
-			dependents: ['summarize', 'extract_keywords'],
+			dependents: ['summarize', 'extractKeywords'],
 			inputType: `{
   run: {
     url: string
@@ -116,25 +116,25 @@
 			displayName: 'Summarize',
 			whatItDoes:
 				'Uses an LLM (Groq) to generate a concise summary of the article content. Runs in parallel with keyword extraction for efficiency.',
-			dependsOn: ['fetch_article'],
+			dependsOn: ['fetchArticle'],
 			dependents: ['publish'],
 			inputType: `{
-  fetch_article: {
+  fetchArticle: {
     content: string
     title: string
   }
 }`,
 			returns: 'string'
 		},
-		extract_keywords: {
-			name: 'extract_keywords',
+		extractKeywords: {
+			name: 'extractKeywords',
 			displayName: 'Extract Keywords',
 			whatItDoes:
 				'Uses an LLM (Groq) to extract key terms and topics from the article. Runs in parallel with summarization for efficiency.',
-			dependsOn: ['fetch_article'],
+			dependsOn: ['fetchArticle'],
 			dependents: ['publish'],
 			inputType: `{
-  fetch_article: {
+  fetchArticle: {
     content: string
   }
 }`,
@@ -145,11 +145,11 @@
 			displayName: 'Publish',
 			whatItDoes:
 				'Combines the summary and keywords and publishes the processed article. In this demo, generates a mock article ID—in production, this would save to a database.',
-			dependsOn: ['summarize', 'extract_keywords'],
+			dependsOn: ['summarize', 'extractKeywords'],
 			dependents: [],
 			inputType: `{
   summarize: string
-  extract_keywords: string[]
+  extractKeywords: string[]
 }`,
 			returns: 'string'
 		}

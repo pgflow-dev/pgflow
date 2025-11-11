@@ -47,7 +47,7 @@
 					<!-- First-time welcome -->
 					<div class="space-y-4">
 						<p class="text-sm text-muted-foreground">
-							This demo is a 4-step DAG workflow: fetch → (summarize + extract_keywords in parallel) → publish.
+							This demo is a 4-step DAG workflow: fetch → (summarize + extractKeywords in parallel) → publish.
 							Watch how pgflow orchestrates execution across three layers.
 						</p>
 
@@ -100,7 +100,7 @@
 									<span class="font-mono text-foreground">start_flow()</span> created state rows for each step
 								</div>
 								<div>
-									SQL Core pushed <span class="font-mono text-foreground">fetch_article</span> message to queue
+									SQL Core pushed <span class="font-mono text-foreground">fetchArticle</span> message to queue
 								</div>
 								<div>
 									Worker polled queue, executed handler, called <span class="font-mono text-foreground">complete_task()</span>

@@ -27,7 +27,7 @@
 	let isMobile = $state(false);
 
 	// Section order for mobile rendering
-	const SECTION_ORDER = ['flow_config', 'fetch_article', 'summarize', 'extract_keywords', 'publish'];
+	const SECTION_ORDER = ['flow_config', 'fetchArticle', 'summarize', 'extractKeywords', 'publish'];
 
 	// Calculate step blocks (groups of lines) for status icon positioning
 	const stepBlocks = $derived.by(() => {

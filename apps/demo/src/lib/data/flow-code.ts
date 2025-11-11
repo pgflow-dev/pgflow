@@ -22,13 +22,13 @@ export const FLOW_SECTIONS: Record<string, CodeSection> = {
   maxAttempts: 3
 })`
 	},
-	fetch_article: {
+	fetchArticle: {
 		code: `  .step(
-    { slug: 'fetch_article' },
+    { slug: 'fetchArticle' },
     (input) => scrapeUrl(input.run.url)
   )`,
 		mobileCode: `  .step(
-    { slug: 'fetch_article' },
+    { slug: 'fetchArticle' },
     (input) => scrapeUrl(
       input.run.url
     )
@@ -36,51 +36,51 @@ export const FLOW_SECTIONS: Record<string, CodeSection> = {
 	},
 	summarize: {
 		code: `  .step(
-    { slug: 'summarize', dependsOn: ['fetch_article'] },
-    (input) => summarize(schema, input.fetch_article.content)
+    { slug: 'summarize', dependsOn: ['fetchArticle'] },
+    (input) => summarize(schema, input.fetchArticle.content)
   )`,
 		mobileCode: `  .step(
     {
       slug: 'summarize',
-      dependsOn: ['fetch_article']
+      dependsOn: ['fetchArticle']
     },
     (input) => summarize(
       schema,
-      input.fetch_article.content
+      input.fetchArticle.content
     )
   )`
 	},
-	extract_keywords: {
+	extractKeywords: {
 		code: `  .step(
-    { slug: 'extract_keywords', dependsOn: ['fetch_article'] },
-    (input) => extractKeywords(input.fetch_article.content)
+    { slug: 'extractKeywords', dependsOn: ['fetchArticle'] },
+    (input) => extractKeywords(input.fetchArticle.content)
   )`,
 		mobileCode: `  .step(
     {
-      slug: 'extract_keywords',
-      dependsOn: ['fetch_article']
+      slug: 'extractKeywords',
+      dependsOn: ['fetchArticle']
     },
     (input) => extractKeywords(
-      input.fetch_article.content
+      input.fetchArticle.content
     )
   )`
 	},
 	publish: {
 		code: `  .step(
-    { slug: 'publish', dependsOn: ['summarize', 'extract_keywords'] },
-    (input) => publishArticle(input.summarize, input.extract_keywords)
+    { slug: 'publish', dependsOn: ['summarize', 'extractKeywords'] },
+    (input) => publishArticle(input.summarize, input.extractKeywords)
   );`,
 		mobileCode: `  .step(
     {
       slug: 'publish',
       dependsOn: [
         'summarize',
-        'extract_keywords'
+        'extractKeywords'
       ]
     },
     (input) => publishArticle(
       input.summarize,
-      input.extract_keywords
+      input.extractKeywords
     )
   );`
 	}
@@ -91,7 +91,7 @@ export const FLOW_SECTIONS: Record<string, CodeSection> = {
  */
 function calculateLineRanges() {
 	let currentLine = 1;
-	const orderedSlugs = ['flow_config', 'fetch_article', 'summarize', 'extract_keywords', 'publish'];
+	const orderedSlugs = ['flow_config', 'fetchArticle', 'summarize', 'extractKeywords', 'publish'];
 
 	for (const slug of orderedSlugs) {
 		const section = FLOW_SECTIONS[slug];

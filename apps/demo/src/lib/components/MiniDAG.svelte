@@ -16,18 +16,18 @@
 
 	// Define nodes positions (x,y = center of node) - vertical layout
 	const nodes = [
-		{ id: 'fetch_article', x: 60, y: 20, label: 'fetch' },
+		{ id: 'fetchArticle', x: 60, y: 20, label: 'fetch' },
 		{ id: 'summarize', x: 25, y: 60, label: 'summ' },
-		{ id: 'extract_keywords', x: 95, y: 60, label: 'kwrds' },
+		{ id: 'extractKeywords', x: 95, y: 60, label: 'kwrds' },
 		{ id: 'publish', x: 60, y: 100, label: 'pub' }
 	];
 
 	// Define edges
 	const edges = [
-		{ from: 'fetch_article', to: 'summarize' },
-		{ from: 'fetch_article', to: 'extract_keywords' },
+		{ from: 'fetchArticle', to: 'summarize' },
+		{ from: 'fetchArticle', to: 'extractKeywords' },
 		{ from: 'summarize', to: 'publish' },
-		{ from: 'extract_keywords', to: 'publish' }
+		{ from: 'extractKeywords', to: 'publish' }
 	];
 
 	// Helper function to create smooth curved paths for vertical layout
