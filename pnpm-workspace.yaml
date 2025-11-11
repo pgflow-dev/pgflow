@@ -3,3 +3,7 @@ packages:
   - 'examples/playground'
   - '!pkgs/*/dist'
   - '!**/dist/**'
+
+onlyBuiltDependencies:
+  - supabase
+  - sharp
