@@ -1,11 +1,3 @@
--- Enable required extensions
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-CREATE EXTENSION IF NOT EXISTS pg_net;
-
--- Grant necessary permissions
-GRANT USAGE ON SCHEMA cron TO postgres;
-GRANT USAGE ON SCHEMA net TO postgres;
-
 -- Remove existing job if it exists to prevent duplicates
 SELECT cron.unschedule(jobname)
 FROM cron.job

@@ -26,7 +26,16 @@
 				"command": "vite build",
 				"cwd": "apps/demo"
 			},
-			"outputs": ["{projectRoot}/.svelte-kit"]
+			"outputs": ["{projectRoot}/.svelte-kit"],
+			"inputs": [
+				"{projectRoot}/wrangler.toml",
+				{
+					"env": "VITE_SUPABASE_URL"
+				},
+				{
+					"env": "VITE_SUPABASE_ANON_KEY"
+				}
+			]
 		},
 		"preview": {
 			"executor": "nx:run-commands",
