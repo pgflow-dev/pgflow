@@ -34,11 +34,13 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
     supabaseClient: SupabaseClient,
     opts: {
       realtimeStabilizationDelayMs?: number;
+      schedule?: typeof setTimeout;
     } = {}
   ) {
     this.#supabase = supabaseClient;
     this.#realtimeAdapter = new SupabaseBroadcastAdapter(supabaseClient, {
       stabilizationDelayMs: opts.realtimeStabilizationDelayMs,
+      schedule: opts.schedule,
     });
 
     // Set up global event listeners - properly typed

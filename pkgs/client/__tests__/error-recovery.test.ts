@@ -7,6 +7,7 @@ import {
   mockRpcCall,
   createRunResponse,
   advanceTimersAndFlush,
+  createSyncSchedule,
 } from './helpers/test-utils';
 import { mockChannelSubscription } from './mocks';
 import {
@@ -36,7 +37,7 @@ describe('Error Recovery', () => {
 
       mockChannelSubscription(mocks);
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Attempt to start flow should throw
       await expect(
@@ -62,7 +63,7 @@ describe('Error Recovery', () => {
 
       mockChannelSubscription(mocks);
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Attempt to get run should return null (handled gracefully)
       const run = await pgflowClient.getRun(RUN_ID);
@@ -85,7 +86,7 @@ describe('Error Recovery', () => {
 
       mockChannelSubscription(mocks);
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Should handle null data gracefully
       const run = await pgflowClient.getRun(RUN_ID);
@@ -106,7 +107,7 @@ describe('Error Recovery', () => {
 
       mockChannelSubscription(mocks);
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Should handle malformed response gracefully
       await expect(pgflowClient.getRun(RUN_ID)).rejects.toThrow();
@@ -144,7 +145,7 @@ describe('Error Recovery', () => {
 
       mockChannelSubscription(mocks);
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Run concurrent operations
       const results = await Promise.allSettled([
@@ -194,7 +195,7 @@ describe('Error Recovery', () => {
 
       mockChannelSubscription(mocks);
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Start the operation
       const startFlowPromise = pgflowClient.startFlow(FLOW_SLUG, {
@@ -234,7 +235,7 @@ describe('Error Recovery', () => {
 
       mockChannelSubscription(mocks);
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Attempt to start flow should fail
       await expect(
@@ -260,7 +261,7 @@ describe('Error Recovery', () => {
 
       mockChannelSubscription(mocks);
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
       const run = await pgflowClient.getRun(RUN_ID);
 
       expect(run).toBeDefined();
@@ -297,7 +298,7 @@ describe('Error Recovery', () => {
 
       mockChannelSubscription(mocks);
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Get multiple runs
       const run1 = await pgflowClient.getRun(RUN_ID);
@@ -331,7 +332,7 @@ describe('Error Recovery', () => {
 
       mockChannelSubscription(mocks);
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       await expect(
         pgflowClient.startFlow('invalid-flow', { input: 'test' })
@@ -349,7 +350,7 @@ describe('Error Recovery', () => {
 
       mockChannelSubscription(mocks);
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       const invalidRunId = 'not-a-uuid';
 
@@ -371,7 +372,7 @@ describe('Error Recovery', () => {
 
       mockChannelSubscription(mocks);
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Should handle null input gracefully
       const run = await pgflowClient.startFlow(FLOW_SLUG, null as any);

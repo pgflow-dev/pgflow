@@ -7,15 +7,19 @@ export default defineConfig({
   root: __dirname,
   cacheDir: '../../node_modules/.vite/pkgs/client',
   plugins: [
-    dts({ 
+    dts({
       include: ['src/**/*.ts'],
       outDir: 'dist',
       rollupTypes: false,  // Don't bundle for now
       insertTypesEntry: true,
-      tsConfigFilePath: resolve(__dirname, 'tsconfig.lib.json'),
-      skipDiagnostics: true  // Skip TypeScript diagnostics to avoid vite-plugin-dts errors with monorepo project references. 
-                             // The plugin tries to compile all imported files (including from other packages) 
-                             // which breaks rootDir boundaries. Nx runs proper type checking separately.
+      // Don't specify tsConfigFilePath - let the plugin find tsconfig.json naturally
+      // This avoids the rootDir issue by not forcing it to use tsconfig.lib.json
+      skipDiagnostics: true,  // Skip diagnostics since Nx runs tsc separately
+      compilerOptions: {
+        // Override composite to false just for declaration generation
+        // This allows dts plugin to traverse into dependency packages
+        composite: false
+      }
     })
   ],
   build: {
@@ -51,6 +55,7 @@ export default defineConfig({
       '__tests__/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
     setupFiles: ['__tests__/setup.ts'],
+    globalSetup: './vitest.global-setup.ts',
     reporters: ['default'],
     coverage: {
       reportsDirectory: '../../coverage/pkgs/client',
