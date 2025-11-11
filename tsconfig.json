@@ -20,6 +20,9 @@
     },
     {
       "path": "./pkgs/client"
+    },
+    {
+      "path": "./apps/demo"
     }
   ]
 }

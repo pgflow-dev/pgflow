@@ -51,16 +51,16 @@
 					'Unique identifier for this flow. Must be ≤128 characters, containing only letters, numbers, and underscores.'
 			},
 			{
-				name: 'maxAttempts',
-				value: '2',
-				explanation:
-					'Maximum total attempts allowed. With 2 attempts: 1 initial try + 1 retry on failure.'
-			},
-			{
 				name: 'baseDelay',
 				value: '1',
 				explanation:
 					'Base delay for retries in seconds. With exponential backoff, first retry waits 1s (subsequent retries would wait 2s, 4s, etc).'
+			},
+			{
+				name: 'maxAttempts',
+				value: '2',
+				explanation:
+					'Maximum total attempts allowed. With 2 attempts: 1 initial try + 1 retry on failure.'
 			}
 		],
 		inputType: `{

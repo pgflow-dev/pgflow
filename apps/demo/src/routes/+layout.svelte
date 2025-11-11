@@ -10,8 +10,8 @@
 	<script
 		defer
 		data-domain="demo.pgflow.dev"
-		data-api="https://pgflow-demo-edge.jumski.workers.dev/stats/api/event"
-		src="https://plausible.io/js/script.js"
+		data-api="https://pgflow-demo-edge.jumski.workers.dev/stats/event"
+		src="https://pgflow-demo-edge.jumski.workers.dev/stats/script.js"
 	></script>
 </svelte:head>
 
