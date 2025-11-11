@@ -1,23 +1,18 @@
 <script lang="ts">
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
-	import { initPlausible } from '$lib/analytics';
-	import { onMount } from 'svelte';
 
 	let { children } = $props();
-
-	onMount(() => {
-		// Initialize Plausible Analytics
-		initPlausible({
-			domain: 'demo.pgflow.dev',
-			apiHost: 'https://pgflow-demo-edge.jumski.workers.dev/stats',
-			trackLocalhost: false // Set to true for local testing
-		});
-	});
 </script>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<script
+		defer
+		data-domain="demo.pgflow.dev"
+		data-api="https://pgflow-demo-edge.jumski.workers.dev/stats/api/event"
+		src="https://plausible.io/js/script.js"
+	></script>
 </svelte:head>
 
 {@render children()}

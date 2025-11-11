@@ -10,7 +10,18 @@
 		"sourceMap": true,
 		"strict": true,
 		"moduleResolution": "bundler"
-	}
+	},
+	"references": [
+		{
+			"path": "../../pkgs/edge-worker"
+		},
+		{
+			"path": "../../pkgs/dsl"
+		},
+		{
+			"path": "../../pkgs/client"
+		}
+	]
 	// Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
 	// except $lib which is handled by https://svelte.dev/docs/kit/configuration#files
 	//

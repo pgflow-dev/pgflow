@@ -1,0 +1,104 @@
+name: 'Install Sqruff CLI'
+description: 'Install sqruff SQL linter and formatter'
+author: 'quarylabs (forked fix from fank)'
+
+inputs:
+  version:
+    description: 'Version of Sqruff CLI to install'
+    required: false
+    default: 'latest'
+  github-token:
+    description: 'GitHub token for API requests (helps avoid rate limiting)'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - run: |
+        set -e  # Exit on error
+
+        # Function to make GitHub API calls with optional token
+        github_api_call() {
+          local url=$1
+          if [ -n "${{ inputs.github-token }}" ]; then
+            curl -s -H "Authorization: token ${{ inputs.github-token }}" "$url"
+          else
+            curl -s "$url"
+          fi
+        }
+
+        # Determine version to install
+        if [ "${{ inputs.version }}" = "latest" ]; then
+          echo "Fetching latest Sqruff release..."
+          API_RESPONSE=$(github_api_call "https://api.github.com/repos/quarylabs/sqruff/releases/latest")
+
+          # Check if API call was successful
+          if echo "$API_RESPONSE" | grep -q "API rate limit exceeded"; then
+            echo "::error::GitHub API rate limit exceeded. Please provide a github-token input."
+            exit 1
+          fi
+
+          LATEST_VERSION=$(echo "$API_RESPONSE" | grep '"tag_name"' | cut -d '"' -f 4)
+
+          if [ -z "$LATEST_VERSION" ]; then
+            echo "::error::Failed to fetch latest version from GitHub API"
+            echo "API Response: $API_RESPONSE"
+            exit 1
+          fi
+
+          echo "Latest version is $LATEST_VERSION"
+          VERSION=$LATEST_VERSION
+        else
+          VERSION=${{ inputs.version }}
+        fi
+
+        # Detect architecture
+        ARCH=$(uname -m)
+        case $ARCH in
+          x86_64)
+            BINARY_NAME="sqruff-linux-x86_64-musl"
+            ;;
+          aarch64|arm64)
+            BINARY_NAME="sqruff-linux-aarch64-musl"
+            ;;
+          *)
+            echo "::error::Unsupported architecture: $ARCH"
+            exit 1
+            ;;
+        esac
+
+        # Download and install
+        echo "Installing Sqruff CLI version $VERSION for architecture $ARCH"
+        DOWNLOAD_URL="https://github.com/quarylabs/sqruff/releases/download/$VERSION/${BINARY_NAME}.tar.gz"
+
+        echo "Downloading from: $DOWNLOAD_URL"
+        if ! wget -q --show-progress "$DOWNLOAD_URL" -O sqruff-cli.tar.gz; then
+          echo "::error::Failed to download Sqruff CLI from $DOWNLOAD_URL"
+          exit 1
+        fi
+
+        echo "Extracting archive..."
+        if ! tar -xzf sqruff-cli.tar.gz; then
+          echo "::error::Failed to extract tarball"
+          exit 1
+        fi
+
+        echo "Installing binary..."
+        if ! sudo mv sqruff /usr/local/bin/sqruff; then
+          echo "::error::Failed to install sqruff binary"
+          exit 1
+        fi
+
+        # Make sure it's executable
+        sudo chmod +x /usr/local/bin/sqruff
+
+        # Verify installation
+        echo "Verifying installation..."
+        if sqruff --version; then
+          echo "✅ Sqruff CLI installed successfully!"
+        else
+          echo "::error::Failed to verify Sqruff CLI installation"
+          exit 1
+        fi
+      shell: bash
