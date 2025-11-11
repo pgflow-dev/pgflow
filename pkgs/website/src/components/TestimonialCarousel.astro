@@ -1,184 +1,226 @@
 ---
+const heroTestimonial = {
+  author: 'cpursley',
+  source: 'Discord',
+  message:
+    'Got a flow up and running, this is bad ass. I love that everything just goes into Postgres.',
+};
+
 const testimonials = [
+  {
+    author: 'nel',
+    source: 'Discord',
+    message:
+      'EdgeWorker is clearly a building block missing from supabase. I toyed with it locally for several days and it worked great.',
+  },
+  {
+    author: 'Alipio Pereira',
+    source: 'Discord',
+    message:
+      "I'm really enjoying PQFlow — this is incredibly powerful! I'm implementing it in a flow with RAG.",
+  },
+  {
+    author: 'Jie',
+    source: 'Discord',
+    message:
+      "I've been through hell and back with Airflow, Windmill, Inngest, etc and to be honest i haven't find anything I really love yet.",
+  },
+  {
+    author: '_perhaps',
+    source: 'Discord',
+    message:
+      'I was for a while now feeling like there had to be a better way of handling workflows on a supabase project without needing to add something like inngest or n8n to my tech stack. It clicked really hard when I found out about your project',
+  },
+  {
+    author: 'TapTap2121',
+    source: 'Reddit',
+    message:
+      "I was searching through the docs for something like this and I'm quite surprised it's not part of Supabase already. A queue feels kinda useless with serverless runners if I need to trigger them manually",
+  },
   {
     author: 'Revolutionary-Fact28',
     source: 'Reddit',
     message:
-      'This looks amazing! I built a system on edge functions but it was very complicated and took so much time. I will probably switch to this.',
+      'I built a system to this on edge functions but it was very complicated and took so much time this will be amazing! I will be probably switch to this.',
   },
   {
     author: 'CjHuber',
     source: 'Hacker News',
     message:
-      'Exactly what I was looking for without even knowing it. Thank you for saving me tons of time in my project.',
+      'Exactly what I was looking for without even knowing it :) well I knew I need smt like this, but I thought I\'d had to build a very rudimentary version myself. Thank you for saving me tons of time',
   },
   {
-    author: 'bctreehugger',
-    source: 'Reddit',
+    author: 'enciso',
+    source: 'Discord',
     message:
-      'Amazing work on taking the initiative to build this out. Watching closely and looking forward to using it once my project has a need for it.',
-  },
-  {
-    author: 'bota01',
-    source: 'Reddit',
-    message:
-      "This is very needed and the product looks nice. Can't wait for it to be production ready.",
-  },
-  {
-    author: 'Danish',
-    source: 'Discord',
-    message: 'Waiting for your amazing work to be production ready!',
-  },
-  {
-    author: 'tomaspozo_',
-    source: 'Discord',
-    message: 'This sounds awesome! Looking forward to see it.',
-  },
-  {
-    author: 'homj',
-    source: 'Discord',
-    message: "Sounds good, I'm looking forward to it!",
+      'I was trying to build my own after having a couple of pgmq queues... you found a problem and you are giving a very good solution',
   },
 ];
-
-// Duplicate testimonials for seamless infinite scroll
-const duplicatedTestimonials = [...testimonials, ...testimonials];
 ---
 
-<div class="testimonial-carousel-wrapper">
-  <div class="testimonial-track">
-    {duplicatedTestimonials.map((testimonial, i) => (
+<div class="testimonials-section">
+  <!-- Hero Testimonial -->
+  <div class="testimonial-card hero">
+    <blockquote class="testimonial-message">
+      {heroTestimonial.message}
+    </blockquote>
+    <div class="testimonial-header">
+      <div class="testimonial-author">@{heroTestimonial.author}</div>
+      <div class="testimonial-source">{heroTestimonial.source}</div>
+    </div>
+  </div>
+
+  <!-- Grid of Remaining Testimonials -->
+  <div class="testimonials-grid">
+    {testimonials.map((testimonial) => (
       <div class="testimonial-card">
-        <div class="testimonial-header">
-          <div class="testimonial-author">@{testimonial.author}</div>
-          <div class="testimonial-source">({testimonial.source})</div>
-        </div>
         <blockquote class="testimonial-message">
           {testimonial.message}
         </blockquote>
+        <div class="testimonial-header">
+          <div class="testimonial-author">@{testimonial.author}</div>
+          <div class="testimonial-source">{testimonial.source}</div>
+        </div>
       </div>
     ))}
   </div>
 </div>
 
 <style>
-  .testimonial-carousel-wrapper {
-    width: 100vw;
-    max-width: 100vw;
-    position: relative;
-    left: 50%;
-    transform: translateX(-50%);
-    overflow: hidden;
-    padding: 2rem 0;
-    margin-left: 0;
-    margin-right: 0;
-    mask-image: linear-gradient(
-      to right,
-      transparent,
-      black 5%,
-      black 95%,
-      transparent
-    );
-    -webkit-mask-image: linear-gradient(
-      to right,
-      transparent,
-      black 5%,
-      black 95%,
-      transparent
-    );
+  .testimonials-section {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
   }
 
-  .testimonial-track {
-    display: flex;
-    align-items: stretch;
-    gap: 2rem;
-    animation: scroll-left 120s linear infinite;
-    width: fit-content;
-    /* Performance optimizations */
-    will-change: transform;
-    transform: translateZ(0); /* Force GPU acceleration */
+  /* Hero Testimonial */
+  .testimonial-card.hero {
+    margin: 0 auto 3rem auto;
+    max-width: 700px;
+    padding: 2rem 2.5rem;
   }
 
-  @keyframes scroll-left {
-    0% {
-      transform: translate3d(0, 0, 0);
-    }
-    100% {
-      transform: translate3d(-50%, 0, 0);
+  /* Grid Layout */
+  .testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  .testimonials-grid > .testimonial-card {
+    height: 100%;
+    align-self: stretch;
+  }
+
+  @media (max-width: 968px) {
+    .testimonials-grid {
+      grid-template-columns: repeat(2, 1fr);
     }
   }
 
+  @media (max-width: 640px) {
+    .testimonials-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+  }
+
+  /* Base Card Styles - Starlight Aside inspired */
   .testimonial-card {
-    min-width: 400px;
-    max-width: 400px;
-    padding: 1.5rem;
-    /* Simplified gradient for better performance */
-    background: rgba(0, 123, 110, 0.04);
-    border: 1px solid rgba(0, 123, 110, 0.16);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 123, 110, 0.03);
-    flex-shrink: 0;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--sl-color-accent-high) 4%, transparent) 0%,
+      color-mix(in srgb, var(--sl-color-accent-high) 1%, transparent) 100%
+    );
+    border-left: 3px solid color-mix(in srgb, var(--sl-color-accent-high) 50%, transparent);
+    padding: 1.5rem 1.75rem;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
-    align-items: flex-start;
+    transition: border-left-color 0.2s ease;
+    margin: 0;
   }
 
+  .testimonial-card:hover {
+    border-left-color: var(--sl-color-accent-high);
+  }
+
+  /* Hero card with less prominent border */
+  .testimonial-card.hero {
+    border-left-width: 4px;
+    border-left-color: color-mix(in srgb, var(--sl-color-accent-high) 50%, transparent);
+  }
+
+  /* Message Styles - Quote first */
+  .testimonial-message {
+    margin: 0;
+    padding: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: var(--sl-color-gray-2);
+    font-style: italic;
+    flex: 1;
+    border: none;
+    border-left: none;
+  }
+
+  .testimonial-card.hero .testimonial-message {
+    font-size: 1.45rem;
+    line-height: 1.7;
+    font-weight: 500;
+  }
+
+  /* Header Styles - Author bottom right */
   .testimonial-header {
     display: flex;
-    align-items: center;
-    margin-bottom: 0.75rem;
+    align-items: baseline;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    flex-shrink: 0;
   }
 
   .testimonial-author {
-    font-weight: bold;
-    font-size: 0.95rem;
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--sl-color-white);
   }
 
   .testimonial-source {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     color: var(--sl-color-gray-3);
-    margin-left: 0.5rem;
   }
 
-  .testimonial-message {
-    font-size: 1.05rem;
-    font-style: italic;
-    margin: 0;
-    line-height: 1.6;
-    color: var(--sl-color-gray-2);
+  .testimonial-source::before {
+    content: "·";
+    margin-right: 0.5rem;
+    color: var(--sl-color-gray-4);
   }
 
-  /* Pause animation on hover */
-  .testimonial-carousel-wrapper:hover .testimonial-track {
-    animation-play-state: paused;
+  .testimonial-card.hero .testimonial-author {
+    font-size: 1.1rem;
   }
 
-  @media (max-width: 768px) {
+  .testimonial-card.hero .testimonial-source {
+    font-size: 1rem;
+  }
+
+  @media (max-width: 640px) {
     .testimonial-card {
-      min-width: 300px;
-      max-width: 300px;
-      padding: 1.25rem;
+      padding: 1rem 1.25rem;
     }
 
-    .testimonial-message {
-      font-size: 0.95rem;
-    }
-
-    .testimonial-track {
-      animation-duration: 80s;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .testimonial-card {
-      min-width: 260px;
-      max-width: 260px;
-      padding: 1rem;
+    .testimonial-card.hero {
+      padding: 1.25rem 1.5rem;
     }
 
     .testimonial-message {
       font-size: 0.9rem;
+    }
+
+    .testimonial-card.hero .testimonial-message {
+      font-size: 1rem;
     }
   }
 
