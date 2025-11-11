@@ -51,10 +51,6 @@
 			{
 				setting: 'maxAttempts: 3',
 				explanation: 'Automatically retries failed steps up to 3 times before giving up'
-			},
-			{
-				setting: 'timeout: 60',
-				explanation: 'Tasks become visible for retry after 60 seconds if worker crashes'
 			}
 		],
 		inputType: `{
@@ -79,7 +75,8 @@
 		fetch_article: {
 			name: 'fetch_article',
 			displayName: 'Fetch Article',
-			whatItDoes: 'Fetches article content from the provided URL using r.jina.ai. Returns both the article text and title for downstream processing.',
+			whatItDoes:
+				'Fetches article content from the provided URL using r.jina.ai. Returns both the article text and title for downstream processing.',
 			dependsOn: [],
 			dependents: ['summarize', 'extract_keywords'],
 			inputType: `{
@@ -95,7 +92,8 @@
 		summarize: {
 			name: 'summarize',
 			displayName: 'Summarize',
-			whatItDoes: 'Uses an LLM (Groq) to generate a concise summary of the article content. Runs in parallel with keyword extraction for efficiency.',
+			whatItDoes:
+				'Uses an LLM (Groq) to generate a concise summary of the article content. Runs in parallel with keyword extraction for efficiency.',
 			dependsOn: ['fetch_article'],
 			dependents: ['publish'],
 			inputType: `{
@@ -109,7 +107,8 @@
 		extract_keywords: {
 			name: 'extract_keywords',
 			displayName: 'Extract Keywords',
-			whatItDoes: 'Uses an LLM (Groq) to extract key terms and topics from the article. Runs in parallel with summarization for efficiency.',
+			whatItDoes:
+				'Uses an LLM (Groq) to extract key terms and topics from the article. Runs in parallel with summarization for efficiency.',
 			dependsOn: ['fetch_article'],
 			dependents: ['publish'],
 			inputType: `{
@@ -122,7 +121,8 @@
 		publish: {
 			name: 'publish',
 			displayName: 'Publish',
-			whatItDoes: 'Combines the summary and keywords and publishes the processed article. In this demo, generates a mock article ID—in production, this would save to a database.',
+			whatItDoes:
+				'Combines the summary and keywords and publishes the processed article. In this demo, generates a mock article ID—in production, this would save to a database.',
 			dependsOn: ['summarize', 'extract_keywords'],
 			dependents: [],
 			inputType: `{
@@ -237,195 +237,220 @@
 
 {#if visible}
 	<div class="explanation-panel-wrapper" bind:this={panelElement}>
-		<Card class="explanation-card p-0">
-			<CardHeader class="explanation-header pb-2 pt-3">
-				<div class="flex items-center justify-between">
-					<div class="flex items-center gap-2">
-						{#if currentStepInfo}
-							<CardTitle class="text-sm">
-								Step <code class="bg-muted px-2 py-0.5 rounded text-sm font-mono"
-									>{currentStepInfo.name}</code
-								>
-							</CardTitle>
-						{:else}
-							<CardTitle class="text-sm">
-								Flow <code class="bg-muted px-2 py-0.5 rounded text-sm font-mono"
-									>{flowInfo.name}</code
-								>
-							</CardTitle>
-						{/if}
-					</div>
-					<div class="flex items-center gap-3">
-						{#if stepStatus}
-							<span class="status-label status-{stepStatus}">{stepStatus}</span>
-							<StatusBadge status={stepStatus} variant="icon-only" size="xl" />
-						{/if}
-						<Button
-							variant="ghost"
-							size="sm"
-							class="text-lg cursor-pointer"
-							onclick={() => dispatch('close')}>✕</Button
-						>
-					</div>
+		<!-- Header: Desktop only (mobile has inline code + no header) -->
+		<div class="hidden md:block sticky top-0 z-10 bg-card border-b pb-2 pt-3 px-4">
+			<div class="flex items-center justify-between">
+				<div class="flex items-center gap-2">
+					{#if currentStepInfo}
+						<h3 class="text-sm font-semibold">
+							Step <code class="bg-muted px-2 py-0.5 rounded text-sm font-mono"
+								>{currentStepInfo.name}</code
+							>
+						</h3>
+					{:else}
+						<h3 class="text-sm font-semibold">
+							Flow <code class="bg-muted px-2 py-0.5 rounded text-sm font-mono"
+								>{flowInfo.name}</code
+							>
+						</h3>
+					{/if}
 				</div>
-			</CardHeader>
-			<CardContent class="explanation-content text-sm pb-4 space-y-3">
+				<div class="flex items-center gap-3">
+					{#if stepStatus}
+						<span class="status-label status-{stepStatus}">{stepStatus}</span>
+						<StatusBadge status={stepStatus} variant="icon-only" size="xl" />
+					{/if}
+					<Button
+						variant="ghost"
+						size="sm"
+						class="text-lg cursor-pointer"
+						onclick={() => dispatch('close')}>✕</Button
+					>
+				</div>
+			</div>
+		</div>
+
+		<!-- Header: Mobile only (just title + close, no code) -->
+		<div class="md:hidden sticky top-0 z-10 bg-card border-b p-4 flex items-center justify-between">
+			<div>
 				{#if currentStepInfo}
-					<!-- What it does (full-width, top) -->
-					<div class="bg-accent/30 rounded-lg p-3 border border-accent">
-						<p class="text-foreground leading-relaxed">
-							{currentStepInfo.whatItDoes}
-						</p>
-					</div>
-
-					<!-- Step-level view: 2-column layout: Dependencies | Inputs/Returns -->
-					<div class="grid grid-cols-2 gap-4">
-						<!-- Left Column: Dependencies -->
-						<div class="space-y-3">
-							<!-- Depends On -->
-							<div>
-								<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Depends On</div>
-								{#if currentStepInfo.dependsOn.length === 0}
-									<Badge variant="secondary" class="text-xs">None</Badge>
-								{:else}
-									<div class="flex flex-col gap-1.5">
-										{#each currentStepInfo.dependsOn as dep (dep)}
-											<button
-												class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left {isDepDimmed(
-													dep
-												)
-													? 'opacity-30'
-													: 'opacity-100'}"
-												onclick={(e) => handleDependencyClick(dep, e)}
-												onmouseenter={() => handleDependencyHover(dep)}
-												onmouseleave={() => handleDependencyHover(null)}
-											>
-												{dep}
-											</button>
-										{/each}
-									</div>
-								{/if}
-							</div>
-
-							<!-- Dependents -->
-							<div>
-								<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Dependents</div>
-								{#if currentStepInfo.dependents.length === 0}
-									<Badge variant="secondary" class="text-xs">None</Badge>
-								{:else}
-									<div class="flex flex-col gap-1.5">
-										{#each currentStepInfo.dependents as dep (dep)}
-											<button
-												class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left {isDepDimmed(
-													dep
-												)
-													? 'opacity-30'
-													: 'opacity-100'}"
-												onclick={(e) => handleDependencyClick(dep, e)}
-												onmouseenter={() => handleDependencyHover(dep)}
-												onmouseleave={() => handleDependencyHover(null)}
-											>
-												{dep}
-											</button>
-										{/each}
-									</div>
-								{/if}
-							</div>
-						</div>
-
-						<!-- Right Column: Inputs/Returns -->
-						<div class="space-y-3">
-							<!-- Inputs -->
-							<div>
-								<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Input Type</div>
-								<div class="input-type-box">
-									<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-									{@html highlightedInputType}
-								</div>
-							</div>
-
-							<!-- Returns -->
-							<div>
-								<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Return Type</div>
-								<div class="return-type-box">
-									<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-									{@html highlightedReturnType}
-								</div>
-							</div>
-						</div>
-					</div>
+					<h3 class="text-base font-semibold">
+						Step <code class="bg-muted px-2 py-0.5 rounded text-sm font-mono"
+							>{currentStepInfo.name}</code
+						>
+					</h3>
 				{:else}
-					<!-- Flow-level view -->
+					<h3 class="text-base font-semibold">
+						Flow <code class="bg-muted px-2 py-0.5 rounded text-sm font-mono">{flowInfo.name}</code>
+					</h3>
+				{/if}
+			</div>
+			<div class="flex items-center gap-3">
+				{#if stepStatus}
+					<StatusBadge status={stepStatus} variant="icon-only" size="lg" />
+				{/if}
+				<button onclick={() => dispatch('close')} class="text-muted-foreground text-xl leading-none"
+					>✕</button
+				>
+			</div>
+		</div>
+
+		<div class="explanation-content text-sm p-4 space-y-3">
+			{#if currentStepInfo}
+				<!-- What it does (full-width, top) -->
+				<div class="bg-accent/30 rounded-lg p-3 border border-accent">
+					<p class="text-foreground leading-relaxed">
+						{currentStepInfo.whatItDoes}
+					</p>
+				</div>
+
+				<!-- Step-level view: 2-column on desktop, single column on mobile -->
+				<div class="grid md:grid-cols-2 grid-cols-1 gap-4">
+					<!-- Left Column: Dependencies -->
 					<div class="space-y-3">
-						<!-- What it does (highlighted) -->
-						<div class="bg-accent/30 rounded-lg p-3 border border-accent">
-							<p class="text-foreground leading-relaxed mb-2">{flowInfo.description}</p>
-							<p class="text-muted-foreground text-sm">{flowInfo.whatItDoes}</p>
+						<!-- Depends On -->
+						<div>
+							<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Depends On</div>
+							{#if currentStepInfo.dependsOn.length === 0}
+								<Badge variant="secondary" class="text-xs">None</Badge>
+							{:else}
+								<div class="flex flex-col gap-1.5">
+									{#each currentStepInfo.dependsOn as dep (dep)}
+										<button
+											class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left {isDepDimmed(
+												dep
+											)
+												? 'opacity-30'
+												: 'opacity-100'}"
+											onclick={(e) => handleDependencyClick(dep, e)}
+											onmouseenter={() => handleDependencyHover(dep)}
+											onmouseleave={() => handleDependencyHover(null)}
+										>
+											{dep}
+										</button>
+									{/each}
+								</div>
+							{/if}
 						</div>
 
-						<!-- Reliability Features -->
+						<!-- Dependents -->
 						<div>
-							<div class="font-semibold text-muted-foreground mb-1.5 text-sm flex items-center gap-2">
-								<span>🛡️</span> Reliability Configuration
-							</div>
-							<div class="space-y-2">
-								{#each flowInfo.reliabilityFeatures as feature}
-									<div class="bg-secondary/50 rounded p-2.5">
-										<code class="text-xs font-mono text-primary">{feature.setting}</code>
-										<p class="text-xs text-muted-foreground mt-1">{feature.explanation}</p>
-									</div>
-								{/each}
-							</div>
+							<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Dependents</div>
+							{#if currentStepInfo.dependents.length === 0}
+								<Badge variant="secondary" class="text-xs">None</Badge>
+							{:else}
+								<div class="flex flex-col gap-1.5">
+									{#each currentStepInfo.dependents as dep (dep)}
+										<button
+											class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left {isDepDimmed(
+												dep
+											)
+												? 'opacity-30'
+												: 'opacity-100'}"
+											onclick={(e) => handleDependencyClick(dep, e)}
+											onmouseenter={() => handleDependencyHover(dep)}
+											onmouseleave={() => handleDependencyHover(null)}
+										>
+											{dep}
+										</button>
+									{/each}
+								</div>
+							{/if}
 						</div>
+					</div>
 
-						<!-- Flow Input -->
+					<!-- Right Column: Inputs/Returns -->
+					<div class="space-y-3">
+						<!-- Inputs -->
 						<div>
-							<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Flow Input Type</div>
+							<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Input Type</div>
 							<div class="input-type-box">
 								<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 								{@html highlightedInputType}
 							</div>
-							<p class="text-muted-foreground text-xs mt-1.5">
-								Start this flow with a URL object. The flow will fetch the article, process it, and
-								publish the results.
-							</p>
 						</div>
 
-						<!-- Steps -->
+						<!-- Returns -->
 						<div>
-							<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Steps</div>
-							<div class="flex flex-col gap-1.5">
-								{#each flowInfo.steps as step (step)}
-									<button
-										class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left {isDepDimmed(
-											step
-										)
-											? 'opacity-30'
-											: 'opacity-100'}"
-										onclick={(e) => handleDependencyClick(step, e)}
-										onmouseenter={() => handleDependencyHover(step)}
-										onmouseleave={() => handleDependencyHover(null)}
-									>
-										{step}
-									</button>
-								{/each}
+							<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Return Type</div>
+							<div class="return-type-box">
+								<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+								{@html highlightedReturnType}
 							</div>
 						</div>
 					</div>
-				{/if}
+				</div>
+			{:else}
+				<!-- Flow-level view -->
+				<div class="space-y-3">
+					<!-- What it does (highlighted) -->
+					<div class="bg-accent/30 rounded-lg p-3 border border-accent">
+						<p class="text-foreground leading-relaxed mb-2">{flowInfo.description}</p>
+						<p class="text-muted-foreground text-sm">{flowInfo.whatItDoes}</p>
+					</div>
 
-				<!-- Output section (full-width, shown when available) -->
-				{#if stepOutput && highlightedOutput}
-					<div class="pt-1">
-						<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Output</div>
-						<div class="output-box">
-							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-							{@html highlightedOutput}
+					<!-- Reliability Features -->
+					<div>
+						<div class="font-semibold text-muted-foreground mb-1.5 text-sm flex items-center gap-2">
+							<span>🛡️</span> Reliability Configuration
+						</div>
+						<div class="space-y-2">
+							{#each flowInfo.reliabilityFeatures as feature}
+								<div class="bg-secondary/50 rounded p-2.5">
+									<code class="text-xs font-mono text-primary">{feature.setting}</code>
+									<p class="text-xs text-muted-foreground mt-1">{feature.explanation}</p>
+								</div>
+							{/each}
 						</div>
 					</div>
-				{/if}
-			</CardContent>
-		</Card>
+
+					<!-- Flow Input -->
+					<div>
+						<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Flow Input Type</div>
+						<div class="input-type-box">
+							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+							{@html highlightedInputType}
+						</div>
+						<p class="text-muted-foreground text-xs mt-1.5">
+							Start this flow with a URL object. The flow will fetch the article, process it, and
+							publish the results.
+						</p>
+					</div>
+
+					<!-- Steps -->
+					<div>
+						<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Steps</div>
+						<div class="flex flex-col gap-1.5">
+							{#each flowInfo.steps as step (step)}
+								<button
+									class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left {isDepDimmed(
+										step
+									)
+										? 'opacity-30'
+										: 'opacity-100'}"
+									onclick={(e) => handleDependencyClick(step, e)}
+									onmouseenter={() => handleDependencyHover(step)}
+									onmouseleave={() => handleDependencyHover(null)}
+								>
+									{step}
+								</button>
+							{/each}
+						</div>
+					</div>
+				</div>
+			{/if}
+
+			<!-- Output section (full-width, shown when available) -->
+			{#if stepOutput && highlightedOutput}
+				<div class="pt-1">
+					<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Output</div>
+					<div class="output-box">
+						<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+						{@html highlightedOutput}
+					</div>
+				</div>
+			{/if}
+		</div>
 	</div>
 {/if}
 
