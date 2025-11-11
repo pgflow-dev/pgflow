@@ -1,3 +1,2 @@
 # Ignore Supabase Edge Functions from Nx dependency analysis
 # These are Deno runtime functions with their own import resolution
-examples/playground/supabase/functions/

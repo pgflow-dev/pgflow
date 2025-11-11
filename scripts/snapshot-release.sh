@@ -249,7 +249,7 @@ echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━�
 echo -e "${BOLD}Building packages...${NC}"
 echo ""
 
-if pnpm nx run-many -t build --exclude=playground ; then
+if pnpm nx run-many -t build ; then
   echo -e "${GREEN}✓ Packages built successfully${NC}"
 else
   echo -e "${RED}✗ Build failed${NC}"

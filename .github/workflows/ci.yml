@@ -50,8 +50,8 @@ jobs:
       - name: Quality gate (lint + typecheck + test)
         run: pnpm nx affected -t lint typecheck test --parallel --configuration=production --base="$NX_BASE" --head="$NX_HEAD"
 
-      - name: Build all affected projects (except playground)
-        run: pnpm nx affected -t build --configuration=production --parallel --exclude=playground --base="$NX_BASE" --head="$NX_HEAD"
+      - name: Build all affected projects
+        run: pnpm nx affected -t build --configuration=production --parallel --base="$NX_BASE" --head="$NX_HEAD"
 
 
 # ─────────────────────────────────────── 2. EDGE-WORKER E2E ──────────────────────────────────────
@@ -101,49 +101,7 @@ jobs:
         run: pnpm nx affected -t test:e2e --parallel --base="$NX_BASE" --head="$NX_HEAD"
 
 
-# ────────────────────────────────── 3. DEPLOY PLAYGROUND ───────────────────────────
-  deploy-playground:
-    needs: [build-and-test, edge-worker-e2e]
-    if: false  # Disabled
-    # if: >-
-    #   ${{
-    #     (github.event_name == 'pull_request') ||
-    #     (github.ref == 'refs/heads/main' && github.event_name == 'push')
-    #   }}
-    runs-on: ubuntu-latest
-    environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
-    env:
-      NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
-      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
-      NEXT_PUBLIC_SUPABASE_URL: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_URL || secrets.DEMO_PRODUCTION_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY || secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: ./.github/actions/setup
-
-      # Build the workspace libraries that the app imports
-      - run: pnpm nx run-many -t build --projects client,dsl --configuration=production
-
-      - name: Build & deploy to Netlify
-        id: deploy
-        run: |
-          pnpm netlify deploy --build --filter=playground \
-            --context ${{ github.event_name == 'pull_request' && 'deploy-preview' || 'production' }} \
-            ${{ github.event_name == 'pull_request' && format('--alias=pr-{0}', github.event.pull_request.number) || '--prod' }}
-
-      - name: Post deployment comment
-        if: always()
-        uses: ./.github/actions/deployment-comment
-        with:
-          project-name: Playground
-          preview-url: https://pr-${{ github.event.pull_request.number }}--pgflow-demo.netlify.app
-          production-url: https://playground.pgflow.dev
-
-# ────────────────────────────────── 4. DEPLOY WEBSITE ───────────────────────────
+# ────────────────────────────────── 3. DEPLOY WEBSITE ───────────────────────────
   deploy-website:
     needs: [build-and-test, edge-worker-e2e]
     runs-on: ubuntu-latest
