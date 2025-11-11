@@ -114,6 +114,9 @@ importers:
 
   apps/demo:
     dependencies:
+      '@pgflow/client':
+        specifier: workspace:*
+        version: link:../../pkgs/client
       '@supabase/supabase-js':
         specifier: ^2.78.0
         version: 2.81.0

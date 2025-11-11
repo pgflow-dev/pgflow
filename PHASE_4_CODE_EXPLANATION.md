@@ -18,22 +18,21 @@
 
 ## Tasks
 
-### 1. Add Shiki Dependency
+### 1. Verify Shiki Dependency
 
-Already added in Phase 2, verify:
+Already installed in Phase 2, verify:
 
 ```bash
 # Check installation
-ls node_modules/shiki
+ls apps/demo/node_modules/shiki
 ```
 
 **If missing:**
 ```bash
 cd apps/demo
 pnpm add shiki
+cd ../..
 ```
-
-**Validate:** Shiki installed
 
 ---
 
