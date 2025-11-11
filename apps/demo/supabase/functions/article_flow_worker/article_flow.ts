@@ -7,7 +7,10 @@ import { fetchArticle } from './tasks/fetch-article.ts';
 const SLEEP_MS = 1000;
 
 function sleep(ms: number) {
-	return new Promise((resolve) => setTimeout(resolve, ms));
+	// const quarter = ms / 4.0;
+	// const random = Math.random() * quarter * 3;
+	const time = 300 + ms * Math.random();
+	return new Promise((resolve) => setTimeout(resolve, time));
 }
 
 // Flow definition - clean and minimal
@@ -17,7 +20,17 @@ export default new Flow<{ url: string }>({
 })
 	.step({ slug: 'fetchArticle' }, async (input) => {
 		await sleep(SLEEP_MS);
-		return fetchArticle(input.run.url);
+		const startTime = Date.now();
+		const result = 'FAKE ARTICLE STUB';
+		// const result = await fetchArticle(input.run.url);
+		const durationMs = Date.now() - startTime;
+		return {
+			...result,
+			_timing: {
+				fetchArticleDurationMs: durationMs,
+				fetchedAt: new Date().toISOString()
+			}
+		};
 	})
 	.step({ slug: 'summarize', dependsOn: ['fetchArticle'], baseDelay: 1 }, async () => {
 		// Simulate failure on first attempt for retry demo

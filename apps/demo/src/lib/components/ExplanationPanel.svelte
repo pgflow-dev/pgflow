@@ -3,7 +3,7 @@
 	import { fade } from 'svelte/transition';
 	import { Button } from '$lib/components/ui/button';
 	import { codeToHtml } from 'shiki';
-	import type { createFlowState } from '$lib/stores/pgflow-state-improved.svelte';
+	import type { createFlowState } from '$lib/stores/pgflow-state.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import MiniDAG from '$lib/components/MiniDAG.svelte';
 	import { Clock, Workflow, Play, Hourglass } from '@lucide/svelte';
@@ -232,36 +232,23 @@
 		selectedStep && stepInfo[selectedStep] ? stepInfo[selectedStep] : null
 	);
 
-	// Build step outputs map from events
-	const stepOutputs = $derived.by(() => {
-		const outputs: Record<string, unknown> = {};
-		flowState.events.forEach((event) => {
-			if (
-				event.event_type === 'step:completed' &&
-				event.data?.step_slug &&
-				event.data?.output !== undefined
-			) {
-				outputs[event.data.step_slug as string] = event.data.output;
-			}
-		});
-		return outputs;
-	});
-
-	// Get step output
-	const stepOutput = $derived(selectedStep ? stepOutputs[selectedStep] : null);
+	// Get step output from reactive step() method
+	const stepOutput = $derived(selectedStep ? flowState.step(selectedStep).output : null);
 
 	// Get actual input for the selected step
 	const stepInput = $derived.by(() => {
-		if (!selectedStep || !currentStepInfo) return null;
+		if (!selectedStep || !currentStepInfo || !flowState.run) return null;
 
 		// Only show input if step is started or completed
-		const stepStatus = flowState.stepStatuses[selectedStep];
+		// Use reactive step() method from runState
+		const stepStatus = flowState.step(selectedStep).status;
 		if (stepStatus !== 'started' && stepStatus !== 'completed') return null;
 
 		// For steps with dependencies, check if all dependencies are completed
 		if (currentStepInfo.dependsOn.length > 0) {
 			const allDepsCompleted = currentStepInfo.dependsOn.every((dep) => {
-				return flowState.stepStatuses[dep] === 'completed';
+				// Use reactive step() method from runState
+				return flowState.step(dep).status === 'completed';
 			});
 			if (!allDepsCompleted) return null;
 		}
@@ -269,13 +256,13 @@
 		const input: Record<string, unknown> = {};
 
 		// Always add run input (URL) from flowState.run if available
-		if (flowState.run?.input) {
+		if (flowState.run.input) {
 			input.run = flowState.run.input;
 		}
 
-		// Add outputs from dependencies
+		// Add outputs from dependencies using reactive step() method
 		for (const dep of currentStepInfo.dependsOn) {
-			const depOutput = stepOutputs[dep];
+			const depOutput = flowState.step(dep).output;
 			if (depOutput !== undefined) {
 				input[dep] = depOutput;
 			}
@@ -286,7 +273,8 @@
 
 	// Get current step status
 	function getStepStatus(stepSlug: string): string | null {
-		const status = flowState.stepStatuses[stepSlug];
+		// Use reactive step() method from runState
+		const status = flowState.step(stepSlug).status;
 		const hasFlowStarted = flowState.status !== 'idle';
 
 		// Don't show badge if flow hasn't started yet
