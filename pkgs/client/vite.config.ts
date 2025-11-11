@@ -7,16 +7,17 @@ export default defineConfig({
   root: __dirname,
   cacheDir: '../../node_modules/.vite/pkgs/client',
   plugins: [
-    dts({ 
+    dts({
       include: ['src/**/*.ts'],
       outDir: 'dist',
       rollupTypes: false,  // Don't bundle for now
       insertTypesEntry: true,
-      tsConfigFilePath: resolve(__dirname, 'tsconfig.lib.json'),
-      skipDiagnostics: true  // Skip TypeScript diagnostics to avoid vite-plugin-dts errors with monorepo project references. 
-                             // The plugin tries to compile all imported files (including from other packages) 
+      tsconfigPath: resolve(__dirname, 'tsconfig.lib.json'),
+      skipDiagnostics: true  // Skip TypeScript diagnostics to avoid vite-plugin-dts errors with monorepo project references.
+                             // The plugin tries to compile all imported files (including from other packages)
                              // which breaks rootDir boundaries. Nx runs proper type checking separately.
-    })
+    }) as any  // Type cast to avoid Vite version mismatch between packages
+
   ],
   build: {
     lib: {
