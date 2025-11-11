@@ -28,10 +28,18 @@ export class PgflowClient<TFlow extends AnyFlow = AnyFlow> implements IFlowClien
    * Creates a new PgflowClient instance
    *
    * @param supabaseClient - Supabase client instance
+   * @param opts - Optional configuration
    */
-  constructor(supabaseClient: SupabaseClient) {
+  constructor(
+    supabaseClient: SupabaseClient,
+    opts: {
+      realtimeStabilizationDelayMs?: number;
+    } = {}
+  ) {
     this.#supabase = supabaseClient;
-    this.#realtimeAdapter = new SupabaseBroadcastAdapter(supabaseClient);
+    this.#realtimeAdapter = new SupabaseBroadcastAdapter(supabaseClient, {
+      stabilizationDelayMs: opts.realtimeStabilizationDelayMs,
+    });
 
     // Set up global event listeners - properly typed
     this.#realtimeAdapter.onRunEvent((event: BroadcastRunEvent) => {
