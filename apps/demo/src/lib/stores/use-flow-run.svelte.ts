@@ -96,7 +96,7 @@ export function useFlowRun<TFlow extends AnyFlow>(run: FlowRun<TFlow>) {
 				}
 			];
 
-			if (event.status === 'in_progress' || event.status === 'started') {
+			if (event.status === 'started') {
 				activeStep = stepSlug;
 			} else if (event.status === 'completed' && activeStep === stepSlug) {
 				activeStep = null;

@@ -61,6 +61,75 @@ export function createFlowState<TFlow extends AnyFlow>(
 		output = flowRun.output;
 		error = flowRun.error_message;
 
+		// Initialize step statuses and events from flowRun's initial state
+		const initialEvents: Array<{ event_type: string; timestamp: Date; data: any }> = [];
+
+		// Add run-level initial event
+		initialEvents.push({
+			event_type: `run:${flowRun.status}`,
+			timestamp: flowRun.started_at || new Date(),
+			data: {
+				status: flowRun.status,
+				run_id: flowRun.run_id
+			}
+		});
+
+		if (flowRun.stepStates) {
+			const initialStepStatuses: Record<string, string> = {};
+			let foundActiveStep: string | null = null;
+
+			flowRun.stepStates.forEach((stepState) => {
+				// Only initialize statuses for steps we're tracking
+				if (stepSlugs.includes(stepState.step_slug)) {
+					initialStepStatuses[stepState.step_slug] = stepState.status;
+
+					// Create synthetic event for this step's current status
+					// Use the appropriate timestamp field based on status
+					let timestamp = new Date();
+					if (stepState.status === 'completed' && stepState.completed_at) {
+						timestamp = stepState.completed_at;
+					} else if (stepState.status === 'failed' && stepState.failed_at) {
+						timestamp = stepState.failed_at;
+					} else if (stepState.status === 'started' && stepState.started_at) {
+						timestamp = stepState.started_at;
+					}
+
+					// Create event data matching the structure of real events from subscriptions
+					initialEvents.push({
+						event_type: `step:${stepState.status}`,
+						timestamp,
+						data: {
+							step_slug: stepState.step_slug,
+							status: stepState.status,
+							output: stepState.output,
+							error: stepState.error,
+							error_message: stepState.error_message,
+							started_at: stepState.started_at,
+							completed_at: stepState.completed_at,
+							failed_at: stepState.failed_at
+						}
+					});
+
+					// Track if this step is currently active
+					if (!foundActiveStep && stepState.status === 'started') {
+						foundActiveStep = stepState.step_slug;
+					}
+				}
+			});
+
+			stepStatuses = initialStepStatuses;
+
+			if (foundActiveStep) {
+				activeStep = foundActiveStep;
+				console.log('Initialized activeStep from flowRun:', foundActiveStep);
+			}
+			console.log('Initialized step statuses from flowRun:', stepStatuses);
+		}
+
+		// Set initial events (sorted by timestamp)
+		events = initialEvents.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+		console.log('Created initial events:', events.length);
+
 		// Set up run-level events
 		const unsubRun = flowRun.on('*', (event) => {
 			events = [
@@ -103,7 +172,7 @@ export function createFlowState<TFlow extends AnyFlow>(
 				// Track step status
 				stepStatuses = { ...stepStatuses, [stepSlug]: event.status };
 
-				if (event.status === 'in_progress' || event.status === 'started') {
+				if (event.status === 'started') {
 					console.log(`Setting activeStep to: ${stepSlug}`);
 					activeStep = stepSlug;
 				} else if (event.status === 'completed' && activeStep === stepSlug) {

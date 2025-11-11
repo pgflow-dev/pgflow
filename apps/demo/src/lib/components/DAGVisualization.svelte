@@ -1,20 +1,89 @@
 <script lang="ts">
+	import { createEventDispatcher, onMount } from 'svelte';
 	import { SvelteFlow } from '@xyflow/svelte';
 	import '@xyflow/svelte/dist/style.css';
 	import type { createFlowState } from '$lib/stores/pgflow-state-improved.svelte';
 
 	interface Props {
 		flowState: ReturnType<typeof createFlowState>;
+		selectedStep?: string | null;
+		hoveredStep?: string | null;
 	}
 
-	let { flowState }: Props = $props();
+	let { flowState, selectedStep = null, hoveredStep = null }: Props = $props();
 
-	// Define the 4-step DAG structure - needs to be reactive to flowState changes
-	let nodes = $derived.by(() => [
+	let containerElement: HTMLDivElement | undefined = $state(undefined);
+	let shouldFitView = $state(true);
+
+	// Re-center when container or window resizes
+	onMount(() => {
+		const handleResize = () => {
+			// Trigger fitView by toggling the flag
+			shouldFitView = false;
+			setTimeout(() => {
+				shouldFitView = true;
+			}, 0);
+		};
+
+		// Watch for window resizes
+		window.addEventListener('resize', handleResize);
+
+		// Watch for container size changes (e.g., when Shiki loads)
+		let resizeObserver: ResizeObserver | undefined;
+		if (containerElement) {
+			resizeObserver = new ResizeObserver(() => {
+				handleResize();
+			});
+			resizeObserver.observe(containerElement);
+		}
+
+		return () => {
+			window.removeEventListener('resize', handleResize);
+			if (resizeObserver && containerElement) {
+				resizeObserver.unobserve(containerElement);
+				resizeObserver.disconnect();
+			}
+		};
+	});
+
+	const dispatch = createEventDispatcher<{
+		'step-selected': { stepSlug: string };
+		'step-hovered': { stepSlug: string | null };
+	}>();
+
+	function handleNodeClick(event: any) {
+		// Svelte Flow may pass event differently depending on version
+		const node = event.detail?.node || event.node || event;
+		const stepSlug = node.id;
+		if (stepSlug) {
+			// Clear hover state before navigating
+			dispatch('step-hovered', { stepSlug: null });
+			dispatch('step-selected', { stepSlug });
+		}
+	}
+
+	function handleNodePointerEnter({ node }: { node: any; event: PointerEvent }) {
+		const stepSlug = node.id;
+		console.log('DAG node pointerenter:', stepSlug);
+		if (stepSlug) {
+			dispatch('step-hovered', { stepSlug });
+		}
+	}
+
+	function handleNodePointerLeave({ node }: { node: any; event: PointerEvent }) {
+		const stepSlug = node.id;
+		console.log('DAG node pointerleave:', stepSlug);
+		dispatch('step-hovered', { stepSlug: null });
+	}
+
+	// Define the 4-step DAG structure - reactive to step states and selection
+	// Vertical spacing between nodes (81px between levels)
+	// Shifted up by 30px to center better in viewport
+	let nodes = $derived([
 		{
 			id: 'fetch_article',
 			type: 'default',
-			position: { x: 150, y: 0 },
+			position: { x: 150, y: -30 },
 			data: { label: 'fetch_article' },
 			class: getNodeClass('fetch_article'),
 			draggable: false
@@ -22,7 +91,7 @@
 		{
 			id: 'summarize',
 			type: 'default',
-			position: { x: 50, y: 120 },
+			position: { x: 50, y: 51 },
 			data: { label: 'summarize' },
 			class: getNodeClass('summarize'),
 			draggable: false
@@ -30,7 +99,7 @@
 		{
 			id: 'extract_keywords',
 			type: 'default',
-			position: { x: 250, y: 120 },
+			position: { x: 250, y: 51 },
 			data: { label: 'extract_keywords' },
 			class: getNodeClass('extract_keywords'),
 			draggable: false
@@ -38,7 +107,7 @@
 		{
 			id: 'publish',
 			type: 'default',
-			position: { x: 150, y: 240 },
+			position: { x: 150, y: 132 },
 			data: { label: 'publish' },
 			class: getNodeClass('publish'),
 			draggable: false
@@ -77,7 +146,8 @@
 	]);
 
 	function isStepActive(stepSlug: string): boolean {
-		return flowState.activeStep === stepSlug;
+		const status = flowState.stepStatuses[stepSlug];
+		return status === 'started';
 	}
 
 	function isStepCompleted(stepSlug: string): boolean {
@@ -115,33 +185,55 @@
 		} else if (isStepFailed(stepSlug)) {
 			classes.push('node-failed');
 		} else {
-			classes.push('node-pending');
+			classes.push('node-created');
+		}
+
+		// Dimming: dim nodes that aren't selected when something is selected
+		if (selectedStep && stepSlug !== selectedStep) {
+			classes.push('node-dimmed');
+		}
+
+		// Add selected class if this step is selected
+		if (selectedStep === stepSlug) {
+			classes.push('node-selected');
+		}
+
+		// Add hovered class if this step is hovered (glow/outline)
+		if (hoveredStep === stepSlug) {
+			classes.push('node-hovered');
 		}
 
 		return classes.join(' ');
 	}
+
 </script>
 
-<div class="dag-container dark">
-	<SvelteFlow
-		{nodes}
-		{edges}
-		fitView
-		panOnDrag={false}
-		zoomOnScroll={false}
-		zoomOnPinch={false}
-		zoomOnDoubleClick={false}
-		nodesDraggable={false}
-		nodesConnectable={false}
-		elementsSelectable={false}
-	>
-	</SvelteFlow>
+<div class="dag-container dark" bind:this={containerElement}>
+	{#key shouldFitView}
+		<SvelteFlow
+			{nodes}
+			{edges}
+			fitView={shouldFitView}
+			fitViewOptions={{ padding: 0.1 }}
+			panOnDrag={false}
+			zoomOnScroll={false}
+			zoomOnPinch={false}
+			zoomOnDoubleClick={false}
+			nodesDraggable={false}
+			nodesConnectable={false}
+			elementsSelectable={true}
+			onnodeclick={handleNodeClick}
+			onnodepointerenter={handleNodePointerEnter}
+			onnodepointerleave={handleNodePointerLeave}
+		>
+		</SvelteFlow>
+	{/key}
 </div>
 
 <style>
 	.dag-container {
 		width: 100%;
-		height: 400px;
+		height: 100%;
 		border-radius: 4px;
 		overflow: hidden;
 	}
@@ -155,15 +247,15 @@
 	/* Node styles matching website SVG DAG */
 	:global(.dag-node) {
 		border-radius: 4px;
-		padding: 12px 16px;
+		padding: 8px 16px;
 		font-size: 14px;
 		font-weight: 600;
 		color: white;
-		transition: all 0.3s ease;
+		transition: background 0.3s ease, border 0.3s ease, opacity 200ms ease;
 		filter: drop-shadow(3px 4px 4px rgba(0, 0, 0, 0.25));
 	}
 
-	:global(.node-pending) {
+	:global(.node-created) {
 		background: #3d524d;
 		border: 2.5px solid #607b75;
 	}
@@ -182,6 +274,27 @@
 	:global(.node-failed) {
 		background: #c94a2e;
 		border: 2.5px solid #f08060;
+	}
+
+	/* Dimmed nodes (when selecting another node) */
+	:global(.dag-node.node-dimmed) {
+		opacity: 0.3;
+	}
+
+	/* Hovered node - blue glow/outline */
+	:global(.dag-node.node-hovered) {
+		outline: 3px solid rgba(88, 166, 255, 0.8) !important;
+		outline-offset: 2px !important;
+		box-shadow: 0 0 20px rgba(88, 166, 255, 0.4) !important;
+		cursor: pointer !important;
+	}
+
+	/* Selected node - blue outline with glow, stays after click */
+	:global(.dag-node.node-selected) {
+		outline: 3px solid rgba(88, 166, 255, 0.8) !important;
+		outline-offset: 2px !important;
+		box-shadow: 0 0 20px rgba(88, 166, 255, 0.4) !important;
+		cursor: pointer !important;
 	}
 
 	@keyframes pulse {
