@@ -5,6 +5,7 @@ This guide walks you through setting up Plausible Analytics with a Cloudflare Wo
 ## Overview
 
 The setup consists of three parts:
+
 1. Plausible dashboard configuration
 2. Cloudflare Worker proxy deployment
 3. SvelteKit app configuration
@@ -43,19 +44,22 @@ The setup consists of three parts:
 2. Delete the default code
 3. Copy the code from `cloudflare-worker-plausible-proxy.js`
 4. **Update the configuration** at the top of the file:
+
    ```javascript
    // Replace with your Plausible script URL from Part 1
    const ProxyScript = 'https://plausible.io/js/pa-XXXXX.js';
 
    // Customize these paths (avoid obvious names)
-   const ScriptName = '/metrics/script.js';  // Change to something unique
-   const Endpoint = '/metrics/event';         // Should match folder above
+   const ScriptName = '/metrics/script.js'; // Change to something unique
+   const Endpoint = '/metrics/event'; // Should match folder above
    ```
+
 5. Click "Save and Deploy"
 
 ### Step 3: Test the Worker
 
 1. Your worker will be available at:
+
    ```
    https://your-worker-name.your-account.workers.dev
    ```
@@ -78,6 +82,7 @@ If your site is on Cloudflare CDN, you can run the proxy as a subdirectory:
 4. Click "Save"
 
 Now your proxy will be available at:
+
 ```
 https://yourdomain.com/analytics/metrics/script.js
 https://yourdomain.com/analytics/metrics/event
@@ -91,24 +96,25 @@ Open `apps/demo/src/routes/+layout.svelte` and update the TODO section:
 
 ```typescript
 onMount(() => {
-  initPlausible({
-    domain: 'demo.pgflow.dev',  // Your actual domain
-    apiHost: 'https://your-worker.workers.dev/metrics',  // Your proxy URL
-    trackLocalhost: false  // Set to true for testing locally
-  });
+	initPlausible({
+		domain: 'demo.pgflow.dev', // Your actual domain
+		apiHost: 'https://your-worker.workers.dev/metrics', // Your proxy URL
+		trackLocalhost: false // Set to true for testing locally
+	});
 });
 ```
 
 **Configuration options:**
 
 - **Without custom route** (worker URL):
+
   ```typescript
-  apiHost: 'https://your-worker-name.your-account.workers.dev/metrics'
+  apiHost: 'https://your-worker-name.your-account.workers.dev/metrics';
   ```
 
 - **With custom route** (subdirectory):
   ```typescript
-  apiHost: '/analytics/metrics'  // Relative path works!
+  apiHost: '/analytics/metrics'; // Relative path works!
   ```
 
 ## Part 4: Track Custom Events
@@ -123,19 +129,23 @@ track('button_clicked');
 
 // Event with properties
 track('signup', {
-  tier: 'pro',
-  plan: 'monthly',
-  source: 'landing_page'
+	tier: 'pro',
+	plan: 'monthly',
+	source: 'landing_page'
 });
 
 // Event with revenue tracking
-track('purchase', {
-  product: 'pro-plan',
-  quantity: 1
-}, {
-  amount: 29.99,
-  currency: 'USD'
-});
+track(
+	'purchase',
+	{
+		product: 'pro-plan',
+		quantity: 1
+	},
+	{
+		amount: 29.99,
+		currency: 'USD'
+	}
+);
 ```
 
 ### Common Event Examples
@@ -158,11 +168,13 @@ track('documentation_download', { doc_type: 'api_reference' });
 ## Part 5: Verify Installation
 
 1. **Start your dev server**:
+
    ```bash
    pnpm nx dev demo
    ```
 
 2. **Open your browser console** and look for:
+
    ```
    [Plausible] Initialized successfully
    ```
@@ -173,10 +185,12 @@ track('documentation_download', { doc_type: 'api_reference' });
    - Note: It may take a few seconds for events to appear
 
 4. **Test custom events**:
+
    ```typescript
    // In browser console or your code
    track('test_event', { test: true });
    ```
+
    - Check Plausible dashboard > Custom Events to see it
 
 ## Troubleshooting

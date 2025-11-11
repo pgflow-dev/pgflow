@@ -570,14 +570,16 @@
 						href="https://pgflow.dev"
 						class="text-xs text-muted-foreground hover:text-foreground"
 						onclick={() =>
-							track('External Link Clicked', { destination: 'website', location: 'header' })}>Website</a
+							track('External Link Clicked', { destination: 'website', location: 'header' })}
+						>Website</a
 					>
 					<span class="text-muted-foreground text-xs">|</span>
 					<a
 						href="https://github.com/pgflow-dev/pgflow"
 						class="text-xs text-muted-foreground hover:text-foreground"
 						onclick={() =>
-							track('External Link Clicked', { destination: 'github', location: 'header' })}>GitHub</a
+							track('External Link Clicked', { destination: 'github', location: 'header' })}
+						>GitHub</a
 					>
 				</div>
 
