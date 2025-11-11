@@ -43,14 +43,24 @@
 			'This flow processes web articles by fetching content, generating summaries and keywords, then publishing the results.',
 		whatItDoes:
 			'Demonstrates parallel execution, automatic retries, and dependency management—all core pgflow features.',
-		reliabilityFeatures: [
+		options: [
 			{
-				setting: 'maxAttempts: 2',
-				explanation: 'Automatically retries failed steps up to 2 times before giving up'
+				name: 'slug',
+				value: '"article_flow"',
+				explanation:
+					'Unique identifier for this flow. Must be ≤128 characters, containing only letters, numbers, and underscores.'
 			},
 			{
-				setting: 'baseDelay: 1',
-				explanation: 'Initial retry delay of 1 second, doubling with each retry (1s, 2s, 4s...)'
+				name: 'maxAttempts',
+				value: '2',
+				explanation:
+					'Maximum total attempts allowed. With 2 attempts: 1 initial try + 1 retry on failure.'
+			},
+			{
+				name: 'baseDelay',
+				value: '1',
+				explanation:
+					'Base delay for retries in seconds. With exponential backoff, first retry waits 1s (subsequent retries would wait 2s, 4s, etc).'
 			}
 		],
 		inputType: `{
@@ -62,26 +72,27 @@
 	// Step-level concept explanations (how pgflow works internally)
 	const stepConcepts: Record<string, string> = {
 		fetchArticle:
-			'Root step with no dependencies. start_flow() creates a task and queues a message containing the task ID. ' +
-			'Worker polls the queue, calls start_tasks() with the task ID to reserve the task and get its input, ' +
-			'executes the handler, calls complete_task() to save the output. Tasks exist independently from queue messages, ' +
-			'enabling both automated polling and manual reservation (future: human approval steps).',
+			'Root step (no dependencies) - starts immediately when flow begins. ' +
+			'pgflow creates a task and queues it. Worker polls the queue, reserves the task, ' +
+			'executes your handler with the initial flow input, and saves the output. ' +
+			'<strong>KEY INSIGHT:</strong> The output becomes available to dependent steps under the key <strong>"fetchArticle"</strong>.',
 
 		summarize:
-			'Depends on fetchArticle. When fetchArticle completes, SQL Core checks dependencies, creates a task, and queues a message. ' +
-			"Worker polls, calls start_tasks() which assembles input from both fetchArticle's output and the original run input, " +
-			'executes the handler, calls complete_task().',
+			'Waits for <strong>fetchArticle</strong> to complete. Once ready, pgflow creates a task and queues it. ' +
+			"When the worker calls <strong>start_tasks()</strong>, the SQL function assembles the input by combining the original flow input with <strong>fetchArticle's</strong> output. " +
+			'<strong>KEY INSIGHT:</strong> Dependencies automatically contribute their outputs to your input object.',
 
 		extractKeywords:
-			'Also depends on fetchArticle, so becomes ready alongside summarize. ' +
-			'Both messages hit the queue simultaneously—parallel execution happens naturally as workers ' +
-			'independently poll and start whichever task they receive first.',
+			'Also depends on <strong>fetchArticle</strong> - becomes ready at the same time as <strong>summarize</strong>. ' +
+			'Both tasks queue simultaneously. Workers poll for batches, ' +
+			'enabling true parallel execution when multiple workers or async handlers are involved. ' +
+			'<strong>KEY INSIGHT:</strong> Steps with the same dependencies run in parallel automatically.',
 
 		publish:
-			'Depends on both summarize AND extractKeywords—blocked until both complete. ' +
-			'After the second finishes, SQL Core finds publish ready, creates a task and queues a message. ' +
-			'start_tasks() assembles input from both dependency outputs. After completion, no dependents remain ' +
-			'and the run is marked completed.'
+			'Requires BOTH <strong>summarize</strong> AND <strong>extractKeywords</strong> to complete. pgflow waits for all dependencies, ' +
+			'then creates and queues a task. When the worker calls <strong>start_tasks()</strong>, the SQL function assembles the input ' +
+			'by combining outputs from both dependencies. After <strong>publish</strong> completes, the flow finishes. ' +
+			'<strong>KEY INSIGHT:</strong> Multiple dependencies create synchronization points in your workflow.'
 	};
 
 	// Step metadata for explanation
@@ -91,6 +102,11 @@
 			name: string;
 			displayName: string;
 			whatItDoes: string;
+			options: Array<{
+				name: string;
+				value: string;
+				explanation: string;
+			}>;
 			dependsOn: string[];
 			dependents: string[];
 			inputType: string;
@@ -102,6 +118,20 @@
 			displayName: 'Fetch Article',
 			whatItDoes:
 				'Fetches article content from the provided URL using Jina Reader API. Returns structured content with title and text for downstream processing.',
+			options: [
+				{
+					name: 'slug',
+					value: '"fetchArticle"',
+					explanation:
+						'Step identifier within the flow. Must be unique per flow, ≤128 chars, and contain only letters, numbers, and underscores.'
+				},
+				{
+					name: 'dependsOn',
+					value: '[]',
+					explanation:
+						'No dependencies - this is a root step that starts immediately when the flow begins. Only receives the initial flow input.'
+				}
+			],
 			dependsOn: [],
 			dependents: ['summarize', 'extractKeywords'],
 			inputType: `{
@@ -119,6 +149,19 @@
 			displayName: 'Summarize',
 			whatItDoes:
 				'Generates a concise summary of the article content using an LLM. Runs in parallel with keyword extraction.',
+			options: [
+				{
+					name: 'slug',
+					value: '"summarize"',
+					explanation: 'Step identifier within the flow.'
+				},
+				{
+					name: 'dependsOn',
+					value: '["fetchArticle"]',
+					explanation:
+						'Waits for fetchArticle to complete. IMPORTANT: The output from fetchArticle will be available in this step\'s input object under the key "fetchArticle".'
+				}
+			],
 			dependsOn: ['fetchArticle'],
 			dependents: ['publish'],
 			inputType: `{
@@ -134,6 +177,19 @@
 			displayName: 'Extract Keywords',
 			whatItDoes:
 				'Extracts key terms and topics from the article using an LLM. Runs in parallel with summarization.',
+			options: [
+				{
+					name: 'slug',
+					value: '"extractKeywords"',
+					explanation: 'Step identifier within the flow.'
+				},
+				{
+					name: 'dependsOn',
+					value: '["fetchArticle"]',
+					explanation:
+						'Waits for fetchArticle to complete. IMPORTANT: The output from fetchArticle will be available in this step\'s input object under the key "fetchArticle".'
+				}
+			],
 			dependsOn: ['fetchArticle'],
 			dependents: ['publish'],
 			inputType: `{
@@ -148,6 +204,19 @@
 			displayName: 'Publish',
 			whatItDoes:
 				'Combines the summary and keywords and publishes the processed article. In this demo, returns a mock article ID—in production, this would insert into a database.',
+			options: [
+				{
+					name: 'slug',
+					value: '"publish"',
+					explanation: 'Step identifier within the flow.'
+				},
+				{
+					name: 'dependsOn',
+					value: '["summarize", "extractKeywords"]',
+					explanation:
+						'Waits for BOTH summarize AND extractKeywords to complete. IMPORTANT: The outputs from both steps will be available in this step\'s input object under their respective keys: "summarize" and "extractKeywords".'
+				}
+			],
 			dependsOn: ['summarize', 'extractKeywords'],
 			dependents: [],
 			inputType: `{
@@ -389,6 +458,29 @@
 							{/if}
 						</div>
 
+						<!-- Configuration Options (collapsible) -->
+						<details
+							class="concept-explainer mt-2 bg-background/50 border border-border rounded-lg"
+						>
+							<summary
+								class="font-semibold text-sm text-foreground cursor-pointer hover:bg-background/80 flex items-center gap-2 p-3 rounded-lg transition-colors"
+							>
+								<span class="concept-caret">▸</span>
+								<span class="flex-1">Configuration options</span>
+							</summary>
+							<div class="text-sm text-foreground/90 leading-relaxed px-3 pb-3 space-y-2.5">
+								{#each currentStepInfo.options as option (option.name)}
+									<div>
+										<div class="font-mono text-sm mb-0.5">
+											<span class="font-bold text-foreground">{option.name}:</span>
+											<span class="text-foreground ml-1">{option.value}</span>
+										</div>
+										<div class="text-sm text-foreground/80 ml-4">{option.explanation}</div>
+									</div>
+								{/each}
+							</div>
+						</details>
+
 						<!-- Concept explainer (collapsible) -->
 						<details
 							class="concept-explainer mt-3 mb-3 bg-background/50 border border-border rounded-lg"
@@ -399,8 +491,9 @@
 								<span class="concept-caret">▸</span>
 								<span class="flex-1">How this step works in pgflow</span>
 							</summary>
-							<div class="text-xs text-muted-foreground leading-relaxed px-3 pb-3">
-								{stepConcepts[currentStepInfo.name]}
+							<div class="text-sm text-foreground/80 leading-relaxed px-3 pb-3">
+								<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+								{@html stepConcepts[currentStepInfo.name]}
 							</div>
 						</details>
 
@@ -579,44 +672,52 @@
 							class="font-semibold text-sm text-foreground cursor-pointer hover:bg-background/80 flex items-center gap-2 p-3 rounded-lg transition-colors"
 						>
 							<span class="concept-caret">▸</span>
-							<span class="flex-1">How pgflow orchestrates this flow</span>
+							<span class="flex-1">Orchestration in Postgres</span>
 						</summary>
-						<div class="text-xs text-muted-foreground leading-relaxed px-3 pb-3 space-y-2">
+						<div class="text-sm text-foreground/80 leading-relaxed px-3 pb-3 space-y-2.5">
 							<p>
-								<code class="bg-muted px-1 rounded font-mono">start_flow()</code> creates a run and initializes
-								state for each step. Root steps (no dependencies) get tasks queued immediately.
+								The <strong>pgflow client</strong> calls SQL function
+								<code class="bg-muted px-1 rounded font-mono">start_flow()</code> via Supabase RPC, which
+								creates a run and initializes state for each step. Root steps (no dependencies) get tasks
+								queued immediately.
 							</p>
 							<p>
-								<strong>Edge Function worker</strong> polls the queue, calls
+								<strong>Edge Function worker</strong> polls the queue, calls SQL function
 								<code class="bg-muted px-1 rounded font-mono">start_tasks()</code> to reserve tasks,
 								executes handlers, then calls
 								<code class="bg-muted px-1 rounded font-mono">complete_task()</code> to save outputs.
 							</p>
 							<p>
-								<strong>SQL Core</strong> checks dependencies after each completion, creates tasks
-								for steps with all dependencies met, and marks the run complete when
+								<code class="bg-muted px-1 rounded font-mono">complete_task()</code> checks
+								dependencies after each completion, creates tasks for steps with all dependencies
+								met, and marks the run complete when
 								<code class="bg-muted px-1 rounded font-mono">remaining_steps = 0</code>.
 							</p>
 							<p>
-								<strong>Supabase Realtime</strong> broadcasts state changes back to this UI for live
-								updates.
+								<strong>Supabase Realtime</strong> streams database events. The
+								<strong>pgflow client</strong>
+								transforms these into a developer-friendly API with promises for completion and reactive
+								state updates.
 							</p>
 						</div>
 					</details>
 
-					<!-- Reliability Configuration (collapsible) -->
+					<!-- Configuration Options (collapsible) -->
 					<details class="concept-explainer bg-background/50 border border-border rounded-lg">
 						<summary
 							class="font-semibold text-sm text-foreground cursor-pointer hover:bg-background/80 flex items-center gap-2 p-3 rounded-lg transition-colors"
 						>
 							<span class="concept-caret">▸</span>
-							<span class="flex-1">Reliability configuration</span>
+							<span class="flex-1">Configuration options</span>
 						</summary>
-						<div class="text-xs text-muted-foreground leading-relaxed px-3 pb-3 space-y-2">
-							{#each flowInfo.reliabilityFeatures as feature (feature.setting)}
+						<div class="text-sm text-foreground/90 leading-relaxed px-3 pb-3 space-y-2.5">
+							{#each flowInfo.options as option (option.name)}
 								<div>
-									<code class="bg-muted px-1 rounded font-mono text-primary">{feature.setting}</code>
-									- {feature.explanation}
+									<div class="font-mono text-sm mb-0.5">
+										<span class="font-bold text-foreground">{option.name}:</span>
+										<span class="text-foreground ml-1">{option.value}</span>
+									</div>
+									<div class="text-sm text-foreground/80 ml-4">{option.explanation}</div>
 								</div>
 							{/each}
 						</div>
@@ -671,6 +772,11 @@
 		flex: 1;
 		min-height: 0; /* Enable scrolling in flex context */
 		scroll-behavior: smooth;
+	}
+
+	/* Make inline code elements slightly bolder */
+	.explanation-content :global(code) {
+		font-weight: 500;
 	}
 
 	/* Custom scrollbar styling */

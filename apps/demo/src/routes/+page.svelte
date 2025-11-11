@@ -12,7 +12,16 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Card } from '$lib/components/ui/card';
-	import { Play, CheckCircle2, XCircle, Code, GitBranch, Radio, Loader2 } from '@lucide/svelte';
+	import {
+		Play,
+		CheckCircle2,
+		XCircle,
+		Code,
+		GitBranch,
+		Radio,
+		Loader2,
+		Lightbulb
+	} from '@lucide/svelte';
 	import { codeToHtml } from 'shiki';
 	import type ArticleFlow from '../../supabase/functions/article_flow_worker/article_flow';
 	import { track } from '$lib/analytics';
@@ -83,6 +92,9 @@
 			// Mark first run as complete (used for UI state tracking)
 			hasRunOnce = true;
 			// Don't show modal on completion - it breaks the flow of viewing results
+
+			// Show pulse dots to guide user to explore the completed flow
+			showPulseDots();
 
 			// Track Flow Completed
 			if (flowStartTime) {
@@ -697,49 +709,56 @@
 			{:else}
 				<!-- Placeholder cheat sheet -->
 				<div
-					class="overflow-auto min-h-0 hidden md:flex flex-col items-center justify-center bg-card rounded-lg border border-border p-8 gap-6"
+					class="overflow-auto min-h-0 hidden md:flex flex-col items-center justify-center bg-card rounded-lg border border-border p-4 gap-4"
 					style="grid-area: explanation"
 				>
-					<div class="text-center max-w-2xl">
-						<h2 class="text-2xl font-bold mb-2 text-foreground">Interactive Flow Explorer</h2>
-						<p class="text-muted-foreground mb-8">
-							Click on any code block or DAG node to explore how steps work
-						</p>
-					</div>
-
-					<div class="grid grid-cols-3 gap-6 max-w-3xl">
+					<!-- Interaction icons (smaller, moved up) -->
+					<div class="grid grid-cols-3 gap-4 max-w-2xl">
 						<!-- Code interaction -->
-						<div class="flex flex-col items-center text-center gap-3">
-							<div class="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center">
-								<Code class="w-8 h-8 text-blue-400" />
+						<div class="flex flex-col items-center text-center gap-2">
+							<div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center">
+								<Code class="w-6 h-6 text-blue-400" />
 							</div>
 							<div>
-								<h3 class="font-semibold text-sm mb-1">Click Code</h3>
-								<p class="text-xs text-muted-foreground">Select a step to see its details</p>
+								<h3 class="font-semibold text-xs mb-0.5">Click Code</h3>
+								<p class="text-xs text-muted-foreground">Select a step to see details</p>
 							</div>
 						</div>
 
 						<!-- DAG interaction -->
-						<div class="flex flex-col items-center text-center gap-3">
-							<div class="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
-								<GitBranch class="w-8 h-8 text-green-400" />
+						<div class="flex flex-col items-center text-center gap-2">
+							<div class="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
+								<GitBranch class="w-6 h-6 text-green-400" />
 							</div>
 							<div>
-								<h3 class="font-semibold text-sm mb-1">Explore DAG</h3>
+								<h3 class="font-semibold text-xs mb-0.5">Explore DAG</h3>
 								<p class="text-xs text-muted-foreground">Click nodes to see dependencies</p>
 							</div>
 						</div>
 
 						<!-- Watch execution -->
-						<div class="flex flex-col items-center text-center gap-3">
-							<div class="w-16 h-16 rounded-full bg-purple-500/20 flex items-center justify-center">
-								<Radio class="w-8 h-8 text-purple-400" />
+						<div class="flex flex-col items-center text-center gap-2">
+							<div class="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center">
+								<Radio class="w-6 h-6 text-purple-400" />
 							</div>
 							<div>
-								<h3 class="font-semibold text-sm mb-1">Watch Events</h3>
+								<h3 class="font-semibold text-xs mb-0.5">Watch Events</h3>
 								<p class="text-xs text-muted-foreground">Track execution in real-time</p>
 							</div>
 						</div>
+					</div>
+
+					<!-- Key Architecture Insight Box (moved down) -->
+					<div class="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 max-w-2xl">
+						<h3 class="font-bold text-base text-foreground mb-2 flex items-center gap-2">
+							<Lightbulb class="w-5 h-5 text-blue-400" />
+							How pgflow Works
+						</h3>
+						<p class="text-sm text-foreground/90 leading-relaxed">
+							<strong>Postgres is the source of truth.</strong> It exposes a SQL API to manage state.
+							Client starts flows → API queues tasks → Workers poll and execute → API propagates state
+							through the DAG. Simple and modular.
+						</p>
 					</div>
 				</div>
 			{/if}
@@ -790,60 +809,68 @@
 </div>
 
 <!-- Mobile: Sticky bottom events bar -->
-{#if flowState.timeline.length > 0}
-	<!-- Backdrop for expanded state -->
-	<div
-		class="fixed inset-0 bg-black/50 z-40 md:hidden mobile-events-backdrop"
-		class:mobile-visible={mobileEventsVisible}
+<!-- Backdrop for expanded state -->
+<div
+	class="fixed inset-0 bg-black/50 z-40 md:hidden mobile-events-backdrop"
+	class:mobile-visible={mobileEventsVisible}
+	onclick={toggleMobileEvents}
+></div>
+
+<!-- Events bar container - transitions between collapsed and expanded -->
+<div
+	class="fixed inset-x-0 bottom-0 z-50 md:hidden border-t border-border mobile-events-bar-container"
+	class:expanded={mobileEventsVisible}
+>
+	<!-- Collapsed view: Horizontal event badges (whole bar is clickable) -->
+	<button
 		onclick={toggleMobileEvents}
-	></div>
-
-	<!-- Events bar container - transitions between collapsed and expanded -->
-	<div
-		class="fixed inset-x-0 bottom-0 z-50 md:hidden border-t border-border mobile-events-bar-container"
-		class:expanded={mobileEventsVisible}
+		class="flex items-center gap-2 px-3 py-2 h-12 w-full bg-card hover:bg-accent/30 transition-colors cursor-pointer relative"
+		style="display: {mobileEventsContentVisible ? 'none' : 'flex'}"
 	>
-		<!-- Collapsed view: Horizontal event badges (whole bar is clickable) -->
-		<button
-			onclick={toggleMobileEvents}
-			class="flex items-center gap-2 px-3 py-2 h-12 w-full bg-card hover:bg-accent/30 transition-colors cursor-pointer"
-			style="display: {mobileEventsContentVisible ? 'none' : 'flex'}"
-		>
-			<div class="text-xs text-muted-foreground flex items-center gap-1 flex-shrink-0">
-				<span class="font-semibold">Events</span>
-				<span>({displayableEvents.length})</span>
-				<span class="text-[10px]">▲</span>
+		<div class="text-xs text-muted-foreground flex items-center gap-1 flex-shrink-0">
+			<span class="font-semibold">Events</span>
+			<span>({displayableEvents.length})</span>
+			<span class="text-[10px]">▲</span>
+			<!-- PulseDot for mobile events footer -->
+			<div class="ml-1">
+				<PulseDot />
 			</div>
-			<div
-				class="flex-1 overflow-x-auto flex gap-1.5 event-badges-scroll pointer-events-none"
-				bind:this={eventsScrollContainer}
-			>
-				{#each displayableEvents as { badge, idx } (idx)}
-					{#if badge}
-						<div
-							class="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium flex-shrink-0 event-badge event-badge-{badge.color}"
-						>
-							<svelte:component this={badge.icon} class="w-3 h-3" />
-							<span>{badge.text}</span>
-						</div>
-					{/if}
-				{/each}
-			</div>
-		</button>
-
-		<!-- Expanded view: Full event list with badges -->
+		</div>
 		<div
-			class="h-full flex flex-col bg-[#252928]"
-			style="display: {mobileEventsContentVisible ? 'flex' : 'none'}"
+			class="flex-1 overflow-x-auto flex gap-1.5 event-badges-scroll pointer-events-none"
+			bind:this={eventsScrollContainer}
 		>
-			<div
-				class="flex items-center justify-between px-3 py-2.5 border-b border-border/50 flex-shrink-0"
-			>
-				<h3 class="font-semibold text-sm">Event Stream ({displayableEvents.length})</h3>
-				<button onclick={toggleMobileEvents} class="text-muted-foreground text-lg">✕</button>
-			</div>
-			<div class="overflow-auto flex-1 py-2">
-				<div class="space-y-1.5 px-3">
+			{#each displayableEvents as { badge, idx } (idx)}
+				{#if badge}
+					<div
+						class="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium flex-shrink-0 event-badge event-badge-{badge.color}"
+					>
+						<svelte:component this={badge.icon} class="w-3 h-3" />
+						<span>{badge.text}</span>
+					</div>
+				{/if}
+			{/each}
+		</div>
+	</button>
+
+	<!-- Expanded view: Full event list with badges -->
+	<div
+		class="h-full flex flex-col bg-[#252928]"
+		style="display: {mobileEventsContentVisible ? 'flex' : 'none'}"
+	>
+		<div
+			class="flex items-center justify-between px-3 py-2.5 border-b border-border/50 flex-shrink-0"
+		>
+			<h3 class="font-semibold text-sm">Event Stream ({displayableEvents.length})</h3>
+			<button onclick={toggleMobileEvents} class="text-muted-foreground text-lg">✕</button>
+		</div>
+		<div class="overflow-auto flex-1 py-2">
+			<div class="space-y-1.5 px-3">
+				{#if displayableEvents.length === 0}
+					<p class="text-sm text-muted-foreground text-center py-8">
+						No events yet. Start a flow to see events.
+					</p>
+				{:else}
 					{#each displayableEvents as { badge, event, idx } (idx)}
 						{#if badge}
 							<button
@@ -879,11 +906,11 @@
 							</button>
 						{/if}
 					{/each}
-				</div>
+				{/if}
 			</div>
 		</div>
 	</div>
-{/if}
+</div>
 
 <style>
 	.page-container {

@@ -1,16 +1,36 @@
 <script lang="ts">
 	import { pulseDots } from '$lib/stores/pulse-dots.svelte';
 
+	interface Props {
+		scale?: number; // Optional scale factor for DAG nodes
+	}
+
+	let { scale = 1 }: Props = $props();
+
 	// Component shows/hides based on global pulsing state
 	const visible = $derived(pulseDots.pulsing);
 	const exploding = $derived(pulseDots.exploding);
+
+	// Calculate container scale style
+	const containerStyle = $derived(scale !== 1 ? `transform: scale(${scale})` : '');
 </script>
 
 {#if visible}
-	<div class="pulse-dot" class:exploding></div>
+	<div class="pulse-dot-container" style={containerStyle}>
+		<div class="pulse-dot" class:exploding></div>
+	</div>
 {/if}
 
 <style>
+	.pulse-dot-container {
+		/* Position container in center of parent */
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		pointer-events: none;
+	}
+
 	.pulse-dot {
 		width: 10px;
 		height: 10px;
@@ -20,11 +40,11 @@
 		pointer-events: none;
 		box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
 
-		/* Center in parent container */
-		position: absolute;
+		/* Center in container */
+		position: relative;
+		transform: translate(-50%, -50%);
 		top: 50%;
 		left: 50%;
-		transform: translate(-50%, -50%);
 
 		/* Normal pulsing while visible */
 		animation: pulse-normal 1s ease-out infinite;
@@ -45,9 +65,9 @@
 		}
 		50% {
 			box-shadow:
-				0 0 12px rgba(255, 255, 255, 0.8),
-				0 0 0 16px rgba(255, 255, 255, 0.4);
-			transform: translate(-50%, -50%) scale(1.1);
+				0 0 10px rgba(255, 255, 255, 0.8),
+				0 0 0 10px rgba(255, 255, 255, 0.4);
+			transform: translate(-50%, -50%) scale(1.05);
 		}
 		100% {
 			box-shadow:
@@ -68,23 +88,23 @@
 		}
 		30% {
 			box-shadow:
-				0 0 16px rgba(255, 255, 255, 0.6),
-				0 0 0 16px rgba(255, 255, 255, 0.4);
-			transform: translate(-50%, -50%) scale(1.15);
+				0 0 12px rgba(255, 255, 255, 0.6),
+				0 0 0 12px rgba(255, 255, 255, 0.4);
+			transform: translate(-50%, -50%) scale(1.1);
 			opacity: 0.2;
 		}
 		60% {
 			box-shadow:
-				0 0 20px rgba(255, 255, 255, 0.4),
-				0 0 0 24px rgba(255, 255, 255, 0.2);
-			transform: translate(-50%, -50%) scale(1.35);
+				0 0 14px rgba(255, 255, 255, 0.4),
+				0 0 0 16px rgba(255, 255, 255, 0.2);
+			transform: translate(-50%, -50%) scale(1.2);
 			opacity: 0.1;
 		}
 		100% {
 			box-shadow:
-				0 0 24px rgba(255, 255, 255, 0),
-				0 0 0 32px rgba(255, 255, 255, 0);
-			transform: translate(-50%, -50%) scale(1.5);
+				0 0 16px rgba(255, 255, 255, 0),
+				0 0 0 20px rgba(255, 255, 255, 0);
+			transform: translate(-50%, -50%) scale(1.3);
 			opacity: 0;
 		}
 	}

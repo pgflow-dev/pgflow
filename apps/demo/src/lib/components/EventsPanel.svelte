@@ -4,6 +4,7 @@
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Play, CheckCircle2, XCircle } from '@lucide/svelte';
 	import { codeToHtml } from 'shiki';
+	import PulseDot from '$lib/components/PulseDot.svelte';
 
 	interface Props {
 		flowState: ReturnType<typeof createFlowState>;
@@ -137,13 +138,17 @@
 	});
 </script>
 
-<Card class="h-full flex flex-col">
+<Card class="h-full flex flex-col relative">
+	<!-- PulseDot in center for desktop/tablet view -->
+	<div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+		<PulseDot />
+	</div>
 	<CardHeader class="pb-0 pt-2 px-3 flex-shrink-0 relative">
 		<div class="flex items-center justify-between">
 			<CardTitle class="text-sm">Event Stream ({displayableEvents.length})</CardTitle>
 		</div>
 	</CardHeader>
-	<CardContent class="flex-1 overflow-auto pt-1 pb-2 px-3 min-h-0">
+	<CardContent class="flex-1 overflow-auto pt-1 pb-2 px-3 min-h-0 relative">
 		<div class="space-y-1">
 			{#if displayableEvents.length === 0}
 				<p class="text-sm text-muted-foreground text-center py-8">
