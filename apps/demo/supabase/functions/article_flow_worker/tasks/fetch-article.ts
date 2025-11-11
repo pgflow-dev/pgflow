@@ -6,13 +6,13 @@ export async function fetchArticle(url: string) {
 	const jinaUrl = `https://r.jina.ai/${url}`;
 
 	try {
+		const apiKey = Deno.env.get('JINA_API_KEY');
 		const response = await fetch(jinaUrl, {
-			headers: {
-				// Add Jina API key if available
-				...(Deno.env.get('JINA_API_KEY') && {
-					Authorization: `Bearer ${Deno.env.get('JINA_API_KEY')}`
-				})
-			}
+			...(apiKey && {
+				headers: {
+					Authorization: `Bearer ${apiKey}`
+				}
+			})
 		});
 
 		if (!response.ok) {

@@ -12,7 +12,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Card } from '$lib/components/ui/card';
-	import { Play, CheckCircle2, Code, GitBranch, Radio } from '@lucide/svelte';
+	import { Play, CheckCircle2, XCircle, Code, GitBranch, Radio, Loader2 } from '@lucide/svelte';
 	import { codeToHtml } from 'shiki';
 	import type ArticleFlow from '../../supabase/functions/article_flow_worker/article_flow';
 
@@ -56,12 +56,37 @@
 		}
 	}
 
-	// Watch for flow completion to show post-run modal
+	// Track when first run completes (no longer shows modal on completion)
 	$effect(() => {
 		if (!hasRunOnce && flowState.status === 'completed') {
-			// First run completed - mark it and show completion modal
+			// Mark first run as complete (used for UI state tracking)
 			hasRunOnce = true;
-			showWelcome = true;
+			// Don't show modal on completion - it breaks the flow of viewing results
+		}
+	});
+
+	// Auto-open explanation panel when a step fails
+	$effect(() => {
+		// Track status changes for all known steps
+		const stepSlugs = ['fetchArticle', 'summarize', 'extractKeywords', 'publish'];
+
+		// Check each step's status using reactive getters
+		const failedSteps = stepSlugs.filter((slug) => {
+			const status = flowState.step(slug).status;
+			return status === 'failed';
+		});
+
+		// If we have a failed step, immediately select it
+		if (failedSteps.length > 0) {
+			const firstFailedSlug = failedSteps[0];
+
+			if (firstFailedSlug && selectedStep !== firstFailedSlug) {
+				selectedStep = firstFailedSlug;
+				showFlowExplanation = false;
+				// Close mobile events panel if open (so explanation panel shows)
+				mobileEventsVisible = false;
+				mobileEventsContentVisible = false;
+			}
 		}
 	});
 
@@ -174,6 +199,7 @@
 	let eventsScrollContainer: HTMLDivElement | undefined;
 	let expandedEventIdx = $state<number | null>(null);
 	let highlightedEventJson = $state<Record<number, string>>({});
+	let isMobile = $state(false);
 
 	function toggleMobileEvents() {
 		if (!mobileEventsVisible) {
@@ -200,7 +226,9 @@
 		} else {
 			// Generate syntax-highlighted JSON if not already cached
 			if (!highlightedEventJson[idx]) {
-				const truncated = truncateDeep(event);
+				// Mobile: 50 chars, Desktop: 500 chars
+				const maxLength = isMobile ? 50 : 500;
+				const truncated = truncateDeep(event, maxLength);
 				const jsonString = JSON.stringify(truncated, null, 2);
 				const html = await codeToHtml(jsonString, {
 					lang: 'json',
@@ -212,6 +240,23 @@
 			expandedEventIdx = idx;
 		}
 	}
+
+	// Auto-expand failed events (both desktop and mobile)
+	$effect(() => {
+		// Find the most recent failed event
+		const failedEvents = displayableEvents.filter((e) => e.event.event_type === 'step:failed');
+		if (failedEvents.length > 0) {
+			const mostRecentFailed = failedEvents[failedEvents.length - 1];
+
+			// Auto-expand the failed event
+			if (expandedEventIdx !== mostRecentFailed.idx) {
+				toggleEventExpanded(mostRecentFailed.idx, mostRecentFailed.event);
+			}
+
+			// Note: Don't auto-open mobile events panel here - the ExplanationPanel
+			// will auto-open instead (they conflict on mobile)
+		}
+	});
 
 	// Truncate deep function (same as ExplanationPanel)
 	function truncateDeep(obj: unknown, maxLength = 80): unknown {
@@ -257,7 +302,7 @@
 
 	// Helper to get event badge info
 	function getEventBadgeInfo(event: { event_type: string; step_slug?: string }): {
-		icon: typeof Play | typeof CheckCircle2;
+		icon: typeof Play | typeof CheckCircle2 | typeof XCircle;
 		color: string;
 		text: string;
 	} | null {
@@ -275,10 +320,17 @@
 				text: getShortStepName(event.step_slug)
 			};
 		}
+		if (event.event_type === 'step:failed' && event.step_slug) {
+			return {
+				icon: XCircle,
+				color: 'red',
+				text: getShortStepName(event.step_slug)
+			};
+		}
 		return null;
 	}
 
-	// Get displayable events (started/completed steps only)
+	// Get displayable events (started/completed/failed steps only)
 	const displayableEvents = $derived(
 		flowState.timeline
 			.map((e, idx) => ({ event: e, badge: getEventBadgeInfo(e), idx }))
@@ -297,6 +349,18 @@
 	if (typeof window !== 'undefined') {
 		setViewportHeight();
 
+		// Detect mobile viewport for truncation
+		const mediaQuery = window.matchMedia('(max-width: 767px)');
+		isMobile = mediaQuery.matches;
+
+		const updateMobile = (e: MediaQueryListEvent) => {
+			isMobile = e.matches;
+			// Clear cache when switching to force regeneration with new truncation
+			highlightedEventJson = {};
+		};
+
+		mediaQuery.addEventListener('change', updateMobile);
+
 		// Listen to visualViewport resize if available (better for mobile)
 		if (window.visualViewport) {
 			window.visualViewport.addEventListener('resize', setViewportHeight);
@@ -307,6 +371,7 @@
 
 		// Clean up on destroy
 		onDestroy(() => {
+			mediaQuery.removeEventListener('change', updateMobile);
 			if (window.visualViewport) {
 				window.visualViewport.removeEventListener('resize', setViewportHeight);
 			} else {
@@ -376,7 +441,12 @@
 							: 'cursor-pointer relative'}
 					>
 						<PulseDot />
-						Process Article
+						{#if isRunning}
+							<Loader2 class="w-4 h-4 mr-2 animate-spin" />
+						{:else}
+							<Play class="w-4 h-4 mr-2" />
+						{/if}
+						{hasRunOnce ? 'Restart' : 'Process Article'}
 					</Button>
 				</div>
 
@@ -388,7 +458,12 @@
 					class="md:hidden h-8 px-3 text-xs relative {highlightButton ? 'button-pulse' : ''}"
 				>
 					<PulseDot />
-					Start
+					{#if isRunning}
+						<Loader2 class="w-3 h-3 mr-1 animate-spin" />
+					{:else}
+						<Play class="w-3 h-3 mr-1" />
+					{/if}
+					{hasRunOnce ? 'Restart' : 'Start'}
 				</Button>
 			</div>
 
@@ -816,6 +891,12 @@
 			color: #20a56f;
 		}
 
+		.event-badge-red {
+			background-color: rgba(220, 38, 38, 0.15);
+			border: 1px solid rgba(239, 68, 68, 0.4);
+			color: #ef4444;
+		}
+
 		/* Event badge rows (for expanded view) */
 		.event-badge-row {
 			border: 1px solid transparent;
@@ -831,6 +912,12 @@
 			background-color: rgba(23, 122, 81, 0.2);
 			border-color: rgba(32, 165, 111, 0.5);
 			color: #2ec184;
+		}
+
+		.event-badge-row.event-badge-red {
+			background-color: rgba(220, 38, 38, 0.2);
+			border-color: rgba(239, 68, 68, 0.5);
+			color: #f87171;
 		}
 
 		/* Event JSON display */

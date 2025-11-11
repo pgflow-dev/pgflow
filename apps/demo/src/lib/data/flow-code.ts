@@ -19,7 +19,7 @@ export const FLOW_SECTIONS: Record<string, CodeSection> = {
 	flow_config: {
 		code: `new Flow<{ url: string }>({
   slug: 'article_flow',
-  maxAttempts: 3
+  maxAttempts: 2
 })`
 	},
 	fetchArticle: {

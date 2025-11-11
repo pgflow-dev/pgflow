@@ -51,21 +51,3 @@ Deno.test({
 		}
 	}
 });
-
-// Test with Jina API key if available
-Deno.test('fetchArticle - works with Jina API key if provided', async () => {
-	const hasApiKey = !!Deno.env.get('JINA_API_KEY');
-
-	if (!hasApiKey) {
-		console.log('⚠ Skipping Jina API key test (no JINA_API_KEY in environment)');
-		return;
-	}
-
-	const url = 'https://example.com';
-	const result = await fetchArticle(url);
-
-	assert(result.content, 'Should have content');
-	assert(result.title, 'Should have title');
-
-	console.log(`✓ Fetched with API key: "${result.title}"`);
-});

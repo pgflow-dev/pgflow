@@ -194,6 +194,9 @@
 		return '';
 	}
 
+	// Define the actual DAG step slugs
+	const DAG_STEPS = ['fetchArticle', 'summarize', 'extractKeywords', 'publish'];
+
 	function getNodeClass(stepSlug: string): string {
 		const classes = ['dag-node'];
 
@@ -207,8 +210,9 @@
 			classes.push('node-created');
 		}
 
-		// Dimming: dim nodes that aren't selected when something is selected
-		if (selectedStep && stepSlug !== selectedStep) {
+		// Dimming: Only dim nodes when a DAG step is selected (not flow_config)
+		// If selectedStep is not a DAG step, don't dim anything
+		if (selectedStep && DAG_STEPS.includes(selectedStep) && stepSlug !== selectedStep) {
 			classes.push('node-dimmed');
 		}
 

@@ -88,8 +88,8 @@
 			return null;
 		}
 
-		// Only show indicators for started and completed
-		if (status === 'started' || status === 'completed') {
+		// Show indicators for started, completed, and failed
+		if (status === 'started' || status === 'completed' || status === 'failed') {
 			return status;
 		}
 
@@ -464,6 +464,10 @@
 		background: #3b82f6; /* Blue */
 	}
 
+	.section-status-border.status-failed {
+		background: #ef4444; /* Red */
+	}
+
 	/* Pulse dot container - centers the dot */
 	.pulse-dot-container {
 		position: absolute;
@@ -622,6 +626,10 @@
 
 	.step-status-border.status-started {
 		background: #3b82f6; /* Blue */
+	}
+
+	.step-status-border.status-failed {
+		background: #ef4444; /* Red */
 	}
 
 	.step-status-border.status-dimmed {
