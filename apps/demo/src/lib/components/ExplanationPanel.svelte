@@ -45,6 +45,18 @@
 		displayName: 'Article Processing Flow',
 		description:
 			'This flow processes web articles by fetching content, generating summaries and keywords, then publishing the results.',
+		whatItDoes:
+			'Demonstrates parallel execution, automatic retries, and dependency management—all core pgflow features.',
+		reliabilityFeatures: [
+			{
+				setting: 'maxAttempts: 3',
+				explanation: 'Automatically retries failed steps up to 3 times before giving up'
+			},
+			{
+				setting: 'timeout: 60',
+				explanation: 'Tasks become visible for retry after 60 seconds if worker crashes'
+			}
+		],
 		inputType: `{
   url: string
 }`,
@@ -57,6 +69,7 @@
 		{
 			name: string;
 			displayName: string;
+			whatItDoes: string;
 			dependsOn: string[];
 			dependents: string[];
 			inputType: string;
@@ -66,6 +79,7 @@
 		fetch_article: {
 			name: 'fetch_article',
 			displayName: 'Fetch Article',
+			whatItDoes: 'Fetches article content from the provided URL using r.jina.ai. Returns both the article text and title for downstream processing.',
 			dependsOn: [],
 			dependents: ['summarize', 'extract_keywords'],
 			inputType: `{
@@ -81,6 +95,7 @@
 		summarize: {
 			name: 'summarize',
 			displayName: 'Summarize',
+			whatItDoes: 'Uses an LLM (Groq) to generate a concise summary of the article content. Runs in parallel with keyword extraction for efficiency.',
 			dependsOn: ['fetch_article'],
 			dependents: ['publish'],
 			inputType: `{
@@ -94,6 +109,7 @@
 		extract_keywords: {
 			name: 'extract_keywords',
 			displayName: 'Extract Keywords',
+			whatItDoes: 'Uses an LLM (Groq) to extract key terms and topics from the article. Runs in parallel with summarization for efficiency.',
 			dependsOn: ['fetch_article'],
 			dependents: ['publish'],
 			inputType: `{
@@ -106,6 +122,7 @@
 		publish: {
 			name: 'publish',
 			displayName: 'Publish',
+			whatItDoes: 'Combines the summary and keywords and publishes the processed article. In this demo, generates a mock article ID—in production, this would save to a database.',
 			dependsOn: ['summarize', 'extract_keywords'],
 			dependents: [],
 			inputType: `{
@@ -254,6 +271,13 @@
 			</CardHeader>
 			<CardContent class="explanation-content text-sm pb-4 space-y-3">
 				{#if currentStepInfo}
+					<!-- What it does (full-width, top) -->
+					<div class="bg-accent/30 rounded-lg p-3 border border-accent">
+						<p class="text-foreground leading-relaxed">
+							{currentStepInfo.whatItDoes}
+						</p>
+					</div>
+
 					<!-- Step-level view: 2-column layout: Dependencies | Inputs/Returns -->
 					<div class="grid grid-cols-2 gap-4">
 						<!-- Left Column: Dependencies -->
@@ -333,10 +357,25 @@
 				{:else}
 					<!-- Flow-level view -->
 					<div class="space-y-3">
-						<!-- Description -->
+						<!-- What it does (highlighted) -->
+						<div class="bg-accent/30 rounded-lg p-3 border border-accent">
+							<p class="text-foreground leading-relaxed mb-2">{flowInfo.description}</p>
+							<p class="text-muted-foreground text-sm">{flowInfo.whatItDoes}</p>
+						</div>
+
+						<!-- Reliability Features -->
 						<div>
-							<div class="font-semibold text-muted-foreground mb-1.5 text-sm">Description</div>
-							<p class="text-foreground leading-relaxed">{flowInfo.description}</p>
+							<div class="font-semibold text-muted-foreground mb-1.5 text-sm flex items-center gap-2">
+								<span>🛡️</span> Reliability Configuration
+							</div>
+							<div class="space-y-2">
+								{#each flowInfo.reliabilityFeatures as feature}
+									<div class="bg-secondary/50 rounded p-2.5">
+										<code class="text-xs font-mono text-primary">{feature.setting}</code>
+										<p class="text-xs text-muted-foreground mt-1">{feature.explanation}</p>
+									</div>
+								{/each}
+							</div>
 						</div>
 
 						<!-- Flow Input -->
