@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { createFlowState } from '$lib/stores/pgflow-state-improved.svelte';
-	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import { codeToHtml } from 'shiki';
+	import { SvelteMap } from 'svelte/reactivity';
 
 	interface Props {
 		flowState: ReturnType<typeof createFlowState>;
@@ -12,7 +12,7 @@
 	let { flowState, selectedStep = null, hoveredStep = null }: Props = $props();
 
 	let expandedEventIndices = $state<Set<number>>(new Set());
-	let highlightedEvents = $state<Map<number, string>>(new Map());
+	let highlightedEvents: SvelteMap<number, string> = new SvelteMap();
 
 	async function toggleEvent(index: number, event: MouseEvent) {
 		// Stop propagation
@@ -37,7 +37,7 @@
 				});
 				highlightedEvents.set(index, html);
 				// Trigger reactivity
-				highlightedEvents = new Map(highlightedEvents);
+				highlightedEvents = new SvelteMap(highlightedEvents);
 			}
 		}
 	}
@@ -48,7 +48,7 @@
 		const currentEventCount = flowState.events.length;
 		// If events list was cleared or reduced significantly, clear the cache
 		if (currentEventCount === 0 || currentEventCount < lastEventCount - 5) {
-			highlightedEvents = new Map();
+			highlightedEvents = new SvelteMap();
 			expandedEventIndices = new Set();
 		}
 		lastEventCount = currentEventCount;
@@ -92,11 +92,14 @@
 <div class="flex flex-col h-full min-w-0">
 	{#if flowState.events.length > 0}
 		<!-- Table-like headers -->
-		<div class="flex items-center gap-2 px-3 py-1 border-b border-muted text-xs font-semibold text-muted-foreground">
+		<div
+			class="flex items-center gap-2 px-3 py-1 border-b border-muted text-xs font-semibold text-muted-foreground"
+		>
 			<div class="w-[80px] text-left">TIME</div>
 			<div class="w-[140px] text-left">EVENT</div>
 			<div class="flex-1 text-left">STEP</div>
-			<div class="w-[32px]"></div> <!-- Space for expand arrow -->
+			<div class="w-[32px]"></div>
+			<!-- Space for expand arrow -->
 		</div>
 	{/if}
 
@@ -107,7 +110,7 @@
 			</p>
 		{:else}
 			{@const firstEventTimestamp = flowState.events[0]?.timestamp}
-			{#each flowState.events as event, index}
+			{#each flowState.events as event, index (index)}
 				{@const eventType = event.event_type}
 				{@const stepSlug = event.data?.step_slug}
 				{@const eventDisplayName = getEventDisplayName(eventType)}
@@ -136,8 +139,7 @@
 									? 'bg-blue-400/20 text-blue-300'
 									: isSelected
 										? 'bg-blue-500/15 text-blue-400'
-										: 'bg-muted text-foreground'}"
-								>{stepSlug}</code
+										: 'bg-muted text-foreground'}">{stepSlug}</code
 							>
 						{:else}
 							<span class="flex-1 text-base font-medium text-muted-foreground">-</span>
@@ -150,10 +152,16 @@
 						{@const highlightedHtml = highlightedEvents.get(index)}
 						{#if highlightedHtml}
 							<div class="event-payload-box mt-1">
+								<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 								{@html highlightedHtml}
 							</div>
 						{:else}
-							<pre class="event-payload-fallback text-sm bg-background/50 p-2 rounded overflow-x-auto max-h-32 mt-1">{JSON.stringify(event.data, null, 2)}</pre>
+							<pre
+								class="event-payload-fallback text-sm bg-background/50 p-2 rounded overflow-x-auto max-h-32 mt-1">{JSON.stringify(
+									event.data,
+									null,
+									2
+								)}</pre>
 						{/if}
 					{/if}
 				</div>

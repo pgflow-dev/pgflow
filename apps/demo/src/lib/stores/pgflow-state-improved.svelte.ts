@@ -1,5 +1,12 @@
 import type { FlowRun, PgflowClient } from '@pgflow/client';
 import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
+import { SvelteDate } from 'svelte/reactivity';
+
+interface FlowEvent {
+	event_type: string;
+	timestamp: Date;
+	data: Record<string, unknown>;
+}
 
 /**
  * Improved pgflow state management for Svelte 5
@@ -18,10 +25,10 @@ export function createFlowState<TFlow extends AnyFlow>(
 	// ✅ Reactive state
 	let run = $state<FlowRun<TFlow> | null>(null);
 	let status = $state<string>('idle');
-	let output = $state<any>(null);
+	let output = $state<unknown>(null);
 	let error = $state<string | null>(null);
 	let activeStep = $state<string | null>(null);
-	let events = $state<Array<{ event_type: string; timestamp: Date; data: any }>>([]);
+	let events = $state<FlowEvent[]>([]);
 	let stepStatuses = $state<Record<string, string>>({});
 
 	// ✅ Non-reactive internals (function-scoped, effectively private)
@@ -62,12 +69,12 @@ export function createFlowState<TFlow extends AnyFlow>(
 		error = flowRun.error_message;
 
 		// Initialize step statuses and events from flowRun's initial state
-		const initialEvents: Array<{ event_type: string; timestamp: Date; data: any }> = [];
+		const initialEvents: FlowEvent[] = [];
 
 		// Add run-level initial event
 		initialEvents.push({
 			event_type: `run:${flowRun.status}`,
-			timestamp: flowRun.started_at || new Date(),
+			timestamp: flowRun.started_at || new SvelteDate(),
 			data: {
 				status: flowRun.status,
 				run_id: flowRun.run_id
@@ -85,7 +92,7 @@ export function createFlowState<TFlow extends AnyFlow>(
 
 					// Create synthetic event for this step's current status
 					// Use the appropriate timestamp field based on status
-					let timestamp = new Date();
+					let timestamp = new SvelteDate();
 					if (stepState.status === 'completed' && stepState.completed_at) {
 						timestamp = stepState.completed_at;
 					} else if (stepState.status === 'failed' && stepState.failed_at) {
@@ -136,8 +143,8 @@ export function createFlowState<TFlow extends AnyFlow>(
 				...events,
 				{
 					event_type: `run:${event.status}`,
-					timestamp: new Date(),
-					data: event
+					timestamp: new SvelteDate(),
+					data: event as Record<string, unknown>
 				}
 			];
 
@@ -164,8 +171,8 @@ export function createFlowState<TFlow extends AnyFlow>(
 					...events,
 					{
 						event_type: `step:${event.status}`,
-						timestamp: new Date(),
-						data: { ...event, step_slug: stepSlug }
+						timestamp: new SvelteDate(),
+						data: { ...(event as Record<string, unknown>), step_slug: stepSlug }
 					}
 				];
 

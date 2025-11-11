@@ -12,6 +12,7 @@
 ### 1. Supabase Projects
 
 Create two Supabase projects:
+
 - **Production**: `pgflow-demo-prod`
 - **Preview**: `pgflow-demo-preview`
 
@@ -68,15 +69,18 @@ pnpm nx deploy:preview demo
 Add these secrets to your GitHub repository (Settings → Secrets):
 
 **Supabase (Production):**
+
 - `SUPABASE_ACCESS_TOKEN` - Personal access token from https://supabase.com/dashboard/account/tokens
 - `PRODUCTION_PROJECT_ID` - Production project ref
 - `PRODUCTION_DB_PASSWORD` - Production database password
 
 **Supabase (Preview):**
+
 - `PREVIEW_PROJECT_ID` - Preview project ref
 - `PREVIEW_DB_PASSWORD` - Preview database password
 
 **Cloudflare:**
+
 - `CLOUDFLARE_API_TOKEN` - API token from Cloudflare dashboard
 - `CLOUDFLARE_ACCOUNT_ID` - Account ID from Cloudflare dashboard
 
@@ -96,11 +100,13 @@ For automatic per-PR preview databases:
 ## Manual Deployments
 
 ### Production
+
 ```bash
 pnpm nx deploy demo
 ```
 
 ### Preview
+
 ```bash
 # With custom name (using script directly)
 cd apps/demo
@@ -117,6 +123,7 @@ pnpm nx deploy:preview demo
 ```
 
 ### Reset Database
+
 ```bash
 cd apps/demo
 supabase link --project-ref <PROJECT_REF>
@@ -126,12 +133,15 @@ supabase db reset --linked
 ## Troubleshooting
 
 **Edge Functions failing:**
+
 - Check secrets are set: `supabase secrets list`
 - Verify you're linked to correct project: `cat supabase/.branches/_current_branch`
 
 **Database out of sync:**
+
 - Run `supabase db reset --linked` to reapply all migrations
 
 **Cloudflare deployment fails:**
+
 - Ensure you're authenticated: `pnpm wrangler whoami`
 - Check wrangler.toml routes match your domain

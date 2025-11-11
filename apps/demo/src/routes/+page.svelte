@@ -10,7 +10,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
-	import { Badge } from '$lib/components/ui/badge';
 	import type ArticleFlow from '../../supabase/functions/article_flow_worker/article_flow';
 
 	const flowState = createFlowState<typeof ArticleFlow>(pgflow, 'article_flow', [
@@ -152,9 +151,7 @@
 	// Automatic cleanup on unmount
 	onDestroy(() => flowState.dispose());
 
-	const isRunning = $derived(
-		flowState.status === 'starting' || flowState.status === 'started'
-	);
+	const isRunning = $derived(flowState.status === 'starting' || flowState.status === 'started');
 </script>
 
 <WelcomeModal
@@ -173,7 +170,8 @@
 >
 	<div class="banner-content mx-auto py-2 px-4">
 		<p class="text-sm font-medium text-white text-center">
-			<span class="hidden md:inline">💬 Questions about pgflow? → Book a call or send an email</span>
+			<span class="hidden md:inline">💬 Questions about pgflow? → Book a call or send an email</span
+			>
 			<span class="md:hidden">💬 Questions? Contact us</span>
 		</p>
 	</div>
@@ -183,136 +181,130 @@
 	<div class="page-content">
 		<!-- Two-column layout: Desktop = 2 cols, Mobile = 1 col (code only) -->
 		<div class="main-layout">
-		<!-- Left Column: Combined Card + Event Stream (Desktop only) -->
-		<div class="left-column">
-			<!-- Desktop: Combined Card: Logo + DAG + Input -->
-			<Card class="p-0 mb-4 flex-shrink-0 hidden md:block">
-				<CardContent class="p-4">
-					<!-- Desktop: Logo and DAG side-by-side -->
-					<div class="grid grid-cols-[0.8fr_1.2fr] gap-4 mb-4">
-						<!-- Left: Logo and Title -->
-						<div class="flex flex-col items-center justify-center">
-							<img src="/pgflow-logo-dark.svg" alt="pgflow" class="h-28 mb-3" />
-							<h1 class="text-xl font-bold mb-1">pgflow Demo</h1>
-							<p class="text-sm font-semibold text-muted-foreground text-center px-2">
-								Dead-simple workflow orchestration for Supabase
-							</p>
+			<!-- Left Column: Combined Card + Event Stream (Desktop only) -->
+			<div class="left-column">
+				<!-- Desktop: Combined Card: Logo + DAG + Input -->
+				<Card class="p-0 mb-4 flex-shrink-0 hidden md:block">
+					<CardContent class="p-4">
+						<!-- Desktop: Logo and DAG side-by-side -->
+						<div class="grid grid-cols-[0.8fr_1.2fr] gap-4 mb-4">
+							<!-- Left: Logo and Title -->
+							<div class="flex flex-col items-center justify-center">
+								<img src="/pgflow-logo-dark.svg" alt="pgflow" class="h-28 mb-3" />
+								<h1 class="text-xl font-bold mb-1">pgflow Demo</h1>
+								<p class="text-sm font-semibold text-muted-foreground text-center px-2">
+									Dead-simple workflow orchestration for Supabase
+								</p>
+							</div>
+
+							<!-- Right: DAG Visualization -->
+							<div class="h-[220px]">
+								<DAGVisualization
+									{flowState}
+									{selectedStep}
+									{hoveredStep}
+									on:step-selected={handleStepSelected}
+									on:step-hovered={handleStepHovered}
+								/>
+							</div>
 						</div>
 
-						<!-- Right: DAG Visualization -->
-						<div class="h-[220px]">
-							<DAGVisualization
+						<!-- Input Form (full width) -->
+						<div class="flex gap-2">
+							<Input type="url" bind:value={url} placeholder="Enter article URL" class="flex-1" />
+							<Button
+								onclick={processArticle}
+								disabled={isRunning}
+								class={highlightButton ? 'button-pulse cursor-pointer' : 'cursor-pointer'}
+							>
+								Process Article
+							</Button>
+						</div>
+					</CardContent>
+				</Card>
+
+				<!-- Event Stream - Full height to bottom (hidden when no events) - Desktop only -->
+				{#if flowState.events.length > 0}
+					<Card class="hidden md:flex flex-1 flex-col min-h-0 p-0 overflow-hidden">
+						<CardHeader class="pb-0 pt-3 flex-shrink-0">
+							<CardTitle class="text-sm">Event Stream</CardTitle>
+						</CardHeader>
+						<CardContent class="flex-1 overflow-hidden py-2 min-h-0">
+							<DebugPanel
 								{flowState}
 								{selectedStep}
 								{hoveredStep}
 								on:step-selected={handleStepSelected}
 								on:step-hovered={handleStepHovered}
 							/>
-						</div>
-					</div>
-
-					<!-- Input Form (full width) -->
-					<div class="flex gap-2">
-						<Input
-							type="url"
-							bind:value={url}
-							placeholder="Enter article URL"
-							class="flex-1"
-						/>
-						<Button
-							onclick={processArticle}
-							disabled={isRunning}
-							class={highlightButton ? 'button-pulse cursor-pointer' : 'cursor-pointer'}
-						>
-							Process Article
-						</Button>
-					</div>
-				</CardContent>
-			</Card>
-
-			<!-- Event Stream - Full height to bottom (hidden when no events) - Desktop only -->
-			{#if flowState.events.length > 0}
-				<Card class="hidden md:flex flex-1 flex-col min-h-0 p-0 overflow-hidden">
-					<CardHeader class="pb-0 pt-3 flex-shrink-0">
-						<CardTitle class="text-sm">Event Stream</CardTitle>
-					</CardHeader>
-					<CardContent class="flex-1 overflow-hidden py-2 min-h-0">
-						<DebugPanel
-							{flowState}
-							{selectedStep}
-							{hoveredStep}
-							on:step-selected={handleStepSelected}
-							on:step-hovered={handleStepHovered}
-						/>
-					</CardContent>
-				</Card>
-			{/if}
-		</div>
-
-		<!-- Right Column: Code Panel + DAG (Mobile) + Explanation -->
-		<div class="right-column">
-			<!-- Code Panel with Clear Selection Button -->
-			<div class="relative flex-shrink-0 mobile-code-wrapper">
-				{#if explanationVisible}
-					<Button variant="outline" onclick={clearSelection} class="absolute top-2 right-2 z-10 hidden md:block cursor-pointer">
-						✕ Clear Selection
-					</Button>
-				{/if}
-				<CodePanel
-					{flowState}
-					{selectedStep}
-					{hoveredStep}
-					on:step-selected={handleStepSelected}
-					on:step-hovered={handleStepHovered}
-				/>
-			</div>
-
-			<!-- Mobile: DAG below code - fills all remaining space -->
-			<div class="md:hidden mobile-dag-container">
-				<DAGVisualization
-					{flowState}
-					{selectedStep}
-					{hoveredStep}
-					on:step-selected={handleStepSelected}
-					on:step-hovered={handleStepHovered}
-				/>
-			</div>
-
-			<!-- Explanation Panel - Desktop: fills remaining space, Mobile: fixed at bottom -->
-			<div class="flex-1 min-h-0 hidden md:block">
-				{#if explanationVisible}
-					<ExplanationPanel
-						{selectedStep}
-						{hoveredStep}
-						{flowState}
-						visible={true}
-						on:close={closeExplanation}
-						on:step-selected={handleStepSelected}
-						on:step-hovered={handleStepHovered}
-					/>
-				{:else}
-					<Card class="h-full flex items-center justify-center">
-						<CardContent class="text-center text-muted-foreground py-8">
-							<p class="text-2xl mb-2">👆</p>
-							<p class="text-lg">Click a step or flow to see details</p>
 						</CardContent>
 					</Card>
 				{/if}
 			</div>
+
+			<!-- Right Column: Code Panel + DAG (Mobile) + Explanation -->
+			<div class="right-column">
+				<!-- Code Panel with Clear Selection Button -->
+				<div class="relative flex-shrink-0 mobile-code-wrapper">
+					{#if explanationVisible}
+						<Button
+							variant="outline"
+							onclick={clearSelection}
+							class="absolute top-2 right-2 z-10 hidden md:block cursor-pointer"
+						>
+							✕ Clear Selection
+						</Button>
+					{/if}
+					<CodePanel
+						{flowState}
+						{selectedStep}
+						{hoveredStep}
+						on:step-selected={handleStepSelected}
+						on:step-hovered={handleStepHovered}
+					/>
+				</div>
+
+				<!-- Mobile: DAG below code - fills all remaining space -->
+				<div class="md:hidden mobile-dag-container">
+					<DAGVisualization
+						{flowState}
+						{selectedStep}
+						{hoveredStep}
+						on:step-selected={handleStepSelected}
+						on:step-hovered={handleStepHovered}
+					/>
+				</div>
+
+				<!-- Explanation Panel - Desktop: fills remaining space, Mobile: fixed at bottom -->
+				<div class="flex-1 min-h-0 hidden md:block">
+					{#if explanationVisible}
+						<ExplanationPanel
+							{selectedStep}
+							{hoveredStep}
+							{flowState}
+							visible={true}
+							on:close={closeExplanation}
+							on:step-selected={handleStepSelected}
+							on:step-hovered={handleStepHovered}
+						/>
+					{:else}
+						<Card class="h-full flex items-center justify-center">
+							<CardContent class="text-center text-muted-foreground py-8">
+								<p class="text-2xl mb-2">👆</p>
+								<p class="text-lg">Click a step or flow to see details</p>
+							</CardContent>
+						</Card>
+					{/if}
+				</div>
+			</div>
 		</div>
-	</div>
 	</div>
 </div>
 
 <!-- Mobile: Sticky bottom input + button -->
 <div class="mobile-sticky-input md:hidden bg-card border-t border-border">
 	<div class="flex gap-2 p-3">
-		<Input
-			type="url"
-			bind:value={url}
-			placeholder="Enter article URL"
-			class="flex-1"
-		/>
+		<Input type="url" bind:value={url} placeholder="Enter article URL" class="flex-1" />
 		<Button
 			onclick={processArticle}
 			disabled={isRunning}

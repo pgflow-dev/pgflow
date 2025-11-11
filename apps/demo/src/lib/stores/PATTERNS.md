@@ -17,34 +17,35 @@ The current `createPgflowState` pattern has these problems:
 
 ```svelte
 <script lang="ts">
-  import { pgflow } from '$lib/supabase';
-  import { useFlowRun } from '$lib/stores/use-flow-run.svelte';
-  import type ArticleFlow from './article_flow';
+	import { pgflow } from '$lib/supabase';
+	import { useFlowRun } from '$lib/stores/use-flow-run.svelte';
+	import type ArticleFlow from './article_flow';
 
-  let flowState = $state<ReturnType<typeof useFlowRun<typeof ArticleFlow>> | null>(null);
+	let flowState = $state<ReturnType<typeof useFlowRun<typeof ArticleFlow>> | null>(null);
 
-  async function startFlow() {
-    // ✅ Use pgflow client directly (as documented)
-    const run = await pgflow.startFlow<typeof ArticleFlow>('article_flow', {
-      url: 'https://example.com'
-    });
+	async function startFlow() {
+		// ✅ Use pgflow client directly (as documented)
+		const run = await pgflow.startFlow<typeof ArticleFlow>('article_flow', {
+			url: 'https://example.com'
+		});
 
-    // ✅ Wrap for reactive state + auto cleanup
-    flowState = useFlowRun(run);
-  }
+		// ✅ Wrap for reactive state + auto cleanup
+		flowState = useFlowRun(run);
+	}
 </script>
 
 {#if flowState}
-  <p>Status: {flowState.status}</p>
-  <p>Active: {flowState.activeStep}</p>
+	<p>Status: {flowState.status}</p>
+	<p>Active: {flowState.activeStep}</p>
 
-  {#each flowState.events as event}
-    <div>{event.event_type} at {event.timestamp.toLocaleTimeString()}</div>
-  {/each}
+	{#each flowState.events as event}
+		<div>{event.event_type} at {event.timestamp.toLocaleTimeString()}</div>
+	{/each}
 {/if}
 ```
 
 **Advantages:**
+
 - ✅ Follows documented pgflow patterns
 - ✅ Auto-discovers steps from run state
 - ✅ Automatic cleanup on unmount
@@ -52,6 +53,7 @@ The current `createPgflowState` pattern has these problems:
 - ✅ Wraps FlowRun (correct abstraction)
 
 **Disadvantages:**
+
 - ❌ Tied to component lifecycle
 - ❌ Harder to share across components
 
@@ -65,108 +67,120 @@ import type { FlowRun } from '@pgflow/client';
 import type { AnyFlow } from '@pgflow/dsl';
 
 export function createFlowStore<TFlow extends AnyFlow>() {
-  let run = $state<FlowRun<TFlow> | null>(null);
-  let status = $state<string>('idle');
-  let output = $state<any>(null);
-  let events = $state<any[]>([]);
+	let run = $state<FlowRun<TFlow> | null>(null);
+	let status = $state<string>('idle');
+	let output = $state<any>(null);
+	let events = $state<any[]>([]);
 
-  const unsubscribers = $state.raw<Array<() => void>>([]);
+	const unsubscribers = $state.raw<Array<() => void>>([]);
 
-  function setRun(flowRun: FlowRun<TFlow>) {
-    // Clear previous subscriptions
-    unsubscribers.forEach(u => u());
-    unsubscribers.length = 0;
+	function setRun(flowRun: FlowRun<TFlow>) {
+		// Clear previous subscriptions
+		unsubscribers.forEach((u) => u());
+		unsubscribers.length = 0;
 
-    run = flowRun;
+		run = flowRun;
 
-    // Auto-discover steps
-    const stepSlugs = flowRun.stepStates?.map(s => s.step_slug) || [];
+		// Auto-discover steps
+		const stepSlugs = flowRun.stepStates?.map((s) => s.step_slug) || [];
 
-    // Set up listeners...
-    const unsub = flowRun.on('*', event => {
-      events = [...events, event];
-      status = event.status;
-    });
+		// Set up listeners...
+		const unsub = flowRun.on('*', (event) => {
+			events = [...events, event];
+			status = event.status;
+		});
 
-    if (typeof unsub === 'function') {
-      unsubscribers.push(unsub);
-    }
-  }
+		if (typeof unsub === 'function') {
+			unsubscribers.push(unsub);
+		}
+	}
 
-  function dispose() {
-    unsubscribers.forEach(u => u());
-    unsubscribers.length = 0;
-    run = null;
-    status = 'idle';
-    events = [];
-  }
+	function dispose() {
+		unsubscribers.forEach((u) => u());
+		unsubscribers.length = 0;
+		run = null;
+		status = 'idle';
+		events = [];
+	}
 
-  return {
-    get run() { return run; },
-    get status() { return status; },
-    get events() { return events; },
-    get output() { return output; },
-    setRun,
-    dispose
-  };
+	return {
+		get run() {
+			return run;
+		},
+		get status() {
+			return status;
+		},
+		get events() {
+			return events;
+		},
+		get output() {
+			return output;
+		},
+		setRun,
+		dispose
+	};
 }
 ```
 
 ```svelte
 <!-- Component usage -->
 <script lang="ts">
-  import { pgflow } from '$lib/supabase';
-  import { createFlowStore } from '$lib/stores/flow-store.svelte';
-  import type ArticleFlow from './article_flow';
+	import { pgflow } from '$lib/supabase';
+	import { createFlowStore } from '$lib/stores/flow-store.svelte';
+	import type ArticleFlow from './article_flow';
 
-  const flowStore = createFlowStore<typeof ArticleFlow>();
+	const flowStore = createFlowStore<typeof ArticleFlow>();
 
-  async function startFlow() {
-    const run = await pgflow.startFlow<typeof ArticleFlow>('article_flow', {
-      url: 'https://example.com'
-    });
+	async function startFlow() {
+		const run = await pgflow.startFlow<typeof ArticleFlow>('article_flow', {
+			url: 'https://example.com'
+		});
 
-    flowStore.setRun(run);
-  }
+		flowStore.setRun(run);
+	}
 
-  // Manual cleanup when needed
-  function cleanup() {
-    flowStore.dispose();
-  }
+	// Manual cleanup when needed
+	function cleanup() {
+		flowStore.dispose();
+	}
 </script>
 ```
 
 **Advantages:**
+
 - ✅ Can be module-level (shared across components)
 - ✅ Auto-discovers steps
 - ✅ Explicit control over lifecycle
 - ✅ No component coupling
 
 **Disadvantages:**
+
 - ❌ Manual cleanup required
 - ❌ Need to remember to call dispose()
 
 ## Comparison Matrix
 
-| Feature | Current Approach | useFlowRun | Store Pattern |
-|---------|------------------|------------|---------------|
-| Follows pgflow docs | ❌ | ✅ | ✅ |
-| Auto-discover steps | ❌ | ✅ | ✅ |
-| Auto cleanup | ❌ | ✅ | ❌ |
-| Module-level | ✅ | ❌ | ✅ |
-| Component-local | ❌ | ✅ | ❌ |
-| Manual step list | ❌ | ✅ | ✅ |
-| Wraps correct abstraction | ❌ | ✅ | ✅ |
+| Feature                   | Current Approach | useFlowRun | Store Pattern |
+| ------------------------- | ---------------- | ---------- | ------------- |
+| Follows pgflow docs       | ❌               | ✅         | ✅            |
+| Auto-discover steps       | ❌               | ✅         | ✅            |
+| Auto cleanup              | ❌               | ✅         | ❌            |
+| Module-level              | ✅               | ❌         | ✅            |
+| Component-local           | ❌               | ✅         | ❌            |
+| Manual step list          | ❌               | ✅         | ✅            |
+| Wraps correct abstraction | ❌               | ✅         | ✅            |
 
 ## Recommendation
 
 **For most use cases:** Use `useFlowRun`
+
 - Simpler
 - Automatic cleanup
 - Follows documented patterns
 - Auto-discovers steps
 
 **For shared state:** Use store pattern
+
 - When multiple components need the same run
 - When you need explicit lifecycle control
 - When you want module-level state
@@ -178,7 +192,7 @@ export function createFlowStore<TFlow extends AnyFlow>() {
 Both patterns discover steps from `run.stepStates`:
 
 ```typescript
-const stepSlugs = run.stepStates?.map(s => s.step_slug) || [];
+const stepSlugs = run.stepStates?.map((s) => s.step_slug) || [];
 ```
 
 This is populated by `startFlow()` / `getRun()`, so no manual list needed.
@@ -197,12 +211,14 @@ const state = useFlowRun<typeof ArticleFlow>(run);
 ### Cleanup Patterns
 
 **Automatic (useFlowRun):**
+
 ```typescript
 // Cleanup happens automatically via onDestroy
 const state = useFlowRun(run);
 ```
 
 **Manual (Store):**
+
 ```typescript
 const store = createFlowStore();
 store.setRun(run);
@@ -212,6 +228,7 @@ store.dispose();
 ```
 
 **With Svelte Context:**
+
 ```typescript
 // In parent component
 setContext('flow', store);

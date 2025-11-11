@@ -1,11 +1,12 @@
 import type { FlowRun } from '@pgflow/client';
 import type { AnyFlow } from '@pgflow/dsl';
 import { onDestroy } from 'svelte';
+import { SvelteDate } from 'svelte/reactivity';
 
 interface FlowRunEvent {
 	event_type: string;
 	timestamp: Date;
-	data: any;
+	data: Record<string, unknown>;
 }
 
 /**
@@ -46,7 +47,7 @@ interface FlowRunEvent {
 export function useFlowRun<TFlow extends AnyFlow>(run: FlowRun<TFlow>) {
 	// ✅ Reactive state
 	let status = $state(run.status);
-	let output = $state<any>(run.output);
+	let output = $state<unknown>(run.output);
 	let error = $state<string | null>(run.error_message);
 	let activeStep = $state<string | null>(null);
 	let events = $state<FlowRunEvent[]>([]);
@@ -55,9 +56,7 @@ export function useFlowRun<TFlow extends AnyFlow>(run: FlowRun<TFlow>) {
 	const unsubscribers = $state.raw<Array<() => void>>([]);
 
 	// Auto-discover step slugs from run state
-	const stepSlugs = $state.raw<string[]>(
-		run.stepStates?.map((s) => s.step_slug) || []
-	);
+	const stepSlugs = $state.raw<string[]>(run.stepStates?.map((s) => s.step_slug) || []);
 
 	// Set up run-level event listeners
 	const unsubRun = run.on('*', (event) => {
@@ -65,8 +64,8 @@ export function useFlowRun<TFlow extends AnyFlow>(run: FlowRun<TFlow>) {
 			...events,
 			{
 				event_type: `run:${event.status}`,
-				timestamp: new Date(),
-				data: event
+				timestamp: new SvelteDate(),
+				data: event as Record<string, unknown>
 			}
 		];
 
@@ -91,8 +90,8 @@ export function useFlowRun<TFlow extends AnyFlow>(run: FlowRun<TFlow>) {
 				...events,
 				{
 					event_type: `step:${event.status}`,
-					timestamp: new Date(),
-					data: { ...event, step_slug: stepSlug }
+					timestamp: new SvelteDate(),
+					data: { ...(event as Record<string, unknown>), step_slug: stepSlug }
 				}
 			];
 

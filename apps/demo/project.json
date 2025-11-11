@@ -1,83 +1,83 @@
 {
-  "name": "demo",
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "projectType": "application",
-  "sourceRoot": "apps/demo/src",
-  "targets": {
-    "dev": {
-      "executor": "nx:run-commands",
-      "dependsOn": ["^build"],
-      "options": {
-        "command": "vite dev",
-        "cwd": "apps/demo"
-      }
-    },
-    "dev:remote": {
-      "executor": "nx:run-commands",
-      "dependsOn": ["^build"],
-      "options": {
-        "command": "vite dev --host 0.0.0.0",
-        "cwd": "apps/demo"
-      }
-    },
-    "build": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "vite build",
-        "cwd": "apps/demo"
-      },
-      "outputs": ["{projectRoot}/.svelte-kit"]
-    },
-    "preview": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "vite preview",
-        "cwd": "apps/demo"
-      },
-      "dependsOn": ["build"]
-    },
-    "sync-edge-deps": {
-      "executor": "nx:run-commands",
-      "dependsOn": ["core:build", "dsl:build"],
-      "options": {
-        "command": "./scripts/sync-edge-deps.sh",
-        "cwd": "apps/demo"
-      }
-    },
-    "test": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "deno test --allow-env --allow-net tests/",
-        "cwd": "apps/demo/supabase/functions/article_flow_worker"
-      }
-    },
-    "ensure-ci-environment": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "node -e \"if (!process.env.CI) throw new Error('This target must run in CI environment')\""
-      }
-    },
-    "deploy": {
-      "executor": "nx:run-commands",
-      "cache": false,
-      "local": true,
-      "dependsOn": ["build", "ensure-ci-environment"],
-      "inputs": ["{projectRoot}/wrangler.toml"],
-      "options": {
-        "cwd": "apps/demo",
-        "command": "wrangler deploy --env production"
-      }
-    },
-    "deploy:preview": {
-      "executor": "nx:run-commands",
-      "cache": false,
-      "local": true,
-      "dependsOn": ["build"],
-      "inputs": ["{projectRoot}/wrangler.toml"],
-      "options": {
-        "cwd": "apps/demo",
-        "command": "./scripts/deploy-preview.sh ${PREVIEW_NAME:-pr-${PR_NUMBER:-preview}}"
-      }
-    }
-  }
+	"name": "demo",
+	"$schema": "../../node_modules/nx/schemas/project-schema.json",
+	"projectType": "application",
+	"sourceRoot": "apps/demo/src",
+	"targets": {
+		"dev": {
+			"executor": "nx:run-commands",
+			"dependsOn": ["^build"],
+			"options": {
+				"command": "vite dev",
+				"cwd": "apps/demo"
+			}
+		},
+		"dev:remote": {
+			"executor": "nx:run-commands",
+			"dependsOn": ["^build"],
+			"options": {
+				"command": "vite dev --host 0.0.0.0",
+				"cwd": "apps/demo"
+			}
+		},
+		"build": {
+			"executor": "nx:run-commands",
+			"options": {
+				"command": "vite build",
+				"cwd": "apps/demo"
+			},
+			"outputs": ["{projectRoot}/.svelte-kit"]
+		},
+		"preview": {
+			"executor": "nx:run-commands",
+			"options": {
+				"command": "vite preview",
+				"cwd": "apps/demo"
+			},
+			"dependsOn": ["build"]
+		},
+		"sync-edge-deps": {
+			"executor": "nx:run-commands",
+			"dependsOn": ["core:build", "dsl:build"],
+			"options": {
+				"command": "./scripts/sync-edge-deps.sh",
+				"cwd": "apps/demo"
+			}
+		},
+		"test": {
+			"executor": "nx:run-commands",
+			"options": {
+				"command": "deno test --allow-env --allow-net tests/",
+				"cwd": "apps/demo/supabase/functions/article_flow_worker"
+			}
+		},
+		"ensure-ci-environment": {
+			"executor": "nx:run-commands",
+			"options": {
+				"command": "node -e \"if (!process.env.CI) throw new Error('This target must run in CI environment')\""
+			}
+		},
+		"deploy": {
+			"executor": "nx:run-commands",
+			"cache": false,
+			"local": true,
+			"dependsOn": ["build", "ensure-ci-environment"],
+			"inputs": ["{projectRoot}/wrangler.toml"],
+			"options": {
+				"cwd": "apps/demo",
+				"command": "wrangler deploy --env production"
+			}
+		},
+		"deploy:preview": {
+			"executor": "nx:run-commands",
+			"cache": false,
+			"local": true,
+			"dependsOn": ["build"],
+			"inputs": ["{projectRoot}/wrangler.toml"],
+			"options": {
+				"cwd": "apps/demo",
+				"command": "./scripts/deploy-preview.sh ${PREVIEW_NAME:-pr-${PR_NUMBER:-preview}}"
+			}
+		}
+	}
 }

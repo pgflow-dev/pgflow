@@ -1,7 +1,14 @@
 import type { FlowRun, PgflowClient } from '@pgflow/client';
 import type { AnyFlow, ExtractFlowInput } from '@pgflow/dsl';
+import { SvelteMap, SvelteDate } from 'svelte/reactivity';
 
-interface PgflowStateConfig<TFlow extends AnyFlow> {
+interface FlowEvent {
+	event_type: string;
+	timestamp: Date;
+	data: Record<string, unknown>;
+}
+
+interface PgflowStateConfig {
 	client: PgflowClient;
 	flowSlug: string;
 	stepSlugs: string[];
@@ -21,8 +28,8 @@ class PgflowState<TFlow extends AnyFlow = AnyFlow> {
 	run = $state<FlowRun<TFlow> | null>(null);
 	activeStep = $state<string | null>(null);
 	status = $state<string>('idle');
-	output = $state<any>(null);
-	events = $state<Array<{ event_type: string; timestamp: Date; data: any }>>([]);
+	output = $state<unknown>(null);
+	events = $state<FlowEvent[]>([]);
 	error = $state<string | null>(null);
 
 	// ✅ Non-reactive objects - don't need deep tracking
@@ -31,7 +38,7 @@ class PgflowState<TFlow extends AnyFlow = AnyFlow> {
 	#stepSlugs = $state.raw<string[]>([]);
 	#unsubscribers = $state.raw<Array<() => void>>([]);
 
-	constructor(config: PgflowStateConfig<TFlow>) {
+	constructor(config: PgflowStateConfig) {
 		this.#client = config.client;
 		this.#flowSlug = config.flowSlug;
 		this.#stepSlugs = config.stepSlugs;
@@ -39,9 +46,9 @@ class PgflowState<TFlow extends AnyFlow = AnyFlow> {
 
 	// ✅ Derived state - automatically recomputes when dependencies change
 	steps = $derived(() => {
-		if (!this.run) return new Map();
+		if (!this.run) return new SvelteMap();
 
-		const stepMap = new Map();
+		const stepMap = new SvelteMap();
 		if (this.run.stepStates) {
 			this.run.stepStates.forEach((stepState) => {
 				stepMap.set(stepState.stepSlug, stepState);
@@ -110,12 +117,15 @@ class PgflowState<TFlow extends AnyFlow = AnyFlow> {
 		});
 	}
 
-	#addEvent(type: 'run' | 'step', data: any) {
+	#addEvent(type: 'run' | 'step', data: Record<string, unknown>) {
 		this.events = [
 			...this.events,
 			{
-				event_type: type === 'run' ? `run:${data.status}` : `step:${data.status}`,
-				timestamp: new Date(),
+				event_type:
+					type === 'run'
+						? `run:${(data as { status: string }).status}`
+						: `step:${(data as { status: string }).status}`,
+				timestamp: new SvelteDate(),
 				data
 			}
 		];
