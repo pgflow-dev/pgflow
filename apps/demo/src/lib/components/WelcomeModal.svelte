@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 
@@ -10,11 +11,27 @@
 	}
 
 	let { visible, hasRun, onRunFlow, onDismiss }: Props = $props();
+
+	// Handle ESC key
+	function handleKeyDown(event: KeyboardEvent) {
+		if (event.key === 'Escape' && visible) {
+			onDismiss();
+		}
+	}
+
+	onMount(() => {
+		document.addEventListener('keydown', handleKeyDown);
+
+		return () => {
+			document.removeEventListener('keydown', handleKeyDown);
+		};
+	});
 </script>
 
 {#if visible}
-	<div class="modal-overlay">
-		<Card class="welcome-card">
+	<!-- Click outside to dismiss -->
+	<div class="modal-overlay" onclick={onDismiss}>
+		<Card class="welcome-card" onclick={(e) => e.stopPropagation()}>
 			<CardHeader class="pb-3">
 				{#if !hasRun}
 					<div class="flex flex-col items-center gap-3">
@@ -32,10 +49,18 @@
 						<p class="text-lg text-muted-foreground">
 							See a workflow in action - process an article with parallel steps
 						</p>
-						<div class="py-4">
-							<Button onclick={onRunFlow} size="lg" class="text-lg px-8 py-6">
+						<div class="py-4 space-y-3">
+							<Button onclick={onRunFlow} size="lg" class="text-lg px-8 py-6 cursor-pointer">
 								Run the Flow
 							</Button>
+							<div>
+								<button
+									onclick={onDismiss}
+									class="text-sm text-muted-foreground hover:text-foreground underline transition-colors cursor-pointer"
+								>
+									or explore on your own
+								</button>
+							</div>
 						</div>
 						<p class="text-sm text-muted-foreground">
 							Watch as the flow fetches an article, then summarizes and extracts keywords in
@@ -69,7 +94,7 @@
 						</div>
 
 						<div class="pt-4">
-							<Button onclick={onDismiss} class="w-full" size="lg">Start Exploring</Button>
+							<Button onclick={onDismiss} class="w-full cursor-pointer" size="lg">Start Exploring</Button>
 						</div>
 					</div>
 				{/if}

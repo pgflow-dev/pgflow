@@ -43,7 +43,8 @@
 	const flowInfo = {
 		name: 'article_flow',
 		displayName: 'Article Processing Flow',
-		description: 'This flow processes web articles by fetching content, generating summaries and keywords, then publishing the results.',
+		description:
+			'This flow processes web articles by fetching content, generating summaries and keywords, then publishing the results.',
 		inputType: `{
   url: string
 }`,
@@ -195,9 +196,7 @@
 	const stepOutput = $derived.by(() => {
 		if (!selectedStep) return null;
 		// Find the latest completed event for this step
-		const stepEvents = flowState.events
-			.filter((e) => e.data?.step_slug === selectedStep)
-			.reverse();
+		const stepEvents = flowState.events.filter((e) => e.data?.step_slug === selectedStep).reverse();
 		const completedEvent = stepEvents.find((e) => e.event_type === 'step:completed');
 		return completedEvent?.data?.output || null;
 	});
@@ -212,11 +211,6 @@
 			return null;
 		}
 
-		// If flow has started but this step has no status yet, show as queued
-		if (!status) {
-			return 'queued';
-		}
-
 		return status;
 	}
 
@@ -226,17 +220,21 @@
 
 {#if visible}
 	<div class="explanation-panel-wrapper" bind:this={panelElement}>
-		<Card class="p-0">
-			<CardHeader class="pb-2 pt-3">
+		<Card class="explanation-card p-0">
+			<CardHeader class="explanation-header pb-2 pt-3">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-2">
 						{#if currentStepInfo}
 							<CardTitle class="text-sm">
-								Step <code class="bg-muted px-2 py-0.5 rounded text-sm font-mono">{currentStepInfo.name}</code>
+								Step <code class="bg-muted px-2 py-0.5 rounded text-sm font-mono"
+									>{currentStepInfo.name}</code
+								>
 							</CardTitle>
 						{:else}
 							<CardTitle class="text-sm">
-								Flow <code class="bg-muted px-2 py-0.5 rounded text-sm font-mono">{flowInfo.name}</code>
+								Flow <code class="bg-muted px-2 py-0.5 rounded text-sm font-mono"
+									>{flowInfo.name}</code
+								>
 							</CardTitle>
 						{/if}
 					</div>
@@ -245,11 +243,16 @@
 							<span class="status-label status-{stepStatus}">{stepStatus}</span>
 							<StatusBadge status={stepStatus} variant="icon-only" size="xl" />
 						{/if}
-						<Button variant="ghost" size="sm" class="text-lg" onclick={() => dispatch('close')}>✕</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							class="text-lg cursor-pointer"
+							onclick={() => dispatch('close')}>✕</Button
+						>
 					</div>
 				</div>
 			</CardHeader>
-			<CardContent class="text-sm pb-4 space-y-3">
+			<CardContent class="explanation-content text-sm pb-4 space-y-3">
 				{#if currentStepInfo}
 					<!-- Step-level view: 2-column layout: Dependencies | Inputs/Returns -->
 					<div class="grid grid-cols-2 gap-4">
@@ -264,7 +267,11 @@
 									<div class="flex flex-col gap-1.5">
 										{#each currentStepInfo.dependsOn as dep}
 											<button
-												class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left {isDepDimmed(dep) ? 'opacity-30' : 'opacity-100'}"
+												class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left {isDepDimmed(
+													dep
+												)
+													? 'opacity-30'
+													: 'opacity-100'}"
 												onclick={(e) => handleDependencyClick(dep, e)}
 												onmouseenter={() => handleDependencyHover(dep)}
 												onmouseleave={() => handleDependencyHover(null)}
@@ -285,7 +292,11 @@
 									<div class="flex flex-col gap-1.5">
 										{#each currentStepInfo.dependents as dep}
 											<button
-												class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left {isDepDimmed(dep) ? 'opacity-30' : 'opacity-100'}"
+												class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left {isDepDimmed(
+													dep
+												)
+													? 'opacity-30'
+													: 'opacity-100'}"
 												onclick={(e) => handleDependencyClick(dep, e)}
 												onmouseenter={() => handleDependencyHover(dep)}
 												onmouseleave={() => handleDependencyHover(null)}
@@ -333,7 +344,8 @@
 								{@html highlightedInputType}
 							</div>
 							<p class="text-muted-foreground text-xs mt-1.5">
-								Start this flow with a URL object. The flow will fetch the article, process it, and publish the results.
+								Start this flow with a URL object. The flow will fetch the article, process it, and
+								publish the results.
 							</p>
 						</div>
 
@@ -343,7 +355,11 @@
 							<div class="flex flex-col gap-1.5">
 								{#each flowInfo.steps as step}
 									<button
-										class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left {isDepDimmed(step) ? 'opacity-30' : 'opacity-100'}"
+										class="font-mono text-sm px-2 py-1.5 rounded bg-secondary hover:bg-secondary/80 transition-all duration-200 cursor-pointer border border-transparent hover:border-blue-500 text-left {isDepDimmed(
+											step
+										)
+											? 'opacity-30'
+											: 'opacity-100'}"
 										onclick={(e) => handleDependencyClick(step, e)}
 										onmouseenter={() => handleDependencyHover(step)}
 										onmouseleave={() => handleDependencyHover(null)}
@@ -373,6 +389,49 @@
 <style>
 	.explanation-panel-wrapper {
 		animation: slideIn 0.2s ease-out;
+		display: flex;
+		flex-direction: column;
+		height: 100%; /* Fill available space from parent flex-1 */
+		min-height: 0; /* Allow flex shrinking */
+	}
+
+	.explanation-card {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0; /* Allow flex shrinking */
+		overflow: hidden; /* Contain scrolling to content area */
+		height: 100%; /* Fill wrapper */
+	}
+
+	.explanation-header {
+		flex-shrink: 0; /* Keep header always visible */
+	}
+
+	.explanation-content {
+		overflow-y: auto; /* Make content scrollable */
+		overflow-x: hidden;
+		flex: 1;
+		min-height: 0; /* Enable scrolling in flex context */
+		scroll-behavior: smooth;
+	}
+
+	/* Custom scrollbar styling */
+	.explanation-content::-webkit-scrollbar {
+		width: 8px;
+	}
+
+	.explanation-content::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	.explanation-content::-webkit-scrollbar-thumb {
+		background: rgba(255, 255, 255, 0.2);
+		border-radius: 4px;
+	}
+
+	.explanation-content::-webkit-scrollbar-thumb:hover {
+		background: rgba(255, 255, 255, 0.3);
 	}
 
 	@keyframes slideIn {
@@ -388,11 +447,46 @@
 
 	/* Input and return type syntax highlighting boxes */
 	.input-type-box,
-	.return-type-box,
+	.return-type-box {
+		border-radius: 4px;
+		overflow: auto;
+		max-height: 12rem; /* Compact for input/return types */
+		scroll-behavior: smooth;
+	}
+
 	.output-box {
 		border-radius: 4px;
 		overflow: auto;
-		max-height: 16rem;
+		max-height: 20rem; /* Allow more space for output data */
+		scroll-behavior: smooth;
+	}
+
+	/* Custom scrollbar for code boxes */
+	.input-type-box::-webkit-scrollbar,
+	.return-type-box::-webkit-scrollbar,
+	.output-box::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+	}
+
+	.input-type-box::-webkit-scrollbar-track,
+	.return-type-box::-webkit-scrollbar-track,
+	.output-box::-webkit-scrollbar-track {
+		background: rgba(255, 255, 255, 0.05);
+		border-radius: 3px;
+	}
+
+	.input-type-box::-webkit-scrollbar-thumb,
+	.return-type-box::-webkit-scrollbar-thumb,
+	.output-box::-webkit-scrollbar-thumb {
+		background: rgba(255, 255, 255, 0.15);
+		border-radius: 3px;
+	}
+
+	.input-type-box::-webkit-scrollbar-thumb:hover,
+	.return-type-box::-webkit-scrollbar-thumb:hover,
+	.output-box::-webkit-scrollbar-thumb:hover {
+		background: rgba(255, 255, 255, 0.25);
 	}
 
 	.input-type-box :global(pre),

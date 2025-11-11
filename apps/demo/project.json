@@ -50,6 +50,34 @@
         "command": "deno test --allow-env --allow-net tests/",
         "cwd": "apps/demo/supabase/functions/article_flow_worker"
       }
+    },
+    "ensure-ci-environment": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -e \"if (!process.env.CI) throw new Error('This target must run in CI environment')\""
+      }
+    },
+    "deploy": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "local": true,
+      "dependsOn": ["build", "ensure-ci-environment"],
+      "inputs": ["{projectRoot}/wrangler.toml"],
+      "options": {
+        "cwd": "apps/demo",
+        "command": "wrangler deploy --env production"
+      }
+    },
+    "deploy:preview": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "local": true,
+      "dependsOn": ["build"],
+      "inputs": ["{projectRoot}/wrangler.toml"],
+      "options": {
+        "cwd": "apps/demo",
+        "command": "./scripts/deploy-preview.sh ${PREVIEW_NAME:-pr-${PR_NUMBER:-preview}}"
+      }
     }
   }
 }

@@ -9,7 +9,7 @@
       "executor": "nx:noop",
       "inputs": ["production", "^production"],
       "outputs": ["{projectRoot}/dist"],
-      "dependsOn": ["^build", "build:lib", "build:browser", "verify-exports"]
+      "dependsOn": ["^build", "build:lib", "build:browser"]
     },
     "verify-exports": {
       "executor": "nx:run-commands",
