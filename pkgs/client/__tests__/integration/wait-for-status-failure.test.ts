@@ -25,7 +25,9 @@ describe('waitForStatus - Failure Scenarios', () => {
 
       const sqlClient = new PgflowSqlClient(sql);
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       const run = await pgflowClient.startFlow(testFlow.slug, { test: 'will-fail' });
       const step = run.step('failing_step');
@@ -79,7 +81,9 @@ describe('waitForStatus - Failure Scenarios', () => {
 
       const sqlClient = new PgflowSqlClient(sql);
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       const run = await pgflowClient.startFlow(testFlow.slug, { test: 'run-will-fail' });
 
@@ -128,7 +132,9 @@ describe('waitForStatus - Failure Scenarios', () => {
       await sql`SELECT pgflow.add_step(${testFlow.slug}, 'normal_step')`;
 
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       const run = await pgflowClient.startFlow(testFlow.slug, { test: 'timeout' });
       const step = run.step('normal_step');
@@ -166,7 +172,9 @@ describe('waitForStatus - Failure Scenarios', () => {
 
       const sqlClient = new PgflowSqlClient(sql);
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       const run = await pgflowClient.startFlow(testFlow.slug, { test: 'multi-fail' });
       const step = run.step('step_one');

@@ -78,7 +78,9 @@ describe('Full Stack DSL Integration', () => {
       // 5. Start flow via client
       const sqlClient = new PgflowSqlClient(sql);
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       const input = { url: 'https://api.example.com/test' };
       const run = await pgflowClient.startFlow(SimpleFlow.slug, input);
