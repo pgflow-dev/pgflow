@@ -75,7 +75,6 @@
 				return 'text-muted-foreground';
 		}
 	}
-
 </script>
 
 <div class="flex flex-col h-full min-w-0">
@@ -119,9 +118,7 @@
 								>{event.cumulativeDisplay}</code
 							>
 							{#if event.deltaMs > 0}
-								<code class="text-xs text-muted-foreground/70 font-mono"
-									>{event.deltaDisplay}</code
-								>
+								<code class="text-xs text-muted-foreground/70 font-mono">{event.deltaDisplay}</code>
 							{/if}
 						</div>
 						<code class="w-[140px] text-base font-semibold font-mono {eventColor}">

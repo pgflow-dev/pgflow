@@ -7,12 +7,12 @@ export async function fetchArticle(url: string) {
 
 	try {
 		const response = await fetch(jinaUrl, {
-			// headers: {
-			//   // Optional: Add Jina API key if available
-			//   ...(Deno.env.get('JINA_API_KEY') && {
-			//     'Authorization': `Bearer ${Deno.env.get('JINA_API_KEY')}`
-			//   })
-			// }
+			headers: {
+				// Add Jina API key if available
+				...(Deno.env.get('JINA_API_KEY') && {
+					Authorization: `Bearer ${Deno.env.get('JINA_API_KEY')}`
+				})
+			}
 		});
 
 		if (!response.ok) {

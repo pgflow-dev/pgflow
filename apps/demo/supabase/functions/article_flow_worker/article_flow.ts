@@ -1,14 +1,12 @@
 import { Flow } from '@pgflow/dsl';
 import { fetchArticle } from './tasks/fetch-article.ts';
-// import { summarizeArticle } from './tasks/summarize-article.ts';
-// import { extractKeywords } from './tasks/extract-keywords.ts';
-// import { publishArticle } from './tasks/publish-article.ts';
+import { summarizeArticle } from './tasks/summarize-article.ts';
+import { extractKeywords } from './tasks/extract-keywords.ts';
+import { publishArticle } from './tasks/publish-article.ts';
 
 const SLEEP_MS = 1000;
 
 function sleep(ms: number) {
-	// const quarter = ms / 4.0;
-	// const random = Math.random() * quarter * 3;
 	const time = 300 + ms * Math.random();
 	return new Promise((resolve) => setTimeout(resolve, time));
 }
@@ -21,8 +19,7 @@ export default new Flow<{ url: string }>({
 	.step({ slug: 'fetchArticle' }, async (input) => {
 		await sleep(SLEEP_MS);
 		const startTime = Date.now();
-		const result = 'FAKE ARTICLE STUB';
-		// const result = await fetchArticle(input.run.url);
+		const result = await fetchArticle(input.run.url);
 		const durationMs = Date.now() - startTime;
 		return {
 			...result,
@@ -32,35 +29,16 @@ export default new Flow<{ url: string }>({
 			}
 		};
 	})
-	.step({ slug: 'summarize', dependsOn: ['fetchArticle'], baseDelay: 1 }, async () => {
-		// Simulate failure on first attempt for retry demo
-		// if (context.rawMessage.read_ct === 1) {
-		// 	throw new Error('Simulated failure for retry demo');
-		// } else {
-		await sleep(SLEEP_MS);
-		// }
-
-		return 'DEBUG ARTICLE CONTENT'; //summarizeArticle(input.fetchArticle.content);
-	})
-	.step({ slug: 'extractKeywords', dependsOn: ['fetchArticle'] }, async () => {
-		await sleep(SLEEP_MS);
-		return { keywords: ['ai', 'llm', 'agent'] }; //extractKeywords(input.fetchArticle.content);
-	})
-	.step({ slug: 'publish', dependsOn: ['summarize', 'extractKeywords'] }, async () => {
-		await sleep(SLEEP_MS);
-		// Step handler acts as adapter - extracting specific fields from previous steps
-
-		return {
-			articleId: 'art_123',
-			// publishedAt: new Date().toISOString(),
-			publishedAt: '2023-05-01T00:00:00.000Z',
-			summary: 'DEBUG SUMMARY',
-			sentiment: 'positive',
-			keywords: ['ai', 'llm', 'agent']
-		};
-		// return publishArticle(
-		// 	input.summarize.summary,
-		// 	input.summarize.sentiment,
-		// 	input.extractKeywords.keywords
-		// );
-	});
+	.step({ slug: 'summarize', dependsOn: ['fetchArticle'], baseDelay: 1 }, async (input) =>
+		summarizeArticle(input.fetchArticle.content)
+	)
+	.step({ slug: 'extractKeywords', dependsOn: ['fetchArticle'] }, async (input) =>
+		extractKeywords(input.fetchArticle.content)
+	)
+	.step({ slug: 'publish', dependsOn: ['summarize', 'extractKeywords'] }, async (input) =>
+		publishArticle(
+			input.summarize.summary,
+			input.summarize.sentiment,
+			input.extractKeywords.keywords
+		)
+	);
