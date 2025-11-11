@@ -3,7 +3,7 @@ description: 'Post deployment status comments on PRs for both preview and produc
 
 inputs:
   project-name:
-    description: 'Name of the project being deployed (e.g., playground, website)'
+    description: 'Name of the project being deployed (e.g., website)'
     required: true
   preview-url:
     description: 'The preview deployment URL'

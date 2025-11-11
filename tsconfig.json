@@ -20,9 +20,6 @@
     },
     {
       "path": "./pkgs/client"
-    },
-    {
-      "path": "./examples/playground"
     }
   ]
 }

@@ -48,7 +48,7 @@ When the Version Packages PR is merged:
 
 ```bash
 # 1. Build all packages
-pnpm nx run-many -t build --exclude=playground
+pnpm nx run-many -t build
 
 # 2. Publish to npm (all packages except edge-worker)
 pnpm publish --recursive --filter=!./pkgs/edge-worker
