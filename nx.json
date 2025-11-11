@@ -11,7 +11,7 @@
       "!{projectRoot}/tsconfig.spec.json",
       "!{projectRoot}/src/test-setup.[jt]s"
     ],
-    "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"],
+    "sharedGlobals": ["{workspaceRoot}/.github/**/*.yml"],
     "sqruffConfig": ["{workspaceRoot}/.sqruff"]
   },
   "nxCloudId": "676490227393fa777407053a",
