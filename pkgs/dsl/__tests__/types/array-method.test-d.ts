@@ -178,7 +178,7 @@ describe('.array() method type constraints', () => {
 
       // ExtractFlowContext should include FlowContext & custom resources
       type FlowCtx = ExtractFlowContext<typeof flow>;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       expectTypeOf<FlowCtx>().toMatchTypeOf<{
         env: Record<string, string | undefined>;
         shutdownSignal: AbortSignal;
