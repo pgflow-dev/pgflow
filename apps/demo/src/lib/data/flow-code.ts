@@ -19,6 +19,7 @@ export const FLOW_SECTIONS: Record<string, CodeSection> = {
 	flow_config: {
 		code: `new Flow<{ url: string }>({
   slug: 'article_flow',
+  baseDelay:1,
   maxAttempts: 2
 })`
 	},
