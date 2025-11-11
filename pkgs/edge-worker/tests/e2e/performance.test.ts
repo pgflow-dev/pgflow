@@ -20,9 +20,17 @@ Deno.test(
     await withSql(async (sql) => {
       await sql`CREATE SEQUENCE IF NOT EXISTS test_seq`;
       await sql`ALTER SEQUENCE test_seq RESTART WITH 1`;
+      await sql`
+        SELECT * FROM pgmq.drop_queue(${WORKER_NAME})
+        WHERE EXISTS (
+          SELECT 1 FROM pgmq.list_queues() WHERE queue_name = ${WORKER_NAME}
+        )
+      `;
       await sql`SELECT pgmq.create(${WORKER_NAME})`;
-      await sql`SELECT pgmq.drop_queue(${WORKER_NAME})`;
-      await sql`SELECT pgmq.create(${WORKER_NAME})`;
+      await sql`
+        DELETE FROM pgflow.workers
+        WHERE last_heartbeat_at < NOW() - INTERVAL '6 seconds'
+      `;
       await startWorker(WORKER_NAME);
       await waitFor(
         async () => {
