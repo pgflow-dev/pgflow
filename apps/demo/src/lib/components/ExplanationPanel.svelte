@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createEventDispatcher, onMount } from 'svelte';
+	import { createEventDispatcher, onMount, onDestroy } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { Button } from '$lib/components/ui/button';
 	import { codeToHtml } from 'shiki';
@@ -46,7 +46,11 @@
 		reliabilityFeatures: [
 			{
 				setting: 'maxAttempts: 2',
-				explanation: 'Automatically retries failed steps up to 3 times before giving up'
+				explanation: 'Automatically retries failed steps up to 2 times before giving up'
+			},
+			{
+				setting: 'baseDelay: 1',
+				explanation: 'Initial retry delay of 1 second, doubling with each retry (1s, 2s, 4s...)'
 			}
 		],
 		inputType: `{
@@ -169,6 +173,10 @@
 		};
 
 		mediaQuery.addEventListener('change', updateMobile);
+
+		onDestroy(() => {
+			mediaQuery.removeEventListener('change', updateMobile);
+		});
 	}
 
 	// Replace long strings with placeholders for mobile display
@@ -596,20 +604,23 @@
 						</div>
 					</details>
 
-					<!-- Reliability Features -->
-					<div>
-						<div class="font-semibold text-muted-foreground mb-1.5 text-sm">
-							Reliability Configuration
-						</div>
-						<div class="space-y-2">
+					<!-- Reliability Configuration (collapsible) -->
+					<details class="concept-explainer bg-background/50 border border-border rounded-lg">
+						<summary
+							class="font-semibold text-sm text-foreground cursor-pointer hover:bg-background/80 flex items-center gap-2 p-3 rounded-lg transition-colors"
+						>
+							<span class="concept-caret">▸</span>
+							<span class="flex-1">Reliability configuration</span>
+						</summary>
+						<div class="text-xs text-muted-foreground leading-relaxed px-3 pb-3 space-y-2">
 							{#each flowInfo.reliabilityFeatures as feature (feature.setting)}
-								<div class="bg-secondary/50 rounded p-2.5">
-									<code class="text-xs font-mono text-primary">{feature.setting}</code>
-									<p class="text-xs text-muted-foreground mt-1">{feature.explanation}</p>
+								<div>
+									<code class="bg-muted px-1 rounded font-mono text-primary">{feature.setting}</code>
+									- {feature.explanation}
 								</div>
 							{/each}
 						</div>
-					</div>
+					</details>
 
 					<!-- Steps -->
 					<div>

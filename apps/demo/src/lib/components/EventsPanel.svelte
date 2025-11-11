@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import type { createFlowState } from '$lib/stores/pgflow-state.svelte';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Play, CheckCircle2, XCircle } from '@lucide/svelte';
@@ -26,6 +27,10 @@
 		};
 
 		mediaQuery.addEventListener('change', updateMobile);
+
+		onDestroy(() => {
+			mediaQuery.removeEventListener('change', updateMobile);
+		});
 	}
 
 	// Helper to get short step name
