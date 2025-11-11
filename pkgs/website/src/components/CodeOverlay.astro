@@ -12,7 +12,7 @@
       ❌ Error handling & retries<br/>
       🔗 Manual step coordination
     </div>
-    <button class="reveal-button sl-button-primary" aria-label="Reveal 250+ lines of traditional code">
+    <button class="reveal-button sl-button-primary plausible-event-name=home:reveal-code" aria-label="Reveal 250+ lines of traditional code">
       Show me the boilerplate code ↓
     </button>
   </div>
@@ -317,11 +317,7 @@
     if (!button || !overlay || !scrollableContainer || !scrollableInner) return;
 
     button.addEventListener('click', () => {
-      // Track custom event in Plausible
-      if (typeof window.plausible !== 'undefined') {
-        window.plausible('home:reveal-code');
-      }
-
+      // Event tracking handled by CSS class: plausible-event-name=home:reveal-code
       scrollableContainer.classList.add('scrollable-enabled');
       overlay.style.opacity = '0';
 
