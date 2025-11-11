@@ -5,6 +5,7 @@
 	import type { createFlowState } from '$lib/stores/pgflow-state-improved.svelte';
 	import StatusBadge from '$lib/components/StatusBadge.svelte';
 	import PulseDot from '$lib/components/PulseDot.svelte';
+	import MiniDAG from '$lib/components/MiniDAG.svelte';
 
 	interface Props {
 		flowState: ReturnType<typeof createFlowState>;
@@ -41,6 +42,21 @@
 
 		return blocks;
 	});
+
+	// Helper to trim common leading whitespace from code
+	function trimLeadingWhitespace(code: string): string {
+		const lines = code.split('\n');
+		// Find minimum indentation (excluding empty lines)
+		const minIndent = lines
+			.filter((line) => line.trim().length > 0)
+			.reduce((min, line) => {
+				const indent = line.match(/^\s*/)?.[0].length ?? 0;
+				return Math.min(min, indent);
+			}, Infinity);
+
+		// Remove common leading whitespace
+		return lines.map((line) => (line.trim().length > 0 ? line.slice(minIndent) : line)).join('\n');
+	}
 
 	// Helper to get status for a step badge
 	function getStepStatus(stepSlug: string): string | null {
@@ -94,8 +110,10 @@
 			});
 
 			// Expanded code for explanation panel (mobile-selected)
+			// Trim common leading whitespace for compact display
 			const expandedCode = section.mobileCode || section.code;
-			highlightedSectionsExpanded[slug] = await codeToHtml(expandedCode, {
+			const trimmedCode = trimLeadingWhitespace(expandedCode);
+			highlightedSectionsExpanded[slug] = await codeToHtml(trimmedCode, {
 				lang: 'typescript',
 				theme: 'night-owl'
 			});
@@ -202,11 +220,18 @@
 
 <div class="code-panel-wrapper">
 	{#if isMobile && selectedStep}
-		<!-- Mobile: Show only selected section in explanation panel (expanded version) -->
-		<div class="code-panel mobile-selected">
-			{#if highlightedSectionsExpanded[selectedStep]}
-				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-				{@html highlightedSectionsExpanded[selectedStep]}
+		<!-- Mobile: Show only selected section in explanation panel (expanded version) with optional mini DAG -->
+		<div class="mobile-code-container">
+			<div class="code-panel mobile-selected">
+				{#if highlightedSectionsExpanded[selectedStep]}
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+					{@html highlightedSectionsExpanded[selectedStep]}
+				{/if}
+			</div>
+			{#if selectedStep !== 'flow_config'}
+				<div class="mini-dag-container">
+					<MiniDAG {selectedStep} />
+				</div>
 			{/if}
 		</div>
 	{:else if isMobile}
@@ -280,6 +305,19 @@
 		position: relative;
 	}
 
+	.mobile-code-container {
+		display: flex;
+		gap: 12px;
+		align-items: center;
+	}
+
+	.mini-dag-container {
+		flex-shrink: 0;
+		width: 95px;
+		padding-right: 12px;
+		opacity: 0.7;
+	}
+
 	.code-panel {
 		overflow-x: auto;
 		border-radius: 5px;
@@ -288,21 +326,30 @@
 	.code-panel.mobile-selected {
 		/* Compact height when showing only selected step on mobile */
 		min-height: auto;
-		font-size: 13px;
+		font-size: 12px;
 		background: #0d1117;
 		position: relative;
+		flex: 1;
+	}
+
+	.code-panel.mobile-selected :global(pre) {
+		padding: 8px 0;
+	}
+
+	.code-panel.mobile-selected :global(.line) {
+		padding: 0 12px;
 	}
 
 	.code-panel.mobile-sections {
 		/* Mobile: Container for separate section blocks */
-		font-size: 11px;
+		font-size: 12px;
 		border-radius: 0;
 	}
 
 	/* Mobile: Smaller font, no border radius (touches edges) */
 	@media (max-width: 768px) {
 		.code-panel {
-			font-size: 11px;
+			font-size: 12px;
 			border-radius: 0;
 		}
 	}
@@ -360,6 +407,7 @@
 		background: #0d1117 !important;
 		border-radius: 5px;
 		line-height: 1.5;
+		font-size: 13px; /* Desktop default */
 	}
 
 	/* Mobile: Smaller padding */

@@ -46,28 +46,32 @@
 				{#if !hasRun}
 					<!-- First-time welcome -->
 					<div class="space-y-4">
-						<p class="text-base text-muted-foreground text-center">
-							This demo processes an article through 4 steps with parallel execution.
-							<strong class="text-foreground">20 lines of TypeScript.</strong>
+						<p class="text-sm text-muted-foreground">
+							This demo is a 4-step DAG workflow: fetch → (summarize + extract_keywords in parallel) → publish.
+							Watch how pgflow orchestrates execution across three layers.
 						</p>
 
-						<div class="text-sm text-muted-foreground space-y-2 bg-accent/30 border border-border rounded p-3">
-							<div class="font-semibold text-foreground mb-1">
-								vs. hand-rolling with pgmq + Edge Functions:
+						<!-- Three-layer architecture -->
+						<div class="text-sm space-y-2 bg-secondary/30 border border-border rounded p-3">
+							<div class="font-semibold text-foreground mb-1">Three-layer architecture:</div>
+							<div class="text-xs text-muted-foreground">
+								<span class="font-mono text-foreground">DSL</span> - User intent (compiles to graph shape in database tables)
 							</div>
-							<div class="text-xs">• 250+ lines of queue management</div>
-							<div class="text-xs">• Manual state tracking and coordination</div>
-							<div class="text-xs">• Custom retry logic for each step</div>
+							<div class="text-xs text-muted-foreground">
+								<span class="font-mono text-foreground">SQL Core</span> - Workflow orchestration (dependency resolution, queue management)
+							</div>
+							<div class="text-xs text-muted-foreground">
+								<span class="font-mono text-foreground">Worker</span> - Dumb execution (polls queue, runs handlers, reports completion)
+							</div>
 						</div>
 
-						<div class="text-sm space-y-1.5">
-							<div class="text-foreground font-semibold">Everything runs in Postgres:</div>
-							<div class="text-muted-foreground text-xs">
-								✓ Built-in retries with exponential backoff
+						<!-- What powers this demo -->
+						<div class="text-xs text-muted-foreground bg-accent/30 border border-border rounded p-3">
+							<div class="font-semibold text-foreground mb-1.5">
+								Demo powered by pgflow TypeScript Client:
 							</div>
-							<div class="text-muted-foreground text-xs">✓ Parallel execution (DAG-based)</div>
-							<div class="text-muted-foreground text-xs">✓ Full observability via SQL queries</div>
-							<div class="text-muted-foreground text-xs">✓ No Bull, Redis, or Temporal needed</div>
+							<div>• Supabase RPC to start flows</div>
+							<div>• Supabase Realtime to stream graph state changes</div>
 						</div>
 
 						<div class="py-3 space-y-2">
@@ -83,30 +87,57 @@
 						</div>
 
 						<p class="text-xs text-muted-foreground text-center pt-2 border-t border-border">
-							Click any step in code or DAG to inspect inputs, outputs, and dependencies
+							Click any step to inspect inputs, outputs, and dependencies
 						</p>
 					</div>
 				{:else}
 					<!-- Post-run explanation -->
 					<div class="space-y-3">
-						<div class="text-sm space-y-2">
-							<div class="font-semibold text-foreground">Execution flow:</div>
-							<div class="text-muted-foreground text-xs">1. fetch_article → scraped URL</div>
-							<div class="text-muted-foreground text-xs">
-								2. summarize + extract_keywords (parallel)
-							</div>
-							<div class="text-muted-foreground text-xs">
-								3. publish → waited for both to complete
+						<div class="bg-accent/30 rounded-lg p-3 border border-accent">
+							<div class="font-semibold text-foreground mb-2">What just happened:</div>
+							<div class="text-xs text-muted-foreground space-y-1.5 leading-relaxed">
+								<div>
+									<span class="font-mono text-foreground">start_flow()</span> created state rows for each step
+								</div>
+								<div>
+									SQL Core pushed <span class="font-mono text-foreground">fetch_article</span> message to queue
+								</div>
+								<div>
+									Worker polled queue, executed handler, called <span class="font-mono text-foreground">complete_task()</span>
+								</div>
+								<div>
+									SQL Core acknowledged completion, saved output, found 2 steps with all dependencies met
+								</div>
+								<div>
+									Both started in parallel → after completion, <span class="font-mono text-foreground">publish</span> became ready
+								</div>
+								<div>
+									Final step completed → SQL Core marked run as completed
+								</div>
 							</div>
 						</div>
 
-						<div class="text-sm text-muted-foreground bg-accent/30 border border-border rounded p-3">
-							<div class="font-semibold text-foreground mb-1">
-								All workflow state lives in Postgres:
+						<!-- Key concept: dependency resolution -->
+						<div class="text-sm text-muted-foreground bg-secondary/30 border border-border rounded p-3">
+							<div class="font-semibold text-foreground mb-1.5">
+								Dependency resolution:
 							</div>
-							<div class="text-xs">• Query step outputs with SQL</div>
-							<div class="text-xs">• Inspect retry history</div>
-							<div class="text-xs">• Debug failures in your DB</div>
+							<div class="text-xs leading-relaxed">
+								After each <code class="bg-muted px-1 rounded">complete_task()</code>, SQL Core searches for
+								dependent steps with <strong>all dependencies satisfied</strong>. Ready steps get messages
+								pushed to the queue. The run completes when no steps remain.
+							</div>
+						</div>
+
+						<!-- Realtime updates -->
+						<div class="text-xs text-muted-foreground bg-accent/30 border border-border rounded p-2.5">
+							<div class="font-semibold text-foreground mb-1">
+								🔄 Live updates via Supabase Realtime
+							</div>
+							<div>
+								SQL Core broadcasts graph state changes (step:started, step:completed, run:completed) that
+								update this demo in real-time.
+							</div>
 						</div>
 
 						<div class="pt-3">

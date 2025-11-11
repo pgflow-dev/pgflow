@@ -54,6 +54,33 @@
 		steps: ['fetch_article', 'summarize', 'extract_keywords', 'publish']
 	};
 
+	// Step-level concept explanations (how pgflow works internally)
+	const stepConcepts: Record<string, string> = {
+		fetch_article:
+			"This is a root step with no dependencies. When start_flow() is called, SQL Core immediately " +
+			"pushes a message to the queue. The Worker polls, gets the message, executes the handler, " +
+			"and calls complete_task() with the return value. SQL Core acknowledges completion, saves the output, " +
+			"and checks which dependent steps now have all their dependencies satisfied.",
+
+		summarize:
+			"Depends on fetch_article. After fetch_article completes, SQL Core checks if this step's " +
+			"dependencies are met. Since fetch_article is the only dependency, this step becomes ready " +
+			"immediately. SQL Core pushes a message with the input payload (fetch_article's output). " +
+			"Worker polls, executes the handler, calls complete_task(). SQL Core acknowledges completion and saves output.",
+
+		extract_keywords:
+			"Also depends only on fetch_article, so it becomes ready at the same time as summarize. " +
+			"Both messages hit the queue simultaneously - whichever Worker polls first starts execution. " +
+			"This is how pgflow achieves parallel execution: SQL Core identifies ready steps and pushes messages, " +
+			"Workers execute independently.",
+
+		publish:
+			"Depends on both summarize AND extract_keywords. This step remains blocked until both " +
+			"dependencies complete. After the second one finishes, complete_task() acknowledges completion, " +
+			"saves output, checks dependencies, and finds publish is now ready. SQL Core pushes the message " +
+			"with both outputs as input. After publish completes, no dependent steps remain - the run is marked completed."
+	};
+
 	// Step metadata for explanation
 	const stepInfo: Record<
 		string,
@@ -299,6 +326,18 @@
 					</p>
 				</div>
 
+				<!-- Concept explainer (collapsible) -->
+				<details class="concept-explainer">
+					<summary
+						class="font-semibold text-sm text-primary cursor-pointer hover:text-primary/80 flex items-center gap-2 mb-2"
+					>
+						<span>📚</span> How this step works in pgflow
+					</summary>
+					<div class="text-xs text-muted-foreground leading-relaxed bg-secondary/30 rounded p-3">
+						{stepConcepts[currentStepInfo.name]}
+					</div>
+				</details>
+
 				<!-- Step-level view: 2-column on desktop, single column on mobile -->
 				<div class="grid md:grid-cols-2 grid-cols-1 gap-4">
 					<!-- Left Column: Dependencies -->
@@ -370,11 +409,39 @@
 			{:else}
 				<!-- Flow-level view -->
 				<div class="space-y-3">
-					<!-- What it does (highlighted) -->
+					<!-- What it does -->
 					<div class="bg-accent/30 rounded-lg p-3 border border-accent">
-						<p class="text-foreground leading-relaxed mb-2">{flowInfo.description}</p>
-						<p class="text-muted-foreground text-sm">{flowInfo.whatItDoes}</p>
+						<p class="text-sm text-foreground leading-relaxed mb-2">{flowInfo.description}</p>
+						<p class="text-xs text-muted-foreground">{flowInfo.whatItDoes}</p>
 					</div>
+
+					<!-- How orchestration works (collapsible) -->
+					<details class="flow-orchestration-explainer">
+						<summary
+							class="font-semibold text-sm text-primary cursor-pointer hover:text-primary/80 flex items-center gap-2 mb-2"
+						>
+							<span>⚙️</span> How SQL Core orchestrates this flow
+						</summary>
+						<div class="text-xs text-muted-foreground leading-relaxed bg-secondary/30 rounded p-3 space-y-2">
+							<p>
+								When you call <code class="bg-muted px-1 rounded font-mono"
+									>start_flow('article_flow', {'{url}'})</code
+								>, SQL Core creates a run and initializes state rows for each step. Root steps (no
+								dependencies) get messages pushed to the queue immediately.
+							</p>
+							<p>
+								As Workers execute handlers and call <code class="bg-muted px-1 rounded font-mono"
+									>complete_task()</code
+								>, SQL Core acknowledges completion, saves outputs, checks dependent steps, and starts
+								those with all dependencies satisfied. The run completes when
+								<code class="bg-muted px-1 rounded font-mono">remaining_steps = 0</code>.
+							</p>
+							<p class="text-muted-foreground/80 italic">
+								This demo uses Supabase Realtime to broadcast graph state changes from SQL Core back to
+								the browser in real-time.
+							</p>
+						</div>
+					</details>
 
 					<!-- Reliability Features -->
 					<div>
@@ -399,8 +466,7 @@
 							{@html highlightedInputType}
 						</div>
 						<p class="text-muted-foreground text-xs mt-1.5">
-							Start this flow with a URL object. The flow will fetch the article, process it, and
-							publish the results.
+							Start this flow with a URL object. SQL Core passes this input to root steps.
 						</p>
 					</div>
 
