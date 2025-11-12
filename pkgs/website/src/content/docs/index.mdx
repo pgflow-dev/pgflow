@@ -24,7 +24,6 @@ editUrl: false
 import { Card, CardGrid, LinkCard, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 import TestimonialCarousel from '../../components/TestimonialCarousel.astro';
 import CodeOverlay from '../../components/CodeOverlay.astro';
-import SlowScroll from '../../components/SlowScroll.astro';
 
 <div class="comparison-container">
 
@@ -678,7 +677,6 @@ Zero boilerplate required."
       overflow-y: auto !important;
       overflow-x: hidden !important;
       flex: 1 !important;
-      -webkit-overflow-scrolling: touch;
       padding: 0.5rem !important;
       min-height: 0 !important;
       max-height: none !important;
@@ -831,6 +829,4 @@ Zero boilerplate required."
     }
   }
 `}</style>
-
-<SlowScroll />
 
