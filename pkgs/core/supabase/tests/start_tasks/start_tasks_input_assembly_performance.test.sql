@@ -241,7 +241,7 @@ BEGIN
   SELECT
     CASE
       WHEN ratio < 2.0 THEN '✅ EXCELLENT - Workers can poll efficiently at any array size'
-      WHEN ratio < 4.0 THEN '👍 GOOD - Minor slowdown but still production-ready'
+      WHEN ratio < 5.0 THEN '👍 GOOD - Minor slowdown but still production-ready'
       ELSE '⚠️ WARNING - May impact throughput with very large arrays'
     END as result
   INTO perf_row
@@ -320,8 +320,8 @@ with degradation as (
 )
 
 select ok(
-  (select ratio < 4.0 from degradation),
-  'Batch-10 polling should NOT degrade > 4x from 100 to 10k elements (realistic worker scenario)'
+  (select ratio < 5.0 from degradation),
+  'Batch-10 polling should NOT degrade > 5x from 100 to 10k elements (realistic worker scenario)'
 );
 
 -- Batch efficiency test

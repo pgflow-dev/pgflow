@@ -53,13 +53,25 @@
       "executor": "nx:noop",
       "dependsOn": ["lint:deno", "lint:jsr"]
     },
+    "supabase:ensure-started": {
+      "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
+      "options": {
+        "cwd": "{workspaceRoot}",
+        "commands": [
+          "scripts/supabase-start-locked.sh {projectRoot}"
+        ],
+        "parallel": false
+      }
+    },
     "supabase:start": {
       "executor": "nx:run-commands",
       "local": true,
       "cache": false,
       "options": {
-        "cwd": "pkgs/edge-worker",
-        "commands": ["supabase start"],
+        "cwd": "{workspaceRoot}",
+        "commands": ["scripts/supabase-start-locked.sh {projectRoot}"],
         "parallel": false
       }
     },
@@ -103,25 +115,26 @@
         "^production"
       ],
       "options": {
-        "cwd": "pkgs/edge-worker",
+        "cwd": "{workspaceRoot}",
         "commands": [
-          "mkdir -p supabase/migrations/",
-          "rm -f supabase/migrations/*.sql",
-          "cp ../core/supabase/migrations/*.sql supabase/migrations/",
-          "supabase db reset"
+          "cd pkgs/edge-worker && mkdir -p supabase/migrations/",
+          "cd pkgs/edge-worker && rm -f supabase/migrations/*.sql",
+          "cd pkgs/edge-worker && cp ../core/supabase/migrations/*.sql supabase/migrations/",
+          "scripts/supabase-start-locked.sh pkgs/edge-worker",
+          "cd pkgs/edge-worker && supabase db reset"
         ],
         "parallel": false
       }
     },
     "supabase:functions-serve": {
-      "dependsOn": ["supabase:start"],
       "executor": "nx:run-commands",
       "local": true,
       "cache": false,
       "options": {
-        "cwd": "pkgs/edge-worker",
+        "cwd": "{workspaceRoot}",
         "commands": [
-          "supabase functions serve --env-file supabase/functions/.env --no-verify-jwt"
+          "scripts/supabase-start-locked.sh {projectRoot}",
+          "cd {projectRoot} && supabase functions serve --env-file supabase/functions/.env --no-verify-jwt"
         ],
         "parallel": false
       }
@@ -129,7 +142,7 @@
     "db:ensure": {
       "executor": "nx:run-commands",
       "local": true,
-      "dependsOn": ["^verify-migrations", "^dump-realtime-schema"],
+      "dependsOn": ["^verify-migrations"],
       "inputs": ["default", "^production", "{projectRoot}/scripts/ensure-db"],
       "options": {
         "cwd": "pkgs/edge-worker",
@@ -177,13 +190,14 @@
     "serve:functions:e2e": {
       "executor": "nx:run-commands",
       "continuous": true,
-      "dependsOn": ["sync-e2e-deps", "supabase:start"],
+      "dependsOn": ["sync-e2e-deps"],
       "local": true,
       "cache": false,
       "options": {
-        "cwd": "pkgs/edge-worker",
+        "cwd": "{workspaceRoot}",
         "commands": [
-          "supabase functions serve --env-file supabase/functions/.env --import-map supabase/functions/deno.json --no-verify-jwt"
+          "scripts/supabase-start-locked.sh {projectRoot}",
+          "cd {projectRoot} && supabase functions serve --env-file supabase/functions/.env --import-map supabase/functions/deno.json --no-verify-jwt"
         ],
         "parallel": false
       }

@@ -63,9 +63,9 @@
       "local": true,
       "cache": false,
       "options": {
-        "cwd": "{projectRoot}",
+        "cwd": "{workspaceRoot}",
         "commands": [
-          "supabase status || (echo \"Starting Supabase...\" && supabase start)"
+          "scripts/supabase-start-locked.sh {projectRoot}"
         ],
         "parallel": false
       }
@@ -75,8 +75,8 @@
       "local": true,
       "cache": false,
       "options": {
-        "cwd": "{projectRoot}",
-        "commands": ["supabase start"],
+        "cwd": "{workspaceRoot}",
+        "commands": ["scripts/supabase-start-locked.sh {projectRoot}"],
         "parallel": false
       }
     },
@@ -129,15 +129,18 @@
       "cache": false,
       "dependsOn": ["supabase:prepare"],
       "options": {
-        "cwd": "{projectRoot}",
-        "commands": ["supabase db reset"],
+        "cwd": "{workspaceRoot}",
+        "commands": [
+          "scripts/supabase-start-locked.sh {projectRoot}",
+          "cd {projectRoot} && supabase db reset"
+        ],
         "parallel": false
       }
     },
     "db:ensure": {
       "executor": "nx:run-commands",
       "local": true,
-      "dependsOn": ["supabase:ensure-started", "supabase:prepare"],
+      "dependsOn": ["supabase:prepare"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": ["./scripts/ensure-db"],

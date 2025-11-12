@@ -12,11 +12,11 @@ concurrency:
 permissions:
   contents: read
   actions: read
-  pull-requests: write       # for preview comments
-  deployments: write         # Netlify action needs it
+  pull-requests: write # for preview comments
+  deployments: write # Netlify action needs it
 
 jobs:
-# ─────────────────────────────────────── 1. BUILD & TEST ──────────────────────────────────────
+  # ─────────────────────────────────────── 1. BUILD & TEST ──────────────────────────────────────
   build-and-test:
     runs-on: ubuntu-latest
     env:
@@ -58,8 +58,7 @@ jobs:
       - name: Verify exports for built packages
         run: pnpm nx affected -t verify-exports --base="$NX_BASE" --head="$NX_HEAD"
 
-
-# ─────────────────────────────────────── 2. EDGE-WORKER E2E ──────────────────────────────────────
+  # ─────────────────────────────────────── 2. EDGE-WORKER E2E ──────────────────────────────────────
   edge-worker-e2e:
     runs-on: ubuntu-latest
     env:
@@ -107,8 +106,7 @@ jobs:
         if: steps.check-affected.outputs.affected == 'true'
         run: pnpm nx affected -t test:e2e --parallel --base="$NX_BASE" --head="$NX_HEAD"
 
-
-# ────────────────────────────────── 3. DEPLOY WEBSITE ───────────────────────────
+  # ────────────────────────────────── 3. DEPLOY WEBSITE ───────────────────────────
   deploy-website:
     needs: [build-and-test, edge-worker-e2e]
     runs-on: ubuntu-latest
@@ -185,8 +183,9 @@ jobs:
           preview-url: https://pr-${{ github.event.pull_request.number }}.pgflow.pages.dev
           production-url: https://pgflow.dev
 
-# ────────────────────────────────── 4. DEPLOY DEMO ───────────────────────────
+  # ────────────────────────────────── 4. DEPLOY DEMO ───────────────────────────
   deploy-demo:
+    if: false # temporarily disabled
     needs: [build-and-test, edge-worker-e2e]
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
@@ -246,4 +245,3 @@ jobs:
           project-name: Demo
           preview-url: https://pr-${{ github.event.pull_request.number }}-pgflow-demo.jumski.workers.dev
           production-url: https://demo.pgflow.dev
-
