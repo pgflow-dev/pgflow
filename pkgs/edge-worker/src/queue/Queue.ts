@@ -79,7 +79,7 @@ export class Queue<TPayload extends Json> {
     );
     return await this.sql<PgmqMessageRecord<TPayload>[]>`
       SELECT *
-      FROM pgflow.read_with_poll(
+      FROM pgmq.read_with_poll(
         queue_name => ${this.queueName},
         vt => ${visibilityTimeout},
         qty => ${batchSize},

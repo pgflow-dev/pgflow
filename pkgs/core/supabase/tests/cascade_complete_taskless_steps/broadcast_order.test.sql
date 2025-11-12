@@ -1,9 +1,6 @@
 begin;
 select plan(5);
 
--- Ensure partition exists for realtime.messages
-select pgflow_tests.create_realtime_partition();
-
 -- Reset database and create flow:
 -- parent_step (single) -> taskless_child1 (map) -> taskless_child2 (map)
 -- Parent outputs empty array, triggering cascade completion of map children

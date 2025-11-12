@@ -9,9 +9,6 @@ import type { Sql } from 'postgres';
 export async function grantMinimalPgflowPermissions(sql: Sql) {
   // Clean up any leftover data from previous tests
   // await sql`SELECT pgflow_tests.reset_db()`; // MOVED TO ONE-TIME SETUP
-  
-  // Ensure realtime partition exists (required after db reset) - safe to call multiple times
-  try { await sql`SELECT pgflow_tests.create_realtime_partition()`; } catch { /* ignore errors */ }
 
   // Grant minimal permissions to service_role (used by tests) - ignore if already granted
   try { await sql`GRANT USAGE ON SCHEMA pgflow TO service_role`; } catch { /* ignore errors */ }

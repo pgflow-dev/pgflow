@@ -12,6 +12,7 @@ export interface PgmqMessageRecord<TPayload extends Json | null = Json>
   enqueued_at: string;
   vt: string;
   message: TPayload;
+  headers?: Json | null;  // Optional for backward compatibility with pgmq 1.5.1+
 }
 
 /**

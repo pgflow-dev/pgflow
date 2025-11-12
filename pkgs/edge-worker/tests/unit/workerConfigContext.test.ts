@@ -32,10 +32,11 @@ Deno.test('createContextSafeConfig excludes sql field and freezes result', () =>
 Deno.test('Queue worker context includes workerConfig for GitHub issue use case', async () => {
   const mockMessage: PgmqMessageRecord<{test: string}> = {
     msg_id: 123,
-    read_ct: 2, // Current retry attempt 
+    read_ct: 2, // Current retry attempt
     enqueued_at: '2024-01-01T00:00:00Z',
     vt: '2024-01-01T00:01:00Z',
-    message: { test: 'data' }
+    message: { test: 'data' },
+    headers: null,
   };
 
   const mockConfig: QueueWorkerConfig = {

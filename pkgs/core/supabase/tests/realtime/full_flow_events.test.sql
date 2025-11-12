@@ -1,9 +1,6 @@
 begin;
 select plan(8);
 
--- Ensure partition exists for realtime.messages
-select pgflow_tests.create_realtime_partition();
-
 -- Reset database and setup a flow with multiple steps and dependencies
 select pgflow_tests.reset_db();
 select pgflow_tests.setup_flow('two_roots_left_right');

@@ -1,9 +1,6 @@
 begin;
 select plan(3);
 
--- Ensure partition exists for realtime.messages
-select pgflow_tests.create_realtime_partition();
-
 -- Reset database and create flow: root_map -> m1 -> m2 -> m3 -> m4 (all maps)
 select pgflow_tests.reset_db();
 select pgflow.create_flow('deep_cascade');

@@ -1,3 +1,4 @@
+create schema if not exists pgflow;
 create schema if not exists pgflow_tests;
 
 --------------------------------------------------------------------------------
@@ -72,7 +73,7 @@ create or replace function pgflow_tests.ensure_worker(
 ) returns uuid as $$
   INSERT INTO pgflow.workers (worker_id, queue_name, function_name, last_heartbeat_at)
   VALUES (worker_uuid, queue_name, function_name, now())
-  ON CONFLICT (worker_id) DO UPDATE SET 
+  ON CONFLICT (worker_id) DO UPDATE SET
     last_heartbeat_at = now(),
     queue_name = EXCLUDED.queue_name,
     function_name = EXCLUDED.function_name
@@ -83,11 +84,11 @@ $$ language sql;
 ------- read_and_start - reads messages and starts tasks in one call -----------
 --------------------------------------------------------------------------------
 create or replace function pgflow_tests.read_and_start(
-  flow_slug     text,
-  vt            integer default 1,
-  qty           integer default 1,
-  worker_uuid   uuid    default '11111111-1111-1111-1111-111111111111'::uuid,
-  function_name text    default 'test_worker'
+  flow_slug text,
+  vt integer default 1,
+  qty integer default 1,
+  worker_uuid uuid default '11111111-1111-1111-1111-111111111111'::uuid,
+  function_name text default 'test_worker'
 ) returns setof pgflow.step_task_record
 language sql
 as $$
@@ -102,7 +103,7 @@ as $$
   -- 2. read messages from the queue
   msgs AS (
     SELECT *
-      FROM pgflow.read_with_poll(flow_slug, vt, qty, 1, 50)
+      FROM pgmq.read_with_poll(flow_slug, vt, qty, 1, 50)
      LIMIT qty
   ),
   -- 3. collect their msg_ids
@@ -526,66 +527,6 @@ BEGIN
 END;
 $$ language plpgsql;
 
---------------------------------------------------------------------------------
-------- create_realtime_partition - creates partition for realtime.messages ----
---------------------------------------------------------------------------------
-/**
- * Creates a partition for the realtime.messages table for the current date.
- *
- * This function ensures the partition exists for the realtime.messages table,
- * which is required for realtime.send() to work properly. Without the appropriate
- * partition, realtime.send() will silently fail (it catches exceptions and sends
- * notifications instead of raising errors).
- *
- * The partition follows the naming convention: messages_YYYY_MM_DD
- * and covers the range from midnight of the target date to midnight of the next day.
- *
- * @param target_date The date to create the partition for. Defaults to current_date.
- * @return boolean TRUE if a partition was created, FALSE if it already existed
- */
-create or replace function pgflow_tests.create_realtime_partition(
-  target_date date default CURRENT_DATE
-) returns boolean as $$
-DECLARE
-  next_date date := target_date + interval '1 day';
-  partition_name text := 'messages_' || to_char(target_date, 'YYYY_MM_DD');
-  partition_exists boolean;
-  was_created boolean := false;
-BEGIN
-  -- Check if partition already exists
-  SELECT EXISTS (
-    SELECT 1 FROM pg_class c
-    JOIN pg_namespace n ON c.relnamespace = n.oid
-    WHERE n.nspname = 'realtime'
-    AND c.relname = partition_name
-  ) INTO partition_exists;
-
-  -- Create partition if it doesn't exist
-  IF NOT partition_exists THEN
-    BEGIN
-      -- Create the partition for the target date
-      EXECUTE format(
-        'CREATE TABLE realtime.%I PARTITION OF realtime.messages
-         FOR VALUES FROM (%L) TO (%L)',
-        partition_name,
-        target_date,
-        next_date
-      );
-      was_created := true;
-      RAISE NOTICE 'Created partition % for date range % to %',
-        partition_name, target_date, next_date;
-    EXCEPTION WHEN OTHERS THEN
-      RAISE NOTICE 'Error creating partition %: %', partition_name, SQLERRM;
-      -- Re-throw the exception
-      RAISE;
-    END;
-  ELSE
-    RAISE NOTICE 'Partition % already exists', partition_name;
-  END IF;
-
-  RETURN was_created;
-END;
-$$ language plpgsql;
 
 --------------------------------------------------------------------------------
 ------- find_realtime_event - finds a specific realtime event for testing ------

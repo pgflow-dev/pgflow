@@ -17,7 +17,7 @@ select is(
 select pgflow_tests.ensure_worker('status_flow');
 with msg_ids as (
   select array_agg(msg_id) as ids
-  from pgflow.read_with_poll('status_flow', 10, 5, 1, 100)
+  from pgmq.read_with_poll('status_flow', 10, 5, 1, 100)
 )
 select pgflow.start_tasks(
   'status_flow',

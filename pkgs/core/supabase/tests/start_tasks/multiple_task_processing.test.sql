@@ -15,7 +15,7 @@ select pgflow_tests.ensure_worker('multi_flow');
 
 -- Read and start multiple tasks
 with msgs as (
-  select * from pgflow.read_with_poll('multi_flow', 10, 10, 1, 50) limit 10
+  select * from pgmq.read_with_poll('multi_flow', 10, 10, 1, 50) limit 10
 ),
 msg_ids as (
   select array_agg(msg_id) as ids from msgs

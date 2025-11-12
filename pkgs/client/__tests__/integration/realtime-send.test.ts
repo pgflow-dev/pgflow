@@ -6,10 +6,7 @@ describe('Realtime Send Integration', () => {
   it(
     'receives events sent via realtime.send() SQL function',
     withPgNoTransaction(async (sql) => {
-      // Create realtime partition using clean core function
-      await sql`SELECT pgflow_tests.create_realtime_partition()`;
-
-      // 2. Create Supabase client with real credentials
+      // 1. Create Supabase client with real credentials
       const supabaseClient = createTestSupabaseClient();
       const testChannel = 'test-realtime-sql-send';
 
