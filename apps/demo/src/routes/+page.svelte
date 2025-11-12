@@ -571,6 +571,8 @@
 				<div class="flex items-center gap-2 md:gap-3">
 					<a
 						href="https://pgflow.dev"
+						target="_blank"
+						rel="noopener noreferrer"
 						class="flex items-center gap-1.5 md:gap-2"
 						onclick={() => track('Logo Clicked', { location: 'header' })}
 					>
@@ -580,6 +582,8 @@
 					<span class="text-muted-foreground text-xs">|</span>
 					<a
 						href="https://pgflow.dev"
+						target="_blank"
+						rel="noopener noreferrer"
 						class="text-xs text-muted-foreground hover:text-foreground"
 						onclick={() =>
 							track('External Link Clicked', { destination: 'website', location: 'header' })}
@@ -588,6 +592,8 @@
 					<span class="text-muted-foreground text-xs">|</span>
 					<a
 						href="https://github.com/pgflow-dev/pgflow"
+						target="_blank"
+						rel="noopener noreferrer"
 						class="text-xs text-muted-foreground hover:text-foreground"
 						onclick={() =>
 							track('External Link Clicked', { destination: 'github', location: 'header' })}

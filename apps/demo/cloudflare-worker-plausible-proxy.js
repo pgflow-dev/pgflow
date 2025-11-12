@@ -1,14 +1,8 @@
 /**
  * Cloudflare Worker for Plausible Analytics Proxy
  *
- * IMPORTANT: You MUST update the ProxyScript variable below with your
- * actual Plausible script URL from your dashboard before deploying!
+ * This worker proxies Plausible Analytics scripts and events to avoid ad-blocker detection
  */
-
-// CONFIGURATION - UPDATE THIS VALUE!
-// Get this from your Plausible dashboard (Site Settings > Site Installation)
-// It will look like: https://plausible.io/js/script.js (or pa-XXXXX.js for custom domains)
-const ProxyScript = 'https://plausible.io/js/script.js'; // ← UPDATE THIS!
 
 // Customize these paths to avoid ad-blocker detection
 const ScriptName = '/stats/script.js';
@@ -18,34 +12,39 @@ const Endpoint = '/stats/event';
 const ScriptWithoutExtension = ScriptName.replace('.js', '');
 
 addEventListener('fetch', (event) => {
-	event.passThroughOnException();
-	event.respondWith(handleRequest(event));
+  event.passThroughOnException();
+  event.respondWith(handleRequest(event));
 });
 
 async function handleRequest(event) {
-	const pathname = new URL(event.request.url).pathname;
-	const [baseUri] = pathname.split('.');
+  const pathname = new URL(event.request.url).pathname;
+  const [baseUri, ...extensions] = pathname.split('.');
 
-	if (baseUri.endsWith(ScriptWithoutExtension)) {
-		return getScript(event);
-	} else if (pathname.endsWith(Endpoint)) {
-		return postData(event);
-	}
+  if (baseUri.endsWith(ScriptWithoutExtension)) {
+    return getScript(event, extensions);
+  } else if (pathname.endsWith(Endpoint)) {
+    return postData(event);
+  }
 
-	return new Response(null, { status: 404 });
+  return new Response(null, { status: 404 });
 }
 
-async function getScript(event) {
-	let response = await caches.default.match(event.request);
-	if (!response) {
-		response = await fetch(ProxyScript);
-		event.waitUntil(caches.default.put(event.request, response.clone()));
-	}
-	return response;
+async function getScript(event, extensions) {
+  let response = await caches.default.match(event.request);
+  if (!response) {
+    // Fetch the standard Plausible script with any extensions
+    // Default to 'plausible.js' if no extensions are provided
+    const scriptPath = extensions.length > 0
+      ? 'plausible.' + extensions.join('.')
+      : 'plausible.js';
+    response = await fetch('https://plausible.io/js/' + scriptPath);
+    event.waitUntil(caches.default.put(event.request, response.clone()));
+  }
+  return response;
 }
 
 async function postData(event) {
-	const request = new Request(event.request);
-	request.headers.delete('cookie');
-	return await fetch('https://plausible.io/api/event', request);
+  const request = new Request(event.request);
+  request.headers.delete('cookie');
+  return await fetch('https://plausible.io/api/event', request);
 }
