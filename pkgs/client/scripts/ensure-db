@@ -6,11 +6,8 @@ mkdir -p .nx-inputs
 
 echo "Ensuring test database is ready..."
 
-# Check if supabase is running
-if ! supabase status > /dev/null 2>&1; then
-  echo "Starting Supabase..."
-  supabase start
-fi
+# Ensure Supabase is running (using shared locked script)
+../../scripts/supabase-start-locked.sh .
 
 # Reset database (migrations should already be prepared by supabase:prepare target)
 echo "Resetting database..."

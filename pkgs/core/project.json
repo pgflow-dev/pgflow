@@ -22,18 +22,25 @@
     "dump-realtime-schema": {
       "executor": "nx:run-commands",
       "local": true,
-      "dependsOn": ["supabase:ensure-started"],
+      "inputs": [
+        "{projectRoot}/package.json",
+        "{projectRoot}/supabase/config.toml",
+        "{projectRoot}/scripts/atlas-dump-realtime-schema"
+      ],
       "outputs": ["{projectRoot}/atlas/.supabase-baseline-schema.sql"],
       "options": {
-        "cwd": "{projectRoot}",
-        "commands": ["scripts/atlas-dump-realtime-schema"],
+        "cwd": "{workspaceRoot}",
+        "commands": [
+          "scripts/supabase-start-locked.sh {projectRoot}",
+          "cd {projectRoot} && scripts/atlas-dump-realtime-schema"
+        ],
         "parallel": false
       },
       "cache": true
     },
     "verify-schemas-synced": {
       "executor": "nx:run-commands",
-      "dependsOn": ["dump-realtime-schema", "supabase:ensure-started"],
+      "dependsOn": ["dump-realtime-schema"],
       "inputs": [
         "schemas",
         "migrations",
@@ -52,14 +59,15 @@
     },
     "verify-migrations": {
       "executor": "nx:run-commands",
-      "dependsOn": ["verify-schemas-synced", "supabase:ensure-started"],
+      "dependsOn": ["verify-schemas-synced"],
       "inputs": ["migrations"],
       "outputs": ["{projectRoot}/.nx-inputs/verify-migrations.txt"],
       "options": {
-        "cwd": "{projectRoot}",
+        "cwd": "{workspaceRoot}",
         "commands": [
-          "mkdir -p .nx-inputs",
-          "supabase db reset > .nx-inputs/verify-migrations.txt 2>&1 || (cat .nx-inputs/verify-migrations.txt && exit 1)"
+          "scripts/supabase-start-locked.sh {projectRoot}",
+          "cd {projectRoot} && mkdir -p .nx-inputs",
+          "cd {projectRoot} && supabase db reset > .nx-inputs/verify-migrations.txt 2>&1 || (cat .nx-inputs/verify-migrations.txt && exit 1)"
         ],
         "parallel": false
       },
@@ -133,9 +141,9 @@
       "local": true,
       "cache": false,
       "options": {
-        "cwd": "{projectRoot}",
+        "cwd": "{workspaceRoot}",
         "commands": [
-          "supabase status || (echo \"Starting Supabase...\" && supabase start)"
+          "scripts/supabase-start-locked.sh {projectRoot}"
         ],
         "parallel": false
       }
@@ -145,8 +153,8 @@
       "local": true,
       "cache": false,
       "options": {
-        "cwd": "{projectRoot}",
-        "commands": ["supabase start"],
+        "cwd": "{workspaceRoot}",
+        "commands": ["scripts/supabase-start-locked.sh {projectRoot}"],
         "parallel": false
       }
     },
@@ -184,10 +192,12 @@
       "executor": "nx:run-commands",
       "local": true,
       "cache": false,
-      "dependsOn": ["supabase:ensure-started"],
       "options": {
-        "cwd": "{projectRoot}",
-        "commands": ["supabase db reset"],
+        "cwd": "{workspaceRoot}",
+        "commands": [
+          "scripts/supabase-start-locked.sh {projectRoot}",
+          "cd {projectRoot} && supabase db reset"
+        ],
         "parallel": false
       }
     },
@@ -199,12 +209,15 @@
     "test:pgtap": {
       "executor": "nx:run-commands",
       "local": true,
-      "dependsOn": ["verify-migrations", "supabase:ensure-started"],
+      "dependsOn": ["verify-migrations"],
       "inputs": ["schemas", "migrations", "pgtapTests"],
       "cache": true,
       "options": {
-        "cwd": "{projectRoot}",
-        "commands": ["scripts/run-test-with-colors"],
+        "cwd": "{workspaceRoot}",
+        "commands": [
+          "scripts/supabase-start-locked.sh {projectRoot}",
+          "cd {projectRoot} && scripts/run-test-with-colors"
+        ],
         "parallel": false
       }
     },
@@ -216,17 +229,6 @@
       "options": {
         "passWithNoTests": true,
         "reportsDirectory": "{workspaceRoot}/coverage/{projectRoot}"
-      }
-    },
-    "test:pgtap:watch": {
-      "executor": "nx:run-commands",
-      "local": true,
-      "dependsOn": ["verify-migrations", "supabase:ensure-started"],
-      "inputs": ["schemas", "migrations", "pgtapTests"],
-      "cache": false,
-      "options": {
-        "cwd": "{projectRoot}",
-        "command": "scripts/watch-test"
       }
     },
     "gen-types": {

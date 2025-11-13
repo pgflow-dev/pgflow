@@ -106,10 +106,12 @@
       "executor": "nx:run-commands",
       "local": true,
       "cache": false,
-      "dependsOn": ["supabase:start"],
       "options": {
-        "cwd": "pkgs/website",
-        "command": "astro dev"
+        "cwd": "{workspaceRoot}",
+        "commands": [
+          "scripts/supabase-start-locked.sh {projectRoot}",
+          "cd {projectRoot} && astro dev"
+        ]
       }
     }
   }
