@@ -44,9 +44,6 @@ describe('Network Resilience Tests', () => {
         }
       });
 
-      // Give subscription time to establish
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
       // Complete first step before disconnection
       let tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
@@ -150,9 +147,6 @@ describe('Network Resilience Tests', () => {
           console.log('Channel status changed:', status);
         });
       }
-
-      // Give subscription time to establish
-      await new Promise((resolve) => setTimeout(resolve, 200));
 
       // Complete step while monitoring connection
       const tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);

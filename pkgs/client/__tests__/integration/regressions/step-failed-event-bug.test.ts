@@ -38,9 +38,6 @@ describe('Step Failed Event Broadcasting', () => {
       step.on('*', stepTracker.callback);
       run.on('*', runTracker.callback);
 
-      // Give realtime subscription time to establish
-      await new Promise(resolve => setTimeout(resolve, 100));
-
       // Poll and start the task (uses pgmq.read_with_poll and pgflow.start_tasks internally)
       const tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);

@@ -34,9 +34,6 @@ describe('waitForStatus - Failure Scenarios', () => {
       const stepTracker = createEventTracker();
       step.on('*', stepTracker.callback);
 
-      // Give realtime subscription time to establish
-      await new Promise(resolve => setTimeout(resolve, 100));
-
       // Start waiting for Failed status (before the step actually fails)
       const waitPromise = step.waitForStatus(FlowStepStatus.Failed, { timeoutMs: 10000 });
 
@@ -90,9 +87,6 @@ describe('waitForStatus - Failure Scenarios', () => {
       const runTracker = createEventTracker();
       run.on('*', runTracker.callback);
 
-      // Give realtime subscription time to establish
-      await new Promise(resolve => setTimeout(resolve, 100));
-
       // Start waiting for Failed status (before the run actually fails)
       const waitPromise = run.waitForStatus(FlowRunStatus.Failed, { timeoutMs: 10000 });
 
@@ -139,9 +133,6 @@ describe('waitForStatus - Failure Scenarios', () => {
       const run = await pgflowClient.startFlow(testFlow.slug, { test: 'timeout' });
       const step = run.step('normal_step');
 
-      // Give realtime subscription time to establish
-      await new Promise(resolve => setTimeout(resolve, 100));
-
       // Wait for Failed status with a short timeout (step will complete normally, not fail)
       const waitPromise = step.waitForStatus(FlowStepStatus.Failed, { timeoutMs: 2000 });
 
@@ -185,9 +176,6 @@ describe('waitForStatus - Failure Scenarios', () => {
       const stepTracker = createEventTracker();
       run.on('*', runTracker.callback);
       step.on('*', stepTracker.callback);
-
-      // Give realtime subscription time to establish
-      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Wait for both step and run to fail
       const stepWaitPromise = step.waitForStatus(FlowStepStatus.Failed, { timeoutMs: 10000 });

@@ -37,9 +37,6 @@ describe('Realtime Send Integration', () => {
       await subscriptionPromise;
       console.log('Channel fully subscribed and ready');
 
-      // Additional wait to ensure realtime connection is stable
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
       // 4. Send event via SQL realtime.send() function
       const dbPayload = {
         test_message: 'Hello from SQL realtime.send()!',

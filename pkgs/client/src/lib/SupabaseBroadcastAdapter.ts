@@ -346,7 +346,13 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
     
     // Wait for the 'SUBSCRIBED' acknowledgment to avoid race conditions
     await subscriptionPromise;
-    
+
+    // Stabilization delay - known Supabase Realtime limitation
+    // The SUBSCRIBED event is emitted before backend routing is fully established.
+    // This delay ensures the backend can receive messages sent immediately after subscription.
+    // See: https://github.com/supabase/supabase-js/issues/1599
+    await new Promise(resolve => setTimeout(resolve, 300));
+
     this.#channels.set(run_id, channel);
 
     const unsubscribe = () => this.unsubscribe(run_id);

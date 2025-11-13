@@ -87,9 +87,6 @@ describe('Full Stack DSL Integration', () => {
       expect(run.flow_slug).toBe(SimpleFlow.slug);
       expect(run.input).toEqual(input);
 
-      // Give realtime subscription time to establish
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
       // 7. Execute the complete flow lifecycle
       console.log('=== Step 1: Completing fetch step ===');
       let tasks = await readAndStart(sql, sqlClient, SimpleFlow.slug, 1, 5);
