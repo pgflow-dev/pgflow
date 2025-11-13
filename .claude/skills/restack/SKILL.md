@@ -1,7 +1,7 @@
 ---
 name: restack
 description: Use when user asks to "restack", "resolve conflicts", "gt restack", or mentions restack conflicts. Guides through gt restack conflicts with intelligent diagnostics and resolution.
-allowed-tools: Bash(gt restack:*), Bash(gt continue:*), Bash(git show:*), Bash(git diff:*), Bash(git log:*), Bash(git ls-tree:*), Bash(pnpm install:*), Bash(git status:*), Bash(gt log:*), Bash(rm pnpm-lock.yaml), Bash(gt add -A:*), Bash(git checkout --theirs:*), Bash(git checkout --ours:*)
+allowed-tools: Bash(gt restack:*), Bash(gt continue:*), Bash(gt abort:*), Bash(git show:*), Bash(git diff:*), Bash(git log:*), Bash(git ls-tree:*), Bash(pnpm install:*), Bash(git status:*), Bash(gt log:*), Bash(rm pnpm-lock.yaml), Bash(gt add -A:*), Bash(git checkout --theirs:*), Bash(git checkout --ours:*), Bash(git --no-pager -c color.ui=false status:*), Bash(gt log short --stack:*), Bash(git --no-pager -c color.ui=false diff --name-only --diff-filter=U --no-renames:*), Bash(git --no-pager -c color.ui=false diff:*)
 ---
 
 <critical>
@@ -17,13 +17,14 @@ allowed-tools: Bash(gt restack:*), Bash(gt continue:*), Bash(git show:*), Bash(g
 !`git --no-pager -c color.ui=false status`
 
 **Current stack:**
-!`gt --no-color log short --stack`
+!`gt log short --stack`
 
 ## Workflow
 
 ### 1. Analyze State
 
 Check `git status` output above:
+
 - **"rebase in progress"** or **"Unmerged paths"** → Already in conflict, skip to step 3
 - **Clean working tree** → Proceed to step 2
 
@@ -34,6 +35,7 @@ gt restack
 ```
 
 **Outcomes:**
+
 - **Success** → Acknowledge and skip to step 4
 - **Conflicts** → Proceed to step 3
 

@@ -19,3 +19,7 @@ runs:
     - name: Install dependencies
       shell: bash
       run: pnpm install --frozen-lockfile --prefer-offline
+
+    - name: Rebuild packages that need postinstall (onlyBuiltDependencies)
+      shell: bash
+      run: pnpm rebuild supabase sharp
