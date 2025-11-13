@@ -21,7 +21,9 @@ describe('Reconnection Integration Tests', () => {
 
       const sqlClient = new PgflowSqlClient(sql);
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       // Start a real flow to have something to subscribe to
       const input = { url: 'https://example.com', data: 'reconnection-test' };
@@ -46,7 +48,9 @@ describe('Reconnection Integration Tests', () => {
       // Simulate network interruption by creating a new client
       // This forces the underlying channel to be recreated
       const newSupabaseClient = createTestSupabaseClient();
-      const newPgflowClient = new PgflowClient(newSupabaseClient);
+      const newPgflowClient = new PgflowClient(newSupabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       // Subscribe with the new client to the same run
       const newRun = await newPgflowClient.getRun(run.run_id);
@@ -97,7 +101,9 @@ describe('Reconnection Integration Tests', () => {
 
       const sqlClient = new PgflowSqlClient(sql);
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       // Start a flow
       const input = { data: 'state-recovery-test' };
@@ -115,7 +121,9 @@ describe('Reconnection Integration Tests', () => {
 
       // Create new client instance (simulates reconnection)
       const newSupabaseClient = createTestSupabaseClient();
-      const newPgflowClient = new PgflowClient(newSupabaseClient);
+      const newPgflowClient = new PgflowClient(newSupabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
       
       // Retrieve the same run
       const reconnectedRun = await newPgflowClient.getRun(run.run_id);
@@ -162,7 +170,9 @@ describe('Reconnection Integration Tests', () => {
 
       const sqlClient = new PgflowSqlClient(sql);
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       // Start a flow
       const input = { data: 'rapid-test' };

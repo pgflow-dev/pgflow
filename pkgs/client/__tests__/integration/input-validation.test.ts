@@ -32,7 +32,9 @@ describe('Input Validation', () => {
       )`;
 
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       // Act & Assert: Should throw validation error
       await expect(
@@ -77,7 +79,9 @@ describe('Input Validation', () => {
       )`;
 
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       // Act: Should succeed with empty array
       const run = await pgflowClient.startFlow(testFlow.slug, []);  // ✓ Valid array
@@ -118,7 +122,9 @@ describe('Input Validation', () => {
       )`;
 
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       // Act: Should succeed with array of items
       const input = [{ id: 1 }, { id: 2 }, { id: 3 }];
@@ -153,7 +159,9 @@ describe('Input Validation', () => {
       await sql`SELECT pgflow.add_step(${testFlow.slug}, 'regular_step')`;  // Single step
 
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       // Act: Should succeed with object input (no root map validation)
       const input = { items: [], foo: 'bar' };
@@ -205,7 +213,9 @@ describe('Input Validation', () => {
 
       const sqlClient = new PgflowSqlClient(sql);
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       const run = await pgflowClient.startFlow(testFlow.slug, { data: 'test' });
 
@@ -287,7 +297,9 @@ describe('Input Validation', () => {
 
       const sqlClient = new PgflowSqlClient(sql);
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       const run = await pgflowClient.startFlow(testFlow.slug, { data: 'test' });
 

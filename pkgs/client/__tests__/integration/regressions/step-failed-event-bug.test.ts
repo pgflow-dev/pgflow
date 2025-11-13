@@ -25,7 +25,9 @@ describe('Step Failed Event Broadcasting', () => {
 
       // Create clients
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
       const sqlClient = new PgflowSqlClient(sql);
 
       // Start the flow

@@ -31,7 +31,9 @@ describe('Concurrent Operations Tests', () => {
 
       const sqlClient = new PgflowSqlClient(sql);
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       // Start flows sequentially to avoid overwhelming the system
       console.log('=== Starting flows ===');
@@ -100,10 +102,16 @@ describe('Concurrent Operations Tests', () => {
       const supabaseClient1 = createTestSupabaseClient();
       const supabaseClient2 = createTestSupabaseClient();
       const supabaseClient3 = createTestSupabaseClient();
-      
-      const pgflowClient1 = new PgflowClient(supabaseClient1);
-      const pgflowClient2 = new PgflowClient(supabaseClient2);
-      const pgflowClient3 = new PgflowClient(supabaseClient3);
+
+      const pgflowClient1 = new PgflowClient(supabaseClient1, {
+        realtimeStabilizationDelayMs: 1000,
+      });
+      const pgflowClient2 = new PgflowClient(supabaseClient2, {
+        realtimeStabilizationDelayMs: 1000,
+      });
+      const pgflowClient3 = new PgflowClient(supabaseClient3, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       // Client 1 starts the flow
       const input = { data: 'multi-client-test' };
@@ -186,7 +194,9 @@ describe('Concurrent Operations Tests', () => {
 
       const sqlClient = new PgflowSqlClient(sql);
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       // Start fewer runs to reduce system load
       const runs = await Promise.all([
@@ -268,7 +278,9 @@ describe('Concurrent Operations Tests', () => {
 
       const sqlClient = new PgflowSqlClient(sql);
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       // Start flows sequentially for reliability
       const runA = await pgflowClient.startFlow(flowA.slug, { type: 'flow-a' });

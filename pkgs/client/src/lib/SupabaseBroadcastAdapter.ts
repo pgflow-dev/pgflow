@@ -22,8 +22,9 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
   #channels: Map<string, RealtimeChannel> = new Map();
   #emitter = createNanoEvents<AdapterEvents>();
   #reconnectionDelay: number;
+  #stabilizationDelay: number;
   #schedule: typeof setTimeout;
-  
+
 
   /**
    * Creates a new instance of SupabaseBroadcastAdapter
@@ -32,10 +33,15 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
    */
   constructor(
     supabase: SupabaseClient,
-    opts: { reconnectDelayMs?: number; schedule?: typeof setTimeout } = {}
+    opts: {
+      reconnectDelayMs?: number;
+      stabilizationDelayMs?: number;
+      schedule?: typeof setTimeout;
+    } = {}
   ) {
     this.#supabase = supabase;
     this.#reconnectionDelay = opts.reconnectDelayMs ?? 2000;
+    this.#stabilizationDelay = opts.stabilizationDelayMs ?? 300;
     this.#schedule = opts.schedule ?? setTimeout;
   }
   
@@ -351,7 +357,7 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
     // The SUBSCRIBED event is emitted before backend routing is fully established.
     // This delay ensures the backend can receive messages sent immediately after subscription.
     // See: https://github.com/supabase/supabase-js/issues/1599
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise(resolve => this.#schedule(resolve, this.#stabilizationDelay));
 
     this.#channels.set(run_id, channel);
 

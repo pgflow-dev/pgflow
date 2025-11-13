@@ -23,7 +23,9 @@ describe('Flow Lifecycle Integration', () => {
         await sql`SELECT pgflow.add_step(${testFlow.slug}, 'first_step')`;
 
         const supabaseClient = createTestSupabaseClient();
-        const pgflowClient = new PgflowClient(supabaseClient);
+        const pgflowClient = new PgflowClient(supabaseClient, {
+          realtimeStabilizationDelayMs: 1000,
+        });
 
         const input = { url: 'https://example.com' };
         const run = await pgflowClient.startFlow(testFlow.slug, input);
@@ -51,7 +53,9 @@ describe('Flow Lifecycle Integration', () => {
         await sql`SELECT pgflow.add_step(${testFlow.slug}, 'step_two')`;
 
         const supabaseClient = createTestSupabaseClient();
-        const pgflowClient = new PgflowClient(supabaseClient);
+        const pgflowClient = new PgflowClient(supabaseClient, {
+          realtimeStabilizationDelayMs: 1000,
+        });
 
         const run = await pgflowClient.startFlow(testFlow.slug, {
           data: 'test',
@@ -83,7 +87,9 @@ describe('Flow Lifecycle Integration', () => {
         await sql`SELECT pgflow.add_step(${testFlow.slug}, 'step_two')`;
 
         const supabaseClient = createTestSupabaseClient();
-        const pgflowClient = new PgflowClient(supabaseClient);
+        const pgflowClient = new PgflowClient(supabaseClient, {
+          realtimeStabilizationDelayMs: 1000,
+        });
 
         const run = await pgflowClient.startFlow(testFlow.slug, {
           data: 'consistency-test',
@@ -119,7 +125,9 @@ describe('Flow Lifecycle Integration', () => {
 
         const sqlClient = new PgflowSqlClient(sql);
         const supabaseClient = createTestSupabaseClient();
-        const pgflowClient = new PgflowClient(supabaseClient);
+        const pgflowClient = new PgflowClient(supabaseClient, {
+          realtimeStabilizationDelayMs: 1000,
+        });
 
         const input = { data: 'lifecycle-test' };
         const run = await pgflowClient.startFlow(testFlow.slug, input);
@@ -154,7 +162,9 @@ describe('Flow Lifecycle Integration', () => {
         await grantMinimalPgflowPermissions(sql);
 
         const supabaseClient = createTestSupabaseClient();
-        const pgflowClient = new PgflowClient(supabaseClient);
+        const pgflowClient = new PgflowClient(supabaseClient, {
+          realtimeStabilizationDelayMs: 1000,
+        });
 
         await expect(
           pgflowClient.startFlow('nonexistent-flow', { data: 'test' })
@@ -178,7 +188,9 @@ describe('Flow Lifecycle Integration', () => {
 
         const sqlClient = new PgflowSqlClient(sql);
         const supabaseClient = createTestSupabaseClient();
-        const pgflowClient = new PgflowClient(supabaseClient);
+        const pgflowClient = new PgflowClient(supabaseClient, {
+          realtimeStabilizationDelayMs: 1000,
+        });
 
         const run = await pgflowClient.startFlow(testFlow.slug, {
           data: 'will-fail',
@@ -212,7 +224,9 @@ describe('Flow Lifecycle Integration', () => {
 
         const sqlClient = new PgflowSqlClient(sql);
         const supabaseClient = createTestSupabaseClient();
-        const pgflowClient = new PgflowClient(supabaseClient);
+        const pgflowClient = new PgflowClient(supabaseClient, {
+          realtimeStabilizationDelayMs: 1000,
+        });
 
         const originalRun = await pgflowClient.startFlow(testFlow.slug, {
           data: 'retrieve-test',
@@ -255,7 +269,9 @@ describe('Flow Lifecycle Integration', () => {
         await grantMinimalPgflowPermissions(sql);
 
         const supabaseClient = createTestSupabaseClient();
-        const pgflowClient = new PgflowClient(supabaseClient);
+        const pgflowClient = new PgflowClient(supabaseClient, {
+          realtimeStabilizationDelayMs: 1000,
+        });
 
         const run = await pgflowClient.getRun(
           '00000000-0000-0000-0000-000000000000'
@@ -279,7 +295,9 @@ describe('Flow Lifecycle Integration', () => {
         await sql`SELECT pgflow.add_step(${testFlow.slug}, 'cached_step')`;
 
         const supabaseClient = createTestSupabaseClient();
-        const pgflowClient = new PgflowClient(supabaseClient);
+        const pgflowClient = new PgflowClient(supabaseClient, {
+          realtimeStabilizationDelayMs: 1000,
+        });
 
         const run1 = await pgflowClient.startFlow(testFlow.slug, {
           data: 'cache-test',
@@ -312,7 +330,9 @@ describe('Flow Lifecycle Integration', () => {
         await sql`SELECT pgflow.add_step(${testFlow2.slug}, 'step2')`;
 
         const supabaseClient = createTestSupabaseClient();
-        const pgflowClient = new PgflowClient(supabaseClient);
+        const pgflowClient = new PgflowClient(supabaseClient, {
+          realtimeStabilizationDelayMs: 1000,
+        });
 
         const run1 = await pgflowClient.startFlow(testFlow1.slug, {
           data: 'flow1',
@@ -354,7 +374,9 @@ describe('Flow Lifecycle Integration', () => {
         await sql`SELECT pgflow.add_step(${testFlow.slug}, 'custom_step')`;
 
         const supabaseClient = createTestSupabaseClient();
-        const pgflowClient = new PgflowClient(supabaseClient);
+        const pgflowClient = new PgflowClient(supabaseClient, {
+          realtimeStabilizationDelayMs: 1000,
+        });
 
         const customRunId = `12345678-1234-1234-1234-${Date.now()
           .toString()
@@ -384,7 +406,9 @@ describe('Flow Lifecycle Integration', () => {
         await sql`SELECT pgflow.add_step(${testFlow.slug}, 'complex_step')`;
 
         const supabaseClient = createTestSupabaseClient();
-        const pgflowClient = new PgflowClient(supabaseClient);
+        const pgflowClient = new PgflowClient(supabaseClient, {
+          realtimeStabilizationDelayMs: 1000,
+        });
 
         const complexInput = {
           user: {

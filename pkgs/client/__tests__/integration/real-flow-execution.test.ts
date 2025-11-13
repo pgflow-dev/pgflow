@@ -27,7 +27,9 @@ describe('Real Flow Execution', () => {
 
       // Create PgflowClient and start flow
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       const input = { data: 'test-input' };
       const run = await pgflowClient.startFlow(testFlow.slug, input);
@@ -95,7 +97,9 @@ describe('Real Flow Execution', () => {
 
       // Create PgflowClient and start flow
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       const input = { foo: 'bar' };
       const run = await pgflowClient.startFlow(testFlow.slug, input);
@@ -156,7 +160,9 @@ describe('Real Flow Execution', () => {
 
       const sqlClient = new PgflowSqlClient(sql);
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       // Start flow - root step starts in this transaction
       const run = await pgflowClient.startFlow(testFlow.slug, { test: 'data' });
@@ -196,7 +202,9 @@ describe('Real Flow Execution', () => {
 
       const sqlClient = new PgflowSqlClient(sql);
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       // Start flow - only root_step starts
       const run = await pgflowClient.startFlow(testFlow.slug, { test: 'data' });
@@ -285,7 +293,9 @@ describe('Real Flow Execution', () => {
       )`;
 
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       // Start flow with empty array (root map steps expect array input)
       const run = await pgflowClient.startFlow(testFlow.slug, []);
@@ -330,7 +340,9 @@ describe('Real Flow Execution', () => {
 
       const sqlClient = new PgflowSqlClient(sql);
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       const run = await pgflowClient.startFlow(testFlow.slug, { test: 'data' });
       const rootStep = run.step('root_step');
@@ -383,7 +395,9 @@ describe('Real Flow Execution', () => {
 
       const sqlClient = new PgflowSqlClient(sql);
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       const run = await pgflowClient.startFlow(testFlow.slug, { test: 'data' });
       const step = run.step('test_step');
