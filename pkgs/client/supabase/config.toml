@@ -8,7 +8,7 @@ schemas = ["public", "graphql_public", "pgflow"]
 [db]
 port = 50522  # distinct from core:50422 and edge-worker:50322
 shadow_port = 50520
-major_version = 15
+major_version = 17
 
 [db.pooler]
 enabled = true

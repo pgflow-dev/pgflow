@@ -12,10 +12,10 @@ env "local" {
 }
 
 docker "postgres" "pgflow" {
-  # image = "postgres:15"
+  # image = "postgres:17"
   # custom image is built and pushed to speed up schema verification,
   # otherwise it takes around 30s
-  image = "jumski/postgres-15-pgmq:latest"
+  image = "jumski/postgres-17-pgmq:latest"
   baseline = file(".supabase-baseline-schema.sql")
   build {
     dockerfile = "atlas/Dockerfile"

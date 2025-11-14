@@ -1,2 +1,2 @@
 #!/bin/bash
-docker build -t jumski/postgres-15-pgmq:latest --file atlas/Dockerfile atlas/
+docker build -t jumski/postgres-17-pgmq:latest --file atlas/Dockerfile atlas/

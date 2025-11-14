@@ -85,6 +85,18 @@ npx supabase stop
 npx supabase start
 ```
 
+### PostgreSQL 17 Compatibility
+
+<Aside type="note" title="PostgreSQL 17 Support">
+Starting with pgflow 0.8.0, PostgreSQL 17 is fully supported and recommended. If you're updating from an earlier version:
+
+1. **Local development**: Update your `supabase/config.toml` to use `major_version = 17`
+2. **Production**: Supabase is migrating to PostgreSQL 17 as the default. Your existing projects will continue on PG15 until Supabase's end-of-life (approximately May 2026)
+3. **Testing recommended**: Test your flows on PG17 locally before deploying to production
+
+pgflow is tested on PostgreSQL 17 for compatibility.
+</Aside>
+
 ### 5. Apply new migrations
 
 Apply the new migrations to your database:
