@@ -6,6 +6,7 @@ import {
   emitBroadcastEvent,
   createEventTracker,
   createEventRoutingTest,
+  createSyncSchedule,
 } from './helpers/test-utils';
 import {
   createRunStartedEvent,
@@ -30,7 +31,7 @@ describe('SupabaseBroadcastAdapter', () => {
 
   test('initializes correctly', () => {
     const { client } = createMockClient();
-    const adapter = new SupabaseBroadcastAdapter(client);
+    const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0 });
 
     expect(adapter).toBeDefined();
   });
@@ -38,7 +39,7 @@ describe('SupabaseBroadcastAdapter', () => {
   describe('channel naming & subscription', () => {
     test('subscribes to run events with correct channel name format', () => {
       const { client, mocks } = createMockClient();
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       adapter.subscribeToRun(RUN_ID);
 
@@ -48,7 +49,7 @@ describe('SupabaseBroadcastAdapter', () => {
 
     test('can subscribe to multiple different run IDs', () => {
       const { client } = createMockClient();
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Subscribe to multiple runs
       adapter.subscribeToRun(RUN_ID);
@@ -64,7 +65,7 @@ describe('SupabaseBroadcastAdapter', () => {
 
     test('registers handlers for all broadcast events with wildcard', async () => {
       const { client, mocks } = createMockClient();
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Setup realistic channel subscription
       mockChannelSubscription(mocks);
@@ -80,7 +81,7 @@ describe('SupabaseBroadcastAdapter', () => {
 
     test('registers handlers for system events', async () => {
       const { client, mocks } = createMockClient();
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Setup realistic channel subscription
       mockChannelSubscription(mocks);
@@ -103,7 +104,7 @@ describe('SupabaseBroadcastAdapter', () => {
 
     test('subscribing to the same run ID twice has no effect', async () => {
       const { client, mocks } = createMockClient();
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Setup realistic channel subscription
       mockChannelSubscription(mocks);
@@ -123,7 +124,7 @@ describe('SupabaseBroadcastAdapter', () => {
   describe('broadcast routing', () => {
     test('routes run:started events correctly', async () => {
       const { client, mocks } = createMockClient();
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
       
       const runStartedEvent = createRunStartedEvent({ run_id: RUN_ID });
       
@@ -138,7 +139,7 @@ describe('SupabaseBroadcastAdapter', () => {
 
     test('routes run:completed events correctly', async () => {
       const { client, mocks } = createMockClient();
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
       
       const runCompletedEvent = createRunCompletedEvent({ run_id: RUN_ID });
       
@@ -153,7 +154,7 @@ describe('SupabaseBroadcastAdapter', () => {
 
     test('routes run:failed events correctly', () => {
       const { client, mocks } = createMockClient();
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Set up an event listener
       const runEventCallback = vi.fn();
@@ -172,7 +173,7 @@ describe('SupabaseBroadcastAdapter', () => {
 
     test('routes step:started events correctly', async () => {
       const { client, mocks } = createMockClient();
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
       
       const stepStartedEvent = createStepStartedEvent({ run_id: RUN_ID });
       
@@ -187,7 +188,7 @@ describe('SupabaseBroadcastAdapter', () => {
 
     test('routes step:completed events correctly', () => {
       const { client, mocks } = createMockClient();
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Set up an event listener
       const stepEventCallback = vi.fn();
@@ -206,7 +207,7 @@ describe('SupabaseBroadcastAdapter', () => {
 
     test('routes step:failed events correctly', () => {
       const { client, mocks } = createMockClient();
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Set up an event listener
       const stepEventCallback = vi.fn();
@@ -225,7 +226,7 @@ describe('SupabaseBroadcastAdapter', () => {
 
     test('ignores unknown event types', () => {
       const { client, mocks } = createMockClient();
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Set up event listeners
       const runEventCallback = vi.fn();
@@ -254,7 +255,7 @@ describe('SupabaseBroadcastAdapter', () => {
 
     test('onRunEvent returns unsubscribe function that works', () => {
       const { client, mocks } = createMockClient();
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Set up an event listener
       const runEventCallback = vi.fn();
@@ -282,7 +283,7 @@ describe('SupabaseBroadcastAdapter', () => {
 
     test('onStepEvent returns unsubscribe function that works', () => {
       const { client, mocks } = createMockClient();
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Set up an event listener
       const stepEventCallback = vi.fn();
@@ -312,7 +313,7 @@ describe('SupabaseBroadcastAdapter', () => {
   describe('unsubscribe', () => {
     test('unsubscribes correctly by closing channel', async () => {
       const { client, mocks } = createMockClient();
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Setup realistic channel subscription
       mockChannelSubscription(mocks);
@@ -326,13 +327,15 @@ describe('SupabaseBroadcastAdapter', () => {
 
     test('multiple unsubscribe calls are safe', async () => {
       const { client, mocks } = createMockClient();
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Setup realistic channel subscription
       mockChannelSubscription(mocks);
 
       // Subscribe once
-      await adapter.subscribeToRun(RUN_ID);
+      const subscribePromise = adapter.subscribeToRun(RUN_ID);
+      await vi.runAllTimersAsync();
+      await subscribePromise;
 
       // Unsubscribe multiple times
       adapter.unsubscribe(RUN_ID);
@@ -345,7 +348,7 @@ describe('SupabaseBroadcastAdapter', () => {
 
     test('unsubscribe for non-existent run ID is safe', () => {
       const { client } = createMockClient();
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Unsubscribe from a run ID that was never subscribed to
       adapter.unsubscribe('non-existent-run-id');
@@ -355,7 +358,7 @@ describe('SupabaseBroadcastAdapter', () => {
 
     test('multiple unsubscribe via returned function calls are safe', async () => {
       const { client, mocks } = createMockClient();
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Setup realistic channel subscription
       mockChannelSubscription(mocks);
@@ -415,7 +418,7 @@ describe('SupabaseBroadcastAdapter', () => {
         error: null,
       });
 
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       const result = await adapter.fetchFlowDefinition(FLOW_SLUG);
 
@@ -462,7 +465,7 @@ describe('SupabaseBroadcastAdapter', () => {
         error: null,
       });
 
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Should throw an error
       await expect(adapter.fetchFlowDefinition(FLOW_SLUG)).rejects.toThrow(
@@ -479,7 +482,7 @@ describe('SupabaseBroadcastAdapter', () => {
         error: new Error('Database query failed'),
       });
 
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Should throw the error from the database
       await expect(adapter.fetchFlowDefinition(FLOW_SLUG)).rejects.toThrow(
@@ -501,7 +504,7 @@ describe('SupabaseBroadcastAdapter', () => {
         error: null,
       });
 
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       const result = await adapter.getRunWithStates(RUN_ID);
 
@@ -524,7 +527,7 @@ describe('SupabaseBroadcastAdapter', () => {
         error: new Error('RPC call failed'),
       });
 
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Should throw the error from the RPC call
       await expect(adapter.getRunWithStates(RUN_ID)).rejects.toThrow(
@@ -541,7 +544,7 @@ describe('SupabaseBroadcastAdapter', () => {
         error: null,
       });
 
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Should throw an error about missing data
       await expect(adapter.getRunWithStates(RUN_ID)).rejects.toThrow(

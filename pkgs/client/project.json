@@ -137,36 +137,19 @@
         "parallel": false
       }
     },
-    "db:ensure": {
-      "executor": "nx:run-commands",
-      "local": true,
-      "dependsOn": ["supabase:prepare"],
-      "options": {
-        "cwd": "{projectRoot}",
-        "commands": ["./scripts/ensure-db"],
-        "parallel": false
-      },
-      "inputs": [
-        "{projectRoot}/scripts/ensure-db",
-        "{workspaceRoot}/pkgs/core/supabase/migrations/**/*.sql",
-        "{workspaceRoot}/pkgs/core/supabase/seed.sql",
-        "{projectRoot}/supabase/config.toml",
-        "{projectRoot}/tests/helpers/db.ts",
-        "{projectRoot}/tests/helpers/permissions.ts"
-      ],
-      "outputs": [
-        "{projectRoot}/.nx-inputs/db-ready.txt"
-      ],
-      "cache": true
-    },
     "test:integration": {
       "executor": "nx:run-commands",
       "local": true,
-      "dependsOn": ["db:ensure", "build"],
-      "inputs": ["default", "^production"],
+      "cache": false,
+      "dependsOn": ["supabase:prepare", "build"],
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["vitest run __tests__/integration/"],
+        "commands": [
+          "../../scripts/supabase-start-locked.sh .",
+          "psql 'postgresql://postgres:postgres@localhost:50522/postgres' -c 'SELECT pgflow_tests.reset_db()'",
+          "psql 'postgresql://postgres:postgres@localhost:50522/postgres' -c 'SELECT pgflow_tests.create_realtime_partition()'",
+          "vitest run __tests__/integration/"
+        ],
         "parallel": false
       }
     },
@@ -183,11 +166,16 @@
     "test:vitest": {
       "executor": "nx:run-commands",
       "local": true,
-      "dependsOn": ["db:ensure", "build"],
-      "inputs": ["default", "^production"],
+      "cache": false,
+      "dependsOn": ["supabase:prepare", "build"],
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["vitest run __tests__/"],
+        "commands": [
+          "../../scripts/supabase-start-locked.sh .",
+          "psql 'postgresql://postgres:postgres@localhost:50522/postgres' -c 'SELECT pgflow_tests.reset_db()'",
+          "psql 'postgresql://postgres:postgres@localhost:50522/postgres' -c 'SELECT pgflow_tests.create_realtime_partition()'",
+          "vitest run __tests__/"
+        ],
         "parallel": false
       }
     },
@@ -199,11 +187,16 @@
     "benchmark": {
       "executor": "nx:run-commands",
       "local": true,
-      "dependsOn": ["db:ensure", "build"],
-      "inputs": ["default", "^production"],
+      "cache": false,
+      "dependsOn": ["supabase:prepare", "build"],
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["node scripts/performance-benchmark.mjs"],
+        "commands": [
+          "../../scripts/supabase-start-locked.sh .",
+          "psql 'postgresql://postgres:postgres@localhost:50522/postgres' -c 'SELECT pgflow_tests.reset_db()'",
+          "psql 'postgresql://postgres:postgres@localhost:50522/postgres' -c 'SELECT pgflow_tests.create_realtime_partition()'",
+          "node scripts/performance-benchmark.mjs"
+        ],
         "parallel": false
       }
     },
@@ -214,7 +207,7 @@
       "inputs": ["default", "^production"],
       "options": {
         "cwd": "{projectRoot}",
-        "command": "pnpm vitest --typecheck.only --run"
+        "command": "pnpm vitest --typecheck.only --run --config vitest.typecheck.config.ts"
       }
     },
     "test:types:strict": {

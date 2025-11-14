@@ -50,7 +50,7 @@ echo -e "${YELLOW}Checking Supabase status in: $PROJECT_DIR${NC}"
 
 # Fast path: Check if Supabase is already running
 # This makes repeated calls very fast
-if supabase status > /dev/null 2>&1; then
+if pnpm exec supabase status > /dev/null 2>&1; then
   echo -e "${GREEN}✓ Supabase is already running${NC}"
   exit 0
 fi
@@ -61,11 +61,11 @@ echo -e "${YELLOW}Supabase is not running. Starting...${NC}"
 # Clean up any stale containers first
 # This prevents errors from previous incomplete shutdowns
 echo -e "${YELLOW}Cleaning up any stale containers...${NC}"
-supabase stop --no-backup 2>/dev/null || true
+pnpm exec supabase stop --no-backup 2>/dev/null || true
 
 # Start Supabase with all configured services
 echo -e "${YELLOW}Starting Supabase...${NC}"
-if supabase start; then
+if pnpm exec supabase start; then
   echo -e "${GREEN}✓ Supabase started successfully${NC}"
   exit 0
 else

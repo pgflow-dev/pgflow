@@ -5,6 +5,7 @@ import {
   setupTestEnvironment,
   createMockClient,
   emitBroadcastEvent,
+  createSyncSchedule,
 } from './helpers/test-utils';
 import { mockChannelSubscription } from './mocks';
 
@@ -20,7 +21,7 @@ describe('JSON Parsing in Broadcasts', () => {
     mocks = mockClient.mocks;
     mockChannelSubscription(mocks);
 
-    adapter = new SupabaseBroadcastAdapter(mockClient.client);
+    adapter = new SupabaseBroadcastAdapter(mockClient.client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
     // Set up event handlers to capture parsed events
     stepEventHandler = vi.fn();

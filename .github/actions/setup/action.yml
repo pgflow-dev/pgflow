@@ -4,6 +4,19 @@ description: 'Common setup steps for pgflow CI workflow (run after checkout)'
 runs:
   using: 'composite'
   steps:
+    # Configure Docker daemon to allow containers to set high ulimits
+    # This prevents "ulimit: open files: cannot modify limit: Operation not permitted" errors
+    # when Supabase containers (pooler, realtime) try to set RLIMIT_NOFILE to 100000.
+    # The error occurs because GitHub Actions runners have restrictive ulimit defaults
+    # that prevent containers from increasing their file descriptor limits.
+    # See: https://github.com/orgs/supabase/discussions/18228
+    - name: Configure Docker ulimits for Supabase
+      shell: bash
+      run: |
+        sudo mkdir -p /etc/docker
+        echo '{"default-ulimits":{"nofile":{"Name":"nofile","Hard":100000,"Soft":100000}}}' | sudo tee /etc/docker/daemon.json
+        sudo systemctl restart docker
+
     - uses: pnpm/action-setup@v4
       with:
         version: '10.20.0'

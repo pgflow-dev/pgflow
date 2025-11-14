@@ -5,6 +5,7 @@ import {
   createMockClient,
   mockRpcCall,
   createRunResponse,
+  createSyncSchedule,
 } from './helpers/test-utils';
 import {
   createMockSchedule,
@@ -29,7 +30,7 @@ describe('Reconnection Logic', () => {
         return mocks.channel.channel;
       });
 
-      const adapter = new SupabaseBroadcastAdapter(client);
+      const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0, schedule: createSyncSchedule() });
       
       // Subscribe to run
       const unsubscribe = await adapter.subscribeToRun(RUN_ID);
@@ -57,11 +58,14 @@ describe('Reconnection Logic', () => {
 
       const adapter = new SupabaseBroadcastAdapter(client, {
         reconnectDelayMs: 1000,
+        stabilizationDelayMs: 0,
         schedule: mockSchedule,
       });
-      
-      // Subscribe to run
-      const unsubscribe = await adapter.subscribeToRun(RUN_ID);
+
+      // Subscribe to run (need to advance timers for setTimeout(..., 0))
+      const subscribePromise = adapter.subscribeToRun(RUN_ID);
+      await vi.runAllTimersAsync();
+      const unsubscribe = await subscribePromise;
 
       // Trigger error handler
       const errorHandler = mocks.channel.systemHandlers.get('error');
@@ -95,11 +99,14 @@ describe('Reconnection Logic', () => {
 
       const adapter = new SupabaseBroadcastAdapter(client, {
         reconnectDelayMs: customDelay,
+        stabilizationDelayMs: 0,
         schedule: mockSchedule,
       });
-      
-      // Subscribe to run
-      const unsubscribe = await adapter.subscribeToRun(RUN_ID);
+
+      // Subscribe to run (need to advance timers for setTimeout(..., 0))
+      const subscribePromise = adapter.subscribeToRun(RUN_ID);
+      await vi.runAllTimersAsync();
+      const unsubscribe = await subscribePromise;
 
       // Trigger error handler
       const errorHandler = mocks.channel.systemHandlers.get('error');

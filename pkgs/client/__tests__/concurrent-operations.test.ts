@@ -11,6 +11,7 @@ import {
   mockSequentialUuids,
   setupConcurrentOperations,
   createEventTracker,
+  createSyncSchedule,
 } from './helpers/test-utils';
 import {
   createStepStartedEvent,
@@ -61,7 +62,7 @@ describe('Concurrent Operations', () => {
         return { data: null, error: null };
       });
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       const flow1Input = { data: 'flow1' };
       const flow2Input = { data: 'flow2' };
@@ -100,7 +101,7 @@ describe('Concurrent Operations', () => {
       const { client, mocks } = createMockClient();
 
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       const sharedRunId = '444e4567-e89b-12d3-a456-426614174000';
       const sharedInput = { shared: 'data' };
@@ -143,7 +144,7 @@ describe('Concurrent Operations', () => {
   describe('Event forwarding', () => {
     it('forwards run events through the client', async () => {
       const { client, mocks } = createMockClient();
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Set up a run
       const response = createRunResponse({ run_id: RUN_ID });
@@ -183,7 +184,7 @@ describe('Concurrent Operations', () => {
     it('forwards step events through the client', async () => {
       const { client, mocks } = createMockClient();
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Set up a run
       mocks.rpc.mockReturnValueOnce({
@@ -240,7 +241,7 @@ describe('Concurrent Operations', () => {
     it('ignores events with wrong run_id', async () => {
       const { client, mocks } = createMockClient();
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Set up a run
       mocks.rpc.mockReturnValueOnce({
@@ -283,7 +284,7 @@ describe('Concurrent Operations', () => {
       const { client, mocks } = createMockClient();
 
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // First call succeeds, second fails
       mocks.rpc

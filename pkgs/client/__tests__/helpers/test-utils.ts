@@ -255,6 +255,17 @@ export async function advanceTimersAndFlush(ms: number): Promise<void> {
 }
 
 /**
+ * Creates a synchronous schedule function for testing (bypasses setTimeout)
+ * Use this when creating adapters/clients to avoid fake timer issues
+ */
+export function createSyncSchedule() {
+  return (callback: () => void, _delay: number) => {
+    callback();
+    return 0 as any; // Return value doesn't matter for tests
+  };
+}
+
+/**
  * Creates a test scenario for verifying event routing
  */
 export function createEventRoutingTest(options: {
