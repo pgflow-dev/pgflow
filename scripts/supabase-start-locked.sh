@@ -60,7 +60,7 @@ fi
 
 # Normalize to absolute path to ensure consistent lock naming
 # This prevents "./pkgs/core" and "pkgs/core" from creating different locks
-PROJECT_DIR_ABS=$(cd "$PROJECT_DIR" && pwd)
+PROJECT_DIR_ABS=$(realpath "$PROJECT_DIR")
 
 # Create a unique lock file path based on the absolute project directory
 # Using md5sum hash to create a safe filename from the directory path
