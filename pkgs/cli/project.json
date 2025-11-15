@@ -77,7 +77,7 @@
       "options": {
         "commands": [
           "rm -rf supabase/",
-          "npx -y supabase@latest init --with-vscode-settings --with-intellij-settings",
+          "npx -y supabase@latest init --force --with-vscode-settings --with-intellij-settings",
           "node dist/index.js compile examples/analyze_website.ts --deno-json examples/deno.json --supabase-path supabase",
           "./scripts/assert-flow-compiled"
         ],

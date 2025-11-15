@@ -63,9 +63,9 @@
       "local": true,
       "cache": false,
       "options": {
-        "cwd": "{workspaceRoot}",
+        "cwd": "{projectRoot}",
         "commands": [
-          "scripts/supabase-start-locked.sh {projectRoot}"
+          "../../scripts/supabase-start-locked.sh ."
         ],
         "parallel": false
       }
@@ -75,8 +75,8 @@
       "local": true,
       "cache": false,
       "options": {
-        "cwd": "{workspaceRoot}",
-        "commands": ["scripts/supabase-start-locked.sh {projectRoot}"],
+        "cwd": "{projectRoot}",
+        "commands": ["../../scripts/supabase-start-locked.sh ."],
         "parallel": false
       }
     },
@@ -129,10 +129,10 @@
       "cache": false,
       "dependsOn": ["supabase:prepare"],
       "options": {
-        "cwd": "{workspaceRoot}",
+        "cwd": "{projectRoot}",
         "commands": [
-          "scripts/supabase-start-locked.sh {projectRoot}",
-          "cd {projectRoot} && supabase db reset"
+          "../../scripts/supabase-start-locked.sh .",
+          "supabase db reset"
         ],
         "parallel": false
       }
@@ -202,9 +202,7 @@
     },
     "test:types:vitest": {
       "executor": "nx:run-commands",
-      "cache": true,
-      "dependsOn": ["build"],
-      "inputs": ["default", "^production"],
+      "dependsOn": ["^build"],
       "options": {
         "cwd": "{projectRoot}",
         "command": "pnpm vitest --typecheck.only --run --config vitest.typecheck.config.ts"

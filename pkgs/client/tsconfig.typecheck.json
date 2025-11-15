@@ -17,5 +17,6 @@
   "include": [
     "__tests__/**/*.test-d.ts",
     "__tests__/**/*.spec-d.ts"
-  ]
+  ],
+  "exclude": ["dist", "node_modules"]
 }

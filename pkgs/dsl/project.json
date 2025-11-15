@@ -38,15 +38,15 @@
     },
     "test:types:vitest": {
       "executor": "nx:run-commands",
-      "dependsOn": ["build"],
+      "dependsOn": [],
       "options": {
         "cwd": "{projectRoot}",
-        "command": "pnpm vitest --typecheck.only --run"
+        "command": "pnpm vitest --typecheck.only --run --config vitest.typecheck.config.ts"
       }
     },
     "test:types:strict": {
       "executor": "nx:run-commands",
-      "dependsOn": ["build"],
+      "dependsOn": [],
       "options": {
         "cwd": "{projectRoot}",
         "command": "bash ../../scripts/typecheck-ts2578.sh"
