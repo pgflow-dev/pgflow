@@ -20,27 +20,6 @@ describe('.array() method type constraints', () => {
     });
 
     it('should reject handlers that return non-arrays', () => {
-      const flow = new Flow<Record<string, never>>({ slug: 'test' });
-
-      // Test that these handlers are NOT assignable to array handler type
-      type ArrayHandler = (input: { run: Record<string, never> }, context: any) => Array<any> | Promise<Array<any>>;
-
-      const invalidNumber = () => 42;
-      expectTypeOf(invalidNumber).not.toMatchTypeOf<ArrayHandler>();
-
-      const invalidString = () => 'not an array';
-      expectTypeOf(invalidString).not.toMatchTypeOf<ArrayHandler>();
-
-      const invalidObject = () => ({ not: 'array' });
-      expectTypeOf(invalidObject).not.toMatchTypeOf<ArrayHandler>();
-
-      const invalidNull = () => null;
-      expectTypeOf(invalidNull).not.toMatchTypeOf<ArrayHandler>();
-
-      const invalidUndefined = () => undefined;
-      expectTypeOf(invalidUndefined).not.toMatchTypeOf<ArrayHandler>();
-
-      // Keep the runtime tests with @ts-expect-error for actual type enforcement
       new Flow<Record<string, never>>({ slug: 'test2' })
         // @ts-expect-error - should reject number return
         .array({ slug: 'invalid_number' }, () => 42)
@@ -117,14 +96,10 @@ describe('.array() method type constraints', () => {
 
   describe('dependency validation', () => {
     it('should enforce compile-time dependency validation', () => {
-      const testFlow = new Flow<string>({ slug: 'test' })
-        .array({ slug: 'items' }, () => [1, 2, 3]);
-
-      // Type assertion to verify compile-time error
-      type TestType = Parameters<typeof testFlow.array>[0]['dependsOn'];
-      // @ts-expect-error - should only allow 'items' as a valid dependency
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const invalidDeps: TestType = ['nonExistentStep'];
+      new Flow<string>({ slug: 'test' })
+        .array({ slug: 'items' }, () => [1, 2, 3])
+        // @ts-expect-error - should reject non-existent dependency
+        .array({ slug: 'invalid', dependsOn: ['nonExistentStep'] }, () => []);
     });
 
     it('should not allow access to non-dependencies', () => {

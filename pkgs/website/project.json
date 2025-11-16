@@ -107,10 +107,10 @@
       "local": true,
       "cache": false,
       "options": {
-        "cwd": "{workspaceRoot}",
+        "cwd": "{projectRoot}",
         "commands": [
-          "scripts/supabase-start-locked.sh {projectRoot}",
-          "cd {projectRoot} && astro dev"
+          "../../scripts/supabase-start-locked.sh .",
+          "astro dev"
         ]
       }
     }

@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config';
 // Separate config for type tests - NO global setup needed
 export default defineConfig({
   root: __dirname,
-  cacheDir: '../../node_modules/.vite/pkgs/client',
+  cacheDir: '../../node_modules/.vite/pkgs/core',
   test: {
     watch: false,
     globals: true,

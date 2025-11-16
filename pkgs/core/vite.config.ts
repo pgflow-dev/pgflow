@@ -14,7 +14,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     include: [
-      '__tests__/**/*.{test,spec,test-d,spec-d}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      '__tests__/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
     ],
     reporters: ['default'],
     coverage: {
