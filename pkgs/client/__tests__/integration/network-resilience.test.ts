@@ -26,7 +26,9 @@ describe('Network Resilience Tests', () => {
 
       const sqlClient = new PgflowSqlClient(sql);
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       const input = { data: 'resilience-test' };
       const run = await pgflowClient.startFlow(testFlow.slug, input);
@@ -131,7 +133,9 @@ describe('Network Resilience Tests', () => {
 
       const sqlClient = new PgflowSqlClient(sql);
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       // Track subscription status changes
       const connectionEvents: string[] = [];
@@ -182,7 +186,9 @@ describe('Network Resilience Tests', () => {
 
       const sqlClient = new PgflowSqlClient(sql);
       const supabaseClient = createTestSupabaseClient();
-      const pgflowClient = new PgflowClient(supabaseClient);
+      const pgflowClient = new PgflowClient(supabaseClient, {
+        realtimeStabilizationDelayMs: 1000,
+      });
 
       const input = { data: 'poor-network-test' };
       const run = await pgflowClient.startFlow(testFlow.slug, input);
