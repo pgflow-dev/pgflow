@@ -54,6 +54,11 @@ deno-dist/
 
 **/.claude/settings.local.json
 
+# Claude config symlinks (actual content in ~/Code/pgflow-dev/claude/)
+**/CLAUDE.md
+.claude/**/*
+!.claude/.gitkeep
+
 # Notes symlink
 .notes
 .notes/.git
