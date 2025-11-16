@@ -2,8 +2,7 @@ name: CI
 on:
   pull_request:
     branches: ['**', '!changeset-release/**']
-  push:
-    branches: ['main']
+  # CI only runs on PRs - merge queue validates before merge to main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -43,8 +42,10 @@ jobs:
         with:
           cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 
-      - name: Set Nx SHAs for affected commands
-        uses: nrwl/nx-set-shas@v4
+      - name: Set Nx base for affected commands
+        run: |
+          echo "NX_BASE=origin/main" >> $GITHUB_ENV
+          echo "NX_HEAD=HEAD" >> $GITHUB_ENV
 
       - name: Verify NX_BASE and NX_HEAD are set
         run: echo "BASE=$NX_BASE HEAD=$NX_HEAD"
@@ -85,8 +86,10 @@ jobs:
         with:
           cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 
-      - name: Set Nx SHAs for affected commands
-        uses: nrwl/nx-set-shas@v4
+      - name: Set Nx base for affected commands
+        run: |
+          echo "NX_BASE=origin/main" >> $GITHUB_ENV
+          echo "NX_HEAD=HEAD" >> $GITHUB_ENV
 
       - name: Verify NX_BASE and NX_HEAD are set
         run: echo "BASE=$NX_BASE HEAD=$NX_HEAD"
@@ -126,8 +129,10 @@ jobs:
 
       - uses: ./.github/actions/setup
 
-      - name: Set Nx SHAs for affected commands
-        uses: nrwl/nx-set-shas@v4
+      - name: Set Nx base for affected commands
+        run: |
+          echo "NX_BASE=origin/main" >> $GITHUB_ENV
+          echo "NX_HEAD=HEAD" >> $GITHUB_ENV
 
       - name: Verify NX_BASE and NX_HEAD are set
         run: echo "BASE=$NX_BASE HEAD=$NX_HEAD"
@@ -202,8 +207,10 @@ jobs:
 
       - uses: ./.github/actions/setup
 
-      - name: Set Nx SHAs for affected commands
-        uses: nrwl/nx-set-shas@v4
+      - name: Set Nx base for affected commands
+        run: |
+          echo "NX_BASE=origin/main" >> $GITHUB_ENV
+          echo "NX_HEAD=HEAD" >> $GITHUB_ENV
 
       - name: Verify NX_BASE and NX_HEAD are set
         run: echo "BASE=$NX_BASE HEAD=$NX_HEAD"
