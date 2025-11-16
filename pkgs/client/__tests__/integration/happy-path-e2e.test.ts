@@ -65,9 +65,6 @@ describe('Happy Path E2E Integration', () => {
       expect(run.status).toBe(FlowRunStatus.Started);
       expect(run.input).toEqual(input);
 
-      // Give realtime subscription time to establish
-      await new Promise(resolve => setTimeout(resolve, 200));
-
       // Step 1: Complete fetch step
       console.log('=== Step 1: Completing fetch step ===');
       let tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);

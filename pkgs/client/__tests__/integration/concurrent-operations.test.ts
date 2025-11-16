@@ -41,9 +41,6 @@ describe('Concurrent Operations Tests', () => {
       expect(run1.flow_slug).toBe(flow1.slug);
       expect(run2.flow_slug).toBe(flow2.slug);
 
-      // Give realtime subscriptions time to establish
-      await new Promise(resolve => setTimeout(resolve, 300));
-
       // Get and complete tasks from both flows
       console.log('=== Completing steps ===');
       
@@ -203,9 +200,6 @@ describe('Concurrent Operations Tests', () => {
       const uniqueRunIds = [...new Set(runIds)];
       expect(uniqueRunIds.length).toBe(3);
 
-      // Give subscriptions time to establish
-      await new Promise(resolve => setTimeout(resolve, 300));
-
       // Poll for all tasks and complete them sequentially for reliability
       const allTasks = await readAndStart(sql, sqlClient, testFlow.slug, 5, 5);
       expect(allTasks.length).toBe(3); // One task per run
@@ -279,9 +273,6 @@ describe('Concurrent Operations Tests', () => {
       // Start flows sequentially for reliability
       const runA = await pgflowClient.startFlow(flowA.slug, { type: 'flow-a' });
       const runB = await pgflowClient.startFlow(flowB.slug, { type: 'flow-b' });
-
-      // Give subscriptions time to establish
-      await new Promise(resolve => setTimeout(resolve, 300));
 
       // Get tasks from both flows
       const tasksA = await readAndStart(sql, sqlClient, flowA.slug, 2, 5);

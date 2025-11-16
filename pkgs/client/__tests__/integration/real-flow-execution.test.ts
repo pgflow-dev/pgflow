@@ -35,9 +35,6 @@ describe('Real Flow Execution', () => {
       expect(run.run_id).toBeDefined();
       expect(run.flow_slug).toBe(testFlow.slug);
 
-      // Give realtime subscription time to establish properly
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
       // Poll for task
       const tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
 
@@ -110,9 +107,6 @@ describe('Real Flow Execution', () => {
       run.on('*', runTracker.callback);
       const step = run.step('event_step');
       step.on('*', stepTracker.callback);
-
-      // Give realtime subscription time to establish
-      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Poll and complete task
       const tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
@@ -216,9 +210,6 @@ describe('Real Flow Execution', () => {
       // NOW set up event tracker (before completing root)
       const tracker = createEventTracker();
       dependentStep.on('*', tracker.callback);
-
-      // Give realtime subscription time to establish
-      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Complete root step - this will trigger dependent_step to start
       const rootTasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
@@ -400,9 +391,6 @@ describe('Real Flow Execution', () => {
       // Root steps are started immediately - verify step is in Started status
       expect(step.status).toBe(FlowStepStatus.Started);
       expect(step.started_at).toBeDefined();
-
-      // Give realtime subscription time to establish
-      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // waitForStatus should resolve immediately since step is already Started
       const waitPromise = step.waitForStatus(FlowStepStatus.Started, {

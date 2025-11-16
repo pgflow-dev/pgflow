@@ -43,9 +43,6 @@ describe('Reconnection Integration Tests', () => {
         reconnectionEvents.push(event.event_type);
       });
 
-      // Give realtime subscription time to establish
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
       // Simulate network interruption by creating a new client
       // This forces the underlying channel to be recreated
       const newSupabaseClient = createTestSupabaseClient();
@@ -110,9 +107,6 @@ describe('Reconnection Integration Tests', () => {
       expect(run.status).toBe(FlowRunStatus.Started);
       expect(run.input).toEqual(input);
 
-      // Give initial subscription time to establish
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
       // Simulate disconnection by disposing the client and creating a new one
       pgflowClient.dispose(run.run_id);
       
@@ -173,9 +167,6 @@ describe('Reconnection Integration Tests', () => {
       // Start a flow
       const input = { data: 'rapid-test' };
       const originalRun = await pgflowClient.startFlow(testFlow.slug, input);
-
-      // Give initial subscription time to establish
-      await new Promise((resolve) => setTimeout(resolve, 200));
 
       // Create multiple run instances rapidly (simulates rapid reconnections)
       const runs = await Promise.all([

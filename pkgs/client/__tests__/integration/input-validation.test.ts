@@ -215,9 +215,6 @@ describe('Input Validation', () => {
       run.on('*', runTracker.callback);
       run.step('producer').on('*', stepTracker.callback);
 
-      // Give realtime subscription time to establish
-      await new Promise(resolve => setTimeout(resolve, 100));
-
       // Execute the producer step
       const tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
@@ -293,9 +290,6 @@ describe('Input Validation', () => {
       const pgflowClient = new PgflowClient(supabaseClient);
 
       const run = await pgflowClient.startFlow(testFlow.slug, { data: 'test' });
-
-      // Give realtime subscription time to establish
-      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Execute the producer step
       const tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
