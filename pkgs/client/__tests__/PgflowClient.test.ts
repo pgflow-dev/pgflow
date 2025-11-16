@@ -7,6 +7,7 @@ import {
   createRunResponse,
   mockRpcCall,
   emitBroadcastEvent,
+  createSyncSchedule,
 } from './helpers/test-utils';
 import {
   createRunCompletedEvent,
@@ -24,7 +25,7 @@ describe('PgflowClient', () => {
 
   test('initializes correctly', () => {
     const { client } = createMockClient();
-    const pgflowClient = new PgflowClient(client);
+    const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
     expect(pgflowClient).toBeDefined();
   });
@@ -40,7 +41,7 @@ describe('PgflowClient', () => {
     );
     mockRpcCall(mocks, response);
 
-    const pgflowClient = new PgflowClient(client);
+    const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
     const run = await pgflowClient.startFlow(FLOW_SLUG, input);
 
     // Check RPC call
@@ -66,7 +67,7 @@ describe('PgflowClient', () => {
     const error = new Error('RPC error');
     mockRpcCall(mocks, { data: null, error });
 
-    const pgflowClient = new PgflowClient(client);
+    const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
     // The startFlow call should reject with the error
     await expect(
@@ -84,7 +85,7 @@ describe('PgflowClient', () => {
     );
     mockRpcCall(mocks, response);
 
-    const pgflowClient = new PgflowClient(client);
+    const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
     // First call should fetch from DB
     const run1 = await pgflowClient.getRun(RUN_ID);
@@ -105,7 +106,7 @@ describe('PgflowClient', () => {
     // Mock the RPC call to return no run
     mockRpcCall(mocks, { data: { run: null, steps: [] }, error: null });
 
-    const pgflowClient = new PgflowClient(client);
+    const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
     const result = await pgflowClient.getRun('nonexistent-id');
 
@@ -120,7 +121,7 @@ describe('PgflowClient', () => {
     mockRpcCall(mocks, response);
 
     // Create test client
-    const pgflowClient = new PgflowClient(client);
+    const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
     // Get a run to create an instance
     const run = await pgflowClient.getRun(RUN_ID);
@@ -154,7 +155,7 @@ describe('PgflowClient', () => {
     const response = createRunResponse({ run_id: RUN_ID, input });
     mockRpcCall(mocks, response);
 
-    const pgflowClient = new PgflowClient(client);
+    const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
     // Start a flow to create a run instance
     const run = await pgflowClient.startFlow(FLOW_SLUG, input);
@@ -189,7 +190,7 @@ describe('PgflowClient', () => {
     mockRpcCall(mocks, response1);
     mockRpcCall(mocks, response2);
 
-    const pgflowClient = new PgflowClient(client);
+    const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
     // Get two different runs
     await pgflowClient.getRun('1');
@@ -215,7 +216,7 @@ describe('PgflowClient', () => {
     const response = createRunResponse({ run_id: RUN_ID, input }, []);
     mockRpcCall(mocks, response);
 
-    const pgflowClient = new PgflowClient(client);
+    const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
     // Start a flow
     const run = await pgflowClient.startFlow(FLOW_SLUG, input);

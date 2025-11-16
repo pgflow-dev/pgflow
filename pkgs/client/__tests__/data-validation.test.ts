@@ -11,6 +11,7 @@ import {
   createRunResponse,
   emitBroadcastEvent,
   advanceTimersAndFlush,
+  createSyncSchedule,
 } from './helpers/test-utils';
 import {
   createRunStartedEvent,
@@ -51,7 +52,7 @@ describe('Data Validation and Edge Cases', () => {
         error: null,
       });
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
       const run = await pgflowClient.getRun(RUN_ID);
       if (!run) throw new Error('Run not found');
 
@@ -77,7 +78,7 @@ describe('Data Validation and Edge Cases', () => {
         error: null,
       });
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
       const run = await pgflowClient.getRun(RUN_ID);
       if (!run) throw new Error('Run not found');
 
@@ -105,7 +106,7 @@ describe('Data Validation and Edge Cases', () => {
         error: null,
       });
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Should handle gracefully without throwing
       await expect(pgflowClient.getRun(RUN_ID)).rejects.toThrow('Invalid run data: invalid status');
@@ -135,7 +136,7 @@ describe('Data Validation and Edge Cases', () => {
         error: null,
       });
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Should handle missing fields gracefully
       await expect(pgflowClient.getRun(RUN_ID)).rejects.toThrow('Invalid step data: missing required fields');
@@ -262,7 +263,7 @@ describe('Data Validation and Edge Cases', () => {
         error: null,
       });
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
       const run = await pgflowClient.startFlow(FLOW_SLUG, null as any);
 
       expect(run).toBeDefined();
@@ -283,7 +284,7 @@ describe('Data Validation and Edge Cases', () => {
         error: null,
       });
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
       const run = await pgflowClient.startFlow(FLOW_SLUG, undefined as any);
 
       expect(run).toBeDefined();
@@ -313,7 +314,7 @@ describe('Data Validation and Edge Cases', () => {
         error: null,
       });
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
       const run = await pgflowClient.startFlow(FLOW_SLUG, largeInput);
 
       expect(run).toBeDefined();
@@ -339,7 +340,7 @@ describe('Data Validation and Edge Cases', () => {
         error: null,
       });
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Should not throw during flow start
       expect(async () => {
@@ -363,7 +364,7 @@ describe('Data Validation and Edge Cases', () => {
         error: null,
       });
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Rapid subscribe/dispose cycles
       for (let i = 0; i < 10; i++) {
@@ -395,7 +396,7 @@ describe('Data Validation and Edge Cases', () => {
         error: null,
       });
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
       const run = await pgflowClient.getRun(RUN_ID);
       if (!run) throw new Error('Run not found');
 
@@ -434,7 +435,7 @@ describe('Data Validation and Edge Cases', () => {
         error: null,
       });
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
       const run = await pgflowClient.getRun(RUN_ID);
 
       expect(run).toBeDefined();
@@ -472,7 +473,7 @@ describe('Data Validation and Edge Cases', () => {
 
       mocks.rpc.mockReturnValueOnce(delayedResponse);
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Start operation then immediately dispose
       const runPromise = pgflowClient.getRun(RUN_ID);
@@ -509,7 +510,7 @@ describe('Data Validation and Edge Cases', () => {
           error: null,
         });
 
-      const pgflowClient = new PgflowClient(client);
+      const pgflowClient = new PgflowClient(client, { realtimeStabilizationDelayMs: 0, schedule: createSyncSchedule() });
 
       // Start multiple operations concurrently for same run
       const [run1, run2] = await Promise.all([

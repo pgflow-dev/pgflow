@@ -37,13 +37,15 @@ describe('SupabaseBroadcastAdapter - Simple Tests', () => {
    */
   test('subscribes to a run and configures channel correctly', async () => {
     const { client, mocks } = createMockClient();
-    const adapter = new SupabaseBroadcastAdapter(client);
+    const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0 });
 
     // Setup realistic channel subscription
     mockChannelSubscription(mocks);
 
-    // Subscribe to run
-    await adapter.subscribeToRun(RUN_ID);
+    // Subscribe to run (need to advance timers for setTimeout(..., 0))
+    const subscribePromise = adapter.subscribeToRun(RUN_ID);
+    await vi.runAllTimersAsync();
+    await subscribePromise;
 
     // Check channel was created with correct name
     expect(client.channel).toHaveBeenCalledWith(`pgflow:run:${RUN_ID}`);
@@ -71,7 +73,7 @@ describe('SupabaseBroadcastAdapter - Simple Tests', () => {
    */
   test('properly routes events to registered callbacks', () => {
     const { client, mocks } = createMockClient();
-    const adapter = new SupabaseBroadcastAdapter(client);
+    const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0 });
 
     // Set up event listeners
     const runSpy = vi.fn();
@@ -112,7 +114,7 @@ describe('SupabaseBroadcastAdapter - Simple Tests', () => {
       error: null,
     });
 
-    const adapter = new SupabaseBroadcastAdapter(client);
+    const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0 });
 
     // Call method directly
     const result = await adapter.getRunWithStates(RUN_ID);
@@ -135,13 +137,15 @@ describe('SupabaseBroadcastAdapter - Simple Tests', () => {
    */
   test('properly cleans up on unsubscribe', async () => {
     const { client, mocks } = createMockClient();
-    const adapter = new SupabaseBroadcastAdapter(client);
+    const adapter = new SupabaseBroadcastAdapter(client, { stabilizationDelayMs: 0 });
 
     // Setup realistic channel subscription
     mockChannelSubscription(mocks);
 
-    // Subscribe then unsubscribe
-    await adapter.subscribeToRun(RUN_ID);
+    // Subscribe then unsubscribe (need to advance timers for setTimeout(..., 0))
+    const subscribePromise = adapter.subscribeToRun(RUN_ID);
+    await vi.runAllTimersAsync();
+    await subscribePromise;
     adapter.unsubscribe(RUN_ID);
 
     // Check channel was unsubscribed

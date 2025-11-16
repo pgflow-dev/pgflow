@@ -110,10 +110,6 @@
       "executor": "nx:run-commands",
       "local": true,
       "cache": false,
-      "inputs": [
-        "{workspaceRoot}/pkgs/core/supabase/migrations/**/*.sql",
-        "^production"
-      ],
       "options": {
         "cwd": "{workspaceRoot}",
         "commands": [
@@ -142,8 +138,8 @@
     "db:ensure": {
       "executor": "nx:run-commands",
       "local": true,
+      "cache": false,
       "dependsOn": ["^verify-migrations"],
-      "inputs": ["default", "^production", "{projectRoot}/scripts/ensure-db"],
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": ["./scripts/ensure-db"],
@@ -187,29 +183,45 @@
         "parallel": false
       }
     },
-    "serve:functions:e2e": {
+    "prepare-e2e": {
       "executor": "nx:run-commands",
-      "continuous": true,
-      "dependsOn": ["sync-e2e-deps"],
+      "dependsOn": ["sync-e2e-deps", "^verify-migrations"],
       "local": true,
       "cache": false,
       "options": {
         "cwd": "{workspaceRoot}",
         "commands": [
-          "scripts/supabase-start-locked.sh {projectRoot}",
-          "cd {projectRoot} && supabase functions serve --env-file supabase/functions/.env --import-map supabase/functions/deno.json --no-verify-jwt"
+          "mkdir -p pkgs/edge-worker/supabase/migrations/",
+          "rm -f pkgs/edge-worker/supabase/migrations/*.sql",
+          "cp pkgs/core/supabase/migrations/*.sql pkgs/edge-worker/supabase/migrations/",
+          "scripts/supabase-start-locked.sh pkgs/edge-worker"
+        ],
+        "parallel": false
+      }
+    },
+    "serve:functions:e2e": {
+      "executor": "nx:run-commands",
+      "continuous": true,
+      "dependsOn": ["prepare-e2e"],
+      "local": true,
+      "cache": false,
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "commands": [
+          "supabase functions serve --env-file supabase/functions/.env --import-map supabase/functions/deno.json --no-verify-jwt"
         ],
         "parallel": false
       }
     },
     "test:e2e": {
       "executor": "nx:run-commands",
-      "dependsOn": ["supabase:reset", "serve:functions:e2e"],
+      "dependsOn": ["prepare-e2e", "serve:functions:e2e"],
       "local": true,
       "inputs": ["default", "^production"],
       "options": {
         "cwd": "pkgs/edge-worker",
         "commands": [
+          "timeout 30 bash -c 'echo \"Waiting for functions server (port 50321)...\"; until nc -z localhost 50321 2>/dev/null; do sleep 0.5; done; echo \" Ready!\"'",
           "deno test --config deno.test.json --allow-all --env=supabase/functions/.env tests/e2e/"
         ],
         "parallel": false

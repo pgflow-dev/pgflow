@@ -40,7 +40,10 @@ async function summarizeWithGroq(content: string, apiKey: string) {
 				},
 				{
 					role: 'user',
-					content: `Summarize this article in 2-3 sentences and determine its sentiment:\n\n${content.slice(0, 4000)}`
+					content: `Summarize this article in 2-3 sentences and determine its sentiment:\n\n${content.slice(
+						0,
+						4000
+					)}`
 				}
 			],
 			temperature: 0.7,
@@ -84,7 +87,10 @@ async function summarizeWithOpenAI(content: string, apiKey: string) {
 				},
 				{
 					role: 'user',
-					content: `Summarize this article in 2-3 sentences and determine its sentiment:\n\n${content.slice(0, 4000)}`
+					content: `Summarize this article in 2-3 sentences and determine its sentiment:\n\n${content.slice(
+						0,
+						4000
+					)}`
 				}
 			],
 			temperature: 0.7,
