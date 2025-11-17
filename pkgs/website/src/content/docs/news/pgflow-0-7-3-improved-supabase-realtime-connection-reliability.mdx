@@ -1,0 +1,59 @@
+---
+draft: false
+title: 'pgflow 0.7.3: Improved Supabase Realtime Connection Reliability'
+description: 'Configurable stabilization delay improves Realtime subscription reliability'
+date: 2025-11-17
+authors:
+  - jumski
+tags:
+  - bugfix
+  - realtime
+  - client
+featured: true
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+pgflow 0.7.3 introduces a configurable `realtimeStabilizationDelayMs` option that addresses a known Supabase Realtime limitation where backend routing isn't fully established when the SUBSCRIBED event is emitted.
+
+## What's New
+
+The TypeScript client now includes a `realtimeStabilizationDelayMs` configuration option (default: 300ms) that adds a delay after subscribing to Realtime channels. This works around a [known Supabase Realtime issue](https://github.com/supabase/supabase-js/issues/1599) where messages sent immediately after subscription confirmation may be missed because backend routing takes additional time to fully establish.
+
+**When starting flows or retrieving runs**, the client waits for this stabilization period after receiving the SUBSCRIBED event, ensuring that all subsequent realtime events are properly received.
+
+## Configuration
+
+The default 300ms delay works reliably in most environments. If you experience missed events or connection issues, increase the delay to 400-500ms:
+
+```typescript
+import { PgflowClient } from '@pgflow/client';
+
+// Increase stabilization delay for unreliable connections
+const pgflow = new PgflowClient(supabase, {
+  realtimeStabilizationDelayMs: 400,
+});
+```
+
+You can also disable the delay by setting it to 0, though this may cause missed events in some environments:
+
+```typescript
+// Disable delay (may cause missed events)
+const pgflow = new PgflowClient(supabase, {
+  realtimeStabilizationDelayMs: 0,
+});
+```
+
+See the [TypeScript Client documentation](/build/starting-flows/typescript-client/) and [PgflowClient API reference](/reference/pgflow-client/) for complete details.
+
+## Upgrading
+
+<Aside type="note" title="No Migration Required">
+This release only updates the TypeScript client package. No database migrations are needed.
+</Aside>
+
+Follow the [update guide](/deploy/update-pgflow/) to upgrade your `@pgflow/client` dependency to 0.7.3.
+
+---
+
+**Questions or issues?** Join our [Discord community](https://www.pgflow.dev/discord/) or [open an issue on GitHub](https://github.com/pgflow-dev/pgflow/issues).

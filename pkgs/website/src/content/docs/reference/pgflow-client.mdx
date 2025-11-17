@@ -35,12 +35,19 @@ Main client class for interacting with pgflow flows.
 ### Constructor
 
 ```typescript
-new PgflowClient(supabase: SupabaseClient)
+new PgflowClient(supabase: SupabaseClient, options?: PgflowClientOptions)
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `supabase` | `SupabaseClient` | Initialized Supabase client instance |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `supabase` | `SupabaseClient` | Yes | Initialized Supabase client instance |
+| `options` | `PgflowClientOptions` | No | Client configuration options |
+
+**PgflowClientOptions:**
+
+##### `realtimeStabilizationDelayMs` (`number`, default: `300`)
+
+Delay in milliseconds after subscribing to Supabase Realtime channels. This addresses a known Supabase Realtime limitation where the backend routing isn't fully established when the SUBSCRIBED event is emitted. Increase to `400-500ms` if experiencing missed events or connection issues.
 
 ### Methods
 
@@ -110,24 +117,35 @@ Represents a single flow execution instance.
 | `status` | `FlowRunStatus` | Current run status |
 | `input` | `object` | Flow input data |
 | `output` | `object \| null` | Flow output data (available when completed) |
+| `error` | `Error \| null` | Error object (available when failed) |
 | `error_message` | `string \| null` | Error message (available when failed) |
 | `started_at` | `Date \| null` | Timestamp when run started |
-| `completed_at` | `Date \| null` | Timestamp when run completed or failed |
+| `completed_at` | `Date \| null` | Timestamp when run completed |
+| `failed_at` | `Date \| null` | Timestamp when run failed |
+| `remaining_steps` | `number` | Number of steps remaining to complete |
 
 ### Methods
 
 #### `waitForStatus(status, options?)`
 
-Waits for the run to reach a specific status or one of multiple statuses.
+Waits for the run to reach a terminal status (completed or failed).
 
 **Parameters:**
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `status` | `FlowRunStatus \| FlowRunStatus[]` | Yes | Target status or array of statuses |
+| `status` | `'completed' \| 'failed'` | Yes | Target terminal status to wait for |
 | `options` | `object` | No | Wait options |
-| `options.timeoutMs` | `number` | No | Timeout in milliseconds |
-| `options.signal` | `AbortSignal` | No | Abort signal to cancel waiting |
+
+**Wait options:**
+
+##### `timeoutMs` (`number`, optional)
+
+Timeout in milliseconds.
+
+##### `signal` (`AbortSignal`, optional)
+
+Abort signal to cancel waiting.
 
 **Returns:** `Promise<FlowRun>` - Updated FlowRun instance
 
@@ -146,6 +164,20 @@ Accesses a specific step within the flow run.
 | `step_slug` | `string` | Yes | Step identifier |
 
 **Returns:** `FlowStep` - FlowStep instance for the specified step
+
+---
+
+#### `hasStep(step_slug)`
+
+Checks if a step exists in the flow run.
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `step_slug` | `string` | Yes | Step identifier to check |
+
+**Returns:** `boolean` - `true` if the step exists, `false` otherwise
 
 ---
 
@@ -209,27 +241,38 @@ Represents a single step within a flow run.
 
 | Property | Type | Description |
 |----------|------|-------------|
+| `run_id` | `string` | Run identifier this step belongs to |
 | `step_slug` | `string` | Step identifier |
 | `status` | `FlowStepStatus` | Current step status |
 | `output` | `object \| null` | Step output data (available when completed) |
+| `error` | `Error \| null` | Error object (available when failed) |
 | `error_message` | `string \| null` | Error message (available when failed) |
 | `started_at` | `Date \| null` | Timestamp when step started |
-| `completed_at` | `Date \| null` | Timestamp when step completed or failed |
+| `completed_at` | `Date \| null` | Timestamp when step completed |
+| `failed_at` | `Date \| null` | Timestamp when step failed |
 
 ### Methods
 
 #### `waitForStatus(status, options?)`
 
-Waits for the step to reach a specific status or one of multiple statuses.
+Waits for the step to reach a specific status.
 
 **Parameters:**
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `status` | `FlowStepStatus \| FlowStepStatus[]` | Yes | Target status or array of statuses |
+| `status` | `'started' \| 'completed' \| 'failed'` | Yes | Target status to wait for |
 | `options` | `object` | No | Wait options |
-| `options.timeoutMs` | `number` | No | Timeout in milliseconds |
-| `options.signal` | `AbortSignal` | No | Abort signal to cancel waiting |
+
+**Wait options:**
+
+##### `timeoutMs` (`number`, optional)
+
+Timeout in milliseconds.
+
+##### `signal` (`AbortSignal`, optional)
+
+Abort signal to cancel waiting.
 
 **Returns:** `Promise<FlowStep>` - Updated FlowStep instance
 
