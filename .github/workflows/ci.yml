@@ -2,7 +2,9 @@ name: CI
 on:
   pull_request:
     branches: ['**', '!changeset-release/**']
-  # CI only runs on PRs - merge queue validates before merge to main
+  push:
+    branches: [main]
+  # TODO: Optimize - separate deployment workflow to avoid re-running tests on main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
