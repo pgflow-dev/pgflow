@@ -47,6 +47,17 @@ This package focuses on:
 
 The actual execution of workflow tasks is handled by the [Edge Worker](../edge-worker/README.md), which calls back to the SQL Core to acknowledge task completion or failure.
 
+## Requirements
+
+> [!IMPORTANT]
+> **pgmq Version Requirement** (since v0.8.0)
+>
+> pgflow v0.8.0 and later requires **pgmq 1.5.0 or higher**. This version of pgflow will NOT work with pgmq 1.4.x or earlier.
+>
+> - **Supabase Cloud**: Recent versions include pgmq 1.5.0+ by default
+> - **Self-hosted**: You must upgrade pgmq to version 1.5.0+ before upgrading pgflow
+> - **Version Check**: Run `SELECT extversion FROM pg_extension WHERE extname = 'pgmq';` to verify your pgmq version
+
 ## Key Features
 
 - **Declarative Workflows**: Define flows and steps via SQL tables

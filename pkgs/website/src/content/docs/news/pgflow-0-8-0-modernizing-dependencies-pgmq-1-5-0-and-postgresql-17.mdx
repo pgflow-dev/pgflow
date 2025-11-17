@@ -1,0 +1,112 @@
+---
+draft: false
+title: 'pgflow 0.8.0: Modernizing Dependencies - pgmq 1.5.0 and PostgreSQL 17'
+description: 'Breaking changes requiring pgmq 1.5.0 or higher and PostgreSQL 17, with built-in migration safety checks'
+date: 2025-11-18
+authors:
+  - jumski
+tags:
+  - release
+  - breaking-change
+  - migration
+featured: true
+cover:
+  alt: 'Cyberpunk hacker upgrading database dependencies on a glitchy terminal screen'
+  image: '../../../assets/cover-images/pgflow-0-8-0-modernizing-dependencies-pgmq-1-5-0-and-postgresql-17.png'
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+pgflow 0.8.0 requires pgmq 1.5.0 or higher and PostgreSQL 17. This release removes the pgmq compatibility layer and prepares the foundation for upcoming flow auto-compilation features.
+
+<Aside type="caution" title="Breaking Change">
+  This version will NOT work with pgmq 1.4.x or earlier. The migration includes a compatibility check that will abort with a clear error message if pgmq 1.5.0 is not detected.
+</Aside>
+
+## What's Changing
+
+pgflow 0.8.0 introduces breaking dependency changes:
+
+1. **pgmq version**: Now requires 1.5.0 or higher (previously supported 1.4.x)
+2. **PostgreSQL version**: Upgrades to PostgreSQL 17 (from 15)
+3. **Supabase CLI**: Requires version 2.34.3 or higher (includes pgmq 1.5.0+)
+
+The migration will fail safely if these requirements are not met - no partial upgrades or corrupted state.
+
+## Background
+
+This release skips backward compatibility entirely - pgflow 0.8.0 requires pgmq 1.5.0 from the start. Maintaining compatibility layers for older versions would accumulate technical debt that becomes harder to remove as the project matures.
+
+Additionally, upcoming features like flow auto-compilation depend on infrastructure available only in newer Supabase versions (automatic edge function respawning in local development). Moving to pgmq 1.5.0 and PostgreSQL 17 unblocks these improvements.
+
+## Before You Upgrade
+
+### Check Your pgmq Version
+
+Run this query to verify your current pgmq version:
+
+```sql
+SELECT extversion FROM pg_extension WHERE extname = 'pgmq';
+```
+
+You need version 1.5.0 or higher to upgrade to pgflow 0.8.0.
+
+### Compatibility Check Built-In
+
+The migration includes a pre-check that inspects the pgmq schema before making any changes. If pgmq 1.5.0 is not detected, the migration aborts with this error:
+
+```
+ERROR: INCOMPATIBLE PGMQ VERSION DETECTED
+
+This migration requires pgmq 1.5.0 or higher.
+The pgmq.message_record type is missing the "headers" column,
+which indicates you are running pgmq < 1.5.0.
+
+Action required:
+  - Supabase: Ensure you are running a recent version that includes pgmq 1.5.0+
+  - Self-hosted: Upgrade pgmq to version 1.5.0 or higher before running this migration
+
+Migration aborted to prevent runtime failures.
+```
+
+This safety check prevents partial migrations and data corruption.
+
+## Migration Guide
+
+### Supabase Cloud Users
+
+Supabase CLI version 2.34.3 or higher includes pgmq 1.5.0 by default. To upgrade:
+
+1. Update your Supabase CLI if needed:
+   ```bash
+   supabase -v  # Check current version
+   npm install -g supabase  # Update if below 2.34.3
+   ```
+2. Verify your pgmq version using the SQL query above
+3. If you have pgmq 1.5.0+, run your migrations normally:
+   ```bash
+   supabase db push
+   ```
+4. If you have pgmq 1.4.x, wait for your Supabase instance to upgrade before updating pgflow
+
+### Self-Hosted Users
+
+You must upgrade pgmq to 1.5.0+ before upgrading pgflow:
+
+1. Check your current pgmq version
+2. Upgrade pgmq to 1.5.0 or higher following the [pgmq upgrade guide](https://github.com/tembo-io/pgmq)
+3. Upgrade PostgreSQL to version 17 if not already running it
+4. Run your pgflow migrations:
+   ```bash
+   supabase db push
+   ```
+
+## What If I Can't Upgrade?
+
+If you cannot upgrade to pgmq 1.5.0 immediately, stay on pgflow 0.7.x. The migration safety check ensures you cannot accidentally upgrade to an incompatible version.
+
+Your existing pgflow 0.7.x installation will continue working until you are ready to upgrade your infrastructure.
+
+---
+
+For questions or issues with the upgrade, visit the [pgflow Discord](https://www.pgflow.dev/discord/) or [open a GitHub issue](https://github.com/pgflow-dev/pgflow/issues).
