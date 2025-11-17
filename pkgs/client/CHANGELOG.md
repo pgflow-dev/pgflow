@@ -1,5 +1,13 @@
 # @pgflow/client
 
+## 0.7.3
+
+### Patch Changes
+
+- bde6bed: Add `realtimeStabilizationDelayMs` option to PgflowClient for improved Supabase Realtime reliability
+  - @pgflow/core@0.7.3
+  - @pgflow/dsl@0.7.3
+
 ## 0.7.2
 
 ### Patch Changes
