@@ -52,6 +52,26 @@ const pgflow = new PgflowClient(supabase);
 
 ## Starting and Waiting for Workflows
 
+:::caution[Important: Realtime Stabilization Delay]
+When starting flows or retrieving runs, the client waits for a [`realtimeStabilizationDelayMs`](/reference/pgflow-client/#constructor) delay (default: `300ms`) after subscribing to Realtime channels. This works around a [known Supabase Realtime limitation](https://github.com/supabase/supabase-js/issues/1599) where backend routing isn't fully established when the SUBSCRIBED event is emitted.
+
+**If you experience missed events or connection issues, increase this value to `400-500ms`:**
+
+```typescript
+const pgflow = new PgflowClient(supabase, {
+  realtimeStabilizationDelayMs: 400,
+});
+```
+
+You can also disable the delay by setting it to `0`, though this may cause missed events in some environments:
+
+```typescript
+const pgflow = new PgflowClient(supabase, {
+  realtimeStabilizationDelayMs: 0,
+});
+```
+:::
+
 The simplest pattern is to start a workflow and wait for it to complete:
 
 ```typescript
