@@ -58,6 +58,7 @@ deno-dist/
 **/CLAUDE.md
 .claude/**/*
 !.claude/.gitkeep
+.mcp.json
 
 # Notes symlink
 .notes
