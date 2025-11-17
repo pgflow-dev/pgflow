@@ -4,7 +4,7 @@
 
 > "Things just happen. What the hell. And the reason things just happen is that a hundred billion other things just happened, all working unheeded and unseen, to make sure that they do."
 >
-> –- **Terry Pratchett, "Last Continent"**, reflecting on the elegant machinery of complex systems
+> — **Terry Pratchett, "Last Continent"**, reflecting on the elegant machinery of complex systems
 
 ## Overview
 
