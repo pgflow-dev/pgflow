@@ -1,6 +1,7 @@
 {
   "name": "@pgflow/example-flows",
   "version": "0.7.2",
+  "license": "Apache-2.0",
   "dependencies": {
     "@pgflow/core": "workspace:*",
     "@pgflow/dsl": "workspace:*"
