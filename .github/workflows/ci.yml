@@ -142,7 +142,11 @@ jobs:
       - name: Check if website is affected
         id: check-affected
         run: |
-          if pnpm nx show projects --affected -t build --base="$NX_BASE" --head="$NX_HEAD" | grep -q "^website$"; then
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            # Always deploy website on main branch
+            echo "affected=true" >> $GITHUB_OUTPUT
+            echo "Main branch push - deploying website to production"
+          elif pnpm nx show projects --affected -t build --base="$NX_BASE" --head="$NX_HEAD" | grep -q "^website$"; then
             echo "affected=true" >> $GITHUB_OUTPUT
             echo "Website is affected by changes"
           else
