@@ -1,0 +1,110 @@
+---
+import Quote from './Quote.astro';
+
+const heroTestimonial = {
+  author: 'cpursley',
+  source: 'Discord',
+  message:
+    'Got a flow up and running, this is bad ass. I love that everything just goes into Postgres.',
+};
+
+const testimonials = [
+  {
+    author: 'nel',
+    source: 'Discord',
+    message:
+      'EdgeWorker is clearly a building block missing from supabase. I toyed with it locally for several days and it worked great.',
+  },
+  {
+    author: 'Alipio Pereira',
+    source: 'Discord',
+    message:
+      "I'm really enjoying PQFlow — this is incredibly powerful! I'm implementing it in a flow with RAG.",
+  },
+  {
+    author: '_perhaps',
+    source: 'Discord',
+    message:
+      'I was for a while now feeling like there had to be a better way of handling workflows on a supabase project without needing to add something like inngest or n8n to my tech stack. It clicked really hard when I found out about your project',
+  },
+  {
+    author: 'TapTap2121',
+    source: 'Reddit',
+    message:
+      "I was searching through the docs for something like this and I'm quite surprised it's not part of Supabase already. A queue feels kinda useless with serverless runners if I need to trigger them manually",
+  },
+  {
+    author: 'CjHuber',
+    source: 'Hacker News',
+    message:
+      'Exactly what I was looking for without even knowing it :) well I knew I need smt like this, but I thought I\'d had to build a very rudimentary version myself. Thank you for saving me tons of time',
+  },
+  {
+    author: 'enciso',
+    source: 'Discord',
+    message:
+      'I was trying to build my own after having a couple of pgmq queues... you found a problem and you are giving a very good solution',
+  },
+];
+---
+
+<div class="testimonials-section">
+  <!-- Hero Testimonial -->
+  <div class="hero-wrapper">
+    <Quote
+      text={heroTestimonial.message}
+      attribution={`@${heroTestimonial.author}`}
+      source={heroTestimonial.source}
+      size="medium"
+    />
+  </div>
+
+  <!-- Grid of Remaining Testimonials -->
+  <div class="testimonials-grid">
+    {testimonials.map((testimonial) => (
+      <Quote
+        text={testimonial.message}
+        attribution={`@${testimonial.author}`}
+        source={testimonial.source}
+        size="small"
+      />
+    ))}
+  </div>
+</div>
+
+<style>
+  .testimonials-section {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  /* Hero Testimonial */
+  .hero-wrapper {
+    margin: 0 auto 3rem auto;
+    max-width: 800px;
+  }
+
+  /* Grid Layout */
+  .testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  @media (max-width: 968px) {
+    .testimonials-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .testimonials-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+  }
+</style>

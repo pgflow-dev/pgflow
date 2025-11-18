@@ -121,29 +121,6 @@ export default defineConfig({
             content: 'website',
           },
         },
-        {
-          tag: 'script',
-          content: `
-            document.addEventListener('DOMContentLoaded', function() {
-              if (!window.location.pathname.startsWith('/author')) {
-                const sticker = document.createElement('a');
-                sticker.href = '/author/';
-                sticker.className = 'hire-sticker';
-                sticker.textContent = 'Chat with Author';
-                document.body.appendChild(sticker);
-
-                // Trigger one-time attention nudge after 5 seconds
-                setTimeout(function() {
-                  sticker.classList.add('nudge');
-                  // Remove the class after animation completes
-                  setTimeout(function() {
-                    sticker.classList.remove('nudge');
-                  }, 800);
-                }, 5000);
-              }
-            });
-          `,
-        },
       ],
       plugins: [
         starlightBlog({
@@ -468,6 +445,7 @@ export default defineConfig({
       ],
       components: {
         Hero: './src/components/ConditionalHero.astro',
+        PageFrame: './src/components/PageFrame.astro',
       },
     }),
     robotsTxt({

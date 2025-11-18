@@ -408,7 +408,7 @@
       setTimeout(() => {
         const resetButton = document.querySelector('.reset-overlay-button') as HTMLElement;
         if (resetButton) resetButton.style.display = 'block';
-      }, 2000);
+      }, 1700);
     });
   };
 
@@ -439,8 +439,25 @@
     scrollableInner.addEventListener('scroll', updateButtonVisibility, { passive: true });
 
     button.addEventListener('click', () => {
+      // Cancel any ongoing scroll animation
+      if (isAnimating) {
+        isAnimating = false;
+        if (scrollAnimationFrame) {
+          cancelAnimationFrame(scrollAnimationFrame);
+          scrollAnimationFrame = null;
+        }
+      }
+
+      // Show the reset overlay button immediately
+      const resetButton = document.querySelector('.reset-overlay-button') as HTMLElement;
+      if (resetButton) {
+        resetButton.style.display = 'block';
+      }
+
       // Mark as programmatic scroll to avoid tracking
       isProgrammaticScroll = true;
+
+      // Scroll to top smoothly
       scrollableInner.scrollTo({ top: 0, behavior: 'smooth' });
 
       // Reset flag after scroll completes
@@ -463,21 +480,30 @@
 
       // Cancel any ongoing animation
       isAnimating = false;
-      isProgrammaticScroll = false; // Reset programmatic flag
       if (scrollAnimationFrame) {
         cancelAnimationFrame(scrollAnimationFrame);
         scrollAnimationFrame = null;
       }
 
+      // Mark as programmatic scroll to avoid tracking
+      isProgrammaticScroll = true;
+
+      // Scroll to top smoothly
+      scrollableInner.scrollTo({ top: 0, behavior: 'smooth' });
+
       // Reset to initial state
       overlay.classList.remove('hidden');
       overlay.style.opacity = '1';
       scrollableContainer.classList.remove('scrollable-enabled');
-      scrollableInner.scrollTop = 0;
       button.style.display = 'none';
       if (scrollTopButton) {
         scrollTopButton.style.display = 'none';
       }
+
+      // Reset flag after scroll completes
+      setTimeout(() => {
+        isProgrammaticScroll = false;
+      }, 1000);
 
       // Note: hasTrackedManualScroll is NOT reset here
       // This means we track manual scroll only once per page session,

@@ -11,10 +11,14 @@ hero:
       icon: right-arrow
       variant: primary
       attrs:
-        class: plausible-event-name=home:cta-get-started
-    - text: How It Works
+        class: call-to-action plausible-event-name=home:cta-get-started
+    - text: Try Demo
+      link: https://demo.pgflow.dev/
+      variant: secondary
+      attrs:
+        class: plausible-event-name=home:cta-try-demo
+    - text: How It Works?
       link: /concepts/how-pgflow-works/
-      icon: information
       variant: minimal
       attrs:
         class: plausible-event-name=home:cta-how-it-works
@@ -22,8 +26,17 @@ editUrl: false
 ---
 
 import { Card, CardGrid, LinkCard, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
-import TestimonialCarousel from '../../components/TestimonialCarousel.astro';
+import TestimonialGrid from '../../components/TestimonialGrid.astro';
 import CodeOverlay from '../../components/CodeOverlay.astro';
+import Quote from '../../components/Quote.astro';
+
+<Quote
+  text="A workflow engine built on Supabase primitives."
+  attribution="Paul Copplestone, CEO, Supabase"
+  source="via X"
+  href="https://x.com/kiwicopple/status/1990686524229181856"
+  class="plausible-event-name=home:copplestone-quote-click"
+/>
 
 <div class="comparison-container">
 
@@ -350,13 +363,13 @@ new Flow<{ url: string }>({ slug: 'analyzeArticle' })
   </Aside>
 </div>
 
-<div class="quickstart-section">
+<div class="quickstart-section plausible-event-name=home:quickstart-install-click">
 
 ```bash
 npx pgflow@latest install
 ```
 
-<div class="quickstart-caption">Sets up pgflow in your Supabase project. <a href="/get-started/installation/">View full setup guide →</a></div>
+<div class="quickstart-caption">Sets up pgflow in your Supabase project. <a href="/get-started/installation/" class="plausible-event-name=home:quickstart-full-guide">View full setup guide →</a></div>
 
 </div>
 
@@ -364,33 +377,33 @@ npx pgflow@latest install
 
 <CardGrid>
   <Card title="✨ No manual wiring">
-    Skip the tedious pg_cron → pgmq → Edge Function setup. No manual queue wiring, no archive code, no state table management. pgflow handles all the plumbing - you just define your workflow. [Learn more →](/get-started/installation/)
+    Skip the tedious pg_cron → pgmq → Edge Function setup. No manual queue wiring, no archive code, no state table management. pgflow handles all the plumbing - you just define your workflow. <a href="/get-started/installation/" class="plausible-event-name=home:why-card-no-manual-wiring">Learn more →</a>
   </Card>
 
   <Card title="📦 Runs entirely in Supabase">
-    Everything in your existing Supabase project. No Bull, no Redis, no Temporal, no Railway. No external services, no vendor dashboards, no additional infrastructure to manage. [Learn more →](/concepts/how-pgflow-works/)
+    Everything in your existing Supabase project. No Bull, no Redis, no Temporal, no Railway. No external services, no vendor dashboards, no additional infrastructure to manage. <a href="/concepts/how-pgflow-works/" class="plausible-event-name=home:why-card-runs-in-supabase">Learn more →</a>
   </Card>
 
   <Card title="👁️ Full observability in SQL">
-    All workflow state lives in Postgres tables. Query execution history, inspect step outputs, and debug failures with standard SQL. No hidden state, no external dashboards. [Learn more →](/deploy/monitor-execution/)
+    All workflow state lives in Postgres tables. Query execution history, inspect step outputs, and debug failures with standard SQL. No hidden state, no external dashboards. <a href="/deploy/monitor-execution/" class="plausible-event-name=home:why-card-observability">Learn more →</a>
   </Card>
 
   <Card title="🔄 Automatic retries">
-    Built-in retry logic with exponential backoff for flaky AI APIs. When OpenAI times out or rate-limits, only that step retries - your workflow continues. Configure max attempts and delays per step, no retry code needed. [Learn more →](/build/retrying-steps/)
+    Built-in retry logic with exponential backoff for flaky AI APIs. When OpenAI times out or rate-limits, only that step retries - your workflow continues. Configure max attempts and delays per step, no retry code needed. <a href="/build/retrying-steps/" class="plausible-event-name=home:why-card-automatic-retries">Learn more →</a>
   </Card>
 
   <Card title="⚡ Parallel array processing">
-    Process arrays in parallel with independent retries per item. Batch 100 embeddings - if 3 fail, only those 3 retry while others continue. Perfect for AI workloads with unreliable APIs. [Learn more →](/build/process-arrays-in-parallel/)
+    Process arrays in parallel with independent retries per item. Batch 100 embeddings - if 3 fail, only those 3 retry while others continue. Perfect for AI workloads with unreliable APIs. <a href="/build/process-arrays-in-parallel/" class="plausible-event-name=home:why-card-parallel-processing">Learn more →</a>
   </Card>
 
   <Card title="🔌 Trigger from anywhere">
-    Start workflows from database triggers, scheduled pg_cron jobs, browser clients, or RPC calls. Ultimate flexibility in how you start your workflows. [Learn more →](/build/starting-flows/)
+    Start workflows from database triggers, scheduled pg_cron jobs, browser clients, or RPC calls. Ultimate flexibility in how you start your workflows. <a href="/build/starting-flows/" class="plausible-event-name=home:why-card-trigger-anywhere">Learn more →</a>
   </Card>
 </CardGrid>
 
 ## What Developers Say
 
-<TestimonialCarousel />
+<TestimonialGrid />
 
 <div style="text-align: center; margin: 4rem 0 5rem;">
 

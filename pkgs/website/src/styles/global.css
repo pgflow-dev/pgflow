@@ -70,6 +70,7 @@ svg .secondary {
 }
 
 @keyframes breathing-glow {
+
   0%,
   100% {
     filter: drop-shadow(0 0 0 transparent);
@@ -84,13 +85,18 @@ svg .secondary {
 .call-to-action {
   font-weight: bold;
   box-shadow: 0 0 10px var(--logo-glow-color), 0 0 15px var(--logo-glow-color);
-  filter: brightness(1.15);
+  filter: brightness(1.05);
   transition: all 0.3s ease;
 
   &:hover {
     box-shadow: 0 0 10px var(--logo-glow-color), 0 0 20px var(--logo-glow-color),
       0 0 30px var(--logo-glow-color);
   }
+}
+
+/* Bold hero primary CTA */
+.hero .actions .sl-link-button.primary {
+  font-weight: bold;
 }
 
 /* HERO QUICKSTART */
@@ -329,10 +335,23 @@ svg .secondary {
   }
 }
 
-/* Hide on small screens */
+/* Mobile: Convert to fixed footer bar */
 @media (max-width: 768px) {
   .hire-sticker {
-    display: none;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    border-radius: 0;
+    padding: 10px 20px;
+    text-align: center;
+    justify-content: center;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
+    font-size: 0.9rem;
+  }
+
+  .hire-sticker:hover {
+    transform: none;
   }
 }
 

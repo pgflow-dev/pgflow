@@ -16,7 +16,7 @@ const { showCaption = true, large = false } = Astro.props;
       aria-controls="flowDemoSvg"
       aria-pressed="true"
       title="Pause animation"
-      class="anim-ctrl">Pause</button>
+      class="anim-ctrl plausible-event-name=home:animation-pause">Pause</button>
 
     <div id="animation-container"></div>
   </div>
@@ -24,7 +24,7 @@ const { showCaption = true, large = false } = Astro.props;
   {showCaption && (
     <p id="flowDemoCaption" class="hero-anim-caption">
       Parallel execution with automatic retry.
-      <a href="/concepts/how-pgflow-works/" class="anim-learn">How it works?</a>
+      <a href="/concepts/how-pgflow-works/" class="anim-learn plausible-event-name=home:animation-how-it-works">How it works?</a>
     </p>
   )}
 

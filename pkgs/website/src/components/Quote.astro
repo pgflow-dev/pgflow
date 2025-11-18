@@ -1,0 +1,229 @@
+---
+interface Props {
+  text: string;
+  attribution: string;
+  source?: string;
+  href?: string;
+  class?: string;
+  size?: 'large' | 'medium' | 'small';
+}
+
+const { text, attribution, source, href, class: className, size = 'large' } = Astro.props;
+---
+
+<div class={`quote ${size}`}>
+  {href ? (
+    <a href={href} target="_blank" rel="noopener" class={`link ${className || ''}`}>
+      <div class="content">
+        <svg class="icon" aria-hidden="true" viewBox="0 0 512 512">
+          <path fill="currentColor" d="M464 256h-80v-64c0-35.3 28.7-64 64-64h8c13.3 0 24-10.7 24-24V56c0-13.3-10.7-24-24-24h-8c-88.4 0-160 71.6-160 160v240c0 26.5 21.5 48 48 48h128c26.5 0 48-21.5 48-48V304c0-26.5-21.5-48-48-48zm-288 0H96v-64c0-35.3 28.7-64 64-64h8c13.3 0 24-10.7 24-24V56c0-13.3-10.7-24-24-24h-8C71.6 32 0 103.6 0 192v240c0 26.5 21.5 48 48 48h128c26.5 0 48-21.5 48-48V304c0-26.5-21.5-48-48-48z"/>
+        </svg>
+        <div class="text-wrapper">
+          <p class="text">"{text}"</p>
+          <p class="attribution">
+            — {attribution}
+            {source && <span class="source"> ({source})</span>}
+          </p>
+        </div>
+      </div>
+    </a>
+  ) : (
+    <div class="content">
+      <svg class="icon" aria-hidden="true" viewBox="0 0 512 512">
+        <path fill="currentColor" d="M464 256h-80v-64c0-35.3 28.7-64 64-64h8c13.3 0 24-10.7 24-24V56c0-13.3-10.7-24-24-24h-8c-88.4 0-160 71.6-160 160v240c0 26.5 21.5 48 48 48h128c26.5 0 48-21.5 48-48V304c0-26.5-21.5-48-48-48zm-288 0H96v-64c0-35.3 28.7-64 64-64h8c13.3 0 24-10.7 24-24V56c0-13.3-10.7-24-24-24h-8C71.6 32 0 103.6 0 192v240c0 26.5 21.5 48 48 48h128c26.5 0 48-21.5 48-48V304c0-26.5-21.5-48-48-48z"/>
+      </svg>
+      <div class="text-wrapper">
+        <p class="text">"{text}"</p>
+        <p class="attribution">
+          — {attribution}
+          {source && <span class="source"> ({source})</span>}
+        </p>
+      </div>
+    </div>
+  )}
+</div>
+
+<style>
+  /* Quote component styling */
+  .quote {
+    margin-top: 3.58rem; /* 57.2px - increased 10% from 52px */
+    margin-bottom: 4.68rem; /* 74.8px - increased 10% from 68px */
+    max-width: 640px; /* Expanded to fit quote on one line (~42-48 chars) */
+  }
+
+  .quote .link {
+    display: block;
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .quote .link:hover .text {
+    text-decoration: underline;
+    text-decoration-color: var(--sl-color-white);
+  }
+
+  .quote .content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.875rem; /* 30px - reduced 2px to keep icon connected */
+  }
+
+  .quote .icon {
+    width: 1.875rem; /* 30px - reduced 15% on desktop */
+    height: 1.875rem;
+    flex-shrink: 0;
+    margin-top: -0.6875rem; /* Shifted up ~3px to align center with x-height */
+    filter: brightness(0) saturate(100%) invert(100%);
+    opacity: 0.8; /* 80% - darker for more visibility */
+  }
+
+  .quote .text-wrapper {
+    flex: 1;
+  }
+
+  .quote .text {
+    font-size: 1.25rem; /* 20px on desktop */
+    font-style: italic;
+    font-weight: 550; /* Between medium and semibold */
+    line-height: 1.6;
+    margin: 0 0 0.75rem 0; /* 0.75-1rem gap to attribution */
+    color: var(--sl-color-white);
+  }
+
+  .quote .attribution {
+    font-size: 1rem; /* 16px */
+    font-style: normal;
+    font-weight: 400;
+    line-height: 1.6;
+    margin: 0;
+    color: var(--sl-color-white);
+    opacity: 0.8;
+  }
+
+  .quote .source {
+    opacity: 0.6; /* Further reduced opacity for source */
+  }
+
+  /* Size variants */
+  .quote.medium {
+    margin-top: 0;
+    margin-bottom: 0;
+    max-width: 100%;
+  }
+
+  .quote.medium .content {
+    gap: 1.5rem;
+  }
+
+  .quote.medium .icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    opacity: 0.7;
+    margin-top: 0.25rem;
+  }
+
+  .quote.medium .text {
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+  }
+
+  .quote.medium .attribution {
+    font-size: 1rem;
+    font-weight: 500;
+  }
+
+  .quote.small {
+    margin-top: 0;
+    margin-bottom: 0;
+    max-width: 100%;
+  }
+
+  .quote.small .content {
+    gap: 1.5rem;
+  }
+
+  .quote.small .icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    opacity: 0.6;
+    margin-top: 0.25rem;
+  }
+
+  .quote.small .text {
+    font-size: 1rem;
+    line-height: 1.7;
+    font-weight: 400;
+    margin-bottom: 0.75rem;
+  }
+
+  .quote.small .attribution {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    opacity: 0.85;
+  }
+
+  @media (max-width: 768px) {
+    .quote {
+      margin-top: 2.625rem; /* 42px - added 10px breathing room on mobile */
+      margin-bottom: 3rem; /* 48px on mobile - proportionally larger */
+      max-width: 100%;
+    }
+
+    .quote .content {
+      gap: 1.625rem; /* 26px - reduced 2px to keep icon connected to quote */
+    }
+
+    .quote .icon {
+      width: 1.6rem; /* 25.6px - reduced ~10% for better balance on mobile */
+      height: 1.6rem;
+      margin-top: -0.5rem; /* Shifted up ~3px to align center with x-height */
+    }
+
+    .quote .text {
+      font-size: 1.125rem; /* 18px on mobile */
+      margin-bottom: 0.625rem; /* Proportional spacing */
+    }
+
+    .quote .attribution {
+      font-size: 0.9375rem; /* 15px on mobile */
+    }
+
+    /* Medium size mobile overrides */
+    .quote.medium .content {
+      gap: 1.25rem;
+    }
+
+    .quote.medium .icon {
+      width: 1.375rem;
+      height: 1.375rem;
+    }
+
+    .quote.medium .text {
+      font-size: 1.0625rem;
+    }
+
+    .quote.medium .attribution {
+      font-size: 0.9375rem;
+    }
+
+    /* Small size mobile overrides */
+    .quote.small .content {
+      gap: 1.25rem;
+    }
+
+    .quote.small .icon {
+      width: 1.125rem;
+      height: 1.125rem;
+    }
+
+    .quote.small .text {
+      font-size: 0.9375rem;
+      margin-bottom: 0.625rem;
+    }
+
+    .quote.small .attribution {
+      font-size: 0.875rem;
+    }
+  }
+</style>
