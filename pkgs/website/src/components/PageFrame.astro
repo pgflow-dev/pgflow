@@ -2,6 +2,8 @@
 import type { Props } from '@astrojs/starlight/props';
 import Default from '@astrojs/starlight/components/PageFrame.astro';
 import { LinkButton } from '@astrojs/starlight/components';
+import logoDark from '../assets/pgflow-logo-dark.svg';
+import logoLight from '../assets/pgflow-logo-light.svg';
 
 const isAuthorPage = Astro.url.pathname.startsWith('/author');
 const isLandingPage = Astro.url.pathname === '/';
@@ -26,8 +28,8 @@ const showFooter = isLandingPage || isAuthorPage;
     <div class="footer-left">
       <div class="footer-logo">
         <a href="/">
-          <img src="/src/assets/pgflow-logo-dark.svg" alt="" class="logo-dark" />
-          <img src="/src/assets/pgflow-logo-light.svg" alt="" class="logo-light" />
+          <img src={logoDark.src} alt="" class="logo-dark" />
+          <img src={logoLight.src} alt="" class="logo-light" />
           <span class="logo-text">pgflow</span>
         </a>
       </div>
