@@ -24,7 +24,7 @@ class MockQueries extends Queries {
     super(null as unknown as postgres.Sql);
   }
   
-  onWorkerStarted(params: { workerId: string; edgeFunctionName: string; queueName: string }): Promise<WorkerRow> {
+  override onWorkerStarted(params: { workerId: string; edgeFunctionName: string; queueName: string }): Promise<WorkerRow> {
     return Promise.resolve({
       worker_id: params.workerId,
       queue_name: params.queueName,
@@ -35,12 +35,12 @@ class MockQueries extends Queries {
     });
   }
 
-  sendHeartbeat(_workerRow: WorkerRow): Promise<{ is_deprecated: boolean }> {
+  override sendHeartbeat(_workerRow: WorkerRow): Promise<{ is_deprecated: boolean }> {
     this.sendHeartbeatCallCount++;
     return Promise.resolve(this.nextResult);
   }
 
-  onWorkerStopped(workerRow: WorkerRow): Promise<WorkerRow> {
+  override onWorkerStopped(workerRow: WorkerRow): Promise<WorkerRow> {
     this.workerStopped = true;
     return Promise.resolve(workerRow);
   }

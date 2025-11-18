@@ -32,7 +32,7 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: '1.45.2'
+          deno-version: '2.1.4'
 
       - name: Install sqruff
         uses: ./.github/actions/setup-sqruff
@@ -76,7 +76,7 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: '1.45.2'
+          deno-version: '2.1.4'
 
       - name: Install sqruff
         uses: ./.github/actions/setup-sqruff

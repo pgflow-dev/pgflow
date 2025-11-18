@@ -19,9 +19,9 @@ import { Aside } from "@astrojs/starlight/components";
 
 pgflow 0.8.0 requires pgmq 1.5.0 or higher and PostgreSQL 17. This release removes the pgmq compatibility layer and prepares the foundation for upcoming flow auto-compilation features.
 
-<Aside type="caution" title="Breaking Change">
-  This version will NOT work with pgmq 1.4.x or earlier. The migration includes a compatibility check that will abort with a clear error message if pgmq 1.5.0 is not detected.
-</Aside>
+:::danger[Breaking Change]
+  This version **will NOT work with pgmq 1.4.x or earlier**. The migration includes a compatibility check that will abort with a clear error message if pgmq 1.5.0 is not detected.
+:::
 
 ## What's Changing
 

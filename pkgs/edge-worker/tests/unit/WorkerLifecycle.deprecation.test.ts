@@ -24,7 +24,7 @@ class MockQueries extends Queries {
     super(null as unknown as postgres.Sql);
   }
   
-  onWorkerStarted(params: {
+  override onWorkerStarted(params: {
     workerId: string;
     edgeFunctionName: string;
     queueName: string;
@@ -39,14 +39,14 @@ class MockQueries extends Queries {
     });
   }
 
-  sendHeartbeat(
+  override sendHeartbeat(
     _workerRow: WorkerRow
   ): Promise<{ is_deprecated: boolean }> {
     this.sendHeartbeatCallCount++;
     return Promise.resolve(this.nextResult);
   }
 
-  onWorkerStopped(workerRow: WorkerRow): Promise<WorkerRow> {
+  override onWorkerStopped(workerRow: WorkerRow): Promise<WorkerRow> {
     this.workerStopped = true;
     return Promise.resolve(workerRow);
   }
@@ -59,7 +59,7 @@ class MockQueue<T extends Json> extends Queue<T> {
     super(null as unknown as postgres.Sql, queueName, { debug: () => {}, info: () => {}, error: () => {}, warn: () => {} } as Logger);
   }
 
-  safeCreate(): Promise<postgres.RowList<postgres.Row[]>> {
+  override safeCreate(): Promise<postgres.RowList<postgres.Row[]>> {
     // No-op for testing - return a mock RowList
     const mockRowList = [] as postgres.Row[];
     Object.assign(mockRowList, {

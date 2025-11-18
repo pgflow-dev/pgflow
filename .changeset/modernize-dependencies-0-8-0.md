@@ -2,7 +2,6 @@
 '@pgflow/core': minor
 '@pgflow/client': minor
 '@pgflow/edge-worker': minor
-'@pgflow/website': minor
 ---
 
 BREAKING CHANGE: pgflow 0.8.0 requires pgmq 1.5.0+, PostgreSQL 17, and Supabase CLI 2.34.3+
