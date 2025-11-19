@@ -21,7 +21,42 @@ pre-commit:
       run: |
         ./scripts/validate-json-files.sh
 
+post-checkout:
+  commands:
+    'pnpm-install-on-deps-change':
+      run: |
+        # Only run if pnpm is available
+        if ! command -v pnpm &> /dev/null; then
+          echo "\033[33mWarning: pnpm not available, skipping dependency installation.\033[0m"
+          exit 0
+        fi
+
+        # Only run for branch checkouts (not file checkouts)
+        if [ "{3}" = "1" ]; then
+          # Always install if node_modules doesn't exist (new worktree case)
+          if [ ! -d "node_modules" ]; then
+            echo "📦 node_modules not found, running pnpm install --frozen-lockfile..."
+            pnpm install --frozen-lockfile
+          # Otherwise, only install if dependencies changed
+          elif git diff --name-only {1} {2} | grep -qE '^(package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml)$'; then
+            echo "📦 Dependencies changed, running pnpm install --frozen-lockfile..."
+            pnpm install --frozen-lockfile
+          fi
+        fi
+    'claude-symlink':
+      run: |
+        if [ -n "$CLAUDE_SYMLINK_SCRIPT" ] && [ -f "$CLAUDE_SYMLINK_SCRIPT" ]; then
+          "$CLAUDE_SYMLINK_SCRIPT" "$PWD"
+        elif [ -z "$CLAUDE_SYMLINK_SCRIPT" ]; then
+          echo "\033[33mWarning: CLAUDE_SYMLINK_SCRIPT not set. See LOCAL_DEV.md for setup instructions.\033[0m"
+        fi
+
 pre-push:
+  commands:
+    'nx-affected-checks':
+      run: pnpm nx affected --target=lint,build --base=origin/main --head=HEAD
   scripts:
     'prevent-push-to-main.sh':
       runner: bash
+      skip_output:
+        - meta
