@@ -42,7 +42,7 @@ export class SupabaseBroadcastAdapter implements IFlowRealtime {
     this.#supabase = supabase;
     this.#reconnectionDelay = opts.reconnectDelayMs ?? 2000;
     this.#stabilizationDelay = opts.stabilizationDelayMs ?? 300;
-    this.#schedule = opts.schedule ?? setTimeout;
+    this.#schedule = opts.schedule ?? setTimeout.bind(globalThis);
   }
   
   /**
