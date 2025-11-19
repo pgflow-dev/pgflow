@@ -1,0 +1,91 @@
+---
+draft: false
+title: 'pgflow 0.8.1: Resolve Client setTimeout Binding Issue in Browsers'
+description: 'Fix setTimeout context binding bug affecting browser environments since client library introduction'
+date: 2025-11-19
+authors:
+  - jumski
+tags:
+  - bugfix
+  - client
+  - browser
+featured: true
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+This release fixes a setTimeout context binding issue in `@pgflow/client` that caused errors in browser environments when subscribing to flow runs or handling connection errors.
+
+## What's Fixed
+
+- **Browser environment crash**: Fixed `TypeError: 'setTimeout' called on an object that does not implement interface Window` when calling `subscribeToRun()` or during channel reconnection
+- **Context binding**: setTimeout now properly maintains its context when called through the internal scheduler
+
+The bug was present since the client library was first introduced in June 2025 (all versions from 0.5.4 onwards) but only manifested in strict browser environments where setTimeout must be called with the correct `this` context.
+
+## Root Cause
+
+When `setTimeout` is assigned to a variable without binding, it loses its execution context:
+
+```typescript
+// Broken: setTimeout loses window/globalThis context
+this.#schedule = opts.schedule ?? setTimeout;
+
+// Later when called:
+this.#schedule(callback, delay); // TypeError in browsers!
+```
+
+Browsers enforce strict context requirements for Web APIs like setTimeout. When the function is called without its original context (`window` or `globalThis`), browsers throw a TypeError. Node.js is more permissive, allowing the same code to work without issues.
+
+## The Fix
+
+The fix binds setTimeout to `globalThis`, ensuring it maintains the correct context:
+
+```typescript
+// Fixed: setTimeout bound to globalThis
+this.#schedule = opts.schedule ?? setTimeout.bind(globalThis);
+```
+
+This one-line change ensures setTimeout works correctly in all environments, whether called directly or through the internal scheduler.
+
+## Why Tests Didn't Catch It
+
+The bug evaded detection for several months because:
+
+- **Node.js tests**: All existing tests run in Node.js, which is permissive with function context. The same code that fails in browsers works fine in Node.js
+- **Fake timers**: Unit tests use Vitest's `vi.useFakeTimers()`, which mocks setTimeout and doesn't have the same context requirements as the real browser API
+- **Limited browser usage**: The browser client wasn't extensively tested in production browser environments until recently
+
+This highlights an important testing gap: code that works in Node.js tests may fail in actual browsers due to stricter Web API requirements.
+
+## Looking Ahead: Browser Testing
+
+To prevent similar browser-specific issues, we're implementing Vitest browser mode for `@pgflow/client`. This will:
+
+- Run tests in real browsers (Chromium, Firefox, Safari) rather than Node.js
+- Catch browser-specific issues like context binding, DOM API compatibility, and Web API strictness
+- Complement existing Node.js tests with browser-environment validation
+
+Browser testing will be added in a future release, with tests running in CI to ensure browser compatibility for all changes.
+
+## Upgrading
+
+<Aside type="note" title="No Migration Required">
+This is a drop-in replacement. Simply upgrade to `@pgflow/client@0.8.1` - no code changes needed.
+</Aside>
+
+Update your `package.json`:
+
+```bash frame="none"
+pnpm add @pgflow/client@0.8.1
+```
+
+Or if using the umbrella package:
+
+```bash frame="none"
+pnpm add pgflow@0.8.1
+```
+
+---
+
+Questions or issues? Join us on [Discord](https://discord.gg/tmzcjv9Hes) or open an issue on [GitHub](https://github.com/pgflow-dev/pgflow).
