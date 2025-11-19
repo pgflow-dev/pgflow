@@ -187,25 +187,30 @@ jobs:
           fi
 
       - name: Post deployment comment
-        if: always()
+        if: steps.check-affected.outputs.affected == 'true'
         uses: ./.github/actions/deployment-comment
         with:
           project-name: Website
           preview-url: https://pr-${{ github.event.pull_request.number }}.pgflow.pages.dev
           production-url: https://pgflow.dev
+          deployment-status: ${{ steps.deploy-website.outcome }}
 
   # ────────────────────────────────── 4. DEPLOY DEMO ───────────────────────────
   deploy-demo:
-    if: false # temporarily disabled
+    if: github.event_name == 'pull_request'
     needs: [build-and-test, edge-worker-e2e]
     runs-on: ubuntu-latest
-    environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
+    environment: preview
+    # environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
     env:
       NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      VITE_SUPABASE_URL: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_URL || secrets.DEMO_PRODUCTION_SUPABASE_URL }}
-      VITE_SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY || secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }}
+      VITE_SUPABASE_URL: ${{ secrets.DEMO_PREVIEW_SUPABASE_URL }}
+      # VITE_SUPABASE_URL: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_URL || secrets.DEMO_PRODUCTION_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY }}
+      # VITE_SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY || secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }}
+      PREVIEW_NAME: pr-${{ github.event.pull_request.number }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -213,43 +218,9 @@ jobs:
 
       - uses: ./.github/actions/setup
 
-      - name: Set Nx base for affected commands
-        run: |
-          echo "NX_BASE=origin/main" >> $GITHUB_ENV
-          echo "NX_HEAD=HEAD" >> $GITHUB_ENV
-
-      - name: Verify NX_BASE and NX_HEAD are set
-        run: echo "BASE=$NX_BASE HEAD=$NX_HEAD"
-
-      - name: Validate Supabase environment variables
-        run: |
-          if [ -z "$VITE_SUPABASE_URL" ]; then
-            echo "❌ Error: VITE_SUPABASE_URL is not set"
-            echo "Required GitHub secret missing: DEMO_${{ github.event_name == 'pull_request' && 'PREVIEW' || 'PRODUCTION' }}_SUPABASE_URL"
-            exit 1
-          fi
-          if [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
-            echo "❌ Error: VITE_SUPABASE_ANON_KEY is not set"
-            echo "Required GitHub secret missing: DEMO_${{ github.event_name == 'pull_request' && 'PREVIEW' || 'PRODUCTION' }}_SUPABASE_ANON_KEY"
-            exit 1
-          fi
-          if [[ ! "$VITE_SUPABASE_URL" =~ ^https:// ]]; then
-            echo "❌ Error: VITE_SUPABASE_URL must use https:// (not http://)"
-            echo "Current value: $VITE_SUPABASE_URL"
-            exit 1
-          fi
-          echo "✅ Supabase environment variables are valid"
-
-      - name: Deploy demo
+      - name: Deploy demo preview
         id: deploy-demo
-        env:
-          PREVIEW_NAME: pr-${{ github.event.pull_request.number }}
-        run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            pnpm nx affected -t deploy:preview --projects=demo --base="$NX_BASE" --head="$NX_HEAD"
-          else
-            pnpm nx affected -t deploy --projects=demo --base="$NX_BASE" --head="$NX_HEAD"
-          fi
+        run: pnpm nx affected -t deploy:preview --base=origin/main --head=HEAD
 
       - name: Post deployment comment
         if: success()
@@ -258,3 +229,4 @@ jobs:
           project-name: Demo
           preview-url: https://pr-${{ github.event.pull_request.number }}-pgflow-demo.jumski.workers.dev
           production-url: https://demo.pgflow.dev
+          deployment-status: ${{ steps.deploy-demo.outcome }}
