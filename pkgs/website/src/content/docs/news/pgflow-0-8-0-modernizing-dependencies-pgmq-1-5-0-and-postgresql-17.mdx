@@ -30,6 +30,7 @@ pgflow 0.8.0 introduces breaking dependency changes:
 1. **pgmq version**: Now requires 1.5.0 or higher (previously supported 1.4.x)
 2. **PostgreSQL version**: Upgrades to PostgreSQL 17 (from 15)
 3. **Supabase CLI**: Requires version 2.34.3 or higher (includes pgmq 1.5.0+)
+4. **Deno version**: Now requires 2.1.x or higher (previously 1.45.x)
 
 The migration will fail safely if these requirements are not met - no partial upgrades or corrupted state.
 
@@ -50,6 +51,16 @@ SELECT extversion FROM pg_extension WHERE extname = 'pgmq';
 ```
 
 You need version 1.5.0 or higher to upgrade to pgflow 0.8.0.
+
+### Check Your Deno Version
+
+Verify your Deno installation meets the minimum requirement:
+
+```bash frame="none"
+deno --version
+```
+
+You need Deno 2.1.x or higher (previously 1.45.x). If you need to upgrade, see the [Deno installation guide](https://docs.deno.com/runtime/getting_started/installation/).
 
 ### Compatibility Check Built-In
 
