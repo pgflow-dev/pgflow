@@ -7,6 +7,12 @@ body {
 
 /* Dark mode colors. */
 :root {
+  /* Content width override - default is ~45rem */
+  --sl-content-width: 55rem;
+
+  /* Sidebar width - default is ~18rem */
+  --sl-sidebar-width: 16rem;
+
   --sl-color-accent-low: #002b26;
   --sl-color-accent: #007b6e;
   --sl-color-accent-high: #a3d4cb;

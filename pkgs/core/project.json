@@ -50,6 +50,7 @@
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
+          "../../scripts/supabase-start-locked.sh .",
           "mkdir -p .nx-inputs",
           "scripts/atlas-verify-schemas-synced > .nx-inputs/verify-schemas-synced.txt 2>&1 || (cat .nx-inputs/verify-schemas-synced.txt && exit 1)"
         ],
