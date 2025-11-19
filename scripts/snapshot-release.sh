@@ -96,7 +96,7 @@ cleanup_snapshot_files() {
   git restore --source=HEAD --worktree --staged \
     pnpm-lock.yaml 2>/dev/null || true
   git restore --source=HEAD --worktree --staged \
-    .changeset/pre.json 2>/dev/null || true
+    .changeset/ 2>/dev/null || true
   git clean -fd .changeset 2>/dev/null || true
   echo -e "${GREEN}✓ Cleanup complete${NC}"
 }
@@ -267,6 +267,7 @@ echo ""
 # Track publish success
 NPM_SUCCESS=false
 JSR_SUCCESS=true  # Default true (only set false if JSR package exists and fails)
+JSR_PUBLISHED_VERSION=""  # Track JSR version if published
 
 # Publish to npm
 echo -e "${BOLD}Publishing to npm...${NC}"
@@ -281,6 +282,8 @@ fi
 
 # Publish to JSR
 if [[ -f pkgs/edge-worker/jsr.json ]]; then
+  # Capture the snapshot version before publishing
+  JSR_PUBLISHED_VERSION=$(jq -r '.version' pkgs/edge-worker/jsr.json)
   echo ""
   echo -e "${BOLD}Publishing to JSR...${NC}"
   if ( cd pkgs/edge-worker && pnpm jsr publish --allow-slow-types --allow-dirty ) ; then
@@ -288,6 +291,7 @@ if [[ -f pkgs/edge-worker/jsr.json ]]; then
   else
     echo -e "${RED}✗ JSR publish failed${NC}"
     JSR_SUCCESS=false
+    JSR_PUBLISHED_VERSION=""  # Clear version since publish failed
   fi
 fi
 
@@ -302,7 +306,7 @@ else
   echo ""
   echo -e "${RED}✗ Publishing failed - keeping files for debugging${NC}"
   echo -e "${YELLOW}Run the following to clean up manually:${NC}"
-  echo -e "${BLUE}git restore --source=HEAD --worktree --staged \"**/package.json\" \"**/jsr.json\" \"**/CHANGELOG.md\" pnpm-lock.yaml .changeset/pre.json${NC}"
+  echo -e "${BLUE}git restore --source=HEAD --worktree --staged \"**/package.json\" \"**/jsr.json\" \"**/CHANGELOG.md\" pnpm-lock.yaml .changeset/${NC}"
   echo -e "${BLUE}git clean -fd .changeset${NC}"
   exit 1
 fi
@@ -323,12 +327,11 @@ for PKG in "${NPM_PKGS[@]}"; do
   echo -e "${BLUE}npm install $PKG${NC}"
 done
 
-# JSR package
-if [[ -f pkgs/edge-worker/jsr.json ]]; then
-  JSR_VERSION=$(jq -r '.version' pkgs/edge-worker/jsr.json)
+# JSR package (only show if successfully published)
+if [[ -n "$JSR_PUBLISHED_VERSION" ]]; then
   echo ""
   echo -e "${BOLD}For Deno/Supabase Edge Functions:${NC}"
-  echo -e "${BLUE}import { EdgeWorker } from \"jsr:@pgflow/edge-worker@$JSR_VERSION\"${NC}"
+  echo -e "${BLUE}import { EdgeWorker } from \"jsr:@pgflow/edge-worker@$JSR_PUBLISHED_VERSION\"${NC}"
 fi
 
 # Deno import map
@@ -349,10 +352,9 @@ for PKG in "${NPM_PKGS[@]}"; do
   fi
 done
 
-# Show edge-worker (JSR)
-if [[ -f pkgs/edge-worker/jsr.json ]]; then
-  JSR_VERSION=$(jq -r '.version' pkgs/edge-worker/jsr.json)
-  echo -e "    \"@pgflow/edge-worker\": \"jsr:@pgflow/edge-worker@$JSR_VERSION\","
+# Show edge-worker (JSR) - only if successfully published
+if [[ -n "$JSR_PUBLISHED_VERSION" ]]; then
+  echo -e "    \"@pgflow/edge-worker\": \"jsr:@pgflow/edge-worker@$JSR_PUBLISHED_VERSION\","
 fi
 
 # Show dsl and dsl/supabase (npm)

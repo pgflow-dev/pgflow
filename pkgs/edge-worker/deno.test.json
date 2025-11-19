@@ -23,7 +23,7 @@
   "lint": {
     "exclude": ["supabase/functions/", "dist/", "node_modules/"],
     "rules": {
-      "exclude": ["no-slow-types"]
+      "exclude": ["no-slow-types", "no-sloppy-imports"]
     }
   },
   "publish": {

@@ -41,6 +41,7 @@ export async function fetchArticle(url: string) {
 		};
 	} catch (error) {
 		console.error('Error fetching article:', error);
-		throw new Error(`Failed to fetch article from ${url}: ${error.message}`);
+		const message = error instanceof Error ? error.message : String(error);
+		throw new Error(`Failed to fetch article from ${url}: ${message}`);
 	}
 }

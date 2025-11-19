@@ -16,7 +16,7 @@ This package provides essential tools for setting up, managing, and deploying pg
 ## Prerequisites
 
 - Supabase CLI v2.34.3 or higher
-- Deno v1.45.x or higher (for flow compilation)
+- Deno v2.1.x or higher (for flow compilation)
 - Local Supabase project initialized
 
 ## Installation
