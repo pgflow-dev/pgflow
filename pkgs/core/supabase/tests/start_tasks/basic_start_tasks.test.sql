@@ -11,7 +11,7 @@ select pgflow_tests.ensure_worker('simple');
 
 -- Read messages from queue and start task
 with msgs as (
-  select * from pgflow.read_with_poll('simple', 10, 5, 1, 50) limit 1
+  select * from pgmq.read_with_poll('simple', 10, 5, 1, 50) limit 1
 ),
 msg_ids as (
   select array_agg(msg_id) as ids from msgs
@@ -65,7 +65,7 @@ select ok(
 
 -- TEST: Empty queue returns no tasks (after task is already started)
 with msgs as (
-  select * from pgflow.read_with_poll('simple', 10, 5, 1, 50) limit 5
+  select * from pgmq.read_with_poll('simple', 10, 5, 1, 50) limit 5
 ),
 msg_ids as (
   select array_agg(msg_id) as ids from msgs

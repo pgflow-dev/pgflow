@@ -14,7 +14,7 @@ select pgflow_tests.ensure_worker('dep_flow');
 -- SETUP: Complete the first step to make second step available
 with first_msg_ids as (
   select array_agg(msg_id) as ids
-  from pgflow.read_with_poll('dep_flow', 10, 5, 1, 100)
+  from pgmq.read_with_poll('dep_flow', 10, 5, 1, 100)
 )
 select pgflow.start_tasks(
   'dep_flow',
@@ -32,7 +32,7 @@ select pgflow.complete_task(
 -- TEST: start_tasks returns a task for the dependent step
 with second_msg_ids as (
   select array_agg(msg_id) as ids
-  from pgflow.read_with_poll('dep_flow', 10, 5, 1, 100)
+  from pgmq.read_with_poll('dep_flow', 10, 5, 1, 100)
 )
 select is(
   (select count(*)::int from pgflow.start_tasks(

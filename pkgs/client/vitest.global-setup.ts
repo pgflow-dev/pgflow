@@ -46,10 +46,6 @@ export async function setup() {
       throw pgError;
     }
 
-    console.log('[GLOBAL SETUP] Creating realtime partition...');
-    await sql`SELECT pgflow_tests.create_realtime_partition()`;
-    console.log('[GLOBAL SETUP] ✓ Realtime partition created');
-
     console.log('[GLOBAL SETUP] Setting up broadcast listener...');
     channel.on('broadcast', { event: '*' }, (p) => {
       console.log('[GLOBAL SETUP] Received broadcast event:', p);

@@ -13,7 +13,7 @@ select pgflow_tests.ensure_worker('simple', '00000000-0000-0000-0000-00000000000
 -- SETUP: Get message IDs and start tasks with specific worker
 with msg_ids as (
   select array_agg(msg_id) as ids
-  from pgflow.read_with_poll('simple', 10, 5, 1, 100)
+  from pgmq.read_with_poll('simple', 10, 5, 1, 100)
 )
 select pgflow.start_tasks(
   'simple',
@@ -32,7 +32,7 @@ select is(
 select pgflow.start_flow('simple', '"world"'::jsonb);
 with msg_ids as (
   select array_agg(msg_id) as ids
-  from pgflow.read_with_poll('simple', 10, 5, 1, 100)
+  from pgmq.read_with_poll('simple', 10, 5, 1, 100)
 )
 select pgflow.start_tasks(
   'simple',

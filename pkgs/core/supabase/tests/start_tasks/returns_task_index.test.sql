@@ -11,7 +11,7 @@ select pgflow.start_flow('single_task', '{"data": "test"}'::jsonb);
 select pgflow_tests.ensure_worker('single_task');
 
 with msgs as (
-  select * from pgflow.read_with_poll('single_task', 10, 5, 1, 50) limit 1
+  select * from pgmq.read_with_poll('single_task', 10, 5, 1, 50) limit 1
 ),
 msg_ids as (
   select array_agg(msg_id) as ids from msgs
@@ -40,7 +40,7 @@ select pgflow_tests.ensure_worker('map_flow');
 
 -- Read all 3 messages
 with msgs as (
-  select * from pgflow.read_with_poll('map_flow', 10, 5, 3, 50) order by msg_id
+  select * from pgmq.read_with_poll('map_flow', 10, 5, 3, 50) order by msg_id
 ),
 msg_ids as (
   select array_agg(msg_id order by msg_id) as ids from msgs
@@ -69,7 +69,7 @@ select pgflow_tests.ensure_worker('map_five');
 
 -- Read all 5 messages
 with msgs as (
-  select * from pgflow.read_with_poll('map_five', 10, 5, 5, 50) order by msg_id
+  select * from pgmq.read_with_poll('map_five', 10, 5, 5, 50) order by msg_id
 ),
 msg_ids as (
   select array_agg(msg_id order by msg_id) as ids from msgs
@@ -120,7 +120,7 @@ select pgflow.complete_task(
 -- Now read and start second map tasks
 select pgflow_tests.ensure_worker('map_chain', '22222222-2222-2222-2222-222222222222'::uuid);
 with msgs as (
-  select * from pgflow.read_with_poll('map_chain', 10, 5, 2, 50) order by msg_id
+  select * from pgmq.read_with_poll('map_chain', 10, 5, 2, 50) order by msg_id
 ),
 msg_ids as (
   select array_agg(msg_id order by msg_id) as ids from msgs
@@ -161,7 +161,7 @@ select pgflow.complete_task(
 -- Process step_b
 select pgflow_tests.ensure_worker('sequential', '33333333-3333-3333-3333-333333333333'::uuid);
 with msgs as (
-  select * from pgflow.read_with_poll('sequential', 10, 5, 1, 50) limit 1
+  select * from pgmq.read_with_poll('sequential', 10, 5, 1, 50) limit 1
 ),
 msg_ids as (
   select array_agg(msg_id) as ids from msgs

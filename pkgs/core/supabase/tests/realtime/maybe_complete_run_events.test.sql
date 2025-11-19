@@ -1,9 +1,6 @@
 begin;
 select plan(6);
 
--- Ensure partition exists for realtime.messages
-select pgflow_tests.create_realtime_partition();
-
 -- Reset database and setup a simple flow with just one step
 select pgflow_tests.reset_db();
 select pgflow.create_flow('simple');

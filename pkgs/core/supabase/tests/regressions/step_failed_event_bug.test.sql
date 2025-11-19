@@ -1,9 +1,6 @@
 begin;
 select plan(3);
 
--- Ensure partition exists for realtime.messages
-select pgflow_tests.create_realtime_partition();
-
 -- Reset database and setup a flow with max_attempts = 1 to fail immediately
 select pgflow_tests.reset_db();
 select pgflow.create_flow('test_flow', max_attempts => 1);

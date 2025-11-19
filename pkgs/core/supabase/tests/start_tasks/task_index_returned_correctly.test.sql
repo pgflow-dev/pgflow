@@ -52,7 +52,7 @@ select pgflow_tests.ensure_worker('test_task_index', '55555555-5555-5555-5555-55
 
 -- Read messages from queue and start tasks
 with msgs as (
-  select * from pgflow.read_with_poll('test_task_index', 10, 10, 1, 50)
+  select * from pgmq.read_with_poll('test_task_index', 10, 10, 1, 50)
 ),
 msg_ids as (
   select array_agg(msg_id) as ids from msgs

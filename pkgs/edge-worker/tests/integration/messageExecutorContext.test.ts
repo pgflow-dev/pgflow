@@ -27,6 +27,7 @@ Deno.test(
       enqueued_at: '2024-01-01T00:00:00Z',
       vt: '2024-01-01T00:01:00Z',
       message: { data: 'test data' },
+      headers: null,
     };
 
     const abortController = new AbortController();
@@ -83,6 +84,7 @@ Deno.test(
       enqueued_at: '2024-01-01T00:00:00Z',
       vt: '2024-01-01T00:01:00Z',
       message: { data: 'legacy test' },
+      headers: null,
     };
 
     let receivedPayload: { data: string } | undefined;
@@ -116,6 +118,7 @@ Deno.test(
       enqueued_at: '2024-01-01T00:00:00Z',
       vt: '2024-01-01T00:01:00Z',
       message: { id: 42, name: 'test item' },
+      headers: null,
     };
 
     const abortController = new AbortController();
@@ -158,6 +161,7 @@ Deno.test(
       enqueued_at: '2024-01-01T00:00:00Z',
       vt: '2024-01-01T00:01:00Z',
       message: { test: 'supabase test' },
+      headers: null,
     };
 
     const abortController = new AbortController();
