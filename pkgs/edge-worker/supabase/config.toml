@@ -7,7 +7,7 @@ port = 50321
 [db]
 port = 50322
 shadow_port = 50320
-major_version = 15
+major_version = 17
 
 [db.pooler]
 enabled = true

@@ -16,7 +16,7 @@ The database must be empty, but contain everything needed for the schemas to app
 We need a configured [PGMQ](https://github.com/tembo-io/pgmq) extension, which Atlas does not support
 in their dev images.
 
-That's why this setup relies on a custom built image `jumski/postgres-15-pgmq:latest`.
+That's why this setup relies on a custom built image `jumski/postgres-17-pgmq:latest`.
 
 Inspect `Dockerfile.atlas` to see how it is built.
 
