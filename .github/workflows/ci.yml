@@ -17,8 +17,8 @@ permissions:
   deployments: write # Netlify action needs it
 
 jobs:
-  # ─────────────────────────────────────── 1. BUILD & TEST ──────────────────────────────────────
-  build-and-test:
+# ─────────────────────────────────────── 1. DB VERIFICATION ──────────────────────────────────────
+  db-verification:
     runs-on: ubuntu-latest
     env:
       NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
@@ -28,21 +28,8 @@ jobs:
           fetch-depth: 0
 
       - uses: ./.github/actions/setup
-
-      - name: Setup Deno
-        uses: denoland/setup-deno@v2
         with:
-          deno-version: '2.1.4'
-
-      - name: Install sqruff
-        uses: ./.github/actions/setup-sqruff
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup Atlas
-        uses: ariga/setup-atlas@master
-        with:
-          cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
+          atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 
       - name: Set Nx base for affected commands
         run: |
@@ -52,7 +39,34 @@ jobs:
       - name: Verify NX_BASE and NX_HEAD are set
         run: echo "BASE=$NX_BASE HEAD=$NX_HEAD"
 
-      - name: Quality gate (lint + typecheck + test)
+      - name: Run database verification
+        run: pnpm nx run core:db:verify
+
+
+# ─────────────────────────────────────── 2. FAST TESTS ──────────────────────────────────────
+  fast-tests:
+    needs: [db-verification]
+    runs-on: ubuntu-latest
+    env:
+      NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+        with:
+          atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
+
+      - name: Set Nx base for affected commands
+        run: |
+          echo "NX_BASE=origin/main" >> $GITHUB_ENV
+          echo "NX_HEAD=HEAD" >> $GITHUB_ENV
+
+      - name: Verify NX_BASE and NX_HEAD are set
+        run: echo "BASE=$NX_BASE HEAD=$NX_HEAD"
+
+      - name: Lint, typecheck, build, and fast tests
         run: pnpm nx affected -t lint typecheck test --parallel --configuration=production --base="$NX_BASE" --head="$NX_HEAD"
 
       - name: Build all affected projects
@@ -61,8 +75,9 @@ jobs:
       - name: Verify exports for built packages
         run: pnpm nx affected -t verify-exports --base="$NX_BASE" --head="$NX_HEAD"
 
-  # ─────────────────────────────────────── 2. EDGE-WORKER E2E ──────────────────────────────────────
-  edge-worker-e2e:
+# ─────────────────────────────────────── 3. CLI LIVE TESTS ──────────────────────────────────────
+  cli-live-tests:
+    needs: [db-verification]
     runs-on: ubuntu-latest
     env:
       NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
@@ -72,48 +87,185 @@ jobs:
           fetch-depth: 0
 
       - uses: ./.github/actions/setup
-
-      - name: Setup Deno
-        uses: denoland/setup-deno@v2
         with:
-          deno-version: '2.1.4'
-
-      - name: Install sqruff
-        uses: ./.github/actions/setup-sqruff
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup Atlas
-        uses: ariga/setup-atlas@master
-        with:
-          cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
+          atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 
       - name: Set Nx base for affected commands
         run: |
           echo "NX_BASE=origin/main" >> $GITHUB_ENV
           echo "NX_HEAD=HEAD" >> $GITHUB_ENV
 
-      - name: Verify NX_BASE and NX_HEAD are set
-        run: echo "BASE=$NX_BASE HEAD=$NX_HEAD"
-
-      - name: Check if edge-worker e2e tests are affected
+      - name: Check if cli is affected
         id: check-affected
         run: |
-          if pnpm nx show projects --affected -t test:e2e --base="$NX_BASE" --head="$NX_HEAD" | grep -q "^edge-worker$"; then
+          if pnpm nx show projects --affected --base="$NX_BASE" --head="$NX_HEAD" | grep -q "^cli$"; then
             echo "affected=true" >> $GITHUB_OUTPUT
-            echo "Edge-worker e2e tests are affected by changes"
+            echo "CLI is affected by changes"
           else
             echo "affected=false" >> $GITHUB_OUTPUT
-            echo "Edge-worker e2e tests are not affected by changes - skipping"
+            echo "CLI is not affected by changes - skipping"
           fi
 
-      - name: Run edge-worker e2e tests
+      - name: Run cli live tests
         if: steps.check-affected.outputs.affected == 'true'
-        run: pnpm nx affected -t test:e2e --parallel --base="$NX_BASE" --head="$NX_HEAD"
+        run: pnpm nx run cli:test:live
 
-  # ────────────────────────────────── 3. DEPLOY WEBSITE ───────────────────────────
+
+
+# ─────────────────────────────────────── 4. CORE LIVE TESTS ──────────────────────────────────────
+  core-live-tests:
+    needs: [db-verification]
+    runs-on: ubuntu-latest
+    env:
+      NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+        with:
+          atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
+
+      - name: Set Nx base for affected commands
+        run: |
+          echo "NX_BASE=origin/main" >> $GITHUB_ENV
+          echo "NX_HEAD=HEAD" >> $GITHUB_ENV
+
+      - name: Check if core is affected
+        id: check-affected
+        run: |
+          if pnpm nx show projects --affected --base="$NX_BASE" --head="$NX_HEAD" | grep -q "^core$"; then
+            echo "affected=true" >> $GITHUB_OUTPUT
+            echo "Core is affected by changes"
+          else
+            echo "affected=false" >> $GITHUB_OUTPUT
+            echo "Core is not affected by changes - skipping"
+          fi
+
+      - name: Run core live tests
+        if: steps.check-affected.outputs.affected == 'true'
+        run: pnpm nx run core:test:live
+
+
+# ─────────────────────────────────────── 5. CLIENT LIVE TESTS ──────────────────────────────────────
+  client-live-tests:
+    needs: [db-verification]
+    runs-on: ubuntu-latest
+    env:
+      NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+        with:
+          atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
+
+      - name: Set Nx base for affected commands
+        run: |
+          echo "NX_BASE=origin/main" >> $GITHUB_ENV
+          echo "NX_HEAD=HEAD" >> $GITHUB_ENV
+
+      - name: Check if client is affected
+        id: check-affected
+        run: |
+          if pnpm nx show projects --affected --base="$NX_BASE" --head="$NX_HEAD" | grep -q "^client$"; then
+            echo "affected=true" >> $GITHUB_OUTPUT
+            echo "Client is affected by changes"
+          else
+            echo "affected=false" >> $GITHUB_OUTPUT
+            echo "Client is not affected by changes - skipping"
+          fi
+
+      - name: Run client live tests
+        if: steps.check-affected.outputs.affected == 'true'
+        run: pnpm nx run client:test:live
+
+
+# ─────────────────────────────────────── 6. EDGE-WORKER LIVE TESTS ──────────────────────────────────────
+  edge-worker-live-tests:
+    needs: [db-verification]
+    runs-on: ubuntu-latest
+    env:
+      NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+        with:
+          atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
+
+      - name: Set Nx base for affected commands
+        run: |
+          echo "NX_BASE=origin/main" >> $GITHUB_ENV
+          echo "NX_HEAD=HEAD" >> $GITHUB_ENV
+
+      - name: Check if edge-worker is affected
+        id: check-affected
+        run: |
+          if pnpm nx show projects --affected --base="$NX_BASE" --head="$NX_HEAD" | grep -q "^edge-worker$"; then
+            echo "affected=true" >> $GITHUB_OUTPUT
+            echo "Edge-worker is affected by changes"
+          else
+            echo "affected=false" >> $GITHUB_OUTPUT
+            echo "Edge-worker is not affected by changes - skipping"
+          fi
+
+      - name: Run edge-worker live tests
+        if: steps.check-affected.outputs.affected == 'true'
+        run: pnpm nx run edge-worker:test:live
+
+
+# ────────────────────────────────── 7. DEPLOY PLAYGROUND ───────────────────────────
+  deploy-playground:
+    needs: [fast-tests]
+    if: false  # Disabled
+    # if: >-
+    #   ${{
+    #     (github.event_name == 'pull_request') ||
+    #     (github.ref == 'refs/heads/main' && github.event_name == 'push')
+    #   }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
+    env:
+      NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PLAYGROUND_SITE_ID }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_URL || secrets.DEMO_PRODUCTION_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY || secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+
+      # Build the workspace libraries that the app imports
+      - run: pnpm nx run-many -t build --projects client,dsl --configuration=production
+
+      - name: Build & deploy to Netlify
+        id: deploy
+        run: |
+          pnpm netlify deploy --build --filter=playground \
+            --context ${{ github.event_name == 'pull_request' && 'deploy-preview' || 'production' }} \
+            ${{ github.event_name == 'pull_request' && format('--alias=pr-{0}', github.event.pull_request.number) || '--prod' }}
+
+      - name: Post deployment comment
+        if: always()
+        uses: ./.github/actions/deployment-comment
+        with:
+          project-name: Playground
+          preview-url: https://pr-${{ github.event.pull_request.number }}--pgflow-demo.netlify.app
+          production-url: https://playground.pgflow.dev
+
+
+# ────────────────────────────────── 8. DEPLOY WEBSITE ───────────────────────────
   deploy-website:
-    needs: [build-and-test, edge-worker-e2e]
+    needs: [fast-tests, cli-live-tests, core-live-tests, client-live-tests, edge-worker-live-tests]
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
     env:
@@ -154,26 +306,6 @@ jobs:
             echo "Website is not affected by changes - skipping deployment"
           fi
 
-      - name: Validate Supabase environment variables
-        if: steps.check-affected.outputs.affected == 'true'
-        run: |
-          if [ -z "$VITE_SUPABASE_URL" ]; then
-            echo "❌ Error: VITE_SUPABASE_URL is not set"
-            echo "Required GitHub secret missing: WEBSITE_${{ github.event_name == 'pull_request' && 'PREVIEW' || 'PRODUCTION' }}_SUPABASE_URL"
-            exit 1
-          fi
-          if [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
-            echo "❌ Error: VITE_SUPABASE_ANON_KEY is not set"
-            echo "Required GitHub secret missing: WEBSITE_${{ github.event_name == 'pull_request' && 'PREVIEW' || 'PRODUCTION' }}_SUPABASE_ANON_KEY"
-            exit 1
-          fi
-          if [[ ! "$VITE_SUPABASE_URL" =~ ^https:// ]]; then
-            echo "❌ Error: VITE_SUPABASE_URL must use https:// (not http://)"
-            echo "Current value: $VITE_SUPABASE_URL"
-            exit 1
-          fi
-          echo "✅ Supabase environment variables are valid"
-
       - name: Deploy website
         id: deploy-website
         if: steps.check-affected.outputs.affected == 'true'
@@ -193,68 +325,3 @@ jobs:
           project-name: Website
           preview-url: https://pr-${{ github.event.pull_request.number }}.pgflow.pages.dev
           production-url: https://pgflow.dev
-
-  # ────────────────────────────────── 4. DEPLOY DEMO ───────────────────────────
-  deploy-demo:
-    if: false # temporarily disabled
-    needs: [build-and-test, edge-worker-e2e]
-    runs-on: ubuntu-latest
-    environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
-    env:
-      NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      VITE_SUPABASE_URL: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_URL || secrets.DEMO_PRODUCTION_SUPABASE_URL }}
-      VITE_SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && secrets.DEMO_PREVIEW_SUPABASE_ANON_KEY || secrets.DEMO_PRODUCTION_SUPABASE_ANON_KEY }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: ./.github/actions/setup
-
-      - name: Set Nx base for affected commands
-        run: |
-          echo "NX_BASE=origin/main" >> $GITHUB_ENV
-          echo "NX_HEAD=HEAD" >> $GITHUB_ENV
-
-      - name: Verify NX_BASE and NX_HEAD are set
-        run: echo "BASE=$NX_BASE HEAD=$NX_HEAD"
-
-      - name: Validate Supabase environment variables
-        run: |
-          if [ -z "$VITE_SUPABASE_URL" ]; then
-            echo "❌ Error: VITE_SUPABASE_URL is not set"
-            echo "Required GitHub secret missing: DEMO_${{ github.event_name == 'pull_request' && 'PREVIEW' || 'PRODUCTION' }}_SUPABASE_URL"
-            exit 1
-          fi
-          if [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
-            echo "❌ Error: VITE_SUPABASE_ANON_KEY is not set"
-            echo "Required GitHub secret missing: DEMO_${{ github.event_name == 'pull_request' && 'PREVIEW' || 'PRODUCTION' }}_SUPABASE_ANON_KEY"
-            exit 1
-          fi
-          if [[ ! "$VITE_SUPABASE_URL" =~ ^https:// ]]; then
-            echo "❌ Error: VITE_SUPABASE_URL must use https:// (not http://)"
-            echo "Current value: $VITE_SUPABASE_URL"
-            exit 1
-          fi
-          echo "✅ Supabase environment variables are valid"
-
-      - name: Deploy demo
-        id: deploy-demo
-        env:
-          PREVIEW_NAME: pr-${{ github.event.pull_request.number }}
-        run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            pnpm nx affected -t deploy:preview --projects=demo --base="$NX_BASE" --head="$NX_HEAD"
-          else
-            pnpm nx affected -t deploy --projects=demo --base="$NX_BASE" --head="$NX_HEAD"
-          fi
-
-      - name: Post deployment comment
-        if: success()
-        uses: ./.github/actions/deployment-comment
-        with:
-          project-name: Demo
-          preview-url: https://pr-${{ github.event.pull_request.number }}-pgflow-demo.jumski.workers.dev
-          production-url: https://demo.pgflow.dev
