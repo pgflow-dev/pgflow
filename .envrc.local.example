@@ -1,0 +1,6 @@
+# Local environment variables (copy to .envrc.local and customize)
+
+# Path to Claude symlink script (runs on git checkout)
+# Claude skills are in pgflow-dev/claude private repo
+# See LOCAL_DEV.md for details
+# export CLAUDE_SYMLINK_SCRIPT="/path/to/your/claude/symlink.sh"
