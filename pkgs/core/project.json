@@ -31,7 +31,7 @@
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
-          "../../scripts/supabase-start-locked.sh .",
+          "../../scripts/supabase-start-locked.sh $(pwd)",
           "scripts/atlas-dump-realtime-schema"
         ],
         "parallel": false
@@ -50,7 +50,7 @@
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
-          "../../scripts/supabase-start-locked.sh .",
+          "../../scripts/supabase-start-locked.sh $(pwd)",
           "mkdir -p .nx-inputs",
           "scripts/atlas-verify-schemas-synced > .nx-inputs/verify-schemas-synced.txt 2>&1 || (cat .nx-inputs/verify-schemas-synced.txt && exit 1)"
         ],
@@ -66,7 +66,7 @@
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
-          "../../scripts/supabase-start-locked.sh .",
+          "../../scripts/supabase-start-locked.sh $(pwd)",
           "mkdir -p .nx-inputs",
           "supabase db reset > .nx-inputs/verify-migrations.txt 2>&1 || (cat .nx-inputs/verify-migrations.txt && exit 1)"
         ],
@@ -144,7 +144,7 @@
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
-          "../../scripts/supabase-start-locked.sh ."
+          "../../scripts/supabase-start-locked.sh $(pwd)"
         ],
         "parallel": false
       }
@@ -155,7 +155,7 @@
       "cache": false,
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["../../scripts/supabase-start-locked.sh ."],
+        "commands": ["../../scripts/supabase-start-locked.sh $(pwd)"],
         "parallel": false
       }
     },
@@ -196,7 +196,7 @@
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
-          "../../scripts/supabase-start-locked.sh .",
+          "../../scripts/supabase-start-locked.sh $(pwd)",
           "supabase db reset"
         ],
         "parallel": false
@@ -216,7 +216,7 @@
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
-          "../../scripts/supabase-start-locked.sh .",
+          "../../scripts/supabase-start-locked.sh $(pwd)",
           "scripts/run-test-with-colors"
         ],
         "parallel": false
@@ -240,7 +240,7 @@
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
-          "../../scripts/supabase-start-locked.sh .",
+          "../../scripts/supabase-start-locked.sh $(pwd)",
           "echo 'Generating database types...'",
           "supabase gen types --local --schema pgflow --schema pgmq > src/database-types.ts",
           "echo 'Verifying generated types...'",
@@ -259,7 +259,7 @@
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
-          "../../scripts/supabase-start-locked.sh .",
+          "../../scripts/supabase-start-locked.sh $(pwd)",
           "mkdir -p .nx-inputs",
           "echo 'Verifying database types are up-to-date...'",
           "cp src/database-types.ts .nx-inputs/database-types.ts.backup",
