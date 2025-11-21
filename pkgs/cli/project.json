@@ -94,6 +94,10 @@
         "command": "./scripts/test-async-hang-issue-123",
         "cwd": "{projectRoot}"
       }
+    },
+    "prepush": {
+      "executor": "nx:noop",
+      "dependsOn": ["lint", "build", "typecheck", "test:vitest"]
     }
   }
 }

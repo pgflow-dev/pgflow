@@ -235,11 +235,15 @@
       "executor": "nx:run-commands",
       "cache": true,
       "dependsOn": ["^build"],
-      "inputs": ["default", "^production"],
+      "inputs": ["production", "^production"],
       "options": {
         "cwd": "{projectRoot}",
         "command": "deno check --config deno.test.json src/examples/*.example.ts tests/types/*.test-d.ts"
       }
+    },
+    "prepush": {
+      "executor": "nx:noop",
+      "dependsOn": ["lint", "build", "test:types"]
     }
   },
   "tags": []

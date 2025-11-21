@@ -200,6 +200,8 @@
     },
     "test:types:vitest": {
       "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["production", "^production"],
       "dependsOn": ["^build"],
       "options": {
         "cwd": "{projectRoot}",
@@ -208,6 +210,8 @@
     },
     "test:types:strict": {
       "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["production", "^production"],
       "dependsOn": ["^build"],
       "options": {
         "cwd": "{projectRoot}",
@@ -217,6 +221,10 @@
     "test:types": {
       "executor": "nx:noop",
       "dependsOn": ["test:types:vitest", "test:types:strict"]
+    },
+    "prepush": {
+      "executor": "nx:noop",
+      "dependsOn": ["lint", "build", "typecheck", "verify-exports", "test:types:vitest", "test:types:strict"]
     }
   }
 }

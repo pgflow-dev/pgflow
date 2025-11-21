@@ -45,16 +45,19 @@ post-checkout:
         fi
     'claude-symlink':
       run: |
-        if [ -n "$CLAUDE_SYMLINK_SCRIPT" ] && [ -f "$CLAUDE_SYMLINK_SCRIPT" ]; then
-          "$CLAUDE_SYMLINK_SCRIPT" "$PWD"
-        elif [ -z "$CLAUDE_SYMLINK_SCRIPT" ]; then
-          echo "\033[33mWarning: CLAUDE_SYMLINK_SCRIPT not set. See LOCAL_DEV.md for setup instructions.\033[0m"
+        # Only run for branch checkouts (not file checkouts)
+        if [ "{3}" = "1" ]; then
+          if [ -n "$CLAUDE_SYMLINK_SCRIPT" ] && [ -f "$CLAUDE_SYMLINK_SCRIPT" ]; then
+            "$CLAUDE_SYMLINK_SCRIPT" --yes "$PWD"
+          elif [ -z "$CLAUDE_SYMLINK_SCRIPT" ]; then
+            echo "\033[33mWarning: CLAUDE_SYMLINK_SCRIPT not set. See LOCAL_DEV.md for setup instructions.\033[0m"
+          fi
         fi
 
 pre-push:
   commands:
     'nx-affected-checks':
-      run: pnpm nx affected --target=lint,build --base=origin/main --head=HEAD
+      run: pnpm nx affected --target=prepush --base=origin/main --head=HEAD --output-style=static
   scripts:
     'prevent-push-to-main.sh':
       runner: bash
