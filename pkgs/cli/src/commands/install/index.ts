@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import { copyMigrations } from './copy-migrations.js';
 import { updateConfigToml } from './update-config-toml.js';
 import { updateEnvFile } from './update-env-file.js';
+import { createEdgeFunction } from './create-edge-function.js';
 import { supabasePathPrompt } from './supabase-path-prompt.js';
 
 export default (program: Command) => {
@@ -42,7 +43,17 @@ export default (program: Command) => {
             });
           },
 
-          // Step 4: Update environment variables
+          // Step 4: Create ControlPlane edge function
+          edgeFunction: async ({ results: { supabasePath } }) => {
+            if (!supabasePath) return false;
+
+            return await createEdgeFunction({
+              supabasePath,
+              autoConfirm: options.yes,
+            });
+          },
+
+          // Step 5: Update environment variables
           envFile: async ({ results: { supabasePath } }) => {
             if (!supabasePath) return false;
 
@@ -65,6 +76,7 @@ export default (program: Command) => {
       const supabasePath = results.supabasePath;
       const configUpdate = results.configUpdate;
       const migrations = results.migrations;
+      const edgeFunction = results.edgeFunction;
       const envFile = results.envFile;
 
       // Exit if supabasePath is null (validation failed or user cancelled)
@@ -77,7 +89,7 @@ export default (program: Command) => {
       const outroMessages = [];
 
       // Always start with a bolded acknowledgement
-      if (migrations || configUpdate || envFile) {
+      if (migrations || configUpdate || edgeFunction || envFile) {
         outroMessages.push(chalk.bold('pgflow setup completed successfully!'));
       } else {
         outroMessages.push(

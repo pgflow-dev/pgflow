@@ -14,14 +14,7 @@
         "main": "{projectRoot}/src/index.ts",
         "tsConfig": "{projectRoot}/tsconfig.lib.json",
         "outputPath": "{projectRoot}/dist",
-        "rootDir": "{projectRoot}/src",
-        "assets": [
-          {
-            "input": "{projectRoot}/src/deno",
-            "glob": "**/*",
-            "output": "deno"
-          }
-        ]
+        "rootDir": "{projectRoot}/src"
       }
     },
     "serve": {
@@ -69,20 +62,26 @@
         "parallel": false
       }
     },
+    "sync-e2e-deps": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "local": true,
+      "inputs": ["^production"],
+      "outputs": ["{projectRoot}/supabase/functions/_vendor"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": ["./scripts/sync-e2e-deps.sh"],
+        "parallel": false
+      }
+    },
     "test:e2e:compile": {
       "executor": "nx:run-commands",
       "local": true,
-      "dependsOn": ["test:e2e:install", "build"],
+      "dependsOn": ["build", "sync-e2e-deps"],
       "inputs": ["default", "^production"],
       "options": {
-        "commands": [
-          "rm -rf supabase/",
-          "npx -y supabase@latest init --force --with-vscode-settings --with-intellij-settings",
-          "node dist/index.js compile examples/analyze_website.ts --deno-json examples/deno.json --supabase-path supabase",
-          "./scripts/assert-flow-compiled"
-        ],
-        "cwd": "{projectRoot}",
-        "parallel": false
+        "command": "vitest run __tests__/e2e/compile.test.ts",
+        "cwd": "{projectRoot}"
       }
     },
     "test:e2e:async-hang-issue-123": {
