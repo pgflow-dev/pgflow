@@ -109,7 +109,7 @@
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
-          "../../scripts/supabase-start-locked.sh .",
+          "../../scripts/supabase-start-locked.sh $(pwd)",
           "astro dev"
         ]
       }
