@@ -245,6 +245,9 @@ importers:
       '@types/node':
         specifier: ^22.14.1
         version: 22.19.0
+      supabase:
+        specifier: ^2.34.3
+        version: 2.34.3
       tsx:
         specifier: ^4.19.3
         version: 4.20.6
