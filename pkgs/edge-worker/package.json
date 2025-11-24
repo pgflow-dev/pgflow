@@ -30,7 +30,7 @@
   "devDependencies": {
     "@types/deno": "^2.3.0",
     "@types/node": "~18.16.20",
-    "supabase": "^2.34.3"
+    "supabase": "^2.50.3"
   },
   "publishConfig": {
     "access": "public"
