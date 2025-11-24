@@ -60,7 +60,7 @@
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
-          "../../scripts/supabase-start-locked.sh ."
+          "../../scripts/supabase-start-locked.sh $(pwd)"
         ],
         "parallel": false
       }
@@ -71,7 +71,7 @@
       "cache": false,
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["../../scripts/supabase-start-locked.sh ."],
+        "commands": ["../../scripts/supabase-start-locked.sh $(pwd)"],
         "parallel": false
       }
     },
@@ -116,7 +116,7 @@
           "mkdir -p supabase/migrations/",
           "rm -f supabase/migrations/*.sql",
           "cp ../core/supabase/migrations/*.sql supabase/migrations/",
-          "../../scripts/supabase-start-locked.sh .",
+          "../../scripts/supabase-start-locked.sh $(pwd)",
           "supabase db reset"
         ],
         "parallel": false
@@ -129,7 +129,7 @@
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
-          "../../scripts/supabase-start-locked.sh .",
+          "../../scripts/supabase-start-locked.sh $(pwd)",
           "supabase functions serve --env-file supabase/functions/.env --no-verify-jwt"
         ],
         "parallel": false
@@ -194,7 +194,7 @@
           "mkdir -p supabase/migrations/",
           "rm -f supabase/migrations/*.sql",
           "cp ../core/supabase/migrations/*.sql supabase/migrations/",
-          "../../scripts/supabase-start-locked.sh ."
+          "../../scripts/supabase-start-locked.sh $(pwd)"
         ],
         "parallel": false
       }
