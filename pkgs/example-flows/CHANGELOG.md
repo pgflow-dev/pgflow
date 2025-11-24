@@ -1,5 +1,13 @@
 # @pgflow/example-flows
 
+## 0.8.1
+
+### Patch Changes
+
+- Updated dependencies [f1d3c32]
+  - @pgflow/core@0.8.1
+  - @pgflow/dsl@0.8.1
+
 ## 0.8.0
 
 ### Patch Changes
