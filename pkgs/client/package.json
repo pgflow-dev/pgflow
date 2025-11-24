@@ -44,7 +44,7 @@
     "@pgflow/dsl": "workspace:*",
     "@types/uuid": "^10.0.0",
     "postgres": "^3.4.5",
-    "supabase": "^2.34.3",
+    "supabase": "^2.50.3",
     "terser": "^5.43.0",
     "vite-plugin-dts": "~3.8.1",
     "vitest": "1.3.1"

@@ -1,5 +1,5 @@
 -- Migration tested 2025-11-02:
--- Successfully verified that this migration fails on pgmq 1.4.4 (Supabase CLI < 2.34.3)
+-- Successfully verified that this migration fails on pgmq 1.4.4 (Supabase CLI < 2.50.3)
 -- with clear error message guiding users to upgrade pgmq to 1.5.0+
 --
 -- Compatibility check: Ensure pgmq.message_record has headers column (pgmq 1.5.0+)

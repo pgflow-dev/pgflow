@@ -188,7 +188,7 @@ importers:
         specifier: ^3.4.0
         version: 3.4.0(prettier@3.6.2)(svelte@5.43.6)
       supabase:
-        specifier: ^2.34.3
+        specifier: ^2.50.3
         version: 2.54.11
       svelte:
         specifier: ^5.41.0
@@ -274,7 +274,7 @@ importers:
         specifier: ^3.4.5
         version: 3.4.5
       supabase:
-        specifier: ^2.34.3
+        specifier: ^2.50.3
         version: 2.54.11
       terser:
         specifier: ^5.43.0
@@ -299,7 +299,7 @@ importers:
         specifier: ^22.14.1
         version: 22.19.0
       supabase:
-        specifier: ^2.34.3
+        specifier: ^2.50.3
         version: 2.54.11
 
   pkgs/dsl:
@@ -339,7 +339,7 @@ importers:
         specifier: ~18.16.20
         version: 18.16.20
       supabase:
-        specifier: ^2.34.3
+        specifier: ^2.50.3
         version: 2.54.11
 
   pkgs/example-flows:
@@ -415,7 +415,7 @@ importers:
         specifier: ^0.14.1
         version: 0.14.1
       supabase:
-        specifier: ^2.34.3
+        specifier: ^2.50.3
         version: 2.54.11
       wrangler:
         specifier: ^4.20.3

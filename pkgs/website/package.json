@@ -35,7 +35,7 @@
   },
   "devDependencies": {
     "prettier-plugin-astro": "^0.14.1",
-    "supabase": "^2.34.3",
+    "supabase": "^2.50.3",
     "wrangler": "^4.20.3"
   }
 }

@@ -4,7 +4,7 @@
 
 ### Minor Changes
 
-- 7380237: BREAKING CHANGE: pgflow 0.8.0 requires pgmq 1.5.0+, PostgreSQL 17, and Supabase CLI 2.34.3+
+- 7380237: BREAKING CHANGE: pgflow 0.8.0 requires pgmq 1.5.0+, PostgreSQL 17, and Supabase CLI 2.50.3+
 
   This version modernizes infrastructure dependencies and will NOT work with pgmq 1.4.x or earlier. The migration includes a compatibility check that aborts with a clear error message if requirements are not met.
 
@@ -12,9 +12,9 @@
 
   - pgmq 1.5.0 or higher (previously supported 1.4.x)
   - PostgreSQL 17 (from 15)
-  - Supabase CLI 2.34.3 or higher (includes pgmq 1.5.0+)
+  - Supabase CLI 2.50.3 or higher (includes pgmq 1.5.0+)
 
-  **For Supabase users:** Upgrade your Supabase CLI to 2.34.3+ which includes pgmq 1.5.0 by default.
+  **For Supabase users:** Upgrade your Supabase CLI to 2.50.3+ which includes pgmq 1.5.0 by default.
 
   **For self-hosted users:** Upgrade pgmq to 1.5.0+ and PostgreSQL to 17 before upgrading pgflow.
 

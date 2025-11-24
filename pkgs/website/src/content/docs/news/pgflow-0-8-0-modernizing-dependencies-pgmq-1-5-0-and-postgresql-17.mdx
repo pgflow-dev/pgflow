@@ -29,7 +29,7 @@ pgflow 0.8.0 introduces breaking dependency changes:
 
 1. **pgmq version**: Now requires 1.5.0 or higher (previously supported 1.4.x)
 2. **PostgreSQL version**: Upgrades to PostgreSQL 17 (from 15)
-3. **Supabase CLI**: Requires version 2.34.3 or higher (includes pgmq 1.5.0+)
+3. **Supabase CLI**: Requires version 2.50.3 or higher (includes pgmq 1.5.0+)
 4. **Deno version**: Now requires 2.1.x or higher (previously 1.45.x)
 
 The migration will fail safely if these requirements are not met - no partial upgrades or corrupted state.
@@ -86,12 +86,12 @@ This safety check prevents partial migrations and data corruption.
 
 ### Supabase Cloud Users
 
-Supabase CLI version 2.34.3 or higher includes pgmq 1.5.0 by default. To upgrade:
+Supabase CLI version 2.50.3 or higher includes pgmq 1.5.0 by default. To upgrade:
 
 1. Update your Supabase CLI if needed:
    ```bash
    supabase -v  # Check current version
-   npm install -g supabase  # Update if below 2.34.3
+   npm install -g supabase  # Update if below 2.50.3
    ```
 2. Verify your pgmq version using the SQL query above
 3. If you have pgmq 1.5.0+, run your migrations normally:
