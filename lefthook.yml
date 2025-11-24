@@ -57,7 +57,7 @@ post-checkout:
 pre-push:
   commands:
     'nx-affected-checks':
-      run: pnpm nx affected --target=prepush --base=origin/main --head=HEAD --output-style=static
+      run: CI=true NX_DAEMON=false pnpm nx affected --target=prepush --base=origin/main --head=HEAD --output-style=static --verbose --nx-bail
   scripts:
     'prevent-push-to-main.sh':
       runner: bash
