@@ -1,0 +1,180 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="5 25 490 495" width="500" height="500">
+  <!-- Colors:
+    pending:  fill=#3d524d stroke=#607b75
+    running:  fill=#3b5bdb stroke=#5b8def
+    failed:   fill=#c94a2e stroke=#f08060
+    retrying: fill=#4460ff stroke=#7a91ff
+    success:  fill=#177a51 stroke=#20a56f
+  -->
+
+  <!-- EDGES -->
+  <!-- fetchArticle -> summarize -->
+  <path d="M 250 130 C 250 187.5, 140 187.5, 140 245"
+        fill="none" stroke="#607b75" stroke-width="2.5" stroke-dasharray="8 4" opacity="0.6">
+    <animate attributeName="stroke-dashoffset" from="0" to="-12" dur="1s" repeatCount="indefinite"/>
+    <animate calcMode="discrete" attributeName="stroke" values="#607b75;#6b8c85;#1a9c64;#1a9c64;#1a9c64;#1a9c64;#1a9c64;#1a9c64;#1a9c64;#607b75"
+             dur="11s" repeatCount="indefinite" keyTimes="0;0.14;0.64;0.7;0.75;0.8;0.85;0.9;0.95;1"/>
+    <animate calcMode="discrete" attributeName="opacity" values="0.6;0.9;0.9;0.9;0.9;0.9;0.9;0.9;0.9;0.6"
+             dur="11s" repeatCount="indefinite" keyTimes="0;0.14;0.64;0.7;0.75;0.8;0.85;0.9;0.95;1"/>
+  </path>
+
+  <!-- fetchArticle -> extractKeywords -->
+  <path d="M 250 130 C 250 187.5, 360 187.5, 360 245"
+        fill="none" stroke="#607b75" stroke-width="2.5" stroke-dasharray="8 4" opacity="0.6">
+    <animate attributeName="stroke-dashoffset" from="0" to="-12" dur="1s" repeatCount="indefinite"/>
+    <animate calcMode="discrete" attributeName="stroke" values="#607b75;#6b8c85;#1a9c64;#1a9c64;#1a9c64;#1a9c64;#1a9c64;#1a9c64;#1a9c64;#607b75"
+             dur="11s" repeatCount="indefinite" keyTimes="0;0.14;0.28;0.5;0.6;0.7;0.8;0.9;0.95;1"/>
+    <animate calcMode="discrete" attributeName="opacity" values="0.6;0.9;0.9;0.9;0.9;0.9;0.9;0.9;0.9;0.6"
+             dur="11s" repeatCount="indefinite" keyTimes="0;0.14;0.28;0.5;0.6;0.7;0.8;0.9;0.95;1"/>
+  </path>
+
+  <!-- summarize -> publish -->
+  <path d="M 140 305 C 140 362.5, 250 362.5, 250 420"
+        fill="none" stroke="#607b75" stroke-width="2.5" stroke-dasharray="8 4" opacity="0.6">
+    <animate attributeName="stroke-dashoffset" from="0" to="-12" dur="1s" repeatCount="indefinite"/>
+    <animate calcMode="discrete" attributeName="stroke" values="#607b75;#607b75;#607b75;#607b75;#607b75;#6b8c85;#1a9c64;#1a9c64;#1a9c64;#607b75"
+             dur="11s" repeatCount="indefinite" keyTimes="0;0.14;0.28;0.5;0.6;0.64;0.66;0.82;0.95;1"/>
+    <animate calcMode="discrete" attributeName="opacity" values="0.6;0.6;0.6;0.6;0.6;0.9;0.9;0.9;0.9;0.6"
+             dur="11s" repeatCount="indefinite" keyTimes="0;0.14;0.28;0.5;0.6;0.64;0.66;0.82;0.95;1"/>
+  </path>
+
+  <!-- extractKeywords -> publish -->
+  <path d="M 360 305 C 360 362.5, 250 362.5, 250 420"
+        fill="none" stroke="#607b75" stroke-width="2.5" stroke-dasharray="8 4" opacity="0.6">
+    <animate attributeName="stroke-dashoffset" from="0" to="-12" dur="1s" repeatCount="indefinite"/>
+    <animate calcMode="discrete" attributeName="stroke" values="#607b75;#607b75;#6b8c85;#1a9c64;#1a9c64;#1a9c64;#1a9c64;#1a9c64;#1a9c64;#607b75"
+             dur="11s" repeatCount="indefinite" keyTimes="0;0.14;0.28;0.3;0.5;0.6;0.7;0.82;0.95;1"/>
+    <animate calcMode="discrete" attributeName="opacity" values="0.6;0.6;0.9;0.9;0.9;0.9;0.9;0.9;0.9;0.6"
+             dur="11s" repeatCount="indefinite" keyTimes="0;0.14;0.28;0.3;0.5;0.6;0.7;0.82;0.95;1"/>
+  </path>
+
+  <!-- NODE: fetchArticle -->
+  <g>
+    <rect x="157.5" y="70" width="185" height="60" rx="4" ry="4" stroke-width="2.5"
+          fill="#3d524d" stroke="#607b75">
+      <animate calcMode="discrete" attributeName="fill"
+               values="#3d524d;#3b5bdb;#177a51;#177a51;#177a51;#177a51;#177a51;#177a51;#177a51;#3d524d"
+               dur="11s" repeatCount="indefinite"
+               keyTimes="0;0.001;0.12;0.2;0.4;0.6;0.7;0.8;0.95;1"/>
+      <animate calcMode="discrete" attributeName="stroke"
+               values="#607b75;#5b8def;#20a56f;#20a56f;#20a56f;#20a56f;#20a56f;#20a56f;#20a56f;#607b75"
+               dur="11s" repeatCount="indefinite"
+               keyTimes="0;0.001;0.12;0.2;0.4;0.6;0.7;0.8;0.95;1"/>
+    </rect>
+    <!-- pending -->
+    <text x="250" y="105" text-anchor="middle" fill="white" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="16" font-weight="600" opacity="1">
+      fetchArticle ⋯
+      <animate calcMode="discrete" attributeName="opacity" values="1;0;0;0;0;0;0;0;0;1" dur="11s" repeatCount="indefinite" keyTimes="0;0.001;0.12;0.2;0.4;0.6;0.7;0.8;0.95;1"/>
+    </text>
+    <!-- running -->
+    <text x="250" y="105" text-anchor="middle" fill="white" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="16" font-weight="600" opacity="0">
+      fetchArticle ▶
+      <animate calcMode="discrete" attributeName="opacity" values="0;1;0;0;0;0;0;0;0;0" dur="11s" repeatCount="indefinite" keyTimes="0;0.001;0.12;0.2;0.4;0.6;0.7;0.8;0.95;1"/>
+    </text>
+    <!-- success -->
+    <text x="250" y="105" text-anchor="middle" fill="white" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="16" font-weight="600" opacity="0">
+      fetchArticle ✓
+      <animate calcMode="discrete" attributeName="opacity" values="0;0;1;1;1;1;1;1;1;0" dur="11s" repeatCount="indefinite" keyTimes="0;0.001;0.12;0.2;0.4;0.6;0.7;0.8;0.95;1"/>
+    </text>
+  </g>
+
+  <!-- NODE: summarize -->
+  <g>
+    <rect x="47.5" y="245" width="185" height="60" rx="4" ry="4" stroke-width="2.5"
+          fill="#3d524d" stroke="#607b75">
+      <animate calcMode="discrete" attributeName="fill"
+               values="#3d524d;#3d524d;#3b5bdb;#3b5bdb;#c94a2e;#4460ff;#177a51;#177a51;#177a51;#3d524d"
+               dur="11s" repeatCount="indefinite"
+               keyTimes="0;0.14;0.141;0.38;0.381;0.5;0.64;0.8;0.95;1"/>
+      <animate calcMode="discrete" attributeName="stroke"
+               values="#607b75;#607b75;#5b8def;#5b8def;#f08060;#7a91ff;#20a56f;#20a56f;#20a56f;#607b75"
+               dur="11s" repeatCount="indefinite"
+               keyTimes="0;0.14;0.141;0.38;0.381;0.5;0.64;0.8;0.95;1"/>
+    </rect>
+    <!-- pending -->
+    <text x="140" y="280" text-anchor="middle" fill="white" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="16" font-weight="600" opacity="1">
+      summarize ⋯
+      <animate calcMode="discrete" attributeName="opacity" values="1;1;0;0;0;0;0;0;0;1" dur="11s" repeatCount="indefinite" keyTimes="0;0.14;0.141;0.38;0.381;0.5;0.64;0.8;0.95;1"/>
+    </text>
+    <!-- running -->
+    <text x="140" y="280" text-anchor="middle" fill="white" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="16" font-weight="600" opacity="0">
+      summarize ▶
+      <animate calcMode="discrete" attributeName="opacity" values="0;0;1;1;0;0;0;0;0;0" dur="11s" repeatCount="indefinite" keyTimes="0;0.14;0.141;0.38;0.381;0.5;0.64;0.8;0.95;1"/>
+    </text>
+    <!-- failed -->
+    <text x="140" y="280" text-anchor="middle" fill="white" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="16" font-weight="600" opacity="0">
+      summarize ✗
+      <animate calcMode="discrete" attributeName="opacity" values="0;0;0;0;1;0;0;0;0;0" dur="11s" repeatCount="indefinite" keyTimes="0;0.14;0.141;0.38;0.381;0.5;0.64;0.8;0.95;1"/>
+    </text>
+    <!-- retrying -->
+    <text x="140" y="280" text-anchor="middle" fill="white" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="16" font-weight="600" opacity="0">
+      summarize ↻
+      <animate calcMode="discrete" attributeName="opacity" values="0;0;0;0;0;1;0;0;0;0" dur="11s" repeatCount="indefinite" keyTimes="0;0.14;0.141;0.38;0.381;0.5;0.64;0.8;0.95;1"/>
+    </text>
+    <!-- success -->
+    <text x="140" y="280" text-anchor="middle" fill="white" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="16" font-weight="600" opacity="0">
+      summarize ✓
+      <animate calcMode="discrete" attributeName="opacity" values="0;0;0;0;0;0;1;1;1;0" dur="11s" repeatCount="indefinite" keyTimes="0;0.14;0.141;0.38;0.381;0.5;0.64;0.8;0.95;1"/>
+    </text>
+  </g>
+
+  <!-- NODE: extractKeywords -->
+  <g>
+    <rect x="267.5" y="245" width="185" height="60" rx="4" ry="4" stroke-width="2.5"
+          fill="#3d524d" stroke="#607b75">
+      <animate calcMode="discrete" attributeName="fill"
+               values="#3d524d;#3d524d;#3b5bdb;#177a51;#177a51;#177a51;#177a51;#177a51;#177a51;#3d524d"
+               dur="11s" repeatCount="indefinite"
+               keyTimes="0;0.14;0.141;0.28;0.5;0.6;0.7;0.8;0.95;1"/>
+      <animate calcMode="discrete" attributeName="stroke"
+               values="#607b75;#607b75;#5b8def;#20a56f;#20a56f;#20a56f;#20a56f;#20a56f;#20a56f;#607b75"
+               dur="11s" repeatCount="indefinite"
+               keyTimes="0;0.14;0.141;0.28;0.5;0.6;0.7;0.8;0.95;1"/>
+    </rect>
+    <!-- pending -->
+    <text x="360" y="280" text-anchor="middle" fill="white" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="16" font-weight="600" opacity="1">
+      extractKeywords ⋯
+      <animate calcMode="discrete" attributeName="opacity" values="1;1;0;0;0;0;0;0;0;1" dur="11s" repeatCount="indefinite" keyTimes="0;0.14;0.141;0.28;0.5;0.6;0.7;0.8;0.95;1"/>
+    </text>
+    <!-- running -->
+    <text x="360" y="280" text-anchor="middle" fill="white" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="16" font-weight="600" opacity="0">
+      extractKeywords ▶
+      <animate calcMode="discrete" attributeName="opacity" values="0;0;1;0;0;0;0;0;0;0" dur="11s" repeatCount="indefinite" keyTimes="0;0.14;0.141;0.28;0.5;0.6;0.7;0.8;0.95;1"/>
+    </text>
+    <!-- success -->
+    <text x="360" y="280" text-anchor="middle" fill="white" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="16" font-weight="600" opacity="0">
+      extractKeywords ✓
+      <animate calcMode="discrete" attributeName="opacity" values="0;0;0;1;1;1;1;1;1;0" dur="11s" repeatCount="indefinite" keyTimes="0;0.14;0.141;0.28;0.5;0.6;0.7;0.8;0.95;1"/>
+    </text>
+  </g>
+
+  <!-- NODE: publish -->
+  <g>
+    <rect x="157.5" y="420" width="185" height="60" rx="4" ry="4" stroke-width="2.5"
+          fill="#3d524d" stroke="#607b75">
+      <animate calcMode="discrete" attributeName="fill"
+               values="#3d524d;#3d524d;#3d524d;#3d524d;#3d524d;#3d524d;#3b5bdb;#177a51;#177a51;#3d524d"
+               dur="11s" repeatCount="indefinite"
+               keyTimes="0;0.14;0.28;0.5;0.6;0.66;0.661;0.82;0.95;1"/>
+      <animate calcMode="discrete" attributeName="stroke"
+               values="#607b75;#607b75;#607b75;#607b75;#607b75;#607b75;#5b8def;#20a56f;#20a56f;#607b75"
+               dur="11s" repeatCount="indefinite"
+               keyTimes="0;0.14;0.28;0.5;0.6;0.66;0.661;0.82;0.95;1"/>
+    </rect>
+    <!-- pending -->
+    <text x="250" y="455" text-anchor="middle" fill="white" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="16" font-weight="600" opacity="1">
+      publish ⋯
+      <animate calcMode="discrete" attributeName="opacity" values="1;1;1;1;1;1;0;0;0;1" dur="11s" repeatCount="indefinite" keyTimes="0;0.14;0.28;0.5;0.6;0.66;0.661;0.82;0.95;1"/>
+    </text>
+    <!-- running -->
+    <text x="250" y="455" text-anchor="middle" fill="white" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="16" font-weight="600" opacity="0">
+      publish ▶
+      <animate calcMode="discrete" attributeName="opacity" values="0;0;0;0;0;0;1;0;0;0" dur="11s" repeatCount="indefinite" keyTimes="0;0.14;0.28;0.5;0.6;0.66;0.661;0.82;0.95;1"/>
+    </text>
+    <!-- success -->
+    <text x="250" y="455" text-anchor="middle" fill="white" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif" font-size="16" font-weight="600" opacity="0">
+      publish ✓
+      <animate calcMode="discrete" attributeName="opacity" values="0;0;0;0;0;0;0;1;1;0" dur="11s" repeatCount="indefinite" keyTimes="0;0.14;0.28;0.5;0.6;0.66;0.661;0.82;0.95;1"/>
+    </text>
+  </g>
+</svg>
