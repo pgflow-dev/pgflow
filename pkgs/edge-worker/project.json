@@ -4,6 +4,9 @@
   "sourceRoot": "pkgs/edge-worker",
   "projectType": "library",
   "targets": {
+    "supabase:ci-marker": {
+      "executor": "nx:noop"
+    },
     "build": {
       "executor": "nx:noop",
       "dependsOn": ["^build"]
