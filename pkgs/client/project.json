@@ -24,7 +24,7 @@
         "cwd": "{projectRoot}",
         "command": "pnpm run verify-exports"
       },
-      "dependsOn": ["build:lib", "build:browser"]
+      "dependsOn": ["build"]
     },
     "build:lib": {
       "executor": "@nx/vite:build",
