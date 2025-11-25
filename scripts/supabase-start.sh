@@ -15,7 +15,10 @@ set -e
 # Behavior:
 #   1. Checks if Supabase is already running (fast path)
 #   2. If running: exits immediately
-#   3. If not running: cleans up stale containers and starts fresh
+#   3. If not running:
+#      a. Runs <project>/scripts/prepare-supabase.sh if it exists (e.g., copy migrations)
+#      b. Cleans up stale containers
+#      c. Starts Supabase fresh
 #
 # Exit codes:
 #   0 - Success (Supabase is running)
@@ -57,6 +60,13 @@ fi
 
 # Supabase is not running - need to start it
 echo -e "${YELLOW}Supabase is not running. Starting...${NC}"
+
+# Run package-specific preparation if script exists
+PREPARE_SCRIPT="$PROJECT_DIR/scripts/prepare-supabase.sh"
+if [ -x "$PREPARE_SCRIPT" ]; then
+  echo -e "${YELLOW}Running prepare-supabase.sh...${NC}"
+  "$PREPARE_SCRIPT"
+fi
 
 # Clean up any stale containers first
 # This prevents errors from previous incomplete shutdowns

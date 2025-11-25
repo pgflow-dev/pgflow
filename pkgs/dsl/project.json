@@ -40,7 +40,7 @@
       "executor": "nx:run-commands",
       "cache": true,
       "inputs": ["production"],
-      "dependsOn": [],
+      "dependsOn": ["lint"],
       "options": {
         "cwd": "{projectRoot}",
         "command": "pnpm vitest --typecheck.only --run --config vitest.typecheck.config.ts"

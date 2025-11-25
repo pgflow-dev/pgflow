@@ -19,6 +19,9 @@
     ]
   },
   "targets": {
+    "supabase:ci-marker": {
+      "executor": "nx:noop"
+    },
     "dump-realtime-schema": {
       "executor": "nx:run-commands",
       "local": true,
@@ -275,7 +278,7 @@
       "executor": "nx:run-commands",
       "cache": true,
       "inputs": ["production", "^production"],
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "lint"],
       "options": {
         "cwd": "{projectRoot}",
         "command": "pnpm vitest --typecheck.only --run --config vitest.typecheck.config.ts"
