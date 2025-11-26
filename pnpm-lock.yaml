@@ -188,8 +188,8 @@ importers:
         specifier: ^3.4.0
         version: 3.4.0(prettier@3.6.2)(svelte@5.43.6)
       supabase:
-        specifier: ^2.50.3
-        version: 2.54.11
+        specifier: ^2.62.10
+        version: 2.62.10
       svelte:
         specifier: ^5.41.0
         version: 5.43.6
@@ -274,8 +274,8 @@ importers:
         specifier: ^3.4.5
         version: 3.4.5
       supabase:
-        specifier: ^2.50.3
-        version: 2.54.11
+        specifier: ^2.62.10
+        version: 2.62.10
       terser:
         specifier: ^5.43.0
         version: 5.43.1
@@ -299,8 +299,8 @@ importers:
         specifier: ^22.14.1
         version: 22.19.0
       supabase:
-        specifier: ^2.50.3
-        version: 2.54.11
+        specifier: ^2.62.10
+        version: 2.62.10
 
   pkgs/dsl:
     devDependencies:
@@ -415,8 +415,8 @@ importers:
         specifier: ^0.14.1
         version: 0.14.1
       supabase:
-        specifier: ^2.50.3
-        version: 2.54.11
+        specifier: ^2.62.10
+        version: 2.62.10
       wrangler:
         specifier: ^4.20.3
         version: 4.46.0(@cloudflare/workers-types@4.20251109.0)
@@ -11127,6 +11127,11 @@ packages:
 
   supabase@2.54.11:
     resolution: {integrity: sha512-KuDDVi1s2fhfun81LNPaCLpW4/LFsP3G2LKUQimzEoj64sP1DtZ/d97uw6GFYbNMPW9JC2Ruuei53qHInOwJLA==}
+    engines: {npm: '>=8'}
+    hasBin: true
+
+  supabase@2.62.10:
+    resolution: {integrity: sha512-Zw5vDl+3KGU8VWSChLQqJ0IYfeLwLNnmW32iS54GVx52VEnOxtDBZylMx/GRGRtv5z6RtU3/Eal7H2B0S1kDcQ==}
     engines: {npm: '>=8'}
     hasBin: true
 
@@ -25803,6 +25808,15 @@ snapshots:
       https-proxy-agent: 7.0.6(supports-color@10.2.2)
       node-fetch: 3.3.2
       tar: 7.5.1
+    transitivePeerDependencies:
+      - supports-color
+
+  supabase@2.62.10:
+    dependencies:
+      bin-links: 6.0.0
+      https-proxy-agent: 7.0.6(supports-color@10.2.2)
+      node-fetch: 3.3.2
+      tar: 7.5.2
     transitivePeerDependencies:
       - supports-color
 
