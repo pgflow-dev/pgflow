@@ -39,7 +39,7 @@
     "build:browser": {
       "executor": "@nx/vite:build",
       "outputs": ["{options.outputPath}"],
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "build:lib"],
       "inputs": ["production", "^production"],
       "options": {
         "outputPath": "pkgs/client/dist",
