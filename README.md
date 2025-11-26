@@ -1,77 +1,111 @@
-<p align="center"><a href="https://pgflow.dev" target="_blank" rel="noopener noreferrer"><img src="logo.png?raw=true" alt="pgflow logo"></a></p>
+<p align="center"><a href="https://pgflow.dev/" target="_blank" rel="noopener noreferrer"><img src="logo-with-text.svg" alt="pgflow logo" width="450"></a></p>
 
-### Where complex becomes clockwork.
+<p align="center">
+  <strong>AI workflows in Supabase, no extra infra.</strong>
+  <br>
+  TypeScript workflows with full autocomplete, zero boilerplate, automatic retries and realtime progress. Built on Postgres + Edge Functions.
+</p>
 
-> "Things just happen. What the hell. And the reason things just happen is that a hundred billion other things just happened, all working unheeded and unseen, to make sure that they do."
->
-> — **Terry Pratchett, "Last Continent"**, reflecting on the elegant machinery of complex systems
+<p align="center">
+  <a href="https://pgflow.dev">Docs</a> |
+  <a href="https://demo.pgflow.dev">Demo</a> |
+  <a href="https://github.com/pgflow-dev/pgflow">GitHub</a> |
+  <a href="https://pgflow.dev/discord/">Discord</a>
+  <br>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
+  <a href="https://supabase.com"><img src="https://img.shields.io/badge/Built%20for-Supabase-3ECF8E?logo=supabase" alt="Built for Supabase"></a>
+</p>
 
-## Overview
+<p align="center">
+  <em style="font-size: 1.2em;">"A workflow engine built on Supabase primitives."</em>
+  <br>
+  <strong>Paul Copplestone, CEO, Supabase</strong> (<a href="https://x.com/kiwicopple/status/1990686524229181856">via X</a>)
+</p>
 
-pgflow is a workflow orchestration system that runs directly in your Postgres database - ideal for building reliable AI workflows, background jobs, and data pipelines on Supabase without external services.
+<p align="center">
+  <img src="dag-animation.svg" alt="pgflow DAG execution showing parallel steps with automatic retry" width="400">
+</p>
 
-The system combines:
+## Quick Start
 
-- **[SQL Core](./pkgs/core/)** - Workflow state management natively in Postgres with ACID compliance
-- **[TypeScript DSL](./pkgs/dsl/)** - Type-safe workflow definitions with automatic inference
-- **[TypeScript Client](./pkgs/client/)** - Client library for starting workflows and monitoring real-time progress
-- **[Edge Worker](./pkgs/edge-worker/)** - Auto-respawning task processor that handles retries and concurrency
-- **[CLI Tools](./pkgs/cli/)** - One-command setup with automatic schema migrations
+```bash
+# Install pgflow in your Supabase project
+npx pgflow@latest install
 
-## Documentation
+# Restart Supabase and apply migrations
+npx supabase stop && npx supabase start
+npx supabase migrations up
+```
 
-The pgflow documentation is [available on pgflow.dev](https://pgflow.dev).
+Then define your workflow ([full guide](https://pgflow.dev/get-started/installation/#next-steps)):
 
-## Getting help
+```typescript
+import { Flow } from '@pgflow/dsl';
 
-File an issue on [GitHub](https://github.com/pgflow-dev/pgflow/issues/new) or join our [Discord](https://pgflow.dev/discord/).
+new Flow<{ url: string }>({ slug: 'analyzeArticle' })
+  .step({ slug: 'scrape' }, (input) => scrapeWebsite(input.run.url))
+  .step({ slug: 'summarize', dependsOn: ['scrape'] }, (input) =>
+    summarize(input.scrape)
+  )
+  .step({ slug: 'extractKeywords', dependsOn: ['scrape'] }, (input) =>
+    extractKeywords(input.scrape)
+  )
+  .step(
+    { slug: 'publish', dependsOn: ['summarize', 'extractKeywords'] },
+    (input) =>
+      publish({ summary: input.summarize, keywords: input.extractKeywords })
+  );
+```
+
+This replaces ~240 lines of queue setup, state management, and coordination code. [See full comparison](https://supabase.com/blog/processing-large-jobs-with-edge-functions)
 
 ## Why pgflow?
 
-When you need more than just isolated background jobs, but don't want the complexity of external orchestration systems:
+Building workflows in Supabase today means wiring together pgmq, pg_cron, state tables, and Edge Functions yourself. It works, but it's tedious.
 
-- **Postgres as the Single Source of Truth** - All definitions, state, and history in your database
-- **Zero Infrastructure** - No external services, dashboards, or control planes
-- **Type-Safe Workflows** - Full compile-time safety between workflow steps
-- **Reliable Background Jobs** - Automatic retries with backoff and observability
+**pgflow gives you:**
+
+- **Declarative workflows** - Define steps and dependencies in TypeScript. pgflow handles queues, state, and coordination.
+- **Built for Supabase** - Runs entirely in your existing project. No Redis, no Temporal, no external services.
+- **AI-ready** - Automatic retries with exponential backoff for flaky LLM APIs. Per-step, not per-workflow.
+- **Parallel processing** - Fan out over arrays with independent retries. If 3 of 100 items fail, only those 3 retry.
+- **Full observability** - All workflow state in Postgres. Query runs, debug failures, inspect outputs with SQL.
+- **Flexible triggers** - Start from your app, database triggers, pg_cron, or direct SQL calls.
 
 ## What can you build?
 
-- **AI Workflows** - Chain LLMs, scrape data, reason across tools, and handle failures
-- **Background Jobs** - Process emails, files, and scheduled tasks with full visibility
-- **Data Pipelines** - Extract, transform, and load data with built-in dependency handling
+- **AI Pipelines** - Scrape websites, chunk content, generate embeddings, summarize with LLMs. Each step retries independently when APIs flake.
+- **Background Jobs** - Process uploads, send emails, sync data. Reliable task queue processing without Redis or external services.
+- **RAG Pipelines** - Chunk documents, generate embeddings, index content. Perfect for AI applications with multi-step LLM chains.
+- **Data Workflows** - ETL pipelines, scheduled imports, multi-step transformations. All orchestrated in Postgres.
 
-## How pgflow works
+See how pgflow compares to [Trigger.dev](https://pgflow.dev/comparisons/trigger/), [Inngest](https://pgflow.dev/comparisons/inngest/), [DBOS](https://pgflow.dev/comparisons/dbos/), and [Vercel Workflows](https://pgflow.dev/comparisons/vercel-workflows/).
 
-1. **Define workflows using TypeScript DSL**
-2. **Compile them to SQL migrations**
-3. **Deploy as Supabase Edge Functions**
-4. **Trigger workflows from your app or SQL**
+## How it works
 
-The execution system handles the rest - scheduling steps when dependencies complete, retrying failed tasks, and aggregating results automatically.
+1. **Define workflows** using the TypeScript DSL
+2. **Compile** them to SQL migrations
+3. **Deploy** as Supabase Edge Functions
+4. **Trigger** from your app, SQL, or pg_cron
+
+The execution engine handles scheduling, retries, and result aggregation automatically.
 
 ## Packages
 
-| Package                                | Description                                                             |
-| -------------------------------------- | ----------------------------------------------------------------------- |
-| [cli](./pkgs/cli/)                     | Command-line interface for installing and compiling flows               |
-| [client](./pkgs/client/)               | TypeScript client for starting workflows and monitoring real-time progress |
-| [core](./pkgs/core/)                   | SQL Core for the workflow engine - foundational tables and functions    |
-| [dsl](./pkgs/dsl/)                     | TypeScript DSL for defining flows with type inference                   |
-| [edge-worker](./pkgs/edge-worker/)     | Task queue worker for Supabase Edge Functions with reliability features |
-| [website](./pkgs/website/)             | Documentation site                                                      |
-| [example-flows](./pkgs/example-flows/) | Example workflow definitions                                            |
-
-## Resources
-
-- 📖 **Documentation**: [pgflow.dev](https://pgflow.dev)
-- 🚀 **Demo**: [pgflow-demo.netlify.app](https://pgflow-demo.netlify.app)
-- 🛠️ **Getting Started**: [pgflow.dev/getting-started](https://pgflow.dev/getting-started)
+| Package                                    | Version                                                                                             | Description                                             |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| [pgflow](./pkgs/cli/)                      | [![npm](https://img.shields.io/npm/v/pgflow)](https://www.npmjs.com/package/pgflow)                 | CLI for installing and compiling flows                  |
+| [@pgflow/core](./pkgs/core/)               | [![npm](https://img.shields.io/npm/v/@pgflow/core)](https://www.npmjs.com/package/@pgflow/core)     | SQL Core - foundational tables and functions            |
+| [@pgflow/dsl](./pkgs/dsl/)                 | [![npm](https://img.shields.io/npm/v/@pgflow/dsl)](https://www.npmjs.com/package/@pgflow/dsl)       | TypeScript DSL for defining flows with type inference   |
+| [@pgflow/edge-worker](./pkgs/edge-worker/) | [![JSR](https://jsr.io/badges/@pgflow/edge-worker)](https://jsr.io/@pgflow/edge-worker)             | Task queue worker for Supabase Edge Functions           |
+| [@pgflow/client](./pkgs/client/)           | [![npm](https://img.shields.io/npm/v/@pgflow/client)](https://www.npmjs.com/package/@pgflow/client) | TypeScript client for starting and monitoring workflows |
 
 ## Releases
 
-- 📋 **Release Process**: See [RELEASES.md](./RELEASES.md) for how versions are managed and published
-- 📦 **Snapshot Releases**: See [SNAPSHOT_RELEASES.md](./SNAPSHOT_RELEASES.md) for testing changes before release
+- **Release Process**: See [RELEASES.md](./RELEASES.md) for how versions are managed and published
+- **Snapshot Releases**: See [SNAPSHOT_RELEASES.md](./SNAPSHOT_RELEASES.md) for testing changes before release
+
+---
 
 > [!NOTE]
 > This project and all its components are licensed under [Apache 2.0](./LICENSE) license.
