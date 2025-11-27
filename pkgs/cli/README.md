@@ -65,7 +65,7 @@ The installer will:
 Convert a TypeScript flow definition into a SQL migration:
 
 ```bash
-npx pgflow@latest compile supabase/functions/_flows/my_flow.ts
+npx pgflow@latest compile my_flow
 ```
 
 Options:

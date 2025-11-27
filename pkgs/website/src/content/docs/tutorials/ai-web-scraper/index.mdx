@@ -52,14 +52,15 @@ Here's the file structure we'll create:
 
 <FileTree>
 - supabase/
+  - flows/
+    - analyze_website.ts
+    - index.ts
+  - tasks/
+    - scrapeWebsite.ts
+    - summarize.ts
+    - extractTags.ts
+    - saveToDb.ts
   - functions/
-    - _tasks/
-      - scrapeWebsite.ts
-      - summarize.ts
-      - extractTags.ts
-      - saveToDb.ts
-    - _flows/
-      - analyze_website.ts
     - analyze_website_worker/
       - index.ts
 </FileTree>

@@ -28,35 +28,32 @@ Our flow will:
 
 1. ### Set up your project structure
 
-   First, create a directory for your flow:
-
-   ```bash frame="none"
-   mkdir -p supabase/functions/_flows
-   ```
+   After running `pgflow install`, you already have a `flows/` directory with an example. Let's create a new flow:
 
    <FileTree>
    - supabase
+     - flows
+       - greet_user.ts (your flow definition)
+       - index.ts (re-exports all flows)
      - functions
        - pgflow
-         - index.ts (register flows here)
+         - index.ts (Control Plane)
          - deno.json
-       - _flows
-         - greet_user.ts (your flow definition)
    </FileTree>
 
 2. ### Create the flow definition
 
-   Create a file called `supabase/functions/_flows/greet_user.ts` with this content:
+   Create a file called `supabase/flows/greet_user.ts` with this content:
 
-   ```typescript title="supabase/functions/_flows/greet_user.ts"
-   import { Flow } from 'npm:@pgflow/dsl';
+   ```typescript title="supabase/flows/greet_user.ts"
+   import { Flow } from '@pgflow/dsl';
 
    type Input = {
      first_name: string;
      last_name: string;
    };
 
-   export default new Flow<Input>({
+   export const GreetUser = new Flow<Input>({
      slug: 'greet_user',
    })
      .step(
@@ -71,19 +68,23 @@ Our flow will:
 
 3. ### Register the flow
 
-   Open `supabase/functions/pgflow/index.ts` and replace the commented example with your flow:
+   Add your flow to `supabase/flows/index.ts`:
 
-   ```diff lang="typescript" title="supabase/functions/pgflow/index.ts"
-    import { ControlPlane } from '@pgflow/edge-worker';
-   -// Import your flows here:
-   -// import { MyFlow } from '../_flows/my_flow.ts';
-   +import GreetUser from '../_flows/greet_user.ts';
+   ```diff lang="typescript" title="supabase/flows/index.ts"
+    // Re-export all flows from this directory
+    // Example: export { MyFlow } from './my_flow.ts';
 
-    ControlPlane.serve([
-   -  // Add your flows here:
-   -  // MyFlow,
-   +  GreetUser,
-    ]);
+    export { ExampleFlow } from './example_flow.ts';
+   +export { GreetUser } from './greet_user.ts';
+   ```
+
+   That's it! The Control Plane in `supabase/functions/pgflow/index.ts` automatically imports all flows from your `flows/` directory using namespace imports:
+
+   ```typescript title="supabase/functions/pgflow/index.ts"
+   import { ControlPlane } from '@pgflow/edge-worker';
+   import * as flows from '../../flows/index.ts';
+
+   ControlPlane.serve(flows);
    ```
 
 </Steps>

@@ -221,7 +221,7 @@ npx pgflow compile path/to/flow.ts
 ```typescript
 import { createFlowWorker } from '@pgflow/edge-worker';
 import { createClient } from '@supabase/supabase-js';
-import MyFlow from './_flows/my_flow.ts';
+import { MyFlow } from '../../flows/my_flow.ts';
 
 // Create Supabase client
 const supabase = createClient(

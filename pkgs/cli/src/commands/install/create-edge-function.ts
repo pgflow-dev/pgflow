@@ -5,13 +5,9 @@ import chalk from 'chalk';
 import { getVersion } from '../../utils/get-version.js';
 
 const INDEX_TS_TEMPLATE = `import { ControlPlane } from '@pgflow/edge-worker';
-// Import your flows here:
-// import { MyFlow } from '../_flows/my_flow.ts';
+import * as flows from '../../flows/index.ts';
 
-ControlPlane.serve([
-  // Add your flows here:
-  // MyFlow,
-]);
+ControlPlane.serve(flows);
 `;
 
 const DENO_JSON_TEMPLATE = (version: string) => `{

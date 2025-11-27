@@ -39,25 +39,31 @@ They break active runs and corrupt data.
 Put the new flow in its own file with a versioned slug.
 
 <FileTree>
-- supabase/functions/
-  - _tasks/
+- supabase/
+  - flows/
+    - greet_user.ts
+    - **greet_user_v2.ts**     // new version
+    - index.ts
+  - tasks/
     - fetchUserData.ts
     - sendEmail.ts
-  - _flows/
-    - greet_user.ts
-    - **greet_user_v2.ts**     // 👈 new
 </FileTree>
 
 <Steps>
 
 1. **Create new flow file**
 
-   ```typescript
-   // supabase/functions/_flows/greet_user_v2.ts
-   export default new Flow<Input>({
+   ```typescript title="supabase/flows/greet_user_v2.ts"
+   export const GreetUserV2 = new Flow<Input>({
      slug: 'greet_user_v2',
      // ...new configuration and step definitions
    })
+   ```
+
+   Then add it to `supabase/flows/index.ts`:
+
+   ```typescript
+   export { GreetUserV2 } from './greet_user_v2.ts';
    ```
 
 2. **Compile it**
@@ -65,7 +71,7 @@ Put the new flow in its own file with a versioned slug.
    [Compile the new flow to SQL](/get-started/flows/compile-flow/) which generates a migration file:
 
    ```bash frame="none"
-   npx pgflow@latest compile supabase/functions/_flows/greet_user_v2.ts
+   npx pgflow@latest compile greet_user_v2
    ```
 
 3. **Run migration**

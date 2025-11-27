@@ -33,8 +33,8 @@ Before starting, make sure you have completed:
    Replace contents of `index.ts` file with the following:
 
    ```typescript title="supabase/functions/greet_user_worker/index.ts"
-   import { EdgeWorker } from "jsr:@pgflow/edge-worker";
-   import GreetUser from '../_flows/greet_user.ts';
+   import { EdgeWorker } from "@pgflow/edge-worker";
+   import { GreetUser } from '../../flows/greet_user.ts';
 
    // Pass the flow definition to the Edge Worker
    EdgeWorker.start(GreetUser);

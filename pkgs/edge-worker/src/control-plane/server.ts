@@ -18,6 +18,20 @@ export interface ErrorResponse {
 }
 
 /**
+ * Input type for flow registration - accepts array or object (for namespace imports)
+ */
+export type FlowInput = AnyFlow[] | Record<string, AnyFlow>;
+
+/**
+ * Normalizes flow input to array format
+ * @param flowsInput Array or object of flows
+ * @returns Array of flows
+ */
+function normalizeFlowInput(flowsInput: FlowInput): AnyFlow[] {
+  return Array.isArray(flowsInput) ? flowsInput : Object.values(flowsInput);
+}
+
+/**
  * Builds a flow registry and validates no duplicate slugs
  * @param flows Array of flow definitions
  * @returns Map of slug to flow
@@ -39,10 +53,11 @@ function buildFlowRegistry(flows: AnyFlow[]): Map<string, AnyFlow> {
 
 /**
  * Creates a request handler for the ControlPlane HTTP API
- * @param flows Array of flow definitions to register
+ * @param flowsInput Array or object of flow definitions to register
  * @returns Request handler function
  */
-export function createControlPlaneHandler(flows: AnyFlow[]) {
+export function createControlPlaneHandler(flowsInput: FlowInput) {
+  const flows = normalizeFlowInput(flowsInput);
   const registry = buildFlowRegistry(flows);
 
   return (req: Request): Response => {
@@ -73,10 +88,10 @@ export function createControlPlaneHandler(flows: AnyFlow[]) {
 
 /**
  * Serves the ControlPlane HTTP API for flow compilation
- * @param flows Array of flow definitions to register
+ * @param flowsInput Array or object of flow definitions to register
  */
-export function serveControlPlane(flows: AnyFlow[]): void {
-  const handler = createControlPlaneHandler(flows);
+export function serveControlPlane(flowsInput: FlowInput): void {
+  const handler = createControlPlaneHandler(flowsInput);
 
   // Create HTTP server using Deno.serve (follows Supabase Edge Function pattern)
   Deno.serve({}, handler);

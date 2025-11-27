@@ -7,5 +7,3 @@ export const TestFlowE2E = new Flow<{ value: string }>({
 }).step({ slug: 'step1' }, async (input) => ({
   result: `processed: ${input.run.value}`,
 }));
-
-export default TestFlowE2E;

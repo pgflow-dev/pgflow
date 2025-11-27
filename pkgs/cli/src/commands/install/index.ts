@@ -5,6 +5,7 @@ import { copyMigrations } from './copy-migrations.js';
 import { updateConfigToml } from './update-config-toml.js';
 import { updateEnvFile } from './update-env-file.js';
 import { createEdgeFunction } from './create-edge-function.js';
+import { createFlowsDirectory } from './create-flows-directory.js';
 import { supabasePathPrompt } from './supabase-path-prompt.js';
 
 export default (program: Command) => {
@@ -34,6 +35,7 @@ export default (program: Command) => {
         '',
         `  • Update ${chalk.cyan('supabase/config.toml')} ${chalk.dim('(enable pooler, per_worker runtime)')}`,
         `  • Add pgflow migrations to ${chalk.cyan('supabase/migrations/')}`,
+        `  • Create ${chalk.cyan('supabase/flows/')} ${chalk.dim('(flow definitions with example)')}`,
         `  • Create Control Plane in ${chalk.cyan('supabase/functions/pgflow/')}`,
         `  • Configure ${chalk.cyan('supabase/functions/.env')}`,
         '',
@@ -73,6 +75,11 @@ export default (program: Command) => {
         autoConfirm: true,
       });
 
+      const flowsDirectory = await createFlowsDirectory({
+        supabasePath,
+        autoConfirm: true,
+      });
+
       const edgeFunction = await createEdgeFunction({
         supabasePath,
         autoConfirm: true,
@@ -86,7 +93,7 @@ export default (program: Command) => {
       // Step 4: Show completion message
       const outroMessages: string[] = [];
 
-      if (migrations || configUpdate || edgeFunction || envFile) {
+      if (migrations || configUpdate || flowsDirectory || edgeFunction || envFile) {
         outroMessages.push(chalk.green.bold('✓ Installation complete!'));
       } else {
         outroMessages.push(
