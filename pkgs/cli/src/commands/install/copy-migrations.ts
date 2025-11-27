@@ -233,7 +233,7 @@ export async function copyMigrations({
 
   // If no files to copy, show message and return false (no changes made)
   if (filesToCopy.length === 0) {
-    log.success(`All ${skippedFiles.length} pgflow migrations are already in place`);
+    log.success('Migrations already up to date');
     return false;
   }
 
@@ -247,32 +247,28 @@ export async function copyMigrations({
     file.destination = `${baseTimestamp}_${file.source}`;
   });
 
-  // Build summary message with explanation - show all migrations
-  const migrationLines = filesToCopy.map((file) => {
-    return `    ${chalk.bold(file.source)}`;
-  });
-
-  const summaryMsg = [
-    `Add to ${chalk.cyan('migrations/')} ${chalk.dim('(database schema for workflow engine)')}:`,
-    '',
-    ...migrationLines,
-  ].join('\n');
-
-  log.info(summaryMsg);
-
-  let shouldContinue = autoConfirm;
-
+  // Show preview and ask for confirmation only when not auto-confirming
   if (!autoConfirm) {
+    const migrationLines = filesToCopy.map((file) => {
+      return `    ${chalk.bold(file.source)}`;
+    });
+
+    const summaryMsg = [
+      `Add to ${chalk.cyan('migrations/')} ${chalk.dim('(database schema for workflow engine)')}:`,
+      '',
+      ...migrationLines,
+    ].join('\n');
+
+    log.info(summaryMsg);
+
     const confirmResult = await confirm({
       message: `Add ${filesToCopy.length} migration${filesToCopy.length !== 1 ? 's' : ''}?`,
     });
 
-    shouldContinue = confirmResult === true;
-  }
-
-  if (!shouldContinue) {
-    log.warn('Migration installation skipped');
-    return false;
+    if (confirmResult !== true) {
+      log.warn('Migration installation skipped');
+      return false;
+    }
   }
 
   // Install migrations with new filenames
@@ -283,12 +279,7 @@ export async function copyMigrations({
     fs.copyFileSync(sourcePath1, destinationPath);
   }
 
-  const successMsg = [
-    `Installed ${filesToCopy.length} migration${filesToCopy.length !== 1 ? 's' : ''}`,
-    `  ${chalk.dim('Learn more:')} ${chalk.blue.underline('https://pgflow.dev/concepts/data-model/')}`,
-  ].join('\n');
-
-  log.success(successMsg);
+  log.success(`Installed ${filesToCopy.length} migration${filesToCopy.length !== 1 ? 's' : ''}`);
 
   return true; // Return true to indicate migrations were copied
 }
