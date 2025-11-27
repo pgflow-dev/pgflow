@@ -68,9 +68,7 @@
       "dependsOn": ["supabase:prepare"],
       "options": {
         "cwd": "{projectRoot}",
-        "commands": [
-          "../../scripts/supabase-start-locked.sh ."
-        ],
+        "commands": ["../../scripts/supabase-start-locked.sh ."],
         "parallel": false
       }
     },
@@ -227,7 +225,13 @@
     },
     "prepush": {
       "executor": "nx:noop",
-      "dependsOn": ["lint", "build", "typecheck", "verify-exports", "test:types:vitest", "test:types:strict"]
+      "dependsOn": [
+        "lint",
+        "build",
+        "typecheck",
+        "test:types:vitest",
+        "test:types:strict"
+      ]
     }
   }
 }

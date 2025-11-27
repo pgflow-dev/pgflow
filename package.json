@@ -17,6 +17,7 @@
   "private": true,
   "devDependencies": {
     "@axhxrx/nx-deno": "^1.0.2",
+    "supabase": "^2.62.10",
     "@changesets/cli": "^2.28.1",
     "@eslint/js": "^9.8.0",
     "@netlify/plugin-nextjs": "^5.11.4",
