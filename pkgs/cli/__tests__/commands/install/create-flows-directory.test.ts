@@ -35,10 +35,10 @@ describe('createFlowsDirectory', () => {
 
     // Verify all files exist
     const indexPath = path.join(flowsDir, 'index.ts');
-    const exampleFlowPath = path.join(flowsDir, 'example-flow.ts');
+    const greetUserPath = path.join(flowsDir, 'greet-user.ts');
 
     expect(fs.existsSync(indexPath)).toBe(true);
-    expect(fs.existsSync(exampleFlowPath)).toBe(true);
+    expect(fs.existsSync(greetUserPath)).toBe(true);
   });
 
   it('should create index.ts with barrel export pattern', async () => {
@@ -50,31 +50,49 @@ describe('createFlowsDirectory', () => {
     const indexPath = path.join(flowsDir, 'index.ts');
     const indexContent = fs.readFileSync(indexPath, 'utf8');
 
-    // Should have export for ExampleFlow
-    expect(indexContent).toContain("export { ExampleFlow } from './example-flow.ts';");
+    // Should have export for GreetUser
+    expect(indexContent).toContain("export { GreetUser } from './greet-user.ts';");
     // Should have documenting comment
     expect(indexContent).toContain('Re-export all flows');
   });
 
-  it('should create example-flow.ts with named export', async () => {
+  it('should create greet-user.ts with named export', async () => {
     await createFlowsDirectory({
       supabasePath,
       autoConfirm: true,
     });
 
-    const exampleFlowPath = path.join(flowsDir, 'example-flow.ts');
-    const exampleFlowContent = fs.readFileSync(exampleFlowPath, 'utf8');
+    const greetUserPath = path.join(flowsDir, 'greet-user.ts');
+    const greetUserContent = fs.readFileSync(greetUserPath, 'utf8');
 
     // Should use named export (not default)
-    expect(exampleFlowContent).toContain('export const ExampleFlow');
+    expect(greetUserContent).toContain('export const GreetUser');
     // Should import Flow from @pgflow/dsl
-    expect(exampleFlowContent).toContain("import { Flow } from '@pgflow/dsl'");
+    expect(greetUserContent).toContain("import { Flow } from '@pgflow/dsl'");
     // Should have correct slug
-    expect(exampleFlowContent).toContain("slug: 'exampleFlow'");
-    // Should have input type
-    expect(exampleFlowContent).toContain('type Input');
-    // Should have at least one step
-    expect(exampleFlowContent).toContain('.step(');
+    expect(greetUserContent).toContain("slug: 'greetUser'");
+    // Should have input type with firstName and lastName
+    expect(greetUserContent).toContain('type Input');
+    expect(greetUserContent).toContain('firstName');
+    expect(greetUserContent).toContain('lastName');
+  });
+
+  it('should create greet-user.ts with two steps showing dependsOn', async () => {
+    await createFlowsDirectory({
+      supabasePath,
+      autoConfirm: true,
+    });
+
+    const greetUserPath = path.join(flowsDir, 'greet-user.ts');
+    const greetUserContent = fs.readFileSync(greetUserPath, 'utf8');
+
+    // Should have two steps
+    expect(greetUserContent).toContain("slug: 'fullName'");
+    expect(greetUserContent).toContain("slug: 'greeting'");
+    // Second step should depend on first
+    expect(greetUserContent).toContain("dependsOn: ['fullName']");
+    // Second step should access result from first step
+    expect(greetUserContent).toContain('input.fullName');
   });
 
   it('should not create files when they already exist', async () => {
@@ -82,10 +100,10 @@ describe('createFlowsDirectory', () => {
     fs.mkdirSync(flowsDir, { recursive: true });
 
     const indexPath = path.join(flowsDir, 'index.ts');
-    const exampleFlowPath = path.join(flowsDir, 'example-flow.ts');
+    const greetUserPath = path.join(flowsDir, 'greet-user.ts');
 
     fs.writeFileSync(indexPath, '// existing content');
-    fs.writeFileSync(exampleFlowPath, '// existing content');
+    fs.writeFileSync(greetUserPath, '// existing content');
 
     const result = await createFlowsDirectory({
       supabasePath,
@@ -97,7 +115,7 @@ describe('createFlowsDirectory', () => {
 
     // Verify files still exist with original content
     expect(fs.readFileSync(indexPath, 'utf8')).toBe('// existing content');
-    expect(fs.readFileSync(exampleFlowPath, 'utf8')).toBe('// existing content');
+    expect(fs.readFileSync(greetUserPath, 'utf8')).toBe('// existing content');
   });
 
   it('should create only missing files when some already exist', async () => {
@@ -105,7 +123,7 @@ describe('createFlowsDirectory', () => {
     fs.mkdirSync(flowsDir, { recursive: true });
 
     const indexPath = path.join(flowsDir, 'index.ts');
-    const exampleFlowPath = path.join(flowsDir, 'example-flow.ts');
+    const greetUserPath = path.join(flowsDir, 'greet-user.ts');
 
     // Only create index.ts
     fs.writeFileSync(indexPath, '// existing content');
@@ -115,17 +133,17 @@ describe('createFlowsDirectory', () => {
       autoConfirm: true,
     });
 
-    // Should return true because example-flow.ts was created
+    // Should return true because greet-user.ts was created
     expect(result).toBe(true);
 
     // Verify index.ts was not modified
     expect(fs.readFileSync(indexPath, 'utf8')).toBe('// existing content');
 
-    // Verify example-flow.ts was created
-    expect(fs.existsSync(exampleFlowPath)).toBe(true);
+    // Verify greet-user.ts was created
+    expect(fs.existsSync(greetUserPath)).toBe(true);
 
-    const exampleContent = fs.readFileSync(exampleFlowPath, 'utf8');
-    expect(exampleContent).toContain('export const ExampleFlow');
+    const greetUserContent = fs.readFileSync(greetUserPath, 'utf8');
+    expect(greetUserContent).toContain('export const GreetUser');
   });
 
   it('should create parent directories if they do not exist', async () => {
@@ -145,6 +163,6 @@ describe('createFlowsDirectory', () => {
 
     // Verify files exist
     expect(fs.existsSync(path.join(flowsDir, 'index.ts'))).toBe(true);
-    expect(fs.existsSync(path.join(flowsDir, 'example-flow.ts'))).toBe(true);
+    expect(fs.existsSync(path.join(flowsDir, 'greet-user.ts'))).toBe(true);
   });
 });

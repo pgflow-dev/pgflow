@@ -6,6 +6,7 @@ import { updateConfigToml } from './update-config-toml.js';
 import { updateEnvFile } from './update-env-file.js';
 import { createEdgeFunction } from './create-edge-function.js';
 import { createFlowsDirectory } from './create-flows-directory.js';
+import { createExampleWorker } from './create-example-worker.js';
 import { supabasePathPrompt } from './supabase-path-prompt.js';
 
 export default (program: Command) => {
@@ -35,8 +36,9 @@ export default (program: Command) => {
         '',
         `  • Update ${chalk.cyan('supabase/config.toml')} ${chalk.dim('(enable pooler, per_worker runtime)')}`,
         `  • Add pgflow migrations to ${chalk.cyan('supabase/migrations/')}`,
-        `  • Create ${chalk.cyan('supabase/flows/')} ${chalk.dim('(flow definitions with example)')}`,
+        `  • Create ${chalk.cyan('supabase/flows/')} ${chalk.dim('(flow definitions with GreetUser example)')}`,
         `  • Create Control Plane in ${chalk.cyan('supabase/functions/pgflow/')}`,
+        `  • Create ${chalk.cyan('supabase/functions/greet-user-worker/')} ${chalk.dim('(example worker)')}`,
         `  • Configure ${chalk.cyan('supabase/functions/.env')}`,
         '',
         `  ${chalk.green('✓ Safe to re-run - completed steps will be skipped')}`,
@@ -85,6 +87,11 @@ export default (program: Command) => {
         autoConfirm: true,
       });
 
+      const exampleWorker = await createExampleWorker({
+        supabasePath,
+        autoConfirm: true,
+      });
+
       const envFile = await updateEnvFile({
         supabasePath,
         autoConfirm: true,
@@ -93,7 +100,7 @@ export default (program: Command) => {
       // Step 4: Show completion message
       const outroMessages: string[] = [];
 
-      if (migrations || configUpdate || flowsDirectory || edgeFunction || envFile) {
+      if (migrations || configUpdate || flowsDirectory || edgeFunction || exampleWorker || envFile) {
         outroMessages.push(chalk.green.bold('✓ Installation complete!'));
       } else {
         outroMessages.push(
@@ -122,7 +129,7 @@ export default (program: Command) => {
       }
 
       outroMessages.push(
-        `  ${stepNumber}. Create your first flow: ${chalk.blue.underline('https://pgflow.dev/getting-started/create-first-flow/')}`
+        `  ${stepNumber}. Run the example: ${chalk.blue.underline('https://pgflow.dev/get-started/flows/quickstart/')}`
       );
 
       outro(outroMessages.join('\n'));

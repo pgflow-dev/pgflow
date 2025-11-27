@@ -30,7 +30,10 @@ If you haven't installed the CLI yet or need to upgrade, see Supabase's [install
    ```
 
    <Aside type="note" title="What got installed?">
-   The installer creates a `pgflow` edge function that handles flow compilation. You'll register your flows in this function and it will compile them to SQL migrations.
+   The installer creates:
+   - A `flows/` directory with an example `GreetUser` flow
+   - A `pgflow` Control Plane that handles flow compilation
+   - A `greet-user-worker` to run the example flow
    </Aside>
 
    Want to understand what's happening? See the [manual installation guide](/reference/manual-installation/).
@@ -60,11 +63,11 @@ Your Supabase project now has everything needed to create and run flows with pgf
 
 import { Card } from '@astrojs/starlight/components';
 
-<Card title="Build Multi-Step Flows" icon="rocket">
-  Coordinate multiple steps with dependencies, data flow between steps, and real-time progress tracking. Perfect for AI pipelines, data processing, and complex automation.
+<Card title="Run the Example" icon="rocket">
+  See pgflow in action in 5 minutes using the scaffolded GreetUser flow.
 
-  <LinkButton href="/get-started/flows/create-flow/" variant="primary" icon="rocket">
-    Create your first flow
+  <LinkButton href="/get-started/flows/quickstart/" variant="primary" icon="rocket">
+    Quickstart
   </LinkButton>
 </Card>
 

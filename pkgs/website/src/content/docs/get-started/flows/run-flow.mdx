@@ -10,13 +10,14 @@ next:
 
 import { Aside, Steps, Tabs, CardGrid, LinkCard, FileTree } from "@astrojs/starlight/components";
 
-Now that you've defined and compiled your flow, it's time to execute it!
+This guide explains how to create Edge Workers to run your flows. If you just want to run the scaffolded example, see the [Quickstart](/get-started/flows/quickstart/).
 
-In this guide, we'll set up an Edge Worker to process your flow tasks, trigger your first flow, and observe its execution.
+<Aside type="tip" title="Already have a worker?">
+If you used `pgflow install`, the `greet-user-worker` is already scaffolded. You can skip to step 3 to start it.
+</Aside>
 
 <Aside type="caution" title="Prerequisites">
 Before starting, make sure you have completed:
-- [Create your first flow](/get-started/flows/create-flow/) guide
 - [Compile flow to SQL](/get-started/flows/compile-flow/) guide
 </Aside>
 
@@ -24,24 +25,23 @@ Before starting, make sure you have completed:
 
 1. ### Create a worker function
 
-   Create a new Edge Function that will process tasks for your flow:
+   For each flow, create an Edge Function to process its tasks:
 
    ```bash frame="none"
-   npx supabase functions new greet-user-worker
+   npx supabase functions new my-flow-worker
    ```
 
    Replace contents of `index.ts` file with the following:
 
-   ```typescript title="supabase/functions/greet-user-worker/index.ts"
+   ```typescript title="supabase/functions/my-flow-worker/index.ts"
    import { EdgeWorker } from "@pgflow/edge-worker";
-   import { GreetUser } from '../../flows/greet-user.ts';
+   import { MyFlow } from '../../flows/my-flow.ts';
 
-   // Pass the flow definition to the Edge Worker
-   EdgeWorker.start(GreetUser);
+   EdgeWorker.start(MyFlow);
    ```
 
    <Aside title="The Edge Worker will:">
-   1. Poll for tasks on the `greetUser` queue
+   1. Poll for tasks on the flow's queue
    2. Process tasks based on the step slug
    3. Return the appropriate result for each step
    4. Handle retries if any step fails
@@ -52,11 +52,11 @@ Before starting, make sure you have completed:
    Edit `supabase/config.toml` to disable JWT verification for local development:
 
    ```diff lang="toml"
-     [functions.greet-user-worker]
+     [functions.my-flow-worker]
      enabled = true
    - verify_jwt = true
    + verify_jwt = false
-     import_map = "./functions/greet-user-worker/deno.json"
+     import_map = "./functions/my-flow-worker/deno.json"
    ```
 
 3. ### Start the Edge Runtime
@@ -82,7 +82,7 @@ Before starting, make sure you have completed:
    In a new terminal, send an HTTP request to start your worker:
 
    ```bash frame="none"
-   curl http://localhost:54321/functions/v1/greet-user-worker
+   curl http://localhost:54321/functions/v1/my-flow-worker
    ```
 
    You should see output in your Edge Runtime terminal indicating the worker has started:

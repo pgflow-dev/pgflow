@@ -1,0 +1,119 @@
+---
+title: Quickstart
+description: Run the example flow in 5 minutes
+sidebar:
+  order: 15
+---
+
+import { Aside, Steps, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+See pgflow in action using the GreetUser flow scaffolded during installation.
+
+<Aside type="caution" title="Prerequisites">
+- Completed the [pgflow installation](/get-started/installation/)
+- Supabase running locally (`npx supabase start`)
+- Migrations applied (`npx supabase migrations up`)
+</Aside>
+
+<Steps>
+
+1. ### Start edge functions
+
+   Open a terminal and start the edge functions server:
+
+   ```bash frame="none"
+   npx supabase functions serve
+   ```
+
+   Keep this terminal open.
+
+2. ### Compile the flow
+
+   In a **new terminal**, compile the GreetUser flow:
+
+   ```bash frame="none"
+   npx pgflow@latest compile greetUser
+   ```
+
+   You should see:
+
+   ```
+   Successfully compiled flow to SQL
+   Migration file created: supabase/migrations/..._create_greetUser_flow.sql
+   ```
+
+3. ### Apply the migration
+
+   Apply the migration to register the flow in your database:
+
+   ```bash frame="none"
+   npx supabase migrations up
+   ```
+
+4. ### Start the worker
+
+   Send an HTTP request to start the scaffolded worker:
+
+   ```bash frame="none"
+   curl http://localhost:54321/functions/v1/greet-user-worker
+   ```
+
+   You should see worker activity in the edge functions terminal.
+
+5. ### Trigger your first flow
+
+   Open Supabase Studio (http://localhost:54323), go to the **SQL Editor**, and run:
+
+   ```sql
+   SELECT * FROM pgflow.start_flow(
+     flow_slug => 'greetUser',
+     input => '{"firstName": "Alice", "lastName": "Smith"}'::jsonb
+   );
+   ```
+
+6. ### Check the result
+
+   After a moment, query the run status:
+
+   ```sql
+   SELECT * FROM pgflow.runs
+   WHERE flow_slug = 'greetUser'
+   ORDER BY started_at DESC
+   LIMIT 1;
+   ```
+
+   You should see `status: completed` with output:
+
+   ```json
+   {"greeting": "Hello, Alice Smith!"}
+   ```
+
+</Steps>
+
+## What just happened?
+
+<details>
+<summary>Expand for details</summary>
+
+1. **Compilation** converted your TypeScript flow to a SQL migration
+2. **Migration** registered the flow structure in Postgres
+3. **Worker** began polling for tasks on the `greetUser` queue
+4. **Steps executed** in dependency order: `fullName` ran first, then `greeting` used its output
+
+The GreetUser flow demonstrates the core pgflow pattern - steps with dependencies that pass data between them.
+</details>
+
+## Next steps
+
+<CardGrid>
+  <LinkCard
+    title="Understand the code"
+    href="/get-started/flows/create-flow/"
+    description="Learn how the scaffolded GreetUser flow works"
+  />
+  <LinkCard
+    title="How pgflow works"
+    href="/concepts/how-pgflow-works/"
+    description="Understand the execution model behind the scenes"
+  />
+</CardGrid>

@@ -1,93 +1,140 @@
 ---
-title: Create your first flow
-description: Learn how to define a flow using pgflow's TypeScript DSL
+title: Understanding Flows
+description: Learn how the scaffolded GreetUser flow works
 sidebar:
   order: 20
 ---
 
-import { Aside, Steps, Tabs, TabItem, CardGrid, LinkCard } from "@astrojs/starlight/components";
+import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
 import { FileTree } from '@astrojs/starlight/components';
 
-Now that pgflow is installed, let's create a simple hello world flow that demonstrates the core concepts.
+The `pgflow install` command created an example flow that demonstrates core pgflow concepts. Let's understand how it works.
 
-Our flow will:
-
-1. Take a person's **first name** and **last name** as input
-2. Format a **full name**
-3. Create a personalized **greeting**
-
-<Aside type="caution" title="Prerequisites">
-- Completed the [pgflow installation](/get-started/installation/)
-- Basic understanding of TypeScript
+<Aside type="tip">
+If you haven't run the example yet, start with the [Quickstart](/get-started/flows/quickstart/).
 </Aside>
 
-## Creating a Simple Greeting Flow
+## Project structure
 
-<Steps>
+<FileTree>
+- supabase
+  - flows
+    - greet-user.ts (flow definition)
+    - index.ts (re-exports all flows)
+  - functions
+    - pgflow
+      - index.ts (Control Plane)
+    - greet-user-worker
+      - index.ts (Edge Worker)
+</FileTree>
 
+## The GreetUser flow
 
-1. ### Set up your project structure
+Open `supabase/flows/greet-user.ts`:
 
-   After running `pgflow install`, you already have a `flows/` directory with an example. Let's create a new flow:
+```typescript title="supabase/flows/greet-user.ts"
+import { Flow } from '@pgflow/dsl';
 
-   <FileTree>
-   - supabase
-     - flows
-       - greet-user.ts (your flow definition)
-       - index.ts (re-exports all flows)
-     - functions
-       - pgflow
-         - index.ts (Control Plane)
-         - deno.json
-   </FileTree>
+type Input = {
+  firstName: string;
+  lastName: string;
+};
 
-2. ### Create the flow definition
+export const GreetUser = new Flow<Input>({
+  slug: 'greetUser',
+})
+  .step(
+    { slug: 'fullName' },
+    (input) => `${input.run.firstName} ${input.run.lastName}`
+  )
+  .step(
+    { slug: 'greeting', dependsOn: ['fullName'] },
+    (input) => `Hello, ${input.fullName}!`
+  );
+```
 
-   Create a file called `supabase/flows/greet-user.ts` with this content:
+Let's break down each part:
 
-   ```typescript title="supabase/flows/greet-user.ts"
-   import { Flow } from '@pgflow/dsl';
+### Input type
 
-   type Input = {
-     firstName: string;
-     lastName: string;
-   };
+```typescript
+type Input = {
+  firstName: string;
+  lastName: string;
+};
+```
 
-   export const GreetUser = new Flow<Input>({
-     slug: 'greetUser',
-   })
-     .step(
-       { slug: 'fullName' },
-       (input) => `${input.run.firstName} ${input.run.lastName}`
-     )
-     .step(
-       { slug: 'greeting', dependsOn: ['fullName'] },
-       (input) => `Hello, ${input.fullName}!`
-     );
+This defines what data the flow accepts when started. The input is always accessible via `input.run` in any step.
+
+### Flow constructor
+
+```typescript
+export const GreetUser = new Flow<Input>({
+  slug: 'greetUser',
+})
+```
+
+- **Named export**: Flows use named exports (not default), making them easy to import elsewhere
+- **Generic type**: `Flow<Input>` provides type safety for the input
+- **Slug**: A unique identifier used in the database and when starting flows
+
+### First step: fullName
+
+```typescript
+.step(
+  { slug: 'fullName' },
+  (input) => `${input.run.firstName} ${input.run.lastName}`
+)
+```
+
+- **No dependencies**: This step runs immediately when the flow starts
+- **`input.run`**: Contains the original flow input
+- **Return value**: The string becomes available to dependent steps
+
+### Second step: greeting
+
+```typescript
+.step(
+  { slug: 'greeting', dependsOn: ['fullName'] },
+  (input) => `Hello, ${input.fullName}!`
+)
+```
+
+- **`dependsOn`**: This step waits for `fullName` to complete
+- **`input.fullName`**: Access the result from the `fullName` step by its slug
+- **Final output**: When the last step completes, its result becomes the flow output
+
+## Flow registration
+
+The `supabase/flows/index.ts` file re-exports all flows:
+
+```typescript title="supabase/flows/index.ts"
+export { GreetUser } from './greet-user.ts';
+```
+
+The Control Plane automatically imports all exports from this file:
+
+```typescript title="supabase/functions/pgflow/index.ts"
+import { ControlPlane } from '@pgflow/edge-worker';
+import * as flows from '../../flows/index.ts';
+
+ControlPlane.serve(flows);
+```
+
+## Try modifying the flow
+
+1. Add a third step that uses the greeting:
+
+   ```typescript
+   .step(
+     { slug: 'shout', dependsOn: ['greeting'] },
+     (input) => input.greeting.toUpperCase()
+   )
    ```
 
-3. ### Register the flow
-
-   Add your flow to `supabase/flows/index.ts`:
-
-   ```diff lang="typescript" title="supabase/flows/index.ts"
-    // Re-export all flows from this directory
-    // Example: export { MyFlow } from './my-flow.ts';
-
-    export { ExampleFlow } from './example-flow.ts';
-   +export { GreetUser } from './greet-user.ts';
-   ```
-
-   That's it! The Control Plane in `supabase/functions/pgflow/index.ts` automatically imports all flows from your `flows/` directory using namespace imports:
-
-   ```typescript title="supabase/functions/pgflow/index.ts"
-   import { ControlPlane } from '@pgflow/edge-worker';
-   import * as flows from '../../flows/index.ts';
-
-   ControlPlane.serve(flows);
-   ```
-
-</Steps>
+2. Recompile: `npx pgflow@latest compile greetUser`
+3. Apply migration: `npx supabase migrations up`
+4. Restart the worker and trigger a new run
 
 :::note[Key Concepts]
 - **input.run**: Contains the original flow input, accessible in every step
