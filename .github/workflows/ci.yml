@@ -44,6 +44,8 @@ jobs:
         with:
           cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 
+      - uses: ./.github/actions/setup-d2
+
       - name: Set Nx base for affected commands
         run: |
           echo "NX_BASE=origin/main" >> $GITHUB_ENV
@@ -144,6 +146,8 @@ jobs:
 
       - name: Verify NX_BASE and NX_HEAD are set
         run: echo "BASE=$NX_BASE HEAD=$NX_HEAD"
+
+      - uses: ./.github/actions/setup-d2
 
       - name: Check if website is affected
         id: check-affected
