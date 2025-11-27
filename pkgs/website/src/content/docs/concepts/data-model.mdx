@@ -13,7 +13,7 @@ pgflow's data model separates flow definitions from runtime execution state. Flo
 
 ### 🏷️ Slugs as Identifiers
 
-Flows and steps are identified by slugs - simple text identifiers like `'analyze_website'` or `'fetch_data'`. Slugs must be valid identifiers (alphanumeric plus underscores, max 128 characters) and serve as natural, readable keys throughout the system.
+Flows and steps are identified by slugs - simple text identifiers like `'analyzeWebsite'` or `'fetchData'`. Slugs use camelCase and must be valid identifiers (alphanumeric, max 128 characters), serving as natural, readable keys throughout the system.
 
 ### 🔑 Composite Keys with Denormalization
 

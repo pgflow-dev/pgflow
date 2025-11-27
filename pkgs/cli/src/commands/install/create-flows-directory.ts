@@ -4,16 +4,16 @@ import { log, confirm } from '@clack/prompts';
 import chalk from 'chalk';
 
 const INDEX_TS_TEMPLATE = `// Re-export all flows from this directory
-// Example: export { MyFlow } from './my_flow.ts';
+// Example: export { MyFlow } from './my-flow.ts';
 
-export { ExampleFlow } from './example_flow.ts';
+export { ExampleFlow } from './example-flow.ts';
 `;
 
 const EXAMPLE_FLOW_TEMPLATE = `import { Flow } from '@pgflow/dsl';
 
 type Input = { name: string };
 
-export const ExampleFlow = new Flow<Input>({ slug: 'example_flow' })
+export const ExampleFlow = new Flow<Input>({ slug: 'exampleFlow' })
   .step({ slug: 'greet' }, (input) => \`Hello, \${input.run.name}!\`);
 `;
 
@@ -27,12 +27,12 @@ export async function createFlowsDirectory({
   const flowsDir = path.join(supabasePath, 'flows');
 
   const indexPath = path.join(flowsDir, 'index.ts');
-  const exampleFlowPath = path.join(flowsDir, 'example_flow.ts');
+  const exampleFlowPath = path.join(flowsDir, 'example-flow.ts');
 
   // Relative paths for display
   const relativeFlowsDir = 'supabase/flows';
   const relativeIndexPath = `${relativeFlowsDir}/index.ts`;
-  const relativeExampleFlowPath = `${relativeFlowsDir}/example_flow.ts`;
+  const relativeExampleFlowPath = `${relativeFlowsDir}/example-flow.ts`;
 
   // Check what needs to be created
   const filesToCreate: Array<{ path: string; relativePath: string }> = [];

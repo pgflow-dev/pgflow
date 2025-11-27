@@ -25,7 +25,7 @@ mkdir -p supabase/tasks
 <FileTree>
 - supabase
   - flows
-    - analyze_website.ts (flow definition)
+    - analyze-website.ts (flow definition)
     - index.ts (re-exports all flows)
   - tasks
     - scrapeWebsite.ts
@@ -37,7 +37,7 @@ mkdir -p supabase/tasks
     - pgflow
       - index.ts (Control Plane)
       - deno.json
-    - analyze_website_worker
+    - analyze-website-worker
       - index.ts (worker for this flow)
       - deno.json
   - migrations
@@ -57,8 +57,8 @@ Each directory uses an `index.ts` barrel file that re-exports all modules:
 
 ```typescript title="supabase/flows/index.ts"
 // Re-export all flows from this directory
-export { AnalyzeWebsite } from './analyze_website.ts';
-export { ProcessOrder } from './process_order.ts';
+export { AnalyzeWebsite } from './analyze-website.ts';
+export { ProcessOrder } from './process-order.ts';
 ```
 
 ```typescript title="supabase/tasks/index.ts" (optional)
@@ -83,9 +83,9 @@ This pattern provides:
     description="How to design task functions that work well across multiple flows"
   />
   <LinkCard
-    title="Naming flow steps"
-    href="/concepts/naming-steps/"
-    description="Best practices for naming steps in your flows"
+    title="Naming conventions"
+    href="/concepts/naming-conventions/"
+    description="Naming conventions for flows, steps, files, and workers"
   />
 </CardGrid>
 

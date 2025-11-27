@@ -1,0 +1,165 @@
+---
+title: Naming conventions
+description: Naming conventions for flows, steps, files, and workers in pgflow
+sidebar:
+  order: 70
+---
+
+This guide covers all naming conventions in pgflow - from flow slugs to file names.
+
+## Quick reference
+
+| Component | Convention | Example |
+|-----------|------------|---------|
+| Flow slug | camelCase | `greetUser` |
+| Step slug | camelCase | `fetchUser` |
+| Flow file | kebab-case | `greet-user.ts` |
+| Flow export | PascalCase | `GreetUser` |
+| Worker directory | kebab-case + `-worker` | `greet-user-worker/` |
+
+**Conversion rule**: camelCase slug to kebab-case file: `greetUser` -> `greet-user.ts`
+
+## Flow slug naming
+
+Flow slugs use **camelCase**:
+
+```typescript
+export const GreetUser = new Flow<Input>({ slug: 'greetUser' })
+export const ProcessOrder = new Flow<Input>({ slug: 'processOrder' })
+export const AnalyzeWebsite = new Flow<Input>({ slug: 'analyzeWebsite' })
+```
+
+Flow slugs are stored in the database and used to identify flows when starting runs. Using camelCase keeps them consistent with step slugs and JavaScript conventions.
+
+## File naming
+
+Flow files use **kebab-case** (industry standard for TypeScript):
+
+| Flow Slug | File Name |
+|-----------|-----------|
+| `greetUser` | `greet-user.ts` |
+| `processOrder` | `process-order.ts` |
+| `analyzeWebsite` | `analyze-website.ts` |
+
+This follows TypeScript/JavaScript ecosystem conventions and ensures compatibility across all filesystems (including case-insensitive systems like macOS and Windows).
+
+### Directory structure
+
+```
+supabase/
+  flows/
+    index.ts              # Barrel file re-exporting all flows
+    greet-user.ts         # kebab-case filename
+    process-order.ts
+    analyze-website.ts
+  functions/
+    pgflow/               # Control plane (serves all flows)
+      index.ts
+```
+
+### Barrel file pattern
+
+The `flows/index.ts` file re-exports all flows:
+
+```typescript
+// supabase/flows/index.ts
+export { GreetUser } from './greet-user.ts';
+export { ProcessOrder } from './process-order.ts';
+export { AnalyzeWebsite } from './analyze-website.ts';
+```
+
+## Worker directory naming
+
+Worker edge functions use **kebab-case** with a `-worker` suffix:
+
+| Flow Slug | Worker Directory |
+|-----------|------------------|
+| `greetUser` | `greet-user-worker/` |
+| `processOrder` | `process-order-worker/` |
+| `analyzeWebsite` | `analyze-website-worker/` |
+
+This follows Supabase Edge Functions conventions and makes it clear which directory contains a worker vs other types of functions.
+
+## Step slug naming
+
+Step slugs use **camelCase** and should reflect the step's primary purpose.
+
+### Recommended approach: Hybrid naming
+
+Ask yourself: **"What matters more - the returned data or that the action happened?"**
+
+- Use **nouns** when downstream steps process the returned data meaningfully
+- Use **verb-noun** when the side effect is the primary purpose, even if data is returned
+
+### Result-focused naming (nouns)
+
+```ts
+// These steps produce data that other steps consume
+.step({ slug: "website" }, ...)  // Returns website content
+.step({ slug: "summary", dependsOn: ["website"] }, ...)  // Returns summary text
+.map({ slug: "userProfiles", array: "userIds" }, ...)  // Returns user profile objects
+```
+
+### Action-focused naming (verb-noun)
+
+```ts
+// These steps are primarily about their side effects
+.step({ slug: "saveToDb", dependsOn: ["summary"] }, ...)  // Side effect: database write
+.map({ slug: "sendEmails", array: "users" }, ...)  // Side effect: emails sent
+.map({ slug: "resizeImages", array: "images" }, ...)  // Action: transformation
+```
+
+## Why this works well
+
+1. **Result-focused steps** with noun names create intuitive property access:
+   ```ts
+   // Natural to access data
+   ({ website, userProfiles }) => {
+     return analyzeData(website.content, userProfiles);
+   }
+   ```
+
+2. **Action-focused steps** with verb names clearly communicate their purpose:
+   ```ts
+   // Clear that this is about the action, not the return value
+   .step({ slug: "notifyAdmins" }, async () => {
+     await sendSlackMessage("Process complete");
+     return { notified: true };  // Simple confirmation
+   })
+   ```
+
+3. The distinction helps readers quickly understand whether a step exists to:
+   - **Produce data** for the workflow (noun)
+   - **Perform an action** with side effects (verb-noun)
+
+## The nuance: Many steps do both
+
+Most real-world steps both perform actions AND return data. The naming should reflect the **primary purpose**:
+
+```ts
+// Primary purpose: Send notifications (side effect)
+// The success/failure data is just metadata about the action
+.map({ slug: "sendNotifications" }, async (user) => {
+  const sent = await sendEmail(user);
+  return { userId: user.id, sent, timestamp: Date.now() };
+})
+.step({ slug: "updateDatabase", dependsOn: ["sendNotifications"] }, (input) => {
+  // Even though we use the results, the primary goal was sending
+  const successful = input.sendNotifications.filter(r => r.sent);
+  await markUsersNotified(successful);
+});
+
+// Primary purpose: Get user profiles (data)
+// The API call is just how we get the data
+.map({ slug: "userProfiles" }, async (userId) => {
+  return await fetchUserProfile(userId);  // Side effect: API call
+})
+.step({ slug: "analyze", dependsOn: ["userProfiles"] }, (input) => {
+  // We care about the profile data, not that an API was called
+  return analyzeProfiles(input.userProfiles);
+});
+```
+
+## Consistency matters
+
+While this guide recommends the hybrid pattern for step naming, the most important thing is consistency within your project. Document the chosen convention and apply it throughout the codebase.

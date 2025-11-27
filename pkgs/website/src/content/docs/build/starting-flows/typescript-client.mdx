@@ -76,7 +76,7 @@ The simplest pattern is to start a workflow and wait for it to complete:
 
 ```typescript
 // Start the workflow
-const run = await pgflow.startFlow('analyze_website', {
+const run = await pgflow.startFlow('analyzeWebsite', {
   url: 'https://example.com',
 });
 
@@ -331,7 +331,7 @@ When using with `@pgflow/dsl`, get full type inference:
 import { Flow } from '@pgflow/dsl';
 
 // Define your flow
-const AnalyzeWebsite = new Flow<{ url: string }>({ slug: 'analyze_website' })
+const AnalyzeWebsite = new Flow<{ url: string }>({ slug: 'analyzeWebsite' })
   .step({ slug: 'scrape' }, async (input) => ({
     content: 'html...',
     title: 'Page Title'

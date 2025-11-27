@@ -33,18 +33,18 @@ Compiles a flow definition to SQL statements.
 
 **Request:**
 ```
-GET /functions/v1/pgflow/flows/greet_user
+GET /functions/v1/pgflow/flows/greetUser
 Authorization: Bearer <anon_key>
 ```
 
 **Success Response (200):**
 ```json
 {
-  "flowSlug": "greet_user",
+  "flowSlug": "greetUser",
   "sql": [
-    "SELECT pgflow.create_flow('greet_user');",
-    "SELECT pgflow.add_step('greet_user', 'full_name', 'single', 0, NULL);",
-    "SELECT pgflow.add_step('greet_user', 'greeting', 'single', 0, ARRAY['full_name']);"
+    "SELECT pgflow.create_flow('greetUser');",
+    "SELECT pgflow.add_step('greetUser', 'fullName', 'single', 0, NULL);",
+    "SELECT pgflow.add_step('greetUser', 'greeting', 'single', 0, ARRAY['fullName']);"
   ]
 }
 ```
@@ -83,12 +83,12 @@ The ControlPlane requires a valid Supabase anon key in the `Authorization` heade
 The `pgflow compile` command handles authentication and request formatting automatically:
 
 ```bash frame="none"
-npx pgflow@latest compile greet_user
+npx pgflow@latest compile greetUser
 ```
 
 For custom tooling or debugging, you can call the endpoint directly:
 
 ```bash frame="none"
 curl -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
-  http://127.0.0.1:54321/functions/v1/pgflow/flows/greet_user
+  http://127.0.0.1:54321/functions/v1/pgflow/flows/greetUser
 ```

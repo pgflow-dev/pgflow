@@ -33,7 +33,7 @@ Our flow will:
    <FileTree>
    - supabase
      - flows
-       - greet_user.ts (your flow definition)
+       - greet-user.ts (your flow definition)
        - index.ts (re-exports all flows)
      - functions
        - pgflow
@@ -43,26 +43,26 @@ Our flow will:
 
 2. ### Create the flow definition
 
-   Create a file called `supabase/flows/greet_user.ts` with this content:
+   Create a file called `supabase/flows/greet-user.ts` with this content:
 
-   ```typescript title="supabase/flows/greet_user.ts"
+   ```typescript title="supabase/flows/greet-user.ts"
    import { Flow } from '@pgflow/dsl';
 
    type Input = {
-     first_name: string;
-     last_name: string;
+     firstName: string;
+     lastName: string;
    };
 
    export const GreetUser = new Flow<Input>({
-     slug: 'greet_user',
+     slug: 'greetUser',
    })
      .step(
-       { slug: 'full_name' },
-       (input) => `${input.run.first_name} ${input.run.last_name}`
+       { slug: 'fullName' },
+       (input) => `${input.run.firstName} ${input.run.lastName}`
      )
      .step(
-       { slug: 'greeting', dependsOn: ['full_name'] },
-       (input) => `Hello, ${input.full_name}!`
+       { slug: 'greeting', dependsOn: ['fullName'] },
+       (input) => `Hello, ${input.fullName}!`
      );
    ```
 
@@ -72,10 +72,10 @@ Our flow will:
 
    ```diff lang="typescript" title="supabase/flows/index.ts"
     // Re-export all flows from this directory
-    // Example: export { MyFlow } from './my_flow.ts';
+    // Example: export { MyFlow } from './my-flow.ts';
 
-    export { ExampleFlow } from './example_flow.ts';
-   +export { GreetUser } from './greet_user.ts';
+    export { ExampleFlow } from './example-flow.ts';
+   +export { GreetUser } from './greet-user.ts';
    ```
 
    That's it! The Control Plane in `supabase/functions/pgflow/index.ts` automatically imports all flows from your `flows/` directory using namespace imports:

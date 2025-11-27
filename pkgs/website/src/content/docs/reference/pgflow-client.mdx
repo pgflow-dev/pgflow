@@ -388,7 +388,7 @@ When using with `@pgflow/dsl`, the client provides full type inference for flow 
 ```typescript
 import { Flow } from '@pgflow/dsl';
 
-const MyFlow = new Flow<{ url: string }>({ slug: 'my_flow' })
+const MyFlow = new Flow<{ url: string }>({ slug: 'myFlow' })
   .step({ slug: 'step1' }, async (input) => ({ data: 'result' }));
 
 // Type-safe flow execution

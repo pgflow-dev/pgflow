@@ -34,7 +34,7 @@ pgflow.delete_flow_and_data(flow_slug TEXT)
 Example usage in local development:
 ```sql
 -- Delete a specific flow and all its data
-SELECT pgflow.delete_flow_and_data('analyze_website');
+SELECT pgflow.delete_flow_and_data('analyzeWebsite');
 ```
 
 This deletes the flow definition, all runs, queued messages, and task outputs for the specified flow.

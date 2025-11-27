@@ -61,7 +61,7 @@ To create task functions that can be used across multiple flows without tight co
    }
 
    // Flow uses handler to adapt context to task parameters
-   new Flow<{ userId: string }>({ slug: 'user_flow' })
+   new Flow<{ userId: string }>({ slug: 'userFlow' })
      .step({ slug: 'profile' }, async (input) =>
        await fetchUserProfile(input.run.userId)
      )

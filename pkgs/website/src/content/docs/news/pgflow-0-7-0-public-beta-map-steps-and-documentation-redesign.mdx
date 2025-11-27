@@ -44,7 +44,7 @@ Map steps enable parallel array processing by automatically creating multiple ta
 import { Flow } from '@pgflow/dsl/supabase';
 
 const BatchProcessor = new Flow<string[]>({
-  slug: 'batch_processor',
+  slug: 'batchProcessor',
   maxAttempts: 3,
 })
   .map(

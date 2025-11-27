@@ -49,7 +49,7 @@ pgflow puts **PostgreSQL at the center** of your workflow orchestration. Flows a
 ```typescript
 // In pgflow, the database orchestrates the workflow
 new Flow<{ url: string }>({
-  slug: 'analyze_website',
+  slug: 'analyzeWebsite',
 })
   .step(
     { slug: 'extract' },

@@ -63,7 +63,7 @@ import { Flow } from 'jsr:@pgflow/dsl/supabase';
 
 // Define a flow using Supabase preset for Supabase resources
 const AnalyzeWebsite = new Flow<{ url: string }>({
-  slug: 'analyze_website',
+  slug: 'analyzeWebsite',
 })
   .step({ slug: 'fetch' }, async (input, context) => {
     // Access Supabase resources through context
@@ -172,7 +172,7 @@ When defining flows that use Supabase resources, import `Flow` from the Supabase
 ```typescript
 import { Flow } from 'jsr:@pgflow/dsl/supabase';
 
-const MyFlow = new Flow<InputType>({ slug: 'my_flow' }).step(
+const MyFlow = new Flow<InputType>({ slug: 'myFlow' }).step(
   { slug: 'process' },
   async (input, context) => {
     // TypeScript knows context includes all Supabase resources

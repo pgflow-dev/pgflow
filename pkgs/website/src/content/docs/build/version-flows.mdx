@@ -41,8 +41,8 @@ Put the new flow in its own file with a versioned slug.
 <FileTree>
 - supabase/
   - flows/
-    - greet_user.ts
-    - **greet_user_v2.ts**     // new version
+    - greet-user.ts
+    - **greet-user-v2.ts**     // new version
     - index.ts
   - tasks/
     - fetchUserData.ts
@@ -53,9 +53,9 @@ Put the new flow in its own file with a versioned slug.
 
 1. **Create new flow file**
 
-   ```typescript title="supabase/flows/greet_user_v2.ts"
+   ```typescript title="supabase/flows/greet-user-v2.ts"
    export const GreetUserV2 = new Flow<Input>({
-     slug: 'greet_user_v2',
+     slug: 'greetUserV2',
      // ...new configuration and step definitions
    })
    ```
@@ -63,7 +63,7 @@ Put the new flow in its own file with a versioned slug.
    Then add it to `supabase/flows/index.ts`:
 
    ```typescript
-   export { GreetUserV2 } from './greet_user_v2.ts';
+   export { GreetUserV2 } from './greet-user-v2.ts';
    ```
 
 2. **Compile it**
@@ -71,7 +71,7 @@ Put the new flow in its own file with a versioned slug.
    [Compile the new flow to SQL](/get-started/flows/compile-flow/) which generates a migration file:
 
    ```bash frame="none"
-   npx pgflow@latest compile greet_user_v2
+   npx pgflow@latest compile greetUserV2
    ```
 
 3. **Run migration**

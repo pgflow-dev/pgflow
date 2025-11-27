@@ -77,21 +77,21 @@ When different steps have different reliability requirements:
 
 ```typescript
 new Flow({
-  slug: 'data_pipeline',
+  slug: 'dataPipeline',
   maxAttempts: 3,     // Sensible defaults
   baseDelay: 1,
 })
   .step({
-    slug: 'validate_input',
+    slug: 'validateInput',
     maxAttempts: 1,   // No retries - validation should not fail
   }, validateHandler)
   .step({
-    slug: 'fetch_external',
+    slug: 'fetchExternal',
     maxAttempts: 5,   // External API might be flaky
     baseDelay: 10,    // Longer delays for external service
   }, fetchHandler)
   .step({
-    slug: 'save_results',
+    slug: 'saveResults',
     // Use flow defaults
   }, saveHandler)
 ```

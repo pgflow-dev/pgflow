@@ -21,7 +21,7 @@ A common use case is fetching and processing multiple web pages in parallel:
 import { Flow } from '@pgflow/dsl/supabase';
 
 const ScrapeMultipleUrls = new Flow<string[]>({  // Flow input must be array for root map
-  slug: 'scrape_multiple_urls',
+  slug: 'scrapeMultipleUrls',
   maxAttempts: 3,
 })
   .map(
@@ -35,7 +35,7 @@ const ScrapeMultipleUrls = new Flow<string[]>({  // Flow input must be array for
 
 // Usage (SQL):
 SELECT pgflow.start_flow(
-  flow_slug => 'scrape_multiple_urls',
+  flow_slug => 'scrapeMultipleUrls',
   input => '["https://example.com", "https://example.org", "https://example.net"]'::jsonb
 );
 ```
@@ -49,7 +49,7 @@ Transform and validate data collections efficiently.
 
 ```typescript
 const CsvProcessor = new Flow<{ csvUrl: string }>({
-  slug: 'csv_processor',
+  slug: 'csvProcessor',
 })
   .array(
     { slug: 'csvRows' },
@@ -78,7 +78,7 @@ Map handlers only receive individual array elements. If a handler needs access t
 ```typescript "apiKey: string" del="id, ???" del="(id)"
 // This won't work - map handler can't access input.run
 const ProblemFlow = new Flow<{ apiKey: string, ids: string[] }>({
-  slug: 'problem_flow',
+  slug: 'problemFlow',
 })
   .map({ slug: 'fetch' }, async (id) => {
     // Can't access input.run.apiKey here!
@@ -90,7 +90,7 @@ const ProblemFlow = new Flow<{ apiKey: string, ids: string[] }>({
 
 ```typescript ins={4-13} ins="item.id, item.apiKey" ins="(item)"
 const SolutionFlow = new Flow<{ apiKey: string, ids: string[] }>({
-  slug: 'solution_flow',
+  slug: 'solutionFlow',
 })
   .array(
     { slug: 'prepareItems' },
@@ -125,7 +125,7 @@ When a map step receives an empty array, pgflow optimizes by completing the enti
 
 ```typescript
 const EmptyHandling = new Flow<{}>({
-  slug: 'empty_handling',
+  slug: 'emptyHandling',
 })
   .array({ slug: 'items' }, async () => {
     const results = await fetchData();

@@ -35,18 +35,18 @@ Before continuing, make sure you have:
    In a **separate terminal**, run the compile command with the flow slug:
 
    ```bash frame="none"
-   npx pgflow@latest compile greet_user
+   npx pgflow@latest compile greetUser
    ```
 
    <Aside type="note" title="Slug, not file path">
-   Notice we pass the **flow slug** (`greet_user`), not the file path. The slug comes from your flow definition: `new Flow({ slug: 'greet_user' })`.
+   Notice we pass the **flow slug** (`greetUser`), not the file path. The slug comes from your flow definition: `new Flow({ slug: 'greetUser' })`.
    </Aside>
 
    You should see output like this:
 
    ```
    Successfully compiled flow to SQL
-   Migration file created: supabase/migrations/20250505120000_create_greet_user_flow.sql
+   Migration file created: supabase/migrations/20250505120000_create_greetUser_flow.sql
    ```
 
 3. ### Examine the generated SQL (optional)
@@ -54,15 +54,15 @@ Before continuing, make sure you have:
    Let's look at what got generated:
 
    ```bash frame="none"
-   cat supabase/migrations/*_create_greet_user_flow.sql
+   cat supabase/migrations/*_create_greetUser_flow.sql
    ```
 
    The generated SQL looks like this:
 
    ```sql
-   SELECT pgflow.create_flow('greet_user');
-   SELECT pgflow.add_step('greet_user', 'full_name');
-   SELECT pgflow.add_step('greet_user', 'greeting', ARRAY['full_name']);
+   SELECT pgflow.create_flow('greetUser');
+   SELECT pgflow.add_step('greetUser', 'fullName');
+   SELECT pgflow.add_step('greetUser', 'greeting', ARRAY['fullName']);
    ```
 
    :::tip[Step Configuration]
@@ -80,7 +80,7 @@ Before continuing, make sure you have:
    You should see:
 
    ```
-   Applying migration 20250505120000_create_greet_user_flow.sql...done
+   Applying migration 20250505120000_create_greetUser_flow.sql...done
    ```
 
 </Steps>
@@ -91,9 +91,9 @@ The compile command sends an HTTP request to your local `pgflow` edge function, 
 <details>
 <summary>Learn more</summary>
 
-When you run `pgflow compile greet_user`:
+When you run `pgflow compile greetUser`:
 
-1. The CLI sends a request to `http://127.0.0.1:54321/functions/v1/pgflow/flows/greet_user`
+1. The CLI sends a request to `http://127.0.0.1:54321/functions/v1/pgflow/flows/greetUser`
 2. The ControlPlane edge function looks up the flow in its registry
 3. It compiles the flow to SQL using `@pgflow/dsl`
 4. The CLI receives the SQL and writes it to a migration file

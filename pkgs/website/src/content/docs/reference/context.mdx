@@ -37,7 +37,7 @@ async function handler(input, ctx) {
 An AbortSignal that triggers when the worker is shutting down. Use this to gracefully handle long-running operations and ensure clean shutdown.
 
 ```typescript "ctx.shutdownSignal"
-.step({ slug: 'fetch_data' }, async (input, ctx) => {
+.step({ slug: 'fetchData' }, async (input, ctx) => {
   // Automatically cancels if worker shuts down
   const response = await fetch('https://api.example.com/data', {
     signal: ctx.shutdownSignal,
@@ -91,7 +91,7 @@ interface StepTaskRecord<TFlow> {
 ```
 
 ```typescript "ctx.stepTask" ".step_slug" ".run_id" ".flow_slug" ".task_index" ".msg_id"
-const MyFlow = new Flow({ slug: 'my_flow' })
+const MyFlow = new Flow({ slug: 'myFlow' })
   .step({ slug: 'process' }, async (input, ctx) => {
     console.log(`Executing step: ${ctx.stepTask.step_slug}`);
     console.log(`For run: ${ctx.stepTask.run_id}`);
@@ -198,7 +198,7 @@ async function handler(input, ctx) {
 Supabase client authenticated with the service role key. This has full database access and bypasses RLS. Since Edge Functions run in a trusted environment, this is the only client you need.
 
 ```typescript "ctx.supabase"
-.step({ slug: 'process_order' }, async (input, ctx) => {
+.step({ slug: 'processOrder' }, async (input, ctx) => {
   const { data, error } = await ctx.supabase
     .from('orders')
     .update({ status: 'processing' })

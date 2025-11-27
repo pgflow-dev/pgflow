@@ -31,7 +31,7 @@ type Input = {
 
 // Define a flow with steps and dependencies
 export const AnalyzeWebsite = new Flow<Input>({
-  slug: 'analyze_website',
+  slug: 'analyzeWebsite',
   maxAttempts: 3,
   baseDelay: 5,
   timeout: 10,
@@ -98,13 +98,13 @@ A semantic wrapper around `.step()` that provides type enforcement for steps tha
 ```typescript
 // Fetch an array of items to be processed
 .array(
-  { slug: 'fetch_items' },
+  { slug: 'fetchItems' },
   async () => [1, 2, 3, 4, 5]
 )
 
 // With dependencies - combining data from multiple sources
 .array(
-  { slug: 'combine_results', dependsOn: ['source1', 'source2'] },
+  { slug: 'combineResults', dependsOn: ['source1', 'source2'] },
   async (input) => [...input.source1, ...input.source2]
 )
 ```
@@ -131,7 +131,7 @@ Processes arrays element-by-element, similar to JavaScript's `Array.map()`. The 
 ```typescript
 // ROOT MAP - No array: property means use flow input
 // Flow input MUST be an array (e.g., ["hello", "world"])
-new Flow<string[]>({ slug: 'process_strings' })
+new Flow<string[]>({ slug: 'processStrings' })
   .map(
     { slug: 'uppercase' }, // No array: property!
     (item) => item.toUpperCase()
@@ -139,7 +139,7 @@ new Flow<string[]>({ slug: 'process_strings' })
 // Each string in the input array gets uppercased in parallel
 
 // DEPENDENT MAP - array: property specifies the source step
-new Flow<{}>({ slug: 'data_pipeline' })
+new Flow<{}>({ slug: 'dataPipeline' })
   .array({ slug: 'numbers' }, () => [1, 2, 3])
   .map(
     { slug: 'double', array: 'numbers' }, // Processes 'numbers' output
@@ -166,7 +166,7 @@ The `.map()` method provides full TypeScript type inference for array elements:
 ```typescript
 type User = { id: number; name: string };
 
-new Flow<{}>({ slug: 'user_flow' })
+new Flow<{}>({ slug: 'userFlow' })
   .array({ slug: 'users' }, (): User[] => [
     { id: 1, name: 'Alice' },
     { id: 2, name: 'Bob' }
@@ -181,7 +181,7 @@ new Flow<{}>({ slug: 'user_flow' })
 
 ```typescript
 // Batch processing - process multiple items in parallel
-new Flow<number[]>({ slug: 'batch_processor' })
+new Flow<number[]>({ slug: 'batchProcessor' })
   .map({ slug: 'validate' }, (item) => {
     if (item < 0) throw new Error('Invalid item');
     return item;
@@ -192,9 +192,9 @@ new Flow<number[]>({ slug: 'batch_processor' })
   });
 
 // Data transformation pipeline
-new Flow<{}>({ slug: 'etl_pipeline' })
-  .step({ slug: 'fetch_urls' }, () => ['url1', 'url2', 'url3'])
-  .map({ slug: 'scrape', array: 'fetch_urls' }, async (url) => {
+new Flow<{}>({ slug: 'etlPipeline' })
+  .step({ slug: 'fetchUrls' }, () => ['url1', 'url2', 'url3'])
+  .map({ slug: 'scrape', array: 'fetchUrls' }, async (url) => {
     return await fetchContent(url);
   })
   .map({ slug: 'extract', array: 'scrape' }, (html) => {
@@ -271,7 +271,7 @@ To use Supabase resources, import the `Flow` class from the Supabase preset:
 import { Flow } from '@pgflow/dsl/supabase';
 
 const MyFlow = new Flow<{ userId: string }>({
-  slug: 'my_flow',
+  slug: 'myFlow',
 }).step({ slug: 'process' }, async (input, context) => {
   // TypeScript knows context includes Supabase resources
   const { data } = await context.supabase
@@ -300,7 +300,7 @@ Configure flows and steps with runtime options:
 
 ```typescript
 new Flow<Input>({
-  slug: 'my_flow', // Required: Unique flow identifier
+  slug: 'myFlow', // Required: Unique flow identifier
   maxAttempts: 3, // Optional: Maximum retry attempts (default: 1)
   baseDelay: 5, // Optional: Base delay in seconds for retries (default: 1)
   timeout: 10, // Optional: Task timeout in seconds (default: 30)

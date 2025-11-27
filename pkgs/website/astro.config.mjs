@@ -339,7 +339,7 @@ export default defineConfig({
                       label: 'Context object',
                       link: '/concepts/context-object/',
                     },
-                    { label: 'Naming steps', link: '/concepts/naming-steps/' },
+                    { label: 'Naming conventions', link: '/concepts/naming-conventions/' },
                   ],
                 },
               ],

@@ -55,12 +55,12 @@ A common scenario is adjusting retry behavior after observing production issues:
 -- Check current settings
 SELECT step_slug, opt_max_attempts, opt_timeout
 FROM pgflow.steps
-WHERE flow_slug = 'analyze_website';
+WHERE flow_slug = 'analyzeWebsite';
 
 -- Update API call step to retry more
 UPDATE pgflow.steps
 SET opt_max_attempts = 5, opt_timeout = 120
-WHERE flow_slug = 'analyze_website' AND step_slug = 'website';
+WHERE flow_slug = 'analyzeWebsite' AND step_slug = 'website';
 ```
 
 <Aside type="caution">
