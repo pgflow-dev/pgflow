@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { log, note, confirm } from '@clack/prompts';
+import { log, confirm } from '@clack/prompts';
 import chalk from 'chalk';
 
 /**
@@ -47,16 +47,12 @@ export async function updateEnvFile({
   // Prepare new content
   let newContent = currentContent;
 
-  // Build diff preview
-  const missingVars: Array<{ key: string; value: string }> = [];
-  const existingVars: Array<string> = [];
-
   // Check which variables need to be added
+  const missingVars: Array<{ key: string; value: string }> = [];
+
   for (const [key, value] of Object.entries(envVars)) {
     if (!newContent.includes(`${key}=`)) {
       missingVars.push({ key, value });
-    } else {
-      existingVars.push(key);
     }
   }
 
@@ -66,40 +62,23 @@ export async function updateEnvFile({
     return false;
   }
 
-  log.info(`Found ${missingVars.length} variable${missingVars.length !== 1 ? 's' : ''} to add`);
+  // Build summary message with explanation
+  const summaryParts = [
+    isNewFile
+      ? `Create ${chalk.cyan('functions/.env')} ${chalk.dim('(worker configuration)')}:`
+      : `Update ${chalk.cyan('functions/.env')} ${chalk.dim('(worker configuration)')}:`,
+    '',
+    ...missingVars.map(({ key, value }) => `    ${chalk.bold(key)}="${value}"`),
+  ];
 
-  // Build diff preview
-  const diffPreview: Array<string> = [];
-
-  if (isNewFile) {
-    diffPreview.push(`${chalk.green('Creating new .env file with:')}`);
-  } else {
-    diffPreview.push(`${chalk.green('Adding to existing .env file:')}`);
-  }
-
-  // Show variables to be added
-  for (const { key, value } of missingVars) {
-    diffPreview.push(`${chalk.green('+')} ${key}="${value}"`);
-  }
-
-  // Show existing variables if any
-  if (existingVars.length > 0) {
-    diffPreview.push('');
-    diffPreview.push(`${chalk.yellow('Already present:')}`);
-    for (const key of existingVars) {
-      diffPreview.push(`${chalk.yellow('•')} ${key}`);
-    }
-  }
-
-  // Show the diff preview
-  note(diffPreview.join('\n'), 'Environment Variables');
+  log.info(summaryParts.join('\n'));
 
   // Ask for confirmation if not auto-confirming
   let shouldContinue = autoConfirm;
 
   if (!autoConfirm) {
     const confirmResult = await confirm({
-      message: `Update environment variables?`,
+      message: isNewFile ? `Create functions/.env?` : `Update functions/.env?`,
     });
 
     shouldContinue = confirmResult === true;
@@ -126,7 +105,7 @@ export async function updateEnvFile({
   // Write the file if changes were made
   try {
     fs.writeFileSync(envFilePath, newContent);
-    log.success('Environment variables updated successfully');
+    log.success('Environment variables configured');
     return true;
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);

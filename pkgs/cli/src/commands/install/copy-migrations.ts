@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
-import { log, confirm, note } from '@clack/prompts';
+import { log, confirm } from '@clack/prompts';
 import chalk from 'chalk';
 
 // Get the directory name in ES modules
@@ -231,38 +231,9 @@ export async function copyMigrations({
     }
   }
 
-  // If no files to copy, show message with details and return false (no changes made)
+  // If no files to copy, show message and return false (no changes made)
   if (filesToCopy.length === 0) {
-    // Show success message
-    log.success('All pgflow migrations are already in place');
-
-    // Show details of already installed migrations
-    if (skippedFiles.length > 0) {
-      const detailedMsg = [
-        'Already installed migrations:',
-        ...skippedFiles.map((file) => {
-          // Find the matching existing file to show how it was installed
-          const matchingFile = existingFiles.find((existingFile) =>
-            existingFile.includes(file)
-          );
-
-          if (matchingFile === file) {
-            // Installed with old direct method
-            return `  ${chalk.dim('•')} ${chalk.bold(file)}`;
-          } else {
-            // Installed with new timestamped method
-            const timestampPart =
-              matchingFile?.substring(0, matchingFile.indexOf(file) - 1) || '';
-            return `  ${chalk.dim('•')} ${chalk.dim(
-              timestampPart + '_'
-            )}${chalk.bold(file)}`;
-          }
-        }),
-      ].join('\n');
-
-      note(detailedMsg, 'Existing pgflow Migrations');
-    }
-
+    log.success(`All ${skippedFiles.length} pgflow migrations are already in place`);
     return false;
   }
 
@@ -276,48 +247,24 @@ export async function copyMigrations({
     file.destination = `${baseTimestamp}_${file.source}`;
   });
 
-  log.info(
-    `Found ${filesToCopy.length} migration${
-      filesToCopy.length !== 1 ? 's' : ''
-    } to install`
-  );
+  // Build summary message with explanation - show all migrations
+  const migrationLines = filesToCopy.map((file) => {
+    return `    ${chalk.bold(file.source)}`;
+  });
 
-  // Prepare summary message with colored output
-  const summaryParts = [];
+  const summaryMsg = [
+    `Add to ${chalk.cyan('migrations/')} ${chalk.dim('(database schema for workflow engine)')}:`,
+    '',
+    ...migrationLines,
+  ].join('\n');
 
-  if (filesToCopy.length > 0) {
-    summaryParts.push(
-      `${chalk.green('New migrations to install:')}\n${filesToCopy
-        .map((file) => {
-          // Extract the timestamp part from the new filename
-          const newTimestamp = file.destination.substring(0, 14);
-          // Format: dim timestamp + bright original name
-          return `${chalk.green('+')} ${file.source} → ${chalk.dim(
-            newTimestamp + '_'
-          )}${chalk.bold(file.source)}`;
-        })
-        .join('\n')}`
-    );
-  }
-
-  if (skippedFiles.length > 0) {
-    summaryParts.push(
-      `${chalk.yellow('Already installed:')}\n${skippedFiles
-        .map((file) => `${chalk.yellow('•')} ${file}`)
-        .join('\n')}`
-    );
-  }
-
-  // Show summary and ask for confirmation if not auto-confirming
-  note(summaryParts.join('\n\n'), 'pgflow Migrations');
+  log.info(summaryMsg);
 
   let shouldContinue = autoConfirm;
 
   if (!autoConfirm) {
     const confirmResult = await confirm({
-      message: `Install ${filesToCopy.length} new migration${
-        filesToCopy.length !== 1 ? 's' : ''
-      }?`,
+      message: `Add ${filesToCopy.length} migration${filesToCopy.length !== 1 ? 's' : ''}?`,
     });
 
     shouldContinue = confirmResult === true;
@@ -336,18 +283,12 @@ export async function copyMigrations({
     fs.copyFileSync(sourcePath1, destinationPath);
   }
 
-  // Show detailed success message with styled filenames
-  const detailedSuccessMsg = [
-    `Installed ${filesToCopy.length} migration${
-      filesToCopy.length !== 1 ? 's' : ''
-    } to your Supabase project:`,
-    ...filesToCopy.map((file) => {
-      const newTimestamp = file.destination.substring(0, 14);
-      return `  ${chalk.dim(newTimestamp + '_')}${chalk.bold(file.source)}`;
-    }),
+  const successMsg = [
+    `Installed ${filesToCopy.length} migration${filesToCopy.length !== 1 ? 's' : ''}`,
+    `  ${chalk.dim('Learn more:')} ${chalk.blue.underline('https://pgflow.dev/concepts/data-model/')}`,
   ].join('\n');
 
-  log.success(detailedSuccessMsg);
+  log.success(successMsg);
 
   return true; // Return true to indicate migrations were copied
 }

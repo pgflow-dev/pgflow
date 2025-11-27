@@ -28,11 +28,6 @@ export async function supabasePathPrompt(options?: { supabasePath?: string }) {
     }
   }
 
-  // Always prompt for detected paths - don't skip
-  if (detectedPath) {
-    log.info(`Found Supabase project at: ${detectedPath}`);
-  }
-
   const promptMessage = 'Where is your Supabase project located?';
 
   const supabasePath = await text({

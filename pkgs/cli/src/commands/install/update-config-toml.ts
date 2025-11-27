@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { log, confirm, note } from '@clack/prompts';
+import { log, confirm } from '@clack/prompts';
 import * as TOML from '@decimalturn/toml-patch';
 import chalk from 'chalk';
 
@@ -77,33 +77,40 @@ export async function updateConfigToml({
       return false;
     }
 
-    const changes = [];
+    const changes: string[] = [];
 
+    // Connection pooler changes
+    const poolerChanges: string[] = [];
     if (currentSettings.poolerEnabled !== true) {
-      changes.push(`${chalk.bold('Enable connection pooler:')}
-${chalk.red(`- enabled = ${currentSettings.poolerEnabled}`)}
-${chalk.green('+ enabled = true')}`);
+      poolerChanges.push(`enabled = ${currentSettings.poolerEnabled} ${chalk.dim('->')} ${chalk.green('true')}`);
     }
-
     if (currentSettings.poolMode !== 'transaction') {
-      changes.push(`${chalk.bold('Set pool mode to transaction:')}
-${chalk.red(`- pool_mode = "${currentSettings.poolMode}"`)}
-${chalk.green('+ pool_mode = "transaction"')}`);
+      poolerChanges.push(`pool_mode = "${currentSettings.poolMode}" ${chalk.dim('->')} ${chalk.green('"transaction"')}`);
+    }
+    if (poolerChanges.length > 0) {
+      changes.push(`  ${chalk.bold('[db.pooler]')} ${chalk.dim('(required for pgflow worker)')}`);
+      poolerChanges.forEach(change => changes.push(`    ${change}`));
     }
 
+    // Edge runtime changes
     if (currentSettings.edgeRuntimePolicy !== 'per_worker') {
-      changes.push(`${chalk.bold('Set edge runtime policy:')}
-${chalk.red(`- policy = "${currentSettings.edgeRuntimePolicy}"`)}
-${chalk.green('+ policy = "per_worker"')}`);
+      changes.push(`  ${chalk.bold('[edge_runtime]')} ${chalk.dim('(required for long-running tasks)')}`);
+      changes.push(`    policy = "${currentSettings.edgeRuntimePolicy}" ${chalk.dim('->')} ${chalk.green('"per_worker"')}`);
     }
 
-    note(changes.join('\n\n'), 'Required Configuration Changes');
+    const summaryMsg = [
+      `Update ${chalk.cyan('config.toml')}:`,
+      '',
+      ...changes,
+    ].join('\n');
+
+    log.info(summaryMsg);
 
     let shouldContinue = autoConfirm;
 
     if (!autoConfirm) {
       const confirmResult = await confirm({
-        message: `Update Supabase configuration? (a backup will be created)`,
+        message: `Update config.toml? (backup will be created)`,
       });
 
       shouldContinue = confirmResult === true;
@@ -149,7 +156,7 @@ ${chalk.green('+ policy = "per_worker"')}`);
       throw new Error(`Failed to write ${configPath}: ${errorMsg}`);
     }
 
-    log.success('Supabase configuration updated successfully');
+    log.success('Configuration updated');
     return true;
   } catch (error) {
     log.error(
