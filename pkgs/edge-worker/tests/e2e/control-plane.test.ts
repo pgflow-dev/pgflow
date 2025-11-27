@@ -100,3 +100,39 @@ Deno.test('E2E ControlPlane - POST /flows/:slug returns 404 (wrong method)', asy
 
   log('404 error correctly returned for wrong HTTP method');
 });
+
+Deno.test('E2E ControlPlane - GET /flows/test_flow_2 returns compiled SQL with dependencies', async () => {
+  const response = await fetch(`${BASE_URL}/flows/test_flow_2`);
+  const data = await response.json();
+
+  assertEquals(response.status, 200);
+  assertEquals(data.flowSlug, 'test_flow_2');
+  assertExists(data.sql);
+  assertEquals(Array.isArray(data.sql), true);
+
+  // Verify SQL contains both steps and dependency information
+  const sqlContent = data.sql.join('\n');
+  assertEquals(sqlContent.includes('step1'), true);
+  assertEquals(sqlContent.includes('step2'), true);
+  // step2 depends on step1, passed as ARRAY['step1'] in add_step call
+  assertEquals(sqlContent.includes("ARRAY['step1']"), true);
+
+  log(`Successfully compiled flow test_flow_2 with dependencies (${data.sql.length} SQL statements)`);
+});
+
+Deno.test('E2E ControlPlane - GET /flows/test_flow_3 returns compiled SQL with maxAttempts', async () => {
+  const response = await fetch(`${BASE_URL}/flows/test_flow_3`);
+  const data = await response.json();
+
+  assertEquals(response.status, 200);
+  assertEquals(data.flowSlug, 'test_flow_3');
+  assertExists(data.sql);
+  assertEquals(Array.isArray(data.sql), true);
+
+  // Verify SQL contains maxAttempts configuration (5 as set in the flow)
+  const sqlContent = data.sql.join('\n');
+  assertEquals(sqlContent.includes('max_attempts'), true);
+  assertEquals(sqlContent.includes('5'), true);
+
+  log(`Successfully compiled flow test_flow_3 with maxAttempts (${data.sql.length} SQL statements)`);
+});

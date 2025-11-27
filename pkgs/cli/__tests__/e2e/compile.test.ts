@@ -133,4 +133,39 @@ describe('pgflow compile (e2e)', () => {
 
     console.log('✨ Compile test complete');
   }, 60000); // 1 minute timeout for the test
+
+  it('should fail with helpful error for unknown flow', async () => {
+    // Wait for Edge Functions server to be fully ready
+    await ensureServerReady();
+
+    // Run pgflow compile command with non-existent flow
+    console.log('⚙️  Compiling non-existent flow to test error handling');
+    const compileResult = await runCommand(
+      'node',
+      [
+        path.join(cliDir, 'dist', 'index.js'),
+        'compile',
+        'nonexistent_flow',
+        '--supabase-path',
+        supabasePath,
+        '--control-plane-url',
+        CONTROL_PLANE_URL,
+      ],
+      {
+        cwd: cliDir,
+        env: { PATH: `${workspaceRoot}/node_modules/.bin:${process.env.PATH}` },
+        debug: true,
+      }
+    );
+
+    // Should fail with non-zero exit code
+    expect(compileResult.code).not.toBe(0);
+
+    // Should contain helpful error message about flow not found
+    const output = compileResult.stderr + compileResult.stdout;
+    expect(output).toMatch(/not found|flows\.ts/i);
+
+    console.log('✓ Unknown flow correctly returned error');
+    console.log('✨ Unknown flow error test complete');
+  }, 60000); // 1 minute timeout for the test
 });
