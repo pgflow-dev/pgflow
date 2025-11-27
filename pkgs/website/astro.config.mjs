@@ -321,6 +321,10 @@ export default defineConfig({
                       link: '/concepts/three-layer-architecture/',
                     },
                     { label: 'Data model', link: '/concepts/data-model/' },
+                    {
+                      label: 'Compilation',
+                      link: '/concepts/compilation/',
+                    },
                   ],
                 },
                 {
@@ -366,6 +370,10 @@ export default defineConfig({
                     },
                     { label: 'Context API', link: '/reference/context/' },
                     { label: 'Compile API', link: '/reference/compile-api/' },
+                    {
+                      label: 'ControlPlane API',
+                      link: '/reference/control-plane-api/',
+                    },
                     {
                       label: 'Manual installation',
                       link: '/reference/manual-installation/',

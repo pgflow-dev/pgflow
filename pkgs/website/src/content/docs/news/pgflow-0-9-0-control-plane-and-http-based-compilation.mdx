@@ -1,0 +1,45 @@
+---
+draft: false
+title: 'pgflow 0.9.0: Control Plane and HTTP-Based Compilation'
+description: 'Simpler flow compilation via ControlPlane edge function - no local Deno required'
+date: 2025-11-27
+authors:
+  - jumski
+tags:
+  - release
+  - control-plane
+  - compilation
+featured: true
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+pgflow 0.9.0 introduces the ControlPlane edge function, enabling HTTP-based flow compilation without requiring a local Deno installation.
+
+## What Changed
+
+The CLI no longer spawns Deno processes locally. Instead, compilation requests go through the ControlPlane edge function:
+
+```
+pgflow compile my_flow  -->  ControlPlane  -->  SQL migration
+```
+
+This simplifies the development setup and lays groundwork for future auto-compilation features where workers will verify and compile flows at startup without any CLI involvement.
+
+<Aside type="note" title="Future Direction">
+This release prepares for upcoming changes where edge workers will automatically verify flow shapes and trigger compilation when needed - making `pgflow compile` optional for development workflows.
+</Aside>
+
+## Upgrading
+
+Update your packages following the [Update pgflow guide](/deploy/update-pgflow/), then run:
+
+```bash frame="none"
+npx pgflow@0.9.0 install
+```
+
+This creates the ControlPlane edge function at `supabase/functions/control-plane/`.
+
+<Aside type="caution" title="Register Your Flows">
+All existing flows must be added to the ControlPlane for compilation to work. See [Compilation](/concepts/compilation/) for details.
+</Aside>

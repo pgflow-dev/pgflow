@@ -72,7 +72,7 @@ describe('fetchFlowSQL', () => {
       status: 404,
       json: async () => ({
         error: 'Flow Not Found',
-        message: "Flow 'unknown_flow' not found. Did you add it to flows.ts?",
+        message: "Flow 'unknown_flow' not found. Did you add it to supabase/functions/pgflow/index.ts?",
       }),
     };
 
@@ -83,7 +83,7 @@ describe('fetchFlowSQL', () => {
     ).rejects.toThrow("Flow 'unknown_flow' not found");
     await expect(
       fetchFlowSQL('unknown_flow', 'http://127.0.0.1:50621/functions/v1/pgflow', 'test-publishable-key')
-    ).rejects.toThrow('Add your flow to supabase/functions/pgflow/flows.ts');
+    ).rejects.toThrow('Add your flow to supabase/functions/pgflow/index.ts');
   });
 
   it('should handle ECONNREFUSED with startup instructions', async () => {
@@ -167,7 +167,7 @@ describe('fetchFlowSQL', () => {
     ).rejects.toThrow("Flow 'unknown_flow' not found");
     await expect(
       fetchFlowSQL('unknown_flow', 'http://127.0.0.1:50621/functions/v1/pgflow', 'test-publishable-key')
-    ).rejects.toThrow('Did you add it to flows.ts');
+    ).rejects.toThrow('Did you add it to supabase/functions/pgflow/index.ts');
   });
 
   it('should construct correct URL with flow slug', async () => {

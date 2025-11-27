@@ -1,0 +1,88 @@
+---
+title: Compilation
+description: How pgflow compiles TypeScript flows to SQL via HTTP
+sidebar:
+  order: 25
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+pgflow compiles TypeScript flow definitions to SQL migrations via an HTTP-based architecture. This design eliminates the need for a local Deno installation and ensures compilation uses the same runtime as production.
+
+## How It Works
+
+When you run `pgflow compile greet_user`, the following happens:
+
+```
+┌─────────────┐     HTTP GET      ┌─────────────────────┐
+│  pgflow CLI │ ─────────────────>│  ControlPlane Edge  │
+│             │                   │      Function       │
+│             │                   │                     │
+│             │     SQL Array     │  1. Look up flow    │
+│             │ <─────────────────│  2. Call compileFlow│
+│             │                   │  3. Return SQL      │
+│             │                   └─────────────────────┘
+│  4. Write   │
+│  migration  │
+└─────────────┘
+```
+
+1. **CLI sends request** - The compile command sends an HTTP GET request to:
+   `http://127.0.0.1:54321/functions/v1/pgflow/flows/{slug}`
+
+2. **ControlPlane looks up flow** - The edge function has a registry of flows (from your `index.ts`). It finds the flow by slug.
+
+3. **Compilation happens in Deno** - The ControlPlane calls `compileFlow()` from `@pgflow/dsl`, which extracts the flow structure and generates SQL.
+
+4. **SQL returned to CLI** - The response contains an array of SQL statements.
+
+5. **CLI writes migration** - The CLI joins the SQL and writes it to `supabase/migrations/{timestamp}_create_{slug}_flow.sql`.
+
+## The ControlPlane Edge Function
+
+The `pgflow` edge function is created during installation and serves as your project's ControlPlane:
+
+```typescript title="supabase/functions/pgflow/index.ts"
+import { ControlPlane } from '@pgflow/edge-worker';
+import GreetUser from '../_flows/greet_user.ts';
+import ProcessOrder from '../_flows/process_order.ts';
+
+ControlPlane.serve([
+  GreetUser,
+  ProcessOrder,
+]);
+```
+
+The ControlPlane:
+- **Registers flows** by slug in an in-memory registry
+- **Exposes** the `/flows/:slug` endpoint for compilation
+- **Returns 404** if a flow slug is not found in the registry
+- **Returns 500** with error details if compilation fails
+
+## Why HTTP-Based Compilation?
+
+This architecture provides several benefits:
+
+**No local Deno required** - Users don't need Deno installed on their machine. The Supabase Edge Functions runtime handles everything.
+
+**Same runtime as production** - Flows are compiled using the exact same Deno environment they'll run in, eliminating "works on my machine" issues.
+
+**Consistent dependency resolution** - The `deno.json` import map in your edge function ensures consistent package versions.
+
+**Simpler CLI** - The CLI is a lightweight Node.js package that makes HTTP requests, rather than needing to bundle the entire compilation infrastructure.
+
+## Adding New Flows
+
+To make a flow available for compilation:
+
+1. Create the flow definition in `_flows/`
+2. Import it in `supabase/functions/pgflow/index.ts`
+3. Add it to the `ControlPlane.serve([...])` array
+
+<Aside type="note">
+When running `supabase functions serve`, code changes are detected automatically and the ControlPlane reloads with your new flows.
+</Aside>
+
+## API Reference
+
+For detailed HTTP endpoint documentation, see [ControlPlane API Reference](/reference/control-plane-api/).

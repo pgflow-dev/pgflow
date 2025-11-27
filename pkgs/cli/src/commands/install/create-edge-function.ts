@@ -5,18 +5,13 @@ import chalk from 'chalk';
 import { getVersion } from '../../utils/get-version.js';
 
 const INDEX_TS_TEMPLATE = `import { ControlPlane } from '@pgflow/edge-worker';
-import { flows } from './flows.ts';
-
-ControlPlane.serve(flows);
-`;
-
-const FLOWS_TS_TEMPLATE = `// Import your flows here
+// Import your flows here:
 // import { MyFlow } from '../_flows/my_flow.ts';
 
-// Export flows array for ControlPlane
-export const flows = [
+ControlPlane.serve([
+  // Add your flows here:
   // MyFlow,
-];
+]);
 `;
 
 const DENO_JSON_TEMPLATE = (version: string) => `{
@@ -44,7 +39,6 @@ export async function createEdgeFunction({
   const pgflowFunctionDir = path.join(functionsDir, 'pgflow');
 
   const indexPath = path.join(pgflowFunctionDir, 'index.ts');
-  const flowsPath = path.join(pgflowFunctionDir, 'flows.ts');
   const denoJsonPath = path.join(pgflowFunctionDir, 'deno.json');
 
   // Check what needs to be created
@@ -52,10 +46,6 @@ export async function createEdgeFunction({
 
   if (!fs.existsSync(indexPath)) {
     filesToCreate.push({ path: indexPath, name: 'index.ts' });
-  }
-
-  if (!fs.existsSync(flowsPath)) {
-    filesToCreate.push({ path: flowsPath, name: 'flows.ts' });
   }
 
   if (!fs.existsSync(denoJsonPath)) {
@@ -69,7 +59,6 @@ export async function createEdgeFunction({
     const detailedMsg = [
       'Existing files:',
       `  ${chalk.dim('•')} ${chalk.bold('supabase/functions/pgflow/index.ts')}`,
-      `  ${chalk.dim('•')} ${chalk.bold('supabase/functions/pgflow/flows.ts')}`,
       `  ${chalk.dim('•')} ${chalk.bold('supabase/functions/pgflow/deno.json')}`,
     ].join('\n');
 
@@ -111,10 +100,6 @@ export async function createEdgeFunction({
   // Create files
   if (filesToCreate.some((f) => f.path === indexPath)) {
     fs.writeFileSync(indexPath, INDEX_TS_TEMPLATE);
-  }
-
-  if (filesToCreate.some((f) => f.path === flowsPath)) {
-    fs.writeFileSync(flowsPath, FLOWS_TS_TEMPLATE);
   }
 
   if (filesToCreate.some((f) => f.path === denoJsonPath)) {

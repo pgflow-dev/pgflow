@@ -30,9 +30,9 @@ export async function fetchFlowSQL(
       const errorData = await response.json();
       throw new Error(
         `Flow '${flowSlug}' not found.\n\n` +
-          `${errorData.message || 'Did you add it to flows.ts?'}\n\n` +
+          `${errorData.message || 'Did you add it to supabase/functions/pgflow/index.ts?'}\n\n` +
           `Fix:\n` +
-          `1. Add your flow to supabase/functions/pgflow/flows.ts\n` +
+          `1. Add your flow to supabase/functions/pgflow/index.ts\n` +
           `2. Restart edge functions: supabase functions serve`
       );
     }
@@ -45,11 +45,6 @@ export async function fetchFlowSQL(
     return await response.json();
   } catch (error) {
     if (error instanceof Error) {
-      // Debug: show actual error and URL
-      console.error(`[DEBUG] Fetch failed for URL: ${url}`);
-      console.error(`[DEBUG] Error message: ${error.message}`);
-      console.error(`[DEBUG] Error cause:`, (error as any).cause);
-
       // Check for connection refused errors
       if (
         error.message.includes('ECONNREFUSED') ||
