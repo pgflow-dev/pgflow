@@ -12,8 +12,8 @@ const BASE_URL = `${API_URL}/functions/v1/pgflow`;
 async function ensureServerReady() {
   log('Ensuring pgflow function is ready...');
 
-  const maxRetries = 15;
-  const retryDelayMs = 1000;
+  const maxRetries = e2eConfig.serverReadyMaxRetries;
+  const retryDelayMs = e2eConfig.serverReadyRetryDelayMs;
 
   for (let i = 0; i < maxRetries; i++) {
     try {

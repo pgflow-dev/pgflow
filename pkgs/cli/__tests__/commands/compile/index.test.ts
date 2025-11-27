@@ -170,6 +170,45 @@ describe('fetchFlowSQL', () => {
     ).rejects.toThrow('Did you add it to supabase/functions/pgflow/index.ts');
   });
 
+  it('should handle missing ControlPlane edge function (Supabase gateway 404)', async () => {
+    // Supabase gateway returns 404 with different error format when function doesn't exist
+    const mockResponse = {
+      ok: false,
+      status: 404,
+      json: async () => ({
+        // Supabase gateway error - not our ControlPlane's "Flow Not Found"
+        error: 'not_found',
+        message: 'Function not found',
+      }),
+    };
+
+    global.fetch = vi.fn().mockResolvedValue(mockResponse);
+
+    await expect(
+      fetchFlowSQL('test_flow', 'http://127.0.0.1:50621/functions/v1/pgflow', 'test-publishable-key')
+    ).rejects.toThrow('ControlPlane edge function not found');
+    await expect(
+      fetchFlowSQL('test_flow', 'http://127.0.0.1:50621/functions/v1/pgflow', 'test-publishable-key')
+    ).rejects.toThrow('npx pgflow install');
+  });
+
+  it('should handle 404 with non-JSON response (HTML error page)', async () => {
+    // Some gateways return HTML error pages
+    const mockResponse = {
+      ok: false,
+      status: 404,
+      json: async () => {
+        throw new Error('Unexpected token < in JSON');
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue(mockResponse);
+
+    await expect(
+      fetchFlowSQL('test_flow', 'http://127.0.0.1:50621/functions/v1/pgflow', 'test-publishable-key')
+    ).rejects.toThrow('ControlPlane edge function not found');
+  });
+
   it('should construct correct URL with flow slug', async () => {
     const mockResponse = {
       ok: true,

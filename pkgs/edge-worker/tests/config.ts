@@ -19,6 +19,18 @@ export const e2eConfig = {
   get dbUrl() {
     return 'postgresql://postgres:postgres@127.0.0.1:50322/postgres';
   },
+
+  /** Max retries when waiting for server to be ready (default: 30) */
+  get serverReadyMaxRetries() {
+    const envValue = Deno.env.get('E2E_SERVER_READY_MAX_RETRIES');
+    return envValue ? parseInt(envValue, 10) : 30;
+  },
+
+  /** Delay between retries in ms (default: 1000) */
+  get serverReadyRetryDelayMs() {
+    const envValue = Deno.env.get('E2E_SERVER_READY_RETRY_DELAY_MS');
+    return envValue ? parseInt(envValue, 10) : 1000;
+  },
 };
 
 /**
