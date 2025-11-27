@@ -1,0 +1,748 @@
+---
+title: "Part 1: Setup and Backend"
+description: Install pgflow manually, create flow definitions, and setup Edge Functions on Lovable
+sidebar:
+  order: 1
+---
+
+import { Steps, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+import { FileTree } from '@astrojs/starlight/components';
+
+This guide walks you through setting up pgflow on Lovable using manual installation and creating your first workflow with real-time UI updates.
+
+## Overview
+
+Since Lovable has no CLI access, the setup process differs from standard pgflow installation:
+
+1. **Download migrations** - Get SQL files from GitHub releases
+2. **Run migrations manually** - Execute SQL in Supabase Dashboard
+3. **Configure environment** - Set secrets in Supabase Dashboard
+4. **Create flow definition** - TypeScript file defining the workflow
+5. **Create compilation function** - Edge Function to generate flow SQL
+6. **Create worker function** - Edge Function to execute workflows
+7. **Setup permissions** - Grant database access to client applications
+8. **Enable Realtime** - Configure Supabase for real-time updates
+
+Let's begin!
+
+---
+
+## Step 1: Download and Install Migrations
+
+pgflow requires database migrations to create the necessary tables and functions. Since Lovable can't run `supabase migration up`, execute the SQL manually.
+
+### Prompt 1 for Lovable
+
+```
+I need to set up pgflow (a Postgres-native workflow engine) on this Supabase project.
+
+**Context:**
+pgflow requires database migrations that create tables, functions, and schemas. Since we don't have CLI access in Lovable, I'll need help fetching and running these migrations.
+
+**Task:**
+Create a markdown note file at `docs/pgflow-setup.md` that contains instructions for:
+
+1. Downloading pgflow migrations from the latest GitHub release at https://github.com/pgflow-dev/pgflow/releases
+2. Finding migration SQL files in the downloaded archive at `pkgs/core/supabase/migrations/`
+3. Explaining that these SQL files need to be executed in order (by timestamp in filename) in Supabase Dashboard → SQL Editor
+
+Include a checklist I can follow to track which migrations have been executed.
+
+**Important:**
+- Do NOT create any database tables or functions yet
+- This is just documentation to guide the manual process
+- Keep it clear and actionable
+```
+
+**What happens:**
+- Lovable creates a documentation file with setup instructions
+- You'll follow these instructions to download migrations
+- The checklist helps track which migrations you've run
+
+### Execute Migrations in Supabase Dashboard
+
+After running the prompt above, follow these steps manually:
+
+<Steps>
+
+1. **Download pgflow release**
+   - Visit https://github.com/pgflow-dev/pgflow/releases
+   - Download the latest release source code (ZIP)
+   - Extract the archive
+
+2. **Locate migration files**
+   - Navigate to `pkgs/core/supabase/migrations/` in the extracted folder
+   - You'll see files like `20240101000000_initial_schema.sql`, etc.
+
+3. **Run migrations in Supabase Dashboard**
+   - Open your Lovable project's Supabase Dashboard
+   - Go to **SQL Editor** (left sidebar)
+   - Create a new query
+   - Copy the content of the first migration file
+   - Click "Run" to execute
+   - Repeat for each migration file in chronological order
+
+4. **Verify installation**
+   - Run this query in SQL Editor:
+   ```sql
+   SELECT * FROM pgflow.flows LIMIT 1;
+   ```
+   - If it runs without errors (even returning no rows), installation succeeded
+
+</Steps>
+
+:::tip[Migration Order]
+Execute migrations in timestamp order (oldest first). The filename format is `YYYYMMDDHHMMSS_description.sql` - sort by the numeric prefix.
+:::
+
+---
+
+## Step 2: Configure Environment Variables
+
+pgflow Edge Functions need database connection configuration.
+
+### Prompt 2 for Lovable
+
+```
+I need to configure environment variables for pgflow Edge Functions.
+
+**Context:**
+pgflow uses Edge Functions that need to connect to the Postgres database. In Supabase, we set these as "secrets" in the Dashboard.
+
+**Task:**
+Create a markdown note at `docs/environment-setup.md` with instructions for:
+
+1. Navigating to Supabase Dashboard → Settings → Edge Functions → Secrets
+2. Adding these two secrets:
+   - `EDGE_WORKER_DB_URL` - The database connection string
+   - `EDGE_WORKER_LOG_LEVEL` - Set to "info" for normal logging
+
+3. Getting the connection string from Dashboard → Settings → Database → Connection String → Transaction Mode (port 6543)
+
+**Important notes to include:**
+- If the database password contains special characters (@, &, :, etc.), they must be URL-encoded
+- Reference the pgflow documentation for URL encoding guide: https://www.pgflow.dev/deploy/connection-string/index.mdx
+- The connection string format: `postgresql://postgres.pooler-project:[PASSWORD]@host:6543/postgres`
+
+**Do NOT:**
+- Create any actual Edge Functions yet
+- Hard-code any actual passwords or connection strings
+```
+
+**What happens:**
+- Lovable creates documentation for setting environment variables
+- You'll follow these instructions in Supabase Dashboard
+- Documentation includes URL encoding guidance for special characters
+
+### Set Secrets in Supabase Dashboard
+
+After running the prompt, follow these steps:
+
+<Steps>
+
+1. **Get connection string**
+   - In Supabase Dashboard → Settings → Database
+   - Scroll to "Connection String" section
+   - Copy the **Transaction Mode** connection string (port 6543)
+   - Replace `[YOUR-PASSWORD]` with your actual database password
+
+2. **URL-encode password** (if needed)
+   - If password has special characters, encode them:
+     - `@` becomes `%40`
+     - `:` becomes `%3A`
+     - `&` becomes `%26`
+   - See full encoding reference at https://www.pgflow.dev/deploy/connection-string/index.mdx
+
+3. **Set secrets**
+   - Go to Dashboard → Settings → Edge Functions → Secrets
+   - Add secret `EDGE_WORKER_DB_URL` with your encoded connection string
+   - Add secret `EDGE_WORKER_LOG_LEVEL` with value `info`
+
+</Steps>
+
+:::caution[Password Security]
+Never commit connection strings or passwords to your repository. Always use Supabase Secrets for sensitive credentials.
+:::
+
+---
+
+## Step 3: Create Flow Definition
+
+Now create the actual workflow definition using pgflow's TypeScript DSL.
+
+### Prompt 3 for Lovable
+
+```
+Create a simple greeting workflow using pgflow's DSL.
+
+**Context:**
+pgflow workflows are defined using a TypeScript DSL (Domain Specific Language). The workflow we're creating takes a first name and last name, then:
+1. Step 1 (full_name): Concatenates them into a full name
+2. Step 2 (greeting): Creates a greeting message using the full name
+
+For reference, see pgflow's flow creation guide: https://www.pgflow.dev/get-started/flows/create-flow/index.mdx
+
+**Task:**
+Create a new file at `supabase/functions/_flows/greet_user.ts` with this EXACT content:
+
+```typescript
+import { Flow } from 'npm:@pgflow/dsl';
+
+type Input = {
+  first_name: string;
+  last_name: string;
+};
+
+export default new Flow<Input>({
+  slug: 'greet_user',
+})
+  .step(
+    { slug: 'full_name' },
+    (input) => `${input.run.first_name} ${input.run.last_name}`
+  )
+  .step(
+    { slug: 'greeting', dependsOn: ['full_name'] },
+    (input) => `Hello, ${input.full_name}!`
+  );
+```
+
+**Important:**
+- Use EXACTLY this code - don't modify the flow definition
+- The path must be `supabase/functions/_flows/greet_user.ts`
+- This file will be imported by both the compilation function and worker function
+```
+
+**What happens:**
+- Lovable creates the flow definition file
+- This defines a two-step DAG (Directed Acyclic Graph)
+- The second step depends on the first step's output
+- Both steps are simple pure functions that transform input data
+
+:::tip[Flow DSL Concepts]
+- `Flow<Input>` - Defines the workflow and input type
+- `.step()` - Adds a step to the workflow
+- `dependsOn` - Declares step dependencies
+- `input.run.*` - Access flow input
+- `input.<step_slug>` - Access previous step outputs
+:::
+
+---
+
+## Step 4: Create Compilation Edge Function
+
+Create an Edge Function that compiles the flow definition into SQL.
+
+### Prompt 4 for Lovable
+
+```
+Create a compilation Edge Function that generates SQL for registering the greeting flow.
+
+**Context:**
+In normal pgflow setup, you'd run `npx pgflow compile`. Since Lovable has no CLI, we create an Edge Function that:
+1. Imports the flow definition we just created
+2. Uses pgflow's `compileFlow()` function to generate SQL
+3. Returns SQL statements that we'll execute in Supabase Dashboard
+
+For reference: https://www.pgflow.dev/reference/compile-api/index.mdx
+
+**Task:**
+Create a new file at `supabase/functions/compile_greet_user/index.ts`:
+
+```typescript
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { compileFlow } from 'npm:@pgflow/dsl';
+import GreetUser from '../_flows/greet_user.ts';
+
+serve(() => {
+  try {
+    // Generate SQL statements from flow definition
+    const statements = compileFlow(GreetUser);
+
+    // Return SQL for manual execution
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: 'Copy and execute these SQL statements in Supabase Dashboard SQL Editor',
+        deleteStatement: "SELECT pgflow.delete_flow_and_data('greet_user');",
+        createStatements: statements,
+        instructions: [
+          '1. First run the deleteStatement (if flow already exists)',
+          '2. Then run each createStatement in order',
+          '3. Verify with: SELECT * FROM pgflow.flows WHERE slug = \\'greet_user\\';'
+        ]
+      }, null, 2),
+      {
+        headers: { 'Content-Type': 'application/json' },
+        status: 200
+      }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message
+      }),
+      {
+        headers: { 'Content-Type': 'application/json' },
+        status: 500
+      }
+    );
+  }
+});
+```
+
+**Important:**
+- This function returns SQL, it doesn't execute it
+- The delete_flow_and_data function will be installed in the next step
+- This Edge Function will auto-deploy when created
+```
+
+**What happens:**
+- Lovable creates the compilation Edge Function
+- Edge Function imports the flow definition and generates SQL
+- Returns formatted JSON with SQL statements and instructions
+- You'll invoke this function to get SQL, then execute that SQL manually
+
+:::note[Why return SQL instead of executing it?]
+This approach:
+- Follows Lovable's workflow of reviewing SQL before execution
+- Allows inspection and learning
+- Provides clear control over database changes
+- Matches the manual installation pattern
+:::
+
+---
+
+## Step 5: Install Delete Function and Compile Flow
+
+Before registering the flow, install a helper function for development.
+
+### Install delete_flow_and_data Function
+
+This function allows you to delete and recreate flows during development.
+
+<Steps>
+
+1. **Get the function SQL**
+   - Visit https://www.pgflow.dev/build/delete-flows/index.mdx
+   - Copy the full SQL function definition from the docs
+
+2. **Execute in Supabase Dashboard**
+   - Open SQL Editor in Supabase Dashboard
+   - Paste the function definition
+   - Run the query
+
+3. **Verify installation**
+   ```sql
+   SELECT routine_name
+   FROM information_schema.routines
+   WHERE routine_schema = 'pgflow'
+   AND routine_name = 'delete_flow_and_data';
+   ```
+
+</Steps>
+
+:::caution[Development Only]
+The `delete_flow_and_data` function is for development only. Never use it in production as it permanently deletes all flow data including run history.
+:::
+
+### Compile the Flow
+
+Now generate and execute the flow registration SQL:
+
+<Steps>
+
+1. **Trigger compilation function**
+   - In Lovable, the Edge Function auto-deploys when created
+   - Get your project URL from Supabase Dashboard
+   - Open: `https://your-project.supabase.co/functions/v1/compile_greet_user`
+   - Or use curl:
+   ```bash
+   curl https://your-project.supabase.co/functions/v1/compile_greet_user
+   ```
+
+2. **Copy the SQL output**
+   - The response contains `deleteStatement` and `createStatements`
+   - Copy each SQL statement
+
+3. **Execute in Supabase Dashboard SQL Editor**
+   - First, run the `deleteStatement` (if flow exists)
+   - Then, run each statement from `createStatements` in order
+
+4. **Verify flow registration**
+   ```sql
+   -- Check flow exists
+   SELECT * FROM pgflow.flows WHERE slug = 'greet_user';
+
+   -- Check steps were created
+   SELECT * FROM pgflow.steps WHERE flow_slug = 'greet_user' ORDER BY slug;
+   ```
+
+</Steps>
+
+**Expected results:**
+- One row in `pgflow.flows` with slug 'greet_user'
+- Two rows in `pgflow.steps`: 'full_name' and 'greeting'
+- 'greeting' step depends on 'full_name'
+
+---
+
+## Step 6: Create Worker Edge Function
+
+Create the Edge Function that executes the workflow.
+
+### Prompt 5 for Lovable
+
+```
+Create the worker Edge Function that executes the greeting workflow.
+
+**Context:**
+The worker is an Edge Function that:
+1. Polls pgflow for tasks to execute
+2. Runs the handler functions defined in the flow
+3. Reports results back to pgflow
+4. Handles retries and errors automatically
+
+For reference: https://www.pgflow.dev/get-started/flows/run-flow/index.mdx
+
+**Task:**
+Create file at `supabase/functions/greet_user_worker/index.ts`:
+
+```typescript
+import { EdgeWorker } from 'jsr:@pgflow/edge-worker';
+import GreetUser from '../_flows/greet_user.ts';
+
+EdgeWorker.start(GreetUser);
+```
+
+That's it! The EdgeWorker handles all the execution logic.
+
+**Important:**
+- This imports the SAME flow definition from step 3
+- EdgeWorker.start() sets up the polling and execution loop
+- The worker uses environment variables we configured in step 2
+- This Edge Function will auto-deploy when created
+```
+
+**What happens:**
+- Lovable creates a minimal worker Edge Function
+- `EdgeWorker.start()` automatically:
+  - Polls for tasks from the pgflow queue
+  - Executes handler functions defined in the flow
+  - Reports progress and results to the database
+  - Implements retry logic and error handling
+
+### Start the Worker
+
+After the function is created:
+
+<Steps>
+
+1. **Find your Supabase URL and anon key**
+   - Dashboard → Settings → API
+   - Copy "Project URL" and "anon public" key
+
+2. **Start the worker**
+   ```bash
+   curl "https://your-project.supabase.co/functions/v1/greet_user_worker" \
+     -H "Authorization: Bearer YOUR_ANON_KEY"
+   ```
+
+3. **Check worker status**
+   ```sql
+   SELECT * FROM pgflow.workers WHERE function_name = 'greet_user_worker';
+   ```
+   - Should show one active worker with recent heartbeat
+
+</Steps>
+
+:::tip[Worker Lifecycle]
+The worker runs continuously in the background, polling every few seconds for new tasks. Edge Functions have a maximum runtime (150s on free tier, 400s on paid), after which they're restarted automatically by Supabase.
+:::
+
+---
+
+## Step 7: Setup Database Permissions
+
+Grant permissions for client applications to start flows and view results.
+
+### Prompt 6 for Lovable
+
+```
+Create documentation for setting up database permissions.
+
+**Context:**
+Client applications need permission to:
+- Start flows using pgflow functions
+- View flow definitions and run results
+- Access the pgflow schema via PostgREST API
+
+For reference: https://www.pgflow.dev/reference/permissions/index.mdx
+
+**Task:**
+Create file `docs/permissions-setup.md` with these instructions:
+
+1. **Expose pgflow schema in Supabase Dashboard:**
+   - Go to Settings → API → Data API Settings
+   - Under "Exposed schemas", add `pgflow` to the list
+   - This makes pgflow tables available via PostgREST
+
+2. **Grant permissions SQL to execute in SQL Editor:**
+   ```sql
+   -- Grant schema access
+   GRANT USAGE ON SCHEMA pgflow TO authenticated, anon;
+
+   -- Grant function execution (for starting flows)
+   GRANT EXECUTE ON FUNCTION pgflow.start_flow_with_states(text, jsonb, uuid) TO authenticated, anon;
+   GRANT EXECUTE ON FUNCTION pgflow.get_run_with_states(uuid) TO authenticated, anon;
+
+   -- Grant read access to flow definitions
+   GRANT SELECT ON TABLE pgflow.flows TO authenticated, anon;
+   GRANT SELECT ON TABLE pgflow.steps TO authenticated, anon;
+   ```
+
+3. **Security notes to include:**
+   - These permissions allow ANY user (authenticated or anonymous) to start flows
+   - Suitable for demos and MVPs only
+   - Production apps should implement custom authorization
+
+**Do NOT:**
+- Try to execute the SQL automatically
+- Create any database functions
+```
+
+**What happens:**
+- Lovable creates permission setup documentation
+- You'll manually execute the SQL grants in Dashboard
+- Both authenticated and anonymous users can use pgflow
+
+### Execute Permission Grants
+
+<Steps>
+
+1. **Expose pgflow schema**
+   - Dashboard → Settings → API → Data API Settings
+   - Find "Exposed schemas" section
+   - Add `pgflow` to the list
+   - Save changes
+
+2. **Run permission grants**
+   - Open SQL Editor in Supabase Dashboard
+   - Copy the SQL from the documentation
+   - Execute the grants
+
+3. **Verify permissions**
+   ```sql
+   SELECT grantee, privilege_type
+   FROM information_schema.role_table_grants
+   WHERE table_schema = 'pgflow' AND table_name = 'flows';
+   ```
+
+</Steps>
+
+:::danger[Security Warning]
+These permissions allow **anyone** to start flows and view runs. Only suitable for:
+- Development environments
+- Internal tools
+- Demos and prototypes
+
+Production applications should implement custom authorization logic.
+:::
+
+---
+
+## Step 8: Enable Realtime
+
+Configure Supabase Realtime for real-time UI updates.
+
+### Prompt 7 for Lovable
+
+```
+Create documentation for enabling Supabase Realtime.
+
+**Context:**
+The pgflow client uses Supabase Realtime to stream workflow progress updates to the UI. We need to enable Realtime and configure which tables broadcast changes.
+
+**Task:**
+Create file `docs/realtime-setup.md` with instructions:
+
+1. **Enable Realtime in Supabase Dashboard:**
+   - Go to Database → Replication
+   - Find table `pgflow.step_states` in the list
+   - Enable replication for this table
+   - This allows the client to subscribe to step status changes
+
+2. **Verify Realtime is enabled:**
+   - Check that "Realtime" is toggled ON at the top
+   - Confirm `step_states` shows "Replicated" status
+
+3. **Explanation to include:**
+   - Realtime uses Postgres replication to broadcast database changes
+   - The @pgflow/client subscribes to `step_states` table changes
+   - This enables real-time progress updates in the UI without polling
+
+**Do NOT:**
+- Try to enable Realtime programmatically
+- Create any database triggers or functions
+```
+
+**What happens:**
+- Lovable creates Realtime setup documentation
+- You'll manually enable replication in Dashboard
+- UI will receive real-time updates when steps execute
+
+### Enable Realtime Replication
+
+<Steps>
+
+1. **Navigate to Replication settings**
+   - Dashboard → Database → Replication
+   - Ensure "Realtime" toggle is ON at the top
+
+2. **Enable step_states replication**
+   - Find `pgflow.step_states` in the tables list
+   - Click to enable replication
+   - Save changes
+
+3. **Test Realtime (optional)**
+   - Open browser console
+   - Create a Supabase client
+   - Subscribe to step_states changes:
+   ```javascript
+   const { createClient } = supabase;
+   const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+   client.channel('test')
+     .on('postgres_changes',
+       { event: '*', schema: 'pgflow', table: 'step_states' },
+       payload => console.log('Change:', payload)
+     )
+     .subscribe();
+   ```
+
+</Steps>
+
+:::tip[Realtime Limits]
+Supabase Realtime has connection limits based on your plan. For development, the free tier is sufficient. Production apps may need higher tiers.
+:::
+
+---
+
+## Verification
+
+At this point, the backend is fully set up. Verify everything is working:
+
+### Backend Checklist
+
+```sql
+-- 1. pgflow schema exists
+SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'pgflow';
+
+-- 2. Flow is registered
+SELECT * FROM pgflow.flows WHERE slug = 'greet_user';
+
+-- 3. Steps are defined
+SELECT slug, depends_on FROM pgflow.steps WHERE flow_slug = 'greet_user' ORDER BY slug;
+
+-- 4. Worker is active
+SELECT function_name, last_heartbeat_at
+FROM pgflow.workers
+WHERE function_name = 'greet_user_worker'
+AND deprecated_at IS NULL;
+
+-- 5. Permissions are granted
+SELECT grantee, privilege_type
+FROM information_schema.role_table_grants
+WHERE table_schema = 'pgflow' AND grantee IN ('authenticated', 'anon');
+```
+
+**Expected results:**
+- ✅ pgflow schema exists
+- ✅ greet_user flow with 2 steps
+- ✅ Steps: full_name (no deps), greeting (depends on full_name)
+- ✅ Active worker with recent heartbeat
+- ✅ Permissions for authenticated and anon roles
+
+### Test the Flow
+
+Test the workflow with a direct SQL call:
+
+```sql
+-- Start a test flow
+SELECT pgflow.start_flow(
+  flow_slug => 'greet_user',
+  flow_input => jsonb_build_object(
+    'first_name', 'Alice',
+    'last_name', 'Smith'
+  )
+);
+
+-- Check the run (use the run_id from above)
+SELECT * FROM pgflow.runs WHERE flow_slug = 'greet_user' ORDER BY created_at DESC LIMIT 1;
+
+-- Check step states
+SELECT step_slug, status, output
+FROM pgflow.step_states
+WHERE run_id = 'YOUR_RUN_ID'
+ORDER BY created_at;
+```
+
+**Expected results:**
+- Run status should be `completed` (or `running` if still executing)
+- Step `full_name` output: `"Alice Smith"`
+- Step `greeting` output: `"Hello, Alice Smith!"`
+
+---
+
+## What's Next
+
+Backend setup is complete! The next part covers building the React UI with real-time updates.
+
+**Coming soon:**
+- Part 2: Build the UI - Create a React interface with @pgflow/client
+- Part 3: Add Features - Enhance with error handling and history
+
+---
+
+## Troubleshooting
+
+### Worker not picking up tasks
+
+**Check worker is running:**
+```sql
+SELECT * FROM pgflow.workers
+WHERE deprecated_at IS NULL
+AND last_heartbeat_at > now() - interval '10 seconds';
+```
+
+**Restart worker:**
+```bash
+curl "https://your-project.supabase.co/functions/v1/greet_user_worker" \
+  -H "Authorization: Bearer YOUR_ANON_KEY"
+```
+
+### Compilation errors
+
+**Common issues:**
+- Import path incorrect - Must be `../flows/greet_user.ts`
+- Missing @pgflow/dsl package - Check Edge Function imports
+- Syntax errors in flow definition - Verify TypeScript syntax
+
+### Permission denied errors
+
+**Re-run permission grants:**
+```sql
+-- Check current permissions
+SELECT grantee, privilege_type, table_schema, table_name
+FROM information_schema.role_table_grants
+WHERE table_schema = 'pgflow';
+
+-- Re-grant if needed (see Step 7)
+```
+
+---
+
+:::note[Need Help?]
+- Join [pgflow Discord](https://discord.gg/pgflow)
+- Check [pgflow documentation](https://www.pgflow.dev)
+- Open an [issue on GitHub](https://github.com/pgflow-dev/pgflow/issues)
+:::
