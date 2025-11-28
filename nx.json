@@ -115,7 +115,7 @@
     "test:integration": {
       "local": true
     },
-    "test:e2e:*": {
+    "e2e:*": {
       "local": true
     }
   }

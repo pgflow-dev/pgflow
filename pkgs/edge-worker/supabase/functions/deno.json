@@ -1,5 +1,10 @@
 {
   "unstable": ["sloppy-imports"],
+  "lint": {
+    "rules": {
+      "exclude": ["no-sloppy-imports"]
+    }
+  },
   "imports": {
     "@pgflow/core": "./_vendor/@pgflow/core/index.js",
     "@pgflow/core/": "./_vendor/@pgflow/core/",

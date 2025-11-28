@@ -1,11 +1,9 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { fileURLToPath } from 'url';
-import { readFileSync } from 'fs';
-import { dirname, join } from 'path';
 import installCommand from './commands/install/index.js';
 import compileCommand from './commands/compile/index.js';
+import { getVersion } from './utils/get-version.js';
 
 // Create a function to handle errors
 const errorHandler = (error: unknown) => {
@@ -18,22 +16,6 @@ const errorHandler = (error: unknown) => {
 
 // Set up process-wide unhandled rejection handler
 process.on('unhandledRejection', errorHandler);
-
-// Function to get version from package.json
-function getVersion(): string {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = dirname(__filename);
-  const packageJsonPath = join(__dirname, '..', 'package.json');
-
-  try {
-    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
-    return packageJson.version || 'unknown';
-  } catch (error) {
-    // Log error but don't display it to the user when showing version
-    console.error('Error reading package.json:', error);
-    return 'unknown';
-  }
-}
 
 const program = new Command();
 program

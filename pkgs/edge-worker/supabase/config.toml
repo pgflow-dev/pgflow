@@ -39,4 +39,20 @@ enabled = false
 [auth]
 enabled = false
 
+[functions.cpu_intensive]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/cpu_intensive/index.ts"
 
+[functions.max_concurrency]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/max_concurrency/index.ts"
+
+[functions.pgflow]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/pgflow/index.ts"

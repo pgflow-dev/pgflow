@@ -31,6 +31,32 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Required services for edge function development
+# Note: Services like imgproxy, studio, inbucket, analytics, vector, pg_meta are optional
+# Container names use project_id suffix from config.toml (e.g., supabase_db_cli for project_id="cli")
+# We use pattern matching to handle different project suffixes
+REQUIRED_SERVICES=(
+  "supabase_db_"
+  "supabase_kong_"
+  "supabase_edge_runtime_"
+  "supabase_rest_"
+  "supabase_realtime_"
+)
+
+# Check if all required services are running via docker ps
+# This is more reliable than `supabase status` which returns 0 even with stopped services
+check_required_services_running() {
+  local running_containers
+  running_containers=$(docker ps --format '{{.Names}}' 2>/dev/null)
+
+  for service_prefix in "${REQUIRED_SERVICES[@]}"; do
+    if ! echo "$running_containers" | grep -q "^${service_prefix}"; then
+      return 1
+    fi
+  done
+  return 0
+}
+
 # Validate project directory argument
 if [ -z "$1" ]; then
   echo -e "${RED}Error: Project directory argument is required${NC}" >&2
@@ -51,15 +77,15 @@ cd "$PROJECT_DIR"
 
 echo -e "${YELLOW}Checking Supabase status in: $PROJECT_DIR${NC}"
 
-# Fast path: Check if Supabase is already running
-# This makes repeated calls very fast
-if pnpm exec supabase status > /dev/null 2>&1; then
-  echo -e "${GREEN}✓ Supabase is already running${NC}"
+# Fast path: Check if all required Supabase services are running via docker ps
+# This is more reliable than `supabase status` which returns 0 even with stopped services
+if check_required_services_running; then
+  echo -e "${GREEN}✓ Supabase is already running (all required services up)${NC}"
   exit 0
 fi
 
-# Supabase is not running - need to start it
-echo -e "${YELLOW}Supabase is not running. Starting...${NC}"
+# Some or all required services are not running - need to start/restart
+echo -e "${YELLOW}Supabase services not fully running. Starting...${NC}"
 
 # Run package-specific preparation if script exists
 PREPARE_SCRIPT="$PROJECT_DIR/scripts/prepare-supabase.sh"

@@ -1,2 +1,3 @@
 supabase/migrations/*
 supabase/functions/_dist/
+supabase/seed.sql

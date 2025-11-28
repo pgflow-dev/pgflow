@@ -1,87 +1,107 @@
 import { type Command } from 'commander';
 import chalk from 'chalk';
-import { intro, log, note, outro } from '@clack/prompts';
+import { intro, log, outro } from '@clack/prompts';
 import path from 'path';
 import fs from 'fs';
-import { spawn } from 'child_process';
-import { fileURLToPath } from 'url';
 
-// Get the directory name in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Default Supabase local development publishable key (same for all local projects)
+const DEFAULT_PUBLISHABLE_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
 
 /**
- * Formats a command and its arguments for display with syntax highlighting
- * Each argument is displayed on a separate line for better readability
+ * Fetch flow SQL from ControlPlane HTTP endpoint
  */
-function formatCommand(command: string, args: string[]): string {
-  const cmd = chalk.cyan(command);
-  const formattedArgs = args.map((arg) => {
-    // Highlight config and file paths differently
-    if (arg.startsWith('--config=')) {
-      const [flag, value] = arg.split('=');
-      return `  ${chalk.yellow(flag)}=${chalk.green(value)}`;
-    } else if (arg.startsWith('--')) {
-      return `  ${chalk.yellow(arg)}`;
-    } else if (arg.endsWith('.ts') || arg.endsWith('.json')) {
-      return `  ${chalk.green(arg)}`;
+export async function fetchFlowSQL(
+  flowSlug: string,
+  controlPlaneUrl: string,
+  publishableKey: string
+): Promise<{ flowSlug: string; sql: string[] }> {
+  const url = `${controlPlaneUrl}/flows/${flowSlug}`;
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${publishableKey}`,
+        'apikey': publishableKey,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.status === 404) {
+      const errorData = await response.json();
+      throw new Error(
+        `Flow '${flowSlug}' not found.\n\n` +
+          `${errorData.message || 'Did you add it to flows.ts?'}\n\n` +
+          `Fix:\n` +
+          `1. Add your flow to supabase/functions/pgflow/flows.ts\n` +
+          `2. Restart edge functions: supabase functions serve`
+      );
     }
-    return `  ${chalk.white(arg)}`;
-  });
 
-  return `$ ${cmd}\n${formattedArgs.join('\n')}`;
-}
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
 
-/**
- * Creates a task log entry with a command and its output
- */
-function createTaskLog(
-  command: string,
-  args: string[],
-  output: string
-): string {
-  return [
-    chalk.bold('Command:'),
-    formatCommand(command, args),
-    '',
-    chalk.bold('Output:'),
-    output.trim() ? output.trim() : '(no output)',
-  ].join('\n');
+    return await response.json();
+  } catch (error) {
+    if (error instanceof Error) {
+      // Debug: show actual error and URL
+      console.error(`[DEBUG] Fetch failed for URL: ${url}`);
+      console.error(`[DEBUG] Error message: ${error.message}`);
+      console.error(`[DEBUG] Error cause:`, (error as any).cause);
+
+      // Check for connection refused errors
+      if (
+        error.message.includes('ECONNREFUSED') ||
+        error.message.includes('fetch failed')
+      ) {
+        throw new Error(
+          'Could not connect to ControlPlane.\n\n' +
+            'Fix options:\n' +
+            '1. Start Supabase: supabase start\n' +
+            '2. Start edge functions: supabase functions serve\n\n' +
+            'Or use previous version: npx pgflow@0.8.0 compile path/to/flow.ts'
+        );
+      }
+
+      throw error;
+    }
+
+    throw new Error(`Unknown error: ${String(error)}`);
+  }
 }
 
 export default (program: Command) => {
   program
     .command('compile')
-    .description('Compiles a TypeScript-defined flow into SQL migration')
-    .argument('<flowPath>', 'Path to the flow TypeScript file')
+    .description('Compiles a flow into SQL migration via ControlPlane HTTP')
+    .argument('<flowSlug>', 'Flow slug to compile (e.g., my_flow)')
     .option(
       '--deno-json <denoJsonPath>',
-      'Path to deno.json configuration file'
+      '[DEPRECATED] No longer used. Will be removed in v1.0'
     )
     .option('--supabase-path <supabasePath>', 'Path to the Supabase folder')
-    .action(async (flowPath, options) => {
+    .option(
+      '--control-plane-url <url>',
+      'Control plane URL',
+      'http://127.0.0.1:54321/functions/v1/pgflow'
+    )
+    .option(
+      '--publishable-key <key>',
+      'Supabase publishable key (legacy anon keys also work)',
+      DEFAULT_PUBLISHABLE_KEY
+    )
+    .action(async (flowSlug, options) => {
       intro('pgflow - Compile Flow to SQL');
 
       try {
-        // Resolve paths
-        const resolvedFlowPath = path.resolve(process.cwd(), flowPath);
-
-        // Only resolve denoJsonPath if it's provided
-        let resolvedDenoJsonPath: string | undefined;
+        // Show deprecation warning for --deno-json
         if (options.denoJson) {
-          resolvedDenoJsonPath = path.resolve(process.cwd(), options.denoJson);
-
-          // Validate deno.json path if provided
-          if (!fs.existsSync(resolvedDenoJsonPath)) {
-            log.error(`deno.json file not found: ${resolvedDenoJsonPath}`);
-            process.exit(1);
-          }
-        }
-
-        // Validate flow path
-        if (!fs.existsSync(resolvedFlowPath)) {
-          log.error(`Flow file not found: ${resolvedFlowPath}`);
-          process.exit(1);
+          log.warn(
+            'The --deno-json flag is deprecated and no longer used.\n' +
+              'Flow compilation now happens via HTTP, not local Deno.\n' +
+              'This flag will be removed in v1.0'
+          );
         }
 
         // Validate Supabase path
@@ -102,18 +122,41 @@ export default (program: Command) => {
           process.exit(1);
         }
 
-        // Find the internal_compile.js script
-        const internalCompileScript = path.resolve(
-          __dirname,
-          '../../deno/internal_compile.js'
-        );
-
         // Create migrations directory if it doesn't exist
         const migrationsDir = path.resolve(supabasePath, 'migrations');
         if (!fs.existsSync(migrationsDir)) {
           fs.mkdirSync(migrationsDir, { recursive: true });
           log.success(`Created migrations directory: ${migrationsDir}`);
         }
+
+        // Check for existing migrations
+        const existingMigrations = fs
+          .readdirSync(migrationsDir)
+          .filter((file) => file.endsWith(`_create_${flowSlug}_flow.sql`));
+
+        if (existingMigrations.length > 0) {
+          log.warn(
+            `Found existing migration(s) for '${flowSlug}':\n` +
+              existingMigrations.map((f) => `  ${f}`).join('\n') +
+              '\nCreating new migration anyway...'
+          );
+        }
+
+        // Fetch flow SQL from ControlPlane
+        log.info(`Compiling flow: ${flowSlug}`);
+        const result = await fetchFlowSQL(
+          flowSlug,
+          options.controlPlaneUrl,
+          options.publishableKey
+        );
+
+        // Validate result
+        if (!result.sql || result.sql.length === 0) {
+          throw new Error('ControlPlane returned empty SQL');
+        }
+
+        // Join SQL statements
+        const compiledSql = result.sql.join('\n') + '\n';
 
         // Generate timestamp for migration file in format YYYYMMDDHHMMSS using UTC
         const now = new Date();
@@ -126,42 +169,13 @@ export default (program: Command) => {
           String(now.getUTCSeconds()).padStart(2, '0'),
         ].join('');
 
-        // Run the compilation
-        log.info(`Compiling flow: ${path.basename(resolvedFlowPath)}`);
-        const compiledSql = await runDenoCompilation(
-          internalCompileScript,
-          resolvedFlowPath,
-          resolvedDenoJsonPath
-        );
-
-        // Extract flow name from the first line of the SQL output using regex
-        // Looking for pattern: SELECT pgflow.create_flow('flow_name', ...);
-        const flowNameMatch = compiledSql.match(
-          /SELECT\s+pgflow\.create_flow\s*\(\s*'([^']+)'/i
-        );
-
-        // Use extracted flow name or fallback to the file basename if extraction fails
-        let flowName;
-        if (flowNameMatch && flowNameMatch[1]) {
-          flowName = flowNameMatch[1];
-          log.info(`Extracted flow name: ${flowName}`);
-        } else {
-          // Fallback to file basename if regex doesn't match
-          flowName = path.basename(
-            resolvedFlowPath,
-            path.extname(resolvedFlowPath)
-          );
-          log.warn(
-            `Could not extract flow name from SQL, using file basename: ${flowName}`
-          );
-        }
-
-        // Create migration filename in the format: <timestamp>_create_<flow_name>_flow.sql
-        const migrationFileName = `${timestamp}_create_${flowName}_flow.sql`;
+        // Create migration filename in the format: <timestamp>_create_<flow_slug>_flow.sql
+        const migrationFileName = `${timestamp}_create_${flowSlug}_flow.sql`;
         const migrationFilePath = path.join(migrationsDir, migrationFileName);
 
         // Write the SQL to a migration file
         fs.writeFileSync(migrationFilePath, compiledSql);
+
         // Show the migration file path relative to the current directory
         const relativeFilePath = path.relative(
           process.cwd(),
@@ -177,7 +191,7 @@ export default (program: Command) => {
             `- Run ${chalk.cyan('supabase migration up')} to apply the migration`,
             '',
             chalk.bold('Continue the setup:'),
-            chalk.blue.underline('https://pgflow.dev/getting-started/run-flow/')
+            chalk.blue.underline('https://pgflow.dev/getting-started/run-flow/'),
           ].join('\n')
         );
       } catch (error) {
@@ -192,7 +206,9 @@ export default (program: Command) => {
             chalk.bold('Compilation failed!'),
             '',
             chalk.bold('For troubleshooting help:'),
-            chalk.blue.underline('https://pgflow.dev/getting-started/compile-to-sql/')
+            chalk.blue.underline(
+              'https://pgflow.dev/getting-started/compile-to-sql/'
+            ),
           ].join('\n')
         );
 
@@ -200,79 +216,3 @@ export default (program: Command) => {
       }
     });
 };
-
-/**
- * Runs the Deno compilation script and returns the compiled SQL
- */
-async function runDenoCompilation(
-  scriptPath: string,
-  flowPath: string,
-  denoJsonPath?: string
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    // Validate input paths
-    if (!scriptPath) {
-      return reject(new Error('Internal script path is required'));
-    }
-
-    if (!flowPath) {
-      return reject(new Error('Flow path is required'));
-    }
-
-    // Build the command arguments array
-    const args = ['run', '--allow-read', '--allow-net', '--allow-env'];
-
-    // Only add the config argument if denoJsonPath is provided and valid
-    if (denoJsonPath && typeof denoJsonPath === 'string') {
-      args.push(`--config=${denoJsonPath}`);
-    }
-
-    // Add the script path and flow path
-    args.push(scriptPath, flowPath);
-
-    // Log the command for debugging with colored output
-    log.info('Running Deno compiler');
-
-    const deno = spawn('deno', args);
-
-    let stdout = '';
-    let stderr = '';
-
-    deno.stdout.on('data', (data) => {
-      stdout += data.toString();
-    });
-
-    deno.stderr.on('data', (data) => {
-      stderr += data.toString();
-    });
-
-    deno.on('close', (code) => {
-      // Always display the task log with command and output
-      note(createTaskLog('deno', args, stdout));
-
-      if (code === 0) {
-        if (stdout.trim().length === 0) {
-          reject(new Error('Compilation produced no output'));
-        } else {
-          resolve(stdout);
-        }
-      } else {
-        reject(
-          new Error(
-            `Deno process exited with code ${code}${
-              stderr ? `\n${stderr}` : ''
-            }`
-          )
-        );
-      }
-    });
-
-    deno.on('error', (err) => {
-      reject(
-        new Error(
-          `Failed to start Deno process: ${err.message}. Make sure Deno is installed.`
-        )
-      );
-    });
-  });
-}
