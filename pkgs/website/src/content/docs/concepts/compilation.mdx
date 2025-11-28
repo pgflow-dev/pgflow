@@ -67,6 +67,13 @@ This architecture provides several benefits:
 
 **Simpler CLI** - The CLI is a lightweight Node.js package that makes HTTP requests, rather than needing to bundle the entire compilation infrastructure.
 
+<Aside type="note" title="Production Deployment">
+The ControlPlane is currently used for local development compilation only.
+In future releases, it will be deployed to production for auto-compilation
+features where workers verify and compile flows at startup.
+For now, only deploy your worker functions to production.
+</Aside>
+
 ## Adding New Flows
 
 To make a flow available for compilation:

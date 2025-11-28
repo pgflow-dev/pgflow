@@ -98,23 +98,10 @@ export default (program: Command) => {
       new Option('--secret-key [key]', 'Supabase anon/service_role key')
         .hideHelp()
     )
-    .option(
-      '--deno-json <denoJsonPath>',
-      '[DEPRECATED] No longer used. Will be removed in v1.0'
-    )
     .action(async (flowSlug, options) => {
       intro('pgflow - Compile Flow to SQL');
 
       try {
-        // Show deprecation warning for --deno-json
-        if (options.denoJson) {
-          log.warn(
-            'The --deno-json flag is deprecated and no longer used.\n' +
-              'Flow compilation now happens via HTTP, not local Deno.\n' +
-              'This flag will be removed in v1.0'
-          );
-        }
-
         // Validate Supabase path
         let supabasePath: string;
         if (options.supabasePath) {

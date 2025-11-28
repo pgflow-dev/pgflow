@@ -168,7 +168,6 @@ export default defineConfig({
             'get-started/installation',
             'get-started/flows/quickstart',
             'get-started/flows/create-flow',
-            'get-started/flows/compile-flow',
             'get-started/flows/run-flow',
             'concepts/how-pgflow-works',
             'concepts/data-model',
