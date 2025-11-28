@@ -1,11 +1,8 @@
-import { type Command } from 'commander';
+import { type Command, Option } from 'commander';
 import chalk from 'chalk';
 import { intro, log, outro } from '@clack/prompts';
 import path from 'path';
 import fs from 'fs';
-
-// Default Supabase local development publishable key (same for all local projects)
-const DEFAULT_PUBLISHABLE_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
 
 /**
  * Fetch flow SQL from ControlPlane HTTP endpoint
@@ -13,15 +10,15 @@ const DEFAULT_PUBLISHABLE_KEY = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH'
 export async function fetchFlowSQL(
   flowSlug: string,
   controlPlaneUrl: string,
-  publishableKey: string
+  secretKey: string
 ): Promise<{ flowSlug: string; sql: string[] }> {
   const url = `${controlPlaneUrl}/flows/${flowSlug}`;
 
   try {
     const response = await fetch(url, {
       headers: {
-        'Authorization': `Bearer ${publishableKey}`,
-        'apikey': publishableKey,
+        'Authorization': `Bearer ${secretKey}`,
+        'apikey': secretKey,
         'Content-Type': 'application/json',
       },
     });
@@ -91,20 +88,19 @@ export default (program: Command) => {
     .command('compile')
     .description('Compiles a flow into SQL migration via ControlPlane HTTP')
     .argument('<flowSlug>', 'Flow slug to compile (e.g., my_flow)')
-    .option(
-      '--deno-json <denoJsonPath>',
-      '[DEPRECATED] No longer used. Will be removed in v1.0'
-    )
     .option('--supabase-path <supabasePath>', 'Path to the Supabase folder')
     .option(
       '--control-plane-url <url>',
       'Control plane URL',
       'http://127.0.0.1:54321/functions/v1/pgflow'
     )
+    .addOption(
+      new Option('--secret-key [key]', 'Supabase anon/service_role key')
+        .hideHelp()
+    )
     .option(
-      '--publishable-key <key>',
-      'Supabase publishable key (legacy anon keys also work)',
-      DEFAULT_PUBLISHABLE_KEY
+      '--deno-json <denoJsonPath>',
+      '[DEPRECATED] No longer used. Will be removed in v1.0'
     )
     .action(async (flowSlug, options) => {
       intro('pgflow - Compile Flow to SQL');
@@ -162,7 +158,7 @@ export default (program: Command) => {
         const result = await fetchFlowSQL(
           flowSlug,
           options.controlPlaneUrl,
-          options.publishableKey
+          options.secretKey
         );
 
         // Validate result
@@ -201,7 +197,7 @@ export default (program: Command) => {
         // Display next steps with outro
         outro(
           [
-            chalk.bold('Flow compilation completed successfully!'),
+            chalk.green.bold('✓ Flow compilation completed successfully!'),
             '',
             `- Run ${chalk.cyan('supabase migration up')} to apply the migration`,
             '',

@@ -43,7 +43,7 @@ describe('fetchFlowSQL', () => {
     const result = await fetchFlowSQL(
       'test_flow',
       'http://127.0.0.1:50621/functions/v1/pgflow',
-      'test-publishable-key'
+      'test-secret-key'
     );
 
     expect(result).toEqual({
@@ -58,8 +58,8 @@ describe('fetchFlowSQL', () => {
       'http://127.0.0.1:50621/functions/v1/pgflow/flows/test_flow',
       {
         headers: {
-          'Authorization': 'Bearer test-publishable-key',
-          'apikey': 'test-publishable-key',
+          'Authorization': 'Bearer test-secret-key',
+          'apikey': 'test-secret-key',
           'Content-Type': 'application/json',
         },
       }
@@ -142,7 +142,7 @@ describe('fetchFlowSQL', () => {
     const result = await fetchFlowSQL(
       'test_flow',
       'http://127.0.0.1:50621',
-      'test-publishable-key'
+      'test-secret-key'
     );
 
     expect(result).toHaveProperty('flowSlug');
@@ -224,7 +224,7 @@ describe('fetchFlowSQL', () => {
     await fetchFlowSQL(
       'my_complex_flow_123',
       'http://127.0.0.1:50621/functions/v1/pgflow',
-      'test-publishable-key'
+      'test-secret-key'
     );
 
     expect(global.fetch).toHaveBeenCalledWith(
@@ -233,7 +233,7 @@ describe('fetchFlowSQL', () => {
     );
   });
 
-  it('should pass publishable key in Authorization header', async () => {
+  it('should pass secret key in Authorization header', async () => {
     const mockResponse = {
       ok: true,
       status: 200,
@@ -248,13 +248,13 @@ describe('fetchFlowSQL', () => {
     await fetchFlowSQL(
       'test_flow',
       'http://127.0.0.1:50621/functions/v1/pgflow',
-      'my-special-publishable-key'
+      'my-special-secret-key'
     );
 
     expect(global.fetch).toHaveBeenCalledWith(expect.any(String), {
       headers: {
-        'Authorization': 'Bearer my-special-publishable-key',
-        'apikey': 'my-special-publishable-key',
+        'Authorization': 'Bearer my-special-secret-key',
+        'apikey': 'my-special-secret-key',
         'Content-Type': 'application/json',
       },
     });
@@ -276,7 +276,7 @@ describe('fetchFlowSQL', () => {
     const result = await fetchFlowSQL(
       'empty_flow',
       'http://127.0.0.1:50621/functions/v1/pgflow',
-      'test-publishable-key'
+      'test-secret-key'
     );
 
     expect(result.sql).toEqual([]);

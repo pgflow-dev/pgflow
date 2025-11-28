@@ -67,7 +67,7 @@
         "cwd": "{projectRoot}",
         "readyWhen": "Serving functions on http://",
         "streamOutput": true,
-        "command": "../../scripts/supabase-start-locked.sh . && ./scripts/sync-e2e-deps.sh && supabase functions serve --import-map supabase/functions/pgflow/deno.json"
+        "command": "../../scripts/supabase-start-locked.sh . && ./scripts/sync-e2e-deps.sh && supabase functions serve --no-verify-jwt --import-map supabase/functions/pgflow/deno.json"
       }
     },
     "hang": {
