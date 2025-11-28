@@ -121,3 +121,25 @@ ALL_TEST_FLOWS.forEach((flow) => {
     assertEquals(data.sql, expectedSql);
   });
 });
+
+Deno.test('ControlPlane Handler - GET /flows/:slug returns 500 on compilation error', async () => {
+  // Create a flow with mismatched stepOrder (references non-existent step)
+  const brokenFlow = new Flow({ slug: 'broken_flow' }).step(
+    { slug: 'step1' },
+    () => ({})
+  );
+
+  // Tamper with stepOrder to reference non-existent step
+  // This will cause compileFlow to throw when it tries to get the step definition
+  // deno-lint-ignore no-explicit-any
+  (brokenFlow as any).stepOrder.push('nonexistent_step');
+
+  const handler = createControlPlaneHandler([brokenFlow]);
+  const request = new Request('http://localhost/pgflow/flows/broken_flow');
+  const response = handler(request);
+
+  assertEquals(response.status, 500);
+  const data = await response.json();
+  assertEquals(data.error, 'Compilation Error');
+  assertMatch(data.message, /does not exist in flow/);
+});
