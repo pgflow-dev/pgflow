@@ -53,7 +53,7 @@ import { sql } from '../db.js';
 import { supabase } from '../supabase-client.js';
 
 const ProcessUserFlow = new Flow<{ userId: string }>({
-  slug: 'process_user'
+  slug: 'processUser'
 })
   .step({ slug: 'validate' }, async (input) => {
     const [user] = await sql`SELECT * FROM users WHERE id = ${input.userId}`;
@@ -88,7 +88,7 @@ async function processOrder(input: { orderId: string }) {
 import { Flow } from '@pgflow/dsl/supabase';
 
 const ProcessUserFlow = new Flow<{ userId: string }>({
-  slug: 'process_user'
+  slug: 'processUser'
 })
   .step({ slug: 'validate' }, async (input, ctx) => {
     const [user] = await ctx.sql`SELECT * FROM users WHERE id = ${input.userId}`;
@@ -142,7 +142,7 @@ While examples in this documentation use `ctx.` for clarity, destructuring often
 <TabItem label="Flows">
 ```typescript ins="{ sql, supabase, stepTask }"
 // Destructure only what you need
-.step({ slug: 'sync_data' }, async (input, { sql, supabase, stepTask }) => {
+.step({ slug: 'syncData' }, async (input, { sql, supabase, stepTask }) => {
   console.log(`Syncing for run ${stepTask.run_id}`);
 
   const data = await sql`SELECT * FROM pending_sync WHERE user_id = ${input.userId}`;

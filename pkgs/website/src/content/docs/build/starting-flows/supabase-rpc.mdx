@@ -34,7 +34,7 @@ const supabase = createClient(
 const { data, error } = await supabase
   .schema('pgflow')
   .rpc('start_flow', {
-    flow_slug: 'send_welcome_email',
+    flow_slug: 'sendWelcomeEmail',
     input: {
       email: 'user@example.com',
       name: 'John Doe'
@@ -64,9 +64,9 @@ const run_id = randomUUID();
 const { data, error } = await supabase
   .schema('pgflow')
   .rpc('start_flow', {
-    flow_slug: 'process_upload',
+    flow_slug: 'processUpload',
     input: {
-      file_url: 'https://example.com/file.pdf'
+      fileUrl: 'https://example.com/file.pdf'
     },
     run_id: run_id
   });

@@ -230,7 +230,7 @@ When using with `@pgflow/dsl`, you get full type safety:
 import { Flow } from '@pgflow/dsl';
 
 // Define your flow
-const AnalyzeWebsite = new Flow<{ url: string }>({ slug: 'analyze_website' })
+const AnalyzeWebsite = new Flow<{ url: string }>({ slug: 'analyzeWebsite' })
   .step({ slug: 'scrape' }, async (input) => ({ content: 'html...' }))
   .step({ slug: 'analyze' }, async (input) => ({ sentiment: 0.8 }));
 

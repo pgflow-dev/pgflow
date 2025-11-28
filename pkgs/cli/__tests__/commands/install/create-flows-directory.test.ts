@@ -35,7 +35,7 @@ describe('createFlowsDirectory', () => {
 
     // Verify all files exist
     const indexPath = path.join(flowsDir, 'index.ts');
-    const exampleFlowPath = path.join(flowsDir, 'example_flow.ts');
+    const exampleFlowPath = path.join(flowsDir, 'example-flow.ts');
 
     expect(fs.existsSync(indexPath)).toBe(true);
     expect(fs.existsSync(exampleFlowPath)).toBe(true);
@@ -51,18 +51,18 @@ describe('createFlowsDirectory', () => {
     const indexContent = fs.readFileSync(indexPath, 'utf8');
 
     // Should have export for ExampleFlow
-    expect(indexContent).toContain("export { ExampleFlow } from './example_flow.ts'");
+    expect(indexContent).toContain("export { ExampleFlow } from './example-flow.ts';");
     // Should have documenting comment
     expect(indexContent).toContain('Re-export all flows');
   });
 
-  it('should create example_flow.ts with named export', async () => {
+  it('should create example-flow.ts with named export', async () => {
     await createFlowsDirectory({
       supabasePath,
       autoConfirm: true,
     });
 
-    const exampleFlowPath = path.join(flowsDir, 'example_flow.ts');
+    const exampleFlowPath = path.join(flowsDir, 'example-flow.ts');
     const exampleFlowContent = fs.readFileSync(exampleFlowPath, 'utf8');
 
     // Should use named export (not default)
@@ -70,7 +70,7 @@ describe('createFlowsDirectory', () => {
     // Should import Flow from @pgflow/dsl
     expect(exampleFlowContent).toContain("import { Flow } from '@pgflow/dsl'");
     // Should have correct slug
-    expect(exampleFlowContent).toContain("slug: 'example_flow'");
+    expect(exampleFlowContent).toContain("slug: 'exampleFlow'");
     // Should have input type
     expect(exampleFlowContent).toContain('type Input');
     // Should have at least one step
@@ -82,7 +82,7 @@ describe('createFlowsDirectory', () => {
     fs.mkdirSync(flowsDir, { recursive: true });
 
     const indexPath = path.join(flowsDir, 'index.ts');
-    const exampleFlowPath = path.join(flowsDir, 'example_flow.ts');
+    const exampleFlowPath = path.join(flowsDir, 'example-flow.ts');
 
     fs.writeFileSync(indexPath, '// existing content');
     fs.writeFileSync(exampleFlowPath, '// existing content');
@@ -105,7 +105,7 @@ describe('createFlowsDirectory', () => {
     fs.mkdirSync(flowsDir, { recursive: true });
 
     const indexPath = path.join(flowsDir, 'index.ts');
-    const exampleFlowPath = path.join(flowsDir, 'example_flow.ts');
+    const exampleFlowPath = path.join(flowsDir, 'example-flow.ts');
 
     // Only create index.ts
     fs.writeFileSync(indexPath, '// existing content');
@@ -115,13 +115,13 @@ describe('createFlowsDirectory', () => {
       autoConfirm: true,
     });
 
-    // Should return true because example_flow.ts was created
+    // Should return true because example-flow.ts was created
     expect(result).toBe(true);
 
     // Verify index.ts was not modified
     expect(fs.readFileSync(indexPath, 'utf8')).toBe('// existing content');
 
-    // Verify example_flow.ts was created
+    // Verify example-flow.ts was created
     expect(fs.existsSync(exampleFlowPath)).toBe(true);
 
     const exampleContent = fs.readFileSync(exampleFlowPath, 'utf8');
@@ -145,6 +145,6 @@ describe('createFlowsDirectory', () => {
 
     // Verify files exist
     expect(fs.existsSync(path.join(flowsDir, 'index.ts'))).toBe(true);
-    expect(fs.existsSync(path.join(flowsDir, 'example_flow.ts'))).toBe(true);
+    expect(fs.existsSync(path.join(flowsDir, 'example-flow.ts'))).toBe(true);
   });
 });

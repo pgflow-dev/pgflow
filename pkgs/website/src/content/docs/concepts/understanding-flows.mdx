@@ -23,7 +23,7 @@ The Flow class uses a fluent interface to build this declarative manifest:
 
 ```typescript
 // Method chaining for flow definition
-new Flow<Input>({ slug: 'my_flow' })
+new Flow<Input>({ slug: 'myFlow' })
   .step({ slug: 'step1' }, async (input) => { /* ... */ })
   .step({ slug: 'step2' }, async (input) => { /* ... */ });
 ```
@@ -48,7 +48,7 @@ Consider this example:
 
 ```typescript "input.run.url" "input.run.userId" "input.scrape.content"
 new Flow<{ url: string, userId: string }>({
-  slug: 'analyze_website',
+  slug: 'analyzeWebsite',
 })
   .step(
     { slug: 'scrape' },
@@ -82,7 +82,7 @@ type WebsiteInput = { url: string, userId: string };
 
 // Create a flow with that input type
 new Flow<WebsiteInput>({
-  slug: 'analyze_website',
+  slug: 'analyzeWebsite',
 })
   .step(
     { slug: 'scrape' },
@@ -135,7 +135,7 @@ A semantic wrapper around `.step()` that enforces array return types. Useful for
 ```typescript
 // Fetch an array of items
 .array(
-  { slug: 'fetch_items' },
+  { slug: 'fetchItems' },
   async () => ['item1', 'item2', 'item3']
 )
 
@@ -152,21 +152,21 @@ Processes arrays element-by-element in parallel. Unlike regular steps, map handl
 
 ```typescript
 // Root map: processes flow input array directly
-new Flow<string[]>({ slug: 'batch_processor' })
+new Flow<string[]>({ slug: 'batchProcessor' })
   .map(
     { slug: 'uppercase' },  // No 'array' property
     (item) => item.toUpperCase()
   );
 
 // Dependent map: processes another step's array output
-new Flow<{}>({ slug: 'data_pipeline' })
-  .array({ slug: 'fetch_ids' }, () => ['id1', 'id2', 'id3'])
+new Flow<{}>({ slug: 'dataPipeline' })
+  .array({ slug: 'fetchIds' }, () => ['id1', 'id2', 'id3'])
   .map(
-    { slug: 'fetch_details', array: 'fetch_ids' },
+    { slug: 'fetchDetails', array: 'fetchIds' },
     async (id) => await fetchUserDetails(id)
   )
   .map(
-    { slug: 'enrich', array: 'fetch_details' },
+    { slug: 'enrich', array: 'fetchDetails' },
     async (user) => ({ ...user, enriched: true })
   );
 ```
@@ -279,7 +279,7 @@ type Input = {
 };
 
 new Flow<Input>({
-  slug: 'user_report',
+  slug: 'userReport',
 })
   // Step 1: Fetch user data
   .step(

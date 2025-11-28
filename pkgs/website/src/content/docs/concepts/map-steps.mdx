@@ -146,7 +146,7 @@ Process the flow's input array directly by omitting the `array` property:
 
 ```typescript
 // Flow input MUST be an array
-new Flow<string[]>({ slug: 'batch_processor' })
+new Flow<string[]>({ slug: 'batchProcessor' })
   .map(
     { slug: 'processEach' },  // No 'array' property
     (item) => processItem(item)
@@ -156,7 +156,7 @@ new Flow<string[]>({ slug: 'batch_processor' })
 Starting this flow:
 ```sql
 SELECT pgflow.start_flow(
-  flow_slug => 'batch_processor',
+  flow_slug => 'batchProcessor',
   input => '["item1", "item2", "item3"]'::jsonb
 );
 ```
@@ -166,7 +166,7 @@ SELECT pgflow.start_flow(
 Process another step's array output by specifying the `array` property:
 
 ```typescript
-new Flow<{ searchQuery: string }>({ slug: 'search_pipeline' })
+new Flow<{ searchQuery: string }>({ slug: 'searchPipeline' })
   .array(
     { slug: 'searchResults' },
     async (input) => await searchAPI(input.run.searchQuery)

@@ -254,10 +254,10 @@ Uses service role key for direct database access. Both URL and key are auto-avai
 
 ## Step 3 - Define flow
 
-Connect tasks into a workflow using pgflow's [TypeScript DSL](/concepts/understanding-flows/) (`supabase/flows/analyze_website.ts`):
+Connect tasks into a workflow using pgflow's [TypeScript DSL](/concepts/understanding-flows/) (`supabase/flows/analyze-website.ts`):
 
 ```typescript
-// supabase/flows/analyze_website.ts
+// supabase/flows/analyze-website.ts
 import { Flow } from "@pgflow/dsl";
 import scrapeWebsite from "../tasks/scrapeWebsite.ts";
 import summarize from "../tasks/summarize.ts";
@@ -304,7 +304,7 @@ Turn your TypeScript flow into SQL using pgflow's [compiler](/get-started/flows/
 <Steps>
 1. First, export the flow from `supabase/flows/index.ts`:
    ```typescript
-   export { AnalyzeWebsite } from './analyze_website.ts';
+   export { AnalyzeWebsite } from './analyze-website.ts';
    ```
 
 2. Compile TypeScript to SQL:
@@ -332,21 +332,21 @@ Changing steps requires a new flow with unique `slug`. This is a core design dec
 <Steps>
 1. Create a worker function that will process steps from your flow:
    ```bash
-   npx supabase functions new analyze_website_worker
+   npx supabase functions new analyze-website-worker
    ```
 
 2. Replace the generated `index.ts` with the following code:
    ```typescript
-   // supabase/functions/analyze_website_worker/index.ts
+   // supabase/functions/analyze-website-worker/index.ts
    import { EdgeWorker } from "@pgflow/edge-worker";
-   import { AnalyzeWebsite } from '../../flows/analyze_website.ts';
+   import { AnalyzeWebsite } from '../../flows/analyze-website.ts';
 
    EdgeWorker.start(AnalyzeWebsite);
    ```
 
 3. Update your `supabase/config.toml`:
    ```diff title="supabase/config.toml"
-     [functions.analyze_website_worker]
+     [functions.analyze-website-worker]
      enabled = true
    - verify_jwt = true
    + verify_jwt = false
@@ -368,7 +368,7 @@ Start the services (make sure `supabase start` is already running):
 
 2. In a new terminal, start the worker:
    ```bash frame="none"
-   curl http://127.0.0.1:54321/functions/v1/analyze_website_worker
+   curl http://127.0.0.1:54321/functions/v1/analyze-website-worker
    ```
 
    :::note[How the worker runs]

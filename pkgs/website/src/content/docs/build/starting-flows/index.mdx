@@ -51,7 +51,7 @@ Use [RPC calls](https://supabase.com/docs/reference/javascript/rpc) when you jus
 
 ```typescript
 await supabase.schema('pgflow').rpc('start_flow', {
-  flow_slug: 'send_email',
+  flow_slug: 'sendEmail',
   input: { to: 'user@example.com' }
 });
 ```

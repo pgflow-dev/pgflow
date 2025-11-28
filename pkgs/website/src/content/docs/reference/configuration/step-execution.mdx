@@ -17,7 +17,7 @@ After deployment, you can update these settings without recompiling your flow. S
 
 ```typescript
 new Flow({
-  slug: 'my_flow',
+  slug: 'myFlow',
   maxAttempts: 3,    // max retry attempts before marking as failed
   baseDelay: 1,      // initial retry delay in seconds
   timeout: 60        // visibility timeout in seconds
@@ -33,10 +33,10 @@ The maximum number of times a task will be attempted before being marked as perm
 
 ```ts
 // Flow level
-new Flow({ slug: 'my_flow', maxAttempts: 5 })
+new Flow({ slug: 'myFlow', maxAttempts: 5 })
 
 // Step level (overrides flow default)
-.step({ slug: 'my_step', maxAttempts: 7 }, handler)
+.step({ slug: 'myStep', maxAttempts: 7 }, handler)
 ```
 
 ## `baseDelay`
@@ -47,10 +47,10 @@ The initial delay (in seconds) before the first retry. pgflow uses exponential b
 
 ```ts
 // Flow level
-new Flow({ slug: 'my_flow', baseDelay: 2 })
+new Flow({ slug: 'myFlow', baseDelay: 2 })
 
 // Step level (overrides flow default)
-.step({ slug: 'my_step', baseDelay: 10 }, handler)
+.step({ slug: 'myStep', baseDelay: 10 }, handler)
 ```
 
 ## `timeout`
@@ -77,10 +77,10 @@ Currently, pgflow uses timeout only for visibility. In the future, the Edge Work
 
 ```ts
 // Flow level
-new Flow({ slug: 'my_flow', timeout: 120 })
+new Flow({ slug: 'myFlow', timeout: 120 })
 
 // Step level (overrides flow default)
-.step({ slug: 'my_step', timeout: 300 }, handler)
+.step({ slug: 'myStep', timeout: 300 }, handler)
 ```
 
 ## `startDelay`
@@ -123,8 +123,8 @@ To apply the same delay to multiple steps, use a constant:
 ```typescript
 const RATE_LIMIT_DELAY = 2;
 flow
-  .step({ slug: "api_call_1", startDelay: RATE_LIMIT_DELAY }, handler1)
-  .step({ slug: "api_call_2", startDelay: RATE_LIMIT_DELAY }, handler2)
+  .step({ slug: "apiCall1", startDelay: RATE_LIMIT_DELAY }, handler1)
+  .step({ slug: "apiCall2", startDelay: RATE_LIMIT_DELAY }, handler2)
 ```
 </Aside>
 
@@ -136,7 +136,7 @@ When all steps can use the same configuration:
 
 ```typescript
 new Flow({
-  slug: 'my_flow',
+  slug: 'myFlow',
   maxAttempts: 3,    // Default for all steps
   baseDelay: 1,      // Default for all steps
   timeout: 60        // Default for all steps
@@ -151,23 +151,23 @@ Override flow defaults for specific steps that need different behavior:
 
 ```typescript
 new Flow({
-  slug: 'analyze_data',
+  slug: 'analyzeData',
   maxAttempts: 3,    // Flow defaults
   baseDelay: 1,
   timeout: 60
 })
   .step({
-    slug: 'fetch_data',
+    slug: 'fetchData',
     // Uses all flow defaults
   }, fetchHandler)
   .step({
-    slug: 'process_data',
+    slug: 'processData',
     maxAttempts: 5,    // Override: more retries
     timeout: 300       // Override: needs more time
     // baseDelay uses flow default (1)
   }, processHandler)
   .step({
-    slug: 'call_api',
+    slug: 'callApi',
     baseDelay: 10,     // Override: longer initial delay
     // maxAttempts and timeout use flow defaults
   }, apiHandler)
