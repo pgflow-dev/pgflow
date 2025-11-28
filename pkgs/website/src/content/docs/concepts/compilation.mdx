@@ -44,13 +44,9 @@ The `pgflow` edge function is created during installation and serves as your pro
 
 ```typescript title="supabase/functions/pgflow/index.ts"
 import { ControlPlane } from '@pgflow/edge-worker';
-import GreetUser from '../_flows/greet_user.ts';
-import ProcessOrder from '../_flows/process_order.ts';
+import * as flows from '../../flows/index.ts';
 
-ControlPlane.serve([
-  GreetUser,
-  ProcessOrder,
-]);
+ControlPlane.serve(flows);
 ```
 
 The ControlPlane:
@@ -75,9 +71,10 @@ This architecture provides several benefits:
 
 To make a flow available for compilation:
 
-1. Create the flow definition in `_flows/`
-2. Import it in `supabase/functions/pgflow/index.ts`
-3. Add it to the `ControlPlane.serve([...])` array
+1. Create the flow definition in `supabase/flows/`
+2. Export it from `supabase/flows/index.ts`
+
+The ControlPlane automatically picks up all flows exported from your `flows/index.ts`.
 
 <Aside type="note">
 When running `supabase functions serve`, code changes are detected automatically and the ControlPlane reloads with your new flows.

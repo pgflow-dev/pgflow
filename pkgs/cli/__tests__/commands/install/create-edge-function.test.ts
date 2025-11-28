@@ -41,11 +41,11 @@ describe('createEdgeFunction', () => {
     expect(fs.existsSync(indexPath)).toBe(true);
     expect(fs.existsSync(denoJsonPath)).toBe(true);
 
-    // Verify index.ts content (inline flow registration, no flows.ts)
+    // Verify index.ts content (namespace import from flows directory)
     const indexContent = fs.readFileSync(indexPath, 'utf8');
     expect(indexContent).toContain("import { ControlPlane } from '@pgflow/edge-worker'");
-    expect(indexContent).toContain('ControlPlane.serve([');
-    expect(indexContent).toContain('// Import your flows here');
+    expect(indexContent).toContain("import * as flows from '../../flows/index.ts'");
+    expect(indexContent).toContain('ControlPlane.serve(flows)');
 
     // Verify deno.json content
     const denoJsonContent = fs.readFileSync(denoJsonPath, 'utf8');

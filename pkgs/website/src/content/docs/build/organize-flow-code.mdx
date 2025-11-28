@@ -10,35 +10,69 @@ import { FileTree } from '@astrojs/starlight/components';
 
 This guide outlines best practices for organizing your pgflow codebase to improve maintainability, reusability, and clarity.
 
-## How to structure your code
+:::note[Flexible Structure]
+The directory structure shown here is a **recommendation**, not a requirement. pgflow works with any file organization - what matters is that your flows are imported into the Control Plane (for compilation) and into your worker Edge Functions (for execution). Feel free to adapt the structure to your project's needs.
+:::
 
-Following the pattern from [Create Flow](/get-started/flows/create-flow/), organize flows and tasks in underscore-prefixed folders using Supabase's pattern for shared code:
+## Recommended structure
+
+After running `pgflow install`, you'll have a `flows/` directory set up. As your project grows, you can add a `tasks/` directory for reusable task functions:
 
 ```bash frame="none"
-mkdir -p supabase/functions/_flows supabase/functions/_tasks
+mkdir -p supabase/tasks
 ```
 
 <FileTree>
 - supabase
+  - flows
+    - analyze_website.ts (flow definition)
+    - index.ts (re-exports all flows)
+  - tasks
+    - scrapeWebsite.ts
+    - summarizeWithAI.ts
+    - extractTags.ts
+    - saveWebsite.ts
+    - index.ts (optional - re-exports tasks)
   - functions
-    - _flows
-      - analyze_website.ts
-    - _tasks
-      - scrapeWebsite.ts
-      - summarizeWithAI.ts
-      - extractTags.ts
-      - saveWebsite.ts
-    - analyze_website_worker
-      - index.ts
+    - pgflow
+      - index.ts (Control Plane)
       - deno.json
+    - analyze_website_worker
+      - index.ts (worker for this flow)
+      - deno.json
+  - migrations
 </FileTree>
 
 This structure enables:
 
-- Sharing tasks across multiple flows
-- Running multiple workers for the same flow (horizontal scaling)
-- Clear separation of flow definitions from execution
-- Standard Supabase pattern for shared code
+- **First-class concepts**: Flows and tasks are not hidden in underscore-prefixed folders
+- **Self-documenting**: Structure clearly shows where things go
+- **Clean imports**: `../../flows/index.ts` from Control Plane, `../../tasks/` from flows
+- **Scalable**: Ready for multiple flows and workers
+- **Barrel exports**: Each directory has an `index.ts` for clean re-exports
+
+## The index.ts pattern
+
+Each directory uses an `index.ts` barrel file that re-exports all modules:
+
+```typescript title="supabase/flows/index.ts"
+// Re-export all flows from this directory
+export { AnalyzeWebsite } from './analyze_website.ts';
+export { ProcessOrder } from './process_order.ts';
+```
+
+```typescript title="supabase/tasks/index.ts" (optional)
+// Re-export all tasks from this directory
+export { scrapeWebsite } from './scrapeWebsite.ts';
+export { summarizeWithAI } from './summarizeWithAI.ts';
+```
+
+This pattern provides:
+
+- Clean imports from other files
+- Single place to see all available flows/tasks
+- Better IDE support with autocomplete
+- Easy to add new flows - just add one export line
 
 ## Learn more
 

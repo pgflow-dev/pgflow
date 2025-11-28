@@ -6,8 +6,18 @@
  *
  * @example
  * ```typescript
+ * // Using namespace import (recommended)
  * import { ControlPlane } from '@pgflow/edge-worker';
- * import { MyFlow } from '../_flows/my_flow.ts';
+ * import * as flows from '../../flows/index.ts';
+ *
+ * ControlPlane.serve(flows);
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // Using array (legacy)
+ * import { ControlPlane } from '@pgflow/edge-worker';
+ * import { MyFlow } from '../../flows/my_flow.ts';
  *
  * ControlPlane.serve([MyFlow]);
  * ```
@@ -21,7 +31,7 @@ import { serveControlPlane } from './server.js';
 export const ControlPlane = {
   /**
    * Start the ControlPlane HTTP server
-   * @param flows Array of flow definitions to register
+   * @param flowsInput Array or object of flow definitions to register
    */
   serve: serveControlPlane,
 };

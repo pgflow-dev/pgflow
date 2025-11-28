@@ -24,7 +24,7 @@ In this mode, Edge Worker polls a queue (default: `tasks`) and processes message
 
 **Flow Mode** - For multi-step workflows:
 ```typescript
-import MyFlow from './_flows/my_flow.ts';
+import { MyFlow } from '../../flows/my_flow.ts';
 EdgeWorker.start(MyFlow);
 ```
 

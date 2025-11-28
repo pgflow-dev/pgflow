@@ -143,3 +143,89 @@ Deno.test('ControlPlane Handler - GET /flows/:slug returns 500 on compilation er
   assertEquals(data.error, 'Compilation Error');
   assertMatch(data.message, /does not exist in flow/);
 });
+
+// Tests for object input support (namespace imports)
+Deno.test('ControlPlane Handler - accepts object of flows', async () => {
+  const flowsObject = {
+    FlowWithSingleStep,
+    FlowWithRuntimeOptions,
+  };
+
+  const handler = createControlPlaneHandler(flowsObject);
+  const expectedSql = compileFlow(FlowWithSingleStep);
+
+  const request = new Request('http://localhost/pgflow/flows/flow_single_step');
+  const response = handler(request);
+
+  assertEquals(response.status, 200);
+  const data = await response.json();
+  assertEquals(data.flowSlug, 'flow_single_step');
+  assertEquals(data.sql, expectedSql);
+});
+
+Deno.test('ControlPlane Handler - accepts namespace import style object', () => {
+  // Simulates: import * as flows from './flows/index.ts'
+  const flowsNamespace = {
+    FlowWithSingleStep,
+    FlowWithMultipleSteps,
+    FlowWithParallelSteps,
+  };
+
+  const handler = createControlPlaneHandler(flowsNamespace);
+
+  // All flows should be accessible
+  for (const flow of [FlowWithSingleStep, FlowWithMultipleSteps, FlowWithParallelSteps]) {
+    const request = new Request(`http://localhost/pgflow/flows/${flow.slug}`);
+    const response = handler(request);
+    assertEquals(response.status, 200);
+  }
+});
+
+Deno.test('ControlPlane Handler - object input rejects duplicate flow slugs', () => {
+  // Create two different flow objects with the same slug
+  const Flow1 = new Flow({ slug: 'duplicate_slug' }).step({ slug: 's1' }, () => ({}));
+  const Flow2 = new Flow({ slug: 'duplicate_slug' }).step({ slug: 's2' }, () => ({}));
+
+  let error: Error | null = null;
+  try {
+    createControlPlaneHandler({ Flow1, Flow2 });
+  } catch (e) {
+    error = e as Error;
+  }
+
+  assertEquals(error instanceof Error, true);
+  assertMatch(error!.message, /Duplicate flow slug detected: 'duplicate_slug'/);
+});
+
+Deno.test('ControlPlane Handler - object input returns 404 for unknown flow', async () => {
+  const handler = createControlPlaneHandler({ FlowWithSingleStep });
+
+  const request = new Request('http://localhost/pgflow/flows/unknown_flow');
+  const response = handler(request);
+
+  assertEquals(response.status, 404);
+  const data = await response.json();
+  assertEquals(data.error, 'Flow Not Found');
+});
+
+Deno.test('ControlPlane Handler - empty object creates handler with no flows', async () => {
+  const handler = createControlPlaneHandler({});
+
+  const request = new Request('http://localhost/pgflow/flows/any_flow');
+  const response = handler(request);
+
+  assertEquals(response.status, 404);
+  const data = await response.json();
+  assertEquals(data.error, 'Flow Not Found');
+});
+
+Deno.test('ControlPlane Handler - empty array creates handler with no flows', async () => {
+  const handler = createControlPlaneHandler([]);
+
+  const request = new Request('http://localhost/pgflow/flows/any_flow');
+  const response = handler(request);
+
+  assertEquals(response.status, 404);
+  const data = await response.json();
+  assertEquals(data.error, 'Flow Not Found');
+});

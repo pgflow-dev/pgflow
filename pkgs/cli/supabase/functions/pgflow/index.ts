@@ -1,4 +1,4 @@
 import { ControlPlane } from '@pgflow/edge-worker';
-import { TestFlowE2E } from '../_flows/test_flow_e2e.ts';
+import * as flows from '../../flows/index.ts';
 
-ControlPlane.serve([TestFlowE2E]);
+ControlPlane.serve(flows);

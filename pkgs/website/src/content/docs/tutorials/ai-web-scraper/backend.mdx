@@ -72,7 +72,7 @@ Build four focused functions that each do one thing well:
 | `extractTags.ts` | AI tags |
 | `saveToDb.ts` | Saves to database |
 
-Put these in `supabase/functions/_tasks` (see [organizing flow code](/build/organize-flow-code/) for project structure):
+Put these in `supabase/tasks/` (see [organizing flow code](/build/organize-flow-code/) for project structure):
 
 ### Web Scraping
 
@@ -80,7 +80,7 @@ Put these in `supabase/functions/_tasks` (see [organizing flow code](/build/orga
   <summary><strong>scrapeWebsite.ts</strong> - Fetch and clean webpage content</summary>
 
 ```typescript
-// supabase/functions/_tasks/scrapeWebsite.ts
+// supabase/tasks/scrapeWebsite.ts
 export default async function scrapeWebsite(url: string) {
   console.log("[scrapeWebsite] fetching", url);
 
@@ -117,7 +117,7 @@ We're using OpenAI's newer Responses API (`openai.responses.parse`) rather than 
   <summary><strong>summarize.ts</strong> - AI summary</summary>
 
 ```typescript
-// supabase/functions/_tasks/summarize.ts
+// supabase/tasks/summarize.ts
 import OpenAI from "npm:openai";
 
 export default async function summarize(content: string) {
@@ -162,7 +162,7 @@ export default async function summarize(content: string) {
   <summary><strong>extractTags.ts</strong> - Extract tags</summary>
 
 ```typescript
-// supabase/functions/_tasks/extractTags.ts
+// supabase/tasks/extractTags.ts
 import OpenAI from "npm:openai";
 
 export default async function extractTags(content: string) {
@@ -214,7 +214,7 @@ The final task saves all results to your database:
   <summary><strong>saveToDb.ts</strong> - Store results</summary>
 
 ```typescript
-// supabase/functions/_tasks/saveToDb.ts
+// supabase/tasks/saveToDb.ts
 import { createClient } from "jsr:@supabase/supabase-js";
 
 export default async function saveToDb(row: {
@@ -254,19 +254,19 @@ Uses service role key for direct database access. Both URL and key are auto-avai
 
 ## Step 3 - Define flow
 
-Connect tasks into a workflow using pgflow's [TypeScript DSL](/concepts/understanding-flows/) (`supabase/functions/_flows/analyze_website.ts`):
+Connect tasks into a workflow using pgflow's [TypeScript DSL](/concepts/understanding-flows/) (`supabase/flows/analyze_website.ts`):
 
 ```typescript
-// supabase/functions/_flows/analyze_website.ts
-import { Flow } from "npm:@pgflow/dsl";
-import scrapeWebsite from "../_tasks/scrapeWebsite.ts";
-import summarize from "../_tasks/summarize.ts";
-import extractTags from "../_tasks/extractTags.ts";
-import saveToDb from "../_tasks/saveToDb.ts";
+// supabase/flows/analyze_website.ts
+import { Flow } from "@pgflow/dsl";
+import scrapeWebsite from "../tasks/scrapeWebsite.ts";
+import summarize from "../tasks/summarize.ts";
+import extractTags from "../tasks/extractTags.ts";
+import saveToDb from "../tasks/saveToDb.ts";
 
 type Input = { url: string };
 
-export default new Flow<Input>({ slug: "analyzeWebsite", maxAttempts: 3 })
+export const AnalyzeWebsite = new Flow<Input>({ slug: "analyzeWebsite", maxAttempts: 3 })
   .step({ slug: "website" }, ({ run }) => scrapeWebsite(run.url))
   .step({ slug: "summary", dependsOn: ["website"] }, ({ website }) =>
     summarize(website.content),
@@ -302,25 +302,18 @@ Summary and tags execute simultaneously since both only need website content - c
 Turn your TypeScript flow into SQL using pgflow's [compiler](/get-started/flows/compile-flow/):
 
 <Steps>
-1. Compile TypeScript to SQL:
-   ```bash
-   npx pgflow@latest compile supabase/functions/_flows/analyze_website.ts
-   # Generates supabase/migrations/<timestamp>_analyze_website.sql
+1. First, export the flow from `supabase/flows/index.ts`:
+   ```typescript
+   export { AnalyzeWebsite } from './analyze_website.ts';
    ```
 
-   <details>
-     <summary>Using import maps or custom `deno.json`?</summary>
+2. Compile TypeScript to SQL:
+   ```bash
+   npx pgflow@latest compile analyzeWebsite
+   # Generates supabase/migrations/<timestamp>_analyzeWebsite.sql
+   ```
 
-     You can use `--deno-json` flag to point at your `deno.json` file:
-     ```bash
-     npx pgflow@latest compile \
-       --deno-json=path/to/deno.json \
-       supabase/functions/_flows/analyze_website.ts
-     ```
-     Run `npx pgflow@latest compile --help` for additional options.
-   </details>
-
-2. Apply migration to database:
+3. Apply migration to database:
    ```bash
    npx supabase migrations up --local
    ```
@@ -345,10 +338,10 @@ Changing steps requires a new flow with unique `slug`. This is a core design dec
 2. Replace the generated `index.ts` with the following code:
    ```typescript
    // supabase/functions/analyze_website_worker/index.ts
-   import { EdgeWorker } from "jsr:@pgflow/edge-worker";
-   import AnalyzeWebsite from '../_flows/analyze_website.ts';
+   import { EdgeWorker } from "@pgflow/edge-worker";
+   import { AnalyzeWebsite } from '../../flows/analyze_website.ts';
 
-   EdgeWorker.start(AnalyzeWebsite);  // That's it! 🤯
+   EdgeWorker.start(AnalyzeWebsite);
    ```
 
 3. Update your `supabase/config.toml`:
