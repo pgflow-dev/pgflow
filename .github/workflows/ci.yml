@@ -17,6 +17,32 @@ permissions:
   deployments: write # Netlify action needs it
 
 jobs:
+  # ─────────────────────────────────────── 0. VALIDATE CHANGESETS ──────────────────────────────────────
+  validate-changesets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+
+      - name: Validate changesets
+        run: |
+          if find .changeset -name "*.md" -not -name "README.md" 2>/dev/null | grep -q .; then
+            echo "Found changeset files, validating..."
+            VERSION=$(jq -r '.devDependencies["@changesets/cli"]' package.json | tr -d '^~')
+            if ! pnpm dlx @changesets/cli@$VERSION status --since=origin/main; then
+              echo ""
+              echo "::error::Changeset validation failed. This usually means a changeset references a package that doesn't exist in the workspace."
+              echo "Check the package names in your .changeset/*.md files match the 'name' field in package.json files."
+              exit 1
+            fi
+            echo "✅ Changesets are valid"
+          else
+            echo "No changeset files found, skipping validation"
+          fi
+
   # ─────────────────────────────────────── 1. BUILD & TEST ──────────────────────────────────────
   build-and-test:
     runs-on: ubuntu-latest

@@ -61,5 +61,18 @@ pre-push:
       skip_output:
         - meta
   commands:
+    'validate-changesets':
+      run: |
+        if find .changeset -name "*.md" -not -name "README.md" 2>/dev/null | grep -q .; then
+          echo "🔍 Validating changesets..."
+          VERSION=$(jq -r '.devDependencies["@changesets/cli"]' package.json | tr -d '^~')
+          if ! pnpm dlx @changesets/cli@$VERSION status; then
+            echo ""
+            echo "❌ Changeset validation failed!"
+            echo "Check that package names in .changeset/*.md files match 'name' field in package.json files."
+            exit 1
+          fi
+          echo "✅ Changesets are valid"
+        fi
     'nx-affected-checks':
       run: CI=true NX_DAEMON=false pnpm nx affected --target=prepush --base=origin/main --head=HEAD --output-style=static --verbose --nx-bail
