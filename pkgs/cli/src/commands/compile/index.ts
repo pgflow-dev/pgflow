@@ -27,13 +27,33 @@ export async function fetchFlowSQL(
     });
 
     if (response.status === 404) {
-      const errorData = await response.json();
+      let errorData: { error?: string; message?: string } = {};
+      try {
+        errorData = await response.json();
+      } catch {
+        // JSON parse failed - likely Supabase gateway error (HTML or plain text)
+      }
+
+      // Check if this is our ControlPlane's 404 (has 'Flow Not Found' error)
+      // vs Supabase gateway's 404 (function doesn't exist)
+      if (errorData.error === 'Flow Not Found') {
+        throw new Error(
+          `Flow '${flowSlug}' not found.\n\n` +
+            `${errorData.message || 'Did you add it to supabase/functions/pgflow/index.ts?'}\n\n` +
+            `Fix:\n` +
+            `1. Add your flow to supabase/functions/pgflow/index.ts\n` +
+            `2. Restart edge functions: supabase functions serve`
+        );
+      }
+
+      // ControlPlane edge function itself doesn't exist
       throw new Error(
-        `Flow '${flowSlug}' not found.\n\n` +
-          `${errorData.message || 'Did you add it to supabase/functions/pgflow/index.ts?'}\n\n` +
-          `Fix:\n` +
-          `1. Add your flow to supabase/functions/pgflow/index.ts\n` +
-          `2. Restart edge functions: supabase functions serve`
+        'ControlPlane edge function not found.\n\n' +
+          'The pgflow edge function is not installed or not running.\n\n' +
+          'Fix:\n' +
+          '1. Run: npx pgflow install\n' +
+          '2. Start edge functions: supabase functions serve\n\n' +
+          'Or use previous version: npx pgflow@0.8.0 compile path/to/flow.ts'
       );
     }
 

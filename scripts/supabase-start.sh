@@ -34,8 +34,8 @@ NC='\033[0m' # No Color
 # Required services for edge function development
 # Note: Services like imgproxy, studio, inbucket, analytics, vector, pg_meta are optional
 # Container names use project_id suffix from config.toml (e.g., supabase_db_cli for project_id="cli")
-# We use pattern matching to handle different project suffixes
-REQUIRED_SERVICES=(
+# The project_id matches the "name" field in project.json
+REQUIRED_SERVICE_PREFIXES=(
   "supabase_db_"
   "supabase_kong_"
   "supabase_edge_runtime_"
@@ -43,14 +43,17 @@ REQUIRED_SERVICES=(
   "supabase_realtime_"
 )
 
-# Check if all required services are running via docker ps
+# Check if all required services are running for a specific project
 # This is more reliable than `supabase status` which returns 0 even with stopped services
+# Args: $1 = project_name (e.g., "cli", "edge-worker")
 check_required_services_running() {
+  local project_name="$1"
   local running_containers
   running_containers=$(docker ps --format '{{.Names}}' 2>/dev/null)
 
-  for service_prefix in "${REQUIRED_SERVICES[@]}"; do
-    if ! echo "$running_containers" | grep -q "^${service_prefix}"; then
+  for service_prefix in "${REQUIRED_SERVICE_PREFIXES[@]}"; do
+    local full_container_name="${service_prefix}${project_name}"
+    if ! echo "$running_containers" | grep -qF "$full_container_name"; then
       return 1
     fi
   done
@@ -72,15 +75,30 @@ if [ ! -d "$PROJECT_DIR" ]; then
   exit 1
 fi
 
+# Convert to absolute path for consistent file lookups after cd
+PROJECT_DIR=$(realpath "$PROJECT_DIR")
+
 # Change to project directory (Supabase CLI uses current directory)
 cd "$PROJECT_DIR"
 
-echo -e "${YELLOW}Checking Supabase status in: $PROJECT_DIR${NC}"
+# Extract project name from project.json (matches project_id in supabase/config.toml)
+if [ ! -f "$PROJECT_DIR/project.json" ]; then
+  echo -e "${RED}Error: project.json not found in $PROJECT_DIR${NC}" >&2
+  exit 1
+fi
+
+PROJECT_NAME=$(jq -r '.name' "$PROJECT_DIR/project.json")
+if [ -z "$PROJECT_NAME" ] || [ "$PROJECT_NAME" = "null" ]; then
+  echo -e "${RED}Error: Could not read 'name' from project.json${NC}" >&2
+  exit 1
+fi
+
+echo -e "${YELLOW}Checking Supabase status for project '$PROJECT_NAME' in: $PROJECT_DIR${NC}"
 
 # Fast path: Check if all required Supabase services are running via docker ps
 # This is more reliable than `supabase status` which returns 0 even with stopped services
-if check_required_services_running; then
-  echo -e "${GREEN}✓ Supabase is already running (all required services up)${NC}"
+if check_required_services_running "$PROJECT_NAME"; then
+  echo -e "${GREEN}✓ Supabase is already running for project '$PROJECT_NAME' (all required services up)${NC}"
   exit 0
 fi
 
