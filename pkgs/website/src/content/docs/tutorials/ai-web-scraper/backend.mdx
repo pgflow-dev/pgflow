@@ -381,8 +381,11 @@ Start the services (make sure `supabase start` is already running):
    :::note[How the worker runs]
    - First curl request boots the worker, which then continuously polls for tasks
    - Subsequent requests have no effect (worker is already running)
-   - If you stop and restart `functions serve`, you'll need to curl again
-   - In production, workers are triggered by cron schedules, not curl
+   - Code changes automatically reload the function, but the worker stops polling - curl again to restart it
+   :::
+
+   :::tip[Seamless local development]
+   Tired of curling after every code change? Add the [watchdog cron](/deploy/supabase/keep-workers-running/) to your `supabase/seed.sql` (use `'2 seconds'` interval for fast local iteration) - it auto-restarts workers when they stop polling.
    :::
 
 3. Trigger the flow in SQL Editor:

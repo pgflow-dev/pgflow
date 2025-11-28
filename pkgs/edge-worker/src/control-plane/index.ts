@@ -7,9 +7,9 @@
  * @example
  * ```typescript
  * import { ControlPlane } from '@pgflow/edge-worker';
- * import { flows } from './flows.ts';
+ * import { MyFlow } from '../_flows/my_flow.ts';
  *
- * ControlPlane.serve(flows);
+ * ControlPlane.serve([MyFlow]);
  * ```
  */
 

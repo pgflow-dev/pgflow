@@ -97,6 +97,10 @@ Before starting, make sure you have completed:
    If you have troubles starting the worker, make sure you disabled JWT verification in the previous step.
    </Aside>
 
+   :::tip[Seamless local development]
+   Tired of curling after every code change? Add the [watchdog cron](/deploy/supabase/keep-workers-running/) to your `supabase/seed.sql` (use `'2 seconds'` interval for fast local iteration) - it auto-restarts workers when they stop polling.
+   :::
+
 5. ### Trigger your first flow
 
    Now let's start a flow run! Using Supabase Studio:

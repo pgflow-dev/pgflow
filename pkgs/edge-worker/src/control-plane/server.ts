@@ -85,10 +85,7 @@ export function serveControlPlane(flows: AnyFlow[]): void {
 /**
  * Handles GET /flows/:slug requests
  */
-function handleGetFlow(
-  registry: Map<string, AnyFlow>,
-  slug: string
-): Response {
+function handleGetFlow(registry: Map<string, AnyFlow>, slug: string): Response {
   try {
     const flow = registry.get(slug);
 
@@ -96,7 +93,7 @@ function handleGetFlow(
       return jsonResponse(
         {
           error: 'Flow Not Found',
-          message: `Flow '${slug}' not found. Did you add it to flows.ts?`,
+          message: `Flow '${slug}' not found. Did you add it to supabase/functions/pgflow/index.ts?`,
         },
         404
       );
@@ -133,18 +130,4 @@ function jsonResponse(data: unknown, status: number): Response {
       'Content-Type': 'application/json',
     },
   });
-}
-
-/**
- * ControlPlane class for serving flow compilation HTTP API
- */
-export class ControlPlane {
-  /**
-   * Serves the ControlPlane HTTP API for flow compilation
-   * @param flows Array of flow definitions to register
-   */
-  static serve(flows: AnyFlow[]): void {
-    const handler = createControlPlaneHandler(flows);
-    Deno.serve({}, handler);
-  }
 }

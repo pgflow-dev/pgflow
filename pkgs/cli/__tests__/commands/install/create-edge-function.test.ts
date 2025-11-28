@@ -22,7 +22,7 @@ describe('createEdgeFunction', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('should create all three files when none exist', async () => {
+  it('should create both files when none exist', async () => {
     const result = await createEdgeFunction({
       supabasePath,
       autoConfirm: true,
@@ -36,23 +36,16 @@ describe('createEdgeFunction', () => {
 
     // Verify all files exist
     const indexPath = path.join(pgflowFunctionDir, 'index.ts');
-    const flowsPath = path.join(pgflowFunctionDir, 'flows.ts');
     const denoJsonPath = path.join(pgflowFunctionDir, 'deno.json');
 
     expect(fs.existsSync(indexPath)).toBe(true);
-    expect(fs.existsSync(flowsPath)).toBe(true);
     expect(fs.existsSync(denoJsonPath)).toBe(true);
 
-    // Verify index.ts content
+    // Verify index.ts content (inline flow registration, no flows.ts)
     const indexContent = fs.readFileSync(indexPath, 'utf8');
     expect(indexContent).toContain("import { ControlPlane } from '@pgflow/edge-worker'");
-    expect(indexContent).toContain("import { flows } from './flows.ts'");
-    expect(indexContent).toContain('ControlPlane.serve(flows)');
-
-    // Verify flows.ts content
-    const flowsContent = fs.readFileSync(flowsPath, 'utf8');
-    expect(flowsContent).toContain('export const flows = [');
-    expect(flowsContent).toContain('// Import your flows here');
+    expect(indexContent).toContain('ControlPlane.serve([');
+    expect(indexContent).toContain('// Import your flows here');
 
     // Verify deno.json content
     const denoJsonContent = fs.readFileSync(denoJsonPath, 'utf8');
@@ -66,11 +59,9 @@ describe('createEdgeFunction', () => {
     fs.mkdirSync(pgflowFunctionDir, { recursive: true });
 
     const indexPath = path.join(pgflowFunctionDir, 'index.ts');
-    const flowsPath = path.join(pgflowFunctionDir, 'flows.ts');
     const denoJsonPath = path.join(pgflowFunctionDir, 'deno.json');
 
     fs.writeFileSync(indexPath, '// existing content');
-    fs.writeFileSync(flowsPath, '// existing content');
     fs.writeFileSync(denoJsonPath, '// existing content');
 
     const result = await createEdgeFunction({
@@ -83,7 +74,6 @@ describe('createEdgeFunction', () => {
 
     // Verify files still exist with original content
     expect(fs.readFileSync(indexPath, 'utf8')).toBe('// existing content');
-    expect(fs.readFileSync(flowsPath, 'utf8')).toBe('// existing content');
     expect(fs.readFileSync(denoJsonPath, 'utf8')).toBe('// existing content');
   });
 
@@ -92,7 +82,6 @@ describe('createEdgeFunction', () => {
     fs.mkdirSync(pgflowFunctionDir, { recursive: true });
 
     const indexPath = path.join(pgflowFunctionDir, 'index.ts');
-    const flowsPath = path.join(pgflowFunctionDir, 'flows.ts');
     const denoJsonPath = path.join(pgflowFunctionDir, 'deno.json');
 
     // Only create index.ts
@@ -103,18 +92,14 @@ describe('createEdgeFunction', () => {
       autoConfirm: true,
     });
 
-    // Should return true because some files were created
+    // Should return true because deno.json was created
     expect(result).toBe(true);
 
     // Verify index.ts was not modified
     expect(fs.readFileSync(indexPath, 'utf8')).toBe('// existing content');
 
-    // Verify flows.ts and deno.json were created
-    expect(fs.existsSync(flowsPath)).toBe(true);
+    // Verify deno.json was created
     expect(fs.existsSync(denoJsonPath)).toBe(true);
-
-    const flowsContent = fs.readFileSync(flowsPath, 'utf8');
-    expect(flowsContent).toContain('export const flows = [');
 
     const denoJsonContent = fs.readFileSync(denoJsonPath, 'utf8');
     expect(denoJsonContent).toContain('"imports"');
@@ -138,7 +123,6 @@ describe('createEdgeFunction', () => {
 
     // Verify files exist
     expect(fs.existsSync(path.join(pgflowFunctionDir, 'index.ts'))).toBe(true);
-    expect(fs.existsSync(path.join(pgflowFunctionDir, 'flows.ts'))).toBe(true);
     expect(fs.existsSync(path.join(pgflowFunctionDir, 'deno.json'))).toBe(true);
   });
 

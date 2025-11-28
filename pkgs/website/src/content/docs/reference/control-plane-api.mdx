@@ -1,0 +1,94 @@
+---
+title: ControlPlane API
+description: HTTP endpoints exposed by the ControlPlane edge function for flow compilation
+sidebar:
+  order: 106
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+The ControlPlane edge function exposes HTTP endpoints for compiling TypeScript flows to SQL. The `pgflow compile` CLI uses these endpoints internally.
+
+<Aside type="note">
+For conceptual overview of how compilation works, see [Compilation](/concepts/compilation/).
+</Aside>
+
+## Base URL
+
+**Local development:**
+```
+http://127.0.0.1:54321/functions/v1/pgflow
+```
+
+**Production (Supabase.com):**
+```
+https://<project-ref>.supabase.co/functions/v1/pgflow
+```
+
+## Endpoints
+
+### GET /flows/:slug
+
+Compiles a flow definition to SQL statements.
+
+**Request:**
+```
+GET /functions/v1/pgflow/flows/greet_user
+Authorization: Bearer <anon_key>
+```
+
+**Success Response (200):**
+```json
+{
+  "flowSlug": "greet_user",
+  "sql": [
+    "SELECT pgflow.create_flow('greet_user');",
+    "SELECT pgflow.add_step('greet_user', 'full_name', 'single', 0, NULL);",
+    "SELECT pgflow.add_step('greet_user', 'greeting', 'single', 0, ARRAY['full_name']);"
+  ]
+}
+```
+
+**Flow Not Found (404):**
+```json
+{
+  "error": "Flow Not Found",
+  "message": "Flow 'unknown' not found. Did you add it to supabase/functions/pgflow/index.ts?"
+}
+```
+
+**Compilation Error (500):**
+```json
+{
+  "error": "Compilation Error",
+  "message": "Detailed error message from compileFlow()"
+}
+```
+
+## Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `flowSlug` | `string` | The slug identifier of the compiled flow |
+| `sql` | `string[]` | Array of SQL statements to execute in order |
+| `error` | `string` | Error type (only present on error responses) |
+| `message` | `string` | Human-readable error description (only present on error responses) |
+
+## Authentication
+
+The ControlPlane requires a valid Supabase anon key in the `Authorization` header. For local development, this is your project's local anon key from `supabase status`.
+
+## Usage with CLI
+
+The `pgflow compile` command handles authentication and request formatting automatically:
+
+```bash frame="none"
+npx pgflow@latest compile greet_user
+```
+
+For custom tooling or debugging, you can call the endpoint directly:
+
+```bash frame="none"
+curl -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+  http://127.0.0.1:54321/functions/v1/pgflow/flows/greet_user
+```
