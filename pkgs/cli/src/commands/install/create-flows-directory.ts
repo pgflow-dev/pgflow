@@ -6,15 +6,27 @@ import chalk from 'chalk';
 const INDEX_TS_TEMPLATE = `// Re-export all flows from this directory
 // Example: export { MyFlow } from './my-flow.ts';
 
-export { ExampleFlow } from './example-flow.ts';
+export { GreetUser } from './greet-user.ts';
 `;
 
-const EXAMPLE_FLOW_TEMPLATE = `import { Flow } from '@pgflow/dsl';
+const GREET_USER_TEMPLATE = `import { Flow } from '@pgflow/dsl';
 
-type Input = { name: string };
+type Input = {
+  firstName: string;
+  lastName: string;
+};
 
-export const ExampleFlow = new Flow<Input>({ slug: 'exampleFlow' })
-  .step({ slug: 'greet' }, (input) => \`Hello, \${input.run.name}!\`);
+export const GreetUser = new Flow<Input>({
+  slug: 'greetUser',
+})
+  .step(
+    { slug: 'fullName' },
+    (input) => \`\${input.run.firstName} \${input.run.lastName}\`
+  )
+  .step(
+    { slug: 'greeting', dependsOn: ['fullName'] },
+    (input) => \`Hello, \${input.fullName}!\`
+  );
 `;
 
 export async function createFlowsDirectory({
@@ -27,12 +39,12 @@ export async function createFlowsDirectory({
   const flowsDir = path.join(supabasePath, 'flows');
 
   const indexPath = path.join(flowsDir, 'index.ts');
-  const exampleFlowPath = path.join(flowsDir, 'example-flow.ts');
+  const greetUserPath = path.join(flowsDir, 'greet-user.ts');
 
   // Relative paths for display
   const relativeFlowsDir = 'supabase/flows';
   const relativeIndexPath = `${relativeFlowsDir}/index.ts`;
-  const relativeExampleFlowPath = `${relativeFlowsDir}/example-flow.ts`;
+  const relativeGreetUserPath = `${relativeFlowsDir}/greet-user.ts`;
 
   // Check what needs to be created
   const filesToCreate: Array<{ path: string; relativePath: string }> = [];
@@ -41,8 +53,8 @@ export async function createFlowsDirectory({
     filesToCreate.push({ path: indexPath, relativePath: relativeIndexPath });
   }
 
-  if (!fs.existsSync(exampleFlowPath)) {
-    filesToCreate.push({ path: exampleFlowPath, relativePath: relativeExampleFlowPath });
+  if (!fs.existsSync(greetUserPath)) {
+    filesToCreate.push({ path: greetUserPath, relativePath: relativeGreetUserPath });
   }
 
   // If all files exist, return success
@@ -81,8 +93,8 @@ export async function createFlowsDirectory({
     fs.writeFileSync(indexPath, INDEX_TS_TEMPLATE);
   }
 
-  if (filesToCreate.some((f) => f.path === exampleFlowPath)) {
-    fs.writeFileSync(exampleFlowPath, EXAMPLE_FLOW_TEMPLATE);
+  if (filesToCreate.some((f) => f.path === greetUserPath)) {
+    fs.writeFileSync(greetUserPath, GREET_USER_TEMPLATE);
   }
 
   log.success('Flows directory created');
