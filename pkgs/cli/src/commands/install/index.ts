@@ -1,5 +1,5 @@
 import { type Command } from 'commander';
-import { intro, group, cancel, outro } from '@clack/prompts';
+import { intro, log, confirm, cancel, outro } from '@clack/prompts';
 import chalk from 'chalk';
 import { copyMigrations } from './copy-migrations.js';
 import { updateConfigToml } from './update-config-toml.js';
@@ -16,84 +16,81 @@ export default (program: Command) => {
     .action(async (options) => {
       intro('Installing pgflow in your Supabase project');
 
-      // Use the group feature to organize installation steps
-      const results = await group(
-        {
-          // Step 1: Determine Supabase path
-          supabasePath: () =>
-            supabasePathPrompt({ supabasePath: options.supabasePath }),
+      // Step 1: Get supabase path
+      const supabasePathResult = await supabasePathPrompt({
+        supabasePath: options.supabasePath,
+      });
 
-          // Step 2: Update config.toml
-          configUpdate: async ({ results: { supabasePath } }) => {
-            if (!supabasePath) return false;
-
-            return await updateConfigToml({
-              supabasePath,
-              autoConfirm: options.yes,
-            });
-          },
-
-          // Step 3: Copy migrations
-          migrations: async ({ results: { supabasePath } }) => {
-            if (!supabasePath) return false;
-
-            return await copyMigrations({
-              supabasePath,
-              autoConfirm: options.yes,
-            });
-          },
-
-          // Step 4: Create ControlPlane edge function
-          edgeFunction: async ({ results: { supabasePath } }) => {
-            if (!supabasePath) return false;
-
-            return await createEdgeFunction({
-              supabasePath,
-              autoConfirm: options.yes,
-            });
-          },
-
-          // Step 5: Update environment variables
-          envFile: async ({ results: { supabasePath } }) => {
-            if (!supabasePath) return false;
-
-            return await updateEnvFile({
-              supabasePath,
-              autoConfirm: options.yes,
-            });
-          },
-        },
-        {
-          // Handle cancellation
-          onCancel: () => {
-            cancel('Installation cancelled');
-            process.exit(1);
-          },
-        }
-      );
-
-      // Extract the results from the group operation
-      const supabasePath = results.supabasePath;
-      const configUpdate = results.configUpdate;
-      const migrations = results.migrations;
-      const edgeFunction = results.edgeFunction;
-      const envFile = results.envFile;
-
-      // Exit if supabasePath is null (validation failed or user cancelled)
-      if (!supabasePath) {
+      if (!supabasePathResult || typeof supabasePathResult === 'symbol') {
         cancel('Installation cancelled - valid Supabase path is required');
         process.exit(1);
       }
 
-      // Show completion message
+      const supabasePath = supabasePathResult;
+
+      // Step 2: Show summary and get single confirmation
+      const summaryMsg = [
+        'This will:',
+        '',
+        `  • Update ${chalk.cyan('supabase/config.toml')} ${chalk.dim('(enable pooler, per_worker runtime)')}`,
+        `  • Add pgflow migrations to ${chalk.cyan('supabase/migrations/')}`,
+        `  • Create Control Plane in ${chalk.cyan('supabase/functions/pgflow/')}`,
+        `  • Configure ${chalk.cyan('supabase/functions/.env')}`,
+        '',
+        `  ${chalk.green('✓ Safe to re-run - completed steps will be skipped')}`,
+      ].join('\n');
+
+      log.info(summaryMsg);
+
+      let shouldProceed = options.yes;
+
+      if (!options.yes) {
+        const confirmResult = await confirm({
+          message: 'Proceed?',
+        });
+
+        if (confirmResult !== true) {
+          cancel('Installation cancelled');
+          process.exit(1);
+        }
+
+        shouldProceed = true;
+      }
+
+      if (!shouldProceed) {
+        cancel('Installation cancelled');
+        process.exit(1);
+      }
+
+      // Step 3: Run all installation steps with autoConfirm
+      const configUpdate = await updateConfigToml({
+        supabasePath,
+        autoConfirm: true,
+      });
+
+      const migrations = await copyMigrations({
+        supabasePath,
+        autoConfirm: true,
+      });
+
+      const edgeFunction = await createEdgeFunction({
+        supabasePath,
+        autoConfirm: true,
+      });
+
+      const envFile = await updateEnvFile({
+        supabasePath,
+        autoConfirm: true,
+      });
+
+      // Step 4: Show completion message
       const outroMessages: string[] = [];
 
-      // Always start with a bolded acknowledgement
       if (migrations || configUpdate || edgeFunction || envFile) {
-        outroMessages.push(chalk.bold('Installation complete!'));
+        outroMessages.push(chalk.green.bold('✓ Installation complete!'));
       } else {
         outroMessages.push(
-          chalk.bold('pgflow is already installed - no changes needed!')
+          chalk.green.bold('✓ pgflow is already installed - no changes needed!')
         );
       }
 
@@ -121,7 +118,6 @@ export default (program: Command) => {
         `  ${stepNumber}. Create your first flow: ${chalk.blue.underline('https://pgflow.dev/getting-started/create-first-flow/')}`
       );
 
-      // Single outro for all paths
       outro(outroMessages.join('\n'));
     });
 };

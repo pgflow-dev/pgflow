@@ -58,35 +58,30 @@ export async function updateEnvFile({
 
   // If no changes needed, return early
   if (missingVars.length === 0) {
-    log.success('Environment variables are already set');
+    log.success('Environment variables already configured');
     return false;
   }
 
-  // Build summary message with explanation
-  const summaryParts = [
-    isNewFile
-      ? `Create ${chalk.cyan('functions/.env')} ${chalk.dim('(worker configuration)')}:`
-      : `Update ${chalk.cyan('functions/.env')} ${chalk.dim('(worker configuration)')}:`,
-    '',
-    ...missingVars.map(({ key, value }) => `    ${chalk.bold(key)}="${value}"`),
-  ];
-
-  log.info(summaryParts.join('\n'));
-
-  // Ask for confirmation if not auto-confirming
-  let shouldContinue = autoConfirm;
-
+  // Show preview and ask for confirmation only when not auto-confirming
   if (!autoConfirm) {
+    const summaryParts = [
+      isNewFile
+        ? `Create ${chalk.cyan('functions/.env')} ${chalk.dim('(worker configuration)')}:`
+        : `Update ${chalk.cyan('functions/.env')} ${chalk.dim('(worker configuration)')}:`,
+      '',
+      ...missingVars.map(({ key, value }) => `    ${chalk.bold(key)}="${value}"`),
+    ];
+
+    log.info(summaryParts.join('\n'));
+
     const confirmResult = await confirm({
       message: isNewFile ? `Create functions/.env?` : `Update functions/.env?`,
     });
 
-    shouldContinue = confirmResult === true;
-  }
-
-  if (!shouldContinue) {
-    log.warn('Environment variable update skipped');
-    return false;
+    if (confirmResult !== true) {
+      log.warn('Environment variable update skipped');
+      return false;
+    }
   }
 
   // Update environment variables

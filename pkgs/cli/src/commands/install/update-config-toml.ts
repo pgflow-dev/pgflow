@@ -73,52 +73,49 @@ export async function updateConfigToml({
       currentSettings.edgeRuntimePolicy !== 'per_worker';
 
     if (!needsChanges) {
-      log.success('Supabase configuration is already set up for pgflow');
+      log.success('Configuration already up to date');
       return false;
     }
 
-    const changes: string[] = [];
-
-    // Connection pooler changes
-    const poolerChanges: string[] = [];
-    if (currentSettings.poolerEnabled !== true) {
-      poolerChanges.push(`enabled = ${currentSettings.poolerEnabled} ${chalk.dim('->')} ${chalk.green('true')}`);
-    }
-    if (currentSettings.poolMode !== 'transaction') {
-      poolerChanges.push(`pool_mode = "${currentSettings.poolMode}" ${chalk.dim('->')} ${chalk.green('"transaction"')}`);
-    }
-    if (poolerChanges.length > 0) {
-      changes.push(`  ${chalk.bold('[db.pooler]')} ${chalk.dim('(required for pgflow worker)')}`);
-      poolerChanges.forEach(change => changes.push(`    ${change}`));
-    }
-
-    // Edge runtime changes
-    if (currentSettings.edgeRuntimePolicy !== 'per_worker') {
-      changes.push(`  ${chalk.bold('[edge_runtime]')} ${chalk.dim('(required for long-running tasks)')}`);
-      changes.push(`    policy = "${currentSettings.edgeRuntimePolicy}" ${chalk.dim('->')} ${chalk.green('"per_worker"')}`);
-    }
-
-    const summaryMsg = [
-      `Update ${chalk.cyan('config.toml')}:`,
-      '',
-      ...changes,
-    ].join('\n');
-
-    log.info(summaryMsg);
-
-    let shouldContinue = autoConfirm;
-
+    // Show preview and ask for confirmation only when not auto-confirming
     if (!autoConfirm) {
+      const changes: string[] = [];
+
+      // Connection pooler changes
+      const poolerChanges: string[] = [];
+      if (currentSettings.poolerEnabled !== true) {
+        poolerChanges.push(`enabled = ${currentSettings.poolerEnabled} ${chalk.dim('->')} ${chalk.green('true')}`);
+      }
+      if (currentSettings.poolMode !== 'transaction') {
+        poolerChanges.push(`pool_mode = "${currentSettings.poolMode}" ${chalk.dim('->')} ${chalk.green('"transaction"')}`);
+      }
+      if (poolerChanges.length > 0) {
+        changes.push(`  ${chalk.bold('[db.pooler]')} ${chalk.dim('(required for pgflow worker)')}`);
+        poolerChanges.forEach(change => changes.push(`    ${change}`));
+      }
+
+      // Edge runtime changes
+      if (currentSettings.edgeRuntimePolicy !== 'per_worker') {
+        changes.push(`  ${chalk.bold('[edge_runtime]')} ${chalk.dim('(required for long-running tasks)')}`);
+        changes.push(`    policy = "${currentSettings.edgeRuntimePolicy}" ${chalk.dim('->')} ${chalk.green('"per_worker"')}`);
+      }
+
+      const summaryMsg = [
+        `Update ${chalk.cyan('config.toml')}:`,
+        '',
+        ...changes,
+      ].join('\n');
+
+      log.info(summaryMsg);
+
       const confirmResult = await confirm({
         message: `Update config.toml? (backup will be created)`,
       });
 
-      shouldContinue = confirmResult === true;
-    }
-
-    if (!shouldContinue) {
-      log.warn('Configuration update skipped');
-      return false;
+      if (confirmResult !== true) {
+        log.warn('Configuration update skipped');
+        return false;
+      }
     }
 
     // Update Supabase configuration

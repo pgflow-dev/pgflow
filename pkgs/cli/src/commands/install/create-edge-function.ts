@@ -59,40 +59,28 @@ export async function createEdgeFunction({
 
   // If all files exist, return success
   if (filesToCreate.length === 0) {
-    const detailedMsg = [
-      'ControlPlane edge function files are already in place:',
-      `  ${chalk.bold(relativeIndexPath)}`,
-      `  ${chalk.bold(relativeDenoJsonPath)}`,
-    ].join('\n');
-
-    log.success(detailedMsg);
-
+    log.success('Control Plane already up to date');
     return false;
   }
 
-  // Show what will be created with explanation
-  const summaryMsg = [
-    `Create ${chalk.cyan('functions/pgflow/')} ${chalk.dim('(Control Plane for flow registration and compilation)')}:`,
-    '',
-    ...filesToCreate.map((file) => `    ${chalk.bold(path.basename(file.relativePath))}`),
-  ].join('\n');
-
-  log.info(summaryMsg);
-
-  // Get confirmation
-  let shouldContinue = autoConfirm;
-
+  // Show preview and ask for confirmation only when not auto-confirming
   if (!autoConfirm) {
+    const summaryMsg = [
+      `Create ${chalk.cyan('functions/pgflow/')} ${chalk.dim('(Control Plane for flow registration and compilation)')}:`,
+      '',
+      ...filesToCreate.map((file) => `    ${chalk.bold(path.basename(file.relativePath))}`),
+    ].join('\n');
+
+    log.info(summaryMsg);
+
     const confirmResult = await confirm({
       message: `Create functions/pgflow/?`,
     });
 
-    shouldContinue = confirmResult === true;
-  }
-
-  if (!shouldContinue) {
-    log.warn('Control Plane installation skipped');
-    return false;
+    if (confirmResult !== true) {
+      log.warn('Control Plane installation skipped');
+      return false;
+    }
   }
 
   // Create the directory if it doesn't exist
@@ -109,12 +97,7 @@ export async function createEdgeFunction({
     fs.writeFileSync(denoJsonPath, DENO_JSON_TEMPLATE(getVersion()));
   }
 
-  const successMsg = [
-    `Control Plane installed`,
-    `  ${chalk.dim('Learn more:')} ${chalk.blue.underline('https://pgflow.dev/concepts/compilation/')}`,
-  ].join('\n');
-
-  log.success(successMsg);
+  log.success('Control Plane installed');
 
   return true;
 }
