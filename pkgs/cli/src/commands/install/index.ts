@@ -86,46 +86,39 @@ export default (program: Command) => {
       }
 
       // Show completion message
-      const outroMessages = [];
+      const outroMessages: string[] = [];
 
       // Always start with a bolded acknowledgement
       if (migrations || configUpdate || edgeFunction || envFile) {
-        outroMessages.push(chalk.bold('pgflow setup completed successfully!'));
+        outroMessages.push(chalk.bold('Installation complete!'));
       } else {
         outroMessages.push(
-          chalk.bold(
-            'pgflow is already properly configured - no changes needed!'
-          )
+          chalk.bold('pgflow is already installed - no changes needed!')
         );
       }
 
-      // Add a newline after the acknowledgement
+      // Add numbered next steps
       outroMessages.push('');
+      outroMessages.push('Next steps:');
 
-      // Add specific next steps if changes were made
+      let stepNumber = 1;
+
       if (configUpdate || envFile) {
         outroMessages.push(
-          `- Restart your Supabase instance for configuration changes to take effect`
+          `  ${stepNumber}. Restart Supabase: ${chalk.cyan('supabase stop && supabase start')}`
         );
+        stepNumber++;
       }
 
       if (migrations) {
         outroMessages.push(
-          `- Apply the migrations with: ${chalk.cyan('supabase migrations up')}`
+          `  ${stepNumber}. Apply migrations: ${chalk.cyan('supabase migrations up')}`
         );
-      }
-
-      // Always add documentation link with consistent formatting
-      if (outroMessages.length > 2) {
-        // If we have specific steps, add another newline
-        outroMessages.push('');
+        stepNumber++;
       }
 
       outroMessages.push(
-        chalk.bold('Continue the setup:'),
-        chalk.blue.underline(
-          'https://pgflow.dev/getting-started/create-first-flow/'
-        )
+        `  ${stepNumber}. Create your first flow: ${chalk.blue.underline('https://pgflow.dev/getting-started/create-first-flow/')}`
       );
 
       // Single outro for all paths

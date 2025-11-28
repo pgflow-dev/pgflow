@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { log, confirm, note } from '@clack/prompts';
+import { log, confirm } from '@clack/prompts';
 import chalk from 'chalk';
 import { getVersion } from '../../utils/get-version.js';
 
@@ -41,54 +41,57 @@ export async function createEdgeFunction({
   const indexPath = path.join(pgflowFunctionDir, 'index.ts');
   const denoJsonPath = path.join(pgflowFunctionDir, 'deno.json');
 
+  // Relative paths for display
+  const relativeFunctionDir = 'supabase/functions/pgflow';
+  const relativeIndexPath = `${relativeFunctionDir}/index.ts`;
+  const relativeDenoJsonPath = `${relativeFunctionDir}/deno.json`;
+
   // Check what needs to be created
-  const filesToCreate: Array<{ path: string; name: string }> = [];
+  const filesToCreate: Array<{ path: string; relativePath: string }> = [];
 
   if (!fs.existsSync(indexPath)) {
-    filesToCreate.push({ path: indexPath, name: 'index.ts' });
+    filesToCreate.push({ path: indexPath, relativePath: relativeIndexPath });
   }
 
   if (!fs.existsSync(denoJsonPath)) {
-    filesToCreate.push({ path: denoJsonPath, name: 'deno.json' });
+    filesToCreate.push({ path: denoJsonPath, relativePath: relativeDenoJsonPath });
   }
 
   // If all files exist, return success
   if (filesToCreate.length === 0) {
-    log.success('ControlPlane edge function files are already in place');
-
     const detailedMsg = [
-      'Existing files:',
-      `  ${chalk.dim('•')} ${chalk.bold('supabase/functions/pgflow/index.ts')}`,
-      `  ${chalk.dim('•')} ${chalk.bold('supabase/functions/pgflow/deno.json')}`,
+      'ControlPlane edge function files are already in place:',
+      `  ${chalk.bold(relativeIndexPath)}`,
+      `  ${chalk.bold(relativeDenoJsonPath)}`,
     ].join('\n');
 
-    note(detailedMsg, 'ControlPlane Edge Function');
+    log.success(detailedMsg);
 
     return false;
   }
 
-  // Show what will be created
-  log.info(`Found ${filesToCreate.length} file${filesToCreate.length !== 1 ? 's' : ''} to create`);
+  // Show what will be created with explanation
+  const summaryMsg = [
+    `Create ${chalk.cyan('functions/pgflow/')} ${chalk.dim('(Control Plane for flow registration and compilation)')}:`,
+    '',
+    ...filesToCreate.map((file) => `    ${chalk.bold(path.basename(file.relativePath))}`),
+  ].join('\n');
 
-  const summaryParts = [`${chalk.green('Files to create:')}\n${filesToCreate
-    .map((file) => `${chalk.green('+')} ${file.name}`)
-    .join('\n')}`];
-
-  note(summaryParts.join('\n'), 'ControlPlane Edge Function');
+  log.info(summaryMsg);
 
   // Get confirmation
   let shouldContinue = autoConfirm;
 
   if (!autoConfirm) {
     const confirmResult = await confirm({
-      message: `Create ${filesToCreate.length} file${filesToCreate.length !== 1 ? 's' : ''}?`,
+      message: `Create functions/pgflow/?`,
     });
 
     shouldContinue = confirmResult === true;
   }
 
   if (!shouldContinue) {
-    log.warn('Edge function setup skipped');
+    log.warn('Control Plane installation skipped');
     return false;
   }
 
@@ -106,13 +109,12 @@ export async function createEdgeFunction({
     fs.writeFileSync(denoJsonPath, DENO_JSON_TEMPLATE(getVersion()));
   }
 
-  // Show success message
-  const detailedSuccessMsg = [
-    `Created ${filesToCreate.length} file${filesToCreate.length !== 1 ? 's' : ''}:`,
-    ...filesToCreate.map((file) => `  ${chalk.bold(file.name)}`),
+  const successMsg = [
+    `Control Plane installed`,
+    `  ${chalk.dim('Learn more:')} ${chalk.blue.underline('https://pgflow.dev/concepts/compilation/')}`,
   ].join('\n');
 
-  log.success(detailedSuccessMsg);
+  log.success(successMsg);
 
   return true;
 }
