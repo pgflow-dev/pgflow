@@ -193,6 +193,10 @@ class EdgeWorker {
 - Advisory locks in ControlPlane
 - Proper error messages with actionable fixes
 - Deployment mode detection (dev/prod)
+- **Auth verification for ControlPlane endpoints** (see PLAN_auth-verification.md)
+  - Verify `apikey` header against `PGFLOW_SECRET_KEY` env var
+  - Required for production deployments
+  - Protects flow enumeration and compilation endpoints
 
 ---
 

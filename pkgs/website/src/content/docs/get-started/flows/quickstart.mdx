@@ -22,8 +22,12 @@ See pgflow in action using the GreetUser flow scaffolded during installation.
    Open a terminal and start the edge functions server:
 
    ```bash frame="none"
-   npx supabase functions serve
+   npx supabase functions serve --no-verify-jwt
    ```
+
+   <Aside type="note" title="About --no-verify-jwt">
+   The `--no-verify-jwt` flag disables JWT authentication for local development.
+   </Aside>
 
    Keep this terminal open.
 
@@ -49,6 +53,10 @@ See pgflow in action using the GreetUser flow scaffolded during installation.
    ```bash frame="none"
    npx supabase migrations up
    ```
+
+   <Aside type="tip" title="Want to modify this flow later?">
+   Once applied, flow structure is immutable. See [Iterating on your flow](#iterating-on-your-flow) below for the development workflow.
+   </Aside>
 
 4. ### Start the worker
 
@@ -103,6 +111,14 @@ See pgflow in action using the GreetUser flow scaffolded during installation.
 The GreetUser flow demonstrates the core pgflow pattern - steps with dependencies that pass data between them.
 </details>
 
+## Iterating on your flow
+
+Want to modify the flow structure? Flows are immutable once registered - this protects running workflows.
+
+**During development:** [Delete the flow](/build/delete-flows/) and recompile. This removes all run data, so only use locally.
+
+**In production:** Create a [versioned flow](/build/version-flows/) (e.g., `greetUserV2`) to preserve history.
+
 ## Next steps
 
 <CardGrid>
@@ -115,5 +131,10 @@ The GreetUser flow demonstrates the core pgflow pattern - steps with dependencie
     title="How pgflow works"
     href="/concepts/how-pgflow-works/"
     description="Understand the execution model behind the scenes"
+  />
+  <LinkCard
+    title="Iterate on flows"
+    href="/build/delete-flows/"
+    description="Delete and recreate flows during development"
   />
 </CardGrid>

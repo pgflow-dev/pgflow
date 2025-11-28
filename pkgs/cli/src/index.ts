@@ -42,18 +42,19 @@ const g = chalk.hex('#9ece6a'); // vibrant green
 const l = chalk.hex('#2ac3de'); // bright teal/cyan
 // const o = chalk.hex('#ff9e64'); // orange
 // const w = chalk.hex('#f7768e'); // magenta/pink
+const d = chalk.dim; // dim for secondary text
 const banner = [
-  `                ${l('__ _')}                 `,
-  `   ${g('_ __   __ _')} ${l('/ _| | _____      __')}  `,
-  `  ${g("| '_ \\ / _'")} ${l('| |_| |/ _ \\ \\ /\\ / /')}  `,
-  `  ${g('| |_) | (_|')} ${l('|  _| | (_) \\ V  V /')}   `,
-  `  ${g('| .__/ \\__,')} ${l('|_| |_|\\___/ \\_/\\_/')}    `,
-  `  ${g('|_|    |___/')}`,
+  `                    ${l('__ _')}`,
+  `       ${g('_ __   __ _')} ${l('/ _| | _____      __')}`,
+  `      ${g("| '_ \\ / _'")} ${l('| |_| |/ _ \\ \\ /\\ / /')}`,
+  `      ${g('| |_) | (_|')} ${l('|  _| | (_) \\ V  V /')}`,
+  `      ${g('| .__/ \\__,')} ${l('|_| |_|\\___/ \\_/\\_/')}`,
+  `      ${g('|_|    |___/')}                ${d('v' + getVersion())}`,
+  ``,
+  `      ${l('Workflows in Supabase')} ${d('|')} ${g.underline('pgflow.dev')}`,
 ].join('\n');
 
 console.log(banner);
-console.log();
-console.log();
 console.log();
 
 // Use a promise-aware approach to parse arguments

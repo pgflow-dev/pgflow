@@ -87,7 +87,7 @@ curl "https://your-project.supabase.co/functions/v1/your-worker-name" \
 3. Copy the `anon` `public` key
 
 :::note
-Production Edge Functions have JWT verification enabled by default.
+Production Edge Functions have JWT verification enabled by default. Currently, workers use the `anon` key for self-respawning. Enhanced authentication using a dedicated secret key is planned for future releases.
 :::
 
 The worker starts polling for tasks and continues running until it's stopped or times out.

@@ -2,7 +2,7 @@
 draft: false
 title: 'pgflow 0.9.0: Control Plane and HTTP-Based Compilation'
 description: 'Simpler flow compilation via ControlPlane edge function - no local Deno required'
-date: 2025-11-27
+date: 2025-11-28
 authors:
   - jumski
 tags:
@@ -30,6 +30,66 @@ This simplifies the development setup and lays groundwork for future auto-compil
 This release prepares for upcoming changes where edge workers will automatically verify flow shapes and trigger compilation when needed - making `pgflow compile` optional for development workflows.
 </Aside>
 
+## Breaking Changes
+
+### Compile Command
+
+The `pgflow compile` command now takes a **flow slug** instead of a file path:
+
+**Before (0.8.x):**
+```bash frame="none"
+pgflow compile path/to/my_flow.ts --deno-json supabase/functions/deno.json
+```
+
+**After (0.9.0):**
+```bash frame="none"
+pgflow compile my_flow
+```
+
+The `--deno-json` flag is deprecated and will be removed in v1.0.
+
+<Aside type="tip" title="Need the Old Behavior?">
+If you need local Deno compilation, you can use the previous version:
+
+```bash frame="none"
+npx pgflow@0.8.0 compile path/to/flow.ts
+```
+</Aside>
+
+## New Install Experience
+
+The installer now scaffolds a complete working setup:
+
+```bash frame="none"
+npx pgflow@0.9.0 install
+```
+
+This creates:
+- `supabase/flows/` - Directory for flow definitions with namespace imports
+- `supabase/flows/greet-user.ts` - Example GreetUser flow
+- `supabase/functions/pgflow/` - Control Plane for compilation
+- `supabase/functions/greet-user-worker/` - Example worker ready to run
+
+The installer shows a clear summary and asks for a single confirmation before making changes.
+
+## Namespace Imports for Flows
+
+ControlPlane now supports namespace imports, the recommended pattern:
+
+```typescript
+import { ControlPlane } from '@pgflow/edge-worker';
+import * as flows from '../../flows/index.ts';
+
+ControlPlane.serve(flows);
+```
+
+Add flows by exporting from `flows/index.ts`:
+
+```typescript
+export { GreetUser } from './greet-user.ts';
+export { MyOtherFlow } from './my-other-flow.ts';
+```
+
 ## Upgrading
 
 Update your packages following the [Update pgflow guide](/deploy/update-pgflow/), then run:
@@ -38,7 +98,7 @@ Update your packages following the [Update pgflow guide](/deploy/update-pgflow/)
 npx pgflow@0.9.0 install
 ```
 
-This creates the ControlPlane edge function at `supabase/functions/control-plane/`.
+This creates the ControlPlane edge function at `supabase/functions/pgflow/`.
 
 <Aside type="caution" title="Register Your Flows">
 All existing flows must be added to the ControlPlane for compilation to work. See [Compilation](/concepts/compilation/) for details.
