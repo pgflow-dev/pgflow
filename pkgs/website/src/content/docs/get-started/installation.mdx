@@ -30,10 +30,17 @@ If you haven't installed the CLI yet or need to upgrade, see Supabase's [install
    ```
 
    <Aside type="note" title="What got installed?">
-   The installer creates:
-   - A `flows/` directory with an example `GreetUser` flow
-   - A `pgflow` Control Plane that handles flow compilation
-   - A `greet-user-worker` to run the example flow
+   <FileTree>
+   - supabase/
+     - flows/
+       - greet-user.ts (example flow)
+       - index.ts (exports)
+     - functions/
+       - pgflow/ (Control Plane for compilation)
+       - greet-user-worker/ (runs the example)
+     - migrations/
+       - ..._install_pgflow.sql
+   </FileTree>
    </Aside>
 
    Want to understand what's happening? See the [manual installation guide](/reference/manual-installation/).

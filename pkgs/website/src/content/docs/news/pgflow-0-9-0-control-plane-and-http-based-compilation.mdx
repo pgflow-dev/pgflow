@@ -46,7 +46,7 @@ pgflow compile path/to/my_flow.ts --deno-json supabase/functions/deno.json
 pgflow compile my_flow
 ```
 
-The `--deno-json` flag is deprecated and will be removed in v1.0.
+The `--deno-json` flag has been removed.
 
 <Aside type="tip" title="Need the Old Behavior?">
 If you need local Deno compilation, you can use the previous version:
@@ -90,16 +90,24 @@ export { GreetUser } from './greet-user.ts';
 export { MyOtherFlow } from './my-other-flow.ts';
 ```
 
-## Upgrading
+## Upgrading from v0.8.x
 
-Update your packages following the [Update pgflow guide](/deploy/update-pgflow/), then run:
+**Existing compiled flows continue to work** - no recompilation needed.
 
-```bash frame="none"
-npx pgflow@0.9.0 install
-```
+To compile **new flows** with v0.9.0:
 
-This creates the ControlPlane edge function at `supabase/functions/pgflow/`.
+1. Run `npx pgflow@0.9.0 install` to add the ControlPlane and `supabase/flows/` directory
+2. Create new flow files in `supabase/flows/`
+3. Export them from `supabase/flows/index.ts`
 
-<Aside type="caution" title="Register Your Flows">
-All existing flows must be added to the ControlPlane for compilation to work. See [Compilation](/concepts/compilation/) for details.
+<Aside type="note" title="Existing Flows">
+You don't need to move existing flow files. The new structure is only for
+flows you want to compile going forward. Move old flows only if you want
+consistency in your project structure.
 </Aside>
+
+### Removed: --deno-json flag
+
+The `--deno-json` flag has been removed. Compilation now uses the ControlPlane
+edge function instead of local Deno. If you used this flag in CI/CD scripts,
+update them to use the new compilation approach.

@@ -299,7 +299,7 @@ Summary and tags execute simultaneously since both only need website content - c
 
 ## Step 4 - Compile & migrate
 
-Turn your TypeScript flow into SQL using pgflow's [compiler](/get-started/flows/compile-flow/):
+Turn your TypeScript flow into SQL using pgflow's compiler:
 
 <Steps>
 1. First, export the flow from `supabase/flows/index.ts`:
@@ -307,14 +307,19 @@ Turn your TypeScript flow into SQL using pgflow's [compiler](/get-started/flows/
    export { AnalyzeWebsite } from './analyze-website.ts';
    ```
 
-2. Compile TypeScript to SQL:
-   ```bash
+2. Start edge functions (the compiler needs the Control Plane running):
+   ```bash frame="none"
+   npx supabase functions serve --no-verify-jwt
+   ```
+   Keep this terminal open for the rest of the tutorial.
+
+3. In a **new terminal**, compile TypeScript to SQL:
+   ```bash frame="none"
    npx pgflow@latest compile analyzeWebsite
-   # Generates supabase/migrations/<timestamp>_analyzeWebsite.sql
    ```
 
-3. Apply migration to database:
-   ```bash
+4. Apply migration to database:
+   ```bash frame="none"
    npx supabase migrations up --local
    ```
 </Steps>
@@ -358,15 +363,10 @@ Changing steps requires a new flow with unique `slug`. This is a core design dec
 
 ## Step 6 - Run & test
 
-Start the services (make sure `supabase start` is already running):
+With edge functions still running from Step 4, start the worker and trigger the flow:
 
 <Steps>
-1. Serve Edge Functions (keep this terminal open):
-   ```bash frame="none"
-   npx supabase functions serve
-   ```
-
-2. In a new terminal, start the worker:
+1. Start the worker:
    ```bash frame="none"
    curl http://127.0.0.1:54321/functions/v1/analyze-website-worker
    ```
@@ -381,7 +381,7 @@ Start the services (make sure `supabase start` is already running):
    Tired of curling after every code change? Add the [watchdog cron](/deploy/supabase/keep-workers-running/) to your `supabase/seed.sql` (use `'2 seconds'` interval for fast local iteration) - it auto-restarts workers when they stop polling.
    :::
 
-3. Trigger the flow in SQL Editor:
+2. Trigger the flow in SQL Editor:
    ```sql
    select * from pgflow.start_flow(
      flow_slug => 'analyzeWebsite',

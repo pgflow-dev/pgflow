@@ -119,6 +119,20 @@ Want to modify the flow structure? Flows are immutable once registered - this pr
 
 **In production:** Create a [versioned flow](/build/version-flows/) (e.g., `greetUserV2`) to preserve history.
 
+## Troubleshooting
+
+### "Could not connect to ControlPlane"
+
+Make sure edge functions are running:
+
+```bash frame="none"
+npx supabase functions serve --no-verify-jwt
+```
+
+### "Flow not found"
+
+Register your flow in `supabase/functions/pgflow/index.ts` and restart the functions server.
+
 ## Next steps
 
 <CardGrid>

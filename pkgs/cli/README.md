@@ -16,7 +16,6 @@ This package provides essential tools for setting up, managing, and deploying pg
 ## Prerequisites
 
 - Supabase CLI v2.50.3 or higher
-- Deno v2.1.x or higher (for flow compilation)
 - Local Supabase project initialized
 
 ## Installation
@@ -70,8 +69,8 @@ npx pgflow@latest compile my_flow
 
 Options:
 
-- `--deno-json <path>` - Path to custom deno.json configuration file
 - `--supabase-path <path>` - Path to custom Supabase directory
+- `--control-plane-url <url>` - ControlPlane URL (default: `http://127.0.0.1:54321/functions/v1/pgflow`)
 
 The compiler will:
 
