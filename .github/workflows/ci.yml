@@ -46,6 +46,8 @@ jobs:
   # ─────────────────────────────────────── 1. BUILD & TEST ──────────────────────────────────────
   build-and-test:
     runs-on: ubuntu-latest
+    # Skip for Version Packages PRs - code was already tested when original PRs merged
+    if: ${{ !startsWith(github.head_ref || '', 'changeset-release/') }}
     env:
       NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
     steps:
@@ -90,6 +92,8 @@ jobs:
   # ─────────────────────────────────────── 2. EDGE-WORKER E2E ──────────────────────────────────────
   edge-worker-e2e:
     runs-on: ubuntu-latest
+    # Skip for Version Packages PRs - code was already tested when original PRs merged
+    if: ${{ !startsWith(github.head_ref || '', 'changeset-release/') }}
     env:
       NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
     steps:
@@ -139,6 +143,8 @@ jobs:
   # ─────────────────────────────────────── 2b. CLI E2E ──────────────────────────────────────
   cli-e2e:
     runs-on: ubuntu-latest
+    # Skip for Version Packages PRs - code was already tested when original PRs merged
+    if: ${{ !startsWith(github.head_ref || '', 'changeset-release/') }}
     env:
       NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
     steps:
