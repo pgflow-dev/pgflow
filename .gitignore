@@ -52,6 +52,7 @@ deno-dist/
 .nx-inputs
 .vscode
 
+.claude/settings.json
 **/.claude/settings.local.json
 
 # Claude config symlinks (actual content in ~/Code/pgflow-dev/claude/)
