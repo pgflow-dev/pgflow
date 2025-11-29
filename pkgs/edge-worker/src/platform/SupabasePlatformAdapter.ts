@@ -203,6 +203,8 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
     Deno.serve({}, (req: Request) => {
       this.logger.debug(`HTTP Request: ${this.edgeFunctionName}`);
 
+      const wasStarted = !this.worker;
+
       if (!this.worker) {
         this.edgeFunctionName = this.extractFunctionName(req);
 
@@ -218,7 +220,11 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
         });
       }
 
-      return new Response('ok', {
+      return new Response(JSON.stringify({
+        status: wasStarted ? 'started' : 'running',
+        workerId: this.validatedEnv.SB_EXECUTION_ID,
+        functionName: this.edgeFunctionName,
+      }), {
         headers: { 'Content-Type': 'application/json' },
       });
     });
