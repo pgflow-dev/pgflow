@@ -17,8 +17,8 @@ describe('extractFlowShape', () => {
       });
     });
 
-    it('should NOT include flow runtime options in shape', () => {
-      // Options are intentionally excluded - they can be tuned at runtime
+    it('should include flow runtime options in shape', () => {
+      // Options are included for flow creation, but not compared
       const flow = new Flow({
         slug: 'test_flow',
         maxAttempts: 5,
@@ -27,10 +27,23 @@ describe('extractFlowShape', () => {
       });
       const shape = extractFlowShape(flow);
 
-      // Shape should only have structural info, no options
+      // Shape should include options for creation
       expect(shape).toEqual({
         steps: [],
+        options: {
+          maxAttempts: 5,
+          baseDelay: 10,
+          timeout: 120,
+        },
       });
+    });
+
+    it('should omit flow options key when no options defined', () => {
+      const flow = new Flow({ slug: 'test_flow' });
+      const shape = extractFlowShape(flow);
+
+      // No options = no options key in shape
+      expect(shape).toEqual({ steps: [] });
       expect('options' in shape).toBe(false);
     });
   });
@@ -76,8 +89,8 @@ describe('extractFlowShape', () => {
       expect(shape.steps[3].dependencies).toEqual(['apple', 'mango', 'zebra']);
     });
 
-    it('should NOT include step runtime options in shape', () => {
-      // Options are intentionally excluded - they can be tuned at runtime
+    it('should include step runtime options in shape', () => {
+      // Options are included for step creation, but not compared
       const flow = new Flow<string>({ slug: 'test_flow' }).step(
         {
           slug: 'step1',
@@ -90,13 +103,47 @@ describe('extractFlowShape', () => {
       );
       const shape = extractFlowShape(flow);
 
-      // Step shape should only have structural info, no options
+      // Step shape should include options for creation
+      expect(shape.steps[0]).toEqual({
+        slug: 'step1',
+        stepType: 'single',
+        dependencies: [],
+        options: {
+          maxAttempts: 3,
+          baseDelay: 5,
+          timeout: 30,
+          startDelay: 100,
+        },
+      });
+    });
+
+    it('should omit step options key when no options defined', () => {
+      const flow = new Flow<string>({ slug: 'test_flow' }).step(
+        { slug: 'step1' },
+        ({ run }) => run
+      );
+      const shape = extractFlowShape(flow);
+
+      // No options = no options key in step shape
       expect(shape.steps[0]).toEqual({
         slug: 'step1',
         stepType: 'single',
         dependencies: [],
       });
       expect('options' in shape.steps[0]).toBe(false);
+    });
+
+    it('should only include defined options (filter undefined)', () => {
+      // When only some options are set, only those should appear
+      const flow = new Flow<string>({ slug: 'test_flow', maxAttempts: 5 }).step(
+        { slug: 'step1', timeout: 30 },
+        ({ run }) => run
+      );
+      const shape = extractFlowShape(flow);
+
+      // Only defined options should be included
+      expect(shape.options).toEqual({ maxAttempts: 5 });
+      expect(shape.steps[0].options).toEqual({ timeout: 30 });
     });
   });
 
@@ -133,7 +180,7 @@ describe('extractFlowShape', () => {
   });
 
   describe('complex flow extraction', () => {
-    it('should extract a complex flow structure (ignoring options)', () => {
+    it('should extract a complex flow structure with options', () => {
       const flow = new Flow<{ url: string }>({
         slug: 'analyze_website',
         maxAttempts: 3,
@@ -155,7 +202,7 @@ describe('extractFlowShape', () => {
 
       const shape = extractFlowShape(flow);
 
-      // Shape should only contain structural info, no options
+      // Shape should contain structural info AND options
       expect(shape).toEqual({
         steps: [
           {
@@ -167,6 +214,10 @@ describe('extractFlowShape', () => {
             slug: 'sentiment',
             stepType: 'single',
             dependencies: ['website'],
+            options: {
+              maxAttempts: 5,
+              timeout: 30,
+            },
           },
           {
             slug: 'summary',
@@ -179,6 +230,11 @@ describe('extractFlowShape', () => {
             dependencies: ['sentiment', 'summary'], // sorted alphabetically
           },
         ],
+        options: {
+          maxAttempts: 3,
+          baseDelay: 5,
+          timeout: 10,
+        },
       });
     });
 
@@ -413,10 +469,10 @@ describe('compareFlowShapes', () => {
     });
   });
 
-  describe('options are NOT compared (runtime tunable)', () => {
+  describe('options are included in shape but NOT compared', () => {
     it('should match flows with same structure but different DSL options', () => {
-      // This is the key behavior: options don't affect shape matching
-      // Users can tune options at runtime via SQL without recompilation
+      // This is the key behavior: options are in shape for creation,
+      // but don't affect shape matching (runtime tunable via SQL)
       const flowA = new Flow<string>({ slug: 'test_flow', maxAttempts: 3 }).step(
         { slug: 'step1', timeout: 60 },
         ({ run }) => run
@@ -430,6 +486,13 @@ describe('compareFlowShapes', () => {
       const shapeA = extractFlowShape(flowA);
       const shapeB = extractFlowShape(flowB);
 
+      // Verify options ARE included in shapes
+      expect(shapeA.options).toEqual({ maxAttempts: 3 });
+      expect(shapeB.options).toEqual({ maxAttempts: 10 });
+      expect(shapeA.steps[0].options).toEqual({ timeout: 60 });
+      expect(shapeB.steps[0].options).toEqual({ timeout: 300, startDelay: 100 });
+
+      // But comparison ignores options - only structure matters
       const result = compareFlowShapes(shapeA, shapeB);
       expect(result.match).toBe(true);
       expect(result.differences).toEqual([]);

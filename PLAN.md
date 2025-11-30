@@ -349,6 +349,44 @@ async function handleEnsureCompiled(
 
 ---
 
+## Phase 3.5: Include Options in FlowShape
+
+Options (maxAttempts, baseDelay, timeout, startDelay) must be included in FlowShape for proper flow creation, while remaining excluded from shape comparison (options can be tuned at runtime without recompilation).
+
+### Problem
+
+`_create_flow_from_shape()` was using defaults instead of DSL-defined options, causing drift between:
+- CLI path: `compileFlow()` -> SQL with options
+- Runtime path: `extractFlowShape()` -> `_create_flow_from_shape()` -> defaults only
+
+### Solution
+
+1. **FlowShape includes options** - Added optional `options` field to FlowShape/StepShape
+2. **NULL = use default** - Modified `create_flow()` to use COALESCE internally
+3. **Pass options through** - Updated `_create_flow_from_shape()` to pass options from shape
+
+### Key Files
+
+| File | Change |
+|------|--------|
+| `pkgs/dsl/src/flow-shape.ts` | Add options to interfaces, update extractFlowShape() |
+| `pkgs/core/schemas/0100_function_create_flow.sql` | NULL params = use default via COALESCE |
+| `pkgs/core/schemas/0100_function_create_flow_from_shape.sql` | Pass options from shape |
+
+### Design Decision: NULL = Use Default
+
+SQL functions now treat NULL parameters as "use default" via COALESCE:
+
+```sql
+-- In create_flow():
+INSERT INTO pgflow.flows (..., opt_max_attempts, ...)
+VALUES (..., COALESCE(max_attempts, 3), ...);
+```
+
+This prevents drift - defaults are defined in ONE place (inside the function), not hardcoded by callers.
+
+---
+
 ## Phase 4: Worker Configuration (Edge-Worker Package)
 
 ### Modify: `pkgs/edge-worker/src/core/workerConfigTypes.ts`
