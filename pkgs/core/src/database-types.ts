@@ -346,6 +346,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _compare_flow_shapes: {
+        Args: { p_db: Json; p_local: Json }
+        Returns: string[]
+      }
+      _get_flow_shape: { Args: { p_flow_slug: string }; Returns: Json }
       add_step: {
         Args: {
           base_delay?: number
