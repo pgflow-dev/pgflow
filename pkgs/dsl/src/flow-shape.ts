@@ -5,30 +5,55 @@ import { AnyFlow } from './dsl.js';
 // ========================
 
 /**
+ * Step-level options that can be included in the shape for creation,
+ * but are NOT compared during shape comparison (runtime tunable).
+ */
+export interface StepShapeOptions {
+  maxAttempts?: number;
+  baseDelay?: number;
+  timeout?: number;
+  startDelay?: number;
+}
+
+/**
+ * Flow-level options that can be included in the shape for creation,
+ * but are NOT compared during shape comparison (runtime tunable).
+ */
+export interface FlowShapeOptions {
+  maxAttempts?: number;
+  baseDelay?: number;
+  timeout?: number;
+}
+
+/**
  * StepShape captures the structural definition of a step for drift detection.
  *
- * NOTE: Runtime options (maxAttempts, baseDelay, timeout, startDelay) are
- * intentionally excluded. These can be tuned at runtime via SQL without
+ * The `options` field is included for flow creation but NOT compared during
+ * shape comparison. Options can be tuned at runtime via SQL without
  * requiring recompilation. See: /deploy/tune-flow-config/
  */
 export interface StepShape {
   slug: string;
   stepType: 'single' | 'map';
   dependencies: string[]; // sorted alphabetically for deterministic comparison
+  options?: StepShapeOptions;
 }
 
 /**
  * FlowShape captures the structural definition of a flow for drift detection.
  *
  * This represents the DAG topology - which steps exist, their types, and how
- * they connect via dependencies. Runtime configuration options are intentionally
- * excluded as they can be tuned in production without recompilation.
+ * they connect via dependencies.
+ *
+ * The `options` field is included for flow creation but NOT compared during
+ * shape comparison. Options can be tuned at runtime via SQL without recompilation.
  *
  * Note: flowSlug is intentionally excluded - it's an identifier, not structural
  * data. The slug comes from context (URL, registry lookup, function parameter).
  */
 export interface FlowShape {
   steps: StepShape[];
+  options?: FlowShapeOptions;
 }
 
 /**
@@ -44,28 +69,75 @@ export interface ShapeComparisonResult {
 // ========================
 
 /**
+ * Checks if an options object has any defined (non-undefined) values.
+ */
+function hasDefinedOptions(options: Record<string, unknown>): boolean {
+  return Object.values(options).some((v) => v !== undefined);
+}
+
+/**
+ * Filters out undefined values from an options object.
+ * Returns only the keys with defined values.
+ */
+function filterDefinedOptions<T extends Record<string, unknown>>(
+  options: T
+): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(options).filter(([_, v]) => v !== undefined)
+  ) as Partial<T>;
+}
+
+/**
  * Extracts a FlowShape from a Flow object.
- * The shape captures structural information needed for drift detection.
+ * The shape captures structural information needed for drift detection,
+ * plus options for flow creation.
  *
- * NOTE: Runtime options are intentionally not included in the shape.
- * They can be tuned at runtime via SQL without triggering recompilation.
+ * Options are included in the shape for proper flow/step creation, but
+ * are NOT compared during shape comparison (they're runtime tunable).
  *
  * @param flow - The Flow object to extract shape from
- * @returns A FlowShape representing the flow's structure
+ * @returns A FlowShape representing the flow's structure and options
  */
 export function extractFlowShape(flow: AnyFlow): FlowShape {
   const steps: StepShape[] = flow.stepOrder.map((stepSlug) => {
     const stepDef = flow.getStepDefinition(stepSlug);
 
-    return {
+    const stepShape: StepShape = {
       slug: stepSlug,
       stepType: stepDef.stepType ?? 'single',
       // Sort dependencies alphabetically for deterministic comparison
       dependencies: [...stepDef.dependencies].sort(),
     };
+
+    // Only include options if at least one is defined
+    const stepOptions = {
+      maxAttempts: stepDef.options.maxAttempts,
+      baseDelay: stepDef.options.baseDelay,
+      timeout: stepDef.options.timeout,
+      startDelay: stepDef.options.startDelay,
+    };
+
+    if (hasDefinedOptions(stepOptions)) {
+      stepShape.options = filterDefinedOptions(stepOptions);
+    }
+
+    return stepShape;
   });
 
-  return { steps };
+  const shape: FlowShape = { steps };
+
+  // Only include flow options if at least one is defined
+  const flowOptions = {
+    maxAttempts: flow.options.maxAttempts,
+    baseDelay: flow.options.baseDelay,
+    timeout: flow.options.timeout,
+  };
+
+  if (hasDefinedOptions(flowOptions)) {
+    shape.options = filterDefinedOptions(flowOptions);
+  }
+
+  return shape;
 }
 
 // ========================

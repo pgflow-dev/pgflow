@@ -1,5 +1,5 @@
 begin;
-select plan(5);
+select plan(7);
 select pgflow_tests.reset_db();
 
 -- SETUP: flow with all default values
@@ -10,6 +10,24 @@ select results_eq(
   $$ SELECT opt_max_attempts, opt_base_delay, opt_timeout FROM pgflow.create_flow('test_flow') $$,
   $$ VALUES (3, 5, 60) $$,
   'Should create flow with default opt_max_attempts, opt_base_delay and opt_timeout'
+);
+
+-- TEST: NULL parameters should use defaults (NULL = "use default" semantics)
+select pgflow.create_flow('test_flow_null', null, null, null);
+
+select results_eq(
+  $$ SELECT opt_max_attempts, opt_base_delay, opt_timeout FROM pgflow.flows WHERE flow_slug = 'test_flow_null' $$,
+  $$ VALUES (3, 5, 60) $$,
+  'NULL parameters should use defaults'
+);
+
+-- TEST: Mixed NULL and explicit values
+select pgflow.create_flow('test_flow_mixed', max_attempts => 10, base_delay => null, timeout => 120);
+
+select results_eq(
+  $$ SELECT opt_max_attempts, opt_base_delay, opt_timeout FROM pgflow.flows WHERE flow_slug = 'test_flow_mixed' $$,
+  $$ VALUES (10, 5, 120) $$,
+  'NULL parameters should use defaults while explicit values are preserved'
 );
 
 -- SETUP: flow with overriden max_attempts
