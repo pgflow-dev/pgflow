@@ -31,29 +31,22 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-# Required services for edge function development
-# Note: Services like imgproxy, studio, inbucket, analytics, vector, pg_meta are optional
-# Container names use project_id suffix from config.toml (e.g., supabase_db_cli for project_id="cli")
-# The project_id matches the "name" field in project.json
-REQUIRED_SERVICE_PREFIXES=(
-  "supabase_db_"
-  "supabase_kong_"
-  "supabase_edge_runtime_"
-  "supabase_rest_"
-  "supabase_realtime_"
-)
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Check if all required services are running for a specific project
 # This is more reliable than `supabase status` which returns 0 even with stopped services
 # Args: $1 = project_name (e.g., "cli", "edge-worker")
+# Uses REQUIRED_SERVICES array (service names like: db, rest, realtime)
+# Container names follow pattern: supabase_{service}_{project_name}
 check_required_services_running() {
   local project_name="$1"
   local running_containers
   running_containers=$(docker ps --format '{{.Names}}' 2>/dev/null)
 
-  for service_prefix in "${REQUIRED_SERVICE_PREFIXES[@]}"; do
-    local full_container_name="${service_prefix}${project_name}"
-    if ! echo "$running_containers" | grep -qF "$full_container_name"; then
+  for service in "${REQUIRED_SERVICES[@]}"; do
+    local container_name="supabase_${service}_${project_name}"
+    if ! echo "$running_containers" | grep -qF "$container_name"; then
       return 1
     fi
   done
@@ -81,6 +74,26 @@ PROJECT_DIR=$(realpath "$PROJECT_DIR")
 # Change to project directory (Supabase CLI uses current directory)
 cd "$PROJECT_DIR"
 
+# ============================================================================
+# TODO: Future improvement - consolidate project_id and services detection
+# ============================================================================
+# Currently we read project_name from project.json and services from config.toml
+# separately. This could be simplified by having get-enabled-services.mjs return
+# JSON with both values:
+#
+#   {"project_id":"core","services":["db","realtime"]}
+#
+# Then parse with jq:
+#   CONFIG_JSON=$(node "$SCRIPT_DIR/get-enabled-services.mjs" "$CONFIG_TOML")
+#   PROJECT_NAME=$(echo "$CONFIG_JSON" | jq -r '.project_id')
+#   mapfile -t REQUIRED_SERVICES < <(echo "$CONFIG_JSON" | jq -r '.services[]')
+#
+# Benefits:
+#   - Single source of truth (config.toml has project_id)
+#   - Removes project.json dependency for this script
+#   - More extensible JSON output
+# ============================================================================
+
 # Extract project name from project.json (matches project_id in supabase/config.toml)
 if [ ! -f "$PROJECT_DIR/project.json" ]; then
   echo -e "${RED}Error: project.json not found in $PROJECT_DIR${NC}" >&2
@@ -93,7 +106,25 @@ if [ -z "$PROJECT_NAME" ] || [ "$PROJECT_NAME" = "null" ]; then
   exit 1
 fi
 
+# Get enabled services from config.toml dynamically
+# This reads the actual config and outputs service names for enabled services
+CONFIG_TOML="$PROJECT_DIR/supabase/config.toml"
+if [ ! -f "$CONFIG_TOML" ]; then
+  echo -e "${RED}Error: config.toml not found at $CONFIG_TOML${NC}" >&2
+  exit 1
+fi
+
+# Read enabled service names into array using Node script
+# Service names are like: db, rest, realtime, edge_runtime
+mapfile -t REQUIRED_SERVICES < <(node "$SCRIPT_DIR/get-enabled-services.mjs" "$CONFIG_TOML")
+
+if [ ${#REQUIRED_SERVICES[@]} -eq 0 ]; then
+  echo -e "${RED}Error: Could not determine required services from config.toml${NC}" >&2
+  exit 1
+fi
+
 echo -e "${YELLOW}Checking Supabase status for project '$PROJECT_NAME' in: $PROJECT_DIR${NC}"
+echo -e "${YELLOW}Required services: ${REQUIRED_SERVICES[*]}${NC}"
 
 # Fast path: Check if all required Supabase services are running via docker ps
 # This is more reliable than `supabase status` which returns 0 even with stopped services
