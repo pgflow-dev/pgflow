@@ -30,7 +30,7 @@
     "test": {
       "executor": "nx:noop",
       "inputs": ["default", "^production"],
-      "dependsOn": ["test:vitest", "e2e:install"],
+      "dependsOn": ["test:vitest"],
       "options": {
         "parallel": false
       }
