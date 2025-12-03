@@ -135,7 +135,7 @@
       }
     },
     "test:unit": {
-      "dependsOn": ["db:ensure", "^build"],
+      "dependsOn": ["^build"],
       "executor": "nx:run-commands",
       "local": true,
       "inputs": ["default", "^production"],

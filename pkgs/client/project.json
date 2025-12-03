@@ -149,7 +149,7 @@
         "commands": [
           "../../scripts/supabase-start-locked.sh .",
           "psql 'postgresql://postgres:postgres@localhost:50522/postgres' -c 'SELECT pgflow_tests.reset_db()'",
-          "vitest run __tests__/integration/"
+          "vitest run __tests__/integration/ --poolOptions.threads.singleThread"
         ],
         "parallel": false
       }
@@ -174,7 +174,7 @@
         "commands": [
           "../../scripts/supabase-start-locked.sh .",
           "psql 'postgresql://postgres:postgres@localhost:50522/postgres' -c 'SELECT pgflow_tests.reset_db()'",
-          "vitest run __tests__/"
+          "vitest run __tests__/ --poolOptions.threads.singleThread"
         ],
         "parallel": false
       }
