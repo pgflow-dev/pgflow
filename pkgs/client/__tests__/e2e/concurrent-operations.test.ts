@@ -8,6 +8,7 @@ import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types.js';
 import { PgflowSqlClient } from '@pgflow/core';
 import { readAndStart } from '../helpers/polling.js';
 import { cleanupFlow } from '../helpers/cleanup.js';
+import { log } from '../helpers/debug.js';
 
 describe('Concurrent Operations Tests', () => {
   it(
@@ -36,7 +37,7 @@ describe('Concurrent Operations Tests', () => {
       });
 
       // Start flows sequentially to avoid overwhelming the system
-      console.log('=== Starting flows ===');
+      log('=== Starting flows ===');
       const run1 = await pgflowClient.startFlow(flow1.slug, { data: 'flow1-data' });
       const run2 = await pgflowClient.startFlow(flow2.slug, { data: 'flow2-data' });
 
@@ -44,7 +45,7 @@ describe('Concurrent Operations Tests', () => {
       expect(run2.flow_slug).toBe(flow2.slug);
 
       // Get and complete tasks from both flows
-      console.log('=== Completing steps ===');
+      log('=== Completing steps ===');
       
       const tasks1 = await readAndStart(sql, sqlClient, flow1.slug, 1, 5);
       const tasks2 = await readAndStart(sql, sqlClient, flow2.slug, 1, 5);
@@ -69,8 +70,8 @@ describe('Concurrent Operations Tests', () => {
       // Debug: Check database state directly
       const dbState1 = await sql`SELECT status, output FROM pgflow.step_tasks WHERE run_id = ${run1.run_id}::uuid`;
       const dbState2 = await sql`SELECT status, output FROM pgflow.step_tasks WHERE run_id = ${run2.run_id}::uuid`;
-      console.log('DB State 1:', dbState1);
-      console.log('DB State 2:', dbState2);
+      log('DB State 1:', dbState1);
+      log('DB State 2:', dbState2);
       
       // Verify database shows completion (since realtime events may be delayed)
       expect(dbState1[0].status).toBe('completed');
@@ -78,7 +79,7 @@ describe('Concurrent Operations Tests', () => {
       expect(dbState1[0].output).toEqual({ result: 'flow1-completed' });
       expect(dbState2[0].output).toEqual({ result: 'flow2-completed' });
 
-      console.log('=== Concurrent flows completed successfully ===');
+      log('=== Concurrent flows completed successfully ===');
       await supabaseClient.removeAllChannels();
     }),
     40000
@@ -164,9 +165,9 @@ describe('Concurrent Operations Tests', () => {
       expect(observerRun2!.step('shared_step').output).toEqual(stepOutput);
 
       // Log event counts for debugging (realtime delivery can be unreliable in tests)
-      console.log('Client 1 events:', client1Events.length);
-      console.log('Client 2 events:', client2Events.length);
-      console.log('Client 3 events:', client3Events.length);
+      log('Client 1 events:', client1Events.length);
+      log('Client 2 events:', client2Events.length);
+      log('Client 3 events:', client3Events.length);
 
       // Don't assert on event count - final state verification is more important
       // The test already verified all clients have correct final state above
@@ -251,7 +252,7 @@ describe('Concurrent Operations Tests', () => {
         expect(dbState[0].output).toEqual(expectedOutput);
       }
 
-      console.log('=== All concurrent instances completed without conflicts ===');
+      log('=== All concurrent instances completed without conflicts ===');
       await supabaseClient.removeAllChannels();
     }),
     40000
@@ -332,7 +333,7 @@ describe('Concurrent Operations Tests', () => {
       expect(dbStateA[0].output.result).toContain('flow-a');
       expect(dbStateB[0].output.result).toContain('flow-b');
 
-      console.log('=== Flow isolation maintained successfully ===');
+      log('=== Flow isolation maintained successfully ===');
       await supabaseClient.removeAllChannels();
     }),
     40000

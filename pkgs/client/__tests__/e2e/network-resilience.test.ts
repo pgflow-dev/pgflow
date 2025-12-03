@@ -8,6 +8,7 @@ import { FlowStepStatus } from '../../src/lib/types.js';
 import { PgflowSqlClient } from '@pgflow/core';
 import { readAndStart } from '../helpers/polling.js';
 import { cleanupFlow } from '../helpers/cleanup.js';
+import { log } from '../helpers/debug.js';
 
 describe('Network Resilience Tests', () => {
   it(
@@ -61,7 +62,7 @@ describe('Network Resilience Tests', () => {
       expect(stepOne.status).toBe(FlowStepStatus.Completed);
 
       // Simulate network disconnection by unsubscribing from all channels
-      console.log('=== Simulating network disconnection ===');
+      log('=== Simulating network disconnection ===');
       await supabaseClient.removeAllChannels();
 
       // Wait a bit to ensure disconnection
@@ -76,7 +77,7 @@ describe('Network Resilience Tests', () => {
       await sqlClient.completeTask(tasks[0], stepTwoOutput);
 
       // Reconnect by creating a new run instance (simulates app restart/reconnection)
-      console.log('=== Simulating reconnection ===');
+      log('=== Simulating reconnection ===');
       const reconnectedRun = await pgflowClient.getRun(run.run_id);
       expect(reconnectedRun).toBeTruthy();
 
@@ -114,8 +115,8 @@ describe('Network Resilience Tests', () => {
       expect(dbState[1].status).toBe('completed');
       expect(dbState[1].output).toEqual(stepTwoOutput);
 
-      console.log('Events before disconnect:', eventsBeforeDisconnect.length);
-      console.log('Events after reconnect:', eventsAfterReconnect.length);
+      log('Events before disconnect:', eventsBeforeDisconnect.length);
+      log('Events after reconnect:', eventsAfterReconnect.length);
 
       await supabaseClient.removeAllChannels();
     }),
@@ -148,7 +149,7 @@ describe('Network Resilience Tests', () => {
       if (channel) {
         channel.subscribe((status: string) => {
           connectionEvents.push(status);
-          console.log('Channel status changed:', status);
+          log('Channel status changed:', status);
         });
       }
 
@@ -165,7 +166,7 @@ describe('Network Resilience Tests', () => {
       expect(step.status).toBe(FlowStepStatus.Completed);
       expect(step.output).toEqual(stepOutput);
 
-      console.log('Connection events recorded:', connectionEvents);
+      log('Connection events recorded:', connectionEvents);
 
       await supabaseClient.removeAllChannels();
     }),
@@ -195,7 +196,7 @@ describe('Network Resilience Tests', () => {
 
       // Simulate poor network by introducing delays and multiple reconnections
       for (let i = 0; i < 3; i++) {
-        console.log(`=== Connection cycle ${i + 1} ===`);
+        log(`=== Connection cycle ${i + 1} ===`);
 
         // Short connection period
         await new Promise((resolve) => setTimeout(resolve, 100));

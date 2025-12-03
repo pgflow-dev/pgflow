@@ -8,6 +8,7 @@ import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types.js';
 import { PgflowSqlClient } from '@pgflow/core';
 import { readAndStart } from '../helpers/polling.js';
 import { cleanupFlow } from '../helpers/cleanup.js';
+import { log } from '../helpers/debug.js';
 
 describe('Happy Path E2E Integration', () => {
   it(
@@ -40,7 +41,7 @@ describe('Happy Path E2E Integration', () => {
 
       // Listen to all events for verification
       run.on('*', (event) => {
-        console.log('Run event received:', event);
+        log('Run event received:', event);
         receivedRunEvents.push(event);
       });
 
@@ -49,17 +50,17 @@ describe('Happy Path E2E Integration', () => {
       const saveStep = run.step('save');
 
       fetchStep.on('*', (event) => {
-        console.log('Fetch step event:', event);
+        log('Fetch step event:', event);
         receivedStepEvents.push({ step: 'fetch', event });
       });
 
       processStep.on('*', (event) => {
-        console.log('Process step event:', event);
+        log('Process step event:', event);
         receivedStepEvents.push({ step: 'process', event });
       });
 
       saveStep.on('*', (event) => {
-        console.log('Save step event:', event);
+        log('Save step event:', event);
         receivedStepEvents.push({ step: 'save', event });
       });
 
@@ -68,7 +69,7 @@ describe('Happy Path E2E Integration', () => {
       expect(run.input).toEqual(input);
 
       // Step 1: Complete fetch step
-      console.log('=== Step 1: Completing fetch step ===');
+      log('=== Step 1: Completing fetch step ===');
       let tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('fetch');
@@ -83,7 +84,7 @@ describe('Happy Path E2E Integration', () => {
       expect(fetchStep.output).toEqual(fetchOutput);
 
       // Step 2: Complete process step (should now be available)
-      console.log('=== Step 2: Completing process step ===');
+      log('=== Step 2: Completing process step ===');
       tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('process');
@@ -103,14 +104,14 @@ describe('Happy Path E2E Integration', () => {
       expect(processStep.output).toEqual(processOutput);
 
       // Step 3: Complete save step (should now be available)
-      console.log('=== Step 3: Completing save step ===');
+      log('=== Step 3: Completing save step ===');
       
       // Debug: Check dependencies in database
       const deps = await sql`
         SELECT * FROM pgflow.deps WHERE flow_slug = ${testFlow.slug}
         ORDER BY dep_slug, step_slug
       `;
-      console.log('Dependencies in database:', deps);
+      log('Dependencies in database:', deps);
       
       // Debug: Check step_tasks status
       const stepTasks = await sql`
@@ -118,13 +119,13 @@ describe('Happy Path E2E Integration', () => {
         WHERE run_id = ${run.run_id}::uuid
         ORDER BY step_slug
       `;
-      console.log('Step tasks status:', stepTasks);
+      log('Step tasks status:', stepTasks);
       
       tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('save');
       
-      console.log('Save task input:', JSON.stringify(tasks[0].input, null, 2));
+      log('Save task input:', JSON.stringify(tasks[0].input, null, 2));
       
       expect(tasks[0].input.run).toEqual(input);
       expect(tasks[0].input.process).toEqual(processOutput);
@@ -150,9 +151,9 @@ describe('Happy Path E2E Integration', () => {
       expect(run.output).toEqual({ save: saveOutput }); // Final step output becomes run output
 
       // Verify we received realtime events
-      console.log('=== Event Verification ===');
-      console.log('Total run events received:', receivedRunEvents.length);
-      console.log('Total step events received:', receivedStepEvents.length);
+      log('=== Event Verification ===');
+      log('Total run events received:', receivedRunEvents.length);
+      log('Total step events received:', receivedStepEvents.length);
 
       // Should have received at least the completion event
       // Note: run:started event may fire before listeners are established  
@@ -183,7 +184,7 @@ describe('Happy Path E2E Integration', () => {
       const remainingTasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 1);
       expect(remainingTasks).toHaveLength(0);
 
-      console.log('=== Happy Path E2E Test Completed Successfully ===');
+      log('=== Happy Path E2E Test Completed Successfully ===');
       await supabaseClient.removeAllChannels();
     }),
     30000 // Allow extra time for 3-step completion

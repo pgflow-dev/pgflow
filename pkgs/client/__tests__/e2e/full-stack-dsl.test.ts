@@ -9,6 +9,7 @@ import { Flow } from '@pgflow/dsl';
 import { compileFlow } from '@pgflow/dsl';
 import { readAndStart } from '../helpers/polling.js';
 import { cleanupFlow } from '../helpers/cleanup.js';
+import { log } from '../helpers/debug.js';
 
 describe('Full Stack DSL Integration', () => {
   it(
@@ -41,7 +42,7 @@ describe('Full Stack DSL Integration', () => {
 
       // 2. Compile to SQL
       const flowSql = compileFlow(SimpleFlow);
-      console.log('Generated SQL statements:', flowSql);
+      log('Generated SQL statements:', flowSql);
 
       // 3. Execute SQL to create flow definition
       for (const statement of flowSql) {
@@ -90,7 +91,7 @@ describe('Full Stack DSL Integration', () => {
       expect(run.input).toEqual(input);
 
       // 7. Execute the complete flow lifecycle
-      console.log('=== Step 1: Completing fetch step ===');
+      log('=== Step 1: Completing fetch step ===');
       let tasks = await readAndStart(sql, sqlClient, SimpleFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('fetch');
@@ -106,7 +107,7 @@ describe('Full Stack DSL Integration', () => {
       expect(fetchStep.status).toBe(FlowStepStatus.Completed);
       expect(fetchStep.output).toEqual(fetchOutput);
 
-      console.log('=== Step 2: Completing process step ===');
+      log('=== Step 2: Completing process step ===');
       tasks = await readAndStart(sql, sqlClient, SimpleFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('process');
@@ -127,7 +128,7 @@ describe('Full Stack DSL Integration', () => {
       expect(processStep.status).toBe(FlowStepStatus.Completed);
       expect(processStep.output).toEqual(processOutput);
 
-      console.log('=== Step 3: Completing save step ===');
+      log('=== Step 3: Completing save step ===');
       tasks = await readAndStart(sql, sqlClient, SimpleFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('save');
@@ -157,7 +158,7 @@ describe('Full Stack DSL Integration', () => {
       expect(run.status).toBe(FlowRunStatus.Completed);
       expect(run.remaining_steps).toBe(0);
 
-      console.log('=== Full Stack DSL Test Completed Successfully ===');
+      log('=== Full Stack DSL Test Completed Successfully ===');
       await supabaseClient.removeAllChannels();
     }),
     30000
