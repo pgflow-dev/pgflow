@@ -1,0 +1,40 @@
+---
+title: Preview Branches
+description: Configure pgflow workers for Supabase preview branch environments
+sidebar:
+  order: 115
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+pgflow works best with the **Transaction pooler** which properly manages connection lifecycle in serverless environments.
+
+Preview branches provide `SUPABASE_DB_URL` (a direct connection), but deriving a pooler URL from it is impossible - the region info needed isn't available in any environment variable. We confirmed with the Supabase team this isn't planned to change soon.
+
+## Recommended: Manual Pooler URL
+
+Each preview branch has its own database. For each branch, [get the Transaction pooler URL](/deploy/supabase/get-connection-string/) from that branch's dashboard and set it as `EDGE_WORKER_DB_URL`.
+
+## Workaround: Direct Connection
+
+If manual setup isn't practical, you can fall back to `SUPABASE_DB_URL`. This works fine for most preview branches with low load - your mileage may vary, so test it out:
+
+```typescript title="supabase/functions/my-worker/index.ts"
+import { EdgeWorker } from "@pgflow/edge-worker";
+import postgres from "postgres";
+import { MyFlow } from "../../flows/my-flow.ts";
+
+const connectionString = Deno.env.get("EDGE_WORKER_DB_URL")
+  || Deno.env.get("SUPABASE_DB_URL");
+
+const sql = postgres(connectionString!, {
+  prepare: false,
+  max: 1,
+});
+
+await EdgeWorker.start(MyFlow, { sql });
+```
+
+<Aside type="danger" title="Connection exhaustion risk">
+Direct connections from Edge Functions can exhaust your connection pool. Edge Functions can be killed at any time, leaving connections hanging until they timeout.
+</Aside>

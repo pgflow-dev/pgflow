@@ -14,21 +14,7 @@ Error: SASL_SIGNATURE_MISMATCH: The server did not return the correct signature
 Error: password authentication failed for user
 ```
 
-## Get Your Connection String
-
-Before encoding, get your connection string from Supabase:
-
-1. Open [Supabase Dashboard](https://supabase.com/dashboard)
-2. Navigate to **Settings** → **Database**
-3. Scroll to **Connection String** section
-4. Copy the **Transaction Mode** connection string (port 6543)
-
-The string looks like:
-```
-postgresql://postgres.pooler-yourproject:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres
-```
-
-Replace `[YOUR-PASSWORD]` with your actual database password from the dashboard (you may need to reveal it first).
+If you haven't gotten your connection string yet, see [Get Connection String](/deploy/supabase/get-connection-string/).
 
 ## Common Characters That Need Encoding
 
@@ -134,7 +120,7 @@ curl "https://your-project.supabase.co/functions/v1/your-worker-name" \
 
 If you see worker logs without authentication errors, the encoding worked.
 
-For full deployment instructions, see [Deploy Your First Flow](/deploy/supabase/deploy-first-flow/).
+For full deployment instructions, see [Deploy to Supabase](/deploy/supabase/).
 
 ## Security Considerations
 

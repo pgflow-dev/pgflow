@@ -1,0 +1,50 @@
+---
+title: Deploy to Supabase
+description: Deploy pgflow workers to Supabase.com production
+sidebar:
+  order: 0
+---
+
+import { Steps, LinkButton, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+This guide assumes you have completed [Getting Started](/get-started/installation/) and have a Supabase project ready.
+
+<Steps>
+1. ### Get Connection String
+
+   Get the Transaction pooler URL from the Supabase dashboard.
+
+   <LinkButton href="/deploy/supabase/get-connection-string/" variant="secondary">Get Connection String</LinkButton>
+
+2. ### Deploy First Flow
+
+   Set database secret, deploy worker function, and start it running.
+
+   <LinkButton href="/deploy/supabase/deploy-first-flow/" variant="secondary">Deploy First Flow</LinkButton>
+
+3. ### Keep Workers Running
+
+   Set up pg_cron safety net to automatically restart workers.
+
+   <LinkButton href="/deploy/supabase/keep-workers-running/" variant="secondary">Keep Workers Running</LinkButton>
+</Steps>
+
+## Advanced Topics
+
+<CardGrid>
+  <LinkCard
+    title="Preview Branches"
+    href="/deploy/supabase/preview-branches/"
+    description="Configure workers for preview branch environments"
+  />
+  <LinkCard
+    title="Update Deployed Flows"
+    href="/deploy/supabase/update-deployed-flows/"
+    description="Safely deploy updates using worker deprecation"
+  />
+  <LinkCard
+    title="Database Connection Options"
+    href="/deploy/database-connection/"
+    description="Alternative connection methods and advanced configuration"
+  />
+</CardGrid>

@@ -78,6 +78,12 @@ Before starting, make sure you have:
    serving the request with supabase/functions/greet-user-worker
    ```
 
+   <Aside type="tip" title="Zero-config local development">
+   When running locally with `supabase start`, the database connection is auto-detected using known Supabase local dev keys. No environment variables needed!
+
+   For production deployment, see [Database Connection](/deploy/database-connection/).
+   </Aside>
+
 4. ### Start your worker
 
    In a new terminal, send an HTTP request to start your worker:

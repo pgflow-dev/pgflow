@@ -1,0 +1,135 @@
+---
+title: Database Connection
+description: How pgflow connects to your database in local and production environments
+sidebar:
+  order: 110
+---
+
+import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+pgflow auto-detects your database connection in local development and requires minimal configuration for production. This guide explains how connection detection works and how to configure it for different environments.
+
+## Connection Priority
+
+When an Edge Worker starts, pgflow resolves the database connection using this priority chain:
+
+| Priority | Source | Use Case |
+|----------|--------|----------|
+| 1 | `config.sql` | Full postgres.js control (SSL, custom options) |
+| 2 | `config.connectionString` | Custom connection URL |
+| 3 | `EDGE_WORKER_DB_URL` | Production environment variable |
+| 4 | Local fallback | Supabase local development (automatic) |
+
+If none of these are available, the worker throws an error: `"No database connection available"`.
+
+<Aside type="note" title="Explicit config wins">
+Providing `config.sql`, `config.connectionString`, or `EDGE_WORKER_DB_URL` **skips the automatic local connection**. The local fallback only applies when no explicit configuration is provided.
+</Aside>
+
+## Local Development
+
+When running locally with `supabase start`, pgflow automatically connects to your database without any configuration needed.
+
+```typescript title="supabase/functions/my-worker/index.ts"
+import { EdgeWorker } from "@pgflow/edge-worker";
+import { MyFlow } from "../../flows/index.ts";
+
+// Just works locally - no config needed!
+EdgeWorker.start(MyFlow);
+```
+
+<Aside type="note" title="How local connections work">
+pgflow recognizes local Supabase environments by checking for known local dev credentials in environment variables. When running locally, it connects to the Docker pooler at `postgresql://postgres.localhost:postgres@127.0.0.1:54329/postgres`.
+</Aside>
+
+## Production Deployment
+
+For production, set the `EDGE_WORKER_DB_URL` secret in your Supabase project:
+
+```bash frame="none"
+npx supabase secrets set EDGE_WORKER_DB_URL="postgresql://postgres.pooler-yourproject:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
+```
+
+Your worker code stays the same - pgflow automatically uses the environment variable when not in local development:
+
+```typescript title="supabase/functions/my-worker/index.ts"
+import { EdgeWorker } from "@pgflow/edge-worker";
+import { MyFlow } from "../../flows/index.ts";
+
+// Uses EDGE_WORKER_DB_URL in production
+EdgeWorker.start(MyFlow);
+```
+
+See [Get Connection String](/deploy/supabase/get-connection-string/) for how to find your pooler URL in the Supabase dashboard.
+
+## Advanced Configuration
+
+### Custom Connection String
+
+If you need to use a custom connection URL (different from `EDGE_WORKER_DB_URL`), pass it via `config.connectionString`:
+
+```typescript title="supabase/functions/my-worker/index.ts"
+import { EdgeWorker } from "@pgflow/edge-worker";
+import { MyFlow } from "../../flows/index.ts";
+
+await EdgeWorker.start(MyFlow, {
+  connectionString: Deno.env.get("MY_CUSTOM_DB_URL"),
+});
+```
+
+### Full Postgres.js Control
+
+For advanced scenarios requiring SSL certificates or other postgres.js settings, create the SQL client yourself and pass it via `config.sql`. Note that `prepare: false` is required when using a transaction pooler:
+
+```typescript title="supabase/functions/my-worker/index.ts" {6}
+import { EdgeWorker } from "@pgflow/edge-worker";
+import postgres from "postgres";
+import { MyFlow } from "../../flows/index.ts";
+
+const sql = postgres(Deno.env.get("DATABASE_URL")!, {
+  prepare: false, // Required for transaction pooling
+  connection: {
+    application_name: "my-flow-worker", // Visible in pg_stat_activity
+  },
+});
+
+await EdgeWorker.start(MyFlow, { sql });
+```
+
+See [Database SSL](/deploy/database-ssl/) for SSL configuration examples.
+
+### Custom Local Connection
+
+If you need to connect to a different database during local development (e.g., a remote staging database), provide an explicit configuration:
+
+```typescript title="supabase/functions/my-worker/index.ts"
+import { EdgeWorker } from "@pgflow/edge-worker";
+import { MyFlow } from "../../flows/index.ts";
+
+// Skips automatic local connection, uses custom URL instead
+await EdgeWorker.start(MyFlow, {
+  connectionString: Deno.env.get("STAGING_DB_URL"),
+});
+```
+
+This works because explicit config always takes priority over the automatic local connection.
+
+## See Also
+
+<CardGrid>
+  <LinkCard
+    title="Database SSL"
+    href="/deploy/database-ssl/"
+    description="Configure SSL certificates for secure database connections"
+  />
+  <LinkCard
+    title="Connection string encoding"
+    href="/deploy/connection-string/"
+    description="Handle special characters in database passwords"
+  />
+  <LinkCard
+    title="Troubleshooting connections"
+    href="/deploy/troubleshooting-connections/"
+    description="Fix common connection errors"
+  />
+</CardGrid>

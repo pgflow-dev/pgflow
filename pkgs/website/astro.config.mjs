@@ -291,8 +291,20 @@ export default defineConfig({
                   label: 'Maintain',
                   items: [
                     {
+                      label: 'Database connection',
+                      link: '/deploy/database-connection/',
+                    },
+                    {
+                      label: 'Database SSL',
+                      link: '/deploy/database-ssl/',
+                    },
+                    {
                       label: 'Connection string encoding',
                       link: '/deploy/connection-string/',
+                    },
+                    {
+                      label: 'Troubleshooting connections',
+                      link: '/deploy/troubleshooting-connections/',
                     },
                     { label: 'Prune records', link: '/deploy/prune-records/' },
                     {

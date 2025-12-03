@@ -1,0 +1,82 @@
+---
+title: Troubleshooting Connections
+description: Fix common database connection errors in pgflow
+sidebar:
+  order: 125
+---
+
+import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+This guide helps you diagnose and fix common database connection issues in pgflow.
+
+## No Database Connection Available
+
+```text del={1}
+No database connection available
+```
+
+This error occurs when pgflow cannot find a valid connection configuration.
+
+See [Database Connection](/deploy/database-connection/) for the priority chain and configuration options.
+
+## SASL_SIGNATURE_MISMATCH
+
+```text del={1}
+SASL_SIGNATURE_MISMATCH: The server did not return the correct signature
+```
+
+This error typically indicates a password encoding issue. Special characters in your database password (like `@`, `&`, `:`, `/`, `#`) must be URL-encoded.
+
+See [Connection String Encoding](/deploy/connection-string/) for how to fix this.
+
+## Password Authentication Failed
+
+```text del={1}
+password authentication failed for user
+```
+
+Possible causes:
+
+1. **Wrong password** - Verify you're using the correct database password
+2. **Encoding issue** - If the password contains special characters, see [Connection String Encoding](/deploy/connection-string/)
+
+## Connection Pool Exhaustion
+
+**Symptoms:**
+- Connections timing out
+- "too many connections" errors
+- Slow worker performance
+
+**Fixes:**
+
+1. **Use transaction pooling** - Always use the transaction pooler connection string (port 6543). See [Get Connection String](/deploy/supabase/get-connection-string/).
+2. **Verify workers aren't stacking** - Check if multiple worker instances are running. See [Monitor Workers Health](/deploy/monitor-workers-health/#list-of-active-workers). If the number of alive workers is unexpectedly high, please [file a bug report](https://github.com/pgflow-dev/pgflow/issues).
+
+## SSL Certificate Errors
+
+```text del={1-2}
+UNABLE_TO_VERIFY_LEAF_SIGNATURE
+self signed certificate
+```
+
+These errors indicate SSL certificate issues. See [Database SSL](/deploy/database-ssl/) for configuration options.
+
+## See Also
+
+<CardGrid>
+  <LinkCard
+    title="Database connection"
+    href="/deploy/database-connection/"
+    description="Overview of connection options and priority chain"
+  />
+  <LinkCard
+    title="Database SSL"
+    href="/deploy/database-ssl/"
+    description="Configure SSL certificates for secure connections"
+  />
+  <LinkCard
+    title="Connection string encoding"
+    href="/deploy/connection-string/"
+    description="Handle special characters in database passwords"
+  />
+</CardGrid>

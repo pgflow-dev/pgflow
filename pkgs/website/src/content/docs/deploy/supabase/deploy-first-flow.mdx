@@ -1,65 +1,32 @@
 ---
-title: Deploy Your First Flow
-description: Step-by-step guide to deploying pgflow workers to Supabase.com production for the first time
+title: Deploy First Flow
+description: Deploy pgflow workers to Supabase.com production
 sidebar:
-  order: 100
+  order: 20
 banner:
   content: |
     pgflow is in public beta. <a href="/project-status/">See project status</a> for production readiness details.
 ---
 
-import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
+import { Aside } from "@astrojs/starlight/components";
 
-This guide walks you through deploying your pgflow workers to Supabase.com production for the first time.
+This guide walks you through deploying your pgflow worker to Supabase.com production.
 
-<Aside type="caution" title="Prerequisites">
-Before deploying to production:
-- You have a working local development environment
-- Your flows are compiled and tested locally
-- You have a Supabase project (free or paid tier)
-</Aside>
-
-<Aside type="note" title="ControlPlane Not Needed Yet">
-The `pgflow` ControlPlane function is for local compilation only.
-You do not need to deploy it to production yet - only deploy your worker functions.
-</Aside>
-
-## Get Your Database Connection String
-
-Your workers need to connect to the production database:
-
-1. Open [Supabase Dashboard](https://supabase.com/dashboard)
-2. Navigate to **Settings** → **Database**
-3. Scroll to **Connection String** section
-4. Copy the **Transaction Mode** connection string (uses connection pooler)
-
-The connection string looks like:
-```
-postgresql://postgres.pooler-yourproject:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres
-```
-
-:::note[Why Transaction Mode?]
-Transaction Mode uses connection pooling (port 6543), which is required for Edge Functions. The pooler efficiently manages database connections in serverless environments.
-:::
-
-<Aside type="note" title="Special Characters in Password">
-If your password contains special characters (`@`, `&`, `:`, etc.), you'll need to URL-encode it. See [Connection String Encoding](/deploy/connection-string/) for details.
-</Aside>
+Before you begin, make sure you have your [connection string ready](/deploy/supabase/get-connection-string/).
 
 ## Set Database Secret
 
 Workers access the database through the `EDGE_WORKER_DB_URL` environment variable. Set it as a Supabase secret:
 
 ```bash frame="none"
-npx supabase secrets set EDGE_WORKER_DB_URL="postgresql://postgres.pooler-yourproject:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
+npx supabase secrets set EDGE_WORKER_DB_URL="postgresql://postgres.yourproject:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
 ```
 
-Replace `[YOUR-PASSWORD]` with your actual database password from the connection string.
+Replace the connection string with your actual Transaction pooler URL.
 
 :::caution[Keep Your Password Secure]
 - Never commit passwords to git
 - Never share passwords in public channels
-- Use the encoded password if it contains special characters
 :::
 
 ## Deploy Your Worker
@@ -77,6 +44,10 @@ This uploads your worker code and makes it available at:
 https://your-project.supabase.co/functions/v1/your-worker-name
 ```
 
+:::note
+You only need to deploy your worker functions. The `pgflow` ControlPlane function is for local compilation only and is not needed in production.
+:::
+
 ## Start Your Worker
 
 Workers don't start automatically after deployment. Start it with a POST request:
@@ -88,11 +59,11 @@ curl "https://your-project.supabase.co/functions/v1/your-worker-name" \
 
 **Finding your ANON key:**
 1. Open [Supabase Dashboard](https://supabase.com/dashboard)
-2. Navigate to **Settings** → **API**
-3. Copy the `anon` `public` key
+2. Navigate to **Project Settings** → **API Keys**
+3. Under **Legacy anon, service_role API Keys**, copy the `anon` `public` key
 
 :::note
-Production Edge Functions have JWT verification enabled by default. Currently, workers use the `anon` key for self-respawning. Enhanced authentication using a dedicated secret key is planned for future releases.
+Workers currently use the `anon` key for self-respawning. This will be improved soon.
 :::
 
 The worker starts polling for tasks and continues running until it's stopped or times out.
@@ -108,11 +79,3 @@ Edge Functions eventually stop due to platform limits or errors. Set up a pg_cro
 
 The safety net takes 2 minutes to set up and prevents hours of debugging why workflows stopped running.
 </Aside>
-
-## See Also
-
-<CardGrid>
-  <LinkCard title="Connection String Encoding" href="/deploy/connection-string/" description="Handle special characters in database passwords" />
-  <LinkCard title="Monitor Execution" href="/deploy/monitor-execution/" description="Track flow runs and debug issues" />
-  <LinkCard title="Monitor Workers Health" href="/deploy/monitor-workers-health/" description="Ensure workers stay healthy" />
-</CardGrid>

@@ -1,0 +1,42 @@
+---
+title: Get Connection String
+description: Get your database connection string from the Supabase dashboard
+sidebar:
+  order: 10
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+Edge Functions require the **Transaction pooler** connection (port 6543) for proper connection management in serverless environments.
+
+<Steps>
+1. ### Open Connect dialog
+
+   In your Supabase project dashboard, click the **Connect** button in the top navigation bar.
+
+   ![Supabase dashboard showing the Connect button](../../../../assets/deploy/supabase/01-connect-button.jpg)
+
+2. ### Select Transaction pooler
+
+   In the Connect dialog, click the **Method** dropdown and select **Transaction pooler**.
+
+   ![Connect dialog showing Transaction pooler selected](../../../../assets/deploy/supabase/02-method-selector.jpg)
+
+3. ### Copy the connection string
+
+   Copy the connection string shown:
+
+   ![Connect dialog showing the connection string](../../../../assets/deploy/supabase/03-db-url-string.jpg)
+
+4. ### Replace the password placeholder
+
+   The copied string contains `[YOUR-PASSWORD]`. Replace it with your actual database password.
+
+   ```
+   postgresql://postgres.yourproject:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres
+   ```
+
+   <Aside type="caution" title="Special characters?">
+   If your password contains `@`, `&`, `:`, `?`, or other special characters, you must URL-encode them first. See [Connection String Encoding](/deploy/connection-string/).
+   </Aside>
+</Steps>

@@ -1,0 +1,82 @@
+---
+title: Database SSL
+description: Configure SSL certificates for secure database connections
+sidebar:
+  order: 115
+---
+
+import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+If you're using SSL for your database connection or encountering certificate errors, this guide shows how to configure SSL properly using the `config.sql` option.
+
+## Configuring SSL
+
+The `config.sql` option gives you full control over the postgres.js client, including SSL settings. For proper certificate verification, you need to provide the CA certificate and enable verification:
+
+```typescript title="supabase/functions/my-worker/index.ts"
+import { EdgeWorker } from "@pgflow/edge-worker";
+import postgres from "postgres";
+import { MyFlow } from "../../flows/index.ts";
+
+const url = Deno.env.get("EDGE_WORKER_DB_URL")!;
+const ca = Deno.env.get("DATABASE_CA_CERT")!;
+
+const sql = postgres(url, {
+  prepare: false, // Required for transaction pooling
+  ssl: {
+    ca,
+    rejectUnauthorized: true,
+  },
+});
+
+await EdgeWorker.start(MyFlow, { sql });
+```
+
+<Aside type="caution" title="ssl: true is not enough">
+Setting `ssl: true` only enables TLS - it does **not** verify the certificate. For proper security, provide the CA certificate and set `rejectUnauthorized: true`.
+</Aside>
+
+## Setting Up the CA Certificate
+
+1. In your Supabase project dashboard, go to **Database → Settings**
+2. Scroll to **SSL Configuration** and click **Download certificate**
+3. This downloads a `prod-ca-2021.crt` file containing a PEM certificate:
+
+```text
+-----BEGIN CERTIFICATE-----
+MIIDxDCCAqygAwIBAgIUbLxM...
+...multiple lines of encoded data...
+-----END CERTIFICATE-----
+```
+
+4. Store the file contents as a Supabase secret under `DATABASE_CA_CERT`:
+
+```bash frame="none"
+npx supabase secrets set DATABASE_CA_CERT="$(cat prod-ca-2021.crt)"
+```
+
+The code example above reads this certificate from `Deno.env.get("DATABASE_CA_CERT")`.
+
+## SSL Options Reference
+
+postgres.js passes the `ssl` object to [Node.js TLS](https://nodejs.org/api/tls.html). Common options:
+
+| Option | Description |
+|--------|-------------|
+| `ca` | CA certificate content (PEM string) |
+| `rejectUnauthorized` | Verify server certificate (recommended: `true`) |
+
+## See Also
+
+<CardGrid>
+  <LinkCard
+    title="Database connection"
+    href="/deploy/database-connection/"
+    description="Overview of connection options and priority chain"
+  />
+  <LinkCard
+    title="Troubleshooting connections"
+    href="/deploy/troubleshooting-connections/"
+    description="Fix common connection errors"
+  />
+</CardGrid>
