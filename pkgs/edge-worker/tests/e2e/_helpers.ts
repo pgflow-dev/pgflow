@@ -4,6 +4,8 @@ import ProgressBar from 'jsr:@deno-library/progress';
 import { dim } from 'https://deno.land/std@0.224.0/fmt/colors.ts';
 import { e2eConfig } from '../config.ts';
 
+const DEBUG = Deno.env.get('DEBUG') === '1' || Deno.env.get('VERBOSE') === '1';
+
 interface WaitForOptions {
   pollIntervalMs?: number;
   timeoutMs?: number;
@@ -11,7 +13,7 @@ interface WaitForOptions {
 }
 
 export function log(message: string, ...args: unknown[]) {
-  console.log(dim(` -> ${message}`), ...args);
+  if (DEBUG) console.log(dim(` -> ${message}`), ...args);
 }
 
 export async function waitFor<T>(
@@ -41,14 +43,15 @@ export async function waitFor<T>(
   }
 }
 
-export async function sendBatch(count: number, queueName: string) {
+export async function sendBatch(count: number, queueName: string, debug = false) {
   const sql = createSql();
+  const payload = JSON.stringify({ debug });
   try {
     return await sql`
       SELECT pgmq.send_batch(
         ${queueName},
         ARRAY(
-          SELECT '{}'::jsonb
+          SELECT ${payload}::jsonb
           FROM generate_series(1, ${count}::integer)
         )
       )`;
@@ -87,28 +90,41 @@ export async function waitForSeqToIncrementBy(
   options: WaitForSeqValueOptions = {}
 ): Promise<number> {
   const { seqName = 'test_seq' } = options;
+  const isTTY = Deno.stdout.isTerminal();
 
-  const perSecond = 0;
-
-  const progress = new ProgressBar({
-    title: `${seqName} (${perSecond}/s)`,
-    total: value,
-    width: 20,
-    display: dim(
-      ` -> incrementing "${seqName}": :completed/:total (:eta left) [:bar] :percent`
-    ),
-    prettyTime: true,
-  });
+  const progress = isTTY
+    ? new ProgressBar({
+        title: `${seqName}`,
+        total: value,
+        width: 20,
+        display: dim(
+          ` -> incrementing "${seqName}": :completed/:total (:eta left) [:bar] :percent`
+        ),
+        prettyTime: true,
+      })
+    : null;
 
   const startVal = await seqLastValue(seqName);
+  const startTime = Date.now();
   let lastVal = startVal;
+  let lastReportedPercent = 0;
 
   try {
     return await waitFor(
       async () => {
         lastVal = await seqLastValue(seqName);
-        progress.render(lastVal);
         const incrementedBy = lastVal - startVal;
+        const percent = Math.floor((incrementedBy / value) * 100);
+
+        if (progress) {
+          progress.render(incrementedBy);
+        } else if (percent >= lastReportedPercent + 10) {
+          // In CI, report every 10% with average speed
+          const elapsedSec = (Date.now() - startTime) / 1000;
+          const avgPerSec = Math.round(incrementedBy / elapsedSec);
+          console.log(dim(` -> ${seqName}: ${percent}% (${incrementedBy}/${value}) - ${avgPerSec}/s avg`));
+          lastReportedPercent = percent;
+        }
 
         return incrementedBy >= value ? lastVal : false;
       },
@@ -118,7 +134,12 @@ export async function waitForSeqToIncrementBy(
       }
     );
   } finally {
-    progress.end();
+    const totalSec = (Date.now() - startTime) / 1000;
+    const avgPerSec = Math.round(value / totalSec);
+    if (progress) {
+      progress.end();
+    }
+    console.log(dim(` -> ${seqName}: 100% complete in ${totalSec.toFixed(1)}s (${avgPerSec}/s avg)`));
   }
 }
 

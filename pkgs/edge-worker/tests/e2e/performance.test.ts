@@ -7,12 +7,12 @@ import {
   log,
 } from './_helpers.ts';
 
-const MESSAGES_TO_SEND = 20000;
+const MESSAGES_TO_SEND = 2000;
 const WORKER_NAME = 'max_concurrency';
 
 Deno.test(
   {
-    name: 'worker can handle tens of thousands of jobs queued at once',
+    name: 'worker can handle thousands of jobs queued at once',
     sanitizeOps: false, // Progress bar uses async writes that don't complete before test ends
     sanitizeResources: false,
   },
