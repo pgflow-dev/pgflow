@@ -1,6 +1,14 @@
 name: 'Setup pgflow workspace'
 description: 'Common setup steps for pgflow CI workflow (run after checkout)'
 
+inputs:
+  github-token:
+    description: 'GitHub token for API requests (used by sqruff)'
+    required: true
+  atlas-cloud-token:
+    description: 'Atlas Cloud token for schema management'
+    required: true
+
 runs:
   using: 'composite'
   steps:
@@ -36,3 +44,18 @@ runs:
     - name: Rebuild packages that need postinstall (onlyBuiltDependencies)
       shell: bash
       run: pnpm rebuild supabase sharp
+
+    # Deno setup
+    - uses: denoland/setup-deno@v2
+      with:
+        deno-version: '2.1.4'
+
+    # Sqruff SQL linter
+    - uses: ./.github/actions/setup-sqruff
+      with:
+        github-token: ${{ inputs.github-token }}
+
+    # Atlas schema management
+    - uses: ariga/setup-atlas@master
+      with:
+        cloud-token: ${{ inputs.atlas-cloud-token }}

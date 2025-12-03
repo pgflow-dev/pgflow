@@ -26,6 +26,9 @@ jobs:
           fetch-depth: 0
 
       - uses: ./.github/actions/setup
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 
       - name: Validate changesets
         run: |
@@ -54,21 +57,9 @@ jobs:
           fetch-depth: 0
 
       - uses: ./.github/actions/setup
-
-      - name: Setup Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: '2.1.4'
-
-      - name: Install sqruff
-        uses: ./.github/actions/setup-sqruff
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup Atlas
-        uses: ariga/setup-atlas@master
-        with:
-          cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
+          atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 
       - name: Set Nx base for affected commands
         run: |
@@ -98,6 +89,9 @@ jobs:
           fetch-depth: 0
 
       - uses: ./.github/actions/setup
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 
       - name: Check if edge-worker is affected
         id: check
@@ -109,24 +103,6 @@ jobs:
             echo "affected=false" >> $GITHUB_OUTPUT
             echo "edge-worker not affected, skipping e2e tests"
           fi
-
-      - name: Setup Deno
-        if: steps.check.outputs.affected == 'true'
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: '2.1.4'
-
-      - name: Install sqruff
-        if: steps.check.outputs.affected == 'true'
-        uses: ./.github/actions/setup-sqruff
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup Atlas
-        if: steps.check.outputs.affected == 'true'
-        uses: ariga/setup-atlas@master
-        with:
-          cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 
       - name: Pre-start Supabase
         if: steps.check.outputs.affected == 'true'
@@ -147,6 +123,9 @@ jobs:
           fetch-depth: 0
 
       - uses: ./.github/actions/setup
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 
       - name: Check if cli is affected
         id: check
@@ -158,24 +137,6 @@ jobs:
             echo "affected=false" >> $GITHUB_OUTPUT
             echo "cli not affected, skipping e2e tests"
           fi
-
-      - name: Setup Deno
-        if: steps.check.outputs.affected == 'true'
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: '2.1.4'
-
-      - name: Install sqruff
-        if: steps.check.outputs.affected == 'true'
-        uses: ./.github/actions/setup-sqruff
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup Atlas
-        if: steps.check.outputs.affected == 'true'
-        uses: ariga/setup-atlas@master
-        with:
-          cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 
       - name: Pre-start Supabase
         if: steps.check.outputs.affected == 'true'
@@ -204,6 +165,9 @@ jobs:
           fetch-depth: 0
 
       - uses: ./.github/actions/setup
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 
       - name: Set Nx base for affected commands
         run: |
@@ -283,6 +247,9 @@ jobs:
           fetch-depth: 0
 
       - uses: ./.github/actions/setup
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 
       - name: Set Nx base for affected commands
         run: |

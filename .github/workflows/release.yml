@@ -22,12 +22,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Atlas
-        uses: ariga/setup-atlas@master
-        with:
-          cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
-
       - uses: ./.github/actions/setup
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 
       - name: Create Release Pull Request
         uses: changesets/action@v1

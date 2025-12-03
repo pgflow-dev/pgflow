@@ -11,7 +11,12 @@
       "!{projectRoot}/tsconfig.spec.json",
       "!{projectRoot}/src/test-setup.[jt]s"
     ],
-    "sharedGlobals": ["{workspaceRoot}/.github/**/*.yml"],
+    "sharedGlobals": [
+      "{workspaceRoot}/.github/actions/setup/action.yml",
+      "{workspaceRoot}/.github/actions/setup-sqruff/action.yml",
+      "{workspaceRoot}/pnpm-lock.yaml",
+      "{workspaceRoot}/tsconfig.base.json"
+    ],
     "sqruffConfig": ["{workspaceRoot}/.sqruff"]
   },
   "nxCloudId": "676490227393fa777407053a",
@@ -117,6 +122,9 @@
     },
     "e2e:*": {
       "local": true
+    },
+    "test:types:strict": {
+      "inputs": ["{workspaceRoot}/scripts/typecheck-ts2578.sh"]
     }
   }
 }
