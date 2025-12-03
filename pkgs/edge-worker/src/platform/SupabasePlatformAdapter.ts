@@ -1,7 +1,6 @@
 import type { CreateWorkerFn, Logger, PlatformAdapter } from './types.js';
 import type { Worker } from '../core/Worker.js';
 import type { Sql } from 'postgres';
-import postgres from 'postgres';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { SupabaseResources } from '@pgflow/dsl/supabase';
 import { createServiceSupabaseClient } from '../core/supabase-utils.js';
@@ -9,7 +8,7 @@ import { createLoggingFactory } from './logging.js';
 import { isLocalSupabaseEnv } from '../shared/localDetection.js';
 import {
   resolveConnectionString,
-  assertConnectionAvailable,
+  resolveSqlConnection,
 } from './resolveConnection.js';
 
 /**
@@ -58,16 +57,11 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
     this.assertSupabaseEnv(env);
     this.validatedEnv = env;
 
-    // Resolve connection string using priority chain
-    const connectionString = resolveConnectionString(env, {
+    // Keep connection string for the getter (interface requirement)
+    this._connectionString = resolveConnectionString(env, {
       hasSql: !!options?.sql,
       connectionString: options?.connectionString,
     });
-
-    // Validate that we have a connection available
-    assertConnectionAvailable(connectionString, !!options?.sql);
-
-    this._connectionString = connectionString;
 
     // Create abort controller for shutdown signal
     this.abortController = new AbortController();
@@ -78,14 +72,11 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
 
     // startWorker logger with a default module name
     this.logger = this.loggingFactory.createLogger('SupabasePlatformAdapter');
-    this.logger.debug('SupabasePlatformAdapter logger instance created and working.'); // Use the created logger
+    this.logger.debug('SupabasePlatformAdapter logger instance created and working.');
 
-    // Initialize platform resources once with validated env
+    // Initialize platform resources - single call handles all priority logic
     this._platformResources = {
-      sql: options?.sql ?? postgres(connectionString!, {
-        prepare: false,
-        max: 10,
-      }),
+      sql: resolveSqlConnection(env, options),
       supabase: createServiceSupabaseClient(this.validatedEnv)
     };
   }

@@ -281,10 +281,10 @@ importers:
         version: 5.43.1
       vite-plugin-dts:
         specifier: ~3.8.1
-        version: 3.8.3(@types/node@22.19.0)(rollup@4.53.2)(typescript@5.9.3)(vite@7.2.2(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))
+        version: 3.8.3(@types/node@22.19.0)(rollup@4.53.2)(typescript@5.8.3)(vite@7.2.2(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1))
       vitest:
         specifier: 1.3.1
-        version: 1.3.1(@types/node@22.19.0)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)
+        version: 1.3.1(@types/node@22.19.0)(@vitest/ui@1.6.1(vitest@1.3.1))(jsdom@22.1.0)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)
 
   pkgs/core:
     dependencies:
@@ -392,6 +392,9 @@ importers:
       starlight-contextual-menu:
         specifier: ^0.1.5
         version: 0.1.5(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))(starlight-markdown@0.1.5(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)))
+      starlight-image-zoom:
+        specifier: ^0.13.2
+        version: 0.13.2(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)))
       starlight-links-validator:
         specifier: ^0.14.3
         version: 0.14.3(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)))
@@ -10924,6 +10927,12 @@ packages:
       astro: ^5.0.0
       starlight-markdown: ^0.1.5
 
+  starlight-image-zoom@0.13.2:
+    resolution: {integrity: sha512-fDJrx+UZXhkbhEeXKoRogTKAYtrYVJPw6wmSUI3nHUTA0vuRM6EI//2Z8bzv3Ecvz0pHKD1vAxtS01mLyessBA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@astrojs/starlight': '>=0.32.0'
+
   starlight-links-validator@0.14.3:
     resolution: {integrity: sha512-2CvQs0ZdIVExrEQ1bn0r2aFx4n+VSOb6vDWK+gTNb5N1c+nXJ7VjUbEsQhj+9Lb7XgY6Nxqz9JXUM9364hJ3ZA==}
     engines: {node: '>=18.17.1'}
@@ -18187,21 +18196,6 @@ snapshots:
       vue-template-compiler: 2.7.16
     optionalDependencies:
       typescript: 5.8.3
-    optional: true
-
-  '@vue/language-core@1.8.27(typescript@5.9.3)':
-    dependencies:
-      '@volar/language-core': 1.11.1
-      '@volar/source-map': 1.11.1
-      '@vue/compiler-dom': 3.5.24
-      '@vue/shared': 3.5.24
-      computeds: 0.0.1
-      minimatch: 9.0.5
-      muggle-string: 0.3.1
-      path-browserify: 1.0.1
-      vue-template-compiler: 2.7.16
-    optionalDependencies:
-      typescript: 5.9.3
 
   '@vue/language-core@2.2.0(typescript@5.8.3)':
     dependencies:
@@ -25574,6 +25568,16 @@ snapshots:
       astro: 5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)
       starlight-markdown: 0.1.5(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))
 
+  starlight-image-zoom@0.13.2(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))):
+    dependencies:
+      '@astrojs/starlight': 0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))
+      mdast-util-mdx-jsx: 3.2.0
+      rehype-raw: 7.0.0
+      unist-util-visit: 5.0.0
+      unist-util-visit-parents: 6.0.2
+    transitivePeerDependencies:
+      - supports-color
+
   starlight-links-validator@0.14.3(@astrojs/starlight@0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))):
     dependencies:
       '@astrojs/starlight': 0.34.8(astro@5.15.5(@netlify/blobs@10.0.7)(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(rollup@4.53.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1))
@@ -26552,16 +26556,16 @@ snapshots:
       - supports-color
       - terser
 
-  vite-plugin-dts@3.8.3(@types/node@22.19.0)(rollup@4.53.2)(typescript@5.9.3)(vite@7.2.2(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)):
+  vite-plugin-dts@3.8.3(@types/node@22.19.0)(rollup@4.53.2)(typescript@5.8.3)(vite@7.2.2(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)):
     dependencies:
       '@microsoft/api-extractor': 7.43.0(@types/node@22.19.0)
       '@rollup/pluginutils': 5.3.0(rollup@4.53.2)
-      '@vue/language-core': 1.8.27(typescript@5.9.3)
+      '@vue/language-core': 1.8.27(typescript@5.8.3)
       debug: 4.4.3(supports-color@10.2.2)
       kolorist: 1.8.0
       magic-string: 0.30.21
-      typescript: 5.9.3
-      vue-tsc: 1.8.27(typescript@5.9.3)
+      typescript: 5.8.3
+      vue-tsc: 1.8.27(typescript@5.8.3)
     optionalDependencies:
       vite: 7.2.2(@types/node@22.19.0)(jiti@2.6.1)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.1)
     transitivePeerDependencies:
@@ -26758,7 +26762,7 @@ snapshots:
       - supports-color
       - terser
 
-  vitest@1.3.1(@types/node@22.19.0)(@vitest/ui@1.6.1)(jsdom@22.1.0)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1):
+  vitest@1.3.1(@types/node@22.19.0)(@vitest/ui@1.6.1(vitest@1.3.1))(jsdom@22.1.0)(less@4.1.3)(lightningcss@1.30.2)(sass-embedded@1.93.3)(sass@1.94.0)(stylus@0.64.0)(terser@5.43.1):
     dependencies:
       '@vitest/expect': 1.3.1
       '@vitest/runner': 1.3.1
@@ -26902,14 +26906,6 @@ snapshots:
       '@vue/language-core': 1.8.27(typescript@5.8.3)
       semver: 7.7.3
       typescript: 5.8.3
-    optional: true
-
-  vue-tsc@1.8.27(typescript@5.9.3):
-    dependencies:
-      '@volar/typescript': 1.11.1
-      '@vue/language-core': 1.8.27(typescript@5.9.3)
-      semver: 7.7.3
-      typescript: 5.9.3
 
   w3c-xmlserializer@4.0.0:
     dependencies:

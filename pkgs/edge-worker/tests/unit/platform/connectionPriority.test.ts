@@ -6,8 +6,10 @@ import {
 import {
   resolveConnectionString,
   assertConnectionAvailable,
+  resolveSqlConnection,
   DOCKER_TRANSACTION_POOLER_URL,
 } from '../../../src/platform/resolveConnection.ts';
+import postgres from 'postgres';
 
 // ============================================================
 // Local environment tests
@@ -136,4 +138,91 @@ Deno.test('connection priority - preview branch fallback pattern works', () => {
 
   const result = resolveConnectionString(env, options);
   assertEquals(result, 'postgresql://preview:5432/db');
+});
+
+// ============================================================
+// resolveSqlConnection tests
+// ============================================================
+
+Deno.test('resolveSqlConnection - priority 1: returns provided sql directly', () => {
+  const mockSql = postgres('postgresql://mock:5432/db');
+  const env = { SUPABASE_ANON_KEY: 'prod-anon-key' };
+
+  const result = resolveSqlConnection(env, { sql: mockSql });
+
+  assertEquals(result, mockSql);
+  mockSql.end();
+});
+
+Deno.test('resolveSqlConnection - priority 2: creates sql from connectionString', () => {
+  const env = { SUPABASE_ANON_KEY: 'prod-anon-key' };
+  const options = { connectionString: 'postgresql://custom:5432/db' };
+
+  const result = resolveSqlConnection(env, options);
+
+  assertEquals(typeof result, 'function'); // postgres returns a tagged template function
+  result.end();
+});
+
+Deno.test('resolveSqlConnection - priority 3: creates sql from EDGE_WORKER_DB_URL', () => {
+  const env = {
+    SUPABASE_ANON_KEY: 'prod-anon-key',
+    EDGE_WORKER_DB_URL: 'postgresql://env-var:5432/db',
+  };
+
+  const result = resolveSqlConnection(env);
+
+  assertEquals(typeof result, 'function');
+  result.end();
+});
+
+Deno.test('resolveSqlConnection - priority 4: creates sql from Docker URL in local env', () => {
+  const env = { SUPABASE_ANON_KEY: KNOWN_LOCAL_ANON_KEY };
+
+  const result = resolveSqlConnection(env);
+
+  assertEquals(typeof result, 'function');
+  result.end();
+});
+
+Deno.test('resolveSqlConnection - throws when nothing configured in production', () => {
+  const env = { SUPABASE_ANON_KEY: 'prod-anon-key' };
+
+  assertThrows(
+    () => resolveSqlConnection(env),
+    Error,
+    'No database connection available'
+  );
+});
+
+Deno.test('resolveSqlConnection - connectionString takes priority over EDGE_WORKER_DB_URL', () => {
+  const env = {
+    SUPABASE_ANON_KEY: 'prod-anon-key',
+    EDGE_WORKER_DB_URL: 'postgresql://env-var:5432/db',
+  };
+  const options = { connectionString: 'postgresql://explicit:5432/db' };
+
+  // Both are set, but connectionString should win
+  // We can't easily verify which URL was used, but we verify it doesn't throw
+  const result = resolveSqlConnection(env, options);
+  assertEquals(typeof result, 'function');
+  result.end();
+});
+
+Deno.test('resolveSqlConnection - sql takes priority over everything', () => {
+  const mockSql = postgres('postgresql://mock:5432/db');
+  const env = {
+    SUPABASE_ANON_KEY: KNOWN_LOCAL_ANON_KEY,
+    EDGE_WORKER_DB_URL: 'postgresql://env-var:5432/db',
+  };
+  const options = {
+    sql: mockSql,
+    connectionString: 'postgresql://explicit:5432/db',
+  };
+
+  const result = resolveSqlConnection(env, options);
+
+  // Should return the exact same sql object, not create a new one
+  assertEquals(result, mockSql);
+  mockSql.end();
 });

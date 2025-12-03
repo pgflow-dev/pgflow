@@ -7,6 +7,7 @@ import starlightSidebarTopics from 'starlight-sidebar-topics';
 import robotsTxt from 'astro-robots-txt';
 import starlightLlmsTxt from 'starlight-llms-txt';
 import starlightContextualMenu from 'starlight-contextual-menu';
+import starlightImageZoom from 'starlight-image-zoom';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
@@ -141,6 +142,7 @@ export default defineConfig({
             readingTime: true,
           },
         }),
+        starlightImageZoom(),
         starlightContextualMenu({
           actions: ['copy', 'view', 'chatgpt', 'claude'],
         }),
@@ -454,6 +456,9 @@ export default defineConfig({
       components: {
         Hero: './src/components/ConditionalHero.astro',
         PageFrame: './src/components/PageFrame.astro',
+        // Custom override to combine starlight-blog and starlight-image-zoom
+        // See: https://github.com/HiDeoo/starlight-image-zoom/issues/41
+        MarkdownContent: './src/components/MarkdownContent.astro',
       },
     }),
     robotsTxt({

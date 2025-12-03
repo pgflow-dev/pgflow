@@ -1,0 +1,9 @@
+---
+// Custom MarkdownContent override to combine starlight-blog and starlight-image-zoom
+// See: https://github.com/HiDeoo/starlight-image-zoom/issues/41
+import StarlightBlog from 'starlight-blog/overrides/MarkdownContent.astro';
+import StarlightImageZoom from 'starlight-image-zoom/components/ImageZoom.astro';
+---
+
+<StarlightImageZoom />
+<StarlightBlog><slot /></StarlightBlog>
