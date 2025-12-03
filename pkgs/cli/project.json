@@ -30,12 +30,12 @@
     "test": {
       "executor": "nx:noop",
       "inputs": ["default", "^production"],
-      "dependsOn": ["test:vitest"],
+      "dependsOn": ["test:unit"],
       "options": {
         "parallel": false
       }
     },
-    "test:vitest": {
+    "test:unit": {
       "executor": "nx:run-commands",
       "inputs": ["default", "^production"],
       "options": {

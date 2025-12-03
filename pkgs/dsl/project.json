@@ -26,7 +26,7 @@
         "parallel": false
       }
     },
-    "test:vitest": {
+    "test:unit": {
       "executor": "@nx/vite:test",
       "dependsOn": ["build"],
       "inputs": ["default", "^production"],
@@ -70,11 +70,11 @@
     "test": {
       "executor": "nx:noop",
       "inputs": ["default", "^production"],
-      "dependsOn": ["test:vitest", "test:types"]
+      "dependsOn": ["test:unit", "test:types"]
     },
     "prepush": {
       "executor": "nx:noop",
-      "dependsOn": ["lint", "build", "test:vitest", "test:types:vitest"]
+      "dependsOn": ["lint", "build", "test:unit", "test:types:vitest"]
     }
   }
 }

@@ -208,7 +208,7 @@
     "test": {
       "executor": "nx:noop",
       "inputs": ["default", "^production", "databaseTypes"],
-      "dependsOn": ["test:vitest", "test:types"]
+      "dependsOn": ["test:unit", "test:types"]
     },
     "pgtap": {
       "executor": "nx:noop",
@@ -229,7 +229,7 @@
         "parallel": false
       }
     },
-    "test:vitest": {
+    "test:unit": {
       "executor": "@nx/vite:test",
       "dependsOn": ["build", "verify-gen-types"],
       "inputs": ["default", "databaseTypes", "^production"],
