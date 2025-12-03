@@ -177,10 +177,44 @@ jobs:
         if: steps.check.outputs.affected == 'true'
         run: pnpm nx run client:e2e
 
+  # ─────────────────────────────────────── 2d. CORE PGTAP ──────────────────────────────────────
+  core-pgtap:
+    runs-on: ubuntu-latest
+    env:
+      NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
+
+      - name: Check if core is affected
+        id: check
+        run: |
+          if pnpm nx show projects --affected --base=origin/main --head=HEAD | grep -q "^core$"; then
+            echo "affected=true" >> $GITHUB_OUTPUT
+            echo "core is affected, running pgtap tests"
+          else
+            echo "affected=false" >> $GITHUB_OUTPUT
+            echo "core not affected, skipping pgtap tests"
+          fi
+
+      - name: Pre-start Supabase
+        if: steps.check.outputs.affected == 'true'
+        run: ./scripts/ci-prestart-supabase.sh core
+
+      - name: Run core pgtap tests
+        if: steps.check.outputs.affected == 'true'
+        run: pnpm nx run core:pgtap
+
   # ────────────────────────────────── 3. DEPLOY WEBSITE (PREVIEW) ───────────────────────────
   deploy-website:
     if: github.event_name == 'pull_request'
-    needs: [build-and-test, edge-worker-e2e, cli-e2e, client-e2e]
+    needs: [build-and-test, edge-worker-e2e, cli-e2e, client-e2e, core-pgtap]
     runs-on: ubuntu-latest
     environment: preview
     env:
@@ -222,7 +256,7 @@ jobs:
   # ────────────────────────────────── 4. DEPLOY DEMO ───────────────────────────
   deploy-demo:
     if: false # temporarily disabled
-    needs: [build-and-test, edge-worker-e2e, cli-e2e, client-e2e]
+    needs: [build-and-test, edge-worker-e2e, cli-e2e, client-e2e, core-pgtap]
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
     env:

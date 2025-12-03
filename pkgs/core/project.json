@@ -207,8 +207,12 @@
     },
     "test": {
       "executor": "nx:noop",
-      "inputs": ["default", "^production", "schemas", "migrations", "pgtapTests", "databaseTypes"],
-      "dependsOn": ["test:pgtap", "test:vitest", "test:types"]
+      "inputs": ["default", "^production", "databaseTypes"],
+      "dependsOn": ["test:vitest", "test:types"]
+    },
+    "pgtap": {
+      "executor": "nx:noop",
+      "dependsOn": ["test:pgtap"]
     },
     "test:pgtap": {
       "executor": "nx:run-commands",
