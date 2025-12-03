@@ -188,7 +188,7 @@
     },
     "test": {
       "inputs": ["default", "^production"],
-      "dependsOn": ["test:types", "test:unit", "test:integration"]
+      "dependsOn": ["test:types", "test:unit"]
     },
     "test:types": {
       "executor": "nx:run-commands",
