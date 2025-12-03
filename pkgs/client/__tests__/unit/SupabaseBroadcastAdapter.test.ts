@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from 'vitest';
-import { SupabaseBroadcastAdapter } from '../src/lib/SupabaseBroadcastAdapter';
+import { SupabaseBroadcastAdapter } from '../../src/lib/SupabaseBroadcastAdapter';
 import {
   setupTestEnvironment,
   createMockClient,
@@ -7,7 +7,7 @@ import {
   createEventTracker,
   createEventRoutingTest,
   createSyncSchedule,
-} from './helpers/test-utils';
+} from '../helpers/test-utils';
 import {
   createRunStartedEvent,
   createRunCompletedEvent,
@@ -15,8 +15,8 @@ import {
   createStepStartedEvent,
   createStepCompletedEvent,
   createStepFailedEvent,
-} from './helpers/event-factories';
-import { mockChannelSubscription } from './mocks';
+} from '../helpers/event-factories';
+import { mockChannelSubscription } from '../mocks';
 import { 
   RUN_ID, 
   FLOW_SLUG, 
@@ -24,7 +24,7 @@ import {
   startedStepState,
   sampleFlowDefinition,
   sampleStepsDefinition,
-} from './fixtures';
+} from '../fixtures';
 
 describe('SupabaseBroadcastAdapter', () => {
   setupTestEnvironment();

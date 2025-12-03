@@ -149,7 +149,7 @@
         "commands": [
           "../../scripts/supabase-start-locked.sh .",
           "psql 'postgresql://postgres:postgres@localhost:50522/postgres' -c 'SELECT pgflow_tests.reset_db()'",
-          "vitest run __tests__/integration/ --poolOptions.threads.singleThread"
+          "vitest run __tests__/e2e/ --config vitest.e2e.config.ts --poolOptions.threads.singleThread"
         ],
         "parallel": false
       }
@@ -160,7 +160,7 @@
       "inputs": ["default", "^production"],
       "options": {
         "cwd": "{projectRoot}",
-        "commands": ["vitest run __tests__/ --exclude __tests__/integration/"],
+        "commands": ["vitest run __tests__/unit/"],
         "parallel": false
       }
     },
@@ -174,7 +174,7 @@
         "commands": [
           "../../scripts/supabase-start-locked.sh .",
           "psql 'postgresql://postgres:postgres@localhost:50522/postgres' -c 'SELECT pgflow_tests.reset_db()'",
-          "vitest run __tests__/ --poolOptions.threads.singleThread"
+          "vitest run __tests__/ --config vitest.e2e.config.ts --poolOptions.threads.singleThread"
         ],
         "parallel": false
       }

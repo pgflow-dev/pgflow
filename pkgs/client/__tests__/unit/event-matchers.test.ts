@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
-import { createEventTracker } from './helpers/test-utils';
-import type { BroadcastRunEvent, BroadcastStepEvent } from '../src/lib/types';
+import { createEventTracker } from '../helpers/test-utils';
+import type { BroadcastRunEvent, BroadcastStepEvent } from '../../src/lib/types';
 
 /**
  * Tests demonstrating the new event matcher patterns

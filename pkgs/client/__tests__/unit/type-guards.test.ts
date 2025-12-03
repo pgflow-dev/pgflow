@@ -9,7 +9,7 @@ import {
   FlowStepStatus,
   type BroadcastRunStartedEvent,
   type BroadcastStepStartedEvent,
-} from '../src/lib/types';
+} from '../../src/lib/types';
 import {
   createRunStartedEvent,
   createRunCompletedEvent,
@@ -17,11 +17,11 @@ import {
   createStepStartedEvent,
   createStepCompletedEvent,
   createStepFailedEvent,
-} from './helpers/event-factories';
+} from '../helpers/event-factories';
 import {
   RUN_ID,
   STEP_SLUG,
-} from './fixtures';
+} from '../fixtures';
 
 // Create test events
 const broadcastRunStarted = createRunStartedEvent({ run_id: RUN_ID });

@@ -1,22 +1,22 @@
 import { describe, test, expect, vi } from 'vitest';
-import { FlowRun } from '../src/lib/FlowRun';
-import { FlowStep } from '../src/lib/FlowStep';
-import { FlowRunStatus, FlowStepStatus } from '../src/lib/types';
-import { toTypedRunEvent, toTypedStepEvent } from '../src/lib/eventAdapters';
+import { FlowRun } from '../../src/lib/FlowRun';
+import { FlowStep } from '../../src/lib/FlowStep';
+import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types';
+import { toTypedRunEvent, toTypedStepEvent } from '../../src/lib/eventAdapters';
 import {
   setupTestEnvironment,
   advanceTimersAndFlush,
   createEventTracker,
-} from './helpers/test-utils';
+} from '../helpers/test-utils';
 import {
   createRunStartedEvent,
   createRunCompletedEvent,
   createRunFailedEvent,
   createStepStartedEvent,
-} from './helpers/event-factories';
-import { createFlowRun } from './helpers/state-factories';
+} from '../helpers/event-factories';
+import { createFlowRun } from '../helpers/state-factories';
 // Test scenarios have been inlined for clarity
-import { RUN_ID, FLOW_SLUG, STEP_SLUG, ANOTHER_STEP_SLUG } from './fixtures';
+import { RUN_ID, FLOW_SLUG, STEP_SLUG, ANOTHER_STEP_SLUG } from '../fixtures';
 
 describe('FlowRun', () => {
   setupTestEnvironment();

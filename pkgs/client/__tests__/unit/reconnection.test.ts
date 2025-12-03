@@ -1,16 +1,16 @@
 import { describe, it, expect, vi } from 'vitest';
-import { SupabaseBroadcastAdapter } from '../src/lib/SupabaseBroadcastAdapter';
+import { SupabaseBroadcastAdapter } from '../../src/lib/SupabaseBroadcastAdapter';
 import {
   setupTestEnvironment,
   createMockClient,
   mockRpcCall,
   createRunResponse,
   createSyncSchedule,
-} from './helpers/test-utils';
+} from '../helpers/test-utils';
 import {
   createMockSchedule,
-} from './mocks';
-import { RUN_ID, startedRunSnapshot, stepStatesSample } from './fixtures';
+} from '../mocks';
+import { RUN_ID, startedRunSnapshot, stepStatesSample } from '../fixtures';
 
 describe('Reconnection Logic', () => {
   setupTestEnvironment();

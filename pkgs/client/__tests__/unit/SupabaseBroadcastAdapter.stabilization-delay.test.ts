@@ -1,10 +1,10 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { SupabaseBroadcastAdapter } from '../src/lib/SupabaseBroadcastAdapter';
+import { SupabaseBroadcastAdapter } from '../../src/lib/SupabaseBroadcastAdapter';
 import {
   createMockClient,
-} from './helpers/test-utils';
-import { RUN_ID } from './fixtures';
-import { mockChannelSubscription } from './mocks';
+} from '../helpers/test-utils';
+import { RUN_ID } from '../fixtures';
+import { mockChannelSubscription } from '../mocks';
 
 /**
  * Tests for configurable stabilization delay

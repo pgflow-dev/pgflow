@@ -1,19 +1,19 @@
 import { describe, test, expect, vi } from 'vitest';
-import { FlowStep } from '../src/lib/FlowStep';
-import { FlowStepStatus } from '../src/lib/types';
+import { FlowStep } from '../../src/lib/FlowStep';
+import { FlowStepStatus } from '../../src/lib/types';
 import {
   setupTestEnvironment,
   advanceTimersAndFlush,
   createEventTracker,
-} from './helpers/test-utils';
+} from '../helpers/test-utils';
 import {
   createStepStartedEvent,
   createStepCompletedEvent,
   createStepFailedEvent,
-} from './helpers/event-factories';
-import { createFlowStep } from './helpers/state-factories';
+} from '../helpers/event-factories';
+import { createFlowStep } from '../helpers/state-factories';
 // Test scenarios have been inlined for clarity
-import { RUN_ID, STEP_SLUG, ANOTHER_STEP_SLUG } from './fixtures';
+import { RUN_ID, STEP_SLUG, ANOTHER_STEP_SLUG } from '../fixtures';
 
 describe('FlowStep', () => {
   setupTestEnvironment();

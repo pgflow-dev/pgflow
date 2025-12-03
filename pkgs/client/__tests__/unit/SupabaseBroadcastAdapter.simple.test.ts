@@ -1,22 +1,22 @@
 import { describe, test, expect, vi } from 'vitest';
-import { SupabaseBroadcastAdapter } from '../src/lib/SupabaseBroadcastAdapter';
+import { SupabaseBroadcastAdapter } from '../../src/lib/SupabaseBroadcastAdapter';
 import {
   setupTestEnvironment,
   createMockClient,
   emitBroadcastEvent,
-} from './helpers/test-utils';
+} from '../helpers/test-utils';
 import {
   createRunStartedEvent,
   createStepStartedEvent,
-} from './helpers/event-factories';
+} from '../helpers/event-factories';
 import {
   RUN_ID,
   FLOW_SLUG,
   STEP_SLUG,
   startedRunSnapshot,
   startedStepState,
-} from './fixtures';
-import { mockChannelSubscription } from './mocks';
+} from '../fixtures';
+import { mockChannelSubscription } from '../mocks';
 
 /**
  * This is a simplified test that focuses on the core functionality

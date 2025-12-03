@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { PgflowClient } from '../src/lib/PgflowClient';
-import { FlowRunStatus, FlowStepStatus } from '../src/lib/types';
+import { PgflowClient } from '../../src/lib/PgflowClient';
+import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types';
 import { Flow } from '@pgflow/dsl';
 import {
   setupTestEnvironment,
@@ -12,13 +12,13 @@ import {
   setupConcurrentOperations,
   createEventTracker,
   createSyncSchedule,
-} from './helpers/test-utils';
+} from '../helpers/test-utils';
 import {
   createStepStartedEvent,
   createStepCompletedEvent,
   createRunCompletedEvent,
-} from './helpers/event-factories';
-import { RUN_ID, FLOW_SLUG, STEP_SLUG, startedRunSnapshot, stepStatesSample } from './fixtures';
+} from '../helpers/event-factories';
+import { RUN_ID, FLOW_SLUG, STEP_SLUG, startedRunSnapshot, stepStatesSample } from '../fixtures';
 
 // Create a test flow for proper typing
 const TestFlow = new Flow<{ test: string }>({ slug: 'test_flow' }).step(

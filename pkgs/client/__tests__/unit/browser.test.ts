@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createClient, PgflowClient } from '../src/browser';
+import { createClient, PgflowClient } from '../../src/browser';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 describe('browser entry point', () => {

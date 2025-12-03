@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { PgflowClient } from '../src/lib/PgflowClient';
-import { FlowRun } from '../src/lib/FlowRun';
-import { FlowStep } from '../src/lib/FlowStep';
-import { FlowRunStatus, FlowStepStatus } from '../src/lib/types';
-import { toTypedRunEvent, toTypedStepEvent } from '../src/lib/eventAdapters';
+import { PgflowClient } from '../../src/lib/PgflowClient';
+import { FlowRun } from '../../src/lib/FlowRun';
+import { FlowStep } from '../../src/lib/FlowStep';
+import { FlowRunStatus, FlowStepStatus } from '../../src/lib/types';
+import { toTypedRunEvent, toTypedStepEvent } from '../../src/lib/eventAdapters';
 import {
   setupTestEnvironment,
   createMockClient,
@@ -12,21 +12,21 @@ import {
   emitBroadcastEvent,
   advanceTimersAndFlush,
   createSyncSchedule,
-} from './helpers/test-utils';
+} from '../helpers/test-utils';
 import {
   createRunStartedEvent,
   createRunCompletedEvent,
   createStepStartedEvent,
   createStepCompletedEvent,
-} from './helpers/event-factories';
-import { mockChannelSubscription } from './mocks';
+} from '../helpers/event-factories';
+import { mockChannelSubscription } from '../mocks';
 import {
   RUN_ID,
   FLOW_SLUG,
   STEP_SLUG,
   startedRunSnapshot,
   stepStatesSample,
-} from './fixtures';
+} from '../fixtures';
 
 // Mock uuid.v4 to return predictable run ID for testing
 vi.mock('uuid', () => ({

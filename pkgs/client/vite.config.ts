@@ -55,7 +55,6 @@ export default defineConfig({
       '__tests__/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
     setupFiles: ['__tests__/setup.ts'],
-    globalSetup: './vitest.global-setup.ts',
     reporters: ['default'],
     coverage: {
       reportsDirectory: '../../coverage/pkgs/client',

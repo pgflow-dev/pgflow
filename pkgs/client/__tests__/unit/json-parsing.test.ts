@@ -1,13 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
-import { SupabaseBroadcastAdapter } from '../src/lib/SupabaseBroadcastAdapter';
-import type { BroadcastStepEvent, BroadcastRunEvent } from '../src/lib/types';
+import { SupabaseBroadcastAdapter } from '../../src/lib/SupabaseBroadcastAdapter';
+import type { BroadcastStepEvent, BroadcastRunEvent } from '../../src/lib/types';
 import {
   setupTestEnvironment,
   createMockClient,
   emitBroadcastEvent,
   createSyncSchedule,
-} from './helpers/test-utils';
-import { mockChannelSubscription } from './mocks';
+} from '../helpers/test-utils';
+import { mockChannelSubscription } from '../mocks';
 
 describe('JSON Parsing in Broadcasts', () => {
   setupTestEnvironment();

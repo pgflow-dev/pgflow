@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { PgflowClient } from '../src/lib/PgflowClient';
-import { FlowRunStatus } from '../src/lib/types';
+import { PgflowClient } from '../../src/lib/PgflowClient';
+import { FlowRunStatus } from '../../src/lib/types';
 import {
   setupTestEnvironment,
   createMockClient,
@@ -8,14 +8,14 @@ import {
   createRunResponse,
   advanceTimersAndFlush,
   createSyncSchedule,
-} from './helpers/test-utils';
-import { mockChannelSubscription } from './mocks';
+} from '../helpers/test-utils';
+import { mockChannelSubscription } from '../mocks';
 import {
   RUN_ID,
   FLOW_SLUG,
   startedRunSnapshot,
   stepStatesSample,
-} from './fixtures';
+} from '../fixtures';
 
 // Mock uuid.v4 to return predictable run ID for testing
 vi.mock('uuid', () => ({
