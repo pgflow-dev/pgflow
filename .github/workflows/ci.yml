@@ -143,10 +143,44 @@ jobs:
         if: steps.check.outputs.affected == 'true'
         run: pnpm nx run cli:e2e
 
+  # ─────────────────────────────────────── 2c. CLIENT E2E ──────────────────────────────────────
+  client-e2e:
+    runs-on: ubuntu-latest
+    env:
+      NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
+
+      - name: Check if client is affected
+        id: check
+        run: |
+          if pnpm nx show projects --affected --base=origin/main --head=HEAD | grep -q "^client$"; then
+            echo "affected=true" >> $GITHUB_OUTPUT
+            echo "client is affected, running e2e tests"
+          else
+            echo "affected=false" >> $GITHUB_OUTPUT
+            echo "client not affected, skipping e2e tests"
+          fi
+
+      - name: Pre-start Supabase
+        if: steps.check.outputs.affected == 'true'
+        run: ./scripts/ci-prestart-supabase.sh client
+
+      - name: Run client e2e tests
+        if: steps.check.outputs.affected == 'true'
+        run: pnpm nx run client:e2e
+
   # ────────────────────────────────── 3. DEPLOY WEBSITE (PREVIEW) ───────────────────────────
   deploy-website:
     if: github.event_name == 'pull_request'
-    needs: [build-and-test, edge-worker-e2e, cli-e2e]
+    needs: [build-and-test, edge-worker-e2e, cli-e2e, client-e2e]
     runs-on: ubuntu-latest
     environment: preview
     env:
@@ -188,7 +222,7 @@ jobs:
   # ────────────────────────────────── 4. DEPLOY DEMO ───────────────────────────
   deploy-demo:
     if: false # temporarily disabled
-    needs: [build-and-test, edge-worker-e2e, cli-e2e]
+    needs: [build-and-test, edge-worker-e2e, cli-e2e, client-e2e]
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
     env:

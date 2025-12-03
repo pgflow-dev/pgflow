@@ -139,7 +139,7 @@
         "parallel": false
       }
     },
-    "test:integration": {
+    "e2e": {
       "executor": "nx:run-commands",
       "local": true,
       "cache": false,
@@ -164,25 +164,10 @@
         "parallel": false
       }
     },
-    "test:vitest": {
-      "executor": "nx:run-commands",
-      "local": true,
-      "cache": false,
-      "dependsOn": ["supabase:prepare", "build"],
-      "options": {
-        "cwd": "{projectRoot}",
-        "commands": [
-          "../../scripts/supabase-start-locked.sh .",
-          "psql 'postgresql://postgres:postgres@localhost:50522/postgres' -c 'SELECT pgflow_tests.reset_db()'",
-          "vitest run __tests__/ --config vitest.e2e.config.ts --poolOptions.threads.singleThread"
-        ],
-        "parallel": false
-      }
-    },
     "test": {
       "executor": "nx:noop",
       "inputs": ["default", "^production"],
-      "dependsOn": ["test:vitest", "test:types"]
+      "dependsOn": ["test:unit", "test:types"]
     },
     "benchmark": {
       "executor": "nx:run-commands",
