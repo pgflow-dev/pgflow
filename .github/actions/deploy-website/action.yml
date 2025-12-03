@@ -1,0 +1,82 @@
+name: 'Deploy Website'
+description: 'Deploy website to Cloudflare Pages (preview or production)'
+
+inputs:
+  environment:
+    description: 'Deployment environment (preview or production)'
+    required: true
+  supabase-url:
+    description: 'Supabase URL for the website'
+    required: true
+  supabase-anon-key:
+    description: 'Supabase anonymous key'
+    required: true
+  cloudflare-api-token:
+    description: 'Cloudflare API token'
+    required: true
+  cloudflare-account-id:
+    description: 'Cloudflare account ID'
+    required: true
+  plausible-proxy-url:
+    description: 'Plausible proxy URL (optional, typically production only)'
+    required: false
+    default: ''
+  preview-name:
+    description: 'Preview name for PR deployments (e.g., pr-123)'
+    required: false
+    default: ''
+  preview-url:
+    description: 'Preview URL for deployment comments'
+    required: false
+    default: ''
+  production-url:
+    description: 'Production URL for deployment comments'
+    required: true
+    default: 'https://pgflow.dev'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Validate Supabase environment variables
+      shell: bash
+      env:
+        VITE_SUPABASE_URL: ${{ inputs.supabase-url }}
+        VITE_SUPABASE_ANON_KEY: ${{ inputs.supabase-anon-key }}
+      run: |
+        if [ -z "$VITE_SUPABASE_URL" ]; then
+          echo "::error::VITE_SUPABASE_URL is not set"
+          exit 1
+        fi
+        if [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
+          echo "::error::VITE_SUPABASE_ANON_KEY is not set"
+          exit 1
+        fi
+        if [[ ! "$VITE_SUPABASE_URL" =~ ^https:// ]]; then
+          echo "::error::VITE_SUPABASE_URL must use https:// (not http://)"
+          exit 1
+        fi
+        echo "Supabase environment variables validated"
+
+    - name: Deploy website
+      shell: bash
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
+        VITE_SUPABASE_URL: ${{ inputs.supabase-url }}
+        VITE_SUPABASE_ANON_KEY: ${{ inputs.supabase-anon-key }}
+        PLAUSIBLE_PROXY_URL: ${{ inputs.plausible-proxy-url }}
+        CLOUDFLARE_BRANCH: ${{ inputs.preview-name }}
+      run: |
+        if [ "${{ inputs.environment }}" = "preview" ]; then
+          pnpm nx run website:deploy:preview --skip-nx-cache
+        else
+          pnpm nx run website:deploy --skip-nx-cache
+        fi
+
+    - name: Post deployment comment
+      if: always()
+      uses: ./.github/actions/deployment-comment
+      with:
+        project-name: Website
+        preview-url: ${{ inputs.preview-url }}
+        production-url: ${{ inputs.production-url }}

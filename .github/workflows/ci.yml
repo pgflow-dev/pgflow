@@ -2,9 +2,6 @@ name: CI
 on:
   workflow_dispatch:
   pull_request:
-  push:
-    branches: [main]
-  # TODO: Optimize - separate deployment workflow to avoid re-running tests on main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -146,19 +143,14 @@ jobs:
         if: steps.check.outputs.affected == 'true'
         run: pnpm nx run cli:e2e
 
-  # ────────────────────────────────── 3. DEPLOY WEBSITE ───────────────────────────
+  # ────────────────────────────────── 3. DEPLOY WEBSITE (PREVIEW) ───────────────────────────
   deploy-website:
+    if: github.event_name == 'pull_request'
     needs: [build-and-test, edge-worker-e2e, cli-e2e]
     runs-on: ubuntu-latest
-    environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
+    environment: preview
     env:
       NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      DEPLOYMENT_ENV: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
-      VITE_SUPABASE_URL: ${{ github.event_name == 'pull_request' && secrets.WEBSITE_PREVIEW_SUPABASE_URL || secrets.WEBSITE_PRODUCTION_SUPABASE_URL }}
-      VITE_SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && secrets.WEBSITE_PREVIEW_SUPABASE_ANON_KEY || secrets.WEBSITE_PRODUCTION_SUPABASE_ANON_KEY }}
-      PLAUSIBLE_PROXY_URL: ${{ secrets.WEBSITE_PLAUSIBLE_PROXY_URL }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -169,19 +161,10 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 
-      - name: Set Nx base for affected commands
-        run: |
-          echo "NX_BASE=origin/main" >> $GITHUB_ENV
-          echo "NX_HEAD=HEAD" >> $GITHUB_ENV
-
       - name: Check if website is affected
         id: check-affected
         run: |
-          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
-            # Always deploy website on main branch
-            echo "affected=true" >> $GITHUB_OUTPUT
-            echo "Main branch push - deploying website to production"
-          elif pnpm nx show projects --affected -t build --base="$NX_BASE" --head="$NX_HEAD" | grep -q "^website$"; then
+          if pnpm nx show projects --affected -t build --base=origin/main --head=HEAD | grep -q "^website$"; then
             echo "affected=true" >> $GITHUB_OUTPUT
             echo "Website is affected by changes"
           else
@@ -189,43 +172,16 @@ jobs:
             echo "Website is not affected by changes - skipping deployment"
           fi
 
-      - name: Validate Supabase environment variables
+      - name: Deploy website preview
         if: steps.check-affected.outputs.affected == 'true'
-        run: |
-          if [ -z "$VITE_SUPABASE_URL" ]; then
-            echo "❌ Error: VITE_SUPABASE_URL is not set"
-            echo "Required GitHub secret missing: WEBSITE_${{ github.event_name == 'pull_request' && 'PREVIEW' || 'PRODUCTION' }}_SUPABASE_URL"
-            exit 1
-          fi
-          if [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
-            echo "❌ Error: VITE_SUPABASE_ANON_KEY is not set"
-            echo "Required GitHub secret missing: WEBSITE_${{ github.event_name == 'pull_request' && 'PREVIEW' || 'PRODUCTION' }}_SUPABASE_ANON_KEY"
-            exit 1
-          fi
-          if [[ ! "$VITE_SUPABASE_URL" =~ ^https:// ]]; then
-            echo "❌ Error: VITE_SUPABASE_URL must use https:// (not http://)"
-            echo "Current value: $VITE_SUPABASE_URL"
-            exit 1
-          fi
-          echo "✅ Supabase environment variables are valid"
-
-      - name: Deploy website
-        id: deploy-website
-        if: steps.check-affected.outputs.affected == 'true'
-        env:
-          CLOUDFLARE_BRANCH: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || 'main' }}
-        run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            pnpm nx run website:deploy:preview --skip-nx-cache
-          else
-            pnpm nx run website:deploy --skip-nx-cache
-          fi
-
-      - name: Post deployment comment
-        if: always()
-        uses: ./.github/actions/deployment-comment
+        uses: ./.github/actions/deploy-website
         with:
-          project-name: Website
+          environment: preview
+          supabase-url: ${{ secrets.WEBSITE_PREVIEW_SUPABASE_URL }}
+          supabase-anon-key: ${{ secrets.WEBSITE_PREVIEW_SUPABASE_ANON_KEY }}
+          cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          cloudflare-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          preview-name: pr-${{ github.event.pull_request.number }}
           preview-url: https://pr-${{ github.event.pull_request.number }}.pgflow.pages.dev
           production-url: https://pgflow.dev
 
