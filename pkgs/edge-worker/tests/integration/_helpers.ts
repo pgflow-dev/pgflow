@@ -11,7 +11,7 @@ import { createServiceSupabaseClient } from '../../src/core/supabase-utils.ts';
 import { integrationConfig } from '../config.ts';
 
 const DEFAULT_TEST_SUPABASE_ENV: SupabaseEnv = {
-  EDGE_WORKER_DB_URL: integrationConfig.dbUrl,
+  SUPABASE_DB_URL: 'postgresql://test',
   SUPABASE_URL: 'https://test.supabase.co',
   SUPABASE_ANON_KEY: 'test-anon-key',
   SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
@@ -40,7 +40,7 @@ export function createTestPlatformAdapter(sql: postgres.Sql): PlatformAdapter<Su
     get env() { return DEFAULT_TEST_SUPABASE_ENV; },
     get shutdownSignal() { return abortController.signal; },
     get platformResources() { return platformResources; },
-    get connectionString() { return DEFAULT_TEST_SUPABASE_ENV.EDGE_WORKER_DB_URL; },
+    get connectionString() { return integrationConfig.dbUrl; },
     async startWorker(_createWorkerFn: CreateWorkerFn) {},
     async stopWorker() {},
   };

@@ -17,12 +17,13 @@ export interface SupabaseResources extends Record<string, unknown> {
 
 /* ---------- 2. Environment ----------------------------------------- */
 export interface SupabaseEnv extends Env {
-  EDGE_WORKER_DB_URL      : string;
-  SUPABASE_URL            : string;
-  SUPABASE_ANON_KEY      : string;
+  SUPABASE_DB_URL          : string;
+  SUPABASE_URL             : string;
+  SUPABASE_ANON_KEY        : string;
   SUPABASE_SERVICE_ROLE_KEY: string;
-  SB_EXECUTION_ID         : string;
-  EDGE_WORKER_LOG_LEVEL?  : string;
+  SB_EXECUTION_ID          : string;
+  EDGE_WORKER_DB_URL?      : string;
+  EDGE_WORKER_LOG_LEVEL?   : string;
 }
 
 /* ---------- 3. Platform context ------------------------------------ */

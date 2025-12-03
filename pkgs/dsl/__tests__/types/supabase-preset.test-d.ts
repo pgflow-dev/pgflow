@@ -47,7 +47,7 @@ describe('Supabase Flow Type Tests', () => {
       { slug: 'check_env' },
       (input, context) => {
         // Required Supabase env vars should be typed as string (not undefined)
-        expectTypeOf(context.env.EDGE_WORKER_DB_URL).toEqualTypeOf<string>();
+        expectTypeOf(context.env.SUPABASE_DB_URL).toEqualTypeOf<string>();
         expectTypeOf(context.env.SUPABASE_URL).toEqualTypeOf<string>();
         expectTypeOf(context.env.SUPABASE_ANON_KEY).toEqualTypeOf<string>();
         expectTypeOf(
@@ -55,7 +55,10 @@ describe('Supabase Flow Type Tests', () => {
         ).toEqualTypeOf<string>();
         expectTypeOf(context.env.SB_EXECUTION_ID).toEqualTypeOf<string>();
 
-        // Optional env var should be string | undefined
+        // Optional env vars should be string | undefined
+        expectTypeOf(context.env.EDGE_WORKER_DB_URL).toEqualTypeOf<
+          string | undefined
+        >();
         expectTypeOf(context.env.EDGE_WORKER_LOG_LEVEL).toEqualTypeOf<
           string | undefined
         >();

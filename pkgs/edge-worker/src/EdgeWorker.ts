@@ -55,7 +55,7 @@ export class EdgeWorker {
    */
   static async start<TPayload extends Json = Json>(
     handler: MessageHandlerFn<TPayload>,
-    config?: Omit<QueueWorkerConfig, 'sql'>
+    config?: QueueWorkerConfig
   ): Promise<PlatformAdapter<CurrentPlatformResources>>;
 
   /**
@@ -66,7 +66,7 @@ export class EdgeWorker {
    */
   static async start<TFlow extends AnyFlow>(
     flow: CompatibleFlow<TFlow, CurrentPlatformResources>,
-    config?: Omit<FlowWorkerConfig, 'sql'>
+    config?: FlowWorkerConfig
   ): Promise<PlatformAdapter<CurrentPlatformResources>>;
 
   /**
@@ -82,7 +82,7 @@ export class EdgeWorker {
     TFlow extends AnyFlow = AnyFlow
   >(
     handlerOrFlow: MessageHandlerFn<TPayload> | TFlow,
-    config?: Omit<QueueWorkerConfig, 'sql'> | Omit<FlowWorkerConfig, 'sql'>
+    config?: QueueWorkerConfig | FlowWorkerConfig
   ): Promise<PlatformAdapter<CurrentPlatformResources>> {
     if (typeof handlerOrFlow === 'function') {
       return await this.startQueueWorker(
@@ -139,15 +139,18 @@ export class EdgeWorker {
   ): Promise<PlatformAdapter<CurrentPlatformResources>> {
     this.ensureFirstCall();
 
-    // Create the adapter (use local const for type safety in callbacks)
-    const platform = await createAdapter();
+    // Create the adapter with connection options
+    const platform = await createAdapter({
+      sql: config.sql,
+      connectionString: config.connectionString,
+    });
     this.platform = platform;
 
-    // Add platform-specific values to the config
+    // Use platform's SQL for unified connection
     const workerConfig: QueueWorkerConfig = {
       ...config,
-      connectionString:
-        config.connectionString || platform.connectionString,
+      sql: platform.platformResources.sql,
+      connectionString: platform.connectionString,
       env: platform.env,
     };
 
@@ -190,15 +193,18 @@ export class EdgeWorker {
   ): Promise<PlatformAdapter<CurrentPlatformResources>> {
     this.ensureFirstCall();
 
-    // Create the adapter (use local const for type safety in callbacks)
-    const platform = await createAdapter();
+    // Create the adapter with connection options
+    const platform = await createAdapter({
+      sql: config.sql,
+      connectionString: config.connectionString,
+    });
     this.platform = platform;
 
-    // Add platform-specific values to the config
+    // Use platform's SQL for unified connection
     const workerConfig: FlowWorkerConfig = {
       ...config,
-      connectionString:
-        config.connectionString || platform.connectionString,
+      sql: platform.platformResources.sql,
+      connectionString: platform.connectionString,
     };
 
     await platform.startWorker((createLoggerFn) => {

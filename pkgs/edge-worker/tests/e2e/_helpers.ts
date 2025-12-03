@@ -122,7 +122,7 @@ export async function waitForSeqToIncrementBy(
   }
 }
 
-export async function waitForActiveWorker() {
+export async function waitForActiveWorker(functionName: string) {
   return await waitFor(
     async () => {
       const sql = createSql();
@@ -130,11 +130,12 @@ export async function waitForActiveWorker() {
         const workers = await sql`
           SELECT worker_id, function_name, last_heartbeat_at, started_at
           FROM pgflow.workers
+          WHERE function_name = ${functionName}
           ORDER BY started_at DESC
           LIMIT 5
         `;
         log(
-          'workers in DB:',
+          `workers in DB for '${functionName}':`,
           workers.length,
           workers.map((w) => ({
             fn: w.function_name,
@@ -146,7 +147,8 @@ export async function waitForActiveWorker() {
         const [{ has_active: hasActiveWorker }] = await sql`
             SELECT count(*) > 0 AS has_active
             FROM pgflow.workers
-            WHERE last_heartbeat_at >= NOW() - INTERVAL '6 seconds'
+            WHERE function_name = ${functionName}
+              AND last_heartbeat_at >= NOW() - INTERVAL '6 seconds'
           `;
         return hasActiveWorker;
       } finally {
@@ -155,7 +157,7 @@ export async function waitForActiveWorker() {
     },
     {
       pollIntervalMs: 300,
-      description: 'active worker',
+      description: `active worker for '${functionName}'`,
     }
   );
 }
@@ -194,7 +196,7 @@ export async function startWorker(workerName: string) {
       );
 
       if (response.ok) {
-        await waitForActiveWorker();
+        await waitForActiveWorker(workerName);
         log('worker spawned!');
         return;
       }

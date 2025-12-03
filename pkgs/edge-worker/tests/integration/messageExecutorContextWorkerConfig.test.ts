@@ -7,7 +7,7 @@ import { createContextSafeConfig } from '../../src/core/context.ts';
 import type { SupabaseEnv } from '@pgflow/dsl/supabase';
 
 const DEFAULT_TEST_SUPABASE_ENV: SupabaseEnv = {
-  EDGE_WORKER_DB_URL: 'postgresql://test',
+  SUPABASE_DB_URL: 'postgresql://test',
   SUPABASE_URL: 'https://test.supabase.co',
   SUPABASE_ANON_KEY: 'test-anon-key',
   SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',

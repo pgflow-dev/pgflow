@@ -24,10 +24,6 @@ if ! grep -q 'EDGE_WORKER_LOG_LEVEL' "${SUPABASE_PATH}/functions/.env"; then
   error "EDGE_WORKER_LOG_LEVEL not found in ${SUPABASE_PATH}/functions/.env"
 fi
 
-if ! grep -q 'EDGE_WORKER_DB_URL' "${SUPABASE_PATH}/functions/.env"; then
-  error "EDGE_WORKER_DB_URL not found in ${SUPABASE_PATH}/functions/.env"
-fi
-
 # Verify per_worker policy in config.toml
 if ! grep -q 'policy = "per_worker"' "${SUPABASE_PATH}/config.toml"; then
   error "policy = \"per_worker\" not found in ${SUPABASE_PATH}/config.toml"

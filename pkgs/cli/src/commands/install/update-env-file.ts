@@ -29,8 +29,6 @@ export async function updateEnvFile({
 
   // Variables to add
   const envVars = {
-    EDGE_WORKER_DB_URL:
-      'postgresql://postgres.pooler-dev:postgres@pooler:6543/postgres',
     EDGE_WORKER_LOG_LEVEL: 'info',
   };
 

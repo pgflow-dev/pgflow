@@ -38,8 +38,9 @@ export interface PlatformAdapter<TResources extends Record<string, unknown> = Re
 
   /**
    * Get the connection string for the database
+   * Returns undefined if sql was provided directly via config
    */
-  get connectionString(): string;
+  get connectionString(): string | undefined;
 
   /**
    * Get all environment variables as a record

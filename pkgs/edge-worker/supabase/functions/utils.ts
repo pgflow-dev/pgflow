@@ -1,13 +1,13 @@
 import postgres from 'postgres';
 import { delay } from '@std/async';
 
-const EDGE_WORKER_DB_URL = Deno.env.get('EDGE_WORKER_DB_URL');
-if (!EDGE_WORKER_DB_URL) {
-  throw new Error('EDGE_WORKER_DB_URL environment variable is not set');
+const connectionUrl =
+  Deno.env.get('EDGE_WORKER_DB_URL') || Deno.env.get('DB_POOL_URL');
+if (!connectionUrl) {
+  throw new Error('No database connection URL available (EDGE_WORKER_DB_URL or DB_POOL_URL)');
 }
-console.log('EDGE_WORKER_DB_URL', EDGE_WORKER_DB_URL);
 
-export const sql = postgres(EDGE_WORKER_DB_URL, { prepare: false });
+export const sql = postgres(connectionUrl, { prepare: false });
 
 export const sleep = delay;
 

@@ -1,11 +1,16 @@
 import type { CreateWorkerFn, Logger, PlatformAdapter } from './types.js';
 import type { Worker } from '../core/Worker.js';
 import type { Sql } from 'postgres';
+import postgres from 'postgres';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { SupabaseResources } from '@pgflow/dsl/supabase';
-import { createSql } from '../core/sql-factory.js';
 import { createServiceSupabaseClient } from '../core/supabase-utils.js';
 import { createLoggingFactory } from './logging.js';
+import { isLocalSupabaseEnv } from '../shared/localDetection.js';
+import {
+  resolveConnectionString,
+  assertConnectionAvailable,
+} from './resolveConnection.js';
 
 /**
  * Supabase Edge Runtime type (without global augmentation to comply with JSR)
@@ -21,10 +26,11 @@ interface SupabaseEnv extends Record<string, string | undefined> {
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
-  EDGE_WORKER_DB_URL: string;
+  EDGE_WORKER_DB_URL?: string;
   SB_EXECUTION_ID: string;
   EDGE_WORKER_LOG_LEVEL?: string;
 }
+
 
 /**
  * Supabase platform adapter for Deno runtime environment.
@@ -41,19 +47,31 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   private abortController: AbortController;
   private _platformResources: SupabaseResources;
   private validatedEnv: SupabaseEnv;
+  private _connectionString: string | undefined;
 
   // Logging factory with dynamic workerId support
   private loggingFactory = createLoggingFactory();
 
-  constructor() {
+  constructor(options?: { sql?: Sql; connectionString?: string }) {
     // Validate environment variables once at startup
     const env = Deno.env.toObject();
     this.assertSupabaseEnv(env);
     this.validatedEnv = env;
-    
+
+    // Resolve connection string using priority chain
+    const connectionString = resolveConnectionString(env, {
+      hasSql: !!options?.sql,
+      connectionString: options?.connectionString,
+    });
+
+    // Validate that we have a connection available
+    assertConnectionAvailable(connectionString, !!options?.sql);
+
+    this._connectionString = connectionString;
+
     // Create abort controller for shutdown signal
     this.abortController = new AbortController();
-    
+
     // Set initial log level
     const logLevel = this.validatedEnv.EDGE_WORKER_LOG_LEVEL || 'info';
     this.loggingFactory.setLogLevel(logLevel);
@@ -61,10 +79,13 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
     // startWorker logger with a default module name
     this.logger = this.loggingFactory.createLogger('SupabasePlatformAdapter');
     this.logger.debug('SupabasePlatformAdapter logger instance created and working.'); // Use the created logger
-    
+
     // Initialize platform resources once with validated env
     this._platformResources = {
-      sql: createSql(this.validatedEnv),
+      sql: options?.sql ?? postgres(connectionString!, {
+        prepare: false,
+        max: 10,
+      }),
       supabase: createServiceSupabaseClient(this.validatedEnv)
     };
   }
@@ -100,8 +121,15 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   /**
    * Ensures the config has a connectionString by using the environment value if needed
    */
-  get connectionString(): string {
-    return this.validatedEnv.EDGE_WORKER_DB_URL;
+  get connectionString(): string | undefined {
+    return this._connectionString;
+  }
+
+  /**
+   * Whether running in a local/development environment.
+   */
+  get isLocalEnvironment(): boolean {
+    return isLocalSupabaseEnv(this.validatedEnv);
   }
 
   /**
@@ -239,7 +267,6 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
       'SUPABASE_URL',
       'SUPABASE_ANON_KEY',
       'SUPABASE_SERVICE_ROLE_KEY',
-      'EDGE_WORKER_DB_URL',
       'SB_EXECUTION_ID'
     ] as const;
 

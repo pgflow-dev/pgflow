@@ -14,7 +14,7 @@ describe('Environment Type Validation', () => {
     const flow = new Flow({ slug: 'test_flow' })
       .step({ slug: 'process' }, async (input, ctx) => {
         // Supabase-specific env vars should be typed
-        expectTypeOf(ctx.env.EDGE_WORKER_DB_URL).toEqualTypeOf<string>();
+        expectTypeOf(ctx.env.SUPABASE_DB_URL).toEqualTypeOf<string>();
         expectTypeOf(ctx.env.EDGE_WORKER_LOG_LEVEL).toEqualTypeOf<string | undefined>();
         
         // Random env vars should still be accessible
@@ -43,8 +43,8 @@ describe('Environment Type Validation', () => {
         ctx.cache.get('key');
         
         // And typed env vars
-        expectTypeOf(ctx.env.EDGE_WORKER_DB_URL).toEqualTypeOf<string>();
-        
+        expectTypeOf(ctx.env.SUPABASE_DB_URL).toEqualTypeOf<string>();
+
         return { done: true };
       });
 
@@ -94,8 +94,8 @@ describe('UserEnv Augmentation', () => {
         expectTypeOf(ctx.env.OPTIONAL_FLAG).toEqualTypeOf<string | undefined>();
         
         // Platform env vars should still be there
-        expectTypeOf(ctx.env.EDGE_WORKER_DB_URL).toEqualTypeOf<string>();
-        
+        expectTypeOf(ctx.env.SUPABASE_DB_URL).toEqualTypeOf<string>();
+
         // Random vars should still work
         expectTypeOf(ctx.env.UNKNOWN_VAR).toEqualTypeOf<string | undefined>();
         
