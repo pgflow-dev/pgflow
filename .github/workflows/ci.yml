@@ -14,8 +14,22 @@ permissions:
   deployments: write # Netlify action needs it
 
 jobs:
+  # ─────────────────────────────────────── SKIP DUPLICATE RUNS ──────────────────────────────────────
+  # Skip CI when tree content already passed (e.g., Graphite rebase with no code changes)
+  pre_job:
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@v5
+        with:
+          skip_after_successful_duplicate: 'true'
+
   # ─────────────────────────────────────── 0. VALIDATE CHANGESETS ──────────────────────────────────────
   validate-changesets:
+    needs: pre_job
+    if: needs.pre_job.outputs.should_skip != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -45,6 +59,8 @@ jobs:
 
   # ─────────────────────────────────────── 1. BUILD & TEST ──────────────────────────────────────
   build-and-test:
+    needs: pre_job
+    if: needs.pre_job.outputs.should_skip != 'true'
     runs-on: ubuntu-latest
     env:
       NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
@@ -64,7 +80,7 @@ jobs:
           echo "NX_HEAD=HEAD" >> $GITHUB_ENV
 
       - name: Pre-start Supabase for affected packages
-        run: ./scripts/ci-prestart-supabase.sh core client
+        run: ./scripts/ci-prestart-supabase.sh core
 
       - name: Quality gate (lint + typecheck + test)
         run: pnpm nx affected -t lint typecheck test --parallel --configuration=production --base="$NX_BASE" --head="$NX_HEAD"
@@ -77,6 +93,8 @@ jobs:
 
   # ─────────────────────────────────────── 2. EDGE-WORKER E2E ──────────────────────────────────────
   edge-worker-e2e:
+    needs: pre_job
+    if: needs.pre_job.outputs.should_skip != 'true'
     runs-on: ubuntu-latest
     env:
       NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
@@ -111,6 +129,8 @@ jobs:
 
   # ─────────────────────────────────────── 2b. CLI E2E ──────────────────────────────────────
   cli-e2e:
+    needs: pre_job
+    if: needs.pre_job.outputs.should_skip != 'true'
     runs-on: ubuntu-latest
     env:
       NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
@@ -145,6 +165,8 @@ jobs:
 
   # ─────────────────────────────────────── 2c. CLIENT E2E ──────────────────────────────────────
   client-e2e:
+    needs: pre_job
+    if: needs.pre_job.outputs.should_skip != 'true'
     runs-on: ubuntu-latest
     env:
       NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
@@ -179,6 +201,8 @@ jobs:
 
   # ─────────────────────────────────────── 2d. CORE PGTAP ──────────────────────────────────────
   core-pgtap:
+    needs: pre_job
+    if: needs.pre_job.outputs.should_skip != 'true'
     runs-on: ubuntu-latest
     env:
       NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
