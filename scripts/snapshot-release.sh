@@ -286,7 +286,21 @@ if [[ -f pkgs/edge-worker/jsr.json ]]; then
   JSR_PUBLISHED_VERSION=$(jq -r '.version' pkgs/edge-worker/jsr.json)
   echo ""
   echo -e "${BOLD}Publishing to JSR...${NC}"
-  if ( cd pkgs/edge-worker && pnpm jsr publish --allow-slow-types --allow-dirty ) ; then
+
+  # Check for JSR authentication (similar to how npm uses ~/.npmrc)
+  # JSR/Deno caches credentials in ~/.deno/credentials.json after `deno login`
+  if [[ -z "${JSR_TOKEN:-}" ]] && [[ ! -f "$HOME/.deno/credentials.json" ]]; then
+    echo -e "${YELLOW}⚠ No JSR credentials found${NC}"
+    echo ""
+    echo -e "To authenticate with JSR (one-time setup, like 'npm login'):"
+    echo -e "  ${BLUE}deno login${NC}"
+    echo ""
+    echo -e "Or for CI/CD, set the JSR_TOKEN environment variable."
+    echo ""
+    echo -e "${YELLOW}Skipping JSR publish.${NC}"
+    JSR_SUCCESS=true  # Don't fail the whole release
+    JSR_PUBLISHED_VERSION=""
+  elif ( cd pkgs/edge-worker && pnpm jsr publish --allow-slow-types --allow-dirty ) ; then
     echo -e "${GREEN}✓ JSR package published${NC}"
   else
     echo -e "${RED}✗ JSR publish failed${NC}"
