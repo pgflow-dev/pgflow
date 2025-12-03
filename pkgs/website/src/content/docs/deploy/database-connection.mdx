@@ -72,7 +72,7 @@ If you need to use a custom connection URL (different from `EDGE_WORKER_DB_URL`)
 import { EdgeWorker } from "@pgflow/edge-worker";
 import { MyFlow } from "../../flows/index.ts";
 
-await EdgeWorker.start(MyFlow, {
+EdgeWorker.start(MyFlow, {
   connectionString: Deno.env.get("MY_CUSTOM_DB_URL"),
 });
 ```
@@ -93,7 +93,7 @@ const sql = postgres(Deno.env.get("DATABASE_URL")!, {
   },
 });
 
-await EdgeWorker.start(MyFlow, { sql });
+EdgeWorker.start(MyFlow, { sql });
 ```
 
 See [Database SSL](/deploy/database-ssl/) for SSL configuration examples.
@@ -107,7 +107,7 @@ import { EdgeWorker } from "@pgflow/edge-worker";
 import { MyFlow } from "../../flows/index.ts";
 
 // Skips automatic local connection, uses custom URL instead
-await EdgeWorker.start(MyFlow, {
+EdgeWorker.start(MyFlow, {
   connectionString: Deno.env.get("STAGING_DB_URL"),
 });
 ```

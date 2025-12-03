@@ -5,29 +5,36 @@ sidebar:
   order: 0
 ---
 
-import { Steps, LinkButton, CardGrid, LinkCard } from "@astrojs/starlight/components";
+import { Steps, LinkButton, Card, CardGrid, LinkCard } from "@astrojs/starlight/components";
 
-This guide assumes you have completed [Getting Started](/get-started/installation/) and have a Supabase project ready.
+This guide walks you through deploying pgflow workers to Supabase.com. Workers run as Edge Functions that poll for tasks, execute your flow handlers, and report results back to the database.
+
+Before starting, ensure you have completed [Getting Started](/get-started/installation/) and have a Supabase project linked to your local environment.
+
+## Deployment Overview
 
 <Steps>
 1. ### Get Connection String
 
-   Get the Transaction pooler URL from the Supabase dashboard.
-
-   <LinkButton href="/deploy/supabase/get-connection-string/" variant="secondary">Get Connection String</LinkButton>
+   Retrieve the Transaction pooler connection string from your Supabase dashboard. Workers use this to connect to your hosted database securely.
 
 2. ### Deploy First Flow
 
-   Set database secret, deploy worker function, and start it running.
-
-   <LinkButton href="/deploy/supabase/deploy-first-flow/" variant="secondary">Deploy First Flow</LinkButton>
+   Store the connection string as a secret, deploy your worker Edge Function, and invoke it to start processing tasks.
 
 3. ### Keep Workers Running
 
-   Set up pg_cron safety net to automatically restart workers.
+   Configure pg_cron to periodically invoke your worker. This acts as a safety net - if a worker stops unexpectedly, pg_cron restarts it automatically.
 
-   <LinkButton href="/deploy/supabase/keep-workers-running/" variant="secondary">Keep Workers Running</LinkButton>
 </Steps>
+
+<Card title="Ready to Deploy" icon="rocket">
+  Follow the step-by-step deployment guide starting with your connection string.
+
+  <LinkButton href="/deploy/supabase/get-connection-string/" variant="primary" icon="right-arrow">
+    Get Connection String
+  </LinkButton>
+</Card>
 
 ## Advanced Topics
 

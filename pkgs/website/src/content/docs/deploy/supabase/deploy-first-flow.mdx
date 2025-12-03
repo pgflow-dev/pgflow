@@ -16,18 +16,11 @@ Before you begin, make sure you have your [connection string ready](/deploy/supa
 
 ## Set Database Secret
 
-Workers access the database through the `EDGE_WORKER_DB_URL` environment variable. Set it as a Supabase secret:
+Workers access the database through the `EDGE_WORKER_DB_URL` environment variable. Set it using the connection string from the [previous step](/deploy/supabase/get-connection-string/):
 
 ```bash frame="none"
-npx supabase secrets set EDGE_WORKER_DB_URL="postgresql://postgres.yourproject:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
+npx supabase secrets set EDGE_WORKER_DB_URL="your-connection-string"
 ```
-
-Replace the connection string with your actual Transaction pooler URL.
-
-:::caution[Keep Your Password Secure]
-- Never commit passwords to git
-- Never share passwords in public channels
-:::
 
 ## Deploy Your Worker
 

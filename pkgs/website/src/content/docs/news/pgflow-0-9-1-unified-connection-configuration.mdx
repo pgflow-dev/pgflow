@@ -1,0 +1,59 @@
+---
+draft: false
+title: 'pgflow 0.9.1: Unified Connection Configuration'
+description: 'Simplified database connection handling with zero-config local development and clear priority chain'
+date: 2025-12-02
+authors:
+  - jumski
+tags:
+  - release
+  - edge-worker
+  - configuration
+featured: false
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+This release unifies how the edge worker handles database connections - zero-config local development, a clear priority chain, and proper SSL support.
+
+## What's New
+
+- **connectionString now works** ([#469](https://github.com/pgflow-dev/pgflow/issues/469), [#424](https://github.com/pgflow-dev/pgflow/issues/424)) - The `connectionString` config option was being ignored. Now it works, enabling patterns like falling back to `SUPABASE_DB_URL`.
+- **Pass raw postgres.js connection** - Use `config.sql` to pass your own [postgres.js](https://github.com/porsager/postgres) instance with custom options (SSL, connection pooling, etc.).
+- **Zero-config local dev** - When local environment is detected (via known local dev keys), the worker automatically connects to the local transaction pooler. No environment variables needed.
+- **Cleaner install** - `pgflow install` no longer writes `EDGE_WORKER_DB_URL` to `.env` since local dev works without it.
+
+## Connection Priority
+
+The edge worker now resolves database connections in this order:
+
+1. `config.sql` - Full control with custom postgres instance
+2. `config.connectionString` - Explicit URL in code
+3. `EDGE_WORKER_DB_URL` - Environment variable
+4. Local fallback - Auto-detected local Supabase pooler
+
+If nothing is configured and local Supabase is not detected, the worker throws a clear error explaining the options.
+
+<Aside type="note" title="Backward Compatible">
+Existing configurations continue to work. If you have `EDGE_WORKER_DB_URL` set or use `config.sql`, no changes are needed.
+</Aside>
+
+## New Documentation
+
+The Supabase deployment guide has been revamped from a single page into a structured overview with dedicated pages for each topic:
+
+- [Supabase Deployment Overview](/deploy/supabase/) - Step-by-step guide structure
+- [Database Connection](/deploy/database-connection/) - Overview of connection options
+- [Preview Branches](/deploy/supabase/preview-branches/) - Handling dynamic environments
+- [Database SSL](/deploy/database-ssl/) - Configuring SSL for external databases
+- [Troubleshooting Connections](/deploy/troubleshooting-connections/) - Common issues and solutions
+
+## Issues Addressed
+
+- [#469](https://github.com/pgflow-dev/pgflow/issues/469) - `connectionString` config was being ignored
+- [#424](https://github.com/pgflow-dev/pgflow/issues/424) - Simplified local development setup
+- [Discussion #280](https://github.com/pgflow-dev/pgflow/discussions/280) - Preview branch connection patterns
+
+## Thanks
+
+This release was shaped by community feedback. Thanks to [Nciso](https://github.com/Nciso), [mikz](https://github.com/mikz), [ddlaws0n](https://github.com/ddlaws0n), and **PixelEcho** (Discord) for reporting issues, suggesting improvements, and helping improve the documentation.

@@ -32,7 +32,7 @@ const sql = postgres(connectionString!, {
   max: 1,
 });
 
-await EdgeWorker.start(MyFlow, { sql });
+EdgeWorker.start(MyFlow, { sql });
 ```
 
 <Aside type="danger" title="Connection exhaustion risk">

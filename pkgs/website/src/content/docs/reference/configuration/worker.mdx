@@ -22,6 +22,10 @@ import { EdgeWorker } from '@pgflow/edge-worker';
 import MyFlow from './flows/my_flow.ts';
 
 EdgeWorker.start(MyFlow, {
+  // Connection configuration (optional - see Connection Priority below)
+  // connectionString: 'postgresql://...',
+  // sql: customPostgresInstance,
+
   // Worker concurrency settings
   maxConcurrent: 10,      // Process up to 10 tasks simultaneously
   maxPgConnections: 4,    // Database connection pool size
@@ -33,25 +37,67 @@ EdgeWorker.start(MyFlow, {
 });
 ```
 
-## `maxConcurrent`
+## Connection Configuration
+
+For local development, no configuration is needed - the worker auto-detects local Supabase and connects automatically. For production, see [Database Connection](/deploy/database-connection/) for setup options.
+
+### `sql`
+**Type:** `Sql` (postgres.js instance)
+**Default:** `undefined`
+
+A custom [postgres.js](https://github.com/porsager/postgres) connection instance. Use this for full control over connection options like SSL, connection pooling, or custom parameters.
+
+```typescript
+import postgres from 'postgres';
+
+const sql = postgres('postgresql://...', {
+  prepare: false,
+  ssl: { ca: caCert, rejectUnauthorized: true },
+});
+
+EdgeWorker.start(MyFlow, { sql });
+```
+
+<Aside type="note">
+When providing a custom `sql` instance, ensure `prepare: false` is set for compatibility with Supabase's transaction pooler.
+</Aside>
+
+### `connectionString`
+**Type:** `string`
+**Default:** `undefined`
+
+Explicit database connection URL. Useful for preview branches or when you need to override the default connection.
+
+```typescript
+EdgeWorker.start(MyFlow, {
+  connectionString: Deno.env.get('EDGE_WORKER_DB_URL')
+    || Deno.env.get('SUPABASE_DB_URL'),
+});
+```
+
+## Concurrency Configuration
+
+### `maxConcurrent`
 **Type:** `number`
 **Default:** `10`
 
 Maximum number of tasks that can be processed simultaneously. Increase for I/O-heavy tasks, decrease for CPU-heavy tasks.
 
-## `maxPgConnections`
+### `maxPgConnections`
 **Type:** `number`
 **Default:** `4`
 
 Size of the PostgreSQL connection pool. Should generally be less than `maxConcurrent` since not all tasks need a connection at all times.
 
-## `batchSize`
+## Polling Configuration
+
+### `batchSize`
 **Type:** `number`
 **Default:** `10`
 
 Maximum number of tasks to fetch in a single poll operation. Larger batches are more efficient but may lead to uneven work distribution.
 
-## `maxPollSeconds`
+### `maxPollSeconds`
 **Type:** `number`
 **Default:** `2`
 
@@ -61,7 +107,7 @@ How long to wait for tasks during each poll cycle. Shorter durations ensure more
 Keep `maxPollSeconds` below the heartbeat interval (5 seconds) for flow workers to ensure proper heartbeat timing.
 </Aside>
 
-## `pollIntervalMs`
+### `pollIntervalMs`
 **Type:** `number`
 **Default:** `100`
 

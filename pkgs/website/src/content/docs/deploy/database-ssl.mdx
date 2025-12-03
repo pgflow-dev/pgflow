@@ -29,7 +29,7 @@ const sql = postgres(url, {
   },
 });
 
-await EdgeWorker.start(MyFlow, { sql });
+EdgeWorker.start(MyFlow, { sql });
 ```
 
 <Aside type="caution" title="ssl: true is not enough">

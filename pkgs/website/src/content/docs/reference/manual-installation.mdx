@@ -56,29 +56,24 @@ npx supabase migration up
 The installation process is exactly the same whether you're using Edge Worker or pgflow, as pgflow builds on top of Edge Worker and the migration files include everything needed for both.
 :::
 
-### 2. Create environment file
+### 2. Create environment file (optional)
 
-Edge Worker needs environment variables for database connection and logging.
+For local development, no database configuration is needed - the worker auto-detects local Supabase and connects automatically.
 
-Create the `supabase/functions` directory if it doesn't exist, then create a `.env` file:
+If you want to configure log levels locally, create `supabase/functions/.env`:
 
 ```bash frame="none"
 mkdir -p supabase/functions
 ```
 
-Create `supabase/functions/.env` with the following content:
-
 ```bash
-# Database connection string for Edge Worker and pgflow
-EDGE_WORKER_DB_URL="postgresql://postgres.pooler-dev:postgres@pooler:6543/postgres"
-
 # Log level (options: debug, info, warn, error)
 EDGE_WORKER_LOG_LEVEL="info"
 ```
 
-:::caution[Special Characters in Passwords]
-If your database password contains special characters (`@`, `&`, `:`, etc.), you must URL-encode them to avoid authentication errors. See our [DB Connection URLs](/deploy/connection-string/) guide for detailed instructions.
-:::
+<Aside type="note" title="Production uses secrets, not .env">
+The `.env` file is only for local development. For production on Supabase hosted, use `supabase secrets set` to configure `EDGE_WORKER_DB_URL`. See [Database Connection](/deploy/database-connection/) for details.
+</Aside>
 
 ### 3. Setup Connection Pool
 
@@ -258,7 +253,7 @@ When following these steps, the installation sets up:
 **Configuration:**
 - Connection pooler enabled with transaction mode
 - Edge runtime policy set to `per_worker`
-- Environment variables for database connection
+- Environment file for log level (database connection auto-detected locally)
 
 **Edge Functions:**
 - Control Plane (`supabase/functions/pgflow/`) - registers and serves your flows
@@ -277,7 +272,7 @@ The manual installation process performs the same steps as the automatic `pgflow
 4. Creates the flows directory with example flow
 5. Creates the Control Plane edge function
 6. Creates the example worker edge function
-7. Creates the environment file with database connection
+7. Creates the environment file with log level settings
 
 The automatic installer also:
 - Checks if each component is already installed to avoid duplicates
