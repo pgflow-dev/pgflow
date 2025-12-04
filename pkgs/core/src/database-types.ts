@@ -448,6 +448,10 @@ export type Database = {
         Args: { p_flow_slug: string }
         Returns: undefined
       }
+      ensure_flow_compiled: {
+        Args: { p_flow_slug: string; p_mode?: string; p_shape: Json }
+        Returns: Json
+      }
       fail_task: {
         Args: {
           error_message: string
