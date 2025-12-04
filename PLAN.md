@@ -16,6 +16,7 @@
 | Prod Shape Mismatch | Fail fast | Prevents accidental overwrites |
 | Dev Behavior | Always recompile | Seamless iteration |
 | Strict Mode | Deferred (YAGNI) | Can be added later, CI/CD achieves same |
+| Local Detection | Known local Supabase keys in ControlPlane | Cryptographic certainty, ControlPlane decides (not Worker) |
 
 ## Compilation Modes
 
@@ -25,6 +26,82 @@
 | `production` | Compile | **FAIL** | Most production deployments |
 
 **Note:** Strict mode (fail on missing) deferred. Users needing strict control can pre-compile via CI/CD - flow will already exist, so production mode never auto-compiles.
+
+---
+
+## Local Development Detection (Safety-Critical)
+
+**CRITICAL:** Development mode allows `delete_flow_and_data()` which destroys ALL flow data. False positive detection (thinking we're local when actually in production) would be catastrophic. We use a **default-to-production** approach with cryptographic certainty for local detection.
+
+**IMPORTANT:** Detection happens in **ControlPlane**, not Worker. This ensures:
+1. Worker can't spoof the mode - ControlPlane decides based on its own environment
+2. Detection logic lives where the destructive action happens
+3. Single source of truth for security-critical decision
+
+### Known Local Supabase Keys
+
+All local Supabase CLI installations use identical, deterministic keys generated from a fixed JWT secret. These values are documented in the [official Supabase CLI reference](https://supabase.com/docs/reference/cli/introduction):
+
+```
+JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
+
+ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+
+SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+```
+
+**Why this is cryptographically safe:**
+- Production keys are generated with unique per-project secrets
+- The JWT payload contains `"iss": "supabase-demo"` for local vs `"iss": "supabase"` with project ref for production
+- It is **impossible** for a production Supabase project to accidentally have these keys
+
+### Shared Detection Module: `pkgs/edge-worker/src/shared/localDetection.ts`
+
+Extracted to a shared module for reuse by ControlPlane (and optionally Worker for logging):
+
+```typescript
+/**
+ * Known local Supabase keys - identical across ALL local Supabase CLI installations.
+ * Generated from fixed JWT_SECRET: 'super-secret-jwt-token-with-at-least-32-characters-long'
+ * Source: https://supabase.com/docs/reference/cli/introduction
+ */
+export const KNOWN_LOCAL_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+
+export const KNOWN_LOCAL_SERVICE_ROLE_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
+
+/**
+ * Detects if running on local Supabase by checking for known local keys.
+ *
+ * SAFETY: Returns false (production) unless keys EXACTLY match known local values.
+ * This is cryptographically safe - production keys are unique per-project.
+ *
+ * Used by ControlPlane to determine compilation mode.
+ */
+export function isLocalSupabase(): boolean {
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+  return anonKey === KNOWN_LOCAL_ANON_KEY ||
+         serviceRoleKey === KNOWN_LOCAL_SERVICE_ROLE_KEY;
+}
+```
+
+### Failure Modes (All Safe)
+
+| Scenario | Detection Result | Consequence |
+|----------|------------------|-------------|
+| Standard local Supabase | `development` | Auto-recompile works |
+| Hosted Supabase (production) | `production` | Safe - fails on mismatch |
+| Self-hosted with custom JWT | `production` | Safe - expected behavior |
+| User overrides local JWT_SECRET | `production` | Safe - inconvenience, not data loss |
+
+### Edge Case: Custom Local Keys
+
+If a user has overwritten their local `JWT_SECRET` in `config.toml`, detection will return `production` mode. This is **intentional** - we default to safety.
+
+**Documentation note:** If users report "auto-compilation not working locally", check if they've customized JWT keys. This is expected behavior - safety over convenience.
 
 ---
 
@@ -56,35 +133,36 @@ function verifyAuth(request: Request): boolean {
 
 ## Architecture Overview
 
-**Worker → ControlPlane HTTP → SQL Function (defense in depth)**
+**Worker → ControlPlane HTTP → SQL Function**
 
 ```
 Worker.start(MyFlow)
     │
-    ├── extractFlowShape(flow) → workerShape
+    ├── extractFlowShape(flow) → shape
     │
     └── POST /flows/:slug/ensure-compiled
-        │   Body: { shape: workerShape, mode: 'development' | 'production' }
+        │   Body: { shape }                              <-- NO mode field
         │   Headers: { apikey: SUPABASE_SERVICE_ROLE_KEY }
         │
-        └── ControlPlane (Layer 1: Deployment Validation)
+        └── ControlPlane
             │
-            ├── 1. Look up flow from registry by slug
-            │      └── If not found: 404 "Flow not registered in ControlPlane"
+            ├── 1. Verify auth (apikey === SUPABASE_SERVICE_ROLE_KEY)
+            │      └── If invalid: 401 "Unauthorized"
             │
-            ├── 2. controlPlaneShape = extractFlowShape(registeredFlow)
+            ├── 2. Validate request body (shape)
+            │      └── If invalid: 400 "Bad Request"
             │
-            ├── 3. Compare workerShape vs controlPlaneShape (TypeScript)
-            │      └── If mismatch: 409 "Worker/ControlPlane deployment mismatch"
+            ├── 3. Detect environment (isLocalSupabase()) <-- ControlPlane decides
+            │      └── mode = isLocal ? 'development' : 'production'
             │
-            └── 4. If shapes match: Call SQL function
+            └── 4. Call SQL function with detected mode
                 │
-                └── sql`SELECT * FROM pgflow.ensure_flow_compiled($1, $2, $3)`
+                └── sql`SELECT pgflow.ensure_flow_compiled($1, $2, $3)`
                     │
-                    └── SQL Function (Layer 2: DB Validation - TRANSACTIONAL)
+                    └── SQL Function (TRANSACTIONAL)
                         ├── Acquire advisory lock
                         ├── Query current shape from flows/steps/deps
-                        ├── Compare controlPlaneShape vs DB shape
+                        ├── Compare incoming shape vs DB shape
                         ├── If match: return 'verified'
                         ├── If missing (any mode): compile, return 'compiled'
                         ├── If different AND mode='development': recompile
@@ -92,23 +170,16 @@ Worker.start(MyFlow)
                         └── Return { status, differences[] }
 ```
 
-### Defense in Depth - What Gets Caught
+### HTTP Response Codes
 
-| Failure Mode | Layer | HTTP Status | Error |
-|--------------|-------|-------------|-------|
-| Flow not in ControlPlane | Layer 1 | 404 | "Flow 'x' not registered" |
-| Worker ≠ ControlPlane shapes | Layer 1 | 409 | "Deployment mismatch: worker and ControlPlane have different definitions" |
-| Flow not in DB | Layer 2 | 200 | Compiles automatically |
-| ControlPlane ≠ DB (dev) | Layer 2 | 200 | Recompiles automatically |
-| ControlPlane ≠ DB (prod) | Layer 2 | 409 | "Shape mismatch with database" |
-
-### Why This Architecture
-
-1. **Layer 1 (ControlPlane)** - Catches deployment bugs before touching DB
-2. **Layer 2 (SQL)** - Transactional DB operations with advisory lock
-3. **Both layers compare** - Worker sends shape, ControlPlane verifies AND uses its own
-4. **Defense in depth** - Multiple validation points, clear error messages
-5. **DB receives agreed shape** - Only shapes that match worker AND ControlPlane reach DB
+| Scenario | HTTP Status | Response |
+|----------|-------------|----------|
+| Invalid/missing apikey | 401 | `{ error: "Unauthorized" }` |
+| Invalid request body | 400 | `{ error: "Bad Request" }` |
+| SQL not configured | 404 | `{ error: "Not Found" }` |
+| Flow compiled/verified/recompiled | 200 | `{ status, differences }` |
+| Shape mismatch (production) | 409 | `{ status: "mismatch", differences }` |
+| Database error | 500 | `{ error: "Database Error" }` |
 
 ---
 
@@ -120,12 +191,12 @@ Worker.start(MyFlow)
 POST /flows/:slug/ensure-compiled
   Headers: { apikey: SUPABASE_SERVICE_ROLE_KEY }
   Body: {
-    shape: FlowShape,
-    mode: 'development' | 'production'
+    shape: FlowShape
   }
   Response: {
     status: 'compiled' | 'verified' | 'recompiled' | 'mismatch',
-    differences?: string[]
+    differences?: string[],
+    mode: 'development' | 'production'  // Detected by ControlPlane
   }
 ```
 
@@ -135,13 +206,10 @@ POST /flows/:slug/ensure-compiled
 Worker.start(MyFlow)
     |
     v
-detectCompilationMode() --> 'development' | 'production'
-    |
-    v
 extractFlowShape(flow) --> FlowShape
     |
     v
-POST /ensure-compiled { shape, mode }
+POST /ensure-compiled { shape }        <-- No mode, ControlPlane detects it
     |
     v
 [status === 'mismatch'?] ----yes----> throw FlowShapeMismatchError(differences)
@@ -161,16 +229,16 @@ Start polling loop
 
 ```typescript
 /**
- * FlowShape captures the structural definition of a flow for drift detection.
+ * FlowShape captures the structural definition of a flow for compilation.
  *
- * This represents the DAG topology - which steps exist, their types, and how
- * they connect via dependencies.
+ * This represents the DAG topology - which steps exist, their types, how
+ * they connect via dependencies, and their configuration options.
  *
  * Intentionally excluded:
  * - flowSlug: identifier, not structural data (comes from URL/context)
- * - options: runtime tunable via SQL without recompilation
  */
 export interface FlowShape {
+  options?: FlowOptions;  // Flow-level options (maxAttempts, baseDelay, etc.)
   steps: StepShape[];
 }
 
@@ -178,6 +246,7 @@ export interface StepShape {
   slug: string;
   stepType: 'single' | 'map';
   dependencies: string[];  // sorted alphabetically for deterministic comparison
+  options?: StepOptions;   // Step-level options (maxAttempts, baseDelay, etc.)
 }
 
 export interface ShapeComparisonResult {
@@ -187,20 +256,16 @@ export interface ShapeComparisonResult {
 
 export function extractFlowShape(flow: AnyFlow): FlowShape;
 
-// Used by ControlPlane for Layer 1 comparison (Worker vs ControlPlane)
+// Used by SQL layer to compare shapes
 export function compareFlowShapes(a: FlowShape, b: FlowShape): ShapeComparisonResult;
 ```
 
-**Note:** Runtime options (`maxAttempts`, `baseDelay`, `timeout`, `startDelay`) are intentionally
-excluded from shape comparison. Users can tune these at runtime via SQL without recompilation.
+**Note:** Options are included in FlowShape for proper flow creation, but are excluded from
+shape comparison. Users can tune options at runtime via SQL without recompilation.
 See: `/deploy/tune-flow-config/`
 
 ### Export from `pkgs/dsl/src/index.ts`
 - Add exports for `FlowShape`, `StepShape`, `ShapeComparisonResult`, `extractFlowShape`, `compareFlowShapes`
-
-**Note:** `compareFlowShapes()` is used in BOTH:
-- TypeScript (Layer 1: ControlPlane comparing worker vs its own shape)
-- SQL (Layer 2: Comparing against DB) - reimplemented in plpgsql
 
 ---
 
@@ -316,17 +381,35 @@ END IF;
 
 ### Modify: `pkgs/edge-worker/src/control-plane/server.ts`
 
-Add single endpoint that calls SQL function:
+Add single endpoint that handles authentication, validation, environment detection, and SQL call:
 
 ```typescript
+import { isLocalSupabase } from '../shared/localDetection.ts';
+
 // POST /flows/:slug/ensure-compiled
 async function handleEnsureCompiled(
-  sql: Sql,
+  request: Request,
   flowSlug: string,
-  shape: FlowShape,
-  mode: 'development' | 'production'
+  options?: ControlPlaneOptions
 ): Promise<Response> {
-  const [result] = await sql`
+  // 1. Check SQL is configured
+  if (!options?.sql) {
+    return jsonResponse({ error: 'Not Found', message: '...' }, 404);
+  }
+
+  // 2. Verify authentication
+  if (!verifyAuth(request)) {
+    return jsonResponse({ error: 'Unauthorized', message: '...' }, 401);
+  }
+
+  // 3. Parse and validate request body (shape only, no mode)
+  const { shape } = await parseAndValidateBody(request);
+
+  // 4. Detect environment - ControlPlane decides, Worker can't spoof
+  const mode = isLocalSupabase() ? 'development' : 'production';
+
+  // 5. Call SQL function with detected mode
+  const [result] = await options.sql`
     SELECT pgflow.ensure_flow_compiled(
       ${flowSlug},
       ${JSON.stringify(shape)}::jsonb,
@@ -334,17 +417,26 @@ async function handleEnsureCompiled(
     ) as result
   `;
 
-  return new Response(JSON.stringify(result.result), {
-    status: result.result.status === 'mismatch' ? 409 : 200,
-    headers: { 'Content-Type': 'application/json' }
-  });
+  // Include detected mode in response for transparency
+  const response = { ...result.result, mode };
+  return jsonResponse(response, result.result.status === 'mismatch' ? 409 : 200);
+}
+
+function verifyAuth(request: Request): boolean {
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!serviceRoleKey) return false;
+  const apikey = request.headers.get('apikey');
+  return apikey === serviceRoleKey;
 }
 ```
 
 **HTTP Status Codes:**
 - `200` - compiled, verified, or recompiled
+- `400 Bad Request` - invalid JSON or missing shape
+- `401 Unauthorized` - invalid or missing apikey
+- `404 Not Found` - SQL not configured
 - `409 Conflict` - shape mismatch in production mode
-- `401 Unauthorized` - invalid apikey
+- `500 Internal Server Error` - database error
 
 ---
 
@@ -390,19 +482,11 @@ This prevents drift - defaults are defined in ONE place (inside the function), n
 
 ### Modify: `pkgs/edge-worker/src/core/workerConfigTypes.ts`
 
-```typescript
-export type CompilationMode = 'development' | 'production';
+Worker configuration is simplified - no mode detection needed since ControlPlane handles it:
 
+```typescript
 export interface FlowWorkerConfig {
   // ... existing fields ...
-
-  /**
-   * Compilation mode:
-   * - 'development': Auto-compile if shape differs (calls /ensure-compiled)
-   * - 'production': Fail if shape differs (calls /verify-compiled)
-   * @default auto-detected from environment
-   */
-  compilationMode?: CompilationMode;
 
   /**
    * ControlPlane URL for compilation endpoints
@@ -412,15 +496,7 @@ export interface FlowWorkerConfig {
 }
 ```
 
-### Mode Detection Logic
-```typescript
-function detectCompilationMode(config: FlowWorkerConfig): CompilationMode {
-  if (config.compilationMode) return config.compilationMode;
-  const isLocal = config.env?.SUPABASE_URL?.includes('localhost')
-               || config.env?.SUPABASE_URL?.includes('127.0.0.1');
-  return isLocal ? 'development' : 'production';
-}
-```
+**Note:** `compilationMode` config removed from Worker. ControlPlane detects environment and decides mode. This is more secure - Worker can't accidentally or maliciously request development mode in production.
 
 ---
 
@@ -428,31 +504,36 @@ function detectCompilationMode(config: FlowWorkerConfig): CompilationMode {
 
 ### Modify: `pkgs/edge-worker/src/flow/FlowWorkerLifecycle.ts`
 
-Add compilation verification before `acknowledgeStart()`:
+Add compilation verification before `acknowledgeStart()`. Worker just sends shape - ControlPlane detects mode:
 
 ```typescript
 async verifyOrCompileFlow(): Promise<void> {
   const shape = extractFlowShape(this.flow);
-  const endpoint = this.mode === 'development'
-    ? `/flows/${this.flow.slug}/ensure-compiled`
-    : `/flows/${this.flow.slug}/verify-compiled`;
 
-  const response = await fetch(`${this.controlPlaneUrl}${endpoint}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders },
-    body: JSON.stringify({ shape }),
-  });
+  const response = await fetch(
+    `${this.controlPlaneUrl}/flows/${this.flow.slug}/ensure-compiled`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      },
+      body: JSON.stringify({ shape }),  // No mode - ControlPlane detects it
+    }
+  );
 
   const result = await response.json();
 
   if (result.status === 'mismatch') {
     throw new FlowShapeMismatchError(this.flow.slug, result.differences);
   }
-  if (result.status === 'not_found' && this.mode === 'production') {
-    throw new FlowNotCompiledError(this.flow.slug);
-  }
+
+  // Log compilation result (mode comes from ControlPlane response)
+  console.log(`[pgflow] Flow '${this.flow.slug}' ${result.status} (mode: ${result.mode})`);
 }
 ```
+
+**Note:** No `detectCompilationMode()` method needed in Worker - ControlPlane handles all detection logic. This simplifies the Worker and improves security.
 
 ### Modify: `pkgs/edge-worker/src/flow/createFlowWorker.ts`
 
@@ -482,10 +563,11 @@ export async function createFlowWorker(...) {
 | **Core** | `pkgs/core/schemas/0100_function_compare_flow_shapes.sql` | NEW - Shape comparison logic |
 | **Core** | `pkgs/core/schemas/0100_function_compile_flow_from_shape.sql` | NEW - Compile from JSONB |
 | **Core** | `pkgs/core/schemas/0100_function_delete_flow_and_data.sql` | PROMOTE from tests - Full flow deletion |
-| **Edge** | `pkgs/edge-worker/src/control-plane/server.ts` | Add POST `/ensure-compiled` endpoint |
-| **Edge** | `pkgs/edge-worker/src/flow/FlowWorkerLifecycle.ts` | Add `verifyOrCompileFlow()` |
+| **Edge** | `pkgs/edge-worker/src/shared/localDetection.ts` | NEW - Known local keys + `isLocalSupabase()` (shared module) |
+| **Edge** | `pkgs/edge-worker/src/control-plane/server.ts` | Add POST `/ensure-compiled` endpoint + import `isLocalSupabase()` |
+| **Edge** | `pkgs/edge-worker/src/core/workerConfigTypes.ts` | Add `controlPlaneUrl` config (no `compilationMode`) |
+| **Edge** | `pkgs/edge-worker/src/flow/FlowWorkerLifecycle.ts` | Add `verifyOrCompileFlow()` (simplified, no mode detection) |
 | **Edge** | `pkgs/edge-worker/src/flow/createFlowWorker.ts` | Call verification at startup |
-| **Edge** | `pkgs/edge-worker/src/core/workerConfigTypes.ts` | Add `CompilationMode` config |
 
 ---
 
@@ -538,14 +620,14 @@ Test-Driven Development order - write tests FIRST, then implement:
 ### TDD Phase 3: ControlPlane Endpoint (Vitest + Integration)
 
 ```
-1. Write test: POST /ensure-compiled returns 404 if flow not in registry
-2. Implement registry lookup
-3. Write test: POST /ensure-compiled returns 409 if worker≠ControlPlane shape
-4. Implement Layer 1 comparison
-5. Write test: POST /ensure-compiled returns 401 for invalid apikey
-6. Implement auth check
-7. Write test: POST /ensure-compiled calls SQL function and returns result
-8. Implement SQL function call
+1. Write test: POST /ensure-compiled returns 404 if SQL not configured
+2. Write test: POST /ensure-compiled returns 401 for invalid apikey
+3. Implement auth check using SUPABASE_SERVICE_ROLE_KEY
+4. Write test: POST /ensure-compiled returns 400 for invalid body
+5. Implement body validation
+6. Write test: POST /ensure-compiled calls SQL function and returns result
+7. Implement SQL function call
+8. Write test: POST /ensure-compiled returns 409 on mismatch status
 ```
 
 ### TDD Phase 4: Worker Integration (Vitest + E2E)
@@ -583,7 +665,6 @@ Test-Driven Development order - write tests FIRST, then implement:
 3. Prod mode: Worker compiles missing flow (first deploy)
 4. Prod mode: Worker fails when shape differs (with clear error)
 5. Auth: Worker with invalid apikey gets 401
-6. Layer 1: Worker/ControlPlane mismatch detected before DB touched
 
 ---
 
@@ -717,17 +798,16 @@ Test-Driven Development order - write tests FIRST, then implement:
 ### Phase 7: ControlPlane Endpoint (~0.5 day)
 
 **Order within phase:**
-1. Add auth verification (check `SUPABASE_SERVICE_ROLE_KEY`)
-2. Add flow registry lookup (404 if not found)
-3. Add Layer 1: TypeScript comparison (409 if worker≠ControlPlane)
-4. Add Layer 2: SQL function call
-5. Return appropriate HTTP status codes
-6. Write Vitest tests for each response code
+1. Add auth verification (check `SUPABASE_SERVICE_ROLE_KEY` env var)
+2. Add request body validation (shape, mode)
+3. Add SQL function call
+4. Return appropriate HTTP status codes
+5. Write Vitest tests for each response code
 
 **Why seventh?**
 - Depends on both DSL and SQL
-- Simple HTTP wrapper around tested components
-- Layer 1 (TS) before Layer 2 (SQL) for fail-fast
+- Simple HTTP wrapper around tested SQL function
+- Auth + validation before SQL call
 
 **Deliverable:** Working endpoint that validates and compiles flows.
 

@@ -5,6 +5,10 @@ import {
   createControlPlaneHandler,
   type ControlPlaneOptions,
 } from '../../../src/control-plane/server.ts';
+import {
+  KNOWN_LOCAL_ANON_KEY,
+  KNOWN_LOCAL_SERVICE_ROLE_KEY,
+} from '../../../src/shared/localDetection.ts';
 
 // Mock SQL function that simulates database responses
 function createMockSql(response: {
@@ -30,7 +34,7 @@ function createErrorSql(errorMessage: string) {
 // Helper to create POST request with body
 function createEnsureCompiledRequest(
   slug: string,
-  body: { shape: FlowShape; mode: 'development' | 'production' },
+  body: { shape: FlowShape },
   apikey?: string
 ): Request {
   const headers: Record<string, string> = {
@@ -291,7 +295,7 @@ Deno.test('ensure-compiled - returns 401 without apikey header', async () => {
     const shape = extractFlowShape(FlowWithSingleStep);
     const request = createEnsureCompiledRequest(
       'flow_single_step',
-      { shape, mode: 'production' }
+      { shape }
       // No apikey
     );
     const response = await handler(request);
@@ -314,7 +318,7 @@ Deno.test('ensure-compiled - returns 401 with wrong apikey', async () => {
     const shape = extractFlowShape(FlowWithSingleStep);
     const request = createEnsureCompiledRequest(
       'flow_single_step',
-      { shape, mode: 'production' },
+      { shape },
       'wrong-api-key'
     );
     const response = await handler(request);
@@ -337,7 +341,7 @@ Deno.test('ensure-compiled - returns 401 when SUPABASE_SERVICE_ROLE_KEY not set'
     const shape = extractFlowShape(FlowWithSingleStep);
     const request = createEnsureCompiledRequest(
       'flow_single_step',
-      { shape, mode: 'production' },
+      { shape },
       'any-key'
     );
     const response = await handler(request);
@@ -360,7 +364,7 @@ Deno.test('ensure-compiled - returns 200 with status compiled for new flow', asy
     const shape = extractFlowShape(FlowWithSingleStep);
     const request = createEnsureCompiledRequest(
       'flow_single_step',
-      { shape, mode: 'production' },
+      { shape },
       TEST_SERVICE_ROLE_KEY
     );
     const response = await handler(request);
@@ -369,6 +373,7 @@ Deno.test('ensure-compiled - returns 200 with status compiled for new flow', asy
     const data = await response.json();
     assertEquals(data.status, 'compiled');
     assertEquals(data.differences, []);
+    assertEquals(data.mode, 'production'); // Non-local key = production mode
   } finally {
     Deno.env.delete(ENV_KEY);
   }
@@ -384,7 +389,7 @@ Deno.test('ensure-compiled - returns 200 with status verified for matching shape
     const shape = extractFlowShape(FlowWithSingleStep);
     const request = createEnsureCompiledRequest(
       'flow_single_step',
-      { shape, mode: 'production' },
+      { shape },
       TEST_SERVICE_ROLE_KEY
     );
     const response = await handler(request);
@@ -397,8 +402,9 @@ Deno.test('ensure-compiled - returns 200 with status verified for matching shape
   }
 });
 
-Deno.test('ensure-compiled - returns 200 with status recompiled in development mode', async () => {
-  Deno.env.set(ENV_KEY, TEST_SERVICE_ROLE_KEY);
+Deno.test('ensure-compiled - returns 200 with status recompiled in development mode (local keys)', async () => {
+  // Set local Supabase keys to trigger development mode
+  Deno.env.set(ENV_KEY, KNOWN_LOCAL_SERVICE_ROLE_KEY);
   try {
     const mockSql = createMockSql({
       status: 'recompiled',
@@ -410,8 +416,8 @@ Deno.test('ensure-compiled - returns 200 with status recompiled in development m
     const shape = extractFlowShape(FlowWithSingleStep);
     const request = createEnsureCompiledRequest(
       'flow_single_step',
-      { shape, mode: 'development' },
-      TEST_SERVICE_ROLE_KEY
+      { shape },
+      KNOWN_LOCAL_SERVICE_ROLE_KEY
     );
     const response = await handler(request);
 
@@ -419,6 +425,7 @@ Deno.test('ensure-compiled - returns 200 with status recompiled in development m
     const data = await response.json();
     assertEquals(data.status, 'recompiled');
     assertEquals(data.differences, ['Step count differs: 1 vs 2']);
+    assertEquals(data.mode, 'development'); // Local key = development mode
   } finally {
     Deno.env.delete(ENV_KEY);
   }
@@ -437,7 +444,7 @@ Deno.test('ensure-compiled - returns 409 on shape mismatch in production mode', 
     const shape = extractFlowShape(FlowWithSingleStep);
     const request = createEnsureCompiledRequest(
       'flow_single_step',
-      { shape, mode: 'production' },
+      { shape },
       TEST_SERVICE_ROLE_KEY
     );
     const response = await handler(request);
@@ -461,7 +468,7 @@ Deno.test('ensure-compiled - returns 500 on database error', async () => {
     const shape = extractFlowShape(FlowWithSingleStep);
     const request = createEnsureCompiledRequest(
       'flow_single_step',
-      { shape, mode: 'production' },
+      { shape },
       TEST_SERVICE_ROLE_KEY
     );
     const response = await handler(request);
@@ -484,7 +491,7 @@ Deno.test('ensure-compiled - returns 404 when SQL not configured', async () => {
     const shape = extractFlowShape(FlowWithSingleStep);
     const request = createEnsureCompiledRequest(
       'flow_single_step',
-      { shape, mode: 'production' },
+      { shape },
       TEST_SERVICE_ROLE_KEY
     );
     const response = await handler(request);
@@ -540,7 +547,7 @@ Deno.test('ensure-compiled - returns 400 for missing shape in body', async () =>
           'Content-Type': 'application/json',
           apikey: TEST_SERVICE_ROLE_KEY,
         },
-        body: JSON.stringify({ mode: 'production' }), // missing shape
+        body: JSON.stringify({}), // missing shape
       }
     );
     const response = await handler(request);
@@ -554,7 +561,37 @@ Deno.test('ensure-compiled - returns 400 for missing shape in body', async () =>
   }
 });
 
-Deno.test('ensure-compiled - returns 400 for invalid mode', async () => {
+// ============================================================
+// Tests for auto-detection behavior
+// ============================================================
+
+Deno.test('ensure-compiled - detects development mode with local anon key', async () => {
+  const ENV_ANON_KEY = 'SUPABASE_ANON_KEY';
+  Deno.env.set(ENV_KEY, TEST_SERVICE_ROLE_KEY);
+  Deno.env.set(ENV_ANON_KEY, KNOWN_LOCAL_ANON_KEY);
+  try {
+    const mockSql = createMockSql({ status: 'verified', differences: [] });
+    const options: ControlPlaneOptions = { sql: mockSql };
+    const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
+
+    const shape = extractFlowShape(FlowWithSingleStep);
+    const request = createEnsureCompiledRequest(
+      'flow_single_step',
+      { shape },
+      TEST_SERVICE_ROLE_KEY
+    );
+    const response = await handler(request);
+
+    assertEquals(response.status, 200);
+    const data = await response.json();
+    assertEquals(data.mode, 'development'); // Local anon key detected
+  } finally {
+    Deno.env.delete(ENV_KEY);
+    Deno.env.delete(ENV_ANON_KEY);
+  }
+});
+
+Deno.test('ensure-compiled - detects production mode with non-local keys', async () => {
   Deno.env.set(ENV_KEY, TEST_SERVICE_ROLE_KEY);
   try {
     const mockSql = createMockSql({ status: 'verified', differences: [] });
@@ -562,23 +599,16 @@ Deno.test('ensure-compiled - returns 400 for invalid mode', async () => {
     const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
 
     const shape = extractFlowShape(FlowWithSingleStep);
-    const request = new Request(
-      'http://localhost/pgflow/flows/flow_single_step/ensure-compiled',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: TEST_SERVICE_ROLE_KEY,
-        },
-        body: JSON.stringify({ shape, mode: 'invalid' }),
-      }
+    const request = createEnsureCompiledRequest(
+      'flow_single_step',
+      { shape },
+      TEST_SERVICE_ROLE_KEY
     );
     const response = await handler(request);
 
-    assertEquals(response.status, 400);
+    assertEquals(response.status, 200);
     const data = await response.json();
-    assertEquals(data.error, 'Bad Request');
-    assertMatch(data.message, /mode/);
+    assertEquals(data.mode, 'production'); // Non-local key = production
   } finally {
     Deno.env.delete(ENV_KEY);
   }

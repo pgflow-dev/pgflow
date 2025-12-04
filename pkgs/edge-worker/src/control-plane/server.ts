@@ -1,5 +1,6 @@
 import type { AnyFlow, FlowShape } from '@pgflow/dsl';
 import { compileFlow } from '@pgflow/dsl';
+import { isLocalSupabase } from '../shared/localDetection.ts';
 
 /**
  * Response type for the /flows/:slug endpoint
@@ -23,6 +24,7 @@ export interface ErrorResponse {
 export interface EnsureCompiledResponse {
   status: 'compiled' | 'verified' | 'recompiled' | 'mismatch';
   differences: string[];
+  mode: 'development' | 'production';
 }
 
 /**
@@ -30,7 +32,6 @@ export interface EnsureCompiledResponse {
  */
 export interface EnsureCompiledRequest {
   shape: FlowShape;
-  mode: 'development' | 'production';
 }
 
 /**
@@ -212,20 +213,13 @@ function validateEnsureCompiledBody(
     return { valid: false, error: 'Request body must be an object' };
   }
 
-  const { shape, mode } = body as Record<string, unknown>;
+  const { shape } = body as Record<string, unknown>;
 
   if (!shape || typeof shape !== 'object') {
     return { valid: false, error: 'Missing or invalid shape in request body' };
   }
 
-  if (mode !== 'development' && mode !== 'production') {
-    return {
-      valid: false,
-      error: "Invalid mode: must be 'development' or 'production'",
-    };
-  }
-
-  return { valid: true, data: { shape: shape as FlowShape, mode } };
+  return { valid: true, data: { shape: shape as FlowShape } };
 }
 
 /**
@@ -283,7 +277,10 @@ async function handleEnsureCompiled(
     );
   }
 
-  const { shape, mode } = validation.data;
+  const { shape } = validation.data;
+
+  // Auto-detect mode based on environment
+  const mode = isLocalSupabase() ? 'development' : 'production';
 
   // Call SQL function
   try {
@@ -295,7 +292,11 @@ async function handleEnsureCompiled(
       ) as result
     `;
 
-    const response = result.result as EnsureCompiledResponse;
+    // Include detected mode in response for transparency
+    const response: EnsureCompiledResponse = {
+      ...result.result,
+      mode,
+    };
 
     return jsonResponse(response, response.status === 'mismatch' ? 409 : 200);
   } catch (error) {
