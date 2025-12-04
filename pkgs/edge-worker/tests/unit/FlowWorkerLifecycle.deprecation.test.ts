@@ -44,14 +44,21 @@ class MockQueries extends Queries {
     this.workerStopped = true;
     return Promise.resolve(workerRow);
   }
+
+  override ensureFlowCompiled(): Promise<{ status: 'compiled' | 'verified' | 'recompiled' | 'mismatch'; differences: string[] }> {
+    return Promise.resolve({ status: 'verified', differences: [] });
+  }
 }
 
 // Mock Flow
 const createMockFlow = (): AnyFlow => {
-  // Return a minimal flow structure that matches AnyFlow type
+  // Return a minimal flow structure needed for extractFlowShape
   return {
     slug: 'test-flow',
-  } as AnyFlow;
+    stepOrder: [],
+    options: {},
+    getStepDefinition: () => { throw new Error('No steps in mock flow'); },
+  } as unknown as AnyFlow;
 };
 
 

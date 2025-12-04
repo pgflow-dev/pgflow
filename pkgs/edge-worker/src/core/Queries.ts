@@ -1,5 +1,13 @@
 import type postgres from 'postgres';
 import type { WorkerRow } from './types.js';
+import type { FlowShape, Json } from '@pgflow/dsl';
+
+export type EnsureFlowCompiledStatus = 'compiled' | 'verified' | 'recompiled' | 'mismatch';
+
+export interface EnsureFlowCompiledResult {
+  status: EnsureFlowCompiledStatus;
+  differences: string[];
+}
 
 export class Queries {
   constructor(private readonly sql: postgres.Sql) {}
@@ -40,7 +48,31 @@ export class Queries {
       WHERE w.worker_id = ${workerRow.worker_id}
       RETURNING (w.deprecated_at IS NOT NULL) AS is_deprecated;
     `;
-    
+
     return result || { is_deprecated: false };
+  }
+
+  async ensureFlowCompiled(
+    flowSlug: string,
+    shape: FlowShape,
+    mode: 'development' | 'production'
+  ): Promise<EnsureFlowCompiledResult> {
+    // SAFETY: FlowShape is JSON-compatible by construction (only strings, numbers,
+    // arrays, and plain objects), but TypeScript can't prove this because FlowShape
+    // uses specific property names while Json uses index signatures. This cast is
+    // safe because we control both sides: extractFlowShape() builds the object and
+    // this method consumes it - no untrusted input crosses this boundary.
+    //
+    // TODO: If FlowShape ever becomes part of a public API or accepts external input,
+    // add a runtime assertion function (assertJsonCompatible) to validate at the boundary.
+    const shapeJson = this.sql.json(shape as unknown as Json);
+    const [result] = await this.sql<{ result: EnsureFlowCompiledResult }[]>`
+      SELECT pgflow.ensure_flow_compiled(
+        ${flowSlug},
+        ${shapeJson}::jsonb,
+        ${mode}
+      ) as result
+    `;
+    return result.result;
   }
 }

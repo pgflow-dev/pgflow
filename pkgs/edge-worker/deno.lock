@@ -5,6 +5,7 @@
     "jsr:@henrygd/queue@^1.0.7": "1.0.7",
     "jsr:@std/assert@*": "0.224.0",
     "jsr:@std/assert@0.224": "0.224.0",
+    "jsr:@std/async@*": "0.224.2",
     "jsr:@std/async@0.224": "0.224.2",
     "jsr:@std/crypto@*": "1.0.5",
     "jsr:@std/fmt@0.224": "0.224.0",

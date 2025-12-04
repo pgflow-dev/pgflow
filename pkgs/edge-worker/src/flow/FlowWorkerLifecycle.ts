@@ -3,9 +3,17 @@ import type { ILifecycle, WorkerBootstrap, WorkerRow } from '../core/types.js';
 import type { Logger } from '../platform/types.js';
 import { States, WorkerState } from '../core/WorkerState.js';
 import type { AnyFlow } from '@pgflow/dsl';
+import { extractFlowShape } from '@pgflow/dsl';
+import {
+  isLocalSupabase,
+  KNOWN_LOCAL_ANON_KEY,
+  KNOWN_LOCAL_SERVICE_ROLE_KEY,
+} from '../shared/localDetection.js';
+import { FlowShapeMismatchError } from './errors.js';
 
 export interface FlowLifecycleConfig {
   heartbeatInterval?: number;
+  env?: Record<string, string | undefined>;
 }
 
 /**
@@ -21,6 +29,7 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
   private _workerId?: string;
   private heartbeatInterval: number;
   private lastHeartbeat = 0;
+  private env?: Record<string, string | undefined>;
 
   constructor(queries: Queries, flow: TFlow, logger: Logger, config?: FlowLifecycleConfig) {
     this.queries = queries;
@@ -28,6 +37,7 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
     this.logger = logger;
     this.workerState = new WorkerState(logger);
     this.heartbeatInterval = config?.heartbeatInterval ?? 5000;
+    this.env = config?.env;
   }
 
   async acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void> {
@@ -36,12 +46,47 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
     // Store workerId for supplier pattern
     this._workerId = workerBootstrap.workerId;
 
+    // Compile/verify flow as part of Starting (before registering worker)
+    await this.ensureFlowCompiled();
+
+    // Only register worker after successful compilation
     this.workerRow = await this.queries.onWorkerStarted({
       queueName: this.queueName,
       ...workerBootstrap,
     });
 
     this.workerState.transitionTo(States.Running);
+  }
+
+  private async ensureFlowCompiled(): Promise<void> {
+    this.logger.info(`Ensuring flow '${this.flow.slug}' is compiled...`);
+
+    const shape = extractFlowShape(this.flow);
+    const mode = this.detectCompilationMode();
+
+    const result = await this.queries.ensureFlowCompiled(
+      this.flow.slug,
+      shape,
+      mode
+    );
+
+    if (result.status === 'mismatch') {
+      throw new FlowShapeMismatchError(this.flow.slug, result.differences);
+    }
+
+    this.logger.info(`Flow '${this.flow.slug}' ${result.status} (mode: ${mode})`);
+  }
+
+  private detectCompilationMode(): 'development' | 'production' {
+    // Use provided env if available, otherwise fall back to global detection
+    if (this.env) {
+      const anonKey = this.env['SUPABASE_ANON_KEY'];
+      const serviceRoleKey = this.env['SUPABASE_SERVICE_ROLE_KEY'];
+      const isLocal = anonKey === KNOWN_LOCAL_ANON_KEY ||
+                      serviceRoleKey === KNOWN_LOCAL_SERVICE_ROLE_KEY;
+      return isLocal ? 'development' : 'production';
+    }
+    return isLocalSupabase() ? 'development' : 'production';
   }
 
   acknowledgeStop() {

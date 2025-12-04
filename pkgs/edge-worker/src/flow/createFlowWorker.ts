@@ -89,7 +89,8 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
   const lifecycle = new FlowWorkerLifecycle<TFlow>(
     queries,
     flow,
-    createLogger('FlowWorkerLifecycle')
+    createLogger('FlowWorkerLifecycle'),
+    { env: platformAdapter.env }
   );
 
   // Create frozen worker config ONCE for reuse across all task executions
