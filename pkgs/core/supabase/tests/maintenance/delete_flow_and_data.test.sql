@@ -2,8 +2,7 @@ begin;
 select plan(9);
 select pgflow_tests.reset_db();
 
--- Load the delete_flow_and_data function
-\i _shared/delete_flow_and_data.sql.raw
+-- Note: delete_flow_and_data is now part of core schema (no longer needs to be loaded)
 
 -- Create test flow with steps and dependencies
 select pgflow.create_flow('test_flow_to_delete', max_attempts => 0);

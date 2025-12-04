@@ -350,6 +350,10 @@ export type Database = {
         Args: { p_db: Json; p_local: Json }
         Returns: string[]
       }
+      _create_flow_from_shape: {
+        Args: { p_flow_slug: string; p_shape: Json }
+        Returns: undefined
+      }
       _get_flow_shape: { Args: { p_flow_slug: string }; Returns: Json }
       add_step: {
         Args: {
@@ -439,6 +443,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      delete_flow_and_data: {
+        Args: { p_flow_slug: string }
+        Returns: undefined
       }
       fail_task: {
         Args: {
