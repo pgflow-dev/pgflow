@@ -96,10 +96,10 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   async stopWorker(): Promise<void> {
     // Trigger shutdown signal
     this.abortController.abort();
-    
+
     // Cleanup resources
     await this._platformResources.sql.end();
-    
+
     if (this.worker) {
       await this.worker.stop();
     }
@@ -262,7 +262,7 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
     ] as const;
 
     const missing: string[] = [];
-    
+
     for (const key of required) {
       if (!env[key]) {
         missing.push(key);

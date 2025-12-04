@@ -4,10 +4,6 @@ import { Flow } from '@pgflow/dsl';
 import { delay } from '@std/async';
 import { createFlowWorker } from '../../../src/flow/createFlowWorker.ts';
 import { createTestPlatformAdapter } from '../_helpers.ts';
-import {
-  KNOWN_LOCAL_ANON_KEY,
-  KNOWN_LOCAL_SERVICE_ROLE_KEY,
-} from '../../../src/shared/localDetection.ts';
 import type { postgres } from '../../sql.ts';
 
 // Define a minimal test flow
@@ -26,19 +22,15 @@ function createLogger(module: string) {
   };
 }
 
-function createPlatformAdapterWithEnv(
+function createPlatformAdapterWithLocalEnv(
   sql: postgres.Sql,
-  envOverrides: Record<string, string> = {}
+  isLocal: boolean
 ) {
   const baseAdapter = createTestPlatformAdapter(sql);
-  const modifiedEnv = {
-    ...baseAdapter.env,
-    ...envOverrides,
-  };
 
   return {
     ...baseAdapter,
-    get env() { return modifiedEnv; },
+    get isLocalEnvironment() { return isLocal; },
   };
 }
 
@@ -64,7 +56,7 @@ Deno.test(
         pollIntervalMs: 200,
       },
       createLogger,
-      createPlatformAdapterWithEnv(sql)
+      createPlatformAdapterWithLocalEnv(sql, false)
     );
 
     try {
@@ -121,7 +113,7 @@ Deno.test(
         pollIntervalMs: 200,
       },
       createLogger,
-      createPlatformAdapterWithEnv(sql)
+      createPlatformAdapterWithLocalEnv(sql, false)
     );
 
     try {
@@ -155,11 +147,8 @@ Deno.test(
     await sql`SELECT pgflow.add_step('test_compilation_flow', 'double')`;
     await sql`SELECT pgflow.add_step('test_compilation_flow', 'different_step', deps_slugs => ARRAY['double']::text[])`;
 
-    // Use non-local keys to simulate production mode
-    const platformAdapter = createPlatformAdapterWithEnv(sql, {
-      SUPABASE_ANON_KEY: 'prod-anon-key-not-local',
-      SUPABASE_SERVICE_ROLE_KEY: 'prod-service-key-not-local',
-    });
+    // Use isLocal: false to simulate production mode
+    const platformAdapter = createPlatformAdapterWithLocalEnv(sql, false);
 
     const worker = createFlowWorker(
       TestCompilationFlow, // Has only 'double' step
@@ -220,11 +209,8 @@ Deno.test(
     await sql`SELECT pgflow.create_flow('test_compilation_flow')`;
     await sql`SELECT pgflow.add_step('test_compilation_flow', 'old_step')`;
 
-    // Use local keys to simulate development mode
-    const platformAdapter = createPlatformAdapterWithEnv(sql, {
-      SUPABASE_ANON_KEY: KNOWN_LOCAL_ANON_KEY,
-      SUPABASE_SERVICE_ROLE_KEY: KNOWN_LOCAL_SERVICE_ROLE_KEY,
-    });
+    // Use isLocal: true to simulate development mode
+    const platformAdapter = createPlatformAdapterWithLocalEnv(sql, true);
 
     const worker = createFlowWorker(
       TestCompilationFlow, // Has 'double' step, not 'old_step'

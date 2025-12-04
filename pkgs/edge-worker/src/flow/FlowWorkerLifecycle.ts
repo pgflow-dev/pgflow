@@ -4,16 +4,11 @@ import type { Logger } from '../platform/types.js';
 import { States, WorkerState } from '../core/WorkerState.js';
 import type { AnyFlow } from '@pgflow/dsl';
 import { extractFlowShape } from '@pgflow/dsl';
-import {
-  isLocalSupabase,
-  KNOWN_LOCAL_ANON_KEY,
-  KNOWN_LOCAL_SERVICE_ROLE_KEY,
-} from '../shared/localDetection.js';
 import { FlowShapeMismatchError } from './errors.js';
 
 export interface FlowLifecycleConfig {
   heartbeatInterval?: number;
-  env?: Record<string, string | undefined>;
+  isLocalEnvironment?: boolean;
 }
 
 /**
@@ -29,7 +24,7 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
   private _workerId?: string;
   private heartbeatInterval: number;
   private lastHeartbeat = 0;
-  private env?: Record<string, string | undefined>;
+  private isLocalEnvironment: boolean;
 
   constructor(queries: Queries, flow: TFlow, logger: Logger, config?: FlowLifecycleConfig) {
     this.queries = queries;
@@ -37,7 +32,7 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
     this.logger = logger;
     this.workerState = new WorkerState(logger);
     this.heartbeatInterval = config?.heartbeatInterval ?? 5000;
-    this.env = config?.env;
+    this.isLocalEnvironment = config?.isLocalEnvironment ?? false;
   }
 
   async acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void> {
@@ -59,10 +54,10 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
   }
 
   private async ensureFlowCompiled(): Promise<void> {
-    this.logger.info(`Ensuring flow '${this.flow.slug}' is compiled...`);
+    const mode = this.isLocalEnvironment ? 'development' : 'production';
+    this.logger.info(`Compiling flow '${this.flow.slug}' (mode: ${mode})...`);
 
     const shape = extractFlowShape(this.flow);
-    const mode = this.detectCompilationMode();
 
     const result = await this.queries.ensureFlowCompiled(
       this.flow.slug,
@@ -74,19 +69,7 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
       throw new FlowShapeMismatchError(this.flow.slug, result.differences);
     }
 
-    this.logger.info(`Flow '${this.flow.slug}' ${result.status} (mode: ${mode})`);
-  }
-
-  private detectCompilationMode(): 'development' | 'production' {
-    // Use provided env if available, otherwise fall back to global detection
-    if (this.env) {
-      const anonKey = this.env['SUPABASE_ANON_KEY'];
-      const serviceRoleKey = this.env['SUPABASE_SERVICE_ROLE_KEY'];
-      const isLocal = anonKey === KNOWN_LOCAL_ANON_KEY ||
-                      serviceRoleKey === KNOWN_LOCAL_SERVICE_ROLE_KEY;
-      return isLocal ? 'development' : 'production';
-    }
-    return isLocalSupabase() ? 'development' : 'production';
+    this.logger.info(`Flow '${this.flow.slug}' compilation complete: ${result.status}`);
   }
 
   acknowledgeStop() {

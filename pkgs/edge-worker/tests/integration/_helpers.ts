@@ -41,14 +41,15 @@ export function createTestPlatformAdapter(sql: postgres.Sql): PlatformAdapter<Su
     get shutdownSignal() { return abortController.signal; },
     get platformResources() { return platformResources; },
     get connectionString() { return integrationConfig.dbUrl; },
+    get isLocalEnvironment() { return false; },
     async startWorker(_createWorkerFn: CreateWorkerFn) {},
     async stopWorker() {},
   };
 }
 
 export function startWorker<TFlow extends AnyFlow>(
-  sql: postgres.Sql, 
-  flow: TFlow, 
+  sql: postgres.Sql,
+  flow: TFlow,
   options: FlowWorkerConfig
 ) {
   const defaultOptions = {

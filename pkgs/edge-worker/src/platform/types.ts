@@ -57,4 +57,10 @@ export interface PlatformAdapter<TResources extends Record<string, unknown> = Re
    */
   get platformResources(): TResources;
 
+  /**
+   * Whether running in a local/development environment.
+   * Used by flow compilation to determine if recompilation is allowed.
+   */
+  get isLocalEnvironment(): boolean;
+
 }

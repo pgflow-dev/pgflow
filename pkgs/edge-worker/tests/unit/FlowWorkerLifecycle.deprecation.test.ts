@@ -1,9 +1,9 @@
 import { assertEquals, assertThrows } from '@std/assert';
 import { FlowWorkerLifecycle } from '../../src/flow/FlowWorkerLifecycle.ts';
 import { TransitionError } from '../../src/core/WorkerState.ts';
-import { Queries } from '../../src/core/Queries.ts';
+import { Queries, type EnsureFlowCompiledResult } from '../../src/core/Queries.ts';
 import type { WorkerRow } from '../../src/core/types.ts';
-import type { AnyFlow } from '@pgflow/dsl';
+import { Flow, type FlowShape } from '@pgflow/dsl';
 import type { Logger } from '../../src/platform/types.ts';
 import { createLoggingFactory } from '../../src/platform/logging.ts';
 import type { postgres } from '../sql.ts';
@@ -45,21 +45,20 @@ class MockQueries extends Queries {
     return Promise.resolve(workerRow);
   }
 
-  override ensureFlowCompiled(): Promise<{ status: 'compiled' | 'verified' | 'recompiled' | 'mismatch'; differences: string[] }> {
+  override ensureFlowCompiled(
+    _flowSlug: string,
+    _shape: FlowShape,
+    _mode: 'development' | 'production'
+  ): Promise<EnsureFlowCompiledResult> {
     return Promise.resolve({ status: 'verified', differences: [] });
   }
 }
 
-// Mock Flow
-const createMockFlow = (): AnyFlow => {
-  // Return a minimal flow structure needed for extractFlowShape
-  return {
-    slug: 'test-flow',
-    stepOrder: [],
-    options: {},
-    getStepDefinition: () => { throw new Error('No steps in mock flow'); },
-  } as unknown as AnyFlow;
-};
+// Real Flow for testing - using the DSL to create a valid flow
+const TestFlow = new Flow<{ value: number }>({ slug: 'test_flow' })
+  .step({ slug: 'step1' }, (input) => input.run.value);
+
+const createMockFlow = () => TestFlow;
 
 
 Deno.test('FlowWorkerLifecycle - should transition to deprecated state when heartbeat returns is_deprecated true', async () => {
@@ -219,7 +218,7 @@ Deno.test('FlowWorkerLifecycle - queueName should return flow slug', () => {
   const mockFlow = createMockFlow();
   const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger);
 
-  assertEquals(lifecycle.queueName, 'test-flow');
+  assertEquals(lifecycle.queueName, 'test_flow');
 });
 
 Deno.test('FlowWorkerLifecycle - workerId getter should work after start', async () => {
