@@ -197,7 +197,7 @@ while IFS= read -r -d '' file; do
     echo -e "  ${GREEN}✓${NC} ${BOLD}$NAME${NC}"
     echo -e "    ${VERSION}"
   fi
-done < <(find pkgs -name package.json -not -path "*/node_modules/*" -print0)
+done < <(find pkgs -name package.json -not -path "*/node_modules/*" -not -path "*/dist/*" -print0)
 
 # Check for JSR package (edge-worker)
 if [[ -f pkgs/edge-worker/jsr.json ]]; then
