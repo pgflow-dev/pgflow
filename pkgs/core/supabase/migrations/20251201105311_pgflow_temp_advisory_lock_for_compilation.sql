@@ -1,16 +1,5 @@
--- Ensure a flow is compiled in the database
--- Handles both development (auto-recompile) and production (fail on mismatch) modes
--- Returns: { status: 'compiled' | 'verified' | 'recompiled' | 'mismatch', differences: text[] }
-create or replace function pgflow.ensure_flow_compiled(
-  p_flow_slug text,
-  p_shape jsonb,
-  p_mode text default 'production'  -- 'development' | 'production'
-)
-returns jsonb
-language plpgsql
-volatile
-set search_path to ''
-as $$
+-- Modify "ensure_flow_compiled" function
+CREATE OR REPLACE FUNCTION "pgflow"."ensure_flow_compiled" ("p_flow_slug" text, "p_shape" jsonb, "p_mode" text DEFAULT 'production') RETURNS jsonb LANGUAGE plpgsql SET "search_path" = '' AS $$
 DECLARE
   v_lock_key int;
   v_flow_exists boolean;

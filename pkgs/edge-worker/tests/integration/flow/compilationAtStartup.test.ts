@@ -5,6 +5,8 @@ import { delay } from '@std/async';
 import { createFlowWorker } from '../../../src/flow/createFlowWorker.ts';
 import { createTestPlatformAdapter } from '../_helpers.ts';
 import type { postgres } from '../../sql.ts';
+import postgresLib from 'postgres';
+import { integrationConfig } from '../../config.ts';
 
 // Define a minimal test flow
 const TestCompilationFlow = new Flow<{ value: number }>({ slug: 'test_compilation_flow' })
@@ -242,6 +244,66 @@ Deno.test(
       assertEquals(steps[0].step_slug, 'double', 'Step should be "double" after recompilation');
     } finally {
       await worker.stop();
+    }
+  })
+);
+
+Deno.test(
+  'handles concurrent compilation with advisory locks (stress test)',
+  withPgNoTransaction(async (sql) => {
+    await sql`select pgflow_tests.reset_db();`;
+
+    const CONCURRENT = 50; // 50 separate connections
+    const flowSlug = `concurrent_test_${Date.now()}`;
+    const shape = {
+      steps: [{ slug: 'step1', stepType: 'single', dependencies: [] }],
+    };
+
+    // Create N SEPARATE connections (critical for true concurrency)
+    const connections = await Promise.all(
+      Array(CONCURRENT)
+        .fill(null)
+        .map(() => postgresLib(integrationConfig.dbUrl, { prepare: false }))
+    );
+
+    try {
+      // Fire all compilations simultaneously on separate connections
+      // Note: Must use conn.json() for proper jsonb parameter passing
+      const results = await Promise.all(
+        connections.map((conn) =>
+          conn`SELECT pgflow.ensure_flow_compiled(
+            ${flowSlug},
+            ${conn.json(shape)},
+            'production'
+          ) as result`
+        )
+      );
+
+      // Parse results
+      const statuses = results.map((r) => r[0].result.status);
+      const compiled = statuses.filter((s) => s === 'compiled');
+      const verified = statuses.filter((s) => s === 'verified');
+
+      // Assert: exactly 1 compiled, rest verified
+      assertEquals(compiled.length, 1, 'Exactly 1 should compile');
+      assertEquals(verified.length, CONCURRENT - 1, 'Rest should verify');
+
+      // Assert: exactly 1 flow and 1 step in DB
+      const [flowCount] = await sql`
+        SELECT COUNT(*)::int as count FROM pgflow.flows
+        WHERE flow_slug = ${flowSlug}
+      `;
+      const [stepCount] = await sql`
+        SELECT COUNT(*)::int as count FROM pgflow.steps
+        WHERE flow_slug = ${flowSlug}
+      `;
+
+      assertEquals(flowCount.count, 1, 'Exactly 1 flow should exist');
+      assertEquals(stepCount.count, 1, 'Exactly 1 step should exist');
+    } finally {
+      // Cleanup
+      await sql`SELECT pgflow.delete_flow_and_data(${flowSlug})`.catch(() => {});
+      await Promise.all(connections.map((c) => c.end()));
     }
   })
 );
