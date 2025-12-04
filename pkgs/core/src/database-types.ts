@@ -482,6 +482,14 @@ export type Database = {
         Args: { flow_slug: string; shape: Json }
         Returns: Json
       }
+      ensure_workers: {
+        Args: never
+        Returns: {
+          function_name: string
+          invoked: boolean
+          request_id: number
+        }[]
+      }
       fail_task: {
         Args: {
           error_message: string
