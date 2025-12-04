@@ -1,5 +1,22 @@
 -- Utility functions that don't depend on other entities
 
+-- Detects if running in local Supabase CLI environment
+-- by checking if JWT secret matches the known hardcoded local value.
+-- Returns true only for exact match; defaults to false (production-safe).
+create or replace function pgflow.is_local()
+returns boolean
+language sql
+stable
+parallel safe
+set search_path = ''
+as $$
+  select coalesce(
+    current_setting('app.settings.jwt_secret', true)
+      = 'super-secret-jwt-token-with-at-least-32-characters-long',
+    false
+  )
+$$;
+
 create or replace function pgflow.is_valid_slug(
   slug text
 )

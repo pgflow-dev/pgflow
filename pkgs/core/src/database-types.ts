@@ -483,6 +483,7 @@ export type Database = {
         }
       }
       get_run_with_states: { Args: { run_id: string }; Returns: Json }
+      is_local: { Args: never; Returns: boolean }
       is_valid_slug: { Args: { slug: string }; Returns: boolean }
       maybe_complete_run: { Args: { run_id: string }; Returns: undefined }
       poll_for_tasks: {
