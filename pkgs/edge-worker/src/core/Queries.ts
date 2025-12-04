@@ -54,8 +54,7 @@ export class Queries {
 
   async ensureFlowCompiled(
     flowSlug: string,
-    shape: FlowShape,
-    mode: 'development' | 'production'
+    shape: FlowShape
   ): Promise<EnsureFlowCompiledResult> {
     // SAFETY: FlowShape is JSON-compatible by construction (only strings, numbers,
     // arrays, and plain objects), but TypeScript can't prove this because FlowShape
@@ -69,8 +68,7 @@ export class Queries {
     const [result] = await this.sql<{ result: EnsureFlowCompiledResult }[]>`
       SELECT pgflow.ensure_flow_compiled(
         ${flowSlug},
-        ${shapeJson}::jsonb,
-        ${mode}
+        ${shapeJson}::jsonb
       ) as result
     `;
     return result.result;

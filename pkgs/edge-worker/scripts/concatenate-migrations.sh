@@ -34,3 +34,8 @@ echo "-- From file: seed.sql" >> "$target_file"
 cat "../core/supabase/seed.sql" >> "$target_file"
 echo "" >> "$target_file"
 echo "" >> "$target_file"
+
+# Configure local JWT secret for is_local() detection in tests
+echo "-- Configure local JWT secret for is_local() detection" >> "$target_file"
+echo "ALTER DATABASE postgres SET app.settings.jwt_secret = 'super-secret-jwt-token-with-at-least-32-characters-long';" >> "$target_file"
+echo "" >> "$target_file"
