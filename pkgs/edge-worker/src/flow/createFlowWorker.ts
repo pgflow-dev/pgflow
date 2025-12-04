@@ -90,7 +90,10 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
     queries,
     flow,
     createLogger('FlowWorkerLifecycle'),
-    { isLocalEnvironment: platformAdapter.isLocalEnvironment }
+    {
+      isLocalEnvironment: platformAdapter.isLocalEnvironment,
+      ensureCompiledOnStartup: config.ensureCompiledOnStartup ?? true
+    }
   );
 
   // Create frozen worker config ONCE for reuse across all task executions

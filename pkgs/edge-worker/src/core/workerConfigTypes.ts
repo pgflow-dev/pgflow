@@ -145,6 +145,14 @@ export type ResolvedQueueWorkerConfig = Required<Omit<QueueWorkerConfig, 'retryD
  */
 export type FlowWorkerConfig = {
   /**
+   * Whether to verify/compile flow at worker startup.
+   * When true (default), worker calls pgflow.ensure_flow_compiled() before polling.
+   * Set to false to skip compilation check (useful if flows are pre-compiled via CLI).
+   * @default true
+   */
+  ensureCompiledOnStartup?: boolean;
+
+  /**
    * How many tasks are processed at the same time
    * @default 10
    */
@@ -201,7 +209,7 @@ export type FlowWorkerConfig = {
 /**
  * Resolved flow configuration with all defaults applied
  */
-export type ResolvedFlowWorkerConfig = Required<Omit<FlowWorkerConfig, 'connectionString' | 'env'>> & {
+export type ResolvedFlowWorkerConfig = Required<Omit<FlowWorkerConfig, 'connectionString' | 'env' | 'ensureCompiledOnStartup'>> & {
   connectionString: string | undefined;
   env: Record<string, string | undefined>;
 };

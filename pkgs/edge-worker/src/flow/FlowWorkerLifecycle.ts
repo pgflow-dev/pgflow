@@ -9,6 +9,7 @@ import { FlowShapeMismatchError } from './errors.js';
 export interface FlowLifecycleConfig {
   heartbeatInterval?: number;
   isLocalEnvironment?: boolean;
+  ensureCompiledOnStartup?: boolean;
 }
 
 /**
@@ -25,6 +26,7 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
   private heartbeatInterval: number;
   private lastHeartbeat = 0;
   private isLocalEnvironment: boolean;
+  private ensureCompiledOnStartup: boolean;
 
   constructor(queries: Queries, flow: TFlow, logger: Logger, config?: FlowLifecycleConfig) {
     this.queries = queries;
@@ -33,6 +35,7 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
     this.workerState = new WorkerState(logger);
     this.heartbeatInterval = config?.heartbeatInterval ?? 5000;
     this.isLocalEnvironment = config?.isLocalEnvironment ?? false;
+    this.ensureCompiledOnStartup = config?.ensureCompiledOnStartup ?? true;
   }
 
   async acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void> {
@@ -42,7 +45,11 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
     this._workerId = workerBootstrap.workerId;
 
     // Compile/verify flow as part of Starting (before registering worker)
-    await this.ensureFlowCompiled();
+    if (this.ensureCompiledOnStartup) {
+      await this.ensureFlowCompiled();
+    } else {
+      this.logger.info(`Skipping compilation check for flow '${this.flow.slug}' (ensureCompiledOnStartup=false)`);
+    }
 
     // Only register worker after successful compilation
     this.workerRow = await this.queries.onWorkerStarted({

@@ -307,3 +307,138 @@ Deno.test(
     }
   })
 );
+
+// Tests for ensureCompiledOnStartup config option
+
+Deno.test(
+  'skips compilation when ensureCompiledOnStartup is false',
+  withPgNoTransaction(async (sql) => {
+    await sql`select pgflow_tests.reset_db();`;
+
+    // Verify flow does NOT exist
+    const [flowBefore] = await sql`
+      SELECT * FROM pgflow.flows WHERE flow_slug = 'test_compilation_flow'
+    `;
+    assertEquals(flowBefore, undefined, 'Flow should not exist before worker startup');
+
+    // Create worker with ensureCompiledOnStartup: false
+    const worker = createFlowWorker(
+      TestCompilationFlow,
+      {
+        sql,
+        ensureCompiledOnStartup: false,  // SKIP compilation
+        maxConcurrent: 1,
+        batchSize: 10,
+        maxPollSeconds: 1,
+        pollIntervalMs: 200,
+      },
+      createLogger,
+      createPlatformAdapterWithLocalEnv(sql, false)
+    );
+
+    try {
+      worker.startOnlyOnce({
+        edgeFunctionName: 'test_compilation',
+        workerId: crypto.randomUUID(),
+      });
+      await delay(100);
+
+      // Flow should NOT have been created (compilation was skipped)
+      const [flowAfter] = await sql`
+        SELECT * FROM pgflow.flows WHERE flow_slug = 'test_compilation_flow'
+      `;
+      assertEquals(flowAfter, undefined, 'Flow should NOT be created when compilation skipped');
+    } finally {
+      await worker.stop();
+    }
+  })
+);
+
+Deno.test(
+  'compiles flow when ensureCompiledOnStartup is explicitly true',
+  withPgNoTransaction(async (sql) => {
+    await sql`select pgflow_tests.reset_db();`;
+
+    // Verify flow does NOT exist
+    const [flowBefore] = await sql`
+      SELECT * FROM pgflow.flows WHERE flow_slug = 'test_compilation_flow'
+    `;
+    assertEquals(flowBefore, undefined, 'Flow should not exist before worker startup');
+
+    // Create worker with ensureCompiledOnStartup: true (explicit)
+    const worker = createFlowWorker(
+      TestCompilationFlow,
+      {
+        sql,
+        ensureCompiledOnStartup: true,  // EXPLICIT true
+        maxConcurrent: 1,
+        batchSize: 10,
+        maxPollSeconds: 1,
+        pollIntervalMs: 200,
+      },
+      createLogger,
+      createPlatformAdapterWithLocalEnv(sql, false)
+    );
+
+    try {
+      worker.startOnlyOnce({
+        edgeFunctionName: 'test_compilation',
+        workerId: crypto.randomUUID(),
+      });
+      await delay(100);
+
+      // Flow SHOULD have been created
+      const [flowAfter] = await sql`
+        SELECT * FROM pgflow.flows WHERE flow_slug = 'test_compilation_flow'
+      `;
+      assertEquals(flowAfter?.flow_slug, 'test_compilation_flow', 'Flow should be created when ensureCompiledOnStartup is true');
+    } finally {
+      await worker.stop();
+    }
+  })
+);
+
+Deno.test(
+  'worker still registers and polls when ensureCompiledOnStartup is false',
+  withPgNoTransaction(async (sql) => {
+    await sql`select pgflow_tests.reset_db();`;
+
+    // Pre-compile the flow manually (simulating pre-compiled via CLI)
+    await sql`SELECT pgflow.create_flow('test_compilation_flow')`;
+    await sql`SELECT pgflow.add_step('test_compilation_flow', 'double')`;
+
+    const workerId = crypto.randomUUID();
+
+    // Create worker with ensureCompiledOnStartup: false
+    const worker = createFlowWorker(
+      TestCompilationFlow,
+      {
+        sql,
+        ensureCompiledOnStartup: false,  // Skip compilation check
+        maxConcurrent: 1,
+        batchSize: 10,
+        maxPollSeconds: 1,
+        pollIntervalMs: 200,
+      },
+      createLogger,
+      createPlatformAdapterWithLocalEnv(sql, false)
+    );
+
+    try {
+      worker.startOnlyOnce({
+        edgeFunctionName: 'test_compilation',
+        workerId,
+      });
+      await delay(100);
+
+      // Worker should have registered (check workers table for this specific worker)
+      const workers = await sql`
+        SELECT * FROM pgflow.workers WHERE worker_id = ${workerId}
+      `;
+      assertEquals(workers.length, 1, 'Worker should be registered even when skipping compilation');
+      assertEquals(workers[0].queue_name, 'test_compilation_flow', 'Worker should be registered for the correct queue');
+    } finally {
+      await worker.stop();
+    }
+  })
+);
