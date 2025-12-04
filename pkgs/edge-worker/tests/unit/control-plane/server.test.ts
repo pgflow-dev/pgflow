@@ -278,259 +278,308 @@ Deno.test('ControlPlane Handler - empty array creates handler with no flows', as
 // Tests for POST /flows/:slug/ensure-compiled endpoint
 // ============================================================
 
-const TEST_SECRET_KEY = 'test-secret-key-12345';
+const TEST_SERVICE_ROLE_KEY = 'test-service-role-key-12345';
+const ENV_KEY = 'SUPABASE_SERVICE_ROLE_KEY';
 
 Deno.test('ensure-compiled - returns 401 without apikey header', async () => {
-  const mockSql = createMockSql({ status: 'verified', differences: [] });
-  const options: ControlPlaneOptions = {
-    sql: mockSql,
-    secretKey: TEST_SECRET_KEY,
-  };
-  const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
+  Deno.env.set(ENV_KEY, TEST_SERVICE_ROLE_KEY);
+  try {
+    const mockSql = createMockSql({ status: 'verified', differences: [] });
+    const options: ControlPlaneOptions = { sql: mockSql };
+    const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
 
-  const shape = extractFlowShape(FlowWithSingleStep);
-  const request = createEnsureCompiledRequest(
-    'flow_single_step',
-    { shape, mode: 'production' }
-    // No apikey
-  );
-  const response = await handler(request);
+    const shape = extractFlowShape(FlowWithSingleStep);
+    const request = createEnsureCompiledRequest(
+      'flow_single_step',
+      { shape, mode: 'production' }
+      // No apikey
+    );
+    const response = await handler(request);
 
-  assertEquals(response.status, 401);
-  const data = await response.json();
-  assertEquals(data.error, 'Unauthorized');
+    assertEquals(response.status, 401);
+    const data = await response.json();
+    assertEquals(data.error, 'Unauthorized');
+  } finally {
+    Deno.env.delete(ENV_KEY);
+  }
 });
 
 Deno.test('ensure-compiled - returns 401 with wrong apikey', async () => {
-  const mockSql = createMockSql({ status: 'verified', differences: [] });
-  const options: ControlPlaneOptions = {
-    sql: mockSql,
-    secretKey: TEST_SECRET_KEY,
-  };
-  const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
+  Deno.env.set(ENV_KEY, TEST_SERVICE_ROLE_KEY);
+  try {
+    const mockSql = createMockSql({ status: 'verified', differences: [] });
+    const options: ControlPlaneOptions = { sql: mockSql };
+    const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
 
-  const shape = extractFlowShape(FlowWithSingleStep);
-  const request = createEnsureCompiledRequest(
-    'flow_single_step',
-    { shape, mode: 'production' },
-    'wrong-api-key'
-  );
-  const response = await handler(request);
+    const shape = extractFlowShape(FlowWithSingleStep);
+    const request = createEnsureCompiledRequest(
+      'flow_single_step',
+      { shape, mode: 'production' },
+      'wrong-api-key'
+    );
+    const response = await handler(request);
 
-  assertEquals(response.status, 401);
-  const data = await response.json();
-  assertEquals(data.error, 'Unauthorized');
+    assertEquals(response.status, 401);
+    const data = await response.json();
+    assertEquals(data.error, 'Unauthorized');
+  } finally {
+    Deno.env.delete(ENV_KEY);
+  }
+});
+
+Deno.test('ensure-compiled - returns 401 when SUPABASE_SERVICE_ROLE_KEY not set', async () => {
+  Deno.env.delete(ENV_KEY); // Ensure it's not set
+  try {
+    const mockSql = createMockSql({ status: 'verified', differences: [] });
+    const options: ControlPlaneOptions = { sql: mockSql };
+    const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
+
+    const shape = extractFlowShape(FlowWithSingleStep);
+    const request = createEnsureCompiledRequest(
+      'flow_single_step',
+      { shape, mode: 'production' },
+      'any-key'
+    );
+    const response = await handler(request);
+
+    assertEquals(response.status, 401);
+    const data = await response.json();
+    assertEquals(data.error, 'Unauthorized');
+  } finally {
+    // Nothing to restore
+  }
 });
 
 Deno.test('ensure-compiled - returns 200 with status compiled for new flow', async () => {
-  const mockSql = createMockSql({ status: 'compiled', differences: [] });
-  const options: ControlPlaneOptions = {
-    sql: mockSql,
-    secretKey: TEST_SECRET_KEY,
-  };
-  const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
+  Deno.env.set(ENV_KEY, TEST_SERVICE_ROLE_KEY);
+  try {
+    const mockSql = createMockSql({ status: 'compiled', differences: [] });
+    const options: ControlPlaneOptions = { sql: mockSql };
+    const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
 
-  const shape = extractFlowShape(FlowWithSingleStep);
-  const request = createEnsureCompiledRequest(
-    'flow_single_step',
-    { shape, mode: 'production' },
-    TEST_SECRET_KEY
-  );
-  const response = await handler(request);
+    const shape = extractFlowShape(FlowWithSingleStep);
+    const request = createEnsureCompiledRequest(
+      'flow_single_step',
+      { shape, mode: 'production' },
+      TEST_SERVICE_ROLE_KEY
+    );
+    const response = await handler(request);
 
-  assertEquals(response.status, 200);
-  const data = await response.json();
-  assertEquals(data.status, 'compiled');
-  assertEquals(data.differences, []);
+    assertEquals(response.status, 200);
+    const data = await response.json();
+    assertEquals(data.status, 'compiled');
+    assertEquals(data.differences, []);
+  } finally {
+    Deno.env.delete(ENV_KEY);
+  }
 });
 
 Deno.test('ensure-compiled - returns 200 with status verified for matching shape', async () => {
-  const mockSql = createMockSql({ status: 'verified', differences: [] });
-  const options: ControlPlaneOptions = {
-    sql: mockSql,
-    secretKey: TEST_SECRET_KEY,
-  };
-  const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
+  Deno.env.set(ENV_KEY, TEST_SERVICE_ROLE_KEY);
+  try {
+    const mockSql = createMockSql({ status: 'verified', differences: [] });
+    const options: ControlPlaneOptions = { sql: mockSql };
+    const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
 
-  const shape = extractFlowShape(FlowWithSingleStep);
-  const request = createEnsureCompiledRequest(
-    'flow_single_step',
-    { shape, mode: 'production' },
-    TEST_SECRET_KEY
-  );
-  const response = await handler(request);
+    const shape = extractFlowShape(FlowWithSingleStep);
+    const request = createEnsureCompiledRequest(
+      'flow_single_step',
+      { shape, mode: 'production' },
+      TEST_SERVICE_ROLE_KEY
+    );
+    const response = await handler(request);
 
-  assertEquals(response.status, 200);
-  const data = await response.json();
-  assertEquals(data.status, 'verified');
+    assertEquals(response.status, 200);
+    const data = await response.json();
+    assertEquals(data.status, 'verified');
+  } finally {
+    Deno.env.delete(ENV_KEY);
+  }
 });
 
 Deno.test('ensure-compiled - returns 200 with status recompiled in development mode', async () => {
-  const mockSql = createMockSql({
-    status: 'recompiled',
-    differences: ['Step count differs: 1 vs 2'],
-  });
-  const options: ControlPlaneOptions = {
-    sql: mockSql,
-    secretKey: TEST_SECRET_KEY,
-  };
-  const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
+  Deno.env.set(ENV_KEY, TEST_SERVICE_ROLE_KEY);
+  try {
+    const mockSql = createMockSql({
+      status: 'recompiled',
+      differences: ['Step count differs: 1 vs 2'],
+    });
+    const options: ControlPlaneOptions = { sql: mockSql };
+    const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
 
-  const shape = extractFlowShape(FlowWithSingleStep);
-  const request = createEnsureCompiledRequest(
-    'flow_single_step',
-    { shape, mode: 'development' },
-    TEST_SECRET_KEY
-  );
-  const response = await handler(request);
+    const shape = extractFlowShape(FlowWithSingleStep);
+    const request = createEnsureCompiledRequest(
+      'flow_single_step',
+      { shape, mode: 'development' },
+      TEST_SERVICE_ROLE_KEY
+    );
+    const response = await handler(request);
 
-  assertEquals(response.status, 200);
-  const data = await response.json();
-  assertEquals(data.status, 'recompiled');
-  assertEquals(data.differences, ['Step count differs: 1 vs 2']);
+    assertEquals(response.status, 200);
+    const data = await response.json();
+    assertEquals(data.status, 'recompiled');
+    assertEquals(data.differences, ['Step count differs: 1 vs 2']);
+  } finally {
+    Deno.env.delete(ENV_KEY);
+  }
 });
 
 Deno.test('ensure-compiled - returns 409 on shape mismatch in production mode', async () => {
-  const mockSql = createMockSql({
-    status: 'mismatch',
-    differences: ['Step count differs: 1 vs 2'],
-  });
-  const options: ControlPlaneOptions = {
-    sql: mockSql,
-    secretKey: TEST_SECRET_KEY,
-  };
-  const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
+  Deno.env.set(ENV_KEY, TEST_SERVICE_ROLE_KEY);
+  try {
+    const mockSql = createMockSql({
+      status: 'mismatch',
+      differences: ['Step count differs: 1 vs 2'],
+    });
+    const options: ControlPlaneOptions = { sql: mockSql };
+    const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
 
-  const shape = extractFlowShape(FlowWithSingleStep);
-  const request = createEnsureCompiledRequest(
-    'flow_single_step',
-    { shape, mode: 'production' },
-    TEST_SECRET_KEY
-  );
-  const response = await handler(request);
+    const shape = extractFlowShape(FlowWithSingleStep);
+    const request = createEnsureCompiledRequest(
+      'flow_single_step',
+      { shape, mode: 'production' },
+      TEST_SERVICE_ROLE_KEY
+    );
+    const response = await handler(request);
 
-  assertEquals(response.status, 409);
-  const data = await response.json();
-  assertEquals(data.status, 'mismatch');
-  assertEquals(data.differences, ['Step count differs: 1 vs 2']);
+    assertEquals(response.status, 409);
+    const data = await response.json();
+    assertEquals(data.status, 'mismatch');
+    assertEquals(data.differences, ['Step count differs: 1 vs 2']);
+  } finally {
+    Deno.env.delete(ENV_KEY);
+  }
 });
 
 Deno.test('ensure-compiled - returns 500 on database error', async () => {
-  const mockSql = createErrorSql('Connection failed');
-  const options: ControlPlaneOptions = {
-    sql: mockSql,
-    secretKey: TEST_SECRET_KEY,
-  };
-  const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
+  Deno.env.set(ENV_KEY, TEST_SERVICE_ROLE_KEY);
+  try {
+    const mockSql = createErrorSql('Connection failed');
+    const options: ControlPlaneOptions = { sql: mockSql };
+    const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
 
-  const shape = extractFlowShape(FlowWithSingleStep);
-  const request = createEnsureCompiledRequest(
-    'flow_single_step',
-    { shape, mode: 'production' },
-    TEST_SECRET_KEY
-  );
-  const response = await handler(request);
+    const shape = extractFlowShape(FlowWithSingleStep);
+    const request = createEnsureCompiledRequest(
+      'flow_single_step',
+      { shape, mode: 'production' },
+      TEST_SERVICE_ROLE_KEY
+    );
+    const response = await handler(request);
 
-  assertEquals(response.status, 500);
-  const data = await response.json();
-  assertEquals(data.error, 'Database Error');
-  assertMatch(data.message, /Connection failed/);
+    assertEquals(response.status, 500);
+    const data = await response.json();
+    assertEquals(data.error, 'Database Error');
+    assertMatch(data.message, /Connection failed/);
+  } finally {
+    Deno.env.delete(ENV_KEY);
+  }
 });
 
 Deno.test('ensure-compiled - returns 404 when SQL not configured', async () => {
-  // No sql option provided
-  const handler = createControlPlaneHandler(ALL_TEST_FLOWS);
+  Deno.env.set(ENV_KEY, TEST_SERVICE_ROLE_KEY);
+  try {
+    // No sql option provided
+    const handler = createControlPlaneHandler(ALL_TEST_FLOWS);
 
-  const shape = extractFlowShape(FlowWithSingleStep);
-  const request = createEnsureCompiledRequest(
-    'flow_single_step',
-    { shape, mode: 'production' },
-    TEST_SECRET_KEY
-  );
-  const response = await handler(request);
+    const shape = extractFlowShape(FlowWithSingleStep);
+    const request = createEnsureCompiledRequest(
+      'flow_single_step',
+      { shape, mode: 'production' },
+      TEST_SERVICE_ROLE_KEY
+    );
+    const response = await handler(request);
 
-  assertEquals(response.status, 404);
-  const data = await response.json();
-  assertEquals(data.error, 'Not Found');
+    assertEquals(response.status, 404);
+    const data = await response.json();
+    assertEquals(data.error, 'Not Found');
+  } finally {
+    Deno.env.delete(ENV_KEY);
+  }
 });
 
 Deno.test('ensure-compiled - returns 400 for invalid JSON body', async () => {
-  const mockSql = createMockSql({ status: 'verified', differences: [] });
-  const options: ControlPlaneOptions = {
-    sql: mockSql,
-    secretKey: TEST_SECRET_KEY,
-  };
-  const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
+  Deno.env.set(ENV_KEY, TEST_SERVICE_ROLE_KEY);
+  try {
+    const mockSql = createMockSql({ status: 'verified', differences: [] });
+    const options: ControlPlaneOptions = { sql: mockSql };
+    const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
 
-  const request = new Request(
-    'http://localhost/pgflow/flows/flow_single_step/ensure-compiled',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: TEST_SECRET_KEY,
-      },
-      body: 'invalid json',
-    }
-  );
-  const response = await handler(request);
+    const request = new Request(
+      'http://localhost/pgflow/flows/flow_single_step/ensure-compiled',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: TEST_SERVICE_ROLE_KEY,
+        },
+        body: 'invalid json',
+      }
+    );
+    const response = await handler(request);
 
-  assertEquals(response.status, 400);
-  const data = await response.json();
-  assertEquals(data.error, 'Bad Request');
+    assertEquals(response.status, 400);
+    const data = await response.json();
+    assertEquals(data.error, 'Bad Request');
+  } finally {
+    Deno.env.delete(ENV_KEY);
+  }
 });
 
 Deno.test('ensure-compiled - returns 400 for missing shape in body', async () => {
-  const mockSql = createMockSql({ status: 'verified', differences: [] });
-  const options: ControlPlaneOptions = {
-    sql: mockSql,
-    secretKey: TEST_SECRET_KEY,
-  };
-  const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
+  Deno.env.set(ENV_KEY, TEST_SERVICE_ROLE_KEY);
+  try {
+    const mockSql = createMockSql({ status: 'verified', differences: [] });
+    const options: ControlPlaneOptions = { sql: mockSql };
+    const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
 
-  const request = new Request(
-    'http://localhost/pgflow/flows/flow_single_step/ensure-compiled',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: TEST_SECRET_KEY,
-      },
-      body: JSON.stringify({ mode: 'production' }), // missing shape
-    }
-  );
-  const response = await handler(request);
+    const request = new Request(
+      'http://localhost/pgflow/flows/flow_single_step/ensure-compiled',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: TEST_SERVICE_ROLE_KEY,
+        },
+        body: JSON.stringify({ mode: 'production' }), // missing shape
+      }
+    );
+    const response = await handler(request);
 
-  assertEquals(response.status, 400);
-  const data = await response.json();
-  assertEquals(data.error, 'Bad Request');
-  assertMatch(data.message, /shape/);
+    assertEquals(response.status, 400);
+    const data = await response.json();
+    assertEquals(data.error, 'Bad Request');
+    assertMatch(data.message, /shape/);
+  } finally {
+    Deno.env.delete(ENV_KEY);
+  }
 });
 
 Deno.test('ensure-compiled - returns 400 for invalid mode', async () => {
-  const mockSql = createMockSql({ status: 'verified', differences: [] });
-  const options: ControlPlaneOptions = {
-    sql: mockSql,
-    secretKey: TEST_SECRET_KEY,
-  };
-  const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
+  Deno.env.set(ENV_KEY, TEST_SERVICE_ROLE_KEY);
+  try {
+    const mockSql = createMockSql({ status: 'verified', differences: [] });
+    const options: ControlPlaneOptions = { sql: mockSql };
+    const handler = createControlPlaneHandler(ALL_TEST_FLOWS, options);
 
-  const shape = extractFlowShape(FlowWithSingleStep);
-  const request = new Request(
-    'http://localhost/pgflow/flows/flow_single_step/ensure-compiled',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: TEST_SECRET_KEY,
-      },
-      body: JSON.stringify({ shape, mode: 'invalid' }),
-    }
-  );
-  const response = await handler(request);
+    const shape = extractFlowShape(FlowWithSingleStep);
+    const request = new Request(
+      'http://localhost/pgflow/flows/flow_single_step/ensure-compiled',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: TEST_SERVICE_ROLE_KEY,
+        },
+        body: JSON.stringify({ shape, mode: 'invalid' }),
+      }
+    );
+    const response = await handler(request);
 
-  assertEquals(response.status, 400);
-  const data = await response.json();
-  assertEquals(data.error, 'Bad Request');
-  assertMatch(data.message, /mode/);
+    assertEquals(response.status, 400);
+    const data = await response.json();
+    assertEquals(data.error, 'Bad Request');
+    assertMatch(data.message, /mode/);
+  } finally {
+    Deno.env.delete(ENV_KEY);
+  }
 });

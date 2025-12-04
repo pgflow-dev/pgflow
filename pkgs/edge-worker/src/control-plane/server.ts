@@ -47,8 +47,6 @@ export type SqlFunction = (strings: TemplateStringsArray, ...values: any[]) => P
 export interface ControlPlaneOptions {
   /** SQL function for database operations (required for ensure-compiled endpoint) */
   sql?: SqlFunction;
-  /** Secret key for authentication (required for ensure-compiled endpoint) */
-  secretKey?: string;
 }
 
 /**
@@ -195,12 +193,13 @@ function jsonResponse(data: unknown, status: number): Response {
 }
 
 /**
- * Verifies authentication using apikey header
+ * Verifies authentication using apikey header against SUPABASE_SERVICE_ROLE_KEY env var
  */
-function verifyAuth(request: Request, secretKey: string | undefined): boolean {
-  if (!secretKey) return false;
+function verifyAuth(request: Request): boolean {
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!serviceRoleKey) return false;
   const apikey = request.headers.get('apikey');
-  return apikey === secretKey;
+  return apikey === serviceRoleKey;
 }
 
 /**
@@ -249,7 +248,7 @@ async function handleEnsureCompiled(
   }
 
   // Verify authentication
-  if (!verifyAuth(request, options.secretKey)) {
+  if (!verifyAuth(request)) {
     return jsonResponse(
       {
         error: 'Unauthorized',

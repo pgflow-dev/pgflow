@@ -30,26 +30,25 @@
 
 ## Authentication
 
-Workers authenticate with ControlPlane using a dedicated secret key:
+Workers authenticate with ControlPlane using the Supabase service role key (zero-config):
 
 ```
-Env var: PGFLOW_SECRET_KEY
-Header: apikey: <secret_key>
+Env var: SUPABASE_SERVICE_ROLE_KEY (automatically available in Edge Functions)
+Header: apikey: <service_role_key>
 ```
 
 **Setup:**
-1. Users generate a secret key in Supabase dashboard (Supabase Secrets)
-2. Set `PGFLOW_SECRET_KEY` env var for both ControlPlane and Worker edge functions
-3. Workers include `apikey` header in compilation requests
-4. ControlPlane verifies `apikey` header matches `PGFLOW_SECRET_KEY` env var
+- No setup required - both ControlPlane and Worker Edge Functions automatically have access to `SUPABASE_SERVICE_ROLE_KEY` via `Deno.env`
+- Workers include `apikey` header in compilation requests
+- ControlPlane verifies `apikey` header matches `SUPABASE_SERVICE_ROLE_KEY` env var
 
 **ControlPlane Verification:**
 ```typescript
 function verifyAuth(request: Request): boolean {
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!serviceRoleKey) return false;  // Not configured - reject all
   const apikey = request.headers.get('apikey');
-  const secretKey = Deno.env.get('PGFLOW_SECRET_KEY');
-  if (!secretKey) return false;  // Not configured - reject all
-  return apikey === secretKey;
+  return apikey === serviceRoleKey;
 }
 ```
 
@@ -66,7 +65,7 @@ Worker.start(MyFlow)
     │
     └── POST /flows/:slug/ensure-compiled
         │   Body: { shape: workerShape, mode: 'development' | 'production' }
-        │   Headers: { apikey: PGFLOW_SECRET_KEY }
+        │   Headers: { apikey: SUPABASE_SERVICE_ROLE_KEY }
         │
         └── ControlPlane (Layer 1: Deployment Validation)
             │
@@ -119,7 +118,7 @@ Worker.start(MyFlow)
 
 ```
 POST /flows/:slug/ensure-compiled
-  Headers: { apikey: PGFLOW_SECRET_KEY }
+  Headers: { apikey: SUPABASE_SERVICE_ROLE_KEY }
   Body: {
     shape: FlowShape,
     mode: 'development' | 'production'
@@ -718,7 +717,7 @@ Test-Driven Development order - write tests FIRST, then implement:
 ### Phase 7: ControlPlane Endpoint (~0.5 day)
 
 **Order within phase:**
-1. Add auth verification (check `PGFLOW_SECRET_KEY`)
+1. Add auth verification (check `SUPABASE_SERVICE_ROLE_KEY`)
 2. Add flow registry lookup (404 if not found)
 3. Add Layer 1: TypeScript comparison (409 if worker≠ControlPlane)
 4. Add Layer 2: SQL function call
