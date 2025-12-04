@@ -314,6 +314,33 @@ export type Database = {
           },
         ]
       }
+      worker_functions: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          function_name: string
+          heartbeat_timeout_seconds: number
+          last_invoked_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          function_name: string
+          heartbeat_timeout_seconds?: number
+          last_invoked_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          function_name?: string
+          heartbeat_timeout_seconds?: number
+          last_invoked_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       workers: {
         Row: {
           deprecated_at: string | null
@@ -321,6 +348,7 @@ export type Database = {
           last_heartbeat_at: string
           queue_name: string
           started_at: string
+          stopped_at: string | null
           worker_id: string
         }
         Insert: {
@@ -329,6 +357,7 @@ export type Database = {
           last_heartbeat_at?: string
           queue_name: string
           started_at?: string
+          stopped_at?: string | null
           worker_id: string
         }
         Update: {
@@ -337,6 +366,7 @@ export type Database = {
           last_heartbeat_at?: string
           queue_name?: string
           started_at?: string
+          stopped_at?: string | null
           worker_id?: string
         }
         Relationships: []

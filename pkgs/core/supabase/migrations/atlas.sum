@@ -1,4 +1,4 @@
-h1:moHUa6OxOaPfYpNNrLRhkw13YzwraGNDxMnA9aarP30=
+h1:1+E3ra0bCEMcyTaOltxInks1QXaP9l45RgA3GSyY7To=
 20250429164909_pgflow_initial.sql h1:I3n/tQIg5Q5nLg7RDoU3BzqHvFVjmumQxVNbXTPG15s=
 20250517072017_pgflow_fix_poll_for_tasks_to_use_separate_statement_for_polling.sql h1:wTuXuwMxVniCr3ONCpodpVWJcHktoQZIbqMZ3sUHKMY=
 20250609105135_pgflow_add_start_tasks_and_started_status.sql h1:ggGanW4Wyt8Kv6TWjnZ00/qVb3sm+/eFVDjGfT8qyPg=
@@ -14,3 +14,4 @@ h1:moHUa6OxOaPfYpNNrLRhkw13YzwraGNDxMnA9aarP30=
 20251130000000_pgflow_auto_compilation.sql h1:qs+3qq1Vsyo0ETzbxDnmkVtSUa6XHkd/K9wF/3W46jM=
 20251204115929_pgflow_temp_is_local.sql h1:arP+PC2OYI9ktAFx0+G9/w8zsaq/AbFWjLgK6YDujvQ=
 20251204142050_pgflow_temp_ensure_flow_compiled_auto_detect.sql h1:9FsEd0iyaIv9X1alACBQCzyebt2/+m1rgL4ozXJWBcA=
+20251204145037_pgflow_temp_worker_functions_schema.sql h1:mrLKtkM8aWHBY+LIxQrsXxE7aKuPJaQJO2qd0NnrJ74=
