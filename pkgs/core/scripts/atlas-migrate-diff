@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
 
-./scripts/atlas-dump-realtime-schema
+# Baseline is pre-generated from fresh Supabase using atlas/dump-fresh-baseline.sh
+# Regenerate only when Supabase CLI version changes significantly
 
 # Check if migration name is provided
 if [ $# -eq 0 ]; then

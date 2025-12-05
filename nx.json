@@ -103,10 +103,6 @@
       "local": true,
       "cache": true
     },
-    "dump-realtime-schema": {
-      "local": true,
-      "cache": true
-    },
     "gen-types": {
       "local": true,
       "cache": true
