@@ -6,6 +6,7 @@ create table if not exists pgflow.workers (
   function_name text not null,
   started_at timestamptz not null default now(),
   deprecated_at timestamptz,
+  stopped_at timestamptz,
   last_heartbeat_at timestamptz not null default now()
 );
 
