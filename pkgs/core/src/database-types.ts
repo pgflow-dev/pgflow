@@ -423,6 +423,12 @@ export type Database = {
         Args: { run_id: string }
         Returns: number
       }
+      cleanup_ensure_workers_logs: {
+        Args: { retention_hours?: number }
+        Returns: {
+          cron_deleted: number
+        }[]
+      }
       complete_task: {
         Args: {
           output: Json
