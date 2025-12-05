@@ -91,7 +91,6 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
     flow,
     createLogger('FlowWorkerLifecycle'),
     {
-      isLocalEnvironment: platformAdapter.isLocalEnvironment,
       ensureCompiledOnStartup: config.ensureCompiledOnStartup ?? true
     }
   );

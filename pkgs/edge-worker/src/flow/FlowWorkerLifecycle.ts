@@ -8,7 +8,6 @@ import { FlowShapeMismatchError } from './errors.js';
 
 export interface FlowLifecycleConfig {
   heartbeatInterval?: number;
-  isLocalEnvironment?: boolean;
   ensureCompiledOnStartup?: boolean;
 }
 
@@ -25,7 +24,6 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
   private _workerId?: string;
   private heartbeatInterval: number;
   private lastHeartbeat = 0;
-  private isLocalEnvironment: boolean;
   private ensureCompiledOnStartup: boolean;
 
   constructor(queries: Queries, flow: TFlow, logger: Logger, config?: FlowLifecycleConfig) {
@@ -34,7 +32,6 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
     this.logger = logger;
     this.workerState = new WorkerState(logger);
     this.heartbeatInterval = config?.heartbeatInterval ?? 5000;
-    this.isLocalEnvironment = config?.isLocalEnvironment ?? false;
     this.ensureCompiledOnStartup = config?.ensureCompiledOnStartup ?? true;
   }
 
@@ -61,15 +58,13 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
   }
 
   private async ensureFlowCompiled(): Promise<void> {
-    const mode = this.isLocalEnvironment ? 'development' : 'production';
-    this.logger.info(`Compiling flow '${this.flow.slug}' (mode: ${mode})...`);
+    this.logger.info(`Compiling flow '${this.flow.slug}'...`);
 
     const shape = extractFlowShape(this.flow);
 
     const result = await this.queries.ensureFlowCompiled(
       this.flow.slug,
-      shape,
-      mode
+      shape
     );
 
     if (result.status === 'mismatch') {

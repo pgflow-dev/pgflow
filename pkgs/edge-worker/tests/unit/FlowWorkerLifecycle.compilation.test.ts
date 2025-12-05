@@ -32,8 +32,7 @@ class MockQueries extends Queries {
 
   override ensureFlowCompiled(
     _flowSlug: string,
-    _shape: FlowShape,
-    _mode: 'development' | 'production'
+    _shape: FlowShape
   ): Promise<EnsureFlowCompiledResult> {
     this.ensureFlowCompiledCallCount++;
     return Promise.resolve({ status: 'verified', differences: [] });

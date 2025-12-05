@@ -149,7 +149,9 @@ Deno.test(
     await sql`SELECT pgflow.add_step('test_compilation_flow', 'double')`;
     await sql`SELECT pgflow.add_step('test_compilation_flow', 'different_step', deps_slugs => ARRAY['double']::text[])`;
 
-    // Use isLocal: false to simulate production mode
+    // Override JWT secret to simulate production mode (is_local() returns false)
+    await sql`SET app.settings.jwt_secret = 'production-secret'`;
+
     const platformAdapter = createPlatformAdapterWithLocalEnv(sql, false);
 
     const worker = createFlowWorker(
@@ -273,8 +275,7 @@ Deno.test(
         connections.map((conn) =>
           conn`SELECT pgflow.ensure_flow_compiled(
             ${flowSlug},
-            ${conn.json(shape)},
-            'production'
+            ${conn.json(shape)}
           ) as result`
         )
       );
