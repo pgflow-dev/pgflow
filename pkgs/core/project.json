@@ -22,28 +22,8 @@
     "supabase:ci-marker": {
       "executor": "nx:noop"
     },
-    "dump-realtime-schema": {
-      "executor": "nx:run-commands",
-      "local": true,
-      "inputs": [
-        "{projectRoot}/package.json",
-        "{projectRoot}/supabase/config.toml",
-        "{projectRoot}/scripts/atlas-dump-realtime-schema"
-      ],
-      "outputs": ["{projectRoot}/atlas/.supabase-baseline-schema.sql"],
-      "options": {
-        "cwd": "{projectRoot}",
-        "commands": [
-          "../../scripts/supabase-start-locked.sh .",
-          "scripts/atlas-dump-realtime-schema"
-        ],
-        "parallel": false
-      },
-      "cache": true
-    },
     "verify-schemas-synced": {
       "executor": "nx:run-commands",
-      "dependsOn": ["dump-realtime-schema"],
       "inputs": [
         "schemas",
         "migrations",

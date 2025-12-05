@@ -15,8 +15,10 @@ docker "postgres" "pgflow" {
   # image = "postgres:17"
   # custom image is built and pushed to speed up schema verification,
   # otherwise it takes around 30s
-  image = "jumski/postgres-17-pgmq:latest"
-  baseline = file(".supabase-baseline-schema.sql")
+  # contains: pgmq, pg_cron, pg_net, pgsodium, supabase_vault
+  # tag matches Supabase Postgres version we align extensions with
+  image = "jumski/atlas-postgres-pgflow:17.6.1.054"
+  baseline = file("supabase-baseline-schema.sql")
   build {
     dockerfile = "atlas/Dockerfile"
     context = "."

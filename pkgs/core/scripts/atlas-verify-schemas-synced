@@ -31,9 +31,8 @@ docker rm -f atlas-dev-postgres-pgflow 2>/dev/null || true
 echo "Creating temporary migrations directory..."
 cp -r supabase/migrations "$TEMP_MIGRATIONS_DIR"
 
-# First, ensure the baseline schema file is updated
-echo "Running atlas-dump-realtime-schema..."
-./scripts/atlas-dump-realtime-schema
+# Baseline is pre-generated and committed (see atlas/dump-fresh-baseline.sh)
+# No need to regenerate it here
 
 # Use a simple fixed temporary name
 temp_migration="temp_verify_schemas"

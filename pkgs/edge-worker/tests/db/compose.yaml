@@ -1,8 +1,7 @@
 services:
   db:
-    image: jumski/postgres-17-pgmq:latest
-    # image: postgres:17-alpine
-    # image: supabase/postgres:17.x
+    # Must match image in pkgs/core/atlas/atlas.hcl for baseline compatibility
+    image: jumski/atlas-postgres-pgflow:17.6.1.054
     ports:
       - '5432:5432'
     volumes:

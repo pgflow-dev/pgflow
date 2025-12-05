@@ -1,2 +1,9 @@
 #!/bin/bash
-docker build -t jumski/postgres-17-pgmq:latest --file atlas/Dockerfile atlas/
+# Tag matches Supabase Postgres version we align extensions with
+# See: https://github.com/supabase/postgres/releases
+SUPABASE_VERSION="17.6.1.054"
+
+docker build \
+  -t jumski/atlas-postgres-pgflow:${SUPABASE_VERSION} \
+  -t jumski/atlas-postgres-pgflow:latest \
+  --file atlas/Dockerfile atlas/
