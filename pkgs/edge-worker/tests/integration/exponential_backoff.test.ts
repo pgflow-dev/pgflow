@@ -1,11 +1,12 @@
-import { assertEquals } from '@std/assert';
+import { assertEquals, assertAlmostEquals } from '@std/assert';
 import { createQueueWorker } from '../../src/queue/createQueueWorker.ts';
 import { createTestPlatformAdapter } from './_helpers.ts';
 import { withTransaction } from '../db.ts';
 import { createFakeLogger } from '../fakes.ts';
 import { log, waitFor } from '../e2e/_helpers.ts';
-import { sendBatch } from '../helpers.ts';
-import type { postgres } from '../sql.ts';
+import { sendBatch, waitForQueue } from '../helpers.ts';
+import type { Json } from '../../src/core/types.ts';
+import type { MessageHandlerContext } from '../../src/core/context.ts';
 
 const workerConfig = {
   maxPollSeconds: 1,
@@ -18,34 +19,40 @@ const workerConfig = {
 } as const;
 
 /**
- * Helper to get message visibility time from pgmq queue table
- */
-async function getMessageVisibilityTime(
-  sql: postgres.Sql,
-  queueName: string,
-  msgId: number
-): Promise<number | null> {
-  const result = await sql<{ vt_seconds: number }[]>`
-    SELECT EXTRACT(EPOCH FROM (vt - now()))::int as vt_seconds
-    FROM pgmq.q_${sql.unsafe(queueName)}
-    WHERE msg_id = ${msgId}
-  `;
-  return result[0]?.vt_seconds ?? null;
-}
-
-/**
- * Creates a handler that always fails and tracks failure times
+ * Creates a handler that always fails and collects timing data from two sources:
+ * 1. JS timestamps (Date.now()) - when handler is invoked
+ * 2. DB visibility times (rawMessage.vt) - when message became visible
  */
 function createFailingHandler() {
-  const failureTimes: number[] = [];
+  const invocations: Array<{ jsTime: number; vt: string }> = [];
   return {
-    handler: () => {
-      failureTimes.push(Date.now());
-      log(`Failure #${failureTimes.length} at ${new Date().toISOString()}`);
+    handler: (_payload: Json, context: MessageHandlerContext) => {
+      invocations.push({
+        jsTime: Date.now(),
+        vt: context.rawMessage.vt,
+      });
+      log(`Invocation #${invocations.length} at ${new Date().toISOString()}`);
       throw new Error('Intentional failure for exponential backoff test');
     },
-    getFailureCount: () => failureTimes.length,
-    getFailureTimes: () => failureTimes,
+    getInvocationCount: () => invocations.length,
+    getJsDelays: () => {
+      // Delays in seconds from JS timestamps
+      const delays: number[] = [];
+      for (let i = 1; i < invocations.length; i++) {
+        delays.push((invocations[i].jsTime - invocations[i - 1].jsTime) / 1000);
+      }
+      return delays;
+    },
+    getVtDelays: () => {
+      // Delays in seconds from DB visibility times
+      const delays: number[] = [];
+      for (let i = 1; i < invocations.length; i++) {
+        const vt1 = new Date(invocations[i - 1].vt).getTime();
+        const vt2 = new Date(invocations[i].vt).getTime();
+        delays.push((vt2 - vt1) / 1000);
+      }
+      return delays;
+    },
   };
 }
 
@@ -53,12 +60,13 @@ function createFailingHandler() {
  * Test verifies that exponential backoff is applied correctly:
  * - 1st retry: baseDelay * 2^0 = 2 seconds
  * - 2nd retry: baseDelay * 2^1 = 4 seconds
- * - 3rd retry: baseDelay * 2^2 = 8 seconds
+ * Uses dual-source timing validation (JS timestamps + DB visibility times).
  */
 Deno.test(
   'queue worker applies exponential backoff on retries',
   withTransaction(async (sql) => {
-    const { handler, getFailureCount } = createFailingHandler();
+    const { handler, getInvocationCount, getJsDelays, getVtDelays } =
+      createFailingHandler();
     const worker = createQueueWorker(
       handler,
       {
@@ -70,11 +78,12 @@ Deno.test(
     );
 
     try {
-      // Start worker and send test message
+      // Start worker and wait for queue to be created
       worker.startOnlyOnce({
         edgeFunctionName: 'exponential-backoff-test',
         workerId: crypto.randomUUID(),
       });
+      await waitForQueue(sql, workerConfig.queueName);
 
       // Send a single message
       const [{ send_batch: msgIds }] = await sendBatch(
@@ -82,57 +91,58 @@ Deno.test(
         workerConfig.queueName,
         sql
       );
-      const msgId = msgIds[0];
-      log(`Sent message with ID: ${msgId}`);
+      log(`Sent message with ID: ${msgIds[0]}`);
 
-      // Collect visibility times after each failure
-      const visibilityTimes: number[] = [];
+      // Wait for all retries to complete
+      await waitFor(() => getInvocationCount() >= workerConfig.retry.limit, {
+        timeoutMs: 30000,
+      });
 
-      for (let i = 1; i <= workerConfig.retry.limit; i++) {
-        // Wait for failure
-        await waitFor(() => getFailureCount() >= i, {
-          timeoutMs: 15000,
-        });
+      // Get delays from both sources
+      const jsDelays = getJsDelays();
+      const vtDelays = getVtDelays();
 
-        // Get visibility time after failure
-        const vt = await getMessageVisibilityTime(
-          sql,
-          workerConfig.queueName,
-          msgId
-        );
-        if (vt !== null) {
-          visibilityTimes.push(vt);
-          log(`Visibility time after failure #${i}: ${vt}s`);
-        }
-      }
-
-      // Calculate individual retry delays from visibility times
-      const actualDelays: number[] = [];
-      for (let i = 0; i < visibilityTimes.length; i++) {
-        if (i === 0) {
-          actualDelays.push(visibilityTimes[i]);
-        } else {
-          actualDelays.push(visibilityTimes[i] - visibilityTimes[i - 1]);
-        }
-      }
+      log(`JS delays: ${JSON.stringify(jsDelays)}`);
+      log(`VT delays: ${JSON.stringify(vtDelays)}`);
 
       // Expected exponential backoff pattern: baseDelay * 2^(attempt-1)
-      const expectedDelays = [
-        2, // First retry: 2 * 2^0 = 2 seconds
-        4, // Second retry: 2 * 2^1 = 4 seconds
-        8, // Third retry: 2 * 2^2 = 8 seconds
-      ];
+      // - Delay 1->2: 2 * 2^0 = 2 seconds
+      // - Delay 2->3: 2 * 2^1 = 4 seconds
+      const expectedDelays = [2, 4];
 
-      // Compare actual vs expected delays
+      // Verify JS-based delays match expected pattern (within 200ms tolerance)
       assertEquals(
-        actualDelays,
-        expectedDelays,
-        'Retry delays should follow exponential backoff pattern'
+        jsDelays.length,
+        expectedDelays.length,
+        `Expected ${expectedDelays.length} delays, got ${jsDelays.length}`
       );
+      for (let i = 0; i < expectedDelays.length; i++) {
+        assertAlmostEquals(
+          jsDelays[i],
+          expectedDelays[i],
+          0.2,
+          `JS delay #${i + 1} should be ~${expectedDelays[i]}s`
+        );
+      }
 
-      // Verify total failure count
+      // Verify VT-based delays match expected pattern (within 200ms tolerance)
       assertEquals(
-        getFailureCount(),
+        vtDelays.length,
+        expectedDelays.length,
+        `Expected ${expectedDelays.length} VT delays, got ${vtDelays.length}`
+      );
+      for (let i = 0; i < expectedDelays.length; i++) {
+        assertAlmostEquals(
+          vtDelays[i],
+          expectedDelays[i],
+          0.2,
+          `VT delay #${i + 1} should be ~${expectedDelays[i]}s`
+        );
+      }
+
+      // Verify total invocation count
+      assertEquals(
+        getInvocationCount(),
         workerConfig.retry.limit,
         `Handler should be called ${workerConfig.retry.limit} times`
       );

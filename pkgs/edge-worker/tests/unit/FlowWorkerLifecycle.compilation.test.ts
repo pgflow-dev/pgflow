@@ -9,6 +9,8 @@ import type { postgres } from '../sql.ts';
 // Mock Queries
 class MockQueries extends Queries {
   public ensureFlowCompiledCallCount = 0;
+  public trackWorkerFunctionCallCount = 0;
+  public lastTrackedFunctionName: string | null = null;
 
   constructor() {
     // Pass null as sql since we'll override all methods
@@ -36,6 +38,12 @@ class MockQueries extends Queries {
   ): Promise<EnsureFlowCompiledResult> {
     this.ensureFlowCompiledCallCount++;
     return Promise.resolve({ status: 'verified', differences: [] });
+  }
+
+  override trackWorkerFunction(functionName: string): Promise<void> {
+    this.trackWorkerFunctionCallCount++;
+    this.lastTrackedFunctionName = functionName;
+    return Promise.resolve();
   }
 }
 
@@ -165,4 +173,20 @@ Deno.test('FlowWorkerLifecycle - does not log skip message when ensureCompiledOn
 
   const skipLog = logs.find(log => log.includes('Skipping compilation'));
   assertEquals(skipLog, undefined, 'Should NOT log skip message when compilation is enabled');
+});
+
+Deno.test('FlowWorkerLifecycle - calls trackWorkerFunction during startup', async () => {
+  const mockQueries = new MockQueries();
+  const mockFlow = createMockFlow();
+  const logger = createLogger();
+
+  const lifecycle = new FlowWorkerLifecycle(mockQueries, mockFlow, logger);
+
+  await lifecycle.acknowledgeStart({
+    workerId: 'test-worker-id',
+    edgeFunctionName: 'my-edge-function',
+  });
+
+  assertEquals(mockQueries.trackWorkerFunctionCallCount, 1, 'trackWorkerFunction should be called once');
+  assertEquals(mockQueries.lastTrackedFunctionName, 'my-edge-function', 'trackWorkerFunction should be called with correct function name');
 });

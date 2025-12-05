@@ -29,6 +29,10 @@ export class WorkerLifecycle<IMessage extends Json> implements ILifecycle {
   async acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void> {
     this.workerState.transitionTo(States.Starting);
 
+    // Register this edge function for monitoring by ensure_workers() cron.
+    // Must be called early to set last_invoked_at (debounce) before heartbeat timeout.
+    await this.queries.trackWorkerFunction(workerBootstrap.edgeFunctionName);
+
     this.logger.debug(`Ensuring queue '${this.queue.queueName}' exists...`);
     await this.queue.safeCreate();
 

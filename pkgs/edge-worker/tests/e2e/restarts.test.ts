@@ -4,7 +4,9 @@ import {
   fetchWorkers,
   sendBatch,
   seqLastValue,
+  setupEnsureWorkersCron,
   startWorker,
+  startWorkersMonitor,
   waitForSeqToIncrementBy,
 } from './_helpers.ts';
 
@@ -35,25 +37,36 @@ Deno.test(
       DELETE FROM pgflow.workers
       WHERE last_heartbeat_at < NOW() - INTERVAL '6 seconds'
     `;
-    await startWorker(WORKER_NAME);
 
-    await sendBatch(MESSAGES_TO_SEND, WORKER_NAME);
-    await waitForSeqToIncrementBy(MESSAGES_TO_SEND, {
-      timeoutMs: 35000,
-      pollIntervalMs: 300,
-    });
+    // Setup cron job for worker respawning (required since we removed HTTP-based respawn)
+    await setupEnsureWorkersCron(sql, '1 second');
 
-    assertGreaterOrEqual(
-      await seqLastValue(),
-      MESSAGES_TO_SEND,
-      'Sequence value should be greater than or equal to the number of messages sent'
-    );
+    // Start monitoring workers and cron for debugging
+    const monitor = startWorkersMonitor(WORKER_NAME);
 
-    const workers = await fetchWorkers(WORKER_NAME);
-    assertGreater(
-      workers.length,
-      1,
-      'expected worker to spawn another but there is only 1 worker'
-    );
+    try {
+      await startWorker(WORKER_NAME);
+
+      await sendBatch(MESSAGES_TO_SEND, WORKER_NAME);
+      await waitForSeqToIncrementBy(MESSAGES_TO_SEND, {
+        timeoutMs: 35000,
+        pollIntervalMs: 300,
+      });
+
+      assertGreaterOrEqual(
+        await seqLastValue(),
+        MESSAGES_TO_SEND,
+        'Sequence value should be greater than or equal to the number of messages sent'
+      );
+
+      const workers = await fetchWorkers(WORKER_NAME);
+      assertGreater(
+        workers.length,
+        1,
+        'expected worker to spawn another but there is only 1 worker'
+      );
+    } finally {
+      await monitor.stop();
+    }
   });
 });
