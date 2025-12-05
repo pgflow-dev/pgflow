@@ -9,7 +9,7 @@ echo "-- Generated on $(date)" >> "$target_file"
 echo "" >> "$target_file"
 
 # First add realtime schema if it exists
-realtime_schema_file="../core/atlas/.supabase-baseline-schema.sql"
+realtime_schema_file="../core/atlas/supabase-baseline-schema.sql"
 if [ -f "$realtime_schema_file" ]; then
   echo "-- Including realtime schema from atlas dump" >> "$target_file"
   cat "$realtime_schema_file" >> "$target_file"
@@ -17,7 +17,7 @@ if [ -f "$realtime_schema_file" ]; then
   echo "" >> "$target_file"
 else
   echo -e "\e[31mERROR: Realtime schema file not found at $realtime_schema_file\e[0m"
-  echo -e "\e[31mRun 'nx dump-realtime-schema core' to generate it\e[0m"
+  echo -e "\e[31mRun 'cd pkgs/core/atlas && ./dump-fresh-baseline.sh' to generate it\e[0m"
   exit 1
 fi
 
