@@ -10,6 +10,7 @@ import {
   resolveConnectionString,
   resolveSqlConnection,
 } from './resolveConnection.js';
+import { Queries } from '../core/Queries.js';
 
 /**
  * Supabase Edge Runtime type (without global augmentation to comply with JSR)
@@ -47,6 +48,7 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   private _platformResources: SupabaseResources;
   private validatedEnv: SupabaseEnv;
   private _connectionString: string | undefined;
+  private queries: Queries;
 
   // Logging factory with dynamic workerId support
   private loggingFactory = createLoggingFactory();
@@ -79,6 +81,9 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
       sql: resolveSqlConnection(env, options),
       supabase: createServiceSupabaseClient(this.validatedEnv)
     };
+
+    // Create Queries instance for shutdown handler
+    this.queries = new Queries(this._platformResources.sql);
   }
 
   /**
@@ -158,35 +163,6 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
     return this._platformResources;
   }
 
-  private async spawnNewEdgeFunction(): Promise<void> {
-    if (!this.edgeFunctionName) {
-      throw new Error('functionName cannot be null or empty');
-    }
-
-    const supabaseUrl = this.validatedEnv.SUPABASE_URL;
-
-    this.logger.debug('Spawning a new Edge Function...');
-
-    const response = await fetch(
-      `${supabaseUrl}/functions/v1/${this.edgeFunctionName}`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.validatedEnv.SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    this.logger.debug('Edge Function spawned successfully!');
-
-    if (!response.ok) {
-      throw new Error(
-        `Edge function returned non-OK status: ${response.status} ${response.statusText}`
-      );
-    }
-  }
-
   private extractFunctionName(req: Request): string {
     return new URL(req.url).pathname.replace(/^\/+|\/+$/g, '');
   }
@@ -196,7 +172,10 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
       this.logger.debug('Shutting down...');
 
       if (this.worker) {
-        await this.spawnNewEdgeFunction();
+        // Signal death to ensure_workers() cron by setting stopped_at.
+        // This allows the cron to immediately ping for a replacement worker.
+        const workerId = this.validatedEnv.SB_EXECUTION_ID;
+        await this.queries.markWorkerStopped(workerId);
       }
 
       await this.stopWorker();
