@@ -1,6 +1,12 @@
-import { assertEquals, assertAlmostEquals } from '@std/assert';
+import { assertEquals } from '@std/assert';
 import { createQueueWorker } from '../../src/queue/createQueueWorker.ts';
-import { createTestPlatformAdapter } from './_helpers.ts';
+import {
+  createTestPlatformAdapter,
+  createHandlerSpy,
+  calculateJsDelays,
+  calculateVtDelays,
+  assertDelaysMatch,
+} from './_helpers.ts';
 import { withTransaction } from '../db.ts';
 import { createFakeLogger } from '../fakes.ts';
 import { log, waitFor } from '../e2e/_helpers.ts';
@@ -19,54 +25,20 @@ const workerConfig = {
 } as const;
 
 /**
- * Creates a handler that always fails and collects timing data from two sources:
- * 1. JS timestamps (Date.now()) - when handler is invoked
- * 2. DB visibility times (rawMessage.vt) - when message became visible
- */
-function createFailingHandler() {
-  const invocations: Array<{ jsTime: number; vt: string }> = [];
-  return {
-    handler: (_payload: Json, context: MessageHandlerContext) => {
-      invocations.push({
-        jsTime: Date.now(),
-        vt: context.rawMessage.vt,
-      });
-      log(`Invocation #${invocations.length} at ${new Date().toISOString()}`);
-      throw new Error('Intentional failure for fixed retry test');
-    },
-    getInvocationCount: () => invocations.length,
-    getJsDelays: () => {
-      // Delays in seconds from JS timestamps
-      const delays: number[] = [];
-      for (let i = 1; i < invocations.length; i++) {
-        delays.push((invocations[i].jsTime - invocations[i - 1].jsTime) / 1000);
-      }
-      return delays;
-    },
-    getVtDelays: () => {
-      // Delays in seconds from DB visibility times
-      const delays: number[] = [];
-      for (let i = 1; i < invocations.length; i++) {
-        const vt1 = new Date(invocations[i - 1].vt).getTime();
-        const vt2 = new Date(invocations[i].vt).getTime();
-        delays.push((vt2 - vt1) / 1000);
-      }
-      return delays;
-    },
-  };
-}
-
-/**
  * Test verifies that fixed retry strategy applies constant delay.
  * Uses dual-source timing validation (JS timestamps + DB visibility times).
  */
 Deno.test(
   'queue worker applies fixed delay on retries',
   withTransaction(async (sql) => {
-    const { handler, getInvocationCount, getJsDelays, getVtDelays } =
-      createFailingHandler();
+    const spy = createHandlerSpy<Json, MessageHandlerContext>(
+      (_input, _context) => {
+        log(`Invocation #${spy.count()} at ${new Date().toISOString()}`);
+        throw new Error('Intentional failure for fixed retry test');
+      }
+    );
     const worker = createQueueWorker(
-      handler,
+      spy.handler,
       {
         sql,
         ...workerConfig,
@@ -92,13 +64,13 @@ Deno.test(
       log(`Sent message with ID: ${msgIds[0]}`);
 
       // Wait for all retries to complete
-      await waitFor(() => getInvocationCount() >= workerConfig.retry.limit, {
+      await waitFor(() => spy.count() >= workerConfig.retry.limit, {
         timeoutMs: 30000,
       });
 
       // Get delays from both sources
-      const jsDelays = getJsDelays();
-      const vtDelays = getVtDelays();
+      const jsDelays = calculateJsDelays(spy.invocations);
+      const vtDelays = calculateVtDelays(spy.invocations);
 
       log(`JS delays: ${JSON.stringify(jsDelays)}`);
       log(`VT delays: ${JSON.stringify(vtDelays)}`);
@@ -108,38 +80,14 @@ Deno.test(
       const expectedDelays = [3, 3];
 
       // Verify JS-based delays match expected pattern (within 200ms tolerance)
-      assertEquals(
-        jsDelays.length,
-        expectedDelays.length,
-        `Expected ${expectedDelays.length} delays, got ${jsDelays.length}`
-      );
-      for (let i = 0; i < expectedDelays.length; i++) {
-        assertAlmostEquals(
-          jsDelays[i],
-          expectedDelays[i],
-          0.2,
-          `JS delay #${i + 1} should be ~${expectedDelays[i]}s`
-        );
-      }
+      assertDelaysMatch(jsDelays, expectedDelays, 0.2);
 
       // Verify VT-based delays match expected pattern (within 200ms tolerance)
-      assertEquals(
-        vtDelays.length,
-        expectedDelays.length,
-        `Expected ${expectedDelays.length} VT delays, got ${vtDelays.length}`
-      );
-      for (let i = 0; i < expectedDelays.length; i++) {
-        assertAlmostEquals(
-          vtDelays[i],
-          expectedDelays[i],
-          0.2,
-          `VT delay #${i + 1} should be ~${expectedDelays[i]}s`
-        );
-      }
+      assertDelaysMatch(vtDelays, expectedDelays, 0.2);
 
       // Verify total invocation count
       assertEquals(
-        getInvocationCount(),
+        spy.count(),
         workerConfig.retry.limit,
         `Handler should be called ${workerConfig.retry.limit} times`
       );
