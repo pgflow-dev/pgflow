@@ -70,6 +70,63 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ------------------------------------------------------------------
+# Authenticate for publishing (token env vars or browser login)
+# ------------------------------------------------------------------
+echo "Checking authentication..."
+
+# NPM authentication
+if [[ -n "${NPM_TOKEN:-}" ]]; then
+  # Token provided - try to get user info (may fail with some token types)
+  if NPM_USER=$(npm whoami 2>/dev/null); then
+    echo -e "  ${GREEN}✓${NC} npm: authenticated as ${BOLD}$NPM_USER${NC} (via token)"
+  else
+    echo -e "  ${YELLOW}!${NC} npm: NPM_TOKEN set (whoami check failed, will verify at publish)"
+  fi
+else
+  # No token - check if already logged in, otherwise prompt browser login
+  if NPM_USER=$(npm whoami 2>/dev/null); then
+    echo -e "  ${GREEN}✓${NC} npm: authenticated as ${BOLD}$NPM_USER${NC} (existing session)"
+  else
+    echo -e "  ${YELLOW}npm: not logged in - opening browser...${NC}"
+    if npm login --auth-type=web; then
+      NPM_USER=$(npm whoami)
+      echo -e "  ${GREEN}✓${NC} npm: authenticated as ${BOLD}$NPM_USER${NC}"
+    else
+      echo -e "${RED}Error: npm login failed${NC}"
+      exit 1
+    fi
+  fi
+fi
+
+# JSR authentication - always validate with dry-run
+JSR_DRY_RUN_CMD="pnpm jsr publish --dry-run --allow-slow-types --allow-dirty"
+if [[ -n "${JSR_TOKEN:-}" ]]; then
+  JSR_DRY_RUN_CMD="$JSR_DRY_RUN_CMD --token $JSR_TOKEN"
+fi
+JSR_CHECK=$(cd pkgs/edge-worker && $JSR_DRY_RUN_CMD 2>&1 || true)
+if echo "$JSR_CHECK" | grep -qi "unauthorized\|not logged in\|authentication"; then
+  if [[ -n "${JSR_TOKEN:-}" ]]; then
+    echo -e "  ${YELLOW}!${NC} jsr: JSR_TOKEN set but invalid/expired - opening browser..."
+  else
+    echo -e "  ${YELLOW}jsr: not logged in - opening browser...${NC}"
+  fi
+  if deno login; then
+    echo -e "  ${GREEN}✓${NC} jsr: authenticated via browser"
+  else
+    echo -e "${RED}Error: JSR login failed${NC}"
+    exit 1
+  fi
+else
+  if [[ -n "${JSR_TOKEN:-}" ]]; then
+    echo -e "  ${GREEN}✓${NC} jsr: authenticated (via token)"
+  else
+    echo -e "  ${GREEN}✓${NC} jsr: authenticated (existing session)"
+  fi
+fi
+
+echo ""
+
+# ------------------------------------------------------------------
 # Resolve snapshot tag if not provided
 # ------------------------------------------------------------------
 if [[ -z $TAG ]]; then
@@ -249,7 +306,7 @@ echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━�
 echo -e "${BOLD}Building packages...${NC}"
 echo ""
 
-if pnpm nx run-many -t build ; then
+if pnpm nx run-many -t build --exclude=demo,website ; then
   echo -e "${GREEN}✓ Packages built successfully${NC}"
 else
   echo -e "${RED}✗ Build failed${NC}"
@@ -269,11 +326,10 @@ NPM_SUCCESS=false
 JSR_SUCCESS=true  # Default true (only set false if JSR package exists and fails)
 JSR_PUBLISHED_VERSION=""  # Track JSR version if published
 
-# Publish to npm
+# Publish to npm (token is read from NPM_TOKEN env var via .npmrc)
+# GITHUB_ACTIONS=true skips changeset's npm profile check which fails with automation tokens
 echo -e "${BOLD}Publishing to npm...${NC}"
-NPM_OUTPUT=$(pnpm exec changeset publish --tag snapshot 2>&1)
-echo "$NPM_OUTPUT"
-if echo "$NPM_OUTPUT" | grep -qi "published" ; then
+if GITHUB_ACTIONS=true pnpm exec changeset publish --tag snapshot ; then
   echo -e "${GREEN}✓ npm packages published${NC}"
   NPM_SUCCESS=true
 else
@@ -286,7 +342,12 @@ if [[ -f pkgs/edge-worker/jsr.json ]]; then
   JSR_PUBLISHED_VERSION=$(jq -r '.version' pkgs/edge-worker/jsr.json)
   echo ""
   echo -e "${BOLD}Publishing to JSR...${NC}"
-  if ( cd pkgs/edge-worker && pnpm jsr publish --allow-slow-types --allow-dirty ) ; then
+  JSR_PUBLISH_CMD="pnpm jsr publish --allow-slow-types --allow-dirty"
+  # Pass token explicitly if set (pnpm jsr may not inherit JSR_TOKEN properly)
+  if [[ -n "${JSR_TOKEN:-}" ]]; then
+    JSR_PUBLISH_CMD="$JSR_PUBLISH_CMD --token $JSR_TOKEN"
+  fi
+  if ( cd pkgs/edge-worker && $JSR_PUBLISH_CMD ) ; then
     echo -e "${GREEN}✓ JSR package published${NC}"
   else
     echo -e "${RED}✗ JSR publish failed${NC}"
@@ -314,61 +375,101 @@ fi
 # ------------------------------------------------------------------
 # Display installation instructions
 # ------------------------------------------------------------------
-echo ""
-echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}✅ Snapshot release complete!${NC}"
-echo ""
-echo -e "${BOLD}Install with npm:${NC}"
-echo ""
 
-# NPM packages
-for PKG in "${NPM_PKGS[@]}"; do
-  [[ $PKG == "@pgflow/edge-worker"* ]] && continue
-  echo -e "${BLUE}npm install $PKG${NC}"
-done
-
-# JSR package (only show if successfully published)
-if [[ -n "$JSR_PUBLISHED_VERSION" ]]; then
-  echo ""
-  echo -e "${BOLD}For Deno/Supabase Edge Functions:${NC}"
-  echo -e "${BLUE}import { EdgeWorker } from \"jsr:@pgflow/edge-worker@$JSR_PUBLISHED_VERSION\"${NC}"
-fi
-
-# Deno import map
-echo ""
-echo -e "${BOLD}Or add to deno.json imports:${NC}"
-echo ""
-echo -e "${BLUE}{"
-echo -e "  \"imports\": {"
-
-# Extract versions for deno.json
+# Extract versions for output
+PGFLOW_VERSION=""
 DSL_VERSION=""
 CORE_VERSION=""
 for PKG in "${NPM_PKGS[@]}"; do
-  if [[ $PKG == "@pgflow/dsl@"* ]]; then
+  if [[ $PKG == "pgflow@"* ]]; then
+    PGFLOW_VERSION=$(echo "$PKG" | rev | cut -d'@' -f1 | rev)
+  elif [[ $PKG == "@pgflow/dsl@"* ]]; then
     DSL_VERSION=$(echo "$PKG" | rev | cut -d'@' -f1 | rev)
   elif [[ $PKG == "@pgflow/core@"* ]]; then
     CORE_VERSION=$(echo "$PKG" | rev | cut -d'@' -f1 | rev)
   fi
 done
 
+echo ""
+echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${GREEN}✅ Snapshot release complete!${NC}"
+echo ""
+
+# Raw version for easy selection
+echo -e "${BOLD}Version:${NC}  ${GREEN}${PGFLOW_VERSION}${NC}"
+echo ""
+
+# npx command
+echo -e "${BOLD}Install pgflow CLI:${NC}"
+echo -e "${BLUE}npx -y pgflow@${PGFLOW_VERSION} install${NC}"
+echo ""
+
+# Deno/Supabase imports
+echo -e "${BOLD}Deno/Supabase Edge Function imports:${NC}"
+if [[ -n "$JSR_PUBLISHED_VERSION" ]]; then
+  echo -e "${BLUE}import { EdgeWorker } from \"jsr:@pgflow/edge-worker@$JSR_PUBLISHED_VERSION\";${NC}"
+fi
+if [[ -n "$DSL_VERSION" ]]; then
+  echo -e "${BLUE}import { Flow } from \"npm:@pgflow/dsl@$DSL_VERSION\";${NC}"
+  echo -e "${BLUE}import { Flow } from \"npm:@pgflow/dsl@$DSL_VERSION/supabase\";${NC}"
+fi
+echo ""
+
+# Deno import map
+echo -e "${BOLD}Add to deno.json imports:${NC}"
+echo ""
+echo -e "${BLUE}{"
+echo -e "  \"imports\": {"
+
+# Show core (npm)
+if [[ -n "$CORE_VERSION" ]]; then
+  echo -e "    \"@pgflow/core\": \"npm:@pgflow/core@$CORE_VERSION\","
+  echo -e "    \"@pgflow/core/\": \"npm:@pgflow/core@$CORE_VERSION/\","
+fi
+
+# Show dsl (npm)
+if [[ -n "$DSL_VERSION" ]]; then
+  echo -e "    \"@pgflow/dsl\": \"npm:@pgflow/dsl@$DSL_VERSION\","
+  echo -e "    \"@pgflow/dsl/\": \"npm:@pgflow/dsl@$DSL_VERSION/\","
+  if [[ -n "$JSR_PUBLISHED_VERSION" ]]; then
+    echo -e "    \"@pgflow/dsl/supabase\": \"npm:@pgflow/dsl@$DSL_VERSION/supabase\","
+  else
+    echo -e "    \"@pgflow/dsl/supabase\": \"npm:@pgflow/dsl@$DSL_VERSION/supabase\""
+  fi
+fi
+
 # Show edge-worker (JSR) - only if successfully published
 if [[ -n "$JSR_PUBLISHED_VERSION" ]]; then
   echo -e "    \"@pgflow/edge-worker\": \"jsr:@pgflow/edge-worker@$JSR_PUBLISHED_VERSION\","
-fi
-
-# Show dsl and dsl/supabase (npm)
-if [[ -n "$DSL_VERSION" ]]; then
-  echo -e "    \"@pgflow/dsl\": \"npm:@pgflow/dsl@$DSL_VERSION\","
-  echo -e "    \"@pgflow/dsl/supabase\": \"npm:@pgflow/dsl@$DSL_VERSION/supabase\","
-fi
-
-# Show core (npm) - no trailing comma on last entry
-if [[ -n "$CORE_VERSION" ]]; then
-  echo -e "    \"@pgflow/core\": \"npm:@pgflow/core@$CORE_VERSION\""
+  echo -e "    \"@pgflow/edge-worker/\": \"jsr:@pgflow/edge-worker@$JSR_PUBLISHED_VERSION/\","
+  echo -e "    \"@pgflow/edge-worker/_internal\": \"jsr:@pgflow/edge-worker@$JSR_PUBLISHED_VERSION/_internal\""
 fi
 
 echo -e "  }"
 echo -e "}${NC}"
+
+echo ""
+
+# ------------------------------------------------------------------
+# Optional: Spawn test Supabase project
+# ------------------------------------------------------------------
+if [[ "$SKIP_CONFIRMATION" != "true" ]]; then
+  echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${BOLD}Spawn test Supabase project with this version?${NC}"
+  echo -e "  Will run: ${BLUE}mksupa new '$TAG' --pgflow='$PGFLOW_VERSION'${NC}"
+  echo ""
+  read -p "Create test project? (y/N) " -n 1 -r
+  echo ""
+
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo ""
+    echo -e "${BOLD}Spawning test Supabase project...${NC}"
+    if command -v fish >/dev/null 2>&1; then
+      fish -c "mksupa new '$TAG' --pgflow='$PGFLOW_VERSION'"
+    else
+      echo -e "${RED}Error: fish shell not found${NC}"
+    fi
+  fi
+fi
 
 echo ""
