@@ -1,8 +1,6 @@
 -- Mark Worker Stopped
 -- Sets stopped_at timestamp on a worker row for graceful shutdown signaling
 
-drop function if exists pgflow.mark_worker_stopped(uuid);
-
 create or replace function pgflow.mark_worker_stopped(
   worker_id uuid
 ) returns void

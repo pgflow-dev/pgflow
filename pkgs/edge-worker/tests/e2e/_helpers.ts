@@ -288,21 +288,6 @@ export async function configureVaultForEnsureWorkers(
 }
 
 /**
- * Sets up the ensure_workers cron job for worker respawning.
- * Must be called before tests that rely on automatic worker respawning.
- * Call configureVaultForEnsureWorkers() first to set the correct URL.
- */
-export async function setupEnsureWorkersCron(
-  sql: Sql<Record<string, unknown>>,
-  cronInterval = '1 second'
-) {
-  log(`Setting up ensure_workers cron job with interval: ${cronInterval}`);
-  const result = await sql`SELECT pgflow.setup_ensure_workers_cron(${cronInterval})`;
-  log('Cron setup result:', result[0]);
-  return result;
-}
-
-/**
  * Monitor workers table and cron activity in background for debugging.
  * Returns an abort function to stop monitoring.
  */

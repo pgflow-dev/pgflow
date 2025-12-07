@@ -2,8 +2,6 @@
 -- Returns which worker functions should be invoked, makes HTTP requests, and updates last_invoked_at
 -- Called by cron job to keep workers running
 
-drop function if exists pgflow.ensure_workers();
-
 create or replace function pgflow.ensure_workers()
 returns table (function_name text, invoked boolean, request_id bigint)
 language sql
