@@ -3,9 +3,18 @@ on:
   workflow_dispatch:
   pull_request:
 
+# Prevent duplicate runs for the same branch, but do NOT cancel in-progress runs.
+# Why: When using Graphite's `gt restack && gt submit` on a PR stack, GitHub often
+# triggers two workflow runs simultaneously for the same commit (duplicate webhook events).
+# With `cancel-in-progress: true`, one run gets cancelled - but GitHub shows check status
+# from the higher run_number, which may be the cancelled one. This causes PRs to show
+# "failed" status even when the other run succeeds. Setting to false lets both complete,
+# ensuring the PR displays the successful status.
+# Trade-off: Occasional duplicate CI runs during bulk stack operations.
+# See: https://github.com/orgs/community/discussions/27174
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -274,7 +283,15 @@ jobs:
   # ────────────────────────────────── 3. DEPLOY WEBSITE (PREVIEW) ───────────────────────────
   deploy-website:
     if: github.event_name == 'pull_request'
-    needs: [build-and-test, edge-worker-e2e, edge-worker-integration, cli-e2e, client-e2e, core-pgtap]
+    needs:
+      [
+        build-and-test,
+        edge-worker-e2e,
+        edge-worker-integration,
+        cli-e2e,
+        client-e2e,
+        core-pgtap,
+      ]
     runs-on: ubuntu-latest
     environment: preview
     env:
@@ -316,7 +333,15 @@ jobs:
   # ────────────────────────────────── 4. DEPLOY DEMO ───────────────────────────
   deploy-demo:
     if: false # temporarily disabled
-    needs: [build-and-test, edge-worker-e2e, edge-worker-integration, cli-e2e, client-e2e, core-pgtap]
+    needs:
+      [
+        build-and-test,
+        edge-worker-e2e,
+        edge-worker-integration,
+        cli-e2e,
+        client-e2e,
+        core-pgtap,
+      ]
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'pull_request' && 'preview' || 'production' }}
     env:
