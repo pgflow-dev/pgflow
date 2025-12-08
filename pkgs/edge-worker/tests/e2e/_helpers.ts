@@ -266,6 +266,101 @@ export async function startWorker(workerName: string) {
   );
 }
 
+export interface StartWorkerWithAuthOptions {
+  headers?: Record<string, string>;
+  expectStatus?: number;
+}
+
+export interface StartWorkerWithAuthResult {
+  status: number;
+  body: unknown;
+}
+
+/**
+ * Start a worker with custom headers (for auth testing).
+ * Unlike startWorker(), this returns the response instead of throwing on non-200.
+ */
+export async function startWorkerWithAuth(
+  workerName: string,
+  options: StartWorkerWithAuthOptions = {}
+): Promise<StartWorkerWithAuthResult> {
+  const { headers = {}, expectStatus } = options;
+
+  log(`Starting worker with auth: ${workerName}`);
+
+  const apiUrl = e2eConfig.apiUrl;
+  const url = `${apiUrl}/functions/v1/${workerName}`;
+
+  log(`Fetching ${url} with headers:`, Object.keys(headers));
+
+  // Retry logic for server startup (only for connection errors)
+  let lastError: Error | null = null;
+  const maxRetries = 10;
+  const retryDelayMs = 1000;
+
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(url, {
+        headers: new Headers(headers),
+      });
+
+      let body: unknown;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        body = await response.json();
+      } else {
+        body = await response.text();
+      }
+
+      log(
+        `Response: ${response.status} ${response.statusText}`,
+        JSON.stringify(body).substring(0, 200)
+      );
+
+      // If we expect a specific status, return immediately (don't retry on 401/500)
+      if (expectStatus !== undefined) {
+        return { status: response.status, body };
+      }
+
+      // For success case, wait for worker and return
+      if (response.ok) {
+        await waitForActiveWorker(workerName);
+        log('worker spawned!');
+        return { status: response.status, body };
+      }
+
+      // Retry on 404 (function not ready yet) or 502/503 (server starting)
+      if ([404, 502, 503].includes(response.status)) {
+        log(`Retry ${i + 1}/${maxRetries}: ${response.status}`);
+        await delay(retryDelayMs);
+        continue;
+      }
+
+      // Return non-retryable error responses
+      return { status: response.status, body };
+    } catch (err) {
+      lastError = err as Error;
+      if (
+        err instanceof TypeError &&
+        err.message.includes('error sending request')
+      ) {
+        // Connection error - server not ready
+        log(`Retry ${i + 1}/${maxRetries}: Connection error`);
+        await delay(retryDelayMs);
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  throw (
+    lastError ||
+    new Error(
+      `Failed to start worker ${workerName} after ${maxRetries} retries`
+    )
+  );
+}
+
 /**
  * Monitor workers table and cron activity in background for debugging.
  * Returns an abort function to stop monitoring.

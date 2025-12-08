@@ -57,6 +57,12 @@ cat > "$VENDOR_DIR/@pgflow/edge-worker/_internal.ts" << 'EOF'
 export * from './src/_internal.ts';
 EOF
 
+# Create testing.ts redirect for test utilities
+cat > "$VENDOR_DIR/@pgflow/edge-worker/testing.ts" << 'EOF'
+// Re-export from the src directory to maintain compatibility
+export * from './src/testing.ts';
+EOF
+
 # Verify key files exist
 if [ ! -f "$VENDOR_DIR/@pgflow/core/index.js" ]; then
     echo "⚠️  Warning: @pgflow/core/index.js not found after copy"

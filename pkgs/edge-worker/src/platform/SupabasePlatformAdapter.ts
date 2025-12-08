@@ -16,13 +16,7 @@ import {
   resolveSqlConnection,
 } from './resolveConnection.js';
 import { Queries } from '../core/Queries.js';
-
-/**
- * Supabase Edge Runtime type (without global augmentation to comply with JSR)
- */
-interface EdgeRuntimeType {
-  waitUntil(promise: Promise<unknown>): void;
-}
+import { getPlatformDeps, type SupabasePlatformDeps } from './deps.js';
 
 /**
  * Supabase-specific environment variables
@@ -54,13 +48,19 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   private validatedEnv: SupabaseEnv;
   private _connectionString: string | undefined;
   private queries: Queries;
+  private deps: SupabasePlatformDeps;
 
   // Logging factory with dynamic workerId support
   private loggingFactory = createLoggingFactory();
 
-  constructor(options?: { sql?: Sql; connectionString?: string }) {
+  constructor(
+    options?: { sql?: Sql; connectionString?: string },
+    deps: SupabasePlatformDeps = getPlatformDeps()
+  ) {
+    this.deps = deps;
+
     // Validate environment variables once at startup
-    const env = Deno.env.toObject();
+    const env = deps.getEnv();
     this.assertSupabaseEnv(env);
     this.validatedEnv = env;
 
@@ -173,7 +173,7 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   }
 
   private setupShutdownHandler(): void {
-    globalThis.onbeforeunload = async () => {
+    this.deps.onShutdown(async () => {
       this.logger.debug('Shutting down...');
 
       if (this.worker) {
@@ -184,7 +184,7 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
       }
 
       await this.stopWorker();
-    };
+    });
   }
 
   /**
@@ -195,15 +195,14 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
    * by passing a promise that never resolves.
    */
   private extendLifetimeOfEdgeFunction(): void {
-    // EdgeRuntime is available in Supabase Edge Functions runtime
     const promiseThatNeverResolves = new Promise(() => {
       // Intentionally empty - this promise never resolves to extend function lifetime
     });
-    (globalThis as typeof globalThis & { EdgeRuntime: EdgeRuntimeType }).EdgeRuntime.waitUntil(promiseThatNeverResolves);
+    this.deps.extendLifetime(promiseThatNeverResolves);
   }
 
   private setupStartupHandler(createWorkerFn: CreateWorkerFn): void {
-    Deno.serve({}, (req: Request) => {
+    this.deps.serve((req: Request) => {
       // Validate auth header in production (skipped in local mode)
       const authResult = validateServiceRoleAuth(req, this.validatedEnv);
       if (!authResult.valid) {

@@ -56,3 +56,45 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/pgflow/index.ts"
+
+[functions.auth_test]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/auth_test/index.ts"
+
+[functions.conn_zero_config]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/conn_zero_config/index.ts"
+
+[functions.conn_string]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/conn_string/index.ts"
+
+[functions.conn_env_var]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/conn_env_var/index.ts"
+
+[functions.conn_custom_sql]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/conn_custom_sql/index.ts"
+
+[functions.stopped_at_test]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/stopped_at_test/index.ts"
+
+[functions.retry-demo]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/retry-demo/index.ts"
