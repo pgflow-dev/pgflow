@@ -148,12 +148,29 @@ fi
 echo -e "${YELLOW}Cleaning up any stale containers...${NC}"
 pnpm exec supabase stop --no-backup 2>/dev/null || true
 
-# Start Supabase with all configured services
-echo -e "${YELLOW}Starting Supabase...${NC}"
-if pnpm exec supabase start; then
-  echo -e "${GREEN}✓ Supabase started successfully${NC}"
-  exit 0
-else
-  echo -e "${RED}✗ Failed to start Supabase${NC}" >&2
-  exit 1
-fi
+# Wait for ports to be released after stop
+# Docker/kernel may hold ports in TIME_WAIT state briefly
+sleep 2
+
+# Start Supabase with retry logic
+# Retries help with transient port binding issues and Docker race conditions
+MAX_ATTEMPTS=3
+RETRY_DELAY=5
+
+for attempt in $(seq 1 $MAX_ATTEMPTS); do
+  echo -e "${YELLOW}Starting Supabase (attempt $attempt/$MAX_ATTEMPTS)...${NC}"
+
+  if pnpm exec supabase start; then
+    echo -e "${GREEN}✓ Supabase started successfully${NC}"
+    exit 0
+  fi
+
+  if [ $attempt -lt $MAX_ATTEMPTS ]; then
+    echo -e "${YELLOW}Start failed, cleaning up and retrying in ${RETRY_DELAY}s...${NC}"
+    pnpm exec supabase stop --no-backup 2>/dev/null || true
+    sleep $RETRY_DELAY
+  fi
+done
+
+echo -e "${RED}✗ Failed to start Supabase after $MAX_ATTEMPTS attempts${NC}" >&2
+exit 1
