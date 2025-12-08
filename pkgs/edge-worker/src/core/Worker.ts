@@ -24,14 +24,11 @@ export class Worker {
   }
 
   startOnlyOnce(workerBootstrap: WorkerBootstrap) {
-    if (this.lifecycle.isRunning) {
-      this.logger.debug('Worker already running, ignoring start request');
+    if (!this.lifecycle.isCreated) {
+      this.logger.debug('Worker not in Created state, ignoring start request');
       return;
     }
-
-    if (!this.mainLoopPromise) {
-      this.mainLoopPromise = this.start(workerBootstrap);
-    }
+    this.mainLoopPromise = this.start(workerBootstrap);
   }
 
   private async start(workerBootstrap: WorkerBootstrap) {

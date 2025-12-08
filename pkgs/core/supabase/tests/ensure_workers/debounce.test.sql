@@ -7,7 +7,11 @@ select pgflow_tests.reset_db();
 select pgflow.track_worker_function('my-function');
 
 -- TEST: Function with recent last_invoked_at is NOT returned (debounce active)
--- Note: track_worker_function sets last_invoked_at to now()
+-- Manually set last_invoked_at to now() to simulate recent invocation
+update pgflow.worker_functions
+set last_invoked_at = now()
+where function_name = 'my-function';
+
 set local app.settings.jwt_secret = 'super-secret-jwt-token-with-at-least-32-characters-long';
 select is(
   (select count(*) from pgflow.ensure_workers()),

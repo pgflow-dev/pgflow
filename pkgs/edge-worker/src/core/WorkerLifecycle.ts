@@ -30,7 +30,6 @@ export class WorkerLifecycle<IMessage extends Json> implements ILifecycle {
     this.workerState.transitionTo(States.Starting);
 
     // Register this edge function for monitoring by ensure_workers() cron.
-    // Must be called early to set last_invoked_at (debounce) before heartbeat timeout.
     await this.queries.trackWorkerFunction(workerBootstrap.edgeFunctionName);
 
     this.logger.debug(`Ensuring queue '${this.queue.queueName}' exists...`);
@@ -93,6 +92,10 @@ export class WorkerLifecycle<IMessage extends Json> implements ILifecycle {
         this.transitionToDeprecated();
       }
     }
+  }
+
+  get isCreated() {
+    return this.workerState.isCreated;
   }
 
   get isRunning() {

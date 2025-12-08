@@ -42,7 +42,6 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
     this._workerId = workerBootstrap.workerId;
 
     // Register this edge function for monitoring by ensure_workers() cron.
-    // Must be called early to set last_invoked_at (debounce) before heartbeat timeout.
     await this.queries.trackWorkerFunction(workerBootstrap.edgeFunctionName);
 
     // Compile/verify flow as part of Starting (before registering worker)
@@ -127,6 +126,10 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
         this.transitionToDeprecated();
       }
     }
+  }
+
+  get isCreated() {
+    return this.workerState.isCreated;
   }
 
   get isRunning() {
