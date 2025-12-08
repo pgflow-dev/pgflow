@@ -558,6 +558,10 @@ export type Database = {
           vt: string
         }[]
       }
+      setup_ensure_workers_cron: {
+        Args: { cron_interval?: string }
+        Returns: string
+      }
       start_flow: {
         Args: { flow_slug: string; input: Json; run_id?: string }
         Returns: {
