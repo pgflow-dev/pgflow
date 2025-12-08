@@ -7,6 +7,11 @@ import { createServiceSupabaseClient } from '../core/supabase-utils.js';
 import { createLoggingFactory } from './logging.js';
 import { isLocalSupabaseEnv } from '../shared/localDetection.js';
 import {
+  validateServiceRoleAuth,
+  createUnauthorizedResponse,
+  createServerErrorResponse,
+} from '../shared/authValidation.js';
+import {
   resolveConnectionString,
   resolveSqlConnection,
 } from './resolveConnection.js';
@@ -199,6 +204,16 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
 
   private setupStartupHandler(createWorkerFn: CreateWorkerFn): void {
     Deno.serve({}, (req: Request) => {
+      // Validate auth header in production (skipped in local mode)
+      const authResult = validateServiceRoleAuth(req, this.validatedEnv);
+      if (!authResult.valid) {
+        this.logger.warn(`Auth validation failed: ${authResult.error}`);
+        if (authResult.error?.includes('misconfigured')) {
+          return createServerErrorResponse();
+        }
+        return createUnauthorizedResponse();
+      }
+
       this.logger.debug(`HTTP Request: ${this.edgeFunctionName}`);
 
       const wasStarted = !this.worker;
