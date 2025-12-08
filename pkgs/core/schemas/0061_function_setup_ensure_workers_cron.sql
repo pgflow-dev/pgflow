@@ -1,8 +1,6 @@
 -- Setup Ensure Workers Cron
 -- Sets up cron jobs for worker management: ensure_workers (configurable interval) and cleanup_logs (hourly)
 
-drop function if exists pgflow.setup_ensure_workers_cron(text);
-
 create or replace function pgflow.setup_ensure_workers_cron(
   cron_interval text default '1 second'
 )

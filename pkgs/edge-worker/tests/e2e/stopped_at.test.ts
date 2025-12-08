@@ -5,7 +5,6 @@ import {
   log,
   sendBatch,
   seqLastValue,
-  setupEnsureWorkersCron,
   startWorker,
   startWorkersMonitor,
   waitFor,
@@ -47,9 +46,6 @@ Deno.test(
         DELETE FROM pgflow.workers
         WHERE function_name = ${WORKER_NAME}
       `;
-
-      // Setup cron job for worker respawning
-      await setupEnsureWorkersCron(sql, '1 second');
 
       // Start monitoring for debugging
       const monitor = startWorkersMonitor(WORKER_NAME);

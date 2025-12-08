@@ -1,8 +1,6 @@
 -- Track Worker Function
 -- Registers an edge function for monitoring by ensure_workers() cron
 
-drop function if exists pgflow.track_worker_function(text);
-
 create or replace function pgflow.track_worker_function(
   function_name text
 ) returns void

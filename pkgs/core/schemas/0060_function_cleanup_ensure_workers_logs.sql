@@ -2,8 +2,6 @@
 -- Cleans up old cron job run details to prevent the table from growing indefinitely.
 -- Note: net._http_response is automatically cleaned by pg_net (6 hour TTL), so we only clean cron logs.
 
-drop function if exists pgflow.cleanup_ensure_workers_logs(integer);
-
 create or replace function pgflow.cleanup_ensure_workers_logs(
   retention_hours integer default 24
 )

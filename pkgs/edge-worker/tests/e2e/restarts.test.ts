@@ -4,7 +4,6 @@ import {
   fetchWorkers,
   sendBatch,
   seqLastValue,
-  setupEnsureWorkersCron,
   startWorker,
   startWorkersMonitor,
   waitForSeqToIncrementBy,
@@ -37,9 +36,6 @@ Deno.test(
       DELETE FROM pgflow.workers
       WHERE last_heartbeat_at < NOW() - INTERVAL '6 seconds'
     `;
-
-    // Setup cron job for worker respawning (required since we removed HTTP-based respawn)
-    await setupEnsureWorkersCron(sql, '1 second');
 
     // Start monitoring workers and cron for debugging
     const monitor = startWorkersMonitor(WORKER_NAME);
