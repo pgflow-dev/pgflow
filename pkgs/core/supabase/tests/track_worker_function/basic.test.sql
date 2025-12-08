@@ -1,5 +1,5 @@
 begin;
-select plan(9);
+select plan(8);
 select pgflow_tests.reset_db();
 
 -- TEST: Inserts new worker function when it does not exist
@@ -24,19 +24,11 @@ select is(
   'New worker function has heartbeat_timeout_seconds=6 by default'
 );
 
--- TEST: New worker function has last_invoked_at set (debounce protection)
-select isnt(
+-- TEST: Does NOT set last_invoked_at on insert (debounce handled by ensure_workers)
+select is(
   (select last_invoked_at from pgflow.worker_functions where function_name = 'my-edge-function'),
   null::timestamptz,
-  'New worker function has last_invoked_at set on insert (debounce protection)'
-);
-
--- TEST: last_invoked_at is set to approximately now
-select ok(
-  (select last_invoked_at >= now() - interval '1 second'
-   from pgflow.worker_functions
-   where function_name = 'my-edge-function'),
-  'last_invoked_at is set to approximately now on insert'
+  'track_worker_function does NOT set last_invoked_at (debounce handled by ensure_workers)'
 );
 
 -- TEST: Upsert updates updated_at on conflict
@@ -48,12 +40,11 @@ select ok(
   'Upsert updates updated_at timestamp on conflict'
 );
 
--- TEST: Upsert updates last_invoked_at on conflict
-select ok(
-  (select last_invoked_at >= now() - interval '1 second'
-   from pgflow.worker_functions
-   where function_name = 'my-edge-function'),
-  'Upsert updates last_invoked_at on conflict (refreshes debounce)'
+-- TEST: Upsert does NOT set last_invoked_at on conflict (keeps it NULL)
+select is(
+  (select last_invoked_at from pgflow.worker_functions where function_name = 'my-edge-function'),
+  null::timestamptz,
+  'Upsert does NOT set last_invoked_at on conflict (keeps it NULL)'
 );
 
 -- TEST: Upsert does not duplicate rows

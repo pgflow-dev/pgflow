@@ -1,6 +1,6 @@
--- Create extension "pg_net"
+-- Create extension "pg_net" (if not exists)
 CREATE EXTENSION IF NOT EXISTS "pg_net" WITH SCHEMA "public";
--- Create extension "pg_cron"
+-- Create extension "pg_cron" (if not exists)
 CREATE EXTENSION IF NOT EXISTS "pg_cron";
 -- Modify "workers" table
 ALTER TABLE "pgflow"."workers" ADD COLUMN "stopped_at" timestamptz NULL;
@@ -245,18 +245,15 @@ Replaces existing jobs if they exist (idempotent).
 Returns a confirmation message with job IDs.';
 -- Create "track_worker_function" function
 CREATE FUNCTION "pgflow"."track_worker_function" ("function_name" text) RETURNS void LANGUAGE sql AS $$
-insert into pgflow.worker_functions (function_name, updated_at, last_invoked_at)
-  values (track_worker_function.function_name, clock_timestamp(), clock_timestamp())
+insert into pgflow.worker_functions (function_name, updated_at)
+  values (track_worker_function.function_name, clock_timestamp())
   on conflict (function_name)
   do update set
-    updated_at = clock_timestamp(),
-    last_invoked_at = clock_timestamp();
+    updated_at = clock_timestamp();
 $$;
 -- Set comment to function: "track_worker_function"
-COMMENT ON FUNCTION "pgflow"."track_worker_function" IS 'Registers an edge function for monitoring. Called by workers on startup.
-Sets last_invoked_at to prevent cron from pinging during startup (debounce).';
+COMMENT ON FUNCTION "pgflow"."track_worker_function" IS 'Registers an edge function for monitoring. Called by workers on startup.';
 -- Drop "ensure_flow_compiled" function
 DROP FUNCTION "pgflow"."ensure_flow_compiled" (text, jsonb, text);
-
 -- Auto-install ensure_workers cron job (1 second interval)
 SELECT pgflow.setup_ensure_workers_cron('1 second');
