@@ -578,6 +578,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      track_worker_function: {
+        Args: { function_name: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
