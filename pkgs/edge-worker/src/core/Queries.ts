@@ -73,4 +73,25 @@ export class Queries {
     `;
     return result.result;
   }
+
+  /**
+   * Registers an edge function for monitoring by ensure_workers() cron.
+   * Called by workers on startup. Sets last_invoked_at to prevent cron from
+   * pinging during startup (debounce).
+   */
+  async trackWorkerFunction(functionName: string): Promise<void> {
+    await this.sql`
+      SELECT pgflow.track_worker_function(${functionName})
+    `;
+  }
+
+  /**
+   * Marks a worker as stopped for graceful shutdown signaling.
+   * Called by workers on beforeunload to allow ensure_workers() to detect death immediately.
+   */
+  async markWorkerStopped(workerId: string): Promise<void> {
+    await this.sql`
+      SELECT pgflow.mark_worker_stopped(${workerId}::uuid)
+    `;
+  }
 }

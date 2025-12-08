@@ -6,7 +6,7 @@ import { createFakeLogger } from '../fakes.ts';
 import { waitFor } from '../e2e/_helpers.ts';
 import type { PgmqMessageRecord } from '../../src/queue/types.ts';
 import { delay } from '@std/async';
-import { sendBatch } from '../helpers.ts';
+import { sendBatch, waitForQueue } from '../helpers.ts';
 
 const QUEUE_NAME = 'max_concurrent';
 const MESSAGES_TO_SEND = 3;
@@ -37,6 +37,7 @@ Deno.test(
         // random uuid
         workerId: crypto.randomUUID(),
       });
+      await waitForQueue(sql, QUEUE_NAME);
 
       await sendBatch(MESSAGES_TO_SEND, QUEUE_NAME, sql);
 

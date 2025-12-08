@@ -3,6 +3,7 @@ import { delay } from '@std/async';
 import ProgressBar from 'jsr:@deno-library/progress';
 import { dim } from 'https://deno.land/std@0.224.0/fmt/colors.ts';
 import { e2eConfig } from '../config.ts';
+import type { Sql } from 'postgres';
 
 const DEBUG = Deno.env.get('DEBUG') === '1' || Deno.env.get('VERBOSE') === '1';
 
@@ -264,4 +265,157 @@ export async function startWorker(workerName: string) {
       `Failed to start worker ${workerName} after ${maxRetries} retries`
     )
   );
+}
+
+/**
+ * Configures the vault secrets needed for ensure_workers() to make HTTP requests.
+ * Must be called before setupEnsureWorkersCron() in tests.
+ */
+export async function configureVaultForEnsureWorkers(
+  sql: Sql<Record<string, unknown>>
+) {
+  const baseUrl = `${e2eConfig.apiUrl}/functions/v1`;
+  log(`Configuring vault with base URL: ${baseUrl}`);
+
+  // Insert or update the base URL in vault
+  await sql`
+    INSERT INTO vault.secrets (name, secret)
+    VALUES ('pgflow_function_base_url', ${baseUrl})
+    ON CONFLICT (name) DO UPDATE SET secret = EXCLUDED.secret
+  `;
+
+  log('Vault configured successfully');
+}
+
+/**
+ * Sets up the ensure_workers cron job for worker respawning.
+ * Must be called before tests that rely on automatic worker respawning.
+ * Call configureVaultForEnsureWorkers() first to set the correct URL.
+ */
+export async function setupEnsureWorkersCron(
+  sql: Sql<Record<string, unknown>>,
+  cronInterval = '1 second'
+) {
+  log(`Setting up ensure_workers cron job with interval: ${cronInterval}`);
+  const result = await sql`SELECT pgflow.setup_ensure_workers_cron(${cronInterval})`;
+  log('Cron setup result:', result[0]);
+  return result;
+}
+
+/**
+ * Monitor workers table and cron activity in background for debugging.
+ * Returns an abort function to stop monitoring.
+ */
+export function startWorkersMonitor(
+  functionName: string,
+  intervalMs = 2000
+): { stop: () => Promise<void> } {
+  const sql = createSql();
+  const abortController = new AbortController();
+
+  const monitorLoop = async () => {
+    try {
+      while (!abortController.signal.aborted) {
+        const workers = await sql`
+          SELECT worker_id, function_name, started_at, stopped_at, deprecated_at,
+                 last_heartbeat_at,
+                 EXTRACT(EPOCH FROM (NOW() - last_heartbeat_at))::int as secs_since_heartbeat
+          FROM pgflow.workers
+          WHERE function_name = ${functionName}
+          ORDER BY started_at DESC
+        `;
+
+        const workerFunctions = await sql`
+          SELECT function_name, enabled, heartbeat_timeout_seconds, last_invoked_at,
+                 EXTRACT(EPOCH FROM (NOW() - last_invoked_at))::int as secs_since_invoked
+          FROM pgflow.worker_functions
+          WHERE function_name = ${functionName}
+        `;
+
+        const cronJobs = await sql`
+          SELECT jobname, schedule, active
+          FROM cron.job
+          WHERE jobname LIKE 'pgflow%'
+        `;
+
+        const recentCronRuns = await sql`
+          SELECT j.jobname, jrd.status, jrd.return_message, jrd.start_time, jrd.end_time
+          FROM cron.job_run_details jrd
+          JOIN cron.job j ON j.jobid = jrd.jobid
+          WHERE j.jobname = 'pgflow_ensure_workers'
+          ORDER BY jrd.start_time DESC
+          LIMIT 3
+        `;
+
+        // Check pg_net HTTP request queue and responses
+        const pgNetQueue = await sql`
+          SELECT id, url, timeout_milliseconds
+          FROM net.http_request_queue
+          ORDER BY id DESC
+          LIMIT 3
+        `.catch(() => []);
+
+        const pgNetResponses = await sql`
+          SELECT id, url, created, status_code, error_msg
+          FROM net._http_response
+          ORDER BY created DESC
+          LIMIT 3
+        `.catch(() => []);
+
+        log(`Workers (${workers.length}):`, workers.map((w) => ({
+          id: String(w.worker_id).slice(0, 8),
+          hb_ago: w.secs_since_heartbeat,
+          stopped: !!w.stopped_at,
+          deprecated: !!w.deprecated_at,
+        })));
+
+        log(`Worker functions:`, workerFunctions.map((wf) => ({
+          fn: wf.function_name,
+          enabled: wf.enabled,
+          timeout: wf.heartbeat_timeout_seconds,
+          invoked_ago: wf.secs_since_invoked,
+        })));
+
+        log(`Cron jobs:`, cronJobs);
+        log(`Recent cron runs:`, recentCronRuns.map((r) => ({
+          status: r.status,
+          msg: String(r.return_message || '').slice(0, 50),
+          start: r.start_time,
+        })));
+
+        if (Array.isArray(pgNetQueue) && pgNetQueue.length > 0) {
+          log(`pg_net queue (${pgNetQueue.length}):`, pgNetQueue.map((r) => ({
+            id: r.id,
+            url: String(r.url || '').slice(-40),
+          })));
+        }
+
+        if (Array.isArray(pgNetResponses) && pgNetResponses.length > 0) {
+          log(`pg_net responses:`, pgNetResponses.map((r) => ({
+            id: r.id,
+            status: r.status_code,
+            error: r.error_msg,
+          })));
+        }
+
+        await delay(intervalMs);
+      }
+    } catch (err) {
+      if (!abortController.signal.aborted) {
+        log('Monitor error:', err);
+      }
+    } finally {
+      await sql.end();
+    }
+  };
+
+  // Start the monitor loop (don't await it)
+  const monitorPromise = monitorLoop();
+
+  return {
+    stop: async () => {
+      abortController.abort();
+      await monitorPromise;
+    },
+  };
 }

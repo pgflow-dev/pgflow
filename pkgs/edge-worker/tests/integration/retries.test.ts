@@ -4,7 +4,7 @@ import { createTestPlatformAdapter } from './_helpers.ts';
 import { withTransaction } from '../db.ts';
 import { createFakeLogger } from '../fakes.ts';
 import { log, waitFor } from '../e2e/_helpers.ts';
-import { getArchivedMessages, sendBatch } from '../helpers.ts';
+import { getArchivedMessages, sendBatch, waitForQueue } from '../helpers.ts';
 
 const workerConfig = {
   maxPollSeconds: 1,
@@ -45,11 +45,12 @@ Deno.test(
     );
 
     try {
-      // Start worker and send test message
+      // Start worker and wait for queue to be created
       worker.startOnlyOnce({
         edgeFunctionName: 'test',
         workerId: crypto.randomUUID(),
       });
+      await waitForQueue(sql, workerConfig.queueName);
       await sendBatch(1, workerConfig.queueName, sql);
 
       // Calculate expected processing time

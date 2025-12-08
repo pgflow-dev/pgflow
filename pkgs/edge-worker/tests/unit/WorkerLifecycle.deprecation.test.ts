@@ -18,12 +18,12 @@ class MockQueries extends Queries {
   public sendHeartbeatCallCount = 0;
   public nextResult: { is_deprecated: boolean } = { is_deprecated: false };
   public workerStopped = false;
-  
+
   constructor() {
     // Pass null as sql since we'll override all methods
     super(null as unknown as postgres.Sql);
   }
-  
+
   override onWorkerStarted(params: {
     workerId: string;
     edgeFunctionName: string;
@@ -49,6 +49,14 @@ class MockQueries extends Queries {
   override onWorkerStopped(workerRow: WorkerRow): Promise<WorkerRow> {
     this.workerStopped = true;
     return Promise.resolve(workerRow);
+  }
+
+  override trackWorkerFunction(_functionName: string): Promise<void> {
+    return Promise.resolve();
+  }
+
+  override markWorkerStopped(_workerId: string): Promise<void> {
+    return Promise.resolve();
   }
 }
 
