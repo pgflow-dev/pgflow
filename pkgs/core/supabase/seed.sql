@@ -13,6 +13,7 @@ BEGIN
   DELETE FROM pgflow.deps;
   DELETE FROM pgflow.steps;
   DELETE FROM pgflow.flows;
+  DELETE FROM pgflow.worker_functions;
 
   -- Also clear the realtime.messages table if it exists
   BEGIN

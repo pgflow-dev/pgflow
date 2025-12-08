@@ -1,6 +1,6 @@
 -- Test: ensure_workers() retrieves credentials from Vault
 begin;
-select plan(2);
+select plan(4);
 select pgflow_tests.reset_db();
 
 -- Setup: Create Vault secrets
@@ -42,6 +42,38 @@ select ok(
   (select request_id is not null from result limit 1),
   'Vault credentials allow HTTP invocation in production mode'
 );
+
+-- TEST: HTTP request URL uses base URL from Vault
+update pgflow.worker_functions
+set last_invoked_at = now() - interval '10 seconds';
+
+-- Store result in temp table to ensure ensure_workers() executes before we query the queue
+select * into temporary test3_result from pgflow.ensure_workers();
+
+select ok(
+  (select url = 'http://vault-configured-url.example.com/functions/v1/my-function'
+   from net.http_request_queue
+   where id = (select request_id from test3_result limit 1)),
+  'HTTP request URL is constructed from Vault pgflow_function_base_url'
+);
+
+drop table test3_result;
+
+-- TEST: HTTP request Authorization header uses service role key from Vault
+update pgflow.worker_functions
+set last_invoked_at = now() - interval '10 seconds';
+
+-- Store result in temp table to ensure ensure_workers() executes before we query the queue
+select * into temporary test4_result from pgflow.ensure_workers();
+
+select ok(
+  (select headers->>'Authorization' = 'Bearer test-service-role-key-from-vault'
+   from net.http_request_queue
+   where id = (select request_id from test4_result limit 1)),
+  'HTTP request Authorization header contains Vault service role key'
+);
+
+drop table test4_result;
 
 select finish();
 rollback;

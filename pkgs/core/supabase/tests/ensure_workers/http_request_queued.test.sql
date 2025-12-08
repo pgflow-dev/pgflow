@@ -1,6 +1,6 @@
 -- Test: ensure_workers() queues HTTP request via pg_net
 begin;
-select plan(4);
+select plan(5);
 select pgflow_tests.reset_db();
 
 -- Clear any existing HTTP requests
@@ -43,6 +43,22 @@ select ok(
   (select request_id is not null from result limit 1),
   'HTTP request was queued (request_id returned)'
 );
+
+-- TEST: HTTP request URL format is correct (base_url/function_name)
+update pgflow.worker_functions
+set last_invoked_at = now() - interval '10 seconds';
+
+-- Store result in temp table to ensure ensure_workers() executes before we query the queue
+select * into temporary test_url_result from pgflow.ensure_workers();
+
+select ok(
+  (select url LIKE '%/functions/v1/my-function'
+   from net.http_request_queue
+   where id = (select request_id from test_url_result limit 1)),
+  'HTTP request URL ends with /functions/v1/{function_name}'
+);
+
+drop table test_url_result;
 
 -- TEST: Multiple functions each get their own request
 select pgflow.track_worker_function('function-two');
