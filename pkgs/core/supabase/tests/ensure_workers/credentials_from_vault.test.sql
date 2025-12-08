@@ -6,11 +6,11 @@ select pgflow_tests.reset_db();
 -- Setup: Create Vault secrets
 select vault.create_secret(
   'test-service-role-key-from-vault',
-  'pgflow_service_role_key'
+  'supabase_service_role_key'
 );
 select vault.create_secret(
-  'http://vault-configured-url.example.com/functions/v1',
-  'pgflow_function_base_url'
+  'vaultproject123',
+  'supabase_project_id'
 );
 
 -- Setup: Register a worker function
@@ -51,10 +51,10 @@ set last_invoked_at = now() - interval '10 seconds';
 select * into temporary test3_result from pgflow.ensure_workers();
 
 select ok(
-  (select url = 'http://vault-configured-url.example.com/functions/v1/my-function'
+  (select url = 'https://vaultproject123.supabase.co/functions/v1/my-function'
    from net.http_request_queue
    where id = (select request_id from test3_result limit 1)),
-  'HTTP request URL is constructed from Vault pgflow_function_base_url'
+  'HTTP request URL is constructed from Vault supabase_project_id'
 );
 
 drop table test3_result;

@@ -4,8 +4,8 @@ select plan(5);
 select pgflow_tests.reset_db();
 
 -- Setup: Create Vault secrets for production mode tests
-select vault.create_secret('test-service-role-key', 'pgflow_service_role_key');
-select vault.create_secret('http://test.example.com/functions/v1', 'pgflow_function_base_url');
+select vault.create_secret('test-service-role-key', 'supabase_service_role_key');
+select vault.create_secret('testproject123', 'supabase_project_id');
 
 -- Setup: Register a worker function
 select pgflow.track_worker_function('my-function');
