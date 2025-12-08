@@ -3,7 +3,6 @@ import { delay } from '@std/async';
 import ProgressBar from 'jsr:@deno-library/progress';
 import { dim } from 'https://deno.land/std@0.224.0/fmt/colors.ts';
 import { e2eConfig } from '../config.ts';
-import type { Sql } from 'postgres';
 
 const DEBUG = Deno.env.get('DEBUG') === '1' || Deno.env.get('VERBOSE') === '1';
 
@@ -265,26 +264,6 @@ export async function startWorker(workerName: string) {
       `Failed to start worker ${workerName} after ${maxRetries} retries`
     )
   );
-}
-
-/**
- * Configures the vault secrets needed for ensure_workers() to make HTTP requests.
- * Must be called before setupEnsureWorkersCron() in tests.
- */
-export async function configureVaultForEnsureWorkers(
-  sql: Sql<Record<string, unknown>>
-) {
-  const baseUrl = `${e2eConfig.apiUrl}/functions/v1`;
-  log(`Configuring vault with base URL: ${baseUrl}`);
-
-  // Insert or update the base URL in vault
-  await sql`
-    INSERT INTO vault.secrets (name, secret)
-    VALUES ('pgflow_function_base_url', ${baseUrl})
-    ON CONFLICT (name) DO UPDATE SET secret = EXCLUDED.secret
-  `;
-
-  log('Vault configured successfully');
 }
 
 /**

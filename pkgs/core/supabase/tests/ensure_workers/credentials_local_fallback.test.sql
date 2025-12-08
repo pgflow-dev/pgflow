@@ -4,7 +4,7 @@ select plan(4);
 select pgflow_tests.reset_db();
 
 -- Ensure no Vault secrets exist
-delete from vault.secrets where name in ('pgflow_service_role_key', 'pgflow_function_base_url');
+delete from vault.secrets where name in ('supabase_service_role_key', 'supabase_project_id');
 
 -- Setup: Register a worker function
 select pgflow.track_worker_function('my-function');

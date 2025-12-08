@@ -12,14 +12,18 @@ as $$
       select pgflow.is_local() as is_local
     ),
 
-    -- Get credentials: Vault secrets with local fallback for base_url only
+    -- Get credentials: Local mode uses hardcoded URL, production uses vault secrets
+    -- Empty strings are treated as NULL using nullif()
     credentials as (
       select
-        (select decrypted_secret from vault.decrypted_secrets where name = 'pgflow_service_role_key') as service_role_key,
-        coalesce(
-          (select decrypted_secret from vault.decrypted_secrets where name = 'pgflow_function_base_url'),
-          case when (select is_local from env) then 'http://kong:8000/functions/v1' end
-        ) as base_url
+        case
+          when (select is_local from env) then null
+          else nullif((select decrypted_secret from vault.decrypted_secrets where name = 'supabase_service_role_key'), '')
+        end as service_role_key,
+        case
+          when (select is_local from env) then 'http://kong:8000/functions/v1'
+          else (select 'https://' || nullif(decrypted_secret, '') || '.supabase.co/functions/v1' from vault.decrypted_secrets where name = 'supabase_project_id')
+        end as base_url
     ),
 
     -- Find functions that pass the debounce check
@@ -93,5 +97,6 @@ comment on function pgflow.ensure_workers() is
 In local mode: always pings all enabled functions (for fast restart after code changes).
 In production mode: only pings functions that have no alive workers.
 Respects debounce: skips functions pinged within their heartbeat_timeout_seconds window.
-Credentials: Uses Vault secrets (pgflow_service_role_key, pgflow_function_base_url) or local fallbacks.
+Credentials: Uses Vault secrets (supabase_service_role_key, supabase_project_id) or local fallbacks.
+URL is built from project_id: https://{project_id}.supabase.co/functions/v1
 Returns request_id from pg_net for each HTTP request made.';
