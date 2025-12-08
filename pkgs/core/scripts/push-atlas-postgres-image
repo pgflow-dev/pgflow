@@ -1,2 +1,6 @@
 #!/bin/bash
-docker push jumski/postgres-17-pgmq:latest
+# Tag matches Supabase Postgres version we align extensions with
+SUPABASE_VERSION="17.6.1.054"
+
+docker push jumski/atlas-postgres-pgflow:${SUPABASE_VERSION}
+docker push jumski/atlas-postgres-pgflow:latest

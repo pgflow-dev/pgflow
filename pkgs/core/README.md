@@ -5,10 +5,6 @@ PostgreSQL-native workflow engine for defining, managing, and tracking DAG-based
 > [!NOTE]
 > This project and all its components are licensed under [Apache 2.0](./LICENSE) license.
 
-> [!WARNING]
-> This project uses [Atlas](https://atlasgo.io/docs) to manage the schemas and migrations.
-> See [ATLAS.md](ATLAS.md) for more details.
-
 ## Table of Contents
 
 - [Overview](#overview)
@@ -49,8 +45,7 @@ The actual execution of workflow tasks is handled by the [Edge Worker](../edge-w
 
 ## Requirements
 
-> [!IMPORTANT]
-> **pgmq Version Requirement** (since v0.8.0)
+> [!IMPORTANT] > **pgmq Version Requirement** (since v0.8.0)
 >
 > pgflow v0.8.0 and later requires **pgmq 1.5.0 or higher**. This version of pgflow will NOT work with pgmq 1.4.x or earlier.
 >
