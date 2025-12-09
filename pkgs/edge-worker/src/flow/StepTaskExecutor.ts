@@ -61,6 +61,8 @@ export class StepTaskExecutor<TFlow extends AnyFlow, TContext extends StepTaskHa
     const stepDef = this.flow.getStepDefinition(this.stepTask.step_slug);
     // maxAttempts includes the initial attempt, so maxRetries = maxAttempts - 1
     const maxRetries = stepDef?.options?.maxAttempts ? stepDef.options.maxAttempts - 1 : undefined;
+    // baseDelay from step options for retry delay calculation
+    const baseDelay = stepDef?.options?.baseDelay;
 
     return {
       flowSlug: this.stepTask.flow_slug,
@@ -73,6 +75,7 @@ export class StepTaskExecutor<TFlow extends AnyFlow, TContext extends StepTaskHa
       queueName: this.workerIdentity.queueName,
       retryAttempt,
       maxRetries,
+      baseDelay,
     };
   }
 

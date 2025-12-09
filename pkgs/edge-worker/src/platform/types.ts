@@ -13,6 +13,8 @@ export interface TaskLogContext {
   queueName: string;
   retryAttempt?: number;
   maxRetries?: number;
+  /** Base delay in seconds for retry calculation (from step options) */
+  baseDelay?: number;
 }
 
 /**

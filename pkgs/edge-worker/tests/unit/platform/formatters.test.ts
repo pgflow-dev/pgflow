@@ -17,6 +17,7 @@ interface TaskLogContext {
   queueName: string;
   retryAttempt?: number;
   maxRetries?: number;
+  baseDelay?: number;
 }
 
 interface StartupContext {
@@ -611,6 +612,192 @@ Deno.test('FancyFormatter - taskFailed at DEBUG level includes identifiers', () 
     assertStringIncludes(output, 'run_id=run-123');
     assertStringIncludes(output, 'msg_id=1044');
     assertStringIncludes(output, 'worker_id=worker-1');
+  } finally {
+    restore();
+  }
+});
+
+// ============================================================
+// Phase 5: Retry Information Display Tests
+// ============================================================
+
+Deno.test('FancyFormatter - taskFailed shows retry pending info when retries remaining', () => {
+  const consoleSpy = spy(console, 'log');
+
+  try {
+    const factory = createLoggingFactory({
+      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+    });
+    const logger = factory.createLogger('test');
+
+    const ctx: TaskLogContext = {
+      flowSlug: 'greetUser',
+      stepSlug: 'sendEmail',
+      msgId: '1044',
+      runId: 'run-123',
+      workerId: 'worker-1',
+      workerName: 'greet-user-worker',
+      queueName: 'orders',
+      retryAttempt: 1,  // First attempt (read_ct=1)
+      maxRetries: 3,    // 3 retries allowed
+      baseDelay: 5,     // 5 second base delay
+    };
+
+    const error = new Error('Request failed');
+    logger.taskFailed(ctx, error);
+
+    assertSpyCalls(consoleSpy, 1);
+    const output = consoleSpy.calls[0].args[0] as string;
+
+    // Should contain retry icon and info
+    assertStringIncludes(output, '↻');
+    assertStringIncludes(output, 'retry 1/3');
+    assertStringIncludes(output, '5s');  // baseDelay * 2^0 = 5s for first attempt
+  } finally {
+    restore();
+  }
+});
+
+Deno.test('FancyFormatter - taskFailed calculates exponential backoff delay correctly', () => {
+  const consoleSpy = spy(console, 'log');
+
+  try {
+    const factory = createLoggingFactory({
+      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+    });
+    const logger = factory.createLogger('test');
+
+    const ctx: TaskLogContext = {
+      flowSlug: 'greetUser',
+      stepSlug: 'sendEmail',
+      msgId: '1044',
+      runId: 'run-123',
+      workerId: 'worker-1',
+      workerName: 'greet-user-worker',
+      queueName: 'orders',
+      retryAttempt: 2,  // Second attempt (first retry)
+      maxRetries: 3,
+      baseDelay: 5,     // 5 second base delay
+    };
+
+    const error = new Error('Request failed');
+    logger.taskFailed(ctx, error);
+
+    assertSpyCalls(consoleSpy, 1);
+    const output = consoleSpy.calls[0].args[0] as string;
+
+    // Should show retry 2/3 with 10s delay (5 * 2^1 = 10)
+    assertStringIncludes(output, 'retry 2/3');
+    assertStringIncludes(output, '10s');
+  } finally {
+    restore();
+  }
+});
+
+Deno.test('FancyFormatter - taskFailed does NOT show retry info when no retries remaining', () => {
+  const consoleSpy = spy(console, 'log');
+
+  try {
+    const factory = createLoggingFactory({
+      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+    });
+    const logger = factory.createLogger('test');
+
+    const ctx: TaskLogContext = {
+      flowSlug: 'greetUser',
+      stepSlug: 'sendEmail',
+      msgId: '1044',
+      runId: 'run-123',
+      workerId: 'worker-1',
+      workerName: 'greet-user-worker',
+      queueName: 'orders',
+      retryAttempt: 4,  // 4th attempt, exceeds maxRetries
+      maxRetries: 3,    // Only 3 retries allowed
+      baseDelay: 5,
+    };
+
+    const error = new Error('Request failed');
+    logger.taskFailed(ctx, error);
+
+    assertSpyCalls(consoleSpy, 1);
+    const output = consoleSpy.calls[0].args[0] as string;
+
+    // Should NOT contain retry icon when no retries remaining
+    assertEquals(output.includes('↻'), false);
+  } finally {
+    restore();
+  }
+});
+
+Deno.test('SimpleFormatter - taskFailed shows retry info in key=value format', () => {
+  const consoleSpy = spy(console, 'log');
+
+  try {
+    const factory = createLoggingFactory({
+      SUPABASE_ANON_KEY: 'some-production-key',
+      EDGE_WORKER_LOG_LEVEL: 'verbose',
+    });
+    const logger = factory.createLogger('test');
+
+    const ctx: TaskLogContext = {
+      flowSlug: 'greetUser',
+      stepSlug: 'sendEmail',
+      msgId: '1044',
+      runId: 'run-123',
+      workerId: 'worker-1',
+      workerName: 'greet-user-worker',
+      queueName: 'orders',
+      retryAttempt: 1,
+      maxRetries: 3,
+      baseDelay: 5,
+    };
+
+    const error = new Error('Request failed');
+    logger.taskFailed(ctx, error);
+
+    assertSpyCalls(consoleSpy, 1);
+    const output = consoleSpy.calls[0].args[0] as string;
+
+    // Should contain retry info in key=value format
+    assertStringIncludes(output, 'retry=1/3');
+    assertStringIncludes(output, 'retry_delay_s=5');
+  } finally {
+    restore();
+  }
+});
+
+Deno.test('SimpleFormatter - taskFailed does NOT show retry info when no retries remaining', () => {
+  const consoleSpy = spy(console, 'log');
+
+  try {
+    const factory = createLoggingFactory({
+      SUPABASE_ANON_KEY: 'some-production-key',
+      EDGE_WORKER_LOG_LEVEL: 'verbose',
+    });
+    const logger = factory.createLogger('test');
+
+    const ctx: TaskLogContext = {
+      flowSlug: 'greetUser',
+      stepSlug: 'sendEmail',
+      msgId: '1044',
+      runId: 'run-123',
+      workerId: 'worker-1',
+      workerName: 'greet-user-worker',
+      queueName: 'orders',
+      retryAttempt: 4,  // Exceeds maxRetries
+      maxRetries: 3,
+      baseDelay: 5,
+    };
+
+    const error = new Error('Request failed');
+    logger.taskFailed(ctx, error);
+
+    assertSpyCalls(consoleSpy, 1);
+    const output = consoleSpy.calls[0].args[0] as string;
+
+    // Should NOT contain retry info when no retries remaining
+    assertEquals(output.includes('retry='), false);
+    assertEquals(output.includes('retry_delay_s='), false);
   } finally {
     restore();
   }
