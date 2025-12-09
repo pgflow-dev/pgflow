@@ -64,7 +64,20 @@ class MockQueries extends Queries {
 class MockQueue<T extends Json> extends Queue<T> {
   constructor(queueName: string) {
     // Pass null as sql and a mock logger since we'll override safeCreate
-    super(null as unknown as postgres.Sql, queueName, { debug: () => {}, verbose: () => {}, info: () => {}, error: () => {}, warn: () => {} } as Logger);
+    super(null as unknown as postgres.Sql, queueName, {
+      debug: () => {},
+      verbose: () => {},
+      info: () => {},
+      error: () => {},
+      warn: () => {},
+      taskStarted: () => {},
+      taskCompleted: () => {},
+      taskFailed: () => {},
+      polling: () => {},
+      taskCount: () => {},
+      startupBanner: () => {},
+      shutdown: () => {},
+    } as Logger);
   }
 
   override safeCreate(): Promise<postgres.RowList<postgres.Row[]>> {
@@ -233,6 +246,13 @@ Deno.test(
       info: (msg: string) => logs.push(msg),
       error: () => {},
       warn: () => {},
+      taskStarted: () => {},
+      taskCompleted: () => {},
+      taskFailed: () => {},
+      polling: () => {},
+      taskCount: () => {},
+      startupBanner: () => {},
+      shutdown: () => {},
     };
 
     const mockQueries = new MockQueries();

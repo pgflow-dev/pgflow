@@ -4,6 +4,7 @@
   "sourceRoot": "pkgs/cli/src",
   "projectType": "library",
   "tags": [],
+  "implicitDependencies": ["!edge-worker"],
   "// targets": "to see all targets run: nx show project cli --web",
   "targets": {
     "build": {

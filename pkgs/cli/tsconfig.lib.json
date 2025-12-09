@@ -6,10 +6,10 @@
   "include": ["src/**/*.ts"],
   "references": [
     {
-      "path": "../dsl/tsconfig.lib.json"
+      "path": "../core/tsconfig.lib.json"
     },
     {
-      "path": "../core/tsconfig.lib.json"
+      "path": "../dsl/tsconfig.lib.json"
     }
   ],
   "exclude": [

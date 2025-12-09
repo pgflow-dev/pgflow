@@ -1,6 +1,34 @@
 import type { Worker } from '../core/Worker.js';
 
 /**
+ * Context for task-related log messages
+ */
+export interface TaskLogContext {
+  flowSlug: string;
+  stepSlug: string;
+  msgId: string;
+  runId: string;
+  workerId: string;
+  workerName: string;
+  queueName: string;
+  retryAttempt?: number;
+  maxRetries?: number;
+}
+
+/**
+ * Context for startup banner log messages (Phase 3b: multi-flow support)
+ */
+export interface StartupContext {
+  workerName: string;
+  workerId: string;
+  queueName: string;
+  flows: Array<{
+    flowSlug: string;
+    compilationStatus: 'compiled' | 'verified' | 'recompiled' | 'mismatch';
+  }>;
+}
+
+/**
  * Basic logger interface used throughout the application
  */
 export interface Logger {
@@ -9,6 +37,16 @@ export interface Logger {
   info(message: string, ...args: unknown[]): void;
   warn(message: string, ...args: unknown[]): void;
   error(message: string, ...args: unknown[]): void;
+
+  // Structured logging methods
+  taskStarted(ctx: TaskLogContext): void;
+  taskCompleted(ctx: TaskLogContext, durationMs: number): void;
+  taskFailed(ctx: TaskLogContext, error: Error): void;
+  // Phase 3b: polling() and taskCount() simplified - no args needed (queue in banner, worker name from factory)
+  polling(): void;
+  taskCount(count: number): void;
+  startupBanner(ctx: StartupContext): void;
+  shutdown(phase: 'deprecating' | 'waiting' | 'stopped'): void;
 }
 
 /**
