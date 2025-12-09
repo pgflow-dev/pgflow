@@ -15,6 +15,10 @@
     "./_internal": {
       "types": "./dist/_internal.d.ts",
       "import": "./dist/_internal.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "import": "./dist/testing.js"
     }
   },
   "files": [

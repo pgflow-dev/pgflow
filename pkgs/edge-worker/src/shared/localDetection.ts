@@ -14,7 +14,3 @@ export function isLocalSupabaseEnv(env: Record<string, string | undefined>): boo
   return anonKey === KNOWN_LOCAL_ANON_KEY ||
          serviceRoleKey === KNOWN_LOCAL_SERVICE_ROLE_KEY;
 }
-
-export function isLocalSupabase(): boolean {
-  return isLocalSupabaseEnv(Deno.env.toObject());
-}
