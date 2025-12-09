@@ -66,6 +66,7 @@ export function startWorker<TFlow extends AnyFlow>(
 
   const consoleLogger = {
     debug: console.log,
+    verbose: console.log,
     info: console.log,
     warn: console.warn,
     error: console.error,

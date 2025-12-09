@@ -5,6 +5,7 @@ import type { Worker } from '../core/Worker.js';
  */
 export interface Logger {
   debug(message: string, ...args: unknown[]): void;
+  verbose(message: string, ...args: unknown[]): void;
   info(message: string, ...args: unknown[]): void;
   warn(message: string, ...args: unknown[]): void;
   error(message: string, ...args: unknown[]): void;

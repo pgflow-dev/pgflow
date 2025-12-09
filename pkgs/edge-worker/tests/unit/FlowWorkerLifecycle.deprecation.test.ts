@@ -185,6 +185,7 @@ Deno.test('FlowWorkerLifecycle - should log appropriate message when transitioni
   const logs: string[] = [];
   const testLogger: Logger = {
     debug: () => {},
+    verbose: () => {},
     info: (msg: string) => logs.push(msg),
     error: () => {},
     warn: () => {},
