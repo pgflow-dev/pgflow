@@ -4,7 +4,8 @@
 create table if not exists pgflow.worker_functions (
   function_name text not null primary key,
   enabled boolean not null default true,
-  heartbeat_timeout_seconds integer not null default 6,
+  debounce interval not null default '6 seconds'
+  check (debounce >= '1 second'),
   last_invoked_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -19,8 +20,8 @@ comment on column pgflow.worker_functions.function_name is
 comment on column pgflow.worker_functions.enabled is
 'Whether ensure_workers() should ping this function';
 
-comment on column pgflow.worker_functions.heartbeat_timeout_seconds is
-'How long before considering a worker dead (no heartbeat)';
+comment on column pgflow.worker_functions.debounce is
+'Minimum interval between invocation attempts for this function';
 
 comment on column pgflow.worker_functions.last_invoked_at is
 'When ensure_workers() last pinged this function (used for debouncing)';

@@ -317,25 +317,25 @@ export type Database = {
       worker_functions: {
         Row: {
           created_at: string
+          debounce: unknown
           enabled: boolean
           function_name: string
-          heartbeat_timeout_seconds: number
           last_invoked_at: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          debounce?: unknown
           enabled?: boolean
           function_name: string
-          heartbeat_timeout_seconds?: number
           last_invoked_at?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          debounce?: unknown
           enabled?: boolean
           function_name?: string
-          heartbeat_timeout_seconds?: number
           last_invoked_at?: string | null
           updated_at?: string
         }

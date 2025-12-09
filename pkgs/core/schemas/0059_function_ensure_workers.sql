@@ -28,12 +28,12 @@ as $$
 
     -- Find functions that pass the debounce check
     debounce_passed as (
-      select wf.function_name, wf.heartbeat_timeout_seconds
+      select wf.function_name, wf.debounce
       from pgflow.worker_functions as wf
       where wf.enabled = true
         and (
           wf.last_invoked_at is null
-          or wf.last_invoked_at < now() - (wf.heartbeat_timeout_seconds || ' seconds')::interval
+          or wf.last_invoked_at < now() - wf.debounce
         )
     ),
 
@@ -44,7 +44,7 @@ as $$
       inner join debounce_passed as dp on w.function_name = dp.function_name
       where w.stopped_at is null
         and w.deprecated_at is null
-        and w.last_heartbeat_at > now() - (dp.heartbeat_timeout_seconds || ' seconds')::interval
+        and w.last_heartbeat_at > now() - dp.debounce
     ),
 
     -- Determine which functions should be invoked
@@ -104,7 +104,7 @@ comment on function pgflow.ensure_workers() is
 'Ensures worker functions are running by pinging them via HTTP when needed.
 In local mode: pings ALL enabled functions (ignores debounce AND alive workers check).
 In production mode: only pings functions that pass debounce AND have no alive workers.
-Debounce: skips functions pinged within their heartbeat_timeout_seconds window (production only).
+Debounce: skips functions pinged within their debounce interval (production only).
 Credentials: Uses Vault secrets (supabase_service_role_key, supabase_project_id) or local fallbacks.
 URL is built from project_id: https://{project_id}.supabase.co/functions/v1
 Returns request_id from pg_net for each HTTP request made.';

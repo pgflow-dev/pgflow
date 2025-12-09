@@ -8,11 +8,12 @@ ALTER TABLE "pgflow"."workers" ADD COLUMN "stopped_at" timestamptz NULL;
 CREATE TABLE "pgflow"."worker_functions" (
   "function_name" text NOT NULL,
   "enabled" boolean NOT NULL DEFAULT true,
-  "heartbeat_timeout_seconds" integer NOT NULL DEFAULT 6,
+  "debounce" interval NOT NULL DEFAULT '00:00:06'::interval,
   "last_invoked_at" timestamptz NULL,
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
-  PRIMARY KEY ("function_name")
+  PRIMARY KEY ("function_name"),
+  CONSTRAINT "worker_functions_debounce_check" CHECK (debounce >= '00:00:01'::interval)
 );
 -- Set comment to table: "worker_functions"
 COMMENT ON TABLE "pgflow"."worker_functions" IS 'Registry of edge functions that run pgflow workers, used by ensure_workers() cron';
@@ -20,8 +21,8 @@ COMMENT ON TABLE "pgflow"."worker_functions" IS 'Registry of edge functions that
 COMMENT ON COLUMN "pgflow"."worker_functions"."function_name" IS 'Name of the Supabase Edge Function';
 -- Set comment to column: "enabled" on table: "worker_functions"
 COMMENT ON COLUMN "pgflow"."worker_functions"."enabled" IS 'Whether ensure_workers() should ping this function';
--- Set comment to column: "heartbeat_timeout_seconds" on table: "worker_functions"
-COMMENT ON COLUMN "pgflow"."worker_functions"."heartbeat_timeout_seconds" IS 'How long before considering a worker dead (no heartbeat)';
+-- Set comment to column: "debounce" on table: "worker_functions"
+COMMENT ON COLUMN "pgflow"."worker_functions"."debounce" IS 'Minimum interval between invocation attempts for this function';
 -- Set comment to column: "last_invoked_at" on table: "worker_functions"
 COMMENT ON COLUMN "pgflow"."worker_functions"."last_invoked_at" IS 'When ensure_workers() last pinged this function (used for debouncing)';
 -- Create "cleanup_ensure_workers_logs" function
@@ -122,12 +123,12 @@ with
 
     -- Find functions that pass the debounce check
     debounce_passed as (
-      select wf.function_name, wf.heartbeat_timeout_seconds
+      select wf.function_name, wf.debounce
       from pgflow.worker_functions as wf
       where wf.enabled = true
         and (
           wf.last_invoked_at is null
-          or wf.last_invoked_at < now() - (wf.heartbeat_timeout_seconds || ' seconds')::interval
+          or wf.last_invoked_at < now() - wf.debounce
         )
     ),
 
@@ -138,7 +139,7 @@ with
       inner join debounce_passed as dp on w.function_name = dp.function_name
       where w.stopped_at is null
         and w.deprecated_at is null
-        and w.last_heartbeat_at > now() - (dp.heartbeat_timeout_seconds || ' seconds')::interval
+        and w.last_heartbeat_at > now() - dp.debounce
     ),
 
     -- Determine which functions should be invoked
@@ -197,7 +198,7 @@ $$;
 COMMENT ON FUNCTION "pgflow"."ensure_workers" IS 'Ensures worker functions are running by pinging them via HTTP when needed.
 In local mode: pings ALL enabled functions (ignores debounce AND alive workers check).
 In production mode: only pings functions that pass debounce AND have no alive workers.
-Debounce: skips functions pinged within their heartbeat_timeout_seconds window (production only).
+Debounce: skips functions pinged within their debounce interval (production only).
 Credentials: Uses Vault secrets (supabase_service_role_key, supabase_project_id) or local fallbacks.
 URL is built from project_id: https://{project_id}.supabase.co/functions/v1
 Returns request_id from pg_net for each HTTP request made.';
