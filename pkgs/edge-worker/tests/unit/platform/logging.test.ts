@@ -127,3 +127,102 @@ Deno.test('createLoggingFactory - level hierarchy: error < warn < info < verbose
     restore();
   }
 });
+
+// ============================================================
+// Environment Configuration Tests (Phase 2)
+// ============================================================
+
+Deno.test('createLoggingFactory - colorsEnabled defaults to true', () => {
+  const factory = createLoggingFactory();
+
+  assertEquals(factory.colorsEnabled, true);
+});
+
+Deno.test('createLoggingFactory - colorsEnabled is false when NO_COLOR env var is set', () => {
+  const factory = createLoggingFactory({ NO_COLOR: '1' });
+
+  assertEquals(factory.colorsEnabled, false);
+});
+
+Deno.test('createLoggingFactory - colorsEnabled is false when NO_COLOR is any truthy value', () => {
+  // NO_COLOR standard: presence of the variable (any value) disables colors
+  const factory1 = createLoggingFactory({ NO_COLOR: 'true' });
+  assertEquals(factory1.colorsEnabled, false);
+
+  const factory2 = createLoggingFactory({ NO_COLOR: '' });
+  // Empty string is still "set" per NO_COLOR standard
+  assertEquals(factory2.colorsEnabled, false);
+});
+
+Deno.test('createLoggingFactory - format defaults to simple when env not provided', () => {
+  const factory = createLoggingFactory();
+
+  assertEquals(factory.format, 'simple');
+});
+
+Deno.test('createLoggingFactory - format is fancy for local Supabase environment', () => {
+  const localEnv = {
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+  };
+  const factory = createLoggingFactory(localEnv);
+
+  assertEquals(factory.format, 'fancy');
+});
+
+Deno.test('createLoggingFactory - format is simple for hosted Supabase environment', () => {
+  const hostedEnv = {
+    SUPABASE_ANON_KEY: 'some-production-key',
+  };
+  const factory = createLoggingFactory(hostedEnv);
+
+  assertEquals(factory.format, 'simple');
+});
+
+Deno.test('createLoggingFactory - EDGE_WORKER_LOG_FORMAT overrides auto-detection', () => {
+  // Even in local env, explicit format override should win
+  const localEnv = {
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+    EDGE_WORKER_LOG_FORMAT: 'simple',
+  };
+  const factory = createLoggingFactory(localEnv);
+
+  assertEquals(factory.format, 'simple');
+});
+
+Deno.test('createLoggingFactory - EDGE_WORKER_LOG_FORMAT can set fancy in hosted env', () => {
+  const hostedEnv = {
+    SUPABASE_ANON_KEY: 'some-production-key',
+    EDGE_WORKER_LOG_FORMAT: 'fancy',
+  };
+  const factory = createLoggingFactory(hostedEnv);
+
+  assertEquals(factory.format, 'fancy');
+});
+
+Deno.test('createLoggingFactory - default log level is verbose for local env', () => {
+  const localEnv = {
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+  };
+  const factory = createLoggingFactory(localEnv);
+
+  assertEquals(factory.logLevel, 'verbose');
+});
+
+Deno.test('createLoggingFactory - default log level is info for hosted env', () => {
+  const hostedEnv = {
+    SUPABASE_ANON_KEY: 'some-production-key',
+  };
+  const factory = createLoggingFactory(hostedEnv);
+
+  assertEquals(factory.logLevel, 'info');
+});
+
+Deno.test('createLoggingFactory - EDGE_WORKER_LOG_LEVEL overrides default', () => {
+  const localEnv = {
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+    EDGE_WORKER_LOG_LEVEL: 'debug',
+  };
+  const factory = createLoggingFactory(localEnv);
+
+  assertEquals(factory.logLevel, 'debug');
+});

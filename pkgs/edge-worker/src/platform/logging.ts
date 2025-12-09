@@ -1,12 +1,38 @@
 import type { Logger } from './types.js';
+import { isLocalSupabaseEnv } from '../shared/localDetection.js';
 
 /**
- * Creates a logging factory with dynamic workerId support
+ * Log format type: 'fancy' for local dev with colors/icons, 'simple' for hosted with key=value
  */
-export function createLoggingFactory() {
+export type LogFormat = 'fancy' | 'simple';
+
+/**
+ * Environment record type for logging configuration
+ */
+export type LoggingEnv = Record<string, string | undefined>;
+
+/**
+ * Creates a logging factory with dynamic workerId support and environment-based configuration
+ * @param env - Optional environment variables for auto-configuration (NO_COLOR, EDGE_WORKER_LOG_FORMAT, etc.)
+ */
+export function createLoggingFactory(env?: LoggingEnv) {
+  // Determine if colors should be enabled (NO_COLOR standard: any value disables colors)
+  const colorsEnabled = env?.NO_COLOR === undefined;
+
+  // Determine if this is a local Supabase environment
+  const isLocal = env ? isLocalSupabaseEnv(env) : false;
+
+  // Determine log format: explicit override > auto-detect from environment
+  const explicitFormat = env?.EDGE_WORKER_LOG_FORMAT as LogFormat | undefined;
+  const format: LogFormat = explicitFormat ?? (isLocal ? 'fancy' : 'simple');
+
+  // Determine log level: explicit override > environment-based default (local=verbose, hosted=info)
+  const explicitLevel = env?.EDGE_WORKER_LOG_LEVEL;
+  const defaultLevel = isLocal ? 'verbose' : 'info';
+  let logLevel = explicitLevel ?? defaultLevel;
+
   // Shared state for all loggers
   let sharedWorkerId = 'unknown';
-  let logLevel = 'info';
 
   // All created logger instances - using Map for efficient lookup
   const loggers: Map<string, Logger> = new Map();
@@ -101,5 +127,15 @@ export function createLoggingFactory() {
     createLogger,
     setWorkerId,
     setLogLevel,
+    // Expose configuration for inspection/testing
+    get colorsEnabled() {
+      return colorsEnabled;
+    },
+    get format() {
+      return format;
+    },
+    get logLevel() {
+      return logLevel;
+    },
   };
 }
