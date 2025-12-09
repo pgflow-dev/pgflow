@@ -3,7 +3,6 @@ import { intro, log, confirm, cancel, outro } from '@clack/prompts';
 import chalk from 'chalk';
 import { copyMigrations } from './copy-migrations.js';
 import { updateConfigToml } from './update-config-toml.js';
-import { updateEnvFile } from './update-env-file.js';
 import { createEdgeFunction } from './create-edge-function.js';
 import { createFlowsDirectory } from './create-flows-directory.js';
 import { createExampleWorker } from './create-example-worker.js';
@@ -39,7 +38,6 @@ export default (program: Command) => {
         `  • Create ${chalk.cyan('supabase/flows/')} ${chalk.dim('(flow definitions with GreetUser example)')}`,
         `  • Create Control Plane in ${chalk.cyan('supabase/functions/pgflow/')}`,
         `  • Create ${chalk.cyan('supabase/functions/greet-user-worker/')} ${chalk.dim('(example worker)')}`,
-        `  • Configure ${chalk.cyan('supabase/functions/.env')}`,
         '',
         `  ${chalk.green('✓ Safe to re-run - completed steps will be skipped')}`,
       ].join('\n');
@@ -92,15 +90,10 @@ export default (program: Command) => {
         autoConfirm: true,
       });
 
-      const envFile = await updateEnvFile({
-        supabasePath,
-        autoConfirm: true,
-      });
-
       // Step 4: Show completion message
       const outroMessages: string[] = [];
 
-      if (migrations || configUpdate || flowsDirectory || edgeFunction || exampleWorker || envFile) {
+      if (migrations || configUpdate || flowsDirectory || edgeFunction || exampleWorker) {
         outroMessages.push(chalk.green.bold('✓ Installation complete!'));
       } else {
         outroMessages.push(
@@ -114,7 +107,7 @@ export default (program: Command) => {
 
       let stepNumber = 1;
 
-      if (configUpdate || envFile) {
+      if (configUpdate) {
         outroMessages.push(
           `  ${stepNumber}. Restart Supabase: ${chalk.cyan('supabase stop && supabase start')}`
         );

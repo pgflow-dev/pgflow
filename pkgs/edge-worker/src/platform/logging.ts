@@ -15,6 +15,12 @@ export type LoggingEnv = Record<string, string | undefined>;
 // ANSI Color Codes (16-color safe palette)
 // ============================================================
 
+/**
+ * Default base delay in seconds for retry exponential backoff.
+ * Matches pgflow SQL default in create_flow/add_step functions.
+ */
+const DEFAULT_BASE_DELAY_SECONDS = 5;
+
 const ANSI = {
   // Colors
   blue: '\x1b[34m',
@@ -117,8 +123,7 @@ class FancyFormatter {
       const retryIcon = colorize('↻', ANSI.yellow, this.colorsEnabled);
       // Exponential backoff: baseDelay * 2^(attempt-1)
       // Example with baseDelay=5: attempt 1 -> 5s, attempt 2 -> 10s, attempt 3 -> 20s
-      // Default 5s matches pgflow SQL default in create_flow/add_step
-      const baseDelay = ctx.baseDelay ?? 5;
+      const baseDelay = ctx.baseDelay ?? DEFAULT_BASE_DELAY_SECONDS;
       const delay = baseDelay * Math.pow(2, ctx.retryAttempt - 1);
       const retryInfo = colorize(`retry ${ctx.retryAttempt}/${ctx.maxRetries} in ${delay}s`, ANSI.yellow, this.colorsEnabled);
       result += `\n${prefix}   ${retryIcon} ${retryInfo}`;
@@ -205,9 +210,8 @@ class SimpleFormatter {
     let result = `[VERBOSE] worker=${ctx.workerName} queue=${ctx.queueName} flow=${ctx.flowSlug} step=${ctx.stepSlug} status=failed error="${error.message}" run_id=${ctx.runId} msg_id=${ctx.msgId} worker_id=${ctx.workerId}`;
 
     // Add retry info if there are retries remaining (see FancyFormatter for detailed comments)
-    // Default 5s matches pgflow SQL default in create_flow/add_step
     if (ctx.retryAttempt !== undefined && ctx.maxRetries !== undefined && ctx.retryAttempt <= ctx.maxRetries) {
-      const baseDelay = ctx.baseDelay ?? 5;
+      const baseDelay = ctx.baseDelay ?? DEFAULT_BASE_DELAY_SECONDS;
       const delay = baseDelay * Math.pow(2, ctx.retryAttempt - 1);
       result += ` retry=${ctx.retryAttempt}/${ctx.maxRetries} retry_delay_s=${delay}`;
     }
@@ -301,7 +305,6 @@ export function createLoggingFactory(env?: LoggingEnv) {
         const levelValue =
           levels[logLevel as keyof typeof levels] ?? levels.info;
         if (levelValue >= levels.debug) {
-          // Use console.log for debug messages since console.debug isn't available in Supabase
           console.debug(
             `worker_id=${sharedWorkerId} module=${module} ${message}`,
             ...args
@@ -312,7 +315,6 @@ export function createLoggingFactory(env?: LoggingEnv) {
         const levelValue =
           levels[logLevel as keyof typeof levels] ?? levels.info;
         if (levelValue >= levels.info) {
-          // Use console.log for info messages since console.info isn't available in Supabase
           console.info(
             `worker_id=${sharedWorkerId} module=${module} ${message}`,
             ...args
@@ -397,7 +399,8 @@ export function createLoggingFactory(env?: LoggingEnv) {
           levels[logLevel as keyof typeof levels] ?? levels.info;
         if (levelValue >= levels.info) {
           const lines = formatter.startupBanner(ctx);
-          lines.forEach(line => console.info(line));
+          // Join lines to reduce blank log entries in Supabase Edge Functions
+          console.info(lines.join('\n'));
         }
       },
 
