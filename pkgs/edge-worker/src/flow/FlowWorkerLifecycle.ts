@@ -1,6 +1,6 @@
 import type { Queries } from '../core/Queries.js';
 import type { ILifecycle, WorkerBootstrap, WorkerRow } from '../core/types.js';
-import type { Logger } from '../platform/types.js';
+import type { Logger, StartupContext } from '../platform/types.js';
 import { States, WorkerState } from '../core/WorkerState.js';
 import type { AnyFlow } from '@pgflow/dsl';
 import { extractFlowShape } from '@pgflow/dsl';
@@ -10,6 +10,11 @@ export interface FlowLifecycleConfig {
   heartbeatInterval?: number;
   ensureCompiledOnStartup?: boolean;
 }
+
+/**
+ * Compilation status returned by ensureFlowCompiled
+ */
+type CompilationStatus = 'compiled' | 'verified' | 'recompiled' | 'mismatch';
 
 /**
  * A specialized WorkerLifecycle for Flow-based workers that is aware of the Flow's step types
@@ -22,6 +27,7 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
   private flow: TFlow;
   // TODO: Temporary field for supplier pattern until we refactor initialization
   private _workerId?: string;
+  private _edgeFunctionName?: string;
   private heartbeatInterval: number;
   private lastHeartbeat = 0;
   private ensureCompiledOnStartup: boolean;
@@ -38,18 +44,23 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
   async acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void> {
     this.workerState.transitionTo(States.Starting);
 
-    // Store workerId for supplier pattern
+    // Store workerId and edgeFunctionName for supplier pattern
     this._workerId = workerBootstrap.workerId;
+    this._edgeFunctionName = workerBootstrap.edgeFunctionName;
 
     // Register this edge function for monitoring by ensure_workers() cron.
     await this.queries.trackWorkerFunction(workerBootstrap.edgeFunctionName);
 
     // Compile/verify flow as part of Starting (before registering worker)
+    let compilationStatus: CompilationStatus = 'verified';
     if (this.ensureCompiledOnStartup) {
-      await this.ensureFlowCompiled();
+      compilationStatus = await this.ensureFlowCompiled();
     } else {
       this.logger.info(`Skipping compilation check for flow '${this.flow.slug}' (ensureCompiledOnStartup=false)`);
     }
+
+    // Log startup banner with compilation status
+    this.logStartupBanner(compilationStatus);
 
     // Only register worker after successful compilation
     this.workerRow = await this.queries.onWorkerStarted({
@@ -60,9 +71,7 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
     this.workerState.transitionTo(States.Running);
   }
 
-  private async ensureFlowCompiled(): Promise<void> {
-    this.logger.info(`Compiling flow '${this.flow.slug}'...`);
-
+  private async ensureFlowCompiled(): Promise<CompilationStatus> {
     const shape = extractFlowShape(this.flow);
 
     const result = await this.queries.ensureFlowCompiled(
@@ -74,7 +83,26 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
       throw new FlowShapeMismatchError(this.flow.slug, result.differences);
     }
 
-    this.logger.info(`Flow '${this.flow.slug}' compilation complete: ${result.status}`);
+    return result.status;
+  }
+
+  /**
+   * Log the startup banner with worker and flow information
+   */
+  private logStartupBanner(compilationStatus: CompilationStatus): void {
+    const startupContext: StartupContext = {
+      workerName: this._edgeFunctionName ?? 'unknown',
+      workerId: this._workerId ?? 'unknown',
+      queueName: this.queueName,
+      flows: [
+        {
+          flowSlug: this.flow.slug,
+          compilationStatus,
+        },
+      ],
+    };
+
+    this.logger.startupBanner(startupContext);
   }
 
   acknowledgeStop() {
@@ -95,7 +123,7 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
   }
 
   get edgeFunctionName() {
-    return this.workerRow?.function_name;
+    return this._edgeFunctionName ?? this.workerRow?.function_name;
   }
 
   get queueName() {

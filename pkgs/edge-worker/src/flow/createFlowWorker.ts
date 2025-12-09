@@ -1,7 +1,7 @@
 import type { AnyFlow, FlowContext } from '@pgflow/dsl';
 import { ExecutionController } from '../core/ExecutionController.js';
 import { StepTaskPoller, type StepTaskPollerConfig } from './StepTaskPoller.js';
-import { StepTaskExecutor } from './StepTaskExecutor.js';
+import { StepTaskExecutor, type WorkerIdentity } from './StepTaskExecutor.js';
 import { PgflowSqlClient } from '@pgflow/core';
 import { Queries } from '../core/Queries.js';
 import type { IExecutor } from '../core/types.js';
@@ -116,6 +116,8 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
   );
 
   // Create executor factory with proper typing
+  // Note: This factory is only called during task execution (after acknowledgeStart completes),
+  // so lifecycle.workerId and lifecycle.edgeFunctionName are guaranteed to be set.
   const executorFactory = (
     taskWithMessage: StepTaskWithMessage<TFlow>,
     signal: AbortSignal
@@ -135,6 +137,14 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
       ...platformAdapter.platformResources
     };
 
+    // Build worker identity for structured logging
+    // Safe to access here because factory is only called after acknowledgeStart()
+    const workerIdentity: WorkerIdentity = {
+      workerId: lifecycle.workerId,
+      workerName: lifecycle.edgeFunctionName ?? 'unknown',
+      queueName: queueName,
+    };
+
     // Type assertion: FlowContext & TResources is compatible with StepTaskHandlerContext<TFlow>
     // at runtime, but TypeScript needs help due to generic type variance
     return new StepTaskExecutor<TFlow>(
@@ -142,7 +152,8 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
       pgflowAdapter,
       signal,
       createLogger('StepTaskExecutor'),
-      context as StepTaskHandlerContext<TFlow>
+      context as StepTaskHandlerContext<TFlow>,
+      workerIdentity
     );
   };
 

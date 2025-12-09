@@ -223,6 +223,7 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
         const workerId = this.validatedEnv.SB_EXECUTION_ID;
 
         this.loggingFactory.setWorkerId(workerId);
+        this.loggingFactory.setWorkerName(this.edgeFunctionName);
 
         // Create the worker using the factory function and the logger
         this.worker = createWorkerFn(this.loggingFactory.createLogger);
