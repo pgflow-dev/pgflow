@@ -17,11 +17,11 @@ select is(
   'New worker function has enabled=true by default'
 );
 
--- TEST: New worker function has default heartbeat_timeout_seconds
+-- TEST: New worker function has default debounce interval
 select is(
-  (select heartbeat_timeout_seconds from pgflow.worker_functions where function_name = 'my-edge-function'),
-  6,
-  'New worker function has heartbeat_timeout_seconds=6 by default'
+  (select debounce from pgflow.worker_functions where function_name = 'my-edge-function'),
+  '6 seconds'::interval,
+  'New worker function has debounce=6 seconds by default'
 );
 
 -- TEST: Does NOT set last_invoked_at on insert (debounce handled by ensure_workers)

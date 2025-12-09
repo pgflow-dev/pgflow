@@ -53,16 +53,16 @@ select is(
   'Function with NULL last_invoked_at IS returned'
 );
 
--- TEST: Debounce uses heartbeat_timeout_seconds from function config
+-- TEST: Debounce uses debounce interval from function config
 update pgflow.worker_functions
-set heartbeat_timeout_seconds = 3,
+set debounce = '3 seconds'::interval,
     last_invoked_at = now() - interval '4 seconds'
 where function_name = 'my-function';
 
 select is(
   (select count(*) from pgflow.ensure_workers()),
   1::bigint,
-  'Debounce respects function-specific heartbeat_timeout_seconds'
+  'Debounce respects function-specific debounce interval'
 );
 
 select finish();
