@@ -37,15 +37,15 @@ select is(
   'Local mode returns function even when worker has fresh heartbeat'
 );
 
--- TEST: Debounce still applies in local mode
+-- TEST: Debounce is bypassed in local mode
 -- Reset last_invoked_at to now (will be within debounce window)
 update pgflow.worker_functions
 set last_invoked_at = now();
 
 select is(
   (select count(*) from pgflow.ensure_workers()),
-  0::bigint,
-  'Debounce still applies in local mode'
+  1::bigint,
+  'Debounce is bypassed in local mode'
 );
 
 select finish();

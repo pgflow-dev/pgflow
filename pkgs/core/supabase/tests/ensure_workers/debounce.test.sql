@@ -1,7 +1,18 @@
--- Test: ensure_workers() respects debounce window
+-- Test: ensure_workers() respects debounce window in production mode
+-- Note: Debounce only applies in production mode; local mode bypasses debounce
 begin;
 select plan(4);
 select pgflow_tests.reset_db();
+
+-- Setup: Create Vault secrets for production mode
+select vault.create_secret(
+  'test-service-role-key',
+  'supabase_service_role_key'
+);
+select vault.create_secret(
+  'testproject123',
+  'supabase_project_id'
+);
 
 -- Setup: Register a worker function with 6 second heartbeat timeout
 select pgflow.track_worker_function('my-function');
@@ -12,7 +23,8 @@ update pgflow.worker_functions
 set last_invoked_at = now()
 where function_name = 'my-function';
 
-set local app.settings.jwt_secret = 'super-secret-jwt-token-with-at-least-32-characters-long';
+-- Simulate production mode (non-local jwt_secret)
+set local app.settings.jwt_secret = 'production-secret-different-from-local';
 select is(
   (select count(*) from pgflow.ensure_workers()),
   0::bigint,

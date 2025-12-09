@@ -48,12 +48,20 @@ as $$
     ),
 
     -- Determine which functions should be invoked
+    -- Local mode: all enabled functions (bypass debounce AND alive workers check)
+    -- Production mode: only functions that pass debounce AND have no alive workers
     functions_to_invoke as (
-      select dp.function_name
-      from debounce_passed as dp
-      where
-        pgflow.is_local() = true
-        or dp.function_name not in (select faw.function_name from functions_with_alive_workers as faw)
+      select wf.function_name
+      from pgflow.worker_functions as wf
+      where wf.enabled = true
+        and (
+          pgflow.is_local() = true  -- Local: all enabled functions
+          or (
+            -- Production: debounce + no alive workers
+            wf.function_name in (select dp.function_name from debounce_passed as dp)
+            and wf.function_name not in (select faw.function_name from functions_with_alive_workers as faw)
+          )
+        )
     ),
 
     -- Make HTTP requests and capture request_ids
@@ -94,9 +102,9 @@ $$;
 
 comment on function pgflow.ensure_workers() is
 'Ensures worker functions are running by pinging them via HTTP when needed.
-In local mode: always pings all enabled functions (for fast restart after code changes).
-In production mode: only pings functions that have no alive workers.
-Respects debounce: skips functions pinged within their heartbeat_timeout_seconds window.
+In local mode: pings ALL enabled functions (ignores debounce AND alive workers check).
+In production mode: only pings functions that pass debounce AND have no alive workers.
+Debounce: skips functions pinged within their heartbeat_timeout_seconds window (production only).
 Credentials: Uses Vault secrets (supabase_service_role_key, supabase_project_id) or local fallbacks.
 URL is built from project_id: https://{project_id}.supabase.co/functions/v1
 Returns request_id from pg_net for each HTTP request made.';
