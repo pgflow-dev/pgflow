@@ -10,6 +10,7 @@ export class Worker {
   private batchProcessor: IBatchProcessor;
   private sql: postgres.Sql;
   private mainLoopPromise: Promise<void> | undefined;
+  private deprecationLogged = false;
 
   constructor(
     batchProcessor: IBatchProcessor,
@@ -45,7 +46,7 @@ export class Worker {
 
         // Check if deprecated after heartbeat
         if (!this.isMainLoopActive) {
-          this.logger.info('Worker deprecated, exiting main loop');
+          this.logDeprecation();
           break;
         }
 
@@ -71,7 +72,8 @@ export class Worker {
     this.lifecycle.transitionToStopping();
 
     try {
-      this.logger.info('-> Stopped accepting new messages');
+      // Signal deprecation (which includes "Stopped accepting new messages")
+      this.logDeprecation();
       this.abortController.abort();
 
       try {
@@ -84,15 +86,17 @@ export class Worker {
         throw error;
       }
 
-      this.logger.debug('-> Waiting for pending tasks to complete...');
+      // Signal waiting for pending tasks
+      this.logger.shutdown('waiting');
       await this.batchProcessor.awaitCompletion();
-      this.logger.debug('-> Pending tasks completed!');
 
       this.lifecycle.acknowledgeStop();
 
       this.logger.debug('-> Closing SQL connection...');
       await this.sql.end();
-      this.logger.debug('-> SQL connection closed!');
+
+      // Signal graceful stop complete
+      this.logger.shutdown('stopped');
     } catch (error) {
       this.logger.debug(`Error during worker stop: ${error}`);
       throw error;
@@ -101,6 +105,17 @@ export class Worker {
 
   get edgeFunctionName() {
     return this.lifecycle.edgeFunctionName;
+  }
+
+  /**
+   * Log deprecation message only once (prevents duplicate logs when deprecation
+   * is detected in heartbeat and then stop() is called)
+   */
+  private logDeprecation(): void {
+    if (!this.deprecationLogged) {
+      this.logger.shutdown('deprecating');
+      this.deprecationLogged = true;
+    }
   }
 
   /**

@@ -18,7 +18,7 @@ export class BatchProcessor<TMessage extends IMessage> {
   }
 
   async processBatch() {
-    this.logger.verbose('Polling for new batch of messages...');
+    this.logger.polling();
     const messageRecords = await this.poller.poll();
 
     if (this.signal.aborted) {
@@ -26,7 +26,7 @@ export class BatchProcessor<TMessage extends IMessage> {
       return;
     }
 
-    this.logger.verbose(`Starting ${messageRecords.length} tasks`);
+    this.logger.taskCount(messageRecords.length);
 
     const startPromises = messageRecords.map((message) =>
       this.executionController.start(message)
