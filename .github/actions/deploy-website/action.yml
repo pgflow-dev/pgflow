@@ -2,6 +2,12 @@ name: 'Deploy Website'
 description: 'Deploy website to Cloudflare Pages (preview or production)'
 
 inputs:
+  github-token:
+    description: 'GitHub token for setup'
+    required: true
+  atlas-cloud-token:
+    description: 'Atlas Cloud token for setup'
+    required: true
   environment:
     description: 'Deployment environment (preview or production)'
     required: true
@@ -37,6 +43,14 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - uses: ./.github/actions/setup
+      with:
+        github-token: ${{ inputs.github-token }}
+        atlas-cloud-token: ${{ inputs.atlas-cloud-token }}
+
+    - name: Install D2 diagramming tool
+      uses: ./.github/actions/setup-d2
+
     - name: Validate Supabase environment variables
       shell: bash
       env:
