@@ -7,10 +7,14 @@ sidebar:
 
 import { Aside } from "@astrojs/starlight/components";
 
+<Aside type="caution" title="Deprecation Notice">
+**The ControlPlane and manual compilation may be removed in a future release.** [Startup Compilation](/concepts/startup-compilation/) is the preferred approach - flows are automatically compiled when workers start, eliminating the need for manual compilation in most workflows.
+</Aside>
+
 The ControlPlane edge function exposes HTTP endpoints for compiling TypeScript flows to SQL. The `pgflow compile` CLI uses these endpoints internally.
 
 <Aside type="note">
-For conceptual overview of how compilation works, see [Compilation](/concepts/compilation/).
+For how to compile flows manually, see [Manual Compilation](/concepts/manual-compilation/).
 </Aside>
 
 ## Base URL

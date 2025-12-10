@@ -1,0 +1,116 @@
+---
+title: Manual Compilation
+description: How to manually compile flows to SQL migrations via HTTP
+sidebar:
+  order: 26
+---
+
+import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+<Aside type="caution" title="Deprecation Notice">
+**Manual compilation via ControlPlane may be removed in a future release.** [Startup Compilation](/concepts/startup-compilation/) is the preferred approach - flows are automatically compiled when workers start, eliminating the need for manual compilation in most workflows.
+</Aside>
+
+Some teams prefer explicit compilation for:
+- SQL migrations in source control
+- Code review of flow structure changes
+- CI/CD validation before deployment
+
+## The Compile Command
+
+To compile a flow manually:
+
+```bash frame="none"
+npx pgflow compile myFlow
+```
+
+This generates a migration file at `supabase/migrations/{timestamp}_create_{slug}_flow.sql`.
+
+The CLI:
+1. Sends an HTTP GET request to the ControlPlane edge function
+2. Receives the compiled SQL statements
+3. Writes them to a timestamped migration file
+
+## How Compilation Works
+
+```
+┌─────────────┐     HTTP GET      ┌─────────────────────┐
+│  pgflow CLI │ ─────────────────>│  ControlPlane Edge  │
+│             │                   │      Function       │
+│             │                   │                     │
+│             │     SQL Array     │  1. Look up flow    │
+│             │ <─────────────────│  2. Call compileFlow│
+│             │                   │  3. Return SQL      │
+│             │                   └─────────────────────┘
+│  4. Write   │
+│  migration  │
+└─────────────┘
+```
+
+The ControlPlane edge function is created during installation:
+
+```typescript title="supabase/functions/pgflow/index.ts"
+import { ControlPlane } from '@pgflow/edge-worker';
+import * as flows from '../../flows/index.ts';
+
+ControlPlane.serve(flows);
+```
+
+It registers all flows by slug and exposes the `/flows/:slug` endpoint for compilation.
+
+## Why HTTP-Based Compilation?
+
+**No local Deno required** - The Supabase Edge Functions runtime handles everything. Users don't need Deno installed.
+
+**Same runtime as production** - Flows are compiled using the exact same Deno environment they'll run in, eliminating "works on my machine" issues.
+
+**Consistent dependency resolution** - The `deno.json` import map in your edge function ensures consistent package versions.
+
+**Simpler CLI** - The CLI is a lightweight Node.js package that makes HTTP requests, rather than needing to bundle the entire compilation infrastructure.
+
+## Adding New Flows
+
+To make a flow available for compilation:
+
+1. Create the flow definition in `supabase/flows/`
+2. Export it from `supabase/flows/index.ts`
+
+The ControlPlane automatically picks up all flows exported from your `flows/index.ts`.
+
+<Aside type="note">
+When running `supabase functions serve`, code changes are detected automatically and the ControlPlane reloads with your new flows.
+</Aside>
+
+## Troubleshooting
+
+### "Could not connect to ControlPlane"
+
+Make sure edge functions are running:
+
+```bash frame="none"
+npx supabase functions serve --no-verify-jwt
+```
+
+### "Flow not found"
+
+Register your flow in `supabase/functions/pgflow/index.ts` and restart the functions server.
+
+## Related
+
+<CardGrid>
+  <LinkCard
+    title="Startup Compilation"
+    href="/concepts/startup-compilation/"
+    description="How flows auto-compile when workers start (preferred)"
+  />
+  <LinkCard
+    title="ControlPlane API"
+    href="/reference/control-plane-api/"
+    description="HTTP endpoint reference"
+  />
+  <LinkCard
+    title="Compile API"
+    href="/reference/compile-api/"
+    description="Programmatic compilation with compileFlow()"
+  />
+</CardGrid>

@@ -7,6 +7,10 @@ sidebar:
 
 import { Aside } from "@astrojs/starlight/components";
 
+<Aside type="caution" title="Deprecation Notice">
+**The ControlPlane and manual compilation may be removed in a future release.** [Startup Compilation](/concepts/startup-compilation/) is the preferred approach - flows are automatically compiled when workers start, eliminating the need for manual compilation in most workflows.
+</Aside>
+
 The `compileFlow` function converts Flow objects into SQL statements that can be executed directly in PostgreSQL. Use this when you need to inspect the generated SQL or integrate flow compilation into custom tooling.
 
 ## Usage

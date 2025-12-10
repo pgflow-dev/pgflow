@@ -356,8 +356,12 @@ export default defineConfig({
                     },
                     { label: 'Data model', link: '/concepts/data-model/' },
                     {
-                      label: 'Compilation',
-                      link: '/concepts/compilation/',
+                      label: 'Startup Compilation',
+                      link: '/concepts/startup-compilation/',
+                    },
+                    {
+                      label: 'Manual Compilation',
+                      link: '/concepts/manual-compilation/',
                     },
                     {
                       label: 'Worker lifecycle',

@@ -77,6 +77,8 @@ export const redirects = {
 
   '/concepts/context/': '/concepts/context-object/',
   '/concepts/flow-dsl/': '/concepts/understanding-flows/',
+  '/concepts/compilation/': '/concepts/startup-compilation/',
+  '/reference/compilation-workflow/': '/concepts/manual-compilation/',
 
   // ============================================================================
   // MAIN BRANCH PATH MIGRATIONS (how-to split to build/deploy/reference/concepts)
