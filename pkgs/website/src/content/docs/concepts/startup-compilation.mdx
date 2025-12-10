@@ -1,0 +1,118 @@
+---
+title: Startup Compilation
+description: How pgflow automatically compiles flows when workers start
+sidebar:
+  order: 25
+---
+
+import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+When an Edge Worker starts, pgflow automatically verifies and compiles flows. This eliminates manual compilation steps in most workflows.
+
+## How It Works
+
+```d2
+...@../../../assets/pgflow-theme.d2
+
+direction: right
+
+start: "Worker\nstarts"
+start.class: step_started
+
+exists: "Exists?"
+exists.shape: diamond
+exists.class: info
+
+compile: "Compile"
+compile.class: step_completed
+
+match: "Same\nshape?"
+match.shape: diamond
+match.class: info
+
+verified: "Verified"
+verified.class: step_completed
+
+local: "Local\ndev?"
+local.shape: diamond
+local.class: warning
+
+recompile: "Delete old\n& compile new"
+recompile.class: step_completed
+
+fail: "Fail\nto start"
+fail.class: step_failed
+
+polling: "Start\npolling"
+polling.class: step_completed
+
+start -> exists: "lookup flow\nin DB by slug"
+exists -> compile: "no"
+exists -> match: "yes"
+match -> verified: "yes"
+match -> local: "no"
+local -> recompile: "yes"
+local -> fail: "prod"
+compile -> polling
+verified -> polling
+recompile -> polling
+```
+
+When a worker starts, it:
+1. **Looks up the flow** in the database by slug
+2. **Compiles if missing** - If the flow doesn't exist, compiles and creates it
+3. **Verifies shape** - If the flow exists, compares the TypeScript definition with the database schema
+4. **Handles mismatches** - Behavior depends on environment (see below)
+
+## Local Development
+
+In local development, startup compilation enables seamless iteration:
+
+1. **No flow exists** - compiles and creates it
+2. **Flow exists with same shape** - uses existing schema
+3. **Flow exists with different shape** - **deletes the existing flow and all its run data**, then compiles the new version
+
+The workflow is fully automatic:
+1. You change your flow code
+2. Edge runtime detects the change and restarts the function
+3. pgflow cron triggers the function via HTTP request
+4. Worker starts, detects shape mismatch, deletes old flow, compiles new one
+
+<Aside type="caution">
+**Warning:** In local development, recompiling **deletes the existing flow and all its run data**. This is intentional for fast iteration but means you lose all previous runs.
+</Aside>
+
+To disable startup compilation, set `ensureFlowCompiled: false` in worker options.
+
+## Production
+
+In production, shape mismatches cause the worker to **refuse to start**:
+- This prevents accidental data loss from running flows
+- Worker fails with `FlowShapeMismatchError`
+- Resolution: create a versioned flow (e.g., `processOrderV2`) and deploy a new worker
+
+## What is "Flow Shape"?
+
+**Changes that affect shape (require versioning):**
+- Step slugs
+- Step order / dependencies
+- Step types (single vs map)
+
+**Changes that DON'T affect shape (safe to change):**
+- Step options (timeout, retries, maxConcurrency)
+- Handler code logic
+
+## Related
+
+<CardGrid>
+  <LinkCard
+    title="Worker Lifecycle"
+    href="/concepts/worker-lifecycle/"
+    description="How workers poll, heartbeat, and restart"
+  />
+  <LinkCard
+    title="Manual Compilation"
+    href="/concepts/manual-compilation/"
+    description="HTTP-based compilation for CI/CD workflows"
+  />
+</CardGrid>

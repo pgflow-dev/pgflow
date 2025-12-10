@@ -37,7 +37,7 @@ See pgflow in action using the GreetUser flow scaffolded during installation.
    curl http://localhost:54321/functions/v1/greet-user-worker
    ```
 
-   You only need to curl once - pgflow [auto-compiles](/concepts/compilation/) and [keeps workers running](/concepts/worker-lifecycle/).
+   You only need to curl once - pgflow [auto-compiles](/concepts/startup-compilation/) and [keeps workers running](/concepts/worker-lifecycle/).
 
 3. ### Trigger your first flow
 
@@ -91,7 +91,7 @@ Just change your flow code - the rest is automatic:
 </Steps>
 
 <Aside type="caution">
-Recompiling **deletes the existing flow and all its run data**. This is intentional for fast local iteration. See [Compilation](/concepts/compilation/) for details.
+Recompiling **deletes the existing flow and all its run data**. This is intentional for fast local iteration. See [Startup Compilation](/concepts/startup-compilation/) for details.
 </Aside>
 
 ## Next steps
@@ -103,8 +103,8 @@ Recompiling **deletes the existing flow and all its run data**. This is intentio
     description="Learn how the scaffolded GreetUser flow works"
   />
   <LinkCard
-    title="How compilation works"
-    href="/concepts/compilation/"
+    title="Startup Compilation"
+    href="/concepts/startup-compilation/"
     description="Auto-compilation, flow shape, and manual compilation"
   />
   <LinkCard

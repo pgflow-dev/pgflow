@@ -85,7 +85,7 @@ cron_trigger -> auto_compile: "starts\nworker"
 auto_compile -> code_change: "ready for\nnext change" {style.stroke-dash: 3}
 ```
 
-When you modify your flow code locally, everything restarts automatically (see [Auto-Compilation](/concepts/compilation/#auto-compilation) for the detailed decision tree):
+When you modify your flow code locally, everything restarts automatically (see [Startup Compilation](/concepts/startup-compilation/) for the detailed decision tree):
 
 1. **Edge runtime detects change** - Supabase Edge Runtime watches for file changes
 2. **Function restarts** - The modified function is reloaded
@@ -114,8 +114,8 @@ You don't need to manually curl or restart anything after the initial setup.
     description="How to register, deprecate, and track workers"
   />
   <LinkCard
-    title="Auto-Compilation"
-    href="/concepts/compilation/"
+    title="Startup Compilation"
+    href="/concepts/startup-compilation/"
     description="How flows are compiled when workers start"
   />
   <LinkCard
