@@ -108,6 +108,22 @@ class FancyFormatter {
     let result = `${prefix} ${icon} ${path}`;
     if (ids) result += `  ${ids}`;
     result += `\n${prefix}   ${errorMsg}`;
+
+    // Show retry info if there are retries remaining
+    // retryAttempt = read_ct from pgmq (1-indexed: read_ct=1 is first attempt, read_ct=2 is first retry)
+    // maxRetries = maxAttempts - 1 (e.g., maxAttempts=4 means 3 retries allowed)
+    // Show retry pending when: retryAttempt <= maxRetries (still have retries left)
+    if (ctx.retryAttempt !== undefined && ctx.maxRetries !== undefined && ctx.retryAttempt <= ctx.maxRetries) {
+      const retryIcon = colorize('↻', ANSI.yellow, this.colorsEnabled);
+      // Exponential backoff: baseDelay * 2^(attempt-1)
+      // Example with baseDelay=5: attempt 1 -> 5s, attempt 2 -> 10s, attempt 3 -> 20s
+      // Default 5s matches pgflow SQL default in create_flow/add_step
+      const baseDelay = ctx.baseDelay ?? 5;
+      const delay = baseDelay * Math.pow(2, ctx.retryAttempt - 1);
+      const retryInfo = colorize(`retry ${ctx.retryAttempt}/${ctx.maxRetries} in ${delay}s`, ANSI.yellow, this.colorsEnabled);
+      result += `\n${prefix}   ${retryIcon} ${retryInfo}`;
+    }
+
     return result;
   }
 
@@ -186,7 +202,17 @@ class SimpleFormatter {
 
   taskFailed(ctx: TaskLogContext, error: Error): string {
     // Phase 3b: worker=X queue=Y flow=Z step=W format
-    return `[VERBOSE] worker=${ctx.workerName} queue=${ctx.queueName} flow=${ctx.flowSlug} step=${ctx.stepSlug} status=failed error="${error.message}" run_id=${ctx.runId} msg_id=${ctx.msgId} worker_id=${ctx.workerId}`;
+    let result = `[VERBOSE] worker=${ctx.workerName} queue=${ctx.queueName} flow=${ctx.flowSlug} step=${ctx.stepSlug} status=failed error="${error.message}" run_id=${ctx.runId} msg_id=${ctx.msgId} worker_id=${ctx.workerId}`;
+
+    // Add retry info if there are retries remaining (see FancyFormatter for detailed comments)
+    // Default 5s matches pgflow SQL default in create_flow/add_step
+    if (ctx.retryAttempt !== undefined && ctx.maxRetries !== undefined && ctx.retryAttempt <= ctx.maxRetries) {
+      const baseDelay = ctx.baseDelay ?? 5;
+      const delay = baseDelay * Math.pow(2, ctx.retryAttempt - 1);
+      result += ` retry=${ctx.retryAttempt}/${ctx.maxRetries} retry_delay_s=${delay}`;
+    }
+
+    return result;
   }
 
   polling(): string {
