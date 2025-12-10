@@ -16,10 +16,8 @@ This guide explains how to create Edge Workers to run your flows. If you just wa
 If you used `pgflow install`, the `greet-user-worker` is already scaffolded. You can skip to step 3 to start it.
 </Aside>
 
-<Aside type="caution" title="Prerequisites">
-Before starting, make sure you have:
-- Compiled your flow: `npx pgflow@latest compile <flowSlug>`
-- Applied migrations: `npx supabase migrations up`
+<Aside type="note" title="Auto-Compilation">
+When you start a worker, pgflow automatically compiles your flow if it's not already in the database. No manual compilation needed for local development!
 </Aside>
 
 <Steps>
@@ -104,9 +102,9 @@ Before starting, make sure you have:
    If you have troubles starting the worker, make sure you disabled JWT verification in the previous step.
    </Aside>
 
-   :::tip[Seamless local development]
-   Tired of curling after every code change? Add the [watchdog cron](/deploy/supabase/keep-workers-running/) to your `supabase/seed.sql` (use `'2 seconds'` interval for fast local iteration) - it auto-restarts workers when they stop polling.
-   :::
+   <Aside type="tip" title="Automatic worker management">
+   You only need to curl once! pgflow automatically keeps workers running via cron. See [Worker Management](/deploy/worker-management/) for details.
+   </Aside>
 
 5. ### Trigger your first flow
 

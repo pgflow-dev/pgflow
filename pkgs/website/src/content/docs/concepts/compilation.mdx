@@ -67,12 +67,108 @@ This architecture provides several benefits:
 
 **Simpler CLI** - The CLI is a lightweight Node.js package that makes HTTP requests, rather than needing to bundle the entire compilation infrastructure.
 
-<Aside type="note" title="Production Deployment">
-The ControlPlane is currently used for local development compilation only.
-In future releases, it will be deployed to production for auto-compilation
-features where workers verify and compile flows at startup.
-For now, only deploy your worker functions to production.
+## Auto-Compilation
+
+When you start an Edge Worker, pgflow automatically compares your TypeScript flow definition with the database schema and takes action based on the environment.
+
+```d2
+...@../../../assets/pgflow-theme.d2
+
+direction: right
+
+start: "Worker\nstarts"
+start.class: step_started
+
+exists: "Exists?"
+exists.shape: diamond
+exists.class: info
+
+compile: "Compile"
+compile.class: step_completed
+
+match: "Same\nshape?"
+match.shape: diamond
+match.class: info
+
+verified: "Verified"
+verified.class: step_completed
+
+local: "Local\ndev?"
+local.shape: diamond
+local.class: warning
+
+recompile: "Delete old\n& compile new"
+recompile.class: step_completed
+
+fail: "Fail\nto start"
+fail.class: step_failed
+
+polling: "Start\npolling"
+polling.class: step_completed
+
+start -> exists: "lookup flow\nin DB by slug"
+exists -> compile: "no"
+exists -> match: "yes"
+match -> verified: "yes"
+match -> local: "no"
+local -> recompile: "yes"
+local -> fail: "prod"
+compile -> polling
+verified -> polling
+recompile -> polling
+```
+
+### Local Development
+
+In local development, auto-compilation enables seamless iteration:
+
+1. **No flow exists** → compiles and creates it
+2. **Flow exists with same shape** → uses existing schema
+3. **Flow exists with different shape** → **deletes the existing flow and all its run data**, then compiles the new version
+
+The workflow is fully automatic:
+1. You change your flow code
+2. Edge runtime detects the change and restarts the function
+3. pgflow cron triggers the function via HTTP request
+4. Worker starts, detects shape mismatch, deletes old flow, compiles new one
+
+<Aside type="caution">
+**Warning:** In local development, recompiling **deletes the existing flow and all its run data**. This is intentional for fast iteration but means you lose all previous runs.
 </Aside>
+
+To disable auto-compilation, set `ensureFlowCompiled: false` in worker options.
+
+### Production
+
+In production, shape mismatches cause the worker to **refuse to start**:
+- This prevents accidental data loss from running flows
+- Worker fails with `FlowShapeMismatchError`
+- Resolution: create a versioned flow (e.g., `processOrderV2`) and deploy a new worker
+
+### What is "Flow Shape"?
+
+**Changes that affect shape (require versioning):**
+- Step slugs
+- Step order / dependencies
+- Step types (single vs map)
+
+**Changes that DON'T affect shape (safe to change):**
+- Step options (timeout, retries, maxConcurrency)
+- Handler code logic
+
+## Manual Compilation (Optional)
+
+Some teams prefer explicit compilation for:
+- SQL migrations in source control
+- Code review of flow structure
+- CI/CD validation
+
+To compile manually:
+```bash frame="none"
+npx pgflow compile myFlow
+```
+
+This generates a migration file you can review and apply.
 
 ## Adding New Flows
 
@@ -86,6 +182,20 @@ The ControlPlane automatically picks up all flows exported from your `flows/inde
 <Aside type="note">
 When running `supabase functions serve`, code changes are detected automatically and the ControlPlane reloads with your new flows.
 </Aside>
+
+## Troubleshooting
+
+### "Could not connect to ControlPlane"
+
+Make sure edge functions are running:
+
+```bash frame="none"
+npx supabase functions serve --no-verify-jwt
+```
+
+### "Flow not found"
+
+Register your flow in `supabase/functions/pgflow/index.ts` and restart the functions server.
 
 ## API Reference
 
