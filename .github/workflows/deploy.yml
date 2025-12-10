@@ -24,14 +24,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: ./.github/actions/setup
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
-
       - name: Deploy website to production
         uses: ./.github/actions/deploy-website
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
           environment: production
           supabase-url: ${{ secrets.WEBSITE_PRODUCTION_SUPABASE_URL }}
           supabase-anon-key: ${{ secrets.WEBSITE_PRODUCTION_SUPABASE_ANON_KEY }}

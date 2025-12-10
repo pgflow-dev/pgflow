@@ -306,8 +306,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
 
-      - uses: ./.github/actions/setup-d2
-
       - name: Check if website is affected
         id: check-affected
         run: |
@@ -323,6 +321,8 @@ jobs:
         if: steps.check-affected.outputs.affected == 'true'
         uses: ./.github/actions/deploy-website
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          atlas-cloud-token: ${{ secrets.ATLAS_CLOUD_TOKEN }}
           environment: preview
           supabase-url: ${{ secrets.WEBSITE_PREVIEW_SUPABASE_URL }}
           supabase-anon-key: ${{ secrets.WEBSITE_PREVIEW_SUPABASE_ANON_KEY }}
