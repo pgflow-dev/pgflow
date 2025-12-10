@@ -2,6 +2,11 @@
   "name": "@pgflow/edge-worker",
   "version": "0.10.0",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pgflow-dev/pgflow",
+    "directory": "pkgs/edge-worker"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
