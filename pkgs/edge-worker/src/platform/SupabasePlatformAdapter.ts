@@ -50,8 +50,8 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   private queries: Queries;
   private deps: SupabasePlatformDeps;
 
-  // Logging factory with dynamic workerId support
-  private loggingFactory = createLoggingFactory();
+  // Logging factory with dynamic workerId support (initialized in constructor)
+  private loggingFactory!: ReturnType<typeof createLoggingFactory>;
 
   constructor(
     options?: { sql?: Sql; connectionString?: string },
@@ -73,9 +73,9 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
     // Create abort controller for shutdown signal
     this.abortController = new AbortController();
 
-    // Set initial log level
-    const logLevel = this.validatedEnv.EDGE_WORKER_LOG_LEVEL || 'info';
-    this.loggingFactory.setLogLevel(logLevel);
+    // Create logging factory with environment for auto-configuration
+    // (log level, format, and colors are determined from env)
+    this.loggingFactory = createLoggingFactory(env);
 
     // startWorker logger with a default module name
     this.logger = this.loggingFactory.createLogger('SupabasePlatformAdapter');
