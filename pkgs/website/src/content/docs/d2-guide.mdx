@@ -1,0 +1,579 @@
+---
+title: D2 Diagrams Guide
+description: Progressive introduction to D2 for creating beautiful documentation diagrams
+sidebar:
+  hidden: true
+draft: true
+editUrl: false
+tableOfContents: true
+---
+
+import { Code } from "@astrojs/starlight/components";
+
+This is an internal reference guide for creating beautiful, consistent diagrams in pgflow documentation using D2 - a declarative diagram scripting language.
+
+## What is D2?
+
+D2 is a modern diagram-as-code language that transforms simple text into professional diagrams. Perfect for state machines, DAGs, and database schemas.
+
+**Why D2:**
+- Version controlled with git
+- Automatic dark/light mode
+- Consistent styling via shared theme
+- Fast iteration - edit text, see diagram
+
+## Quick Start
+
+**Every D2 diagram MUST start with the theme import:**
+
+<Code code={`\`\`\`d2
+...@../../assets/pgflow-theme.d2
+
+node1: "Label"
+node2: "Label"
+node1 -> node2
+\`\`\``} lang="markdown" title="How to write D2 in MDX" />
+
+This renders as:
+
+```d2
+...@../../assets/pgflow-theme.d2
+
+node1: "Label"
+node2: "Label"
+node1 -> node2
+```
+
+**Core syntax:**
+- **Nodes:** `identifier: "Display Label"`
+- **Edges:** `source -> target: "Label"`
+- **Properties:** `node.property: value` (dot notation only, NO curly braces)
+
+### Direction & Shapes
+
+**Direction:** Use `direction: right` (horizontal) or `direction: down` (vertical)
+
+**Common shapes:**
+- `rectangle` - Steps/states (default)
+- `cylinder` - Databases
+- `circle` - Status indicators
+
+Set with: `node.shape: rectangle`
+
+### Color Classes
+
+Apply colors with `node.class: class-name`:
+
+**Entity-specific (preferred for pgflow diagrams):**
+```
+Steps:  step_created  step_started  step_completed  step_failed
+Tasks:  task_queued                 task_completed  task_failed
+Runs:                 run_started   run_completed   run_failed
+```
+
+**Generic (for other diagrams):**
+`neutral` (gray) | `info` (blue) | `success` (green) | `warning` (orange) | `error` (red)
+
+<Code code={`my_step: "processing_data"
+my_step.class: step_started  # Uses blue (running state)`} lang="d2" title="Example: Apply step_started class" />
+
+## Example: Step Lifecycle with Retry
+
+<Code code={`\`\`\`d2
+...@../../assets/pgflow-theme.d2
+
+direction: right
+
+created: "created"
+created.class: step_created
+
+started: "started"
+started.class: step_started
+
+retrying: "retrying"
+retrying.class: warning
+
+completed: "completed"
+completed.class: step_completed
+
+failed: "failed"
+failed.class: step_failed
+
+created -> started
+started -> retrying: "task fails,\\nattempts < max"
+retrying -> started: "retry task"
+started -> completed: "all tasks\\nsucceed"
+started -> failed: "max attempts\\nreached"
+\`\`\``} lang="markdown" title="D2 code" />
+
+Renders as:
+
+```d2
+...@../../assets/pgflow-theme.d2
+
+direction: right
+
+created: "created"
+created.class: step_created
+
+started: "started"
+started.class: step_started
+
+retrying: "retrying"
+retrying.class: warning
+
+completed: "completed"
+completed.class: step_completed
+
+failed: "failed"
+failed.class: step_failed
+
+created -> started
+started -> retrying: "task fails,\nattempts < max"
+retrying -> started: "retry task"
+started -> completed: "all tasks\nsucceed"
+started -> failed: "max attempts\nreached"
+```
+
+## Example: DAG with Execution States
+
+<Code code={`\`\`\`d2
+...@../../assets/pgflow-theme.d2
+
+direction: right
+
+validate: "validate_input"
+validate.class: step_completed
+
+fetch: "fetch_data"
+fetch.class: step_completed
+
+process: "process_data"
+process.class: step_started
+
+notify: "send_notification"
+notify.class: step_created
+
+validate -> fetch -> process -> notify
+\`\`\``} lang="markdown" title="D2 code" />
+
+Renders as:
+
+```d2
+...@../../assets/pgflow-theme.d2
+
+direction: right
+
+validate: "validate_input"
+validate.class: step_completed
+
+fetch: "fetch_data"
+fetch.class: step_completed
+
+process: "process_data"
+process.class: step_started
+
+notify: "send_notification"
+notify.class: step_created
+
+validate -> fetch -> process -> notify
+```
+
+## Tips
+
+**Multi-line labels:** Use `\n` for line breaks in labels
+
+<Code code={`edge -> node: "line 1\\nline 2"`} lang="d2" />
+
+**Chaining edges:** Simplify linear flows
+
+<Code code={`a -> b -> c -> d  # Instead of separate edges`} lang="d2" />
+
+**Shapes for databases:** Use `cylinder` shape
+
+<Code code={`db: "PostgreSQL"
+db.shape: cylinder`} lang="d2" />
+
+## Custom Color Palette Explorer
+
+This section demonstrates custom color palettes with explicit hex codes for easy experimentation. Each branch shows 4 shades of a color family.
+
+:::note[Customization Guide]
+Colors below use inline styles (not the theme). To change a color:
+1. Note the node name (e.g., "blue_dark")
+2. Find its hex code in the diagram
+3. Tell me: "change blue_dark to #123456"
+:::
+
+### Current Theme Colors
+
+Shows the colors currently defined in `pgflow-theme.d2`. These are the default colors used in all diagrams.
+
+```d2
+direction: down
+
+theme_root: "Current Theme"
+theme_root.style.fill: "#121a19"
+theme_root.style.stroke: "#4a5759"
+theme_root.style.font-color: "#e8eced"
+
+# Neutrals (N1-N7)
+n1: "N1 Lightest\n#e8eced"
+n1.style.fill: "#e8eced"
+n1.style.stroke: "#4a5759"
+n1.style.font-color: "#1a2324"
+
+n2: "N2\n#c5cacc"
+n2.style.fill: "#c5cacc"
+n2.style.stroke: "#4a5759"
+n2.style.font-color: "#1a2324"
+
+n3: "N3\n#95a0a3"
+n3.style.fill: "#95a0a3"
+n3.style.stroke: "#4a5759"
+n3.style.font-color: "#1a2324"
+
+n4: "N4\n#4a5759"
+n4.style.fill: "#4a5759"
+n4.style.stroke: "#2d3739"
+n4.style.font-color: "#e8eced"
+
+n5: "N5\n#2d3739"
+n5.style.fill: "#2d3739"
+n5.style.stroke: "#4a5759"
+n5.style.font-color: "#c5cacc"
+
+n6: "N6 Dark\n#1a2324"
+n6.style.fill: "#1a2324"
+n6.style.stroke: "#4a5759"
+n6.style.font-color: "#c5cacc"
+
+n7: "N7 Canvas\n#121a19"
+n7.style.fill: "#121a19"
+n7.style.stroke: "#4a5759"
+n7.style.font-color: "#c5cacc"
+
+# Borders (B1-B6)
+b1: "B1\n#3a4547"
+b1.style.fill: "#3a4547"
+b1.style.stroke: "#95a0a3"
+b1.style.font-color: "#e8eced"
+
+b2: "B2\n#4a5759"
+b2.style.fill: "#4a5759"
+b2.style.stroke: "#95a0a3"
+b2.style.font-color: "#e8eced"
+
+b3: "B3\n#5a6769"
+b3.style.fill: "#5a6769"
+b3.style.stroke: "#95a0a3"
+b3.style.font-color: "#e8eced"
+
+b4: "B4\n#1a2324"
+b4.style.fill: "#1a2324"
+b4.style.stroke: "#95a0a3"
+b4.style.font-color: "#c5cacc"
+
+b5: "B5\n#2d3739"
+b5.style.fill: "#2d3739"
+b5.style.stroke: "#95a0a3"
+b5.style.font-color: "#c5cacc"
+
+b6: "B6\n#4a5759"
+b6.style.fill: "#4a5759"
+b6.style.stroke: "#95a0a3"
+b6.style.font-color: "#e8eced"
+
+# Semantic colors
+aa2: "AA2 Warning\n#a87c45"
+aa2.style.fill: "#a87c45"
+aa2.style.stroke: "#d9a66e"
+aa2.style.font-color: "#f5e8d6"
+
+aa4: "AA4 Error\n#a33636"
+aa4.style.fill: "#a33636"
+aa4.style.stroke: "#e85c5c"
+aa4.style.font-color: "#f7d1d1"
+
+aa5: "AA5 Dark Warn\n#4d3d2b"
+aa5.style.fill: "#4d3d2b"
+aa5.style.stroke: "#d9a66e"
+aa5.style.font-color: "#f5e8d6"
+
+ab4: "AB4 Success\n#247056"
+ab4.style.fill: "#247056"
+ab4.style.stroke: "#33cc7f"
+ab4.style.font-color: "#99e6c0"
+
+ab5: "AB5 Info\n#34578f"
+ab5.style.fill: "#34578f"
+ab5.style.stroke: "#5c8dd6"
+ab5.style.font-color: "#d4e3f7"
+
+# Root to main categories
+theme_root -> n1
+theme_root -> b1
+theme_root -> aa2
+theme_root -> ab4
+
+# Neutral chain (lightest to darkest)
+n1 -> n2
+n2 -> n3
+n3 -> n4
+n4 -> n5
+n5 -> n6
+n6 -> n7
+
+# Border chain
+b1 -> b2
+b2 -> b3
+b3 -> b4
+b4 -> b5
+b5 -> b6
+
+# Warning/Error chain
+aa2 -> aa4
+aa4 -> aa5
+
+# Success/Info chain
+ab4 -> ab5
+```
+
+:::note[Theme Variables]
+**Neutrals (N):** Used for default node fills and text
+**Borders (B):** Used for node strokes and edges
+**Semantic (AA):** Warning/error states
+**Semantic (AB):** Success/info states
+:::
+
+### Color DAG - Four Families
+
+```d2
+direction: down
+
+root: "Color Palette Root"
+root.style.fill: "#2a3d39"
+root.style.stroke: "#495d59"
+root.style.font-color: "#e7f0ee"
+
+# Teal family (4 shades - primary theme color)
+teal_dark: "Teal Dark\n#003b34"
+teal_dark.style.fill: "#003b34"
+teal_dark.style.stroke: "#00574d"
+teal_dark.style.font-color: "#a3d4cb"
+
+teal_medium: "Teal Medium\n#00574d"
+teal_medium.style.fill: "#00574d"
+teal_medium.style.stroke: "#007b6e"
+teal_medium.style.font-color: "#a3d4cb"
+
+teal_base: "Teal Base\n#007b6e"
+teal_base.style.fill: "#007b6e"
+teal_base.style.stroke: "#00574d"
+teal_base.style.font-color: "#e7f0ee"
+
+teal_light: "Teal Light\n#a3d4cb"
+teal_light.style.fill: "#a3d4cb"
+teal_light.style.stroke: "#007b6e"
+teal_light.style.font-color: "#003b34"
+
+# Blue family (4 shades)
+blue_dark: "Blue Dark\n#1a2947"
+blue_dark.style.fill: "#1a2947"
+blue_dark.style.stroke: "#5c8dd6"
+blue_dark.style.font-color: "#d4e3f7"
+
+blue_medium: "Blue Medium\n#34578f"
+blue_medium.style.fill: "#34578f"
+blue_medium.style.stroke: "#5c8dd6"
+blue_medium.style.font-color: "#d4e3f7"
+
+blue_base: "Blue Base\n#5c8dd6"
+blue_base.style.fill: "#5c8dd6"
+blue_base.style.stroke: "#34578f"
+blue_base.style.font-color: "#ffffff"
+
+blue_light: "Blue Light\n#d4e3f7"
+blue_light.style.fill: "#d4e3f7"
+blue_light.style.stroke: "#5c8dd6"
+blue_light.style.font-color: "#1a2947"
+
+# Purple family (4 shades)
+purple_dark: "Purple Dark\n#472952"
+purple_dark.style.fill: "#472952"
+purple_dark.style.stroke: "#b77ddb"
+purple_dark.style.font-color: "#ead9f5"
+
+purple_medium: "Purple Medium\n#805099"
+purple_medium.style.fill: "#805099"
+purple_medium.style.stroke: "#b77ddb"
+purple_medium.style.font-color: "#ead9f5"
+
+purple_base: "Purple Base\n#b77ddb"
+purple_base.style.fill: "#b77ddb"
+purple_base.style.stroke: "#805099"
+purple_base.style.font-color: "#ffffff"
+
+purple_light: "Purple Light\n#ead9f5"
+purple_light.style.fill: "#ead9f5"
+purple_light.style.stroke: "#b77ddb"
+purple_light.style.font-color: "#472952"
+
+# Orange family (4 shades)
+orange_dark: "Orange Dark\n#4d3d2b"
+orange_dark.style.fill: "#4d3d2b"
+orange_dark.style.stroke: "#d9a66e"
+orange_dark.style.font-color: "#f5e8d6"
+
+orange_medium: "Orange Medium\n#a87c45"
+orange_medium.style.fill: "#a87c45"
+orange_medium.style.stroke: "#d9a66e"
+orange_medium.style.font-color: "#f5e8d6"
+
+orange_base: "Orange Base\n#d9a66e"
+orange_base.style.fill: "#d9a66e"
+orange_base.style.stroke: "#a87c45"
+orange_base.style.font-color: "#4d3d2b"
+
+orange_light: "Orange Light\n#f5e8d6"
+orange_light.style.fill: "#f5e8d6"
+orange_light.style.stroke: "#d9a66e"
+orange_light.style.font-color: "#4d3d2b"
+
+# Green family (4 shades)
+green_dark: "Green Dark\n#1a4136"
+green_dark.style.fill: "#1a4136"
+green_dark.style.stroke: "#33cc7f"
+green_dark.style.font-color: "#99e6c0"
+
+green_medium: "Green Medium\n#247056"
+green_medium.style.fill: "#247056"
+green_medium.style.stroke: "#33cc7f"
+green_medium.style.font-color: "#99e6c0"
+
+green_base: "Green Base\n#33cc7f"
+green_base.style.fill: "#33cc7f"
+green_base.style.stroke: "#247056"
+green_base.style.font-color: "#ffffff"
+
+green_light: "Green Light\n#99e6c0"
+green_light.style.fill: "#99e6c0"
+green_light.style.stroke: "#33cc7f"
+green_light.style.font-color: "#1a4136"
+
+# Red family (4 shades)
+red_dark: "Red Dark\n#4f1f1f"
+red_dark.style.fill: "#4f1f1f"
+red_dark.style.stroke: "#e85c5c"
+red_dark.style.font-color: "#f7d1d1"
+
+red_medium: "Red Medium\n#a33636"
+red_medium.style.fill: "#a33636"
+red_medium.style.stroke: "#e85c5c"
+red_medium.style.font-color: "#f7d1d1"
+
+red_base: "Red Base\n#e85c5c"
+red_base.style.fill: "#e85c5c"
+red_base.style.stroke: "#a33636"
+red_base.style.font-color: "#ffffff"
+
+red_light: "Red Light\n#f7d1d1"
+red_light.style.fill: "#f7d1d1"
+red_light.style.stroke: "#e85c5c"
+red_light.style.font-color: "#4f1f1f"
+
+# Gray family (4 shades - neutral teal-tinted)
+gray_dark: "Gray Dark\n#182b28"
+gray_dark.style.fill: "#182b28"
+gray_dark.style.stroke: "#495d59"
+gray_dark.style.font-color: "#c2cdca"
+
+gray_medium: "Gray Medium\n#2a3d39"
+gray_medium.style.fill: "#2a3d39"
+gray_medium.style.stroke: "#495d59"
+gray_medium.style.font-color: "#c2cdca"
+
+gray_base: "Gray Base\n#495d59"
+gray_base.style.fill: "#495d59"
+gray_base.style.stroke: "#2a3d39"
+gray_base.style.font-color: "#e7f0ee"
+
+gray_light: "Gray Light\n#92a8a3"
+gray_light.style.fill: "#92a8a3"
+gray_light.style.stroke: "#495d59"
+gray_light.style.font-color: "#182b28"
+
+# Teal Gray family (4 shades - lighter teal-tinted neutrals)
+teal_gray_dark: "Teal Gray Dark\n#2a3d39"
+teal_gray_dark.style.fill: "#2a3d39"
+teal_gray_dark.style.stroke: "#495d59"
+teal_gray_dark.style.font-color: "#c2cdca"
+
+teal_gray_medium: "Teal Gray Medium\n#495d59"
+teal_gray_medium.style.fill: "#495d59"
+teal_gray_medium.style.stroke: "#92a8a3"
+teal_gray_medium.style.font-color: "#e7f0ee"
+
+teal_gray_base: "Teal Gray Base\n#92a8a3"
+teal_gray_base.style.fill: "#92a8a3"
+teal_gray_base.style.stroke: "#495d59"
+teal_gray_base.style.font-color: "#182b28"
+
+teal_gray_light: "Teal Gray Light\n#c2cdca"
+teal_gray_light.style.fill: "#c2cdca"
+teal_gray_light.style.stroke: "#495d59"
+teal_gray_light.style.font-color: "#182b28"
+
+# Root to shade levels (4 branches)
+root -> teal_dark
+root -> teal_medium
+root -> teal_base
+root -> teal_light
+
+# Dark shade chain (8 levels)
+teal_dark -> blue_dark
+blue_dark -> green_dark
+green_dark -> purple_dark
+purple_dark -> orange_dark
+orange_dark -> red_dark
+red_dark -> gray_dark
+gray_dark -> teal_gray_dark
+
+# Medium shade chain (8 levels)
+teal_medium -> blue_medium
+blue_medium -> green_medium
+green_medium -> purple_medium
+purple_medium -> orange_medium
+orange_medium -> red_medium
+red_medium -> gray_medium
+gray_medium -> teal_gray_medium
+
+# Base shade chain (8 levels)
+teal_base -> blue_base
+blue_base -> green_base
+green_base -> purple_base
+purple_base -> orange_base
+orange_base -> red_base
+red_base -> gray_base
+gray_base -> teal_gray_base
+
+# Light shade chain (8 levels)
+teal_light -> blue_light
+blue_light -> green_light
+green_light -> purple_light
+purple_light -> orange_light
+orange_light -> red_light
+red_light -> gray_light
+gray_light -> teal_gray_light
+```
+
+:::tip[Color Reference Quick Guide]
+**Teals (Primary):** #003b34 → #00574d → #007b6e → #a3d4cb
+**Blues:** #1a2947 → #34578f → #5c8dd6 → #d4e3f7
+**Greens:** #1a4136 → #247056 → #33cc7f → #99e6c0
+**Purples:** #472952 → #805099 → #b77ddb → #ead9f5
+**Oranges:** #4d3d2b → #a87c45 → #d9a66e → #f5e8d6
+**Reds:** #4f1f1f → #a33636 → #e85c5c → #f7d1d1
+**Grays (Dark Tinted):** #182b28 → #2a3d39 → #495d59 → #92a8a3
+**Teal Grays (Light Tinted):** #2a3d39 → #495d59 → #92a8a3 → #c2cdca
+:::

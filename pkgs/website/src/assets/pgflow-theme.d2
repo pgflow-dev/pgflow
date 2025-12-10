@@ -1,0 +1,103 @@
+vars: {
+  d2-config: {
+    theme-id: 0
+    dark-theme-overrides: {
+      # Canvas background
+      N7: "#121a19"
+
+      # Neutrals - desaturated grays for default nodes
+      N1: "#e8eced"
+      N2: "#c5cacc"
+      N3: "#95a0a3"
+      N4: "#4a5759"
+      N5: "#2d3739"
+      N6: "#1a2324"
+
+      # Borders - neutral grays
+      B1: "#3a4547"
+      B2: "#4a5759"
+      B3: "#5a6769"
+      B4: "#1a2324"
+      B5: "#2d3739"
+      B6: "#4a5759"
+
+      # Semantic colors - intentional states
+      AA2: "#a87c45"
+      AA4: "#a33636"
+      AA5: "#4d3d2b"
+      AB4: "#247056"
+      AB5: "#34578f"
+    }
+  }
+}
+
+# Semantic color classes for workflow states
+classes: {
+  # Generic semantic classes (for general use)
+  neutral: {
+    style.fill: "#95a0a3"
+    style.stroke: "#4a5759"
+  }
+  info: {
+    style.fill: "#34578f"
+    style.stroke: "#5c8dd6"
+  }
+  warning: {
+    style.fill: "#a87c45"
+    style.stroke: "#d9a66e"
+  }
+  error: {
+    style.fill: "#a33636"
+    style.stroke: "#e85c5c"
+  }
+  success: {
+    style.fill: "#247056"
+    style.stroke: "#33cc7f"
+  }
+
+  # Run state classes (started, completed, failed)
+  run_started: {
+    style.fill: "#34578f"
+    style.stroke: "#5c8dd6"
+  }
+  run_completed: {
+    style.fill: "#247056"
+    style.stroke: "#33cc7f"
+  }
+  run_failed: {
+    style.fill: "#a33636"
+    style.stroke: "#e85c5c"
+  }
+
+  # Step state classes (created, started, completed, failed)
+  step_created: {
+    style.fill: "#95a0a3"
+    style.stroke: "#4a5759"
+  }
+  step_started: {
+    style.fill: "#34578f"
+    style.stroke: "#5c8dd6"
+  }
+  step_completed: {
+    style.fill: "#247056"
+    style.stroke: "#33cc7f"
+  }
+  step_failed: {
+    style.fill: "#a33636"
+    style.stroke: "#e85c5c"
+  }
+
+  # Task state classes (queued, completed, failed)
+  task_queued: {
+    style.fill: "#95a0a3"
+    style.stroke: "#4a5759"
+  }
+  task_completed: {
+    style.fill: "#247056"
+    style.stroke: "#33cc7f"
+  }
+  task_failed: {
+    style.fill: "#a33636"
+    style.stroke: "#e85c5c"
+  }
+}
