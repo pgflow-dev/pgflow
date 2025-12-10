@@ -12,7 +12,8 @@ export function createLoggingFactory() {
   const loggers: Map<string, Logger> = new Map();
 
   // Simple level filtering
-  const levels = { error: 0, warn: 1, info: 2, debug: 3 };
+  // Hierarchy: error < warn < info < verbose < debug
+  const levels = { error: 0, warn: 1, info: 2, verbose: 3, debug: 4 };
 
   /**
    * Creates a new logger for a specific module
@@ -37,6 +38,17 @@ export function createLoggingFactory() {
         if (levelValue >= levels.info) {
           // Use console.log for info messages since console.info isn't available in Supabase
           console.info(
+            `worker_id=${sharedWorkerId} module=${module} ${message}`,
+            ...args
+          );
+        }
+      },
+      verbose: (message, ...args) => {
+        const levelValue =
+          levels[logLevel as keyof typeof levels] ?? levels.info;
+        if (levelValue >= levels.verbose) {
+          // Use console.log for verbose messages
+          console.log(
             `worker_id=${sharedWorkerId} module=${module} ${message}`,
             ...args
           );

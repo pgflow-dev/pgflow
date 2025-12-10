@@ -18,6 +18,7 @@ const TestCompilationFlow = new Flow<{ value: number }>({ slug: 'test_compilatio
 function createLogger(module: string) {
   return {
     debug: console.log.bind(console, `[${module}]`),
+    verbose: console.log.bind(console, `[${module}]`),
     info: console.log.bind(console, `[${module}]`),
     warn: console.warn.bind(console, `[${module}]`),
     error: console.error.bind(console, `[${module}]`),

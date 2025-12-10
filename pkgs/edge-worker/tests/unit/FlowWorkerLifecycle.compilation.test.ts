@@ -55,6 +55,7 @@ const createMockFlow = () => TestFlow;
 
 const createLogger = (): Logger => ({
   debug: () => {},
+  verbose: () => {},
   info: () => {},
   error: () => {},
   warn: () => {},
@@ -128,6 +129,7 @@ Deno.test('FlowWorkerLifecycle - logs skip message when ensureCompiledOnStartup 
   const logs: string[] = [];
   const testLogger: Logger = {
     debug: () => {},
+    verbose: () => {},
     info: (msg: string) => logs.push(msg),
     error: () => {},
     warn: () => {},
@@ -154,6 +156,7 @@ Deno.test('FlowWorkerLifecycle - does not log skip message when ensureCompiledOn
   const logs: string[] = [];
   const testLogger: Logger = {
     debug: () => {},
+    verbose: () => {},
     info: (msg: string) => logs.push(msg),
     error: () => {},
     warn: () => {},

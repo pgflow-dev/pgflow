@@ -62,13 +62,17 @@ export class StepTaskExecutor<TFlow extends AnyFlow, TContext extends StepTaskHa
         throw new Error(`No step definition found for slug=${stepSlug}`);
       }
 
+      // Measure handler execution duration
+      const startTime = Date.now();
 
       // !!! HANDLER EXECUTION !!!
       const result = await stepDef.handler(this.stepTask.input, this.context);
       // !!! HANDLER EXECUTION !!!
 
-      this.logger.debug(
-        `step task ${this.msgId} completed successfully, marking as complete`
+      const durationMs = Date.now() - startTime;
+
+      this.logger.verbose(
+        `step task ${this.msgId} completed in ${durationMs}ms`
       );
       await this.adapter.completeTask(this.stepTask, result);
 
@@ -92,7 +96,7 @@ export class StepTaskExecutor<TFlow extends AnyFlow, TContext extends StepTaskHa
       // Do not mark as failed - the worker was aborted and stopping,
       // the task will be picked up by another worker later
     } else {
-      this.logger.error(
+      this.logger.verbose(
         `step task ${this.msgId} failed with error: ${error}`
       );
       await this.adapter.failTask(this.stepTask, error);

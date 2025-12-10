@@ -13,6 +13,7 @@
     "jsr:@std/internal@0.224": "0.224.0",
     "jsr:@std/io@0.225": "0.225.0",
     "jsr:@std/io@0.225.0": "0.225.0",
+    "jsr:@std/testing@0.224": "0.224.0",
     "npm:@supabase/supabase-js@^2.39.0": "2.84.0",
     "npm:postgres@3.4.5": "3.4.5"
   },
@@ -60,6 +61,12 @@
     },
     "@std/io@0.225.0": {
       "integrity": "c1db7c5e5a231629b32d64b9a53139445b2ca640d828c26bf23e1c55f8c079b3"
+    },
+    "@std/testing@0.224.0": {
+      "integrity": "371b8a929aa7132240d5dd766a439be8f780ef5c176ab194e0bcab72370c761e",
+      "dependencies": [
+        "jsr:@std/assert@0.224"
+      ]
     }
   },
   "npm": {
