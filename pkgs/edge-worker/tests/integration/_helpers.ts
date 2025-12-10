@@ -64,12 +64,21 @@ export function startWorker<TFlow extends AnyFlow>(
     ...options,
   };
 
+  const noop = () => {};
   const consoleLogger = {
     debug: console.log,
     verbose: console.log,
     info: console.log,
     warn: console.warn,
     error: console.error,
+    // Structured logging methods (no-op for integration tests)
+    taskStarted: noop,
+    taskCompleted: noop,
+    taskFailed: noop,
+    polling: noop,
+    taskCount: noop,
+    startupBanner: noop,
+    shutdown: noop,
   };
 
   const worker = createFlowWorker(flow, mergedOptions, () => consoleLogger, createTestPlatformAdapter(sql));

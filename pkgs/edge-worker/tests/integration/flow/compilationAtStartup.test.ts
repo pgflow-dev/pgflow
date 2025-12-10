@@ -15,6 +15,8 @@ const TestCompilationFlow = new Flow<{ value: number }>({ slug: 'test_compilatio
     return input.run.value * 2;
   });
 
+const noop = () => {};
+
 function createLogger(module: string) {
   return {
     debug: console.log.bind(console, `[${module}]`),
@@ -22,6 +24,14 @@ function createLogger(module: string) {
     info: console.log.bind(console, `[${module}]`),
     warn: console.warn.bind(console, `[${module}]`),
     error: console.error.bind(console, `[${module}]`),
+    // Structured logging methods (no-op for integration tests)
+    taskStarted: noop,
+    taskCompleted: noop,
+    taskFailed: noop,
+    polling: noop,
+    taskCount: noop,
+    startupBanner: noop,
+    shutdown: noop,
   };
 }
 

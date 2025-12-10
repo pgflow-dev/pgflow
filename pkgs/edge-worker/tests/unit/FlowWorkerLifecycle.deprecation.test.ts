@@ -189,6 +189,13 @@ Deno.test('FlowWorkerLifecycle - should log appropriate message when transitioni
     info: (msg: string) => logs.push(msg),
     error: () => {},
     warn: () => {},
+    taskStarted: () => {},
+    taskCompleted: () => {},
+    taskFailed: () => {},
+    polling: () => {},
+    taskCount: () => {},
+    startupBanner: () => {},
+    shutdown: () => {},
   };
 
   const mockQueries = new MockQueries();

@@ -59,6 +59,13 @@ const createLogger = (): Logger => ({
   info: () => {},
   error: () => {},
   warn: () => {},
+  taskStarted: () => {},
+  taskCompleted: () => {},
+  taskFailed: () => {},
+  polling: () => {},
+  taskCount: () => {},
+  startupBanner: () => {},
+  shutdown: () => {},
 });
 
 Deno.test('FlowWorkerLifecycle - calls ensureFlowCompiled when ensureCompiledOnStartup is true', async () => {
@@ -133,6 +140,13 @@ Deno.test('FlowWorkerLifecycle - logs skip message when ensureCompiledOnStartup 
     info: (msg: string) => logs.push(msg),
     error: () => {},
     warn: () => {},
+    taskStarted: () => {},
+    taskCompleted: () => {},
+    taskFailed: () => {},
+    polling: () => {},
+    taskCount: () => {},
+    startupBanner: () => {},
+    shutdown: () => {},
   };
 
   const mockQueries = new MockQueries();
@@ -160,6 +174,13 @@ Deno.test('FlowWorkerLifecycle - does not log skip message when ensureCompiledOn
     info: (msg: string) => logs.push(msg),
     error: () => {},
     warn: () => {},
+    taskStarted: () => {},
+    taskCompleted: () => {},
+    taskFailed: () => {},
+    polling: () => {},
+    taskCount: () => {},
+    startupBanner: () => {},
+    shutdown: () => {},
   };
 
   const mockQueries = new MockQueries();
