@@ -85,11 +85,9 @@ Everything runs in your Supabase project - no external infrastructure needed.
    ```
 
 3. Add your [OpenAI API key](https://platform.openai.com/api-keys) to `supabase/functions/.env`:
-   ```diff
-     # supabase/functions/.env
-     EDGE_WORKER_DB_URL=postgres://...
-     EDGE_WORKER_LOG_LEVEL=info
-   + OPENAI_API_KEY=sk-...
+   ```bash
+   # supabase/functions/.env
+   OPENAI_API_KEY=sk-...
    ```
 
    **Important:** Place this `.env` file in the `supabase/functions` directory, not in your project root. Edge Functions specifically look for environment variables in this location.

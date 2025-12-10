@@ -7,22 +7,28 @@ sidebar:
 
 ## Logging
 
-Edge Worker logs various events to the console. You can change the log level
-by setting `EDGE_WORKER_LOG_LEVEL` environment variable:
+Edge Worker automatically configures logging based on your environment:
+- **Local development**: Colorful "fancy" format at `verbose` level
+- **Hosted Supabase**: Structured key=value format at `info` level
+
+You can override the log level by setting `EDGE_WORKER_LOG_LEVEL`:
 
 ```bash
-// supabase/functions/.env
+# supabase/functions/.env
 EDGE_WORKER_LOG_LEVEL=debug
 ```
 
-Available log levels are:
+Available log levels (from least to most verbose):
 
-- `debug`
-- `info`
-- `error`
-- (more will come)
+| Level | Description |
+|-------|-------------|
+| `error` | Critical failures only |
+| `warn` | Deprecation notices, auth failures |
+| `info` | Startup banner, shutdown events |
+| `verbose` | Task outcomes, polling feedback |
+| `debug` | Task started events, detailed identifiers |
 
-By default, Edge Worker's log level is `info`.
+For complete logging configuration including output format options and examples, see [Worker Logging Configuration](/reference/configuration/worker/#logging-configuration).
 
 ## Heartbeats
 

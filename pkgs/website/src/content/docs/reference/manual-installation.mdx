@@ -56,26 +56,7 @@ npx supabase migration up
 The installation process is exactly the same whether you're using Edge Worker or pgflow, as pgflow builds on top of Edge Worker and the migration files include everything needed for both.
 :::
 
-### 2. Create environment file (optional)
-
-For local development, no database configuration is needed - the worker auto-detects local Supabase and connects automatically.
-
-If you want to configure log levels locally, create `supabase/functions/.env`:
-
-```bash frame="none"
-mkdir -p supabase/functions
-```
-
-```bash
-# Log level (options: debug, info, warn, error)
-EDGE_WORKER_LOG_LEVEL="info"
-```
-
-<Aside type="note" title="Production uses secrets, not .env">
-The `.env` file is only for local development. For production on Supabase hosted, use `supabase secrets set` to configure `EDGE_WORKER_DB_URL`. See [Database Connection](/deploy/database-connection/) for details.
-</Aside>
-
-### 3. Setup Connection Pool
+### 2. Setup Connection Pool
 
 Modify the `db.pooler` section in your `supabase/config.toml` file
 to enable pooler and make sure that `db.pool_mode` is set to `"transaction"`.
@@ -100,7 +81,7 @@ Edge Worker requires **transaction mode** connection because of Edge
 Function early termination. This will change in the future.
 :::
 
-### 4. Setup Edge Runtime policy
+### 3. Setup Edge Runtime policy
 
 Change the Edge Runtime policy to `per_worker` to enable
 Background Tasks (see more in [Testing background tasks locally](https://supabase.com/docs/guides/functions/background-tasks#testing-background-tasks-locally)).
@@ -116,7 +97,7 @@ Background Tasks (see more in [Testing background tasks locally](https://supabas
     inspector_port = 8083
   ```
 
-### 5. Create flows directory
+### 4. Create flows directory
 
 Create a `flows` directory in your `supabase` folder to store your flow definitions:
 
@@ -156,7 +137,7 @@ Create `supabase/flows/index.ts` to export your flows:
 export { GreetUser } from './greet-user.ts';
 ```
 
-### 6. Create Control Plane edge function
+### 5. Create Control Plane edge function
 
 The Control Plane is an edge function that registers and serves your flows.
 
@@ -196,7 +177,7 @@ Create `supabase/functions/pgflow/deno.json` with the pgflow package imports (re
 Check the [pgflow releases page](https://github.com/pgflow-dev/pgflow/releases) for the latest version number.
 :::
 
-### 7. Create example worker
+### 6. Create example worker
 
 The worker executes the tasks defined in your flows.
 
@@ -232,7 +213,7 @@ Create `supabase/functions/greet-user-worker/deno.json` with the same imports (r
 }
 ```
 
-### 8. Restart Supabase
+### 7. Restart Supabase
 
 To apply the changes, restart Supabase:
 
@@ -253,7 +234,6 @@ When following these steps, the installation sets up:
 **Configuration:**
 - Connection pooler enabled with transaction mode
 - Edge runtime policy set to `per_worker`
-- Environment file for log level (database connection auto-detected locally)
 
 **Edge Functions:**
 - Control Plane (`supabase/functions/pgflow/`) - registers and serves your flows
@@ -272,7 +252,6 @@ The manual installation process performs the same steps as the automatic `pgflow
 4. Creates the flows directory with example flow
 5. Creates the Control Plane edge function
 6. Creates the example worker edge function
-7. Creates the environment file with log level settings
 
 The automatic installer also:
 - Checks if each component is already installed to avoid duplicates

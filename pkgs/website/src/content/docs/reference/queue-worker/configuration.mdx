@@ -346,6 +346,20 @@ Maximum number of retry attempts for failed message processing before marking th
 
 Your handler functions can access the resolved worker configuration through the context object. For detailed information about available configuration options and usage patterns, see [`workerConfig`](/reference/context/#workerconfig).
 
+## Logging Configuration
+
+Edge Worker automatically configures logging based on your environment. For local development, it uses colorful "fancy" output at verbose level. For hosted Supabase, it uses structured key=value output at info level.
+
+You can override these defaults with environment variables:
+
+| Variable | Values | Default |
+|----------|--------|---------|
+| `EDGE_WORKER_LOG_LEVEL` | `error`, `warn`, `info`, `verbose`, `debug` | `verbose` (local), `info` (hosted) |
+| `EDGE_WORKER_LOG_FORMAT` | `fancy`, `simple` | Auto-detected |
+| `NO_COLOR` | Any value | Unset |
+
+For detailed information about log levels, output formats, and examples, see [Worker Logging Configuration](/reference/configuration/worker/#logging-configuration).
+
 ## Next Steps
 
 - [Update pgflow](/deploy/update-pgflow/) - Keep your pgflow installation up to date with the latest features and bug fixes
