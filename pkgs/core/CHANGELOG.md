@@ -1,5 +1,17 @@
 # @pgflow/core
 
+## 0.10.0
+
+### Minor Changes
+
+- 90276ce: Add automatic worker restart via `ensure_workers()` cron job that keeps edge functions running. Add `worker_functions` table for tracking registered edge functions and their health status. Add `stopped_at` column to workers table for graceful shutdown detection. Integrate `trackWorkerFunction` and `markWorkerStopped` into edge worker lifecycle for automatic registration and shutdown signaling.
+
+### Patch Changes
+
+- 0b84bb0: Add automatic flow compilation at worker startup. Workers now call ensure_flow_compiled to verify flows are up-to-date. In development, mismatched flows are recompiled automatically. In production, mismatches cause errors. Use ensureCompiledOnStartup: false to opt-out.
+- Updated dependencies [0b84bb0]
+  - @pgflow/dsl@0.10.0
+
 ## 0.9.1
 
 ### Patch Changes
