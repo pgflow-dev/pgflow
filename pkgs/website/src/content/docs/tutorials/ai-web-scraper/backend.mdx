@@ -283,7 +283,21 @@ export const AnalyzeWebsite = new Flow<Input>({ slug: "analyzeWebsite", maxAttem
 
 Flow structure:
 
-<img src="/analyze_website.svg" alt="AI Web Scraper Workflow" title="AI-powered web scraper workflow DAG" class="responsive-svg"/>
+```d2
+...@../../../../assets/pgflow-theme.d2
+
+direction: down
+
+website: "website"
+summary: "summary"
+tags: "tags"
+saveToDb: "saveToDb"
+
+website -> summary
+website -> tags
+summary -> saveToDb
+tags -> saveToDb
+```
 
 - `website` → fetches the URL (root step)
 - `summary` & `tags` → run in parallel (both need website content)

@@ -11,7 +11,27 @@ pgflow separates concerns across three distinct layers. Each layer operates at a
 
 ## Overview
 
-<img src="/diagrams/three-layers.svg" alt="Three layers of pgflow architecture" width="90%" />
+```d2
+...@../../../assets/pgflow-theme.d2
+
+direction: down
+
+dsl: "DSL Layer\nUser Intent"
+dsl.class: success
+
+core: "SQL Core\nWorkflow Orchestration"
+core.class: info
+
+worker: "Worker\nTask Execution"
+worker.class: warning
+
+dsl -> core: Step definitions
+dsl -> worker: Handler functions {
+  style.stroke-dash: 3
+}
+core -> worker: Tasks
+worker -> core: Results
+```
 
 The diagram shows two key distinctions:
 
