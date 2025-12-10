@@ -23,7 +23,7 @@ This guide walks you through deploying your pgflow worker to Supabase.com produc
 
    Workers access the database through the `EDGE_WORKER_DB_URL` environment variable:
 
-   ```bash frame="none"
+   ```bash frame="none" "your-connection-string"
    npx supabase secrets set EDGE_WORKER_DB_URL="your-connection-string"
    ```
 
@@ -31,11 +31,11 @@ This guide walks you through deploying your pgflow worker to Supabase.com produc
 
    Deploy your Edge Function to Supabase:
 
-   ```bash frame="none"
+   ```bash frame="none" "your-worker-name"
    npx supabase functions deploy your-worker-name
    ```
 
-   Replace `your-worker-name` with your actual worker function name (e.g., `greet-user-worker`).
+   Replace the highlighted value with your actual worker function name (e.g., `greet-user-worker`).
 
    <Aside type="note">
    You only need to deploy your worker functions. The `pgflow` ControlPlane function is for local compilation only and is not needed in production.
@@ -45,7 +45,7 @@ This guide walks you through deploying your pgflow worker to Supabase.com produc
 
    Register your worker so pgflow can manage it automatically:
 
-   ```sql
+   ```sql "your-worker-name"
    SELECT pgflow.track_worker_function('your-worker-name');
    ```
 

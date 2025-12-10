@@ -18,13 +18,13 @@ Before starting, ensure you have completed [Getting Started](/get-started/instal
 
    Retrieve the Transaction pooler connection string from your Supabase dashboard. Workers use this to connect to your hosted database securely.
 
-2. ### Deploy First Flow
+2. ### Configure Secrets
 
-   Store the connection string as a secret, deploy your worker Edge Function, and invoke it to start processing tasks.
+   Set up vault secrets so pgflow can automatically manage and restart your workers in production.
 
-3. ### Keep Workers Running
+3. ### Deploy First Flow
 
-   Configure pg_cron to periodically invoke your worker. This acts as a safety net - if a worker stops unexpectedly, pg_cron restarts it automatically.
+   Store the connection string as a secret, deploy your worker Edge Function, and register it with pgflow.
 
 </Steps>
 
