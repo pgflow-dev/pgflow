@@ -44,7 +44,21 @@ You'll create a practical AI web scraper workflow that:
 5. Auto-retries when things go wrong (because APIs sometimes fail)
 </Steps>
 
-<img src="/analyze_website.svg" alt="AI Web Scraper Workflow" title="AI-powered web scraper workflow DAG" className="responsive-svg" />
+```d2
+...@../../../../assets/pgflow-theme.d2
+
+direction: down
+
+website: "website"
+summary: "summary"
+tags: "tags"
+saveToDb: "saveToDb"
+
+website -> summary
+website -> tags
+summary -> saveToDb
+tags -> saveToDb
+```
 
 ## Project Structure
 

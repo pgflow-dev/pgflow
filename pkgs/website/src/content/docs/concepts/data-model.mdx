@@ -88,9 +88,58 @@ Created and modified during execution. Each run creates new records tracking pro
 
 The relationships between these tables form the complete pgflow data model:
 
-<a href="/diagrams/schema.svg" target="_blank">
-  <img src="/diagrams/schema.svg" alt="Schema ERD Diagram" width="600" />
-</a>
+```d2
+...@../../../assets/pgflow-theme.d2
+
+direction: right
+
+# Legend
+legend: "" {
+  style.stroke-width: 0
+  style.fill: transparent
+
+  def: Static Definition
+  def.class: info
+  run: Runtime State
+  run.class: success
+}
+
+# Flow tables
+flow: Flows {
+  fl: flows
+  fl.class: info
+  st: steps
+  st.class: info
+  dp: deps
+  dp.class: info
+
+  rn: runs
+  rn.class: success
+  ss: step_states
+  ss.class: success
+  tk: step_tasks
+  tk.class: success
+
+  fl -> st: has
+  fl -> rn: instantiates
+  st -> dp: depends
+  st -> ss: state
+  rn -> ss: contains
+  ss -> tk: spawns
+}
+
+# Worker tables
+worker: Workers {
+  wf: worker_functions
+  wf.class: info
+  wk: workers
+  wk.class: success
+
+  wf -> wk: spawns via cron
+}
+
+flow.tk -> worker.wk: executed by
+```
 
 ## How the Categories Work Together
 
