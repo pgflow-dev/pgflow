@@ -1,0 +1,137 @@
+---
+title: Worker Management
+description: How to register, deprecate, and track workers
+sidebar:
+  order: 50
+---
+
+import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+pgflow automatically keeps your Edge Workers running. This guide covers how to register, deprecate, and track workers.
+
+<Aside type="tip">
+For understanding how the worker lifecycle works, see [Worker Lifecycle](/concepts/worker-lifecycle/).
+</Aside>
+
+## Worker Registration
+
+Before pgflow can manage a worker, it must be registered.
+
+**Local development:**
+```bash frame="none"
+curl http://localhost:54321/functions/v1/my-worker
+```
+
+**Production:**
+```sql
+SELECT pgflow.track_worker_function('my-worker');
+```
+
+Once registered, pgflow tracks the worker in the `worker_functions` table and keeps it alive automatically.
+
+## Worker Deprecation
+
+To gracefully stop workers for a specific function, you can deprecate them. This ensures in-flight tasks complete before shutdown:
+
+```sql
+UPDATE pgflow.workers
+SET deprecated_at = now()
+WHERE function_name = 'my-worker';
+```
+
+```d2
+...@../../../assets/pgflow-theme.d2
+
+direction: down
+
+trigger: "1. Trigger" {
+  deprecate: "You deprecate\nworkers by function"
+  deprecate.class: neutral
+
+  heartbeat: "Worker sends\nheartbeat (every 6s)"
+  heartbeat.class: info
+
+  response: "DB returns\nis_deprecated: true"
+  response.class: warning
+
+  deprecate -> heartbeat
+  heartbeat -> response: "checks\ndeprecated_at"
+}
+
+shutdown: "2. Graceful Shutdown" {
+  direction: right
+
+  stop: "Worker stops\naccepting new work"
+  stop.class: warning
+
+  finish: "Finishes\nin-flight tasks"
+  finish.class: step_started
+
+  exit: "Worker\nexits"
+  exit.class: step_completed
+
+  skip: "Cron skips\n(not restarted)"
+  skip.class: step_failed
+
+  stop -> finish
+  finish -> exit
+  exit -> skip
+}
+
+trigger.response -> shutdown.stop: "isRunning = false"
+```
+
+1. **Deprecate workers** - Set `deprecated_at` for workers by function name
+2. **Heartbeat detects deprecation** - Worker's next heartbeat returns `is_deprecated: true`
+3. **Worker stops polling** - Worker stops accepting new tasks
+4. **Finish in-flight work** - Worker completes any currently running task
+5. **Graceful shutdown** - Worker exits cleanly
+6. **No restart** - Cron skips deprecated workers when checking for restarts
+
+## Tracking Workers
+
+Query the `worker_functions` table to see registered workers:
+
+```sql
+SELECT * FROM pgflow.worker_functions;
+```
+
+Query the `workers` table to see active worker instances:
+
+```sql
+SELECT
+  worker_id,
+  function_name,
+  started_at,
+  last_heartbeat_at,
+  deprecated_at,
+  stopped_at
+FROM pgflow.workers
+WHERE stopped_at IS NULL
+ORDER BY started_at DESC;
+```
+
+## Prerequisites
+
+For automatic worker management to work in production, you need vault secrets configured.
+See [Configure Secrets](/deploy/supabase/configure-secrets/).
+
+## Related
+
+<CardGrid>
+  <LinkCard
+    title="Worker Lifecycle"
+    href="/concepts/worker-lifecycle/"
+    description="How workers poll, heartbeat, and restart"
+  />
+  <LinkCard
+    title="Local Development"
+    href="/build/local-development/"
+    description="Tips for local development"
+  />
+  <LinkCard
+    title="Monitor Workers Health"
+    href="/deploy/monitor-workers-health/"
+    description="Monitoring worker status"
+  />
+</CardGrid>

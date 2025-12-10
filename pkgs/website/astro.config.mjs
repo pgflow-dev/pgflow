@@ -224,6 +224,15 @@ export default defineConfig({
               items: [
                 { label: 'Overview', link: '/build/' },
                 {
+                  label: 'Development',
+                  items: [
+                    {
+                      label: 'Local development',
+                      link: '/build/local-development/',
+                    },
+                  ],
+                },
+                {
                   label: 'Writing Flows',
                   items: [
                     {
@@ -277,15 +286,24 @@ export default defineConfig({
                   autogenerate: { directory: 'deploy/supabase/' },
                 },
                 {
-                  label: 'Observe',
+                  label: 'Workers',
                   items: [
                     {
-                      label: 'Monitor flow execution',
-                      link: '/deploy/monitor-execution/',
+                      label: 'Worker management',
+                      link: '/deploy/worker-management/',
                     },
                     {
                       label: 'Monitor workers health',
                       link: '/deploy/monitor-workers-health/',
+                    },
+                  ],
+                },
+                {
+                  label: 'Runs',
+                  items: [
+                    {
+                      label: 'Monitor flow execution',
+                      link: '/deploy/monitor-execution/',
                     },
                   ],
                 },
@@ -340,6 +358,10 @@ export default defineConfig({
                     {
                       label: 'Compilation',
                       link: '/concepts/compilation/',
+                    },
+                    {
+                      label: 'Worker lifecycle',
+                      link: '/concepts/worker-lifecycle/',
                     },
                   ],
                 },

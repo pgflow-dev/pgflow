@@ -69,8 +69,8 @@ Before starting, please read the [Installation](/get-started/installation/) guid
     [Info] worker_id=<uuid> [WorkerLifecycle] Ensuring queue 'tasks' exists...
 		```
 
-    :::tip[Seamless local development]
-    Tired of curling after every code change? Add the [watchdog cron](/deploy/supabase/keep-workers-running/) to your `supabase/seed.sql` (use `'2 seconds'` interval for fast local iteration) - it auto-restarts workers when they stop polling.
+    :::tip[Automatic worker management]
+    You only need to curl once! pgflow automatically keeps workers running via cron. See [Worker Management](/deploy/worker-management/) for details.
     :::
 
 4. ### Process your first message

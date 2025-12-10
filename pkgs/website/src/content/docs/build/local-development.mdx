@@ -1,0 +1,70 @@
+---
+title: Local Development
+description: Tips for a better local development experience
+sidebar:
+  order: 5
+---
+
+import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+## Filtering Console Noise
+
+The Supabase Edge Runtime can produce verbose output during local development. This is especially noticeable because pgflow sends HTTP requests every 1 second to respawn workers quickly. To get cleaner logs that focus on your worker output, pipe through grep:
+
+```bash frame="none"
+npx supabase functions serve --no-verify-jwt 2>&1 | \
+  grep -Pv 'serving the request with supabase/functions/[a-zA-Z0-9-]+-worker|^\d{4}-\d{2}-\d{2}T[\d:.]+Z\s*$'
+```
+
+This filters out:
+- Request serving messages for worker functions
+- Empty timestamp lines
+
+:::note[Shell Alias]
+Add this to `~/.bashrc` or `~/.zshrc`, then run `source ~/.bashrc` to reload:
+
+```bash frame="none"
+alias supabase-serve="npx supabase functions serve --no-verify-jwt 2>&1 | grep -Pv 'serving the request with supabase/functions/[a-zA-Z0-9-]+-worker|^\d{4}-\d{2}-\d{2}T[\d:.]+Z\s*$'"
+```
+
+Then just run: `supabase-serve`
+:::
+
+## Auto-Restart Behavior
+
+During local development, pgflow automatically:
+- Restarts workers when you change flow code
+- Recompiles flows when the shape changes
+- Keeps workers running via cron (every 1 second)
+
+See [Worker Lifecycle](/concepts/worker-lifecycle/) for details on how this works.
+
+## Initial Worker Registration
+
+The first time you start a worker, you need to trigger it once:
+
+```bash frame="none"
+curl http://localhost:54321/functions/v1/my-worker
+```
+
+After this initial registration, pgflow's cron keeps the worker running automatically.
+
+## Related
+
+<CardGrid>
+  <LinkCard
+    title="Quickstart"
+    href="/get-started/flows/quickstart/"
+    description="Run your first flow"
+  />
+  <LinkCard
+    title="Worker Lifecycle"
+    href="/concepts/worker-lifecycle/"
+    description="How workers poll and restart"
+  />
+  <LinkCard
+    title="Auto-Compilation"
+    href="/concepts/compilation/"
+    description="How flows are compiled on startup"
+  />
+</CardGrid>

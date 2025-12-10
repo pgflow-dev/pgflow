@@ -1,6 +1,6 @@
 ---
 title: Quickstart
-description: Run the example flow in 5 minutes
+description: Run the example flow in 3 minutes
 sidebar:
   order: 15
 ---
@@ -25,50 +25,21 @@ See pgflow in action using the GreetUser flow scaffolded during installation.
    npx supabase functions serve --no-verify-jwt
    ```
 
-   <Aside type="note" title="About --no-verify-jwt">
-   The `--no-verify-jwt` flag disables JWT authentication for local development.
-   </Aside>
-
    Keep this terminal open.
 
-2. ### Compile the flow
+   See [Local Development](/build/local-development/) for cleaner output.
 
-   In a **new terminal**, compile the GreetUser flow:
+2. ### Start the worker
 
-   ```bash frame="none"
-   npx pgflow@latest compile greetUser
-   ```
-
-   You should see:
-
-   ```
-   Successfully compiled flow to SQL
-   Migration file created: supabase/migrations/..._create_greetUser_flow.sql
-   ```
-
-3. ### Apply the migration
-
-   Apply the migration to register the flow in your database:
-
-   ```bash frame="none"
-   npx supabase migrations up
-   ```
-
-   <Aside type="tip" title="Want to modify this flow later?">
-   Once applied, flow structure is immutable. See [Iterating on your flow](#iterating-on-your-flow) below for the development workflow.
-   </Aside>
-
-4. ### Start the worker
-
-   Send an HTTP request to start the scaffolded worker:
+   In a **new terminal**, send an HTTP request to start the worker:
 
    ```bash frame="none"
    curl http://localhost:54321/functions/v1/greet-user-worker
    ```
 
-   You should see worker activity in the edge functions terminal.
+   You only need to curl once - pgflow [auto-compiles](/concepts/compilation/) and [keeps workers running](/concepts/worker-lifecycle/).
 
-5. ### Trigger your first flow
+3. ### Trigger your first flow
 
    Open Supabase Studio (http://localhost:54323), go to the **SQL Editor**, and run:
 
@@ -78,8 +49,6 @@ See pgflow in action using the GreetUser flow scaffolded during installation.
      input => '{"firstName": "Alice", "lastName": "Smith"}'::jsonb
    );
    ```
-
-6. ### Check the result
 
    After a moment, query the run status:
 
@@ -103,35 +72,27 @@ See pgflow in action using the GreetUser flow scaffolded during installation.
 <details>
 <summary>Expand for details</summary>
 
-1. **Compilation** converted your TypeScript flow to a SQL migration
-2. **Migration** registered the flow structure in Postgres
-3. **Worker** began polling for tasks on the `greetUser` queue
-4. **Steps executed** in dependency order: `fullName` ran first, then `greeting` used its output
+1. **Auto-compilation** - The worker detected the flow wasn't in the database and compiled it automatically
+2. **Worker started** - The worker began polling for tasks on the `greetUser` queue
+3. **Steps executed** - Steps ran in dependency order: `fullName` first, then `greeting` used its output
 
-The GreetUser flow demonstrates the core pgflow pattern - steps with dependencies that pass data between them.
 </details>
 
 ## Iterating on your flow
 
-Want to modify the flow structure? Flows are immutable once registered - this protects running workflows.
+Just change your flow code - the rest is automatic:
 
-**During development:** [Delete the flow](/build/delete-flows/) and recompile. This removes all run data, so only use locally.
+<Steps>
 
-**In production:** Create a [versioned flow](/build/version-flows/) (e.g., `greetUserV2`) to preserve history.
+1. Edge runtime detects code changes and restarts the function
+2. pgflow cron triggers the function via HTTP
+3. Worker starts, detects the new shape, deletes the old flow, and compiles the new one
 
-## Troubleshooting
+</Steps>
 
-### "Could not connect to ControlPlane"
-
-Make sure edge functions are running:
-
-```bash frame="none"
-npx supabase functions serve --no-verify-jwt
-```
-
-### "Flow not found"
-
-Register your flow in `supabase/functions/pgflow/index.ts` and restart the functions server.
+<Aside type="caution">
+Recompiling **deletes the existing flow and all its run data**. This is intentional for fast local iteration. See [Compilation](/concepts/compilation/) for details.
+</Aside>
 
 ## Next steps
 
@@ -142,13 +103,13 @@ Register your flow in `supabase/functions/pgflow/index.ts` and restart the funct
     description="Learn how the scaffolded GreetUser flow works"
   />
   <LinkCard
-    title="How pgflow works"
-    href="/concepts/how-pgflow-works/"
-    description="Understand the execution model behind the scenes"
+    title="How compilation works"
+    href="/concepts/compilation/"
+    description="Auto-compilation, flow shape, and manual compilation"
   />
   <LinkCard
-    title="Iterate on flows"
-    href="/build/delete-flows/"
-    description="Delete and recreate flows during development"
+    title="Worker management"
+    href="/deploy/worker-management/"
+    description="How pgflow keeps workers running automatically"
   />
 </CardGrid>

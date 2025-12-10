@@ -8,67 +8,49 @@ banner:
     pgflow is in public beta. <a href="/project-status/">See project status</a> for production readiness details.
 ---
 
-import { Aside } from "@astrojs/starlight/components";
+import { Aside, Steps } from "@astrojs/starlight/components";
 
 This guide walks you through deploying your pgflow worker to Supabase.com production.
 
-Before you begin, make sure you have your [connection string ready](/deploy/supabase/get-connection-string/).
-
-## Set Database Secret
-
-Workers access the database through the `EDGE_WORKER_DB_URL` environment variable. Set it using the connection string from the [previous step](/deploy/supabase/get-connection-string/):
-
-```bash frame="none"
-npx supabase secrets set EDGE_WORKER_DB_URL="your-connection-string"
-```
-
-## Deploy Your Worker
-
-Deploy your Edge Function to Supabase:
-
-```bash frame="none"
-npx supabase functions deploy your-worker-name
-```
-
-Replace `your-worker-name` with your actual worker function name (e.g., `flow-worker`).
-
-This uploads your worker code and makes it available at:
-```
-https://your-project.supabase.co/functions/v1/your-worker-name
-```
-
-:::note
-You only need to deploy your worker functions. The `pgflow` ControlPlane function is for local compilation only and is not needed in production.
-:::
-
-## Start Your Worker
-
-Workers don't start automatically after deployment. Start it with a POST request:
-
-```bash frame="none"
-curl "https://your-project.supabase.co/functions/v1/your-worker-name" \
-  -H "Authorization: Bearer YOUR_ANON_KEY"
-```
-
-**Finding your ANON key:**
-1. Open [Supabase Dashboard](https://supabase.com/dashboard)
-2. Navigate to **Project Settings** → **API Keys**
-3. Under **Legacy anon, service_role API Keys**, copy the `anon` `public` key
-
-:::note
-Workers currently use the `anon` key for self-respawning. This will be improved soon.
-:::
-
-The worker starts polling for tasks and continues running until it's stopped or times out.
-
-## Set Up the Safety Net
-
-Edge Functions eventually stop due to platform limits or errors. Set up a pg_cron job to automatically restart workers when they stop.
-
-[Follow the safety net setup guide →](/deploy/supabase/keep-workers-running/)
-
-<Aside type="danger" title="Don't Skip This Step">
-**Your workers will eventually stop without a safety net.** This is especially critical for production where workflow reliability matters.
-
-The safety net takes 2 minutes to set up and prevents hours of debugging why workflows stopped running.
+<Aside type="caution" title="Prerequisites">
+- [Connection string](/deploy/supabase/get-connection-string/) ready
+- [Vault secrets configured](/deploy/supabase/configure-secrets/)
 </Aside>
+
+<Steps>
+
+1. ### Set database secret
+
+   Workers access the database through the `EDGE_WORKER_DB_URL` environment variable:
+
+   ```bash frame="none"
+   npx supabase secrets set EDGE_WORKER_DB_URL="your-connection-string"
+   ```
+
+2. ### Deploy your worker
+
+   Deploy your Edge Function to Supabase:
+
+   ```bash frame="none"
+   npx supabase functions deploy your-worker-name
+   ```
+
+   Replace `your-worker-name` with your actual worker function name (e.g., `greet-user-worker`).
+
+   <Aside type="note">
+   You only need to deploy your worker functions. The `pgflow` ControlPlane function is for local compilation only and is not needed in production.
+   </Aside>
+
+3. ### Register the worker
+
+   Register your worker so pgflow can manage it automatically:
+
+   ```sql
+   SELECT pgflow.track_worker_function('your-worker-name');
+   ```
+
+   Run this in the SQL Editor in your Supabase Dashboard.
+
+</Steps>
+
+That's it! The cron automatically keeps your worker running. See [Worker Management](/deploy/worker-management/) for details on how this works.

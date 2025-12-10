@@ -132,9 +132,13 @@ ControlPlane.serve(flows);
    )
    ```
 
-2. Recompile: `npx pgflow@latest compile greetUser`
-3. Apply migration: `npx supabase migrations up`
-4. Restart the worker and trigger a new run
+2. Save the file - Edge runtime automatically restarts the function
+3. pgflow cron triggers the worker, which detects the new shape and recompiles
+4. Trigger a new run to test your changes
+
+<Aside type="caution">
+Recompiling **deletes the existing flow and all its run data**. See [Compilation](/concepts/compilation/) for details.
+</Aside>
 
 :::note[Key Concepts]
 - **input.run**: Contains the original flow input, accessible in every step

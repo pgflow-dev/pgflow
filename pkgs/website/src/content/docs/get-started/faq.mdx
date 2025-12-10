@@ -48,7 +48,7 @@ In this mode, Edge Worker processes tasks for a specific workflow, handling step
 **Short Answer:** It depends on your workload
 
 Edge Worker consumes:
-- **Invocations:** One invocation to start, then processes messages continuously until CPU/clock limits terminate the function. Automatically self-respawns (and can be additionally respawned by [pg_cron safety net](/deploy/supabase/keep-workers-running/) if configured).
+- **Invocations:** One invocation to start, then processes messages continuously until CPU/clock limits terminate the function. pgflow automatically keeps workers running via [Worker Management](/deploy/worker-management/).
 - **Egress:** Message data transferred during processing. Varies based on message size and count.
 
 This is more efficient than invoking Edge Functions per-message or per-batch via pg_cron, which would require one invocation per batch.

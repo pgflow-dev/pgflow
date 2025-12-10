@@ -16,10 +16,6 @@ pgflow is in **public beta** and being used in production by early adopters. Cor
   Core operations are optimized with batching, proper indexing, and declarative SQL. However, **large-scale workloads** may reveal additional optimization opportunities. Start with your expected workload and scale as needed.
 </Card>
 
-<Card title="Worker Management" icon="setting">
-  Edge Functions have platform execution time limits. For production reliability, set up a **pg_cron job** to automatically restart workers when needed. See [deployment guide](/deploy/supabase/keep-workers-running/) for the simple 2-minute setup.
-</Card>
-
 <Card title="Fair Processing" icon="warning">
   Fair processing across flows is not currently implemented. A flow with many tasks (especially map steps processing large arrays) can fill the queue ahead of other flows. This is more noticeable with the introduction of map steps in 0.7.0. For multi-tenant or multi-flow scenarios where fairness is important, join [Discord](https://pgflow.dev/discord/) to discuss approaches and workarounds.
 </Card>

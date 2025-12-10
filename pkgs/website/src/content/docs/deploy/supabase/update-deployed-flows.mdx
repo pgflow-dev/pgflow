@@ -34,21 +34,11 @@ If you haven't deployed to production yet, see [Deploy Your First Flow](/deploy/
    npx supabase functions deploy your-worker-name
    ```
 
-3. **Start new worker**
-   ```bash frame="none"
-   curl "https://your-project.supabase.co/functions/v1/your-worker-name" \
-     -H "Authorization: Bearer YOUR_ANON_KEY"
-   ```
+3. **Wait for new worker to start**
 
-4. **Keep workers up**
-   
-   [Set up the pg_cron safety net](/deploy/supabase/keep-workers-running/) for reliable production operation.
-   
-   <Aside type="danger" title="Don't Skip the Safety Net">
-   **Your workers will eventually stop working without a safety net.** This is especially critical for production deployments where workflow reliability matters.
+   The pgflow cron automatically starts the new worker within seconds.
 
-   The safety net takes 2 minutes to set up and prevents hours of debugging why workflows stopped running. [Configure it now →](/deploy/supabase/keep-workers-running/)
-   </Aside>
+   See [Worker Management](/deploy/worker-management/) for details.
 
 </Steps>
 
@@ -59,10 +49,6 @@ If you haven't deployed to production yet, see [Deploy Your First Flow](/deploy/
 Without deprecation, old workers run for up to 150s (free tier) or 400s (paid) after deployment, causing both versions to process tasks simultaneously.
 
 Deprecation fixes this: workers check their status every 5 seconds and immediately stop polling for new tasks when deprecated, while finishing current work.
-
-### Getting Your ANON Key
-
-Find your ANON key in [Supabase Dashboard](https://supabase.com/dashboard) → Settings → API → `anon` `public` key.
 
 ### Monitoring Workers
 
