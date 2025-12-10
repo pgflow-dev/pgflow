@@ -36,6 +36,7 @@ runs:
         cache: 'pnpm'
         cache-dependency-path: |
           **/pnpm-lock.yaml
+        registry-url: 'https://registry.npmjs.org'
 
     - name: Install dependencies
       shell: bash

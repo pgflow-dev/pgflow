@@ -2,10 +2,18 @@
   "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [["@pgflow/*", "pgflow"]],
+  "fixed": [
+    [
+      "@pgflow/core",
+      "@pgflow/dsl",
+      "@pgflow/client",
+      "@pgflow/edge-worker",
+      "pgflow"
+    ]
+  ],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@pgflow/demo", "@pgflow/website"]
+  "ignore": []
 }
