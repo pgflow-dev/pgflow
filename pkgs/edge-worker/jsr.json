@@ -21,6 +21,7 @@
       "src/**/*.ts"
     ],
     "exclude": [
+      "!src/_generated",
       "__tests__/**/*",
       "tests/",
       "supabase/",
