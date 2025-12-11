@@ -1,6 +1,6 @@
 import { assertEquals, assertMatch } from '@std/assert';
 import { Flow, compileFlow } from '@pgflow/dsl';
-import { createControlPlaneHandler } from '../../../src/control-plane/server.ts';
+import { createControlPlaneHandler, extractProjectId } from '../../../src/control-plane/server.ts';
 
 // Test flows covering different DSL features
 const FlowWithSingleStep = new Flow({ slug: 'flow_single_step' })
@@ -228,4 +228,121 @@ Deno.test('ControlPlane Handler - empty array creates handler with no flows', as
   assertEquals(response.status, 404);
   const data = await response.json();
   assertEquals(data.error, 'Flow Not Found');
+});
+
+// ============================================================
+// Migration endpoints - Auth tests
+// ============================================================
+
+Deno.test('ControlPlane Handler - GET /migrations/list returns 401 without auth', async () => {
+  const handler = createControlPlaneHandler([]);
+
+  const request = new Request('http://localhost/pgflow/migrations/list');
+  const response = await handler(request);
+
+  assertEquals(response.status, 401);
+  const data = await response.json();
+  assertEquals(data.error, 'Unauthorized');
+});
+
+Deno.test('ControlPlane Handler - POST /migrations/up returns 401 without auth', async () => {
+  const handler = createControlPlaneHandler([]);
+
+  const request = new Request('http://localhost/pgflow/migrations/up', {
+    method: 'POST',
+  });
+  const response = await handler(request);
+
+  assertEquals(response.status, 401);
+  const data = await response.json();
+  assertEquals(data.error, 'Unauthorized');
+});
+
+Deno.test('ControlPlane Handler - GET /migrations/list returns 401 with invalid auth', async () => {
+  const handler = createControlPlaneHandler([]);
+
+  const request = new Request('http://localhost/pgflow/migrations/list', {
+    headers: { Authorization: 'Bearer invalid-token' },
+  });
+  const response = await handler(request);
+
+  assertEquals(response.status, 401);
+  const data = await response.json();
+  assertEquals(data.error, 'Unauthorized');
+});
+
+Deno.test('ControlPlane Handler - POST /migrations/up returns 401 with invalid auth', async () => {
+  const handler = createControlPlaneHandler([]);
+
+  const request = new Request('http://localhost/pgflow/migrations/up', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer invalid-token' },
+  });
+  const response = await handler(request);
+
+  assertEquals(response.status, 401);
+  const data = await response.json();
+  assertEquals(data.error, 'Unauthorized');
+});
+
+// ============================================================
+// Secrets endpoint - Auth tests
+// ============================================================
+
+Deno.test('ControlPlane Handler - POST /secrets/configure returns 401 without auth', async () => {
+  const handler = createControlPlaneHandler([]);
+
+  const request = new Request('http://localhost/pgflow/secrets/configure', {
+    method: 'POST',
+  });
+  const response = await handler(request);
+
+  assertEquals(response.status, 401);
+  const data = await response.json();
+  assertEquals(data.error, 'Unauthorized');
+});
+
+Deno.test('ControlPlane Handler - POST /secrets/configure returns 401 with invalid auth', async () => {
+  const handler = createControlPlaneHandler([]);
+
+  const request = new Request('http://localhost/pgflow/secrets/configure', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer invalid-token' },
+  });
+  const response = await handler(request);
+
+  assertEquals(response.status, 401);
+  const data = await response.json();
+  assertEquals(data.error, 'Unauthorized');
+});
+
+// ============================================================
+// extractProjectId - URL parsing tests
+// ============================================================
+
+Deno.test('extractProjectId - extracts project ID from .supabase.co URL', () => {
+  assertEquals(extractProjectId('https://abc123.supabase.co'), 'abc123');
+});
+
+Deno.test('extractProjectId - extracts project ID from .supabase.green URL', () => {
+  assertEquals(extractProjectId('https://xyz789.supabase.green'), 'xyz789');
+});
+
+Deno.test('extractProjectId - handles complex project IDs', () => {
+  assertEquals(
+    extractProjectId('https://my-project-123.supabase.co'),
+    'my-project-123'
+  );
+});
+
+Deno.test('extractProjectId - returns null for invalid URL', () => {
+  assertEquals(extractProjectId('https://example.com'), null);
+});
+
+Deno.test('extractProjectId - returns null for empty string', () => {
+  assertEquals(extractProjectId(''), null);
+});
+
+Deno.test('extractProjectId - returns null for non-https URL', () => {
+  assertEquals(extractProjectId('http://abc123.supabase.co'), null);
 });

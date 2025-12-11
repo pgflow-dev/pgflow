@@ -42,3 +42,14 @@ export const integrationConfig = {
     return 'postgresql://postgres:postgres@127.0.0.1:5432/postgres';
   },
 };
+
+/**
+ * Clean database test configuration
+ * Uses Docker Compose database WITHOUT pgflow migrations (port 5433)
+ * For testing migration installer functionality
+ */
+export const cleanDbConfig = {
+  get dbUrl() {
+    return 'postgresql://postgres:postgres@127.0.0.1:5433/postgres';
+  },
+};
