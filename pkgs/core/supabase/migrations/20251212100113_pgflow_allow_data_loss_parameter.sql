@@ -1,16 +1,8 @@
--- Ensure a flow is compiled in the database
--- Auto-detects environment via is_local(): local -> auto-recompile, production -> fail on mismatch
--- Returns: { status: 'compiled' | 'verified' | 'recompiled' | 'mismatch', differences: text[] }
-create or replace function pgflow.ensure_flow_compiled(
-  flow_slug text,
-  shape jsonb,
-  allow_data_loss boolean default false
-)
-returns jsonb
-language plpgsql
-volatile
-set search_path to ''
-as $$
+-- Drop old 2-parameter version before creating new 3-parameter version
+DROP FUNCTION IF EXISTS "pgflow"."ensure_flow_compiled" (text, jsonb);
+
+-- Create "ensure_flow_compiled" function with allow_data_loss parameter
+CREATE FUNCTION "pgflow"."ensure_flow_compiled" ("flow_slug" text, "shape" jsonb, "allow_data_loss" boolean DEFAULT false) RETURNS jsonb LANGUAGE plpgsql SET "search_path" = '' AS $$
 DECLARE
   v_lock_key int;
   v_flow_exists boolean;

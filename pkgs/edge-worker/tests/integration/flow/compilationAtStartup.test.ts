@@ -320,10 +320,10 @@ Deno.test(
   })
 );
 
-// Tests for ensureCompiledOnStartup config option
+// Tests for compilation config option
 
 Deno.test(
-  'skips compilation when ensureCompiledOnStartup is false',
+  'skips compilation when compilation: false',
   withPgNoTransaction(async (sql) => {
     await sql`select pgflow_tests.reset_db();`;
 
@@ -333,12 +333,12 @@ Deno.test(
     `;
     assertEquals(flowBefore, undefined, 'Flow should not exist before worker startup');
 
-    // Create worker with ensureCompiledOnStartup: false
+    // Create worker with compilation: false
     const worker = createFlowWorker(
       TestCompilationFlow,
       {
         sql,
-        ensureCompiledOnStartup: false,  // SKIP compilation
+        compilation: false,  // SKIP compilation
         maxConcurrent: 1,
         batchSize: 10,
         maxPollSeconds: 1,
@@ -367,7 +367,7 @@ Deno.test(
 );
 
 Deno.test(
-  'compiles flow when ensureCompiledOnStartup is explicitly true',
+  'compiles flow when compilation: {} (explicit empty object)',
   withPgNoTransaction(async (sql) => {
     await sql`select pgflow_tests.reset_db();`;
 
@@ -377,12 +377,12 @@ Deno.test(
     `;
     assertEquals(flowBefore, undefined, 'Flow should not exist before worker startup');
 
-    // Create worker with ensureCompiledOnStartup: true (explicit)
+    // Create worker with compilation: {} (explicit)
     const worker = createFlowWorker(
       TestCompilationFlow,
       {
         sql,
-        ensureCompiledOnStartup: true,  // EXPLICIT true
+        compilation: {},  // EXPLICIT empty object = enable compilation
         maxConcurrent: 1,
         batchSize: 10,
         maxPollSeconds: 1,
@@ -403,7 +403,7 @@ Deno.test(
       const [flowAfter] = await sql`
         SELECT * FROM pgflow.flows WHERE flow_slug = 'test_compilation_flow'
       `;
-      assertEquals(flowAfter?.flow_slug, 'test_compilation_flow', 'Flow should be created when ensureCompiledOnStartup is true');
+      assertEquals(flowAfter?.flow_slug, 'test_compilation_flow', 'Flow should be created when compilation: {}');
     } finally {
       await worker.stop();
     }
@@ -411,7 +411,7 @@ Deno.test(
 );
 
 Deno.test(
-  'worker still registers and polls when ensureCompiledOnStartup is false',
+  'worker still registers and polls when compilation: false',
   withPgNoTransaction(async (sql) => {
     await sql`select pgflow_tests.reset_db();`;
 
@@ -421,12 +421,12 @@ Deno.test(
 
     const workerId = crypto.randomUUID();
 
-    // Create worker with ensureCompiledOnStartup: false
+    // Create worker with compilation: false
     const worker = createFlowWorker(
       TestCompilationFlow,
       {
         sql,
-        ensureCompiledOnStartup: false,  // Skip compilation check
+        compilation: false,  // Skip compilation check
         maxConcurrent: 1,
         batchSize: 10,
         maxPollSeconds: 1,
@@ -451,6 +451,122 @@ Deno.test(
       assertEquals(workers[0].queue_name, 'test_compilation_flow', 'Worker should be registered for the correct queue');
     } finally {
       await worker.stop();
+    }
+  })
+);
+
+Deno.test(
+  'recompiles flow with allowDataLoss: true even in production mode',
+  withPgNoTransaction(async (sql) => {
+    await sql`select pgflow_tests.reset_db();`;
+
+    // Pre-create flow with DIFFERENT structure
+    await sql`SELECT pgflow.create_flow('test_compilation_flow')`;
+    await sql`SELECT pgflow.add_step('test_compilation_flow', 'old_step')`;
+
+    // Override JWT secret to simulate production mode (is_local() returns false)
+    await sql`SET app.settings.jwt_secret = 'production-secret'`;
+
+    const platformAdapter = createPlatformAdapterWithLocalEnv(sql, false);
+
+    // Create worker with allowDataLoss: true
+    const worker = createFlowWorker(
+      TestCompilationFlow, // Has 'double' step, not 'old_step'
+      {
+        sql,
+        compilation: { allowDataLoss: true },  // Allow destructive recompile in production
+        maxConcurrent: 1,
+        batchSize: 10,
+        maxPollSeconds: 1,
+        pollIntervalMs: 200,
+      },
+      createLogger,
+      platformAdapter
+    );
+
+    try {
+      worker.startOnlyOnce({
+        edgeFunctionName: 'test_compilation',
+        workerId: crypto.randomUUID(),
+      });
+
+      // Give time for startup and recompilation
+      await delay(200);
+
+      // Verify flow was recompiled with new structure (NOT mismatch error)
+      const steps = await sql`
+        SELECT step_slug FROM pgflow.steps WHERE flow_slug = 'test_compilation_flow' ORDER BY step_slug
+      `;
+      assertEquals(steps.length, 1, 'Should have 1 step after recompilation with allowDataLoss');
+      assertEquals(steps[0].step_slug, 'double', 'Step should be "double" after recompilation');
+    } finally {
+      await worker.stop();
+    }
+  })
+);
+
+Deno.test(
+  'throws FlowShapeMismatchError with allowDataLoss: false in production mode',
+  withPgNoTransaction(async (sql) => {
+    await sql`select pgflow_tests.reset_db();`;
+
+    // Pre-create flow with DIFFERENT structure than what worker expects
+    await sql`SELECT pgflow.create_flow('test_compilation_flow')`;
+    await sql`SELECT pgflow.add_step('test_compilation_flow', 'double')`;
+    await sql`SELECT pgflow.add_step('test_compilation_flow', 'different_step', deps_slugs => ARRAY['double']::text[])`;
+
+    // Override JWT secret to simulate production mode (is_local() returns false)
+    await sql`SET app.settings.jwt_secret = 'production-secret'`;
+
+    const platformAdapter = createPlatformAdapterWithLocalEnv(sql, false);
+
+    const worker = createFlowWorker(
+      TestCompilationFlow, // Has only 'double' step
+      {
+        sql,
+        compilation: { allowDataLoss: false },  // Explicit false
+        maxConcurrent: 1,
+        batchSize: 10,
+        maxPollSeconds: 1,
+        pollIntervalMs: 200,
+      },
+      createLogger,
+      platformAdapter
+    );
+
+    // Set up unhandled rejection handler to capture the error
+    const caughtErrors: Error[] = [];
+    const errorHandler = (event: PromiseRejectionEvent) => {
+      event.preventDefault();
+      caughtErrors.push(event.reason as Error);
+    };
+    globalThis.addEventListener('unhandledrejection', errorHandler);
+
+    try {
+      worker.startOnlyOnce({
+        edgeFunctionName: 'test_compilation',
+        workerId: crypto.randomUUID(),
+      });
+
+      // Give time for startup to fail
+      await delay(200);
+
+      // Verify error was thrown
+      assertEquals(caughtErrors.length > 0, true, 'Should have caught an error');
+      const caughtError = caughtErrors[0];
+      assertEquals(caughtError.name, 'FlowShapeMismatchError', 'Error should be FlowShapeMismatchError');
+      assertEquals(
+        caughtError.message.includes('shape mismatch'),
+        true,
+        'Error message should mention mismatch'
+      );
+    } finally {
+      globalThis.removeEventListener('unhandledrejection', errorHandler);
+      try {
+        await worker.stop();
+      } catch {
+        // Ignore stop errors since worker may have failed to start
+      }
     }
   })
 );

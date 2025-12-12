@@ -6,9 +6,11 @@ import type { AnyFlow } from '@pgflow/dsl';
 import { extractFlowShape } from '@pgflow/dsl';
 import { FlowShapeMismatchError } from './errors.js';
 
+import type { CompilationConfig } from '../core/workerConfigTypes.js';
+
 export interface FlowLifecycleConfig {
   heartbeatInterval?: number;
-  ensureCompiledOnStartup?: boolean;
+  compilation?: false | CompilationConfig;
 }
 
 /**
@@ -30,7 +32,7 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
   private _edgeFunctionName?: string;
   private heartbeatInterval: number;
   private lastHeartbeat = 0;
-  private ensureCompiledOnStartup: boolean;
+  private compilation: false | CompilationConfig;
 
   constructor(queries: Queries, flow: TFlow, logger: Logger, config?: FlowLifecycleConfig) {
     this.queries = queries;
@@ -38,7 +40,8 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
     this.logger = logger;
     this.workerState = new WorkerState(logger);
     this.heartbeatInterval = config?.heartbeatInterval ?? 5000;
-    this.ensureCompiledOnStartup = config?.ensureCompiledOnStartup ?? true;
+    // Default to {} (enable compilation with default settings) if not specified
+    this.compilation = config?.compilation ?? {};
   }
 
   async acknowledgeStart(workerBootstrap: WorkerBootstrap): Promise<void> {
@@ -53,10 +56,11 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
 
     // Compile/verify flow as part of Starting (before registering worker)
     let compilationStatus: CompilationStatus = 'verified';
-    if (this.ensureCompiledOnStartup) {
-      compilationStatus = await this.ensureFlowCompiled();
+    if (this.compilation !== false) {
+      const allowDataLoss = this.compilation.allowDataLoss ?? false;
+      compilationStatus = await this.ensureFlowCompiled(allowDataLoss);
     } else {
-      this.logger.info(`Skipping compilation check for flow '${this.flow.slug}' (ensureCompiledOnStartup=false)`);
+      this.logger.info(`Skipping compilation check for flow '${this.flow.slug}' (compilation: false)`);
     }
 
     // Log startup banner with compilation status
@@ -71,12 +75,13 @@ export class FlowWorkerLifecycle<TFlow extends AnyFlow> implements ILifecycle {
     this.workerState.transitionTo(States.Running);
   }
 
-  private async ensureFlowCompiled(): Promise<CompilationStatus> {
+  private async ensureFlowCompiled(allowDataLoss: boolean): Promise<CompilationStatus> {
     const shape = extractFlowShape(this.flow);
 
     const result = await this.queries.ensureFlowCompiled(
       this.flow.slug,
-      shape
+      shape,
+      allowDataLoss
     );
 
     if (result.status === 'mismatch') {

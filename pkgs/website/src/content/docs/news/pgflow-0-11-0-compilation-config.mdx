@@ -1,0 +1,121 @@
+---
+draft: false
+title: 'pgflow 0.11.0: Compilation Configuration Overhaul'
+description: 'New compilation config with allowDataLoss option for rapid iteration platforms like Lovable'
+date: 2025-12-12
+authors:
+  - jumski
+tags:
+  - release
+  - compilation
+  - configuration
+  - breaking-change
+featured: true
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+pgflow 0.11.0 introduces a redesigned compilation configuration system. The new `compilation` option provides clearer semantics and adds support for rapid iteration platforms like Lovable through the `allowDataLoss` flag.
+
+## Highlights
+
+- **New `compilation` config** - Grouped compilation options with clearer semantics
+- **`allowDataLoss` option** - Enable destructive recompilation in production for rapid iteration
+- **Breaking change** - `ensureCompiledOnStartup` removed in favor of `compilation`
+
+## What's New: The `compilation` Config
+
+The compilation behavior is now controlled by a single `compilation` option:
+
+```typescript
+// Default: auto-detect environment
+EdgeWorker.start(MyFlow);
+
+// Skip compilation (flows pre-compiled via CLI)
+EdgeWorker.start(MyFlow, { compilation: false });
+
+// Allow destructive recompile in production
+EdgeWorker.start(MyFlow, { compilation: { allowDataLoss: true } });
+```
+
+### When to Use Each Option
+
+| Option | Use Case |
+|--------|----------|
+| (not set) | Standard development and production - auto-detects environment |
+| `compilation: false` | CI/CD pipelines with pre-compiled flows |
+| `compilation: { allowDataLoss: true }` | Rapid iteration platforms (Lovable) |
+
+## The `allowDataLoss` Option
+
+The new `allowDataLoss` flag enables local-development behavior in production environments. When a flow shape mismatch is detected:
+
+1. **Deletes the existing flow** and all its run data
+2. **Compiles the new flow** from the TypeScript definition
+3. **Worker continues** with the new schema
+
+<Aside type="danger" title="Data Loss Warning">
+Setting `allowDataLoss: true` will **permanently delete all flow data** (runs, tasks, execution history) when the flow shape changes. This is intentional for rapid iteration but means you lose all previous runs.
+</Aside>
+
+### Target Use Case: Lovable and Similar Platforms
+
+The `allowDataLoss` option was designed for platforms like [Lovable](https://lovable.dev) where:
+
+- Flow definitions change frequently during development
+- Execution history doesn't need to persist between iterations
+- Speed of iteration matters more than data durability
+- Users expect "just works" behavior without manual intervention
+
+## Breaking Changes
+
+### `ensureCompiledOnStartup` Removed
+
+The `ensureCompiledOnStartup` option has been replaced by the new `compilation` config.
+
+**Before (0.10.x):**
+```typescript
+// Skip compilation
+EdgeWorker.start(MyFlow, { ensureCompiledOnStartup: false });
+
+// Enable compilation (default)
+EdgeWorker.start(MyFlow, { ensureCompiledOnStartup: true });
+```
+
+**After (0.11.0):**
+```typescript
+// Skip compilation
+EdgeWorker.start(MyFlow, { compilation: false });
+
+// Enable compilation (default) - just don't set the option
+EdgeWorker.start(MyFlow);
+```
+
+### Migration Guide
+
+If you were using `ensureCompiledOnStartup`:
+
+| Old Config | New Config |
+|-----------|------------|
+| `ensureCompiledOnStartup: true` | Remove (or use `compilation: {}`) |
+| `ensureCompiledOnStartup: false` | `compilation: false` |
+
+## Upgrade Now
+
+Follow the standard [Update pgflow](/deploy/update-pgflow/) guide to update packages and apply migrations.
+
+### Quick Migration
+
+1. Update your packages:
+   ```bash frame="none"
+   npx pgflow@latest install
+   ```
+
+2. Find and replace in your worker files:
+   - `ensureCompiledOnStartup: false` → `compilation: false`
+   - `ensureCompiledOnStartup: true` → remove the option entirely
+
+3. Apply database migrations:
+   ```bash frame="none"
+   supabase db push
+   ```
