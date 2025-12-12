@@ -141,16 +141,30 @@ export type QueueWorkerConfig = {
 export type ResolvedQueueWorkerConfig = Required<Omit<QueueWorkerConfig, 'retryDelay' | 'retryLimit'>>;
 
 /**
+ * Compilation configuration for flow workers.
+ */
+export interface CompilationConfig {
+  /**
+   * Allow destructive recompilation on shape mismatch.
+   * When true, ALL flow data (runs, tasks, history) will be deleted
+   * if the flow shape changes. Use only during iteration phases (e.g., Lovable).
+   * When false (default), recompilation only happens in local environment.
+   * @default false
+   */
+  allowDataLoss?: boolean;
+}
+
+/**
  * Configuration for the flow worker with two-phase polling
  */
 export type FlowWorkerConfig = {
   /**
-   * Whether to verify/compile flow at worker startup.
-   * When true (default), worker calls pgflow.ensure_flow_compiled() before polling.
-   * Set to false to skip compilation check (useful if flows are pre-compiled via CLI).
-   * @default true
+   * Compilation behavior at worker startup.
+   * - undefined or {}: Auto-detect (local=recompile, prod=fail on mismatch)
+   * - false: Skip compilation check (flows pre-compiled via CLI)
+   * - { allowDataLoss: true }: Allow destructive recompile anywhere
    */
-  ensureCompiledOnStartup?: boolean;
+  compilation?: false | CompilationConfig;
 
   /**
    * How many tasks are processed at the same time
@@ -209,7 +223,7 @@ export type FlowWorkerConfig = {
 /**
  * Resolved flow configuration with all defaults applied
  */
-export type ResolvedFlowWorkerConfig = Required<Omit<FlowWorkerConfig, 'connectionString' | 'env' | 'ensureCompiledOnStartup'>> & {
+export type ResolvedFlowWorkerConfig = Required<Omit<FlowWorkerConfig, 'connectionString' | 'env' | 'compilation'>> & {
   connectionString: string | undefined;
   env: Record<string, string | undefined>;
 };

@@ -26,6 +26,10 @@ EdgeWorker.start(MyFlow, {
   // connectionString: 'postgresql://...',
   // sql: customPostgresInstance,
 
+  // Compilation configuration (optional)
+  // compilation: false,            // Skip compilation check
+  // compilation: { allowDataLoss: true }, // Allow destructive recompile
+
   // Worker concurrency settings
   maxConcurrent: 10,      // Process up to 10 tasks simultaneously
   maxPgConnections: 4,    // Database connection pool size
@@ -112,6 +116,37 @@ Keep `maxPollSeconds` below the heartbeat interval (5 seconds) for flow workers 
 **Default:** `100`
 
 How frequently (in milliseconds) to check the database for new tasks during the poll cycle.
+
+## Compilation Configuration
+
+Controls startup compilation behavior. See [Startup Compilation](/concepts/startup-compilation/) for details on how compilation works.
+
+### `compilation`
+**Type:** `false | { allowDataLoss?: boolean }`
+**Default:** `{}` (auto-detect environment)
+
+Configures whether and how the worker compiles flows at startup.
+
+| Value | Behavior |
+|-------|----------|
+| `undefined` (default) | Compile new flows, verify existing flows, recompile on mismatch in local dev, fail on mismatch in production |
+| `false` | Skip compilation entirely (use when flows are pre-compiled via CLI) |
+| `{ allowDataLoss: true }` | Allow destructive recompilation even in production |
+
+```typescript
+// Default: auto-detect environment
+EdgeWorker.start(MyFlow);
+
+// Skip compilation (flows pre-compiled via CLI)
+EdgeWorker.start(MyFlow, { compilation: false });
+
+// Allow destructive recompile in production (for rapid iteration platforms)
+EdgeWorker.start(MyFlow, { compilation: { allowDataLoss: true } });
+```
+
+<Aside type="danger" title="Data Loss Warning">
+Setting `allowDataLoss: true` will **delete all flow data** (runs, tasks, history) when the flow shape changes. Only use this for rapid iteration platforms like Lovable where you're actively developing and don't need to preserve execution history.
+</Aside>
 
 ## Accessing Worker Configuration in Handlers
 

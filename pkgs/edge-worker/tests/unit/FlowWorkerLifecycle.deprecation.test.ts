@@ -47,7 +47,8 @@ class MockQueries extends Queries {
 
   override ensureFlowCompiled(
     _flowSlug: string,
-    _shape: FlowShape
+    _shape: FlowShape,
+    _allowDataLoss: boolean = false
   ): Promise<EnsureFlowCompiledResult> {
     return Promise.resolve({ status: 'verified', differences: [] });
   }

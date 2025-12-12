@@ -37,6 +37,10 @@ local: "Local\ndev?"
 local.shape: diamond
 local.class: warning
 
+allowLoss: "allowDataLoss?"
+allowLoss.shape: diamond
+allowLoss.class: warning
+
 recompile: "Delete old\n& compile new"
 recompile.class: step_completed
 
@@ -52,7 +56,9 @@ exists -> match: "yes"
 match -> verified: "yes"
 match -> local: "no"
 local -> recompile: "yes"
-local -> fail: "prod"
+local -> allowLoss: "prod"
+allowLoss -> recompile: "true"
+allowLoss -> fail: "false"
 compile -> polling
 verified -> polling
 recompile -> polling
@@ -82,7 +88,7 @@ The workflow is fully automatic:
 **Warning:** In local development, recompiling **deletes the existing flow and all its run data**. This is intentional for fast iteration but means you lose all previous runs.
 </Aside>
 
-To disable startup compilation, set `ensureFlowCompiled: false` in worker options.
+To disable startup compilation, set `compilation: false` in worker options.
 
 ## Production
 
@@ -90,6 +96,41 @@ In production, shape mismatches cause the worker to **refuse to start**:
 - This prevents accidental data loss from running flows
 - Worker fails with `FlowShapeMismatchError`
 - Resolution: create a versioned flow (e.g., `processOrderV2`) and deploy a new worker
+
+## Configuration Options
+
+The `compilation` option controls startup behavior:
+
+```typescript
+// Default: auto-detect environment
+EdgeWorker.start(MyFlow);
+
+// Skip compilation (flows pre-compiled via CLI)
+EdgeWorker.start(MyFlow, { compilation: false });
+
+// Allow destructive recompile in production
+EdgeWorker.start(MyFlow, { compilation: { allowDataLoss: true } });
+```
+
+### Skip Compilation
+
+Use `compilation: false` when flows are pre-compiled via CLI or HTTP API. The worker will start immediately without verifying flow shape.
+
+### Allow Data Loss
+
+The `allowDataLoss: true` option enables local-development behavior in production:
+- On shape mismatch, **deletes the existing flow and all its data**
+- Then compiles and creates the new flow version
+- Worker continues normally
+
+<Aside type="danger" title="When to Use allowDataLoss">
+Only use `allowDataLoss: true` on **rapid iteration platforms** like Lovable where:
+- You're actively developing and changing flow structure frequently
+- You don't need to preserve execution history
+- Speed of iteration matters more than data durability
+
+**Never use in production with real user data.**
+</Aside>
 
 ## What is "Flow Shape"?
 

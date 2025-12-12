@@ -91,7 +91,7 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
     flow,
     createLogger('FlowWorkerLifecycle'),
     {
-      ensureCompiledOnStartup: config.ensureCompiledOnStartup ?? true
+      compilation: config.compilation
     }
   );
 
