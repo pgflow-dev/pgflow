@@ -1,5 +1,12 @@
 # pgflow
 
+## 0.11.0
+
+### Patch Changes
+
+- Updated dependencies [0cb5500]
+  - @pgflow/core@0.11.0
+
 ## 0.10.0
 
 ### Patch Changes
