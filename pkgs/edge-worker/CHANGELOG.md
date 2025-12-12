@@ -1,5 +1,17 @@
 # @pgflow/edge-worker
 
+## 0.11.0
+
+### Minor Changes
+
+- 0cb5500: New compilation config with allowDataLoss option for rapid iteration platforms. Breaking: ensureCompiledOnStartup removed in favor of compilation option.
+
+### Patch Changes
+
+- Updated dependencies [0cb5500]
+  - @pgflow/core@0.11.0
+  - @pgflow/dsl@0.11.0
+
 ## 0.10.0
 
 ### Minor Changes
