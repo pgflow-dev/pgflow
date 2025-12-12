@@ -4,11 +4,14 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - 'pkgs/website/**'
-      - 'pkgs/example-flows/**'
-      - 'apps/demo/**'
-      - '**/*.md'
+    paths:
+      - '**'                        # Include all files
+      - '!pkgs/website/**'          # Exclude website
+      - '!pkgs/example-flows/**'    # Exclude example-flows
+      - '!apps/demo/**'             # Exclude demo
+      - '!**/*.md'                  # Exclude all markdown
+      - '.changeset/*.md'           # Re-include changeset files
+      - '!.changeset/README.md'     # Exclude changeset README
   workflow_dispatch:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
