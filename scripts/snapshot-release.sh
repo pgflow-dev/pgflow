@@ -326,10 +326,9 @@ NPM_SUCCESS=false
 JSR_SUCCESS=true  # Default true (only set false if JSR package exists and fails)
 JSR_PUBLISHED_VERSION=""  # Track JSR version if published
 
-# Publish to npm (token is read from NPM_TOKEN env var via .npmrc)
-# GITHUB_ACTIONS=true skips changeset's npm profile check which fails with automation tokens
+# Publish to npm (exclude edge-worker which goes to JSR only)
 echo -e "${BOLD}Publishing to npm...${NC}"
-if GITHUB_ACTIONS=true pnpm exec changeset publish --tag snapshot ; then
+if pnpm publish --recursive --tag snapshot --no-git-checks --filter='!./pkgs/edge-worker' ; then
   echo -e "${GREEN}✓ npm packages published${NC}"
   NPM_SUCCESS=true
 else
@@ -343,7 +342,6 @@ if [[ -f pkgs/edge-worker/jsr.json ]]; then
   echo ""
   echo -e "${BOLD}Publishing to JSR...${NC}"
   JSR_PUBLISH_CMD="pnpm jsr publish --allow-slow-types --allow-dirty"
-  # Pass token explicitly if set (pnpm jsr may not inherit JSR_TOKEN properly)
   if [[ -n "${JSR_TOKEN:-}" ]]; then
     JSR_PUBLISH_CMD="$JSR_PUBLISH_CMD --token $JSR_TOKEN"
   fi
