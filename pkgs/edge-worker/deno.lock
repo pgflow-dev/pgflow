@@ -3,7 +3,6 @@
   "specifiers": {
     "jsr:@deno-library/progress@*": "1.5.1",
     "jsr:@henrygd/queue@^1.0.7": "1.2.0",
-    "jsr:@std/assert@*": "0.224.0",
     "jsr:@std/assert@0.224": "0.224.0",
     "jsr:@std/async@0.224": "0.224.2",
     "jsr:@std/crypto@*": "1.0.5",
@@ -14,7 +13,7 @@
     "jsr:@std/io@0.225": "0.225.0",
     "jsr:@std/io@0.225.0": "0.225.0",
     "jsr:@std/testing@0.224": "0.224.0",
-    "npm:@supabase/supabase-js@^2.39.0": "2.84.0",
+    "npm:@supabase/supabase-js@^2.39.0": "2.86.0",
     "npm:postgres@3.4.5": "3.4.5"
   },
   "jsr": {
@@ -41,7 +40,7 @@
     "@std/crypto@0.224.0": {
       "integrity": "154ef3ff08ef535562ef1a718718c5b2c5fc3808f0f9100daad69e829bfcdf2d",
       "dependencies": [
-        "jsr:@std/assert@0.224"
+        "jsr:@std/assert"
       ]
     },
     "@std/crypto@1.0.5": {
@@ -65,31 +64,31 @@
     "@std/testing@0.224.0": {
       "integrity": "371b8a929aa7132240d5dd766a439be8f780ef5c176ab194e0bcab72370c761e",
       "dependencies": [
-        "jsr:@std/assert@0.224"
+        "jsr:@std/assert"
       ]
     }
   },
   "npm": {
-    "@supabase/auth-js@2.84.0": {
-      "integrity": "sha512-J6XKbqqg1HQPMfYkAT9BrC8anPpAiifl7qoVLsYhQq5B/dnu/lxab1pabnxtJEsvYG5rwI5HEVEGXMjoQ6Wz2Q==",
+    "@supabase/auth-js@2.86.0": {
+      "integrity": "sha512-3xPqMvBWC6Haqpr6hEWmSUqDq+6SA1BAEdbiaHdAZM9QjZ5uiQJ+6iD9pZOzOa6MVXZh4GmwjhC9ObIG0K1NcA==",
       "dependencies": [
         "tslib"
       ]
     },
-    "@supabase/functions-js@2.84.0": {
-      "integrity": "sha512-2oY5QBV4py/s64zMlhPEz+4RTdlwxzmfhM1k2xftD2v1DruRZKfoe7Yn9DCz1VondxX8evcvpc2udEIGzHI+VA==",
+    "@supabase/functions-js@2.86.0": {
+      "integrity": "sha512-AlOoVfeaq9XGlBFIyXTmb+y+CZzxNO4wWbfgRM6iPpNU5WCXKawtQYSnhivi3UVxS7GA0rWovY4d6cIAxZAojA==",
       "dependencies": [
         "tslib"
       ]
     },
-    "@supabase/postgrest-js@2.84.0": {
-      "integrity": "sha512-oplc/3jfJeVW4F0J8wqywHkjIZvOVHtqzF0RESijepDAv5Dn/LThlGW1ftysoP4+PXVIrnghAbzPHo88fNomPQ==",
+    "@supabase/postgrest-js@2.86.0": {
+      "integrity": "sha512-QVf+wIXILcZJ7IhWhWn+ozdf8B+oO0Ulizh2AAPxD/6nQL+x3r9lJ47a+fpc/jvAOGXMbkeW534Kw6jz7e8iIA==",
       "dependencies": [
         "tslib"
       ]
     },
-    "@supabase/realtime-js@2.84.0": {
-      "integrity": "sha512-ThqjxiCwWiZAroHnYPmnNl6tZk6jxGcG2a7Hp/3kcolPcMj89kWjUTA3cHmhdIWYsP84fHp8MAQjYWMLf7HEUg==",
+    "@supabase/realtime-js@2.86.0": {
+      "integrity": "sha512-dyS8bFoP29R/sj5zLi0AP3JfgG8ar1nuImcz5jxSx7UIW7fbFsXhUCVrSY2Ofo0+Ev6wiATiSdBOzBfWaiFyPA==",
       "dependencies": [
         "@types/phoenix",
         "@types/ws",
@@ -97,14 +96,15 @@
         "ws"
       ]
     },
-    "@supabase/storage-js@2.84.0": {
-      "integrity": "sha512-vXvAJ1euCuhryOhC6j60dG8ky+lk0V06ubNo+CbhuoUv+sl39PyY0lc+k+qpQhTk/VcI6SiM0OECLN83+nyJ5A==",
+    "@supabase/storage-js@2.86.0": {
+      "integrity": "sha512-PM47jX/Mfobdtx7NNpoj9EvlrkapAVTQBZgGGslEXD6NS70EcGjhgRPBItwHdxZPM5GwqQ0cGMN06uhjeY2mHQ==",
       "dependencies": [
+        "iceberg-js",
         "tslib"
       ]
     },
-    "@supabase/supabase-js@2.84.0": {
-      "integrity": "sha512-byMqYBvb91sx2jcZsdp0qLpmd4Dioe80e4OU/UexXftCkpTcgrkoENXHf5dO8FCSai8SgNeq16BKg10QiDI6xg==",
+    "@supabase/supabase-js@2.86.0": {
+      "integrity": "sha512-BaC9sv5+HGNy1ulZwY8/Ev7EjfYYmWD4fOMw9bDBqTawEj6JHAiOHeTwXLRzVaeSay4p17xYLN2NSCoGgXMQnw==",
       "dependencies": [
         "@supabase/auth-js",
         "@supabase/functions-js",
@@ -127,6 +127,9 @@
       "dependencies": [
         "@types/node"
       ]
+    },
+    "iceberg-js@0.8.0": {
+      "integrity": "sha512-kmgmea2nguZEvRqW79gDqNXyxA3OS5WIgMVffrHpqXV4F/J4UmNIw2vstixioLTNSkd5rFB8G0s3Lwzogm6OFw=="
     },
     "postgres@3.4.5": {
       "integrity": "sha512-cDWgoah1Gez9rN3H4165peY9qfpEo+SA61oQv65O3cRUE1pOEoJWwddwcqKE8XZYjbblOJlYDlLV4h67HrEVDg=="

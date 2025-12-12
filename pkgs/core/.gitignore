@@ -1,1 +1,3 @@
 atlas/schema.sql
+src/migrations/_generated/
+src/migrations/index.ts
