@@ -1,0 +1,444 @@
+---
+title: Automatic Embeddings
+description: Generate vector embeddings automatically on INSERT using database triggers and pgflow
+sidebar:
+  order: 2
+  badge:
+    text: Part 1
+    variant: tip
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Vector embeddings power semantic search, recommendations, and RAG applications. This tutorial shows how to generate embeddings automatically whenever a document is inserted.
+
+## The Embedding Pipeline Problem
+
+Building an embedding pipeline typically requires:
+
+1. Detecting content changes in your database
+2. Chunking content into appropriate segments
+3. Generating embeddings via an external API (like OpenAI)
+4. Storing embeddings alongside the content
+5. Handling failures, retries, and rate limits
+
+This pipeline is easy to describe but complex to implement. Common failure modes include:
+
+- **Drift** - Content updates without re-embedding degrade search quality
+- **Latency** - Synchronous embedding calls slow down writes
+- **Fragility** - Failed API calls leave data in inconsistent states
+
+## The pgflow Solution
+
+pgflow moves embedding coordination into Postgres. A database trigger starts the flow, which handles chunking, parallel embedding generation, retries, and storage - all with a simple flow definition.
+
+```d2
+...@../../../../assets/pgflow-theme.d2
+
+direction: right
+
+trigger: "INSERT Trigger" {
+  shape: rectangle
+}
+split: "Split Chunks" {
+  shape: rectangle
+}
+embed: "Generate Embeddings\n(parallel)" {
+  shape: rectangle
+}
+save: "Save to DB" {
+  shape: rectangle
+}
+
+trigger -> split -> embed -> save
+```
+
+This approach addresses two of the three failure modes from manual pipelines:
+
+- **No latency** - The flow runs asynchronously; your INSERT returns immediately
+- **No fragility** - Each chunk gets independent retries with exponential backoff
+
+The `.map()` step is key - it processes chunks in parallel, so a 10-chunk document generates 10 concurrent embedding requests. If one fails, only that chunk retries while others continue.
+
+<Aside type="note" title="What About Updates?">
+This tutorial covers INSERT only. Content updates can still cause drift until you add an UPDATE trigger - this will be covered in Part 3 (Keeping Embeddings Fresh).
+</Aside>
+
+<Aside type="tip" title="Get the Code">
+Clone the complete working example: [github.com/pgflow-dev/automatic-embeddings](https://github.com/pgflow-dev/automatic-embeddings)
+</Aside>
+
+## Quick Start
+
+- **Setup time:** ~10 minutes
+- **Lines of flow code:** ~20
+- **What you get:** Embeddings generated automatically on every INSERT
+
+## Prerequisites
+
+- [pgflow installed](/get-started/installation/) in your Supabase project
+- [OpenAI API key](https://platform.openai.com/api-keys)
+
+## Setup
+
+Create the environment file for your OpenAI API key at `supabase/functions/.env`:
+
+```bash
+OPENAI_API_KEY=sk-your-key-here
+```
+
+Enable pgvector extension in a migration:
+
+```sql
+create extension if not exists vector with schema extensions;
+```
+
+## Database Schema
+
+```sql
+create table documents (
+  id bigserial primary key,
+  content text not null,
+  created_at timestamptz default now()
+);
+
+create table document_chunks (
+  id bigserial primary key,
+  document_id bigint references documents(id) on delete cascade,
+  content text not null,
+  embedding extensions.vector(1536)
+);
+
+-- Index for fast similarity search
+create index on document_chunks using hnsw (embedding extensions.vector_cosine_ops);
+```
+
+## The Strategy
+
+The embedding pipeline follows a three-phase pattern:
+
+1. **Chunk** - Break the document into chunks (sentences, paragraphs, or semantic units)
+2. **Embed** - Generate embeddings for each chunk in parallel
+3. **Save** - Store chunks with their embeddings in a single batch
+
+Each phase is a step in the flow, with pgflow handling the coordination. The `.array()` step splits content and prepares it for parallel processing, `.map()` generates embeddings concurrently, and the final step combines results.
+
+Let's implement each phase as a reusable task function.
+
+## Task Functions
+
+**Split document into chunks:**
+
+```typescript
+// supabase/tasks/splitChunks.ts
+export async function splitChunks(content: string) {
+  // Split on sentence boundaries while preserving context
+  const chunks = content
+    .split(/(?<=[.!?])\s+/)
+    .filter((chunk) => chunk.trim().length > 0)
+    .map((chunk) => chunk.trim());
+
+  return chunks;
+}
+```
+
+<Aside type="tip" title="Chunking Strategies">
+This example uses simple sentence splitting. For production, consider:
+- Recursive text splitting with overlap
+- Semantic chunking based on topics
+- Fixed-size chunks with overlap (e.g., 512 tokens with 50 token overlap)
+
+Libraries like `langchain` provide sophisticated chunking utilities.
+</Aside>
+
+**Generate embedding for a chunk:**
+
+```typescript
+// supabase/tasks/generateEmbedding.ts
+import { openai } from 'npm:@ai-sdk/openai';
+import { embed } from 'npm:ai';
+
+export async function generateEmbedding(chunk: string) {
+  const { embedding } = await embed({
+    model: openai.embedding('text-embedding-3-small'),
+    value: chunk,
+  });
+
+  return embedding;
+}
+```
+
+**Save chunks with embeddings:**
+
+```typescript
+// supabase/tasks/saveChunks.ts
+import type { SupabaseClient } from 'jsr:@supabase/supabase-js';
+
+export async function saveChunks(
+  input: {
+    documentId: number;
+    chunks: string[];
+    embeddings: number[][];
+  },
+  supabase: SupabaseClient
+) {
+  const rows = input.chunks.map((content, i) => ({
+    document_id: input.documentId,
+    content,
+    embedding: input.embeddings[i],
+  }));
+
+  const { data } = await supabase
+    .from('document_chunks')
+    .insert(rows)
+    .select()
+    .throwOnError();
+
+  return data;
+}
+```
+
+<Aside type="tip" title="Using Context Resources">
+By importing from `@pgflow/dsl/supabase`, step handlers receive a [context object](/reference/context/) with pre-configured `supabase` and `sql` clients. This eliminates boilerplate for credentials and client setup.
+</Aside>
+
+## Flow Definition
+
+Now we wire the task functions together into a flow. The key insight is that `.map()` creates parallel tasks - one per chunk - with independent retries.
+
+```typescript
+// supabase/flows/generate-embeddings.ts
+import { Flow } from 'npm:@pgflow/dsl/supabase';
+import { splitChunks } from '../tasks/splitChunks.ts';
+import { generateEmbedding } from '../tasks/generateEmbedding.ts';
+import { saveChunks } from '../tasks/saveChunks.ts';
+
+type Input = {
+  documentId: number;
+  content: string;
+};
+
+export const GenerateEmbeddings = new Flow<Input>({ slug: 'generateEmbeddings' })
+  .array({ slug: 'chunks' }, (input) => splitChunks(input.run.content))
+  .map({ slug: 'embeddings', array: 'chunks' }, (chunk) =>
+    generateEmbedding(chunk)
+  )
+  .step({ slug: 'save', dependsOn: ['chunks', 'embeddings'] }, (input, context) =>
+    saveChunks({
+      documentId: input.run.documentId,
+      chunks: input.chunks,
+      embeddings: input.embeddings,
+    }, context.supabase)
+  );
+```
+
+**How the flow works:**
+
+1. **chunks** - The `.array()` step splits the document into chunks and prepares them for parallel processing. Each chunk becomes an individual item for the next step.
+
+2. **embeddings** - The `.map()` step creates one task per chunk. A 10-chunk document spawns 10 parallel embedding tasks. If OpenAI rate-limits one request, only that task retries - the others continue unaffected.
+
+3. **save** - Waits for both `chunks` and `embeddings` to complete. It zips them together by index and batch-inserts to the database.
+
+This parallel-with-independent-retries pattern is ideal for embedding pipelines where API calls are the bottleneck and failures are common.
+
+## Database Trigger
+
+```sql
+create or replace function trigger_embedding_flow()
+returns trigger as $$
+begin
+  perform pgflow.start_flow(
+    flow_slug => 'generateEmbeddings',
+    input => jsonb_build_object(
+      'documentId', new_documents.id,
+      'content', new_documents.content
+    )
+  )
+  from new_documents;
+
+  return null;
+end;
+$$ language plpgsql;
+
+create trigger documents_embedding_trigger
+  after insert on documents
+  referencing new table as new_documents
+  for each statement
+  execute function trigger_embedding_flow();
+```
+
+<Aside type="tip" title="Why FOR EACH STATEMENT?">
+This pattern is more efficient than `FOR EACH ROW` because the trigger function runs once per INSERT statement, not once per row. This reduces overhead for bulk inserts.
+</Aside>
+
+## Start the Worker
+
+Export the flow from `supabase/flows/index.ts`:
+
+```typescript
+// supabase/flows/index.ts
+export { GenerateEmbeddings } from './generate-embeddings.ts';
+```
+
+Create a worker at `supabase/functions/generate-embeddings-worker/index.ts`:
+
+```typescript
+// supabase/functions/generate-embeddings-worker/index.ts
+import { EdgeWorker } from '@pgflow/edge-worker';
+import { GenerateEmbeddings } from '../../flows/generate-embeddings.ts';
+
+EdgeWorker.start(GenerateEmbeddings);
+```
+
+Start the edge functions:
+
+```bash frame="none"
+npx supabase functions serve --no-verify-jwt
+```
+
+In another terminal, start the worker to trigger auto-compilation:
+
+```bash frame="none"
+curl http://localhost:54321/functions/v1/generate-embeddings-worker
+```
+
+<Aside type="tip" title="Auto-Compilation">
+The flow compiles automatically when the worker starts (after the curl request), not when edge functions start. The worker will show `Flows: generateEmbeddings (compiled)` when ready.
+</Aside>
+
+## Usage
+
+Insert a document - embeddings generate automatically:
+
+```sql
+insert into documents (content) values (
+  'PostgreSQL is a powerful database. It supports extensions like pgvector. Vector search enables semantic similarity queries.'
+);
+```
+
+Check the generated chunks:
+
+```sql
+select id, left(content, 50) as content_preview, vector_dims(embedding) as dims
+from document_chunks
+where document_id = 1;
+```
+
+## Semantic Search
+
+With embeddings generating automatically, you can now query them. Here's a function that finds chunks semantically similar to a query.
+
+```sql
+create or replace function search_documents(
+  query_embedding extensions.vector(1536),
+  match_threshold float default 0.7,
+  match_count int default 5
+)
+returns table (
+  chunk_id bigint,
+  document_id bigint,
+  content text,
+  similarity float
+)
+language sql stable
+as $$
+  select
+    dc.id as chunk_id,
+    dc.document_id,
+    dc.content,
+    1 - (dc.embedding <=> query_embedding) as similarity
+  from document_chunks dc
+  where 1 - (dc.embedding <=> query_embedding) > match_threshold
+  order by dc.embedding <=> query_embedding
+  limit match_count;
+$$;
+```
+
+Use it from your application:
+
+```typescript
+import { openai } from 'npm:@ai-sdk/openai';
+import { embed } from 'npm:ai';
+import { createClient } from 'jsr:@supabase/supabase-js';
+
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_ANON_KEY')!
+);
+
+async function searchDocuments(query: string) {
+  const { embedding } = await embed({
+    model: openai.embedding('text-embedding-3-small'),
+    value: query,
+  });
+
+  const { data } = await supabase.rpc('search_documents', {
+    query_embedding: embedding,
+    match_threshold: 0.7,
+    match_count: 5,
+  });
+
+  return data;
+}
+```
+
+## Benefits Over Manual Pipelines
+
+| Challenge | Manual Pipeline | pgflow |
+|-----------|-----------------|--------|
+| Sync | External queue + workers | Database trigger starts flow |
+| Retries | Custom retry logic | Built-in with configurable backoff |
+| Parallelism | Thread pools or async workers | `.map()` handles concurrently |
+| Observability | Custom logging | Query `pgflow.runs` and `pgflow.steps` |
+| Failures | Silent data inconsistency | Failed runs visible in database |
+
+The trigger starts the flow automatically, which handles chunking, parallel embedding generation with built-in retries, and saves results to the database - all coordinated through Postgres.
+
+## Use Cases
+
+This automatic embedding pattern applies to many scenarios:
+
+- **Knowledge bases** - Embed documentation, FAQs, or help articles as they're created
+- **E-commerce** - Generate product embeddings for semantic search ("shoes like these")
+- **Support tickets** - Find similar past tickets to suggest solutions
+- **Content moderation** - Detect duplicate or near-duplicate submissions
+- **User-generated content** - Enable semantic search over posts, comments, or reviews
+
+The trigger-based approach works anywhere you want embeddings generated automatically without application code changes.
+
+## Troubleshooting
+
+**Worker returns error on curl**
+- Ensure `supabase functions serve --no-verify-jwt` is running in another terminal
+
+**Embeddings not generating**
+- Check your `OPENAI_API_KEY` in `supabase/functions/.env`
+- Verify the flow compiled: look for `Flows: generateEmbeddings (compiled)` in worker output
+
+**Flow not found error**
+- Restart edge functions and curl the worker again to trigger recompilation
+
+**Check flow execution status:**
+
+```sql
+select run_id, status, remaining_steps
+from pgflow.runs
+where flow_slug = 'generateEmbeddings'
+order by started_at desc limit 5;
+```
+
+## What's Next
+
+This tutorial covered automatic embedding generation on INSERT. The series continues:
+
+- **Semantic Search** (coming soon) - Query the embeddings you just created
+- **Keeping Embeddings Fresh** (coming soon) - Handle document updates
+- **Advanced Retrieval** (coming soon) - HyDE, reranking, query transformation
+- **Conversational RAG** (coming soon) - Chat with history and context
+
+## Learn More
+
+- [Complete example repo](https://github.com/pgflow-dev/automatic-embeddings) - Clone and run in 10 minutes
+- [pgflow Documentation](https://pgflow.dev/) - Full reference and guides
+- [pgvector Documentation](https://github.com/pgvector/pgvector) - Vector extension for Postgres

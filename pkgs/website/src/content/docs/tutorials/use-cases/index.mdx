@@ -1,0 +1,29 @@
+---
+title: Use Cases
+description: Learn how to build common AI workflows with pgflow
+draft: true
+sidebar:
+  order: 2
+---
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+Practical examples showing how to build common AI workflows with pgflow. Each tutorial demonstrates a specific pattern with working code.
+
+<CardGrid>
+  <LinkCard
+    title="Structured Output"
+    description="Extract type-safe data from AI models using Zod schemas"
+    href="/tutorials/use-cases/structured-output/"
+  />
+  <LinkCard
+    title="RAG Pipeline"
+    description="Build query transformation, retrieval, and reranking pipeline"
+    href="/tutorials/use-cases/rag-pipeline/"
+  />
+  <LinkCard
+    title="Chatbot with RAG"
+    description="Create a chatbot with history and parallel RAG retrieval"
+    href="/tutorials/use-cases/chatbot/"
+  />
+</CardGrid>

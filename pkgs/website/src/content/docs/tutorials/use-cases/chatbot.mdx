@@ -1,0 +1,269 @@
+---
+title: Chatbot with RAG
+description: Build a chatbot with conversation history and parallel RAG retrieval
+draft: true
+sidebar:
+  order: 4
+---
+
+Build a chatbot that retrieves conversation history and performs RAG lookup in parallel, then generates a response enriched with context.
+
+## Setup
+
+Install dependencies:
+
+```bash
+pnpm add ai @ai-sdk/openai
+```
+
+Enable pgvector:
+
+```sql
+create extension if not exists vector;
+```
+
+## Database Schema
+
+```sql
+create table conversations (
+  id bigserial primary key,
+  created_at timestamptz default now()
+);
+
+create table messages (
+  id bigserial primary key,
+  conversation_id bigint references conversations(id) on delete cascade,
+  role text not null check (role in ('user', 'assistant')),
+  content text not null,
+  created_at timestamptz default now()
+);
+
+create table knowledge_base (
+  id bigserial primary key,
+  content text not null,
+  embedding vector(1536)
+);
+
+create index on knowledge_base using ivfflat (embedding vector_cosine_ops);
+```
+
+## Task Functions
+
+**Retrieve conversation history:**
+
+```typescript
+// supabase/functions/_tasks/getHistory.ts
+import { createClient } from 'jsr:@supabase/supabase-js';
+
+export default async function getHistory(conversationId: number) {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing Supabase credentials');
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  const { data } = await supabase
+    .from('messages')
+    .select('role, content')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: true })
+    .limit(10)
+    .throwOnError();
+
+  return data || [];
+}
+```
+
+**Retrieve relevant knowledge:**
+
+```typescript
+// supabase/functions/_tasks/retrieveKnowledge.ts
+import { createClient } from 'jsr:@supabase/supabase-js';
+import { openai } from '@ai-sdk/openai';
+import { embed } from 'ai';
+
+export default async function retrieveKnowledge(query: string) {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing Supabase credentials');
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  const { embedding } = await embed({
+    model: openai.textEmbeddingModel('text-embedding-3-small'),
+    value: query,
+  });
+
+  const { data } = await supabase.rpc('match_knowledge', {
+    query_embedding: embedding,
+    match_threshold: 0.7,
+    match_count: 5,
+  });
+
+  return data || [];
+}
+```
+
+Add the matching function:
+
+```sql
+create or replace function match_knowledge(
+  query_embedding vector(1536),
+  match_threshold float,
+  match_count int
+)
+returns table (content text, similarity float)
+language sql stable
+as $$
+  select
+    knowledge_base.content,
+    1 - (knowledge_base.embedding <=> query_embedding) as similarity
+  from knowledge_base
+  where 1 - (knowledge_base.embedding <=> query_embedding) > match_threshold
+  order by knowledge_base.embedding <=> query_embedding
+  limit match_count;
+$$;
+```
+
+**Generate response with context:**
+
+```typescript
+// supabase/functions/_tasks/generateResponse.ts
+import { openai } from '@ai-sdk/openai';
+import { generateText } from 'ai';
+
+export default async function generateResponse(input: {
+  message: string;
+  history: Array<{ role: string; content: string }>;
+  knowledge: Array<{ content: string }>;
+}) {
+  const knowledgeContext = input.knowledge.length > 0
+    ? `\n\nRelevant information:\n${input.knowledge.map(k => k.content).join('\n')}`
+    : '';
+
+  const { text } = await generateText({
+    model: openai('gpt-4o'),
+    messages: [
+      {
+        role: 'system',
+        content: `You are a helpful assistant. Use conversation history and provided knowledge to give accurate responses.${knowledgeContext}`,
+      },
+      ...input.history,
+      { role: 'user', content: input.message },
+    ],
+  });
+
+  return text;
+}
+```
+
+**Save assistant message:**
+
+```typescript
+// supabase/functions/_tasks/saveMessage.ts
+import { createClient } from 'jsr:@supabase/supabase-js';
+
+export default async function saveMessage(input: {
+  conversationId: number;
+  content: string;
+}) {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing Supabase credentials');
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  const { data } = await supabase
+    .from('messages')
+    .insert({
+      conversation_id: input.conversationId,
+      role: 'assistant',
+      content: input.content,
+    })
+    .select()
+    .single()
+    .throwOnError();
+
+  return data;
+}
+```
+
+## Flow Definition
+
+```typescript
+// supabase/functions/_flows/chatbot.ts
+import { Flow } from 'npm:@pgflow/dsl';
+import getHistory from '../_tasks/getHistory.ts';
+import retrieveKnowledge from '../_tasks/retrieveKnowledge.ts';
+import generateResponse from '../_tasks/generateResponse.ts';
+import saveMessage from '../_tasks/saveMessage.ts';
+
+type Input = {
+  conversationId: number;
+  message: string;
+};
+
+export default new Flow<Input>({ slug: 'chatbot' })
+  .step({ slug: 'history' }, ({ run }) =>
+    getHistory(run.conversationId)
+  )
+  .step({ slug: 'knowledge' }, ({ run }) =>
+    retrieveKnowledge(run.message)
+  )
+  .step(
+    { slug: 'response', dependsOn: ['history', 'knowledge'] },
+    ({ run, history, knowledge }) =>
+      generateResponse({
+        message: run.message,
+        history,
+        knowledge,
+      })
+  )
+  .step({ slug: 'save', dependsOn: ['response'] }, ({ run, response }) =>
+    saveMessage({
+      conversationId: run.conversationId,
+      content: response,
+    })
+  );
+```
+
+The `history` and `knowledge` steps run in parallel since neither depends on the other. Both results feed into `response`, which generates an AI reply enriched with conversation context and relevant knowledge.
+
+## Compile and Deploy
+
+```bash
+npx pgflow@latest compile supabase/functions/_flows/chatbot.ts
+npx supabase migrations up --local
+```
+
+## Usage
+
+```sql
+-- Create conversation
+insert into conversations default values returning id;
+-- Returns: id = 1
+
+-- Add user message
+insert into messages (conversation_id, role, content)
+values (1, 'user', 'What is PostgreSQL?');
+
+-- Trigger chatbot flow
+select * from pgflow.start_flow(
+  flow_slug => 'chatbot',
+  input => '{"conversationId": 1, "message": "What is PostgreSQL?"}'
+);
+
+-- Check response
+select * from messages where conversation_id = 1 order by created_at;
+```
+
+The flow retrieves conversation history and performs knowledge base lookup in parallel, generates a response using both contexts, and saves the assistant's reply to the conversation.

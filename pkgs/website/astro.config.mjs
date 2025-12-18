@@ -24,17 +24,27 @@ const DEPLOYMENT_ENV = process.env.DEPLOYMENT_ENV; // 'production' or 'preview' 
 const isProduction = DEPLOYMENT_ENV === 'production';
 
 // Validate DEPLOYMENT_ENV if set
-if (DEPLOYMENT_ENV && DEPLOYMENT_ENV !== 'production' && DEPLOYMENT_ENV !== 'preview') {
-  throw new Error(`DEPLOYMENT_ENV must be either "production" or "preview", got: "${DEPLOYMENT_ENV}"`);
+if (
+  DEPLOYMENT_ENV &&
+  DEPLOYMENT_ENV !== 'production' &&
+  DEPLOYMENT_ENV !== 'preview'
+) {
+  throw new Error(
+    `DEPLOYMENT_ENV must be either "production" or "preview", got: "${DEPLOYMENT_ENV}"`
+  );
 }
 
 // Require Plausible proxy URL only for production
 if (isProduction && !process.env.PLAUSIBLE_PROXY_URL) {
-  throw new Error('PLAUSIBLE_PROXY_URL environment variable is required for production deployments');
+  throw new Error(
+    'PLAUSIBLE_PROXY_URL environment variable is required for production deployments'
+  );
 }
 
 const PLAUSIBLE_PROXY = {
-  url: process.env.PLAUSIBLE_PROXY_URL || 'https://wispy-pond-c6f8.jumski.workers.dev',
+  url:
+    process.env.PLAUSIBLE_PROXY_URL ||
+    'https://wispy-pond-c6f8.jumski.workers.dev',
   eventPath: '/data/event',
   scriptPath:
     '/assets/script.hash.outbound-links.pageview-props.tagged-events.js',
@@ -381,7 +391,10 @@ export default defineConfig({
                       label: 'Context object',
                       link: '/concepts/context-object/',
                     },
-                    { label: 'Naming conventions', link: '/concepts/naming-conventions/' },
+                    {
+                      label: 'Naming conventions',
+                      link: '/concepts/naming-conventions/',
+                    },
                   ],
                 },
               ],
@@ -435,6 +448,12 @@ export default defineConfig({
               id: 'tutorials',
               items: [
                 {
+                  label: 'RAG Pipeline',
+                  autogenerate: {
+                    directory: 'tutorials/rag/',
+                  },
+                },
+                {
                   label: 'AI Web Scraper',
                   autogenerate: {
                     directory: 'tutorials/ai-web-scraper/',
@@ -452,7 +471,10 @@ export default defineConfig({
                 { label: 'DBOS', link: '/comparisons/dbos/' },
                 { label: 'Inngest', link: '/comparisons/inngest/' },
                 { label: 'Trigger.dev', link: '/comparisons/trigger/' },
-                { label: 'Vercel Workflows', link: '/comparisons/vercel-workflows/' },
+                {
+                  label: 'Vercel Workflows',
+                  link: '/comparisons/vercel-workflows/',
+                },
               ],
             },
           ],
