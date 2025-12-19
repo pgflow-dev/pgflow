@@ -1,0 +1,319 @@
+---
+/**
+ * LovableInstallPrompt component
+ *
+ * Renders the pgflow installation prompt for Lovable with client-side
+ * generated security tokens. Each page load generates:
+ * - A random function suffix (8 chars) to make the installer function name unpredictable
+ * - A random token (UUID) to authorize installer requests
+ *
+ * The installer connects directly to the database to run migrations and
+ * configure vault secrets - no Control Plane needed during installation.
+ */
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+// Read version from edge-worker package.json at build time
+const packageJsonPath = resolve(process.cwd(), '../edge-worker/package.json');
+const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+const defaultEdgeWorkerVersion = packageJson.version;
+
+const promptText = `I need to install pgflow - a workflow engine for Supabase Edge Functions.
+
+**CRITICAL REQUIREMENTS - READ BEFORE STARTING:**
+
+1. **config.toml is REQUIRED** - You MUST create/update \`supabase/config.toml\` with \`verify_jwt = false\` for the installer function. Without this, the installer will fail with 401 errors.
+
+2. **Deno errors are expected** - You will see errors about "npm:postgres" in the preview. These are harmless and only affect Lovable's local type checker. Do NOT try to fix them.
+
+---
+
+**STEP 1: Enable Lovable Cloud**
+
+If not already enabled, enable Lovable Cloud for this project now.
+You will need the Supabase project reference to construct the installer link later.
+
+---
+
+**STEP 2: Create the installer Edge Function**
+
+Create Edge Function \`supabase/functions/pgflow-installer-<span class="token-suffix"></span>/index.ts\`:
+\`\`\`ts
+import { Installer } from 'jsr:@pgflow/edge-worker<span class="edge-worker-version"></span>';
+
+Installer.run('<span class="token-value"></span>');
+\`\`\`
+
+---
+
+**STEP 3: Configure supabase/config.toml (CRITICAL)**
+
+This step is REQUIRED. Without it, the installer will fail with 401 errors.
+
+Create or update \`supabase/config.toml\` with this EXACT entry:
+
+\`\`\`toml
+[functions.pgflow-installer-<span class="token-suffix"></span>]
+verify_jwt = false
+\`\`\`
+
+**Why this is safe:** The installer is a temporary function with a random name suffix and requires a secret token in the URL. It will be deleted immediately after use.
+
+---
+
+**STEP 4: Verify files before deploying**
+
+Before proceeding, verify the files were created correctly. Check each item and show me a summary:
+
+- [checkmark or red X emoji] \`supabase/functions/pgflow-installer-<span class="token-suffix"></span>/index.ts\` exists and imports Installer
+- [checkmark or red X emoji] \`supabase/config.toml\` has \`[functions.pgflow-installer-<span class="token-suffix"></span>]\` with \`verify_jwt = false\`
+
+If ANY item has a red X, fix it before continuing. ALL items must be green checkmarks.
+
+---
+
+**STEP 5: Deploy the Edge Function**
+
+Deploy the installer edge function to Supabase now.
+Wait for deployment to complete successfully before proceeding.
+Ignore any Deno preview errors - the deployment will work.
+
+---
+
+**STEP 6: Show me the installer link**
+
+After deployment succeeds, construct and show me a clickable link:
+\`https://[PROJECT_REF].supabase.co/functions/v1/pgflow-installer-<span class="token-suffix"></span>?token=<span class="token-value"></span>\`
+
+Replace [PROJECT_REF] with the actual Supabase project reference.
+
+---
+
+**STEP 7: Wait for me to paste the result**
+
+I will click the link, copy the JSON response, and paste it here.
+
+Success response looks like:
+\`\`\`json
+{
+  "success": true,
+  "secrets": { "success": true, "status": 200, "data": {...} },
+  "migrations": { "success": true, "status": 200, "data": {...} },
+  "message": "pgflow installed successfully!"
+}
+\`\`\`
+
+Error response looks like:
+\`\`\`json
+{
+  "success": false,
+  "secrets": { "success": false, "status": 500, "error": "..." },
+  "message": "Failed to configure vault secrets..."
+}
+\`\`\`
+
+---
+
+**STEP 8: Interpret the result**
+
+When I paste the JSON:
+- If \`"success": true\` - confirm pgflow is installed and ready
+- If \`"success": false\` - explain what went wrong based on the error messages
+
+---
+
+**STEP 9: Clean up the installer**
+
+After confirming success (or discussing errors), delete the temporary installer:
+- Remove \`supabase/functions/pgflow-installer-<span class="token-suffix"></span>/\` folder
+- Remove the \`[functions.pgflow-installer-<span class="token-suffix"></span>]\` section from \`config.toml\`
+
+This removes the temporary unauthenticated endpoint.`;
+---
+
+<div class="lovable-install-prompt" data-default-version={defaultEdgeWorkerVersion}>
+  <div class="prompt-container">
+    <pre><code id="lovable-install-prompt-code" set:html={promptText}></code></pre>
+    <button class="copy-button" id="copy-prompt-btn" title="Copy to clipboard">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+      </svg>
+      <span class="copy-text">Copy</span>
+    </button>
+  </div>
+  <p class="security-note">
+    <strong>Security tokens generated:</strong>
+    Function suffix: <code class="token-suffix"></code> |
+    Auth token: <code class="token-value"></code>
+    <button class="regenerate-btn" id="regenerate-tokens-btn" title="Generate new tokens">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+      </svg>
+      Regenerate
+    </button>
+  </p>
+</div>
+
+<script>
+  function generateTokens() {
+    const token = crypto.randomUUID();
+    const suffix = crypto.randomUUID().slice(0, 8);
+    return { token, suffix };
+  }
+
+  function getVersionFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('version');
+  }
+
+  function updatePrompt() {
+    const { token, suffix } = generateTokens();
+
+    // Update all token placeholders
+    document.querySelectorAll('.token-value').forEach(el => {
+      el.textContent = token;
+    });
+
+    // Update all suffix placeholders
+    document.querySelectorAll('.token-suffix').forEach(el => {
+      el.textContent = suffix;
+    });
+
+    // Update edge-worker version from URL param or default
+    const container = document.querySelector('.lovable-install-prompt');
+    const defaultVersion = container?.getAttribute('data-default-version') || '';
+    const urlVersion = getVersionFromUrl();
+
+    // Use URL version if provided, otherwise use default
+    const version = urlVersion || defaultVersion;
+    const versionText = version ? `@${version}` : '';
+
+    document.querySelectorAll('.edge-worker-version').forEach(el => {
+      el.textContent = versionText;
+    });
+  }
+
+  function copyPrompt() {
+    const codeEl = document.getElementById('lovable-install-prompt-code');
+    if (codeEl) {
+      const text = codeEl.textContent || '';
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copy-prompt-btn');
+        const textEl = btn?.querySelector('.copy-text');
+        if (textEl) {
+          textEl.textContent = 'Copied!';
+          setTimeout(() => {
+            textEl.textContent = 'Copy';
+          }, 2000);
+        }
+      });
+    }
+  }
+
+  // Initialize on page load
+  document.addEventListener('DOMContentLoaded', updatePrompt);
+
+  // Also run immediately for client-side navigation
+  updatePrompt();
+
+  // Set up event listeners
+  document.getElementById('copy-prompt-btn')?.addEventListener('click', copyPrompt);
+  document.getElementById('regenerate-tokens-btn')?.addEventListener('click', updatePrompt);
+</script>
+
+<style>
+  .lovable-install-prompt {
+    margin: 1.5rem 0;
+  }
+
+  .prompt-container {
+    position: relative;
+    background: var(--sl-color-gray-6);
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+
+  .prompt-container pre {
+    margin: 0;
+    padding: 1rem;
+    padding-right: 4rem;
+    max-height: 500px;
+    overflow-y: auto;
+    overflow-x: auto;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  .prompt-container code {
+    font-family: var(--sl-font-mono);
+    background: transparent;
+  }
+
+  .copy-button {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--sl-color-gray-5);
+    border: 1px solid var(--sl-color-gray-4);
+    border-radius: 0.25rem;
+    color: var(--sl-color-text);
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-family: var(--sl-font);
+    transition: background 0.15s ease;
+    z-index: 10;
+  }
+
+  .copy-button:hover {
+    background: var(--sl-color-gray-4);
+  }
+
+  .copy-button svg {
+    flex-shrink: 0;
+  }
+
+  .security-note {
+    margin-top: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--sl-color-gray-6);
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--sl-color-gray-2);
+  }
+
+  .security-note code {
+    background: var(--sl-color-gray-5);
+    padding: 0.1rem 0.3rem;
+    border-radius: 0.2rem;
+    font-size: 0.75rem;
+  }
+
+  .regenerate-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background: transparent;
+    border: 1px solid var(--sl-color-gray-4);
+    border-radius: 0.25rem;
+    color: var(--sl-color-text-accent);
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-family: var(--sl-font);
+    transition: background 0.15s ease;
+  }
+
+  .regenerate-btn:hover {
+    background: var(--sl-color-gray-5);
+  }
+</style>
