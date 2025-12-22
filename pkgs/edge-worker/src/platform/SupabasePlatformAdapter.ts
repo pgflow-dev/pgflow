@@ -1,6 +1,6 @@
 import type { CreateWorkerFn, Logger, PlatformAdapter } from './types.js';
 import type { Worker } from '../core/Worker.js';
-import type { Sql } from 'postgres';
+import type postgres from 'postgres';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { SupabaseResources } from '@pgflow/dsl/supabase';
 import { createServiceSupabaseClient } from '../core/supabase-utils.js';
@@ -54,7 +54,7 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   private loggingFactory!: ReturnType<typeof createLoggingFactory>;
 
   constructor(
-    options?: { sql?: Sql; connectionString?: string },
+    options?: { sql?: postgres.Sql; connectionString?: string },
     deps: SupabasePlatformDeps = getPlatformDeps()
   ) {
     this.deps = deps;
@@ -150,7 +150,7 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   /**
    * Get SQL client - exposed for context creation
    */
-  get sql(): Sql {
+  get sql(): postgres.Sql {
     return this._platformResources.sql;
   }
 

@@ -1,6 +1,5 @@
 import { isLocalSupabaseEnv } from '../shared/localDetection.ts';
 import postgres from 'postgres';
-import type { Sql } from 'postgres';
 
 /**
  * Docker-internal URL for Supabase transaction pooler (Supavisor).
@@ -23,7 +22,7 @@ export interface ConnectionOptions {
 }
 
 export interface SqlConnectionOptions {
-  sql?: Sql;
+  sql?: postgres.Sql;
   connectionString?: string;
 }
 
@@ -77,7 +76,7 @@ export function assertConnectionAvailable(
 export function resolveSqlConnection(
   env: ConnectionEnv,
   options?: SqlConnectionOptions
-): Sql {
+): postgres.Sql {
   // 1. config.sql - highest priority
   if (options?.sql) {
     return options.sql;

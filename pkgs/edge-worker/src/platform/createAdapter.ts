@@ -1,11 +1,11 @@
 import type { PlatformAdapter } from './types.js';
 import { SupabasePlatformAdapter } from './SupabasePlatformAdapter.js';
 import type { SupabaseResources } from '@pgflow/dsl/supabase';
-import type { Sql } from 'postgres';
+import type postgres from 'postgres';
 import { getPlatformDeps } from './deps.js';
 
 interface AdapterOptions {
-  sql?: Sql;
+  sql?: postgres.Sql;
   connectionString?: string;
 }
 

@@ -1,4 +1,4 @@
-import type { Sql } from 'postgres';
+import type postgres from 'postgres';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   Flow as CoreFlow,
@@ -8,7 +8,7 @@ import {
 
 /* ---------- 1. Resources ------------------------------------------- */
 export interface SupabaseResources extends Record<string, unknown> {
-  sql            : Sql;
+  sql            : postgres.Sql;
   /**
    * Supabase client with service role key for full database access
    */

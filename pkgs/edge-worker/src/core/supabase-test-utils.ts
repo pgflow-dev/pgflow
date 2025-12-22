@@ -1,4 +1,4 @@
-import type { Sql } from 'postgres';
+import type postgres from 'postgres';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AnyFlow } from '@pgflow/dsl';
 import type { Json } from './types.js';
@@ -17,7 +17,7 @@ import { createServiceSupabaseClient } from './supabase-utils.js';
  */
 export function createQueueWorkerContext<TPayload extends Json>(params: {
   env: SupabaseEnv;
-  sql: Sql;
+  sql: postgres.Sql;
   abortSignal: AbortSignal;
   rawMessage: PgmqMessageRecord<TPayload>;
   workerConfig?: Readonly<Omit<QueueWorkerConfig, 'sql'>>;
@@ -66,7 +66,7 @@ export function createQueueWorkerContext<TPayload extends Json>(params: {
  */
 export function createFlowWorkerContext<TFlow extends AnyFlow = AnyFlow>(params: {
   env: SupabaseEnv;
-  sql: Sql;
+  sql: postgres.Sql;
   abortSignal: AbortSignal;
   taskWithMessage?: StepTaskWithMessage<TFlow>;
   workerConfig?: Readonly<Omit<FlowWorkerConfig, 'sql'>>;

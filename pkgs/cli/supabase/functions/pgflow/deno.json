@@ -15,7 +15,7 @@
     "@pgflow/edge-worker/_internal": "../_vendor/@pgflow/edge-worker/_internal.ts",
     "@henrygd/queue": "jsr:@henrygd/queue@^1.0.7",
     "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.49.4",
-    "postgres": "npm:postgres@3.4.5",
+    "postgres": "jsr:@oscar6echo/postgres@3.4.5-d",
     "@std/crypto": "jsr:@std/crypto"
   }
 }

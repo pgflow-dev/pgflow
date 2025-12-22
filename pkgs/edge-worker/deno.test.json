@@ -11,7 +11,7 @@
     "@std/crypto/timing-safe-equal": "jsr:@std/crypto@^0.224.0/timing-safe-equal",
     "@std/log": "jsr:@std/log@^0.224.13",
     "@std/testing/mock": "jsr:@std/testing@^0.224.0/mock",
-    "postgres": "npm:postgres@3.4.5",
+    "postgres": "jsr:@oscar6echo/postgres@3.4.5-d",
     "@pgflow/core": "../core/src/index.ts",
     "@pgflow/dsl": "../dsl/src/index.ts",
     "@pgflow/dsl/supabase": "../dsl/src/platforms/supabase.ts",

@@ -1,4 +1,4 @@
-import type { Sql } from 'postgres';
+import type postgres from 'postgres';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AnyFlow, AllStepInputs } from '@pgflow/dsl';
 import type { SupabaseResources } from '@pgflow/dsl/supabase';
@@ -19,7 +19,7 @@ import type { QueueWorkerConfig, FlowWorkerConfig } from '../core/workerConfigTy
  */
 export function createSupabaseMessageContext<TPayload extends Json = Json>(params: {
   env: Record<string, string | undefined>;
-  sql: Sql;
+  sql: postgres.Sql;
   abortSignal: AbortSignal;
   rawMessage: PgmqMessageRecord<TPayload>;
   workerConfig?: Readonly<Omit<QueueWorkerConfig, 'sql'>>;
@@ -79,7 +79,7 @@ export function createSupabaseMessageContext<TPayload extends Json = Json>(param
  */
 export function createSupabaseStepTaskContext<TFlow extends AnyFlow>(params: {
   env: Record<string, string | undefined>;
-  sql: Sql;
+  sql: postgres.Sql;
   abortSignal: AbortSignal;
   stepTask: StepTaskRecord<TFlow>;
   rawMessage: PgmqMessageRecord<AllStepInputs<TFlow>>;
@@ -147,7 +147,7 @@ export function createMockSupabaseClient(): SupabaseClient {
  */
 export function createMockSupabaseResources(overrides?: Partial<SupabaseResources>): SupabaseResources {
   return {
-    sql: {} as unknown as Sql,
+    sql: {} as unknown as postgres.Sql,
     supabase: createMockSupabaseClient(),
     ...overrides
   };
