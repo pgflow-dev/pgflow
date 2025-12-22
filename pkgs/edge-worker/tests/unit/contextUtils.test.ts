@@ -9,7 +9,7 @@ import type { PgmqMessageRecord } from '../../src/queue/types.ts';
 import type { StepTaskRecord } from '../../src/flow/types.ts';
 
 // Mock SQL client
-const mockSql = {} as unknown as import('postgres').Sql;
+const mockSql = {} as unknown as import('postgres').default.Sql;
 
 // Mock abort signal
 const mockAbortSignal = new AbortController().signal;

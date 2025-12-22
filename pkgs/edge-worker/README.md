@@ -208,6 +208,16 @@ To run a manual test:
 1. Start Supabase: `pnpm nx supabase:start edge-worker`
 2. Follow the instructions in the specific test's README
 
+## Dependencies
+
+### PostgreSQL Client
+
+This package uses `jsr:@oscar6echo/postgres` - a JSR-compatible fork of the popular [postgres](https://github.com/porsager/postgres) package.
+
+**Why a fork?** The official `npm:postgres` package uses CommonJS exports (`export =`) which are incompatible with JSR's ES Module requirements. The npm version also fails to parse database URLs correctly in Supabase Edge Runtime, causing `CONNECT_TIMEOUT` errors. See [porsager/postgres#839](https://github.com/porsager/postgres/issues/839) for details.
+
+The fork is functionally identical to postgres v3.4.5, with only the export syntax changed for Deno/JSR compatibility.
+
 ## Building
 
 Run `nx build edge-worker` to build the library.

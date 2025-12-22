@@ -2,10 +2,10 @@ import { assertEquals, assertThrows } from '@std/assert';
 import type { QueueWorkerConfig, FlowWorkerConfig } from '../../src/core/workerConfigTypes.ts';
 import { createContextSafeConfig } from '../../src/core/context.ts';
 import type { PgmqMessageRecord } from '../../src/queue/types.ts';
-import type { Sql } from 'postgres';
+import type postgres from 'postgres';
 
 Deno.test('createContextSafeConfig excludes sql field and freezes result', () => {
-  const mockSql = {} as Sql<Record<string, never>>;
+  const mockSql = {} as postgres.Sql<Record<string, never>>;
   const config: QueueWorkerConfig = {
     queueName: 'test-queue',
     maxConcurrent: 5,

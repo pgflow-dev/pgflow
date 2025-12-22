@@ -21,6 +21,6 @@
     "@std/log": "jsr:@std/log@^0.224.13",
     "@std/testing/mock": "jsr:@std/testing@^0.224.0/mock",
     "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2.49.4",
-    "postgres": "npm:postgres@3.4.5"
+    "postgres": "jsr:@oscar6echo/postgres@3.4.5-d"
   }
 }

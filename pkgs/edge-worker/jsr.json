@@ -9,7 +9,7 @@
   "imports": {
     "@henrygd/queue": "jsr:@henrygd/queue@^1.0.7",
     "@std/crypto": "jsr:@std/crypto@^1.0.5",
-    "postgres": "npm:postgres@3.4.5",
+    "postgres": "jsr:@oscar6echo/postgres@3.4.5-d",
     "@pgflow/core": "npm:@pgflow/core@0.11.0",
     "@pgflow/dsl": "npm:@pgflow/dsl@0.11.0"
   },
