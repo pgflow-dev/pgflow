@@ -60,7 +60,7 @@ class MockQueries extends Queries {
 
 // Real Flow for testing - using the DSL to create a valid flow
 const TestFlow = new Flow<{ value: number }>({ slug: 'test_flow' })
-  .step({ slug: 'step1' }, (input) => input.run.value);
+  .step({ slug: 'step1' }, (flowInput) => flowInput.value);
 
 const createMockFlow = () => TestFlow;
 

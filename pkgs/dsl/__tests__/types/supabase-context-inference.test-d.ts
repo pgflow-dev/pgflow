@@ -6,7 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 describe('Supabase Flow Context Inference', () => {
   it('should infer platform context without annotations', () => {
     const flow = new Flow({ slug: 'test' })
-      .step({ slug: 'query' }, (input, context) => {  // NO annotation!
+      .step({ slug: 'query' }, (flowInput, context) => {  // NO annotation!
         // Platform resources
         expectTypeOf(context.sql).toEqualTypeOf<Sql>();
         expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
@@ -26,13 +26,13 @@ describe('Supabase Flow Context Inference', () => {
 
   it('should work across multiple steps', () => {
     const flow = new Flow({ slug: 'multi' })
-      .step({ slug: 's1' }, (input, context) => {
+      .step({ slug: 's1' }, (flowInput, context) => {
         expectTypeOf(context.sql).toEqualTypeOf<Sql>();
         return { data: 'test' };
       })
-      .step({ slug: 's2', dependsOn: ['s1'] }, (input, context) => {
+      .step({ slug: 's2', dependsOn: ['s1'] }, (deps, context) => {
         expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
-        expectTypeOf(input.s1.data).toEqualTypeOf<string>();
+        expectTypeOf(deps.s1.data).toEqualTypeOf<string>();
         return { final: true };
       });
 

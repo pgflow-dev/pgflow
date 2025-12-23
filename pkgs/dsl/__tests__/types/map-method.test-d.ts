@@ -57,8 +57,8 @@ describe('.map() method type constraints', () => {
   describe('dependent map - array from another step', () => {
     it('should accept dependent map when dependency returns array', () => {
       const flow = new Flow<{ count: number }>({ slug: 'test' })
-        .array({ slug: 'numbers' }, ({ run }) =>
-          Array(run.count).fill(0).map((_, i) => i)
+        .array({ slug: 'numbers' }, (flowInput) =>
+          Array(flowInput.count).fill(0).map((_, i) => i)
         )
         .map({ slug: 'double', array: 'numbers' }, (item) => {
           expectTypeOf(item).toEqualTypeOf<number>();
@@ -158,9 +158,9 @@ describe('.map() method type constraints', () => {
     it('should allow regular step to depend on map output', () => {
       const flow = new Flow<number[]>({ slug: 'test' })
         .map({ slug: 'double' }, (n) => n * 2)
-        .step({ slug: 'sum', dependsOn: ['double'] }, (input) => {
-          expectTypeOf(input.double).toEqualTypeOf<number[]>();
-          return input.double.reduce((a, b) => a + b, 0);
+        .step({ slug: 'sum', dependsOn: ['double'] }, (deps) => {
+          expectTypeOf(deps.double).toEqualTypeOf<number[]>();
+          return deps.double.reduce((a, b) => a + b, 0);
         });
 
       type SumOutput = typeof flow extends Flow<any, any, infer Steps, any>
@@ -177,6 +177,8 @@ describe('.map() method type constraints', () => {
           // Let TypeScript infer the full context type
           expectTypeOf(context.env).toEqualTypeOf<Record<string, string | undefined>>();
           expectTypeOf(context.shutdownSignal).toEqualTypeOf<AbortSignal>();
+          // Context should include flowInput for map steps
+          expectTypeOf(context.flowInput).toEqualTypeOf<string[]>();
           return String(item);
         });
 
@@ -192,17 +194,17 @@ describe('.map() method type constraints', () => {
     it('should not include input for map steps', () => {
       const flow = new Flow<string[]>({ slug: 'test' })
         .map({ slug: 'process' }, (item) => item.toUpperCase())
-        .step({ slug: 'count', dependsOn: ['process'] }, (input) => input.process.length);
+        .step({ slug: 'count', dependsOn: ['process'] }, (deps) => deps.process.length);
 
       // Map steps don't have StepInput in the traditional sense
       // They receive individual items, not the full input object
+      // Root map step gets flow input directly (no run key)
       type ProcessInput = StepInput<typeof flow, 'process'>;
-      // This should probably be never or a special type for map steps
-      expectTypeOf<ProcessInput>().toMatchTypeOf<{ run: string[] }>();
+      expectTypeOf<ProcessInput>().toMatchTypeOf<string[]>();
 
+      // Dependent step gets deps only (no run key)
       type CountInput = StepInput<typeof flow, 'count'>;
       expectTypeOf<CountInput>().toMatchTypeOf<{
-        run: string[];
         process: string[];
       }>();
     });
@@ -212,8 +214,8 @@ describe('.map() method type constraints', () => {
     it('should correctly type map step definitions', () => {
       const flow = new Flow<number[]>({ slug: 'test' })
         .map({ slug: 'square' }, (n) => n * n)
-        .step({ slug: 'sum', dependsOn: ['square'] }, (input) =>
-          input.square.reduce((a, b) => a + b, 0)
+        .step({ slug: 'sum', dependsOn: ['square'] }, (deps) =>
+          deps.square.reduce((a, b) => a + b, 0)
         );
 
       const squareStep = flow.getStepDefinition('square');
@@ -221,10 +223,9 @@ describe('.map() method type constraints', () => {
       expectTypeOf(squareStep.handler).toBeFunction();
 
       const sumStep = flow.getStepDefinition('sum');
-      // Handler should be typed to receive input and context
+      // Handler should be typed to receive deps only (no run key)
       expectTypeOf(sumStep.handler).toBeFunction();
       expectTypeOf(sumStep.handler).parameter(0).toEqualTypeOf<{
-        run: number[];
         square: number[];
       }>();
     });

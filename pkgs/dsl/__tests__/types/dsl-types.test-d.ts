@@ -5,9 +5,11 @@ describe('Flow Type System Tests', () => {
   it('should properly type input argument for root steps', () => {
     new Flow<{ id: number; email: string }>({
       slug: 'test_flow',
-    }).step({ slug: 'root_a' }, (input) => {
-      expectTypeOf(input).toMatchTypeOf<{
-        run: { id: number; email: string };
+    }).step({ slug: 'root_a' }, (flowInput) => {
+      // Root steps receive flow input directly (no run key)
+      expectTypeOf(flowInput).toMatchTypeOf<{
+        id: number;
+        email: string;
       }>();
       return { result: 'test-result' };
     });
@@ -17,24 +19,26 @@ describe('Flow Type System Tests', () => {
     new Flow<{ id: number; email: string }>({
       slug: 'test_flow',
     })
-      .step({ slug: 'root_a' }, (input) => {
-        expectTypeOf(input).toMatchTypeOf<{
-          run: { id: number; email: string };
+      .step({ slug: 'root_a' }, (flowInput) => {
+        // Root step receives flow input directly
+        expectTypeOf(flowInput).toMatchTypeOf<{
+          id: number;
+          email: string;
         }>();
         return { result: 'test-result' };
       })
-      .step({ slug: 'step_a', dependsOn: ['root_a'] }, (input) => {
-        expectTypeOf(input).toMatchTypeOf<{
-          run: { id: number; email: string };
+      .step({ slug: 'step_a', dependsOn: ['root_a'] }, (deps) => {
+        // Dependent step receives deps only (no run key)
+        expectTypeOf(deps).toMatchTypeOf<{
           root_a: { result: string };
         }>();
         return { count: 42 };
       })
       .step(
         { slug: 'final_step', dependsOn: ['root_a', 'step_a'] },
-        (input) => {
-          expectTypeOf(input).toMatchTypeOf<{
-            run: { id: number; email: string };
+        (deps) => {
+          // Dependent step with multiple deps
+          expectTypeOf(deps).toMatchTypeOf<{
             root_a: { result: string };
             step_a: { count: number };
           }>();
@@ -60,16 +64,16 @@ describe('Flow Type System Tests', () => {
       new Flow<string>({ slug: 'test_flow' })
         .step({ slug: 'step1' }, () => 1)
         .step({ slug: 'step2' }, () => 2)
-        .step({ slug: 'step3', dependsOn: ['step1'] }, (payload) => {
-          expectTypeOf(payload).toMatchTypeOf<{
-            run: string;
+        .step({ slug: 'step3', dependsOn: ['step1'] }, (deps) => {
+          // Dependent step receives deps only (no run key)
+          expectTypeOf(deps).toMatchTypeOf<{
             step1: number;
           }>();
 
           // Verify that step2 is not accessible
-          expectTypeOf(payload).not.toHaveProperty('step2');
+          expectTypeOf(deps).not.toHaveProperty('step2');
 
-          return payload.step1;
+          return deps.step1;
         });
     });
   });
@@ -77,21 +81,22 @@ describe('Flow Type System Tests', () => {
   describe('Multi-level dependencies', () => {
     it('should correctly type multi-level dependencies', () => {
       new Flow<string>({ slug: 'test_flow' })
-        .step({ slug: 'first' }, (payload) => {
-          expectTypeOf(payload).toMatchTypeOf<{ run: string }>();
+        .step({ slug: 'first' }, (flowInput) => {
+          // Root step receives flow input directly
+          expectTypeOf(flowInput).toMatchTypeOf<string>();
           return 5;
         })
-        .step({ slug: 'second', dependsOn: ['first'] }, (payload) => {
-          expectTypeOf(payload).toMatchTypeOf<{
-            run: string;
+        .step({ slug: 'second', dependsOn: ['first'] }, (deps) => {
+          // Dependent step receives deps only (no run key)
+          expectTypeOf(deps).toMatchTypeOf<{
             first: number;
           }>();
 
-          return [payload.run] as string[];
+          return ['test'] as string[];
         })
-        .step({ slug: 'third', dependsOn: ['first', 'second'] }, (payload) => {
-          expectTypeOf(payload).toMatchTypeOf<{
-            run: string;
+        .step({ slug: 'third', dependsOn: ['first', 'second'] }, (deps) => {
+          // Dependent step with multiple deps
+          expectTypeOf(deps).toMatchTypeOf<{
             first: number;
             second: string[];
           }>();

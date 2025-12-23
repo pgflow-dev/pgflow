@@ -103,6 +103,7 @@ export function createFlowWorkerContext<TFlow extends AnyFlow = AnyFlow>(params:
     // Step task execution context
     rawMessage: taskWithMessage.message,
     stepTask: taskWithMessage.task,
+    flowInput: taskWithMessage.flowInput,
     workerConfig: createContextSafeConfig(resolvedConfig),
 
     // Supabase-specific resources (always present in Phase 1)

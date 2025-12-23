@@ -24,7 +24,7 @@ describe('Supabase Flow Type Tests', () => {
   it('should provide all Supabase platform resources by default', () => {
     const flow = new SupabaseFlow({ slug: 'supabase_default' }).step(
       { slug: 'query' },
-      (input, context) => {
+      (flowInput, context) => {
         // Should have all Supabase platform resources
         expectTypeOf(context.sql).toEqualTypeOf<Sql>();
         expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
@@ -45,7 +45,7 @@ describe('Supabase Flow Type Tests', () => {
   it('should provide typed Supabase environment variables', () => {
     const flow = new SupabaseFlow({ slug: 'supabase_env' }).step(
       { slug: 'check_env' },
-      (input, context) => {
+      (flowInput, context) => {
         // Required Supabase env vars should be typed as string (not undefined)
         expectTypeOf(context.env.SUPABASE_DB_URL).toEqualTypeOf<string>();
         expectTypeOf(context.env.SUPABASE_URL).toEqualTypeOf<string>();
@@ -80,7 +80,7 @@ describe('Supabase Flow Type Tests', () => {
     const flow = new SupabaseFlow<{ data: string }, { redis: CustomRedis; ai: CustomAI }>({
       slug: 'custom_resources'
     })
-      .step({ slug: 'db_query' }, (input, context) => {
+      .step({ slug: 'db_query' }, (flowInput, context) => {
         // Should have all Supabase platform resources
         expectTypeOf(context.sql).toEqualTypeOf<Sql>();
         expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
@@ -94,7 +94,7 @@ describe('Supabase Flow Type Tests', () => {
 
         return { data: 'result' };
       })
-      .step({ slug: 'ai_process' }, (input, context) => {
+      .step({ slug: 'ai_process' }, (flowInput, context) => {
         // All steps get same context (no accumulation)
         expectTypeOf(context.sql).toEqualTypeOf<Sql>();
         expectTypeOf(context.redis).toEqualTypeOf<CustomRedis>();
@@ -121,7 +121,7 @@ describe('Supabase Flow Type Tests', () => {
 
     const flow = new SupabaseFlow<{ userId: string }, ExplicitCustomContext>({
       slug: 'explicit_supabase_flow',
-    }).step({ slug: 'fetch_user' }, (input, context) => {
+    }).step({ slug: 'fetch_user' }, (flowInput, context) => {
       // Should have Supabase platform resources
       expectTypeOf(context.sql).toEqualTypeOf<Sql>();
       expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
@@ -135,7 +135,7 @@ describe('Supabase Flow Type Tests', () => {
       // Should have typed Supabase env
       expectTypeOf(context.env).toMatchTypeOf<SupabaseEnv>();
 
-      return { user: { id: input.run.userId, name: 'Test' } };
+      return { user: { id: flowInput.userId, name: 'Test' } };
     });
 
     // Flow context should combine Supabase platform + explicit custom context
@@ -164,27 +164,28 @@ describe('Supabase Flow Type Tests', () => {
     const flow = new SupabaseFlow<{ initial: number }, { factor: number }>({
       slug: 'step_inference',
     })
-      .step({ slug: 'multiply' }, (input, context) => {
-        // Step input should be properly inferred
-        expectTypeOf(input.run.initial).toEqualTypeOf<number>();
+      .step({ slug: 'multiply' }, (flowInput, context) => {
+        // Step input should be properly inferred - root step gets flow input directly
+        expectTypeOf(flowInput.initial).toEqualTypeOf<number>();
 
         // Should have Supabase resources + custom context
         expectTypeOf(context.sql).toEqualTypeOf<Sql>();
         expectTypeOf(context.factor).toEqualTypeOf<number>();
 
-        return { result: input.run.initial * context.factor };
+        return { result: flowInput.initial * context.factor };
       })
-      .step({ slug: 'format', dependsOn: ['multiply'] }, (input, context) => {
-        // Should have proper step input inference from dependencies
-        expectTypeOf(input.run.initial).toEqualTypeOf<number>();
-        expectTypeOf(input.multiply.result).toEqualTypeOf<number>();
+      .step({ slug: 'format', dependsOn: ['multiply'] }, (deps, context) => {
+        // Should have proper step input inference from dependencies (deps only, no run key)
+        expectTypeOf(deps.multiply.result).toEqualTypeOf<number>();
+        // Access flow input via context.flowInput
+        expectTypeOf(context.flowInput.initial).toEqualTypeOf<number>();
 
         // Should still have all context
         expectTypeOf(context.sql).toEqualTypeOf<Sql>();
         expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
         expectTypeOf(context.factor).toEqualTypeOf<number>();
 
-        return { formatted: `Result: ${input.multiply.result}` };
+        return { formatted: `Result: ${deps.multiply.result}` };
       });
 
     // Verify flow context
@@ -200,7 +201,7 @@ describe('Supabase Flow Type Tests', () => {
     const flow = new SupabaseFlow<{ data: string }, { logger: { info: (msg: string) => void } }>({
       slug: 'shared_context',
     })
-      .step({ slug: 'step1' }, (input, context) => {
+      .step({ slug: 'step1' }, (flowInput, context) => {
         // All handlers get same context
         expectTypeOf(context.sql).toEqualTypeOf<Sql>();
         expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
@@ -208,7 +209,7 @@ describe('Supabase Flow Type Tests', () => {
 
         return { step1Done: true };
       })
-      .step({ slug: 'step2' }, (input, context) => {
+      .step({ slug: 'step2' }, (flowInput, context) => {
         // Same context in all steps
         expectTypeOf(context.sql).toEqualTypeOf<Sql>();
         expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();
@@ -216,7 +217,7 @@ describe('Supabase Flow Type Tests', () => {
 
         return { step2Done: true };
       })
-      .step({ slug: 'step3' }, (input, context) => {
+      .step({ slug: 'step3' }, (flowInput, context) => {
         // Same context in all steps
         expectTypeOf(context.sql).toEqualTypeOf<Sql>();
         expectTypeOf(context.supabase).toEqualTypeOf<SupabaseClient>();

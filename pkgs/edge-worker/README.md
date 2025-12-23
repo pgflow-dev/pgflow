@@ -65,18 +65,18 @@ import { Flow } from 'jsr:@pgflow/dsl/supabase';
 const AnalyzeWebsite = new Flow<{ url: string }>({
   slug: 'analyzeWebsite',
 })
-  .step({ slug: 'fetch' }, async (input, context) => {
+  .step({ slug: 'fetch' }, async (flowInput, context) => {
     // Access Supabase resources through context
-    const response = await fetch(input.run.url, {
+    const response = await fetch(flowInput.url, {
       signal: context.shutdownSignal,
     });
     return { html: await response.text() };
   })
-  .step({ slug: 'save' }, async (input, context) => {
+  .step({ slug: 'save', dependsOn: ['fetch'] }, async (deps, context) => {
     // Use Supabase client from context
     const { data } = await context.supabase
       .from('websites')
-      .insert({ url: input.run.url, html: input.fetch.html })
+      .insert({ url: context.flowInput.url, html: deps.fetch.html })
       .select()
       .single();
     return data;

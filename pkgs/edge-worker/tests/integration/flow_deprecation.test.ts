@@ -8,17 +8,17 @@ import { startWorker } from './_helpers.ts';
 // Create a simple test flow that tracks executions
 const createTestFlow = (flowName: string, executions: { step1: number; step2: number }) => {
   return new Flow<{ value: number }>({ slug: flowName })
-    .step({ slug: 'step1' }, async (input) => {
+    .step({ slug: 'step1' }, async (flowInput) => {
       executions.step1++;
       await delay(50);
-      return { result: input.run.value * 2 };
+      return { result: flowInput.value * 2 };
     })
     .step(
       { slug: 'step2', dependsOn: ['step1'] },
-      async (input) => {
+      async (deps) => {
         executions.step2++;
         await delay(50);
-        return { final: input.step1.result + 10 };
+        return { final: deps.step1.result + 10 };
       }
     );
 };

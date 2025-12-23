@@ -20,8 +20,8 @@ const AnalyzeWebsite = new Flow<{ url: string }>({
   baseDelay: 5,
   timeout: 10,
 })
-  .step({ slug: 'website' }, (input) => ({
-    content: `Content for ${input.run.url}`,
+  .step({ slug: 'website' }, (flowInput) => ({
+    content: `Content for ${flowInput.url}`,
   }))
   .step({ slug: 'sentiment', dependsOn: ['website'] }, (_input) => ({
     score: 0.75,
@@ -150,11 +150,15 @@ describe('PgflowClient Type Tests', () => {
       .resolves.toHaveProperty('output')
       .toEqualTypeOf<SentimentOutput | null>();
 
-    // Check input type for a step
+    // Check input type for a step - dependent steps only get their deps (no run key)
+    // flowInput is available via context.flowInput for dependent steps
     type SentimentInput = StepInput<typeof AnalyzeWebsite, 'sentiment'>;
     expectTypeOf<SentimentInput>().toMatchTypeOf<{
-      run: { url: string };
       website: { content: string };
+    }>();
+    // Verify it does NOT have run key (asymmetric input)
+    expectTypeOf<SentimentInput>().not.toMatchTypeOf<{
+      run: { url: string };
     }>();
   });
 

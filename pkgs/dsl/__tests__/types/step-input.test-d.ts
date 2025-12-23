@@ -1,20 +1,19 @@
 import { Flow, type StepInput } from '../../src/index.js';
 import { describe, it, expectTypeOf } from 'vitest';
 
-describe('StepInput utility type', () => {
+describe('StepInput utility type (asymmetric)', () => {
   describe('for a flow without steps', () => {
     const emptyFlow = new Flow<{ userId: number }>({ slug: 'empty_flow' });
     type NonExistentInput = StepInput<typeof emptyFlow, 'nonExistentStep'>;
 
-    it('should contain only run input for non-existent steps', () => {
-      expectTypeOf<NonExistentInput>().toMatchTypeOf<{
-        run: { userId: number };
-      }>();
+    it('should return flow input directly for non-existent steps (treated as root)', () => {
+      // Non-existent steps are treated as root steps - they get flow input directly
+      expectTypeOf<NonExistentInput>().toMatchTypeOf<{ userId: number }>();
     });
 
-    it('should not allow extraneous keys', () => {
+    it('should not have run wrapper', () => {
       expectTypeOf<NonExistentInput>().not.toMatchTypeOf<{
-        nonExistentStep: any;
+        run: { userId: number };
       }>();
     });
   });
@@ -23,61 +22,36 @@ describe('StepInput utility type', () => {
     const twoRootFlow = new Flow<{ baseInput: string }>({
       slug: 'two_root_flow',
     })
-      .step({ slug: 'step1' }, () => ({ result1: 42 }))
-      .step({ slug: 'step2' }, () => ({ result2: 'test' }));
+      .step({ slug: 'step1' }, (flowInput) => ({ result1: flowInput.baseInput.length }))
+      .step({ slug: 'step2' }, (flowInput) => ({ result2: flowInput.baseInput }));
 
-    describe('step1 input', () => {
+    describe('step1 input (root step)', () => {
       type Step1Input = StepInput<typeof twoRootFlow, 'step1'>;
 
-      it('should only contain run input and not the other root step', () => {
-        expectTypeOf<Step1Input>().toMatchTypeOf<{
-          run: { baseInput: string };
-        }>();
+      it('should receive flow input directly (no run wrapper)', () => {
+        expectTypeOf<Step1Input>().toMatchTypeOf<{ baseInput: string }>();
+        expectTypeOf<Step1Input>().not.toMatchTypeOf<{ run: any }>();
+      });
+
+      it('should not contain other steps outputs', () => {
         expectTypeOf<Step1Input>().not.toMatchTypeOf<{
           step2: { result2: string };
         }>();
       });
-
-      it('should not allow extraneous keys', () => {
-        expectTypeOf<Step1Input>().not.toMatchTypeOf<{
-          extraProperty: unknown;
-        }>();
-      });
     });
 
-    describe('step2 input', () => {
+    describe('step2 input (root step)', () => {
       type Step2Input = StepInput<typeof twoRootFlow, 'step2'>;
 
-      it('should only contain run input and not contain the other root step', () => {
-        expectTypeOf<Step2Input>().toMatchTypeOf<{
-          run: { baseInput: string };
-        }>();
+      it('should receive flow input directly (no run wrapper)', () => {
+        expectTypeOf<Step2Input>().toMatchTypeOf<{ baseInput: string }>();
+      });
+
+      it('should not contain other steps outputs', () => {
         expectTypeOf<Step2Input>().not.toMatchTypeOf<{
           step1: { result1: number };
         }>();
       });
-
-      it('should not allow extraneous keys', () => {
-        expectTypeOf<Step2Input>().not.toMatchTypeOf<{
-          extraProperty: unknown;
-        }>();
-      });
-    });
-
-    it('should contain only run input if used for non-existent steps', () => {
-      type NonExistentInput = StepInput<typeof twoRootFlow, 'nonExistentStep'>;
-      expectTypeOf<NonExistentInput>().toMatchTypeOf<{
-        run: { baseInput: string };
-      }>();
-      expectTypeOf<NonExistentInput>().not.toMatchTypeOf<{
-        step1: any;
-      }>();
-      expectTypeOf<NonExistentInput>().not.toMatchTypeOf<{
-        step2: any;
-      }>();
-      expectTypeOf<NonExistentInput>().not.toMatchTypeOf<{
-        extraProperty: unknown;
-      }>();
     });
   });
 
@@ -85,38 +59,30 @@ describe('StepInput utility type', () => {
     const dependentFlow = new Flow<{ userId: string }>({
       slug: 'dependent_flow',
     })
-      .step({ slug: 'rootStep' }, () => ({ data: 'root' }))
-      .step({ slug: 'dependent1', dependsOn: ['rootStep'] }, () => ({
-        child: 1,
+      .step({ slug: 'rootStep' }, (flowInput) => ({ data: flowInput.userId }))
+      .step({ slug: 'dependent1', dependsOn: ['rootStep'] }, (deps) => ({
+        child: deps.rootStep.data.length,
       }))
-      .step({ slug: 'dependent2', dependsOn: ['rootStep'] }, () => ({
-        child: 2,
+      .step({ slug: 'dependent2', dependsOn: ['rootStep'] }, (deps) => ({
+        child: deps.rootStep.data.toUpperCase(),
       }));
 
     describe('rootStep input', () => {
       type RootStepInput = StepInput<typeof dependentFlow, 'rootStep'>;
 
-      it('should only contain run input', () => {
-        expectTypeOf<RootStepInput>().toMatchTypeOf<{
+      it('should receive flow input directly', () => {
+        expectTypeOf<RootStepInput>().toMatchTypeOf<{ userId: string }>();
+      });
+
+      it('should not have run wrapper', () => {
+        expectTypeOf<RootStepInput>().not.toMatchTypeOf<{
           run: { userId: string };
         }>();
       });
 
-      it('should not contain dependent1 step', () => {
+      it('should not contain dependent steps', () => {
         expectTypeOf<RootStepInput>().not.toMatchTypeOf<{
-          dependent1: { child: number };
-        }>();
-      });
-
-      it('should not contain dependent2 step', () => {
-        expectTypeOf<RootStepInput>().not.toMatchTypeOf<{
-          dependent2: { child: number };
-        }>();
-      });
-
-      it('should not allow extraneous keys', () => {
-        expectTypeOf<RootStepInput>().not.toMatchTypeOf<{
-          extraProperty: unknown;
+          dependent1: any;
         }>();
       });
     });
@@ -124,22 +90,21 @@ describe('StepInput utility type', () => {
     describe('dependent1 input', () => {
       type Dependent1Input = StepInput<typeof dependentFlow, 'dependent1'>;
 
-      it('should contain run input and rootStep', () => {
+      it('should contain only rootStep dependency (no run key)', () => {
         expectTypeOf<Dependent1Input>().toMatchTypeOf<{
-          run: { userId: string };
           rootStep: { data: string };
         }>();
       });
 
-      it('should not contain dependent2 step', () => {
+      it('should NOT contain run key (flow input available via context)', () => {
         expectTypeOf<Dependent1Input>().not.toMatchTypeOf<{
-          dependent2: { child: number };
+          run: { userId: string };
         }>();
       });
 
-      it('should not allow extraneous keys', () => {
+      it('should not contain other dependent steps', () => {
         expectTypeOf<Dependent1Input>().not.toMatchTypeOf<{
-          extraProperty: unknown;
+          dependent2: any;
         }>();
       });
     });
@@ -147,22 +112,15 @@ describe('StepInput utility type', () => {
     describe('dependent2 input', () => {
       type Dependent2Input = StepInput<typeof dependentFlow, 'dependent2'>;
 
-      it('should contain run input and rootStep', () => {
+      it('should contain only rootStep dependency (no run key)', () => {
         expectTypeOf<Dependent2Input>().toMatchTypeOf<{
-          run: { userId: string };
           rootStep: { data: string };
         }>();
       });
 
-      it('should not contain dependent1 step', () => {
+      it('should NOT contain run key', () => {
         expectTypeOf<Dependent2Input>().not.toMatchTypeOf<{
-          dependent1: { child: number };
-        }>();
-      });
-
-      it('should not allow extraneous keys', () => {
-        expectTypeOf<Dependent2Input>().not.toMatchTypeOf<{
-          extraProperty: unknown;
+          run: { userId: string };
         }>();
       });
     });
@@ -174,39 +132,61 @@ describe('StepInput utility type', () => {
     })
       .step({ slug: 'step1' }, () => ({ val1: 'a' }))
       .step({ slug: 'step2' }, () => ({ val2: 'b' }))
-      .step({ slug: 'step3', dependsOn: ['step1', 'step2'] }, () => ({
-        val3: 'c',
+      .step({ slug: 'step3', dependsOn: ['step1', 'step2'] }, (deps) => ({
+        val3: deps.step1.val1 + deps.step2.val2,
       }));
 
     describe('step3 input with multiple dependencies', () => {
       type Step3Input = StepInput<typeof complexFlow, 'step3'>;
 
-      it('should contain run input and both dependencies', () => {
+      it('should contain only dependencies (no run key)', () => {
         expectTypeOf<Step3Input>().toMatchTypeOf<{
-          run: { initial: boolean };
           step1: { val1: string };
           step2: { val2: string };
         }>();
       });
 
-      it('should not allow extraneous keys', () => {
+      it('should NOT contain run key', () => {
         expectTypeOf<Step3Input>().not.toMatchTypeOf<{
-          extraProperty: unknown;
+          run: { initial: boolean };
         }>();
       });
     });
 
-    it('should contain only run input for non-existent steps', () => {
+    it('should return flow input for non-existent steps (treated as root)', () => {
       type NonExistentInput = StepInput<typeof complexFlow, 'nonExistentStep'>;
-      expectTypeOf<NonExistentInput>().toMatchTypeOf<{
+      expectTypeOf<NonExistentInput>().toMatchTypeOf<{ initial: boolean }>();
+      // No run wrapper
+      expectTypeOf<NonExistentInput>().not.toMatchTypeOf<{
         run: { initial: boolean };
       }>();
-      expectTypeOf<NonExistentInput>().not.toMatchTypeOf<{
-        step1: { val1: string };
-      }>();
-      expectTypeOf<NonExistentInput>().not.toMatchTypeOf<{
-        step2: { val2: string };
-      }>();
+    });
+  });
+
+  describe('handler parameter types in practice', () => {
+    it('root step handler receives flowInput directly', () => {
+      const flow = new Flow<{ userId: string }>({ slug: 'test_flow' })
+        .step({ slug: 'root' }, (flowInput, _ctx) => {
+          // flowInput should be the flow input directly
+          expectTypeOf(flowInput).toMatchTypeOf<{ userId: string }>();
+          return { processed: flowInput.userId };
+        });
+
+      expectTypeOf(flow).toMatchTypeOf<Flow<{ userId: string }, any, any, any, any>>();
+    });
+
+    it('dependent step handler receives deps object only', () => {
+      const flow = new Flow<{ userId: string }>({ slug: 'test_flow' })
+        .step({ slug: 'fetch' }, () => ({ data: 'fetched' }))
+        .step({ slug: 'process', dependsOn: ['fetch'] }, (deps, ctx) => {
+          // deps should only contain dependencies
+          expectTypeOf(deps).toMatchTypeOf<{ fetch: { data: string } }>();
+          // flowInput available via context
+          expectTypeOf(ctx.flowInput).toMatchTypeOf<{ userId: string }>();
+          return { result: deps.fetch.data };
+        });
+
+      expectTypeOf(flow).toMatchTypeOf<Flow<{ userId: string }, any, any, any, any>>();
     });
   });
 });

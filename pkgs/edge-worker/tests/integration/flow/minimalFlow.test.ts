@@ -17,15 +17,15 @@ import {
 // 1. Convert a number to a string
 // 2. Wrap the string in an array
 const MinimalFlow = new Flow<number>({ slug: 'test_minimal_flow' })
-  .step({ slug: 'toStringStep' }, async (input) => {
+  .step({ slug: 'toStringStep' }, async (flowInput) => {
     await delay(1);
-    return input.run.toString();
+    return flowInput.toString();
   })
   .step(
     { slug: 'wrapInArrayStep', dependsOn: ['toStringStep'] },
-    async (input) => {
+    async (deps) => {
       await delay(1);
-      return [input.toStringStep];
+      return [deps.toStringStep];
     }
   );
 

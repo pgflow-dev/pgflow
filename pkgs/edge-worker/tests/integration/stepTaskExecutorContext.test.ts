@@ -20,11 +20,11 @@ const DEFAULT_TEST_SUPABASE_ENV: SupabaseEnv = {
 
 // Define a test flow
 const _TestFlow = new Flow<{ value: number }>({ slug: 'test_context_flow' })
-  .step({ slug: 'step1' }, (input) => {
-    return { result: input.run.value * 2 };
+  .step({ slug: 'step1' }, (flowInput) => {
+    return { result: flowInput.value * 2 };
   })
-  .step({ slug: 'step2', dependsOn: ['step1'] }, (input) => {
-    return { final: input.step1.result + 10 };
+  .step({ slug: 'step2', dependsOn: ['step1'] }, (deps) => {
+    return { final: deps.step1.result + 10 };
   });
 
 Deno.test(
@@ -50,14 +50,14 @@ Deno.test(
       }
     );
 
-    // Mock step task record
+    // Mock step task record - root steps get flow input directly
     const mockTask: StepTaskRecord<typeof ContextTestFlow> = {
       flow_slug: 'context_test_flow',
       msg_id: 123,
       run_id: 'test-run-id',
       step_slug: 'test_step',
       task_index: 0,
-      input: { run: { data: 'test data' } },
+      input: { data: 'test data' },
       flow_input: { data: 'test data' },
     };
 
@@ -67,7 +67,7 @@ Deno.test(
       read_ct: 1,
       enqueued_at: '2024-01-01T00:00:00Z',
       vt: '2024-01-01T00:01:00Z',
-      message: { run: { data: 'test data' } },
+      message: { data: 'test data' },
     };
 
     const context = createFlowWorkerContext({
@@ -89,7 +89,7 @@ Deno.test(
     await stepDef.handler(mockTask.input, context);
 
     // Verify handler received correct input and context
-    assertEquals(receivedInput, { run: { data: 'test data' } });
+    assertEquals(receivedInput, { data: 'test data' });
     assertExists(receivedContext);
     assertEquals(receivedContext.sql, _sql);
     assertEquals(receivedContext.shutdownSignal, abortController.signal);
@@ -107,21 +107,21 @@ Deno.test(
     // Legacy flow with single-arg handler
     const LegacyFlow = new Flow<{ value: number }>({ slug: 'legacy_flow' }).step(
       { slug: 'legacy_step' },
-      (input) => {
-        receivedInput = input;
+      (flowInput) => {
+        receivedInput = flowInput;
         handlerCallCount++;
-        return { doubled: input.run.value * 2 };
+        return { doubled: flowInput.value * 2 };
       }
     );
 
-    // Mock step task record
+    // Mock step task record - input is the unwrapped flowInput for root steps
     const mockTask: StepTaskRecord<typeof LegacyFlow> = {
       flow_slug: 'legacy_flow',
       msg_id: 456,
       run_id: 'legacy_run_id',
       step_slug: 'legacy_step',
       task_index: 0,
-      input: { run: { value: 42 } },
+      input: { value: 42 },
       flow_input: { value: 42 },
     };
 
@@ -134,7 +134,7 @@ Deno.test(
       read_ct: 1,
       enqueued_at: '2024-01-01T00:00:00Z',
       vt: '2024-01-01T00:01:00Z',
-      message: { run: { value: 42 } },
+      message: { value: 42 },
     };
 
     const context = createFlowWorkerContext({
@@ -152,7 +152,7 @@ Deno.test(
     const result = await stepDef.handler(mockTask.input, context);
 
     // Verify handler worked correctly
-    assertEquals(receivedInput, { run: { value: 42 } });
+    assertEquals(receivedInput, { value: 42 });
     assertEquals(result, { doubled: 84 });
     assertEquals(handlerCallCount, 1);
   })
@@ -174,23 +174,23 @@ Deno.test(
       }
     );
 
-    // Mock message
+    // Mock message - root steps get flow input directly (empty object for this flow)
     const mockMessage = {
       msg_id: 789,
       read_ct: 1,
       enqueued_at: '2024-01-01T00:00:00Z',
       vt: '2024-01-01T00:01:00Z',
-      message: { run: {} },
+      message: {},
     };
 
-    // Mock step task record
+    // Mock step task record - root steps get flow input directly
     const mockTask: StepTaskRecord<typeof RawMessageFlow> = {
       flow_slug: 'rawmessage_flow',
       msg_id: 789,
       run_id: 'raw_run_id',
       step_slug: 'check_raw',
       task_index: 0,
-      input: { run: {} },
+      input: {},
       flow_input: {},
     };
 
@@ -236,13 +236,13 @@ Deno.test(
       }
     );
 
-    // Mock message
+    // Mock message - root steps get flow input directly (empty object for this flow)
     const mockMessage = {
       msg_id: 999,
       read_ct: 1,
       enqueued_at: '2024-01-01T00:00:00Z',
       vt: '2024-01-01T00:01:00Z',
-      message: { run: {} },
+      message: {},
     };
 
     // Mock step task record
@@ -252,7 +252,7 @@ Deno.test(
       run_id: 'supabase_run_id',
       step_slug: 'check_clients',
       task_index: 0,
-      input: { run: {} },
+      input: {},
       flow_input: {},
     };
 
@@ -294,39 +294,39 @@ Deno.test(
     const ComplexFlow = new Flow<{ id: number }>({ slug: 'complex_context_flow' })
       .step(
         { slug: 'fetch_data' },
-        async (input, context) => {
+        async (flowInput, context) => {
           step1Context = context;
 
           // Simulate using context.sql to fetch data
           if (context?.sql) {
             const result =
-              await context.sql`SELECT ${input.run.id}::integer as id, 'test' as name`;
+              await context.sql`SELECT ${flowInput.id}::integer as id, 'test' as name`;
             return { data: result[0] };
           }
 
-          return { data: { id: input.run.id, name: 'fallback' } };
+          return { data: { id: flowInput.id, name: 'fallback' } };
         }
       )
       .step(
         { slug: 'process_data', dependsOn: ['fetch_data'] },
-        (input, context) => {
+        (deps, context) => {
           step2Context = context;
 
           // Process with context
           const prefix = context?.env.DATA_PREFIX || 'default';
           return {
-            processed: `${prefix}:${input['fetch_data'].data.name}:${input['fetch_data'].data.id}`,
+            processed: `${prefix}:${deps['fetch_data'].data.name}:${deps['fetch_data'].data.id}`,
           };
         }
       );
 
-    // Create context
+    // Create context - root steps get flow input directly
     const mockMessageForComplex = {
       msg_id: 456,
       read_ct: 1,
       enqueued_at: '2024-01-01T00:00:00Z',
       vt: '2024-01-01T00:01:00Z',
-      message: { run: { id: 123 } },
+      message: { id: 123 },
     };
 
     const mockTaskForComplex: StepTaskRecord<typeof ComplexFlow> = {
@@ -335,7 +335,7 @@ Deno.test(
       run_id: 'complex_run',
       step_slug: 'fetch_data',
       task_index: 0,
-      input: { run: { id: 123 } },
+      input: { id: 123 },
       flow_input: { id: 123 },
     };
 
@@ -351,19 +351,19 @@ Deno.test(
       },
     });
 
-    // Test first step
+    // Test first step - root step receives flowInput directly
     const step1Def = ComplexFlow.getStepDefinition('fetch_data');
-    const step1Result = await step1Def.handler({ run: { id: 123 } }, context);
+    const step1Result = await step1Def.handler({ id: 123 }, context);
 
     // Verify first step
     assertExists(step1Context);
     assertEquals(step1Context.env.DATA_PREFIX, 'custom');
     assertEquals((step1Result as { data: { id: number } }).data.id, 123);
 
-    // Test second step
+    // Test second step - dependent step receives deps only
     const step2Def = ComplexFlow.getStepDefinition('process_data');
     const step2Result = await step2Def.handler(
-      { run: { id: 123 }, 'fetch_data': step1Result },
+      { 'fetch_data': step1Result },
       context
     );
 

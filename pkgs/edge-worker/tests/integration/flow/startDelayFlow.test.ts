@@ -7,64 +7,64 @@ import { startFlow, startWorker } from '../_helpers.ts';
 import { waitForRunCompletion, getStepStates, getStepTasks, getRunOutput } from './_testHelpers.ts';
 
 // Test flow with root step delay
-const RootStepDelayFlow = new Flow<{ message: string }>({ 
+const RootStepDelayFlow = new Flow<{ message: string }>({
   slug: 'test_root_step_delay_flow',
   maxAttempts: 2,
   timeout: 5
 })
-  .step({ 
+  .step({
     slug: 'delayedRoot',
     startDelay: 2  // 2 second delay
-  }, async (input) => {
+  }, async (flowInput) => {
     await delay(1);
-    return `Delayed: ${input.run.message}`;
+    return `Delayed: ${flowInput.message}`;
   });
 
 // Test flow with normal step delay
-const NormalStepDelayFlow = new Flow<{ value: number }>({ 
+const NormalStepDelayFlow = new Flow<{ value: number }>({
   slug: 'test_normal_step_delay_flow'
 })
-  .step({ 
-    slug: 'immediate' 
-  }, async (input) => {
+  .step({
+    slug: 'immediate'
+  }, async (flowInput) => {
     await delay(1);
-    return input.run.value * 2;
+    return flowInput.value * 2;
   })
-  .step({ 
+  .step({
     slug: 'delayed',
     dependsOn: ['immediate'],
     startDelay: 3  // 3 second delay after immediate completes
-  }, async (input) => {
+  }, async (deps) => {
     await delay(1);
-    return (input.immediate as number) + 10;
+    return (deps.immediate as number) + 10;
   });
 
 // Test flow with cascaded delays
-const CascadedDelayFlow = new Flow<{ start: string }>({ 
+const CascadedDelayFlow = new Flow<{ start: string }>({
   slug: 'test_cascaded_delay_flow'
 })
-  .step({ 
+  .step({
     slug: 'first',
     startDelay: 1  // 1 second delay
-  }, async (input) => {
+  }, async (flowInput) => {
     await delay(1);
-    return `${input.run.start}->first`;
+    return `${flowInput.start}->first`;
   })
-  .step({ 
+  .step({
     slug: 'second',
     dependsOn: ['first'],
     startDelay: 2  // 2 second delay after first completes
-  }, async (input) => {
+  }, async (deps) => {
     await delay(1);
-    return `${input.first}->second`;
+    return `${deps.first}->second`;
   })
-  .step({ 
+  .step({
     slug: 'third',
     dependsOn: ['second'],
     startDelay: 1  // 1 second delay after second completes
-  }, async (input) => {
+  }, async (deps) => {
     await delay(1);
-    return `${input.second}->third`;
+    return `${deps.second}->third`;
   });
 
 Deno.test(

@@ -10,9 +10,9 @@ import { integrationConfig } from '../../config.ts';
 
 // Define a minimal test flow
 const TestCompilationFlow = new Flow<{ value: number }>({ slug: 'test_compilation_flow' })
-  .step({ slug: 'double' }, async (input) => {
+  .step({ slug: 'double' }, async (flowInput) => {
     await delay(1);
-    return input.run.value * 2;
+    return flowInput.value * 2;
   });
 
 const noop = () => {};

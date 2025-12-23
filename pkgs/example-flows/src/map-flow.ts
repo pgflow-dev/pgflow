@@ -25,39 +25,39 @@ export const TextProcessingFlow = new Flow<string[]>({
     return text.charAt(0).toUpperCase() + text.slice(1);
   })
   // Regular step that aggregates the results
-  .step({ slug: 'summarize', dependsOn: ['capitalize'] }, (input) => ({
-    processed: input.capitalize.length,
-    results: input.capitalize,
+  .step({ slug: 'summarize', dependsOn: ['capitalize'] }, (deps) => ({
+    processed: deps.capitalize.length,
+    results: deps.capitalize,
   }));
 
 export const UserEnrichmentFlow = new Flow<{ userIds: string[] }>({
   slug: 'user_enrichment',
 })
   // Generate initial data array
-  .array({ slug: 'fetch_users' }, async ({ run }) => {
+  .array({ slug: 'fetch_users' }, async (flowInput) => {
     // Simulating API calls to fetch user data
-    return run.userIds.map((id) => ({
+    return flowInput.userIds.map((id: string) => ({
       id,
       name: `User_${id}`,
     }));
   })
   // Map over each user to add timestamps
-  .map({ slug: 'add_timestamps', array: 'fetch_users' }, (user) => ({
+  .map({ slug: 'add_timestamps', array: 'fetch_users' }, (user: { id: string; name: string }) => ({
     ...user,
     createdAt: new Date().toISOString(),
     processed: true,
   }))
   // Map to calculate derived fields
-  .map({ slug: 'add_metadata', array: 'add_timestamps' }, (user) => ({
+  .map({ slug: 'add_metadata', array: 'add_timestamps' }, (user: { id: string; name: string; createdAt: string; processed: boolean }) => ({
     ...user,
     displayName: `${user.name} (${user.id})`,
     hashId: Buffer.from(user.id).toString('base64'),
   }))
   // Final aggregation
-  .step({ slug: 'create_report', dependsOn: ['add_metadata'] }, (input) => ({
-    totalUsers: input.add_metadata.length,
+  .step({ slug: 'create_report', dependsOn: ['add_metadata'] }, (deps) => ({
+    totalUsers: deps.add_metadata.length,
     processedAt: new Date().toISOString(),
-    users: input.add_metadata,
+    users: deps.add_metadata,
   }));
 
 // Example 3: Numerical computation with maps
@@ -77,8 +77,8 @@ export const StatisticsFlow = new Flow<number[]>({
     };
   })
   // Aggregate statistics
-  .step({ slug: 'calculate_stats', dependsOn: ['cumulative'] }, (input) => {
-    const values = input.cumulative;
+  .step({ slug: 'calculate_stats', dependsOn: ['cumulative'] }, (deps) => {
+    const values = deps.cumulative;
     const squares = values.map((v) => v.squared);
     return {
       count: values.length,
@@ -133,8 +133,8 @@ export const OrderProcessingFlow = new Flow<OrderItem[]>({
   // Calculate totals
   .step(
     { slug: 'calculate_order', dependsOn: ['apply_discounts'] },
-    (input) => {
-      const items = input.apply_discounts;
+    (deps) => {
+      const items = deps.apply_discounts;
       const validItems = items.filter((item) => item.valid);
 
       return {
@@ -158,16 +158,16 @@ export const ParallelMapsFlow = new Flow<{
   slug: 'parallel_maps',
 })
   // Extract arrays for parallel processing
-  .step({ slug: 'extract_numbers' }, ({ run }) => run.numbers)
-  .step({ slug: 'extract_strings' }, ({ run }) => run.strings)
+  .step({ slug: 'extract_numbers' }, (flowInput) => flowInput.numbers)
+  .step({ slug: 'extract_strings' }, (flowInput) => flowInput.strings)
   // Process numbers
-  .map({ slug: 'double_numbers', array: 'extract_numbers' }, (n) => n * 2)
-  .map({ slug: 'square_numbers', array: 'double_numbers' }, (n) => n * n)
+  .map({ slug: 'double_numbers', array: 'extract_numbers' }, (n: number) => n * 2)
+  .map({ slug: 'square_numbers', array: 'double_numbers' }, (n: number) => n * n)
   // Process strings
-  .map({ slug: 'uppercase_strings', array: 'extract_strings' }, (s) =>
+  .map({ slug: 'uppercase_strings', array: 'extract_strings' }, (s: string) =>
     s.toUpperCase()
   )
-  .map({ slug: 'reverse_strings', array: 'uppercase_strings' }, (s) =>
+  .map({ slug: 'reverse_strings', array: 'uppercase_strings' }, (s: string) =>
     s.split('').reverse().join('')
   )
   // Combine results
@@ -176,10 +176,10 @@ export const ParallelMapsFlow = new Flow<{
       slug: 'combine_results',
       dependsOn: ['square_numbers', 'reverse_strings'],
     },
-    (input) => ({
-      processedNumbers: input.square_numbers,
-      processedStrings: input.reverse_strings,
-      numberSum: input.square_numbers.reduce((a, b) => a + b, 0),
-      concatenated: input.reverse_strings.join(', '),
+    (deps) => ({
+      processedNumbers: deps.square_numbers,
+      processedStrings: deps.reverse_strings,
+      numberSum: deps.square_numbers.reduce((a: number, b: number) => a + b, 0),
+      concatenated: deps.reverse_strings.join(', '),
     })
   );

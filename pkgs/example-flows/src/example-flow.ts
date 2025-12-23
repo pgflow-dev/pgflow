@@ -9,23 +9,23 @@ export const ExampleFlow = new Flow<{ value: number }>({
   // rootStep return type will be inferred to:
   //
   // { doubledValue: number; };
-  .step({ slug: 'rootStep' }, async (input) => ({
-    doubledValue: input.run.value * 2,
+  .step({ slug: 'rootStep' }, async (flowInput) => ({
+    doubledValue: flowInput.value * 2,
   }))
   // normalStep return type will be inferred to:
   // { doubledValueArray: number[] };
-  // The input will only include 'run' and 'rootStep' properties
+  // The input will only include 'rootStep' dependency
   .step(
     { slug: 'normalStep', dependsOn: ['rootStep'], maxAttempts: 5 },
-    async (input) => ({
-      doubledValueArray: [input.rootStep.doubledValue],
+    async (deps) => ({
+      doubledValueArray: [deps.rootStep.doubledValue],
     })
   )
-  // This step depends on normalStep, so its input will include 'run', 'normalStep'
+  // This step depends on normalStep, so its input will include 'normalStep'
   // but not 'rootStep' since it's not directly declared as a dependency
-  .step({ slug: 'thirdStep', dependsOn: ['normalStep'] }, async (input) => ({
-    // input.rootStep would be a type error since it's not in dependsOn
-    finalValue: input.normalStep.doubledValueArray.length,
+  .step({ slug: 'thirdStep', dependsOn: ['normalStep'] }, async (deps) => ({
+    // deps.rootStep would be a type error since it's not in dependsOn
+    finalValue: deps.normalStep.doubledValueArray.length,
   }));
 export default ExampleFlow;
 
@@ -35,7 +35,6 @@ export const stepTaskRecord: StepTaskRecord<typeof ExampleFlow> = {
   step_slug: 'normalStep',
   task_index: 0,
   input: {
-    run: { value: 23 },
     rootStep: { doubledValue: 23 },
     // thirdStep: { finalValue: 23 }, --- this should be an error
     // normalStep: { doubledValueArray: [1, 2, 3] }, --- this should be an error

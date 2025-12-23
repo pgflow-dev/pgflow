@@ -21,14 +21,14 @@ const FlowWithMultipleSteps = new Flow({ slug: 'flow_multiple_steps' })
 const FlowWithArrayStep = new Flow<{ items: string[] }>({
   slug: 'flow_with_array',
 })
-  .array({ slug: 'process_items' }, ({ run }) =>
-    run.items.map((item) => ({ item, processed: true }))
+  .array({ slug: 'process_items' }, (flowInput) =>
+    flowInput.items.map((item) => ({ item, processed: true }))
   );
 
 const FlowWithMapStep = new Flow<string[]>({ slug: 'flow_with_map' })
   .map({ slug: 'uppercase' }, (text) => text.toUpperCase())
-  .step({ slug: 'join', dependsOn: ['uppercase'] }, (input) => ({
-    result: input.uppercase.join(','),
+  .step({ slug: 'join', dependsOn: ['uppercase'] }, (deps) => ({
+    result: deps.uppercase.join(','),
   }));
 
 const FlowWithStepOptions = new Flow({ slug: 'flow_step_options' })
