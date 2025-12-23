@@ -1,6 +1,6 @@
 import type postgres from 'postgres';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { AnyFlow, AllStepInputs } from '@pgflow/dsl';
+import type { AnyFlow, AllStepInputs, ExtractFlowInput } from '@pgflow/dsl';
 import type { SupabaseResources } from '@pgflow/dsl/supabase';
 import type { Json } from '../core/types.js';
 import type { PgmqMessageRecord } from '../queue/types.js';
@@ -83,9 +83,10 @@ export function createSupabaseStepTaskContext<TFlow extends AnyFlow>(params: {
   abortSignal: AbortSignal;
   stepTask: StepTaskRecord<TFlow>;
   rawMessage: PgmqMessageRecord<AllStepInputs<TFlow>>;
+  flowInput: ExtractFlowInput<TFlow>;
   workerConfig?: Readonly<Omit<FlowWorkerConfig, 'sql'>>;
 }): SupabaseStepTaskContext<TFlow> {
-  const { env, sql, abortSignal, stepTask, rawMessage, workerConfig } = params;
+  const { env, sql, abortSignal, stepTask, rawMessage, flowInput, workerConfig } = params;
 
   // Validate required environment variables
   const supabaseUrl = env.SUPABASE_URL;
@@ -126,6 +127,7 @@ export function createSupabaseStepTaskContext<TFlow extends AnyFlow>(params: {
     rawMessage,
     stepTask,
     workerConfig: defaultWorkerConfig,
+    flowInput,
 
     // Supabase-specific resources (always present)
     sql,

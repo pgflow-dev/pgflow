@@ -1,5 +1,5 @@
 /* DSL‐level ------------------------------------------------------------ */
-import type { BaseContext, AnyFlow, AllStepInputs } from '@pgflow/dsl';
+import type { BaseContext, AnyFlow, AllStepInputs, ExtractFlowInput } from '@pgflow/dsl';
 import type { Json } from './types.js';
 import type { PgmqMessageRecord } from '../queue/types.js';
 import type { StepTaskRecord } from '../flow/types.js';
@@ -30,6 +30,7 @@ export interface StepTaskExecution<TFlow extends AnyFlow = AnyFlow> {
   rawMessage: PgmqMessageRecord<AllStepInputs<TFlow>>;
   stepTask  : StepTaskRecord<TFlow>;
   workerConfig: Readonly<Omit<FlowWorkerConfig, 'sql'>>;
+  flowInput: ExtractFlowInput<TFlow>;
 }
 
 /** Message handler context for any platform */
@@ -52,6 +53,7 @@ export interface StepTaskWithMessage<TFlow extends AnyFlow> {
   msg_id : number;
   message: PgmqMessageRecord<AllStepInputs<TFlow>>;
   task   : StepTaskRecord<TFlow>;
+  flowInput: ExtractFlowInput<TFlow>;
 }
 
 import { deepClone, deepFreeze } from './deepUtils.js';

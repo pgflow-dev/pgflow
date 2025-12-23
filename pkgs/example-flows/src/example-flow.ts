@@ -41,6 +41,7 @@ export const stepTaskRecord: StepTaskRecord<typeof ExampleFlow> = {
     // normalStep: { doubledValueArray: [1, 2, 3] }, --- this should be an error
   },
   msg_id: 1,
+  flow_input: { value: 23 },
 };
 
 // export const yolo: { value: number } = { value: 23, otherValue: 'yolo' };

@@ -103,7 +103,8 @@ export class StepTaskPoller<TFlow extends AnyFlow>
           return {
             message,
             task,
-            msg_id: task.msg_id
+            msg_id: task.msg_id,
+            flowInput: task.flow_input
           };
         })
         .filter((item): item is StepTaskWithMessage<TFlow> => item !== null);
