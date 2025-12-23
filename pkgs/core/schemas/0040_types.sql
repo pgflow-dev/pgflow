@@ -5,5 +5,6 @@ create type pgflow.step_task_record as (
   step_slug text,
   input jsonb,
   msg_id bigint,
-  task_index int
+  task_index int,
+  flow_input jsonb
 );
