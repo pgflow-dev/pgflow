@@ -207,28 +207,27 @@ describe('Steps', () => {
     it('allows steps to access run input', async () => {
       const testFlow = new Flow<{ value: number }>({ slug: 'test_flow' }).step(
         { slug: 'step1' },
-        ({ run }) => ({ doubled: run.value * 2 })
+        (flowInput) => ({ doubled: flowInput.value * 2 })
       );
 
       const step1Def = testFlow.getStepDefinition('step1');
-      const result = await step1Def.handler({ run: { value: 5 } });
+      const result = await step1Def.handler({ value: 5 });
 
       expect(result).toEqual({ doubled: 10 });
     });
 
     it('allows steps to access dependencies', async () => {
       const testFlow = new Flow<{ value: number }>({ slug: 'test_flow' })
-        .step({ slug: 'step1' }, ({ run }) => ({ doubled: run.value * 2 }))
-        .step({ slug: 'step2', dependsOn: ['step1'] }, ({ step1 }) => ({
-          quadrupled: step1.doubled * 2,
+        .step({ slug: 'step1' }, (flowInput) => ({ doubled: flowInput.value * 2 }))
+        .step({ slug: 'step2', dependsOn: ['step1'] }, (deps) => ({
+          quadrupled: deps.step1.doubled * 2,
         }));
 
       const step1Def = testFlow.getStepDefinition('step1');
-      const step1Result = await step1Def.handler({ run: { value: 5 } });
+      const step1Result = await step1Def.handler({ value: 5 });
 
       const step2Def = testFlow.getStepDefinition('step2');
       const step2Result = await step2Def.handler({
-        run: { value: 5 },
         step1: step1Result,
       });
 

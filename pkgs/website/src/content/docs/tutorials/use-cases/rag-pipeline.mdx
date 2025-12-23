@@ -201,25 +201,25 @@ import generateAnswer from '../_tasks/generateAnswer.ts';
 type Input = { query: string };
 
 export default new Flow<Input>({ slug: 'ragSearch' })
-  .step({ slug: 'transform' }, ({ run }) =>
-    transformQuery(run.query)
+  .step({ slug: 'transform' }, (flowInput) =>
+    transformQuery(flowInput.query)
   )
-  .step({ slug: 'retrieve', dependsOn: ['transform'] }, ({ transform }) =>
+  .step({ slug: 'retrieve', dependsOn: ['transform'] }, (deps) =>
     retrieveDocuments({
-      query: transform.enhanced,
+      query: deps.transform.enhanced,
       limit: 20,
     })
   )
-  .step({ slug: 'rerank', dependsOn: ['retrieve', 'transform'] }, ({ run, retrieve }) =>
+  .step({ slug: 'rerank', dependsOn: ['retrieve', 'transform'] }, (deps, ctx) =>
     rerankResults({
-      query: run.query,
-      documents: retrieve,
+      query: ctx.flowInput.query,
+      documents: deps.retrieve,
     })
   )
-  .step({ slug: 'answer', dependsOn: ['rerank'] }, ({ run, rerank }) =>
+  .step({ slug: 'answer', dependsOn: ['rerank'] }, (deps, ctx) =>
     generateAnswer({
-      query: run.query,
-      context: rerank,
+      query: ctx.flowInput.query,
+      context: deps.rerank,
     })
   );
 ```

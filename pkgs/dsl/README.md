@@ -38,23 +38,23 @@ export const AnalyzeWebsite = new Flow<Input>({
 })
   .step(
     { slug: 'website' },
-    async (input) => await scrapeWebsite(input.run.url)
+    async (flowInput) => await scrapeWebsite(flowInput.url)
   )
   .step(
     { slug: 'sentiment', dependsOn: ['website'] },
-    async (input) => await analyzeSentiment(input.website.content)
+    async (deps) => await analyzeSentiment(deps.website.content)
   )
   .step(
     { slug: 'summary', dependsOn: ['website'] },
-    async (input) => await summarizeWithAI(input.website.content)
+    async (deps) => await summarizeWithAI(deps.website.content)
   )
   .step(
     { slug: 'saveToDb', dependsOn: ['sentiment', 'summary'] },
-    async (input) => {
+    async (deps, ctx) => {
       return await saveToDb({
-        websiteUrl: input.run.url,
-        sentiment: input.sentiment.score,
-        summary: input.summary.aiSummary,
+        websiteUrl: ctx.flowInput.url,
+        sentiment: deps.sentiment.score,
+        summary: deps.summary.aiSummary,
       });
     }
   );
@@ -62,16 +62,22 @@ export const AnalyzeWebsite = new Flow<Input>({
 
 ### Understanding Data Flow
 
-In pgflow, each step receives an `input` object that contains:
+In pgflow, step handlers use **asymmetric signatures** based on whether they have dependencies:
 
-1. **`input.run`** - The original flow input (available to all steps)
-2. **`input.{stepName}`** - Outputs from dependency steps
+**Root steps (no dependencies):**
+- First parameter: `flowInput` - the original flow input directly
+- Second parameter: `ctx` - context object (env, supabase, flowInput, etc.)
+
+**Dependent steps (with dependsOn):**
+- First parameter: `deps` - object with outputs from dependency steps (`deps.{stepName}`)
+- Second parameter: `ctx` - context object (includes `ctx.flowInput` if needed)
 
 This design ensures:
 
-- Original flow parameters are accessible throughout the entire flow
-- Data doesn't need to be manually forwarded through intermediate steps
-- Steps can combine original input with processed data from previous steps
+- Root steps receive flow input directly for clean, simple handlers
+- Dependent steps focus on their dependencies without wrapping
+- Original flow input is always accessible via `ctx.flowInput` when needed
+- Steps can combine dependency outputs with original input via context
 
 ### Step Methods
 
@@ -84,8 +90,9 @@ The standard method for adding steps to a flow. Each step processes input and re
 ```typescript
 .step(
   { slug: 'process', dependsOn: ['previous'] },
-  async (input) => {
-    // Access input.run and input.previous
+  async (deps, ctx) => {
+    // Access deps.previous for dependency output
+    // Access ctx.flowInput if original flow input is needed
     return { result: 'processed' };
   }
 )
@@ -105,7 +112,7 @@ A semantic wrapper around `.step()` that provides type enforcement for steps tha
 // With dependencies - combining data from multiple sources
 .array(
   { slug: 'combineResults', dependsOn: ['source1', 'source2'] },
-  async (input) => [...input.source1, ...input.source2]
+  async (deps) => [...deps.source1, ...deps.source2]
 )
 ```
 
@@ -200,9 +207,9 @@ new Flow<{}>({ slug: 'etlPipeline' })
   .map({ slug: 'extract', array: 'scrape' }, (html) => {
     return extractData(html);
   })
-  .step({ slug: 'aggregate', dependsOn: ['extract'] }, (input) => {
-    // input.extract is the aggregated array from all map tasks
-    return consolidateResults(input.extract);
+  .step({ slug: 'aggregate', dependsOn: ['extract'] }, (deps) => {
+    // deps.extract is the aggregated array from all map tasks
+    return consolidateResults(deps.extract);
   });
 ```
 
@@ -218,9 +225,9 @@ Step handlers can optionally receive a second parameter - the **context object**
 ```typescript
 .step(
   { slug: 'saveToDb' },
-  async (input, context) => {
+  async (flowInput, ctx) => {
     // Access platform resources through context
-    const result = await context.sql`SELECT * FROM users WHERE id = ${input.userId}`;
+    const result = await ctx.sql`SELECT * FROM users WHERE id = ${flowInput.userId}`;
     return result[0];
   }
 )
@@ -230,40 +237,40 @@ Step handlers can optionally receive a second parameter - the **context object**
 
 All platforms provide these core resources:
 
-- **`context.env`** - Environment variables (`Record<string, string | undefined>`)
-- **`context.shutdownSignal`** - AbortSignal for graceful shutdown handling
-- **`context.rawMessage`** - Original pgmq message with metadata
+- **`ctx.env`** - Environment variables (`Record<string, string | undefined>`)
+- **`ctx.flowInput`** - Original flow input (typed as the flow's input type)
+- **`ctx.shutdownSignal`** - AbortSignal for graceful shutdown handling
+- **`ctx.rawMessage`** - Original pgmq message with metadata
   ```typescript
   interface PgmqMessageRecord<T> {
     msg_id: number;
     read_ct: number;
     enqueued_at: Date;
     vt: Date;
-    message: T; // <-- this is your 'input'
+    message: T;
   }
   ```
-- **`context.stepTask`** - Current step task details (flow handlers only)
+- **`ctx.stepTask`** - Current step task details (flow handlers only)
   ```typescript
   interface StepTaskRecord<TFlow> {
     flow_slug: string;
     run_id: string;
     step_slug: string;
-    input: StepInput<TFlow, StepSlug>; // <-- this is handler 'input'
     msg_id: number;
   }
   ```
-- **`context.workerConfig`** - Resolved worker configuration with all defaults applied
+- **`ctx.workerConfig`** - Resolved worker configuration with all defaults applied
   ```typescript
   // Provides access to worker settings like retry limits
-  const isLastAttempt = context.rawMessage.read_ct >= context.workerConfig.retry.limit;
+  const isLastAttempt = ctx.rawMessage.read_ct >= ctx.workerConfig.retry.limit;
   ```
 
 #### Supabase Platform Resources
 
 When using the Supabase platform with EdgeWorker, additional resources are available:
 
-- **`context.sql`** - PostgreSQL client (postgres.js)
-- **`context.supabase`** - Supabase client with service role key for full database access
+- **`ctx.sql`** - PostgreSQL client (postgres.js)
+- **`ctx.supabase`** - Supabase client with service role key for full database access
 
 To use Supabase resources, import the `Flow` class from the Supabase preset:
 
@@ -272,17 +279,17 @@ import { Flow } from '@pgflow/dsl/supabase';
 
 const MyFlow = new Flow<{ userId: string }>({
   slug: 'myFlow',
-}).step({ slug: 'process' }, async (input, context) => {
-  // TypeScript knows context includes Supabase resources
-  const { data } = await context.supabase
+}).step({ slug: 'process' }, async (flowInput, ctx) => {
+  // TypeScript knows ctx includes Supabase resources
+  const { data } = await ctx.supabase
     .from('users')
     .select('*')
-    .eq('id', input.userId);
+    .eq('id', flowInput.userId);
 
   // Use SQL directly
-  const stats = await context.sql`
-      SELECT COUNT(*) as total FROM events 
-      WHERE user_id = ${input.userId}
+  const stats = await ctx.sql`
+      SELECT COUNT(*) as total FROM events
+      WHERE user_id = ${flowInput.userId}
     `;
 
   return { user: data[0], eventCount: stats[0].total };

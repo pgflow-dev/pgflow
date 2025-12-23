@@ -99,10 +99,10 @@ begin
 end $$;
 
 -- Verify collector receives both aggregated arrays
+-- Dependent steps only get dependency outputs (no 'run' key)
 select is(
   (select input from pgflow_tests.read_and_start('test_multi_maps', 1, 1)),
   jsonb_build_object(
-    'run', '{}'::jsonb,
     'map_a', jsonb_build_array(20, 40, 60),
     'map_b', jsonb_build_array('ALPHA', 'BETA')
   ),

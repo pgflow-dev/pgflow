@@ -267,17 +267,17 @@ import saveToDb from "../tasks/saveToDb.ts";
 type Input = { url: string };
 
 export const AnalyzeWebsite = new Flow<Input>({ slug: "analyzeWebsite", maxAttempts: 3 })
-  .step({ slug: "website" }, ({ run }) => scrapeWebsite(run.url))
-  .step({ slug: "summary", dependsOn: ["website"] }, ({ website }) =>
-    summarize(website.content),
+  .step({ slug: "website" }, (flowInput) => scrapeWebsite(flowInput.url))
+  .step({ slug: "summary", dependsOn: ["website"] }, (deps) =>
+    summarize(deps.website.content),
   )
-  .step({ slug: "tags", dependsOn: ["website"] }, ({ website }) =>
-    extractTags(website.content),
+  .step({ slug: "tags", dependsOn: ["website"] }, (deps) =>
+    extractTags(deps.website.content),
   )
   .step(
     { slug: "saveToDb", dependsOn: ["summary", "tags"] },
-    ({ run, summary, tags }) =>
-      saveToDb({ website_url: run.url, summary, tags }),
+    (deps, ctx) =>
+      saveToDb({ website_url: ctx.flowInput.url, summary: deps.summary, tags: deps.tags }),
   );
 ```
 

@@ -213,25 +213,25 @@ type Input = {
 };
 
 export default new Flow<Input>({ slug: 'chatbot' })
-  .step({ slug: 'history' }, ({ run }) =>
-    getHistory(run.conversationId)
+  .step({ slug: 'history' }, (flowInput) =>
+    getHistory(flowInput.conversationId)
   )
-  .step({ slug: 'knowledge' }, ({ run }) =>
-    retrieveKnowledge(run.message)
+  .step({ slug: 'knowledge' }, (flowInput) =>
+    retrieveKnowledge(flowInput.message)
   )
   .step(
     { slug: 'response', dependsOn: ['history', 'knowledge'] },
-    ({ run, history, knowledge }) =>
+    (deps, ctx) =>
       generateResponse({
-        message: run.message,
-        history,
-        knowledge,
+        message: ctx.flowInput.message,
+        history: deps.history,
+        knowledge: deps.knowledge,
       })
   )
-  .step({ slug: 'save', dependsOn: ['response'] }, ({ run, response }) =>
+  .step({ slug: 'save', dependsOn: ['response'] }, (deps, ctx) =>
     saveMessage({
-      conversationId: run.conversationId,
-      content: response,
+      conversationId: ctx.flowInput.conversationId,
+      content: deps.response,
     })
   );
 ```

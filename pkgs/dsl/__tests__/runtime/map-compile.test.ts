@@ -56,7 +56,7 @@ describe('compileFlow with map steps', () => {
   describe('dependent map compilation', () => {
     it('should compile dependent map with array dependency', () => {
       const flow = new Flow<{ count: number }>({ slug: 'test_flow' })
-        .array({ slug: 'nums' }, ({ run }) => Array(run.count).fill(0).map((_, i) => i))
+        .array({ slug: 'nums' }, (flowInput) => Array(flowInput.count).fill(0).map((_, i) => i))
         .map({ slug: 'double', array: 'nums' }, (n) => n * 2);
 
       const sql = compileFlow(flow);
@@ -93,8 +93,8 @@ describe('compileFlow with map steps', () => {
     it('should compile flow with map and regular steps', () => {
       const flow = new Flow<number[]>({ slug: 'test_flow' })
         .map({ slug: 'double' }, (n) => n * 2)
-        .step({ slug: 'sum', dependsOn: ['double'] }, (input) =>
-          input.double.reduce((a, b) => a + b, 0)
+        .step({ slug: 'sum', dependsOn: ['double'] }, (deps) =>
+          deps.double.reduce((a, b) => a + b, 0)
         );
 
       const sql = compileFlow(flow);
@@ -123,8 +123,8 @@ describe('compileFlow with map steps', () => {
       const flow = new Flow<Record<string, never>>({ slug: 'test_flow' })
         .array({ slug: 'generate' }, () => [1, 2, 3])
         .map({ slug: 'square', array: 'generate' }, (n) => n * n)
-        .step({ slug: 'total', dependsOn: ['square'] }, (input) => ({
-          sum: input.square.reduce((a, b) => a + b, 0)
+        .step({ slug: 'total', dependsOn: ['square'] }, (deps) => ({
+          sum: deps.square.reduce((a, b) => a + b, 0)
         }));
 
       const sql = compileFlow(flow);

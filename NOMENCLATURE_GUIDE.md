@@ -200,19 +200,32 @@ Slugs are unique text identifiers with specific rules:
 
 ## Data Flow Terms
 
+### Handler Signatures
+
+Step handlers use **asymmetric signatures** based on whether they have dependencies:
+
+**Root steps (no dependencies):**
+- First parameter: `flowInput` - the original flow input directly
+- Second parameter: `ctx` - context object (env, supabase, flowInput, etc.)
+
+**Dependent steps (with dependsOn):**
+- First parameter: `deps` - object with outputs from dependency steps
+- Second parameter: `ctx` - context object (includes `ctx.flowInput` if needed)
+
 ### Input Structure
 
-- `input.run` - Original flow input (available to all steps except map tasks)
-- `input.{stepName}` - Output from dependency step
+- `flowInput` - Original flow input (root step first parameter)
+- `deps.{stepName}` - Output from dependency step (dependent step first parameter)
+- `ctx.flowInput` - Original flow input via context (available in all steps)
 
 ### Map Step Input
 
 - Map step handlers receive **two parameters**:
   1. **item** - The assigned array element
-  2. **context** - BaseContext object (env, shutdownSignal, rawMessage, workerConfig)
+  2. **context** - BaseContext object (env, shutdownSignal, rawMessage, workerConfig, flowInput)
 - Map handlers do NOT receive FlowContext (no access to `context.stepTask`)
-- No access to `input.run` or other step dependencies via the item parameter
-- Context provides environment and worker metadata, but not flow-level input data
+- Access to original flow input via `context.flowInput`
+- Context provides environment, worker metadata, and flow-level input data
 
 ### Output Handling
 
