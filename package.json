@@ -7,10 +7,10 @@
     "build": "nx run-many --target=build --all",
     "version": "pnpm changeset version && ./scripts/update-jsr-json-version.sh",
     "validate:publish:npm": "pnpm nx run-many -t build --exclude=demo,website,example-flows && pnpm publish --dry-run --provenance --recursive --filter=!./pkgs/edge-worker",
-    "validate:publish:jsr": "cd ./pkgs/edge-worker && jsr publish --dry-run --allow-slow-types",
+    "validate:publish:jsr": "cd ./pkgs/edge-worker && pnpm jsr publish --dry-run --allow-slow-types",
     "validate:publish": "pnpm run validate:publish:npm && pnpm run validate:publish:jsr",
     "publish:npm": "pnpm nx run-many -t build --exclude=demo,website,example-flows && pnpm publish --provenance --recursive --filter=!./pkgs/edge-worker",
-    "publish:jsr": "cd ./pkgs/edge-worker && jsr publish --allow-slow-types",
+    "publish:jsr": "cd ./pkgs/edge-worker && pnpm jsr publish --allow-slow-types",
     "changeset:tag": "pnpm changeset tag && git push --follow-tags",
     "release": "git status && pnpm run validate:publish && pnpm run publish:npm && pnpm run publish:jsr && pnpm run changeset:tag"
   },
