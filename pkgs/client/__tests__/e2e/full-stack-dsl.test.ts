@@ -19,20 +19,20 @@ describe('Full Stack DSL Integration', () => {
       const SimpleFlow = new Flow<{ url: string }>({
         slug: 'simple_dag_test',
       })
-        .step({ slug: 'fetch' }, async (_input) => ({
+        .step({ slug: 'fetch' }, async (_flowInput) => ({
           data: 'fetched content',
           status: 200,
           items: 10,
         }))
-        .step({ slug: 'process', dependsOn: ['fetch'] }, async (input) => ({
+        .step({ slug: 'process', dependsOn: ['fetch'] }, async (deps) => ({
           processed_data: 'cleaned and validated',
-          item_count: input.fetch.items * 2,
+          item_count: deps.fetch.items * 2,
           metadata: { stage: 'processed' },
         }))
-        .step({ slug: 'save', dependsOn: ['process'] }, async (input) => ({
+        .step({ slug: 'save', dependsOn: ['process'] }, async (deps) => ({
           saved: true,
           record_id: 'rec_12345',
-          final_count: input.process.item_count,
+          final_count: deps.process.item_count,
         }));
 
       // Clean up flow data to ensure clean state
@@ -95,7 +95,7 @@ describe('Full Stack DSL Integration', () => {
       let tasks = await readAndStart(sql, sqlClient, SimpleFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('fetch');
-      expect(tasks[0].input.run).toEqual(input);
+      expect(tasks[0].flow_input).toEqual(input);
 
       const fetchOutput = { data: 'fetched content', status: 200, items: 10 };
       await sqlClient.completeTask(tasks[0], fetchOutput);
@@ -111,7 +111,7 @@ describe('Full Stack DSL Integration', () => {
       tasks = await readAndStart(sql, sqlClient, SimpleFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('process');
-      expect(tasks[0].input.run).toEqual(input);
+      expect(tasks[0].flow_input).toEqual(input);
       expect(tasks[0].input.fetch).toEqual(fetchOutput); // Critical: dependency output included
 
       const processOutput = {

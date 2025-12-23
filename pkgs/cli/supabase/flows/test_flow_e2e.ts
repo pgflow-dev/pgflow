@@ -4,6 +4,6 @@ import { Flow } from '@pgflow/dsl';
 export const TestFlowE2E = new Flow<{ value: string }>({
   slug: 'test_flow_e2e',
   maxAttempts: 3,
-}).step({ slug: 'step1' }, async (input) => ({
-  result: `processed: ${input.run.value}`,
+}).step({ slug: 'step1' }, async (flowInput) => ({
+  result: `processed: ${flowInput.value}`,
 }));

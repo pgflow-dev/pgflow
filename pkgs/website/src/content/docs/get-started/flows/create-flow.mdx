@@ -45,11 +45,11 @@ export const GreetUser = new Flow<Input>({
 })
   .step(
     { slug: 'fullName' },
-    (input) => `${input.run.firstName} ${input.run.lastName}`
+    (flowInput) => `${flowInput.firstName} ${flowInput.lastName}`
   )
   .step(
     { slug: 'greeting', dependsOn: ['fullName'] },
-    (input) => `Hello, ${input.fullName}!`
+    (deps) => `Hello, ${deps.fullName}!`
   );
 ```
 
@@ -64,7 +64,7 @@ type Input = {
 };
 ```
 
-This defines what data the flow accepts when started. The input is always accessible via `input.run` in any step.
+This defines what data the flow accepts when started. Root steps receive this directly, while dependent steps access it via `ctx.flowInput`.
 
 ### Flow constructor
 
@@ -83,12 +83,12 @@ export const GreetUser = new Flow<Input>({
 ```typescript
 .step(
   { slug: 'fullName' },
-  (input) => `${input.run.firstName} ${input.run.lastName}`
+  (flowInput) => `${flowInput.firstName} ${flowInput.lastName}`
 )
 ```
 
 - **No dependencies**: This step runs immediately when the flow starts
-- **`input.run`**: Contains the original flow input
+- **`flowInput`**: Root steps receive the flow input directly as the first parameter
 - **Return value**: The string becomes available to dependent steps
 
 ### Second step: greeting
@@ -96,12 +96,12 @@ export const GreetUser = new Flow<Input>({
 ```typescript
 .step(
   { slug: 'greeting', dependsOn: ['fullName'] },
-  (input) => `Hello, ${input.fullName}!`
+  (deps) => `Hello, ${deps.fullName}!`
 )
 ```
 
 - **`dependsOn`**: This step waits for `fullName` to complete
-- **`input.fullName`**: Access the result from the `fullName` step by its slug
+- **`deps.fullName`**: Access the result from the `fullName` step by its slug
 - **Final output**: When the last step completes, its result becomes the flow output
 
 ## Flow registration
@@ -128,7 +128,7 @@ ControlPlane.serve(flows);
    ```typescript
    .step(
      { slug: 'shout', dependsOn: ['greeting'] },
-     (input) => input.greeting.toUpperCase()
+     (deps) => deps.greeting.toUpperCase()
    )
    ```
 
@@ -141,7 +141,8 @@ Recompiling **deletes the existing flow and all its run data**. See [Startup Com
 </Aside>
 
 :::note[Key Concepts]
-- **input.run**: Contains the original flow input, accessible in every step
+- **Root steps**: Receive flow input directly as first parameter
+- **Dependent steps**: Receive dependency outputs as first parameter, access flow input via `ctx.flowInput`
 - **step slugs**: Unique identifiers for each step
 - **dependsOn**: Specifies which steps must complete before a step can run
 - **JSON serialization**: All inputs and outputs must be JSON-serializable

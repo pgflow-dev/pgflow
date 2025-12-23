@@ -18,11 +18,11 @@ pgflow retries all exceptions based on `maxAttempts`. Without explicit validatio
 new Flow<{ email: string }>({ slug: 'sendEmail', maxAttempts: 5 })
   .step(
     { slug: 'send' },
-    async (input) => {
-      if (!input.run.email.includes('@')) {
+    async (flowInput) => {
+      if (!flowInput.email.includes('@')) {
         throw new Error('Invalid email');  // Retries 5 times!
       }
-      return await sendEmail(input.run.email);
+      return await sendEmail(flowInput.email);
     }
   )
 ```
@@ -34,16 +34,16 @@ With explicit validation, failures stop immediately:
 new Flow<{ email: string }>({ slug: 'sendEmail' })
   .step(
     { slug: 'validInput', maxAttempts: 1 },
-    (input) => {
-      if (!input.run.email.includes('@')) {
+    (flowInput) => {
+      if (!flowInput.email.includes('@')) {
         throw new Error('Invalid email');
       }
-      return input.run;
+      return flowInput;
     }
   )
   .step(
     { slug: 'send', dependsOn: ['validInput'], maxAttempts: 5 },
-    async (input) => await sendEmail(input.validInput.email)
+    async (deps) => await sendEmail(deps.validInput.email)
   )
 ```
 
@@ -55,24 +55,24 @@ Validation steps should be fast, synchronous functions that check input format a
 // Good: Fast, synchronous validation
 .step(
   { slug: 'validOrder', maxAttempts: 1 },
-  (input) => {
-    const { amount, items } = input.run;
+  (flowInput) => {
+    const { amount, items } = flowInput;
 
     if (amount <= 0) throw new Error('amount must be positive');
     if (!items?.length) throw new Error('items cannot be empty');
 
-    return input.run;
+    return flowInput;
   }
 )
 
 // Bad: Async checks in validation
 .step(
   { slug: 'validCustomer', maxAttempts: 1 },
-  async (input) => {
+  async (flowInput) => {
     // Database lookups belong in separate steps with retries
-    const exists = await checkCustomerExists(input.run.customerId);
+    const exists = await checkCustomerExists(flowInput.customerId);
     if (!exists) throw new Error('Customer not found');
-    return input.run;
+    return flowInput;
   }
 )
 ```

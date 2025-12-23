@@ -325,20 +325,20 @@ import { Flow } from 'npm:@pgflow/dsl';
 
 new Flow<{ url: string }>({ slug: 'analyzeArticle' })
   .step({ slug: 'fetchArticle' },
-    (input) => scrapeWebsite(input.run.url)
+    (flowInput) => scrapeWebsite(flowInput.url)
   )
   .step({ slug: 'summarize', dependsOn: ['fetchArticle'] },
-    (input) => summarizeContent(input.fetchArticle)
+    (deps) => summarizeContent(deps.fetchArticle)
   )
   .step({ slug: 'extractKeywords', dependsOn: ['fetchArticle'] },
-    (input) => extractKeywords(input.fetchArticle)
+    (deps) => extractKeywords(deps.fetchArticle)
   )
   .step({ slug: 'publish', dependsOn: ['summarize', 'extractKeywords'] },
-    (input) => publishArticle({
-      url: input.run.url,
-      content: input.fetchArticle,
-      summary: input.summarize,
-      keywords: input.extractKeywords
+    (deps, ctx) => publishArticle({
+      url: ctx.flowInput.url,
+      content: deps.fetchArticle,
+      summary: deps.summarize,
+      keywords: deps.extractKeywords
     })
   );
 ```
