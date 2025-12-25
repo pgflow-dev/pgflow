@@ -177,8 +177,8 @@ describe('Supabase Flow Type Tests', () => {
       .step({ slug: 'format', dependsOn: ['multiply'] }, (deps, context) => {
         // Should have proper step input inference from dependencies (deps only, no run key)
         expectTypeOf(deps.multiply.result).toEqualTypeOf<number>();
-        // Access flow input via context.flowInput
-        expectTypeOf(context.flowInput.initial).toEqualTypeOf<number>();
+        // Access flow input via context.flowInput (Promise type)
+        expectTypeOf(context.flowInput).toEqualTypeOf<Promise<{ initial: number }>>();
 
         // Should still have all context
         expectTypeOf(context.sql).toEqualTypeOf<Sql>();

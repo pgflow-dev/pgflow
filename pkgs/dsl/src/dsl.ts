@@ -302,11 +302,16 @@ export interface BaseContext<TEnv extends Env = Env> {
   workerConfig: Readonly<WorkerConfig>;
 }
 
-// Flow context extends base with stepTask and flowInput
-// TFlowInput is typed as Json by default but gets properly typed via method overloads
+/**
+ * Flow context extends base with stepTask and flowInput.
+ *
+ * Note: flowInput is a Promise to support lazy loading. Only root non-map steps
+ * receive flow_input from SQL; other step types lazy-load it on demand.
+ * Use `await ctx.flowInput` to access the original flow input.
+ */
 export interface FlowContext<TEnv extends Env = Env, TFlowInput extends AnyInput = AnyInput> extends BaseContext<TEnv> {
   stepTask: StepTaskRecord<AnyFlow>;
-  flowInput: TFlowInput;
+  flowInput: Promise<TFlowInput>;
 }
 
 // Generic context type helper (uses FlowContext for flow handlers)

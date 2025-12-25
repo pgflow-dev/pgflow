@@ -181,8 +181,8 @@ describe('StepInput utility type (asymmetric)', () => {
         .step({ slug: 'process', dependsOn: ['fetch'] }, (deps, ctx) => {
           // deps should only contain dependencies
           expectTypeOf(deps).toMatchTypeOf<{ fetch: { data: string } }>();
-          // flowInput available via context
-          expectTypeOf(ctx.flowInput).toMatchTypeOf<{ userId: string }>();
+          // flowInput available via context as Promise
+          expectTypeOf(ctx.flowInput).toMatchTypeOf<Promise<{ userId: string }>>();
           return { result: deps.fetch.data };
         });
 

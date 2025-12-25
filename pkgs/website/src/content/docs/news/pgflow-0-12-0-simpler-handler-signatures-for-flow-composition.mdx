@@ -24,8 +24,8 @@ Handler signatures are now asymmetric based on step type:
 |-----------|--------|-------|
 | Root step | `(input) => input.run.xxx` | `(flowInput, ctx) => flowInput.xxx` |
 | Dependent step | `(input) => input.dep.xxx` | `(deps, ctx) => deps.dep.xxx` |
-| Dependent (needs flowInput) | `(input) => input.run.xxx` | `(deps, ctx) => ctx.flowInput.xxx` |
-| Map step | `(item) => ...` | `(item, ctx) => ctx.flowInput.xxx` |
+| Dependent (needs flowInput) | `(input) => input.run.xxx` | `async (deps, ctx) => (await ctx.flowInput).xxx` |
+| Map step | `(item) => ...` | `async (item, ctx) => (await ctx.flowInput).xxx` |
 
 <Aside type="caution" title="Breaking Change">
 All handler signatures must be updated. The `input.run` pattern no longer exists.
@@ -72,13 +72,14 @@ Root steps receive flow input directly as the first parameter:
 
 ### Dependent Steps
 
-Dependent steps receive only their dependencies as the first parameter. Access `flowInput` via context if needed:
+Dependent steps receive only their dependencies as the first parameter. Access `flowInput` via context if needed (async):
 
 ```typescript
-// .step() - dependent (needs flowInput)
-.step({ slug: 'process', dependsOn: ['init'] }, (deps, ctx) => {
-  const config = ctx.flowInput.config;  // Via context
-  const data = deps.init.userId;        // Dependencies directly
+// .step() - dependent (needs flowInput) - must be async
+.step({ slug: 'process', dependsOn: ['init'] }, async (deps, ctx) => {
+  const flowInput = await ctx.flowInput;  // Lazy-loaded, must await
+  const config = flowInput.config;
+  const data = deps.init.userId;          // Dependencies directly
   return { result: process(data, config) };
 })
 
@@ -95,15 +96,19 @@ Dependent steps receive only their dependencies as the first parameter. Access `
 
 ### Map Steps
 
-Map steps receive individual array elements. Access `flowInput` via context:
+Map steps receive individual array elements. Access `flowInput` via context (async):
 
 ```typescript
-// .map() - processes each array element
-.map({ slug: 'processItem', array: 'fetchAll' }, (item, ctx) => {
-  const config = ctx.flowInput.config;  // Original flow input via context
-  return transform(item, config);
+// .map() - processes each array element (async if needs flowInput)
+.map({ slug: 'processItem', array: 'fetchAll' }, async (item, ctx) => {
+  const flowInput = await ctx.flowInput;  // Lazy-loaded, must await
+  return transform(item, flowInput.config);
 })
 ```
+
+<Aside type="tip" title="Why is ctx.flowInput async?">
+`ctx.flowInput` is lazy-loaded to prevent data duplication. For map steps processing thousands of items, including the full flow input in each task would multiply data transfer. Instead, it's fetched on-demand and cached per run.
+</Aside>
 
 ## Upgrading Your Flows
 
@@ -139,7 +144,7 @@ Apply these transformations to your handlers:
 
 #### Dependent Steps - Needing flowInput
 
-```typescript del="input" del="input.run" del="input.init" ins="deps, ctx" ins="ctx.flowInput" ins="deps.init"
+```typescript del="input" del="input.run" del="input.init" ins="async" ins="deps, ctx" ins="await ctx.flowInput" ins="deps.init"
 // BEFORE
 .step({ slug: 'process', dependsOn: ['init'] }, (input) => {
   const config = input.run.config;
@@ -147,9 +152,10 @@ Apply these transformations to your handlers:
   return combine(data, config);
 })
 
-// AFTER
-.step({ slug: 'process', dependsOn: ['init'] }, (deps, ctx) => {
-  const config = ctx.flowInput.config;
+// AFTER (must be async)
+.step({ slug: 'process', dependsOn: ['init'] }, async (deps, ctx) => {
+  const flowInput = await ctx.flowInput;
+  const config = flowInput.config;
   const data = deps.init.data;
   return combine(data, config);
 })
@@ -171,15 +177,16 @@ Apply these transformations to your handlers:
 
 #### Map Steps - Accessing flowInput
 
-```typescript ins="item, ctx" ins="ctx.flowInput.options"
+```typescript ins="async" ins="item, ctx" ins="await ctx.flowInput"
 // BEFORE
 .map({ slug: 'transform', array: 'items' }, (item) => {
   return process(item);
 })
 
-// AFTER (if you need flowInput)
-.map({ slug: 'transform', array: 'items' }, (item, ctx) => {
-  return process(item, ctx.flowInput.options);
+// AFTER (if you need flowInput - must be async)
+.map({ slug: 'transform', array: 'items' }, async (item, ctx) => {
+  const flowInput = await ctx.flowInput;
+  return process(item, flowInput.options);
 })
 ```
 

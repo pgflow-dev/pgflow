@@ -88,7 +88,8 @@ describe('Happy Path E2E Integration', () => {
       tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('process');
-      expect(tasks[0].flow_input).toEqual(input);
+      // Dependent steps have null flow_input (lazy loaded via ctx.flowInput)
+      expect(tasks[0].flow_input).toBeNull();
       expect(tasks[0].input.fetch).toEqual(fetchOutput);
 
       const processOutput = { 
@@ -127,7 +128,8 @@ describe('Happy Path E2E Integration', () => {
       
       log('Save task input:', JSON.stringify(tasks[0].input, null, 2));
 
-      expect(tasks[0].flow_input).toEqual(input);
+      // Dependent steps have null flow_input (lazy loaded via ctx.flowInput)
+      expect(tasks[0].flow_input).toBeNull();
       expect(tasks[0].input.process).toEqual(processOutput);
       // Note: save step only depends on process, so fetch output is not included (correct behavior)
       expect(tasks[0].input.fetch).toBeUndefined();

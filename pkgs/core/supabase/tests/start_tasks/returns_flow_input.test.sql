@@ -2,7 +2,15 @@ begin;
 select plan(5);
 select pgflow_tests.reset_db();
 
--- Test 1: Root step returns flow_input matching original run input
+-- =========================================================================
+-- Test: flow_input in start_tasks (conditional inclusion)
+--
+-- Only root non-map steps receive flow_input.
+-- Other step types (dependent, map) receive NULL for efficiency.
+-- Workers lazy-load flow_input via ctx.flowInput when needed.
+-- =========================================================================
+
+-- Test 1: Root non-map step returns flow_input matching original run input
 select pgflow.create_flow('simple_flow');
 select pgflow.add_step('simple_flow', 'root_step');
 select pgflow.start_flow('simple_flow', '{"user_id": "abc123", "config": {"debug": true}}'::jsonb);
@@ -25,10 +33,10 @@ started_tasks as (
 select is(
   (select flow_input from started_tasks),
   '{"user_id": "abc123", "config": {"debug": true}}'::jsonb,
-  'Root step flow_input should match original run input'
+  'Root non-map step flow_input should match original run input'
 );
 
--- Test 2: Dependent step also returns flow_input
+-- Test 2: Dependent step returns NULL flow_input (lazy loaded by worker)
 select pgflow_tests.reset_db();
 select pgflow.create_flow('dep_flow');
 select pgflow.add_step('dep_flow', 'first');
@@ -48,7 +56,7 @@ select pgflow.complete_task(
   '{"first_result": "done"}'::jsonb
 ) from poll_result;
 
--- Start second step and verify flow_input
+-- Start second step and verify flow_input is NULL
 select pgflow_tests.ensure_worker('dep_flow', '22222222-2222-2222-2222-222222222222'::uuid);
 with msgs as (
   select * from pgmq.read_with_poll('dep_flow', 10, 5, 1, 50) limit 1
@@ -65,12 +73,12 @@ started_tasks as (
 )
 select is(
   (select flow_input from started_tasks),
-  '{"original": "input"}'::jsonb,
-  'Dependent step flow_input should match original run input'
+  NULL::jsonb,
+  'Dependent step flow_input should be NULL (lazy loaded by worker)'
 );
 
--- Tests 3 & 4: Root map step returns flow_input (the array)
--- All map tasks should have same flow_input and it should be the original array
+-- Tests 3 & 4: Root map step returns NULL flow_input
+-- Map steps receive NULL because flowInput IS the array (useless to duplicate)
 select pgflow_tests.reset_db();
 select pgflow.create_flow('map_flow');
 select pgflow.add_step('map_flow', 'map_step', '{}', null, null, null, null, 'map');
@@ -92,23 +100,23 @@ select * from pgflow.start_tasks(
   '11111111-1111-1111-1111-111111111111'::uuid
 );
 
--- Test 3: All map tasks should have same flow_input
+-- Test 3: All map tasks should have NULL flow_input (consistent)
 select is(
-  (select count(distinct flow_input)::int from map_started_tasks),
+  (select count(distinct coalesce(flow_input::text, 'NULL'))::int from map_started_tasks),
   1,
-  'All map tasks should have same flow_input'
+  'All map tasks should have consistent flow_input (all NULL)'
 );
 
--- Test 4: Map task flow_input is the original array, not the element
+-- Test 4: Map task flow_input is NULL (lazy loaded by worker)
 select is(
   (select flow_input from map_started_tasks limit 1),
-  '[1, 2, 3]'::jsonb,
-  'Map task flow_input should be original array, not individual element'
+  NULL::jsonb,
+  'Map task flow_input should be NULL (lazy loaded by worker)'
 );
 
 drop table map_started_tasks;
 
--- Test 5: Multiple tasks in batch all have correct flow_input
+-- Test 5: Multiple parallel root non-map tasks all have correct flow_input
 select pgflow_tests.reset_db();
 select pgflow.create_flow('multi_flow');
 select pgflow.add_step('multi_flow', 'step1');
@@ -133,7 +141,7 @@ started_tasks as (
 )
 select ok(
   (select bool_and(flow_input = '{"batch": "test"}'::jsonb) from started_tasks),
-  'All tasks in batch should have correct flow_input'
+  'All parallel root non-map tasks should have correct flow_input'
 );
 
 select finish();

@@ -26,11 +26,17 @@ export interface MessageExecution<TPayload extends Json = Json> {
   workerConfig: Readonly<Omit<QueueWorkerConfig, 'sql'>>;
 }
 
+/**
+ * Execution context for step task handlers.
+ *
+ * Note: flowInput is a Promise to support lazy loading. Only root non-map steps
+ * receive flow_input from SQL; other step types lazy-load it on demand.
+ */
 export interface StepTaskExecution<TFlow extends AnyFlow = AnyFlow> {
   rawMessage: PgmqMessageRecord<AllStepInputs<TFlow>>;
   stepTask  : StepTaskRecord<TFlow>;
   workerConfig: Readonly<Omit<FlowWorkerConfig, 'sql'>>;
-  flowInput: ExtractFlowInput<TFlow>;
+  flowInput: Promise<ExtractFlowInput<TFlow>>;
 }
 
 /** Message handler context for any platform */
@@ -49,11 +55,18 @@ export type StepTaskContext<
    3.  UTILITIES
    --------------------------------------------------------------------- */
 
+/**
+ * Combined task and message data from polling.
+ *
+ * Note: flowInput is nullable because start_tasks only provides it for root
+ * non-map steps. The executor will create a Promise that either resolves
+ * immediately (if provided) or lazy-loads from the runs table.
+ */
 export interface StepTaskWithMessage<TFlow extends AnyFlow> {
   msg_id : number;
   message: PgmqMessageRecord<AllStepInputs<TFlow>>;
   task   : StepTaskRecord<TFlow>;
-  flowInput: ExtractFlowInput<TFlow>;
+  flowInput: ExtractFlowInput<TFlow> | null;
 }
 
 import { deepClone, deepFreeze } from './deepUtils.js';

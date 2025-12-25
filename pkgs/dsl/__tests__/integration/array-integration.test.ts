@@ -20,11 +20,12 @@ describe('Array Integration Tests', () => {
           }))
         )
         // Filter users based on criteria
-        .array({ slug: 'filtered_users', dependsOn: ['users'] }, (deps, ctx) =>
-          ctx.flowInput.includeInactive
+        .array({ slug: 'filtered_users', dependsOn: ['users'] }, async (deps, ctx) => {
+          const flowInput = await ctx.flowInput;
+          return flowInput.includeInactive
             ? deps.users
-            : deps.users.filter(user => user.active)
-        )
+            : deps.users.filter(user => user.active);
+        })
         // Calculate statistics from filtered users
         .step({ slug: 'stats', dependsOn: ['filtered_users'] }, (deps) => ({
           count: deps.filtered_users.length,
@@ -54,7 +55,7 @@ describe('Array Integration Tests', () => {
       const filteredHandler = dataFlow.getStepDefinition('filtered_users').handler;
       const filteredResult = await filteredHandler({
         users: usersResult
-      }, { flowInput: input });
+      }, { flowInput: Promise.resolve(input) } as any);
 
       const statsHandler = dataFlow.getStepDefinition('stats').handler;
       const statsResult = await statsHandler({
@@ -92,8 +93,9 @@ describe('Array Integration Tests', () => {
           }))
         )
         // Build level 1 from level 0
-        .array({ slug: 'level_1', dependsOn: ['level_0'] }, (deps, ctx) => {
-          if (ctx.flowInput.levels <= 1) return [];
+        .array({ slug: 'level_1', dependsOn: ['level_0'] }, async (deps, ctx) => {
+          const flowInput = await ctx.flowInput;
+          if (flowInput.levels <= 1) return [];
           return deps.level_0.map(item => ({
             id: item.id + 100,
             level: 1,
@@ -102,8 +104,9 @@ describe('Array Integration Tests', () => {
           }));
         })
         // Build level 2 from level 1
-        .array({ slug: 'level_2', dependsOn: ['level_1'] }, (deps, ctx) => {
-          if (ctx.flowInput.levels <= 2) return [];
+        .array({ slug: 'level_2', dependsOn: ['level_1'] }, async (deps, ctx) => {
+          const flowInput = await ctx.flowInput;
+          if (flowInput.levels <= 2) return [];
           return deps.level_1.map(item => ({
             id: item.id + 100,
             level: 2,
@@ -135,10 +138,10 @@ describe('Array Integration Tests', () => {
       const level0Result = await level0Handler(input);
 
       const level1Handler = pyramidFlow.getStepDefinition('level_1').handler;
-      const level1Result = await level1Handler({ level_0: level0Result }, { flowInput: input });
+      const level1Result = await level1Handler({ level_0: level0Result }, { flowInput: Promise.resolve(input) } as any);
 
       const level2Handler = pyramidFlow.getStepDefinition('level_2').handler;
-      const level2Result = await level2Handler({ level_1: level1Result }, { flowInput: input });
+      const level2Result = await level2Handler({ level_1: level1Result }, { flowInput: Promise.resolve(input) } as any);
 
       const summaryHandler = pyramidFlow.getStepDefinition('summary').handler;
       const summaryResult = await summaryHandler({
@@ -187,12 +190,13 @@ describe('Array Integration Tests', () => {
           }))
         )
         // Batch processing (regular step that groups array data)
-        .step({ slug: 'batches', dependsOn: ['raw_data', 'config'] }, (deps, ctx) => {
+        .step({ slug: 'batches', dependsOn: ['raw_data', 'config'] }, async (deps, ctx) => {
+          const flowInput = await ctx.flowInput;
           const batches = [];
-          for (let i = 0; i < deps.raw_data.length; i += ctx.flowInput.batchSize) {
+          for (let i = 0; i < deps.raw_data.length; i += flowInput.batchSize) {
             batches.push({
-              id: Math.floor(i / ctx.flowInput.batchSize),
-              items: deps.raw_data.slice(i, i + ctx.flowInput.batchSize),
+              id: Math.floor(i / flowInput.batchSize),
+              items: deps.raw_data.slice(i, i + flowInput.batchSize),
               mode: deps.config.processingMode
             });
           }
@@ -238,7 +242,7 @@ describe('Array Integration Tests', () => {
       const batchesResult = await batchesHandler({
         raw_data: rawDataResult,
         config: configResult
-      }, { flowInput: input });
+      }, { flowInput: Promise.resolve(input) } as any);
 
       const processedHandler = processingFlow.getStepDefinition('processed_batches').handler;
       const processedResult = await processedHandler({

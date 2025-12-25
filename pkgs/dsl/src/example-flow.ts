@@ -28,10 +28,11 @@ export const AnalyzeWebsite = new Flow<Input>({
   )
   .step(
     { slug: 'saveToDb', dependsOn: ['sentiment', 'summary'] },
-    // Dependent step needing flowInput: access via ctx.flowInput
+    // Dependent step needing flowInput: access via await ctx.flowInput
     async (deps, ctx) => {
+      const flowInput = await ctx.flowInput;
       const results = await saveToDb({
-        websiteUrl: ctx.flowInput.url,
+        websiteUrl: flowInput.url,
         sentiment: deps.sentiment.score,
         summary: deps.summary.aiSummary,
       });

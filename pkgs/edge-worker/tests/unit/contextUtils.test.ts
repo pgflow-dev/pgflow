@@ -57,9 +57,9 @@ const mockStepTask = {
   step_slug: 'test-step',
   input: { run: { test: 'input' } },
   msg_id: 123,
-  flow_input: mockFlowInput,
+  flow_input: mockFlowInput,  // Can be actual value or null - test helper wraps in Promise
   task_index: 0
-} as StepTaskRecord<never>;
+} as unknown as StepTaskRecord<never>;
 
 Deno.test('createSupabaseMessageContext - creates context with all Supabase resources', () => {
   const context = createSupabaseMessageContext({
@@ -102,7 +102,7 @@ Deno.test('createTestMessageContext - allows custom resources for testing', () =
   assertEquals((context as unknown as { customResource: string }).customResource, 'test-value');
 });
 
-Deno.test('createSupabaseStepTaskContext - creates context with step task', () => {
+Deno.test('createSupabaseStepTaskContext - creates context with step task', async () => {
   const context = createSupabaseStepTaskContext({
     env: fullEnv,
     sql: mockSql,
@@ -118,7 +118,9 @@ Deno.test('createSupabaseStepTaskContext - creates context with step task', () =
   assertEquals(context.shutdownSignal, mockAbortSignal);
   assertEquals(context.stepTask, mockStepTask);
   assertEquals(context.rawMessage, mockStepMessage);
-  assertEquals(context.flowInput, mockFlowInput);
+
+  // flowInput is now a Promise
+  assertEquals(await context.flowInput, mockFlowInput);
 
   // Supabase client should always be present
   assertExists(context.supabase);
