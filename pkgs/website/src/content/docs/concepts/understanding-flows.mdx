@@ -41,14 +41,14 @@ Both step types receive a **context object** as the second parameter, which prov
 
 :::note[Accessing Flow Input]
 - Root steps: Access directly via the first parameter (e.g., `flowInput.url`)
-- Dependent steps: Access via context (e.g., `ctx.flowInput.url`)
+- Dependent steps: Access via context (e.g., `await ctx.flowInput` - it's lazy-loaded)
 
 This asymmetric design matches the domain - root and dependent steps ARE different.
 :::
 
 Consider this example:
 
-```typescript "flowInput.url" "ctx.flowInput.userId" "deps.scrape.content"
+```typescript "flowInput.url" "await ctx.flowInput" "deps.scrape.content"
 new Flow<{ url: string, userId: string }>({
   slug: 'analyzeWebsite',
 })
@@ -63,7 +63,7 @@ new Flow<{ url: string, userId: string }>({
     { slug: 'analyze', dependsOn: ['scrape'] },
     async (deps, ctx) => {
       // deps contains dependency outputs
-      // ctx.flowInput provides access to original flow input if needed
+      // await ctx.flowInput provides access to original flow input if needed
       return await analyzeContent(deps.scrape.content);
     }
   );
@@ -72,7 +72,7 @@ new Flow<{ url: string, userId: string }>({
 When this flow runs:
 1. The flow receives an input object (e.g., `{ url: "example.com", userId: "123" }`)
 2. Root steps receive the flow input directly as the first parameter
-3. Dependent steps receive their dependencies as the first parameter, with flow input available via `ctx.flowInput`
+3. Dependent steps receive their dependencies as the first parameter, with flow input available via `await ctx.flowInput`
 
 ## The Type System
 
@@ -272,7 +272,7 @@ The TypeScript code is used only for definition and compilation, not for executi
 
 Here's a practical example showing how data flows efficiently through steps:
 
-```typescript "flowInput.userId" "ctx.flowInput.reportType" "ctx.flowInput.includeDetails" {21,30,38}
+```typescript "flowInput.userId" "await ctx.flowInput" {22-23,32-33,42-43}
 // Flow with multiple input parameters
 type Input = {
   userId: string,
@@ -294,27 +294,28 @@ new Flow<Input>({
   .step(
     { slug: 'activity', dependsOn: ['user'] },
     async (deps, ctx) => {
-      // Uses ctx.flowInput.reportType to determine timespan
-      const timespan = ctx.flowInput.reportType === 'advanced' ? '1y' : '30d';
+      const flowInput = await ctx.flowInput;
+      const timespan = flowInput.reportType === 'advanced' ? '1y' : '30d';
       return await getUserActivity(deps.user.id, timespan);
     }
   )
   .step(
     { slug: 'preferences', dependsOn: ['user'] },
     async (deps, ctx) => {
-      // Uses ctx.flowInput.includeDetails parameter
-      return await getUserPreferences(deps.user.id, ctx.flowInput.includeDetails);
+      const flowInput = await ctx.flowInput;
+      return await getUserPreferences(deps.user.id, flowInput.includeDetails);
     }
   )
   // Step 4: Combine results
   .step(
     { slug: 'report', dependsOn: ['activity', 'preferences'] },
     async (deps, ctx) => {
+      const flowInput = await ctx.flowInput;
       return {
         user: deps.user,
         activity: deps.activity,
         preferences: deps.preferences,
-        reportType: ctx.flowInput.reportType,  // Original parameter still available
+        reportType: flowInput.reportType,
         generatedAt: new Date().toISOString()
       };
     }
@@ -322,7 +323,7 @@ new Flow<Input>({
 ```
 
 This example demonstrates:
-1. **Original parameters available via context** - Dependent steps access flow input via `ctx.flowInput`
+1. **Original parameters available via context** - Dependent steps access flow input via `await ctx.flowInput`
 2. **Conditional processing** - Steps adapt behavior based on original parameters
 3. **No manual parameter forwarding needed** - The `user` step doesn't need to include original parameters
 4. **Type safety throughout** - TypeScript ensures all data accesses are valid

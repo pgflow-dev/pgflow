@@ -15,11 +15,13 @@ new Flow<{ url: string; user_id: string }>({
   )
   .step(
     { slug: 'saveToDb', dependsOn: ['summary', 'tags'] },
-    async (deps, ctx) =>
-      await saveWebsite({
-        user_id: ctx.flowInput.user_id,
-        website_url: ctx.flowInput.url,
+    async (deps, ctx) => {
+      const flowInput = await ctx.flowInput;
+      return saveWebsite({
+        user_id: flowInput.user_id,
+        website_url: flowInput.url,
         summary: deps.summary,
         tags: deps.tags,
-      })
+      });
+    }
   );

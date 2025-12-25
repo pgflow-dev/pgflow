@@ -30,10 +30,10 @@ const MyFlow = new Flow<Input>({
   timeout: 60,
 })
   .step({ slug: 'fetch' }, (flowInput) => flowInput.url)
-  .step({ slug: 'process', dependsOn: ['fetch'] }, (deps, ctx) => ({
-    url: ctx.flowInput.url,
-    content: deps.fetch,
-  }));
+  .step({ slug: 'process', dependsOn: ['fetch'] }, async (deps, ctx) => {
+    const flowInput = await ctx.flowInput;
+    return { url: flowInput.url, content: deps.fetch };
+  });
 
 const statements = compileFlow(MyFlow);
 // Returns: string[]

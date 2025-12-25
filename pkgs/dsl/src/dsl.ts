@@ -431,12 +431,13 @@ export class Flow<
   >;
 
   // Overload 2: Dependent step (with dependsOn) - receives deps, flowInput via context
+  // Note: [Deps, ...Deps[]] requires at least one dependency - empty arrays are rejected at compile time
   step<
     Slug extends string,
     Deps extends Extract<keyof Steps, string>,
     TOutput
   >(
-    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn: Deps[] } & StepRuntimeOptions>,
+    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn: [Deps, ...Deps[]] } & StepRuntimeOptions>,
     handler: (
       deps: { [K in Deps]: K extends keyof Steps ? Steps[K] : never },
       context: FlowContext<TEnv, TFlowInput> & TContext
@@ -537,12 +538,13 @@ export class Flow<
   >;
 
   // Overload 2: Dependent array (with dependsOn) - receives deps, flowInput via context
+  // Note: [Deps, ...Deps[]] requires at least one dependency - empty arrays are rejected at compile time
   array<
     Slug extends string,
     Deps extends Extract<keyof Steps, string>,
     TOutput extends readonly any[]
   >(
-    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn: Deps[] } & StepRuntimeOptions>,
+    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn: [Deps, ...Deps[]] } & StepRuntimeOptions>,
     handler: (
       deps: { [K in Deps]: K extends keyof Steps ? Steps[K] : never },
       context: FlowContext<TEnv, TFlowInput> & TContext

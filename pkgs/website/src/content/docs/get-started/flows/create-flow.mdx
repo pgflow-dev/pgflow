@@ -62,7 +62,7 @@ type Input = {
 };
 ```
 
-This defines what data the flow accepts when started. Root steps receive this directly, while dependent steps access it via `ctx.flowInput`.
+This defines what data the flow accepts when started. Root steps receive this directly, while dependent steps access it via `await ctx.flowInput`.
 
 ### Flow constructor
 
@@ -113,7 +113,7 @@ export const GreetUser = new Flow<Input>({
 (deps) => ...  // deps = { fullName: "John Doe" }
 ```
 
-Need flow input in a dependent step? Use `ctx.flowInput`.
+Need flow input in a dependent step? Use `await ctx.flowInput`.
 </Aside>
 
 ## Exporting flows
@@ -145,7 +145,7 @@ Recompiling **deletes the existing flow and all its run data**. See [Startup Com
 
 :::note[Key Concepts]
 - **Root steps**: Receive flow input directly as first parameter
-- **Dependent steps**: Receive dependency outputs as first parameter, access flow input via `ctx.flowInput`
+- **Dependent steps**: Receive dependency outputs as first parameter, access flow input via `await ctx.flowInput`
 - **step slugs**: Unique identifiers for each step
 - **dependsOn**: Specifies which steps must complete before a step can run
 - **JSON serialization**: All inputs and outputs must be JSON-serializable

@@ -223,13 +223,14 @@ export const GenerateEmbeddings = new Flow<Input>({ slug: 'generateEmbeddings' }
   .map({ slug: 'embeddings', array: 'chunks' }, (chunk) =>
     generateEmbedding(chunk)
   )
-  .step({ slug: 'save', dependsOn: ['chunks', 'embeddings'] }, (deps, ctx) =>
-    saveChunks({
-      documentId: ctx.flowInput.documentId,
+  .step({ slug: 'save', dependsOn: ['chunks', 'embeddings'] }, async (deps, ctx) => {
+    const flowInput = await ctx.flowInput;
+    return saveChunks({
+      documentId: flowInput.documentId,
       chunks: deps.chunks,
       embeddings: deps.embeddings,
-    }, ctx.supabase)
-  );
+    }, ctx.supabase);
+  });
 ```
 
 **How the flow works:**

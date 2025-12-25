@@ -276,8 +276,10 @@ export const AnalyzeWebsite = new Flow<Input>({ slug: "analyzeWebsite", maxAttem
   )
   .step(
     { slug: "saveToDb", dependsOn: ["summary", "tags"] },
-    (deps, ctx) =>
-      saveToDb({ website_url: ctx.flowInput.url, summary: deps.summary, tags: deps.tags }),
+    async (deps, ctx) => {
+      const flowInput = await ctx.flowInput;
+      return saveToDb({ website_url: flowInput.url, summary: deps.summary, tags: deps.tags });
+    },
   );
 ```
 

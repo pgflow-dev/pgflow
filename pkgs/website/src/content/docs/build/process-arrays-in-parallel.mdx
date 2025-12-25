@@ -71,22 +71,22 @@ const CsvProcessor = new Flow<{ csvUrl: string }>({
 
 ## Enriching Array Elements with Additional Data
 
-Map handlers only receive individual array elements. If a handler needs access to the original flow input, outputs from other dependencies, or any additional data, include that data in the array elements via a previous step.
+Map handlers can access flow input via `await ctx.flowInput`, but for better performance, include needed data directly in the array elements via a previous step.
 
-### Problem: Map Handlers Can't Access Flow Context
+### Inefficient: Awaiting flowInput in Each Map Task
 
-```typescript "apiKey: string" del="id, ???" del="(id)"
-// This won't work - map handler can't access ctx.flowInput
-const ProblemFlow = new Flow<{ apiKey: string, ids: string[] }>({
-  slug: 'problemFlow',
+```typescript "apiKey: string" del="await ctx.flowInput" del="(id, ctx)"
+// Works, but inefficient - fetches flowInput for each of N tasks
+const InefficientFlow = new Flow<{ apiKey: string, ids: string[] }>({
+  slug: 'inefficientFlow',
 })
-  .map({ slug: 'fetch' }, async (id) => {
-    // Can't access flowInput.apiKey here!
-    return await fetchWithKey(id, ???);  // No access to apiKey
+  .map({ slug: 'fetch' }, async (id, ctx) => {
+    const flowInput = await ctx.flowInput;  // N fetches for N items
+    return await fetchWithKey(id, flowInput.apiKey);
   });
 ```
 
-### Solution: Enrich Array Elements
+### Better: Enrich Array Elements
 
 ```typescript ins={4-13} ins="item.id, item.apiKey" ins="(item)"
 const SolutionFlow = new Flow<{ apiKey: string, ids: string[] }>({
@@ -112,6 +112,10 @@ const SolutionFlow = new Flow<{ apiKey: string, ids: string[] }>({
 ```
 
 This pattern applies whenever a map handler needs any data beyond the array elements themselves. Add a step before the map that enriches the array elements with whatever data the handler needs - whether that's the original flow input, outputs from other dependencies, or both.
+
+:::tip[Why is ctx.flowInput async?]
+`ctx.flowInput` is lazy-loaded to prevent data duplication. For map steps processing thousands of items, including the full flow input in each task record would multiply storage and transfer costs. Instead, it's fetched on-demand when you `await` it and cached per run - subsequent awaits in the same worker reuse the cached value. The enrichment pattern above is still more efficient because it avoids even the initial fetch overhead per task.
+:::
 
 :::note[Debugging Map Tasks]
 When debugging map steps, use [`context.stepTask.task_index`](/reference/context/#steptask) to identify which array element each task is processing.

@@ -210,18 +210,20 @@ export default new Flow<Input>({ slug: 'ragSearch' })
       limit: 20,
     })
   )
-  .step({ slug: 'rerank', dependsOn: ['retrieve', 'transform'] }, (deps, ctx) =>
-    rerankResults({
-      query: ctx.flowInput.query,
+  .step({ slug: 'rerank', dependsOn: ['retrieve', 'transform'] }, async (deps, ctx) => {
+    const flowInput = await ctx.flowInput;
+    return rerankResults({
+      query: flowInput.query,
       documents: deps.retrieve,
-    })
-  )
-  .step({ slug: 'answer', dependsOn: ['rerank'] }, (deps, ctx) =>
-    generateAnswer({
-      query: ctx.flowInput.query,
+    });
+  })
+  .step({ slug: 'answer', dependsOn: ['rerank'] }, async (deps, ctx) => {
+    const flowInput = await ctx.flowInput;
+    return generateAnswer({
+      query: flowInput.query,
       context: deps.rerank,
-    })
-  );
+    });
+  });
 ```
 
 ## Compile and Deploy
