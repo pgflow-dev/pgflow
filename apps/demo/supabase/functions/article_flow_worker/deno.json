@@ -1,5 +1,6 @@
 {
 	"imports": {
+		"@std/crypto/timing-safe-equal": "jsr:@std/crypto@1/timing-safe-equal",
 		"@pgflow/core": "../_vendor/@pgflow/core/index.ts",
 		"@pgflow/core/": "../_vendor/@pgflow/core/",
 		"@pgflow/dsl": "../_vendor/@pgflow/dsl/index.ts",
