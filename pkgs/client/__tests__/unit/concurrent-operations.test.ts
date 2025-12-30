@@ -23,7 +23,7 @@ import { RUN_ID, FLOW_SLUG, STEP_SLUG, startedRunSnapshot, stepStatesSample } fr
 // Create a test flow for proper typing
 const TestFlow = new Flow<{ test: string }>({ slug: 'test_flow' }).step(
   { slug: 'test_step' },
-  (input) => ({ result: input.run.test })
+  (flowInput) => ({ result: flowInput.test })
 );
 
 // Mock uuid to return predictable IDs

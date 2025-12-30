@@ -3,23 +3,23 @@ import { it, expectTypeOf, expect } from 'vitest';
 
 it('should correctly type step handlers when using getStepDefinition', () => {
   const TestFlow = new Flow<{ url: string }>({ slug: 'test_flo' })
-    .step({ slug: 'root_a' }, (input) =>
-      [input.run.url, input.run.url].join(' ')
+    .step({ slug: 'root_a' }, (flowInput) =>
+      [flowInput.url, flowInput.url].join(' ')
     )
-    .step({ slug: 'root_b' }, (input) => input.run.url.length)
-    .step({ slug: 'merge', dependsOn: ['root_a', 'root_b'] }, (input) => {
+    .step({ slug: 'root_b' }, (flowInput) => flowInput.url.length)
+    .step({ slug: 'merge', dependsOn: ['root_a', 'root_b'] }, (deps) => {
       return {
-        a_val: input.root_a,
-        b_val: input.root_b,
+        a_val: deps.root_a,
+        b_val: deps.root_b,
       };
     });
 
   const root_a = TestFlow.getStepDefinition('root_a');
 
-  // Test root_a handler type - handlers now have 2 parameters (input, context)
+  // Test root_a handler type - root steps receive flowInput directly (no run key)
   expectTypeOf(root_a.handler).toBeFunction();
   expectTypeOf(root_a.handler).parameters.toMatchTypeOf<
-    [{ run: { url: string } }, any]
+    [{ url: string }, any]
   >();
   expectTypeOf(root_a.handler).returns.toMatchTypeOf<
     string | Promise<string>
@@ -29,19 +29,18 @@ it('should correctly type step handlers when using getStepDefinition', () => {
   const root_b = TestFlow.getStepDefinition('root_b');
   expectTypeOf(root_b.handler).toBeFunction();
   expectTypeOf(root_b.handler).parameters.toMatchTypeOf<
-    [{ run: { url: string } }, any]
+    [{ url: string }, any]
   >();
   expectTypeOf(root_b.handler).returns.toMatchTypeOf<
     number | Promise<number>
   >();
 
-  // Test merge handler type
+  // Test merge handler type - dependent steps receive deps only (no run key)
   const merge = TestFlow.getStepDefinition('merge');
   expectTypeOf(merge.handler).toBeFunction();
   expectTypeOf(merge.handler).parameters.toMatchTypeOf<
     [
       {
-        run: { url: string };
         root_a: string;
         root_b: number;
       },

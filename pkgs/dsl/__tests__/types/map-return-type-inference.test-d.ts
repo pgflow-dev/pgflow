@@ -4,7 +4,7 @@ import { describe, it, expectTypeOf } from 'vitest';
 describe('map step return type inference bug', () => {
   it('should preserve specific return type from map handler, not collapse to any[]', () => {
     const flow = new Flow<{ items: string[] }>({ slug: 'test' })
-      .array({ slug: 'chunks' }, async ({ run }) => {
+      .array({ slug: 'chunks' }, async (flowInput) => {
         return [{ data: 'chunk1' }, { data: 'chunk2' }];
       })
       .map(
@@ -19,12 +19,12 @@ describe('map step return type inference bug', () => {
       )
       .step(
         { slug: 'aggregate', dependsOn: ['processChunks'] },
-        async ({ run, processChunks }) => {
-          // Verify types are inferred correctly
-          expectTypeOf(processChunks).not.toEqualTypeOf<any[]>();
+        async (deps) => {
+          // Verify types are inferred correctly - deps only (no run key)
+          expectTypeOf(deps.processChunks).not.toEqualTypeOf<any[]>();
 
           // These should all have proper types, not any
-          for (const result of processChunks) {
+          for (const result of deps.processChunks) {
             expectTypeOf(result.chunkIndex).toEqualTypeOf<number>();
             expectTypeOf(result.chunkIndex).not.toEqualTypeOf<any>();
             expectTypeOf(result.successes).toEqualTypeOf<string[]>();
@@ -60,15 +60,15 @@ describe('map step return type inference bug', () => {
           array: [1, 2, 3]
         };
       })
-      .step({ slug: 'use', dependsOn: ['transform'] }, ({ transform }) => {
-        expectTypeOf(transform).toEqualTypeOf<ComplexResult[]>();
-        expectTypeOf(transform).not.toEqualTypeOf<any[]>();
+      .step({ slug: 'use', dependsOn: ['transform'] }, (deps) => {
+        expectTypeOf(deps.transform).toEqualTypeOf<ComplexResult[]>();
+        expectTypeOf(deps.transform).not.toEqualTypeOf<any[]>();
 
         // Verify nested structure is preserved
-        expectTypeOf(transform[0].nested.deep.value).toEqualTypeOf<string>();
-        expectTypeOf(transform[0].nested.deep.value).not.toEqualTypeOf<any>();
-        expectTypeOf(transform[0].array).toEqualTypeOf<number[]>();
-        expectTypeOf(transform[0].array).not.toEqualTypeOf<any>();
+        expectTypeOf(deps.transform[0].nested.deep.value).toEqualTypeOf<string>();
+        expectTypeOf(deps.transform[0].nested.deep.value).not.toEqualTypeOf<any>();
+        expectTypeOf(deps.transform[0].array).toEqualTypeOf<number[]>();
+        expectTypeOf(deps.transform[0].array).not.toEqualTypeOf<any>();
 
         return { ok: true };
       });
@@ -90,11 +90,11 @@ describe('map step return type inference bug', () => {
         const failure = { success: false as const, error: 'fail' };
         return Math.random() > 0.5 ? success : failure;
       })
-      .step({ slug: 'aggregate', dependsOn: ['process'] }, ({ process }) => {
-        expectTypeOf(process).not.toEqualTypeOf<any[]>();
+      .step({ slug: 'aggregate', dependsOn: ['process'] }, (deps) => {
+        expectTypeOf(deps.process).not.toEqualTypeOf<any[]>();
 
         // Verify the inferred type preserves the shape
-        const firstResult = process[0];
+        const firstResult = deps.process[0];
         expectTypeOf(firstResult.success).toEqualTypeOf<boolean>();
 
         return { done: true };
@@ -112,12 +112,12 @@ describe('map step return type inference bug', () => {
       .map({ slug: 'transform' }, (item) => {
         return { value: item.toUpperCase(), length: item.length };
       })
-      .step({ slug: 'use', dependsOn: ['transform'] }, ({ transform }) => {
-        // Should infer { value: string; length: number }[]
-        expectTypeOf(transform).toEqualTypeOf<{ value: string; length: number }[]>();
-        expectTypeOf(transform).not.toEqualTypeOf<any[]>();
+      .step({ slug: 'use', dependsOn: ['transform'] }, (deps) => {
+        // Should infer { value: string; length: number }[] - deps only (no run key)
+        expectTypeOf(deps.transform).toEqualTypeOf<{ value: string; length: number }[]>();
+        expectTypeOf(deps.transform).not.toEqualTypeOf<any[]>();
 
-        for (const result of transform) {
+        for (const result of deps.transform) {
           expectTypeOf(result.value).toEqualTypeOf<string>();
           expectTypeOf(result.value).not.toEqualTypeOf<any>();
           expectTypeOf(result.length).toEqualTypeOf<number>();
@@ -140,18 +140,19 @@ describe('map step return type inference bug', () => {
       .map({ slug: 'uppercase' }, (item) => {
         return { original: item, transformed: item.toUpperCase() };
       })
-      .step({ slug: 'aggregate', dependsOn: ['uppercase'] }, ({ uppercase }) => {
-        expectTypeOf(uppercase).toEqualTypeOf<{ original: string; transformed: string }[]>();
-        expectTypeOf(uppercase).not.toEqualTypeOf<any[]>();
+      .step({ slug: 'aggregate', dependsOn: ['uppercase'] }, (deps) => {
+        // Dependent step receives deps only (no run key)
+        expectTypeOf(deps.uppercase).toEqualTypeOf<{ original: string; transformed: string }[]>();
+        expectTypeOf(deps.uppercase).not.toEqualTypeOf<any[]>();
 
-        for (const result of uppercase) {
+        for (const result of deps.uppercase) {
           expectTypeOf(result.original).toEqualTypeOf<string>();
           expectTypeOf(result.original).not.toEqualTypeOf<any>();
           expectTypeOf(result.transformed).toEqualTypeOf<string>();
           expectTypeOf(result.transformed).not.toEqualTypeOf<any>();
         }
 
-        return { count: uppercase.length };
+        return { count: deps.uppercase.length };
       });
 
     type UppercaseOutput = typeof flow extends Flow<any, any, infer Steps, any>

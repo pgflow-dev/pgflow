@@ -13,23 +13,27 @@ export const AnalyzeWebsite = new Flow<Input>({
 })
   .step(
     { slug: 'website' },
-    async (input) => await scrapeWebsite(input.run.url)
+    // Root step: receives flowInput directly
+    async (flowInput) => await scrapeWebsite(flowInput.url)
   )
   .step(
     { slug: 'sentiment', dependsOn: ['website'], timeout: 30, maxAttempts: 5 },
-    async (input) => await analyzeSentiment(input.website.content)
+    // Dependent step: receives deps, flowInput via context
+    async (deps) => await analyzeSentiment(deps.website.content)
   )
   .step(
     { slug: 'summary', dependsOn: ['website'] },
-    async (input) => await summarizeWithAI(input.website.content)
+    // Dependent step: receives deps
+    async (deps) => await summarizeWithAI(deps.website.content)
   )
   .step(
     { slug: 'saveToDb', dependsOn: ['sentiment', 'summary'] },
-    async (input) => {
+    // Dependent step needing flowInput: access via ctx.flowInput
+    async (deps, ctx) => {
       const results = await saveToDb({
-        websiteUrl: input.run.url,
-        sentiment: input.sentiment.score,
-        summary: input.summary.aiSummary,
+        websiteUrl: ctx.flowInput.url,
+        sentiment: deps.sentiment.score,
+        summary: deps.summary.aiSummary,
       });
       return results.status;
     }

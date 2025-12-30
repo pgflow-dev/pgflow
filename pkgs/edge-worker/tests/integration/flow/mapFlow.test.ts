@@ -30,12 +30,12 @@ const DependentMapFlow = new Flow<{ prefix: string }>({ slug: 'test_dependent_ma
     await delay(1);
     return str.toUpperCase();
   })
-  .step({ slug: 'aggregate', dependsOn: ['uppercase'] }, async (input) => {
+  .step({ slug: 'aggregate', dependsOn: ['uppercase'] }, async (deps, ctx) => {
     await delay(1);
     return {
-      prefix: input.run.prefix,
-      processed: input.uppercase,
-      count: input.uppercase.length
+      prefix: ctx.flowInput.prefix,
+      processed: deps.uppercase,
+      count: deps.uppercase.length
     };
   });
 

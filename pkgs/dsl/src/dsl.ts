@@ -243,20 +243,22 @@ export type StepOutput<
   : never;
 
 /**
- * This ensures that:
- * 1. The run input is always included
- * 2. Only declared dependencies are included
- * 3. No extra properties are allowed
- * Utility type to extract the input type for a specific step in a flow
+ * Asymmetric step input type:
+ * - Root steps (no dependencies): receive flow input directly
+ * - Dependent steps: receive only their dependencies (flow input available via context)
+ *
+ * This enables functional composition where subflows can receive typed inputs
+ * without the 'run' wrapper that previously blocked type matching.
  */
-export type StepInput<TFlow extends AnyFlow, TStepSlug extends string> = {
-  run: ExtractFlowInput<TFlow>;
-} & {
-  [K in Extract<
-    keyof ExtractFlowSteps<TFlow>,
-    StepDepsOf<TFlow, TStepSlug>
-  >]: ExtractFlowSteps<TFlow>[K];
-};
+export type StepInput<TFlow extends AnyFlow, TStepSlug extends string> =
+  StepDepsOf<TFlow, TStepSlug> extends never
+    ? ExtractFlowInput<TFlow> // Root step: flow input directly
+    : {
+        [K in Extract<
+          keyof ExtractFlowSteps<TFlow>,
+          StepDepsOf<TFlow, TStepSlug>
+        >]: ExtractFlowSteps<TFlow>[K];
+      }; // Dependent step: only deps
 
 // Runtime options interface for flow-level options
 export interface RuntimeOptions {
@@ -300,9 +302,11 @@ export interface BaseContext<TEnv extends Env = Env> {
   workerConfig: Readonly<WorkerConfig>;
 }
 
-// Flow context extends base with stepTask
-export interface FlowContext<TEnv extends Env = Env> extends BaseContext<TEnv> {
+// Flow context extends base with stepTask and flowInput
+// TFlowInput is typed as Json by default but gets properly typed via method overloads
+export interface FlowContext<TEnv extends Env = Env, TFlowInput extends AnyInput = AnyInput> extends BaseContext<TEnv> {
   stepTask: StepTaskRecord<AnyFlow>;
+  flowInput: TFlowInput;
 }
 
 // Generic context type helper (uses FlowContext for flow handlers)
@@ -325,9 +329,6 @@ export interface StepDefinition<
   options: StepRuntimeOptions;
   stepType?: 'single' | 'map';
 }
-
-// Utility type to merge two object types and preserve required properties
-type MergeObjects<T1 extends object, T2 extends object> = T1 & T2;
 
 // Flow class definition
 export class Flow<
@@ -373,21 +374,25 @@ export class Flow<
 
   /**
    * Get a specific step definition by slug with proper typing
+   *
+   * Returns the step definition with asymmetric input typing:
+   * - Root steps (no dependencies): input is flowInput directly
+   * - Dependent steps: input is deps object only (flowInput available via context)
+   *
    * @throws Error if the step with the given slug doesn't exist
    */
   getStepDefinition<SlugType extends keyof Steps & keyof StepDependencies>(
     slug: SlugType
   ): StepDefinition<
-    Simplify<
-      {
-        run: TFlowInput;
-      } & {
-        [K in StepDependencies[SlugType][number]]: K extends keyof Steps
-          ? Steps[K]
-          : never;
-      }
-    >,
-    Steps[SlugType]
+    StepDependencies[SlugType] extends [] | readonly []
+      ? TFlowInput // Root step: flow input directly
+      : Simplify<{
+          [K in StepDependencies[SlugType][number]]: K extends keyof Steps
+            ? Steps[K]
+            : never;
+        }>, // Dependent step: only deps
+    Steps[SlugType],
+    FlowContext<TEnv, TFlowInput> & TContext
   > {
     // Check if the slug exists in stepDefinitions using a more explicit pattern
     if (!(slug in this.stepDefinitions)) {
@@ -402,38 +407,46 @@ export class Flow<
     return this.stepDefinitions[slug as string];
   }
 
-  // SlugType extends keyof Steps & keyof StepDependencies
+  // Overload 1: Root step (no dependsOn) - receives flowInput directly
   step<
     Slug extends string,
-    THandler extends (
-      input: Simplify<
-        {
-          run: TFlowInput;
-        } & {
-          [K in Deps]: K extends keyof Steps ? Steps[K] : never;
-        }
-      >,
-      context: FlowContext<TEnv> & TContext
-    ) => any,
-    Deps extends Extract<keyof Steps, string> = never
+    TOutput
   >(
-    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn?: Deps[] } & StepRuntimeOptions>,
-    handler: THandler
+    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn?: never } & StepRuntimeOptions>,
+    handler: (
+      flowInput: TFlowInput,
+      context: FlowContext<TEnv, TFlowInput> & TContext
+    ) => TOutput | Promise<TOutput>
   ): Flow<
     TFlowInput,
     TContext,
-    Steps & { [K in Slug]: AwaitedReturn<THandler> },
+    Steps & { [K in Slug]: Awaited<TOutput> },
+    StepDependencies & { [K in Slug]: [] },
+    TEnv
+  >;
+
+  // Overload 2: Dependent step (with dependsOn) - receives deps, flowInput via context
+  step<
+    Slug extends string,
+    Deps extends Extract<keyof Steps, string>,
+    TOutput
+  >(
+    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn: Deps[] } & StepRuntimeOptions>,
+    handler: (
+      deps: { [K in Deps]: K extends keyof Steps ? Steps[K] : never },
+      context: FlowContext<TEnv, TFlowInput> & TContext
+    ) => TOutput | Promise<TOutput>
+  ): Flow<
+    TFlowInput,
+    TContext,
+    Steps & { [K in Slug]: Awaited<TOutput> },
     StepDependencies & { [K in Slug]: Deps[] },
     TEnv
-  > {
-    type RetType = AwaitedReturn<THandler>;
-    type NewSteps = MergeObjects<Steps, { [K in Slug]: RetType }>;
-    type NewDependencies = MergeObjects<
-      StepDependencies,
-      { [K in Slug]: Deps[] }
-    >;
+  >;
 
-    const slug = opts.slug as Slug;
+  // Implementation (type safety enforced by overloads above)
+  step(opts: any, handler: any): any {
+    const slug = opts.slug;
 
     // Validate the step slug
     validateSlug(slug);
@@ -462,20 +475,10 @@ export class Flow<
     // Validate runtime options (optional for step level)
     validateRuntimeOptions(options, { optional: true });
 
-    // Preserve the exact type of the handler
-    const newStepDefinition: StepDefinition<
-      Simplify<
-        {
-          run: TFlowInput;
-        } & {
-          [K in Deps]: K extends keyof Steps ? Steps[K] : never;
-        }
-      >,
-      RetType & Json,
-      FlowContext<TEnv> & TContext
-    > = {
+    // Create step definition (type assertions needed due to complex generic constraints)
+    const newStepDefinition: StepDefinition<AnyInput, AnyOutput> = {
       slug,
-      handler: handler as any, // Type assertion needed due to complex generic constraints
+      handler,
       dependencies: dependencies as string[],
       options,
     };
@@ -489,14 +492,12 @@ export class Flow<
     const newStepOrder = [...this.stepOrder, slug];
 
     // Create a new flow with the same slug and options but with updated type parameters
-    // We need to use type assertions here because TypeScript cannot track the exact relationship
-    // between the specific step definition types and the generic Flow type parameters
-    // This is safe because we're constructing the newStepDefinitions in a type-safe way above
-    return new Flow<TFlowInput, TContext, NewSteps, NewDependencies, TEnv>(
+    // Type safety is enforced by the overload signatures above
+    return new Flow(
       { slug: this.slug, ...this.options },
-      newStepDefinitions as Record<string, StepDefinition<AnyInput, AnyOutput>>,
+      newStepDefinitions,
       newStepOrder
-    ) as Flow<TFlowInput, TContext, NewSteps, NewDependencies, TEnv>;
+    );
   }
 
   /**
@@ -512,29 +513,45 @@ export class Flow<
    * @param handler - Function that processes input and returns an array (null/undefined rejected)
    * @returns A new Flow instance with the array step added
    */
+  // Overload 1: Root array (no dependsOn) - receives flowInput directly
   array<
     Slug extends string,
-    THandler extends (
-      input: Simplify<
-        {
-          run: TFlowInput;
-        } & {
-          [K in Deps]: K extends keyof Steps ? Steps[K] : never;
-        }
-      >,
-      context: BaseContext & TContext
-    ) => readonly any[] | Promise<readonly any[]>,
-    Deps extends Extract<keyof Steps, string> = never
+    TOutput extends readonly any[]
   >(
-    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn?: Deps[] } & StepRuntimeOptions>,
-    handler: THandler
+    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn?: never } & StepRuntimeOptions>,
+    handler: (
+      flowInput: TFlowInput,
+      context: FlowContext<TEnv, TFlowInput> & TContext
+    ) => TOutput | Promise<TOutput>
   ): Flow<
     TFlowInput,
     TContext,
-    Steps & { [K in Slug]: AwaitedReturn<THandler> },
+    Steps & { [K in Slug]: Awaited<TOutput> },
+    StepDependencies & { [K in Slug]: [] },
+    TEnv
+  >;
+
+  // Overload 2: Dependent array (with dependsOn) - receives deps, flowInput via context
+  array<
+    Slug extends string,
+    Deps extends Extract<keyof Steps, string>,
+    TOutput extends readonly any[]
+  >(
+    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn: Deps[] } & StepRuntimeOptions>,
+    handler: (
+      deps: { [K in Deps]: K extends keyof Steps ? Steps[K] : never },
+      context: FlowContext<TEnv, TFlowInput> & TContext
+    ) => TOutput | Promise<TOutput>
+  ): Flow<
+    TFlowInput,
+    TContext,
+    Steps & { [K in Slug]: Awaited<TOutput> },
     StepDependencies & { [K in Slug]: Deps[] },
     TEnv
-  > {
+  >;
+
+  // Implementation
+  array(opts: any, handler: any): any {
     // Delegate to existing .step() method for maximum code reuse
     return this.step(opts, handler);
   }
@@ -550,37 +567,39 @@ export class Flow<
    * @param handler - Function that processes individual array elements
    * @returns A new Flow instance with the map step added
    */
-  // Overload for root map
+  // Overload for root map - handler receives item, context includes flowInput
   map<
     Slug extends string,
     THandler extends TFlowInput extends readonly (infer Item)[]
-      ? (item: Item, context: BaseContext & TContext) => Json | Promise<Json>
+      ? (item: Item, context: FlowContext<TEnv, TFlowInput> & TContext) => Json | Promise<Json>
       : never
   >(
     opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug } & StepRuntimeOptions>,
     handler: THandler
   ): Flow<
     TFlowInput,
-    TContext & BaseContext,
+    TContext,
     Steps & { [K in Slug]: AwaitedReturn<THandler>[] },
-    StepDependencies & { [K in Slug]: [] }
+    StepDependencies & { [K in Slug]: [] },
+    TEnv
   >;
 
-  // Overload for dependent map
+  // Overload for dependent map - handler receives item, context includes flowInput
   map<
     Slug extends string,
     TArrayDep extends Extract<keyof Steps, string>,
     THandler extends Steps[TArrayDep] extends readonly (infer Item)[]
-      ? (item: Item, context: BaseContext & TContext) => Json | Promise<Json>
+      ? (item: Item, context: FlowContext<TEnv, TFlowInput> & TContext) => Json | Promise<Json>
       : never
   >(
     opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; array: TArrayDep } & StepRuntimeOptions>,
     handler: THandler
   ): Flow<
     TFlowInput,
-    TContext & BaseContext,
+    TContext,
     Steps & { [K in Slug]: AwaitedReturn<THandler>[] },
-    StepDependencies & { [K in Slug]: [TArrayDep] }
+    StepDependencies & { [K in Slug]: [TArrayDep] },
+    TEnv
   >;
 
   // Implementation

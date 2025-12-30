@@ -105,8 +105,21 @@ export class StepTaskExecutor<TFlow extends AnyFlow, TContext extends StepTaskHa
       // Measure handler execution duration
       const startTime = Date.now();
 
+      // Route input based on step type and dependencies
+      let handlerInput: unknown;
+      if (stepDef.stepType === 'map') {
+        // Map steps: SQL already extracted element
+        handlerInput = this.stepTask.input;
+      } else if (stepDef.dependencies.length === 0) {
+        // Root single/array step: use flowInput from context
+        handlerInput = this.context.flowInput;
+      } else {
+        // Dependent single/array step: use deps object from task input
+        handlerInput = this.stepTask.input;
+      }
+
       // !!! HANDLER EXECUTION !!!
-      const result = await stepDef.handler(this.stepTask.input, this.context);
+      const result = await stepDef.handler(handlerInput, this.context);
       // !!! HANDLER EXECUTION !!!
 
       const durationMs = Date.now() - startTime;

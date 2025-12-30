@@ -7,75 +7,75 @@ const WideFlow = new Flow<string>({
   slug: 'wide_flow',
   maxAttempts: 3,
 })
-  .step({ slug: 'start' }, async (input) => {
+  .step({ slug: 'start' }, async (flowInput) => {
     await simulateWorkThenError();
-    return `[${input.run}]start`;
+    return `[${flowInput}]start`;
   })
-  .step({ slug: 'download_stream', dependsOn: ['start'] }, async (input) => {
+  .step({ slug: 'download_stream', dependsOn: ['start'] }, async (deps) => {
     await simulateWorkThenError();
-    return `${input.start}/download_stream`;
+    return `${deps.start}/download_stream`;
   })
   .step(
     { slug: 'extract_frames', dependsOn: ['download_stream'] },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.download_stream}/extract_frames`;
+      return `${deps.download_stream}/extract_frames`;
     }
   )
   .step(
     { slug: 'extract_audio', dependsOn: ['download_stream'] },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.download_stream}/extract_audio`;
+      return `${deps.download_stream}/extract_audio`;
     }
   )
   .step(
     { slug: 'collect_chat_data', dependsOn: ['download_stream'] },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.download_stream}/collect_chat_data`;
+      return `${deps.download_stream}/collect_chat_data`;
     }
   )
   .step(
     { slug: 'detect_scenes', dependsOn: ['extract_frames'] },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.extract_frames}/detect_scenes`;
+      return `${deps.extract_frames}/detect_scenes`;
     }
   )
   .step(
     { slug: 'detect_players', dependsOn: ['extract_frames'] },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.extract_frames}/detect_players`;
+      return `${deps.extract_frames}/detect_players`;
     }
   )
   .step(
     { slug: 'scene_classification', dependsOn: ['detect_scenes'] },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.detect_scenes}/scene_classification`;
+      return `${deps.detect_scenes}/scene_classification`;
     }
   )
   .step(
     { slug: 'scene_segmentation', dependsOn: ['detect_scenes'] },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.detect_scenes}/scene_segmentation`;
+      return `${deps.detect_scenes}/scene_segmentation`;
     }
   )
   .step(
     { slug: 'face_recognition', dependsOn: ['detect_players'] },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.detect_players}/face_recognition`;
+      return `${deps.detect_players}/face_recognition`;
     }
   )
   .step(
     { slug: 'jersey_recognition', dependsOn: ['detect_players'] },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.detect_players}/jersey_recognition`;
+      return `${deps.detect_players}/jersey_recognition`;
     }
   )
   .step(
@@ -83,44 +83,44 @@ const WideFlow = new Flow<string>({
       slug: 'identify_players',
       dependsOn: ['face_recognition', 'jersey_recognition'],
     },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.face_recognition} & ${input.jersey_recognition}/identify_players`;
+      return `${deps.face_recognition} & ${deps.jersey_recognition}/identify_players`;
     }
   )
   .step(
     { slug: 'transcribe_audio', dependsOn: ['extract_audio'] },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.extract_audio}/transcribe_audio`;
+      return `${deps.extract_audio}/transcribe_audio`;
     }
   )
   .step(
     { slug: 'analyze_audio_sentiment', dependsOn: ['transcribe_audio'] },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.transcribe_audio}/analyze_audio_sentiment`;
+      return `${deps.transcribe_audio}/analyze_audio_sentiment`;
     }
   )
   .step(
     { slug: 'keyword_extraction', dependsOn: ['transcribe_audio'] },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.transcribe_audio}/keyword_extraction`;
+      return `${deps.transcribe_audio}/keyword_extraction`;
     }
   )
   .step(
     { slug: 'filter_spam', dependsOn: ['collect_chat_data'] },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.collect_chat_data}/filter_spam`;
+      return `${deps.collect_chat_data}/filter_spam`;
     }
   )
   .step(
     { slug: 'analyze_chat_sentiment', dependsOn: ['filter_spam'] },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.filter_spam}/analyze_chat_sentiment`;
+      return `${deps.filter_spam}/analyze_chat_sentiment`;
     }
   )
   .step(
@@ -128,9 +128,9 @@ const WideFlow = new Flow<string>({
       slug: 'sentiment_summary',
       dependsOn: ['analyze_audio_sentiment', 'analyze_chat_sentiment'],
     },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.analyze_audio_sentiment} & ${input.analyze_chat_sentiment}/sentiment_summary`;
+      return `${deps.analyze_audio_sentiment} & ${deps.analyze_chat_sentiment}/sentiment_summary`;
     }
   )
   .step(
@@ -138,9 +138,9 @@ const WideFlow = new Flow<string>({
       slug: 'generate_statistics',
       dependsOn: ['sentiment_summary', 'identify_players'],
     },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.sentiment_summary} & ${input.identify_players}/generate_statistics`;
+      return `${deps.sentiment_summary} & ${deps.identify_players}/generate_statistics`;
     }
   )
   .step(
@@ -153,9 +153,9 @@ const WideFlow = new Flow<string>({
         'identify_players',
       ],
     },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.scene_classification}, ${input.scene_segmentation}, ${input.keyword_extraction}, ${input.identify_players}/generate_highlights`;
+      return `${deps.scene_classification}, ${deps.scene_segmentation}, ${deps.keyword_extraction}, ${deps.identify_players}/generate_highlights`;
     }
   )
   .step(
@@ -163,23 +163,23 @@ const WideFlow = new Flow<string>({
       slug: 'update_dashboard',
       dependsOn: ['generate_statistics', 'generate_highlights'],
     },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.generate_statistics} & ${input.generate_highlights}/update_dashboard`;
+      return `${deps.generate_statistics} & ${deps.generate_highlights}/update_dashboard`;
     }
   )
   .step(
     { slug: 'send_notifications', dependsOn: ['update_dashboard'] },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.update_dashboard}/send_notifications`;
+      return `${deps.update_dashboard}/send_notifications`;
     }
   )
   .step(
     { slug: 'finish', dependsOn: ['send_notifications'] },
-    async (input) => {
+    async (deps) => {
       await simulateWorkThenError();
-      return `${input.send_notifications}/finish`;
+      return `${deps.send_notifications}/finish`;
     }
   );
 

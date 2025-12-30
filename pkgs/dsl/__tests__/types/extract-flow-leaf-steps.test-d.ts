@@ -15,8 +15,8 @@ describe('ExtractFlowLeafSteps utility type', () => {
   it('should correctly extract a single leaf step', () => {
     const singleStepFlow = new Flow<{ input: string }>({
       slug: 'single_step_flow',
-    }).step({ slug: 'process' }, (input) => ({
-      result: input.run.input.toUpperCase(),
+    }).step({ slug: 'process' }, (flowInput) => ({
+      result: flowInput.input.toUpperCase(),
     }));
 
     type LeafSteps = ExtractFlowLeafSteps<typeof singleStepFlow>;
@@ -36,14 +36,14 @@ describe('ExtractFlowLeafSteps utility type', () => {
     const multiLeafFlow = new Flow<{ data: number }>({
       slug: 'multi_leaf_flow',
     })
-      .step({ slug: 'intermediate' }, (input) => ({
-        value: input.run.data * 2,
+      .step({ slug: 'intermediate' }, (flowInput) => ({
+        value: flowInput.data * 2,
       }))
-      .step({ slug: 'leaf1', dependsOn: ['intermediate'] }, (input) => ({
-        squared: input.intermediate.value ** 2,
+      .step({ slug: 'leaf1', dependsOn: ['intermediate'] }, (deps) => ({
+        squared: deps.intermediate.value ** 2,
       }))
-      .step({ slug: 'leaf2', dependsOn: ['intermediate'] }, (input) => ({
-        doubled: input.intermediate.value * 2,
+      .step({ slug: 'leaf2', dependsOn: ['intermediate'] }, (deps) => ({
+        doubled: deps.intermediate.value * 2,
       }));
 
     type LeafSteps = ExtractFlowLeafSteps<typeof multiLeafFlow>;
@@ -62,14 +62,14 @@ describe('ExtractFlowLeafSteps utility type', () => {
 
   it('should correctly identify a root step that is also a leaf step', () => {
     const rootLeafFlow = new Flow<{ input: string }>({ slug: 'root_leaf_flow' })
-      .step({ slug: 'rootLeaf' }, (input) => ({
-        processed: input.run.input.trim(),
+      .step({ slug: 'rootLeaf' }, (flowInput) => ({
+        processed: flowInput.input.trim(),
       }))
-      .step({ slug: 'intermediate' }, (input) => ({
-        length: input.run.input.length,
+      .step({ slug: 'intermediate' }, (flowInput) => ({
+        length: flowInput.input.length,
       }))
-      .step({ slug: 'dependent', dependsOn: ['intermediate'] }, (input) => ({
-        result: input.intermediate.length > 10,
+      .step({ slug: 'dependent', dependsOn: ['intermediate'] }, (deps) => ({
+        result: deps.intermediate.length > 10,
       }));
 
     type LeafSteps = ExtractFlowLeafSteps<typeof rootLeafFlow>;
@@ -89,16 +89,16 @@ describe('ExtractFlowLeafSteps utility type', () => {
 
   it('should handle complex dependency chains', () => {
     const complexFlow = new Flow<{ input: number }>({ slug: 'complex_flow' })
-      .step({ slug: 'step1' }, (input) => ({ value: input.run.input + 1 }))
-      .step({ slug: 'step2', dependsOn: ['step1'] }, (input) => ({
-        value: input.step1.value * 2,
+      .step({ slug: 'step1' }, (flowInput) => ({ value: flowInput.input + 1 }))
+      .step({ slug: 'step2', dependsOn: ['step1'] }, (deps) => ({
+        value: deps.step1.value * 2,
       }))
-      .step({ slug: 'step3', dependsOn: ['step1'] }, (input) => ({
-        value: input.step1.value - 1,
+      .step({ slug: 'step3', dependsOn: ['step1'] }, (deps) => ({
+        value: deps.step1.value - 1,
       }))
-      .step({ slug: 'step4', dependsOn: ['step2', 'step3'] }, (input) => ({
-        sum: input.step2.value + input.step3.value,
-        original: input.run.input,
+      .step({ slug: 'step4', dependsOn: ['step2', 'step3'] }, (deps, ctx) => ({
+        sum: deps.step2.value + deps.step3.value,
+        original: ctx.flowInput.input,
       }));
 
     type LeafSteps = ExtractFlowLeafSteps<typeof complexFlow>;
