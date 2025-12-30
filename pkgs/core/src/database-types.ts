@@ -613,6 +613,7 @@ export type Database = {
         input: Json | null
         msg_id: number | null
         task_index: number | null
+        flow_input: Json | null
       }
     }
   }
