@@ -89,10 +89,10 @@ begin
 end $$;
 
 -- Verify consumer receives both outputs correctly
+-- Dependent steps only get dependency outputs (no 'run' key)
 select is(
   (select input from pgflow_tests.read_and_start('test_mixed', 1, 1)),
   jsonb_build_object(
-    'run', jsonb_build_object('config', 'test'),
     'single_src', jsonb_build_object('processed', true, 'value', 100),
     'map_src', jsonb_build_array('"A"', '"B"', '"C"')  -- Strings are JSON encoded
   ),

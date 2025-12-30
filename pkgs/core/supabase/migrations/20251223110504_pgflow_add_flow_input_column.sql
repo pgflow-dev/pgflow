@@ -148,21 +148,19 @@ with tasks as (
         END
 
       -- -------------------- NON-MAP STEPS --------------------
-      -- Regular (non-map) steps receive ALL inputs as a structured object.
-      -- This includes the original run input plus all dependency outputs.
+      -- Regular (non-map) steps receive dependency outputs as a structured object.
+      -- Root steps (no dependencies) get empty object - they access flowInput via context.
+      -- Dependent steps get only their dependency outputs.
       ELSE
-        -- Non-map steps get structured input with named keys
-        -- Example output: {
-        --   "run": {"original": "input"},
+        -- Non-map steps get structured input with dependency keys only
+        -- Example for dependent step: {
         --   "step1": {"output": "from_step1"},
         --   "step2": {"output": "from_step2"}
         -- }
+        -- Example for root step: {}
         --
-        -- Build object with 'run' key containing original input
-        jsonb_build_object('run', r.input) ||
-        -- Merge with deps_output which already has dependency outputs
-        -- deps_output format: {"dep1": output1, "dep2": output2, ...}
-        -- If no dependencies, defaults to empty object
+        -- Note: flow_input is available separately in the returned record
+        -- for workers to access via context.flowInput
         coalesce(dep_out.deps_output, '{}'::jsonb)
     END as input,
     st.message_id as msg_id,

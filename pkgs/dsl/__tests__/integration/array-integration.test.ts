@@ -11,8 +11,8 @@ describe('Array Integration Tests', () => {
 
       const dataFlow = new Flow<Input>({ slug: 'user_processing_pipeline' })
         // Fetch user data as array
-        .array({ slug: 'users' }, ({ run }) => 
-          run.userIds.map(id => ({
+        .array({ slug: 'users' }, (flowInput) =>
+          flowInput.userIds.map(id => ({
             id,
             name: `User ${id}`,
             active: id % 2 === 1, // Odd IDs are active
@@ -20,27 +20,27 @@ describe('Array Integration Tests', () => {
           }))
         )
         // Filter users based on criteria
-        .array({ slug: 'filtered_users', dependsOn: ['users'] }, ({ users, run }) =>
-          run.includeInactive 
-            ? users 
-            : users.filter(user => user.active)
+        .array({ slug: 'filtered_users', dependsOn: ['users'] }, (deps, ctx) =>
+          ctx.flowInput.includeInactive
+            ? deps.users
+            : deps.users.filter(user => user.active)
         )
         // Calculate statistics from filtered users
-        .step({ slug: 'stats', dependsOn: ['filtered_users'] }, ({ filtered_users }) => ({
-          count: filtered_users.length,
-          averageScore: filtered_users.length > 0 
-            ? filtered_users.reduce((sum, user) => sum + user.score, 0) / filtered_users.length
+        .step({ slug: 'stats', dependsOn: ['filtered_users'] }, (deps) => ({
+          count: deps.filtered_users.length,
+          averageScore: deps.filtered_users.length > 0
+            ? deps.filtered_users.reduce((sum, user) => sum + user.score, 0) / deps.filtered_users.length
             : 0,
-          activeCount: filtered_users.filter(user => user.active).length
+          activeCount: deps.filtered_users.filter(user => user.active).length
         }))
         // Generate reports array based on stats
-        .array({ slug: 'reports', dependsOn: ['stats', 'filtered_users'] }, ({ stats, filtered_users }) => 
-          filtered_users.map(user => ({
+        .array({ slug: 'reports', dependsOn: ['stats', 'filtered_users'] }, (deps) =>
+          deps.filtered_users.map(user => ({
             userId: user.id,
             userName: user.name,
             score: user.score,
-            percentile: stats.averageScore > 0 ? (user.score / stats.averageScore) * 100 : 0,
-            isAboveAverage: user.score > stats.averageScore
+            percentile: deps.stats.averageScore > 0 ? (user.score / deps.stats.averageScore) * 100 : 0,
+            isAboveAverage: user.score > deps.stats.averageScore
           }))
         );
 
@@ -49,23 +49,20 @@ describe('Array Integration Tests', () => {
 
       // Execute each step
       const usersHandler = dataFlow.getStepDefinition('users').handler;
-      const usersResult = await usersHandler({ run: input });
+      const usersResult = await usersHandler(input);
 
       const filteredHandler = dataFlow.getStepDefinition('filtered_users').handler;
-      const filteredResult = await filteredHandler({ 
-        run: input, 
-        users: usersResult 
-      });
+      const filteredResult = await filteredHandler({
+        users: usersResult
+      }, { flowInput: input });
 
       const statsHandler = dataFlow.getStepDefinition('stats').handler;
-      const statsResult = await statsHandler({ 
-        run: input, 
-        filtered_users: filteredResult 
+      const statsResult = await statsHandler({
+        filtered_users: filteredResult
       });
 
       const reportsHandler = dataFlow.getStepDefinition('reports').handler;
-      const reportsResult = await reportsHandler({ 
-        run: input, 
+      const reportsResult = await reportsHandler({
         stats: statsResult,
         filtered_users: filteredResult
       });
@@ -87,17 +84,17 @@ describe('Array Integration Tests', () => {
 
       const pyramidFlow = new Flow<Config>({ slug: 'pyramid_builder' })
         // Generate base level items
-        .array({ slug: 'level_0' }, ({ run }) =>
-          Array(run.itemsPerLevel).fill(0).map((_, i) => ({
+        .array({ slug: 'level_0' }, (flowInput) =>
+          Array(flowInput.itemsPerLevel).fill(0).map((_, i) => ({
             id: i,
             level: 0,
             value: i + 1
           }))
         )
         // Build level 1 from level 0
-        .array({ slug: 'level_1', dependsOn: ['level_0'] }, ({ level_0, run }) => {
-          if (run.levels <= 1) return [];
-          return level_0.map(item => ({
+        .array({ slug: 'level_1', dependsOn: ['level_0'] }, (deps, ctx) => {
+          if (ctx.flowInput.levels <= 1) return [];
+          return deps.level_0.map(item => ({
             id: item.id + 100,
             level: 1,
             value: item.value * 2,
@@ -105,9 +102,9 @@ describe('Array Integration Tests', () => {
           }));
         })
         // Build level 2 from level 1
-        .array({ slug: 'level_2', dependsOn: ['level_1'] }, ({ level_1, run }) => {
-          if (run.levels <= 2) return [];
-          return level_1.map(item => ({
+        .array({ slug: 'level_2', dependsOn: ['level_1'] }, (deps, ctx) => {
+          if (ctx.flowInput.levels <= 2) return [];
+          return deps.level_1.map(item => ({
             id: item.id + 100,
             level: 2,
             value: item.value * 2,
@@ -115,18 +112,18 @@ describe('Array Integration Tests', () => {
           }));
         })
         // Aggregate all levels
-        .step({ slug: 'summary', dependsOn: ['level_0', 'level_1', 'level_2'] }, 
-          ({ level_0, level_1, level_2 }) => ({
-            totalItems: level_0.length + level_1.length + level_2.length,
+        .step({ slug: 'summary', dependsOn: ['level_0', 'level_1', 'level_2'] },
+          (deps) => ({
+            totalItems: deps.level_0.length + deps.level_1.length + deps.level_2.length,
             totalValue: [
-              ...level_0.map(item => item.value),
-              ...level_1.map(item => item.value),
-              ...level_2.map(item => item.value)
+              ...deps.level_0.map(item => item.value),
+              ...deps.level_1.map(item => item.value),
+              ...deps.level_2.map(item => item.value)
             ].reduce((sum, val) => sum + val, 0),
             levelCounts: {
-              level0: level_0.length,
-              level1: level_1.length,
-              level2: level_2.length
+              level0: deps.level_0.length,
+              level1: deps.level_1.length,
+              level2: deps.level_2.length
             }
           })
         );
@@ -135,17 +132,16 @@ describe('Array Integration Tests', () => {
       const input = { levels: 3, itemsPerLevel: 2 };
 
       const level0Handler = pyramidFlow.getStepDefinition('level_0').handler;
-      const level0Result = await level0Handler({ run: input });
+      const level0Result = await level0Handler(input);
 
       const level1Handler = pyramidFlow.getStepDefinition('level_1').handler;
-      const level1Result = await level1Handler({ run: input, level_0: level0Result });
+      const level1Result = await level1Handler({ level_0: level0Result }, { flowInput: input });
 
       const level2Handler = pyramidFlow.getStepDefinition('level_2').handler;
-      const level2Result = await level2Handler({ run: input, level_1: level1Result });
+      const level2Result = await level2Handler({ level_1: level1Result }, { flowInput: input });
 
       const summaryHandler = pyramidFlow.getStepDefinition('summary').handler;
       const summaryResult = await summaryHandler({
-        run: input,
         level_0: level0Result,
         level_1: level1Result,
         level_2: level2Result
@@ -176,35 +172,35 @@ describe('Array Integration Tests', () => {
 
       const processingFlow = new Flow<Input>({ slug: 'mixed_processing' })
         // Configuration step (regular)
-        .step({ slug: 'config' }, ({ run }) => ({
-          source: run.dataSource,
-          maxItems: run.batchSize * 10,
-          processingMode: run.batchSize > 100 ? 'parallel' : 'sequential'
+        .step({ slug: 'config' }, (flowInput) => ({
+          source: flowInput.dataSource,
+          maxItems: flowInput.batchSize * 10,
+          processingMode: flowInput.batchSize > 100 ? 'parallel' : 'sequential'
         }))
         // Generate data array based on config
-        .array({ slug: 'raw_data', dependsOn: ['config'] }, ({ config }) =>
-          Array(Math.min(config.maxItems, 50)).fill(0).map((_, i) => ({
+        .array({ slug: 'raw_data', dependsOn: ['config'] }, (deps) =>
+          Array(Math.min(deps.config.maxItems, 50)).fill(0).map((_, i) => ({
             id: i,
-            source: config.source,
+            source: deps.config.source,
             data: `item_${i}`,
             timestamp: Date.now() + i
           }))
         )
         // Batch processing (regular step that groups array data)
-        .step({ slug: 'batches', dependsOn: ['raw_data', 'config'] }, ({ raw_data, config, run }) => {
+        .step({ slug: 'batches', dependsOn: ['raw_data', 'config'] }, (deps, ctx) => {
           const batches = [];
-          for (let i = 0; i < raw_data.length; i += run.batchSize) {
+          for (let i = 0; i < deps.raw_data.length; i += ctx.flowInput.batchSize) {
             batches.push({
-              id: Math.floor(i / run.batchSize),
-              items: raw_data.slice(i, i + run.batchSize),
-              mode: config.processingMode
+              id: Math.floor(i / ctx.flowInput.batchSize),
+              items: deps.raw_data.slice(i, i + ctx.flowInput.batchSize),
+              mode: deps.config.processingMode
             });
           }
           return { batches, count: batches.length };
         })
         // Process each batch into results array
-        .array({ slug: 'processed_batches', dependsOn: ['batches'] }, ({ batches }) =>
-          batches.batches.map(batch => ({
+        .array({ slug: 'processed_batches', dependsOn: ['batches'] }, (deps) =>
+          deps.batches.batches.map(batch => ({
             batchId: batch.id,
             processedCount: batch.items.length,
             mode: batch.mode,
@@ -216,14 +212,14 @@ describe('Array Integration Tests', () => {
           }))
         )
         // Final summary (regular step)
-        .step({ slug: 'final_summary', dependsOn: ['processed_batches', 'config'] }, 
-          ({ processed_batches, config }) => ({
-            totalBatches: processed_batches.length,
-            totalProcessedItems: processed_batches.reduce(
+        .step({ slug: 'final_summary', dependsOn: ['processed_batches', 'config'] },
+          (deps) => ({
+            totalBatches: deps.processed_batches.length,
+            totalProcessedItems: deps.processed_batches.reduce(
               (sum, batch) => sum + batch.processedCount, 0
             ),
-            processingMode: config.processingMode,
-            allSuccessful: processed_batches.every(batch => 
+            processingMode: deps.config.processingMode,
+            allSuccessful: deps.processed_batches.every(batch =>
               batch.results.every(result => result.processed)
             )
           })
@@ -233,27 +229,24 @@ describe('Array Integration Tests', () => {
       const input = { dataSource: 'test-db', batchSize: 5 };
 
       const configHandler = processingFlow.getStepDefinition('config').handler;
-      const configResult = await configHandler({ run: input });
+      const configResult = await configHandler(input);
 
       const rawDataHandler = processingFlow.getStepDefinition('raw_data').handler;
-      const rawDataResult = await rawDataHandler({ run: input, config: configResult });
+      const rawDataResult = await rawDataHandler({ config: configResult });
 
       const batchesHandler = processingFlow.getStepDefinition('batches').handler;
-      const batchesResult = await batchesHandler({ 
-        run: input, 
-        raw_data: rawDataResult, 
-        config: configResult 
-      });
+      const batchesResult = await batchesHandler({
+        raw_data: rawDataResult,
+        config: configResult
+      }, { flowInput: input });
 
       const processedHandler = processingFlow.getStepDefinition('processed_batches').handler;
-      const processedResult = await processedHandler({ 
-        run: input, 
-        batches: batchesResult 
+      const processedResult = await processedHandler({
+        batches: batchesResult
       });
 
       const summaryHandler = processingFlow.getStepDefinition('final_summary').handler;
-      const summaryResult = await summaryHandler({ 
-        run: input, 
+      const summaryResult = await summaryHandler({
         processed_batches: processedResult,
         config: configResult
       });
@@ -275,44 +268,43 @@ describe('Array Integration Tests', () => {
 
       const diamondFlow = new Flow<Input>({ slug: 'diamond_pattern' })
         // Root step
-        .step({ slug: 'root' }, ({ run }) => ({ value: run.base, multiplier: 2 }))
-        
+        .step({ slug: 'root' }, (flowInput) => ({ value: flowInput.base, multiplier: 2 }))
+
         // Two parallel array branches from root
-        .array({ slug: 'left_branch', dependsOn: ['root'] }, ({ root }) =>
-          [root.value, root.value + 1, root.value + 2].map(val => ({ 
-            value: val * root.multiplier,
-            branch: 'left' 
+        .array({ slug: 'left_branch', dependsOn: ['root'] }, (deps) =>
+          [deps.root.value, deps.root.value + 1, deps.root.value + 2].map(val => ({
+            value: val * deps.root.multiplier,
+            branch: 'left'
           }))
         )
-        .array({ slug: 'right_branch', dependsOn: ['root'] }, ({ root }) =>
-          [root.value + 10, root.value + 20].map(val => ({ 
-            value: val * root.multiplier,
-            branch: 'right' 
+        .array({ slug: 'right_branch', dependsOn: ['root'] }, (deps) =>
+          [deps.root.value + 10, deps.root.value + 20].map(val => ({
+            value: val * deps.root.multiplier,
+            branch: 'right'
           }))
         )
-        
+
         // Merge both branches in final array step
-        .array({ slug: 'merged', dependsOn: ['left_branch', 'right_branch'] }, 
-          ({ left_branch, right_branch }) => [
-            ...left_branch.map(item => ({ ...item, merged: true })),
-            ...right_branch.map(item => ({ ...item, merged: true }))
+        .array({ slug: 'merged', dependsOn: ['left_branch', 'right_branch'] },
+          (deps) => [
+            ...deps.left_branch.map(item => ({ ...item, merged: true })),
+            ...deps.right_branch.map(item => ({ ...item, merged: true }))
           ]
         );
 
       const input = { base: 5 };
 
       const rootHandler = diamondFlow.getStepDefinition('root').handler;
-      const rootResult = await rootHandler({ run: input });
+      const rootResult = await rootHandler(input);
 
       const leftHandler = diamondFlow.getStepDefinition('left_branch').handler;
-      const leftResult = await leftHandler({ run: input, root: rootResult });
+      const leftResult = await leftHandler({ root: rootResult });
 
       const rightHandler = diamondFlow.getStepDefinition('right_branch').handler;
-      const rightResult = await rightHandler({ run: input, root: rootResult });
+      const rightResult = await rightHandler({ root: rootResult });
 
       const mergedHandler = diamondFlow.getStepDefinition('merged').handler;
-      const mergedResult = await mergedHandler({ 
-        run: input,
+      const mergedResult = await mergedHandler({
         left_branch: leftResult,
         right_branch: rightResult
       });
@@ -335,15 +327,15 @@ describe('Array Integration Tests', () => {
       type Input = { seed: number };
 
       const chainFlow = new Flow<Input>({ slug: 'deep_chain' })
-        .array({ slug: 'generation_1' }, ({ run }) => 
-          Array(3).fill(0).map((_, i) => ({ 
-            id: i, 
-            generation: 1, 
-            value: run.seed + i 
+        .array({ slug: 'generation_1' }, (flowInput) =>
+          Array(3).fill(0).map((_, i) => ({
+            id: i,
+            generation: 1,
+            value: flowInput.seed + i
           }))
         )
-        .array({ slug: 'generation_2', dependsOn: ['generation_1'] }, ({ generation_1 }) =>
-          generation_1.flatMap(parent => 
+        .array({ slug: 'generation_2', dependsOn: ['generation_1'] }, (deps) =>
+          deps.generation_1.flatMap(parent =>
             Array(2).fill(0).map((_, i) => ({
               id: parent.id * 2 + i,
               generation: 2,
@@ -352,8 +344,8 @@ describe('Array Integration Tests', () => {
             }))
           )
         )
-        .array({ slug: 'generation_3', dependsOn: ['generation_2'] }, ({ generation_2 }) =>
-          generation_2.flatMap(parent => 
+        .array({ slug: 'generation_3', dependsOn: ['generation_2'] }, (deps) =>
+          deps.generation_2.flatMap(parent =>
             Array(2).fill(0).map((_, i) => ({
               id: parent.id * 2 + i,
               generation: 3,
@@ -363,33 +355,32 @@ describe('Array Integration Tests', () => {
             }))
           )
         )
-        .step({ slug: 'lineage_analysis', dependsOn: ['generation_1', 'generation_2', 'generation_3'] }, 
-          ({ generation_1, generation_2, generation_3 }) => ({
-            totalNodes: generation_1.length + generation_2.length + generation_3.length,
-            generationCounts: [generation_1.length, generation_2.length, generation_3.length],
+        .step({ slug: 'lineage_analysis', dependsOn: ['generation_1', 'generation_2', 'generation_3'] },
+          (deps) => ({
+            totalNodes: deps.generation_1.length + deps.generation_2.length + deps.generation_3.length,
+            generationCounts: [deps.generation_1.length, deps.generation_2.length, deps.generation_3.length],
             maxValue: Math.max(
-              ...generation_1.map(n => n.value),
-              ...generation_2.map(n => n.value),
-              ...generation_3.map(n => n.value)
+              ...deps.generation_1.map(n => n.value),
+              ...deps.generation_2.map(n => n.value),
+              ...deps.generation_3.map(n => n.value)
             ),
-            leafNodes: generation_3.length
+            leafNodes: deps.generation_3.length
           })
         );
 
       const input = { seed: 10 };
 
       const gen1Handler = chainFlow.getStepDefinition('generation_1').handler;
-      const gen1Result = await gen1Handler({ run: input });
+      const gen1Result = await gen1Handler(input);
 
       const gen2Handler = chainFlow.getStepDefinition('generation_2').handler;
-      const gen2Result = await gen2Handler({ run: input, generation_1: gen1Result });
+      const gen2Result = await gen2Handler({ generation_1: gen1Result });
 
       const gen3Handler = chainFlow.getStepDefinition('generation_3').handler;
-      const gen3Result = await gen3Handler({ run: input, generation_2: gen2Result });
+      const gen3Result = await gen3Handler({ generation_2: gen2Result });
 
       const analysisHandler = chainFlow.getStepDefinition('lineage_analysis').handler;
       const analysisResult = await analysisHandler({
-        run: input,
         generation_1: gen1Result,
         generation_2: gen2Result,
         generation_3: gen3Result
@@ -416,34 +407,32 @@ describe('Array Integration Tests', () => {
       type Input = { includeItems: boolean };
 
       const emptyFlow = new Flow<Input>({ slug: 'empty_handling' })
-        .array({ slug: 'conditional_items' }, ({ run }) =>
-          run.includeItems ? [1, 2, 3] : []
+        .array({ slug: 'conditional_items' }, (flowInput) =>
+          flowInput.includeItems ? [1, 2, 3] : []
         )
-        .array({ slug: 'processed_items', dependsOn: ['conditional_items'] }, ({ conditional_items }) =>
-          conditional_items.map(item => ({ processed: item * 2 }))
+        .array({ slug: 'processed_items', dependsOn: ['conditional_items'] }, (deps) =>
+          deps.conditional_items.map(item => ({ processed: item * 2 }))
         )
-        .step({ slug: 'summary', dependsOn: ['processed_items'] }, ({ processed_items }) => ({
-          count: processed_items.length,
-          hasItems: processed_items.length > 0,
-          total: processed_items.reduce((sum, item) => sum + item.processed, 0)
+        .step({ slug: 'summary', dependsOn: ['processed_items'] }, (deps) => ({
+          count: deps.processed_items.length,
+          hasItems: deps.processed_items.length > 0,
+          total: deps.processed_items.reduce((sum, item) => sum + item.processed, 0)
         }));
 
       // Test with empty array
       const emptyInput = { includeItems: false };
-      
+
       const conditionalHandler = emptyFlow.getStepDefinition('conditional_items').handler;
-      const conditionalResult = await conditionalHandler({ run: emptyInput });
+      const conditionalResult = await conditionalHandler(emptyInput);
 
       const processedHandler = emptyFlow.getStepDefinition('processed_items').handler;
-      const processedResult = await processedHandler({ 
-        run: emptyInput, 
-        conditional_items: conditionalResult 
+      const processedResult = await processedHandler({
+        conditional_items: conditionalResult
       });
 
       const summaryHandler = emptyFlow.getStepDefinition('summary').handler;
-      const summaryResult = await summaryHandler({ 
-        run: emptyInput, 
-        processed_items: processedResult 
+      const summaryResult = await summaryHandler({
+        processed_items: processedResult
       });
 
       expect(conditionalResult).toEqual([]);
@@ -459,46 +448,44 @@ describe('Array Integration Tests', () => {
       type Input = { delays: number[] };
 
       const asyncFlow = new Flow<Input>({ slug: 'async_operations' })
-        .array({ slug: 'async_data' }, async ({ run }) => {
+        .array({ slug: 'async_data' }, async (flowInput) => {
           // Simulate async operations with different delays
-          const promises = run.delays.map(async (delay, index) => {
+          const promises = flowInput.delays.map(async (delay, index) => {
             await new Promise(resolve => setTimeout(resolve, delay));
             return { id: index, delay, completed: Date.now() };
           });
           return Promise.all(promises);
         })
-        .array({ slug: 'validated_data', dependsOn: ['async_data'] }, async ({ async_data }) => {
+        .array({ slug: 'validated_data', dependsOn: ['async_data'] }, async (deps) => {
           // Simulate async validation
           await new Promise(resolve => setTimeout(resolve, 1));
-          return async_data.filter(item => item.delay < 100).map(item => ({
+          return deps.async_data.filter(item => item.delay < 100).map(item => ({
             ...item,
             validated: true,
             validatedAt: Date.now()
           }));
         })
-        .step({ slug: 'timing_analysis', dependsOn: ['validated_data'] }, ({ validated_data }) => ({
-          validatedCount: validated_data.length,
-          averageDelay: validated_data.length > 0
-            ? validated_data.reduce((sum, item) => sum + item.delay, 0) / validated_data.length
+        .step({ slug: 'timing_analysis', dependsOn: ['validated_data'] }, (deps) => ({
+          validatedCount: deps.validated_data.length,
+          averageDelay: deps.validated_data.length > 0
+            ? deps.validated_data.reduce((sum, item) => sum + item.delay, 0) / deps.validated_data.length
             : 0,
-          allValidated: validated_data.every(item => item.validated)
+          allValidated: deps.validated_data.every(item => item.validated)
         }));
 
       const input = { delays: [10, 50, 150, 30] }; // 150ms will be filtered out
-      
+
       const asyncHandler = asyncFlow.getStepDefinition('async_data').handler;
-      const asyncResult = await asyncHandler({ run: input });
+      const asyncResult = await asyncHandler(input);
 
       const validatedHandler = asyncFlow.getStepDefinition('validated_data').handler;
-      const validatedResult = await validatedHandler({ 
-        run: input, 
-        async_data: asyncResult 
+      const validatedResult = await validatedHandler({
+        async_data: asyncResult
       });
 
       const timingHandler = asyncFlow.getStepDefinition('timing_analysis').handler;
-      const timingResult = await timingHandler({ 
-        run: input, 
-        validated_data: validatedResult 
+      const timingResult = await timingHandler({
+        validated_data: validatedResult
       });
 
       expect(asyncResult).toHaveLength(4);

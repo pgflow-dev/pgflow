@@ -126,8 +126,8 @@ describe('Happy Path E2E Integration', () => {
       expect(tasks[0].step_slug).toBe('save');
       
       log('Save task input:', JSON.stringify(tasks[0].input, null, 2));
-      
-      expect(tasks[0].input.run).toEqual(input);
+
+      expect(tasks[0].flow_input).toEqual(input);
       expect(tasks[0].input.process).toEqual(processOutput);
       // Note: save step only depends on process, so fetch output is not included (correct behavior)
       expect(tasks[0].input.fetch).toBeUndefined();

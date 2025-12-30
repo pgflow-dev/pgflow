@@ -43,17 +43,17 @@ Then define your workflow ([full guide](https://pgflow.dev/get-started/installat
 import { Flow } from '@pgflow/dsl';
 
 new Flow<{ url: string }>({ slug: 'analyzeArticle' })
-  .step({ slug: 'scrape' }, (input) => scrapeWebsite(input.run.url))
-  .step({ slug: 'summarize', dependsOn: ['scrape'] }, (input) =>
-    summarize(input.scrape)
+  .step({ slug: 'scrape' }, (flowInput) => scrapeWebsite(flowInput.url))
+  .step({ slug: 'summarize', dependsOn: ['scrape'] }, (deps) =>
+    summarize(deps.scrape)
   )
-  .step({ slug: 'extractKeywords', dependsOn: ['scrape'] }, (input) =>
-    extractKeywords(input.scrape)
+  .step({ slug: 'extractKeywords', dependsOn: ['scrape'] }, (deps) =>
+    extractKeywords(deps.scrape)
   )
   .step(
     { slug: 'publish', dependsOn: ['summarize', 'extractKeywords'] },
-    (input) =>
-      publish({ summary: input.summarize, keywords: input.extractKeywords })
+    (deps) =>
+      publish({ summary: deps.summarize, keywords: deps.extractKeywords })
   );
 ```
 

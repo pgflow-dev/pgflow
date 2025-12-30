@@ -132,7 +132,7 @@ describe('Full Stack DSL Integration', () => {
       tasks = await readAndStart(sql, sqlClient, SimpleFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('save');
-      expect(tasks[0].input.run).toEqual(input);
+      expect(tasks[0].flow_input).toEqual(input);
 
       // The save step only depends on process, so it should only have process output
       // This is correct behavior - transitive dependencies are not automatically included

@@ -12,10 +12,10 @@ describe('Map flow integration tests', () => {
           // Validate each normalized item
           return item.length > 0 && item.length < 100;
         })
-        .step({ slug: 'summarize', dependsOn: ['validate'] }, (input) => ({
-          total: input.validate.length,
-          valid: input.validate.filter(v => v).length,
-          invalid: input.validate.filter(v => !v).length
+        .step({ slug: 'summarize', dependsOn: ['validate'] }, (deps) => ({
+          total: deps.validate.length,
+          valid: deps.validate.filter(v => v).length,
+          invalid: deps.validate.filter(v => !v).length
         }));
 
       const sql = compileFlow(flow);
@@ -29,9 +29,9 @@ describe('Map flow integration tests', () => {
 
     it('should compile an ETL flow with array generation and mapping', () => {
       const flow = new Flow<{ sourceIds: string[] }>({ slug: 'etl_flow' })
-        .array({ slug: 'fetch_data' }, async ({ run }) => {
+        .array({ slug: 'fetch_data' }, async (flowInput) => {
           // Simulating fetching data for each source ID
-          return run.sourceIds.map(id => ({ id, data: `data_${id}` }));
+          return flowInput.sourceIds.map(id => ({ id, data: `data_${id}` }));
         })
         .map({ slug: 'transform', array: 'fetch_data' }, (record) => ({
           ...record,
@@ -43,10 +43,10 @@ describe('Map flow integration tests', () => {
           enriched: true,
           metadata: { processedAt: new Date().toISOString() }
         }))
-        .step({ slug: 'load', dependsOn: ['enrich'] }, async (input) => {
+        .step({ slug: 'load', dependsOn: ['enrich'] }, async (deps) => {
           // Final loading step
           return {
-            recordsProcessed: input.enrich.length,
+            recordsProcessed: deps.enrich.length,
             success: true
           };
         });
@@ -64,8 +64,8 @@ describe('Map flow integration tests', () => {
       // Flow that processes nested arrays (e.g., matrix operations)
       const flow = new Flow<number[][]>({ slug: 'matrix_flow' })
         .map({ slug: 'row_sums' }, (row) => row.reduce((a, b) => a + b, 0))
-        .step({ slug: 'total_sum', dependsOn: ['row_sums'] }, (input) =>
-          input.row_sums.reduce((a, b) => a + b, 0)
+        .step({ slug: 'total_sum', dependsOn: ['row_sums'] }, (deps) =>
+          deps.row_sums.reduce((a, b) => a + b, 0)
         );
 
       const sql = compileFlow(flow);
@@ -130,12 +130,12 @@ describe('Map flow integration tests', () => {
   describe('type inference validation', () => {
     it('should correctly infer types through map chains', () => {
       const flow = new Flow<{ items: string[] }>({ slug: 'test' })
-        .step({ slug: 'extract', dependsOn: [] }, ({ run }) => run.items)
+        .step({ slug: 'extract' }, (flowInput) => flowInput.items)
         .map({ slug: 'lengths', array: 'extract' }, (item) => item.length)
         .map({ slug: 'doubles', array: 'lengths' }, (len) => len * 2)
-        .step({ slug: 'sum', dependsOn: ['doubles'] }, (input) => {
+        .step({ slug: 'sum', dependsOn: ['doubles'] }, (deps) => {
           // Type checking - this should compile without errors
-          const total: number = input.doubles.reduce((a, b) => a + b, 0);
+          const total: number = deps.doubles.reduce((a, b) => a + b, 0);
           return total;
         });
 
@@ -190,13 +190,13 @@ describe('Map flow integration tests', () => {
 
     it('should handle multiple independent map chains', () => {
       const flow = new Flow<{ a: number[]; b: string[] }>({ slug: 'parallel' })
-        .step({ slug: 'extract_a' }, ({ run }) => run.a)
-        .step({ slug: 'extract_b' }, ({ run }) => run.b)
+        .step({ slug: 'extract_a' }, (flowInput) => flowInput.a)
+        .step({ slug: 'extract_b' }, (flowInput) => flowInput.b)
         .map({ slug: 'process_a', array: 'extract_a' }, (n) => n * 2)
         .map({ slug: 'process_b', array: 'extract_b' }, (s) => s.toUpperCase())
-        .step({ slug: 'combine', dependsOn: ['process_a', 'process_b'] }, (input) => ({
-          numbers: input.process_a,
-          strings: input.process_b
+        .step({ slug: 'combine', dependsOn: ['process_a', 'process_b'] }, (deps) => ({
+          numbers: deps.process_a,
+          strings: deps.process_b
         }));
 
       const sql = compileFlow(flow);

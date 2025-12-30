@@ -42,10 +42,10 @@ begin
 end $$;
 
 -- Check that single_step receives aggregated array as input
+-- Dependent steps only get dependency outputs (no 'run' key)
 select is(
   (select input from pgflow_tests.read_and_start('test_agg', 1, 1)),
   jsonb_build_object(
-    'run', '[10, 20, 30]'::jsonb,
     'map_step', jsonb_build_array(
       jsonb_build_object('result', 100),
       jsonb_build_object('result', 200),

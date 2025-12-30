@@ -125,14 +125,14 @@ import saveProduct from '../_tasks/saveProduct.ts';
 type Input = { text: string };
 
 export default new Flow<Input>({ slug: 'processProduct' })
-  .step({ slug: 'extract' }, ({ run }) =>
-    extractProduct(run.text)
+  .step({ slug: 'extract' }, (flowInput) =>
+    extractProduct(flowInput.text)
   )
-  .step({ slug: 'enrich', dependsOn: ['extract'] }, ({ extract }) =>
-    enrichProduct(extract)
+  .step({ slug: 'enrich', dependsOn: ['extract'] }, (deps) =>
+    enrichProduct(deps.extract)
   )
-  .step({ slug: 'save', dependsOn: ['enrich'] }, ({ enrich }) =>
-    saveProduct(enrich)
+  .step({ slug: 'save', dependsOn: ['enrich'] }, (deps) =>
+    saveProduct(deps.enrich)
   );
 ```
 

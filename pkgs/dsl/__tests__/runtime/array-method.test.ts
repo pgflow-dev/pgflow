@@ -239,11 +239,11 @@ describe('.array() method', () => {
     it('allows array steps to access run input', async () => {
       const testFlow = new Flow<{ count: number }>({ slug: 'test_flow' }).array(
         { slug: 'numbers' },
-        ({ run }) => Array(run.count).fill(0).map((_, i) => ({ index: i }))
+        (flowInput) => Array(flowInput.count).fill(0).map((_, i) => ({ index: i }))
       );
 
       const numbersDef = testFlow.getStepDefinition('numbers');
-      const result = await numbersDef.handler({ run: { count: 3 } });
+      const result = await numbersDef.handler({ count: 3 });
 
       expect(result).toEqual([
         { index: 0 },
@@ -255,18 +255,17 @@ describe('.array() method', () => {
     it('allows steps to depend on array steps', async () => {
       const testFlow = new Flow<{ multiplier: number }>({ slug: 'test_flow' })
         .array({ slug: 'numbers' }, () => [1, 2, 3])
-        .step({ slug: 'sum', dependsOn: ['numbers'] }, ({ numbers, run }) => 
-          numbers.reduce((acc, n) => acc + n * run.multiplier, 0)
+        .step({ slug: 'sum', dependsOn: ['numbers'] }, (deps, ctx) =>
+          deps.numbers.reduce((acc, n) => acc + n * ctx.flowInput.multiplier, 0)
         );
 
       const numbersDef = testFlow.getStepDefinition('numbers');
-      const numbersResult = await numbersDef.handler({ run: { multiplier: 2 } });
+      const numbersResult = await numbersDef.handler({ multiplier: 2 });
 
       const sumDef = testFlow.getStepDefinition('sum');
-      const sumResult = await sumDef.handler({ 
-        run: { multiplier: 2 }, 
-        numbers: numbersResult 
-      });
+      const sumResult = await sumDef.handler({
+        numbers: numbersResult
+      }, { flowInput: { multiplier: 2 } });
 
       expect(numbersResult).toEqual([1, 2, 3]);
       expect(sumResult).toBe(12); // (1 + 2 + 3) * 2
@@ -275,18 +274,17 @@ describe('.array() method', () => {
     it('allows array steps to depend on other array steps', async () => {
       const testFlow = new Flow<{ factor: number }>({ slug: 'test_flow' })
         .array({ slug: 'base_numbers' }, () => [1, 2, 3])
-        .array({ slug: 'doubled', dependsOn: ['base_numbers'] }, ({ base_numbers, run }) =>
-          base_numbers.map(n => n * run.factor)
+        .array({ slug: 'doubled', dependsOn: ['base_numbers'] }, (deps, ctx) =>
+          deps.base_numbers.map(n => n * ctx.flowInput.factor)
         );
 
       const baseDef = testFlow.getStepDefinition('base_numbers');
-      const baseResult = await baseDef.handler({ run: { factor: 2 } });
+      const baseResult = await baseDef.handler({ factor: 2 });
 
       const doubledDef = testFlow.getStepDefinition('doubled');
       const doubledResult = await doubledDef.handler({
-        run: { factor: 2 },
         base_numbers: baseResult
-      });
+      }, { flowInput: { factor: 2 } });
 
       expect(baseResult).toEqual([1, 2, 3]);
       expect(doubledResult).toEqual([2, 4, 6]);
@@ -294,17 +292,16 @@ describe('.array() method', () => {
 
     it('allows array steps to depend on regular steps', async () => {
       const testFlow = new Flow<{ size: number }>({ slug: 'test_flow' })
-        .step({ slug: 'config' }, ({ run }) => ({ length: run.size, prefix: 'item' }))
-        .array({ slug: 'items', dependsOn: ['config'] }, ({ config }) =>
-          Array(config.length).fill(0).map((_, i) => `${config.prefix}_${i}`)
+        .step({ slug: 'config' }, (flowInput) => ({ length: flowInput.size, prefix: 'item' }))
+        .array({ slug: 'items', dependsOn: ['config'] }, (deps) =>
+          Array(deps.config.length).fill(0).map((_, i) => `${deps.config.prefix}_${i}`)
         );
 
       const configDef = testFlow.getStepDefinition('config');
-      const configResult = await configDef.handler({ run: { size: 3 } });
+      const configResult = await configDef.handler({ size: 3 });
 
       const itemsDef = testFlow.getStepDefinition('items');
       const itemsResult = await itemsDef.handler({
-        run: { size: 3 },
         config: configResult
       });
 
@@ -314,21 +311,20 @@ describe('.array() method', () => {
 
     it('supports multiple dependencies for array steps', async () => {
       const testFlow = new Flow<{ base: number }>({ slug: 'test_flow' })
-        .step({ slug: 'multiplier' }, ({ run }) => run.base * 2)
-        .step({ slug: 'offset' }, ({ run }) => run.base + 10)
-        .array({ slug: 'combined', dependsOn: ['multiplier', 'offset'] }, ({ multiplier, offset }) =>
-          [multiplier, offset, multiplier + offset]
+        .step({ slug: 'multiplier' }, (flowInput) => flowInput.base * 2)
+        .step({ slug: 'offset' }, (flowInput) => flowInput.base + 10)
+        .array({ slug: 'combined', dependsOn: ['multiplier', 'offset'] }, (deps) =>
+          [deps.multiplier, deps.offset, deps.multiplier + deps.offset]
         );
 
       const multiplierDef = testFlow.getStepDefinition('multiplier');
-      const multiplierResult = await multiplierDef.handler({ run: { base: 5 } });
+      const multiplierResult = await multiplierDef.handler({ base: 5 });
 
       const offsetDef = testFlow.getStepDefinition('offset');
-      const offsetResult = await offsetDef.handler({ run: { base: 5 } });
+      const offsetResult = await offsetDef.handler({ base: 5 });
 
       const combinedDef = testFlow.getStepDefinition('combined');
       const combinedResult = await combinedDef.handler({
-        run: { base: 5 },
         multiplier: multiplierResult,
         offset: offsetResult
       });
@@ -343,15 +339,15 @@ describe('.array() method', () => {
     it('supports async array handlers', async () => {
       const testFlow = new Flow<{ delay: number }>({ slug: 'test_flow' }).array(
         { slug: 'async_data' },
-        async ({ run }) => {
+        async (flowInput) => {
           // Simulate async operation
-          await new Promise(resolve => setTimeout(resolve, run.delay));
+          await new Promise(resolve => setTimeout(resolve, flowInput.delay));
           return [{ processed: true }, { processed: false }];
         }
       );
 
       const asyncDef = testFlow.getStepDefinition('async_data');
-      const result = await asyncDef.handler({ run: { delay: 1 } });
+      const result = await asyncDef.handler({ delay: 1 });
 
       expect(result).toEqual([
         { processed: true },

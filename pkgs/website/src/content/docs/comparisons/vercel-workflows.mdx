@@ -59,15 +59,15 @@ new Flow<{ userId: string }>({
 })
   .step(
     { slug: 'createUser' },
-    ({ run }) => ({ id: crypto.randomUUID(), email: run.userId })
+    (flowInput) => ({ id: crypto.randomUUID(), email: flowInput.userId })
   )
   .step(
     { slug: 'sendWelcome', dependsOn: ['createUser'] },
-    ({ createUser }) => sendEmail(createUser.email, 'Welcome!')
+    (deps) => sendEmail(deps.createUser.email, 'Welcome!')
   )
   .step(
-    { slug: 'sendCheckin', dependsOn: ['sendWelcome'], startDelay: 604800 },
-    ({ createUser }) => sendEmail(createUser.email, 'How are you doing?')
+    { slug: 'sendCheckin', dependsOn: ['sendWelcome', 'createUser'], startDelay: 604800 },
+    (deps) => sendEmail(deps.createUser.email, 'How are you doing?')
   );
 ```
 

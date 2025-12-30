@@ -22,8 +22,6 @@ If you haven't run the example yet, start with the [Quickstart](/get-started/flo
     - greet-user.ts (flow definition)
     - index.ts (re-exports all flows)
   - functions
-    - pgflow
-      - index.ts (Control Plane)
     - greet-user-worker
       - index.ts (Edge Worker)
 </FileTree>
@@ -104,21 +102,26 @@ export const GreetUser = new Flow<Input>({
 - **`deps.fullName`**: Access the result from the `fullName` step by its slug
 - **Final output**: When the last step completes, its result becomes the flow output
 
-## Flow registration
+<Aside type="tip" title="Root vs Dependent Steps">
+**Root steps** (no `dependsOn`) receive flow input directly:
+```typescript
+(flowInput) => ...  // flowInput = { firstName: "John", lastName: "Doe" }
+```
 
-The `supabase/flows/index.ts` file re-exports all flows:
+**Dependent steps** (with `dependsOn`) receive dependency outputs:
+```typescript
+(deps) => ...  // deps = { fullName: "John Doe" }
+```
+
+Need flow input in a dependent step? Use `ctx.flowInput`.
+</Aside>
+
+## Exporting flows
+
+Re-export each flow from `supabase/flows/index.ts`:
 
 ```typescript title="supabase/flows/index.ts"
 export { GreetUser } from './greet-user.ts';
-```
-
-The Control Plane automatically imports all exports from this file:
-
-```typescript title="supabase/functions/pgflow/index.ts"
-import { ControlPlane } from '@pgflow/edge-worker';
-import * as flows from '../../flows/index.ts';
-
-ControlPlane.serve(flows);
 ```
 
 ## Try modifying the flow

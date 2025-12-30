@@ -52,7 +52,7 @@ describe('extractFlowShape', () => {
     it('should extract a single step with no dependencies', () => {
       const flow = new Flow<string>({ slug: 'test_flow' }).step(
         { slug: 'step1' },
-        ({ run }) => run.toUpperCase()
+        (flowInput) => flowInput.toUpperCase()
       );
       const shape = extractFlowShape(flow);
 
@@ -66,8 +66,8 @@ describe('extractFlowShape', () => {
 
     it('should extract step with dependencies', () => {
       const flow = new Flow<string>({ slug: 'test_flow' })
-        .step({ slug: 'step1' }, ({ run }) => run)
-        .step({ slug: 'step2', dependsOn: ['step1'] }, ({ step1 }) => step1);
+        .step({ slug: 'step1' }, (flowInput) => flowInput)
+        .step({ slug: 'step2', dependsOn: ['step1'] }, (deps) => deps.step1);
       const shape = extractFlowShape(flow);
 
       expect(shape.steps).toHaveLength(2);
@@ -99,7 +99,7 @@ describe('extractFlowShape', () => {
           timeout: 30,
           startDelay: 100,
         },
-        ({ run }) => run
+        (flowInput) => flowInput
       );
       const shape = extractFlowShape(flow);
 
@@ -120,7 +120,7 @@ describe('extractFlowShape', () => {
     it('should omit step options key when no options defined', () => {
       const flow = new Flow<string>({ slug: 'test_flow' }).step(
         { slug: 'step1' },
-        ({ run }) => run
+        (flowInput) => flowInput
       );
       const shape = extractFlowShape(flow);
 
@@ -137,7 +137,7 @@ describe('extractFlowShape', () => {
       // When only some options are set, only those should appear
       const flow = new Flow<string>({ slug: 'test_flow', maxAttempts: 5 }).step(
         { slug: 'step1', timeout: 30 },
-        ({ run }) => run
+        (flowInput) => flowInput
       );
       const shape = extractFlowShape(flow);
 
@@ -187,7 +187,7 @@ describe('extractFlowShape', () => {
         baseDelay: 5,
         timeout: 10,
       })
-        .step({ slug: 'website' }, ({ run }) => ({ content: run.url }))
+        .step({ slug: 'website' }, (flowInput) => ({ content: flowInput.url }))
         .step(
           { slug: 'sentiment', dependsOn: ['website'], maxAttempts: 5, timeout: 30 },
           () => ({ score: 0.8 })
@@ -475,12 +475,12 @@ describe('compareFlowShapes', () => {
       // but don't affect shape matching (runtime tunable via SQL)
       const flowA = new Flow<string>({ slug: 'test_flow', maxAttempts: 3 }).step(
         { slug: 'step1', timeout: 60 },
-        ({ run }) => run
+        (flowInput) => flowInput
       );
 
       const flowB = new Flow<string>({ slug: 'test_flow', maxAttempts: 10 }).step(
         { slug: 'step1', timeout: 300, startDelay: 100 },
-        ({ run }) => run
+        (flowInput) => flowInput
       );
 
       const shapeA = extractFlowShape(flowA);
@@ -544,8 +544,8 @@ describe('compareFlowShapes', () => {
     it('should match shapes extracted from identical flows', () => {
       const createFlow = () =>
         new Flow<string>({ slug: 'test_flow', maxAttempts: 3 })
-          .step({ slug: 'step1' }, ({ run }) => run)
-          .step({ slug: 'step2', dependsOn: ['step1'] }, ({ step1 }) => step1);
+          .step({ slug: 'step1' }, (flowInput) => flowInput)
+          .step({ slug: 'step2', dependsOn: ['step1'] }, (deps) => deps.step1);
 
       const shapeA = extractFlowShape(createFlow());
       const shapeB = extractFlowShape(createFlow());
@@ -558,11 +558,11 @@ describe('compareFlowShapes', () => {
     it('should detect difference when step is added', () => {
       const flowA = new Flow<string>({ slug: 'test_flow' }).step(
         { slug: 'step1' },
-        ({ run }) => run
+        (flowInput) => flowInput
       );
 
       const flowB = new Flow<string>({ slug: 'test_flow' })
-        .step({ slug: 'step1' }, ({ run }) => run)
+        .step({ slug: 'step1' }, (flowInput) => flowInput)
         .step({ slug: 'step2' }, () => 'extra');
 
       const shapeA = extractFlowShape(flowA);
@@ -579,7 +579,7 @@ describe('compareFlowShapes', () => {
     it('should detect difference when step type changes', () => {
       const flowA = new Flow<string[]>({ slug: 'test_flow' }).step(
         { slug: 'process' },
-        ({ run }) => run.join(',')
+        (flowInput) => flowInput.join(',')
       );
 
       const flowB = new Flow<string[]>({ slug: 'test_flow' }).map(
