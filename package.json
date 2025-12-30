@@ -6,7 +6,7 @@
   "scripts": {
     "build": "nx run-many --target=build --all",
     "version": "pnpm changeset version && ./scripts/update-jsr-json-version.sh",
-    "validate:publish:npm": "pnpm nx run-many -t build --exclude=demo,website,example-flows && pnpm publish --dry-run --provenance --recursive --filter=!./pkgs/edge-worker",
+    "validate:publish:npm": "pnpm nx run-many -t build --exclude=demo,website,example-flows && git status && pnpm publish --dry-run --provenance --recursive --filter=!./pkgs/edge-worker",
     "validate:publish:jsr": "cd ./pkgs/edge-worker && jsr publish --dry-run --allow-slow-types",
     "validate:publish": "pnpm run validate:publish:npm && pnpm run validate:publish:jsr",
     "publish:npm": "pnpm nx run-many -t build --exclude=demo,website,example-flows && pnpm publish --provenance --recursive --filter=!./pkgs/edge-worker",
