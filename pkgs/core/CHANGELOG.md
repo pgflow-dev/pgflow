@@ -1,5 +1,23 @@
 # @pgflow/core
 
+## 0.12.0
+
+### Minor Changes
+
+- 37402eb: BREAKING: Asymmetric handler signatures - remove `run` key from step inputs
+
+  - Root steps: `(flowInput, ctx) => ...` - flow input directly as first param
+  - Dependent steps: `(deps, ctx) => ...` - only dependency outputs as first param
+  - Access flow input in dependent steps via `await ctx.flowInput` (async/lazy-loaded)
+  - Lazy loading prevents data duplication for map steps processing large arrays
+  - Enables functional composition and simplifies types for future subflows
+
+### Patch Changes
+
+- Updated dependencies [37402eb]
+- Updated dependencies [5dc5cfc]
+  - @pgflow/dsl@0.12.0
+
 ## 0.11.0
 
 ### Minor Changes

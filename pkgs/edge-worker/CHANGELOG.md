@@ -1,5 +1,25 @@
 # @pgflow/edge-worker
 
+## 0.12.0
+
+### Minor Changes
+
+- 37402eb: BREAKING: Asymmetric handler signatures - remove `run` key from step inputs
+
+  - Root steps: `(flowInput, ctx) => ...` - flow input directly as first param
+  - Dependent steps: `(deps, ctx) => ...` - only dependency outputs as first param
+  - Access flow input in dependent steps via `await ctx.flowInput` (async/lazy-loaded)
+  - Lazy loading prevents data duplication for map steps processing large arrays
+  - Enables functional composition and simplifies types for future subflows
+
+### Patch Changes
+
+- 5dc5cfc: Fix Supabase Edge Runtime compatibility by replacing npm:postgres with jsr:@oscar6echo/postgres fork. The npm package fails to parse database URLs in Deno edge environments, causing CONNECT_TIMEOUT errors.
+- Updated dependencies [37402eb]
+- Updated dependencies [5dc5cfc]
+  - @pgflow/core@0.12.0
+  - @pgflow/dsl@0.12.0
+
 ## 0.11.0
 
 ### Minor Changes
