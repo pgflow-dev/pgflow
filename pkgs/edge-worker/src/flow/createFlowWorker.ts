@@ -2,6 +2,7 @@ import type { AnyFlow, FlowContext } from '@pgflow/dsl';
 import { ExecutionController } from '../core/ExecutionController.js';
 import { StepTaskPoller, type StepTaskPollerConfig } from './StepTaskPoller.js';
 import { StepTaskExecutor, type WorkerIdentity } from './StepTaskExecutor.js';
+import { FlowInputProvider } from './FlowInputProvider.js';
 import { PgflowSqlClient } from '@pgflow/core';
 import { Queries } from '../core/Queries.js';
 import type { IExecutor } from '../core/types.js';
@@ -98,6 +99,9 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
   // Create frozen worker config ONCE for reuse across all task executions
   const frozenWorkerConfig = createContextSafeConfig(resolvedConfig);
 
+  // Create FlowInputProvider for lazy loading and caching flow input
+  const flowInputProvider = new FlowInputProvider<TFlow>(sql);
+
   // Create StepTaskPoller with two-phase approach
   const pollerConfig: StepTaskPollerConfig = {
     batchSize: resolvedConfig.batchSize,
@@ -122,7 +126,15 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
     taskWithMessage: StepTaskWithMessage<TFlow>,
     signal: AbortSignal
   ): IExecutor => {
+    const runId = taskWithMessage.task.run_id;
+
+    // Populate cache if flow_input was provided by SQL (root non-map steps only)
+    if (taskWithMessage.flowInput !== null) {
+      flowInputProvider.populate(runId, taskWithMessage.flowInput);
+    }
+
     // Build context directly using platform resources
+    // flowInput is a Promise that either resolves immediately (cached) or lazy-loads
     const context: FlowContext & TResources = {
       // Core platform resources
       env: platformAdapter.env,
@@ -132,7 +144,7 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
       rawMessage: taskWithMessage.message,
       stepTask: taskWithMessage.task,
       workerConfig: frozenWorkerConfig, // Reuse cached frozen config
-      flowInput: taskWithMessage.flowInput, // Original flow input for dependent steps
+      flowInput: flowInputProvider.get(runId), // Lazy-loaded flow input
 
       // Platform-specific resources (generic)
       ...platformAdapter.platformResources

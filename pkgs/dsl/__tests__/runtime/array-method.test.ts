@@ -255,9 +255,10 @@ describe('.array() method', () => {
     it('allows steps to depend on array steps', async () => {
       const testFlow = new Flow<{ multiplier: number }>({ slug: 'test_flow' })
         .array({ slug: 'numbers' }, () => [1, 2, 3])
-        .step({ slug: 'sum', dependsOn: ['numbers'] }, (deps, ctx) =>
-          deps.numbers.reduce((acc, n) => acc + n * ctx.flowInput.multiplier, 0)
-        );
+        .step({ slug: 'sum', dependsOn: ['numbers'] }, async (deps, ctx) => {
+          const flowInput = await ctx.flowInput;
+          return deps.numbers.reduce((acc, n) => acc + n * flowInput.multiplier, 0);
+        });
 
       const numbersDef = testFlow.getStepDefinition('numbers');
       const numbersResult = await numbersDef.handler({ multiplier: 2 });
@@ -265,7 +266,7 @@ describe('.array() method', () => {
       const sumDef = testFlow.getStepDefinition('sum');
       const sumResult = await sumDef.handler({
         numbers: numbersResult
-      }, { flowInput: { multiplier: 2 } });
+      }, { flowInput: Promise.resolve({ multiplier: 2 }) } as any);
 
       expect(numbersResult).toEqual([1, 2, 3]);
       expect(sumResult).toBe(12); // (1 + 2 + 3) * 2
@@ -274,9 +275,10 @@ describe('.array() method', () => {
     it('allows array steps to depend on other array steps', async () => {
       const testFlow = new Flow<{ factor: number }>({ slug: 'test_flow' })
         .array({ slug: 'base_numbers' }, () => [1, 2, 3])
-        .array({ slug: 'doubled', dependsOn: ['base_numbers'] }, (deps, ctx) =>
-          deps.base_numbers.map(n => n * ctx.flowInput.factor)
-        );
+        .array({ slug: 'doubled', dependsOn: ['base_numbers'] }, async (deps, ctx) => {
+          const flowInput = await ctx.flowInput;
+          return deps.base_numbers.map(n => n * flowInput.factor);
+        });
 
       const baseDef = testFlow.getStepDefinition('base_numbers');
       const baseResult = await baseDef.handler({ factor: 2 });
@@ -284,7 +286,7 @@ describe('.array() method', () => {
       const doubledDef = testFlow.getStepDefinition('doubled');
       const doubledResult = await doubledDef.handler({
         base_numbers: baseResult
-      }, { flowInput: { factor: 2 } });
+      }, { flowInput: Promise.resolve({ factor: 2 }) } as any);
 
       expect(baseResult).toEqual([1, 2, 3]);
       expect(doubledResult).toEqual([2, 4, 6]);

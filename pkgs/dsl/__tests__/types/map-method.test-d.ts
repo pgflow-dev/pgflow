@@ -177,8 +177,8 @@ describe('.map() method type constraints', () => {
           // Let TypeScript infer the full context type
           expectTypeOf(context.env).toEqualTypeOf<Record<string, string | undefined>>();
           expectTypeOf(context.shutdownSignal).toEqualTypeOf<AbortSignal>();
-          // Context should include flowInput for map steps
-          expectTypeOf(context.flowInput).toEqualTypeOf<string[]>();
+          // Context should include flowInput as Promise for map steps
+          expectTypeOf(context.flowInput).toEqualTypeOf<Promise<string[]>>();
           return String(item);
         });
 

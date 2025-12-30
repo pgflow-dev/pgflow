@@ -16,6 +16,10 @@ export type { Json };
  * Same as pgflow.step_task_record type, but with not-null fields and type argument for payload.
  * The input type is automatically inferred based on the step_slug using a discriminated union.
  * This ensures that each step only receives inputs from its declared dependencies and the flow's run input.
+ *
+ * Note: flow_input is nullable because start_tasks only includes it for root non-map steps.
+ * For dependent and map steps, flow_input is NULL to avoid data duplication.
+ * Workers can access the original flow input via ctx.flowInput (lazy loaded).
  */
 export type StepTaskRecord<TFlow extends AnyFlow> = {
   [StepSlug in Extract<keyof ExtractFlowSteps<TFlow>, string>]: {
@@ -25,7 +29,7 @@ export type StepTaskRecord<TFlow extends AnyFlow> = {
     task_index: number;
     input: Simplify<StepInput<TFlow, StepSlug>>;
     msg_id: number;
-    flow_input: ExtractFlowInput<TFlow>;
+    flow_input: ExtractFlowInput<TFlow> | null;
   };
 }[Extract<keyof ExtractFlowSteps<TFlow>, string>];
 

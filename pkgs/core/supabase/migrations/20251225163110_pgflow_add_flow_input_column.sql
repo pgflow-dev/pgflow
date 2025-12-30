@@ -166,9 +166,14 @@ with tasks as (
     st.message_id as msg_id,
     st.task_index as task_index,
     -- flow_input: Original run input for worker context
-    -- This allows workers to access the original flow input directly
-    -- without parsing it from the constructed 'input' field
-    r.input as flow_input
+    -- Only included for root non-map steps to avoid data duplication.
+    -- Root map steps: flowInput IS the array, useless to include
+    -- Dependent steps: lazy load via ctx.flowInput when needed
+    CASE
+      WHEN step.step_type != 'map' AND step.deps_count = 0
+      THEN r.input
+      ELSE NULL
+    END as flow_input
   from tasks st
   join runs r on st.run_id = r.run_id
   join pgflow.steps step on

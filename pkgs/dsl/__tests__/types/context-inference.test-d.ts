@@ -84,8 +84,8 @@ describe('Context Type Inference Tests', () => {
         expectTypeOf(deps.double.doubled).toEqualTypeOf<number>();
         // And still has custom context
         expectTypeOf(context.multiplier).toEqualTypeOf<number>();
-        // Access flow input via context.flowInput
-        expectTypeOf(context.flowInput.initial).toEqualTypeOf<number>();
+        // Access flow input via context.flowInput (Promise type)
+        expectTypeOf(context.flowInput).toEqualTypeOf<Promise<{ initial: number }>>();
         return { formatted: String(deps.double.doubled) };
       });
 

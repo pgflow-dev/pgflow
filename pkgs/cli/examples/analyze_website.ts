@@ -54,7 +54,8 @@ const AnalyzeWebsite = new Flow<WebsiteAnalysisInput>({
   .step(
     { slug: 'saveToDb', dependsOn: ['sentiment', 'summary'] },
     async (_deps, ctx) => {
-      console.log(`Saving results to database for: ${ctx.flowInput.url}`);
+      const flowInput = await ctx.flowInput;
+      console.log(`Saving results to database for: ${flowInput.url}`);
       // In a real implementation, this would save to a database
       return {
         status: 'success',

@@ -112,10 +112,13 @@ describe('ExtractFlowOutput utility type', () => {
       .step({ slug: 'step3', dependsOn: ['step1'] }, (deps) => ({
         value: deps.step1.value - 1,
       }))
-      .step({ slug: 'step4', dependsOn: ['step2', 'step3'] }, (deps, ctx) => ({
-        sum: deps.step2.value + deps.step3.value,
-        original: ctx.flowInput.input,
-      }));
+      .step({ slug: 'step4', dependsOn: ['step2', 'step3'] }, async (deps, ctx) => {
+        const flowInput = await ctx.flowInput;
+        return {
+          sum: deps.step2.value + deps.step3.value,
+          original: flowInput.input,
+        };
+      });
 
     type FlowOutput = ExtractFlowOutput<typeof complexFlow>;
 

@@ -127,7 +127,7 @@ export function createSupabaseStepTaskContext<TFlow extends AnyFlow>(params: {
     rawMessage,
     stepTask,
     workerConfig: defaultWorkerConfig,
-    flowInput,
+    flowInput: Promise.resolve(flowInput),
 
     // Supabase-specific resources (always present)
     sql,
