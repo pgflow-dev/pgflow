@@ -219,16 +219,16 @@ type Input = {
 };
 
 export const GenerateEmbeddings = new Flow<Input>({ slug: 'generateEmbeddings' })
-  .array({ slug: 'chunks' }, (input) => splitChunks(input.run.content))
+  .array({ slug: 'chunks' }, (flowInput) => splitChunks(flowInput.content))
   .map({ slug: 'embeddings', array: 'chunks' }, (chunk) =>
     generateEmbedding(chunk)
   )
-  .step({ slug: 'save', dependsOn: ['chunks', 'embeddings'] }, (input, context) =>
+  .step({ slug: 'save', dependsOn: ['chunks', 'embeddings'] }, (deps, ctx) =>
     saveChunks({
-      documentId: input.run.documentId,
-      chunks: input.chunks,
-      embeddings: input.embeddings,
-    }, context.supabase)
+      documentId: ctx.flowInput.documentId,
+      chunks: deps.chunks,
+      embeddings: deps.embeddings,
+    }, ctx.supabase)
   );
 ```
 

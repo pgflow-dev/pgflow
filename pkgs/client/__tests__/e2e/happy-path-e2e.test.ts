@@ -73,7 +73,7 @@ describe('Happy Path E2E Integration', () => {
       let tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('fetch');
-      expect(tasks[0].input.run).toEqual(input);
+      expect(tasks[0].flow_input).toEqual(input);
 
       const fetchOutput = { data: 'fetched content', status: 200, items: 10 };
       await sqlClient.completeTask(tasks[0], fetchOutput);
@@ -88,7 +88,7 @@ describe('Happy Path E2E Integration', () => {
       tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].step_slug).toBe('process');
-      expect(tasks[0].input.run).toEqual(input);
+      expect(tasks[0].flow_input).toEqual(input);
       expect(tasks[0].input.fetch).toEqual(fetchOutput);
 
       const processOutput = { 

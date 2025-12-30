@@ -107,40 +107,40 @@ new Flow<Input>({ slug: "process_article" })
   .step({ slug: "publish", dependsOn: ["summarize", "extractKeywords"] }, fn);
 ```
 
-pgflow uses dependencies to figure out execution order and parallelism. Steps with the same dependencies run in parallel. Return values become available as `input.<slug>` to dependent steps.
+pgflow uses dependencies to figure out execution order and parallelism. Steps with the same dependencies run in parallel. Return values become available as `deps.<slug>` to dependent steps.
 
 <details>
 <summary>See full code</summary>
 
-```typescript "input.run" "dependsOn: [\"fetchArticle\"]" "input.fetchArticle" "dependsOn: [\"summarize\", \"extractKeywords\"]" "input.summarize" "input.extractKeywords"
+```typescript "flowInput.url" "dependsOn: [\"fetchArticle\"]" "deps.fetchArticle" "dependsOn: [\"summarize\", \"extractKeywords\"]" "deps.summarize" "deps.extractKeywords"
 type Input = { url: string };
 
 new Flow<Input>({ slug: "process_article" })
   .step(
     { slug: "fetchArticle" },
-    async (input) => {
-      const response = await fetch(input.run.url);
+    async (flowInput) => {
+      const response = await fetch(flowInput.url);
       return response.text();
     }
   )
   .step(
     { slug: "summarize", dependsOn: ["fetchArticle"] },
-    async (input) => {
-      return await openai.summarize(input.fetchArticle);
+    async (deps) => {
+      return await openai.summarize(deps.fetchArticle);
     }
   )
   .step(
     { slug: "extractKeywords", dependsOn: ["fetchArticle"] },
-    async (input) => {
-      return await openai.extractKeywords(input.fetchArticle);
+    async (deps) => {
+      return await openai.extractKeywords(deps.fetchArticle);
     }
   )
   .step(
     { slug: "publish", dependsOn: ["summarize", "extractKeywords"] },
-    async (input) => {
+    async (deps) => {
       await db.insert({
-        summary: input.summarize,
-        keywords: input.extractKeywords
+        summary: deps.summarize,
+        keywords: deps.extractKeywords
       });
     }
   );

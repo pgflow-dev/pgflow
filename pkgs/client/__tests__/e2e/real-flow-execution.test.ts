@@ -41,7 +41,7 @@ describe('Real Flow Execution', () => {
       const tasks = await readAndStart(sql, sqlClient, testFlow.slug, 1, 5);
 
       expect(tasks).toHaveLength(1);
-      expect(tasks[0].input.run).toEqual(input);
+      expect(tasks[0].flow_input).toEqual(input);
 
       // Complete task with complex nested output to verify JSON parsing
       const taskOutput = {

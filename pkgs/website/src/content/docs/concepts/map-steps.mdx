@@ -116,25 +116,24 @@ As map tasks complete, their outputs are collected:
 Map step handlers receive only the individual array element, not the full input object that regular step handlers receive:
 
 **Regular Step Handler:**
-```typescript "input"
-.step({ slug: 'regular' }, async (input) => {
-  // input contains:
-  // - input.run: The original flow input
-  // - input.dependencyName: Output from each dependency
-  return processAllData(input);
+```typescript "deps"
+.step({ slug: 'regular', dependsOn: ['source'] }, async (deps, ctx) => {
+  // deps contains outputs from dependencies
+  // ctx.flowInput provides access to the original flow input
+  return processAllData(deps.source);
 })
 ```
 
 **Map Step Handler:**
 ```typescript "item"
-.map({ slug: 'mapStep', array: 'source' }, async (item) => {
+.map({ slug: 'mapStep', array: 'source' }, async (item, ctx) => {
   // item is ONLY the individual array element
-  // No access to input.run or other dependencies
+  // ctx.flowInput provides access to the original flow input
   return processItem(item);
 })
 ```
 
-This constraint keeps map handlers focused on transforming individual elements. If a map handler needs additional data (like flow input or other step outputs), include that data in the array elements via a previous step. Future versions will provide access to flow input via the handler's context parameter.
+This constraint keeps map handlers focused on transforming individual elements. If a map handler needs additional data from other step outputs, include that data in the array elements via a previous step. The context parameter provides access to flow input when needed.
 
 ## Root Maps vs Dependent Maps
 
@@ -169,7 +168,7 @@ Process another step's array output by specifying the `array` property:
 new Flow<{ searchQuery: string }>({ slug: 'searchPipeline' })
   .array(
     { slug: 'searchResults' },
-    async (input) => await searchAPI(input.run.searchQuery)
+    async (flowInput) => await searchAPI(flowInput.searchQuery)
   )
   .map(
     { slug: 'processResults', array: 'searchResults' },  // Processes search output
@@ -237,11 +236,11 @@ If your map handler needs data from other steps or must wait for additional depe
     slug: 'enrichedItems',
     dependsOn: ['items', 'config']  // Array steps CAN use dependsOn
   },
-  (input) => {
+  (deps) => {
     // Enrich each item with the config data it needs
-    return input.items.map(item => ({
+    return deps.items.map(item => ({
       item,
-      apiKey: input.config.apiKey
+      apiKey: deps.config.apiKey
     }));
   }
 )

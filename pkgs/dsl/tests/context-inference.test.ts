@@ -77,10 +77,10 @@ interface ExplicitContext {
 }
 
 const ExplicitFlow = new Flow<{ userId: string }, ExplicitContext>({ slug: 'explicit-flow' })
-  .step({ slug: 'get-user' }, async (input, context) => {
+  .step({ slug: 'get-user' }, async (flowInput, context) => {
     // All ExplicitContext properties should be available
-    const user = await context.sql.query(`SELECT * FROM users WHERE id = ${input.run.userId}`);
-    await context.cache.set(`user:${input.run.userId}`, JSON.stringify(user));
+    const user = await context.sql.query(`SELECT * FROM users WHERE id = ${flowInput.userId}`);
+    await context.cache.set(`user:${flowInput.userId}`, JSON.stringify(user));
     context.pubsub.publish('user-fetched');
     return user;
   });
@@ -95,9 +95,9 @@ const _explicitTest: ExplicitFlowContext = {
 
 // Test 5: Mixed approach - explicit base with inferred additions
 const MixedFlow = new Flow<{ id: string }, { sql: TestSql }>({ slug: 'mixed-flow' })
-  .step({ slug: 'query' }, async (input, context) => {
+  .step({ slug: 'query' }, async (flowInput, context) => {
     // Has sql from explicit type
-    return await context.sql.query(`SELECT * FROM items WHERE id = ${input.run.id}`);
+    return await context.sql.query(`SELECT * FROM items WHERE id = ${flowInput.id}`);
   })
   .step({ slug: 'enhance' }, async (input, context: Context & { sql: TestSql, ai: { generate: () => string } }) => {
     // Adds ai requirement via inference

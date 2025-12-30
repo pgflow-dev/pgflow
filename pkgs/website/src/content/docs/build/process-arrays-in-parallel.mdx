@@ -30,7 +30,7 @@ const ScrapeMultipleUrls = new Flow<string[]>({  // Flow input must be array for
   )
   .step(
     { slug: 'summary', dependsOn: ['scrapedPages'] },
-    (input) => summarizeResults(input.scrapedPages)
+    (deps) => summarizeResults(deps.scrapedPages)
   );
 
 // Usage (SQL):
@@ -53,7 +53,7 @@ const CsvProcessor = new Flow<{ csvUrl: string }>({
 })
   .array(
     { slug: 'csvRows' },
-    async (input) => await fetchAndParseCSV(input.run.csvUrl)
+    async (flowInput) => await fetchAndParseCSV(flowInput.csvUrl)
   )
   .map(
     { slug: 'validatedRows', array: 'csvRows' },
@@ -65,23 +65,23 @@ const CsvProcessor = new Flow<{ csvUrl: string }>({
   )
   .step(
     { slug: 'saveResults', dependsOn: ['processedRows'] },
-    async (input, context) => await saveProcessedData(input.processedRows, context)
+    async (deps, ctx) => await saveProcessedData(deps.processedRows, ctx)
   );
 ```
 
 ## Enriching Array Elements with Additional Data
 
-Map handlers only receive individual array elements. If a handler needs access to the original flow input (`run`), outputs from other dependencies, or any additional data, include that data in the array elements via a previous step.
+Map handlers only receive individual array elements. If a handler needs access to the original flow input, outputs from other dependencies, or any additional data, include that data in the array elements via a previous step.
 
 ### Problem: Map Handlers Can't Access Flow Context
 
 ```typescript "apiKey: string" del="id, ???" del="(id)"
-// This won't work - map handler can't access input.run
+// This won't work - map handler can't access ctx.flowInput
 const ProblemFlow = new Flow<{ apiKey: string, ids: string[] }>({
   slug: 'problemFlow',
 })
   .map({ slug: 'fetch' }, async (id) => {
-    // Can't access input.run.apiKey here!
+    // Can't access flowInput.apiKey here!
     return await fetchWithKey(id, ???);  // No access to apiKey
   });
 ```
@@ -94,11 +94,11 @@ const SolutionFlow = new Flow<{ apiKey: string, ids: string[] }>({
 })
   .array(
     { slug: 'prepareItems' },
-    (input) => {
+    (flowInput) => {
       // Include needed context in each element
-      return input.run.ids.map(id => ({
+      return flowInput.ids.map(id => ({
         id,
-        apiKey: input.run.apiKey
+        apiKey: flowInput.apiKey
       }));
     }
   )
@@ -111,7 +111,7 @@ const SolutionFlow = new Flow<{ apiKey: string, ids: string[] }>({
   );
 ```
 
-This pattern applies whenever a map handler needs any data beyond the array elements themselves. Add a step before the map that enriches the array elements with whatever data the handler needs - whether that's the original flow input (`run`), outputs from other dependencies, or both.
+This pattern applies whenever a map handler needs any data beyond the array elements themselves. Add a step before the map that enriches the array elements with whatever data the handler needs - whether that's the original flow input, outputs from other dependencies, or both.
 
 :::note[Debugging Map Tasks]
 When debugging map steps, use [`context.stepTask.task_index`](/reference/context/#steptask) to identify which array element each task is processing.
@@ -141,12 +141,12 @@ const EmptyHandling = new Flow<{}>({
   )
   .step(
     { slug: 'handleResults', dependsOn: ['enrichedItems'] },
-    (input) => {
+    (deps) => {
       // This still executes to handle the empty result
-      if (input.enrichedItems.length === 0) {
+      if (deps.enrichedItems.length === 0) {
         return { message: 'No items to process' };
       }
-      return { processed: input.enrichedItems.length };
+      return { processed: deps.enrichedItems.length };
     }
   );
 ```

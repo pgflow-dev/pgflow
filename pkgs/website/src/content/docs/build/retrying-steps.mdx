@@ -33,7 +33,7 @@ Configure with retries:
   slug: 'fetchExternalData',
   maxAttempts: 5,   // Retry transient failures
   baseDelay: 2,
-}, async (input) => await fetchFromAPI(input.run.url))
+}, async (flowInput) => await fetchFromAPI(flowInput.url))
 ```
 
 ### Permanent Failures
@@ -49,9 +49,9 @@ Configure without retries:
 .step({
   slug: 'validInput',
   maxAttempts: 1,   // No retries for validation
-}, (input) => {
-  if (!input.run.email) throw new Error('Email required');
-  return input.run;
+}, (flowInput) => {
+  if (!flowInput.email) throw new Error('Email required');
+  return flowInput;
 })
 ```
 

@@ -26,50 +26,50 @@ export const FLOW_SECTIONS: Record<string, CodeSection> = {
 	fetchArticle: {
 		code: `  .step(
     { slug: 'fetchArticle' },
-    (input) => scrapeUrl(input.run.url)
+    (flowInput) => scrapeUrl(flowInput.url)
   )`,
 		mobileCode: `  .step(
     { slug: 'fetchArticle' },
-    (input) => scrapeUrl(
-      input.run.url
+    (flowInput) => scrapeUrl(
+      flowInput.url
     )
   )`
 	},
 	summarize: {
 		code: `  .step(
     { slug: 'summarize', dependsOn: ['fetchArticle'] },
-    (input) => summarize(schema, input.fetchArticle.content)
+    (deps) => summarize(schema, deps.fetchArticle.content)
   )`,
 		mobileCode: `  .step(
     {
       slug: 'summarize',
       dependsOn: ['fetchArticle']
     },
-    (input) => summarize(
+    (deps) => summarize(
       schema,
-      input.fetchArticle.content
+      deps.fetchArticle.content
     )
   )`
 	},
 	extractKeywords: {
 		code: `  .step(
     { slug: 'extractKeywords', dependsOn: ['fetchArticle'] },
-    (input) => extractKeywords(input.fetchArticle.content)
+    (deps) => extractKeywords(deps.fetchArticle.content)
   )`,
 		mobileCode: `  .step(
     {
       slug: 'extractKeywords',
       dependsOn: ['fetchArticle']
     },
-    (input) => extractKeywords(
-      input.fetchArticle.content
+    (deps) => extractKeywords(
+      deps.fetchArticle.content
     )
   )`
 	},
 	publish: {
 		code: `  .step(
     { slug: 'publish', dependsOn: ['summarize', 'extractKeywords'] },
-    (input) => publishArticle(input.summarize, input.extractKeywords)
+    (deps) => publishArticle(deps.summarize, deps.extractKeywords)
   );`,
 		mobileCode: `  .step(
     {
@@ -79,9 +79,9 @@ export const FLOW_SECTIONS: Record<string, CodeSection> = {
         'extractKeywords'
       ]
     },
-    (input) => publishArticle(
-      input.summarize,
-      input.extractKeywords
+    (deps) => publishArticle(
+      deps.summarize,
+      deps.extractKeywords
     )
   );`
 	}

@@ -92,7 +92,7 @@ describe('createFlowsDirectory', () => {
     // Second step should depend on first
     expect(greetUserContent).toContain("dependsOn: ['fullName']");
     // Second step should access result from first step
-    expect(greetUserContent).toContain('input.fullName');
+    expect(greetUserContent).toContain('deps.fullName');
   });
 
   it('should not create files when they already exist', async () => {

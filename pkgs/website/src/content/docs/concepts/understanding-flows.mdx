@@ -32,45 +32,47 @@ Each `.step()` call creates a new Flow instance without modifying the original, 
 
 ## Understanding Step Inputs and Data Flow
 
-In pgflow, **every step receives a unified `input` object** with two critical parts:
+In pgflow, step handlers have **asymmetric signatures** based on whether they have dependencies:
 
-1. **`input.run`** - The original flow input, available to ALL steps
-2. **`input.{stepName}`** - Outputs from any dependency steps
+1. **Root steps** (no dependencies) receive **flow input directly** as the first parameter
+2. **Dependent steps** receive **dependency outputs** as the first parameter
 
-:::note[The input.run Field]
-Every step has access to the complete flow input via `input.run`, ensuring:
-- Original flow parameters are accessible throughout the flow
-- Data doesn't need to be manually forwarded through intermediate steps
-- Steps can combine original input with processed data
+Both step types receive a **context object** as the second parameter, which provides access to environment variables, the Supabase client, and the original flow input.
+
+:::note[Accessing Flow Input]
+- Root steps: Access directly via the first parameter (e.g., `flowInput.url`)
+- Dependent steps: Access via context (e.g., `ctx.flowInput.url`)
+
+This asymmetric design matches the domain - root and dependent steps ARE different.
 :::
 
 Consider this example:
 
-```typescript "input.run.url" "input.run.userId" "input.scrape.content"
+```typescript "flowInput.url" "ctx.flowInput.userId" "deps.scrape.content"
 new Flow<{ url: string, userId: string }>({
   slug: 'analyzeWebsite',
 })
   .step(
     { slug: 'scrape' },
-    async (input) => {
-      // Access to input.run.url and input.run.userId
-      return await scrapeWebsite(input.run.url);
+    async (flowInput) => {
+      // flowInput is the flow input directly
+      return await scrapeWebsite(flowInput.url);
     }
   )
   .step(
     { slug: 'analyze', dependsOn: ['scrape'] },
-    async (input) => {
-      // Still has access to input.run.userId
-      // Now also has access to input.scrape
-      return await analyzeContent(input.scrape.content);
+    async (deps, ctx) => {
+      // deps contains dependency outputs
+      // ctx.flowInput provides access to original flow input if needed
+      return await analyzeContent(deps.scrape.content);
     }
   );
 ```
 
 When this flow runs:
 1. The flow receives an input object (e.g., `{ url: "example.com", userId: "123" }`)
-2. Each step receives both the original input via `input.run` and the outputs of any dependency steps
-3. Steps can combine original parameters with processed data from previous steps
+2. Root steps receive the flow input directly as the first parameter
+3. Dependent steps receive their dependencies as the first parameter, with flow input available via `ctx.flowInput`
 
 ## The Type System
 
@@ -86,15 +88,15 @@ new Flow<WebsiteInput>({
 })
   .step(
     { slug: 'scrape' },
-    async (input) => {
-      // input.run is typed as WebsiteInput
+    async (flowInput) => {
+      // flowInput is typed as WebsiteInput
       return { content: "..." };
     }
   )
   .step(
     { slug: 'analyze', dependsOn: ['scrape'] },
-    async (input) => {
-      // input.scrape is typed based on the scrape step's return type
+    async (deps) => {
+      // deps.scrape is typed based on the scrape step's return type
       return { analysis: "..." };
     }
   );
@@ -102,12 +104,12 @@ new Flow<WebsiteInput>({
 
 The type system automatically:
 - Enforces the correct input type for the flow
-- Makes the flow input available as `input.run` in every step
+- Types the first parameter based on step type (root vs dependent)
 - Tracks each step's output type and makes it available to dependent steps
 - Provides IDE autocompletion and catches type errors at compile time
 
 :::tip[Type Safety]
-TypeScript provides full autocompletion for both `input.run` properties and dependency outputs, allowing you to confidently access data without runtime errors.
+TypeScript provides full autocompletion for flow input (first parameter for root steps) and dependency outputs (first parameter for dependent steps), allowing you to confidently access data without runtime errors.
 :::
 
 ## Step Methods
@@ -121,8 +123,8 @@ The standard method for adding steps to a flow. Each step processes input and re
 ```typescript
 .step(
   { slug: 'process', dependsOn: ['previous'] },
-  async (input) => {
-    // Access input.run and input.previous
+  async (deps) => {
+    // Access deps.previous for dependency output
     return { result: 'processed' };
   }
 )
@@ -142,7 +144,7 @@ A semantic wrapper around `.step()` that enforces array return types. Useful for
 // With dependencies
 .array(
   { slug: 'combine', dependsOn: ['source1', 'source2'] },
-  async (input) => [...input.source1, ...input.source2]
+  async (deps) => [...deps.source1, ...deps.source2]
 )
 ```
 
@@ -204,7 +206,7 @@ All step inputs and outputs MUST be serializable to JSON since pgflow stores the
 // GOOD: Fully serializable objects
 .step(
   { slug: 'processData' },
-  async (input) => {
+  async () => {
     return {
       count: 42,
       items: ["apple", "banana"],
@@ -219,7 +221,7 @@ All step inputs and outputs MUST be serializable to JSON since pgflow stores the
 // BAD: Non-serializable types will cause runtime errors
 .step(
   { slug: 'badExample' },
-  async (input) => {
+  async () => {
     return {
       date: new Date(),     // Use toISOString() instead
       regex: /test/,        // Not serializable
@@ -270,7 +272,7 @@ The TypeScript code is used only for definition and compilation, not for executi
 
 Here's a practical example showing how data flows efficiently through steps:
 
-```typescript "input.run.userId" "input.run.reportType" "input.run.includeDetails" "input.run.reportType" {21,30,38}
+```typescript "flowInput.userId" "ctx.flowInput.reportType" "ctx.flowInput.includeDetails" {21,30,38}
 // Flow with multiple input parameters
 type Input = {
   userId: string,
@@ -284,35 +286,35 @@ new Flow<Input>({
   // Step 1: Fetch user data
   .step(
     { slug: 'user' },
-    async (input) => {
-      return await fetchUser(input.run.userId);
+    async (flowInput) => {
+      return await fetchUser(flowInput.userId);
     }
   )
   // Steps 2 & 3: Process user data in parallel
   .step(
     { slug: 'activity', dependsOn: ['user'] },
-    async (input) => {
-      // Uses input.run.reportType to determine timespan
-      const timespan = input.run.reportType === 'advanced' ? '1y' : '30d';
-      return await getUserActivity(input.user.id, timespan);
+    async (deps, ctx) => {
+      // Uses ctx.flowInput.reportType to determine timespan
+      const timespan = ctx.flowInput.reportType === 'advanced' ? '1y' : '30d';
+      return await getUserActivity(deps.user.id, timespan);
     }
   )
   .step(
     { slug: 'preferences', dependsOn: ['user'] },
-    async (input) => {
-      // Uses input.run.includeDetails parameter
-      return await getUserPreferences(input.user.id, input.run.includeDetails);
+    async (deps, ctx) => {
+      // Uses ctx.flowInput.includeDetails parameter
+      return await getUserPreferences(deps.user.id, ctx.flowInput.includeDetails);
     }
   )
   // Step 4: Combine results
   .step(
     { slug: 'report', dependsOn: ['activity', 'preferences'] },
-    async (input) => {
+    async (deps, ctx) => {
       return {
-        user: input.user,
-        activity: input.activity,
-        preferences: input.preferences,
-        reportType: input.run.reportType,  // Original parameter still available
+        user: deps.user,
+        activity: deps.activity,
+        preferences: deps.preferences,
+        reportType: ctx.flowInput.reportType,  // Original parameter still available
         generatedAt: new Date().toISOString()
       };
     }
@@ -320,7 +322,7 @@ new Flow<Input>({
 ```
 
 This example demonstrates:
-1. **Original parameters available throughout** - Every step can access the input parameters
+1. **Original parameters available via context** - Dependent steps access flow input via `ctx.flowInput`
 2. **Conditional processing** - Steps adapt behavior based on original parameters
 3. **No manual parameter forwarding needed** - The `user` step doesn't need to include original parameters
 4. **Type safety throughout** - TypeScript ensures all data accesses are valid
@@ -329,10 +331,12 @@ This example demonstrates:
 
 pgflow provides a powerful, type-safe way to define complex workflows:
 
-- Every step receives the original flow input via `input.run`
+- Root steps receive flow input directly as the first parameter
+- Dependent steps receive dependency outputs as the first parameter
+- The context object (second parameter) provides access to environment, supabase client, and flow input
 - TypeScript's type system ensures data flows correctly between steps
 - The functional approach keeps task implementation separate from flow orchestration
 - Parallel execution of independent steps is managed automatically
 - Dependencies between steps are handled transparently
 
-The `input.run` design enables original parameters to be available throughout the workflow without manual forwarding, allowing steps to focus on their specific tasks while maintaining type safety.
+The asymmetric handler signatures match the domain - root and dependent steps ARE different - while still providing full access to flow input when needed via the context object.

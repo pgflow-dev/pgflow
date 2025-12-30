@@ -17,10 +17,10 @@ export default new Flow<{ url: string }>({
 	baseDelay: 1,
 	maxAttempts: 2
 })
-	.step({ slug: 'fetchArticle' }, async (input) => {
+	.step({ slug: 'fetchArticle' }, async (flowInput) => {
 		await sleep(SLEEP_MS);
 		const startTime = Date.now();
-		const result = await fetchArticle(input.run.url);
+		const result = await fetchArticle(flowInput.url);
 		const durationMs = Date.now() - startTime;
 		return {
 			...result,
@@ -30,16 +30,12 @@ export default new Flow<{ url: string }>({
 			}
 		};
 	})
-	.step({ slug: 'summarize', dependsOn: ['fetchArticle'], baseDelay: 1 }, async (input) =>
-		summarizeArticle(input.fetchArticle.content)
+	.step({ slug: 'summarize', dependsOn: ['fetchArticle'], baseDelay: 1 }, async (deps) =>
+		summarizeArticle(deps.fetchArticle.content)
 	)
-	.step({ slug: 'extractKeywords', dependsOn: ['fetchArticle'] }, async (input) =>
-		extractKeywords(input.fetchArticle.content)
+	.step({ slug: 'extractKeywords', dependsOn: ['fetchArticle'] }, async (deps) =>
+		extractKeywords(deps.fetchArticle.content)
 	)
-	.step({ slug: 'publish', dependsOn: ['summarize', 'extractKeywords'] }, async (input) =>
-		publishArticle(
-			input.summarize.summary,
-			input.summarize.sentiment,
-			input.extractKeywords.keywords
-		)
+	.step({ slug: 'publish', dependsOn: ['summarize', 'extractKeywords'] }, async (deps) =>
+		publishArticle(deps.summarize.summary, deps.summarize.sentiment, deps.extractKeywords.keywords)
 	);
