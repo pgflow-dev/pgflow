@@ -119,7 +119,7 @@ Map step handlers receive only the individual array element, not the full input 
 ```typescript "deps"
 .step({ slug: 'regular', dependsOn: ['source'] }, async (deps, ctx) => {
   // deps contains outputs from dependencies
-  // ctx.flowInput provides access to the original flow input
+  // await ctx.flowInput provides access to the original flow input
   return processAllData(deps.source);
 })
 ```
@@ -128,12 +128,16 @@ Map step handlers receive only the individual array element, not the full input 
 ```typescript "item"
 .map({ slug: 'mapStep', array: 'source' }, async (item, ctx) => {
   // item is ONLY the individual array element
-  // ctx.flowInput provides access to the original flow input
+  // await ctx.flowInput provides access to the original flow input
   return processItem(item);
 })
 ```
 
 This constraint keeps map handlers focused on transforming individual elements. If a map handler needs additional data from other step outputs, include that data in the array elements via a previous step. The context parameter provides access to flow input when needed.
+
+:::tip[Accessing flowInput in map handlers]
+While `await ctx.flowInput` works in map handlers, it's lazy-loaded (fetched on first access, then cached per run). For better performance with large arrays, enrich your array elements with the data they need before mapping. See [Enriching Array Elements](/build/process-arrays-in-parallel/#enriching-array-elements-with-additional-data) for the recommended pattern.
+:::
 
 ## Root Maps vs Dependent Maps
 

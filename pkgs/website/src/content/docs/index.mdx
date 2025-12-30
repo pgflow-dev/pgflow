@@ -334,12 +334,15 @@ new Flow<{ url: string }>({ slug: 'analyzeArticle' })
     (deps) => extractKeywords(deps.fetchArticle)
   )
   .step({ slug: 'publish', dependsOn: ['summarize', 'extractKeywords'] },
-    (deps, ctx) => publishArticle({
-      url: ctx.flowInput.url,
-      content: deps.fetchArticle,
-      summary: deps.summarize,
-      keywords: deps.extractKeywords
-    })
+    async (deps, ctx) => {
+      const flowInput = await ctx.flowInput;
+      return publishArticle({
+        url: flowInput.url,
+        content: deps.fetchArticle,
+        summary: deps.summarize,
+        keywords: deps.extractKeywords
+      });
+    }
   );
 ```
 

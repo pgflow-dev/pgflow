@@ -111,8 +111,8 @@ export class StepTaskExecutor<TFlow extends AnyFlow, TContext extends StepTaskHa
         // Map steps: SQL already extracted element
         handlerInput = this.stepTask.input;
       } else if (stepDef.dependencies.length === 0) {
-        // Root single/array step: use flowInput from context (await the Promise)
-        handlerInput = await this.context.flowInput;
+        // Root single/array step: flow_input is guaranteed by SQL (start_tasks)
+        handlerInput = this.stepTask.flow_input!;
       } else {
         // Dependent single/array step: use deps object from task input
         handlerInput = this.stepTask.input;

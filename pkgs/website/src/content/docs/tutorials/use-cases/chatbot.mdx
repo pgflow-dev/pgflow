@@ -221,19 +221,22 @@ export default new Flow<Input>({ slug: 'chatbot' })
   )
   .step(
     { slug: 'response', dependsOn: ['history', 'knowledge'] },
-    (deps, ctx) =>
-      generateResponse({
-        message: ctx.flowInput.message,
+    async (deps, ctx) => {
+      const flowInput = await ctx.flowInput;
+      return generateResponse({
+        message: flowInput.message,
         history: deps.history,
         knowledge: deps.knowledge,
-      })
+      });
+    }
   )
-  .step({ slug: 'save', dependsOn: ['response'] }, (deps, ctx) =>
-    saveMessage({
-      conversationId: ctx.flowInput.conversationId,
+  .step({ slug: 'save', dependsOn: ['response'] }, async (deps, ctx) => {
+    const flowInput = await ctx.flowInput;
+    return saveMessage({
+      conversationId: flowInput.conversationId,
       content: deps.response,
-    })
-  );
+    });
+  });
 ```
 
 The `history` and `knowledge` steps run in parallel since neither depends on the other. Both results feed into `response`, which generates an AI reply enriched with conversation context and relevant knowledge.

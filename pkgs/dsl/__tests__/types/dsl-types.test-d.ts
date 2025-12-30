@@ -78,6 +78,24 @@ describe('Flow Type System Tests', () => {
     });
   });
 
+  describe('Empty dependsOn array handling', () => {
+    it('should reject empty dependsOn array at compile time', () => {
+      // Empty dependsOn: [] is semantically meaningless - if you have no dependencies,
+      // simply omit dependsOn. Allowing it creates a type mismatch where:
+      // - TypeScript infers deps as {} (empty object from never[])
+      // - Runtime treats it as a root step and passes flowInput
+      //
+      // This test verifies that dependsOn: [] is rejected at compile time.
+      new Flow<{ userId: string }>({ slug: 'test_flow' })
+        .step({ slug: 'root' }, () => ({ value: 1 }))
+        // @ts-expect-error - empty dependsOn array should be rejected
+        .step({ slug: 'bad_step', dependsOn: [] }, (deps) => {
+          // If this compiled, deps would be {} but runtime would pass { userId: string }
+          return { result: deps };
+        });
+    });
+  });
+
   describe('Multi-level dependencies', () => {
     it('should correctly type multi-level dependencies', () => {
       new Flow<string>({ slug: 'test_flow' })
