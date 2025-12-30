@@ -25,6 +25,7 @@ export type StepTaskRecord<TFlow extends AnyFlow> = {
     task_index: number;
     input: Simplify<StepInput<TFlow, StepSlug>>;
     msg_id: number;
+    flow_input: ExtractFlowInput<TFlow>;
   };
 }[Extract<keyof ExtractFlowSteps<TFlow>, string>];
 

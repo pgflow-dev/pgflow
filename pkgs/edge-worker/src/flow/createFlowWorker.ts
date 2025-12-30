@@ -132,6 +132,7 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
       rawMessage: taskWithMessage.message,
       stepTask: taskWithMessage.task,
       workerConfig: frozenWorkerConfig, // Reuse cached frozen config
+      flowInput: taskWithMessage.flowInput, // Original flow input for dependent steps
 
       // Platform-specific resources (generic)
       ...platformAdapter.platformResources

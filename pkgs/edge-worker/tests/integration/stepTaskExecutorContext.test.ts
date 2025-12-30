@@ -58,6 +58,7 @@ Deno.test(
       step_slug: 'test_step',
       task_index: 0,
       input: { run: { data: 'test data' } },
+      flow_input: { data: 'test data' },
     };
 
     // Create context with mock task and message using proper flow worker context creation
@@ -77,6 +78,7 @@ Deno.test(
         msg_id: 123,
         message: mockMessage,
         task: mockTask,
+        flowInput: { data: 'test data' },
       },
     });
 
@@ -120,6 +122,7 @@ Deno.test(
       step_slug: 'legacy_step',
       task_index: 0,
       input: { run: { value: 42 } },
+      flow_input: { value: 42 },
     };
 
     // Get the step handler
@@ -142,6 +145,7 @@ Deno.test(
         msg_id: 456,
         message: mockMessage,
         task: mockTask,
+        flowInput: { value: 42 },
       },
     });
 
@@ -187,6 +191,7 @@ Deno.test(
       step_slug: 'check_raw',
       task_index: 0,
       input: { run: {} },
+      flow_input: {},
     };
 
     // Create context - for this test we need a mock taskWithMessage
@@ -194,6 +199,7 @@ Deno.test(
       msg_id: 789,
       message: mockMessage,
       task: mockTask,
+      flowInput: {},
     };
 
     const context = createFlowWorkerContext({
@@ -247,6 +253,7 @@ Deno.test(
       step_slug: 'check_clients',
       task_index: 0,
       input: { run: {} },
+      flow_input: {},
     };
 
     // Create context with Supabase env vars
@@ -254,6 +261,7 @@ Deno.test(
       msg_id: 999,
       message: mockMessage,
       task: mockTask,
+      flowInput: {},
     };
 
     const context = createFlowWorkerContext({
@@ -328,6 +336,7 @@ Deno.test(
       step_slug: 'fetch_data',
       task_index: 0,
       input: { run: { id: 123 } },
+      flow_input: { id: 123 },
     };
 
     const context = createFlowWorkerContext({
@@ -338,6 +347,7 @@ Deno.test(
         msg_id: 456,
         message: mockMessageForComplex,
         task: mockTaskForComplex,
+        flowInput: { id: 123 },
       },
     });
 

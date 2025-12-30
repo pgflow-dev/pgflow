@@ -47,13 +47,18 @@ const mockStepMessage: PgmqMessageRecord<{ run: { test: string } }> = {
   headers: null,
 };
 
+// Mock flow input
+const mockFlowInput = { test: 'flow-input' };
+
 // Mock step task (using generic typing)
 const mockStepTask = {
   flow_slug: 'test-flow',
   run_id: 'run-456',
   step_slug: 'test-step',
   input: { run: { test: 'input' } },
-  msg_id: 123
+  msg_id: 123,
+  flow_input: mockFlowInput,
+  task_index: 0
 } as StepTaskRecord<never>;
 
 Deno.test('createSupabaseMessageContext - creates context with all Supabase resources', () => {
@@ -104,15 +109,17 @@ Deno.test('createSupabaseStepTaskContext - creates context with step task', () =
     abortSignal: mockAbortSignal,
     stepTask: mockStepTask,
     rawMessage: mockStepMessage,
+    flowInput: mockFlowInput,
   });
-  
+
   // Check all properties exist
   assertEquals(context.env, fullEnv);
   assertEquals(context.sql, mockSql);
   assertEquals(context.shutdownSignal, mockAbortSignal);
   assertEquals(context.stepTask, mockStepTask);
   assertEquals(context.rawMessage, mockStepMessage);
-  
+  assertEquals(context.flowInput, mockFlowInput);
+
   // Supabase client should always be present
   assertExists(context.supabase);
 });
