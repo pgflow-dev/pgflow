@@ -77,15 +77,58 @@
 				"command": "wrangler deploy --env production"
 			}
 		},
-		"deploy:preview": {
+		"validate:preview": {
+			"executor": "nx:run-commands",
+			"options": {
+				"cwd": "apps/demo",
+				"command": "./scripts/validate-preview-env.sh"
+			}
+		},
+		"build:preview": {
+			"executor": "nx:run-commands",
+			"dependsOn": ["validate:preview", "^build"],
+			"inputs": ["{projectRoot}/.env.preview", "{projectRoot}/wrangler.toml"],
+			"outputs": ["{projectRoot}/.svelte-kit"],
+			"options": {
+				"cwd": "apps/demo",
+				"command": "vite build --mode preview"
+			}
+		},
+		"deploy:preview:webapp": {
 			"executor": "nx:run-commands",
 			"cache": false,
 			"local": true,
-			"dependsOn": ["build"],
+			"dependsOn": ["sync-edge-deps", "build:preview"],
 			"inputs": ["{projectRoot}/wrangler.toml"],
 			"options": {
 				"cwd": "apps/demo",
 				"command": "./scripts/deploy-preview.sh ${PREVIEW_NAME:-pr-${PR_NUMBER:-preview}}"
+			}
+		},
+		"deploy:preview:db": {
+			"executor": "nx:run-commands",
+			"cache": false,
+			"dependsOn": ["validate:preview"],
+			"options": {
+				"cwd": "apps/demo",
+				"command": "./scripts/db-reset-preview.sh"
+			}
+		},
+		"deploy:preview:functions": {
+			"executor": "nx:run-commands",
+			"cache": false,
+			"dependsOn": ["deploy:preview:db", "sync-edge-deps"],
+			"options": {
+				"cwd": "apps/demo",
+				"command": "./scripts/functions-deploy-preview.sh"
+			}
+		},
+		"deploy:preview": {
+			"executor": "nx:run-commands",
+			"cache": false,
+			"dependsOn": ["deploy:preview:functions", "deploy:preview:webapp"],
+			"options": {
+				"command": "echo '✅ Full preview deployment complete!'"
 			}
 		}
 	}
