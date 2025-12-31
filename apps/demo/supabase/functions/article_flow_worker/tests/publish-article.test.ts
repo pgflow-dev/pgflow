@@ -1,5 +1,5 @@
 import { assertEquals, assert } from 'https://deno.land/std@0.208.0/assert/mod.ts';
-import { publishArticle } from '../tasks/publish-article.ts';
+import { publishArticle } from '../../../tasks/publish-article.ts';
 
 Deno.test('publishArticle - generates article ID and timestamp', () => {
 	const summary = 'Test summary';

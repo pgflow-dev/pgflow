@@ -1,5 +1,5 @@
 import { assert, assertRejects } from 'https://deno.land/std@0.208.0/assert/mod.ts';
-import { summarizeArticle } from '../tasks/summarize-article.ts';
+import { summarizeArticle } from '../../../tasks/summarize-article.ts';
 import { load } from 'https://deno.land/std@0.208.0/dotenv/mod.ts';
 
 // Load environment variables from .env file if it exists

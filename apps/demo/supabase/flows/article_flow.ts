@@ -1,8 +1,8 @@
 import { Flow } from '@pgflow/dsl';
-import { fetchArticle } from './tasks/fetch-article.ts';
-import { summarizeArticle } from './tasks/summarize-article.ts';
-import { extractKeywords } from './tasks/extract-keywords.ts';
-import { publishArticle } from './tasks/publish-article.ts';
+import { fetchArticle } from '../tasks/fetch-article.ts';
+import { summarizeArticle } from '../tasks/summarize-article.ts';
+import { extractKeywords } from '../tasks/extract-keywords.ts';
+import { publishArticle } from '../tasks/publish-article.ts';
 
 const SLEEP_MS = 1000;
 
@@ -12,7 +12,7 @@ function sleep(ms: number) {
 }
 
 // Flow definition - clean and minimal
-export default new Flow<{ url: string }>({
+export const ArticleFlow = new Flow<{ url: string }>({
 	slug: 'article_flow',
 	baseDelay: 1,
 	maxAttempts: 2
