@@ -1,6 +1,6 @@
 import { assert } from 'https://deno.land/std@0.208.0/assert/mod.ts';
 import { stub } from 'https://deno.land/std@0.208.0/testing/mock.ts';
-import { fetchArticle } from '../tasks/fetch-article.ts';
+import { fetchArticle } from '../../../tasks/fetch-article.ts';
 import { load } from 'https://deno.land/std@0.208.0/dotenv/mod.ts';
 
 // Load environment variables from .env file if it exists
