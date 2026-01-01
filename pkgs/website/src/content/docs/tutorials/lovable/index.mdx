@@ -21,31 +21,19 @@ With pgflow integrated into your Lovable app, you can:
 - **Track progress** - Full observability into workflow state in your Postgres database
 - **Scale horizontally** - Edge Workers auto-scale with your Supabase project
 
-## Installation overview
+## Installation
 
-Installing pgflow in a Lovable project requires a few prompts that you paste into Lovable's chat. The process is designed to be simple and safe.
-
-<Steps>
-1. **Install the Control Plane** - Create the pgflow Edge Function that manages flows
-2. **Run Migrations** - Apply database migrations and configure secrets via a temporary installer
-</Steps>
+Installing pgflow in a Lovable project takes just one prompt that you paste into Lovable's chat. The prompt creates a temporary installer that runs database migrations and configures vault secrets.
 
 <Aside type="note" title="One-time setup">
-  These installation steps only need to be done once per project. After installation, you can define and run workflows entirely through Lovable's chat interface.
+  Installation only needs to be done once per project. After that, you can define and run workflows entirely through Lovable's chat interface.
 </Aside>
-
-## Get started
 
 <CardGrid>
   <LinkCard
-    title="Step 1: Install Control Plane"
-    description="Create the pgflow Edge Function in your Supabase project"
+    title="Install pgflow"
+    description="Set up pgflow in your Lovable project with a single prompt"
     href="/tutorials/lovable/01-install-pgflow/"
-  />
-  <LinkCard
-    title="Step 2: Run Migrations"
-    description="Apply database migrations and configure vault secrets"
-    href="/tutorials/lovable/02-install-migrations/"
   />
 </CardGrid>
 
@@ -53,9 +41,9 @@ Installing pgflow in a Lovable project requires a few prompts that you paste int
 
 Once pgflow is installed, you can ask Lovable to:
 
-- Create new workflow definitions in `supabase/flows/`
+- Create the Control Plane Edge Function (`supabase/functions/pgflow/`)
+- Create workflow definitions in `supabase/flows/`
 - Define task functions that call AI APIs
-- Compile flows and apply new migrations
 - Start workflow runs from your app's frontend
 
 Each workflow you create becomes a reliable, observable background process that Lovable can help you build and iterate on.

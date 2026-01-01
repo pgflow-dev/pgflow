@@ -1,73 +1,66 @@
 ---
-title: "Step 1: Install Control Plane"
-description: Create the pgflow Edge Function that manages workflow compilation and execution
+title: "Install pgflow"
+description: Install pgflow in your Lovable project with a single prompt
 sidebar:
   order: 10
 ---
 
 import { Aside, Steps } from '@astrojs/starlight/components';
-import { FileTree } from '@astrojs/starlight/components';
+import LovableInstallPrompt from '@/components/lovable/LovableInstallPrompt.astro';
 
-The first step is to install the pgflow Control Plane - an Edge Function that manages your workflow definitions and compilation.
-
-## What gets created
-
-After pasting the prompt below, Lovable will create:
-
-<FileTree>
-- supabase/
-  - flows/
-    - index.ts (empty - you'll add flows here later)
-  - functions/
-    - pgflow/
-      - index.ts (the Control Plane function)
-</FileTree>
+Install pgflow in your Lovable project using a single prompt. This runs database migrations and configures vault secrets needed for pgflow to work.
 
 ## Installation prompt
 
 Copy and paste this entire prompt into Lovable:
 
-````text
-I need to install pgflow - a workflow engine for Supabase Edge Functions.
-
-Please create the following files:
-
-1. Create folder `supabase/flows/` and file `supabase/flows/index.ts` with this content:
-```ts
-// Flow definitions will be added here
-// Example: export { default as MyFlow } from './my-flow.ts';
-```
-
-2. Create Edge Function `supabase/functions/pgflow/index.ts` with this exact content:
-```ts
-import { ControlPlane } from 'jsr:@pgflow/edge-worker';
-import * as flows from '../../flows/index.ts';
-
-ControlPlane.serve(flows);
-```
-
-After creating these files, confirm that both were created successfully.
-````
+<LovableInstallPrompt />
 
 ## What to expect
 
 <Steps>
 1. **Paste the prompt** into Lovable's chat
-2. **Wait for confirmation** that the files were created
-3. **Verify the structure** - Lovable should confirm both the `flows` folder and `pgflow` function exist
+2. **Enable Cloud** when Lovable prompts (if not already enabled)
+3. **Wait for file creation** - Lovable creates the installer Edge Function
+4. **Verify the checklist** - Lovable shows a verification checklist
+5. **Wait for deployment** - Lovable deploys the installer to Supabase
+6. **Click the installer link** - Lovable shows you a link to run the installation
+7. **Paste the result** - Copy the JSON response and paste it back
+8. **Confirm cleanup** - Lovable deletes the temporary installer
 </Steps>
 
-<Aside type="tip" title="What is the Control Plane?">
-  The Control Plane is an Edge Function that:
-  - Compiles your TypeScript flow definitions to SQL
-  - Provides HTTP endpoints for running migrations
-  - Manages vault secrets for secure worker authentication
-
-  It's the central management point for all pgflow operations in your project.
+<Aside type="caution" title="About the Deno errors">
+  You will see errors about `npm:postgres` in Lovable's preview. These are **expected and harmless** - they only affect the local type checker, not the actual deployment. The prompt tells Lovable to ignore them.
 </Aside>
 
-## Next step
+## Troubleshooting
 
-Once Lovable confirms the files are created, proceed to run the database migrations:
+### "Missing SUPABASE_DB_URL"
 
-[Step 2: Run Migrations →](/tutorials/lovable/02-install-migrations/)
+This environment variable should be automatically available in Supabase Edge Functions. If you see this error, try redeploying the installer.
+
+### "401" or "Invalid JWT" error
+
+Ensure the `config.toml` has `verify_jwt = false` for the `pgflow-installer-*` function. The prompt includes this, but you can verify manually.
+
+### "Migrations failed"
+
+Check the `migrations.data` field in the response for specific error messages. Common issues:
+- Missing database permissions
+- Conflicting table names
+- Network timeout (try clicking the link again)
+
+### The installer link doesn't work
+
+Ensure the Edge Function was deployed successfully. You may need to ask Lovable to redeploy.
+
+## Next steps
+
+Once pgflow is installed, you can ask Lovable to:
+
+- **Create the Control Plane** - Create `supabase/functions/pgflow/index.ts` with `ControlPlane.serve(flows)`
+- **Create workflows** - Define flow definitions in `supabase/flows/`
+- **Add task functions** - Build handlers that call AI APIs, process data, etc.
+- **Start workflow runs** - Trigger flows from your app's frontend
+
+Check out the [AI Web Scraper tutorial](/tutorials/ai-web-scraper/) for an example of building a complete workflow.
