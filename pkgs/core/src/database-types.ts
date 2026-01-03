@@ -128,6 +128,7 @@ export type Database = {
           failed_at: string | null
           flow_slug: string
           initial_tasks: number | null
+          output: Json | null
           remaining_deps: number
           remaining_tasks: number | null
           run_id: string
@@ -142,6 +143,7 @@ export type Database = {
           failed_at?: string | null
           flow_slug: string
           initial_tasks?: number | null
+          output?: Json | null
           remaining_deps?: number
           remaining_tasks?: number | null
           run_id: string
@@ -156,6 +158,7 @@ export type Database = {
           failed_at?: string | null
           flow_slug?: string
           initial_tasks?: number | null
+          output?: Json | null
           remaining_deps?: number
           remaining_tasks?: number | null
           run_id?: string

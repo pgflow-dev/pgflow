@@ -1,14 +1,310 @@
-create or replace function pgflow.complete_task(
-  run_id uuid,
-  step_slug text,
-  task_index int,
-  output jsonb
+-- Modify "step_states" table
+ALTER TABLE "pgflow"."step_states" ADD CONSTRAINT "output_only_for_completed_or_null" CHECK ((output IS NULL) OR (status = 'completed'::text)), ADD COLUMN "output" jsonb NULL;
+-- Modify "cascade_complete_taskless_steps" function
+CREATE OR REPLACE FUNCTION "pgflow"."cascade_complete_taskless_steps" ("run_id" uuid) RETURNS integer LANGUAGE plpgsql AS $$
+DECLARE
+  v_total_completed int := 0;
+  v_iteration_completed int;
+  v_iterations int := 0;
+  v_max_iterations int := 50;
+BEGIN
+  -- ==========================================
+  -- ITERATIVE CASCADE COMPLETION
+  -- ==========================================
+  -- Completes taskless steps in waves until none remain
+  LOOP
+    -- ---------- Safety check ----------
+    v_iterations := v_iterations + 1;
+    IF v_iterations > v_max_iterations THEN
+      RAISE EXCEPTION 'Cascade loop exceeded safety limit of % iterations', v_max_iterations;
+    END IF;
+
+    -- ==========================================
+    -- COMPLETE READY TASKLESS STEPS
+    -- ==========================================
+    WITH
+    -- ---------- Find steps to complete in topological order ----------
+    steps_to_complete AS (
+      SELECT ss.run_id, ss.flow_slug, ss.step_slug, s.step_type
+      FROM pgflow.step_states ss
+      JOIN pgflow.steps s ON s.flow_slug = ss.flow_slug AND s.step_slug = ss.step_slug
+      WHERE ss.run_id = cascade_complete_taskless_steps.run_id
+        AND ss.status = 'created'
+        AND ss.remaining_deps = 0
+        AND ss.initial_tasks = 0
+      -- Process in topological order to ensure proper cascade
+      ORDER BY s.step_index
+    ),
+    completed AS (
+      -- ---------- Complete taskless steps ----------
+      -- Steps with initial_tasks=0 and no remaining deps
+      -- Store output atomically: map steps get [], single steps get NULL
+      UPDATE pgflow.step_states ss
+      SET status = 'completed',
+          started_at = now(),
+          completed_at = now(),
+          remaining_tasks = 0,
+          -- Set output based on step type
+          output = CASE
+            WHEN stc.step_type = 'map' THEN '[]'::jsonb
+            ELSE NULL  -- Single steps get NULL (for future conditional execution)
+          END
+      FROM steps_to_complete stc
+      WHERE ss.run_id = stc.run_id
+        AND ss.step_slug = stc.step_slug
+      RETURNING
+        ss.*,
+        -- Broadcast step:completed event atomically with the UPDATE
+        -- Using RETURNING ensures this executes during row processing
+        -- and cannot be optimized away by the query planner
+        realtime.send(
+          jsonb_build_object(
+            'event_type', 'step:completed',
+            'run_id', ss.run_id,
+            'step_slug', ss.step_slug,
+            'status', 'completed',
+            'started_at', ss.started_at,
+            'completed_at', ss.completed_at,
+            'remaining_tasks', 0,
+            'remaining_deps', 0,
+            'output', ss.output  -- Use stored output instead of hardcoded []
+          ),
+          concat('step:', ss.step_slug, ':completed'),
+          concat('pgflow:run:', ss.run_id),
+          false
+        ) as _broadcast_result  -- Prefix with _ to indicate internal use only
+    ),
+    -- ---------- Update dependent steps ----------
+    -- Propagate completion and empty arrays to dependents
+    dep_updates AS (
+      UPDATE pgflow.step_states ss
+      SET remaining_deps = ss.remaining_deps - dep_count.count,
+          -- If the dependent is a map step and its dependency completed with 0 tasks,
+          -- set its initial_tasks to 0 as well
+          initial_tasks = CASE
+            WHEN s.step_type = 'map' AND dep_count.has_zero_tasks
+            THEN 0  -- Empty array propagation
+            ELSE ss.initial_tasks  -- Keep existing value (including NULL)
+          END
+      FROM (
+        -- Aggregate dependency updates per dependent step
+        SELECT
+          d.flow_slug,
+          d.step_slug as dependent_slug,
+          COUNT(*) as count,
+          BOOL_OR(c.initial_tasks = 0) as has_zero_tasks
+        FROM completed c
+        JOIN pgflow.deps d ON d.flow_slug = c.flow_slug
+                           AND d.dep_slug = c.step_slug
+        GROUP BY d.flow_slug, d.step_slug
+      ) dep_count,
+      pgflow.steps s
+      WHERE ss.run_id = cascade_complete_taskless_steps.run_id
+        AND ss.flow_slug = dep_count.flow_slug
+        AND ss.step_slug = dep_count.dependent_slug
+        AND s.flow_slug = ss.flow_slug
+        AND s.step_slug = ss.step_slug
+    ),
+    -- ---------- Update run counters ----------
+    -- Only decrement remaining_steps; let maybe_complete_run handle finalization
+    run_updates AS (
+      UPDATE pgflow.runs r
+      SET remaining_steps = r.remaining_steps - c.completed_count
+      FROM (SELECT COUNT(*) AS completed_count FROM completed) c
+      WHERE r.run_id = cascade_complete_taskless_steps.run_id
+        AND c.completed_count > 0
+    )
+    -- ---------- Check iteration results ----------
+    SELECT COUNT(*) INTO v_iteration_completed FROM completed;
+
+    EXIT WHEN v_iteration_completed = 0;  -- No more steps to complete
+    v_total_completed := v_total_completed + v_iteration_completed;
+  END LOOP;
+
+  RETURN v_total_completed;
+END;
+$$;
+-- Modify "start_ready_steps" function
+CREATE OR REPLACE FUNCTION "pgflow"."start_ready_steps" ("run_id" uuid) RETURNS void LANGUAGE plpgsql SET "search_path" = '' AS $$
+begin
+-- ==========================================
+-- GUARD: No mutations on failed runs
+-- ==========================================
+IF EXISTS (SELECT 1 FROM pgflow.runs WHERE pgflow.runs.run_id = start_ready_steps.run_id AND pgflow.runs.status = 'failed') THEN
+  RETURN;
+END IF;
+
+-- ==========================================
+-- HANDLE EMPTY ARRAY MAPS (initial_tasks = 0)
+-- ==========================================
+-- These complete immediately without spawning tasks
+WITH empty_map_steps AS (
+  SELECT step_state.*
+  FROM pgflow.step_states AS step_state
+  JOIN pgflow.steps AS step 
+    ON step.flow_slug = step_state.flow_slug 
+    AND step.step_slug = step_state.step_slug
+  WHERE step_state.run_id = start_ready_steps.run_id
+    AND step_state.status = 'created'
+    AND step_state.remaining_deps = 0
+    AND step.step_type = 'map'
+    AND step_state.initial_tasks = 0
+  ORDER BY step_state.step_slug
+  FOR UPDATE OF step_state
+),
+-- ---------- Complete empty map steps ----------
+completed_empty_steps AS (
+  UPDATE pgflow.step_states
+  SET status = 'completed',
+      started_at = now(),
+      completed_at = now(),
+      remaining_tasks = 0,
+      output = '[]'::jsonb  -- Empty map produces empty array output
+  FROM empty_map_steps
+  WHERE pgflow.step_states.run_id = start_ready_steps.run_id
+    AND pgflow.step_states.step_slug = empty_map_steps.step_slug
+  RETURNING
+    pgflow.step_states.*,
+    -- Broadcast step:completed event atomically with the UPDATE
+    -- Using RETURNING ensures this executes during row processing
+    -- and cannot be optimized away by the query planner
+    realtime.send(
+      jsonb_build_object(
+        'event_type', 'step:completed',
+        'run_id', pgflow.step_states.run_id,
+        'step_slug', pgflow.step_states.step_slug,
+        'status', 'completed',
+        'started_at', pgflow.step_states.started_at,
+        'completed_at', pgflow.step_states.completed_at,
+        'remaining_tasks', 0,
+        'remaining_deps', 0,
+        'output', pgflow.step_states.output  -- Use stored output instead of hardcoded []
+      ),
+      concat('step:', pgflow.step_states.step_slug, ':completed'),
+      concat('pgflow:run:', pgflow.step_states.run_id),
+      false
+    ) as _broadcast_completed  -- Prefix with _ to indicate internal use only
+),
+
+-- ==========================================
+-- HANDLE NORMAL STEPS (initial_tasks > 0)
+-- ==========================================
+-- ---------- Find ready steps ----------
+-- Steps with no remaining deps and known task count
+ready_steps AS (
+  SELECT *
+  FROM pgflow.step_states AS step_state
+  WHERE step_state.run_id = start_ready_steps.run_id
+    AND step_state.status = 'created'
+    AND step_state.remaining_deps = 0
+    AND step_state.initial_tasks IS NOT NULL  -- NEW: Cannot start with unknown count
+    AND step_state.initial_tasks > 0  -- Don't start taskless steps
+    -- Exclude empty map steps already handled
+    AND NOT EXISTS (
+      SELECT 1 FROM empty_map_steps
+      WHERE empty_map_steps.run_id = step_state.run_id
+        AND empty_map_steps.step_slug = step_state.step_slug
+    )
+  ORDER BY step_state.step_slug
+  FOR UPDATE
+),
+-- ---------- Mark steps as started ----------
+started_step_states AS (
+  UPDATE pgflow.step_states
+  SET status = 'started',
+      started_at = now(),
+      remaining_tasks = ready_steps.initial_tasks  -- Copy initial_tasks to remaining_tasks when starting
+  FROM ready_steps
+  WHERE pgflow.step_states.run_id = start_ready_steps.run_id
+    AND pgflow.step_states.step_slug = ready_steps.step_slug
+  RETURNING pgflow.step_states.*,
+    -- Broadcast step:started event atomically with the UPDATE
+    -- Using RETURNING ensures this executes during row processing
+    -- and cannot be optimized away by the query planner
+    realtime.send(
+      jsonb_build_object(
+        'event_type', 'step:started',
+        'run_id', pgflow.step_states.run_id,
+        'step_slug', pgflow.step_states.step_slug,
+        'status', 'started',
+        'started_at', pgflow.step_states.started_at,
+        'remaining_tasks', pgflow.step_states.remaining_tasks,
+        'remaining_deps', pgflow.step_states.remaining_deps
+      ),
+      concat('step:', pgflow.step_states.step_slug, ':started'),
+      concat('pgflow:run:', pgflow.step_states.run_id),
+      false
+    ) as _broadcast_result  -- Prefix with _ to indicate internal use only
+),
+
+-- ==========================================
+-- TASK GENERATION AND QUEUE MESSAGES
+-- ==========================================
+-- ---------- Generate tasks and batch messages ----------
+-- Single steps: 1 task (index 0)
+-- Map steps: N tasks (indices 0..N-1)
+message_batches AS (
+  SELECT
+    started_step.flow_slug,
+    started_step.run_id,
+    started_step.step_slug,
+    COALESCE(step.opt_start_delay, 0) as delay,
+    array_agg(
+      jsonb_build_object(
+        'flow_slug', started_step.flow_slug,
+        'run_id', started_step.run_id,
+        'step_slug', started_step.step_slug,
+        'task_index', task_idx.task_index
+      ) ORDER BY task_idx.task_index
+    ) AS messages,
+    array_agg(task_idx.task_index ORDER BY task_idx.task_index) AS task_indices
+  FROM started_step_states AS started_step
+  JOIN pgflow.steps AS step 
+    ON step.flow_slug = started_step.flow_slug 
+    AND step.step_slug = started_step.step_slug
+  -- Generate task indices from 0 to initial_tasks-1
+  CROSS JOIN LATERAL generate_series(0, started_step.initial_tasks - 1) AS task_idx(task_index)
+  GROUP BY started_step.flow_slug, started_step.run_id, started_step.step_slug, step.opt_start_delay
+),
+-- ---------- Send messages to queue ----------
+-- Uses batch sending for performance with large arrays
+sent_messages AS (
+  SELECT
+    mb.flow_slug,
+    mb.run_id,
+    mb.step_slug,
+    task_indices.task_index,
+    msg_ids.msg_id
+  FROM message_batches mb
+  CROSS JOIN LATERAL unnest(mb.task_indices) WITH ORDINALITY AS task_indices(task_index, idx_ord)
+  CROSS JOIN LATERAL pgmq.send_batch(mb.flow_slug, mb.messages, mb.delay) WITH ORDINALITY AS msg_ids(msg_id, msg_ord)
+  WHERE task_indices.idx_ord = msg_ids.msg_ord
 )
-returns setof pgflow.step_tasks
-language plpgsql
-volatile
-set search_path to ''
-as $$
+
+-- ==========================================
+-- RECORD TASKS IN DATABASE
+-- ==========================================
+INSERT INTO pgflow.step_tasks (flow_slug, run_id, step_slug, task_index, message_id)
+SELECT
+  sent_messages.flow_slug,
+  sent_messages.run_id,
+  sent_messages.step_slug,
+  sent_messages.task_index,
+  sent_messages.msg_id
+FROM sent_messages;
+
+-- ==========================================
+-- BROADCAST REALTIME EVENTS
+-- ==========================================
+-- Note: Both step:completed events for empty maps and step:started events
+-- are now broadcast atomically in their respective CTEs using RETURNING pattern.
+-- This ensures correct ordering, prevents duplicate broadcasts, and guarantees
+-- that events are sent for exactly the rows that were updated.
+
+end;
+$$;
+-- Modify "complete_task" function
+CREATE OR REPLACE FUNCTION "pgflow"."complete_task" ("run_id" uuid, "step_slug" text, "task_index" integer, "output" jsonb) RETURNS SETOF "pgflow"."step_tasks" LANGUAGE plpgsql SET "search_path" = '' AS $$
 declare
   v_step_state pgflow.step_states%ROWTYPE;
   v_dependent_map_slug text;

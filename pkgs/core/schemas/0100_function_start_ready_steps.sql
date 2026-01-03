@@ -35,7 +35,8 @@ completed_empty_steps AS (
   SET status = 'completed',
       started_at = now(),
       completed_at = now(),
-      remaining_tasks = 0
+      remaining_tasks = 0,
+      output = '[]'::jsonb  -- Empty map produces empty array output
   FROM empty_map_steps
   WHERE pgflow.step_states.run_id = start_ready_steps.run_id
     AND pgflow.step_states.step_slug = empty_map_steps.step_slug
@@ -54,7 +55,7 @@ completed_empty_steps AS (
         'completed_at', pgflow.step_states.completed_at,
         'remaining_tasks', 0,
         'remaining_deps', 0,
-        'output', '[]'::jsonb
+        'output', pgflow.step_states.output  -- Use stored output instead of hardcoded []
       ),
       concat('step:', pgflow.step_states.step_slug, ':completed'),
       concat('pgflow:run:', pgflow.step_states.run_id),
