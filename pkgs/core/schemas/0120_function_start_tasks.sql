@@ -47,28 +47,13 @@ as $$
       st.run_id,
       st.step_slug,
       dep.dep_slug,
-      -- Aggregate map outputs or use single output
-      CASE
-        WHEN dep_step.step_type = 'map' THEN
-          -- Aggregate all task outputs ordered by task_index
-          -- Use COALESCE to return empty array if no tasks
-          (SELECT COALESCE(jsonb_agg(dt.output ORDER BY dt.task_index), '[]'::jsonb)
-           FROM pgflow.step_tasks dt
-           WHERE dt.run_id = st.run_id
-             AND dt.step_slug = dep.dep_slug
-             AND dt.status = 'completed')
-        ELSE
-          -- Single step: use the single task output
-          dep_task.output
-      END as dep_output
+      -- Read output directly from step_states (already aggregated by writers)
+      dep_state.output as dep_output
     from tasks st
     join pgflow.deps dep on dep.flow_slug = st.flow_slug and dep.step_slug = st.step_slug
-    join pgflow.steps dep_step on dep_step.flow_slug = dep.flow_slug and dep_step.step_slug = dep.dep_slug
-    left join pgflow.step_tasks dep_task on
-      dep_task.run_id = st.run_id and
-      dep_task.step_slug = dep.dep_slug and
-      dep_task.status = 'completed'
-      and dep_step.step_type = 'single'  -- Only join for single steps
+    join pgflow.step_states dep_state on
+      dep_state.run_id = st.run_id and
+      dep_state.step_slug = dep.dep_slug
   ),
   deps_outputs as (
     select
