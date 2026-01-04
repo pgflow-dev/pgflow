@@ -25,7 +25,7 @@ BEGIN
     WITH
     -- ---------- Find steps to complete in topological order ----------
     steps_to_complete AS (
-      SELECT ss.run_id, ss.step_slug
+      SELECT ss.run_id, ss.flow_slug, ss.step_slug, s.step_type
       FROM pgflow.step_states ss
       JOIN pgflow.steps s ON s.flow_slug = ss.flow_slug AND s.step_slug = ss.step_slug
       WHERE ss.run_id = cascade_complete_taskless_steps.run_id
@@ -38,11 +38,17 @@ BEGIN
     completed AS (
       -- ---------- Complete taskless steps ----------
       -- Steps with initial_tasks=0 and no remaining deps
+      -- Store output atomically: map steps get [], single steps get NULL
       UPDATE pgflow.step_states ss
       SET status = 'completed',
           started_at = now(),
           completed_at = now(),
-          remaining_tasks = 0
+          remaining_tasks = 0,
+          -- Set output based on step type
+          output = CASE
+            WHEN stc.step_type = 'map' THEN '[]'::jsonb
+            ELSE NULL  -- Single steps get NULL (for future conditional execution)
+          END
       FROM steps_to_complete stc
       WHERE ss.run_id = stc.run_id
         AND ss.step_slug = stc.step_slug
@@ -61,7 +67,7 @@ BEGIN
             'completed_at', ss.completed_at,
             'remaining_tasks', 0,
             'remaining_deps', 0,
-            'output', '[]'::jsonb
+            'output', ss.output  -- Use stored output instead of hardcoded []
           ),
           concat('step:', ss.step_slug, ':completed'),
           concat('pgflow:run:', ss.run_id),

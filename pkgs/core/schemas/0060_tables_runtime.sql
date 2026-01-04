@@ -29,6 +29,7 @@ create table pgflow.step_states (
   remaining_tasks int null,  -- NULL = not started, >0 = active countdown
   initial_tasks int null check (initial_tasks is null or initial_tasks >= 0),
   remaining_deps int not null default 0 check (remaining_deps >= 0),
+  output jsonb,  -- Step output: stored atomically with status=completed transition
   error_message text,
   created_at timestamptz not null default now(),
   started_at timestamptz,
@@ -45,6 +46,11 @@ create table pgflow.step_states (
   ),
   constraint initial_tasks_known_when_started check (
     status != 'started' or initial_tasks is not null
+  ),
+  -- Output is only allowed for completed steps (or NULL for steps that haven't completed)
+  -- Note: allows status=completed with output=NULL for single steps that return NULL
+  constraint output_only_for_completed_or_null check (
+    output is null or status = 'completed'
   ),
   constraint completed_at_or_failed_at check (not (completed_at is not null and failed_at is not null)),
   constraint started_at_is_after_created_at check (started_at is null or started_at >= created_at),
