@@ -312,6 +312,26 @@ IF v_step_state.status = 'completed' THEN
     false
   );
 
+  -- THEN evaluate conditions on newly-ready dependent steps
+  -- This must happen before cascade_complete_taskless_steps so that
+  -- skipped steps can set initial_tasks=0 for their map dependents
+  IF NOT pgflow.cascade_resolve_conditions(complete_task.run_id) THEN
+    -- Run was failed due to a condition with when_unmet='fail'
+    -- Archive the current task's message before returning
+    PERFORM pgmq.archive(
+      (SELECT r.flow_slug FROM pgflow.runs r WHERE r.run_id = complete_task.run_id),
+      (SELECT st.message_id FROM pgflow.step_tasks st
+       WHERE st.run_id = complete_task.run_id
+         AND st.step_slug = complete_task.step_slug
+         AND st.task_index = complete_task.task_index)
+    );
+    RETURN QUERY SELECT * FROM pgflow.step_tasks
+      WHERE pgflow.step_tasks.run_id = complete_task.run_id
+        AND pgflow.step_tasks.step_slug = complete_task.step_slug
+        AND pgflow.step_tasks.task_index = complete_task.task_index;
+    RETURN;
+  END IF;
+
   -- THEN cascade complete any taskless steps that are now ready
   -- This ensures dependent children broadcast AFTER their parent
   PERFORM pgflow.cascade_complete_taskless_steps(complete_task.run_id);

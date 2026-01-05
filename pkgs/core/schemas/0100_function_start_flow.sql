@@ -110,6 +110,14 @@ PERFORM realtime.send(
   false
 );
 
+-- ---------- Evaluate conditions on ready steps ----------
+-- Skip steps with unmet conditions, propagate to dependents
+IF NOT pgflow.cascade_resolve_conditions(v_created_run.run_id) THEN
+  -- Run was failed due to a condition with when_unmet='fail'
+  RETURN QUERY SELECT * FROM pgflow.runs where pgflow.runs.run_id = v_created_run.run_id;
+  RETURN;
+END IF;
+
 -- ---------- Complete taskless steps ----------
 -- Handle empty array maps that should auto-complete
 PERFORM pgflow.cascade_complete_taskless_steps(v_created_run.run_id);
