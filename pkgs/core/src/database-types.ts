@@ -394,6 +394,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _cascade_force_skip_steps: {
+        Args: { run_id: string; skip_reason: string; step_slug: string }
+        Returns: number
+      }
       _compare_flow_shapes: {
         Args: { p_db: Json; p_local: Json }
         Returns: string[]
@@ -447,10 +451,7 @@ export type Database = {
         Args: { run_id: string }
         Returns: number
       }
-      cascade_skip_steps: {
-        Args: { run_id: string; skip_reason: string; step_slug: string }
-        Returns: number
-      }
+      cascade_resolve_conditions: { Args: { run_id: string }; Returns: boolean }
       cleanup_ensure_workers_logs: {
         Args: { retention_hours?: number }
         Returns: {

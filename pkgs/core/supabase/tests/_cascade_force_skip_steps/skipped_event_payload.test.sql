@@ -1,4 +1,4 @@
--- Test: cascade_skip_steps - step:skipped event payload format
+-- Test: _cascade_force_skip_steps - step:skipped event payload format
 -- Verifies the realtime event contains all required fields
 begin;
 select plan(8);
@@ -15,7 +15,7 @@ with flow as (
 select run_id into temporary run_ids from flow;
 
 -- Skip step_a
-select pgflow.cascade_skip_steps(
+select pgflow._cascade_force_skip_steps(
   (select run_id from run_ids),
   'step_a',
   'condition_unmet'

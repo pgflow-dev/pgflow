@@ -1,4 +1,4 @@
--- Test: cascade_skip_steps - Cascade through multiple DAG levels
+-- Test: _cascade_force_skip_steps - Cascade through multiple DAG levels
 -- Verifies skipping A cascades through A -> B -> C chain
 begin;
 select plan(8);
@@ -17,7 +17,7 @@ with flow as (
 select run_id into temporary run_ids from flow;
 
 -- Skip step_a (should cascade to step_b and step_c)
-select pgflow.cascade_skip_steps(
+select pgflow._cascade_force_skip_steps(
   (select run_id from run_ids),
   'step_a',
   'handler_failed'
