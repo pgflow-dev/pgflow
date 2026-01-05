@@ -1,6 +1,6 @@
--- cascade_skip_steps: Skip a step and cascade to all downstream dependents
+-- _cascade_force_skip_steps: Skip a step and cascade to all downstream dependents
 -- Used when a condition is unmet (whenUnmet: skip-cascade) or handler fails (whenFailed: skip-cascade)
-create or replace function pgflow.cascade_skip_steps(
+create or replace function pgflow._cascade_force_skip_steps(
   run_id uuid,
   step_slug text,
   skip_reason text
@@ -15,10 +15,10 @@ BEGIN
   -- Get flow_slug for this run
   SELECT r.flow_slug INTO v_flow_slug
   FROM pgflow.runs r
-  WHERE r.run_id = cascade_skip_steps.run_id;
+  WHERE r.run_id = _cascade_force_skip_steps.run_id;
 
   IF v_flow_slug IS NULL THEN
-    RAISE EXCEPTION 'Run not found: %', cascade_skip_steps.run_id;
+    RAISE EXCEPTION 'Run not found: %', _cascade_force_skip_steps.run_id;
   END IF;
 
   -- ==========================================
@@ -34,10 +34,10 @@ BEGIN
       s.flow_slug,
       s.step_slug,
       s.step_index,
-      cascade_skip_steps.skip_reason AS reason  -- Original reason for trigger step
+      _cascade_force_skip_steps.skip_reason AS reason  -- Original reason for trigger step
     FROM pgflow.steps s
     WHERE s.flow_slug = v_flow_slug
-      AND s.step_slug = cascade_skip_steps.step_slug
+      AND s.step_slug = _cascade_force_skip_steps.step_slug
 
     UNION ALL
 
@@ -69,7 +69,7 @@ BEGIN
         skipped_at = now(),
         remaining_tasks = NULL  -- Clear remaining_tasks for skipped steps
     FROM steps_to_skip sts
-    WHERE ss.run_id = cascade_skip_steps.run_id
+    WHERE ss.run_id = _cascade_force_skip_steps.run_id
       AND ss.step_slug = sts.step_slug
       AND ss.status IN ('created', 'started')  -- Only skip non-terminal steps
     RETURNING
@@ -95,7 +95,7 @@ BEGIN
     UPDATE pgflow.runs r
     SET remaining_steps = r.remaining_steps - skipped_count.count
     FROM (SELECT COUNT(*) AS count FROM skipped) skipped_count
-    WHERE r.run_id = cascade_skip_steps.run_id
+    WHERE r.run_id = _cascade_force_skip_steps.run_id
       AND skipped_count.count > 0
   )
   SELECT COUNT(*) INTO v_total_skipped FROM skipped;

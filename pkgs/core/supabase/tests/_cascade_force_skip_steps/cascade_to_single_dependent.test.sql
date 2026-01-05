@@ -1,4 +1,4 @@
--- Test: cascade_skip_steps - Cascade to single dependent
+-- Test: _cascade_force_skip_steps - Cascade to single dependent
 -- Verifies skipping a step cascades to its direct dependent
 begin;
 select plan(7);
@@ -16,7 +16,7 @@ with flow as (
 select run_id into temporary run_ids from flow;
 
 -- Skip step_a (should cascade to step_b)
-select pgflow.cascade_skip_steps(
+select pgflow._cascade_force_skip_steps(
   (select run_id from run_ids),
   'step_a',
   'condition_unmet'

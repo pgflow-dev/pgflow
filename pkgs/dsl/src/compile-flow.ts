@@ -62,5 +62,15 @@ function formatRuntimeOptions(options: RuntimeOptions | StepRuntimeOptions): str
     parts.push(`start_delay => ${options.startDelay}`);
   }
 
+  if ('condition' in options && options.condition !== undefined) {
+    // Serialize JSON pattern and escape for SQL
+    const jsonStr = JSON.stringify(options.condition);
+    parts.push(`condition_pattern => '${jsonStr}'`);
+  }
+
+  if ('whenUnmet' in options && options.whenUnmet !== undefined) {
+    parts.push(`when_unmet => '${options.whenUnmet}'`);
+  }
+
   return parts.length > 0 ? `, ${parts.join(', ')}` : '';
 }

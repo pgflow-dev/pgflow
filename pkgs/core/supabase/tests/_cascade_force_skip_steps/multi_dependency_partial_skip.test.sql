@@ -1,4 +1,4 @@
--- Test: cascade_skip_steps - Multi-dependency scenario
+-- Test: _cascade_force_skip_steps - Multi-dependency scenario
 -- Flow: A -> C, B -> C (C depends on both A and B)
 -- Skipping A should cascade to C, even though B is still runnable
 begin;
@@ -18,7 +18,7 @@ with flow as (
 select run_id into temporary run_ids from flow;
 
 -- Skip step_a (should cascade to step_c)
-select pgflow.cascade_skip_steps(
+select pgflow._cascade_force_skip_steps(
   (select run_id from run_ids),
   'step_a',
   'condition_unmet'

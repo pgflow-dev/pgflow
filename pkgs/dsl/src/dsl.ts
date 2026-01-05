@@ -317,9 +317,14 @@ export interface FlowContext<TEnv extends Env = Env, TFlowInput extends AnyInput
 // Generic context type helper (uses FlowContext for flow handlers)
 export type Context<T extends Record<string, unknown> = Record<string, never>, TEnv extends Env = Env> = FlowContext<TEnv> & T;
 
+// Valid values for whenUnmet option
+export type WhenUnmetMode = 'fail' | 'skip' | 'skip-cascade';
+
 // Step runtime options interface that extends flow options with step-specific options
 export interface StepRuntimeOptions extends RuntimeOptions {
   startDelay?: number;
+  condition?: Json;  // JSON pattern for @> containment check
+  whenUnmet?: WhenUnmetMode;  // What to do when condition not met
 }
 
 // Define the StepDefinition interface with integrated options
@@ -477,6 +482,8 @@ export class Flow<
     if (opts.baseDelay !== undefined) options.baseDelay = opts.baseDelay;
     if (opts.timeout !== undefined) options.timeout = opts.timeout;
     if (opts.startDelay !== undefined) options.startDelay = opts.startDelay;
+    if (opts.condition !== undefined) options.condition = opts.condition;
+    if (opts.whenUnmet !== undefined) options.whenUnmet = opts.whenUnmet;
 
     // Validate runtime options (optional for step level)
     validateRuntimeOptions(options, { optional: true });
@@ -640,6 +647,8 @@ export class Flow<
     if (opts.baseDelay !== undefined) options.baseDelay = opts.baseDelay;
     if (opts.timeout !== undefined) options.timeout = opts.timeout;
     if (opts.startDelay !== undefined) options.startDelay = opts.startDelay;
+    if (opts.condition !== undefined) options.condition = opts.condition;
+    if (opts.whenUnmet !== undefined) options.whenUnmet = opts.whenUnmet;
 
     // Validate runtime options
     validateRuntimeOptions(options, { optional: true });
