@@ -320,11 +320,15 @@ export type Context<T extends Record<string, unknown> = Record<string, never>, T
 // Valid values for whenUnmet option
 export type WhenUnmetMode = 'fail' | 'skip' | 'skip-cascade';
 
+// Valid values for whenFailed option (same values as whenUnmet)
+export type WhenFailedMode = 'fail' | 'skip' | 'skip-cascade';
+
 // Step runtime options interface that extends flow options with step-specific options
 export interface StepRuntimeOptions extends RuntimeOptions {
   startDelay?: number;
   condition?: Json;  // JSON pattern for @> containment check
   whenUnmet?: WhenUnmetMode;  // What to do when condition not met
+  whenFailed?: WhenFailedMode;  // What to do when handler fails after retries
 }
 
 // Define the StepDefinition interface with integrated options
@@ -484,6 +488,7 @@ export class Flow<
     if (opts.startDelay !== undefined) options.startDelay = opts.startDelay;
     if (opts.condition !== undefined) options.condition = opts.condition;
     if (opts.whenUnmet !== undefined) options.whenUnmet = opts.whenUnmet;
+    if (opts.whenFailed !== undefined) options.whenFailed = opts.whenFailed;
 
     // Validate runtime options (optional for step level)
     validateRuntimeOptions(options, { optional: true });
@@ -649,6 +654,7 @@ export class Flow<
     if (opts.startDelay !== undefined) options.startDelay = opts.startDelay;
     if (opts.condition !== undefined) options.condition = opts.condition;
     if (opts.whenUnmet !== undefined) options.whenUnmet = opts.whenUnmet;
+    if (opts.whenFailed !== undefined) options.whenFailed = opts.whenFailed;
 
     // Validate runtime options
     validateRuntimeOptions(options, { optional: true });

@@ -72,5 +72,9 @@ function formatRuntimeOptions(options: RuntimeOptions | StepRuntimeOptions): str
     parts.push(`when_unmet => '${options.whenUnmet}'`);
   }
 
+  if ('whenFailed' in options && options.whenFailed !== undefined) {
+    parts.push(`when_failed => '${options.whenFailed}'`);
+  }
+
   return parts.length > 0 ? `, ${parts.join(', ')}` : '';
 }
