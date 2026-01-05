@@ -107,6 +107,60 @@ BEGIN
           )
         );
       END IF;
+
+      -- Compare whenUnmet (structural - affects DAG execution semantics)
+      IF v_local_step->>'whenUnmet' != v_db_step->>'whenUnmet' THEN
+        v_differences := array_append(
+          v_differences,
+          format(
+            $$Step at index %s: whenUnmet differs '%s' vs '%s'$$,
+            v_idx,
+            v_local_step->>'whenUnmet',
+            v_db_step->>'whenUnmet'
+          )
+        );
+      END IF;
+
+      -- Compare whenFailed (structural - affects DAG execution semantics)
+      IF v_local_step->>'whenFailed' != v_db_step->>'whenFailed' THEN
+        v_differences := array_append(
+          v_differences,
+          format(
+            $$Step at index %s: whenFailed differs '%s' vs '%s'$$,
+            v_idx,
+            v_local_step->>'whenFailed',
+            v_db_step->>'whenFailed'
+          )
+        );
+      END IF;
+
+      -- Compare requiredInputPattern (structural - affects DAG execution semantics)
+      -- Uses -> (jsonb) not ->> (text) to properly compare wrapper objects
+      IF v_local_step->'requiredInputPattern' IS DISTINCT FROM v_db_step->'requiredInputPattern' THEN
+        v_differences := array_append(
+          v_differences,
+          format(
+            $$Step at index %s: requiredInputPattern differs '%s' vs '%s'$$,
+            v_idx,
+            v_local_step->'requiredInputPattern',
+            v_db_step->'requiredInputPattern'
+          )
+        );
+      END IF;
+
+      -- Compare forbiddenInputPattern (structural - affects DAG execution semantics)
+      -- Uses -> (jsonb) not ->> (text) to properly compare wrapper objects
+      IF v_local_step->'forbiddenInputPattern' IS DISTINCT FROM v_db_step->'forbiddenInputPattern' THEN
+        v_differences := array_append(
+          v_differences,
+          format(
+            $$Step at index %s: forbiddenInputPattern differs '%s' vs '%s'$$,
+            v_idx,
+            v_local_step->'forbiddenInputPattern',
+            v_db_step->'forbiddenInputPattern'
+          )
+        );
+      END IF;
     END IF;
   END LOOP;
 

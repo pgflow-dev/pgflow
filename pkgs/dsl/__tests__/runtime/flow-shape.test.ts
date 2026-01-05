@@ -61,6 +61,10 @@ describe('extractFlowShape', () => {
         slug: 'step1',
         stepType: 'single',
         dependencies: [],
+        whenUnmet: 'skip',
+        whenFailed: 'fail',
+        requiredInputPattern: { defined: false },
+        forbiddenInputPattern: { defined: false },
       });
     });
 
@@ -108,6 +112,10 @@ describe('extractFlowShape', () => {
         slug: 'step1',
         stepType: 'single',
         dependencies: [],
+        whenUnmet: 'skip',
+        whenFailed: 'fail',
+        requiredInputPattern: { defined: false },
+        forbiddenInputPattern: { defined: false },
         options: {
           maxAttempts: 3,
           baseDelay: 5,
@@ -129,6 +137,10 @@ describe('extractFlowShape', () => {
         slug: 'step1',
         stepType: 'single',
         dependencies: [],
+        whenUnmet: 'skip',
+        whenFailed: 'fail',
+        requiredInputPattern: { defined: false },
+        forbiddenInputPattern: { defined: false },
       });
       expect('options' in shape.steps[0]).toBe(false);
     });
@@ -160,6 +172,10 @@ describe('extractFlowShape', () => {
         slug: 'process_items',
         stepType: 'map',
         dependencies: [],
+        whenUnmet: 'skip',
+        whenFailed: 'fail',
+        requiredInputPattern: { defined: false },
+        forbiddenInputPattern: { defined: false },
       });
     });
 
@@ -175,6 +191,10 @@ describe('extractFlowShape', () => {
         slug: 'process',
         stepType: 'map',
         dependencies: ['get_items'],
+        whenUnmet: 'skip',
+        whenFailed: 'fail',
+        requiredInputPattern: { defined: false },
+        forbiddenInputPattern: { defined: false },
       });
     });
   });
@@ -189,7 +209,12 @@ describe('extractFlowShape', () => {
       })
         .step({ slug: 'website' }, (flowInput) => ({ content: flowInput.url }))
         .step(
-          { slug: 'sentiment', dependsOn: ['website'], maxAttempts: 5, timeout: 30 },
+          {
+            slug: 'sentiment',
+            dependsOn: ['website'],
+            maxAttempts: 5,
+            timeout: 30,
+          },
           () => ({ score: 0.8 })
         )
         .step({ slug: 'summary', dependsOn: ['website'] }, () => ({
@@ -209,11 +234,19 @@ describe('extractFlowShape', () => {
             slug: 'website',
             stepType: 'single',
             dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
           },
           {
             slug: 'sentiment',
             stepType: 'single',
             dependencies: ['website'],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
             options: {
               maxAttempts: 5,
               timeout: 30,
@@ -223,11 +256,19 @@ describe('extractFlowShape', () => {
             slug: 'summary',
             stepType: 'single',
             dependencies: ['website'],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
           },
           {
             slug: 'save_to_db',
             stepType: 'single',
             dependencies: ['sentiment', 'summary'], // sorted alphabetically
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
           },
         ],
         options: {
@@ -251,6 +292,89 @@ describe('extractFlowShape', () => {
         'third',
       ]);
     });
+
+    describe('pattern extraction', () => {
+      it('should extract requiredInputPattern from step with if option', () => {
+        const flow = new Flow<{ status: string }>({ slug: 'test_flow' }).step(
+          { slug: 'step1', if: { status: 'active' } },
+          (flowInput) => flowInput
+        );
+        const shape = extractFlowShape(flow);
+
+        expect(shape.steps[0]).toEqual({
+          slug: 'step1',
+          stepType: 'single',
+          dependencies: [],
+          whenUnmet: 'skip',
+          whenFailed: 'fail',
+          requiredInputPattern: { defined: true, value: { status: 'active' } },
+          forbiddenInputPattern: { defined: false },
+        });
+      });
+
+      it('should extract forbiddenInputPattern from step with ifNot option', () => {
+        const flow = new Flow<{ status: string }>({ slug: 'test_flow' }).step(
+          { slug: 'step1', ifNot: { status: 'deleted' } },
+          (flowInput) => flowInput
+        );
+        const shape = extractFlowShape(flow);
+
+        expect(shape.steps[0]).toEqual({
+          slug: 'step1',
+          stepType: 'single',
+          dependencies: [],
+          whenUnmet: 'skip',
+          whenFailed: 'fail',
+          requiredInputPattern: { defined: false },
+          forbiddenInputPattern: { defined: true, value: { status: 'deleted' } },
+        });
+      });
+
+      it('should extract both pattern fields when both if and ifNot are set', () => {
+        const flow = new Flow<{ status: string; type: string }>({
+          slug: 'test_flow',
+        }).step(
+          {
+            slug: 'step1',
+            if: { status: 'active' },
+            ifNot: { type: 'archived' },
+          },
+          (flowInput) => flowInput
+        );
+        const shape = extractFlowShape(flow);
+
+        expect(shape.steps[0]).toEqual({
+          slug: 'step1',
+          stepType: 'single',
+          dependencies: [],
+          whenUnmet: 'skip',
+          whenFailed: 'fail',
+          requiredInputPattern: { defined: true, value: { status: 'active' } },
+          forbiddenInputPattern: { defined: true, value: { type: 'archived' } },
+        });
+      });
+
+      it('should include pattern keys with defined:false when no patterns are set', () => {
+        const flow = new Flow<string>({ slug: 'test_flow' }).step(
+          { slug: 'step1' },
+          (flowInput) => flowInput
+        );
+        const shape = extractFlowShape(flow);
+
+        expect(shape.steps[0]).toEqual({
+          slug: 'step1',
+          stepType: 'single',
+          dependencies: [],
+          whenUnmet: 'skip',
+          whenFailed: 'fail',
+          requiredInputPattern: { defined: false },
+          forbiddenInputPattern: { defined: false },
+        });
+        // Pattern keys are now always present with the wrapper format
+        expect('requiredInputPattern' in shape.steps[0]).toBe(true);
+        expect('forbiddenInputPattern' in shape.steps[0]).toBe(true);
+      });
+    });
   });
 });
 
@@ -263,6 +387,10 @@ describe('compareFlowShapes', () => {
             slug: 'step1',
             stepType: 'single',
             dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
           },
         ],
       };
@@ -290,7 +418,15 @@ describe('compareFlowShapes', () => {
       };
       const b: FlowShape = {
         steps: [
-          { slug: 'step1', stepType: 'single', dependencies: [] },
+          {
+            slug: 'step1',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
+          },
         ],
       };
 
@@ -305,7 +441,15 @@ describe('compareFlowShapes', () => {
     it('should detect extra step at end', () => {
       const a: FlowShape = {
         steps: [
-          { slug: 'step1', stepType: 'single', dependencies: [] },
+          {
+            slug: 'step1',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
+          },
         ],
       };
       const b: FlowShape = { steps: [] };
@@ -321,14 +465,46 @@ describe('compareFlowShapes', () => {
     it('should detect different steps at same positions', () => {
       const a: FlowShape = {
         steps: [
-          { slug: 'step_a', stepType: 'single', dependencies: [] },
-          { slug: 'step_b', stepType: 'single', dependencies: [] },
+          {
+            slug: 'step_a',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
+          },
+          {
+            slug: 'step_b',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
+          },
         ],
       };
       const b: FlowShape = {
         steps: [
-          { slug: 'step_c', stepType: 'single', dependencies: [] },
-          { slug: 'step_d', stepType: 'single', dependencies: [] },
+          {
+            slug: 'step_c',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
+          },
+          {
+            slug: 'step_d',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
+          },
         ],
       };
 
@@ -347,14 +523,46 @@ describe('compareFlowShapes', () => {
     it('should detect steps in different order', () => {
       const a: FlowShape = {
         steps: [
-          { slug: 'step_a', stepType: 'single', dependencies: [] },
-          { slug: 'step_b', stepType: 'single', dependencies: [] },
+          {
+            slug: 'step_a',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
+          },
+          {
+            slug: 'step_b',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
+          },
         ],
       };
       const b: FlowShape = {
         steps: [
-          { slug: 'step_b', stepType: 'single', dependencies: [] },
-          { slug: 'step_a', stepType: 'single', dependencies: [] },
+          {
+            slug: 'step_b',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
+          },
+          {
+            slug: 'step_a',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
+          },
         ],
       };
 
@@ -373,12 +581,28 @@ describe('compareFlowShapes', () => {
     it('should detect stepType difference', () => {
       const a: FlowShape = {
         steps: [
-          { slug: 'step1', stepType: 'single', dependencies: [] },
+          {
+            slug: 'step1',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
+          },
         ],
       };
       const b: FlowShape = {
         steps: [
-          { slug: 'step1', stepType: 'map', dependencies: [] },
+          {
+            slug: 'step1',
+            stepType: 'map',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
+          },
         ],
       };
 
@@ -394,7 +618,15 @@ describe('compareFlowShapes', () => {
     it('should detect added dependency', () => {
       const a: FlowShape = {
         steps: [
-          { slug: 'step1', stepType: 'single', dependencies: [] },
+          {
+            slug: 'step1',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
+          },
         ],
       };
       const b: FlowShape = {
@@ -403,6 +635,10 @@ describe('compareFlowShapes', () => {
             slug: 'step1',
             stepType: 'single',
             dependencies: ['step0'],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
           },
         ],
       };
@@ -421,6 +657,10 @@ describe('compareFlowShapes', () => {
             slug: 'step1',
             stepType: 'single',
             dependencies: ['dep1', 'dep2'],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
           },
         ],
       };
@@ -430,6 +670,10 @@ describe('compareFlowShapes', () => {
             slug: 'step1',
             stepType: 'single',
             dependencies: ['dep1'],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
           },
         ],
       };
@@ -448,6 +692,10 @@ describe('compareFlowShapes', () => {
             slug: 'step1',
             stepType: 'single',
             dependencies: ['old_dep'],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
           },
         ],
       };
@@ -457,6 +705,10 @@ describe('compareFlowShapes', () => {
             slug: 'step1',
             stepType: 'single',
             dependencies: ['new_dep'],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
           },
         ],
       };
@@ -473,12 +725,15 @@ describe('compareFlowShapes', () => {
     it('should match flows with same structure but different DSL options', () => {
       // This is the key behavior: options are in shape for creation,
       // but don't affect shape matching (runtime tunable via SQL)
-      const flowA = new Flow<string>({ slug: 'test_flow', maxAttempts: 3 }).step(
-        { slug: 'step1', timeout: 60 },
-        (flowInput) => flowInput
-      );
+      const flowA = new Flow<string>({
+        slug: 'test_flow',
+        maxAttempts: 3,
+      }).step({ slug: 'step1', timeout: 60 }, (flowInput) => flowInput);
 
-      const flowB = new Flow<string>({ slug: 'test_flow', maxAttempts: 10 }).step(
+      const flowB = new Flow<string>({
+        slug: 'test_flow',
+        maxAttempts: 10,
+      }).step(
         { slug: 'step1', timeout: 300, startDelay: 100 },
         (flowInput) => flowInput
       );
@@ -490,7 +745,10 @@ describe('compareFlowShapes', () => {
       expect(shapeA.options).toEqual({ maxAttempts: 3 });
       expect(shapeB.options).toEqual({ maxAttempts: 10 });
       expect(shapeA.steps[0].options).toEqual({ timeout: 60 });
-      expect(shapeB.steps[0].options).toEqual({ timeout: 300, startDelay: 100 });
+      expect(shapeB.steps[0].options).toEqual({
+        timeout: 300,
+        startDelay: 100,
+      });
 
       // But comparison ignores options - only structure matters
       const result = compareFlowShapes(shapeA, shapeB);
@@ -507,6 +765,10 @@ describe('compareFlowShapes', () => {
             slug: 'step1',
             stepType: 'single',
             dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
           },
         ],
       };
@@ -516,11 +778,19 @@ describe('compareFlowShapes', () => {
             slug: 'step1',
             stepType: 'map',
             dependencies: ['dep1'],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
           },
           {
             slug: 'step2',
             stepType: 'single',
             dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+            requiredInputPattern: { defined: false },
+            forbiddenInputPattern: { defined: false },
           },
         ],
       };
@@ -614,6 +884,90 @@ describe('compareFlowShapes', () => {
       expect(result.differences).toContain(
         'Step at index 1: dependencies differ [] vs [step1]'
       );
+    });
+
+    describe('pattern comparison', () => {
+      it('should detect requiredInputPattern difference', () => {
+        const flowA = new Flow<{ status: string }>({ slug: 'test_flow' }).step(
+          { slug: 'step1', if: { status: 'active' } },
+          (flowInput) => flowInput
+        );
+
+        const flowB = new Flow<{ status: string }>({ slug: 'test_flow' }).step(
+          { slug: 'step1', if: { status: 'pending' } },
+          (flowInput) => flowInput
+        );
+
+        const shapeA = extractFlowShape(flowA);
+        const shapeB = extractFlowShape(flowB);
+
+        const result = compareFlowShapes(shapeA, shapeB);
+        expect(result.match).toBe(false);
+        expect(result.differences).toContain(
+          'Step at index 0: requiredInputPattern differs \'{"defined":true,"value":{"status":"active"}}\' vs \'{"defined":true,"value":{"status":"pending"}}\''
+        );
+      });
+
+      it('should detect forbiddenInputPattern difference', () => {
+        const flowA = new Flow<{ status: string }>({ slug: 'test_flow' }).step(
+          { slug: 'step1', ifNot: { status: 'deleted' } },
+          (flowInput) => flowInput
+        );
+
+        const flowB = new Flow<{ status: string }>({ slug: 'test_flow' }).step(
+          { slug: 'step1', ifNot: { status: 'archived' } },
+          (flowInput) => flowInput
+        );
+
+        const shapeA = extractFlowShape(flowA);
+        const shapeB = extractFlowShape(flowB);
+
+        const result = compareFlowShapes(shapeA, shapeB);
+        expect(result.match).toBe(false);
+        expect(result.differences).toContain(
+          'Step at index 0: forbiddenInputPattern differs \'{"defined":true,"value":{"status":"deleted"}}\' vs \'{"defined":true,"value":{"status":"archived"}}\''
+        );
+      });
+
+      it('should match flows with identical patterns', () => {
+        const createFlow = () =>
+          new Flow<{ status: string }>({ slug: 'test_flow' }).step(
+            {
+              slug: 'step1',
+              if: { status: 'active' },
+              ifNot: { status: 'deleted' },
+            },
+            (flowInput) => flowInput
+          );
+
+        const shapeA = extractFlowShape(createFlow());
+        const shapeB = extractFlowShape(createFlow());
+
+        const result = compareFlowShapes(shapeA, shapeB);
+        expect(result.match).toBe(true);
+        expect(result.differences).toEqual([]);
+      });
+
+      it('should detect missing requiredInputPattern', () => {
+        const flowA = new Flow<{ status: string }>({ slug: 'test_flow' }).step(
+          { slug: 'step1' },
+          (flowInput) => flowInput
+        );
+
+        const flowB = new Flow<{ status: string }>({ slug: 'test_flow' }).step(
+          { slug: 'step1', if: { status: 'active' } },
+          (flowInput) => flowInput
+        );
+
+        const shapeA = extractFlowShape(flowA);
+        const shapeB = extractFlowShape(flowB);
+
+        const result = compareFlowShapes(shapeA, shapeB);
+        expect(result.match).toBe(false);
+        expect(result.differences).toContain(
+          'Step at index 0: requiredInputPattern differs \'{"defined":false}\' vs \'{"defined":true,"value":{"status":"active"}}\''
+        );
+      });
     });
   });
 });

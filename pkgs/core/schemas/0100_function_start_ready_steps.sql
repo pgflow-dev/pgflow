@@ -3,69 +3,25 @@ returns void
 language plpgsql
 set search_path to ''
 as $$
-begin
+BEGIN
 -- ==========================================
--- GUARD: No mutations on failed runs
+-- GUARD: No mutations on terminal runs
 -- ==========================================
-IF EXISTS (SELECT 1 FROM pgflow.runs WHERE pgflow.runs.run_id = start_ready_steps.run_id AND pgflow.runs.status = 'failed') THEN
+IF EXISTS (
+  SELECT 1 FROM pgflow.runs
+  WHERE pgflow.runs.run_id = start_ready_steps.run_id
+    AND pgflow.runs.status IN ('failed', 'completed')
+) THEN
   RETURN;
 END IF;
 
 -- ==========================================
--- HANDLE EMPTY ARRAY MAPS (initial_tasks = 0)
+-- PHASE 1: START READY STEPS
 -- ==========================================
--- These complete immediately without spawning tasks
-WITH empty_map_steps AS (
-  SELECT step_state.*
-  FROM pgflow.step_states AS step_state
-  JOIN pgflow.steps AS step 
-    ON step.flow_slug = step_state.flow_slug 
-    AND step.step_slug = step_state.step_slug
-  WHERE step_state.run_id = start_ready_steps.run_id
-    AND step_state.status = 'created'
-    AND step_state.remaining_deps = 0
-    AND step.step_type = 'map'
-    AND step_state.initial_tasks = 0
-  ORDER BY step_state.step_slug
-  FOR UPDATE OF step_state
-),
--- ---------- Complete empty map steps ----------
-completed_empty_steps AS (
-  UPDATE pgflow.step_states
-  SET status = 'completed',
-      started_at = now(),
-      completed_at = now(),
-      remaining_tasks = 0,
-      output = '[]'::jsonb  -- Empty map produces empty array output
-  FROM empty_map_steps
-  WHERE pgflow.step_states.run_id = start_ready_steps.run_id
-    AND pgflow.step_states.step_slug = empty_map_steps.step_slug
-  RETURNING
-    pgflow.step_states.*,
-    -- Broadcast step:completed event atomically with the UPDATE
-    -- Using RETURNING ensures this executes during row processing
-    -- and cannot be optimized away by the query planner
-    realtime.send(
-      jsonb_build_object(
-        'event_type', 'step:completed',
-        'run_id', pgflow.step_states.run_id,
-        'step_slug', pgflow.step_states.step_slug,
-        'status', 'completed',
-        'started_at', pgflow.step_states.started_at,
-        'completed_at', pgflow.step_states.completed_at,
-        'remaining_tasks', 0,
-        'remaining_deps', 0,
-        'output', pgflow.step_states.output  -- Use stored output instead of hardcoded []
-      ),
-      concat('step:', pgflow.step_states.step_slug, ':completed'),
-      concat('pgflow:run:', pgflow.step_states.run_id),
-      false
-    ) as _broadcast_completed  -- Prefix with _ to indicate internal use only
-),
-
--- ==========================================
--- HANDLE NORMAL STEPS (initial_tasks > 0)
--- ==========================================
+-- NOTE: Condition evaluation and empty map handling are done by
+-- cascade_resolve_conditions() and cascade_complete_taskless_steps()
+-- which are called before this function.
+WITH
 -- ---------- Find ready steps ----------
 -- Steps with no remaining deps and known task count
 ready_steps AS (
@@ -74,14 +30,8 @@ ready_steps AS (
   WHERE step_state.run_id = start_ready_steps.run_id
     AND step_state.status = 'created'
     AND step_state.remaining_deps = 0
-    AND step_state.initial_tasks IS NOT NULL  -- NEW: Cannot start with unknown count
-    AND step_state.initial_tasks > 0  -- Don't start taskless steps
-    -- Exclude empty map steps already handled
-    AND NOT EXISTS (
-      SELECT 1 FROM empty_map_steps
-      WHERE empty_map_steps.run_id = step_state.run_id
-        AND empty_map_steps.step_slug = step_state.step_slug
-    )
+    AND step_state.initial_tasks IS NOT NULL  -- Cannot start with unknown count
+    AND step_state.initial_tasks > 0  -- Don't start taskless steps (handled by cascade_complete_taskless_steps)
   ORDER BY step_state.step_slug
   FOR UPDATE
 ),
@@ -115,7 +65,7 @@ started_step_states AS (
 ),
 
 -- ==========================================
--- TASK GENERATION AND QUEUE MESSAGES
+-- PHASE 2: TASK GENERATION AND QUEUE MESSAGES
 -- ==========================================
 -- ---------- Generate tasks and batch messages ----------
 -- Single steps: 1 task (index 0)
@@ -136,8 +86,8 @@ message_batches AS (
     ) AS messages,
     array_agg(task_idx.task_index ORDER BY task_idx.task_index) AS task_indices
   FROM started_step_states AS started_step
-  JOIN pgflow.steps AS step 
-    ON step.flow_slug = started_step.flow_slug 
+  JOIN pgflow.steps AS step
+    ON step.flow_slug = started_step.flow_slug
     AND step.step_slug = started_step.step_slug
   -- Generate task indices from 0 to initial_tasks-1
   CROSS JOIN LATERAL generate_series(0, started_step.initial_tasks - 1) AS task_idx(task_index)
@@ -159,7 +109,7 @@ sent_messages AS (
 )
 
 -- ==========================================
--- RECORD TASKS IN DATABASE
+-- PHASE 3: RECORD TASKS IN DATABASE
 -- ==========================================
 INSERT INTO pgflow.step_tasks (flow_slug, run_id, step_slug, task_index, message_id)
 SELECT
@@ -170,13 +120,5 @@ SELECT
   sent_messages.msg_id
 FROM sent_messages;
 
--- ==========================================
--- BROADCAST REALTIME EVENTS
--- ==========================================
--- Note: Both step:completed events for empty maps and step:started events
--- are now broadcast atomically in their respective CTEs using RETURNING pattern.
--- This ensures correct ordering, prevents duplicate broadcasts, and guarantees
--- that events are sent for exactly the rows that were updated.
-
-end;
+END;
 $$;
