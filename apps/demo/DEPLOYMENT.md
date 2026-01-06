@@ -209,6 +209,38 @@ pnpm supabase migration up --file 20251230202447_20251225163110_pgflow_add_flow_
 pnpm wrangler deploy
 ```
 
+## Copying Production Data to Preview
+
+To copy pgflow data (flows, runs, step states, etc.) from production to preview:
+
+```bash
+cd apps/demo
+
+# 1. Download pgflow data from production
+./scripts/download-production-dump.sh
+# Creates: dumps/production-data-<timestamp>.sql
+
+# 2. Restore to preview (will ask for confirmation)
+./scripts/restore-dump-to-preview.sh dumps/production-data-<timestamp>.sql
+```
+
+**What gets copied:**
+
+- `pgflow.flows`, `pgflow.steps`, `pgflow.deps` - flow definitions
+- `pgflow.runs`, `pgflow.step_states`, `pgflow.step_tasks` - run history
+- `pgflow.workers`, `pgflow.worker_functions` - worker registrations
+
+**What stays unchanged:**
+
+- Preview vault secrets (API keys, etc.)
+- Schema/migrations - only data is copied
+
+**Requirements:**
+
+- `.env.production` with `SUPABASE_DB_URL` for production
+- `.env.preview` with `SUPABASE_DB_URL` for preview
+- `pg_dump` and `psql` CLI tools installed
+
 ## Troubleshooting
 
 **Edge Functions failing:**
