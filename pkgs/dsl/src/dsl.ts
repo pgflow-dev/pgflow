@@ -16,6 +16,22 @@ export type Json =
 // Used to flatten the types of a union of objects for readability
 export type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
 
+/**
+ * ContainmentPattern<T> - Type for JSON containment (@>) patterns
+ *
+ * Matches PostgreSQL's @> containment semantics where a pattern is a
+ * recursive partial structure that the target must contain:
+ * - Primitives: exact value match
+ * - Objects: all keys optional, recursively applied
+ * - Arrays: elements expected to be present in target array
+ */
+export type ContainmentPattern<T> =
+  T extends readonly (infer U)[]
+    ? ContainmentPattern<U>[]  // Array: elements expected to be present
+    : T extends object
+      ? { [K in keyof T]?: ContainmentPattern<T[K]> }  // Object: all keys optional
+      : T;  // Primitive: exact value match
+
 // Utility that unwraps Promise and keeps plain values unchanged
 // Note: `any[]` is required here for proper type inference in conditional types
 // `unknown[]` would be too restrictive and break type matching
@@ -324,12 +340,30 @@ export type WhenUnmetMode = 'fail' | 'skip' | 'skip-cascade';
 export type WhenFailedMode = 'fail' | 'skip' | 'skip-cascade';
 
 // Step runtime options interface that extends flow options with step-specific options
+// Note: condition is typed as Json here for internal storage; overloads provide type safety
 export interface StepRuntimeOptions extends RuntimeOptions {
   startDelay?: number;
   condition?: Json;  // JSON pattern for @> containment check
   whenUnmet?: WhenUnmetMode;  // What to do when condition not met
   whenFailed?: WhenFailedMode;  // What to do when handler fails after retries
 }
+
+// Base runtime options without condition (for typed overloads)
+interface BaseStepRuntimeOptions extends RuntimeOptions {
+  startDelay?: number;
+  whenUnmet?: WhenUnmetMode;
+  whenFailed?: WhenFailedMode;
+}
+
+// Typed step options for root steps (condition matches FlowInput pattern)
+type RootStepOptions<TFlowInput> = BaseStepRuntimeOptions & {
+  condition?: ContainmentPattern<TFlowInput>;
+};
+
+// Typed step options for dependent steps (condition matches deps object pattern)
+type DependentStepOptions<TDeps> = BaseStepRuntimeOptions & {
+  condition?: ContainmentPattern<TDeps>;
+};
 
 // Define the StepDefinition interface with integrated options
 export interface StepDefinition<
@@ -422,11 +456,12 @@ export class Flow<
   }
 
   // Overload 1: Root step (no dependsOn) - receives flowInput directly
+  // condition is typed as ContainmentPattern<TFlowInput>
   step<
     Slug extends string,
     TOutput
   >(
-    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn?: never } & StepRuntimeOptions>,
+    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn?: never } & RootStepOptions<TFlowInput>>,
     handler: (
       flowInput: TFlowInput,
       context: FlowContext<TEnv, TFlowInput> & TContext
@@ -440,13 +475,14 @@ export class Flow<
   >;
 
   // Overload 2: Dependent step (with dependsOn) - receives deps, flowInput via context
+  // condition is typed as ContainmentPattern<DepsObject>
   // Note: [Deps, ...Deps[]] requires at least one dependency - empty arrays are rejected at compile time
   step<
     Slug extends string,
     Deps extends Extract<keyof Steps, string>,
     TOutput
   >(
-    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn: [Deps, ...Deps[]] } & StepRuntimeOptions>,
+    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn: [Deps, ...Deps[]] } & DependentStepOptions<{ [K in Deps]: K extends keyof Steps ? Steps[K] : never }>>,
     handler: (
       deps: { [K in Deps]: K extends keyof Steps ? Steps[K] : never },
       context: FlowContext<TEnv, TFlowInput> & TContext
@@ -532,11 +568,12 @@ export class Flow<
    * @returns A new Flow instance with the array step added
    */
   // Overload 1: Root array (no dependsOn) - receives flowInput directly
+  // condition is typed as ContainmentPattern<TFlowInput>
   array<
     Slug extends string,
     TOutput extends readonly any[]
   >(
-    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn?: never } & StepRuntimeOptions>,
+    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn?: never } & RootStepOptions<TFlowInput>>,
     handler: (
       flowInput: TFlowInput,
       context: FlowContext<TEnv, TFlowInput> & TContext
@@ -550,13 +587,14 @@ export class Flow<
   >;
 
   // Overload 2: Dependent array (with dependsOn) - receives deps, flowInput via context
+  // condition is typed as ContainmentPattern<DepsObject>
   // Note: [Deps, ...Deps[]] requires at least one dependency - empty arrays are rejected at compile time
   array<
     Slug extends string,
     Deps extends Extract<keyof Steps, string>,
     TOutput extends readonly any[]
   >(
-    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn: [Deps, ...Deps[]] } & StepRuntimeOptions>,
+    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn: [Deps, ...Deps[]] } & DependentStepOptions<{ [K in Deps]: K extends keyof Steps ? Steps[K] : never }>>,
     handler: (
       deps: { [K in Deps]: K extends keyof Steps ? Steps[K] : never },
       context: FlowContext<TEnv, TFlowInput> & TContext
@@ -587,13 +625,14 @@ export class Flow<
    * @returns A new Flow instance with the map step added
    */
   // Overload for root map - handler receives item, context includes flowInput
+  // condition is typed as ContainmentPattern<TFlowInput> (checks the array itself)
   map<
     Slug extends string,
     THandler extends TFlowInput extends readonly (infer Item)[]
       ? (item: Item, context: FlowContext<TEnv, TFlowInput> & TContext) => Json | Promise<Json>
       : never
   >(
-    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug } & StepRuntimeOptions>,
+    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug } & RootStepOptions<TFlowInput>>,
     handler: THandler
   ): Flow<
     TFlowInput,
@@ -604,6 +643,7 @@ export class Flow<
   >;
 
   // Overload for dependent map - handler receives item, context includes flowInput
+  // condition is typed as ContainmentPattern<{ arrayDep: ArrayOutput }> (checks the dep object)
   map<
     Slug extends string,
     TArrayDep extends Extract<keyof Steps, string>,
@@ -611,7 +651,7 @@ export class Flow<
       ? (item: Item, context: FlowContext<TEnv, TFlowInput> & TContext) => Json | Promise<Json>
       : never
   >(
-    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; array: TArrayDep } & StepRuntimeOptions>,
+    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; array: TArrayDep } & DependentStepOptions<{ [K in TArrayDep]: Steps[K] }>>,
     handler: THandler
   ): Flow<
     TFlowInput,
