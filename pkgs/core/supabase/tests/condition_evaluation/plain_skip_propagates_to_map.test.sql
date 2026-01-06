@@ -21,7 +21,7 @@ select pgflow.add_step(
   '{}',  -- root step
   null, null, null, null,  -- default options
   'single',  -- step_type
-  '{"enabled": true}'::jsonb,  -- condition: requires enabled=true
+  '{"enabled": true}'::jsonb,  -- if: requires enabled=true
   'skip'  -- when_unmet - plain skip (not skip-cascade)
 );
 -- Map consumer: no condition, just depends on producer

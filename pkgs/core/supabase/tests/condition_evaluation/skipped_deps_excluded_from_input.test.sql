@@ -27,7 +27,7 @@ select pgflow.add_step(
   '{}',  -- root step
   null, null, null, null,
   'single',
-  '{"enabled": true}'::jsonb,  -- condition: requires enabled=true
+  '{"enabled": true}'::jsonb,  -- if: requires enabled=true
   'skip'  -- plain skip
 );
 select pgflow.add_step(

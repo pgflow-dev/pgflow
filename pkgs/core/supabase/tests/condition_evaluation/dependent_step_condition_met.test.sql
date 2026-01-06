@@ -16,7 +16,7 @@ select pgflow.add_step(
   '{first}',  -- depends on first
   null, null, null, null,  -- default options
   'single',  -- step_type
-  '{"first": {"success": true}}'::jsonb,  -- condition: first.success must be true
+  '{"first": {"success": true}}'::jsonb,  -- if: first.success must be true
   'skip'  -- when_unmet
 );
 
