@@ -494,7 +494,7 @@ export interface StepRuntimeOptions extends RuntimeOptions {
   /**
    * What to do when the 'if' pattern doesn't match the input
    *
-   * @default 'fail'
+   * @default 'skip'
    *
    * @example
    * { else: 'fail' }        // Pattern doesn't match -> step fails -> run fails

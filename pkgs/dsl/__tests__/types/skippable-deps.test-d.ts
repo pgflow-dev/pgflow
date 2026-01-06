@@ -438,3 +438,111 @@ describe('skippable deps type safety', () => {
     });
   });
 });
+
+/**
+ * Compile-time error tests for skippable deps
+ *
+ * These tests use @ts-expect-error to verify that TypeScript correctly
+ * rejects invalid patterns when accessing skippable dependencies.
+ */
+describe('skippable deps compile-time errors', () => {
+  describe('direct property access on optional deps', () => {
+    it('should reject direct property access on skippable dep without null check', () => {
+      new Flow<{ value: number }>({ slug: 'test' })
+        .step({ slug: 'maybeSkipped', retriesExhausted: 'skip' }, () => ({
+          data: 'result',
+        }))
+        .step({ slug: 'consumer', dependsOn: ['maybeSkipped'] }, (deps) => {
+          // @ts-expect-error - deps.maybeSkipped is optional, cannot access .data directly
+          const result: string = deps.maybeSkipped.data;
+          return { result };
+        });
+    });
+
+    it('should reject direct property access with else: skip', () => {
+      new Flow<{ value: number }>({ slug: 'test' })
+        .step({ slug: 'conditional', if: { value: 42 }, else: 'skip' }, () => ({
+          processed: true,
+        }))
+        .step({ slug: 'next', dependsOn: ['conditional'] }, (deps) => {
+          // @ts-expect-error - deps.conditional is optional due to else: 'skip'
+          const flag: boolean = deps.conditional.processed;
+          return { flag };
+        });
+    });
+
+    it('should reject direct property access with else: skip-cascade', () => {
+      new Flow<{ value: number }>({ slug: 'test' })
+        .step(
+          { slug: 'cascading', if: { value: 42 }, else: 'skip-cascade' },
+          () => ({ count: 10 })
+        )
+        .step({ slug: 'next', dependsOn: ['cascading'] }, (deps) => {
+          // @ts-expect-error - deps.cascading is optional due to else: 'skip-cascade'
+          const num: number = deps.cascading.count;
+          return { num };
+        });
+    });
+
+    it('should reject direct property access with retriesExhausted: skip-cascade', () => {
+      new Flow<{ value: number }>({ slug: 'test' })
+        .step({ slug: 'risky', retriesExhausted: 'skip-cascade' }, () => ({
+          status: 'ok',
+        }))
+        .step({ slug: 'next', dependsOn: ['risky'] }, (deps) => {
+          // @ts-expect-error - deps.risky is optional due to retriesExhausted: skip-cascade
+          const s: string = deps.risky.status;
+          return { s };
+        });
+    });
+  });
+
+  describe('mixed deps - optional and required', () => {
+    it('should allow direct access on required dep but reject on optional', () => {
+      new Flow<{ value: number }>({ slug: 'test' })
+        .step({ slug: 'required' }, () => ({ reqData: 'always' }))
+        .step({ slug: 'optional', retriesExhausted: 'skip' }, () => ({
+          optData: 'maybe',
+        }))
+        .step(
+          { slug: 'consumer', dependsOn: ['required', 'optional'] },
+          (deps) => {
+            // This is fine - required dep is always present
+            const req: string = deps.required.reqData;
+
+            // @ts-expect-error - deps.optional is optional, cannot access .optData directly
+            const opt: string = deps.optional.optData;
+
+            return { req, opt };
+          }
+        );
+    });
+  });
+
+  describe('array and map steps with skip modes', () => {
+    it('should reject direct access on skippable array step output', () => {
+      new Flow<{ items: string[] }>({ slug: 'test' })
+        .array({ slug: 'processed', retriesExhausted: 'skip' }, (input) =>
+          input.items.map((s) => s.toUpperCase())
+        )
+        .step({ slug: 'consumer', dependsOn: ['processed'] }, (deps) => {
+          // @ts-expect-error - deps.processed is optional, cannot access .length directly
+          const len: number = deps.processed.length;
+          return { len };
+        });
+    });
+
+    it('should reject direct access on skippable map step output', () => {
+      new Flow<string[]>({ slug: 'test' })
+        .map(
+          { slug: 'doubled', retriesExhausted: 'skip' },
+          (item) => item + item
+        )
+        .step({ slug: 'consumer', dependsOn: ['doubled'] }, (deps) => {
+          // @ts-expect-error - deps.doubled is optional, cannot access [0] directly
+          const first: string = deps.doubled[0];
+          return { first };
+        });
+    });
+  });
+});
