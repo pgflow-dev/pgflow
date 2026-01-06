@@ -3,61 +3,61 @@ import { Flow } from '../../src/dsl.js';
 import { compileFlow } from '../../src/compile-flow.js';
 
 describe('Condition Options', () => {
-  describe('DSL accepts condition and whenUnmet', () => {
-    it('should accept condition option on a step', () => {
+  describe('DSL accepts if and else', () => {
+    it('should accept if option on a step', () => {
       const flow = new Flow({ slug: 'test_flow' })
         .step(
-          { slug: 'conditional_step', condition: { enabled: true } },
+          { slug: 'conditional_step', if: { enabled: true } },
           () => 'result'
         );
 
       const step = flow.getStepDefinition('conditional_step');
-      expect(step.options.condition).toEqual({ enabled: true });
+      expect(step.options.if).toEqual({ enabled: true });
     });
 
-    it('should accept whenUnmet option on a step', () => {
+    it('should accept else option on a step', () => {
       const flow = new Flow({ slug: 'test_flow' })
         .step(
-          { slug: 'conditional_step', whenUnmet: 'skip' },
+          { slug: 'conditional_step', else: 'skip' },
           () => 'result'
         );
 
       const step = flow.getStepDefinition('conditional_step');
-      expect(step.options.whenUnmet).toBe('skip');
+      expect(step.options.else).toBe('skip');
     });
 
-    it('should accept both condition and whenUnmet together', () => {
+    it('should accept both if and else together', () => {
       const flow = new Flow({ slug: 'test_flow' })
         .step(
           {
             slug: 'conditional_step',
-            condition: { status: 'active' },
-            whenUnmet: 'skip-cascade',
+            if: { status: 'active' },
+            else: 'skip-cascade',
           },
           () => 'result'
         );
 
       const step = flow.getStepDefinition('conditional_step');
-      expect(step.options.condition).toEqual({ status: 'active' });
-      expect(step.options.whenUnmet).toBe('skip-cascade');
+      expect(step.options.if).toEqual({ status: 'active' });
+      expect(step.options.else).toBe('skip-cascade');
     });
 
-    it('should accept condition on dependent steps', () => {
+    it('should accept if on dependent steps', () => {
       const flow = new Flow({ slug: 'test_flow' })
         .step({ slug: 'first' }, () => ({ success: true }))
         .step(
           {
             slug: 'conditional_step',
             dependsOn: ['first'],
-            condition: { first: { success: true } },
-            whenUnmet: 'skip',
+            if: { first: { success: true } },
+            else: 'skip',
           },
           () => 'result'
         );
 
       const step = flow.getStepDefinition('conditional_step');
-      expect(step.options.condition).toEqual({ first: { success: true } });
-      expect(step.options.whenUnmet).toBe('skip');
+      expect(step.options.if).toEqual({ first: { success: true } });
+      expect(step.options.else).toBe('skip');
     });
   });
 
@@ -65,7 +65,7 @@ describe('Condition Options', () => {
     it('should compile condition_pattern for root step', () => {
       const flow = new Flow({ slug: 'test_flow' })
         .step(
-          { slug: 'step1', condition: { enabled: true } },
+          { slug: 'step1', if: { enabled: true } },
           () => 'result'
         );
 
@@ -78,7 +78,7 @@ describe('Condition Options', () => {
     it('should compile when_unmet for step', () => {
       const flow = new Flow({ slug: 'test_flow' })
         .step(
-          { slug: 'step1', whenUnmet: 'fail' },
+          { slug: 'step1', else: 'fail' },
           () => 'result'
         );
 
@@ -93,8 +93,8 @@ describe('Condition Options', () => {
         .step(
           {
             slug: 'step1',
-            condition: { active: true, type: 'premium' },
-            whenUnmet: 'skip-cascade',
+            if: { active: true, type: 'premium' },
+            else: 'skip-cascade',
           },
           () => 'result'
         );
@@ -113,8 +113,8 @@ describe('Condition Options', () => {
             slug: 'step1',
             maxAttempts: 3,
             timeout: 60,
-            condition: { enabled: true },
-            whenUnmet: 'skip',
+            if: { enabled: true },
+            else: 'skip',
           },
           () => 'result'
         );
@@ -135,8 +135,8 @@ describe('Condition Options', () => {
           {
             slug: 'second',
             dependsOn: ['first'],
-            condition: { first: { success: true } },
-            whenUnmet: 'skip',
+            if: { first: { success: true } },
+            else: 'skip',
           },
           () => 'result'
         );
@@ -150,26 +150,26 @@ describe('Condition Options', () => {
     });
   });
 
-  describe('whenUnmet validation', () => {
-    it('should only accept valid whenUnmet values', () => {
+  describe('else validation', () => {
+    it('should only accept valid else values', () => {
       // Valid values should work
       expect(() =>
         new Flow({ slug: 'test' }).step(
-          { slug: 's1', whenUnmet: 'fail' },
+          { slug: 's1', else: 'fail' },
           () => 1
         )
       ).not.toThrow();
 
       expect(() =>
         new Flow({ slug: 'test' }).step(
-          { slug: 's1', whenUnmet: 'skip' },
+          { slug: 's1', else: 'skip' },
           () => 1
         )
       ).not.toThrow();
 
       expect(() =>
         new Flow({ slug: 'test' }).step(
-          { slug: 's1', whenUnmet: 'skip-cascade' },
+          { slug: 's1', else: 'skip-cascade' },
           () => 1
         )
       ).not.toThrow();

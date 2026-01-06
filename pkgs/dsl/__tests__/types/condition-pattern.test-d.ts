@@ -133,48 +133,48 @@ describe('ContainmentPattern<T> utility type', () => {
   });
 });
 
-describe('condition option typing in step methods', () => {
-  describe('root step condition', () => {
-    it('should type condition as ContainmentPattern<FlowInput>', () => {
+describe('if option typing in step methods', () => {
+  describe('root step if', () => {
+    it('should type if as ContainmentPattern<FlowInput>', () => {
       type FlowInput = { userId: string; role: string };
 
       // This should compile - valid partial pattern
       const flow = new Flow<FlowInput>({ slug: 'test_flow' }).step(
-        { slug: 'check', condition: { role: 'admin' } },
+        { slug: 'check', if: { role: 'admin' } },
         (input) => input.userId
       );
 
       expectTypeOf(flow).toBeObject();
     });
 
-    it('should reject invalid keys in condition', () => {
+    it('should reject invalid keys in if', () => {
       type FlowInput = { userId: string; role: string };
 
       // @ts-expect-error - 'invalidKey' does not exist on FlowInput
       new Flow<FlowInput>({ slug: 'test_flow' }).step(
-        { slug: 'check', condition: { invalidKey: 'value' } },
+        { slug: 'check', if: { invalidKey: 'value' } },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (input: any) => input.userId
       );
     });
 
-    it('should reject wrong value types in condition', () => {
+    it('should reject wrong value types in if', () => {
       type FlowInput = { userId: string; role: string };
 
       // @ts-expect-error - role should be string, not number
       new Flow<FlowInput>({ slug: 'test_flow' }).step(
-        { slug: 'check', condition: { role: 123 } },
+        { slug: 'check', if: { role: 123 } },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (input: any) => input.userId
       );
     });
 
-    it('should allow empty object condition (always matches)', () => {
+    it('should allow empty object if (always matches)', () => {
       type FlowInput = { userId: string; role: string };
 
       // Empty object should be valid
       const flow = new Flow<FlowInput>({ slug: 'test_flow' }).step(
-        { slug: 'check', condition: {} },
+        { slug: 'check', if: {} },
         (input) => input.userId
       );
 
@@ -185,7 +185,7 @@ describe('condition option typing in step methods', () => {
       type FlowInput = { user: { name: string; role: string } };
 
       const flow = new Flow<FlowInput>({ slug: 'test_flow' }).step(
-        { slug: 'check', condition: { user: { role: 'admin' } } },
+        { slug: 'check', if: { user: { role: 'admin' } } },
         (input) => input.user.name
       );
 
@@ -193,15 +193,15 @@ describe('condition option typing in step methods', () => {
     });
   });
 
-  describe('dependent step condition', () => {
-    it('should type condition as ContainmentPattern<DepsObject>', () => {
+  describe('dependent step if', () => {
+    it('should type if as ContainmentPattern<DepsObject>', () => {
       const flow = new Flow<{ initial: string }>({ slug: 'test_flow' })
         .step({ slug: 'fetch' }, () => ({ status: 'ok', data: 'result' }))
         .step(
           {
             slug: 'process',
             dependsOn: ['fetch'],
-            condition: { fetch: { status: 'ok' } },
+            if: { fetch: { status: 'ok' } },
           },
           (deps) => deps.fetch.data
         );
@@ -209,7 +209,7 @@ describe('condition option typing in step methods', () => {
       expectTypeOf(flow).toBeObject();
     });
 
-    it('should reject invalid dep slug in condition', () => {
+    it('should reject invalid dep slug in if', () => {
       new Flow<{ initial: string }>({ slug: 'test_flow' })
         .step({ slug: 'fetch' }, () => ({ status: 'ok' }))
         .step(
@@ -217,7 +217,7 @@ describe('condition option typing in step methods', () => {
             slug: 'process',
             dependsOn: ['fetch'],
             // @ts-expect-error - 'nonexistent' is not a dependency
-            condition: { nonexistent: { status: 'ok' } },
+            if: { nonexistent: { status: 'ok' } },
           },
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (deps: any) => deps.fetch.status
@@ -232,14 +232,14 @@ describe('condition option typing in step methods', () => {
             slug: 'process',
             dependsOn: ['fetch'],
             // @ts-expect-error - 'invalidField' does not exist on fetch output
-            condition: { fetch: { invalidField: 'value' } },
+            if: { fetch: { invalidField: 'value' } },
           },
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (deps: any) => deps.fetch.status
         );
     });
 
-    it('should handle multiple dependencies in condition', () => {
+    it('should handle multiple dependencies in if', () => {
       const flow = new Flow<{ initial: string }>({ slug: 'test_flow' })
         .step({ slug: 'step1' }, () => ({ ready: true }))
         .step({ slug: 'step2' }, () => ({ valid: true }))
@@ -247,7 +247,7 @@ describe('condition option typing in step methods', () => {
           {
             slug: 'final',
             dependsOn: ['step1', 'step2'],
-            condition: { step1: { ready: true }, step2: { valid: true } },
+            if: { step1: { ready: true }, step2: { valid: true } },
           },
           (deps) => deps.step1.ready && deps.step2.valid
         );
@@ -256,26 +256,26 @@ describe('condition option typing in step methods', () => {
     });
   });
 
-  describe('array step condition', () => {
-    it('should type condition for root array step', () => {
+  describe('array step if', () => {
+    it('should type if for root array step', () => {
       type FlowInput = { items: string[]; enabled: boolean };
 
       const flow = new Flow<FlowInput>({ slug: 'test_flow' }).array(
-        { slug: 'getItems', condition: { enabled: true } },
+        { slug: 'getItems', if: { enabled: true } },
         (input) => input.items
       );
 
       expectTypeOf(flow).toBeObject();
     });
 
-    it('should type condition for dependent array step', () => {
+    it('should type if for dependent array step', () => {
       const flow = new Flow<{ initial: string }>({ slug: 'test_flow' })
         .step({ slug: 'fetch' }, () => ({ ready: true, items: ['a', 'b'] }))
         .array(
           {
             slug: 'process',
             dependsOn: ['fetch'],
-            condition: { fetch: { ready: true } },
+            if: { fetch: { ready: true } },
           },
           (deps) => deps.fetch.items
         );
@@ -284,20 +284,20 @@ describe('condition option typing in step methods', () => {
     });
   });
 
-  describe('map step condition', () => {
-    it('should type condition for root map step', () => {
+  describe('map step if', () => {
+    it('should type if for root map step', () => {
       type FlowInput = { type: string; value: number }[];
 
       const flow = new Flow<FlowInput>({ slug: 'test_flow' }).map(
-        // Root map condition checks the array itself
-        { slug: 'process', condition: [{ type: 'active' }] },
+        // Root map if checks the array itself
+        { slug: 'process', if: [{ type: 'active' }] },
         (item) => item.value * 2
       );
 
       expectTypeOf(flow).toBeObject();
     });
 
-    it('should type condition for dependent map step', () => {
+    it('should type if for dependent map step', () => {
       const flow = new Flow<{ initial: string }>({ slug: 'test_flow' })
         .step({ slug: 'fetch' }, () => [
           { id: 1, active: true },
@@ -308,7 +308,7 @@ describe('condition option typing in step methods', () => {
             slug: 'process',
             array: 'fetch',
             // Condition checks the array dep
-            condition: { fetch: [{ active: true }] },
+            if: { fetch: [{ active: true }] },
           },
           (item) => item.id
         );

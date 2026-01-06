@@ -2,65 +2,65 @@ import { describe, it, expect } from 'vitest';
 import { Flow } from '../../src/dsl.js';
 import { compileFlow } from '../../src/compile-flow.js';
 
-describe('whenFailed Options', () => {
-  describe('DSL accepts whenFailed option', () => {
-    it('should accept whenFailed option on a step', () => {
+describe('retriesExhausted Options', () => {
+  describe('DSL accepts retriesExhausted option', () => {
+    it('should accept retriesExhausted option on a step', () => {
       const flow = new Flow({ slug: 'test_flow' })
         .step(
-          { slug: 'step1', whenFailed: 'skip' },
+          { slug: 'step1', retriesExhausted: 'skip' },
           () => 'result'
         );
 
       const step = flow.getStepDefinition('step1');
-      expect(step.options.whenFailed).toBe('skip');
+      expect(step.options.retriesExhausted).toBe('skip');
     });
 
-    it('should accept whenFailed: fail (default behavior)', () => {
+    it('should accept retriesExhausted: fail (default behavior)', () => {
       const flow = new Flow({ slug: 'test_flow' })
         .step(
-          { slug: 'step1', whenFailed: 'fail' },
+          { slug: 'step1', retriesExhausted: 'fail' },
           () => 'result'
         );
 
       const step = flow.getStepDefinition('step1');
-      expect(step.options.whenFailed).toBe('fail');
+      expect(step.options.retriesExhausted).toBe('fail');
     });
 
-    it('should accept whenFailed: skip-cascade', () => {
+    it('should accept retriesExhausted: skip-cascade', () => {
       const flow = new Flow({ slug: 'test_flow' })
         .step(
-          { slug: 'step1', whenFailed: 'skip-cascade' },
+          { slug: 'step1', retriesExhausted: 'skip-cascade' },
           () => 'result'
         );
 
       const step = flow.getStepDefinition('step1');
-      expect(step.options.whenFailed).toBe('skip-cascade');
+      expect(step.options.retriesExhausted).toBe('skip-cascade');
     });
 
-    it('should accept whenFailed on dependent steps', () => {
+    it('should accept retriesExhausted on dependent steps', () => {
       const flow = new Flow({ slug: 'test_flow' })
         .step({ slug: 'first' }, () => ({ data: 'test' }))
         .step(
           {
             slug: 'second',
             dependsOn: ['first'],
-            whenFailed: 'skip',
+            retriesExhausted: 'skip',
           },
           () => 'result'
         );
 
       const step = flow.getStepDefinition('second');
-      expect(step.options.whenFailed).toBe('skip');
+      expect(step.options.retriesExhausted).toBe('skip');
     });
 
-    it('should accept whenFailed together with other options', () => {
+    it('should accept retriesExhausted together with other options', () => {
       const flow = new Flow({ slug: 'test_flow' })
         .step(
           {
             slug: 'step1',
             maxAttempts: 3,
             timeout: 60,
-            whenFailed: 'skip-cascade',
+            retriesExhausted: 'skip-cascade',
           },
           () => 'result'
         );
@@ -68,25 +68,25 @@ describe('whenFailed Options', () => {
       const step = flow.getStepDefinition('step1');
       expect(step.options.maxAttempts).toBe(3);
       expect(step.options.timeout).toBe(60);
-      expect(step.options.whenFailed).toBe('skip-cascade');
+      expect(step.options.retriesExhausted).toBe('skip-cascade');
     });
 
-    it('should accept both whenUnmet and whenFailed together', () => {
+    it('should accept both else and retriesExhausted together', () => {
       const flow = new Flow({ slug: 'test_flow' })
         .step(
           {
             slug: 'step1',
-            condition: { enabled: true },
-            whenUnmet: 'skip',
-            whenFailed: 'skip-cascade',
+            if: { enabled: true },
+            else: 'skip',
+            retriesExhausted: 'skip-cascade',
           },
           () => 'result'
         );
 
       const step = flow.getStepDefinition('step1');
-      expect(step.options.condition).toEqual({ enabled: true });
-      expect(step.options.whenUnmet).toBe('skip');
-      expect(step.options.whenFailed).toBe('skip-cascade');
+      expect(step.options.if).toEqual({ enabled: true });
+      expect(step.options.else).toBe('skip');
+      expect(step.options.retriesExhausted).toBe('skip-cascade');
     });
   });
 
@@ -94,7 +94,7 @@ describe('whenFailed Options', () => {
     it('should compile when_failed for step', () => {
       const flow = new Flow({ slug: 'test_flow' })
         .step(
-          { slug: 'step1', whenFailed: 'skip' },
+          { slug: 'step1', retriesExhausted: 'skip' },
           () => 'result'
         );
 
@@ -107,7 +107,7 @@ describe('whenFailed Options', () => {
     it('should compile when_failed: fail', () => {
       const flow = new Flow({ slug: 'test_flow' })
         .step(
-          { slug: 'step1', whenFailed: 'fail' },
+          { slug: 'step1', retriesExhausted: 'fail' },
           () => 'result'
         );
 
@@ -120,7 +120,7 @@ describe('whenFailed Options', () => {
     it('should compile when_failed: skip-cascade', () => {
       const flow = new Flow({ slug: 'test_flow' })
         .step(
-          { slug: 'step1', whenFailed: 'skip-cascade' },
+          { slug: 'step1', retriesExhausted: 'skip-cascade' },
           () => 'result'
         );
 
@@ -130,16 +130,16 @@ describe('whenFailed Options', () => {
       expect(statements[1]).toContain("when_failed => 'skip-cascade'");
     });
 
-    it('should compile step with all options including whenFailed', () => {
+    it('should compile step with all options including retriesExhausted', () => {
       const flow = new Flow({ slug: 'test_flow' })
         .step(
           {
             slug: 'step1',
             maxAttempts: 3,
             timeout: 60,
-            condition: { enabled: true },
-            whenUnmet: 'skip',
-            whenFailed: 'skip-cascade',
+            if: { enabled: true },
+            else: 'skip',
+            retriesExhausted: 'skip-cascade',
           },
           () => 'result'
         );
@@ -168,22 +168,22 @@ describe('whenFailed Options', () => {
     });
   });
 
-  describe('whenFailed on map steps', () => {
-    it('should accept whenFailed on map step', () => {
+  describe('retriesExhausted on map steps', () => {
+    it('should accept retriesExhausted on map step', () => {
       const flow = new Flow<string[]>({ slug: 'test_flow' })
         .map(
-          { slug: 'map_step', whenFailed: 'skip' },
+          { slug: 'map_step', retriesExhausted: 'skip' },
           (item) => item.toUpperCase()
         );
 
       const step = flow.getStepDefinition('map_step');
-      expect(step.options.whenFailed).toBe('skip');
+      expect(step.options.retriesExhausted).toBe('skip');
     });
 
     it('should compile when_failed for map step', () => {
       const flow = new Flow<string[]>({ slug: 'test_flow' })
         .map(
-          { slug: 'map_step', whenFailed: 'skip-cascade' },
+          { slug: 'map_step', retriesExhausted: 'skip-cascade' },
           (item) => item.toUpperCase()
         );
 
