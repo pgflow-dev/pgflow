@@ -16,14 +16,19 @@ export function validateServiceRoleAuth(
   }
 
   const authHeader = request.headers.get('Authorization');
-  const expectedKey = env['SUPABASE_SERVICE_ROLE_KEY'];
+
+  // Treat empty string as unset - use PGFLOW_AUTH_SECRET if set and non-empty,
+  // otherwise fall back to SUPABASE_SERVICE_ROLE_KEY
+  const authSecret = env['PGFLOW_AUTH_SECRET'];
+  const serviceRoleKey = env['SUPABASE_SERVICE_ROLE_KEY'];
+  const expectedKey = (authSecret && authSecret !== '') ? authSecret : serviceRoleKey;
 
   if (!authHeader) {
     return { valid: false, error: 'Missing Authorization header' };
   }
 
-  if (!expectedKey) {
-    return { valid: false, error: 'Server misconfigured: missing service role key' };
+  if (!expectedKey || expectedKey === '') {
+    return { valid: false, error: 'Server misconfigured: missing PGFLOW_AUTH_SECRET or SUPABASE_SERVICE_ROLE_KEY' };
   }
 
   const expected = `Bearer ${expectedKey}`;

@@ -1,0 +1,64 @@
+---
+draft: false
+title: 'pgflow 0.13.3: Authentication Fix for ensure_workers and EdgeWorker'
+description: 'Fixes 401 authentication errors between the cron-based worker management and Edge Functions by introducing PGFLOW_AUTH_SECRET'
+date: 2026-02-03
+authors:
+  - jumski
+tags:
+  - bugfix
+  - authentication
+  - edge-worker
+  - release
+featured: true
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+This release fixes a critical authentication issue where `ensure_workers()` fails to start Edge Workers due to key format mismatches, resulting in 401 Unauthorized errors. This resolves [GitHub issue #603](https://github.com/pgflow-dev/pgflow/issues/603).
+
+## The Problem
+
+Supabase stores the service role key in different formats depending on where you access it:
+
+- **In Vault** (used by `ensure_workers`): JWT format starting with `eyJhbG...`
+- **In Edge Functions** (`SUPABASE_SERVICE_ROLE_KEY` env var): Internal format starting with `sb_secret_...`
+
+When `ensure_workers` sends an HTTP request to trigger a worker, it includes the JWT-format key from vault in the Authorization header. However, the Edge Worker validates this against `SUPABASE_SERVICE_ROLE_KEY`, which contains the `sb_secret_...` format. Since these strings don't match, authentication fails with a 401 error.
+
+## The Solution
+
+We've introduced `PGFLOW_AUTH_SECRET` - a user-controlled authentication secret that bypasses the format mismatch entirely:
+
+1. Store your custom secret in vault as `pgflow_auth_secret`
+2. Set the same value as `PGFLOW_AUTH_SECRET` in your Edge Function secrets
+3. Both sides now use the identical string for authentication
+
+<Aside type="caution" title="Set the same value in both locations">
+  You must set the same secret value in both vault and Edge Functions. Since
+  Supabase uses different key formats internally, relying on the fallback can
+  cause authentication failures. Always set both `pgflow_auth_secret` in vault
+  and `PGFLOW_AUTH_SECRET` in Edge Functions to the same value.
+</Aside>
+
+## How to Update
+
+Update your pgflow installation and configure the new authentication secret:
+
+1. Update your packages and migrations following the [update guide](/deploy/update-pgflow/)
+2. Set `pgflow_auth_secret` in vault (same value you'll use in step 3):
+   ```sql
+   SELECT vault.create_secret('your-secret-value', 'pgflow_auth_secret');
+   ```
+3. Set `PGFLOW_AUTH_SECRET` in your Edge Function secrets with the same value
+
+See the [Configure Secrets](/deploy/supabase/configure-secrets/) documentation for detailed setup instructions.
+
+## Backward Compatibility
+
+For backwards compatibility, pgflow falls back to the legacy secrets if `PGFLOW_AUTH_SECRET` is not configured:
+
+- **Database side**: Falls back to `supabase_service_role_key` in vault
+- **Edge Function side**: Falls back to `SUPABASE_SERVICE_ROLE_KEY` env var
+
+Existing deployments will continue to work without immediate changes, though we strongly recommend migrating to `PGFLOW_AUTH_SECRET` to avoid the format mismatch issues.

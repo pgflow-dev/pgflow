@@ -31,7 +31,19 @@ function productionEnv(serviceRoleKey?: string): Record<string, string | undefin
   };
 }
 
+function productionEnvWithAuthSecret(
+  authSecret?: string,
+  serviceRoleKey?: string
+): Record<string, string | undefined> {
+  return {
+    SUPABASE_ANON_KEY: 'production-anon-key-abc',
+    SUPABASE_SERVICE_ROLE_KEY: serviceRoleKey,
+    PGFLOW_AUTH_SECRET: authSecret,
+  };
+}
+
 const PRODUCTION_SERVICE_ROLE_KEY = 'production-service-role-key-xyz';
+const PGFLOW_AUTH_SECRET_VALUE = 'user-controlled-auth-secret-123';
 
 // ============================================================
 // validateServiceRoleAuth() - Local mode tests
@@ -80,7 +92,7 @@ Deno.test('validateServiceRoleAuth - production: accepts request with correct au
 Deno.test('validateServiceRoleAuth - production: rejects when service role key not configured', () => {
   const request = createRequest('Bearer any-key');
   const result = validateServiceRoleAuth(request, productionEnv(undefined));
-  assertEquals(result, { valid: false, error: 'Server misconfigured: missing service role key' });
+  assertEquals(result, { valid: false, error: 'Server misconfigured: missing PGFLOW_AUTH_SECRET or SUPABASE_SERVICE_ROLE_KEY' });
 });
 
 Deno.test('validateServiceRoleAuth - production: rejects Basic auth scheme', () => {
@@ -99,6 +111,64 @@ Deno.test('validateServiceRoleAuth - production: rejects auth header without sch
   const request = createRequest(PRODUCTION_SERVICE_ROLE_KEY);
   const result = validateServiceRoleAuth(request, productionEnv(PRODUCTION_SERVICE_ROLE_KEY));
   assertEquals(result, { valid: false, error: 'Invalid Authorization header' });
+});
+
+// ============================================================
+// validateServiceRoleAuth() - PGFLOW_AUTH_SECRET tests
+// ============================================================
+
+Deno.test('validateServiceRoleAuth - PGFLOW_AUTH_SECRET: accepts request with auth secret when set', () => {
+  const request = createRequest(`Bearer ${PGFLOW_AUTH_SECRET_VALUE}`);
+  const result = validateServiceRoleAuth(
+    request,
+    productionEnvWithAuthSecret(PGFLOW_AUTH_SECRET_VALUE, PRODUCTION_SERVICE_ROLE_KEY)
+  );
+  assertEquals(result, { valid: true });
+});
+
+Deno.test('validateServiceRoleAuth - PGFLOW_AUTH_SECRET: rejects service role key when auth secret is set', () => {
+  const request = createRequest(`Bearer ${PRODUCTION_SERVICE_ROLE_KEY}`);
+  const result = validateServiceRoleAuth(
+    request,
+    productionEnvWithAuthSecret(PGFLOW_AUTH_SECRET_VALUE, PRODUCTION_SERVICE_ROLE_KEY)
+  );
+  assertEquals(result, { valid: false, error: 'Invalid Authorization header' });
+});
+
+Deno.test('validateServiceRoleAuth - PGFLOW_AUTH_SECRET: falls back to service role key when auth secret not set', () => {
+  const request = createRequest(`Bearer ${PRODUCTION_SERVICE_ROLE_KEY}`);
+  const result = validateServiceRoleAuth(
+    request,
+    productionEnvWithAuthSecret(undefined, PRODUCTION_SERVICE_ROLE_KEY)
+  );
+  assertEquals(result, { valid: true });
+});
+
+Deno.test('validateServiceRoleAuth - PGFLOW_AUTH_SECRET: works without service role key when auth secret is set', () => {
+  const request = createRequest(`Bearer ${PGFLOW_AUTH_SECRET_VALUE}`);
+  const result = validateServiceRoleAuth(
+    request,
+    productionEnvWithAuthSecret(PGFLOW_AUTH_SECRET_VALUE, undefined)
+  );
+  assertEquals(result, { valid: true });
+});
+
+Deno.test('validateServiceRoleAuth - PGFLOW_AUTH_SECRET: returns error when neither key is set', () => {
+  const request = createRequest('Bearer any-key');
+  const result = validateServiceRoleAuth(
+    request,
+    productionEnvWithAuthSecret(undefined, undefined)
+  );
+  assertEquals(result, { valid: false, error: 'Server misconfigured: missing PGFLOW_AUTH_SECRET or SUPABASE_SERVICE_ROLE_KEY' });
+});
+
+Deno.test('validateServiceRoleAuth - PGFLOW_AUTH_SECRET: treats empty string as unset, falls back to service role key', () => {
+  const request = createRequest(`Bearer ${PRODUCTION_SERVICE_ROLE_KEY}`);
+  const result = validateServiceRoleAuth(
+    request,
+    productionEnvWithAuthSecret('', PRODUCTION_SERVICE_ROLE_KEY) // Empty string
+  );
+  assertEquals(result, { valid: true });
 });
 
 // ============================================================

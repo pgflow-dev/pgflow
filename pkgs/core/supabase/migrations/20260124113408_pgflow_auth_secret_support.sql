@@ -1,12 +1,6 @@
--- Ensure Workers
--- Returns which worker functions should be invoked, makes HTTP requests, and updates last_invoked_at
--- Called by cron job to keep workers running
-
-create or replace function pgflow.ensure_workers()
-returns table (function_name text, invoked boolean, request_id bigint)
-language sql
-as $$
-  with
+-- Modify "ensure_workers" function
+CREATE OR REPLACE FUNCTION "pgflow"."ensure_workers" () RETURNS TABLE ("function_name" text, "invoked" boolean, "request_id" bigint) LANGUAGE sql AS $$
+with
     -- Detect environment
     env as (
       select pgflow.is_local() as is_local
@@ -103,9 +97,8 @@ as $$
   from updated as u
   inner join http_requests as hr on u.function_name = hr.function_name
 $$;
-
-comment on function pgflow.ensure_workers() is
-'Ensures worker functions are running by pinging them via HTTP when needed.
+-- Set comment to function: "ensure_workers"
+COMMENT ON FUNCTION "pgflow"."ensure_workers" IS 'Ensures worker functions are running by pinging them via HTTP when needed.
 In local mode: pings ALL enabled functions (ignores debounce AND alive workers check).
 In production mode: only pings functions that pass debounce AND have no alive workers.
 Debounce: skips functions pinged within their debounce interval (production only).
