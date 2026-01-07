@@ -39,7 +39,7 @@ Deno.test('FancyFormatter - taskCompleted outputs correct format with worker pre
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+      SUPABASE_URL: 'http://kong:8000',
     });
     const logger = factory.createLogger('test');
 
@@ -81,7 +81,7 @@ Deno.test('FancyFormatter - taskCompleted shows colors when colorsEnabled', () =
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+      SUPABASE_URL: 'http://kong:8000',
     });
     const logger = factory.createLogger('test');
 
@@ -112,7 +112,7 @@ Deno.test('FancyFormatter - taskFailed outputs error with worker prefix and flow
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+      SUPABASE_URL: 'http://kong:8000',
     });
     const logger = factory.createLogger('test');
 
@@ -152,7 +152,7 @@ Deno.test('FancyFormatter - taskStarted outputs dim styling with identifiers (de
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+      SUPABASE_URL: 'http://kong:8000',
       EDGE_WORKER_LOG_LEVEL: 'debug',
     });
     const logger = factory.createLogger('test');
@@ -192,7 +192,7 @@ Deno.test('FancyFormatter - taskStarted NOT logged when level is verbose', () =>
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+      SUPABASE_URL: 'http://kong:8000',
       EDGE_WORKER_LOG_LEVEL: 'verbose',
     });
     const logger = factory.createLogger('test');
@@ -221,7 +221,7 @@ Deno.test('FancyFormatter - retry information displayed when retryAttempt > 1', 
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+      SUPABASE_URL: 'http://kong:8000',
     });
     const logger = factory.createLogger('test');
 
@@ -254,7 +254,7 @@ Deno.test('FancyFormatter - polling outputs with worker prefix', () => {
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+      SUPABASE_URL: 'http://kong:8000',
     });
     factory.setWorkerName('greet-user-worker');
     const logger = factory.createLogger('test');
@@ -278,7 +278,7 @@ Deno.test('FancyFormatter - taskCount shows count with worker prefix when > 0', 
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+      SUPABASE_URL: 'http://kong:8000',
     });
     factory.setWorkerName('greet-user-worker');
     const logger = factory.createLogger('test');
@@ -304,7 +304,7 @@ Deno.test('FancyFormatter - taskCount muted with worker prefix when count is 0',
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+      SUPABASE_URL: 'http://kong:8000',
     });
     factory.setWorkerName('greet-user-worker');
     const logger = factory.createLogger('test');
@@ -328,7 +328,7 @@ Deno.test('FancyFormatter - startupBanner shows multi-flow with aligned list', (
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+      SUPABASE_URL: 'http://kong:8000',
     });
     const logger = factory.createLogger('test');
 
@@ -372,7 +372,7 @@ Deno.test('FancyFormatter - shutdown shows correct phase with worker prefix', ()
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+      SUPABASE_URL: 'http://kong:8000',
     });
     factory.setWorkerName('greet-user-worker');
     const logger = factory.createLogger('test');
@@ -399,7 +399,7 @@ Deno.test('SimpleFormatter - taskCompleted outputs key=value format with worker/
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'some-production-key',
+      SUPABASE_URL: 'https://abc123.supabase.co',
       EDGE_WORKER_LOG_LEVEL: 'verbose',
     });
     const logger = factory.createLogger('test');
@@ -439,7 +439,7 @@ Deno.test('SimpleFormatter - taskFailed outputs structured error with worker/que
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'some-production-key',
+      SUPABASE_URL: 'https://abc123.supabase.co',
       EDGE_WORKER_LOG_LEVEL: 'verbose',
     });
     const logger = factory.createLogger('test');
@@ -478,7 +478,7 @@ Deno.test('SimpleFormatter - no ANSI colors in output', () => {
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'some-production-key',
+      SUPABASE_URL: 'https://abc123.supabase.co',
       EDGE_WORKER_LOG_LEVEL: 'verbose',
     });
     const logger = factory.createLogger('test');
@@ -514,7 +514,7 @@ Deno.test('NO_COLOR disables colors in fancy mode', () => {
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+      SUPABASE_URL: 'http://kong:8000',
       NO_COLOR: '1',
     });
     const logger = factory.createLogger('test');
@@ -553,7 +553,7 @@ Deno.test('FancyFormatter - taskCompleted at DEBUG level includes identifiers', 
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+      SUPABASE_URL: 'http://kong:8000',
       EDGE_WORKER_LOG_LEVEL: 'debug',
     });
     const logger = factory.createLogger('test');
@@ -587,7 +587,7 @@ Deno.test('FancyFormatter - taskFailed at DEBUG level includes identifiers', () 
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+      SUPABASE_URL: 'http://kong:8000',
       EDGE_WORKER_LOG_LEVEL: 'debug',
     });
     const logger = factory.createLogger('test');
@@ -626,7 +626,7 @@ Deno.test('FancyFormatter - taskFailed shows retry pending info when retries rem
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+      SUPABASE_URL: 'http://kong:8000',
     });
     const logger = factory.createLogger('test');
 
@@ -663,7 +663,7 @@ Deno.test('FancyFormatter - taskFailed calculates exponential backoff delay corr
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+      SUPABASE_URL: 'http://kong:8000',
     });
     const logger = factory.createLogger('test');
 
@@ -699,7 +699,7 @@ Deno.test('FancyFormatter - taskFailed does NOT show retry info when no retries 
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+      SUPABASE_URL: 'http://kong:8000',
     });
     const logger = factory.createLogger('test');
 
@@ -734,7 +734,7 @@ Deno.test('SimpleFormatter - taskFailed shows retry info in key=value format', (
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'some-production-key',
+      SUPABASE_URL: 'https://abc123.supabase.co',
       EDGE_WORKER_LOG_LEVEL: 'verbose',
     });
     const logger = factory.createLogger('test');
@@ -771,7 +771,7 @@ Deno.test('SimpleFormatter - taskFailed does NOT show retry info when no retries
 
   try {
     const factory = createLoggingFactory({
-      SUPABASE_ANON_KEY: 'some-production-key',
+      SUPABASE_URL: 'https://abc123.supabase.co',
       EDGE_WORKER_LOG_LEVEL: 'verbose',
     });
     const logger = factory.createLogger('test');
