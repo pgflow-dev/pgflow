@@ -1,0 +1,145 @@
+---
+draft: false
+title: 'pgflow 0.13.0: CLI Fix + Step Output Storage for Conditional Execution'
+description: 'Fixes local development with recent Supabase CLI versions, plus 2x faster Map chains'
+date: 2026-01-03
+authors:
+  - jumski
+tags:
+  - release
+  - performance
+featured: true
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+pgflow 0.13.0 fixes a compatibility issue with recent Supabase CLI versions and introduces atomic step output storage for 2x faster Map chains.
+
+## Supabase CLI Compatibility Fix
+
+**If local development stopped working after a Supabase CLI update, this release fixes it.**
+
+Recent versions of the Supabase CLI transitioned to new publishable/secret API keys instead of the previous JWT-based keys. pgflow now detects both key formats, ensuring local environment detection works correctly regardless of which CLI version you use.
+
+## Step Output Storage
+
+### What Changed
+
+Step outputs are now stored in `step_states.output` when a step completes, rather than being aggregated on-demand.
+
+### How It Worked Before
+
+Previously, every time a downstream step needed its dependency's output, pgflow ran an aggregation query:
+
+```sql
+SELECT jsonb_agg(output ORDER BY index)
+FROM pgflow.step_tasks
+WHERE run_id = $1 AND step_slug = $2
+```
+
+For a Map step with 500 items, this query scanned 500 rows. When another Map step depended on it with 500 tasks, that's 500 tasks x 500 rows = 250,000 row scans.
+
+### Performance Gains
+
+With outputs pre-stored, downstream tasks now read a single column instead of aggregating:
+
+| Benchmark | Before | After | Improvement |
+|-----------|--------|-------|-------------|
+| Start 500 tasks reading 500-element output | 189s | 87s | **2.17x faster** |
+
+The complexity dropped from O(N^2) to O(N) for Map-to-Map chains.
+
+### Simpler Manual Queries
+
+Querying step outputs is now straightforward:
+
+```sql
+-- Get output for a specific step in a run
+SELECT output
+FROM pgflow.step_states
+WHERE run_id = 'run-abc' AND step_slug = 'process';
+
+-- Get all step outputs for a run
+SELECT step_slug, output
+FROM pgflow.step_states
+WHERE run_id = 'run-abc';
+```
+
+No need to aggregate from `step_tasks` - the output is ready to use.
+
+## Migration Guide
+
+This release includes a data migration that backfills `step_states.output` for existing completed steps.
+
+<Aside type="caution" title="Data Migration - Test First">
+This migration backfills data for all completed steps. Download a production database dump and test the migration locally before applying to production. The backfill is safe (only touches completed rows) but should run during low-traffic periods and with no workers running.
+</Aside>
+
+<Steps>
+
+1. **Test locally with production data**
+
+   Download a production backup and restore it locally to test the migration. See [Restoring a downloaded backup](https://supabase.com/docs/guides/local-development/restoring-downloaded-backup/) in the Supabase docs, then run `npx supabase db push` to test the migration.
+
+2. **Record enabled worker functions**
+
+   Before disabling, note which functions are currently enabled:
+
+   ```sql
+   SELECT function_name FROM pgflow.worker_functions WHERE enabled = true;
+   ```
+
+   Save this list - you'll need it in step 7.
+
+3. **Disable all worker functions**
+
+   ```sql
+   UPDATE pgflow.worker_functions SET enabled = false;
+   ```
+
+4. **Deprecate running workers**
+
+   ```sql
+   UPDATE pgflow.workers
+   SET deprecated_at = NOW()
+   WHERE deprecated_at IS NULL
+     AND stopped_at IS NULL;
+   ```
+
+5. **Wait for all workers to stop**
+
+   ```sql
+   SELECT COUNT(*) FROM pgflow.workers WHERE stopped_at IS NULL;
+   ```
+
+   Wait until this returns `0`.
+
+6. **Apply database migration**
+
+   ```bash frame="none"
+   npx supabase db push
+   ```
+
+7. **Deploy workers and re-enable**
+
+   Deploy your workers and re-enable only the functions that were enabled before:
+
+   ```bash frame="none"
+   npx supabase functions deploy
+   ```
+
+   ```sql
+   UPDATE pgflow.worker_functions
+   SET enabled = true
+   WHERE function_name IN ('worker-1', 'worker-2');  -- from step 2
+   ```
+
+</Steps>
+
+## Looking Ahead
+
+This change stores step outputs in a queryable location - a prerequisite for conditional execution. Future releases will use these stored outputs to evaluate conditions and skip steps dynamically.
+
+---
+
+Questions or issues? Join the [Discord community](https://discord.gg/pgflow) or [open a GitHub issue](https://github.com/pgflow-dev/pgflow/issues).

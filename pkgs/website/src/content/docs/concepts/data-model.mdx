@@ -74,13 +74,13 @@ These tables track the execution state of flow instances:
 **`step_states`** - State of individual steps within a run
 - Tracks step status (`created`, `started`, `completed`, `failed`)
 - For map steps, tracks `initial_tasks` and `remaining_tasks` counts
-- Coordinates step-level completion and aggregation
+- Stores step output when complete (for both single and map steps)
+- Coordinates step-level completion
 
 **`step_tasks`** - Units of work for steps
 - Single steps create 1 task, map steps create N tasks
 - Each task has retry counter and attempts tracking
 - Contains `task_index` for map task array elements
-- Stores individual outputs for aggregation
 
 Created and modified during execution. Each run creates new records tracking progress from start to completion.
 
@@ -171,5 +171,5 @@ This design handles both single-task steps and parallel fanout through the same 
 🔸 **Step-level tracking** (map steps only)
 - `initial_tasks` set when array size known
 - `remaining_tasks` decrements as tasks complete
-- When zero, outputs aggregated into array
+- When zero, output stored as ordered array in `step_states.output`
 

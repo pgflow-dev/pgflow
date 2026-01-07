@@ -40,16 +40,14 @@ Run statuses include:
 To check the status of individual steps within a run:
 
 ```sql
-
-SELECT ss.step_slug, ss.status, ss.remaining_deps, ss.remaining_tasks, st.output
-FROM pgflow.step_states ss
-LEFT JOIN
-    pgflow.step_tasks st
-    ON
-        ss.run_id = st.run_id
-        AND ss.step_slug = st.step_slug
-        AND st.status = 'completed'
-WHERE ss.run_id = 'your-run-id-here';
+SELECT
+  step_slug,
+  status,
+  remaining_deps,
+  remaining_tasks,
+  output
+FROM pgflow.step_states
+WHERE run_id = 'your-run-id-here';
 ```
 
 This shows the status of each step with its output:
