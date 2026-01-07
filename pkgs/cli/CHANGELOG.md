@@ -1,5 +1,12 @@
 # pgflow
 
+## 0.13.0
+
+### Patch Changes
+
+- Updated dependencies [05738ed]
+  - @pgflow/core@0.13.0
+
 ## 0.12.0
 
 ### Minor Changes

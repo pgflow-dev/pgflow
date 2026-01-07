@@ -1,5 +1,14 @@
 # @pgflow/edge-worker
 
+## 0.13.0
+
+### Patch Changes
+
+- e0c6e0e: Add support for new Supabase CLI v2+ opaque API keys in local environment detection
+- Updated dependencies [05738ed]
+  - @pgflow/core@0.13.0
+  - @pgflow/dsl@0.13.0
+
 ## 0.12.0
 
 ### Minor Changes
