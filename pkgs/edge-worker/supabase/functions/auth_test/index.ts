@@ -2,9 +2,7 @@ import { EdgeWorker } from '@pgflow/edge-worker';
 import { configurePlatform } from '@pgflow/edge-worker/testing';
 import { sql } from '../utils.ts';
 
-// Production-like keys (NOT the known local demo keys)
-// These must match the values used in tests/e2e/authorization.test.ts
-export const PRODUCTION_ANON_KEY = 'test-production-anon-key-abc123';
+// Production-like service role key for auth validation (must match test's Bearer token)
 export const PRODUCTION_SERVICE_ROLE_KEY = 'test-production-service-role-key-xyz789';
 
 // Docker-internal URL for Supabase transaction pooler
@@ -12,13 +10,13 @@ const DOCKER_POOLER_URL = 'postgresql://postgres.pooler-dev:postgres@pooler:6543
 
 // Override environment BEFORE EdgeWorker.start() to enable auth validation
 // This simulates production mode where auth is NOT bypassed
-// Note: We must include EDGE_WORKER_DB_URL because with production keys,
+// Note: We must include EDGE_WORKER_DB_URL because with production SUPABASE_URL,
 // isLocalSupabaseEnv() returns false and the docker pooler fallback won't trigger
 configurePlatform({
   getEnv: () => ({
     ...Deno.env.toObject(),
-    SUPABASE_ANON_KEY: PRODUCTION_ANON_KEY,
-    SUPABASE_SERVICE_ROLE_KEY: PRODUCTION_SERVICE_ROLE_KEY,
+    SUPABASE_URL: 'https://test-project.supabase.co', // Production URL
+    SUPABASE_SERVICE_ROLE_KEY: PRODUCTION_SERVICE_ROLE_KEY, // For auth validation
     EDGE_WORKER_DB_URL: DOCKER_POOLER_URL,
   }),
 });

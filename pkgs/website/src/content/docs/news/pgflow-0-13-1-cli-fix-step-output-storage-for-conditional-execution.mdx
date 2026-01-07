@@ -1,6 +1,6 @@
 ---
-draft: true
-title: 'pgflow 0.13.0: CLI Fix + Step Output Storage for Conditional Execution'
+draft: false
+title: 'pgflow 0.13.1: CLI Fix + Step Output Storage for Conditional Execution'
 description: 'Fixes local development with recent Supabase CLI versions, plus 2x faster Map chains'
 date: 2026-01-03
 authors:
@@ -13,13 +13,17 @@ featured: true
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 
-pgflow 0.13.0 fixes a compatibility issue with recent Supabase CLI versions and introduces atomic step output storage for 2x faster Map chains.
+<Aside type="caution" title="Note on 0.13.0">
+Version 0.13.0 was yanked from npm and JSR due to unreliable local environment detection. The key-based detection approach did not work correctly with recent Supabase CLI versions. This release (0.13.1) replaces it with a more robust URL-based detection method.
+</Aside>
+
+pgflow 0.13.1 fixes a compatibility issue with recent Supabase CLI versions and introduces atomic step output storage for 2x faster Map chains.
 
 ## Supabase CLI Compatibility Fix
 
 **If local development stopped working after a Supabase CLI update, this release fixes it.**
 
-Recent versions of the Supabase CLI transitioned to new publishable/secret API keys instead of the previous JWT-based keys. pgflow now detects both key formats, ensuring local environment detection works correctly regardless of which CLI version you use.
+pgflow now detects local development by checking the `SUPABASE_URL` environment variable. When running locally, Supabase CLI sets this to `http://kong:8000` (the Docker-internal API gateway). This is more reliable than the previous key-based detection, which broke when Supabase CLI transitioned to new opaque API keys.
 
 ## Step Output Storage
 

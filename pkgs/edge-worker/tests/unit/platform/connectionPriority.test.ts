@@ -1,9 +1,5 @@
 import { assertEquals, assertThrows } from '@std/assert';
 import {
-  KNOWN_LOCAL_ANON_KEY,
-  KNOWN_LOCAL_SERVICE_ROLE_KEY,
-} from '../../../src/shared/localDetection.ts';
-import {
   resolveConnectionString,
   assertConnectionAvailable,
   resolveSqlConnection,
@@ -11,31 +7,28 @@ import {
 } from '../../../src/platform/resolveConnection.ts';
 import postgres from 'postgres';
 
+// Local URL for test envs (triggers isLocalSupabaseEnv = true)
+const LOCAL_SUPABASE_URL = 'http://kong:8000';
+
 // ============================================================
 // Local environment tests
 // ============================================================
 
 Deno.test('connection priority - local env uses Docker pooler URL by default', () => {
-  const env = { SUPABASE_ANON_KEY: KNOWN_LOCAL_ANON_KEY };
-  const result = resolveConnectionString(env);
-  assertEquals(result, DOCKER_TRANSACTION_POOLER_URL);
-});
-
-Deno.test('connection priority - local env with service role key uses Docker pooler URL', () => {
-  const env = { SUPABASE_SERVICE_ROLE_KEY: KNOWN_LOCAL_SERVICE_ROLE_KEY };
+  const env = { SUPABASE_URL: LOCAL_SUPABASE_URL };
   const result = resolveConnectionString(env);
   assertEquals(result, DOCKER_TRANSACTION_POOLER_URL);
 });
 
 Deno.test('connection priority - local env respects config.connectionString override', () => {
-  const env = { SUPABASE_ANON_KEY: KNOWN_LOCAL_ANON_KEY };
+  const env = { SUPABASE_URL: LOCAL_SUPABASE_URL };
   const options = { connectionString: 'postgresql://custom:5432/db' };
   const result = resolveConnectionString(env, options);
   assertEquals(result, 'postgresql://custom:5432/db');
 });
 
 Deno.test('connection priority - local env respects config.sql override', () => {
-  const env = { SUPABASE_ANON_KEY: KNOWN_LOCAL_ANON_KEY };
+  const env = { SUPABASE_URL: LOCAL_SUPABASE_URL };
   const options = { hasSql: true };
   const result = resolveConnectionString(env, options);
   // When sql is provided, we don't use the local pooler URL
@@ -45,7 +38,7 @@ Deno.test('connection priority - local env respects config.sql override', () => 
 
 Deno.test('connection priority - local env with EDGE_WORKER_DB_URL uses it instead of docker pooler', () => {
   const env = {
-    SUPABASE_ANON_KEY: KNOWN_LOCAL_ANON_KEY,
+    SUPABASE_URL: LOCAL_SUPABASE_URL,
     EDGE_WORKER_DB_URL: 'postgresql://custom-local:5432/db',
   };
   const result = resolveConnectionString(env);
@@ -58,7 +51,7 @@ Deno.test('connection priority - local env with EDGE_WORKER_DB_URL uses it inste
 
 Deno.test('connection priority - production uses EDGE_WORKER_DB_URL', () => {
   const env = {
-    SUPABASE_ANON_KEY: 'prod-anon-key',
+    SUPABASE_URL: 'https://abc123.supabase.co',
     EDGE_WORKER_DB_URL: 'postgresql://prod:5432/db',
   };
   const result = resolveConnectionString(env);
@@ -67,7 +60,7 @@ Deno.test('connection priority - production uses EDGE_WORKER_DB_URL', () => {
 
 Deno.test('connection priority - production config.connectionString overrides env var', () => {
   const env = {
-    SUPABASE_ANON_KEY: 'prod-anon-key',
+    SUPABASE_URL: 'https://abc123.supabase.co',
     EDGE_WORKER_DB_URL: 'postgresql://prod:5432/db',
   };
   const options = { connectionString: 'postgresql://override:5432/db' };
@@ -76,7 +69,7 @@ Deno.test('connection priority - production config.connectionString overrides en
 });
 
 Deno.test('connection priority - production returns undefined when nothing configured', () => {
-  const env = { SUPABASE_ANON_KEY: 'prod-anon-key' };
+  const env = { SUPABASE_URL: 'https://abc123.supabase.co' };
   const result = resolveConnectionString(env);
   assertEquals(result, undefined);
 });
@@ -86,7 +79,7 @@ Deno.test('connection priority - production returns undefined when nothing confi
 // ============================================================
 
 Deno.test('connection validation - throws when no connection available on production', () => {
-  const env = { SUPABASE_ANON_KEY: 'prod-anon-key' };
+  const env = { SUPABASE_URL: 'https://abc123.supabase.co' };
   const connectionString = resolveConnectionString(env);
 
   assertThrows(
@@ -108,7 +101,7 @@ Deno.test('connection validation - does not throw when sql is provided', () => {
 });
 
 Deno.test('connection validation - error message lists all options', () => {
-  const env = { SUPABASE_ANON_KEY: 'prod-anon-key' };
+  const env = { SUPABASE_URL: 'https://abc123.supabase.co' };
   const connectionString = resolveConnectionString(env);
 
   try {
@@ -128,7 +121,7 @@ Deno.test('connection validation - error message lists all options', () => {
 Deno.test('connection priority - preview branch fallback pattern works', () => {
   // Simulates: connectionString: Deno.env.get('EDGE_WORKER_DB_URL') || Deno.env.get('SUPABASE_DB_URL')
   const env = {
-    SUPABASE_ANON_KEY: 'prod-anon-key',
+    SUPABASE_URL: 'https://abc123.supabase.co',
     // EDGE_WORKER_DB_URL not set (preview branch)
   };
 
@@ -146,7 +139,7 @@ Deno.test('connection priority - preview branch fallback pattern works', () => {
 
 Deno.test('resolveSqlConnection - priority 1: returns provided sql directly', () => {
   const mockSql = postgres('postgresql://mock:5432/db');
-  const env = { SUPABASE_ANON_KEY: 'prod-anon-key' };
+  const env = { SUPABASE_URL: 'https://abc123.supabase.co' };
 
   const result = resolveSqlConnection(env, { sql: mockSql });
 
@@ -155,7 +148,7 @@ Deno.test('resolveSqlConnection - priority 1: returns provided sql directly', ()
 });
 
 Deno.test('resolveSqlConnection - priority 2: creates sql from connectionString', () => {
-  const env = { SUPABASE_ANON_KEY: 'prod-anon-key' };
+  const env = { SUPABASE_URL: 'https://abc123.supabase.co' };
   const options = { connectionString: 'postgresql://custom:5432/db' };
 
   const result = resolveSqlConnection(env, options);
@@ -166,7 +159,7 @@ Deno.test('resolveSqlConnection - priority 2: creates sql from connectionString'
 
 Deno.test('resolveSqlConnection - priority 3: creates sql from EDGE_WORKER_DB_URL', () => {
   const env = {
-    SUPABASE_ANON_KEY: 'prod-anon-key',
+    SUPABASE_URL: 'https://abc123.supabase.co',
     EDGE_WORKER_DB_URL: 'postgresql://env-var:5432/db',
   };
 
@@ -177,7 +170,7 @@ Deno.test('resolveSqlConnection - priority 3: creates sql from EDGE_WORKER_DB_UR
 });
 
 Deno.test('resolveSqlConnection - priority 4: creates sql from Docker URL in local env', () => {
-  const env = { SUPABASE_ANON_KEY: KNOWN_LOCAL_ANON_KEY };
+  const env = { SUPABASE_URL: LOCAL_SUPABASE_URL };
 
   const result = resolveSqlConnection(env);
 
@@ -186,7 +179,7 @@ Deno.test('resolveSqlConnection - priority 4: creates sql from Docker URL in loc
 });
 
 Deno.test('resolveSqlConnection - throws when nothing configured in production', () => {
-  const env = { SUPABASE_ANON_KEY: 'prod-anon-key' };
+  const env = { SUPABASE_URL: 'https://abc123.supabase.co' };
 
   assertThrows(
     () => resolveSqlConnection(env),
@@ -197,7 +190,7 @@ Deno.test('resolveSqlConnection - throws when nothing configured in production',
 
 Deno.test('resolveSqlConnection - connectionString takes priority over EDGE_WORKER_DB_URL', () => {
   const env = {
-    SUPABASE_ANON_KEY: 'prod-anon-key',
+    SUPABASE_URL: 'https://abc123.supabase.co',
     EDGE_WORKER_DB_URL: 'postgresql://env-var:5432/db',
   };
   const options = { connectionString: 'postgresql://explicit:5432/db' };
@@ -212,7 +205,7 @@ Deno.test('resolveSqlConnection - connectionString takes priority over EDGE_WORK
 Deno.test('resolveSqlConnection - sql takes priority over everything', () => {
   const mockSql = postgres('postgresql://mock:5432/db');
   const env = {
-    SUPABASE_ANON_KEY: KNOWN_LOCAL_ANON_KEY,
+    SUPABASE_URL: LOCAL_SUPABASE_URL,
     EDGE_WORKER_DB_URL: 'postgresql://env-var:5432/db',
   };
   const options = {

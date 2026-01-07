@@ -162,7 +162,7 @@ Deno.test('createLoggingFactory - format defaults to simple when env not provide
 
 Deno.test('createLoggingFactory - format is fancy for local Supabase environment', () => {
   const localEnv = {
-    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+    SUPABASE_URL: 'http://kong:8000',
   };
   const factory = createLoggingFactory(localEnv);
 
@@ -171,7 +171,7 @@ Deno.test('createLoggingFactory - format is fancy for local Supabase environment
 
 Deno.test('createLoggingFactory - format is simple for hosted Supabase environment', () => {
   const hostedEnv = {
-    SUPABASE_ANON_KEY: 'some-production-key',
+    SUPABASE_URL: 'https://abc123.supabase.co',
   };
   const factory = createLoggingFactory(hostedEnv);
 
@@ -181,7 +181,7 @@ Deno.test('createLoggingFactory - format is simple for hosted Supabase environme
 Deno.test('createLoggingFactory - EDGE_WORKER_LOG_FORMAT overrides auto-detection', () => {
   // Even in local env, explicit format override should win
   const localEnv = {
-    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+    SUPABASE_URL: 'http://kong:8000',
     EDGE_WORKER_LOG_FORMAT: 'simple',
   };
   const factory = createLoggingFactory(localEnv);
@@ -191,7 +191,7 @@ Deno.test('createLoggingFactory - EDGE_WORKER_LOG_FORMAT overrides auto-detectio
 
 Deno.test('createLoggingFactory - EDGE_WORKER_LOG_FORMAT can set fancy in hosted env', () => {
   const hostedEnv = {
-    SUPABASE_ANON_KEY: 'some-production-key',
+    SUPABASE_URL: 'https://abc123.supabase.co',
     EDGE_WORKER_LOG_FORMAT: 'fancy',
   };
   const factory = createLoggingFactory(hostedEnv);
@@ -201,7 +201,7 @@ Deno.test('createLoggingFactory - EDGE_WORKER_LOG_FORMAT can set fancy in hosted
 
 Deno.test('createLoggingFactory - default log level is verbose for local env', () => {
   const localEnv = {
-    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+    SUPABASE_URL: 'http://kong:8000',
   };
   const factory = createLoggingFactory(localEnv);
 
@@ -210,7 +210,7 @@ Deno.test('createLoggingFactory - default log level is verbose for local env', (
 
 Deno.test('createLoggingFactory - default log level is info for hosted env', () => {
   const hostedEnv = {
-    SUPABASE_ANON_KEY: 'some-production-key',
+    SUPABASE_URL: 'https://abc123.supabase.co',
   };
   const factory = createLoggingFactory(hostedEnv);
 
@@ -219,7 +219,7 @@ Deno.test('createLoggingFactory - default log level is info for hosted env', () 
 
 Deno.test('createLoggingFactory - EDGE_WORKER_LOG_LEVEL overrides default', () => {
   const localEnv = {
-    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
+    SUPABASE_URL: 'http://kong:8000',
     EDGE_WORKER_LOG_LEVEL: 'debug',
   };
   const factory = createLoggingFactory(localEnv);

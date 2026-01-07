@@ -214,16 +214,14 @@ Deno.test({
 // ============================================================
 
 Deno.test({
-  name: 'isLocalEnvironment returns true for local Supabase keys',
+  name: 'isLocalEnvironment returns true for local Supabase URL (kong)',
   sanitizeResources: false,
   fn: () => {
-    const KNOWN_LOCAL_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
-
     const deps = createMockDeps({
       getEnv: () => ({
-        SUPABASE_URL: 'http://test.supabase.co',
-        SUPABASE_ANON_KEY: KNOWN_LOCAL_ANON_KEY,
-        SUPABASE_SERVICE_ROLE_KEY: 'test-service-key',
+        SUPABASE_URL: 'http://kong:8000', // Local dev URL
+        SUPABASE_ANON_KEY: 'any-anon-key',
+        SUPABASE_SERVICE_ROLE_KEY: 'any-service-key',
         SB_EXECUTION_ID: 'test-exec-id',
         EDGE_WORKER_DB_URL: 'postgresql://postgres:postgres@localhost:54322/postgres',
       }),
@@ -236,14 +234,14 @@ Deno.test({
 });
 
 Deno.test({
-  name: 'isLocalEnvironment returns false for production keys',
+  name: 'isLocalEnvironment returns false for production URL',
   sanitizeResources: false,
   fn: () => {
     const deps = createMockDeps({
       getEnv: () => ({
-        SUPABASE_URL: 'http://test.supabase.co',
-        SUPABASE_ANON_KEY: 'production-anon-key',
-        SUPABASE_SERVICE_ROLE_KEY: 'production-service-key',
+        SUPABASE_URL: 'https://abc123.supabase.co', // Production URL
+        SUPABASE_ANON_KEY: 'any-anon-key',
+        SUPABASE_SERVICE_ROLE_KEY: 'any-service-key',
         SB_EXECUTION_ID: 'test-exec-id',
         EDGE_WORKER_DB_URL: 'postgresql://postgres:postgres@localhost:54322/postgres',
       }),

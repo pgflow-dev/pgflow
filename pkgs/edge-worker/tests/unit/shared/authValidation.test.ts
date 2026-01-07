@@ -4,10 +4,6 @@ import {
   createUnauthorizedResponse,
   createServerErrorResponse,
 } from '../../../src/shared/authValidation.ts';
-import {
-  KNOWN_LOCAL_ANON_KEY,
-  KNOWN_LOCAL_SERVICE_ROLE_KEY,
-} from '../../../src/shared/localDetection.ts';
 
 // ============================================================
 // Helper functions
@@ -23,14 +19,14 @@ function createRequest(authHeader?: string): Request {
 
 function localEnv(): Record<string, string | undefined> {
   return {
-    SUPABASE_ANON_KEY: KNOWN_LOCAL_ANON_KEY,
-    SUPABASE_SERVICE_ROLE_KEY: KNOWN_LOCAL_SERVICE_ROLE_KEY,
+    SUPABASE_URL: 'http://kong:8000', // Local dev URL
+    SUPABASE_SERVICE_ROLE_KEY: 'any-key', // Not used for local detection anymore
   };
 }
 
 function productionEnv(serviceRoleKey?: string): Record<string, string | undefined> {
   return {
-    SUPABASE_ANON_KEY: 'production-anon-key-abc',
+    SUPABASE_URL: 'https://abc123.supabase.co', // Production URL
     SUPABASE_SERVICE_ROLE_KEY: serviceRoleKey,
   };
 }
@@ -53,8 +49,8 @@ Deno.test('validateServiceRoleAuth - local mode: allows request with wrong auth 
   assertEquals(result, { valid: true });
 });
 
-Deno.test('validateServiceRoleAuth - local mode: allows request with correct auth header', () => {
-  const request = createRequest(`Bearer ${KNOWN_LOCAL_SERVICE_ROLE_KEY}`);
+Deno.test('validateServiceRoleAuth - local mode: allows request with any auth header', () => {
+  const request = createRequest('Bearer any-key');
   const result = validateServiceRoleAuth(request, localEnv());
   assertEquals(result, { valid: true });
 });
