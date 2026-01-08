@@ -1,8 +1,10 @@
-import { Flow, type ExtractFlowSteps } from '../../src/index.js';
+import { Flow, type ExtractFlowSteps, type StepOutput } from '../../src/index.js';
 import { describe, it, expectTypeOf } from 'vitest';
 
+// ExtractFlowSteps returns step slugs as keys
+// Use StepOutput<> to get the output type from a step
 describe('ExtractFlowSteps utility type', () => {
-  it('should correctly extract steps from a flow with defined input', () => {
+  it('should correctly extract step slugs from a flow', () => {
     const flow = new Flow<{ userId: number }>({ slug: 'user_flow' })
       .step({ slug: 'fetchUser' }, () => ({ name: 'John', age: 30 }))
       .step({ slug: 'fetchPosts', dependsOn: ['fetchUser'] }, () => [
@@ -12,15 +14,17 @@ describe('ExtractFlowSteps utility type', () => {
 
     type Steps = ExtractFlowSteps<typeof flow>;
 
-    expectTypeOf<Steps>().toMatchTypeOf<{
-      fetchUser: { name: string; age: number };
-      fetchPosts: Array<{ id: number; title: string }>;
-    }>();
+    // Keys are step slugs
+    expectTypeOf<keyof Steps>().toEqualTypeOf<'fetchUser' | 'fetchPosts'>();
 
-    // ensure it doesn't extract non-existent fields
-    expectTypeOf<Steps>().not.toMatchTypeOf<{
-      nonExistentStep: number;
+    // Use StepOutput to get output types (public API)
+    expectTypeOf<StepOutput<typeof flow, 'fetchUser'>>().toMatchTypeOf<{
+      name: string;
+      age: number;
     }>();
+    expectTypeOf<StepOutput<typeof flow, 'fetchPosts'>>().toMatchTypeOf<
+      Array<{ id: number; title: string }>
+    >();
   });
 
   it('should work with AnyFlow to extract steps from a generic flow', () => {
@@ -31,15 +35,14 @@ describe('ExtractFlowSteps utility type', () => {
 
     type Steps = ExtractFlowSteps<typeof anyFlow>;
 
-    expectTypeOf<Steps>().toMatchTypeOf<{
-      step1: number;
-      step2: string;
-      step3: { complex: { nested: boolean } };
-    }>();
+    // Keys are step slugs
+    expectTypeOf<keyof Steps>().toEqualTypeOf<'step1' | 'step2' | 'step3'>();
 
-    // ensure it doesn't extract non-existent fields
-    expectTypeOf<Steps>().not.toMatchTypeOf<{
-      nonExistentStep: number;
+    // Use StepOutput to verify output types
+    expectTypeOf<StepOutput<typeof anyFlow, 'step1'>>().toEqualTypeOf<number>();
+    expectTypeOf<StepOutput<typeof anyFlow, 'step2'>>().toEqualTypeOf<string>();
+    expectTypeOf<StepOutput<typeof anyFlow, 'step3'>>().toMatchTypeOf<{
+      complex: { nested: boolean };
     }>();
   });
 
@@ -59,16 +62,15 @@ describe('ExtractFlowSteps utility type', () => {
 
     type Steps = ExtractFlowSteps<typeof primitiveFlow>;
 
-    expectTypeOf<Steps>().toMatchTypeOf<{
-      numberStep: number;
-      stringStep: string;
-      booleanStep: boolean;
-      nullStep: null;
-    }>();
+    // Keys are step slugs
+    expectTypeOf<keyof Steps>().toEqualTypeOf<
+      'numberStep' | 'stringStep' | 'booleanStep' | 'nullStep'
+    >();
 
-    // ensure it doesn't extract non-existent fields
-    expectTypeOf<Steps>().not.toMatchTypeOf<{
-      nonExistentStep: number;
-    }>();
+    // Use StepOutput to verify output types
+    expectTypeOf<StepOutput<typeof primitiveFlow, 'numberStep'>>().toEqualTypeOf<number>();
+    expectTypeOf<StepOutput<typeof primitiveFlow, 'stringStep'>>().toEqualTypeOf<string>();
+    expectTypeOf<StepOutput<typeof primitiveFlow, 'booleanStep'>>().toEqualTypeOf<boolean>();
+    expectTypeOf<StepOutput<typeof primitiveFlow, 'nullStep'>>().toEqualTypeOf<null>();
   });
 });
