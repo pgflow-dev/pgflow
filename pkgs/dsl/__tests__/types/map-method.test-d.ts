@@ -1,4 +1,4 @@
-import { Flow, type Json, type StepInput, type ExtractFlowContext } from '../../src/index.js';
+import { Flow, type Json, type StepInput, type ExtractFlowContext, type ExtractFlowSteps } from '../../src/index.js';
 import { describe, it, expectTypeOf } from 'vitest';
 
 describe('.map() method type constraints', () => {
@@ -11,9 +11,7 @@ describe('.map() method type constraints', () => {
         });
 
       // The map step should return an array of the handler return type
-      type ProcessOutput = typeof flow extends Flow<any, any, infer Steps, any>
-        ? Steps['process']
-        : never;
+      type ProcessOutput = ExtractFlowSteps<typeof flow>['process'];
       expectTypeOf<ProcessOutput>().toEqualTypeOf<{ processed: string }[]>();
     });
 
@@ -34,9 +32,7 @@ describe('.map() method type constraints', () => {
           return item.length;
         });
 
-      type FlattenOutput = typeof flow extends Flow<any, any, infer Steps, any>
-        ? Steps['flatten']
-        : never;
+      type FlattenOutput = ExtractFlowSteps<typeof flow>['flatten'];
       expectTypeOf<FlattenOutput>().toEqualTypeOf<number[]>();
     });
 
@@ -47,9 +43,7 @@ describe('.map() method type constraints', () => {
           return String(item);
         });
 
-      type StringifyOutput = typeof flow extends Flow<any, any, infer Steps, any>
-        ? Steps['stringify']
-        : never;
+      type StringifyOutput = ExtractFlowSteps<typeof flow>['stringify'];
       expectTypeOf<StringifyOutput>().toEqualTypeOf<string[]>();
     });
   });
@@ -65,9 +59,7 @@ describe('.map() method type constraints', () => {
           return item * 2;
         });
 
-      type DoubleOutput = typeof flow extends Flow<any, any, infer Steps, any>
-        ? Steps['double']
-        : never;
+      type DoubleOutput = ExtractFlowSteps<typeof flow>['double'];
       expectTypeOf<DoubleOutput>().toEqualTypeOf<number[]>();
     });
 
@@ -105,9 +97,7 @@ describe('.map() method type constraints', () => {
           return user.name;
         });
 
-      type NamesOutput = typeof flow extends Flow<any, any, infer Steps, any>
-        ? Steps['extractNames']
-        : never;
+      type NamesOutput = ExtractFlowSteps<typeof flow>['extractNames'];
       expectTypeOf<NamesOutput>().toEqualTypeOf<string[]>();
     });
   });
@@ -149,9 +139,7 @@ describe('.map() method type constraints', () => {
           return item.length;
         });
 
-      type LengthsOutput = typeof flow extends Flow<any, any, infer Steps, any>
-        ? Steps['lengths']
-        : never;
+      type LengthsOutput = ExtractFlowSteps<typeof flow>['lengths'];
       expectTypeOf<LengthsOutput>().toEqualTypeOf<number[]>();
     });
 
@@ -163,9 +151,7 @@ describe('.map() method type constraints', () => {
           return deps.double.reduce((a, b) => a + b, 0);
         });
 
-      type SumOutput = typeof flow extends Flow<any, any, infer Steps, any>
-        ? Steps['sum']
-        : never;
+      type SumOutput = ExtractFlowSteps<typeof flow>['sum'];
       expectTypeOf<SumOutput>().toEqualTypeOf<number>();
     });
   });
@@ -239,9 +225,7 @@ describe('.map() method type constraints', () => {
           return String(item);
         });
 
-      type StringifyOutput = typeof flow extends Flow<any, any, infer Steps, any>
-        ? Steps['stringify']
-        : never;
+      type StringifyOutput = ExtractFlowSteps<typeof flow>['stringify'];
       expectTypeOf<StringifyOutput>().toEqualTypeOf<string[]>();
     });
 
@@ -252,9 +236,7 @@ describe('.map() method type constraints', () => {
           return item !== null;
         });
 
-      type FilterOutput = typeof flow extends Flow<any, any, infer Steps, any>
-        ? Steps['filter']
-        : never;
+      type FilterOutput = ExtractFlowSteps<typeof flow>['filter'];
       expectTypeOf<FilterOutput>().toEqualTypeOf<boolean[]>();
     });
   });

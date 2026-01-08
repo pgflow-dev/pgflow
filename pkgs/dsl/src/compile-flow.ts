@@ -62,18 +62,18 @@ function formatRuntimeOptions(options: RuntimeOptions | StepRuntimeOptions): str
     parts.push(`start_delay => ${options.startDelay}`);
   }
 
-  if ('condition' in options && options.condition !== undefined) {
+  if ('if' in options && options.if !== undefined) {
     // Serialize JSON pattern and escape for SQL
-    const jsonStr = JSON.stringify(options.condition);
+    const jsonStr = JSON.stringify(options.if);
     parts.push(`condition_pattern => '${jsonStr}'`);
   }
 
-  if ('whenUnmet' in options && options.whenUnmet !== undefined) {
-    parts.push(`when_unmet => '${options.whenUnmet}'`);
+  if ('else' in options && options.else !== undefined) {
+    parts.push(`when_unmet => '${options.else}'`);
   }
 
-  if ('whenFailed' in options && options.whenFailed !== undefined) {
-    parts.push(`when_failed => '${options.whenFailed}'`);
+  if ('retriesExhausted' in options && options.retriesExhausted !== undefined) {
+    parts.push(`when_failed => '${options.retriesExhausted}'`);
   }
 
   return parts.length > 0 ? `, ${parts.join(', ')}` : '';

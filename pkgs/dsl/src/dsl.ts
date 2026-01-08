@@ -25,12 +25,11 @@ export type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
  * - Objects: all keys optional, recursively applied
  * - Arrays: elements expected to be present in target array
  */
-export type ContainmentPattern<T> =
-  T extends readonly (infer U)[]
-    ? ContainmentPattern<U>[]  // Array: elements expected to be present
-    : T extends object
-      ? { [K in keyof T]?: ContainmentPattern<T[K]> }  // Object: all keys optional
-      : T;  // Primitive: exact value match
+export type ContainmentPattern<T> = T extends readonly (infer U)[]
+  ? ContainmentPattern<U>[] // Array: elements expected to be present
+  : T extends object
+  ? { [K in keyof T]?: ContainmentPattern<T[K]> } // Object: all keys optional
+  : T; // Primitive: exact value match
 
 // Utility that unwraps Promise and keeps plain values unchanged
 // Note: `any[]` is required here for proper type inference in conditional types
@@ -38,8 +37,8 @@ export type ContainmentPattern<T> =
 type AwaitedReturn<T> = T extends (...args: any[]) => Promise<infer R>
   ? R
   : T extends (...args: any[]) => infer R
-    ? R
-    : never;
+  ? R
+  : never;
 
 // ========================
 // ENVIRONMENT TYPE SYSTEM
@@ -67,8 +66,18 @@ export type AnyInput = Json;
 export type AnyOutput = Json;
 
 // Step Types
+// Step metadata structure - enriched type that tracks output and skippability
+export interface StepMeta<
+  TOutput = AnyOutput,
+  TSkippable extends boolean = boolean
+> {
+  output: TOutput;
+  skippable: TSkippable;
+}
+
 export type EmptySteps = Record<never, never>;
-export type AnySteps = Record<string, AnyOutput>; // Could use unknown if needed
+// AnySteps now uses StepMeta structure for enriched step information
+export type AnySteps = Record<string, StepMeta>;
 
 // Dependency Types
 export type EmptyDeps = Record<never, never[]>;
@@ -115,7 +124,7 @@ export type ExtractFlowInput<TFlow extends AnyFlow> = TFlow extends Flow<
  * This creates a union of all step input types
  */
 export type AllStepInputs<TFlow extends AnyFlow> = {
-  [K in keyof ExtractFlowSteps<TFlow> & string]: StepInput<TFlow, K>
+  [K in keyof ExtractFlowSteps<TFlow> & string]: StepInput<TFlow, K>;
 }[keyof ExtractFlowSteps<TFlow> & string];
 
 /**
@@ -137,10 +146,24 @@ export type ExtractFlowOutput<TFlow extends AnyFlow> = TFlow extends Flow<
   : never;
 
 /**
- * Extracts the steps type from a Flow
+ * Extracts the steps type from a Flow (unwraps StepMeta to just output types)
  * @template TFlow - The Flow type to extract from
  */
 export type ExtractFlowSteps<TFlow extends AnyFlow> = TFlow extends Flow<
+  infer _TI,
+  infer _TC,
+  infer TS,
+  infer _TD,
+  infer _TEnv
+>
+  ? { [K in keyof TS]: TS[K]['output'] }
+  : never;
+
+/**
+ * Extracts the raw steps type from a Flow (includes StepMeta structure with skippable info)
+ * @template TFlow - The Flow type to extract from
+ */
+export type ExtractFlowStepsRaw<TFlow extends AnyFlow> = TFlow extends Flow<
   infer _TI,
   infer _TC,
   infer TS,
@@ -220,10 +243,11 @@ export type CompatibleFlow<
   F extends AnyFlow,
   PlatformResources extends Record<string, unknown>,
   UserResources extends Record<string, unknown> = Record<string, never>
-> =
-  (FlowContext<ExtractFlowEnv<F>> & PlatformResources & UserResources) extends ExtractFlowContext<F>
-    ? F
-    : never;
+> = FlowContext<ExtractFlowEnv<F>> &
+  PlatformResources &
+  UserResources extends ExtractFlowContext<F>
+  ? F
+  : never;
 
 /**
  * Extracts the dependencies type from a Flow
@@ -238,6 +262,7 @@ type StepDepsOf<
 
 /**
  * Extracts only the leaf steps from a Flow (steps that are not dependencies of any other steps)
+ * Returns the output types, not the full StepMeta structure
  * @template TFlow - The Flow type to extract from
  */
 export type ExtractFlowLeafSteps<TFlow extends AnyFlow> = {
@@ -251,6 +276,7 @@ export type ExtractFlowLeafSteps<TFlow extends AnyFlow> = {
 // Utility type to extract the output type of a step handler from a Flow
 // Usage:
 //   StepOutput<typeof flow, 'step1'>
+// Returns the output type (ExtractFlowSteps already unwraps StepMeta)
 export type StepOutput<
   TFlow extends AnyFlow,
   TStepSlug extends string
@@ -259,22 +285,52 @@ export type StepOutput<
   : never;
 
 /**
+ * Checks if a step is skippable (has else: 'skip' | 'skip-cascade' or retriesExhausted: 'skip' | 'skip-cascade')
+ * @template TFlow - The Flow type
+ * @template TStepSlug - The step slug to check
+ */
+export type IsStepSkippable<
+  TFlow extends AnyFlow,
+  TStepSlug extends string
+> = TStepSlug extends keyof ExtractFlowStepsRaw<TFlow>
+  ? ExtractFlowStepsRaw<TFlow>[TStepSlug]['skippable']
+  : false;
+
+// Helper types for StepInput with optional skippable deps
+type RequiredDeps<TFlow extends AnyFlow, TStepSlug extends string> = {
+  [K in Extract<
+    keyof ExtractFlowSteps<TFlow>,
+    StepDepsOf<TFlow, TStepSlug>
+  > as IsStepSkippable<TFlow, K & string> extends true
+    ? never
+    : K]: ExtractFlowSteps<TFlow>[K];
+};
+
+type OptionalDeps<TFlow extends AnyFlow, TStepSlug extends string> = {
+  [K in Extract<
+    keyof ExtractFlowSteps<TFlow>,
+    StepDepsOf<TFlow, TStepSlug>
+  > as IsStepSkippable<TFlow, K & string> extends true
+    ? K
+    : never]?: ExtractFlowSteps<TFlow>[K];
+};
+
+/**
  * Asymmetric step input type:
  * - Root steps (no dependencies): receive flow input directly
  * - Dependent steps: receive only their dependencies (flow input available via context)
+ *   - Skippable deps (else/retriesExhausted: 'skip' | 'skip-cascade') are optional
+ *   - Required deps are required
  *
  * This enables functional composition where subflows can receive typed inputs
  * without the 'run' wrapper that previously blocked type matching.
  */
-export type StepInput<TFlow extends AnyFlow, TStepSlug extends string> =
-  StepDepsOf<TFlow, TStepSlug> extends never
-    ? ExtractFlowInput<TFlow> // Root step: flow input directly
-    : {
-        [K in Extract<
-          keyof ExtractFlowSteps<TFlow>,
-          StepDepsOf<TFlow, TStepSlug>
-        >]: ExtractFlowSteps<TFlow>[K];
-      }; // Dependent step: only deps
+export type StepInput<
+  TFlow extends AnyFlow,
+  TStepSlug extends string
+> = StepDepsOf<TFlow, TStepSlug> extends never
+  ? ExtractFlowInput<TFlow> // Root step: flow input directly
+  : Simplify<RequiredDeps<TFlow, TStepSlug> & OptionalDeps<TFlow, TStepSlug>>;
 
 // Runtime options interface for flow-level options
 export interface RuntimeOptions {
@@ -325,44 +381,164 @@ export interface BaseContext<TEnv extends Env = Env> {
  * receive flow_input from SQL; other step types lazy-load it on demand.
  * Use `await ctx.flowInput` to access the original flow input.
  */
-export interface FlowContext<TEnv extends Env = Env, TFlowInput extends AnyInput = AnyInput> extends BaseContext<TEnv> {
+export interface FlowContext<
+  TEnv extends Env = Env,
+  TFlowInput extends AnyInput = AnyInput
+> extends BaseContext<TEnv> {
   stepTask: StepTaskRecord<AnyFlow>;
   flowInput: Promise<TFlowInput>;
 }
 
 // Generic context type helper (uses FlowContext for flow handlers)
-export type Context<T extends Record<string, unknown> = Record<string, never>, TEnv extends Env = Env> = FlowContext<TEnv> & T;
+export type Context<
+  T extends Record<string, unknown> = Record<string, never>,
+  TEnv extends Env = Env
+> = FlowContext<TEnv> & T;
 
-// Valid values for whenUnmet option
-export type WhenUnmetMode = 'fail' | 'skip' | 'skip-cascade';
+/**
+ * Options for handling unmet conditions (when 'if' pattern doesn't match input)
+ *
+ * @example
+ * // Fail the step (and run) when pattern doesn't match
+ * { if: { enabled: true }, else: 'fail' }
+ *
+ * @example
+ * // Skip this step only when pattern doesn't match
+ * { if: { enabled: true }, else: 'skip' }
+ *
+ * @example
+ * // Skip this step and all dependents when pattern doesn't match
+ * { if: { enabled: true }, else: 'skip-cascade' }
+ *
+ * @remarks
+ * - `'fail'`: When pattern doesn't match, step fails -> run fails (default)
+ * - `'skip'`: When pattern doesn't match, skip step and continue (step key omitted from dependent inputs)
+ * - `'skip-cascade'`: When pattern doesn't match, skip step + mark all dependents as skipped
+ */
+export type ElseMode = 'fail' | 'skip' | 'skip-cascade';
 
-// Valid values for whenFailed option (same values as whenUnmet)
-export type WhenFailedMode = 'fail' | 'skip' | 'skip-cascade';
+/**
+ * Options for handling errors after all retries are exhausted
+ *
+ * @example
+ * // Fail the run after retries exhausted (default)
+ * { retriesExhausted: 'fail' }
+ *
+ * @example
+ * // Skip this step after retries exhausted, continue run
+ * { retriesExhausted: 'skip' }
+ *
+ * @example
+ * // Skip this step and all dependents after retries exhausted
+ * { retriesExhausted: 'skip-cascade' }
+ *
+ * @remarks
+ * - `'fail'`: Step fails -> run fails (default behavior)
+ * - `'skip'`: Mark step as skipped, continue run (step key omitted from dependent inputs)
+ * - `'skip-cascade'`: Skip step + mark all dependents as skipped too
+ *
+ * @note
+ * TYPE_VIOLATION errors (e.g., single step returns non-array for map dependent)
+ * are NOT subject to retriesExhausted - these always hard fail as they indicate
+ * programming errors, not runtime conditions.
+ */
+export type RetriesExhaustedMode = 'fail' | 'skip' | 'skip-cascade';
 
-// Step runtime options interface that extends flow options with step-specific options
-// Note: condition is typed as Json here for internal storage; overloads provide type safety
-export interface StepRuntimeOptions extends RuntimeOptions {
-  startDelay?: number;
-  condition?: Json;  // JSON pattern for @> containment check
-  whenUnmet?: WhenUnmetMode;  // What to do when condition not met
-  whenFailed?: WhenFailedMode;  // What to do when handler fails after retries
-}
-
-// Base runtime options without condition (for typed overloads)
-interface BaseStepRuntimeOptions extends RuntimeOptions {
-  startDelay?: number;
-  whenUnmet?: WhenUnmetMode;
-  whenFailed?: WhenFailedMode;
-}
-
-// Typed step options for root steps (condition matches FlowInput pattern)
-type RootStepOptions<TFlowInput> = BaseStepRuntimeOptions & {
-  condition?: ContainmentPattern<TFlowInput>;
+/**
+ * Helper type for dependent step handlers - creates deps object with correct optionality.
+ * Skippable deps (steps with else/retriesExhausted: 'skip' | 'skip-cascade') are optional.
+ * Required deps are required.
+ */
+type DepsWithOptionalSkippable<
+  TSteps extends AnySteps,
+  TDeps extends string
+> = {
+  [K in TDeps as K extends keyof TSteps
+    ? TSteps[K]['skippable'] extends true
+      ? never
+      : K
+    : K]: K extends keyof TSteps ? TSteps[K]['output'] : never;
+} & {
+  [K in TDeps as K extends keyof TSteps
+    ? TSteps[K]['skippable'] extends true
+      ? K
+      : never
+    : never]?: K extends keyof TSteps ? TSteps[K]['output'] : never;
 };
 
-// Typed step options for dependent steps (condition matches deps object pattern)
+// Step runtime options interface that extends flow options with step-specific options
+// Note: 'if' is typed as Json here for internal storage; overloads provide type safety
+export interface StepRuntimeOptions extends RuntimeOptions {
+  startDelay?: number;
+
+  /**
+   * Pattern to match using PostgreSQL's @> (contains) operator
+   *
+   * @example
+   * // Root step: match against flow input
+   * { if: { role: 'admin', active: true } }
+   *
+   * @example
+   * // Dependent step: match against dependency outputs
+   * { if: { prevStep: { status: 'success' } } }
+   *
+   * @remarks
+   * - Primitives: exact value match
+   * - Objects: all keys optional, recursively applied
+   * - Arrays: elements expected to be present in target array
+   *
+   * @see ElseMode for controlling what happens when pattern doesn't match
+   */
+  if?: Json;
+
+  /**
+   * What to do when the 'if' pattern doesn't match the input
+   *
+   * @default 'fail'
+   *
+   * @example
+   * { else: 'fail' }        // Pattern doesn't match -> step fails -> run fails
+   * { else: 'skip' }        // Pattern doesn't match -> skip step, continue run
+   * { else: 'skip-cascade' } // Pattern doesn't match -> skip step + all dependents
+   *
+   * @see ElseMode for detailed documentation of each mode
+   */
+  else?: ElseMode;
+
+  /**
+   * What to do when handler throws an error after all retries are exhausted
+   *
+   * @default 'fail'
+   *
+   * @example
+   * { retriesExhausted: 'fail' }        // Step fails -> run fails
+   * { retriesExhausted: 'skip' }        // Skip step, continue run
+   * { retriesExhausted: 'skip-cascade' } // Skip step + all dependents
+   *
+   * @remarks
+   * Only applies after maxAttempts retries are exhausted.
+   * TYPE_VIOLATION errors always fail regardless of this setting.
+   *
+   * @see RetriesExhaustedMode for detailed documentation of each mode
+   */
+  retriesExhausted?: RetriesExhaustedMode;
+}
+
+// Base runtime options without 'if' (for typed overloads)
+interface BaseStepRuntimeOptions extends RuntimeOptions {
+  startDelay?: number;
+  else?: ElseMode;
+  retriesExhausted?: RetriesExhaustedMode;
+}
+
+// Typed step options for root steps (if matches FlowInput pattern)
+type RootStepOptions<TFlowInput> = BaseStepRuntimeOptions & {
+  if?: ContainmentPattern<TFlowInput>;
+};
+
+// Typed step options for dependent steps (if matches deps object pattern)
 type DependentStepOptions<TDeps> = BaseStepRuntimeOptions & {
-  condition?: ContainmentPattern<TDeps>;
+  if?: ContainmentPattern<TDeps>;
 };
 
 // Define the StepDefinition interface with integrated options
@@ -426,6 +602,7 @@ export class Flow<
    * Returns the step definition with asymmetric input typing:
    * - Root steps (no dependencies): input is flowInput directly
    * - Dependent steps: input is deps object only (flowInput available via context)
+   *   - Skippable deps are optional, required deps are required
    *
    * @throws Error if the step with the given slug doesn't exist
    */
@@ -434,12 +611,22 @@ export class Flow<
   ): StepDefinition<
     StepDependencies[SlugType] extends [] | readonly []
       ? TFlowInput // Root step: flow input directly
-      : Simplify<{
-          [K in StepDependencies[SlugType][number]]: K extends keyof Steps
-            ? Steps[K]
-            : never;
-        }>, // Dependent step: only deps
-    Steps[SlugType],
+      : Simplify<
+          {
+            [K in StepDependencies[SlugType][number] as K extends keyof Steps
+              ? Steps[K]['skippable'] extends true
+                ? never
+                : K
+              : never]: K extends keyof Steps ? Steps[K]['output'] : never;
+          } & {
+            [K in StepDependencies[SlugType][number] as K extends keyof Steps
+              ? Steps[K]['skippable'] extends true
+                ? K
+                : never
+              : never]?: K extends keyof Steps ? Steps[K]['output'] : never;
+          }
+        >, // Dependent step: only deps (skippable deps optional)
+    Steps[SlugType]['output'],
     FlowContext<TEnv, TFlowInput> & TContext
   > {
     // Check if the slug exists in stepDefinitions using a more explicit pattern
@@ -449,19 +636,25 @@ export class Flow<
       );
     }
 
-    // Use a type assertion directive to tell TypeScript that this is safe
-    // @ts-expect-error The type system cannot track that this.stepDefinitions[slug] has the correct type
-    // but we know it's safe because we only add steps through the strongly-typed `step` method
     return this.stepDefinitions[slug as string];
   }
 
   // Overload 1: Root step (no dependsOn) - receives flowInput directly
-  // condition is typed as ContainmentPattern<TFlowInput>
+  // if is typed as ContainmentPattern<TFlowInput>
   step<
     Slug extends string,
-    TOutput
+    TOutput,
+    TElse extends ElseMode | undefined = undefined,
+    TRetries extends RetriesExhaustedMode | undefined = undefined
   >(
-    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn?: never } & RootStepOptions<TFlowInput>>,
+    opts: Simplify<
+      {
+        slug: Slug extends keyof Steps ? never : Slug;
+        dependsOn?: never;
+        else?: TElse;
+        retriesExhausted?: TRetries;
+      } & Omit<RootStepOptions<TFlowInput>, 'else' | 'retriesExhausted'>
+    >,
     handler: (
       flowInput: TFlowInput,
       context: FlowContext<TEnv, TFlowInput> & TContext
@@ -469,28 +662,59 @@ export class Flow<
   ): Flow<
     TFlowInput,
     TContext,
-    Steps & { [K in Slug]: Awaited<TOutput> },
+    Steps & {
+      [K in Slug]: StepMeta<
+        Awaited<TOutput>,
+        TElse extends 'skip' | 'skip-cascade'
+          ? true
+          : TRetries extends 'skip' | 'skip-cascade'
+          ? true
+          : false
+      >;
+    },
     StepDependencies & { [K in Slug]: [] },
     TEnv
   >;
 
   // Overload 2: Dependent step (with dependsOn) - receives deps, flowInput via context
-  // condition is typed as ContainmentPattern<DepsObject>
+  // if is typed as ContainmentPattern<DepsObject>
   // Note: [Deps, ...Deps[]] requires at least one dependency - empty arrays are rejected at compile time
+  // Handler receives deps with correct optionality based on upstream steps' skippability
   step<
     Slug extends string,
     Deps extends Extract<keyof Steps, string>,
-    TOutput
+    TOutput,
+    TElse extends ElseMode | undefined = undefined,
+    TRetries extends RetriesExhaustedMode | undefined = undefined
   >(
-    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn: [Deps, ...Deps[]] } & DependentStepOptions<{ [K in Deps]: K extends keyof Steps ? Steps[K] : never }>>,
+    opts: Simplify<
+      {
+        slug: Slug extends keyof Steps ? never : Slug;
+        dependsOn: [Deps, ...Deps[]];
+        else?: TElse;
+        retriesExhausted?: TRetries;
+      } & Omit<
+        DependentStepOptions<Simplify<DepsWithOptionalSkippable<Steps, Deps>>>,
+        'else' | 'retriesExhausted'
+      >
+    >,
     handler: (
-      deps: { [K in Deps]: K extends keyof Steps ? Steps[K] : never },
+      deps: Simplify<DepsWithOptionalSkippable<Steps, Deps>>,
       context: FlowContext<TEnv, TFlowInput> & TContext
     ) => TOutput | Promise<TOutput>
   ): Flow<
     TFlowInput,
     TContext,
-    Steps & { [K in Slug]: Awaited<TOutput> },
+    Steps & {
+      [K in Slug]: StepMeta<
+        Awaited<TOutput>,
+        TElse extends 'skip' | 'skip-cascade'
+          ? true
+          : TRetries extends 'skip' | 'skip-cascade'
+          ? true
+          : false
+      >;
+    },
     StepDependencies & { [K in Slug]: Deps[] },
     TEnv
   >;
@@ -522,9 +746,10 @@ export class Flow<
     if (opts.baseDelay !== undefined) options.baseDelay = opts.baseDelay;
     if (opts.timeout !== undefined) options.timeout = opts.timeout;
     if (opts.startDelay !== undefined) options.startDelay = opts.startDelay;
-    if (opts.condition !== undefined) options.condition = opts.condition;
-    if (opts.whenUnmet !== undefined) options.whenUnmet = opts.whenUnmet;
-    if (opts.whenFailed !== undefined) options.whenFailed = opts.whenFailed;
+    if (opts.if !== undefined) options.if = opts.if;
+    if (opts.else !== undefined) options.else = opts.else;
+    if (opts.retriesExhausted !== undefined)
+      options.retriesExhausted = opts.retriesExhausted;
 
     // Validate runtime options (optional for step level)
     validateRuntimeOptions(options, { optional: true });
@@ -568,12 +793,21 @@ export class Flow<
    * @returns A new Flow instance with the array step added
    */
   // Overload 1: Root array (no dependsOn) - receives flowInput directly
-  // condition is typed as ContainmentPattern<TFlowInput>
+  // if is typed as ContainmentPattern<TFlowInput>
   array<
     Slug extends string,
-    TOutput extends readonly any[]
+    TOutput extends readonly any[],
+    TElse extends ElseMode | undefined = undefined,
+    TRetries extends RetriesExhaustedMode | undefined = undefined
   >(
-    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn?: never } & RootStepOptions<TFlowInput>>,
+    opts: Simplify<
+      {
+        slug: Slug extends keyof Steps ? never : Slug;
+        dependsOn?: never;
+        else?: TElse;
+        retriesExhausted?: TRetries;
+      } & Omit<RootStepOptions<TFlowInput>, 'else' | 'retriesExhausted'>
+    >,
     handler: (
       flowInput: TFlowInput,
       context: FlowContext<TEnv, TFlowInput> & TContext
@@ -581,28 +815,58 @@ export class Flow<
   ): Flow<
     TFlowInput,
     TContext,
-    Steps & { [K in Slug]: Awaited<TOutput> },
+    Steps & {
+      [K in Slug]: StepMeta<
+        Awaited<TOutput>,
+        TElse extends 'skip' | 'skip-cascade'
+          ? true
+          : TRetries extends 'skip' | 'skip-cascade'
+          ? true
+          : false
+      >;
+    },
     StepDependencies & { [K in Slug]: [] },
     TEnv
   >;
 
   // Overload 2: Dependent array (with dependsOn) - receives deps, flowInput via context
-  // condition is typed as ContainmentPattern<DepsObject>
+  // if is typed as ContainmentPattern<DepsObject>
   // Note: [Deps, ...Deps[]] requires at least one dependency - empty arrays are rejected at compile time
   array<
     Slug extends string,
     Deps extends Extract<keyof Steps, string>,
-    TOutput extends readonly any[]
+    TOutput extends readonly any[],
+    TElse extends ElseMode | undefined = undefined,
+    TRetries extends RetriesExhaustedMode | undefined = undefined
   >(
-    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; dependsOn: [Deps, ...Deps[]] } & DependentStepOptions<{ [K in Deps]: K extends keyof Steps ? Steps[K] : never }>>,
+    opts: Simplify<
+      {
+        slug: Slug extends keyof Steps ? never : Slug;
+        dependsOn: [Deps, ...Deps[]];
+        else?: TElse;
+        retriesExhausted?: TRetries;
+      } & Omit<
+        DependentStepOptions<Simplify<DepsWithOptionalSkippable<Steps, Deps>>>,
+        'else' | 'retriesExhausted'
+      >
+    >,
     handler: (
-      deps: { [K in Deps]: K extends keyof Steps ? Steps[K] : never },
+      deps: Simplify<DepsWithOptionalSkippable<Steps, Deps>>,
       context: FlowContext<TEnv, TFlowInput> & TContext
     ) => TOutput | Promise<TOutput>
   ): Flow<
     TFlowInput,
     TContext,
-    Steps & { [K in Slug]: Awaited<TOutput> },
+    Steps & {
+      [K in Slug]: StepMeta<
+        Awaited<TOutput>,
+        TElse extends 'skip' | 'skip-cascade'
+          ? true
+          : TRetries extends 'skip' | 'skip-cascade'
+          ? true
+          : false
+      >;
+    },
     StepDependencies & { [K in Slug]: Deps[] },
     TEnv
   >;
@@ -625,38 +889,82 @@ export class Flow<
    * @returns A new Flow instance with the map step added
    */
   // Overload for root map - handler receives item, context includes flowInput
-  // condition is typed as ContainmentPattern<TFlowInput> (checks the array itself)
+  // if is typed as ContainmentPattern<TFlowInput> (checks the array itself)
   map<
     Slug extends string,
     THandler extends TFlowInput extends readonly (infer Item)[]
-      ? (item: Item, context: FlowContext<TEnv, TFlowInput> & TContext) => Json | Promise<Json>
-      : never
+      ? (
+          item: Item,
+          context: FlowContext<TEnv, TFlowInput> & TContext
+        ) => Json | Promise<Json>
+      : never,
+    TElse extends ElseMode | undefined = undefined,
+    TRetries extends RetriesExhaustedMode | undefined = undefined
   >(
-    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug } & RootStepOptions<TFlowInput>>,
+    opts: Simplify<
+      {
+        slug: Slug extends keyof Steps ? never : Slug;
+        else?: TElse;
+        retriesExhausted?: TRetries;
+      } & Omit<RootStepOptions<TFlowInput>, 'else' | 'retriesExhausted'>
+    >,
     handler: THandler
   ): Flow<
     TFlowInput,
     TContext,
-    Steps & { [K in Slug]: AwaitedReturn<THandler>[] },
+    Steps & {
+      [K in Slug]: StepMeta<
+        AwaitedReturn<THandler>[],
+        TElse extends 'skip' | 'skip-cascade'
+          ? true
+          : TRetries extends 'skip' | 'skip-cascade'
+          ? true
+          : false
+      >;
+    },
     StepDependencies & { [K in Slug]: [] },
     TEnv
   >;
 
   // Overload for dependent map - handler receives item, context includes flowInput
-  // condition is typed as ContainmentPattern<{ arrayDep: ArrayOutput }> (checks the dep object)
+  // if is typed as ContainmentPattern<{ arrayDep: ArrayOutput }> (checks the dep object)
   map<
     Slug extends string,
     TArrayDep extends Extract<keyof Steps, string>,
-    THandler extends Steps[TArrayDep] extends readonly (infer Item)[]
-      ? (item: Item, context: FlowContext<TEnv, TFlowInput> & TContext) => Json | Promise<Json>
-      : never
+    THandler extends Steps[TArrayDep]['output'] extends readonly (infer Item)[]
+      ? (
+          item: Item,
+          context: FlowContext<TEnv, TFlowInput> & TContext
+        ) => Json | Promise<Json>
+      : never,
+    TElse extends ElseMode | undefined = undefined,
+    TRetries extends RetriesExhaustedMode | undefined = undefined
   >(
-    opts: Simplify<{ slug: Slug extends keyof Steps ? never : Slug; array: TArrayDep } & DependentStepOptions<{ [K in TArrayDep]: Steps[K] }>>,
+    opts: Simplify<
+      {
+        slug: Slug extends keyof Steps ? never : Slug;
+        array: TArrayDep;
+        else?: TElse;
+        retriesExhausted?: TRetries;
+      } & Omit<
+        DependentStepOptions<{ [K in TArrayDep]: Steps[K]['output'] }>,
+        'else' | 'retriesExhausted'
+      >
+    >,
     handler: THandler
   ): Flow<
     TFlowInput,
     TContext,
-    Steps & { [K in Slug]: AwaitedReturn<THandler>[] },
+    Steps & {
+      [K in Slug]: StepMeta<
+        AwaitedReturn<THandler>[],
+        TElse extends 'skip' | 'skip-cascade'
+          ? true
+          : TRetries extends 'skip' | 'skip-cascade'
+          ? true
+          : false
+      >;
+    },
     StepDependencies & { [K in Slug]: [TArrayDep] },
     TEnv
   >;
@@ -678,7 +986,9 @@ export class Flow<
     if (arrayDep) {
       // Dependent map - validate single dependency exists and returns array
       if (!this.stepDefinitions[arrayDep]) {
-        throw new Error(`Step "${slug}" depends on undefined step "${arrayDep}"`);
+        throw new Error(
+          `Step "${slug}" depends on undefined step "${arrayDep}"`
+        );
       }
       dependencies = [arrayDep];
     } else {
@@ -692,16 +1002,21 @@ export class Flow<
     if (opts.baseDelay !== undefined) options.baseDelay = opts.baseDelay;
     if (opts.timeout !== undefined) options.timeout = opts.timeout;
     if (opts.startDelay !== undefined) options.startDelay = opts.startDelay;
-    if (opts.condition !== undefined) options.condition = opts.condition;
-    if (opts.whenUnmet !== undefined) options.whenUnmet = opts.whenUnmet;
-    if (opts.whenFailed !== undefined) options.whenFailed = opts.whenFailed;
+    if (opts.if !== undefined) options.if = opts.if;
+    if (opts.else !== undefined) options.else = opts.else;
+    if (opts.retriesExhausted !== undefined)
+      options.retriesExhausted = opts.retriesExhausted;
 
     // Validate runtime options
     validateRuntimeOptions(options, { optional: true });
 
     // Create the map step definition with stepType
     // Note: We use AnyInput/AnyOutput here because the actual types are handled at the type level via overloads
-    const newStepDefinition: StepDefinition<AnyInput, AnyOutput, BaseContext & TContext> = {
+    const newStepDefinition: StepDefinition<
+      AnyInput,
+      AnyOutput,
+      BaseContext & TContext
+    > = {
       slug,
       handler: handler as any, // Type assertion needed due to complex generic constraints
       dependencies,

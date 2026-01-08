@@ -76,7 +76,7 @@ select pgflow.complete_task(
   '{"data": "from_b"}'::jsonb
 );
 
--- Test 3: step_c remaining_deps should be 0 (both deps resolved - a skipped, b completed)
+-- Test 3: Verify step_c remaining_deps is 0 (ready to start)
 select is(
   (select remaining_deps from pgflow.step_states
    where run_id = (select run_id from run_ids) and step_slug = 'step_c'),
@@ -84,24 +84,55 @@ select is(
   'step_c remaining_deps should be 0 (a skipped + b completed)'
 );
 
--- Test 4: step_c should now be started
+-- Now read and start step_c - this replicates what read_and_start does
+-- and allows us to inspect the returned input value
+--
+-- We need to do this in steps:
+-- 1. Read the message from the queue
+-- 2. Start the task with start_tasks
+-- 3. Inspect the input returned by start_tasks
+
+-- Read the message and store msg_id
+with read_msg as (
+  select * from pgmq.read_with_poll('skip_diamond', 1, 1, 1, 50)
+  limit 1
+),
+msg_ids as (
+  select array_agg(msg_id) as ids from read_msg
+),
+-- Start the task and get the input
+start_result as (
+  select st.input, st.step_slug, st.run_id
+  from pgflow.start_tasks(
+    'skip_diamond',
+    (select ids from msg_ids),
+    pgflow_tests.ensure_worker('skip_diamond')
+  ) st
+)
+-- Store the input for later testing
+select input, step_slug, run_id into temporary step_c_inputs
+from start_result
+where step_slug = 'step_c';
+
+-- Test 4: Verify step_c was started
 select is(
   (select status from pgflow.step_states
    where run_id = (select run_id from run_ids) and step_slug = 'step_c'),
   'started',
-  'step_c should be started after step_b completes'
+  'step_c should be started after read_and_start'
 );
 
--- Test 5: step_b output should be in step_states
+-- Test 5: Verify the input does NOT contain step_a key
+-- The handler input should only have step_b, NOT step_a
 select is(
-  (select output from pgflow.step_states
-   where run_id = (select run_id from run_ids) and step_slug = 'step_b'),
-  '{"data": "from_b"}'::jsonb,
-  'step_b output should be stored'
+  (select input from step_c_inputs),
+  '{"step_b": {"data": "from_b"}}'::jsonb,
+  'step_c input should only contain step_b, not step_a (skipped deps are excluded)'
 );
 
 -- Clean up
 drop table if exists run_ids;
+drop table if exists step_c_inputs;
 
 select finish();
 rollback;
