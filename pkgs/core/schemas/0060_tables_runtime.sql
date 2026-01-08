@@ -31,18 +31,20 @@ create table pgflow.step_states (
   remaining_deps int not null default 0 check (remaining_deps >= 0),
   output jsonb,  -- Step output: stored atomically with status=completed transition
   error_message text,
+  skip_reason text,  -- Why step was skipped: condition_unmet, handler_failed, dependency_skipped
   created_at timestamptz not null default now(),
   started_at timestamptz,
   completed_at timestamptz,
   failed_at timestamptz,
+  skipped_at timestamptz,
   primary key (run_id, step_slug),
   foreign key (flow_slug, step_slug)
   references pgflow.steps (flow_slug, step_slug),
-  constraint status_is_valid check (status in ('created', 'started', 'completed', 'failed')),
+  constraint status_is_valid check (status in ('created', 'started', 'completed', 'failed', 'skipped')),
   constraint status_and_remaining_tasks_match check (status != 'completed' or remaining_tasks = 0),
   -- Add constraint to ensure remaining_tasks is only set when step has started
   constraint remaining_tasks_state_consistency check (
-    remaining_tasks is null or status != 'created'
+    remaining_tasks is null or status not in ('created', 'skipped')
   ),
   constraint initial_tasks_known_when_started check (
     status != 'started' or initial_tasks is not null
@@ -52,16 +54,29 @@ create table pgflow.step_states (
   constraint output_only_for_completed_or_null check (
     output is null or status = 'completed'
   ),
-  constraint completed_at_or_failed_at check (not (completed_at is not null and failed_at is not null)),
+  -- skip_reason is required for skipped status and forbidden for other statuses
+  constraint skip_reason_matches_status check (
+    (status = 'skipped' and skip_reason is not null) or
+    (status != 'skipped' and skip_reason is null)
+  ),
+  constraint completed_at_or_failed_at_or_skipped_at check (
+    (
+      case when completed_at is not null then 1 else 0 end +
+      case when failed_at is not null then 1 else 0 end +
+      case when skipped_at is not null then 1 else 0 end
+    ) <= 1
+  ),
   constraint started_at_is_after_created_at check (started_at is null or started_at >= created_at),
   constraint completed_at_is_after_started_at check (completed_at is null or completed_at >= started_at),
-  constraint failed_at_is_after_started_at check (failed_at is null or failed_at >= started_at)
+  constraint failed_at_is_after_started_at check (failed_at is null or failed_at >= started_at),
+  constraint skipped_at_is_after_created_at check (skipped_at is null or skipped_at >= created_at)
 );
 
 create index if not exists idx_step_states_ready on pgflow.step_states (run_id, status, remaining_deps) where status
 = 'created'
 and remaining_deps = 0;
 create index if not exists idx_step_states_failed on pgflow.step_states (run_id, step_slug) where status = 'failed';
+create index if not exists idx_step_states_skipped on pgflow.step_states (run_id, step_slug) where status = 'skipped';
 create index if not exists idx_step_states_flow_slug on pgflow.step_states (flow_slug);
 create index if not exists idx_step_states_run_id on pgflow.step_states (run_id);
 

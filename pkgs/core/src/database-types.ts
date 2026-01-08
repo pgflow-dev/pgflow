@@ -132,6 +132,8 @@ export type Database = {
           remaining_deps: number
           remaining_tasks: number | null
           run_id: string
+          skip_reason: string | null
+          skipped_at: string | null
           started_at: string | null
           status: string
           step_slug: string
@@ -147,6 +149,8 @@ export type Database = {
           remaining_deps?: number
           remaining_tasks?: number | null
           run_id: string
+          skip_reason?: string | null
+          skipped_at?: string | null
           started_at?: string | null
           status?: string
           step_slug: string
@@ -162,6 +166,8 @@ export type Database = {
           remaining_deps?: number
           remaining_tasks?: number | null
           run_id?: string
+          skip_reason?: string | null
+          skipped_at?: string | null
           started_at?: string | null
           status?: string
           step_slug?: string
@@ -272,6 +278,7 @@ export type Database = {
       }
       steps: {
         Row: {
+          condition_pattern: Json | null
           created_at: string
           deps_count: number
           flow_slug: string
@@ -282,8 +289,11 @@ export type Database = {
           step_index: number
           step_slug: string
           step_type: string
+          when_failed: string
+          when_unmet: string
         }
         Insert: {
+          condition_pattern?: Json | null
           created_at?: string
           deps_count?: number
           flow_slug: string
@@ -294,8 +304,11 @@ export type Database = {
           step_index?: number
           step_slug: string
           step_type?: string
+          when_failed?: string
+          when_unmet?: string
         }
         Update: {
+          condition_pattern?: Json | null
           created_at?: string
           deps_count?: number
           flow_slug?: string
@@ -306,6 +319,8 @@ export type Database = {
           step_index?: number
           step_slug?: string
           step_type?: string
+          when_failed?: string
+          when_unmet?: string
         }
         Relationships: [
           {
@@ -391,6 +406,7 @@ export type Database = {
       add_step: {
         Args: {
           base_delay?: number
+          condition_pattern?: Json
           deps_slugs?: string[]
           flow_slug: string
           max_attempts?: number
@@ -398,8 +414,11 @@ export type Database = {
           step_slug: string
           step_type?: string
           timeout?: number
+          when_failed?: string
+          when_unmet?: string
         }
         Returns: {
+          condition_pattern: Json | null
           created_at: string
           deps_count: number
           flow_slug: string
@@ -410,6 +429,8 @@ export type Database = {
           step_index: number
           step_slug: string
           step_type: string
+          when_failed: string
+          when_unmet: string
         }
         SetofOptions: {
           from: "*"
@@ -424,6 +445,10 @@ export type Database = {
       }
       cascade_complete_taskless_steps: {
         Args: { run_id: string }
+        Returns: number
+      }
+      cascade_skip_steps: {
+        Args: { run_id: string; skip_reason: string; step_slug: string }
         Returns: number
       }
       cleanup_ensure_workers_logs: {
