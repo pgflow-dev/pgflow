@@ -53,7 +53,8 @@ as $$
     join pgflow.deps dep on dep.flow_slug = st.flow_slug and dep.step_slug = st.step_slug
     join pgflow.step_states dep_state on
       dep_state.run_id = st.run_id and
-      dep_state.step_slug = dep.dep_slug
+      dep_state.step_slug = dep.dep_slug and
+      dep_state.status = 'completed'  -- Only include completed deps (not skipped)
   ),
   deps_outputs as (
     select

@@ -1,4 +1,4 @@
--- Test: cascade_skip_steps - Broadcast order respects dependency graph
+-- Test: _cascade_force_skip_steps - Broadcast order respects dependency graph
 -- Verifies step:skipped events are sent in topological order
 begin;
 select plan(2);
@@ -17,7 +17,7 @@ with flow as (
 select run_id into temporary run_ids from flow;
 
 -- Skip step_a (cascades to B and C)
-select pgflow.cascade_skip_steps(
+select pgflow._cascade_force_skip_steps(
   (select run_id from run_ids),
   'step_a',
   'condition_unmet'
