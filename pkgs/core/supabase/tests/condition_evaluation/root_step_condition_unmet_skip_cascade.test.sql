@@ -10,18 +10,15 @@ select pgflow_tests.reset_db();
 -- Create flow with a root step that has a condition and a dependent
 select pgflow.create_flow('conditional_flow');
 select pgflow.add_step(
-  'conditional_flow',
-  'checked_step',
-  '{}',  -- no deps (root step)
-  null, null, null, null,  -- default options
-  'single',  -- step_type
-  '{"enabled": true}'::jsonb,  -- condition_pattern
-  'skip-cascade'  -- when_unmet - skip this AND dependents
+  flow_slug => 'conditional_flow',
+  step_slug => 'checked_step',
+  condition_pattern => '{"enabled": true}'::jsonb,
+  when_unmet => 'skip-cascade'  -- skip this AND dependents
 );
 select pgflow.add_step(
-  'conditional_flow',
-  'dependent_step',
-  '{checked_step}'  -- depends on checked_step
+  flow_slug => 'conditional_flow',
+  step_slug => 'dependent_step',
+  deps_slugs => ARRAY['checked_step']
 );
 -- Add an independent root step that should still run
 select pgflow.add_step('conditional_flow', 'other_step');

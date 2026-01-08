@@ -285,7 +285,7 @@ export type StepOutput<
   : never;
 
 /**
- * Checks if a step is skippable (has else: 'skip' | 'skip-cascade' or retriesExhausted: 'skip' | 'skip-cascade')
+ * Checks if a step is skippable (has whenUnmet: 'skip' | 'skip-cascade' or retriesExhausted: 'skip' | 'skip-cascade')
  * @template TFlow - The Flow type
  * @template TStepSlug - The step slug to check
  */
@@ -319,7 +319,7 @@ type OptionalDeps<TFlow extends AnyFlow, TStepSlug extends string> = {
  * Asymmetric step input type:
  * - Root steps (no dependencies): receive flow input directly
  * - Dependent steps: receive only their dependencies (flow input available via context)
- *   - Skippable deps (else/retriesExhausted: 'skip' | 'skip-cascade') are optional
+ *   - Skippable deps (whenUnmet/retriesExhausted: 'skip' | 'skip-cascade') are optional
  *   - Required deps are required
  *
  * This enables functional composition where subflows can receive typed inputs
@@ -400,22 +400,22 @@ export type Context<
  *
  * @example
  * // Fail the step (and run) when pattern doesn't match
- * { if: { enabled: true }, else: 'fail' }
+ * { if: { enabled: true }, whenUnmet: 'fail' }
  *
  * @example
  * // Skip this step only when pattern doesn't match
- * { if: { enabled: true }, else: 'skip' }
+ * { if: { enabled: true }, whenUnmet: 'skip' }
  *
  * @example
  * // Skip this step and all dependents when pattern doesn't match
- * { if: { enabled: true }, else: 'skip-cascade' }
+ * { if: { enabled: true }, whenUnmet: 'skip-cascade' }
  *
  * @remarks
  * - `'fail'`: When pattern doesn't match, step fails -> run fails (default)
  * - `'skip'`: When pattern doesn't match, skip step and continue (step key omitted from dependent inputs)
  * - `'skip-cascade'`: When pattern doesn't match, skip step + mark all dependents as skipped
  */
-export type ElseMode = 'fail' | 'skip' | 'skip-cascade';
+export type WhenUnmetMode = 'fail' | 'skip' | 'skip-cascade';
 
 /**
  * Options for handling errors after all retries are exhausted
@@ -446,7 +446,7 @@ export type RetriesExhaustedMode = 'fail' | 'skip' | 'skip-cascade';
 
 /**
  * Helper type for dependent step handlers - creates deps object with correct optionality.
- * Skippable deps (steps with else/retriesExhausted: 'skip' | 'skip-cascade') are optional.
+ * Skippable deps (steps with whenUnmet/retriesExhausted: 'skip' | 'skip-cascade') are optional.
  * Required deps are required.
  */
 type DepsWithOptionalSkippable<
@@ -487,9 +487,29 @@ export interface StepRuntimeOptions extends RuntimeOptions {
    * - Objects: all keys optional, recursively applied
    * - Arrays: elements expected to be present in target array
    *
-   * @see ElseMode for controlling what happens when pattern doesn't match
+   * @see WhenUnmetMode for controlling what happens when pattern doesn't match
    */
   if?: Json;
+
+  /**
+   * Negative pattern - step executes when input does NOT match this pattern
+   *
+   * @example
+   * // Root step: execute when NOT an admin
+   * { ifNot: { role: 'admin' } }
+   *
+   * @example
+   * // Combined with 'if' for AND semantics: "active admin who is NOT suspended"
+   * { if: { role: 'admin', active: true }, ifNot: { suspended: true } }
+   *
+   * @remarks
+   * - Uses PostgreSQL's @> containment check, negated
+   * - When combined with 'if', BOTH must pass (AND semantics)
+   * - For mutual exclusion: use same pattern with if on one step, ifNot on another
+   *
+   * @see WhenUnmetMode for controlling what happens when condition not met
+   */
+  ifNot?: Json;
 
   /**
    * What to do when the 'if' pattern doesn't match the input
@@ -497,13 +517,13 @@ export interface StepRuntimeOptions extends RuntimeOptions {
    * @default 'skip'
    *
    * @example
-   * { else: 'fail' }        // Pattern doesn't match -> step fails -> run fails
-   * { else: 'skip' }        // Pattern doesn't match -> skip step, continue run
-   * { else: 'skip-cascade' } // Pattern doesn't match -> skip step + all dependents
+   * { whenUnmet: 'fail' }        // Pattern doesn't match -> step fails -> run fails
+   * { whenUnmet: 'skip' }        // Pattern doesn't match -> skip step, continue run
+   * { whenUnmet: 'skip-cascade' } // Pattern doesn't match -> skip step + all dependents
    *
-   * @see ElseMode for detailed documentation of each mode
+   * @see WhenUnmetMode for detailed documentation of each mode
    */
-  else?: ElseMode;
+  whenUnmet?: WhenUnmetMode;
 
   /**
    * What to do when handler throws an error after all retries are exhausted
@@ -524,22 +544,57 @@ export interface StepRuntimeOptions extends RuntimeOptions {
   retriesExhausted?: RetriesExhaustedMode;
 }
 
-// Base runtime options without 'if' (for typed overloads)
+// Base runtime options without condition-related fields
 interface BaseStepRuntimeOptions extends RuntimeOptions {
   startDelay?: number;
-  else?: ElseMode;
   retriesExhausted?: RetriesExhaustedMode;
 }
 
-// Typed step options for root steps (if matches FlowInput pattern)
-type RootStepOptions<TFlowInput> = BaseStepRuntimeOptions & {
-  if?: ContainmentPattern<TFlowInput>;
+/**
+ * Condition with 'if' required (ifNot optional) - allows whenUnmet.
+ * whenUnmet only makes sense when there's a condition to be "unmet".
+ */
+type WithIfCondition<T> = {
+  if: ContainmentPattern<T>;
+  ifNot?: ContainmentPattern<T>;
+  whenUnmet?: WhenUnmetMode;
 };
 
-// Typed step options for dependent steps (if matches deps object pattern)
-type DependentStepOptions<TDeps> = BaseStepRuntimeOptions & {
-  if?: ContainmentPattern<TDeps>;
+/**
+ * Condition with 'ifNot' required (if optional) - allows whenUnmet.
+ */
+type WithIfNotCondition<T> = {
+  if?: ContainmentPattern<T>;
+  ifNot: ContainmentPattern<T>;
+  whenUnmet?: WhenUnmetMode;
 };
+
+/**
+ * No condition - if, ifNot, and whenUnmet are all forbidden.
+ * This ensures whenUnmet can only be used with a condition.
+ */
+type WithoutCondition = {
+  if?: never;
+  ifNot?: never;
+  whenUnmet?: never;
+};
+
+/**
+ * Discriminated union for condition options.
+ * whenUnmet is only allowed when if or ifNot is provided.
+ */
+type ConditionOpts<T> =
+  | WithIfCondition<T>
+  | WithIfNotCondition<T>
+  | WithoutCondition;
+
+// Typed step options for root steps (if/ifNot match FlowInput pattern)
+export type RootStepOptions<TFlowInput> = BaseStepRuntimeOptions &
+  ConditionOpts<TFlowInput>;
+
+// Typed step options for dependent steps (if/ifNot match deps object pattern)
+export type DependentStepOptions<TDeps> = BaseStepRuntimeOptions &
+  ConditionOpts<TDeps>;
 
 // Define the StepDefinition interface with integrated options
 export interface StepDefinition<
@@ -641,19 +696,24 @@ export class Flow<
 
   // Overload 1: Root step (no dependsOn) - receives flowInput directly
   // if is typed as ContainmentPattern<TFlowInput>
+  // whenUnmet is only allowed when if or ifNot is provided (enforced by ConditionOpts union)
   step<
     Slug extends string,
     TOutput,
-    TElse extends ElseMode | undefined = undefined,
+    TWhenUnmet extends WhenUnmetMode | undefined = undefined,
     TRetries extends RetriesExhaustedMode | undefined = undefined
   >(
     opts: Simplify<
       {
         slug: Slug extends keyof Steps ? never : Slug;
         dependsOn?: never;
-        else?: TElse;
         retriesExhausted?: TRetries;
-      } & Omit<RootStepOptions<TFlowInput>, 'else' | 'retriesExhausted'>
+      } & (
+        | (WithIfCondition<TFlowInput> & { whenUnmet?: TWhenUnmet })
+        | (WithIfNotCondition<TFlowInput> & { whenUnmet?: TWhenUnmet })
+        | WithoutCondition
+      ) &
+        Omit<BaseStepRuntimeOptions, 'retriesExhausted'>
     >,
     handler: (
       flowInput: TFlowInput,
@@ -665,7 +725,7 @@ export class Flow<
     Steps & {
       [K in Slug]: StepMeta<
         Awaited<TOutput>,
-        TElse extends 'skip' | 'skip-cascade'
+        TWhenUnmet extends 'skip' | 'skip-cascade'
           ? true
           : TRetries extends 'skip' | 'skip-cascade'
           ? true
@@ -680,23 +740,29 @@ export class Flow<
   // if is typed as ContainmentPattern<DepsObject>
   // Note: [Deps, ...Deps[]] requires at least one dependency - empty arrays are rejected at compile time
   // Handler receives deps with correct optionality based on upstream steps' skippability
+  // whenUnmet is only allowed when if or ifNot is provided (enforced by ConditionOpts union)
   step<
     Slug extends string,
     Deps extends Extract<keyof Steps, string>,
     TOutput,
-    TElse extends ElseMode | undefined = undefined,
+    TWhenUnmet extends WhenUnmetMode | undefined = undefined,
     TRetries extends RetriesExhaustedMode | undefined = undefined
   >(
     opts: Simplify<
       {
         slug: Slug extends keyof Steps ? never : Slug;
         dependsOn: [Deps, ...Deps[]];
-        else?: TElse;
         retriesExhausted?: TRetries;
-      } & Omit<
-        DependentStepOptions<Simplify<DepsWithOptionalSkippable<Steps, Deps>>>,
-        'else' | 'retriesExhausted'
-      >
+      } & (
+        | (WithIfCondition<Simplify<DepsWithOptionalSkippable<Steps, Deps>>> & {
+            whenUnmet?: TWhenUnmet;
+          })
+        | (WithIfNotCondition<
+            Simplify<DepsWithOptionalSkippable<Steps, Deps>>
+          > & { whenUnmet?: TWhenUnmet })
+        | WithoutCondition
+      ) &
+        Omit<BaseStepRuntimeOptions, 'retriesExhausted'>
     >,
     handler: (
       deps: Simplify<DepsWithOptionalSkippable<Steps, Deps>>,
@@ -708,7 +774,7 @@ export class Flow<
     Steps & {
       [K in Slug]: StepMeta<
         Awaited<TOutput>,
-        TElse extends 'skip' | 'skip-cascade'
+        TWhenUnmet extends 'skip' | 'skip-cascade'
           ? true
           : TRetries extends 'skip' | 'skip-cascade'
           ? true
@@ -747,7 +813,8 @@ export class Flow<
     if (opts.timeout !== undefined) options.timeout = opts.timeout;
     if (opts.startDelay !== undefined) options.startDelay = opts.startDelay;
     if (opts.if !== undefined) options.if = opts.if;
-    if (opts.else !== undefined) options.else = opts.else;
+    if (opts.ifNot !== undefined) options.ifNot = opts.ifNot;
+    if (opts.whenUnmet !== undefined) options.whenUnmet = opts.whenUnmet;
     if (opts.retriesExhausted !== undefined)
       options.retriesExhausted = opts.retriesExhausted;
 
@@ -794,19 +861,24 @@ export class Flow<
    */
   // Overload 1: Root array (no dependsOn) - receives flowInput directly
   // if is typed as ContainmentPattern<TFlowInput>
+  // whenUnmet is only allowed when if or ifNot is provided (enforced by ConditionOpts union)
   array<
     Slug extends string,
     TOutput extends readonly any[],
-    TElse extends ElseMode | undefined = undefined,
+    TWhenUnmet extends WhenUnmetMode | undefined = undefined,
     TRetries extends RetriesExhaustedMode | undefined = undefined
   >(
     opts: Simplify<
       {
         slug: Slug extends keyof Steps ? never : Slug;
         dependsOn?: never;
-        else?: TElse;
         retriesExhausted?: TRetries;
-      } & Omit<RootStepOptions<TFlowInput>, 'else' | 'retriesExhausted'>
+      } & (
+        | (WithIfCondition<TFlowInput> & { whenUnmet?: TWhenUnmet })
+        | (WithIfNotCondition<TFlowInput> & { whenUnmet?: TWhenUnmet })
+        | WithoutCondition
+      ) &
+        Omit<BaseStepRuntimeOptions, 'retriesExhausted'>
     >,
     handler: (
       flowInput: TFlowInput,
@@ -818,7 +890,7 @@ export class Flow<
     Steps & {
       [K in Slug]: StepMeta<
         Awaited<TOutput>,
-        TElse extends 'skip' | 'skip-cascade'
+        TWhenUnmet extends 'skip' | 'skip-cascade'
           ? true
           : TRetries extends 'skip' | 'skip-cascade'
           ? true
@@ -832,23 +904,29 @@ export class Flow<
   // Overload 2: Dependent array (with dependsOn) - receives deps, flowInput via context
   // if is typed as ContainmentPattern<DepsObject>
   // Note: [Deps, ...Deps[]] requires at least one dependency - empty arrays are rejected at compile time
+  // whenUnmet is only allowed when if or ifNot is provided (enforced by ConditionOpts union)
   array<
     Slug extends string,
     Deps extends Extract<keyof Steps, string>,
     TOutput extends readonly any[],
-    TElse extends ElseMode | undefined = undefined,
+    TWhenUnmet extends WhenUnmetMode | undefined = undefined,
     TRetries extends RetriesExhaustedMode | undefined = undefined
   >(
     opts: Simplify<
       {
         slug: Slug extends keyof Steps ? never : Slug;
         dependsOn: [Deps, ...Deps[]];
-        else?: TElse;
         retriesExhausted?: TRetries;
-      } & Omit<
-        DependentStepOptions<Simplify<DepsWithOptionalSkippable<Steps, Deps>>>,
-        'else' | 'retriesExhausted'
-      >
+      } & (
+        | (WithIfCondition<Simplify<DepsWithOptionalSkippable<Steps, Deps>>> & {
+            whenUnmet?: TWhenUnmet;
+          })
+        | (WithIfNotCondition<
+            Simplify<DepsWithOptionalSkippable<Steps, Deps>>
+          > & { whenUnmet?: TWhenUnmet })
+        | WithoutCondition
+      ) &
+        Omit<BaseStepRuntimeOptions, 'retriesExhausted'>
     >,
     handler: (
       deps: Simplify<DepsWithOptionalSkippable<Steps, Deps>>,
@@ -860,7 +938,7 @@ export class Flow<
     Steps & {
       [K in Slug]: StepMeta<
         Awaited<TOutput>,
-        TElse extends 'skip' | 'skip-cascade'
+        TWhenUnmet extends 'skip' | 'skip-cascade'
           ? true
           : TRetries extends 'skip' | 'skip-cascade'
           ? true
@@ -890,6 +968,7 @@ export class Flow<
    */
   // Overload for root map - handler receives item, context includes flowInput
   // if is typed as ContainmentPattern<TFlowInput> (checks the array itself)
+  // whenUnmet is only allowed when if or ifNot is provided (enforced by ConditionOpts union)
   map<
     Slug extends string,
     THandler extends TFlowInput extends readonly (infer Item)[]
@@ -898,15 +977,19 @@ export class Flow<
           context: FlowContext<TEnv, TFlowInput> & TContext
         ) => Json | Promise<Json>
       : never,
-    TElse extends ElseMode | undefined = undefined,
+    TWhenUnmet extends WhenUnmetMode | undefined = undefined,
     TRetries extends RetriesExhaustedMode | undefined = undefined
   >(
     opts: Simplify<
       {
         slug: Slug extends keyof Steps ? never : Slug;
-        else?: TElse;
         retriesExhausted?: TRetries;
-      } & Omit<RootStepOptions<TFlowInput>, 'else' | 'retriesExhausted'>
+      } & (
+        | (WithIfCondition<TFlowInput> & { whenUnmet?: TWhenUnmet })
+        | (WithIfNotCondition<TFlowInput> & { whenUnmet?: TWhenUnmet })
+        | WithoutCondition
+      ) &
+        Omit<BaseStepRuntimeOptions, 'retriesExhausted'>
     >,
     handler: THandler
   ): Flow<
@@ -915,7 +998,7 @@ export class Flow<
     Steps & {
       [K in Slug]: StepMeta<
         AwaitedReturn<THandler>[],
-        TElse extends 'skip' | 'skip-cascade'
+        TWhenUnmet extends 'skip' | 'skip-cascade'
           ? true
           : TRetries extends 'skip' | 'skip-cascade'
           ? true
@@ -928,6 +1011,7 @@ export class Flow<
 
   // Overload for dependent map - handler receives item, context includes flowInput
   // if is typed as ContainmentPattern<{ arrayDep: ArrayOutput }> (checks the dep object)
+  // whenUnmet is only allowed when if or ifNot is provided (enforced by ConditionOpts union)
   map<
     Slug extends string,
     TArrayDep extends Extract<keyof Steps, string>,
@@ -937,19 +1021,24 @@ export class Flow<
           context: FlowContext<TEnv, TFlowInput> & TContext
         ) => Json | Promise<Json>
       : never,
-    TElse extends ElseMode | undefined = undefined,
+    TWhenUnmet extends WhenUnmetMode | undefined = undefined,
     TRetries extends RetriesExhaustedMode | undefined = undefined
   >(
     opts: Simplify<
       {
         slug: Slug extends keyof Steps ? never : Slug;
         array: TArrayDep;
-        else?: TElse;
         retriesExhausted?: TRetries;
-      } & Omit<
-        DependentStepOptions<{ [K in TArrayDep]: Steps[K]['output'] }>,
-        'else' | 'retriesExhausted'
-      >
+      } & (
+        | (WithIfCondition<{ [K in TArrayDep]: Steps[K]['output'] }> & {
+            whenUnmet?: TWhenUnmet;
+          })
+        | (WithIfNotCondition<{ [K in TArrayDep]: Steps[K]['output'] }> & {
+            whenUnmet?: TWhenUnmet;
+          })
+        | WithoutCondition
+      ) &
+        Omit<BaseStepRuntimeOptions, 'retriesExhausted'>
     >,
     handler: THandler
   ): Flow<
@@ -958,7 +1047,7 @@ export class Flow<
     Steps & {
       [K in Slug]: StepMeta<
         AwaitedReturn<THandler>[],
-        TElse extends 'skip' | 'skip-cascade'
+        TWhenUnmet extends 'skip' | 'skip-cascade'
           ? true
           : TRetries extends 'skip' | 'skip-cascade'
           ? true
@@ -1003,7 +1092,8 @@ export class Flow<
     if (opts.timeout !== undefined) options.timeout = opts.timeout;
     if (opts.startDelay !== undefined) options.startDelay = opts.startDelay;
     if (opts.if !== undefined) options.if = opts.if;
-    if (opts.else !== undefined) options.else = opts.else;
+    if (opts.ifNot !== undefined) options.ifNot = opts.ifNot;
+    if (opts.whenUnmet !== undefined) options.whenUnmet = opts.whenUnmet;
     if (opts.retriesExhausted !== undefined)
       options.retriesExhausted = opts.retriesExhausted;
 

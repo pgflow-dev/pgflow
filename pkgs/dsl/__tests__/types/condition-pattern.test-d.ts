@@ -76,7 +76,9 @@ describe('ContainmentPattern<T> utility type', () => {
       type Pattern = ContainmentPattern<Input>;
 
       // Should allow partial object patterns in array
-      expectTypeOf<Pattern>().toEqualTypeOf<{ type?: string; value?: number }[]>();
+      expectTypeOf<Pattern>().toEqualTypeOf<
+        { type?: string; value?: number }[]
+      >();
     });
 
     it('should allow array pattern with specific elements', () => {
@@ -314,6 +316,303 @@ describe('if option typing in step methods', () => {
         );
 
       expectTypeOf(flow).toBeObject();
+    });
+  });
+});
+
+describe('ifNot option typing in step methods', () => {
+  describe('root step ifNot', () => {
+    it('should type ifNot as ContainmentPattern<FlowInput>', () => {
+      type FlowInput = { userId: string; role: string };
+
+      // This should compile - valid partial pattern
+      const flow = new Flow<FlowInput>({ slug: 'test_flow' }).step(
+        { slug: 'check', ifNot: { role: 'admin' } },
+        (input) => input.userId
+      );
+
+      expectTypeOf(flow).toBeObject();
+    });
+
+    it('should reject invalid keys in ifNot', () => {
+      type FlowInput = { userId: string; role: string };
+
+      // @ts-expect-error - 'invalidKey' does not exist on FlowInput
+      new Flow<FlowInput>({ slug: 'test_flow' }).step(
+        { slug: 'check', ifNot: { invalidKey: 'value' } },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (input: any) => input.userId
+      );
+    });
+
+    it('should reject wrong value types in ifNot', () => {
+      type FlowInput = { userId: string; role: string };
+
+      // @ts-expect-error - role should be string, not number
+      new Flow<FlowInput>({ slug: 'test_flow' }).step(
+        { slug: 'check', ifNot: { role: 123 } },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (input: any) => input.userId
+      );
+    });
+
+    it('should allow combined if and ifNot', () => {
+      type FlowInput = { role: string; active: boolean; suspended?: boolean };
+
+      const flow = new Flow<FlowInput>({ slug: 'test_flow' }).step(
+        {
+          slug: 'admin_action',
+          if: { role: 'admin', active: true },
+          ifNot: { suspended: true },
+        },
+        (input) => input.role
+      );
+
+      expectTypeOf(flow).toBeObject();
+    });
+  });
+
+  describe('dependent step ifNot', () => {
+    it('should type ifNot as ContainmentPattern<DepsObject>', () => {
+      const flow = new Flow<{ initial: string }>({ slug: 'test_flow' })
+        .step({ slug: 'fetch' }, () => ({ hasError: true, data: 'result' }))
+        .step(
+          {
+            slug: 'process',
+            dependsOn: ['fetch'],
+            ifNot: { fetch: { hasError: true } },
+          },
+          (deps) => deps.fetch.data
+        );
+
+      expectTypeOf(flow).toBeObject();
+    });
+
+    it('should reject invalid dep slug in ifNot', () => {
+      new Flow<{ initial: string }>({ slug: 'test_flow' })
+        .step({ slug: 'fetch' }, () => ({ status: 'ok' }))
+        .step(
+          {
+            slug: 'process',
+            dependsOn: ['fetch'],
+            // @ts-expect-error - 'nonexistent' is not a dependency
+            ifNot: { nonexistent: { status: 'error' } },
+          },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (deps: any) => deps.fetch.status
+        );
+    });
+
+    it('should reject invalid keys within dep output for ifNot', () => {
+      new Flow<{ initial: string }>({ slug: 'test_flow' })
+        .step({ slug: 'fetch' }, () => ({ status: 'ok' }))
+        .step(
+          {
+            slug: 'process',
+            dependsOn: ['fetch'],
+            // @ts-expect-error - 'invalidField' does not exist on fetch output
+            ifNot: { fetch: { invalidField: 'value' } },
+          },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (deps: any) => deps.fetch.status
+        );
+    });
+  });
+
+  describe('array step ifNot', () => {
+    it('should type ifNot for root array step', () => {
+      type FlowInput = { items: string[]; disabled: boolean };
+
+      const flow = new Flow<FlowInput>({ slug: 'test_flow' }).array(
+        { slug: 'getItems', ifNot: { disabled: true } },
+        (input) => input.items
+      );
+
+      expectTypeOf(flow).toBeObject();
+    });
+
+    it('should type ifNot for dependent array step', () => {
+      const flow = new Flow<{ initial: string }>({ slug: 'test_flow' })
+        .step({ slug: 'fetch' }, () => ({ error: false, items: ['a', 'b'] }))
+        .array(
+          {
+            slug: 'process',
+            dependsOn: ['fetch'],
+            ifNot: { fetch: { error: true } },
+          },
+          (deps) => deps.fetch.items
+        );
+
+      expectTypeOf(flow).toBeObject();
+    });
+  });
+
+  describe('map step ifNot', () => {
+    it('should type ifNot for root map step', () => {
+      type FlowInput = { type: string; value: number }[];
+
+      const flow = new Flow<FlowInput>({ slug: 'test_flow' }).map(
+        // Root map ifNot checks the array itself
+        { slug: 'process', ifNot: [{ type: 'disabled' }] },
+        (item) => item.value * 2
+      );
+
+      expectTypeOf(flow).toBeObject();
+    });
+
+    it('should type ifNot for dependent map step', () => {
+      const flow = new Flow<{ initial: string }>({ slug: 'test_flow' })
+        .step({ slug: 'fetch' }, () => [
+          { id: 1, deleted: false },
+          { id: 2, deleted: true },
+        ])
+        .map(
+          {
+            slug: 'process',
+            array: 'fetch',
+            // Condition checks the array dep
+            ifNot: { fetch: [{ deleted: true }] },
+          },
+          (item) => item.id
+        );
+
+      expectTypeOf(flow).toBeObject();
+    });
+  });
+});
+
+describe('whenUnmet requires if or ifNot', () => {
+  describe('step method', () => {
+    it('should allow whenUnmet with if', () => {
+      type FlowInput = { role: string };
+
+      const flow = new Flow<FlowInput>({ slug: 'test_flow' }).step(
+        { slug: 'admin', if: { role: 'admin' }, whenUnmet: 'skip' },
+        (input) => input.role
+      );
+
+      expectTypeOf(flow).toBeObject();
+    });
+
+    it('should allow whenUnmet with ifNot', () => {
+      type FlowInput = { role: string };
+
+      const flow = new Flow<FlowInput>({ slug: 'test_flow' }).step(
+        { slug: 'non_admin', ifNot: { role: 'admin' }, whenUnmet: 'skip' },
+        (input) => input.role
+      );
+
+      expectTypeOf(flow).toBeObject();
+    });
+
+    it('should allow whenUnmet with both if and ifNot', () => {
+      type FlowInput = { role: string; suspended: boolean };
+
+      const flow = new Flow<FlowInput>({ slug: 'test_flow' }).step(
+        {
+          slug: 'active_admin',
+          if: { role: 'admin' },
+          ifNot: { suspended: true },
+          whenUnmet: 'skip-cascade',
+        },
+        (input) => input.role
+      );
+
+      expectTypeOf(flow).toBeObject();
+    });
+  });
+
+  describe('array method', () => {
+    it('should allow whenUnmet with if on array step', () => {
+      type FlowInput = { items: string[]; enabled: boolean };
+
+      const flow = new Flow<FlowInput>({ slug: 'test_flow' }).array(
+        { slug: 'getItems', if: { enabled: true }, whenUnmet: 'skip' },
+        (input) => input.items
+      );
+
+      expectTypeOf(flow).toBeObject();
+    });
+  });
+
+  describe('map method', () => {
+    it('should allow whenUnmet with ifNot on map step', () => {
+      type FlowInput = { type: string; value: number }[];
+
+      const flow = new Flow<FlowInput>({ slug: 'test_flow' }).map(
+        { slug: 'process', ifNot: [{ type: 'disabled' }], whenUnmet: 'skip' },
+        (item) => item.value
+      );
+
+      expectTypeOf(flow).toBeObject();
+    });
+  });
+
+  describe('whenUnmet rejection tests', () => {
+    it('should reject whenUnmet without if or ifNot on root step', () => {
+      type FlowInput = { role: string };
+
+      new Flow<FlowInput>({ slug: 'test_flow' })
+        // @ts-expect-error - whenUnmet requires if or ifNot
+        .step({ slug: 'step', whenUnmet: 'skip' }, (input) => input.role);
+    });
+
+    it('should reject whenUnmet without if or ifNot on dependent step', () => {
+      const flow = new Flow<{ initial: string }>({ slug: 'test_flow' }).step(
+        { slug: 'first' },
+        () => ({ done: true })
+      );
+
+      // @ts-expect-error - whenUnmet requires if or ifNot
+      flow.step(
+        { slug: 'second', dependsOn: ['first'], whenUnmet: 'skip' },
+        // Handler typed as any to suppress cascading error from failed overload
+        (deps: any) => deps.first.done
+      );
+    });
+
+    it('should reject whenUnmet without if or ifNot on root array step', () => {
+      type FlowInput = { items: string[] };
+
+      new Flow<FlowInput>({ slug: 'test_flow' })
+        // @ts-expect-error - whenUnmet requires if or ifNot
+        .array({ slug: 'getItems', whenUnmet: 'skip' }, (input) => input.items);
+    });
+
+    it('should reject whenUnmet without if or ifNot on dependent array step', () => {
+      const flow = new Flow<{ initial: string }>({ slug: 'test_flow' }).step(
+        { slug: 'fetch' },
+        () => ({ items: ['a', 'b'] })
+      );
+
+      // @ts-expect-error - whenUnmet requires if or ifNot
+      flow.array(
+        { slug: 'process', dependsOn: ['fetch'], whenUnmet: 'skip' },
+        // Handler typed as any to suppress cascading error from failed overload
+        (deps: any) => deps.fetch.items
+      );
+    });
+
+    it('should reject whenUnmet without if or ifNot on root map step', () => {
+      type FlowInput = { value: number }[];
+
+      new Flow<FlowInput>({ slug: 'test_flow' })
+        // @ts-expect-error - whenUnmet requires if or ifNot
+        .map({ slug: 'process', whenUnmet: 'skip' }, (item) => item.value);
+    });
+
+    it('should reject whenUnmet without if or ifNot on dependent map step', () => {
+      const flow = new Flow<{ initial: string }>({ slug: 'test_flow' }).step(
+        { slug: 'fetch' },
+        () => [{ id: 1 }, { id: 2 }]
+      );
+
+      // @ts-expect-error - whenUnmet requires if or ifNot
+      flow.map(
+        { slug: 'process', array: 'fetch', whenUnmet: 'skip' },
+        // Handler typed as any to suppress cascading error from failed overload
+        (item: any) => item.id
+      );
     });
   });
 });

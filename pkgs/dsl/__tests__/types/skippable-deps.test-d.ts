@@ -4,16 +4,16 @@ import { describe, it, expectTypeOf } from 'vitest';
 /**
  * Type tests for skippable step dependencies
  *
- * When a step has `else: 'skip' | 'skip-cascade'` or `retriesExhausted: 'skip' | 'skip-cascade'`,
+ * When a step has `whenUnmet: 'skip' | 'skip-cascade'` or `retriesExhausted: 'skip' | 'skip-cascade'`,
  * it may not execute. Dependent steps should receive that step's output as an optional key.
  */
 
 describe('skippable deps type safety', () => {
-  describe('core skippability - else', () => {
-    it('step with else: skip makes output optional for dependents', () => {
+  describe('core skippability - whenUnmet', () => {
+    it('step with whenUnmet: skip makes output optional for dependents', () => {
       const flow = new Flow<{ value: number }>({ slug: 'test' })
         .step(
-          { slug: 'conditional', if: { value: 42 }, else: 'skip' },
+          { slug: 'conditional', if: { value: 42 }, whenUnmet: 'skip' },
           (input) => ({ result: input.value * 2 })
         )
         .step({ slug: 'dependent', dependsOn: ['conditional'] }, (deps) => {
@@ -30,10 +30,10 @@ describe('skippable deps type safety', () => {
       }>();
     });
 
-    it('step with else: skip-cascade makes output optional for dependents', () => {
+    it('step with whenUnmet: skip-cascade makes output optional for dependents', () => {
       const flow = new Flow<{ value: number }>({ slug: 'test' })
         .step(
-          { slug: 'conditional', if: { value: 42 }, else: 'skip-cascade' },
+          { slug: 'conditional', if: { value: 42 }, whenUnmet: 'skip-cascade' },
           (input) => ({ result: input.value * 2 })
         )
         .step({ slug: 'dependent', dependsOn: ['conditional'] }, (deps) => {
@@ -49,14 +49,14 @@ describe('skippable deps type safety', () => {
       }>();
     });
 
-    it('step with else: fail keeps output required (default behavior)', () => {
+    it('step with whenUnmet: fail keeps output required (default behavior)', () => {
       const flow = new Flow<{ value: number }>({ slug: 'test' })
         .step(
-          { slug: 'conditional', if: { value: 42 }, else: 'fail' },
+          { slug: 'conditional', if: { value: 42 }, whenUnmet: 'fail' },
           (input) => ({ result: input.value * 2 })
         )
         .step({ slug: 'dependent', dependsOn: ['conditional'] }, (deps) => {
-          // else: 'fail' means step either runs or flow fails - output is guaranteed
+          // whenUnmet: 'fail' means step either runs or flow fails - output is guaranteed
           expectTypeOf(deps.conditional).toEqualTypeOf<{ result: number }>();
           return { done: true };
         });
@@ -67,7 +67,7 @@ describe('skippable deps type safety', () => {
       }>();
     });
 
-    it('step without else keeps output required', () => {
+    it('step without whenUnmet keeps output required', () => {
       const flow = new Flow<{ value: number }>({ slug: 'test' })
         .step({ slug: 'normal' }, (input) => ({ result: input.value * 2 }))
         .step({ slug: 'dependent', dependsOn: ['normal'] }, (deps) => {
@@ -139,9 +139,12 @@ describe('skippable deps type safety', () => {
   describe('multiple dependencies - mixed skippability', () => {
     it('mixed deps: some optional, some required', () => {
       const flow = new Flow<{ value: number }>({ slug: 'test' })
-        .step({ slug: 'skippable', if: { value: 42 }, else: 'skip' }, () => ({
-          a: 1,
-        }))
+        .step(
+          { slug: 'skippable', if: { value: 42 }, whenUnmet: 'skip' },
+          () => ({
+            a: 1,
+          })
+        )
         .step({ slug: 'required' }, () => ({ b: 2 }))
         .step(
           { slug: 'dependent', dependsOn: ['skippable', 'required'] },
@@ -317,13 +320,13 @@ describe('skippable deps type safety', () => {
       }>();
     });
 
-    it('both else and retriesExhausted set: still skippable', () => {
+    it('both whenUnmet and retriesExhausted set: still skippable', () => {
       const flow = new Flow<{ value: number }>({ slug: 'test' })
         .step(
           {
             slug: 'both',
             if: { value: 42 },
-            else: 'skip',
+            whenUnmet: 'skip',
             retriesExhausted: 'skip',
           },
           () => ({ result: 1 })
@@ -459,26 +462,27 @@ describe('skippable deps compile-time errors', () => {
         });
     });
 
-    it('should reject direct property access with else: skip', () => {
+    it('should reject direct property access with whenUnmet: skip', () => {
       new Flow<{ value: number }>({ slug: 'test' })
-        .step({ slug: 'conditional', if: { value: 42 }, else: 'skip' }, () => ({
-          processed: true,
-        }))
+        .step(
+          { slug: 'conditional', if: { value: 42 }, whenUnmet: 'skip' },
+          () => ({ processed: true })
+        )
         .step({ slug: 'next', dependsOn: ['conditional'] }, (deps) => {
-          // @ts-expect-error - deps.conditional is optional due to else: 'skip'
+          // @ts-expect-error - deps.conditional is optional due to whenUnmet: skip
           const flag: boolean = deps.conditional.processed;
           return { flag };
         });
     });
 
-    it('should reject direct property access with else: skip-cascade', () => {
+    it('should reject direct property access with whenUnmet: skip-cascade', () => {
       new Flow<{ value: number }>({ slug: 'test' })
         .step(
-          { slug: 'cascading', if: { value: 42 }, else: 'skip-cascade' },
+          { slug: 'cascading', if: { value: 42 }, whenUnmet: 'skip-cascade' },
           () => ({ count: 10 })
         )
         .step({ slug: 'next', dependsOn: ['cascading'] }, (deps) => {
-          // @ts-expect-error - deps.cascading is optional due to else: 'skip-cascade'
+          // @ts-expect-error - deps.cascading is optional due to whenUnmet: skip-cascade
           const num: number = deps.cascading.count;
           return { num };
         });

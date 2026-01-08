@@ -20,29 +20,23 @@ select pgflow_tests.reset_db();
 -- c has no condition
 select pgflow.create_flow('chain_skip');
 select pgflow.add_step(
-  'chain_skip',
-  'step_a',
-  '{}',  -- root step
-  null, null, null, null,
-  'single',
-  '{"enabled": true}'::jsonb,  -- if: requires enabled=true
-  'skip'  -- plain skip
+  flow_slug => 'chain_skip',
+  step_slug => 'step_a',
+  condition_pattern => '{"enabled": true}'::jsonb,  -- requires enabled=true
+  when_unmet => 'skip'  -- plain skip
 );
 select pgflow.add_step(
-  'chain_skip',
-  'step_b',
-  '{step_a}',  -- depends on a
-  null, null, null, null,
-  'single',
-  '{"step_a": {"success": true}}'::jsonb,  -- if: a.success must be true
-  'skip'  -- plain skip (won't be met since a was skipped)
+  flow_slug => 'chain_skip',
+  step_slug => 'step_b',
+  deps_slugs => ARRAY['step_a'],
+  condition_pattern => '{"step_a": {"success": true}}'::jsonb,  -- a.success must be true
+  when_unmet => 'skip'  -- plain skip (won't be met since a was skipped)
 );
 select pgflow.add_step(
-  'chain_skip',
-  'step_c',
-  '{step_b}',  -- depends on b
-  null, null, null, null,
-  'single'  -- no condition
+  flow_slug => 'chain_skip',
+  step_slug => 'step_c',
+  deps_slugs => ARRAY['step_b']
+  -- no condition
 );
 
 -- Start flow with input that does NOT match step_a's condition

@@ -10,13 +10,10 @@ select pgflow_tests.reset_db();
 -- Create flow with a root step that has a condition with fail mode
 select pgflow.create_flow('conditional_flow');
 select pgflow.add_step(
-  'conditional_flow',
-  'checked_step',
-  '{}',  -- no deps (root step)
-  null, null, null, null,  -- default options
-  'single',  -- step_type
-  '{"enabled": true}'::jsonb,  -- condition_pattern: requires enabled=true
-  'fail'  -- when_unmet - causes run to fail
+  flow_slug => 'conditional_flow',
+  step_slug => 'checked_step',
+  condition_pattern => '{"enabled": true}'::jsonb,  -- requires enabled=true
+  when_unmet => 'fail'  -- causes run to fail
 );
 
 -- Start flow with input that does NOT match condition

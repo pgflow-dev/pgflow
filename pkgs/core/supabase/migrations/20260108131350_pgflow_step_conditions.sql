@@ -15,7 +15,7 @@ END) <= 1), ADD CONSTRAINT "skip_reason_matches_status" CHECK (((status = 'skipp
 -- Create index "idx_step_states_skipped" to table: "step_states"
 CREATE INDEX "idx_step_states_skipped" ON "pgflow"."step_states" ("run_id", "step_slug") WHERE (status = 'skipped'::text);
 -- Modify "steps" table
-ALTER TABLE "pgflow"."steps" ADD CONSTRAINT "when_failed_is_valid" CHECK (when_failed = ANY (ARRAY['fail'::text, 'skip'::text, 'skip-cascade'::text])), ADD CONSTRAINT "when_unmet_is_valid" CHECK (when_unmet = ANY (ARRAY['fail'::text, 'skip'::text, 'skip-cascade'::text])), ADD COLUMN "condition_pattern" jsonb NULL, ADD COLUMN "when_unmet" text NOT NULL DEFAULT 'skip', ADD COLUMN "when_failed" text NOT NULL DEFAULT 'fail';
+ALTER TABLE "pgflow"."steps" ADD CONSTRAINT "when_failed_is_valid" CHECK (when_failed = ANY (ARRAY['fail'::text, 'skip'::text, 'skip-cascade'::text])), ADD CONSTRAINT "when_unmet_is_valid" CHECK (when_unmet = ANY (ARRAY['fail'::text, 'skip'::text, 'skip-cascade'::text])), ADD COLUMN "condition_pattern" jsonb NULL, ADD COLUMN "condition_not_pattern" jsonb NULL, ADD COLUMN "when_unmet" text NOT NULL DEFAULT 'skip', ADD COLUMN "when_failed" text NOT NULL DEFAULT 'fail';
 -- Create "_cascade_force_skip_steps" function
 CREATE FUNCTION "pgflow"."_cascade_force_skip_steps" ("run_id" uuid, "step_slug" text, "skip_reason" text) RETURNS integer LANGUAGE plpgsql AS $$
 DECLARE
@@ -151,11 +151,15 @@ BEGIN
     -- PHASE 1a: CHECK FOR FAIL CONDITIONS
     -- ==========================================
     -- Find first step (by topological order) with unmet condition and 'fail' mode.
+    -- Condition is unmet when:
+    --   (condition_pattern is set AND input does NOT contain it) OR
+    --   (condition_not_pattern is set AND input DOES contain it)
     WITH steps_with_conditions AS (
       SELECT
         step_state.flow_slug,
         step_state.step_slug,
         step.condition_pattern,
+        step.condition_not_pattern,
         step.when_unmet,
         step.deps_count,
         step.step_index
@@ -166,7 +170,7 @@ BEGIN
       WHERE step_state.run_id = cascade_resolve_conditions.run_id
         AND step_state.status = 'created'
         AND step_state.remaining_deps = 0
-        AND step.condition_pattern IS NOT NULL
+        AND (step.condition_pattern IS NOT NULL OR step.condition_not_pattern IS NOT NULL)
     ),
     step_deps_output AS (
       SELECT
@@ -184,14 +188,17 @@ BEGIN
     condition_evaluations AS (
       SELECT
         swc.*,
-        CASE
-          WHEN swc.deps_count = 0 THEN v_run_input @> swc.condition_pattern
-          ELSE COALESCE(sdo.deps_output, '{}'::jsonb) @> swc.condition_pattern
-        END AS condition_met
+        -- condition_met = (if IS NULL OR input @> if) AND (ifNot IS NULL OR NOT(input @> ifNot))
+        (swc.condition_pattern IS NULL OR
+          CASE WHEN swc.deps_count = 0 THEN v_run_input ELSE COALESCE(sdo.deps_output, '{}'::jsonb) END @> swc.condition_pattern)
+        AND
+        (swc.condition_not_pattern IS NULL OR
+          NOT (CASE WHEN swc.deps_count = 0 THEN v_run_input ELSE COALESCE(sdo.deps_output, '{}'::jsonb) END @> swc.condition_not_pattern))
+        AS condition_met
       FROM steps_with_conditions swc
       LEFT JOIN step_deps_output sdo ON sdo.step_slug = swc.step_slug
     )
-    SELECT flow_slug, step_slug, condition_pattern
+    SELECT flow_slug, step_slug, condition_pattern, condition_not_pattern
     INTO v_first_fail
     FROM condition_evaluations
     WHERE NOT condition_met AND when_unmet = 'fail'
@@ -199,11 +206,13 @@ BEGIN
     LIMIT 1;
 
     -- Handle fail mode: fail step and run, return false
-    IF v_first_fail IS NOT NULL THEN
+    -- Note: Cannot use "v_first_fail IS NOT NULL" because records with NULL fields
+    -- evaluate to NULL in IS NOT NULL checks. Use FOUND instead.
+    IF FOUND THEN
       UPDATE pgflow.step_states
       SET status = 'failed',
           failed_at = now(),
-          error_message = 'Condition not met: ' || v_first_fail.condition_pattern::text
+          error_message = 'Condition not met'
       WHERE pgflow.step_states.run_id = cascade_resolve_conditions.run_id
         AND pgflow.step_states.step_slug = v_first_fail.step_slug;
 
@@ -219,12 +228,13 @@ BEGIN
     -- PHASE 1b: HANDLE SKIP CONDITIONS (with propagation)
     -- ==========================================
     -- Skip steps with unmet conditions and whenUnmet='skip'.
-    -- NEW: Also decrement remaining_deps on dependents and set initial_tasks=0 for map dependents.
+    -- Also decrement remaining_deps on dependents and set initial_tasks=0 for map dependents.
     WITH steps_with_conditions AS (
       SELECT
         step_state.flow_slug,
         step_state.step_slug,
         step.condition_pattern,
+        step.condition_not_pattern,
         step.when_unmet,
         step.deps_count,
         step.step_index
@@ -235,7 +245,7 @@ BEGIN
       WHERE step_state.run_id = cascade_resolve_conditions.run_id
         AND step_state.status = 'created'
         AND step_state.remaining_deps = 0
-        AND step.condition_pattern IS NOT NULL
+        AND (step.condition_pattern IS NOT NULL OR step.condition_not_pattern IS NOT NULL)
     ),
     step_deps_output AS (
       SELECT
@@ -253,10 +263,13 @@ BEGIN
     condition_evaluations AS (
       SELECT
         swc.*,
-        CASE
-          WHEN swc.deps_count = 0 THEN v_run_input @> swc.condition_pattern
-          ELSE COALESCE(sdo.deps_output, '{}'::jsonb) @> swc.condition_pattern
-        END AS condition_met
+        -- condition_met = (if IS NULL OR input @> if) AND (ifNot IS NULL OR NOT(input @> ifNot))
+        (swc.condition_pattern IS NULL OR
+          CASE WHEN swc.deps_count = 0 THEN v_run_input ELSE COALESCE(sdo.deps_output, '{}'::jsonb) END @> swc.condition_pattern)
+        AND
+        (swc.condition_not_pattern IS NULL OR
+          NOT (CASE WHEN swc.deps_count = 0 THEN v_run_input ELSE COALESCE(sdo.deps_output, '{}'::jsonb) END @> swc.condition_not_pattern))
+        AS condition_met
       FROM steps_with_conditions swc
       LEFT JOIN step_deps_output sdo ON sdo.step_slug = swc.step_slug
     ),
@@ -336,13 +349,15 @@ BEGIN
     WHERE ready_step.run_id = cascade_resolve_conditions.run_id
       AND ready_step.status = 'created'
       AND ready_step.remaining_deps = 0
-      AND step.condition_pattern IS NOT NULL
+      AND (step.condition_pattern IS NOT NULL OR step.condition_not_pattern IS NOT NULL)
       AND step.when_unmet = 'skip-cascade'
+      -- Condition is NOT met when: (if fails) OR (ifNot fails)
       AND NOT (
-        CASE
-          WHEN step.deps_count = 0 THEN v_run_input @> step.condition_pattern
-          ELSE COALESCE(agg_deps.deps_output, '{}'::jsonb) @> step.condition_pattern
-        END
+        (step.condition_pattern IS NULL OR
+          CASE WHEN step.deps_count = 0 THEN v_run_input ELSE COALESCE(agg_deps.deps_output, '{}'::jsonb) END @> step.condition_pattern)
+        AND
+        (step.condition_not_pattern IS NULL OR
+          NOT (CASE WHEN step.deps_count = 0 THEN v_run_input ELSE COALESCE(agg_deps.deps_output, '{}'::jsonb) END @> step.condition_not_pattern))
       )
     ORDER BY step.step_index;
 
@@ -1440,7 +1455,7 @@ with tasks as (
     dep_out.step_slug = st.step_slug
 $$;
 -- Create "add_step" function
-CREATE FUNCTION "pgflow"."add_step" ("flow_slug" text, "step_slug" text, "deps_slugs" text[] DEFAULT '{}', "max_attempts" integer DEFAULT NULL::integer, "base_delay" integer DEFAULT NULL::integer, "timeout" integer DEFAULT NULL::integer, "start_delay" integer DEFAULT NULL::integer, "step_type" text DEFAULT 'single', "condition_pattern" jsonb DEFAULT NULL::jsonb, "when_unmet" text DEFAULT 'skip', "when_failed" text DEFAULT 'fail') RETURNS "pgflow"."steps" LANGUAGE plpgsql SET "search_path" = '' AS $$
+CREATE FUNCTION "pgflow"."add_step" ("flow_slug" text, "step_slug" text, "deps_slugs" text[] DEFAULT '{}', "max_attempts" integer DEFAULT NULL::integer, "base_delay" integer DEFAULT NULL::integer, "timeout" integer DEFAULT NULL::integer, "start_delay" integer DEFAULT NULL::integer, "step_type" text DEFAULT 'single', "condition_pattern" jsonb DEFAULT NULL::jsonb, "condition_not_pattern" jsonb DEFAULT NULL::jsonb, "when_unmet" text DEFAULT 'skip', "when_failed" text DEFAULT 'fail') RETURNS "pgflow"."steps" LANGUAGE plpgsql SET "search_path" = '' AS $$
 DECLARE
   result_step pgflow.steps;
   next_idx int;
@@ -1465,7 +1480,7 @@ BEGIN
   INSERT INTO pgflow.steps (
     flow_slug, step_slug, step_type, step_index, deps_count,
     opt_max_attempts, opt_base_delay, opt_timeout, opt_start_delay,
-    condition_pattern, when_unmet, when_failed
+    condition_pattern, condition_not_pattern, when_unmet, when_failed
   )
   VALUES (
     add_step.flow_slug,
@@ -1478,6 +1493,7 @@ BEGIN
     add_step.timeout,
     add_step.start_delay,
     add_step.condition_pattern,
+    add_step.condition_not_pattern,
     add_step.when_unmet,
     add_step.when_failed
   )

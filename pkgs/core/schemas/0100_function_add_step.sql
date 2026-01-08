@@ -8,6 +8,7 @@ create or replace function pgflow.add_step(
   start_delay int default null,
   step_type text default 'single',
   condition_pattern jsonb default null,
+  condition_not_pattern jsonb default null,
   when_unmet text default 'skip',
   when_failed text default 'fail'
 )
@@ -40,7 +41,7 @@ BEGIN
   INSERT INTO pgflow.steps (
     flow_slug, step_slug, step_type, step_index, deps_count,
     opt_max_attempts, opt_base_delay, opt_timeout, opt_start_delay,
-    condition_pattern, when_unmet, when_failed
+    condition_pattern, condition_not_pattern, when_unmet, when_failed
   )
   VALUES (
     add_step.flow_slug,
@@ -53,6 +54,7 @@ BEGIN
     add_step.timeout,
     add_step.start_delay,
     add_step.condition_pattern,
+    add_step.condition_not_pattern,
     add_step.when_unmet,
     add_step.when_failed
   )
