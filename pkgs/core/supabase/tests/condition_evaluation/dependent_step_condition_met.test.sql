@@ -11,13 +11,11 @@ select pgflow_tests.reset_db();
 select pgflow.create_flow('conditional_flow');
 select pgflow.add_step('conditional_flow', 'first');
 select pgflow.add_step(
-  'conditional_flow',
-  'checked_step',
-  '{first}',  -- depends on first
-  null, null, null, null,  -- default options
-  'single',  -- step_type
-  '{"first": {"success": true}}'::jsonb,  -- if: first.success must be true
-  'skip'  -- when_unmet
+  flow_slug => 'conditional_flow',
+  step_slug => 'checked_step',
+  deps_slugs => ARRAY['first'],
+  condition_pattern => '{"first": {"success": true}}'::jsonb,  -- first.success must be true
+  when_unmet => 'skip'
 );
 
 -- Start flow

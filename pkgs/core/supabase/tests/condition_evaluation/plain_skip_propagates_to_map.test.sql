@@ -16,21 +16,17 @@ select pgflow_tests.reset_db();
 -- producer (conditional, skip) -> map_consumer (map step)
 select pgflow.create_flow('skip_to_map');
 select pgflow.add_step(
-  'skip_to_map',
-  'producer',
-  '{}',  -- root step
-  null, null, null, null,  -- default options
-  'single',  -- step_type
-  '{"enabled": true}'::jsonb,  -- if: requires enabled=true
-  'skip'  -- when_unmet - plain skip (not skip-cascade)
+  flow_slug => 'skip_to_map',
+  step_slug => 'producer',
+  condition_pattern => '{"enabled": true}'::jsonb,  -- requires enabled=true
+  when_unmet => 'skip'  -- plain skip (not skip-cascade)
 );
 -- Map consumer: no condition, just depends on producer
 select pgflow.add_step(
-  'skip_to_map',
-  'map_consumer',
-  '{producer}',  -- depends on producer
-  null, null, null, null,  -- default options
-  'map'  -- map step type (no condition_pattern or when_unmet needed)
+  flow_slug => 'skip_to_map',
+  step_slug => 'map_consumer',
+  deps_slugs => ARRAY['producer'],
+  step_type => 'map'
 );
 
 -- Start flow with input that does NOT match producer's condition
