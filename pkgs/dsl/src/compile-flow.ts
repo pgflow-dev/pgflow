@@ -43,7 +43,9 @@ export function compileFlow(flow: AnyFlow): string[] {
 /**
  * Formats runtime options into SQL parameter string
  */
-function formatRuntimeOptions(options: RuntimeOptions | StepRuntimeOptions): string {
+function formatRuntimeOptions(
+  options: RuntimeOptions | StepRuntimeOptions
+): string {
   const parts: string[] = [];
 
   if (options.maxAttempts !== undefined) {
@@ -68,8 +70,14 @@ function formatRuntimeOptions(options: RuntimeOptions | StepRuntimeOptions): str
     parts.push(`condition_pattern => '${jsonStr}'`);
   }
 
-  if ('else' in options && options.else !== undefined) {
-    parts.push(`when_unmet => '${options.else}'`);
+  if ('ifNot' in options && options.ifNot !== undefined) {
+    // Serialize JSON pattern and escape for SQL
+    const jsonStr = JSON.stringify(options.ifNot);
+    parts.push(`condition_not_pattern => '${jsonStr}'`);
+  }
+
+  if ('whenUnmet' in options && options.whenUnmet !== undefined) {
+    parts.push(`when_unmet => '${options.whenUnmet}'`);
   }
 
   if ('retriesExhausted' in options && options.retriesExhausted !== undefined) {

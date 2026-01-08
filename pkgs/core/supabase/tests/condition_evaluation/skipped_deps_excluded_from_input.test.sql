@@ -22,25 +22,21 @@ select pgflow_tests.reset_db();
 -- c depends on both
 select pgflow.create_flow('skip_diamond');
 select pgflow.add_step(
-  'skip_diamond',
-  'step_a',
-  '{}',  -- root step
-  null, null, null, null,
-  'single',
-  '{"enabled": true}'::jsonb,  -- if: requires enabled=true
-  'skip'  -- plain skip
+  flow_slug => 'skip_diamond',
+  step_slug => 'step_a',
+  condition_pattern => '{"enabled": true}'::jsonb,  -- requires enabled=true
+  when_unmet => 'skip'  -- plain skip
 );
 select pgflow.add_step(
-  'skip_diamond',
-  'step_b',
-  '{}'  -- root step, no condition
+  flow_slug => 'skip_diamond',
+  step_slug => 'step_b'
+  -- root step, no condition
 );
 select pgflow.add_step(
-  'skip_diamond',
-  'step_c',
-  '{step_a, step_b}',  -- depends on both
-  null, null, null, null,
-  'single'  -- no condition
+  flow_slug => 'skip_diamond',
+  step_slug => 'step_c',
+  deps_slugs => ARRAY['step_a', 'step_b']
+  -- no condition
 );
 
 -- Start flow with input that skips step_a
