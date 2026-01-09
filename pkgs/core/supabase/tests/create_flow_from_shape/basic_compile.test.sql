@@ -1,5 +1,5 @@
 begin;
-select plan(4);
+select plan(5);
 select pgflow_tests.reset_db();
 
 -- Test: Compile a simple sequential flow from shape
@@ -7,9 +7,9 @@ select pgflow._create_flow_from_shape(
   'test_flow',
   '{
     "steps": [
-      {"slug": "first", "stepType": "single", "dependencies": []},
-      {"slug": "second", "stepType": "single", "dependencies": ["first"]},
-      {"slug": "third", "stepType": "single", "dependencies": ["second"]}
+      {"slug": "first", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail"},
+      {"slug": "second", "stepType": "single", "dependencies": ["first"], "whenUnmet": "skip", "whenFailed": "fail"},
+      {"slug": "third", "stepType": "single", "dependencies": ["second"], "whenUnmet": "skip", "whenFailed": "fail"}
     ]
   }'::jsonb
 );
@@ -40,6 +40,19 @@ select results_eq(
   $$ SELECT dep_slug, step_slug FROM pgflow.deps WHERE flow_slug = 'test_flow' ORDER BY step_slug $$,
   $$ VALUES ('first', 'second'), ('second', 'third') $$,
   'Dependencies should be created correctly'
+);
+
+-- Verify shape round-trips correctly
+select is(
+  pgflow._get_flow_shape('test_flow'),
+  '{
+    "steps": [
+      {"slug": "first", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail"},
+      {"slug": "second", "stepType": "single", "dependencies": ["first"], "whenUnmet": "skip", "whenFailed": "fail"},
+      {"slug": "third", "stepType": "single", "dependencies": ["second"], "whenUnmet": "skip", "whenFailed": "fail"}
+    ]
+  }'::jsonb,
+  'Shape should round-trip correctly'
 );
 
 select finish();
