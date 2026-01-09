@@ -24,8 +24,8 @@ create table pgflow.steps (
   opt_base_delay int,
   opt_timeout int,
   opt_start_delay int,
-  condition_pattern jsonb,  -- JSON pattern for @> containment check (if)
-  condition_not_pattern jsonb,  -- JSON pattern for NOT @> containment check (ifNot)
+  required_input_pattern jsonb,  -- JSON pattern for @> containment check (if)
+  forbidden_input_pattern jsonb,  -- JSON pattern for NOT @> containment check (ifNot)
   when_unmet text not null default 'skip',  -- What to do when condition not met (skip is natural default)
   when_failed text not null default 'fail',  -- What to do when handler fails after retries
   created_at timestamptz not null default now(),

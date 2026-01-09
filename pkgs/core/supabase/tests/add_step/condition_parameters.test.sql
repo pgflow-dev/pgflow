@@ -1,23 +1,23 @@
 -- Test: add_step - New condition parameters
--- Verifies condition_pattern, when_unmet, when_failed parameters work correctly
+-- Verifies required_input_pattern, when_unmet, when_failed parameters work correctly
 begin;
 select plan(9);
 
 select pgflow_tests.reset_db();
 select pgflow.create_flow('condition_test');
 
--- Test 1: Add step with condition_pattern
+-- Test 1: Add step with required_input_pattern
 select pgflow.add_step(
   'condition_test',
   'step_with_condition',
-  condition_pattern => '{"type": "premium"}'::jsonb
+  required_input_pattern => '{"type": "premium"}'::jsonb
 );
 
 select is(
-  (select condition_pattern from pgflow.steps
+  (select required_input_pattern from pgflow.steps
    where flow_slug = 'condition_test' and step_slug = 'step_with_condition'),
   '{"type": "premium"}'::jsonb,
-  'condition_pattern should be stored correctly'
+  'required_input_pattern should be stored correctly'
 );
 
 -- Test 2: Add step with when_unmet = skip
@@ -94,26 +94,26 @@ select is(
   'Default when_failed should be fail'
 );
 
--- Test 8: Default condition_pattern should be NULL
+-- Test 8: Default required_input_pattern should be NULL
 select is(
-  (select condition_pattern from pgflow.steps
+  (select required_input_pattern from pgflow.steps
    where flow_slug = 'condition_test' and step_slug = 'step_default_unmet'),
   NULL::jsonb,
-  'Default condition_pattern should be NULL'
+  'Default required_input_pattern should be NULL'
 );
 
 -- Test 9: Add step with all condition parameters
 select pgflow.add_step(
   'condition_test',
   'step_all_params',
-  condition_pattern => '{"status": "active"}'::jsonb,
+  required_input_pattern => '{"status": "active"}'::jsonb,
   when_unmet => 'skip',
   when_failed => 'skip-cascade'
 );
 
 select ok(
   (select
-    condition_pattern = '{"status": "active"}'::jsonb
+    required_input_pattern = '{"status": "active"}'::jsonb
     AND when_unmet = 'skip'
     AND when_failed = 'skip-cascade'
    from pgflow.steps

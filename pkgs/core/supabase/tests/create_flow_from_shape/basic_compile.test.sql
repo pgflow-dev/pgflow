@@ -7,9 +7,9 @@ select pgflow._create_flow_from_shape(
   'test_flow',
   '{
     "steps": [
-      {"slug": "first", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail"},
-      {"slug": "second", "stepType": "single", "dependencies": ["first"], "whenUnmet": "skip", "whenFailed": "fail"},
-      {"slug": "third", "stepType": "single", "dependencies": ["second"], "whenUnmet": "skip", "whenFailed": "fail"}
+      {"slug": "first", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
+      {"slug": "second", "stepType": "single", "dependencies": ["first"], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
+      {"slug": "third", "stepType": "single", "dependencies": ["second"], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}}
     ]
   }'::jsonb
 );
@@ -47,9 +47,9 @@ select is(
   pgflow._get_flow_shape('test_flow'),
   '{
     "steps": [
-      {"slug": "first", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail"},
-      {"slug": "second", "stepType": "single", "dependencies": ["first"], "whenUnmet": "skip", "whenFailed": "fail"},
-      {"slug": "third", "stepType": "single", "dependencies": ["second"], "whenUnmet": "skip", "whenFailed": "fail"}
+      {"slug": "first", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
+      {"slug": "second", "stepType": "single", "dependencies": ["first"], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
+      {"slug": "third", "stepType": "single", "dependencies": ["second"], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}}
     ]
   }'::jsonb,
   'Shape should round-trip correctly'

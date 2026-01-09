@@ -13,14 +13,14 @@ select pgflow.create_flow('branch_flow');
 select pgflow.add_step(
   flow_slug => 'branch_flow',
   step_slug => 'admin_branch',
-  condition_pattern => '{"role": "admin"}'::jsonb,  -- if: role=admin
+  required_input_pattern => '{"role": "admin"}'::jsonb,  -- if: role=admin
   when_unmet => 'skip'
 );
 -- Regular branch: only runs when role!=admin
 select pgflow.add_step(
   flow_slug => 'branch_flow',
   step_slug => 'regular_branch',
-  condition_not_pattern => '{"role": "admin"}'::jsonb,  -- ifNot: role=admin
+  forbidden_input_pattern => '{"role": "admin"}'::jsonb,  -- ifNot: role=admin
   when_unmet => 'skip'
 );
 

@@ -59,7 +59,7 @@ describe('Condition Options', () => {
   });
 
   describe('compileFlow includes condition parameters', () => {
-    it('should compile condition_pattern for root step', () => {
+    it('should compile required_input_pattern for root step', () => {
       const flow = new Flow({ slug: 'test_flow' }).step(
         { slug: 'step1', if: { enabled: true } },
         () => 'result'
@@ -69,7 +69,7 @@ describe('Condition Options', () => {
 
       expect(statements).toHaveLength(2);
       expect(statements[1]).toContain(
-        'condition_pattern => \'{"enabled":true}\''
+        'required_input_pattern => \'{"enabled":true}\''
       );
     });
 
@@ -85,7 +85,7 @@ describe('Condition Options', () => {
       expect(statements[1]).toContain("when_unmet => 'fail'");
     });
 
-    it('should compile both condition_pattern and when_unmet together', () => {
+    it('should compile both required_input_pattern and when_unmet together', () => {
       const flow = new Flow({ slug: 'test_flow' }).step(
         {
           slug: 'step1',
@@ -99,7 +99,7 @@ describe('Condition Options', () => {
 
       expect(statements).toHaveLength(2);
       expect(statements[1]).toContain(
-        'condition_pattern => \'{"active":true,"type":"premium"}\''
+        'required_input_pattern => \'{"active":true,"type":"premium"}\''
       );
       expect(statements[1]).toContain("when_unmet => 'skip-cascade'");
     });
@@ -122,7 +122,7 @@ describe('Condition Options', () => {
       expect(statements[1]).toContain('max_attempts => 3');
       expect(statements[1]).toContain('timeout => 60');
       expect(statements[1]).toContain(
-        'condition_pattern => \'{"enabled":true}\''
+        'required_input_pattern => \'{"enabled":true}\''
       );
       expect(statements[1]).toContain("when_unmet => 'skip'");
     });
@@ -145,7 +145,7 @@ describe('Condition Options', () => {
       expect(statements).toHaveLength(3);
       expect(statements[2]).toContain("ARRAY['first']");
       expect(statements[2]).toContain(
-        'condition_pattern => \'{"first":{"success":true}}\''
+        'required_input_pattern => \'{"first":{"success":true}}\''
       );
       expect(statements[2]).toContain("when_unmet => 'skip'");
     });
@@ -225,7 +225,7 @@ describe('Condition Options', () => {
   });
 
   describe('compileFlow includes ifNot parameters', () => {
-    it('should compile condition_not_pattern for root step', () => {
+    it('should compile forbidden_input_pattern for root step', () => {
       const flow = new Flow({ slug: 'test_flow' }).step(
         { slug: 'step1', ifNot: { role: 'admin' } },
         () => 'result'
@@ -235,7 +235,7 @@ describe('Condition Options', () => {
 
       expect(statements).toHaveLength(2);
       expect(statements[1]).toContain(
-        'condition_not_pattern => \'{"role":"admin"}\''
+        'forbidden_input_pattern => \'{"role":"admin"}\''
       );
     });
 
@@ -254,10 +254,10 @@ describe('Condition Options', () => {
 
       expect(statements).toHaveLength(2);
       expect(statements[1]).toContain(
-        'condition_pattern => \'{"active":true}\''
+        'required_input_pattern => \'{"active":true}\''
       );
       expect(statements[1]).toContain(
-        'condition_not_pattern => \'{"suspended":true}\''
+        'forbidden_input_pattern => \'{"suspended":true}\''
       );
       expect(statements[1]).toContain("when_unmet => 'skip'");
     });
@@ -280,7 +280,7 @@ describe('Condition Options', () => {
       expect(statements).toHaveLength(3);
       expect(statements[2]).toContain("ARRAY['first']");
       expect(statements[2]).toContain(
-        'condition_not_pattern => \'{"first":{"error":true}}\''
+        'forbidden_input_pattern => \'{"first":{"error":true}}\''
       );
       expect(statements[2]).toContain("when_unmet => 'skip'");
     });

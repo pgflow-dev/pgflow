@@ -12,7 +12,7 @@ select pgflow.create_flow('conditional_flow');
 select pgflow.add_step(
   flow_slug => 'conditional_flow',
   step_slug => 'checked_step',
-  condition_pattern => '{"enabled": true}'::jsonb,
+  required_input_pattern => '{"enabled": true}'::jsonb,
   when_unmet => 'skip-cascade'  -- skip this AND dependents
 );
 select pgflow.add_step(

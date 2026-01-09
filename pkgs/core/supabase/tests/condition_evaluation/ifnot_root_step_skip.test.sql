@@ -10,7 +10,7 @@ select pgflow.create_flow('ifnot_skip_flow');
 select pgflow.add_step(
   flow_slug => 'ifnot_skip_flow',
   step_slug => 'no_admin_step',
-  condition_not_pattern => '{"role": "admin"}'::jsonb,  -- must NOT contain role=admin
+  forbidden_input_pattern => '{"role": "admin"}'::jsonb,  -- must NOT contain role=admin
   when_unmet => 'skip'
 );
 -- Add another root step without condition

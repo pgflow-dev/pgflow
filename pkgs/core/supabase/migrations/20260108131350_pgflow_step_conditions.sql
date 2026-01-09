@@ -15,7 +15,7 @@ END) <= 1), ADD CONSTRAINT "skip_reason_matches_status" CHECK (((status = 'skipp
 -- Create index "idx_step_states_skipped" to table: "step_states"
 CREATE INDEX "idx_step_states_skipped" ON "pgflow"."step_states" ("run_id", "step_slug") WHERE (status = 'skipped'::text);
 -- Modify "steps" table
-ALTER TABLE "pgflow"."steps" ADD CONSTRAINT "when_failed_is_valid" CHECK (when_failed = ANY (ARRAY['fail'::text, 'skip'::text, 'skip-cascade'::text])), ADD CONSTRAINT "when_unmet_is_valid" CHECK (when_unmet = ANY (ARRAY['fail'::text, 'skip'::text, 'skip-cascade'::text])), ADD COLUMN "condition_pattern" jsonb NULL, ADD COLUMN "condition_not_pattern" jsonb NULL, ADD COLUMN "when_unmet" text NOT NULL DEFAULT 'skip', ADD COLUMN "when_failed" text NOT NULL DEFAULT 'fail';
+ALTER TABLE "pgflow"."steps" ADD CONSTRAINT "when_failed_is_valid" CHECK (when_failed = ANY (ARRAY['fail'::text, 'skip'::text, 'skip-cascade'::text])), ADD CONSTRAINT "when_unmet_is_valid" CHECK (when_unmet = ANY (ARRAY['fail'::text, 'skip'::text, 'skip-cascade'::text])), ADD COLUMN "required_input_pattern" jsonb NULL, ADD COLUMN "forbidden_input_pattern" jsonb NULL, ADD COLUMN "when_unmet" text NOT NULL DEFAULT 'skip', ADD COLUMN "when_failed" text NOT NULL DEFAULT 'fail';
 -- Modify "_compare_flow_shapes" function
 CREATE OR REPLACE FUNCTION "pgflow"."_compare_flow_shapes" ("p_local" jsonb, "p_db" jsonb) RETURNS text[] LANGUAGE plpgsql STABLE SET "search_path" = '' AS $BODY$
 DECLARE
@@ -142,6 +142,34 @@ BEGIN
           )
         );
       END IF;
+
+      -- Compare requiredInputPattern (structural - affects DAG execution semantics)
+      -- Uses -> (jsonb) not ->> (text) to properly compare wrapper objects
+      IF v_local_step->'requiredInputPattern' IS DISTINCT FROM v_db_step->'requiredInputPattern' THEN
+        v_differences := array_append(
+          v_differences,
+          format(
+            $$Step at index %s: requiredInputPattern differs '%s' vs '%s'$$,
+            v_idx,
+            v_local_step->'requiredInputPattern',
+            v_db_step->'requiredInputPattern'
+          )
+        );
+      END IF;
+
+      -- Compare forbiddenInputPattern (structural - affects DAG execution semantics)
+      -- Uses -> (jsonb) not ->> (text) to properly compare wrapper objects
+      IF v_local_step->'forbiddenInputPattern' IS DISTINCT FROM v_db_step->'forbiddenInputPattern' THEN
+        v_differences := array_append(
+          v_differences,
+          format(
+            $$Step at index %s: forbiddenInputPattern differs '%s' vs '%s'$$,
+            v_idx,
+            v_local_step->'forbiddenInputPattern',
+            v_db_step->'forbiddenInputPattern'
+          )
+        );
+      END IF;
     END IF;
   END LOOP;
 
@@ -149,7 +177,7 @@ BEGIN
 END;
 $BODY$;
 -- Create "add_step" function
-CREATE FUNCTION "pgflow"."add_step" ("flow_slug" text, "step_slug" text, "deps_slugs" text[] DEFAULT '{}', "max_attempts" integer DEFAULT NULL::integer, "base_delay" integer DEFAULT NULL::integer, "timeout" integer DEFAULT NULL::integer, "start_delay" integer DEFAULT NULL::integer, "step_type" text DEFAULT 'single', "condition_pattern" jsonb DEFAULT NULL::jsonb, "condition_not_pattern" jsonb DEFAULT NULL::jsonb, "when_unmet" text DEFAULT 'skip', "when_failed" text DEFAULT 'fail') RETURNS "pgflow"."steps" LANGUAGE plpgsql SET "search_path" = '' AS $$
+CREATE FUNCTION "pgflow"."add_step" ("flow_slug" text, "step_slug" text, "deps_slugs" text[] DEFAULT '{}', "max_attempts" integer DEFAULT NULL::integer, "base_delay" integer DEFAULT NULL::integer, "timeout" integer DEFAULT NULL::integer, "start_delay" integer DEFAULT NULL::integer, "step_type" text DEFAULT 'single', "required_input_pattern" jsonb DEFAULT NULL::jsonb, "forbidden_input_pattern" jsonb DEFAULT NULL::jsonb, "when_unmet" text DEFAULT 'skip', "when_failed" text DEFAULT 'fail') RETURNS "pgflow"."steps" LANGUAGE plpgsql SET "search_path" = '' AS $$
 DECLARE
   result_step pgflow.steps;
   next_idx int;
@@ -174,7 +202,7 @@ BEGIN
   INSERT INTO pgflow.steps (
     flow_slug, step_slug, step_type, step_index, deps_count,
     opt_max_attempts, opt_base_delay, opt_timeout, opt_start_delay,
-    condition_pattern, condition_not_pattern, when_unmet, when_failed
+    required_input_pattern, forbidden_input_pattern, when_unmet, when_failed
   )
   VALUES (
     add_step.flow_slug,
@@ -186,8 +214,8 @@ BEGIN
     add_step.base_delay,
     add_step.timeout,
     add_step.start_delay,
-    add_step.condition_pattern,
-    add_step.condition_not_pattern,
+    add_step.required_input_pattern,
+    add_step.forbidden_input_pattern,
     add_step.when_unmet,
     add_step.when_failed
   )
@@ -246,7 +274,17 @@ BEGIN
       start_delay => (v_step_options->>'startDelay')::int,
       step_type => v_step->>'stepType',
       when_unmet => v_step->>'whenUnmet',
-      when_failed => v_step->>'whenFailed'
+      when_failed => v_step->>'whenFailed',
+      required_input_pattern => CASE
+        WHEN (v_step->'requiredInputPattern'->>'defined')::boolean
+        THEN v_step->'requiredInputPattern'->'value'
+        ELSE NULL
+      END,
+      forbidden_input_pattern => CASE
+        WHEN (v_step->'forbiddenInputPattern'->>'defined')::boolean
+        THEN v_step->'forbiddenInputPattern'->'value'
+        ELSE NULL
+      END
     );
   END LOOP;
 END;
@@ -270,7 +308,17 @@ SELECT jsonb_build_object(
             '[]'::jsonb
           ),
           'whenUnmet', step.when_unmet,
-          'whenFailed', step.when_failed
+          'whenFailed', step.when_failed,
+          'requiredInputPattern', CASE
+            WHEN step.required_input_pattern IS NULL
+            THEN '{"defined": false}'::jsonb
+            ELSE jsonb_build_object('defined', true, 'value', step.required_input_pattern)
+          END,
+          'forbiddenInputPattern', CASE
+            WHEN step.forbidden_input_pattern IS NULL
+            THEN '{"defined": false}'::jsonb
+            ELSE jsonb_build_object('defined', true, 'value', step.forbidden_input_pattern)
+          END
         )
         ORDER BY step.step_index
       ),
@@ -416,14 +464,14 @@ BEGIN
     -- ==========================================
     -- Find first step (by topological order) with unmet condition and 'fail' mode.
     -- Condition is unmet when:
-    --   (condition_pattern is set AND input does NOT contain it) OR
-    --   (condition_not_pattern is set AND input DOES contain it)
+    --   (required_input_pattern is set AND input does NOT contain it) OR
+    --   (forbidden_input_pattern is set AND input DOES contain it)
     WITH steps_with_conditions AS (
       SELECT
         step_state.flow_slug,
         step_state.step_slug,
-        step.condition_pattern,
-        step.condition_not_pattern,
+        step.required_input_pattern,
+        step.forbidden_input_pattern,
         step.when_unmet,
         step.deps_count,
         step.step_index
@@ -434,7 +482,7 @@ BEGIN
       WHERE step_state.run_id = cascade_resolve_conditions.run_id
         AND step_state.status = 'created'
         AND step_state.remaining_deps = 0
-        AND (step.condition_pattern IS NOT NULL OR step.condition_not_pattern IS NOT NULL)
+        AND (step.required_input_pattern IS NOT NULL OR step.forbidden_input_pattern IS NOT NULL)
     ),
     step_deps_output AS (
       SELECT
@@ -453,16 +501,16 @@ BEGIN
       SELECT
         swc.*,
         -- condition_met = (if IS NULL OR input @> if) AND (ifNot IS NULL OR NOT(input @> ifNot))
-        (swc.condition_pattern IS NULL OR
-          CASE WHEN swc.deps_count = 0 THEN v_run_input ELSE COALESCE(sdo.deps_output, '{}'::jsonb) END @> swc.condition_pattern)
+        (swc.required_input_pattern IS NULL OR
+          CASE WHEN swc.deps_count = 0 THEN v_run_input ELSE COALESCE(sdo.deps_output, '{}'::jsonb) END @> swc.required_input_pattern)
         AND
-        (swc.condition_not_pattern IS NULL OR
-          NOT (CASE WHEN swc.deps_count = 0 THEN v_run_input ELSE COALESCE(sdo.deps_output, '{}'::jsonb) END @> swc.condition_not_pattern))
+        (swc.forbidden_input_pattern IS NULL OR
+          NOT (CASE WHEN swc.deps_count = 0 THEN v_run_input ELSE COALESCE(sdo.deps_output, '{}'::jsonb) END @> swc.forbidden_input_pattern))
         AS condition_met
       FROM steps_with_conditions swc
       LEFT JOIN step_deps_output sdo ON sdo.step_slug = swc.step_slug
     )
-    SELECT flow_slug, step_slug, condition_pattern, condition_not_pattern
+    SELECT flow_slug, step_slug, required_input_pattern, forbidden_input_pattern
     INTO v_first_fail
     FROM condition_evaluations
     WHERE NOT condition_met AND when_unmet = 'fail'
@@ -497,8 +545,8 @@ BEGIN
       SELECT
         step_state.flow_slug,
         step_state.step_slug,
-        step.condition_pattern,
-        step.condition_not_pattern,
+        step.required_input_pattern,
+        step.forbidden_input_pattern,
         step.when_unmet,
         step.deps_count,
         step.step_index
@@ -509,7 +557,7 @@ BEGIN
       WHERE step_state.run_id = cascade_resolve_conditions.run_id
         AND step_state.status = 'created'
         AND step_state.remaining_deps = 0
-        AND (step.condition_pattern IS NOT NULL OR step.condition_not_pattern IS NOT NULL)
+        AND (step.required_input_pattern IS NOT NULL OR step.forbidden_input_pattern IS NOT NULL)
     ),
     step_deps_output AS (
       SELECT
@@ -528,11 +576,11 @@ BEGIN
       SELECT
         swc.*,
         -- condition_met = (if IS NULL OR input @> if) AND (ifNot IS NULL OR NOT(input @> ifNot))
-        (swc.condition_pattern IS NULL OR
-          CASE WHEN swc.deps_count = 0 THEN v_run_input ELSE COALESCE(sdo.deps_output, '{}'::jsonb) END @> swc.condition_pattern)
+        (swc.required_input_pattern IS NULL OR
+          CASE WHEN swc.deps_count = 0 THEN v_run_input ELSE COALESCE(sdo.deps_output, '{}'::jsonb) END @> swc.required_input_pattern)
         AND
-        (swc.condition_not_pattern IS NULL OR
-          NOT (CASE WHEN swc.deps_count = 0 THEN v_run_input ELSE COALESCE(sdo.deps_output, '{}'::jsonb) END @> swc.condition_not_pattern))
+        (swc.forbidden_input_pattern IS NULL OR
+          NOT (CASE WHEN swc.deps_count = 0 THEN v_run_input ELSE COALESCE(sdo.deps_output, '{}'::jsonb) END @> swc.forbidden_input_pattern))
         AS condition_met
       FROM steps_with_conditions swc
       LEFT JOIN step_deps_output sdo ON sdo.step_slug = swc.step_slug
@@ -613,15 +661,15 @@ BEGIN
     WHERE ready_step.run_id = cascade_resolve_conditions.run_id
       AND ready_step.status = 'created'
       AND ready_step.remaining_deps = 0
-      AND (step.condition_pattern IS NOT NULL OR step.condition_not_pattern IS NOT NULL)
+      AND (step.required_input_pattern IS NOT NULL OR step.forbidden_input_pattern IS NOT NULL)
       AND step.when_unmet = 'skip-cascade'
       -- Condition is NOT met when: (if fails) OR (ifNot fails)
       AND NOT (
-        (step.condition_pattern IS NULL OR
-          CASE WHEN step.deps_count = 0 THEN v_run_input ELSE COALESCE(agg_deps.deps_output, '{}'::jsonb) END @> step.condition_pattern)
+        (step.required_input_pattern IS NULL OR
+          CASE WHEN step.deps_count = 0 THEN v_run_input ELSE COALESCE(agg_deps.deps_output, '{}'::jsonb) END @> step.required_input_pattern)
         AND
-        (step.condition_not_pattern IS NULL OR
-          NOT (CASE WHEN step.deps_count = 0 THEN v_run_input ELSE COALESCE(agg_deps.deps_output, '{}'::jsonb) END @> step.condition_not_pattern))
+        (step.forbidden_input_pattern IS NULL OR
+          NOT (CASE WHEN step.deps_count = 0 THEN v_run_input ELSE COALESCE(agg_deps.deps_output, '{}'::jsonb) END @> step.forbidden_input_pattern))
       )
     ORDER BY step.step_index;
 

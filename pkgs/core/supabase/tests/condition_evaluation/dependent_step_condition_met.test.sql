@@ -14,7 +14,7 @@ select pgflow.add_step(
   flow_slug => 'conditional_flow',
   step_slug => 'checked_step',
   deps_slugs => ARRAY['first'],
-  condition_pattern => '{"first": {"success": true}}'::jsonb,  -- first.success must be true
+  required_input_pattern => '{"first": {"success": true}}'::jsonb,  -- first.success must be true
   when_unmet => 'skip'
 );
 

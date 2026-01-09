@@ -47,14 +47,14 @@ BEGIN
     -- ==========================================
     -- Find first step (by topological order) with unmet condition and 'fail' mode.
     -- Condition is unmet when:
-    --   (condition_pattern is set AND input does NOT contain it) OR
-    --   (condition_not_pattern is set AND input DOES contain it)
+    --   (required_input_pattern is set AND input does NOT contain it) OR
+    --   (forbidden_input_pattern is set AND input DOES contain it)
     WITH steps_with_conditions AS (
       SELECT
         step_state.flow_slug,
         step_state.step_slug,
-        step.condition_pattern,
-        step.condition_not_pattern,
+        step.required_input_pattern,
+        step.forbidden_input_pattern,
         step.when_unmet,
         step.deps_count,
         step.step_index
@@ -65,7 +65,7 @@ BEGIN
       WHERE step_state.run_id = cascade_resolve_conditions.run_id
         AND step_state.status = 'created'
         AND step_state.remaining_deps = 0
-        AND (step.condition_pattern IS NOT NULL OR step.condition_not_pattern IS NOT NULL)
+        AND (step.required_input_pattern IS NOT NULL OR step.forbidden_input_pattern IS NOT NULL)
     ),
     step_deps_output AS (
       SELECT
@@ -84,16 +84,16 @@ BEGIN
       SELECT
         swc.*,
         -- condition_met = (if IS NULL OR input @> if) AND (ifNot IS NULL OR NOT(input @> ifNot))
-        (swc.condition_pattern IS NULL OR
-          CASE WHEN swc.deps_count = 0 THEN v_run_input ELSE COALESCE(sdo.deps_output, '{}'::jsonb) END @> swc.condition_pattern)
+        (swc.required_input_pattern IS NULL OR
+          CASE WHEN swc.deps_count = 0 THEN v_run_input ELSE COALESCE(sdo.deps_output, '{}'::jsonb) END @> swc.required_input_pattern)
         AND
-        (swc.condition_not_pattern IS NULL OR
-          NOT (CASE WHEN swc.deps_count = 0 THEN v_run_input ELSE COALESCE(sdo.deps_output, '{}'::jsonb) END @> swc.condition_not_pattern))
+        (swc.forbidden_input_pattern IS NULL OR
+          NOT (CASE WHEN swc.deps_count = 0 THEN v_run_input ELSE COALESCE(sdo.deps_output, '{}'::jsonb) END @> swc.forbidden_input_pattern))
         AS condition_met
       FROM steps_with_conditions swc
       LEFT JOIN step_deps_output sdo ON sdo.step_slug = swc.step_slug
     )
-    SELECT flow_slug, step_slug, condition_pattern, condition_not_pattern
+    SELECT flow_slug, step_slug, required_input_pattern, forbidden_input_pattern
     INTO v_first_fail
     FROM condition_evaluations
     WHERE NOT condition_met AND when_unmet = 'fail'
@@ -128,8 +128,8 @@ BEGIN
       SELECT
         step_state.flow_slug,
         step_state.step_slug,
-        step.condition_pattern,
-        step.condition_not_pattern,
+        step.required_input_pattern,
+        step.forbidden_input_pattern,
         step.when_unmet,
         step.deps_count,
         step.step_index
@@ -140,7 +140,7 @@ BEGIN
       WHERE step_state.run_id = cascade_resolve_conditions.run_id
         AND step_state.status = 'created'
         AND step_state.remaining_deps = 0
-        AND (step.condition_pattern IS NOT NULL OR step.condition_not_pattern IS NOT NULL)
+        AND (step.required_input_pattern IS NOT NULL OR step.forbidden_input_pattern IS NOT NULL)
     ),
     step_deps_output AS (
       SELECT
@@ -159,11 +159,11 @@ BEGIN
       SELECT
         swc.*,
         -- condition_met = (if IS NULL OR input @> if) AND (ifNot IS NULL OR NOT(input @> ifNot))
-        (swc.condition_pattern IS NULL OR
-          CASE WHEN swc.deps_count = 0 THEN v_run_input ELSE COALESCE(sdo.deps_output, '{}'::jsonb) END @> swc.condition_pattern)
+        (swc.required_input_pattern IS NULL OR
+          CASE WHEN swc.deps_count = 0 THEN v_run_input ELSE COALESCE(sdo.deps_output, '{}'::jsonb) END @> swc.required_input_pattern)
         AND
-        (swc.condition_not_pattern IS NULL OR
-          NOT (CASE WHEN swc.deps_count = 0 THEN v_run_input ELSE COALESCE(sdo.deps_output, '{}'::jsonb) END @> swc.condition_not_pattern))
+        (swc.forbidden_input_pattern IS NULL OR
+          NOT (CASE WHEN swc.deps_count = 0 THEN v_run_input ELSE COALESCE(sdo.deps_output, '{}'::jsonb) END @> swc.forbidden_input_pattern))
         AS condition_met
       FROM steps_with_conditions swc
       LEFT JOIN step_deps_output sdo ON sdo.step_slug = swc.step_slug
@@ -244,15 +244,15 @@ BEGIN
     WHERE ready_step.run_id = cascade_resolve_conditions.run_id
       AND ready_step.status = 'created'
       AND ready_step.remaining_deps = 0
-      AND (step.condition_pattern IS NOT NULL OR step.condition_not_pattern IS NOT NULL)
+      AND (step.required_input_pattern IS NOT NULL OR step.forbidden_input_pattern IS NOT NULL)
       AND step.when_unmet = 'skip-cascade'
       -- Condition is NOT met when: (if fails) OR (ifNot fails)
       AND NOT (
-        (step.condition_pattern IS NULL OR
-          CASE WHEN step.deps_count = 0 THEN v_run_input ELSE COALESCE(agg_deps.deps_output, '{}'::jsonb) END @> step.condition_pattern)
+        (step.required_input_pattern IS NULL OR
+          CASE WHEN step.deps_count = 0 THEN v_run_input ELSE COALESCE(agg_deps.deps_output, '{}'::jsonb) END @> step.required_input_pattern)
         AND
-        (step.condition_not_pattern IS NULL OR
-          NOT (CASE WHEN step.deps_count = 0 THEN v_run_input ELSE COALESCE(agg_deps.deps_output, '{}'::jsonb) END @> step.condition_not_pattern))
+        (step.forbidden_input_pattern IS NULL OR
+          NOT (CASE WHEN step.deps_count = 0 THEN v_run_input ELSE COALESCE(agg_deps.deps_output, '{}'::jsonb) END @> step.forbidden_input_pattern))
       )
     ORDER BY step.step_index;
 

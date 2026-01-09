@@ -307,6 +307,8 @@ Deno.test(
           dependencies: [],
           whenUnmet: 'skip',
           whenFailed: 'fail',
+          requiredInputPattern: { defined: false },
+          forbiddenInputPattern: { defined: false },
         },
       ],
     };
