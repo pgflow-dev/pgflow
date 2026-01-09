@@ -1,4 +1,4 @@
-import { AnyFlow } from './dsl.js';
+import { AnyFlow, WhenUnmetMode, RetriesExhaustedMode } from './dsl.js';
 
 // ========================
 // SHAPE TYPE DEFINITIONS
@@ -31,11 +31,16 @@ export interface FlowShapeOptions {
  * The `options` field is included for flow creation but NOT compared during
  * shape comparison. Options can be tuned at runtime via SQL without
  * requiring recompilation. See: /deploy/tune-flow-config/
+ *
+ * `whenUnmet` and `whenFailed` ARE structural - they affect DAG execution
+ * semantics and must match between worker and database.
  */
 export interface StepShape {
   slug: string;
   stepType: 'single' | 'map';
   dependencies: string[]; // sorted alphabetically for deterministic comparison
+  whenUnmet: WhenUnmetMode;
+  whenFailed: RetriesExhaustedMode;
   options?: StepShapeOptions;
 }
 
@@ -107,6 +112,9 @@ export function extractFlowShape(flow: AnyFlow): FlowShape {
       stepType: stepDef.stepType ?? 'single',
       // Sort dependencies alphabetically for deterministic comparison
       dependencies: [...stepDef.dependencies].sort(),
+      // Condition modes are structural - they affect DAG execution semantics
+      whenUnmet: stepDef.options.whenUnmet ?? 'skip',
+      whenFailed: stepDef.options.retriesExhausted ?? 'fail',
     };
 
     // Only include options if at least one is defined
@@ -175,9 +183,13 @@ export function compareFlowShapes(
     const bStep = b.steps[i];
 
     if (!aStep) {
-      differences.push(`Step at index ${i}: missing in first shape (second has '${bStep.slug}')`);
+      differences.push(
+        `Step at index ${i}: missing in first shape (second has '${bStep.slug}')`
+      );
     } else if (!bStep) {
-      differences.push(`Step at index ${i}: missing in second shape (first has '${aStep.slug}')`);
+      differences.push(
+        `Step at index ${i}: missing in second shape (first has '${aStep.slug}')`
+      );
     } else {
       compareSteps(aStep, bStep, i, differences);
     }
@@ -217,7 +229,22 @@ function compareSteps(
   const bDeps = b.dependencies.join(',');
   if (aDeps !== bDeps) {
     differences.push(
-      `Step at index ${index}: dependencies differ [${a.dependencies.join(', ')}] vs [${b.dependencies.join(', ')}]`
+      `Step at index ${index}: dependencies differ [${a.dependencies.join(
+        ', '
+      )}] vs [${b.dependencies.join(', ')}]`
+    );
+  }
+
+  // Compare condition modes (structural - affects DAG execution semantics)
+  if (a.whenUnmet !== b.whenUnmet) {
+    differences.push(
+      `Step at index ${index}: whenUnmet differs '${a.whenUnmet}' vs '${b.whenUnmet}'`
+    );
+  }
+
+  if (a.whenFailed !== b.whenFailed) {
+    differences.push(
+      `Step at index ${index}: whenFailed differs '${a.whenFailed}' vs '${b.whenFailed}'`
     );
   }
 }

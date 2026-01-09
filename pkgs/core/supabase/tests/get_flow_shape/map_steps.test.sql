@@ -20,8 +20,8 @@ select is(
   pgflow._get_flow_shape('map_flow'),
   '{
     "steps": [
-      {"slug": "root_map", "stepType": "map", "dependencies": []},
-      {"slug": "process", "stepType": "single", "dependencies": ["root_map"]}
+      {"slug": "root_map", "stepType": "map", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail"},
+      {"slug": "process", "stepType": "single", "dependencies": ["root_map"], "whenUnmet": "skip", "whenFailed": "fail"}
     ]
   }'::jsonb,
   'Should correctly identify map step type'
