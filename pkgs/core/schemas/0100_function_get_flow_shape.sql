@@ -22,7 +22,9 @@ as $$
                 AND dep.step_slug = step.step_slug
             ),
             '[]'::jsonb
-          )
+          ),
+          'whenUnmet', step.when_unmet,
+          'whenFailed', step.when_failed
         )
         ORDER BY step.step_index
       ),

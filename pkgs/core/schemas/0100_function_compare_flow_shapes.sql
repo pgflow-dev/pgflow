@@ -107,6 +107,32 @@ BEGIN
           )
         );
       END IF;
+
+      -- Compare whenUnmet (structural - affects DAG execution semantics)
+      IF v_local_step->>'whenUnmet' != v_db_step->>'whenUnmet' THEN
+        v_differences := array_append(
+          v_differences,
+          format(
+            $$Step at index %s: whenUnmet differs '%s' vs '%s'$$,
+            v_idx,
+            v_local_step->>'whenUnmet',
+            v_db_step->>'whenUnmet'
+          )
+        );
+      END IF;
+
+      -- Compare whenFailed (structural - affects DAG execution semantics)
+      IF v_local_step->>'whenFailed' != v_db_step->>'whenFailed' THEN
+        v_differences := array_append(
+          v_differences,
+          format(
+            $$Step at index %s: whenFailed differs '%s' vs '%s'$$,
+            v_idx,
+            v_local_step->>'whenFailed',
+            v_db_step->>'whenFailed'
+          )
+        );
+      END IF;
     END IF;
   END LOOP;
 

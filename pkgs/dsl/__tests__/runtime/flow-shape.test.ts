@@ -61,6 +61,8 @@ describe('extractFlowShape', () => {
         slug: 'step1',
         stepType: 'single',
         dependencies: [],
+        whenUnmet: 'skip',
+        whenFailed: 'fail',
       });
     });
 
@@ -108,6 +110,8 @@ describe('extractFlowShape', () => {
         slug: 'step1',
         stepType: 'single',
         dependencies: [],
+        whenUnmet: 'skip',
+        whenFailed: 'fail',
         options: {
           maxAttempts: 3,
           baseDelay: 5,
@@ -129,6 +133,8 @@ describe('extractFlowShape', () => {
         slug: 'step1',
         stepType: 'single',
         dependencies: [],
+        whenUnmet: 'skip',
+        whenFailed: 'fail',
       });
       expect('options' in shape.steps[0]).toBe(false);
     });
@@ -160,6 +166,8 @@ describe('extractFlowShape', () => {
         slug: 'process_items',
         stepType: 'map',
         dependencies: [],
+        whenUnmet: 'skip',
+        whenFailed: 'fail',
       });
     });
 
@@ -175,6 +183,8 @@ describe('extractFlowShape', () => {
         slug: 'process',
         stepType: 'map',
         dependencies: ['get_items'],
+        whenUnmet: 'skip',
+        whenFailed: 'fail',
       });
     });
   });
@@ -189,7 +199,12 @@ describe('extractFlowShape', () => {
       })
         .step({ slug: 'website' }, (flowInput) => ({ content: flowInput.url }))
         .step(
-          { slug: 'sentiment', dependsOn: ['website'], maxAttempts: 5, timeout: 30 },
+          {
+            slug: 'sentiment',
+            dependsOn: ['website'],
+            maxAttempts: 5,
+            timeout: 30,
+          },
           () => ({ score: 0.8 })
         )
         .step({ slug: 'summary', dependsOn: ['website'] }, () => ({
@@ -209,11 +224,15 @@ describe('extractFlowShape', () => {
             slug: 'website',
             stepType: 'single',
             dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
           },
           {
             slug: 'sentiment',
             stepType: 'single',
             dependencies: ['website'],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
             options: {
               maxAttempts: 5,
               timeout: 30,
@@ -223,11 +242,15 @@ describe('extractFlowShape', () => {
             slug: 'summary',
             stepType: 'single',
             dependencies: ['website'],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
           },
           {
             slug: 'save_to_db',
             stepType: 'single',
             dependencies: ['sentiment', 'summary'], // sorted alphabetically
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
           },
         ],
         options: {
@@ -263,6 +286,8 @@ describe('compareFlowShapes', () => {
             slug: 'step1',
             stepType: 'single',
             dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
           },
         ],
       };
@@ -290,7 +315,13 @@ describe('compareFlowShapes', () => {
       };
       const b: FlowShape = {
         steps: [
-          { slug: 'step1', stepType: 'single', dependencies: [] },
+          {
+            slug: 'step1',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+          },
         ],
       };
 
@@ -305,7 +336,13 @@ describe('compareFlowShapes', () => {
     it('should detect extra step at end', () => {
       const a: FlowShape = {
         steps: [
-          { slug: 'step1', stepType: 'single', dependencies: [] },
+          {
+            slug: 'step1',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+          },
         ],
       };
       const b: FlowShape = { steps: [] };
@@ -321,14 +358,38 @@ describe('compareFlowShapes', () => {
     it('should detect different steps at same positions', () => {
       const a: FlowShape = {
         steps: [
-          { slug: 'step_a', stepType: 'single', dependencies: [] },
-          { slug: 'step_b', stepType: 'single', dependencies: [] },
+          {
+            slug: 'step_a',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+          },
+          {
+            slug: 'step_b',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+          },
         ],
       };
       const b: FlowShape = {
         steps: [
-          { slug: 'step_c', stepType: 'single', dependencies: [] },
-          { slug: 'step_d', stepType: 'single', dependencies: [] },
+          {
+            slug: 'step_c',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+          },
+          {
+            slug: 'step_d',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+          },
         ],
       };
 
@@ -347,14 +408,38 @@ describe('compareFlowShapes', () => {
     it('should detect steps in different order', () => {
       const a: FlowShape = {
         steps: [
-          { slug: 'step_a', stepType: 'single', dependencies: [] },
-          { slug: 'step_b', stepType: 'single', dependencies: [] },
+          {
+            slug: 'step_a',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+          },
+          {
+            slug: 'step_b',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+          },
         ],
       };
       const b: FlowShape = {
         steps: [
-          { slug: 'step_b', stepType: 'single', dependencies: [] },
-          { slug: 'step_a', stepType: 'single', dependencies: [] },
+          {
+            slug: 'step_b',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+          },
+          {
+            slug: 'step_a',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+          },
         ],
       };
 
@@ -373,12 +458,24 @@ describe('compareFlowShapes', () => {
     it('should detect stepType difference', () => {
       const a: FlowShape = {
         steps: [
-          { slug: 'step1', stepType: 'single', dependencies: [] },
+          {
+            slug: 'step1',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+          },
         ],
       };
       const b: FlowShape = {
         steps: [
-          { slug: 'step1', stepType: 'map', dependencies: [] },
+          {
+            slug: 'step1',
+            stepType: 'map',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+          },
         ],
       };
 
@@ -394,7 +491,13 @@ describe('compareFlowShapes', () => {
     it('should detect added dependency', () => {
       const a: FlowShape = {
         steps: [
-          { slug: 'step1', stepType: 'single', dependencies: [] },
+          {
+            slug: 'step1',
+            stepType: 'single',
+            dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
+          },
         ],
       };
       const b: FlowShape = {
@@ -403,6 +506,8 @@ describe('compareFlowShapes', () => {
             slug: 'step1',
             stepType: 'single',
             dependencies: ['step0'],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
           },
         ],
       };
@@ -421,6 +526,8 @@ describe('compareFlowShapes', () => {
             slug: 'step1',
             stepType: 'single',
             dependencies: ['dep1', 'dep2'],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
           },
         ],
       };
@@ -430,6 +537,8 @@ describe('compareFlowShapes', () => {
             slug: 'step1',
             stepType: 'single',
             dependencies: ['dep1'],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
           },
         ],
       };
@@ -448,6 +557,8 @@ describe('compareFlowShapes', () => {
             slug: 'step1',
             stepType: 'single',
             dependencies: ['old_dep'],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
           },
         ],
       };
@@ -457,6 +568,8 @@ describe('compareFlowShapes', () => {
             slug: 'step1',
             stepType: 'single',
             dependencies: ['new_dep'],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
           },
         ],
       };
@@ -473,12 +586,15 @@ describe('compareFlowShapes', () => {
     it('should match flows with same structure but different DSL options', () => {
       // This is the key behavior: options are in shape for creation,
       // but don't affect shape matching (runtime tunable via SQL)
-      const flowA = new Flow<string>({ slug: 'test_flow', maxAttempts: 3 }).step(
-        { slug: 'step1', timeout: 60 },
-        (flowInput) => flowInput
-      );
+      const flowA = new Flow<string>({
+        slug: 'test_flow',
+        maxAttempts: 3,
+      }).step({ slug: 'step1', timeout: 60 }, (flowInput) => flowInput);
 
-      const flowB = new Flow<string>({ slug: 'test_flow', maxAttempts: 10 }).step(
+      const flowB = new Flow<string>({
+        slug: 'test_flow',
+        maxAttempts: 10,
+      }).step(
         { slug: 'step1', timeout: 300, startDelay: 100 },
         (flowInput) => flowInput
       );
@@ -490,7 +606,10 @@ describe('compareFlowShapes', () => {
       expect(shapeA.options).toEqual({ maxAttempts: 3 });
       expect(shapeB.options).toEqual({ maxAttempts: 10 });
       expect(shapeA.steps[0].options).toEqual({ timeout: 60 });
-      expect(shapeB.steps[0].options).toEqual({ timeout: 300, startDelay: 100 });
+      expect(shapeB.steps[0].options).toEqual({
+        timeout: 300,
+        startDelay: 100,
+      });
 
       // But comparison ignores options - only structure matters
       const result = compareFlowShapes(shapeA, shapeB);
@@ -507,6 +626,8 @@ describe('compareFlowShapes', () => {
             slug: 'step1',
             stepType: 'single',
             dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
           },
         ],
       };
@@ -516,11 +637,15 @@ describe('compareFlowShapes', () => {
             slug: 'step1',
             stepType: 'map',
             dependencies: ['dep1'],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
           },
           {
             slug: 'step2',
             stepType: 'single',
             dependencies: [],
+            whenUnmet: 'skip',
+            whenFailed: 'fail',
           },
         ],
       };

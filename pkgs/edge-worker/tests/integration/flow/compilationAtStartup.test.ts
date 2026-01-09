@@ -9,11 +9,12 @@ import postgresLib from 'postgres';
 import { integrationConfig } from '../../config.ts';
 
 // Define a minimal test flow
-const TestCompilationFlow = new Flow<{ value: number }>({ slug: 'test_compilation_flow' })
-  .step({ slug: 'double' }, async (flowInput) => {
-    await delay(1);
-    return flowInput.value * 2;
-  });
+const TestCompilationFlow = new Flow<{ value: number }>({
+  slug: 'test_compilation_flow',
+}).step({ slug: 'double' }, async (flowInput) => {
+  await delay(1);
+  return flowInput.value * 2;
+});
 
 const noop = () => {};
 
@@ -43,7 +44,9 @@ function createPlatformAdapterWithLocalEnv(
 
   return {
     ...baseAdapter,
-    get isLocalEnvironment() { return isLocal; },
+    get isLocalEnvironment() {
+      return isLocal;
+    },
   };
 }
 
@@ -56,7 +59,11 @@ Deno.test(
     const [flowBefore] = await sql`
       SELECT * FROM pgflow.flows WHERE flow_slug = 'test_compilation_flow'
     `;
-    assertEquals(flowBefore, undefined, 'Flow should not exist before worker startup');
+    assertEquals(
+      flowBefore,
+      undefined,
+      'Flow should not exist before worker startup'
+    );
 
     // Create worker (compilation happens during acknowledgeStart)
     const worker = createFlowWorker(
@@ -86,7 +93,11 @@ Deno.test(
       const [flowAfter] = await sql`
         SELECT * FROM pgflow.flows WHERE flow_slug = 'test_compilation_flow'
       `;
-      assertEquals(flowAfter?.flow_slug, 'test_compilation_flow', 'Flow should be created');
+      assertEquals(
+        flowAfter?.flow_slug,
+        'test_compilation_flow',
+        'Flow should be created'
+      );
 
       // Verify step was created
       const steps = await sql`
@@ -113,7 +124,11 @@ Deno.test(
     const [flowBefore] = await sql`
       SELECT * FROM pgflow.flows WHERE flow_slug = 'test_compilation_flow'
     `;
-    assertEquals(flowBefore?.flow_slug, 'test_compilation_flow', 'Flow should exist');
+    assertEquals(
+      flowBefore?.flow_slug,
+      'test_compilation_flow',
+      'Flow should exist'
+    );
 
     // Create and start worker
     const worker = createFlowWorker(
@@ -143,7 +158,11 @@ Deno.test(
       const [flowAfter] = await sql`
         SELECT * FROM pgflow.flows WHERE flow_slug = 'test_compilation_flow'
       `;
-      assertEquals(flowAfter?.flow_slug, 'test_compilation_flow', 'Flow should still exist');
+      assertEquals(
+        flowAfter?.flow_slug,
+        'test_compilation_flow',
+        'Flow should still exist'
+      );
     } finally {
       await worker.stop();
     }
@@ -196,9 +215,17 @@ Deno.test(
       await delay(200);
 
       // Verify error was thrown
-      assertEquals(caughtErrors.length > 0, true, 'Should have caught an error');
+      assertEquals(
+        caughtErrors.length > 0,
+        true,
+        'Should have caught an error'
+      );
       const caughtError = caughtErrors[0];
-      assertEquals(caughtError.name, 'FlowShapeMismatchError', 'Error should be FlowShapeMismatchError');
+      assertEquals(
+        caughtError.name,
+        'FlowShapeMismatchError',
+        'Error should be FlowShapeMismatchError'
+      );
       assertEquals(
         caughtError.message.includes('shape mismatch'),
         true,
@@ -254,7 +281,11 @@ Deno.test(
         SELECT step_slug FROM pgflow.steps WHERE flow_slug = 'test_compilation_flow' ORDER BY step_slug
       `;
       assertEquals(steps.length, 1, 'Should have 1 step after recompilation');
-      assertEquals(steps[0].step_slug, 'double', 'Step should be "double" after recompilation');
+      assertEquals(
+        steps[0].step_slug,
+        'double',
+        'Step should be "double" after recompilation'
+      );
     } finally {
       await worker.stop();
     }
@@ -269,7 +300,15 @@ Deno.test(
     const CONCURRENT = 50; // 50 separate connections
     const flowSlug = `concurrent_test_${Date.now()}`;
     const shape = {
-      steps: [{ slug: 'step1', stepType: 'single', dependencies: [] }],
+      steps: [
+        {
+          slug: 'step1',
+          stepType: 'single',
+          dependencies: [],
+          whenUnmet: 'skip',
+          whenFailed: 'fail',
+        },
+      ],
     };
 
     // Create N SEPARATE connections (critical for true concurrency)
@@ -283,8 +322,9 @@ Deno.test(
       // Fire all compilations simultaneously on separate connections
       // Note: Must use conn.json() for proper jsonb parameter passing
       const results = await Promise.all(
-        connections.map((conn) =>
-          conn`SELECT pgflow.ensure_flow_compiled(
+        connections.map(
+          (conn) =>
+            conn`SELECT pgflow.ensure_flow_compiled(
             ${flowSlug},
             ${conn.json(shape)}
           ) as result`
@@ -314,7 +354,9 @@ Deno.test(
       assertEquals(stepCount.count, 1, 'Exactly 1 step should exist');
     } finally {
       // Cleanup
-      await sql`SELECT pgflow.delete_flow_and_data(${flowSlug})`.catch(() => {});
+      await sql`SELECT pgflow.delete_flow_and_data(${flowSlug})`.catch(
+        () => {}
+      );
       await Promise.all(connections.map((c) => c.end()));
     }
   })
@@ -331,14 +373,18 @@ Deno.test(
     const [flowBefore] = await sql`
       SELECT * FROM pgflow.flows WHERE flow_slug = 'test_compilation_flow'
     `;
-    assertEquals(flowBefore, undefined, 'Flow should not exist before worker startup');
+    assertEquals(
+      flowBefore,
+      undefined,
+      'Flow should not exist before worker startup'
+    );
 
     // Create worker with compilation: false
     const worker = createFlowWorker(
       TestCompilationFlow,
       {
         sql,
-        compilation: false,  // SKIP compilation
+        compilation: false, // SKIP compilation
         maxConcurrent: 1,
         batchSize: 10,
         maxPollSeconds: 1,
@@ -359,7 +405,11 @@ Deno.test(
       const [flowAfter] = await sql`
         SELECT * FROM pgflow.flows WHERE flow_slug = 'test_compilation_flow'
       `;
-      assertEquals(flowAfter, undefined, 'Flow should NOT be created when compilation skipped');
+      assertEquals(
+        flowAfter,
+        undefined,
+        'Flow should NOT be created when compilation skipped'
+      );
     } finally {
       await worker.stop();
     }
@@ -375,14 +425,18 @@ Deno.test(
     const [flowBefore] = await sql`
       SELECT * FROM pgflow.flows WHERE flow_slug = 'test_compilation_flow'
     `;
-    assertEquals(flowBefore, undefined, 'Flow should not exist before worker startup');
+    assertEquals(
+      flowBefore,
+      undefined,
+      'Flow should not exist before worker startup'
+    );
 
     // Create worker with compilation: {} (explicit)
     const worker = createFlowWorker(
       TestCompilationFlow,
       {
         sql,
-        compilation: {},  // EXPLICIT empty object = enable compilation
+        compilation: {}, // EXPLICIT empty object = enable compilation
         maxConcurrent: 1,
         batchSize: 10,
         maxPollSeconds: 1,
@@ -403,7 +457,11 @@ Deno.test(
       const [flowAfter] = await sql`
         SELECT * FROM pgflow.flows WHERE flow_slug = 'test_compilation_flow'
       `;
-      assertEquals(flowAfter?.flow_slug, 'test_compilation_flow', 'Flow should be created when compilation: {}');
+      assertEquals(
+        flowAfter?.flow_slug,
+        'test_compilation_flow',
+        'Flow should be created when compilation: {}'
+      );
     } finally {
       await worker.stop();
     }
@@ -426,7 +484,7 @@ Deno.test(
       TestCompilationFlow,
       {
         sql,
-        compilation: false,  // Skip compilation check
+        compilation: false, // Skip compilation check
         maxConcurrent: 1,
         batchSize: 10,
         maxPollSeconds: 1,
@@ -447,8 +505,16 @@ Deno.test(
       const workers = await sql`
         SELECT * FROM pgflow.workers WHERE worker_id = ${workerId}
       `;
-      assertEquals(workers.length, 1, 'Worker should be registered even when skipping compilation');
-      assertEquals(workers[0].queue_name, 'test_compilation_flow', 'Worker should be registered for the correct queue');
+      assertEquals(
+        workers.length,
+        1,
+        'Worker should be registered even when skipping compilation'
+      );
+      assertEquals(
+        workers[0].queue_name,
+        'test_compilation_flow',
+        'Worker should be registered for the correct queue'
+      );
     } finally {
       await worker.stop();
     }
@@ -474,7 +540,7 @@ Deno.test(
       TestCompilationFlow, // Has 'double' step, not 'old_step'
       {
         sql,
-        compilation: { allowDataLoss: true },  // Allow destructive recompile in production
+        compilation: { allowDataLoss: true }, // Allow destructive recompile in production
         maxConcurrent: 1,
         batchSize: 10,
         maxPollSeconds: 1,
@@ -497,8 +563,16 @@ Deno.test(
       const steps = await sql`
         SELECT step_slug FROM pgflow.steps WHERE flow_slug = 'test_compilation_flow' ORDER BY step_slug
       `;
-      assertEquals(steps.length, 1, 'Should have 1 step after recompilation with allowDataLoss');
-      assertEquals(steps[0].step_slug, 'double', 'Step should be "double" after recompilation');
+      assertEquals(
+        steps.length,
+        1,
+        'Should have 1 step after recompilation with allowDataLoss'
+      );
+      assertEquals(
+        steps[0].step_slug,
+        'double',
+        'Step should be "double" after recompilation'
+      );
     } finally {
       await worker.stop();
     }
@@ -524,7 +598,7 @@ Deno.test(
       TestCompilationFlow, // Has only 'double' step
       {
         sql,
-        compilation: { allowDataLoss: false },  // Explicit false
+        compilation: { allowDataLoss: false }, // Explicit false
         maxConcurrent: 1,
         batchSize: 10,
         maxPollSeconds: 1,
@@ -552,9 +626,17 @@ Deno.test(
       await delay(200);
 
       // Verify error was thrown
-      assertEquals(caughtErrors.length > 0, true, 'Should have caught an error');
+      assertEquals(
+        caughtErrors.length > 0,
+        true,
+        'Should have caught an error'
+      );
       const caughtError = caughtErrors[0];
-      assertEquals(caughtError.name, 'FlowShapeMismatchError', 'Error should be FlowShapeMismatchError');
+      assertEquals(
+        caughtError.name,
+        'FlowShapeMismatchError',
+        'Error should be FlowShapeMismatchError'
+      );
       assertEquals(
         caughtError.message.includes('shape mismatch'),
         true,

@@ -16,10 +16,10 @@ select is(
   pgflow._get_flow_shape('multi_deps'),
   '{
     "steps": [
-      {"slug": "alpha", "stepType": "single", "dependencies": []},
-      {"slug": "beta", "stepType": "single", "dependencies": []},
-      {"slug": "gamma", "stepType": "single", "dependencies": []},
-      {"slug": "final", "stepType": "single", "dependencies": ["alpha", "beta", "gamma"]}
+      {"slug": "alpha", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail"},
+      {"slug": "beta", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail"},
+      {"slug": "gamma", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail"},
+      {"slug": "final", "stepType": "single", "dependencies": ["alpha", "beta", "gamma"], "whenUnmet": "skip", "whenFailed": "fail"}
     ]
   }'::jsonb,
   'Dependencies should be sorted alphabetically'

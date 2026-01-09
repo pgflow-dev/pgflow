@@ -47,7 +47,9 @@ BEGIN
       base_delay => (v_step_options->>'baseDelay')::int,
       timeout => (v_step_options->>'timeout')::int,
       start_delay => (v_step_options->>'startDelay')::int,
-      step_type => v_step->>'stepType'
+      step_type => v_step->>'stepType',
+      when_unmet => v_step->>'whenUnmet',
+      when_failed => v_step->>'whenFailed'
     );
   END LOOP;
 END;
