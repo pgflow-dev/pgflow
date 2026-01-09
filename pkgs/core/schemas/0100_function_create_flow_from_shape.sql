@@ -49,7 +49,17 @@ BEGIN
       start_delay => (v_step_options->>'startDelay')::int,
       step_type => v_step->>'stepType',
       when_unmet => v_step->>'whenUnmet',
-      when_failed => v_step->>'whenFailed'
+      when_failed => v_step->>'whenFailed',
+      required_input_pattern => CASE
+        WHEN (v_step->'requiredInputPattern'->>'defined')::boolean
+        THEN v_step->'requiredInputPattern'->'value'
+        ELSE NULL
+      END,
+      forbidden_input_pattern => CASE
+        WHEN (v_step->'forbiddenInputPattern'->>'defined')::boolean
+        THEN v_step->'forbiddenInputPattern'->'value'
+        ELSE NULL
+      END
     );
   END LOOP;
 END;

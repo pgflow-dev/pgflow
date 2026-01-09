@@ -16,7 +16,7 @@ select is(
   pgflow._compare_flow_shapes(
     '{
       "steps": [
-        {"slug": "step1", "stepType": "single", "dependencies": [], "whenUnmet": "skip-cascade", "whenFailed": "fail"}
+        {"slug": "step1", "stepType": "single", "dependencies": [], "whenUnmet": "skip-cascade", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}}
       ]
     }'::jsonb,
     pgflow._get_flow_shape('drift_test')
@@ -30,7 +30,7 @@ select is(
   pgflow._compare_flow_shapes(
     '{
       "steps": [
-        {"slug": "step1", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "skip-cascade"}
+        {"slug": "step1", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "skip-cascade", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}}
       ]
     }'::jsonb,
     pgflow._get_flow_shape('drift_test')
@@ -44,7 +44,7 @@ select is(
   pgflow._compare_flow_shapes(
     '{
       "steps": [
-        {"slug": "step1", "stepType": "single", "dependencies": [], "whenUnmet": "fail", "whenFailed": "skip"}
+        {"slug": "step1", "stepType": "single", "dependencies": [], "whenUnmet": "fail", "whenFailed": "skip", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}}
       ]
     }'::jsonb,
     pgflow._get_flow_shape('drift_test')

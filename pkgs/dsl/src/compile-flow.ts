@@ -67,13 +67,13 @@ function formatRuntimeOptions(
   if ('if' in options && options.if !== undefined) {
     // Serialize JSON pattern and escape for SQL
     const jsonStr = JSON.stringify(options.if);
-    parts.push(`condition_pattern => '${jsonStr}'`);
+    parts.push(`required_input_pattern => '${jsonStr}'`);
   }
 
   if ('ifNot' in options && options.ifNot !== undefined) {
     // Serialize JSON pattern and escape for SQL
     const jsonStr = JSON.stringify(options.ifNot);
-    parts.push(`condition_not_pattern => '${jsonStr}'`);
+    parts.push(`forbidden_input_pattern => '${jsonStr}'`);
   }
 
   if ('whenUnmet' in options && options.whenUnmet !== undefined) {

@@ -278,15 +278,15 @@ export type Database = {
       }
       steps: {
         Row: {
-          condition_not_pattern: Json | null
-          condition_pattern: Json | null
           created_at: string
           deps_count: number
           flow_slug: string
+          forbidden_input_pattern: Json | null
           opt_base_delay: number | null
           opt_max_attempts: number | null
           opt_start_delay: number | null
           opt_timeout: number | null
+          required_input_pattern: Json | null
           step_index: number
           step_slug: string
           step_type: string
@@ -294,15 +294,15 @@ export type Database = {
           when_unmet: string
         }
         Insert: {
-          condition_not_pattern?: Json | null
-          condition_pattern?: Json | null
           created_at?: string
           deps_count?: number
           flow_slug: string
+          forbidden_input_pattern?: Json | null
           opt_base_delay?: number | null
           opt_max_attempts?: number | null
           opt_start_delay?: number | null
           opt_timeout?: number | null
+          required_input_pattern?: Json | null
           step_index?: number
           step_slug: string
           step_type?: string
@@ -310,15 +310,15 @@ export type Database = {
           when_unmet?: string
         }
         Update: {
-          condition_not_pattern?: Json | null
-          condition_pattern?: Json | null
           created_at?: string
           deps_count?: number
           flow_slug?: string
+          forbidden_input_pattern?: Json | null
           opt_base_delay?: number | null
           opt_max_attempts?: number | null
           opt_start_delay?: number | null
           opt_timeout?: number | null
+          required_input_pattern?: Json | null
           step_index?: number
           step_slug?: string
           step_type?: string
@@ -413,11 +413,11 @@ export type Database = {
       add_step: {
         Args: {
           base_delay?: number
-          condition_not_pattern?: Json
-          condition_pattern?: Json
           deps_slugs?: string[]
           flow_slug: string
+          forbidden_input_pattern?: Json
           max_attempts?: number
+          required_input_pattern?: Json
           start_delay?: number
           step_slug: string
           step_type?: string
@@ -426,15 +426,15 @@ export type Database = {
           when_unmet?: string
         }
         Returns: {
-          condition_not_pattern: Json | null
-          condition_pattern: Json | null
           created_at: string
           deps_count: number
           flow_slug: string
+          forbidden_input_pattern: Json | null
           opt_base_delay: number | null
           opt_max_attempts: number | null
           opt_start_delay: number | null
           opt_timeout: number | null
+          required_input_pattern: Json | null
           step_index: number
           step_slug: string
           step_type: string

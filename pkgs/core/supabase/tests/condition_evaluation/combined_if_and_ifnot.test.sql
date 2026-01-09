@@ -12,8 +12,8 @@ select pgflow.create_flow('combined_flow');
 select pgflow.add_step(
   flow_slug => 'combined_flow',
   step_slug => 'admin_action',
-  condition_pattern => '{"role": "admin", "active": true}'::jsonb,  -- if
-  condition_not_pattern => '{"suspended": true}'::jsonb,  -- ifNot
+  required_input_pattern => '{"role": "admin", "active": true}'::jsonb,  -- if
+  forbidden_input_pattern => '{"suspended": true}'::jsonb,  -- ifNot
   when_unmet => 'skip'
 );
 -- Add another step without conditions

@@ -7,9 +7,9 @@ select pgflow._create_flow_from_shape(
   'condition_flow',
   '{
     "steps": [
-      {"slug": "always_run", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail"},
-      {"slug": "cascade_skip", "stepType": "single", "dependencies": ["always_run"], "whenUnmet": "skip-cascade", "whenFailed": "skip"},
-      {"slug": "fail_on_unmet", "stepType": "single", "dependencies": ["always_run"], "whenUnmet": "fail", "whenFailed": "skip-cascade"}
+      {"slug": "always_run", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
+      {"slug": "cascade_skip", "stepType": "single", "dependencies": ["always_run"], "whenUnmet": "skip-cascade", "whenFailed": "skip", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
+      {"slug": "fail_on_unmet", "stepType": "single", "dependencies": ["always_run"], "whenUnmet": "fail", "whenFailed": "skip-cascade", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}}
     ]
   }'::jsonb
 );
@@ -33,9 +33,9 @@ select is(
   pgflow._get_flow_shape('condition_flow'),
   '{
     "steps": [
-      {"slug": "always_run", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail"},
-      {"slug": "cascade_skip", "stepType": "single", "dependencies": ["always_run"], "whenUnmet": "skip-cascade", "whenFailed": "skip"},
-      {"slug": "fail_on_unmet", "stepType": "single", "dependencies": ["always_run"], "whenUnmet": "fail", "whenFailed": "skip-cascade"}
+      {"slug": "always_run", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
+      {"slug": "cascade_skip", "stepType": "single", "dependencies": ["always_run"], "whenUnmet": "skip-cascade", "whenFailed": "skip", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
+      {"slug": "fail_on_unmet", "stepType": "single", "dependencies": ["always_run"], "whenUnmet": "fail", "whenFailed": "skip-cascade", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}}
     ]
   }'::jsonb,
   'Shape with condition modes should round-trip correctly'
@@ -47,9 +47,9 @@ select is(
     pgflow._get_flow_shape('condition_flow'),
     '{
       "steps": [
-        {"slug": "always_run", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail"},
-        {"slug": "cascade_skip", "stepType": "single", "dependencies": ["always_run"], "whenUnmet": "skip-cascade", "whenFailed": "skip"},
-        {"slug": "fail_on_unmet", "stepType": "single", "dependencies": ["always_run"], "whenUnmet": "fail", "whenFailed": "skip-cascade"}
+        {"slug": "always_run", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
+        {"slug": "cascade_skip", "stepType": "single", "dependencies": ["always_run"], "whenUnmet": "skip-cascade", "whenFailed": "skip", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
+        {"slug": "fail_on_unmet", "stepType": "single", "dependencies": ["always_run"], "whenUnmet": "fail", "whenFailed": "skip-cascade", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}}
       ]
     }'::jsonb
   ),

@@ -18,7 +18,7 @@ select pgflow.create_flow('skip_to_map');
 select pgflow.add_step(
   flow_slug => 'skip_to_map',
   step_slug => 'producer',
-  condition_pattern => '{"enabled": true}'::jsonb,  -- requires enabled=true
+  required_input_pattern => '{"enabled": true}'::jsonb,  -- requires enabled=true
   when_unmet => 'skip'  -- plain skip (not skip-cascade)
 );
 -- Map consumer: no condition, just depends on producer
