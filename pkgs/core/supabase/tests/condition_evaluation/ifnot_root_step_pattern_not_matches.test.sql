@@ -11,7 +11,7 @@ select pgflow.create_flow('ifnot_pass_flow');
 select pgflow.add_step(
   flow_slug => 'ifnot_pass_flow',
   step_slug => 'no_admin_step',
-  condition_not_pattern => '{"role": "admin"}'::jsonb,  -- must NOT contain role=admin
+  forbidden_input_pattern => '{"role": "admin"}'::jsonb,  -- must NOT contain role=admin
   when_unmet => 'fail'  -- (doesn't matter for this test since condition is met)
 );
 

@@ -22,14 +22,14 @@ select pgflow.create_flow('chain_skip');
 select pgflow.add_step(
   flow_slug => 'chain_skip',
   step_slug => 'step_a',
-  condition_pattern => '{"enabled": true}'::jsonb,  -- requires enabled=true
+  required_input_pattern => '{"enabled": true}'::jsonb,  -- requires enabled=true
   when_unmet => 'skip'  -- plain skip
 );
 select pgflow.add_step(
   flow_slug => 'chain_skip',
   step_slug => 'step_b',
   deps_slugs => ARRAY['step_a'],
-  condition_pattern => '{"step_a": {"success": true}}'::jsonb,  -- a.success must be true
+  required_input_pattern => '{"step_a": {"success": true}}'::jsonb,  -- a.success must be true
   when_unmet => 'skip'  -- plain skip (won't be met since a was skipped)
 );
 select pgflow.add_step(

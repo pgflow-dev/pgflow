@@ -24,7 +24,7 @@ select pgflow.create_flow('skip_diamond');
 select pgflow.add_step(
   flow_slug => 'skip_diamond',
   step_slug => 'step_a',
-  condition_pattern => '{"enabled": true}'::jsonb,  -- requires enabled=true
+  required_input_pattern => '{"enabled": true}'::jsonb,  -- requires enabled=true
   when_unmet => 'skip'  -- plain skip
 );
 select pgflow.add_step(

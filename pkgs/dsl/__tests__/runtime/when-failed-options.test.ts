@@ -141,7 +141,7 @@ describe('retriesExhausted Options', () => {
       expect(statements[1]).toContain('max_attempts => 3');
       expect(statements[1]).toContain('timeout => 60');
       expect(statements[1]).toContain(
-        'condition_pattern => \'{"enabled":true}\''
+        'required_input_pattern => \'{"enabled":true}\''
       );
       expect(statements[1]).toContain("when_unmet => 'skip'");
       expect(statements[1]).toContain("when_failed => 'skip-cascade'");

@@ -1,5 +1,5 @@
 -- Test: Step with no condition (NULL pattern) always executes
--- Verifies that steps without condition_pattern execute normally
+-- Verifies that steps without required_input_pattern execute normally
 -- regardless of input content
 begin;
 select plan(2);
