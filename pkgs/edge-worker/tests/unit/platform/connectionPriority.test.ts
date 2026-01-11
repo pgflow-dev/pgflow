@@ -219,3 +219,21 @@ Deno.test('resolveSqlConnection - sql takes priority over everything', () => {
   assertEquals(result, mockSql);
   mockSql.end();
 });
+
+// ============================================================
+// maxPgConnections tests
+// ============================================================
+
+Deno.test('resolveSqlConnection - uses default maxPgConnections of 4', () => {
+  const env = { SUPABASE_URL: LOCAL_SUPABASE_URL };
+  const result = resolveSqlConnection(env);
+  assertEquals(result.options.max, 4);
+  result.end();
+});
+
+Deno.test('resolveSqlConnection - respects maxPgConnections override', () => {
+  const env = { SUPABASE_URL: LOCAL_SUPABASE_URL };
+  const result = resolveSqlConnection(env, { maxPgConnections: 7 });
+  assertEquals(result.options.max, 7);
+  result.end();
+});

@@ -7,6 +7,7 @@ import { getPlatformDeps } from './deps.js';
 interface AdapterOptions {
   sql?: postgres.Sql;
   connectionString?: string;
+  maxPgConnections?: number;
 }
 
 /**

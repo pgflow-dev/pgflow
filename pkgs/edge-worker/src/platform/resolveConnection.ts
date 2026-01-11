@@ -24,6 +24,7 @@ export interface ConnectionOptions {
 export interface SqlConnectionOptions {
   sql?: postgres.Sql;
   connectionString?: string;
+  maxPgConnections?: number;
 }
 
 /**
@@ -82,19 +83,21 @@ export function resolveSqlConnection(
     return options.sql;
   }
 
+  const max = options?.maxPgConnections ?? 4;
+
   // 2. config.connectionString
   if (options?.connectionString) {
-    return postgres(options.connectionString, { prepare: false, max: 10 });
+    return postgres(options.connectionString, { prepare: false, max });
   }
 
   // 3. EDGE_WORKER_DB_URL
   if (env.EDGE_WORKER_DB_URL) {
-    return postgres(env.EDGE_WORKER_DB_URL, { prepare: false, max: 10 });
+    return postgres(env.EDGE_WORKER_DB_URL, { prepare: false, max });
   }
 
   // 4. Local Supabase detection + docker URL
   if (isLocalSupabaseEnv(env)) {
-    return postgres(DOCKER_TRANSACTION_POOLER_URL, { prepare: false, max: 10 });
+    return postgres(DOCKER_TRANSACTION_POOLER_URL, { prepare: false, max });
   }
 
   throw new Error(
