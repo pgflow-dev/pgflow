@@ -143,6 +143,7 @@ export class EdgeWorker {
     const platform = await createAdapter({
       sql: config.sql,
       connectionString: config.connectionString,
+      maxPgConnections: config.maxPgConnections,
     });
     this.platform = platform;
 
@@ -197,6 +198,7 @@ export class EdgeWorker {
     const platform = await createAdapter({
       sql: config.sql,
       connectionString: config.connectionString,
+      maxPgConnections: config.maxPgConnections,
     });
     this.platform = platform;
 

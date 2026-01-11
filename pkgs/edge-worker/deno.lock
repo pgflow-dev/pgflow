@@ -4,6 +4,7 @@
     "jsr:@deno-library/progress@*": "1.5.1",
     "jsr:@henrygd/queue@^1.0.7": "1.2.0",
     "jsr:@oscar6echo/postgres@3.4.5-d": "3.4.5-d",
+    "jsr:@std/assert@*": "0.224.0",
     "jsr:@std/assert@0.224": "0.224.0",
     "jsr:@std/async@0.224": "0.224.2",
     "jsr:@std/crypto@0.224": "0.224.0",
@@ -42,7 +43,7 @@
     "@std/crypto@0.224.0": {
       "integrity": "154ef3ff08ef535562ef1a718718c5b2c5fc3808f0f9100daad69e829bfcdf2d",
       "dependencies": [
-        "jsr:@std/assert"
+        "jsr:@std/assert@0.224"
       ]
     },
     "@std/fmt@0.224.0": {
@@ -63,7 +64,7 @@
     "@std/testing@0.224.0": {
       "integrity": "371b8a929aa7132240d5dd766a439be8f780ef5c176ab194e0bcab72370c761e",
       "dependencies": [
-        "jsr:@std/assert"
+        "jsr:@std/assert@0.224"
       ]
     }
   },

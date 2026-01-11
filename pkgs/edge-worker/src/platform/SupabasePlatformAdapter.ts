@@ -54,7 +54,7 @@ export class SupabasePlatformAdapter implements PlatformAdapter<SupabaseResource
   private loggingFactory!: ReturnType<typeof createLoggingFactory>;
 
   constructor(
-    options?: { sql?: postgres.Sql; connectionString?: string },
+    options?: { sql?: postgres.Sql; connectionString?: string; maxPgConnections?: number },
     deps: SupabasePlatformDeps = getPlatformDeps()
   ) {
     this.deps = deps;
