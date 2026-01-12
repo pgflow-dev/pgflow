@@ -1,0 +1,71 @@
+---
+draft: false
+title: 'pgflow 0.13.2: Stalled Task Recovery and Config Fixes'
+description: 'Automatic recovery for stalled tasks and fix for maxPgConnections config'
+date: 2026-01-12
+authors:
+  - jumski
+tags:
+  - bugfix
+  - patch
+featured: false
+---
+
+This patch release fixes two issues: tasks getting stuck when workers crash, and the `maxPgConnections` config being ignored.
+
+## Stalled Tasks Automatic Recovery
+
+### The Problem
+
+When a worker crashes or is terminated unexpectedly, tasks can get stuck in `started` status indefinitely. These "stalled" tasks never complete and block flow progress. This was reported in [#586](https://github.com/pgflow-dev/pgflow/issues/586).
+
+### The Solution
+
+A new `pgflow.requeue_stalled_tasks()` function automatically detects and recovers stalled tasks:
+
+- Runs via cron job every 15 seconds
+- Identifies tasks stuck in `started` status beyond their timeout + 30s buffer
+- Requeues them back to `queued` status (up to 3 times)
+- After 3 requeue attempts, archives the message and marks task with `permanently_stalled_at` timestamp for manual investigation
+
+The cron job is set up automatically via migration. For more details, see the [Troubleshooting Stalled Tasks](/deploy/troubleshooting-stalled-tasks/) guide.
+
+### Visibility Timeout Increase
+
+Default visibility timeout increased from 2s to 5s to reduce the likelihood of tasks appearing stalled during normal processing delays.
+
+## Did This Affect You?
+
+Run this query to check if you had stalled tasks before upgrading:
+
+```sql
+SELECT count(*)
+FROM pgflow.step_tasks
+WHERE status = 'started'
+  AND started_at < now() - interval '5 minutes';
+```
+
+If you see results, those tasks will now be automatically recovered.
+
+To find tasks that exceeded the max requeue limit (for manual investigation):
+
+```sql
+SELECT r.run_id, r.flow_slug, st.step_slug, st.requeued_count, st.permanently_stalled_at
+FROM pgflow.step_tasks st
+JOIN pgflow.runs r ON r.run_id = st.run_id
+WHERE st.permanently_stalled_at IS NOT NULL;
+```
+
+## Connection Config Fix
+
+### The Bug
+
+The `maxPgConnections` configuration option was being ignored when passed to `createFlowWorker()`.
+
+### The Fix
+
+The config is now properly passed through the connection chain with a default of 4 connections.
+
+## Credits
+
+Thanks to [matz](https://github.com/matz) for reporting issue [#586](https://github.com/pgflow-dev/pgflow/issues/586)!

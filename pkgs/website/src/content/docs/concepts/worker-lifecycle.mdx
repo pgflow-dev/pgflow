@@ -5,7 +5,7 @@ sidebar:
   order: 30
 ---
 
-import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 pgflow workers are designed to be resilient. They poll for tasks, send heartbeats, and automatically restart when they stop.
 
@@ -55,6 +55,7 @@ restart -> startup: "starts new\nworker"
 ## Why Workers Stop
 
 Edge Functions have execution time limits:
+
 - Free tier: 150 seconds
 - Paid tier: 400 seconds
 
@@ -97,13 +98,13 @@ You don't need to manually curl or restart anything after the initial setup.
 
 ## Local vs Production Behavior
 
-| Aspect              | Local                          | Production                              |
-|---------------------|--------------------------------|-----------------------------------------|
-| Cron interval       | 1 second                       | 1 second                                |
-| HTTP request        | Always for enabled functions   | Only if not enough active workers       |
-| Debounce            | Bypassed                       | Applied (prevents too frequent pings)   |
-| Active worker check | Bypassed                       | Required (enabled, non-deprecated)      |
-| Detection           | Automatic (is_local)           | Automatic                               |
+| Aspect              | Local                        | Production                            |
+| ------------------- | ---------------------------- | ------------------------------------- |
+| Cron interval       | 1 second                     | 1 second                              |
+| HTTP request        | Always for enabled functions | Only if not enough active workers     |
+| Debounce            | Bypassed                     | Applied (prevents too frequent pings) |
+| Active worker check | Bypassed                     | Required (enabled, non-deprecated)    |
+| Detection           | Automatic (is_local)         | Automatic                             |
 
 ## Related
 
@@ -122,5 +123,10 @@ You don't need to manually curl or restart anything after the initial setup.
     title="Local Development"
     href="/build/local-development/"
     description="Tips for local development"
+  />
+  <LinkCard
+    title="Troubleshooting Stalled Tasks"
+    href="/deploy/troubleshooting-stalled-tasks/"
+    description="Recover tasks left behind when workers terminate unexpectedly"
   />
 </CardGrid>

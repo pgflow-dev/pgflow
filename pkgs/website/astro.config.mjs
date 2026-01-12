@@ -336,6 +336,10 @@ export default defineConfig({
                       label: 'Troubleshooting connections',
                       link: '/deploy/troubleshooting-connections/',
                     },
+                    {
+                      label: 'Troubleshooting stalled tasks',
+                      link: '/deploy/troubleshooting-stalled-tasks/',
+                    },
                     { label: 'Prune records', link: '/deploy/prune-records/' },
                     {
                       label: 'Tune deployed flows',
