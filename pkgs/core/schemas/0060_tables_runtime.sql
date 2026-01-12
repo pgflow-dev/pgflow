@@ -81,6 +81,10 @@ create table pgflow.step_tasks (
   completed_at timestamptz,
   failed_at timestamptz,
   last_worker_id uuid references pgflow.workers (worker_id) on delete set null,
+  -- Requeue tracking columns
+  requeued_count int not null default 0,
+  last_requeued_at timestamptz,
+  permanently_stalled_at timestamptz,
   constraint step_tasks_pkey primary key (run_id, step_slug, task_index),
   foreign key (run_id, step_slug)
   references pgflow.step_states (run_id, step_slug),
