@@ -74,3 +74,12 @@ deno-dist/
 .github/instructions/nx.instructions.md
 config.toml.backup
 sqruff-cli.tar.gz
+
+.opencode
+.ignore
+AGENTS.md
+pkgs/cli/AGENTS.md
+pkgs/client/AGENTS.md
+pkgs/edge-worker/AGENTS.md
+pkgs/website/AGENTS.md
+
