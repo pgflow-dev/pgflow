@@ -1,0 +1,299 @@
+---
+title: Skip Modes
+description: Understand fail, skip, and skip-cascade behaviors when conditions aren't met.
+sidebar:
+  order: 2
+---
+
+import { Aside, Code } from '@astrojs/starlight/components';
+
+When a step's condition isn't met (or a step fails after retries), the `whenUnmet` option controls what happens next.
+
+<Aside type="note">
+  Skipped steps are never pushed to the queue - the decision happens at the
+  database level during dependency resolution. Zero worker overhead.
+</Aside>
+
+## The Three Modes
+
+| Mode           | Step    | Dependents               | Run       |
+| -------------- | ------- | ------------------------ | --------- |
+| `fail`         | Fails   | Not executed             | Fails     |
+| `skip`         | Skipped | Execute with `undefined` | Continues |
+| `skip-cascade` | Skipped | All skipped              | Continues |
+
+## fail Mode
+
+When a condition isn't met, the step fails and the entire run fails.
+
+```typescript
+.step({
+  slug: 'requirePremium',
+  if: { plan: 'premium' },
+  whenUnmet: 'fail',        // Explicit - must fail if not premium
+}, handler)
+```
+
+**Use when:** The condition is a hard requirement. If not met, the workflow cannot proceed meaningfully.
+
+```d2 width="600" pad="20"
+...@../../../../assets/pgflow-theme.d2
+
+direction: right
+
+validate: "validate"
+validate.class: step_completed
+
+premium: "requirePremium"
+premium.class: step_failed
+
+notify: "notify"
+notify.class: step_created
+
+validate -> premium
+premium -> notify
+
+run: "Run: failed" {
+  style.stroke: "#a33636"
+  style.stroke-dash: 3
+}
+```
+
+## skip Mode
+
+The default behavior for `whenUnmet`. The step is marked as skipped, but the run continues. Downstream steps receive `undefined` for this dependency.
+
+```typescript
+.step({
+  slug: 'enrichData',
+  if: { includeEnrichment: true },
+  // whenUnmet: 'skip' is the default
+}, async (input) => {
+  return await fetchEnrichment(input.run.id);
+})
+.step({
+  slug: 'processResults',
+  dependsOn: ['enrichData'],
+}, async (input) => {
+  // TypeScript knows enrichData may be undefined
+  if (input.enrichData) {
+    return processWithEnrichment(input.enrichData);
+  }
+  return processBasic(input.run);
+})
+```
+
+**Use when:** The step is optional and downstream steps can handle its absence.
+
+```d2 width="600" pad="20"
+...@../../../../assets/pgflow-theme.d2
+
+direction: right
+
+validate: "validate"
+validate.class: step_completed
+
+enrich: "enrichData"
+enrich.class: step_skipped
+
+process: "processResults"
+process.class: step_completed
+
+validate -> enrich: "if: { includeEnrichment: true }"
+validate -> process
+enrich -> process: "undefined" {
+  style.stroke-dash: 3
+}
+
+run: "Run: completed" {
+  style.stroke: "#247056"
+  style.stroke-dash: 3
+}
+```
+
+## skip-cascade Mode
+
+The step is skipped AND all downstream dependents are automatically skipped too. The run continues with whatever steps don't depend on the skipped step.
+
+```typescript
+.step({
+  slug: 'loadPremiumData',
+  if: { plan: 'premium' },
+  whenUnmet: 'skip-cascade',  // Skip this AND all dependents
+}, loadPremiumHandler)
+.step({
+  slug: 'processPremiumData',
+  dependsOn: ['loadPremiumData'],
+}, processHandler)  // Also skipped if loadPremiumData skips
+.step({
+  slug: 'sendBasicReport',
+  // No dependency on premium steps - always runs
+}, basicReportHandler)
+```
+
+**Use when:** A group of steps only makes sense together. If the first can't run, the rest shouldn't either.
+
+```d2 width="700" pad="20"
+...@../../../../assets/pgflow-theme.d2
+
+direction: right
+
+validate: "validate" {
+  class: step_completed
+}
+
+load: "loadPremiumData\n(condition_unmet)" {
+  class: step_skipped
+}
+
+process: "processPremiumData\n(dependency_skipped)" {
+  class: step_skipped
+}
+
+basic: "sendBasicReport" {
+  class: step_completed
+}
+
+validate -> load {
+  style.stroke-dash: 3
+}
+validate -> basic
+load -> process {
+  style.stroke-dash: 3
+}
+
+run: "Run: completed" {
+  style.stroke: "#247056"
+  style.stroke-dash: 3
+}
+```
+
+## Type Safety
+
+The mode you choose affects TypeScript types in dependent steps:
+
+| Mode           | Dependent Input Type | Reason                                         |
+| -------------- | -------------------- | ---------------------------------------------- |
+| `fail`         | `T` (required)       | Run fails if step fails, so always has value   |
+| `skip`         | `T \| undefined`     | Step may be skipped, must handle missing case  |
+| `skip-cascade` | `T` (required)       | If dependent runs, parent definitely completed |
+
+```typescript
+// With skip mode - must handle undefined
+.step({
+  slug: 'optional',
+  if: { feature: 'enabled' },
+  whenUnmet: 'skip',
+}, () => ({ data: 'enriched' }))
+
+.step({
+  slug: 'consumer',
+  dependsOn: ['optional'],
+}, async (input) => {
+  // Type is: { data: string } | undefined
+  if (input.optional) {
+    return input.optional.data;
+  }
+  return 'default';
+})
+
+// With skip-cascade - output guaranteed
+.step({
+  slug: 'required',
+  if: { enabled: true },
+  whenUnmet: 'skip-cascade',
+}, () => ({ items: [1, 2, 3] }))
+
+.step({
+  slug: 'processor',
+  dependsOn: ['required'],
+}, async (input) => {
+  // Type is: { items: number[] } - NOT optional
+  // If required was skipped, processor is also skipped
+  return input.required.items.map(x => x * 2);
+})
+```
+
+<Aside type="tip">
+The key omission rule: When a step is skipped, its key is **absent** from the dependency input object - it's not `null`, it's `undefined`. This enables the `ifNot: { depName: {} }` pattern to detect skipped dependencies.
+</Aside>
+
+## Choosing the Right Mode
+
+| Scenario                                    | Recommended Mode      |
+| ------------------------------------------- | --------------------- |
+| Hard requirement - can't proceed without it | `fail`                |
+| Optional enrichment - nice to have          | `skip`                |
+| Feature flag - entire feature branch        | `skip-cascade`        |
+| Premium features - all or nothing           | `skip-cascade`        |
+| Fallback handling - try A, fallback to B    | `skip` with detection |
+
+## Skip Reasons
+
+When a step is skipped, pgflow records why in the `skip_reason` field:
+
+| Skip Reason          | Meaning                                           |
+| -------------------- | ------------------------------------------------- |
+| `condition_unmet`    | Step's `if` or `ifNot` condition wasn't satisfied |
+| `dependency_skipped` | A dependency was skipped with `skip-cascade`      |
+| `handler_failed`     | Handler failed with `retriesExhausted: 'skip'`    |
+
+Query skipped steps:
+
+```sql
+SELECT step_slug, status, skip_reason
+FROM pgflow.step_states
+WHERE run_id = 'your-run-id'
+  AND status = 'skipped';
+```
+
+## Multi-Level Cascades
+
+Skip cascades propagate through the entire dependency chain:
+
+```typescript
+new Flow({ slug: 'pipeline' })
+  .step(
+    {
+      slug: 'step_a',
+      if: { enabled: true },
+      whenUnmet: 'skip-cascade',
+    },
+    handlerA
+  )
+  .step({ slug: 'step_b', dependsOn: ['step_a'] }, handlerB)
+  .step({ slug: 'step_c', dependsOn: ['step_b'] }, handlerC);
+// If step_a skips, step_b AND step_c are also skipped
+```
+
+```d2 width="600" pad="20"
+...@../../../../assets/pgflow-theme.d2
+
+direction: right
+
+a: "step_a"
+a.class: step_skipped
+
+b: "step_b"
+b.class: step_skipped
+
+c: "step_c"
+c.class: step_skipped
+
+d: "step_d"
+d.class: step_completed
+
+a -> b: "cascade" {style.stroke-dash: 3}
+b -> c: "cascade" {style.stroke-dash: 3}
+
+note: "step_d has no dependency\non A/B/C, so it runs" {
+  style.fill: transparent
+  style.stroke: transparent
+}
+```
+
+<Aside type="tip">
+  See the [Layered Conditions
+  example](/build/conditional-steps/examples/#layered-conditions) for a complete
+  flow showing when to use `skip` vs `skip-cascade` with LLM tool calling.
+</Aside>

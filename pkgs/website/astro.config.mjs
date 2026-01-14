@@ -254,6 +254,10 @@ export default defineConfig({
                       link: '/build/retrying-steps/',
                     },
                     {
+                      label: 'Graceful Failure',
+                      link: '/build/graceful-failure/',
+                    },
+                    {
                       label: 'Validation steps',
                       link: '/build/validation-steps/',
                     },
@@ -270,6 +274,10 @@ export default defineConfig({
                       link: '/build/process-arrays-in-parallel/',
                     },
                   ],
+                },
+                {
+                  label: 'Conditional Steps',
+                  autogenerate: { directory: 'build/conditional-steps/' },
                 },
                 {
                   label: 'Starting Flows',
