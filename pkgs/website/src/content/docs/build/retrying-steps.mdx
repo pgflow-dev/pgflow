@@ -72,6 +72,11 @@ Configure without retries:
   should fail fast.
 </Aside>
 
+<Aside type="tip">
+  For non-critical steps that shouldn't fail the entire run, see [Error
+  Handling](/build/graceful-failure/) to configure `retriesExhausted: 'skip'`.
+</Aside>
+
 For detailed guidance on validation patterns, see [Validation Steps](/build/validation-steps/).
 
 ## Guiding Principle
@@ -125,6 +130,11 @@ new Flow({
 ## Learn More
 
 <CardGrid>
+  <LinkCard
+    title="Graceful Failure"
+    href="/build/graceful-failure/"
+    description="Handle step failures gracefully with retriesExhausted option"
+  />
   <LinkCard
     title="Validation Steps"
     href="/build/validation-steps/"
