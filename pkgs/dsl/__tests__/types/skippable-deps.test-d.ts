@@ -30,22 +30,24 @@ describe('skippable deps type safety', () => {
       }>();
     });
 
-    it('step with whenUnmet: skip-cascade makes output optional for dependents', () => {
+    it('step with whenUnmet: skip-cascade keeps output required (cascade skips dependents)', () => {
+      // skip-cascade means if the step is skipped, its dependents are ALSO skipped
+      // So if the dependent handler runs at all, the parent must have succeeded
+      // Therefore the dependency should be required, not optional
       const flow = new Flow<{ value: number }>({ slug: 'test' })
         .step(
           { slug: 'conditional', if: { value: 42 }, whenUnmet: 'skip-cascade' },
           (input) => ({ result: input.value * 2 })
         )
         .step({ slug: 'dependent', dependsOn: ['conditional'] }, (deps) => {
-          expectTypeOf(deps.conditional).toEqualTypeOf<
-            { result: number } | undefined
-          >();
+          // With skip-cascade, if we're running, the dependency succeeded
+          expectTypeOf(deps.conditional).toEqualTypeOf<{ result: number }>();
           return { done: true };
         });
 
       type DepInput = StepInput<typeof flow, 'dependent'>;
       expectTypeOf<DepInput>().toEqualTypeOf<{
-        conditional?: { result: number };
+        conditional: { result: number };
       }>();
     });
 
@@ -101,21 +103,22 @@ describe('skippable deps type safety', () => {
       }>();
     });
 
-    it('step with retriesExhausted: skip-cascade makes output optional for dependents', () => {
+    it('step with retriesExhausted: skip-cascade keeps output required (cascade skips dependents)', () => {
+      // skip-cascade means if the step is skipped, its dependents are ALSO skipped
+      // So if the dependent handler runs at all, the parent must have succeeded
       const flow = new Flow<{ value: number }>({ slug: 'test' })
         .step({ slug: 'risky', retriesExhausted: 'skip-cascade' }, (input) => ({
           result: input.value * 2,
         }))
         .step({ slug: 'dependent', dependsOn: ['risky'] }, (deps) => {
-          expectTypeOf(deps.risky).toEqualTypeOf<
-            { result: number } | undefined
-          >();
+          // With skip-cascade, if we're running, the dependency succeeded
+          expectTypeOf(deps.risky).toEqualTypeOf<{ result: number }>();
           return { done: true };
         });
 
       type DepInput = StepInput<typeof flow, 'dependent'>;
       expectTypeOf<DepInput>().toEqualTypeOf<{
-        risky?: { result: number };
+        risky: { result: number };
       }>();
     });
 
@@ -251,16 +254,17 @@ describe('skippable deps type safety', () => {
       }>();
     });
 
-    it('cascade does NOT propagate: A(skip-cascade) -> B: B output NOT automatically optional', () => {
+    it('cascade does NOT propagate: A(skip-cascade) -> B: B sees A as required', () => {
       // skip-cascade means A and its dependents get skipped at RUNTIME
-      // but B itself is not marked as skippable in its definition
-      // so if B does run, its output is required for its own dependents
+      // If A is skipped, B is also skipped (cascade), so B never runs with undefined A
+      // Therefore B should see A as required, not optional
       const flow = new Flow<{ value: number }>({ slug: 'test' })
         .step({ slug: 'a', retriesExhausted: 'skip-cascade' }, () => ({
           aVal: 1,
         }))
         .step({ slug: 'b', dependsOn: ['a'] }, (deps) => {
-          expectTypeOf(deps.a).toEqualTypeOf<{ aVal: number } | undefined>();
+          // With skip-cascade, if B runs, A must have succeeded
+          expectTypeOf(deps.a).toEqualTypeOf<{ aVal: number }>();
           return { bVal: 2 };
         })
         .step({ slug: 'c', dependsOn: ['b'] }, (deps) => {
@@ -268,6 +272,9 @@ describe('skippable deps type safety', () => {
           expectTypeOf(deps.b).toEqualTypeOf<{ bVal: number }>();
           return { cVal: 3 };
         });
+
+      type BInput = StepInput<typeof flow, 'b'>;
+      expectTypeOf<BInput>().toEqualTypeOf<{ a: { aVal: number } }>();
 
       type CInput = StepInput<typeof flow, 'c'>;
       expectTypeOf<CInput>().toEqualTypeOf<{ b: { bVal: number } }>();
@@ -475,26 +482,29 @@ describe('skippable deps compile-time errors', () => {
         });
     });
 
-    it('should reject direct property access with whenUnmet: skip-cascade', () => {
+    it('should ALLOW direct property access with whenUnmet: skip-cascade (cascade skips dependents)', () => {
+      // With skip-cascade, if the dependent runs, the parent must have succeeded
+      // So direct property access should be allowed
       new Flow<{ value: number }>({ slug: 'test' })
         .step(
           { slug: 'cascading', if: { value: 42 }, whenUnmet: 'skip-cascade' },
           () => ({ count: 10 })
         )
         .step({ slug: 'next', dependsOn: ['cascading'] }, (deps) => {
-          // @ts-expect-error - deps.cascading is optional due to whenUnmet: skip-cascade
+          // No error - deps.cascading is required with skip-cascade
           const num: number = deps.cascading.count;
           return { num };
         });
     });
 
-    it('should reject direct property access with retriesExhausted: skip-cascade', () => {
+    it('should ALLOW direct property access with retriesExhausted: skip-cascade (cascade skips dependents)', () => {
+      // With skip-cascade, if the dependent runs, the parent must have succeeded
       new Flow<{ value: number }>({ slug: 'test' })
         .step({ slug: 'risky', retriesExhausted: 'skip-cascade' }, () => ({
           status: 'ok',
         }))
         .step({ slug: 'next', dependsOn: ['risky'] }, (deps) => {
-          // @ts-expect-error - deps.risky is optional due to retriesExhausted: skip-cascade
+          // No error - deps.risky is required with skip-cascade
           const s: string = deps.risky.status;
           return { s };
         });

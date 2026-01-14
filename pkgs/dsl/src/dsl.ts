@@ -66,10 +66,14 @@ export type AnyInput = Json;
 export type AnyOutput = Json;
 
 // Step Types
+// Skippable mode: 'skip' makes deps optional, 'skip-cascade' keeps deps required
+// (because cascade skips dependents at runtime, so if handler runs, dep succeeded)
+export type SkippableMode = 'skip' | 'skip-cascade' | false;
+
 // Step metadata structure - enriched type that tracks output and skippability
 export interface StepMeta<
   TOutput = AnyOutput,
-  TSkippable extends boolean = boolean
+  TSkippable extends SkippableMode = SkippableMode
 > {
   output: TOutput;
   skippable: TSkippable;
@@ -285,23 +289,34 @@ export type StepOutput<
   : never;
 
 /**
- * Checks if a step is skippable (has whenUnmet: 'skip' | 'skip-cascade' or retriesExhausted: 'skip' | 'skip-cascade')
+ * Gets the skippable mode for a step ('skip' | 'skip-cascade' | false)
  * @template TFlow - The Flow type
  * @template TStepSlug - The step slug to check
  */
-export type IsStepSkippable<
+export type GetSkippableMode<
   TFlow extends AnyFlow,
   TStepSlug extends string
 > = TStepSlug extends keyof ExtractFlowStepsRaw<TFlow>
   ? ExtractFlowStepsRaw<TFlow>[TStepSlug]['skippable']
   : false;
 
+/**
+ * Checks if a step makes its dependents' deps optional (only 'skip' mode, not 'skip-cascade')
+ * With 'skip-cascade', dependents are also skipped at runtime, so if handler runs, dep succeeded.
+ */
+export type IsStepSkippable<
+  TFlow extends AnyFlow,
+  TStepSlug extends string
+> = GetSkippableMode<TFlow, TStepSlug> extends 'skip' ? true : false;
+
 // Helper types for StepInput with optional skippable deps
+// Only 'skip' mode makes deps optional (dependents run with undefined value)
+// 'skip-cascade' keeps deps required (dependents also skipped, so value guaranteed if running)
 type RequiredDeps<TFlow extends AnyFlow, TStepSlug extends string> = {
   [K in Extract<
     keyof ExtractFlowSteps<TFlow>,
     StepDepsOf<TFlow, TStepSlug>
-  > as IsStepSkippable<TFlow, K & string> extends true
+  > as GetSkippableMode<TFlow, K & string> extends 'skip'
     ? never
     : K]: ExtractFlowSteps<TFlow>[K];
 };
@@ -310,7 +325,7 @@ type OptionalDeps<TFlow extends AnyFlow, TStepSlug extends string> = {
   [K in Extract<
     keyof ExtractFlowSteps<TFlow>,
     StepDepsOf<TFlow, TStepSlug>
-  > as IsStepSkippable<TFlow, K & string> extends true
+  > as GetSkippableMode<TFlow, K & string> extends 'skip'
     ? K
     : never]?: ExtractFlowSteps<TFlow>[K];
 };
@@ -319,8 +334,10 @@ type OptionalDeps<TFlow extends AnyFlow, TStepSlug extends string> = {
  * Asymmetric step input type:
  * - Root steps (no dependencies): receive flow input directly
  * - Dependent steps: receive only their dependencies (flow input available via context)
- *   - Skippable deps (whenUnmet/retriesExhausted: 'skip' | 'skip-cascade') are optional
- *   - Required deps are required
+ *   - Skippable deps (whenUnmet/retriesExhausted: 'skip') are optional
+ *   - Cascade deps (whenUnmet/retriesExhausted: 'skip-cascade') are required
+ *     (because if handler runs, the dependency must have succeeded)
+ *   - All other deps are required
  *
  * This enables functional composition where subflows can receive typed inputs
  * without the 'run' wrapper that previously blocked type matching.
@@ -446,21 +463,23 @@ export type RetriesExhaustedMode = 'fail' | 'skip' | 'skip-cascade';
 
 /**
  * Helper type for dependent step handlers - creates deps object with correct optionality.
- * Skippable deps (steps with whenUnmet/retriesExhausted: 'skip' | 'skip-cascade') are optional.
- * Required deps are required.
+ * Only steps with 'skip' mode (not 'skip-cascade') make deps optional.
+ * With 'skip-cascade', dependents are also skipped at runtime, so if handler runs, dep succeeded.
  */
 type DepsWithOptionalSkippable<
   TSteps extends AnySteps,
   TDeps extends string
 > = {
+  // Required deps: either not skippable or skip-cascade (cascade skips dependents, so value guaranteed)
   [K in TDeps as K extends keyof TSteps
-    ? TSteps[K]['skippable'] extends true
+    ? TSteps[K]['skippable'] extends 'skip'
       ? never
       : K
     : K]: K extends keyof TSteps ? TSteps[K]['output'] : never;
 } & {
+  // Optional deps: only 'skip' mode (dependents run with undefined value)
   [K in TDeps as K extends keyof TSteps
-    ? TSteps[K]['skippable'] extends true
+    ? TSteps[K]['skippable'] extends 'skip'
       ? K
       : never
     : never]?: K extends keyof TSteps ? TSteps[K]['output'] : never;
@@ -726,9 +745,9 @@ export class Flow<
       [K in Slug]: StepMeta<
         Awaited<TOutput>,
         TWhenUnmet extends 'skip' | 'skip-cascade'
-          ? true
+          ? TWhenUnmet
           : TRetries extends 'skip' | 'skip-cascade'
-          ? true
+          ? TRetries
           : false
       >;
     },
@@ -775,9 +794,9 @@ export class Flow<
       [K in Slug]: StepMeta<
         Awaited<TOutput>,
         TWhenUnmet extends 'skip' | 'skip-cascade'
-          ? true
+          ? TWhenUnmet
           : TRetries extends 'skip' | 'skip-cascade'
-          ? true
+          ? TRetries
           : false
       >;
     },
@@ -891,9 +910,9 @@ export class Flow<
       [K in Slug]: StepMeta<
         Awaited<TOutput>,
         TWhenUnmet extends 'skip' | 'skip-cascade'
-          ? true
+          ? TWhenUnmet
           : TRetries extends 'skip' | 'skip-cascade'
-          ? true
+          ? TRetries
           : false
       >;
     },
@@ -939,9 +958,9 @@ export class Flow<
       [K in Slug]: StepMeta<
         Awaited<TOutput>,
         TWhenUnmet extends 'skip' | 'skip-cascade'
-          ? true
+          ? TWhenUnmet
           : TRetries extends 'skip' | 'skip-cascade'
-          ? true
+          ? TRetries
           : false
       >;
     },
@@ -999,9 +1018,9 @@ export class Flow<
       [K in Slug]: StepMeta<
         AwaitedReturn<THandler>[],
         TWhenUnmet extends 'skip' | 'skip-cascade'
-          ? true
+          ? TWhenUnmet
           : TRetries extends 'skip' | 'skip-cascade'
-          ? true
+          ? TRetries
           : false
       >;
     },
@@ -1048,9 +1067,9 @@ export class Flow<
       [K in Slug]: StepMeta<
         AwaitedReturn<THandler>[],
         TWhenUnmet extends 'skip' | 'skip-cascade'
-          ? true
+          ? TWhenUnmet
           : TRetries extends 'skip' | 'skip-cascade'
-          ? true
+          ? TRetries
           : false
       >;
     },
