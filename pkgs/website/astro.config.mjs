@@ -448,6 +448,10 @@ export default defineConfig({
               id: 'tutorials',
               items: [
                 {
+                  label: 'Chatbot with pgflow',
+                  link: '/tutorials/chatbot-pgflow/',
+                },
+                {
                   label: 'RAG Pipeline',
                   autogenerate: {
                     directory: 'tutorials/rag/',
