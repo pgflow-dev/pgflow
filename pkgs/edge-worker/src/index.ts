@@ -9,6 +9,9 @@ export { FlowWorkerLifecycle } from './flow/FlowWorkerLifecycle.js';
 // Export ControlPlane for HTTP-based flow compilation
 export { ControlPlane } from './control-plane/index.js';
 
+// Export Installer for no-CLI platforms (e.g., Lovable)
+export { Installer } from './installer/index.js';
+
 // Export platform adapters
 export * from './platform/index.js';
 
