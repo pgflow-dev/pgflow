@@ -1,0 +1,118 @@
+---
+title: Troubleshooting Stalled Tasks
+description: Diagnose and recover tasks stuck in 'started' status
+sidebar:
+  order: 126
+---
+
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+## What are stalled tasks?
+
+Tasks get stuck in `started` status when workers die mid-processing. This is common in serverless environments where functions can be terminated unexpectedly. When this happens, the message keeps cycling in the queue but can't be picked up because the task status filter excludes it. This wastes resources and blocks flow progress.
+
+## Automatic Recovery
+
+pgflow automatically recovers stalled tasks via a cron job that runs every 15 seconds:
+
+1. **Detection** - Identifies tasks stuck in `started` status longer than their step timeout + 30 second buffer
+2. **Requeue** - Resets task status to `queued` and clears `started_at`
+3. **Tracking** - Increments `requeued_count` and sets `last_requeued_at` for observability
+4. **Limit** - After 3 requeue attempts, archives the message and marks the task with `permanently_stalled_at` timestamp
+
+<Aside type="note" title="Why limit requeues?">
+  The 3-attempt limit prevents infinite recovery loops. If a task keeps stalling
+  after 3 requeues, it likely has a deeper issue (e.g., input data that crashes
+  the handler, external service permanently down). The task's status remains
+  `'started'` but is excluded from reprocessing by the `permanently_stalled_at`
+  timestamp so you can investigate the root cause rather than endlessly
+  retrying.
+</Aside>
+
+## Find Currently Stalled Tasks
+
+To find tasks that are currently stalled (before automatic recovery kicks in):
+
+```sql
+SELECT
+  r.flow_slug,
+  st.step_slug,
+  st.run_id,
+  st.status,
+  st.started_at,
+  st.requeued_count,
+  now() - st.started_at AS stuck_duration
+FROM pgflow.step_tasks st
+JOIN pgflow.runs r ON r.run_id = st.run_id
+WHERE st.status = 'started'
+  AND st.started_at < now() - interval '5 minutes'
+ORDER BY st.started_at;
+```
+
+## Find Tasks That Exceeded Max Requeues
+
+Tasks that have been requeued 3 or more times need manual investigation:
+
+```sql
+SELECT
+  r.flow_slug,
+  r.run_id,
+  st.step_slug,
+  st.requeued_count,
+  st.permanently_stalled_at,
+  st.last_requeued_at
+FROM pgflow.step_tasks st
+JOIN pgflow.runs r ON r.run_id = st.run_id
+WHERE st.permanently_stalled_at IS NOT NULL
+ORDER BY st.permanently_stalled_at DESC;
+```
+
+These tasks have a persistent issue causing repeated stalls. Check your step handler logs and input data to determine the root cause.
+
+## Customize Cron Interval
+
+The stalled task recovery cron runs every 15 seconds by default. To change the interval:
+
+```sql
+SELECT pgflow.setup_requeue_stalled_tasks_cron('30 seconds');
+```
+
+<Aside type="tip">
+  The function is idempotent - calling it replaces any existing job with the new
+  interval.
+</Aside>
+
+## Related
+
+<CardGrid>
+  <LinkCard
+    title="Monitor Execution"
+    href="/deploy/monitor-execution/"
+    description="Track flow runs and step status"
+  />
+  <LinkCard
+    title="Worker Management"
+    href="/deploy/worker-management/"
+    description="Understand worker lifecycle and registration"
+  />
+  <LinkCard
+    title="Monitor Workers Health"
+    href="/deploy/monitor-workers-health/"
+    description="Check worker logs and heartbeats"
+  />
+  <LinkCard
+    title="Step Execution Options"
+    href="/reference/configuration/step-execution/"
+    description="Configure timeout and retry behavior"
+  />
+  <LinkCard
+    title="Retrying Steps"
+    href="/build/retrying-steps/"
+    description="Handle transient failures with automatic retries"
+  />
+  <LinkCard
+    title="Worker Lifecycle"
+    href="/concepts/worker-lifecycle/"
+    description="Understand why workers start and stop"
+  />
+</CardGrid>

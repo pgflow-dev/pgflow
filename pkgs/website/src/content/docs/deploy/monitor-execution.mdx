@@ -5,7 +5,14 @@ sidebar:
   order: 10
 ---
 
-import { Aside, Steps, Tabs, CardGrid, LinkCard, FileTree } from "@astrojs/starlight/components";
+import {
+  Aside,
+  Steps,
+  Tabs,
+  CardGrid,
+  LinkCard,
+  FileTree,
+} from '@astrojs/starlight/components';
 
 This guide explains how to monitor your pgflow flows during and after execution using SQL queries.
 
@@ -31,6 +38,7 @@ run_id        | flow_slug    | status    | input                | output        
 ```
 
 Run statuses include:
+
 - `started`: The run has been created and is executing steps
 - `completed`: All steps have completed successfully
 - `failed`: One or more steps have failed after max retries
@@ -61,6 +69,7 @@ final_step   | created   | 2              | 1              | null
 ```
 
 Step statuses include:
+
 - `created`: The step has been created but may be waiting for dependencies
 - `started`: The step has started execution (all dependencies are complete)
 - `completed`: The step has completed successfully
@@ -95,6 +104,7 @@ run_id   | step_slug    | status  | attempts_count | message_id | queued_at     
 ```
 
 Active task statuses:
+
 - `queued`: Task is ready to run, waiting for a worker to claim it
 - `started`: Task is currently being processed by a worker (with `started_at` timestamp and `worker_id`)
 
@@ -139,18 +149,21 @@ AND ss.status = 'failed';
 To start flows from TypeScript applications and stream real-time progress updates, see [Start Flows from TypeScript Client](/build/starting-flows/typescript-client/).
 
 This page focuses on SQL-based monitoring for debugging and operations.
+
 </Aside>
 
 <Aside type="tip" title="Flow Visualization">
 Applications typically create dashboards to visualize flows and their execution status.
 
 pgflow stores all the information needed to build rich visualizations of your flow execution, including:
+
 - Step dependencies
 - Execution times
 - Retry attempts
 - Inputs and outputs
 
 This data is available through SQL queries to the pgflow schema tables.
+
 </Aside>
 
 ## View step dependencies
@@ -172,8 +185,29 @@ GROUP BY steps.step_slug;
 ## Next steps
 
 <CardGrid>
-  <LinkCard title="Start Flows from TypeScript Client" href="/build/starting-flows/typescript-client/" description="Start flows from TypeScript apps and stream real-time progress updates"/>
-  <LinkCard title="Organize Flow code" href="/build/organize-flow-code/" description="Learn how to structure your pgflow code for maintainability and reusability"/>
-  <LinkCard title="Tune deployed flows" href="/deploy/tune-flow-config/" description="Adjust retry behavior and timeouts for production flows"/>
-  <LinkCard title="Version your Flows" href="/build/version-flows/" description="Learn how to safely update your flows without breaking existing runs"/>
+  <LinkCard
+    title="Start Flows from TypeScript Client"
+    href="/build/starting-flows/typescript-client/"
+    description="Start flows from TypeScript apps and stream real-time progress updates"
+  />
+  <LinkCard
+    title="Organize Flow code"
+    href="/build/organize-flow-code/"
+    description="Learn how to structure your pgflow code for maintainability and reusability"
+  />
+  <LinkCard
+    title="Tune deployed flows"
+    href="/deploy/tune-flow-config/"
+    description="Adjust retry behavior and timeouts for production flows"
+  />
+  <LinkCard
+    title="Version your Flows"
+    href="/build/version-flows/"
+    description="Learn how to safely update your flows without breaking existing runs"
+  />
+  <LinkCard
+    title="Troubleshoot stalled tasks"
+    href="/deploy/troubleshooting-stalled-tasks/"
+    description="Diagnose and recover tasks stuck in 'started' status"
+  />
 </CardGrid>

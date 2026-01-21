@@ -5,12 +5,13 @@ sidebar:
   order: 25
 ---
 
-import { Aside, CardGrid, LinkCard } from "@astrojs/starlight/components";
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 Configure retry behavior based on step reliability characteristics. Set conservative flow-level defaults and override per-step as needed.
 
 <Aside type="tip">
-For scheduling delays between steps, see [Delaying Steps](/build/delaying-steps/).
+  For scheduling delays between steps, see [Delaying
+  Steps](/build/delaying-steps/).
 </Aside>
 
 For detailed information about each configuration option, see the [Step Execution Options](/reference/configuration/step-execution/) reference.
@@ -22,12 +23,14 @@ Not all failures should retry. Understanding the difference helps you configure 
 ### Transient Failures
 
 Temporary problems that might succeed on retry:
+
 - Network timeouts
 - Rate limiting (429 responses)
 - Temporary service unavailability (503 responses)
 - Database connection issues
 
 Configure with retries:
+
 ```typescript
 .step({
   slug: 'fetchExternalData',
@@ -39,12 +42,14 @@ Configure with retries:
 ### Permanent Failures
 
 Problems that will never succeed on retry:
+
 - Invalid input format (malformed email, negative numbers)
 - Missing required fields
 - Business rule violations
 - Schema validation errors
 
 Configure without retries:
+
 ```typescript
 .step({
   slug: 'validInput',
@@ -56,11 +61,15 @@ Configure without retries:
 ```
 
 <Aside type="note">
-`maxAttempts: 1` means "run once, do not retry". If the step fails, it fails immediately without retry attempts.
+  `maxAttempts: 1` means "run once, do not retry". If the step fails, it fails
+  immediately without retry attempts.
 </Aside>
 
 <Aside type="caution" title="Current Limitation">
-pgflow does not distinguish between transient and permanent failures automatically. All exceptions trigger retry logic based on `maxAttempts`. Use `maxAttempts: 1` for steps that perform validation or other operations that should fail fast.
+  pgflow does not distinguish between transient and permanent failures
+  automatically. All exceptions trigger retry logic based on `maxAttempts`. Use
+  `maxAttempts: 1` for steps that perform validation or other operations that
+  should fail fast.
 </Aside>
 
 For detailed guidance on validation patterns, see [Validation Steps](/build/validation-steps/).
@@ -78,25 +87,35 @@ When different steps have different reliability requirements:
 ```typescript
 new Flow({
   slug: 'dataPipeline',
-  maxAttempts: 3,     // Sensible defaults
+  maxAttempts: 3, // Sensible defaults
   baseDelay: 1,
 })
-  .step({
-    slug: 'validateInput',
-    maxAttempts: 1,   // No retries - validation should not fail
-  }, validateHandler)
-  .step({
-    slug: 'fetchExternal',
-    maxAttempts: 5,   // External API might be flaky
-    baseDelay: 10,    // Longer delays for external service
-  }, fetchHandler)
-  .step({
-    slug: 'saveResults',
-    // Use flow defaults
-  }, saveHandler)
+  .step(
+    {
+      slug: 'validateInput',
+      maxAttempts: 1, // No retries - validation should not fail
+    },
+    validateHandler
+  )
+  .step(
+    {
+      slug: 'fetchExternal',
+      maxAttempts: 5, // External API might be flaky
+      baseDelay: 10, // Longer delays for external service
+    },
+    fetchHandler
+  )
+  .step(
+    {
+      slug: 'saveResults',
+      // Use flow defaults
+    },
+    saveHandler
+  );
 ```
 
 **Why this approach:**
+
 - Set reasonable flow-level defaults
 - Override only where needed
 - Validation steps need no retries (fail immediately on bad input)
@@ -130,5 +149,10 @@ new Flow({
     title="Tune Deployed Flows"
     href="/deploy/tune-flow-config/"
     description="Adjust configuration for production flows without redeploying"
+  />
+  <LinkCard
+    title="Troubleshooting Stalled Tasks"
+    href="/deploy/troubleshooting-stalled-tasks/"
+    description="Recover tasks stuck when workers crash mid-processing"
   />
 </CardGrid>
