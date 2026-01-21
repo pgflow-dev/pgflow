@@ -1,5 +1,12 @@
 # @pgflow/core
 
+## 0.13.2
+
+### Patch Changes
+
+- c1ac86c: Add automatic requeue for stalled tasks via cron job - tasks stuck beyond timeout+30s are requeued up to 3 times, then archived with status left as 'started' for easy identification (closes #586)
+  - @pgflow/dsl@0.13.2
+
 ## 0.13.1
 
 ### Patch Changes
