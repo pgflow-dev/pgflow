@@ -7,13 +7,19 @@ import { PgflowSqlClient } from '@pgflow/core';
 import { Queries } from '../core/Queries.js';
 import type { IExecutor } from '../core/types.js';
 import type { Logger, PlatformAdapter } from '../platform/types.js';
-import type { StepTaskWithMessage, StepTaskHandlerContext } from '../core/context.js';
+import type {
+  StepTaskWithMessage,
+  StepTaskHandlerContext,
+} from '../core/context.js';
 import { createContextSafeConfig } from '../core/context.js';
 import { Worker } from '../core/Worker.js';
 import postgres from 'postgres';
 import { FlowWorkerLifecycle } from './FlowWorkerLifecycle.js';
 import { BatchProcessor } from '../core/BatchProcessor.js';
-import type { FlowWorkerConfig, ResolvedFlowWorkerConfig } from '../core/workerConfigTypes.js';
+import type {
+  FlowWorkerConfig,
+  ResolvedFlowWorkerConfig,
+} from '../core/workerConfigTypes.js';
 
 // Re-export type from workerConfigTypes to maintain backward compatibility
 export type { FlowWorkerConfig } from '../core/workerConfigTypes.js';
@@ -23,7 +29,7 @@ const DEFAULT_FLOW_CONFIG = {
   maxConcurrent: 10,
   maxPgConnections: 4,
   batchSize: 10,
-  visibilityTimeout: 2,
+  visibilityTimeout: 5,
   maxPollSeconds: 2,
   pollIntervalMs: 100,
 } as const;
@@ -31,13 +37,17 @@ const DEFAULT_FLOW_CONFIG = {
 /**
  * Normalizes flow worker configuration by applying all defaults
  */
-function normalizeFlowConfig(config: FlowWorkerConfig, sql: postgres.Sql, platformEnv: Record<string, string | undefined>): ResolvedFlowWorkerConfig {
+function normalizeFlowConfig(
+  config: FlowWorkerConfig,
+  sql: postgres.Sql,
+  platformEnv: Record<string, string | undefined>
+): ResolvedFlowWorkerConfig {
   return {
     ...DEFAULT_FLOW_CONFIG,
     ...config,
     sql,
     env: platformEnv,
-    connectionString: config.connectionString
+    connectionString: config.connectionString,
   };
 }
 
@@ -51,7 +61,10 @@ function normalizeFlowConfig(config: FlowWorkerConfig, sql: postgres.Sql, platfo
  * @param platformAdapter - Platform adapter for creating contexts
  * @returns A configured Worker instance ready to be started
  */
-export function createFlowWorker<TFlow extends AnyFlow, TResources extends Record<string, unknown>>(
+export function createFlowWorker<
+  TFlow extends AnyFlow,
+  TResources extends Record<string, unknown>
+>(
   flow: TFlow,
   config: FlowWorkerConfig,
   createLogger: (module: string) => Logger,
@@ -92,7 +105,7 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
     flow,
     createLogger('FlowWorkerLifecycle'),
     {
-      compilation: config.compilation
+      compilation: config.compilation,
     }
   );
 
@@ -147,7 +160,7 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
       flowInput: flowInputProvider.get(runId), // Lazy-loaded flow input
 
       // Platform-specific resources (generic)
-      ...platformAdapter.platformResources
+      ...platformAdapter.platformResources,
     };
 
     // Build worker identity for structured logging
@@ -171,7 +184,9 @@ export function createFlowWorker<TFlow extends AnyFlow, TResources extends Recor
   };
 
   // Create ExecutionController
-  const executionController = new ExecutionController<StepTaskWithMessage<TFlow>>(
+  const executionController = new ExecutionController<
+    StepTaskWithMessage<TFlow>
+  >(
     executorFactory,
     abortSignal,
     {

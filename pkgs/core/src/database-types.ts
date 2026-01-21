@@ -197,10 +197,13 @@ export type Database = {
           error_message: string | null
           failed_at: string | null
           flow_slug: string
+          last_requeued_at: string | null
           last_worker_id: string | null
           message_id: number | null
           output: Json | null
+          permanently_stalled_at: string | null
           queued_at: string
+          requeued_count: number
           run_id: string
           started_at: string | null
           status: string
@@ -213,10 +216,13 @@ export type Database = {
           error_message?: string | null
           failed_at?: string | null
           flow_slug: string
+          last_requeued_at?: string | null
           last_worker_id?: string | null
           message_id?: number | null
           output?: Json | null
+          permanently_stalled_at?: string | null
           queued_at?: string
+          requeued_count?: number
           run_id: string
           started_at?: string | null
           status?: string
@@ -229,10 +235,13 @@ export type Database = {
           error_message?: string | null
           failed_at?: string | null
           flow_slug?: string
+          last_requeued_at?: string | null
           last_worker_id?: string | null
           message_id?: number | null
           output?: Json | null
+          permanently_stalled_at?: string | null
           queued_at?: string
+          requeued_count?: number
           run_id?: string
           started_at?: string | null
           status?: string
@@ -445,10 +454,13 @@ export type Database = {
           error_message: string | null
           failed_at: string | null
           flow_slug: string
+          last_requeued_at: string | null
           last_worker_id: string | null
           message_id: number | null
           output: Json | null
+          permanently_stalled_at: string | null
           queued_at: string
+          requeued_count: number
           run_id: string
           started_at: string | null
           status: string
@@ -512,10 +524,13 @@ export type Database = {
           error_message: string | null
           failed_at: string | null
           flow_slug: string
+          last_requeued_at: string | null
           last_worker_id: string | null
           message_id: number | null
           output: Json | null
+          permanently_stalled_at: string | null
           queued_at: string
+          requeued_count: number
           run_id: string
           started_at: string | null
           status: string
@@ -550,6 +565,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      requeue_stalled_tasks: { Args: never; Returns: number }
       set_vt_batch: {
         Args: { msg_ids: number[]; queue_name: string; vt_offsets: number[] }
         Returns: {
@@ -562,6 +578,10 @@ export type Database = {
         }[]
       }
       setup_ensure_workers_cron: {
+        Args: { cron_interval?: string }
+        Returns: string
+      }
+      setup_requeue_stalled_tasks_cron: {
         Args: { cron_interval?: string }
         Returns: string
       }
