@@ -7,9 +7,19 @@
     "supabase:ci-marker": {
       "executor": "nx:noop"
     },
+    "generate-migrations": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["{workspaceRoot}/pkgs/core/supabase/migrations/*.sql", "{projectRoot}/scripts/generate-migrations.ts"],
+      "outputs": ["{projectRoot}/src/_generated/migrations"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "tsx scripts/generate-migrations.ts"
+      }
+    },
     "build": {
       "executor": "nx:noop",
-      "dependsOn": ["^build"]
+      "dependsOn": ["generate-migrations", "^build"]
     },
     "_build_disabled": {
       "executor": "@nx/js:tsc",
@@ -134,8 +144,18 @@
         "parallel": false
       }
     },
+    "db-clean:ensure": {
+      "executor": "nx:run-commands",
+      "local": true,
+      "cache": false,
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "commands": ["./scripts/ensure-db-clean"],
+        "parallel": false
+      }
+    },
     "test:unit": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["build", "^build"],
       "executor": "nx:run-commands",
       "local": true,
       "inputs": ["default", "^production"],
@@ -148,7 +168,7 @@
       }
     },
     "test:integration": {
-      "dependsOn": ["db:ensure", "^build"],
+      "dependsOn": ["db:ensure", "build", "^build"],
       "executor": "nx:run-commands",
       "local": true,
       "inputs": ["default", "^production"],
@@ -160,9 +180,22 @@
         "parallel": false
       }
     },
+    "test:migrations": {
+      "dependsOn": ["db-clean:ensure", "build", "^build"],
+      "executor": "nx:run-commands",
+      "local": true,
+      "inputs": ["default", "^production"],
+      "options": {
+        "cwd": "pkgs/edge-worker",
+        "commands": [
+          "deno test --config deno.test.json --allow-all --env=supabase/functions/.env tests/migrations/"
+        ],
+        "parallel": false
+      }
+    },
     "serve:functions:e2e": {
       "executor": "nx:run-commands",
-      "dependsOn": ["^build"],
+      "dependsOn": ["build", "^build"],
       "continuous": true,
       "local": true,
       "cache": false,
@@ -188,12 +221,12 @@
     },
     "test": {
       "inputs": ["default", "^production"],
-      "dependsOn": ["test:types", "test:unit"]
+      "dependsOn": ["test:types", "test:unit", "test:migrations"]
     },
     "test:types": {
       "executor": "nx:run-commands",
       "cache": true,
-      "dependsOn": ["^build"],
+      "dependsOn": ["build", "^build"],
       "inputs": ["production", "^production"],
       "options": {
         "cwd": "{projectRoot}",

@@ -1,0 +1,61 @@
+---
+title: Using pgflow with Lovable
+description: Build multi-step AI workflows in your Lovable apps using pgflow - a Postgres-native workflow engine
+sidebar:
+  order: 0
+---
+
+import { Steps, LinkCard, CardGrid, Aside } from '@astrojs/starlight/components';
+
+**Build reliable, multi-step AI workflows in your Lovable apps.**
+
+pgflow lets you create complex background processes - like AI pipelines, data processing, and multi-step operations - directly in your Supabase backend. When combined with Lovable's AI-powered development, you can build sophisticated apps with robust backend workflows.
+
+## What pgflow enables
+
+With pgflow integrated into your Lovable app, you can:
+
+- **Chain multiple AI operations** - Scrape content, then summarize, then extract tags - all as a single reliable workflow
+- **Run steps in parallel** - Process independent operations simultaneously for faster results
+- **Handle failures gracefully** - Automatic retries with exponential backoff when APIs fail
+- **Track progress** - Full observability into workflow state in your Postgres database
+- **Scale horizontally** - Edge Workers auto-scale with your Supabase project
+
+## Installation overview
+
+Installing pgflow in a Lovable project requires a few prompts that you paste into Lovable's chat. The process is designed to be simple and safe.
+
+<Steps>
+1. **Install the Control Plane** - Create the pgflow Edge Function that manages flows
+2. **Run Migrations** - Apply database migrations and configure secrets via a temporary installer
+</Steps>
+
+<Aside type="note" title="One-time setup">
+  These installation steps only need to be done once per project. After installation, you can define and run workflows entirely through Lovable's chat interface.
+</Aside>
+
+## Get started
+
+<CardGrid>
+  <LinkCard
+    title="Step 1: Install Control Plane"
+    description="Create the pgflow Edge Function in your Supabase project"
+    href="/tutorials/lovable/01-install-pgflow/"
+  />
+  <LinkCard
+    title="Step 2: Run Migrations"
+    description="Apply database migrations and configure vault secrets"
+    href="/tutorials/lovable/02-install-migrations/"
+  />
+</CardGrid>
+
+## After installation
+
+Once pgflow is installed, you can ask Lovable to:
+
+- Create new workflow definitions in `supabase/flows/`
+- Define task functions that call AI APIs
+- Compile flows and apply new migrations
+- Start workflow runs from your app's frontend
+
+Each workflow you create becomes a reliable, observable background process that Lovable can help you build and iterate on.

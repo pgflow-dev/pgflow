@@ -463,6 +463,12 @@ export default defineConfig({
                     directory: 'tutorials/ai-web-scraper/',
                   },
                 },
+                {
+                  label: 'Lovable',
+                  autogenerate: {
+                    directory: 'tutorials/lovable/',
+                  },
+                },
               ],
             },
             {
