@@ -4,10 +4,12 @@ export function createTestFlow(flowSlug?: string) {
   const uniqueSuffix = `${Date.now()}_${Math.random()
     .toString(36)
     .substr(2, 5)}`;
+
+  const maxBaseLength = 48 - uniqueSuffix.length - 1;
+  const baseSlug = flowSlug ? flowSlug.slice(0, maxBaseLength) : 'test_flow';
+
   return {
-    slug: flowSlug
-      ? `${flowSlug}_${uniqueSuffix}`
-      : `test_flow_${uniqueSuffix}`,
+    slug: `${baseSlug}_${uniqueSuffix}`,
     options: {},
   };
 }
