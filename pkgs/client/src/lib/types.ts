@@ -125,7 +125,16 @@ export enum FlowStepStatus {
   Started = 'started',
   Completed = 'completed',
   Failed = 'failed',
+  Skipped = 'skipped',
 }
+
+/**
+ * Reason why a step was skipped
+ */
+export type SkipReason =
+  | 'condition_unmet'
+  | 'handler_failed'
+  | 'dependency_skipped';
 
 /**
  * Step event data types (no circular reference)
@@ -157,6 +166,14 @@ export type StepEventData<
     status: FlowStepStatus.Failed;
     failed_at: string;
   };
+  skipped: {
+    event_type: 'step:skipped';
+    run_id: string;
+    step_slug: TStepSlug;
+    status: FlowStepStatus.Skipped;
+    skipped_at: string;
+    skip_reason: SkipReason;
+  };
 };
 
 /**
@@ -182,7 +199,8 @@ export function isStepEvent<
     'status' in value &&
     (value.status === FlowStepStatus.Started ||
       value.status === FlowStepStatus.Completed ||
-      value.status === FlowStepStatus.Failed)
+      value.status === FlowStepStatus.Failed ||
+      value.status === FlowStepStatus.Skipped)
   );
 }
 
@@ -228,6 +246,21 @@ export function isStepFailedEvent<
     event.status === FlowStepStatus.Failed &&
     'event_type' in event &&
     event.event_type === 'step:failed'
+  );
+}
+
+/**
+ * Type guard for skipped step events
+ */
+export function isStepSkippedEvent<
+  TFlow extends AnyFlow,
+  TStepSlug extends keyof ExtractFlowSteps<TFlow> & string
+>(event: unknown): event is StepEventData<TFlow, TStepSlug>['skipped'] {
+  return (
+    isStepEvent<TFlow, TStepSlug>(event) &&
+    event.status === FlowStepStatus.Skipped &&
+    'event_type' in event &&
+    event.event_type === 'step:skipped'
   );
 }
 
@@ -323,10 +356,22 @@ export type BroadcastStepFailedEvent = {
   output?: Json; // Adding for type compatibility
 };
 
+export type BroadcastStepSkippedEvent = {
+  event_type: 'step:skipped';
+  run_id: string;
+  step_slug: string;
+  status: FlowStepStatus.Skipped;
+  skipped_at: string;
+  skip_reason: SkipReason;
+  error_message?: string; // Adding for type compatibility
+  output?: Json; // Adding for type compatibility
+};
+
 export type BroadcastStepEvent =
   | BroadcastStepStartedEvent
   | BroadcastStepCompletedEvent
-  | BroadcastStepFailedEvent;
+  | BroadcastStepFailedEvent
+  | BroadcastStepSkippedEvent;
 
 /**
  * Flow run state
@@ -361,6 +406,8 @@ export type FlowStepState<
   started_at: Date | null;
   completed_at: Date | null;
   failed_at: Date | null;
+  skipped_at: Date | null;
+  skip_reason: SkipReason | null;
 };
 
 /**

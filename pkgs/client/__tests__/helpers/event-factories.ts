@@ -7,6 +7,7 @@ import type {
   BroadcastStepStartedEvent,
   BroadcastStepCompletedEvent,
   BroadcastStepFailedEvent,
+  BroadcastStepSkippedEvent,
 } from '../../src/lib/types';
 
 /**
@@ -95,6 +96,20 @@ export function createStepFailedEvent(
     status: FlowStepStatus.Failed,
     error_message: 'Step failed',
     failed_at: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+export function createStepSkippedEvent(
+  overrides: Partial<BroadcastStepSkippedEvent> = {}
+): BroadcastStepSkippedEvent {
+  return {
+    event_type: 'step:skipped',
+    run_id: '123e4567-e89b-12d3-a456-426614174000',
+    step_slug: 'test-step',
+    status: FlowStepStatus.Skipped,
+    skipped_at: new Date().toISOString(),
+    skip_reason: 'condition_unmet',
     ...overrides,
   };
 }
