@@ -169,6 +169,8 @@ export class FlowRun<TFlow extends AnyFlow>
       started_at: null,
       completed_at: null,
       failed_at: null,
+      skipped_at: null,
+      skip_reason: null,
     });
 
     // Cache the step
@@ -277,7 +279,9 @@ export class FlowRun<TFlow extends AnyFlow>
     this.#state.input = row.input as ExtractFlowInput<TFlow>;
     this.#state.output = row.output as ExtractFlowOutput<TFlow> | null;
     this.#state.started_at = row.started_at ? new Date(row.started_at) : null;
-    this.#state.completed_at = row.completed_at ? new Date(row.completed_at) : null;
+    this.#state.completed_at = row.completed_at
+      ? new Date(row.completed_at)
+      : null;
     this.#state.failed_at = row.failed_at ? new Date(row.failed_at) : null;
     this.#state.remaining_steps = row.remaining_steps;
     this.#state.error_message = null; // Database doesn't have error_message for runs
