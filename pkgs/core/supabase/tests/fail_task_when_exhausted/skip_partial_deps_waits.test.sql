@@ -1,7 +1,7 @@
--- Test: when_failed='skip' decrements remaining_deps but step waits if other deps remain
+-- Test: when_exhausted='skip' decrements remaining_deps but step waits if other deps remain
 --
 -- Flow structure:
---   step_a (when_failed='skip', max_attempts=0) ─┐
+--   step_a (when_exhausted='skip', max_attempts=0) ─┐
 --   step_b ───────────────────────────────────────┼──> step_c (depends on both)
 --
 -- Expected behavior:
@@ -16,7 +16,7 @@ select pgflow_tests.reset_db();
 
 -- Create flow: step_a + step_b -> step_c
 select pgflow.create_flow('partial_skip');
-select pgflow.add_step('partial_skip', 'step_a', max_attempts => 0, when_failed => 'skip');
+select pgflow.add_step('partial_skip', 'step_a', max_attempts => 0, when_exhausted => 'skip');
 select pgflow.add_step('partial_skip', 'step_b');
 select pgflow.add_step('partial_skip', 'step_c', array['step_a', 'step_b']);
 

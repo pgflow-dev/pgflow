@@ -49,7 +49,7 @@ BEGIN
       start_delay => (v_step_options->>'startDelay')::int,
       step_type => v_step->>'stepType',
       when_unmet => v_step->>'whenUnmet',
-      when_failed => v_step->>'whenFailed',
+      when_exhausted => v_step->>'whenExhausted',
       required_input_pattern => CASE
         WHEN (v_step->'requiredInputPattern'->>'defined')::boolean
         THEN v_step->'requiredInputPattern'->'value'

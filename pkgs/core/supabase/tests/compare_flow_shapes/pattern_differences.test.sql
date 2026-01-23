@@ -7,12 +7,12 @@ select is(
   pgflow._compare_flow_shapes(
     '{
       "steps": [
-        {"slug": "step1", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": true, "value": {"status": "active"}}, "forbiddenInputPattern": {"defined": false}}
+        {"slug": "step1", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenExhausted": "fail", "requiredInputPattern": {"defined": true, "value": {"status": "active"}}, "forbiddenInputPattern": {"defined": false}}
       ]
     }'::jsonb,
     '{
       "steps": [
-        {"slug": "step1", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": true, "value": {"status": "active"}}, "forbiddenInputPattern": {"defined": false}}
+        {"slug": "step1", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenExhausted": "fail", "requiredInputPattern": {"defined": true, "value": {"status": "active"}}, "forbiddenInputPattern": {"defined": false}}
       ]
     }'::jsonb
   ),
@@ -25,12 +25,12 @@ select is(
   pgflow._compare_flow_shapes(
     '{
       "steps": [
-        {"slug": "step1", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": true, "value": {"status": "active"}}, "forbiddenInputPattern": {"defined": false}}
+        {"slug": "step1", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenExhausted": "fail", "requiredInputPattern": {"defined": true, "value": {"status": "active"}}, "forbiddenInputPattern": {"defined": false}}
       ]
     }'::jsonb,
     '{
       "steps": [
-        {"slug": "step1", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": true, "value": {"status": "pending"}}, "forbiddenInputPattern": {"defined": false}}
+        {"slug": "step1", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenExhausted": "fail", "requiredInputPattern": {"defined": true, "value": {"status": "pending"}}, "forbiddenInputPattern": {"defined": false}}
       ]
     }'::jsonb
   ),

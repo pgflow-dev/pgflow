@@ -1,9 +1,9 @@
--- Test: when_failed='skip' sets skip_reason to 'handler_failed'
+-- Test: when_exhausted='skip' sets skip_reason to 'handler_failed'
 --
 -- This distinguishes handler-failure skips from condition-unmet skips.
 --
 -- Flow structure:
---   step_a (when_failed='skip', max_attempts=0) → step_b
+--   step_a (when_exhausted='skip', max_attempts=0) → step_b
 --
 -- Expected behavior:
 --   1. step_a fails and gets skipped
@@ -17,7 +17,7 @@ select pgflow_tests.reset_db();
 
 -- Create flow
 select pgflow.create_flow('skip_reason_test');
-select pgflow.add_step('skip_reason_test', 'step_a', max_attempts => 0, when_failed => 'skip');
+select pgflow.add_step('skip_reason_test', 'step_a', max_attempts => 0, when_exhausted => 'skip');
 select pgflow.add_step('skip_reason_test', 'step_b', array['step_a']);
 
 -- Start the flow

@@ -22,7 +22,7 @@ pgflow provides two ways to skip steps:
 | Feature                   | When Evaluated   | Purpose                          |
 | ------------------------- | ---------------- | -------------------------------- |
 | `if`/`ifNot` conditions   | Before step runs | Route based on input data        |
-| `retriesExhausted` option | After step fails | Recover gracefully from failures |
+| `whenExhausted` option | After step fails | Recover gracefully from failures |
 
 Both use the same three modes: `fail`, `skip`, and `skip-cascade`.
 
@@ -38,7 +38,7 @@ When a condition is unmet or a step fails, you control what happens:
 
 | Mode           | Behavior                                                                                        |
 | -------------- | ----------------------------------------------------------------------------------------------- |
-| `fail`         | Step fails, entire run fails (default for `retriesExhausted`)                                   |
+| `fail`         | Step fails, entire run fails (default for `whenExhausted`)                                   |
 | `skip`         | Step marked as skipped, run continues, dependents receive `undefined` (default for `whenUnmet`) |
 | `skip-cascade` | Step AND all downstream dependents skipped, run continues                                       |
 
@@ -77,14 +77,14 @@ Continue the workflow even if an optional step fails:
   slug: 'sendWelcomeEmail',
   dependsOn: ['createAccount'],
   maxAttempts: 3,
-  retriesExhausted: 'skip',     // If email fails, continue anyway
+  whenExhausted: 'skip',     // If email fails, continue anyway
 }, async (input) => {
   return await sendEmail(input.createAccount.accountId);
 })
 ```
 
 <Aside type="tip">
-  Use `retriesExhausted: 'skip'` for non-critical steps like notifications,
+  Use `whenExhausted: 'skip'` for non-critical steps like notifications,
   analytics, or enrichment that shouldn't block the main workflow.
 </Aside>
 
@@ -124,7 +124,7 @@ pgflow's type system tracks which steps may be skipped:
   <LinkCard
     title="Graceful Failure"
     href="/build/graceful-failure/"
-    description="Handle step failures gracefully with retriesExhausted"
+    description="Handle step failures gracefully with whenExhausted"
   />
   <LinkCard
     title="Examples"

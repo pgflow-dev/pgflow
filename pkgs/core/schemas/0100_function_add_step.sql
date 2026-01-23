@@ -10,7 +10,7 @@ create or replace function pgflow.add_step(
   required_input_pattern jsonb default null,
   forbidden_input_pattern jsonb default null,
   when_unmet text default 'skip',
-  when_failed text default 'fail'
+  when_exhausted text default 'fail'
 )
 returns pgflow.steps
 language plpgsql
@@ -41,7 +41,7 @@ BEGIN
   INSERT INTO pgflow.steps (
     flow_slug, step_slug, step_type, step_index, deps_count,
     opt_max_attempts, opt_base_delay, opt_timeout, opt_start_delay,
-    required_input_pattern, forbidden_input_pattern, when_unmet, when_failed
+    required_input_pattern, forbidden_input_pattern, when_unmet, when_exhausted
   )
   VALUES (
     add_step.flow_slug,
@@ -56,7 +56,7 @@ BEGIN
     add_step.required_input_pattern,
     add_step.forbidden_input_pattern,
     add_step.when_unmet,
-    add_step.when_failed
+    add_step.when_exhausted
   )
   ON CONFLICT ON CONSTRAINT steps_pkey
   DO UPDATE SET step_slug = EXCLUDED.step_slug

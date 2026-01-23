@@ -1,7 +1,7 @@
 ---
 draft: false
 title: 'pgflow 0.14.0: Conditional Step Execution'
-description: 'Run steps based on input patterns with if/ifNot conditions and handle failures gracefully with retriesExhausted.'
+description: 'Run steps based on input patterns with if/ifNot conditions and handle failures gracefully with whenExhausted.'
 date: 2026-01-21
 authors:
   - jumski
@@ -23,7 +23,7 @@ pgflow 0.14.0 introduces conditional step execution - run steps based on input p
 
 - **`if` / `ifNot`** - Skip steps based on JSON containment patterns
 - **`whenUnmet`** - Control behavior when conditions aren't met (`fail`, `skip`, `skip-cascade`)
-- **`retriesExhausted`** - Handle step failures gracefully after all retries fail
+- **`whenExhausted`** - Handle step failures gracefully after all retries fail
 - **Type-safe** - TypeScript tracks which dependencies may be `undefined`
 
 ## Pattern Matching with `if` / `ifNot`
@@ -88,18 +88,18 @@ See [Skip Modes](/build/conditional-steps/skip-modes/) for detailed guidance on 
 
 ## Graceful Failure Handling
 
-The new `retriesExhausted` option controls what happens after all retries fail:
+The new `whenExhausted` option controls what happens after all retries fail:
 
 ```typescript
 .step({
   slug: 'sendWelcomeEmail',
   dependsOn: ['createAccount'],
   maxAttempts: 3,
-  retriesExhausted: 'skip',  // Continue even if email fails
+  whenExhausted: 'skip',  // Continue even if email fails
 }, handler)
 ```
 
-Use `retriesExhausted: 'skip'` for non-critical steps like notifications, analytics, or enrichment that shouldn't block the main workflow.
+Use `whenExhausted: 'skip'` for non-critical steps like notifications, analytics, or enrichment that shouldn't block the main workflow.
 
 See [Graceful Failure](/build/graceful-failure/) for patterns.
 
@@ -138,7 +138,7 @@ npx supabase db push
 
 <Aside type="caution">
   The migration adds new columns (`required_input_pattern`,
-  `forbidden_input_pattern`, `when_unmet`, `when_failed`, `skip_reason`,
+  `forbidden_input_pattern`, `when_unmet`, `when_exhausted`, `skip_reason`,
   `skipped_at`) and a new step status (`skipped`). Existing flows continue to
   work unchanged.
 </Aside>
@@ -150,5 +150,5 @@ See [Install pgflow](/get-started/installation/) for upgrade details.
 - [Conditional Steps Overview](/build/conditional-steps/) - Introduction to the feature
 - [Pattern Matching](/build/conditional-steps/pattern-matching/) - JSON containment patterns
 - [Skip Modes](/build/conditional-steps/skip-modes/) - Detailed mode comparison
-- [Graceful Failure](/build/graceful-failure/) - Handling failures with `retriesExhausted`
+- [Graceful Failure](/build/graceful-failure/) - Handling failures with `whenExhausted`
 - [Examples](/build/conditional-steps/examples/) - AI/LLM patterns like query routing and RAG fallback
