@@ -1,5 +1,5 @@
 -- Test: add_step - Invalid condition parameter values
--- Verifies CHECK constraints reject invalid when_unmet and when_failed values
+-- Verifies CHECK constraints reject invalid when_unmet and when_exhausted values
 begin;
 select plan(2);
 
@@ -13,11 +13,11 @@ select throws_ok(
   'Invalid when_unmet value should be rejected'
 );
 
--- Test 2: Invalid when_failed value should fail
+-- Test 2: Invalid when_exhausted value should fail
 select throws_ok(
-  $$ SELECT pgflow.add_step('invalid_test', 'bad_step2', when_failed => 'invalid_value') $$,
-  'new row for relation "steps" violates check constraint "when_failed_is_valid"',
-  'Invalid when_failed value should be rejected'
+  $$ SELECT pgflow.add_step('invalid_test', 'bad_step2', when_exhausted => 'invalid_value') $$,
+  'new row for relation "steps" violates check constraint "when_exhausted_is_valid"',
+  'Invalid when_exhausted value should be rejected'
 );
 
 select finish();

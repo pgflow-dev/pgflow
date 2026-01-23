@@ -7,8 +7,8 @@ select pgflow._create_flow_from_shape(
   'map_flow',
   '{
     "steps": [
-      {"slug": "root_map", "stepType": "map", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
-      {"slug": "process", "stepType": "single", "dependencies": ["root_map"], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}}
+      {"slug": "root_map", "stepType": "map", "dependencies": [], "whenUnmet": "skip", "whenExhausted": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
+      {"slug": "process", "stepType": "single", "dependencies": ["root_map"], "whenUnmet": "skip", "whenExhausted": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}}
     ]
   }'::jsonb
 );
@@ -25,8 +25,8 @@ select is(
   pgflow._get_flow_shape('map_flow'),
   '{
     "steps": [
-      {"slug": "root_map", "stepType": "map", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
-      {"slug": "process", "stepType": "single", "dependencies": ["root_map"], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}}
+      {"slug": "root_map", "stepType": "map", "dependencies": [], "whenUnmet": "skip", "whenExhausted": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
+      {"slug": "process", "stepType": "single", "dependencies": ["root_map"], "whenUnmet": "skip", "whenExhausted": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}}
     ]
   }'::jsonb,
   'Shape should round-trips correctly'

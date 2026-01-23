@@ -19,7 +19,7 @@ Add conditional step execution with skip infrastructure
 
 **Schema Changes:**
 
-- New columns: required_input_pattern, forbidden_input_pattern, when_unmet, when_failed, skip_reason, skipped_at
+- New columns: required_input_pattern, forbidden_input_pattern, when_unmet, when_exhausted, skip_reason, skipped_at
 - New step status: 'skipped'
 - New function: cascade_skip_steps() for skip propagation
 - FlowShape condition fields for auto-compilation drift detection

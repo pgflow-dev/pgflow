@@ -226,7 +226,7 @@ Controls what happens when `if` or `ifNot` condition is not met.
   workflow rather than failing the entire run.
 </Aside>
 
-### `retriesExhausted`
+### `whenExhausted`
 
 **Type:** `'fail' | 'skip' | 'skip-cascade'`
 **Default:** `'fail'`
@@ -243,24 +243,24 @@ Controls what happens when a step fails after exhausting all `maxAttempts` retry
 .step({
   slug: 'sendEmail',
   maxAttempts: 3,
-  retriesExhausted: 'skip',  // Don't fail run if email service is down
+  whenExhausted: 'skip',  // Don't fail run if email service is down
 }, handler)
 
 .step({
   slug: 'criticalOperation',
   maxAttempts: 5,
-  retriesExhausted: 'fail',  // Default - fail if operation fails
+  whenExhausted: 'fail',  // Default - fail if operation fails
 }, handler)
 ```
 
 <Aside type="tip">
-  Use `retriesExhausted: 'skip'` for non-critical steps like notifications,
+  Use `whenExhausted: 'skip'` for non-critical steps like notifications,
   analytics, or optional enrichment.
 </Aside>
 
 <Aside type="caution" title="TYPE_VIOLATION Errors">
   Programming errors like returning wrong type (e.g., string instead of array
-  for map step) always fail the run, regardless of `retriesExhausted` setting.
+  for map step) always fail the run, regardless of `whenExhausted` setting.
   These are bugs in your code, not runtime conditions.
 </Aside>
 

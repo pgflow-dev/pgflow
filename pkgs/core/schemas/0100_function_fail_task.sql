@@ -13,7 +13,7 @@ DECLARE
   v_run_failed boolean;
   v_step_failed boolean;
   v_step_skipped boolean;
-  v_when_failed text;
+  v_when_exhausted text;
   v_task_exhausted boolean;  -- True if task has exhausted retries
   v_flow_slug_for_deps text;  -- Used for decrementing remaining_deps on plain skip
 begin
@@ -63,11 +63,11 @@ flow_info AS (
   FROM pgflow.runs r
   WHERE r.run_id = fail_task.run_id
 ),
-config AS (
+  config AS (
   SELECT
     COALESCE(s.opt_max_attempts, f.opt_max_attempts) AS opt_max_attempts,
     COALESCE(s.opt_base_delay, f.opt_base_delay) AS opt_base_delay,
-    s.when_failed
+    s.when_exhausted
   FROM pgflow.steps s
   JOIN pgflow.flows f ON f.flow_slug = s.flow_slug
   JOIN flow_info fi ON fi.flow_slug = s.flow_slug
@@ -95,45 +95,45 @@ fail_or_retry_task as (
     AND task.status = 'started'
   RETURNING *
 ),
--- Determine if task exhausted retries and get when_failed mode
-task_status AS (
-  SELECT
-    (select status from fail_or_retry_task) AS new_task_status,
-    (select when_failed from config) AS when_failed_mode,
+ -- Determine if task exhausted retries and get when_exhausted mode
+ task_status AS (
+   SELECT
+     (select status from fail_or_retry_task) AS new_task_status,
+     (select when_exhausted from config) AS when_exhausted_mode,
     -- Task is exhausted when it's failed (no more retries)
     ((select status from fail_or_retry_task) = 'failed') AS is_exhausted
 ),
 maybe_fail_step AS (
   UPDATE pgflow.step_states
   SET
-    -- Status logic:
-    -- - If task not exhausted (retrying): keep current status
-    -- - If exhausted AND when_failed='fail': set to 'failed'
-    -- - If exhausted AND when_failed IN ('skip', 'skip-cascade'): set to 'skipped'
-    status = CASE
-             WHEN NOT (select is_exhausted from task_status) THEN pgflow.step_states.status
-             WHEN (select when_failed_mode from task_status) = 'fail' THEN 'failed'
-             ELSE 'skipped'  -- skip or skip-cascade
-             END,
+     -- Status logic:
+     -- - If task not exhausted (retrying): keep current status
+     -- - If exhausted AND when_exhausted='fail': set to 'failed'
+     -- - If exhausted AND when_exhausted IN ('skip', 'skip-cascade'): set to 'skipped'
+     status = CASE
+              WHEN NOT (select is_exhausted from task_status) THEN pgflow.step_states.status
+              WHEN (select when_exhausted_mode from task_status) = 'fail' THEN 'failed'
+              ELSE 'skipped'  -- skip or skip-cascade
+              END,
     failed_at = CASE
-                WHEN (select is_exhausted from task_status) AND (select when_failed_mode from task_status) = 'fail' THEN now()
-                ELSE NULL
-                END,
+                 WHEN (select is_exhausted from task_status) AND (select when_exhausted_mode from task_status) = 'fail' THEN now()
+                 ELSE NULL
+                 END,
     error_message = CASE
                     WHEN (select is_exhausted from task_status) THEN fail_task.error_message
                     ELSE NULL
                     END,
     skip_reason = CASE
-                  WHEN (select is_exhausted from task_status) AND (select when_failed_mode from task_status) IN ('skip', 'skip-cascade') THEN 'handler_failed'
+                  WHEN (select is_exhausted from task_status) AND (select when_exhausted_mode from task_status) IN ('skip', 'skip-cascade') THEN 'handler_failed'
                   ELSE pgflow.step_states.skip_reason
                   END,
     skipped_at = CASE
-                 WHEN (select is_exhausted from task_status) AND (select when_failed_mode from task_status) IN ('skip', 'skip-cascade') THEN now()
+                 WHEN (select is_exhausted from task_status) AND (select when_exhausted_mode from task_status) IN ('skip', 'skip-cascade') THEN now()
                  ELSE pgflow.step_states.skipped_at
                  END,
     -- Clear remaining_tasks when skipping (required by remaining_tasks_state_consistency constraint)
     remaining_tasks = CASE
-                      WHEN (select is_exhausted from task_status) AND (select when_failed_mode from task_status) IN ('skip', 'skip-cascade') THEN NULL
+                      WHEN (select is_exhausted from task_status) AND (select when_exhausted_mode from task_status) IN ('skip', 'skip-cascade') THEN NULL
                       ELSE pgflow.step_states.remaining_tasks
                       END
   FROM fail_or_retry_task
@@ -141,7 +141,7 @@ maybe_fail_step AS (
     AND pgflow.step_states.step_slug = fail_task.step_slug
   RETURNING pgflow.step_states.*
 )
--- Update run status: only fail when when_failed='fail' and step was failed
+ -- Update run status: only fail when when_exhausted='fail' and step was failed
 UPDATE pgflow.runs
 SET status = CASE
               WHEN (select status from maybe_fail_step) = 'failed' THEN 'failed'
@@ -159,9 +159,9 @@ SET status = CASE
 WHERE pgflow.runs.run_id = fail_task.run_id
 RETURNING (status = 'failed') INTO v_run_failed;
 
--- Capture when_failed mode and check if step was skipped for later processing
-SELECT s.when_failed INTO v_when_failed
-FROM pgflow.steps s
+ -- Capture when_exhausted mode and check if step was skipped for later processing
+ SELECT s.when_exhausted INTO v_when_exhausted
+ FROM pgflow.steps s
 JOIN pgflow.runs r ON r.flow_slug = s.flow_slug
 WHERE r.run_id = fail_task.run_id
   AND s.step_slug = fail_task.step_slug;
@@ -194,8 +194,8 @@ IF v_step_failed THEN
   );
 END IF;
 
--- Handle step skipping (when_failed = 'skip' or 'skip-cascade')
-IF v_step_skipped THEN
+ -- Handle step skipping (when_exhausted = 'skip' or 'skip-cascade')
+ IF v_step_skipped THEN
   -- Send broadcast event for step skipped
   PERFORM realtime.send(
     jsonb_build_object(
@@ -212,8 +212,8 @@ IF v_step_skipped THEN
     false
   );
 
-  -- For skip-cascade: cascade skip to all downstream dependents
-  IF v_when_failed = 'skip-cascade' THEN
+   -- For skip-cascade: cascade skip to all downstream dependents
+   IF v_when_exhausted = 'skip-cascade' THEN
     PERFORM pgflow._cascade_force_skip_steps(fail_task.run_id, fail_task.step_slug, 'handler_failed');
   ELSE
     -- For plain 'skip': decrement remaining_deps on dependent steps

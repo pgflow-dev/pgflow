@@ -13,9 +13,9 @@ select is(
   pgflow._get_flow_shape('test_flow'),
   '{
     "steps": [
-      {"slug": "first", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
-      {"slug": "second", "stepType": "single", "dependencies": ["first"], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
-      {"slug": "third", "stepType": "single", "dependencies": ["second"], "whenUnmet": "skip", "whenFailed": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}}
+      {"slug": "first", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenExhausted": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
+      {"slug": "second", "stepType": "single", "dependencies": ["first"], "whenUnmet": "skip", "whenExhausted": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}},
+      {"slug": "third", "stepType": "single", "dependencies": ["second"], "whenUnmet": "skip", "whenExhausted": "fail", "requiredInputPattern": {"defined": false}, "forbiddenInputPattern": {"defined": false}}
     ]
   }'::jsonb,
   'Should return correct shape for simple sequential flow'

@@ -24,7 +24,7 @@ as $$
             '[]'::jsonb
           ),
           'whenUnmet', step.when_unmet,
-          'whenFailed', step.when_failed,
+          'whenExhausted', step.when_exhausted,
           'requiredInputPattern', CASE
             WHEN step.required_input_pattern IS NULL
             THEN '{"defined": false}'::jsonb

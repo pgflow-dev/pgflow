@@ -112,7 +112,7 @@ new Flow<{ query: string }>({ slug: 'rag_fallback' })
       slug: 'web',
       dependsOn: ['retrieve'],
       if: { retrieve: { confidence: 'low' } },
-      retriesExhausted: 'skip', // Continue if web search fails
+      whenExhausted: 'skip', // Continue if web search fails
     },
     async (_, ctx) => searchWeb((await ctx.flowInput).query)
   )
@@ -137,7 +137,7 @@ new Flow<{ query: string }>({ slug: 'rag_fallback' })
 
 - Retrieval always runs first to check knowledge base
 - Web search is conditional on low confidence scores
-- `retriesExhausted: 'skip'` ensures graceful degradation if web search fails
+- `whenExhausted: 'skip'` ensures graceful degradation if web search fails
 
 ---
 
@@ -173,7 +173,7 @@ new Flow<{ query: string }>({ slug: 'multi_retrieval' })
     {
       slug: 'vector',
       dependsOn: ['embed'],
-      retriesExhausted: 'skip',
+      whenExhausted: 'skip',
     },
     (deps) => searchPinecone(deps.embed.vector)
   )
@@ -181,7 +181,7 @@ new Flow<{ query: string }>({ slug: 'multi_retrieval' })
     {
       slug: 'keyword',
       dependsOn: ['embed'],
-      retriesExhausted: 'skip',
+      whenExhausted: 'skip',
     },
     async (_, ctx) => searchElastic((await ctx.flowInput).query)
   )
@@ -189,7 +189,7 @@ new Flow<{ query: string }>({ slug: 'multi_retrieval' })
     {
       slug: 'graph',
       dependsOn: ['embed'],
-      retriesExhausted: 'skip',
+      whenExhausted: 'skip',
     },
     async (_, ctx) => searchNeo4j((await ctx.flowInput).query)
   )
@@ -212,7 +212,7 @@ new Flow<{ query: string }>({ slug: 'multi_retrieval' })
 **Key points:**
 
 - Three retrieval sources run **in parallel** after embedding
-- Each source has `retriesExhausted: 'skip'` for resilience
+- Each source has `whenExhausted: 'skip'` for resilience
 - `rerank` combines available results - handles undefined sources gracefully
 
 ---

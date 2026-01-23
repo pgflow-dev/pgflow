@@ -17,7 +17,7 @@ select is(
       'local_flow',
       '{
         "steps": [
-          {"slug": "new_step", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenFailed": "fail"}
+          {"slug": "new_step", "stepType": "single", "dependencies": [], "whenUnmet": "skip", "whenExhausted": "fail"}
         ]
       }'::jsonb
     ) as result

@@ -1,5 +1,5 @@
 -- _cascade_force_skip_steps: Skip a step and cascade to all downstream dependents
--- Used when a condition is unmet (whenUnmet: skip-cascade) or handler fails (whenFailed: skip-cascade)
+-- Used when a condition is unmet (whenUnmet: skip-cascade) or handler fails (whenExhausted: skip-cascade)
 create or replace function pgflow._cascade_force_skip_steps(
   run_id uuid,
   step_slug text,

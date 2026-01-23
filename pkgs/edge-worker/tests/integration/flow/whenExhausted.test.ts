@@ -19,10 +19,10 @@ const workerConfig = {
 } as const;
 
 // =============================================================================
-// Test 1: Handler fails with when_failed='fail' (default) - run fails
+// Test 1: Handler fails with when_exhausted='fail' (default) - run fails
 // =============================================================================
 Deno.test(
-  'retries exhausted with when_failed=fail causes run failure',
+  'retries exhausted with when_exhausted=fail causes run failure',
   withPgNoTransaction(async (sql) => {
     await sql`select pgflow_tests.reset_db();`;
 
@@ -38,7 +38,7 @@ Deno.test(
           slug: 'failing_step',
           dependsOn: ['first'],
           maxAttempts: 1,
-          // default retriesExhausted: 'fail'
+          // default whenExhausted: 'fail'
         },
         async () => {
           await delay(1);
@@ -88,10 +88,10 @@ Deno.test(
 );
 
 // =============================================================================
-// Test 2: Handler fails with when_failed='skip' - step skipped, run completes
+// Test 2: Handler fails with when_exhausted='skip' - step skipped, run completes
 // =============================================================================
 Deno.test(
-  'retries exhausted with when_failed=skip skips step with handler_failed',
+  'retries exhausted with when_exhausted=skip skips step with handler_failed',
   withPgNoTransaction(async (sql) => {
     await sql`select pgflow_tests.reset_db();`;
 
@@ -107,7 +107,7 @@ Deno.test(
           slug: 'optional_step',
           dependsOn: ['first'],
           maxAttempts: 1,
-          retriesExhausted: 'skip',
+          whenExhausted: 'skip',
         },
         async () => {
           await delay(1);
@@ -160,10 +160,10 @@ Deno.test(
 );
 
 // =============================================================================
-// Test 3: Handler fails with when_failed='skip-cascade' - cascades to dependents
+// Test 3: Handler fails with when_exhausted='skip-cascade' - cascades to dependents
 // =============================================================================
 Deno.test(
-  'retries exhausted with when_failed=skip-cascade skips dependents',
+  'retries exhausted with when_exhausted=skip-cascade skips dependents',
   withPgNoTransaction(async (sql) => {
     await sql`select pgflow_tests.reset_db();`;
 
@@ -179,7 +179,7 @@ Deno.test(
           slug: 'risky_step',
           dependsOn: ['first'],
           maxAttempts: 1,
-          retriesExhausted: 'skip-cascade',
+          whenExhausted: 'skip-cascade',
         },
         async () => {
           await delay(1);
@@ -251,7 +251,7 @@ Deno.test(
           dependsOn: ['init'],
           maxAttempts: 3,
           baseDelay: 1,
-          retriesExhausted: 'skip',
+          whenExhausted: 'skip',
         },
         async () => {
           attemptCount++;
@@ -313,7 +313,7 @@ Deno.test(
         {
           slug: 'maybe_skip',
           dependsOn: ['first'],
-          retriesExhausted: 'skip', // configured to skip on failure
+          whenExhausted: 'skip', // configured to skip on failure
         },
         async (deps) => {
           await delay(1);
@@ -342,7 +342,6 @@ Deno.test(
         assertEquals(state.skipped_at, null);
       }
 
-      // Only leaf steps (steps with no dependents) that completed are included in output
       assertEquals(polledRun.output, {
         final: { result: { processed: 10 } },
       });
@@ -374,9 +373,9 @@ Deno.test(
         {
           slug: 'conditional_risky',
           dependsOn: ['base'],
-          if: { base: { risky: true } },
           maxAttempts: 1,
-          retriesExhausted: 'skip',
+          if: { base: { risky: true } },
+          whenExhausted: 'skip',
         },
         async () => {
           await delay(1);

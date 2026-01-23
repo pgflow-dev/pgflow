@@ -15,7 +15,7 @@ END) <= 1), ADD CONSTRAINT "skip_reason_matches_status" CHECK (((status = 'skipp
 -- Create index "idx_step_states_skipped" to table: "step_states"
 CREATE INDEX "idx_step_states_skipped" ON "pgflow"."step_states" ("run_id", "step_slug") WHERE (status = 'skipped'::text);
 -- Modify "steps" table
-ALTER TABLE "pgflow"."steps" ADD CONSTRAINT "when_failed_is_valid" CHECK (when_failed = ANY (ARRAY['fail'::text, 'skip'::text, 'skip-cascade'::text])), ADD CONSTRAINT "when_unmet_is_valid" CHECK (when_unmet = ANY (ARRAY['fail'::text, 'skip'::text, 'skip-cascade'::text])), ADD COLUMN "required_input_pattern" jsonb NULL, ADD COLUMN "forbidden_input_pattern" jsonb NULL, ADD COLUMN "when_unmet" text NOT NULL DEFAULT 'skip', ADD COLUMN "when_failed" text NOT NULL DEFAULT 'fail';
+ALTER TABLE "pgflow"."steps" ADD CONSTRAINT "when_exhausted_is_valid" CHECK (when_exhausted = ANY (ARRAY['fail'::text, 'skip'::text, 'skip-cascade'::text])), ADD CONSTRAINT "when_unmet_is_valid" CHECK (when_unmet = ANY (ARRAY['fail'::text, 'skip'::text, 'skip-cascade'::text])), ADD COLUMN "required_input_pattern" jsonb NULL, ADD COLUMN "forbidden_input_pattern" jsonb NULL, ADD COLUMN "when_unmet" text NOT NULL DEFAULT 'skip', ADD COLUMN "when_exhausted" text NOT NULL DEFAULT 'fail';
 -- Modify "_compare_flow_shapes" function
 CREATE OR REPLACE FUNCTION "pgflow"."_compare_flow_shapes" ("p_local" jsonb, "p_db" jsonb) RETURNS text[] LANGUAGE plpgsql STABLE SET "search_path" = '' AS $BODY$
 DECLARE
@@ -130,15 +130,15 @@ BEGIN
         );
       END IF;
 
-      -- Compare whenFailed (structural - affects DAG execution semantics)
-      IF v_local_step->>'whenFailed' != v_db_step->>'whenFailed' THEN
+      -- Compare whenExhausted (structural - affects DAG execution semantics)
+      IF v_local_step->>'whenExhausted' != v_db_step->>'whenExhausted' THEN
         v_differences := array_append(
           v_differences,
           format(
-            $$Step at index %s: whenFailed differs '%s' vs '%s'$$,
+            $$Step at index %s: whenExhausted differs '%s' vs '%s'$$,
             v_idx,
-            v_local_step->>'whenFailed',
-            v_db_step->>'whenFailed'
+            v_local_step->>'whenExhausted',
+            v_db_step->>'whenExhausted'
           )
         );
       END IF;
@@ -177,7 +177,7 @@ BEGIN
 END;
 $BODY$;
 -- Create "add_step" function
-CREATE FUNCTION "pgflow"."add_step" ("flow_slug" text, "step_slug" text, "deps_slugs" text[] DEFAULT '{}', "max_attempts" integer DEFAULT NULL::integer, "base_delay" integer DEFAULT NULL::integer, "timeout" integer DEFAULT NULL::integer, "start_delay" integer DEFAULT NULL::integer, "step_type" text DEFAULT 'single', "required_input_pattern" jsonb DEFAULT NULL::jsonb, "forbidden_input_pattern" jsonb DEFAULT NULL::jsonb, "when_unmet" text DEFAULT 'skip', "when_failed" text DEFAULT 'fail') RETURNS "pgflow"."steps" LANGUAGE plpgsql SET "search_path" = '' AS $$
+CREATE FUNCTION "pgflow"."add_step" ("flow_slug" text, "step_slug" text, "deps_slugs" text[] DEFAULT '{}', "max_attempts" integer DEFAULT NULL::integer, "base_delay" integer DEFAULT NULL::integer, "timeout" integer DEFAULT NULL::integer, "start_delay" integer DEFAULT NULL::integer, "step_type" text DEFAULT 'single', "required_input_pattern" jsonb DEFAULT NULL::jsonb, "forbidden_input_pattern" jsonb DEFAULT NULL::jsonb, "when_unmet" text DEFAULT 'skip', "when_exhausted" text DEFAULT 'fail') RETURNS "pgflow"."steps" LANGUAGE plpgsql SET "search_path" = '' AS $$
 DECLARE
   result_step pgflow.steps;
   next_idx int;
@@ -202,7 +202,7 @@ BEGIN
   INSERT INTO pgflow.steps (
     flow_slug, step_slug, step_type, step_index, deps_count,
     opt_max_attempts, opt_base_delay, opt_timeout, opt_start_delay,
-    required_input_pattern, forbidden_input_pattern, when_unmet, when_failed
+    required_input_pattern, forbidden_input_pattern, when_unmet, when_exhausted
   )
   VALUES (
     add_step.flow_slug,
@@ -217,7 +217,7 @@ BEGIN
     add_step.required_input_pattern,
     add_step.forbidden_input_pattern,
     add_step.when_unmet,
-    add_step.when_failed
+    add_step.when_exhausted
   )
   ON CONFLICT ON CONSTRAINT steps_pkey
   DO UPDATE SET step_slug = EXCLUDED.step_slug
@@ -274,7 +274,7 @@ BEGIN
       start_delay => (v_step_options->>'startDelay')::int,
       step_type => v_step->>'stepType',
       when_unmet => v_step->>'whenUnmet',
-      when_failed => v_step->>'whenFailed',
+      when_exhausted => v_step->>'whenExhausted',
       required_input_pattern => CASE
         WHEN (v_step->'requiredInputPattern'->>'defined')::boolean
         THEN v_step->'requiredInputPattern'->'value'
@@ -308,7 +308,7 @@ SELECT jsonb_build_object(
             '[]'::jsonb
           ),
           'whenUnmet', step.when_unmet,
-          'whenFailed', step.when_failed,
+          'whenExhausted', step.when_exhausted,
           'requiredInputPattern', CASE
             WHEN step.required_input_pattern IS NULL
             THEN '{"defined": false}'::jsonb
@@ -1179,7 +1179,7 @@ DECLARE
   v_run_failed boolean;
   v_step_failed boolean;
   v_step_skipped boolean;
-  v_when_failed text;
+  v_when_exhausted text;
   v_task_exhausted boolean;  -- True if task has exhausted retries
   v_flow_slug_for_deps text;  -- Used for decrementing remaining_deps on plain skip
 begin
@@ -1229,11 +1229,11 @@ flow_info AS (
   FROM pgflow.runs r
   WHERE r.run_id = fail_task.run_id
 ),
-config AS (
+  config AS (
   SELECT
     COALESCE(s.opt_max_attempts, f.opt_max_attempts) AS opt_max_attempts,
     COALESCE(s.opt_base_delay, f.opt_base_delay) AS opt_base_delay,
-    s.when_failed
+    s.when_exhausted
   FROM pgflow.steps s
   JOIN pgflow.flows f ON f.flow_slug = s.flow_slug
   JOIN flow_info fi ON fi.flow_slug = s.flow_slug
@@ -1261,45 +1261,45 @@ fail_or_retry_task as (
     AND task.status = 'started'
   RETURNING *
 ),
--- Determine if task exhausted retries and get when_failed mode
-task_status AS (
-  SELECT
-    (select status from fail_or_retry_task) AS new_task_status,
-    (select when_failed from config) AS when_failed_mode,
+ -- Determine if task exhausted retries and get when_exhausted mode
+ task_status AS (
+   SELECT
+     (select status from fail_or_retry_task) AS new_task_status,
+     (select when_exhausted from config) AS when_exhausted_mode,
     -- Task is exhausted when it's failed (no more retries)
     ((select status from fail_or_retry_task) = 'failed') AS is_exhausted
 ),
 maybe_fail_step AS (
   UPDATE pgflow.step_states
   SET
-    -- Status logic:
-    -- - If task not exhausted (retrying): keep current status
-    -- - If exhausted AND when_failed='fail': set to 'failed'
-    -- - If exhausted AND when_failed IN ('skip', 'skip-cascade'): set to 'skipped'
-    status = CASE
-             WHEN NOT (select is_exhausted from task_status) THEN pgflow.step_states.status
-             WHEN (select when_failed_mode from task_status) = 'fail' THEN 'failed'
-             ELSE 'skipped'  -- skip or skip-cascade
-             END,
+     -- Status logic:
+     -- - If task not exhausted (retrying): keep current status
+     -- - If exhausted AND when_exhausted='fail': set to 'failed'
+     -- - If exhausted AND when_exhausted IN ('skip', 'skip-cascade'): set to 'skipped'
+     status = CASE
+              WHEN NOT (select is_exhausted from task_status) THEN pgflow.step_states.status
+              WHEN (select when_exhausted_mode from task_status) = 'fail' THEN 'failed'
+              ELSE 'skipped'  -- skip or skip-cascade
+              END,
     failed_at = CASE
-                WHEN (select is_exhausted from task_status) AND (select when_failed_mode from task_status) = 'fail' THEN now()
-                ELSE NULL
-                END,
+                 WHEN (select is_exhausted from task_status) AND (select when_exhausted_mode from task_status) = 'fail' THEN now()
+                 ELSE NULL
+                 END,
     error_message = CASE
                     WHEN (select is_exhausted from task_status) THEN fail_task.error_message
                     ELSE NULL
                     END,
     skip_reason = CASE
-                  WHEN (select is_exhausted from task_status) AND (select when_failed_mode from task_status) IN ('skip', 'skip-cascade') THEN 'handler_failed'
+                  WHEN (select is_exhausted from task_status) AND (select when_exhausted_mode from task_status) IN ('skip', 'skip-cascade') THEN 'handler_failed'
                   ELSE pgflow.step_states.skip_reason
                   END,
     skipped_at = CASE
-                 WHEN (select is_exhausted from task_status) AND (select when_failed_mode from task_status) IN ('skip', 'skip-cascade') THEN now()
+                 WHEN (select is_exhausted from task_status) AND (select when_exhausted_mode from task_status) IN ('skip', 'skip-cascade') THEN now()
                  ELSE pgflow.step_states.skipped_at
                  END,
     -- Clear remaining_tasks when skipping (required by remaining_tasks_state_consistency constraint)
     remaining_tasks = CASE
-                      WHEN (select is_exhausted from task_status) AND (select when_failed_mode from task_status) IN ('skip', 'skip-cascade') THEN NULL
+                      WHEN (select is_exhausted from task_status) AND (select when_exhausted_mode from task_status) IN ('skip', 'skip-cascade') THEN NULL
                       ELSE pgflow.step_states.remaining_tasks
                       END
   FROM fail_or_retry_task
@@ -1307,7 +1307,7 @@ maybe_fail_step AS (
     AND pgflow.step_states.step_slug = fail_task.step_slug
   RETURNING pgflow.step_states.*
 )
--- Update run status: only fail when when_failed='fail' and step was failed
+ -- Update run status: only fail when when_exhausted='fail' and step was failed
 UPDATE pgflow.runs
 SET status = CASE
               WHEN (select status from maybe_fail_step) = 'failed' THEN 'failed'
@@ -1325,9 +1325,9 @@ SET status = CASE
 WHERE pgflow.runs.run_id = fail_task.run_id
 RETURNING (status = 'failed') INTO v_run_failed;
 
--- Capture when_failed mode and check if step was skipped for later processing
-SELECT s.when_failed INTO v_when_failed
-FROM pgflow.steps s
+ -- Capture when_exhausted mode and check if step was skipped for later processing
+ SELECT s.when_exhausted INTO v_when_exhausted
+ FROM pgflow.steps s
 JOIN pgflow.runs r ON r.flow_slug = s.flow_slug
 WHERE r.run_id = fail_task.run_id
   AND s.step_slug = fail_task.step_slug;
@@ -1360,8 +1360,8 @@ IF v_step_failed THEN
   );
 END IF;
 
--- Handle step skipping (when_failed = 'skip' or 'skip-cascade')
-IF v_step_skipped THEN
+ -- Handle step skipping (when_exhausted = 'skip' or 'skip-cascade')
+ IF v_step_skipped THEN
   -- Send broadcast event for step skipped
   PERFORM realtime.send(
     jsonb_build_object(
@@ -1378,8 +1378,8 @@ IF v_step_skipped THEN
     false
   );
 
-  -- For skip-cascade: cascade skip to all downstream dependents
-  IF v_when_failed = 'skip-cascade' THEN
+   -- For skip-cascade: cascade skip to all downstream dependents
+   IF v_when_exhausted = 'skip-cascade' THEN
     PERFORM pgflow._cascade_force_skip_steps(fail_task.run_id, fail_task.step_slug, 'handler_failed');
   ELSE
     -- For plain 'skip': decrement remaining_deps on dependent steps

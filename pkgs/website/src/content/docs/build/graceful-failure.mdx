@@ -1,13 +1,13 @@
 ---
 title: Graceful Failure
-description: Handle step failures gracefully with retriesExhausted option.
+description: Handle step failures gracefully with whenExhausted option.
 sidebar:
   order: 26
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-The `retriesExhausted` option controls what happens when a step fails after exhausting all retry attempts. Instead of failing the entire run, you can skip the step and continue.
+The `whenExhausted` option controls what happens when a step fails after exhausting all retry attempts. Instead of failing the entire run, you can skip the step and continue.
 
 ## Quick Example
 
@@ -15,7 +15,7 @@ The `retriesExhausted` option controls what happens when a step fails after exha
 .step({
   slug: 'sendWelcomeEmail',
   maxAttempts: 3,
-  retriesExhausted: 'skip',  // If email fails 3x, skip and continue
+  whenExhausted: 'skip',  // If email fails 3x, skip and continue
 }, async (input) => {
   return await sendEmail(input.run.email);
 })
@@ -38,19 +38,19 @@ The `retriesExhausted` option controls what happens when a step fails after exha
 | `skip-cascade` | Step AND all downstream dependents skipped |
 
 <Aside type="tip">
-  Use `retriesExhausted: 'skip'` for non-critical steps like notifications,
+  Use `whenExhausted: 'skip'` for non-critical steps like notifications,
   analytics, or enrichment that shouldn't block your core business logic.
 </Aside>
 
 ## TYPE_VIOLATION Exception
 
-Programming errors always fail the run, regardless of `retriesExhausted`:
+Programming errors always fail the run, regardless of `whenExhausted`:
 
 ```typescript
-// This ALWAYS fails the run, even with retriesExhausted: 'skip'
+// This ALWAYS fails the run, even with whenExhausted: 'skip'
 .step({
   slug: 'fetchItems',
-  retriesExhausted: 'skip',
+  whenExhausted: 'skip',
 }, () => "not an array")  // Returns string instead of array!
 .map({
   slug: 'processItems',
@@ -65,7 +65,7 @@ Programming errors always fail the run, regardless of `retriesExhausted`:
 
 ## Skip Reason
 
-When `retriesExhausted: 'skip'` triggers, the step gets `skip_reason: 'handler_failed'` with the original error preserved in `error_message`.
+When `whenExhausted: 'skip'` triggers, the step gets `skip_reason: 'handler_failed'` with the original error preserved in `error_message`.
 
 ```sql
 SELECT step_slug, error_message, skip_reason
@@ -76,14 +76,14 @@ WHERE run_id = 'your-run-id'
 
 ## Combining with Conditions
 
-You can use `retriesExhausted` together with `if` conditions for maximum flexibility:
+You can use `whenExhausted` together with `if` conditions for maximum flexibility:
 
 ```typescript
 .step({
   slug: 'enrichFromAPI',
   if: { includeEnrichment: true },   // Only attempt if requested
   maxAttempts: 3,
-  retriesExhausted: 'skip',          // If API fails, continue anyway
+  whenExhausted: 'skip',          // If API fails, continue anyway
 }, async (input) => {
   return await externalAPI.enrich(input.run.id);
 })
@@ -97,7 +97,7 @@ This step:
 
 ## Best Practices
 
-**Do use `retriesExhausted: 'skip'` for:**
+**Do use `whenExhausted: 'skip'` for:**
 
 - Notification steps (email, SMS, push)
 - Analytics and tracking events

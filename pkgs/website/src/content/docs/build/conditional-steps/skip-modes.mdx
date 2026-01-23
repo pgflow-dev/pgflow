@@ -236,7 +236,7 @@ When a step is skipped, pgflow records why in the `skip_reason` field:
 | -------------------- | ------------------------------------------------- |
 | `condition_unmet`    | Step's `if` or `ifNot` condition wasn't satisfied |
 | `dependency_skipped` | A dependency was skipped with `skip-cascade`      |
-| `handler_failed`     | Handler failed with `retriesExhausted: 'skip'`    |
+| `handler_failed`     | Handler failed with `whenExhausted: 'skip'`    |
 
 Query skipped steps:
 
