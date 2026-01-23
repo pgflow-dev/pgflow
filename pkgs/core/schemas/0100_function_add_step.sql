@@ -6,7 +6,11 @@ create or replace function pgflow.add_step(
   base_delay int default null,
   timeout int default null,
   start_delay int default null,
-  step_type text default 'single'
+  step_type text default 'single',
+  required_input_pattern jsonb default null,
+  forbidden_input_pattern jsonb default null,
+  when_unmet text default 'skip',
+  when_failed text default 'fail'
 )
 returns pgflow.steps
 language plpgsql
@@ -22,7 +26,7 @@ BEGIN
   --   0 dependencies (root map - maps over flow input array)
   --   1 dependency (dependent map - maps over dependency output array)
   IF COALESCE(add_step.step_type, 'single') = 'map' AND COALESCE(array_length(add_step.deps_slugs, 1), 0) > 1 THEN
-    RAISE EXCEPTION 'Map step "%" can have at most one dependency, but % were provided: %', 
+    RAISE EXCEPTION 'Map step "%" can have at most one dependency, but % were provided: %',
       add_step.step_slug,
       COALESCE(array_length(add_step.deps_slugs, 1), 0),
       array_to_string(add_step.deps_slugs, ', ');
@@ -36,18 +40,23 @@ BEGIN
   -- Create the step
   INSERT INTO pgflow.steps (
     flow_slug, step_slug, step_type, step_index, deps_count,
-    opt_max_attempts, opt_base_delay, opt_timeout, opt_start_delay
+    opt_max_attempts, opt_base_delay, opt_timeout, opt_start_delay,
+    required_input_pattern, forbidden_input_pattern, when_unmet, when_failed
   )
   VALUES (
     add_step.flow_slug,
     add_step.step_slug,
     COALESCE(add_step.step_type, 'single'),
-    next_idx, 
+    next_idx,
     COALESCE(array_length(add_step.deps_slugs, 1), 0),
     add_step.max_attempts,
     add_step.base_delay,
     add_step.timeout,
-    add_step.start_delay
+    add_step.start_delay,
+    add_step.required_input_pattern,
+    add_step.forbidden_input_pattern,
+    add_step.when_unmet,
+    add_step.when_failed
   )
   ON CONFLICT ON CONSTRAINT steps_pkey
   DO UPDATE SET step_slug = EXCLUDED.step_slug
@@ -59,7 +68,7 @@ BEGIN
   FROM unnest(COALESCE(add_step.deps_slugs, '{}')) AS d(dep_slug)
   WHERE add_step.deps_slugs IS NOT NULL AND array_length(add_step.deps_slugs, 1) > 0
   ON CONFLICT ON CONSTRAINT deps_pkey DO NOTHING;
-  
+
   RETURN result_step;
 END;
 $$;

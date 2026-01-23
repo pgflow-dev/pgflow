@@ -1,4 +1,4 @@
-import { Flow } from '../../src/index.js';
+import { Flow, type ExtractFlowSteps } from '../../src/index.js';
 import { describe, it, expectTypeOf } from 'vitest';
 
 describe('map step return type inference bug', () => {
@@ -38,9 +38,7 @@ describe('map step return type inference bug', () => {
       );
 
     // Verify the map step output type is not any[]
-    type ProcessChunksOutput = typeof flow extends Flow<any, any, infer Steps, any>
-      ? Steps['processChunks']
-      : never;
+    type ProcessChunksOutput = ExtractFlowSteps<typeof flow>['processChunks'];
 
     expectTypeOf<ProcessChunksOutput>().not.toEqualTypeOf<any[]>();
   });
@@ -73,9 +71,7 @@ describe('map step return type inference bug', () => {
         return { ok: true };
       });
 
-    type TransformOutput = typeof flow extends Flow<any, any, infer Steps, any>
-      ? Steps['transform']
-      : never;
+    type TransformOutput = ExtractFlowSteps<typeof flow>['transform'];
 
     expectTypeOf<TransformOutput>().toEqualTypeOf<ComplexResult[]>();
     expectTypeOf<TransformOutput>().not.toEqualTypeOf<any[]>();
@@ -100,9 +96,7 @@ describe('map step return type inference bug', () => {
         return { done: true };
       });
 
-    type ProcessOutput = typeof flow extends Flow<any, any, infer Steps, any>
-      ? Steps['process']
-      : never;
+    type ProcessOutput = ExtractFlowSteps<typeof flow>['process'];
 
     expectTypeOf<ProcessOutput>().not.toEqualTypeOf<any[]>();
   });
@@ -127,9 +121,7 @@ describe('map step return type inference bug', () => {
         return { ok: true };
       });
 
-    type TransformOutput = typeof flow extends Flow<any, any, infer Steps, any>
-      ? Steps['transform']
-      : never;
+    type TransformOutput = ExtractFlowSteps<typeof flow>['transform'];
 
     expectTypeOf<TransformOutput>().toEqualTypeOf<{ value: string; length: number }[]>();
     expectTypeOf<TransformOutput>().not.toEqualTypeOf<any[]>();
@@ -155,9 +147,7 @@ describe('map step return type inference bug', () => {
         return { count: deps.uppercase.length };
       });
 
-    type UppercaseOutput = typeof flow extends Flow<any, any, infer Steps, any>
-      ? Steps['uppercase']
-      : never;
+    type UppercaseOutput = ExtractFlowSteps<typeof flow>['uppercase'];
 
     expectTypeOf<UppercaseOutput>().toEqualTypeOf<{ original: string; transformed: string }[]>();
     expectTypeOf<UppercaseOutput>().not.toEqualTypeOf<any[]>();
