@@ -306,7 +306,7 @@ Deno.test(
           stepType: 'single',
           dependencies: [],
           whenUnmet: 'skip',
-          whenFailed: 'fail',
+          whenExhausted: 'fail',
           requiredInputPattern: { defined: false },
           forbiddenInputPattern: { defined: false },
         },

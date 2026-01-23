@@ -1,5 +1,5 @@
 -- Test: add_step - New condition parameters
--- Verifies required_input_pattern, when_unmet, when_failed parameters work correctly
+-- Verifies required_input_pattern, when_unmet, when_exhausted parameters work correctly
 begin;
 select plan(9);
 
@@ -48,32 +48,32 @@ select is(
   'when_unmet should be skip-cascade'
 );
 
--- Test 4: Add step with when_failed = skip
+-- Test 4: Add step with when_exhausted = skip
 select pgflow.add_step(
   'condition_test',
   'step_skip_failed',
-  when_failed => 'skip'
+  when_exhausted => 'skip'
 );
 
 select is(
-  (select when_failed from pgflow.steps
+  (select when_exhausted from pgflow.steps
    where flow_slug = 'condition_test' and step_slug = 'step_skip_failed'),
   'skip',
-  'when_failed should be skip'
+  'when_exhausted should be skip'
 );
 
--- Test 5: Add step with when_failed = skip-cascade
+-- Test 5: Add step with when_exhausted = skip-cascade
 select pgflow.add_step(
   'condition_test',
   'step_skip_cascade_failed',
-  when_failed => 'skip-cascade'
+  when_exhausted => 'skip-cascade'
 );
 
 select is(
-  (select when_failed from pgflow.steps
+  (select when_exhausted from pgflow.steps
    where flow_slug = 'condition_test' and step_slug = 'step_skip_cascade_failed'),
   'skip-cascade',
-  'when_failed should be skip-cascade'
+  'when_exhausted should be skip-cascade'
 );
 
 -- Test 6: Default when_unmet should be skip (natural default for conditions)
@@ -86,12 +86,12 @@ select is(
   'Default when_unmet should be skip'
 );
 
--- Test 7: Default when_failed should be fail
+-- Test 7: Default when_exhausted should be fail
 select is(
-  (select when_failed from pgflow.steps
+  (select when_exhausted from pgflow.steps
    where flow_slug = 'condition_test' and step_slug = 'step_default_unmet'),
   'fail',
-  'Default when_failed should be fail'
+  'Default when_exhausted should be fail'
 );
 
 -- Test 8: Default required_input_pattern should be NULL
@@ -108,14 +108,14 @@ select pgflow.add_step(
   'step_all_params',
   required_input_pattern => '{"status": "active"}'::jsonb,
   when_unmet => 'skip',
-  when_failed => 'skip-cascade'
+  when_exhausted => 'skip-cascade'
 );
 
 select ok(
   (select
     required_input_pattern = '{"status": "active"}'::jsonb
     AND when_unmet = 'skip'
-    AND when_failed = 'skip-cascade'
+    AND when_exhausted = 'skip-cascade'
    from pgflow.steps
    where flow_slug = 'condition_test' and step_slug = 'step_all_params'),
   'All condition parameters should be stored correctly together'
